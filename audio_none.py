@@ -26,21 +26,14 @@ def close():
     """ Clean up and exit sound system. """
     pass
 
-def queue_length(voice):
-    """ Number of unfinished sounds per voice. """
-    # this is just sound.tone_queue[voice].unfinished_tasks but not part of API
-    return sound.tone_queue[voice].qsize() + (next_tone[voice] is not None)
-
-
+# sound generators for sounds being queued
+# if not None, something is playing
+next_tone = [ None, None, None, None ]
 
 ##############################################################################
 # implementation
 
 tick_s = 0.024
-
-# sound generators for sounds not played yet
-next_tone = [ None, None, None, None ]
-
 
 def launch_thread():
     """ Launch consumer thread. """

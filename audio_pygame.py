@@ -57,7 +57,7 @@ def init():
     return True
 
 def close():
-    """ Close sound queue at exit. """
+    """ Clean up and exit sound system. """
     # drain signal queue (to allow for persistence) and request exit
     if sound.tone_queue:
         for i in range(4):
@@ -67,11 +67,9 @@ def close():
             # signal quit and wait for thread to finish
             thread.join()
 
-def queue_length(voice):
-    """ Number of unfinished sounds per voice. """
-    # this is just sound.tone_queue[voice].unfinished_tasks but not part of API
-    return sound.tone_queue[voice].qsize() + (next_tone[voice] is not None)
-
+# sound generators for sounds not played yet
+# if not None, something is playing
+next_tone = [ None, None, None, None ]
 
 ##############################################################################
 # implementation
@@ -85,9 +83,6 @@ quiet_quit = 10000
 quiet_ticks = 0
 # do not quit mixer if true
 persist = False
-
-# sound generators for sounds not played yet
-next_tone = [ None, None, None, None ]
 
 # currently looping sound
 loop_sound = [ None, None, None, None ]

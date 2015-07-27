@@ -177,7 +177,7 @@ class Sound(object):
 
     def wait_all_music(self):
         """ Wait until all music (not noise) has finished playing. """
-        while (audio.queue_length(0) or audio.queue_length(1) or audio.queue_length(2)):
+        while (self.is_playing(0) or self.is_playing(1) or self.is_playing(2)):
             backend.wait()
 
     def stop_all_sound(self):
@@ -200,8 +200,14 @@ class Sound(object):
 
     def queue_length(self, voice=0):
         """ Return the number of notes in the queue. """
-        # top of sound_queue is currently playing
-        return max(0, audio.queue_length(voice)-1)
+        # NOTE: this returns zero when there are still TWO notes to play
+        # one in the pre-play buffer and another because we subtract 1 here
+        # this agrees with empirical GW-BASIC ON PLAY() timings!
+        return max(0, tone_queue[voice].qsize()-1)
+
+    def is_playing(self, voice):
+        """ A note is playing or queued at the given voice. """
+        return self.queue_length(voice) or audio.next_tone[voice]
 
     def persist(self, flag):
         """ Set mixer persistence flag (runmode). """

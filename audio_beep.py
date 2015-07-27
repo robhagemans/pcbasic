@@ -28,11 +28,9 @@ def close():
     """ Clean up and exit sound system. """
     pass
 
-def queue_length(voice):
-    """ Number of unfinished sounds per voice. """
-    # this is just sound.tone_queue[voice].unfinished_tasks but not part of API
-    return sound.tone_queue[voice].qsize() + (now_playing[voice] is not None)
-
+# sound generators for sounds not played yet
+# if not None, something is playing
+next_tone = [ None, None, None, None ]
 
 ##############################################################################
 # implementation
@@ -40,7 +38,6 @@ def queue_length(voice):
 import plat
 
 tick_s = 0.024
-next_tone = [None, None, None, None]
 now_playing = [None, None, None, None]
 now_looping = [None, None, None, None]
 
