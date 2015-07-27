@@ -55,10 +55,8 @@ def consumer_thread():
         empty = drain_tone_queue()
         # handle playing queues
         play_sound()
-        for voice in range(4):
-            empty = empty and not next_tone[voice]
         # do not hog cpu
-        if empty:
+        if empty and next_tone == [None, None, None, None]:
             time.sleep(tick_s)
 
 def drain_message_queue():
@@ -74,6 +72,7 @@ def drain_message_queue():
             for voice in now_playing:
                 if voice and voice.poll() is None:
                     voice.terminate()
+            next_tone = [None, None, None, None]
             now_playing = [None, None, None, None]
             now_looping = [None, None, None, None]
             hush()

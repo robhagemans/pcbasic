@@ -224,13 +224,12 @@ def consumer_thread():
         empty = drain_tone_queue()
         # generate and play chunks
         play_sound()
-        # check if mixer can be quit
-        check_quit()
         # do not hog cpu
         if empty and next_tone == [None, None, None, None]:
             pygame.time.wait(tick_ms)
 
 def drain_message_queue():
+    """ Drain signal queue. """
     global next_tone, loop_sound, persist
     while True:
         try:
@@ -315,6 +314,8 @@ def play_sound():
         if current_chunk[voice] is not None and len(current_chunk[voice]) != 0:
             snd = pygame.sndarray.make_sound(current_chunk[voice])
             mixer.Channel(voice).queue(snd)
+    # check if mixer can be quit
+    check_quit()
 
 def check_quit():
     """ Quit the mixer if not running a program and sound quiet for a while. """

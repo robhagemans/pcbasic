@@ -47,15 +47,9 @@ def consumer_thread():
     while True:
         drain_message_queue()
         empty = drain_tone_queue()
-        # handle playing queues
-        now = datetime.datetime.now()
-        for voice in range(4):
-            if next_tone[voice] is not None and now >= next_tone[voice]:
-                next_tone[voice] = None
-                sound.tone_queue[voice].task_done()
-            empty = empty and not next_tone[voice]
+        play_sound()
         # do not hog cpu
-        if empty:
+        if empty and next_tone == [None, None, None, None]:
             time.sleep(tick_s)
 
 def drain_message_queue():
@@ -99,3 +93,12 @@ def drain_tone_queue():
             latest = next_tone[voice] or datetime.datetime.now()
             next_tone[voice] = latest + datetime.timedelta(seconds=duration)
     return empty
+
+def play_sound():
+    """ Play sounds. """
+    # handle playing queues
+    now = datetime.datetime.now()
+    for voice in range(4):
+        if next_tone[voice] is not None and now >= next_tone[voice]:
+            next_tone[voice] = None
+            sound.tone_queue[voice].task_done()
