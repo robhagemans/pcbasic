@@ -24,7 +24,31 @@ import representation
 import vartypes
 import backend
 
-thread_queue = [ Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue() ]
+
+class PersistentQueue(Queue.Queue):
+    """ Simple picklable Queue. """
+
+    def __getstate__(self):
+        """ Get pickling dict for queue. """
+        qlist = []
+        while True:
+            try:
+                qlist.append(self.get(False))
+                self.task_done()
+            except Queue.Empty:
+                break
+        return { 'qlist': qlist }
+
+    def __setstate__(self, st):
+        """ Initialise queue from pickling dict. """
+        self.__init__()
+        qlist = st['qlist']
+        for item in qlist:
+            self.put(item)
+
+
+message_queue = Queue.Queue()
+tone_queue = None
 
 # audio plugin
 audio = None
@@ -73,10 +97,15 @@ def prepare():
     state.console_state.sound.sound_on = (pcjr_sound == 'tandy')
     # pc-speaker on/off; (not implemented; not sure whether should be on)
     state.console_state.sound.beep_on = True
+    # persist tone queue
+    state.console_state.tone_queue = [PersistentQueue(), PersistentQueue(),
+                                      PersistentQueue(), PersistentQueue() ]
 
 def init():
     """ Initialise the audio backend. """
-    global audio
+    global audio, tone_queue
+    # NOTE that we shouldn't assign to either of these queues after this point
+    tone_queue = state.console_state.tone_queue
     if not audio or not audio.init():
         return False
     return True
@@ -129,8 +158,8 @@ class Sound(object):
                 frequency < 110. and frequency != 0):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
-        tone = AudioEvent(AUDIO_TONE, (frequency, duration, fill, loop, voice, volume))
-        thread_queue[voice].put(tone)
+        tone = AudioEvent(AUDIO_TONE, (frequency, duration, fill, loop, volume))
+        state.console_state.tone_queue[voice].put(tone)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
@@ -148,36 +177,41 @@ class Sound(object):
 
     def wait_all_music(self):
         """ Wait until all music (not noise) has finished playing. """
-        while (audio.busy() or audio.queue_length(0) or audio.queue_length(1) or audio.queue_length(2)):
+        while (self.is_playing(0) or self.is_playing(1) or self.is_playing(2)):
             backend.wait()
 
     def stop_all_sound(self):
         """ Terminate all sounds immediately. """
-        for q in thread_queue:
+        for q in state.console_state.tone_queue:
             while not q.empty():
                 try:
                     q.get(False)
                 except Queue.Empty:
                     continue
                 q.task_done()
-        for q in thread_queue:
-            q.put(AudioEvent(AUDIO_STOP))
+        message_queue.put(AudioEvent(AUDIO_STOP))
 
     def play_noise(self, source, volume, duration, loop=False):
         """ Play a sound on the noise generator. """
         frequency = self.noise_freq[source]
         noise = AudioEvent(AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
-        thread_queue[3].put(noise)
+        state.console_state.tone_queue[3].put(noise)
         # don't wait for noise
 
     def queue_length(self, voice=0):
         """ Return the number of notes in the queue. """
-        # top of sound_queue is currently playing
-        return max(0, audio.queue_length(voice)-1)
+        # NOTE: this returns zero when there are still TWO notes to play
+        # one in the pre-play buffer and another because we subtract 1 here
+        # this agrees with empirical GW-BASIC ON PLAY() timings!
+        return max(0, tone_queue[voice].qsize()-1)
+
+    def is_playing(self, voice):
+        """ A note is playing or queued at the given voice. """
+        return self.queue_length(voice) or audio.next_tone[voice]
 
     def persist(self, flag):
         """ Set mixer persistence flag (runmode). """
-        thread_queue[0].put(AudioEvent(AUDIO_PERSIST, flag))
+        message_queue.put(AudioEvent(AUDIO_PERSIST, flag))
 
     ### PLAY statement
 
@@ -193,7 +227,6 @@ class Sound(object):
         next_oct = 0
         total_time = [0, 0, 0, 0]
         voices = range(3)
-        total_time = [0, 0, 0, 0]
         while True:
             if not voices:
                 break
