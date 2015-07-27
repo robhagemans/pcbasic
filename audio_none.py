@@ -77,20 +77,21 @@ def drain_tone_queue():
     while not empty:
         empty = True
         for voice, q in enumerate(sound.tone_queue):
-            try:
-                signal = q.get(False)
-                empty = False
-            except Queue.Empty:
-                continue
-            duration = 0
-            if signal.event_type == sound.AUDIO_TONE:
-                # enqueue a tone
-                frequency, duration, fill, loop, volume = signal.params
-            elif signal.event_type == sound.AUDIO_NOISE:
-                # enqueue a noise
-                is_white, frequency, duration, fill, loop, volume = signal.params
-            latest = next_tone[voice] or datetime.datetime.now()
-            next_tone[voice] = latest + datetime.timedelta(seconds=duration)
+            if next_tone[voice] is None:
+                try:
+                    signal = q.get(False)
+                    empty = False
+                except Queue.Empty:
+                    continue
+                duration = 0
+                if signal.event_type == sound.AUDIO_TONE:
+                    # enqueue a tone
+                    frequency, duration, fill, loop, volume = signal.params
+                elif signal.event_type == sound.AUDIO_NOISE:
+                    # enqueue a noise
+                    is_white, frequency, duration, fill, loop, volume = signal.params
+                latest = next_tone[voice] or datetime.datetime.now()
+                next_tone[voice] = latest + datetime.timedelta(seconds=duration)
     return empty
 
 def play_sound():
