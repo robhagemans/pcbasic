@@ -133,6 +133,10 @@ if plat.system == 'Windows':
         """ This module is not supported under Windows. """
         pass
 
+    def sleep():
+        """ This module is not supported under Windows. """
+        pass
+
     def hush():
         """ This module is not supported under Windows. """
         pass
@@ -150,19 +154,23 @@ else:
         return subprocess.Popen(('beep -f %f -l %d -D %d' %
             (frequency, duration*fill*1000, duration*(1-fill)*1000)).split())
 
+    def sleep(duration):
+        """ Wait for given number of seconds. """
+        return subprocess.Popen(('sleep %f') % duration)
+
     def hush():
         """ Turn off any sound. """
         subprocess.call('beep -f 1 -l 0'.split())
+
 
 def play_now(frequency, duration, fill, loop, volume, voice):
     """ Play a sound immediately. """
     frequency = max(1, min(19999, frequency))
     if loop:
-        duration = 5
-        fill = 1
+        duration, fill = 5, 1
         now_looping[voice] = (frequency, duration, fill, loop, volume)
-    if voice == 3:
-        # ignore noise channel
-        pass
-    else:
+    if voice == 1:
         now_playing[voice] = beep(frequency, duration, fill)
+    else:
+        # don't play other channels as there is no mixer or noise generator
+        now_playing[voice] = sleep(duration)
