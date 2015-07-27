@@ -54,8 +54,7 @@ def launch_thread():
 
 def consumer_thread():
     """ Audio signal queue consumer thread. """
-    while True:
-        drain_message_queue()
+    while drain_message_queue():
         empty = drain_tone_queue()
         # handle playing queues
         play_sound()
@@ -70,7 +69,7 @@ def drain_message_queue():
         try:
             signal = sound.message_queue.get(False)
         except Queue.Empty:
-            break
+            return True
         if signal.event_type == sound.AUDIO_STOP:
             # stop all channels
             for voice in now_playing:

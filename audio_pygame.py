@@ -219,8 +219,7 @@ def consumer_thread():
     # initialise mixer as silent
     # this is necessary to be able to set channels to mono
     mixer.quit()
-    while True:
-        drain_message_queue()
+    while drain_message_queue():
         empty = drain_tone_queue()
         # generate and play chunks
         play_sound()
@@ -235,7 +234,7 @@ def drain_message_queue():
         try:
             signal = sound.message_queue.get(False)
         except Queue.Empty:
-            break
+            return True
         if signal.event_type == sound.AUDIO_STOP:
             # stop all channels
             for voice in range(4):
