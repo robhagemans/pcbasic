@@ -10,7 +10,9 @@ import datetime
 import time
 import threading
 import Queue
+import subprocess
 
+import plat
 import sound
 
 
@@ -19,7 +21,11 @@ import sound
 
 def init():
     """ Initialise sound system. """
-    if init_sound():
+    if plat.system == 'Windows':
+        # Windows not supported as there's no beep utility anyway
+        # and we can't run the test below on CMD
+        return False
+    elif subprocess.call("command -v beep >/dev/null 2>&1", shell=True) == 0:
         launch_thread()
         return True
     return False
@@ -34,8 +40,6 @@ next_tone = [ None, None, None, None ]
 
 ##############################################################################
 # implementation
-
-import plat
 
 tick_s = 0.024
 now_playing = [None, None, None, None]
@@ -120,51 +124,24 @@ def play_sound():
             next_tone[voice] = None
 
 def busy(voice):
-    """ Is the mixer busy? """
+    """ Is the beeper busy? """
     return now_playing[voice] and now_playing[voice].poll() is None
 
+def beep(frequency, duration, fill):
+    """ Emit a sound. """
+    return subprocess.Popen(
+            'beep -f {freq} -l {dur} -D {gap}'.format(
+                freq=frequency, dur=duration*fill*1000,
+                gap=duration*(1-fill)*1000
+            ).split())
 
-if plat.system == 'Windows':
-    def init_sound():
-        """ This module is not supported under Windows. """
-        return False
+def sleep(duration):
+    """ Wait for given number of seconds. """
+    return subprocess.Popen('sleep {0}'.format(duration).split())
 
-    def beep():
-        """ This module is not supported under Windows. """
-        pass
-
-    def sleep():
-        """ This module is not supported under Windows. """
-        pass
-
-    def hush():
-        """ This module is not supported under Windows. """
-        pass
-
-else:
-    import subprocess
-
-    def init_sound():
-        """ Initialise sound module. """
-        return subprocess.call("command -v beep >/dev/null 2>&1",
-                                shell=True) == 0
-
-    def beep(frequency, duration, fill):
-        """ Emit a sound. """
-        return subprocess.Popen(
-                'beep -f {freq} -l {dur} -D {gap}'.format(
-                    freq=frequency, dur=duration*fill*1000,
-                    gap=duration*(1-fill)*1000
-                ).split())
-
-    def sleep(duration):
-        """ Wait for given number of seconds. """
-        return subprocess.Popen('sleep {0}'.format(duration).split())
-
-    def hush():
-        """ Turn off any sound. """
-        subprocess.call('beep -f 1 -l 0'.split())
-
+def hush():
+    """ Turn off any sound. """
+    subprocess.call('beep -f 1 -l 0'.split())
 
 def play_now(frequency, duration, fill, loop, volume, voice):
     """ Play a sound immediately. """
@@ -176,4 +153,5 @@ def play_now(frequency, duration, fill, loop, volume, voice):
         now_playing[voice] = beep(frequency, duration, fill)
     else:
         # don't play other channels as there is no mixer or noise generator
+        # but use a sleep process to get timings right
         now_playing[voice] = sleep(duration)
