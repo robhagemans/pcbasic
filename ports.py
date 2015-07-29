@@ -76,19 +76,27 @@ class COMDevice(devices.Device):
         devices.Device.__init__(self)
         addr, val = devices.parse_protocol_string(arg)
         self.stream = None
-        if (not val):
-            pass
-        elif (addr and addr not in self.allowed_protocols):
-            logging.warning('Could not attach %s to COM device', arg)
-        elif addr == 'SOCKET':
-            self.stream = serial_for_url('socket://'+val)
-        else:
-            # 'PORT' is default
-            # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows. Or anything supported by serial_for_url (RFC 2217 etc)
-            self.stream = serial_for_url(val)
         # wait until socket is open to open file on it
         # as opening a text file atomatically reads a byte
         self.device_file = None
+        if (not val):
+            pass
+        elif not serial:
+            logging.warning('Serial module not found. Serial port and socket communication not available.')
+            self.stream = None
+        elif (addr and addr not in self.allowed_protocols):
+            logging.warning('Could not attach %s to COM device', arg)
+        else:
+            try:
+                if addr == 'SOCKET':
+                    self.stream = SocketSerialStream(val)
+                else:
+                    # 'PORT' is default
+                    # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows.
+                    self.stream = SerialStream(val)
+            except (ValueError, EnvironmentError) as e:
+                logging.warning('Could not attach %s to COM device: %s', arg, e)
+                self.stream = None
 
     def open(self, number, param, filetype, mode, access, lock,
                        reclen, seg, offset, length):
@@ -97,7 +105,7 @@ class COMDevice(devices.Device):
             # device unavailable
             raise error.RunError(68)
         # open the COM port
-        if self.stream._isOpen:
+        if self.stream.is_open:
             # file already open
             raise error.RunError(55)
         else:
@@ -288,27 +296,64 @@ class COMFile(devices.CRLFTextFileBase):
         return serial_in_size - self.loc()
 
 
-def serial_for_url(url):
-    """ Return a Serial object for a given url. """
-    if not serial:
-        logging.warning('Serial module not found. Serial port and socket communication not available.')
-        return None
-    try:
-        stream = serial.serial_for_url(url, timeout=0, do_not_open=True)
-    except ValueError as e:
-        return None
-    if url.split(':', 1)[0] == 'socket':
-        return SocketSerialWrapper(stream)
-    else:
-        return stream
+class SerialStream(object):
+    """ Wrapper object for Serial to enable pickling. """
+
+    def __init__(self, port, do_open=False):
+        """ Initialise the stream. """
+        self._serial = serial.serial_for_url(port, timeout=0, do_not_open=not do_open)
+        self._url = port
+        self.is_open = False
+
+    def __getstate__(self):
+        """ Get pickling dict for stream. """
+        return { 'url': self._url, 'is_open': self.is_open }
+
+    def __setstate__(self, st):
+        """ Initialise stream from pickling dict. """
+        try:
+            SerialStream.__init__(self, st['url'], st['is_open'])
+        except (EnvironmentError, ValueError) as e:
+            logging.warning('Could not resume serial connection: %s', e)
+            self.__init__(st['url'], False)
+            self.is_open = False
+
+    # delegation doesn't play ball nicely with Pickle
+    # def __getattr__(self, attr):
+    #     return getattr(self._serial, attr)
+
+    def open(self):
+        """ Open the serial connection. """
+        self._serial.open()
+        self.is_open = True
+
+    def close(self):
+        """ Close the serial connection. """
+        self._serial.close()
+        self.is_open = False
+
+    def flush(self):
+        """ No buffer to flush. """
+        pass
+
+    def read(self, num=1):
+        """ Non-blocking read from socket. """
+        # NOTE: num=1 follows PySerial
+        # stream default is num=-1 to mean all available
+        # but that's ill-defined for ports
+        self._serial.read(num)
+
+    def write(self, s):
+        """ Write to socket. """
+        self._serial.write(s)
 
 
-class SocketSerialWrapper(object):
+class SocketSerialStream(SerialStream):
     """ Wrapper object for SocketSerial to work around timeout==0 issues. """
 
-    def __init__(self, socketserial):
-        """ initialise the wrapper. """
-        self._serial = socketserial
+    def __init__(self, socket, do_open=False):
+        """ Initialise the stream. """
+        SerialStream.__init__(self, 'socket://' + socket, do_open)
 
     def read(self, num=1):
         """ Non-blocking read from socket. """
@@ -328,30 +373,6 @@ class SocketSerialWrapper(object):
             if e.errno == 11:
                 return ''
             raise SerialException('connection failed (%s)' % e)
-
-    # delegation doesn't play ball nicely with Pickle
-    # def __getattr__(self, attr):
-    #     return getattr(self._serial, attr)
-
-    @property
-    def _isOpen(self):
-        return self._serial._isOpen
-
-    def open(self):
-        """ Open the serial connection. """
-        self._serial.open()
-
-    def close(self):
-        """ Close the serial connection. """
-        self._serial.close()
-
-    def flush(self):
-        """ No buffer to flush. """
-        pass
-
-    def write(self, s):
-        """ Write to socket. """
-        self._serial.write(s)
 
 
 ###############################################################################
@@ -485,7 +506,16 @@ class ParallelStream(object):
 
     def __init__(self, port):
         """ Initialise the ParallelStream. """
-        self.parallel = parallel.Parallel(port)
+        self._parallel = parallel.Parallel(port)
+        self._port = port
+
+    def __getstate__(self):
+        """ Get pickling dict for stream. """
+        return { 'port': self._port }
+
+    def __setstate__(self, st):
+        """ Initialise stream from pickling dict. """
+        self.__init__(st['port'])
 
     def flush(self):
         """ No buffer to flush. """
@@ -494,7 +524,7 @@ class ParallelStream(object):
     def write(self, s):
         """ Write to the parallel port. """
         for c in s:
-            self.parallel.setData(ord(c))
+            self._parallel.setData(ord(c))
 
     def close(self):
         """ Close the stream. """
