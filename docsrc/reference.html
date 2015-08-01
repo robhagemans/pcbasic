@@ -6160,9 +6160,10 @@ The screen. Output to <code>SCRN:</code> has largely the same
 </td>
 </tr><tr>
 <td><code>LPT1:</code> <code>LPT2:</code> <code>LPT3:</code></td>
-<td><code>OUTPUT</code></td>
+<td><code>OUTPUT</code> <code>RANDOM</code></td>
 <td>
 Parallel ports 1&mdash;3.  In PC-BASIC, <code>LPT</code> devices can be attached to the physical parallel port, to a printer or to a text file.
+Opening a printer for <code>RANDOM</code> has the same effect as opening it for <code>OUTPUT</code>; attempting random-file operations will raise <code>BAD FILE MODE</code>.
 </td>
 </tr><tr>
 <td><code>COM1:</code> <code>COM2:</code></td>

@@ -376,6 +376,9 @@ class LPTDevice(devices.Device):
     """ Parallel port or printer device (LPTn:) """
 
     allowed_protocols = ('PRINTER', 'PARPORT', 'FILE')
+    # LPT1 can be opened as RANDOM
+    # but behaves just like OUTPUT
+    # in GW-BASIC, FIELD gives a FIELD OVERFLOW; we get BAD FILE MODE.
     allowed_modes = 'OR'
 
     def __init__(self, arg, default_stream, flush_trigger):
