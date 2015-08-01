@@ -32,7 +32,15 @@ def init():
 
 def close():
     """ Clean up and exit sound system. """
-    pass
+    # drain signal queue (to allow for persistence) and request exit
+    if sound.message_queue:
+        sound.message_queue.put(sound.AudioEvent(sound.AUDIO_QUIT))
+        sound.message_queue.join()
+    # don't wait for tone que, it will not drain but be pickled later.
+    if thread and thread.is_alive():
+        # signal quit and wait for thread to finish
+        thread.join()
+
 
 # sound generators for sounds not played yet
 # if not None, something is playing
@@ -49,7 +57,6 @@ def launch_thread():
     """ Launch consumer thread. """
     global thread
     thread = threading.Thread(target=consumer_thread)
-    thread.daemon = True
     thread.start()
 
 def consumer_thread():

@@ -127,6 +127,7 @@ def start_basic():
     import disk
     import cassette
     import reset
+    import sound
     do_reset = False
     backend, console = None, None
     try:
@@ -196,8 +197,8 @@ def start_basic():
             logging.debug('Error on closing devices: %s', e)
         try:
             sound.audio.close()
-        except (NameError, AttributeError):
-            pass
+        except (NameError, AttributeError) as e:
+            logging.debug('Error on closing audio: %s', e)
 
 def prepare_console():
     """ Initialise backend and console. """

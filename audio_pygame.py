@@ -59,13 +59,13 @@ def init():
 def close():
     """ Clean up and exit sound system. """
     # drain signal queue (to allow for persistence) and request exit
-    if sound.tone_queue:
-        for i in range(4):
-            sound.tone_queue[i].join()
+    if sound.message_queue:
         sound.message_queue.put(sound.AudioEvent(sound.AUDIO_QUIT))
-        if thread and thread.is_alive():
-            # signal quit and wait for thread to finish
-            thread.join()
+        sound.message_queue.join()
+    # don't wait for tone que, it will not drain but be pickled later.
+    if thread and thread.is_alive():
+        # signal quit and wait for thread to finish
+        thread.join()
 
 # sound generators for sounds not played yet
 # if not None, something is playing
@@ -211,7 +211,6 @@ def launch_thread():
     """ Launch consumer thread. """
     global thread
     thread = threading.Thread(target=consumer_thread)
-    thread.daemon = True
     thread.start()
 
 def consumer_thread():
@@ -230,7 +229,8 @@ def consumer_thread():
 def drain_message_queue():
     """ Drain signal queue. """
     global next_tone, loop_sound, persist
-    while True:
+    alive = True
+    while alive:
         try:
             signal = sound.message_queue.get(False)
         except Queue.Empty:
@@ -242,8 +242,8 @@ def drain_message_queue():
             loop_sound = [None, None, None, None]
             next_tone = [None, None, None, None]
         elif signal.event_type == sound.AUDIO_QUIT:
-            # close thread
-            return False
+            # close thread after task_done
+            alive = False
         elif signal.event_type == sound.AUDIO_PERSIST:
             # allow/disallow mixer to quit
             persist = signal.params
