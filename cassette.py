@@ -34,7 +34,7 @@ msgstream = None
 def prepare():
     """ Initialise cassette module. """
     global msgstream
-    state.io_state.devices['CAS1:'] = CASDevice(config.options['cas1'])
+    state.io_state.devices['CAS1:'] = CASDevice(config.get('cas1'))
     msgstream = console
 
 

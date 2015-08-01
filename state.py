@@ -38,9 +38,8 @@ loaded = False
 def prepare():
     """ Initialise the state module. """
     global state_file, loaded
-    if config.options['state']:
-        state_file = config.options['state']
-    elif os.path.exists(plat.state_name):
+    state_file = config.get('state')
+    if os.path.exists(plat.state_name):
         state_file = plat.state_name
     else:
         state_file = os.path.join(plat.state_path, plat.state_name)

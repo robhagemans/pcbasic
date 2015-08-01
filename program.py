@@ -41,11 +41,11 @@ def prepare():
     """ Initialise program module. """
     global max_list_line, dont_protect
     global program_memory_start
-    if (not config.options['strict-hidden-lines']) or config.options['convert']:
+    if (not config.get('strict-hidden-lines')) or config.get('convert'):
         max_list_line = 65535
     else:
         max_list_line = 65530
-    dont_protect = (not config.options['strict-protect']) or config.options['convert']
+    dont_protect = (not config.get('strict-protect')) or config.get('convert')
     # program memory model; offsets in files (4718 == 0x126e)
     program_memory_start = memory.code_start + 1
     erase_program()

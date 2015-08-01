@@ -20,17 +20,17 @@ def prepare():
     """ Prepare the video modes. """
     global video_capabilities, mono_monitor
     global circle_aspect
-    video_capabilities = config.options['video']
+    video_capabilities = config.get('video')
     if video_capabilities == 'tandy':
         circle_aspect = (3072, 2000)
     else:
         circle_aspect = (4, 3)
-    mono_monitor = config.options['monitor'] == 'mono'
+    mono_monitor = config.get('monitor') == 'mono'
     if video_capabilities == 'ega' and mono_monitor:
         video_capabilities = 'ega_mono'
-    cga_low = config.options['cga-low']
+    cga_low = config.get('cga-low')
     # set monochrome tint
-    mono_tint = config.options['mono-tint']
+    mono_tint = config.get('mono-tint')
     # build colour sets
     prepare_colours(mono_monitor, mono_tint)
     # initialise the 4-colour CGA palette

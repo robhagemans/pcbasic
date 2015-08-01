@@ -208,42 +208,42 @@ def prepare():
     global caption
     global wait_on_close
     # display dimensions
-    force_display_size = config.options['dimensions']
-    aspect = config.options['aspect'] or aspect
-    border_width = config.options['border']
-    force_square_pixel = (config.options['scaling'] == 'native')
-    fullscreen = config.options['fullscreen']
-    smooth = (config.options['scaling'] == 'smooth')
+    force_display_size = config.get('dimensions')
+    aspect = config.get('aspect') or aspect
+    border_width = config.get('border')
+    force_square_pixel = (config.get('scaling') == 'native')
+    fullscreen = config.get('fullscreen')
+    smooth = (config.get('scaling') == 'smooth')
     # don't catch Alt+F4
-    noquit = config.options['nokill']
+    noquit = config.get('nokill')
     # monitor choice
-    mono_monitor =  config.options['monitor'] == 'mono'
+    mono_monitor =  config.get('monitor') == 'mono'
     # if no composite palette available for this card, ignore.
-    composite_monitor = (config.options['monitor'] == 'composite' and
-                         config.options['video'] in composite_640)
+    composite_monitor = (config.get('monitor') == 'composite' and
+                         config.get('video') in composite_640)
     if composite_monitor:
-            composite_640_palette = composite_640[config.options['video']]
+            composite_640_palette = composite_640[config.get('video')]
     # keyboard setting based on video card...
-    if config.options['video'] == 'tandy':
+    if config.get('video') == 'tandy':
         # enable tandy F11, F12
         key_to_scan[pygame.K_F11] = scancode.F11
         key_to_scan[pygame.K_F12] = scancode.F12
     # fonts
-    font_families = config.options['font']
+    font_families = config.get('font')
     # mouse setups
     buttons = { 'left': 1, 'middle': 2, 'right': 3, 'none': -1 }
-    mousebutton_copy = buttons[config.options['copy-paste'][0]]
-    mousebutton_paste = buttons[config.options['copy-paste'][1]]
-    mousebutton_pen = buttons[config.options['pen']]
-    if not config.options['altgr']:
+    mousebutton_copy = buttons[config.get('copy-paste')[0]]
+    mousebutton_paste = buttons[config.get('copy-paste')[1]]
+    mousebutton_pen = buttons[config.get('pen')]
+    if not config.get('altgr'):
         # on Windows, AltGr key is reported as right-alt
         key_to_scan[pygame.K_RALT] = scancode.ALT
         # on Linux, AltGr is reported as mode key
         key_to_scan[pygame.K_MODE] = scancode.ALT
     # window caption/title
-    caption = config.options['caption']
+    caption = config.get('caption')
     # wait before closing window
-    wait_on_close = config.options['wait']
+    wait_on_close = config.get('wait')
 
 ###############################################################################
 # state saving and loading

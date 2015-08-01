@@ -47,8 +47,8 @@ def prepare():
     redirect.prepare_redirects()
     state.basic_state.events = Events()
     # we need this for PLAY event
-    if config.options['syntax'] in ('pcjr', 'tandy'):
-        pcjr_sound = config.options['syntax']
+    if config.get('syntax') in ('pcjr', 'tandy'):
+        pcjr_sound = config.get('syntax')
     else:
         pcjr_sound = None
 
@@ -327,9 +327,9 @@ def prepare_keyboard():
     # inserted keystrokes
     if plat.system == 'Android':
         # string_escape not available on PGS4A
-        keystring = config.options['keys'].decode('utf-8')
+        keystring = config.get('keys').decode('utf-8')
     else:
-        keystring = config.options['keys'].decode('string_escape').decode('utf-8')
+        keystring = config.get('keys').decode('string_escape').decode('utf-8')
     state.console_state.keyb = Keyboard()
     for u in keystring:
         c = u.encode('utf-8')
@@ -338,15 +338,14 @@ def prepare_keyboard():
         except KeyError:
             state.console_state.keyb.buf.insert(c)
     # handle caps lock only if requested
-    if config.options['capture-caps']:
-        ignore_caps = False
+    ignore_caps = not config.get('capture-caps')
     # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
-    if config.options['syntax'] == 'tandy':
+    if config.get('syntax') == 'tandy':
         num_fn_keys = 12
     else:
         num_fn_keys = 10
     # if true, treat Ctrl+C *exactly* like ctrl+break (unlike GW-BASIC)
-    ctrl_c_is_break = config.options['ctrl-c-break']
+    ctrl_c_is_break = config.get('ctrl-c-break')
 
 class KeyboardBuffer(object):
     """ Quirky emulated ring buffer for keystrokes. """
@@ -805,20 +804,20 @@ def prepare_video():
     global egacursor
     global video_capabilities, composite_monitor, mono_monitor
     global font_8, heights_needed
-    video_capabilities = config.options['video']
+    video_capabilities = config.get('video')
     # do all text modes with >8 pixels have an ega-cursor?
-    egacursor = config.options['video'] in (
+    egacursor = video_capabilities in (
         'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules')
-    composite_monitor = config.options['monitor'] == 'composite'
-    mono_monitor = config.options['monitor'] == 'mono'
+    composite_monitor = config.get('monitor') == 'composite'
+    mono_monitor = config.get('monitor') == 'mono'
     if video_capabilities == 'ega' and mono_monitor:
         video_capabilities = 'ega_mono'
     # prepare video mode list
     # only allow the screen modes that the given machine supports
     # PCjr starts in 40-column mode
     # video memory size - default is EGA 256K
-    state.console_state.screen = Screen(config.options['text-width'],
-                                        config.options['video-memory'])
+    state.console_state.screen = Screen(config.get('text-width'),
+                                        config.get('video-memory'))
 
     heights_needed = set()
     for mode in state.console_state.screen.text_data.values():
@@ -826,7 +825,7 @@ def prepare_video():
     for mode in state.console_state.screen.mode_data.values():
         heights_needed.add(mode.font_height)
     # load the 8-pixel font that's available in RAM.
-    font_8 = typeface.load(config.options['font'], 8,
+    font_8 = typeface.load(config.get('font'), 8,
                            unicodepage.cp_to_unicodepoint)
 
 

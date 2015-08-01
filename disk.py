@@ -100,14 +100,14 @@ utf8_files = False
 def prepare():
     """ Initialise disk devices. """
     global utf8_files, universal_newline
-    utf8_files = config.options['utf8']
-    universal_newline = not config.options['strict-newline']
-    if config.options['map-drives']:
+    utf8_files = config.get('utf8')
+    universal_newline = not config.get('strict-newline')
+    if config.get('map-drives'):
         drives, current_drive = map_drives()
     else:
         drives = { 'Z': (os.getcwd(), '') }
-        current_drive = config.options['current-device']
-    for a in config.options['mount']:
+        current_drive = config.get('current-device')
+    for a in config.get('mount'):
         try:
             # the last one that's specified will stick
             letter, path = a.split(':', 1)

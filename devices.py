@@ -40,8 +40,7 @@ magic_to_type = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
 def prepare():
     """ Initialise iolayer module. """
     global max_files
-    if config.options['max-files'] is not None:
-        max_files = min(16, config.options['max-files'])
+    max_files = min(16, config.get('max-files'))
     # console
     state.io_state.devices['SCRN:'] = SCRNDevice()
     state.io_state.devices['KYBD:'] = KYBDDevice()

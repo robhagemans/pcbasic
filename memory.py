@@ -2,7 +2,7 @@
 PC-BASIC - memory.py
 Model memory
 
-(c) 2013, 2014, 2015 Rob Hagemans 
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -58,13 +58,13 @@ def prepare():
     global field_mem_base, field_mem_start, field_mem_offset
     global code_start, stack_size, max_memory, total_memory
     # length of field record (by default 128)
-    file_rec_len = config.options['max-reclen']
+    file_rec_len = config.get('max-reclen')
     # file header (at head of field memory)
     file_header_size = 194
     # number of file records
-    num_files = config.options['max-files']
+    num_files = config.get('max-files')
     # first field buffer address (workspace size; 3429 for gw-basic)
-    field_mem_base = config.options['reserved-memory']
+    field_mem_base = config.get('reserved-memory')
     # bytes distance between field buffers
     field_mem_offset = file_header_size + file_rec_len
     # start of 1st field =3945, includes FCB & header header of 1st field
@@ -77,7 +77,7 @@ def prepare():
     # or one-eighth of the available memory, whichever is smaller.
     stack_size = 512
     # max available memory to BASIC (set by /m)
-    max_list = config.options['max-memory']
+    max_list = config.get('max-memory')
     max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
     max_list[0] = max_list[0] or max_list[1]
     max_memory = min(max_list) or 65534

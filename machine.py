@@ -40,13 +40,13 @@ def prepare():
     """ Initialise machine module. """
     global allow_code_poke, tandy_syntax
     try:
-        for a in config.options['peek']:
+        for a in config.get('peek'):
             seg, addr, val = a.split(':')
             peek_values[int(seg)*0x10 + int(addr)] = int(val)
     except (TypeError, ValueError):
         pass
-    allow_code_poke = config.options['allow-code-poke']
-    tandy_syntax = config.options['syntax'] == 'tandy'
+    allow_code_poke = config.get('allow-code-poke')
+    tandy_syntax = config.get('syntax') == 'tandy'
 
 def peek(addr):
     """ Retrieve the value at an emulated memory location. """

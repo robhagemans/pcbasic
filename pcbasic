@@ -32,23 +32,23 @@ def main():
         import config
         if plat.system == 'Android':
             # resume from existing directory (or clear it if we're not resuming)
-            if not config.options['resume'] and os.path.exists(plat.temp_dir):
+            if not config.get('resume') and os.path.exists(plat.temp_dir):
                 shutil.rmtree(plat.temp_dir)
             if not os.path.exists(plat.temp_dir):
                 os.mkdir(plat.temp_dir)
         # set up the logging system
         prepare_logging()
-        if config.options['version']:
+        if config.get('version'):
             # in version mode, print version and exit
             sys.stdout.write(plat.version + '\n')
-            if config.options['debug']:
+            if config.get('debug'):
                 debug_details()
-        elif config.options['help']:
+        elif config.get('help'):
             # in help mode, print usage and exit
             with open(os.path.join(plat.info_dir, 'USAGE')) as f:
                 for line in f:
                     sys.stdout.write(line)
-        elif config.options['convert']:
+        elif config.get('convert'):
             # in converter mode, convert and exit
             convert()
         else:
@@ -65,14 +65,14 @@ def main():
 
 def prepare_logging():
     """ Set up the logging system. """
-    logfile = config.options['logfile']
-    if config.options['version'] or config.options['help']:
+    logfile = config.get('logfile')
+    if config.get('version') or config.get('help'):
         formatstr = '%(message)s'
         loglevel = logging.INFO
     else:
         # logging setup before we import modules and may need to log errors
         formatstr = '%(levelname)s: %(message)s'
-        if config.options['debug']:
+        if config.get('debug'):
             loglevel = logging.DEBUG
         else:
             loglevel = logging.INFO
@@ -85,10 +85,10 @@ def convert():
     import error
     # set conversion output
     # first arg, if given, is mode; second arg, if given, is outfile
-    mode = config.options['convert']
-    infile = (config.options[0] or
-              config.options['run'] or config.options['load'])
-    outfile = config.options[1]
+    mode = config.get('convert')
+    infile = (config.get(0) or
+              config.get('run') or config.get('load'))
+    outfile = config.get(1)
     # keep uppercase first letter
     mode = mode[0].upper() if mode else 'A'
     # load & save in different format
@@ -132,7 +132,7 @@ def start_basic():
     backend, console = None, None
     try:
         # resume from saved emulator state if requested and available
-        resume = config.options['resume'] and state.load()
+        resume = config.get('resume') and state.load()
         # choose the video and sound backends
         backend, console = prepare_console()
         # greet, load and run only if not resuming
@@ -140,11 +140,11 @@ def start_basic():
             # suppress double prompt
             if not state.basic_state.execute_mode:
                 state.basic_state.prompt = False
-            run.start('', False, config.options['quit'])
+            run.start('', False, config.get('quit'))
         else:
             # load/run program
-            config.options['run'] = config.options[0] or config.options['run']
-            prog = config.options['run'] or config.options['load']
+            config.options['run'] = config.get(0) or config.get('run')
+            prog = config.get('run') or config.get('load')
             if prog:
                 # on load, accept capitalised versions and default extension
                 with open_native_or_dos_filename(prog) as progfile:
@@ -152,11 +152,10 @@ def start_basic():
                 reset.clear()
             print_greeting(console)
             # start the interpreter (and get out if we ran with -q)
-            run.start(config.options['exec'], config.options['run'],
-                      config.options['quit'])
+            run.start(config.get('exec'), config.get('run'), config.get('quit'))
     except error.RunError as e:
         msg = error.get_message(e.err)
-        if console and config.options['wait']:
+        if console and config.get('wait'):
             console.write_error_message(msg, None)
         if backend and backend.video:
             # close terminal to avoid garbled error message
@@ -168,7 +167,7 @@ def start_basic():
     except error.Reset:
         do_reset = True
     except KeyboardInterrupt:
-        if config.options['debug']:
+        if config.get('debug'):
             raise
     except Exception as e:
         logging.error("Unhandled exception\n%s", traceback.format_exc())
@@ -231,10 +230,10 @@ def prepare_console():
         'ansi': ('video_ansi', 'audio_beep'),
         'graphical': ('video_pygame', 'audio_pygame'),
         }
-    if not config.options['interface']:
+    if not config.get('interface'):
         config.options['interface'] = 'graphical'
     # select interface
-    video_name, audio_name = backends[config.options['interface']]
+    video_name, audio_name = backends[config.get('interface')]
     # initialise video backend before console
     while True:
         try:
@@ -256,7 +255,7 @@ def prepare_console():
                 video.close()
             if video_name:
                 logging.info('Falling back to %s interface.', video_name)
-    if config.options['nosound']:
+    if config.get('nosound'):
         sound.audio = __import__('audio_none')
     else:
         sound.audio = __import__(audio_name)
@@ -278,10 +277,10 @@ def print_greeting(console):
         '{free} Bytes free')
     # following GW, don't write greeting for redirected input
     # or command-line filter run
-    if (not config.options['run'] and not config.options['exec'] and
-             not config.options['input'] and not config.options[0] and
-             not config.options['interface'] == 'none'):
-        debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
+    if (not config.get('run') and not config.get('exec') and
+             not config.get('input') and not config.get(0) and
+             not config.get('interface') == 'none'):
+        debugstr = ' [DEBUG mode]' if config.get('debug') else ''
         params = { 'version': plat.version, 'note': debugstr, 'free': var.fre()}
         console.write_line(greeting.format(**params))
         console.show_keys(True)

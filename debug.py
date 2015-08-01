@@ -2,7 +2,7 @@
 PC-BASIC - debug.py
 DEBUG statement and utilities
 
-(c) 2013, 2014, 2015 Rob Hagemans 
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -26,8 +26,7 @@ watch_list = []
 def prepare():
     """ Initialise the debug module. """
     global debug_mode
-    if config.options['debug']:
-        debug_mode = True
+    debug_mode = config.get('debug')
 
 def debug_exec(debug_cmd):
     """ Execute a debug command. """

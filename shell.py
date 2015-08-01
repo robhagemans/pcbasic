@@ -38,13 +38,14 @@ native_shell = {
 def prepare():
     """ Initialise shell module. """
     global shell_enabled, shell_command
-    if config.options['shell'] and config.options['shell'] != 'none':
+    option_shell = config.get('shell')
+    if option_shell != 'none':
         if (plat.system == 'Windows' or pexpect):
             shell_enabled = True
-            if config.options['shell'] == 'native':
+            if option_shell == 'native':
                 shell_command = native_shell[plat.system]
             else:
-                shell_command = config.options['shell']
+                shell_command = option_shell
         else:
             logging.warning('Pexpect module not found. SHELL command disabled.')
 

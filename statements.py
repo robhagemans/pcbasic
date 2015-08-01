@@ -47,12 +47,12 @@ import vartypes
 def prepare():
     """ Initialise statements module. """
     global pcjr_syntax, pcjr_term
-    if config.options['syntax'] in ('pcjr', 'tandy'):
-        pcjr_syntax = config.options['syntax']
+    if config.get('syntax') in ('pcjr', 'tandy'):
+        pcjr_syntax = config.get('syntax')
     else:
         pcjr_syntax = None
     # find program for PCjr TERM command
-    pcjr_term = config.options['pcjr-term']
+    pcjr_term = config.get('pcjr-term')
     if pcjr_term and not os.path.exists(pcjr_term):
         pcjr_term = os.path.join(plat.info_dir, pcjr_term)
     if not os.path.exists(pcjr_term):

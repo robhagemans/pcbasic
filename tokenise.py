@@ -39,10 +39,10 @@ def prepare():
     """ Initialise tokenise module. """
     global keyword_to_token, token_to_keyword
     token_to_keyword = tk.to_keyword
-    if config.options['debug']:
+    if config.get('debug'):
         # NOTE: PC-BASIC only. Not the same command or token as Sperry DEBUG.
         token_to_keyword[tk.DEBUG] = 'DEBUG'
-    if config.options['syntax'] in ('pcjr', 'tandy'):
+    if config.get('syntax') in ('pcjr', 'tandy'):
         # pcjr, tandy; incompatible with Sperry PC.
         token_to_keyword[tk.NOISE] = 'NOISE'
         token_to_keyword[tk.TERM] = 'TERM'

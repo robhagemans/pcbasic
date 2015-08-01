@@ -61,8 +61,8 @@ is_pcjr_syntax = False
 def prepare():
     """ Initialise expressions module. """
     global option_double, is_pcjr_syntax
-    is_pcjr_syntax = config.options['syntax'] in ('pcjr', 'tandy')
-    option_double = config.options['double']
+    is_pcjr_syntax = config.get('syntax') in ('pcjr', 'tandy')
+    option_double = config.get('double')
 
 def parse_expression(ins, allow_empty=False, empty_err=22):
     """ Compute the value of the expression at the current code pointer. """

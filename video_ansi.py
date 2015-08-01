@@ -43,8 +43,8 @@ cursor_col = 1
 def prepare():
     """ Initialise the video_curses module. """
     global caption, wait_on_close
-    caption = config.options['caption']
-    wait_on_close = config.options['wait']
+    caption = config.get('caption')
+    wait_on_close = config.get('wait')
 
 
 #### shared with video_cli

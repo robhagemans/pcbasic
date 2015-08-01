@@ -2,7 +2,7 @@
 PC-BASIC - redirect.py
 I/O redirection
 
-(c) 2014, 2015 Rob Hagemans 
+(c) 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -28,17 +28,19 @@ def prepare():
 
 def prepare_redirects():
     """ Initialise i/o redirects. """
-    if config.options['output']:
-        mode = 'ab' if config.options['append'] else 'wb'
+    option_input = config.get('input')
+    option_output = config.get('output')
+    if option_output:
+        mode = 'ab' if config.get('append') else 'wb'
         try:
-            set_output(open(config.options['output'], mode))
+            set_output(open(option_output, mode))
         except EnvironmentError as e:
-            logging.warning('Could not open output file %s: %s', config.options['output'], e.strerror)
-    if config.options['input']:
+            logging.warning('Could not open output file %s: %s', option_output, e.strerror)
+    if option_input:
         try:
-            set_input(open(config.options['input'], 'rb'))
+            set_input(open(option_input, 'rb'))
         except EnvironmentError as e:
-            logging.warning('Could not open input file %s: %s', config.options['input'], e.strerror)
+            logging.warning('Could not open input file %s: %s', option_input, e.strerror)
 
 def set_input(f):
     """ BASIC-style redirected input. """

@@ -48,20 +48,17 @@ max_reclen = 128
 
 def prepare():
     # parallel devices - LPT1: must always be defined
-    print_trigger = config.options['print-trigger']
-    state.io_state.devices['LPT1:'] = LPTDevice(config.options['lpt1'], devices.nullstream, print_trigger)
-    state.io_state.devices['LPT2:'] = LPTDevice(config.options['lpt2'], None, print_trigger)
-    state.io_state.devices['LPT3:'] = LPTDevice(config.options['lpt3'], None, print_trigger)
+    print_trigger = config.get('print-trigger')
+    state.io_state.devices['LPT1:'] = LPTDevice(config.get('lpt1'), devices.nullstream, print_trigger)
+    state.io_state.devices['LPT2:'] = LPTDevice(config.get('lpt2'), None, print_trigger)
+    state.io_state.devices['LPT3:'] = LPTDevice(config.get('lpt3'), None, print_trigger)
     state.io_state.lpt1_file = state.io_state.devices['LPT1:'].device_file
     # serial devices
     global max_reclen, serial_in_size
-    if config.options['max-reclen'] is not None:
-        max_reclen = config.options['max-reclen']
-        max_reclen = max(1, min(32767, max_reclen))
-    if config.options['serial-buffer-size'] is not None:
-        serial_in_size = config.options['serial-buffer-size']
-    state.io_state.devices['COM1:'] = COMDevice(config.options['com1'], max_reclen, serial_in_size)
-    state.io_state.devices['COM2:'] = COMDevice(config.options['com2'], max_reclen, serial_in_size)
+    max_reclen = max(1, min(32767, config.get('max-reclen')))
+    serial_in_size = config.get('serial-buffer-size')
+    state.io_state.devices['COM1:'] = COMDevice(config.get('com1'), max_reclen, serial_in_size)
+    state.io_state.devices['COM2:'] = COMDevice(config.get('com2'), max_reclen, serial_in_size)
 
 
 ###############################################################################

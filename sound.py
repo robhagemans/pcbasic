@@ -89,8 +89,8 @@ def prepare():
     """ Prepare the audio subsystem. """
     global pcjr_sound
     # pcjr/tandy sound
-    if config.options['syntax'] in ('pcjr', 'tandy'):
-        pcjr_sound = config.options['syntax']
+    if config.get('syntax') in ('pcjr', 'tandy'):
+        pcjr_sound = config.get('syntax')
     # initialise sound queue
     state.console_state.sound = Sound()
     # tandy has SOUND ON by default, pcjr has it OFF

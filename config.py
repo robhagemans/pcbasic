@@ -163,9 +163,9 @@ def prepare():
             pass
         build_default_config_file(user_config_path)
     # store options in options dictionary
-    options = get_options()
+    options = retrieve_options()
 
-def get_options():
+def retrieve_options():
     """ Retrieve command line and option file options. """
     # convert command line arguments to string dictionary form
     remaining = get_arguments(sys.argv[1:])
@@ -184,6 +184,23 @@ def get_options():
     # apply builtin defaults for unspecified options
     apply_defaults(args)
     return args
+
+def get(name, get_default=True):
+    """ Get value of option; choose whether to get default or None. """
+    try:
+        value = options[name]
+        if value is None or value == '':
+            raise KeyError
+    except KeyError:
+        if get_default:
+            try:
+                value = arguments[name]['default']
+            except KeyError:
+                if name in range(positional):
+                    return ''
+        else:
+            value = None
+    return value
 
 def append_arg(args, key, value):
     """ Update a single argument by appending a value """
@@ -237,15 +254,15 @@ def get_arguments(argv):
 
 def apply_defaults(args):
     """ Apply default argument where no option specified. """
-    for arg in arguments:
-        if arg not in args or args[arg] in ('', None):
-            try:
-                args[arg] = arguments[arg]['default']
-            except KeyError:
-                pass
-    for pos in range(positional):
-        if pos not in args:
-            args[pos] = ''
+    # for arg in arguments:
+    #     if arg not in args or args[arg] in ('', None):
+    #         try:
+    #             args[arg] = arguments[arg]['default']
+    #         except KeyError:
+    #             pass
+    # for pos in range(positional):
+    #     if pos not in args:
+    #         args[pos] = ''
     return args
 
 def parse_presets(remaining, conf_dict):
