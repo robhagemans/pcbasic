@@ -137,6 +137,10 @@ def start_basic():
         backend, console = prepare_console()
         # greet, load and run only if not resuming
         if resume:
+            # override selected settings from command line
+            cassette.override()
+            disk.override()
+            print state.io_state.devices['C:'].path
             # suppress double prompt
             if not state.basic_state.execute_mode:
                 state.basic_state.prompt = False

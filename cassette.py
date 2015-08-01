@@ -37,6 +37,12 @@ def prepare():
     state.io_state.devices['CAS1:'] = CASDevice(config.get('cas1'))
     msgstream = console
 
+def override():
+    """ Initialise cassette module settings that override --resume. """
+    override_cas1 = config.get('cas1', False)
+    if override_cas1:
+        state.io_state.devices['CAS1:'] = CASDevice(override_cas1)
+
 
 #################################################################################
 # Exceptions

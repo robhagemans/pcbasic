@@ -95,6 +95,9 @@ universal_newline = False
 # interpret "ascii" program files as UTF-8
 utf8_files = False
 
+# allowable drive letters in GW-BASIC are letters or @
+drive_letters = '@' + string.ascii_uppercase
+
 #####################
 
 def prepare():
@@ -102,36 +105,47 @@ def prepare():
     global utf8_files, universal_newline
     utf8_files = config.get('utf8')
     universal_newline = not config.get('strict-newline')
+    for letter in drive_letters:
+        state.io_state.devices[letter + ':'] = DiskDevice(letter, None, '')
+    current_drive = config.get('current-device').upper()
     if config.get('map-drives'):
-        drives, current_drive = map_drives()
+        current_drive = map_drives()
     else:
-        drives = { 'Z': (os.getcwd(), '') }
-        current_drive = config.get('current-device')
-    for a in config.get('mount'):
+        state.io_state.devices['Z:'] = DiskDevice('Z', os.getcwd(), '')
+    mount_drives(config.get('mount'))
+    set_current_device(current_drive + ':')
+    reset_fields()
+
+def override():
+    """ Initialise module settings that override --resume. """
+    mount_drives(config.get('mount', False))
+    # we always need to reset this or it may be a reference to an old device
+    set_current_device(config.get('current-device', True).upper() + ':')
+
+def mount_drives(mount_list):
+    """ Mount disk drives """
+    if not mount_list:
+        return
+    for a in mount_list:
         try:
             # the last one that's specified will stick
             letter, path = a.split(':', 1)
+            letter = letter.upper()
             path = os.path.realpath(path)
             if not os.path.isdir(path):
                 logging.warning('Could not mount %s', a)
             else:
-                drives[letter.upper()] = path, ''
+                state.io_state.devices[letter + ':'] = DiskDevice(letter, path, '')
         except (TypeError, ValueError):
             logging.warning('Could not mount %s', a)
-    # allowable drive letters in GW-BASIC are letters or @
-    for letter in '@' + string.ascii_uppercase:
-        try:
-            path, cwd = drives[letter]
-        except KeyError:
-            path, cwd = None, ''
-        state.io_state.devices[letter + ':'] = DiskDevice(letter, path, cwd)
+
+def set_current_device(current_drive, default='Z:'):
+    """ Set the current device. """
     try:
-        state.io_state.current_device = state.io_state.devices[current_drive + ':']
+        state.io_state.current_device = state.io_state.devices[current_drive]
     except KeyError:
-        logging.warning('Could not set current drive to %s', current_drive + ':')
-        state.io_state.current_device = state.io_state.devices['Z:']
-    # initialise field buffers
-    reset_fields()
+        logging.warning('Could not set current device to %s', current_drive)
+        state.io_state.current_device = state.io_state.devices[default]
 
 def reset_fields():
     """ Initialise FIELD buffers. """
@@ -149,33 +163,34 @@ if plat.system == 'Windows':
         current_drive = os.path.abspath(os.getcwd()).split(':')[0]
         save_current = os.getcwd()
         drives = {}
-        for drive_letter in win32api.GetLogicalDriveStrings().split(':\\\0')[:-1]:
+        for letter in win32api.GetLogicalDriveStrings().split(':\\\0')[:-1]:
             try:
-                os.chdir(drive_letter + ':')
+                os.chdir(letter + ':')
                 cwd = win32api.GetShortPathName(os.getcwd())
                 # must not start with \\
-                drives[drive_letter] = cwd[:3], cwd[3:]
+                path, cwd = cwd[:3], cwd[3:]
+                state.io_state.devices[letter + ':'] = DiskDevice(letter, path, cwd)
             except OSError:
                 pass
         os.chdir(save_current)
-        return drives, current_drive
+        return current_drive
 else:
     def map_drives():
         """ Map useful Unix directories to PC-BASIC disk devices. """
-        drives = {}
-        # map C to root
         cwd = os.getcwd()
-        drives['C'] = '/', cwd[1:]
+        # map C to root
+        state.io_state.devices['C:'] = DiskDevice('C', '/', cwd[1:])
         # map Z to cwd
-        drives['Z'] = cwd, ''
+        state.io_state.devices['Z:'] = DiskDevice('Z', cwd, '')
         # map H to home
         home = os.path.expanduser('~')
         # if cwd is in home tree, set it also on H:
         if cwd[:len(home)] == home:
-            drives['H'] = home, cwd[len(home)+1:]
+            state.io_state.devices['H:'] = DiskDevice('H', home, cwd[len(home)+1:])
         else:
-            drives['H'] = home, ''
-        return drives, 'Z'
+            state.io_state.devices['H:'] = DiskDevice('H', home, '')
+        # default durrent drive
+        return 'Z'
 
 
 ##############################################################################
