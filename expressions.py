@@ -30,7 +30,6 @@ import console
 import program
 import state
 import machine
-import backend
 import timedate
 import basictoken as tk
 
@@ -515,7 +514,7 @@ def value_input(ins):
     util.require_read(ins, ('(',))
     num = vartypes.pass_int_unpack(parse_expression(ins))
     util.range_check(1, 255, num)
-    infile = backend.kybd_file
+    infile = state.io_state.kybd_file
     if util.skip_white_read_if(ins, (',',)):
         infile = devices.get_file(parse_file_number_opthash(ins))
     util.require_read(ins, (')',))
@@ -553,7 +552,7 @@ def value_lpos(ins):
     """ LPOS: get the current printer column. """
     num = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, num)
-    printer = backend.devices['LPT' + max(1, num) + ':']
+    printer = state.io_state.devices['LPT' + max(1, num) + ':']
     if printer.device_file:
         return vartypes.pack_int(printer.device_file.col)
     else:

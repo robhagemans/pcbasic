@@ -31,7 +31,9 @@ except Exception:
     parallel = None
 
 import config
+import state
 import error
+# for wait() during port read
 import backend
 import devices
 import printer
@@ -47,10 +49,10 @@ max_reclen = 128
 def prepare():
     # parallel devices - LPT1: must always be defined
     print_trigger = config.options['print-trigger']
-    backend.devices['LPT1:'] = LPTDevice(config.options['lpt1'], devices.nullstream, print_trigger)
-    backend.devices['LPT2:'] = LPTDevice(config.options['lpt2'], None, print_trigger)
-    backend.devices['LPT3:'] = LPTDevice(config.options['lpt3'], None, print_trigger)
-    backend.lpt1_file = backend.devices['LPT1:'].device_file
+    state.io_state.devices['LPT1:'] = LPTDevice(config.options['lpt1'], devices.nullstream, print_trigger)
+    state.io_state.devices['LPT2:'] = LPTDevice(config.options['lpt2'], None, print_trigger)
+    state.io_state.devices['LPT3:'] = LPTDevice(config.options['lpt3'], None, print_trigger)
+    state.io_state.lpt1_file = state.io_state.devices['LPT1:'].device_file
     # serial devices
     global max_reclen, serial_in_size
     if config.options['max-reclen'] is not None:
@@ -58,8 +60,8 @@ def prepare():
         max_reclen = max(1, min(32767, max_reclen))
     if config.options['serial-buffer-size'] is not None:
         serial_in_size = config.options['serial-buffer-size']
-    backend.devices['COM1:'] = COMDevice(config.options['com1'], max_reclen, serial_in_size)
-    backend.devices['COM2:'] = COMDevice(config.options['com2'], max_reclen, serial_in_size)
+    state.io_state.devices['COM1:'] = COMDevice(config.options['com1'], max_reclen, serial_in_size)
+    state.io_state.devices['COM2:'] = COMDevice(config.options['com2'], max_reclen, serial_in_size)
 
 
 ###############################################################################

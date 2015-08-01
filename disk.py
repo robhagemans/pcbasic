@@ -25,6 +25,7 @@ from bytestream import ByteStream
 import config
 import error
 import state
+# for check_events during FILES
 import backend
 import console
 # for value_to_uint
@@ -123,12 +124,12 @@ def prepare():
             path, cwd = drives[letter]
         except KeyError:
             path, cwd = None, ''
-        backend.devices[letter + ':'] = DiskDevice(letter, path, cwd)
+        state.io_state.devices[letter + ':'] = DiskDevice(letter, path, cwd)
     try:
-        devices.current_device = backend.devices[current_drive + ':']
+        state.io_state.current_device = state.io_state.devices[current_drive + ':']
     except KeyError:
         logging.warning('Could not set current drive to %s', current_drive + ':')
-        devices.current_device = backend.devices['Z:']
+        state.io_state.current_device = state.io_state.devices['Z:']
     # initialise field buffers
     reset_fields()
 
@@ -236,16 +237,16 @@ def get_diskdevice_and_path(path):
     """ Return the disk device and remaining path for given BASIC path. """
     splits = str(path).upper().split(':', 1)
     if len(splits) == 0:
-        return devices.current_device, ''
+        return state.io_state.current_device, ''
     elif len(splits) == 1:
-        return devices.current_device, splits[0]
+        return state.io_state.current_device, splits[0]
     else:
         # must be a disk device
         if len(splits[0]) > 1:
             # 68: device unavailable
             raise error.RunError(68)
         try:
-            return backend.devices[splits[0] + ':'], splits[1]
+            return state.io_state.devices[splits[0] + ':'], splits[1]
         except KeyError:
             raise error.RunError(68)
 
@@ -508,7 +509,7 @@ class DiskDevice(object):
         # set cwd for the specified drive
         self.cwd = rpath
         # set the cwd in the underlying os (really only useful for SHELL)
-        if self == devices.current_device:
+        if self == state.io_state.current_device:
             safe(os.chdir, os.path.join(dpath, rpath))
 
     def mkdir(self, name):

@@ -36,13 +36,6 @@ import clipboard
 # backend implementations
 video = None
 
-### devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
-devices = {}
-scrn_file = None
-kybd_file = None
-lpt1_file = None
-
-
 ###############################################################################
 # initialisation
 
@@ -192,7 +185,8 @@ class ComHandler(EventHandler):
 
     def check(self):
         """ Trigger COM-port events. """
-        if devices[self.portname] and devices[self.portname].char_waiting():
+        if (state.io_state.devices[self.portname] and
+                    state.io_state.devices[self.portname].char_waiting()):
             self.trigger()
 
 
@@ -529,7 +523,7 @@ class Keyboard(object):
                 state.console_state.screen.print_screen()
             if self.mod & modifier[scancode.CTRL]:
                 # ctrl + printscreen
-                redirect.toggle_echo(lpt1_file)
+                redirect.toggle_echo(state.io_state.lpt1_file)
         # alt+keypad ascii replacement
         # we can't depend on internal NUM LOCK state as it doesn't get updated
         if (self.mod & modifier[scancode.ALT] and
@@ -1297,14 +1291,14 @@ class Screen(object):
         # set cursor back to previous state
         self.cursor.reset_visibility()
 
-    #D -> lpt1_file.write(get_text(...))
+    #D -> state.io_state.lpt1_file.write(get_text(...))
     def print_screen(self):
         """ Output the visible page to LPT1. """
         for crow in range(1, self.mode.height+1):
             line = ''
             for c, _ in self.vpage.row[crow-1].buf:
                 line += c
-            lpt1_file.write_line(line)
+            state.io_state.lpt1_file.write_line(line)
 
     def clear_text_at(self, x, y):
         """ Remove the character covering a single pixel. """

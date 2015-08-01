@@ -18,9 +18,9 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+import state
 import error
 import config
-import backend
 import devices
 import console
 
@@ -34,7 +34,7 @@ msgstream = None
 def prepare():
     """ Initialise cassette module. """
     global msgstream
-    backend.devices['CAS1:'] = CASDevice(config.options['cas1'])
+    state.io_state.devices['CAS1:'] = CASDevice(config.options['cas1'])
     msgstream = console
 
 

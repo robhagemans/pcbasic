@@ -14,7 +14,6 @@ import error
 import console
 import state
 import memory
-import backend
 
 # file numbers
 state.io_state.files = {}
@@ -25,8 +24,14 @@ max_files = 3
 
 nullstream = open(os.devnull, 'r+')
 
+# devices - SCRN: KYBD: LPT1: etc.
+state.io_state.devices = {}
+state.io_state.scrn_file = None
+state.io_state.kybd_file = None
+state.io_state.lpt1_file = None
+
 # set by disk.py
-current_device = None
+state.io_state.current_device = None
 
 # magic chars used by some devices to indicate file type
 type_to_magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd' }
@@ -38,10 +43,10 @@ def prepare():
     if config.options['max-files'] is not None:
         max_files = min(16, config.options['max-files'])
     # console
-    backend.devices['SCRN:'] = SCRNDevice()
-    backend.devices['KYBD:'] = KYBDDevice()
-    backend.scrn_file = backend.devices['SCRN:'].device_file
-    backend.kybd_file = backend.devices['KYBD:'].device_file
+    state.io_state.devices['SCRN:'] = SCRNDevice()
+    state.io_state.devices['KYBD:'] = KYBDDevice()
+    state.io_state.scrn_file = state.io_state.devices['SCRN:'].device_file
+    state.io_state.kybd_file = state.io_state.devices['KYBD:'].device_file
 
 
 ############################################################################
@@ -63,13 +68,13 @@ def open_file(number, description, filetype, mode='I', access='R', lock='',
         dev_name = split_colon[0].upper() + ':'
         dev_param = ''.join(split_colon[1:])
         try:
-            device = backend.devices[dev_name]
+            device = state.io_state.devices[dev_name]
         except KeyError:
             # not an allowable device or drive name
             # bad file number, for some reason
             raise error.RunError(52)
     else:
-        device = current_device
+        device = state.io_state.current_device
         dev_param = name
     # check if device exists and allows the requested mode
     new_file = device.open(number, dev_param, filetype, mode, access, lock,
@@ -106,7 +111,7 @@ def close_files():
 
 def close_devices():
     """ Close device master files. """
-    for d in backend.devices.values():
+    for d in state.io_state.devices.values():
         d.close()
 
 

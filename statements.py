@@ -17,6 +17,7 @@ import string
 
 import plat
 import config
+# for num_fn_keys
 import backend
 import console
 import debug
@@ -42,7 +43,6 @@ import basictoken as tk
 import util
 import var
 import vartypes
-import backend
 
 def prepare():
     """ Initialise statements module. """
@@ -895,7 +895,7 @@ def exec_list(ins):
         out = devices.open_file(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)),
                                 filetype='A', mode='O')
     else:
-        out = backend.scrn_file
+        out = state.io_state.scrn_file
     util.require(ins, tk.end_statement)
     with out:
         program.list_lines(out, from_line, to_line)
@@ -905,7 +905,7 @@ def exec_llist(ins):
     """ LLIST: output program lines to LPT1: """
     from_line, to_line = parse_line_range(ins)
     util.require(ins, tk.end_statement)
-    program.list_lines(backend.lpt1_file, from_line, to_line)
+    program.list_lines(state.io_state.lpt1_file, from_line, to_line)
 
 def exec_load(ins):
     """ LOAD: load program from file. """
@@ -2303,7 +2303,7 @@ def exec_locate(ins):
 def exec_write(ins, output=None):
     """ WRITE: Output machine-readable expressions to the screen or a file. """
     output = expressions.parse_file_number(ins, 'OAR')
-    output = backend.scrn_file if output is None else output
+    output = state.io_state.scrn_file if output is None else output
     expr = expressions.parse_expression(ins, allow_empty=True)
     outstr = ''
     if expr:
@@ -2325,7 +2325,7 @@ def exec_print(ins, output=None):
     """ PRINT: Write expressions to the screen or a file. """
     if output is None:
         output = expressions.parse_file_number(ins, 'OAR')
-        output = backend.scrn_file if output is None else output
+        output = state.io_state.scrn_file if output is None else output
     number_zones = max(1, int(output.width/14))
     newline = True
     while True:
@@ -2365,7 +2365,7 @@ def exec_print(ins, output=None):
     if util.skip_white_read_if(ins, (tk.USING,)):
         return exec_print_using(ins, output)
     if newline:
-        if output == backend.scrn_file and state.console_state.overflow:
+        if output == state.io_state.scrn_file and state.console_state.overflow:
             output.write_line()
         output.write_line()
     util.require(ins, tk.end_statement)
@@ -2418,7 +2418,7 @@ def exec_print_using(ins, output):
 
 def exec_lprint(ins):
     """ LPRINT: Write expressions to printer LPT1. """
-    exec_print(ins, backend.lpt1_file)
+    exec_print(ins, state.io_state.lpt1_file)
 
 def exec_view_print(ins):
     """ VIEW PRINT: set scroll region. """
@@ -2441,7 +2441,7 @@ def exec_width(ins):
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     elif d == tk.LPRINT:
         ins.read(1)
-        dev = backend.lpt1_file
+        dev = state.io_state.lpt1_file
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
         if d in tk.number:
@@ -2449,15 +2449,16 @@ def exec_width(ins):
         else:
             expr = expressions.parse_expression(ins)
         if expr[0] == '$':
+            devname = str(vartypes.pass_string_unpack(expr)).upper()
             try:
-                dev = backend.devices[str(vartypes.pass_string_unpack(expr)).upper()].device_file
+                dev = state.io_state.devices[devname].device_file
             except KeyError, AttributeError:
                 # bad file name
                 raise error.RunError(64)
             util.require_read(ins, (',',))
             w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         else:
-            dev = backend.scrn_file
+            dev = state.io_state.scrn_file
             # IN GW-BASIC, we can do calculations, but they must be bracketed...
             #w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
             w = vartypes.pass_int_unpack(expr)

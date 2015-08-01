@@ -556,8 +556,8 @@ def get_low_memory(addr):
             return 32 + 6
     elif addr == 1041:
         return 18 + 64 * (1 +
-                (backend.devices['LPT2:'] is not None) +
-                (backend.devices['LPT3:'] is not None))
+                (state.io_state.devices['LPT2:'] is not None) +
+                (state.io_state.devices['LPT3:'] is not None))
     elif addr == 1047:
         return state.console_state.keyb.mod
     # not implemented: peek(1048)==4 if sysrq pressed, 0 otherwise
