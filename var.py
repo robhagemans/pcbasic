@@ -163,7 +163,7 @@ def set_var(name, value):
         # TODO: GARBTEST difference is because string literal is currently stored in string space, whereas GW stores it in code space.
         collect_garbage()
         if fre() <= size:
-            raise error.RunError(7)
+            raise error.RunError(error.OUT_OF_MEMORY)
     # assign variables
     if type_char == '$':
         # every assignment to string leads to new pointer being allocated
@@ -199,13 +199,13 @@ def swap_var(name1, index1, name2, index2):
     """ Swap two variables by reference (Strings) or value (everything else). """
     if name1[-1] != name2[-1]:
         # type mismatch
-        raise error.RunError(13)
+        raise error.RunError(error.TYPE_MISMATCH)
     elif ((index1 == [] and name1 not in state.basic_state.variables) or
             (index1 != [] and name1 not in state.basic_state.arrays) or
             (index2 == [] and name2 not in state.basic_state.variables) or
             (index2 != [] and name2 not in state.basic_state.arrays)):
         # illegal function call
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     typechar = name1[-1]
     size = byte_size[typechar]
     # swap non-strings by value, strings by address
@@ -233,7 +233,7 @@ def erase_array(name):
         del state.basic_state.arrays[name]
     except KeyError:
         # illegal fn call
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
 
 def index_array(index, dimensions):
     """ Return the flat index for a given dimensioned index. """
@@ -254,7 +254,7 @@ def var_size_bytes(name):
     try:
         return byte_size[name[-1]]
     except KeyError:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
 
 def array_size_bytes(name):
     """ Return the byte size of an array, if it exists. Return 0 otherwise. """
@@ -270,24 +270,21 @@ def dim_array(name, dimensions):
         state.basic_state.array_base = 0
     name = vartypes.complete_name(name)
     if name in state.basic_state.arrays:
-        # duplicate definition
-        raise error.RunError(10)
+        raise error.RunError(error.DUPLICATE_DEFINITION)
     for d in dimensions:
         if d < 0:
-            # illegal function call
-            raise error.RunError(5)
+            raise error.RunError(error.IFC)
         elif d < state.basic_state.array_base:
-            # subscript out of range
-            raise error.RunError(9)
+            raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
     size = array_len(dimensions)
     try:
         state.basic_state.arrays[name] = [ dimensions, bytearray(size*var_size_bytes(name)), 0 ]
     except OverflowError:
         # out of memory
-        raise error.RunError(7)
+        raise error.RunError(error.OUT_OF_MEMORY)
     except MemoryError:
         # out of memory
-        raise error.RunError(7)
+        raise error.RunError(error.OUT_OF_MEMORY)
     # update memory model
     # first two bytes: chars of name or 0 if name is one byte long
     name_ptr = state.basic_state.array_current
@@ -307,23 +304,23 @@ def check_dim_array(name, index):
         dim_array(name, dimensions)
         [dimensions, lst, _] = state.basic_state.arrays[name]
     if len(index) != len(dimensions):
-        raise error.RunError(9)
+        raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
     for i in range(len(index)):
         if index[i] < 0:
-            raise error.RunError(5)
+            raise error.RunError(error.IFC)
         elif index[i] < state.basic_state.array_base or index[i] > dimensions[i]:
             # WARNING: dimensions is the *maximum index number*, regardless of state.basic_state.array_base!
-            raise error.RunError(9)
+            raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
     return [dimensions, lst]
 
 def base_array(base):
     """ Set the array base to 0 or 1 (OPTION BASE). Raise error if already set. """
     if base not in (1, 0):
         # syntax error
-        raise error.RunError(2)
+        raise error.RunError(error.STX)
     if state.basic_state.array_base is not None and base != state.basic_state.array_base:
         # duplicate definition
-        raise error.RunError(10)
+        raise error.RunError(error.DUPLICATE_DEFINITION)
     state.basic_state.array_base = base
 
 def get_array(name, index):
@@ -367,10 +364,10 @@ def set_field_var_or_array(random_file, varname, indices, offset, length):
     """ Attach a string variable to a FIELD buffer. """
     if varname[-1] != '$':
         # type mismatch
-        raise error.RunError(13)
+        raise error.RunError(error.TYPE_MISMATCH)
     if offset+length > len(random_file.field.buffer):
         # FIELD overflow
-        raise error.RunError(50)
+        raise error.RunError(error.FIELD_OVERFLOW)
     str_addr = random_file.field.address + offset
     str_sequence = bytearray(chr(length)) + vartypes.value_to_uint(str_addr)
     # assign the string ptr to the variable name
@@ -393,7 +390,7 @@ def get_var_or_array_string_pointer(name, indices):
     """ Retrieve the pointer value of a string or a string-array element. """
     if name[-1] != '$':
         # type mismatch
-        raise error.RunError(13)
+        raise error.RunError(error.TYPE_MISMATCH)
     try:
         if indices == []:
             return state.basic_state.variables[name]
@@ -409,7 +406,7 @@ def assign_field_var_or_array(name, indices, value, justify_right=False):
     """ Write a packed value into a field-assigned string. """
     if value[0] != '$':
         # type mismatch
-        raise error.RunError(13)
+        raise error.RunError(error.TYPE_MISMATCH)
     s = vartypes.unpack_string(value)
     v = get_var_or_array_string_pointer(name, indices)
     if v is None:
@@ -430,12 +427,12 @@ def string_assign_into(name, indices, offset, num, value):
     # WARNING - need to decrement basic offset by 1 to get python offset
     if value[0] != '$':
         # type mismatch
-        raise error.RunError(13)
+        raise error.RunError(error.TYPE_MISMATCH)
     s = vartypes.unpack_string(value)
     v = get_var_or_array_string_pointer(name, indices)
     if v is None:
         # illegal function call
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     string_assign_unpacked_into(v, offset, num, s)
 
 def string_assign_unpacked_into(sequence, offset, num, val):

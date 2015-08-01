@@ -38,7 +38,7 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
         if allow_empty_expression:
             return ('$', '')
         else:
-            raise error.RunError(2)
+            raise error.RunError(error.STX)
     typechar = inp[0]
     if typechar == '$':
         return ('$', inp[1])
@@ -52,7 +52,7 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
     elif typechar == '#':
         return ('$', float_to_str(fp.unpack(inp), screen, write) )
     else:
-        raise error.RunError(2)
+        raise error.RunError(error.STX)
 
 # tokenised ints to python str
 
@@ -197,7 +197,7 @@ def format_number(value, tokens, digits_before, decimals):
     """ Format a number to a format string. For PRINT USING. """
     # illegal function call if too many digits
     if digits_before + decimals > 24:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     # extract sign, mantissa, exponent
     value = unpack(value)
     # dollar sign, decimal point
@@ -535,8 +535,7 @@ def input_entry(stream, allow_quotes,
     if quoted:
         c = stream.read(1)
     if not c and not allow_past_end:
-        # input past end
-        raise error.RunError(62)
+        raise error.RunError(error.INPUT_PAST_END)
     # we read the ending char before breaking the loop
     # this may raise FIELD OVERFLOW
     # on reading from a KYBD: file, control char replacement takes place
@@ -683,7 +682,7 @@ def parse_value(ins):
     val = bytearray(ins.read(length))
     if len(val) < length:
         # truncated stream
-        raise error.RunError(2)
+        raise error.RunError(error.STX)
     if d in (tk.T_OCT, tk.T_HEX, tk.T_INT):
         return ('%', val)
     elif d == tk.T_BYTE:

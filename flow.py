@@ -39,7 +39,7 @@ def restore(datanum=-1):
     try:
         state.basic_state.data_pos = 0 if datanum == -1 else state.basic_state.line_numbers[datanum]
     except KeyError:
-        raise error.RunError(8)
+        raise error.RunError(error.UNDEFINED_LINE_NUMBER)
 
 def set_pointer(new_runmode, pos=None):
     """ Set program pointer to the given codestream and position. """
@@ -68,8 +68,7 @@ def jump_return(jumpnum):
     try:
         pos, orig_runmode, handler = state.basic_state.gosub_return.pop()
     except IndexError:
-        # RETURN without GOSUB
-        raise error.RunError(3)
+        raise error.RunError(error.RETURN_WITHOUT_GOSUB)
     # returning from ON (event) GOSUB, re-enable event
     if handler:
         # if stopped explicitly using STOP, we wouldn't have got here; it STOP is run  inside the trap, no effect. OFF in trap: event off.
@@ -123,8 +122,7 @@ def loop_iterate(ins):
             state.basic_state.for_next_stack = state.basic_state.for_next_stack[:len(state.basic_state.for_next_stack)-depth]
             break
     else:
-        # next without for
-        raise error.RunError(1)
+        raise error.RunError(error.NEXT_WITHOUT_FOR)
     # increment counter
     loop_ends = number_inc_gt(typechar, loopvar, stop, step, sgn)
     if loop_ends:
@@ -151,7 +149,7 @@ def resume(jumpnum):
         # RESUME n
         jump(jumpnum)
 
-def jump(jumpnum, err=8):
+def jump(jumpnum, err=error.UNDEFINED_LINE_NUMBER):
     """ Execute jump for a GOTO or RUN instruction. """
     if jumpnum is None:
         set_pointer(True, 0)
@@ -160,7 +158,6 @@ def jump(jumpnum, err=8):
             # jump to target
             set_pointer(True, state.basic_state.line_numbers[jumpnum])
         except KeyError:
-            # Undefined line number
             raise error.RunError(err)
 
 def read_entry():
@@ -171,8 +168,7 @@ def read_entry():
         # initialise - find first DATA
         util.skip_to(state.basic_state.bytecode, ('\x84',))  # DATA
     if state.basic_state.bytecode.read(1) not in ('\x84', ','):
-        # out of DATA
-        raise error.RunError(4)
+        raise error.RunError(error.OUT_OF_DATA)
     vals, word, literal = '', '', False
     while True:
         # read next char; omit leading whitespace

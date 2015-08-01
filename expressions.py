@@ -64,7 +64,7 @@ def prepare():
     is_pcjr_syntax = config.get('syntax') in ('pcjr', 'tandy')
     option_double = config.get('double')
 
-def parse_expression(ins, allow_empty=False, empty_err=22):
+def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
     """ Compute the value of the expression at the current code pointer. """
     units, operators = [], []
     while True:
@@ -83,7 +83,7 @@ def parse_expression(ins, allow_empty=False, empty_err=22):
             if nxt in (tk.O_LT, tk.O_EQ, tk.O_GT):
                 ins.read(1)
                 if d == nxt:
-                    raise error.RunError(2)
+                    raise error.RunError(error.STX)
                 else:
                     d += nxt
                     if d[0] == tk.O_EQ:
@@ -103,11 +103,11 @@ def parse_expression(ins, allow_empty=False, empty_err=22):
             if d in (')', ']'):
                 ins.read(1) # for positioning of cursor in edit gadget
             # always 22 here now that the bracket is taken out?
-            raise error.RunError(2 if d in (')', ']') else empty_err)
+            raise error.RunError(error.STX if d in (')', ']') else empty_err)
     if len(units) <= len(operators):
         if d in (')', ']'):
             ins.read(1)
-        raise error.RunError(2 if d in (')', ']') else 22)
+        raise error.RunError(error.STX if d in (')', ']') else error.MISSING_OPERAND)
     return parse_operators(operators, units)
 
 def parse_operators(operators, units):
@@ -125,7 +125,7 @@ def parse_operators(operators, units):
             break
     if len(operators) > 0:
         # unrecognised operator, syntax error
-        raise error.RunError(2)
+        raise error.RunError(error.STX)
     return units[0]
 
 def parse_expr_unit(ins):
@@ -254,16 +254,17 @@ def parse_bracket(ins):
     """ Compute the value of the bracketed expression. """
     util.require_read(ins, ('(',))
     # we need a Syntax error, not a Missing operand
-    val = parse_expression(ins, empty_err=2)
+    val = parse_expression(ins, empty_err=error.STX)
     util.require_read(ins, (')',))
     return val
 
-def parse_int_list(ins, size, err=5, allow_last_empty=False):
+def parse_int_list(ins, size, err=error.IFC, allow_last_empty=False):
     """ Helper function: parse a list of integers. """
     exprlist = parse_expr_list(ins, size, err, allow_last_empty=allow_last_empty)
     return [(vartypes.pass_int_unpack(expr) if expr else None) for expr in exprlist]
 
-def parse_expr_list(ins, size, err=5, separators=(',',), allow_last_empty=False):
+def parse_expr_list(ins, size, err=error.IFC,
+                    separators=(',',), allow_last_empty=False):
     """ Helper function : parse a list of expressions. """
     output = []
     while True:
@@ -274,7 +275,7 @@ def parse_expr_list(ins, size, err=5, separators=(',',), allow_last_empty=False)
         raise error.RunError(err)
     # can't end on a comma: Missing Operand
     if not allow_last_empty and output and output[-1] is None:
-        raise error.RunError(22)
+        raise error.RunError(error.MISSING_OPERAND)
     while len(output) < size:
         output.append(None)
     return output
@@ -306,7 +307,7 @@ def get_var_or_array_name(ins):
         while len(indices) > 0 and indices[-1] is None:
             indices = indices[:-1]
         if None in indices:
-            raise error.RunError(2)
+            raise error.RunError(error.STX)
         util.require_read(ins, (']', ')'))
     return name, indices
 
@@ -317,21 +318,21 @@ def value_cvi(ins):
     """ CVI: return the int value of a byte representation. """
     cstr =  vartypes.pass_string_unpack(parse_bracket(ins))
     if len(cstr) < 2:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     return vartypes.pack_int(vartypes.sint_to_value(cstr[:2]))
 
 def value_cvs(ins):
     """ CVS: return the single-precision value of a byte representation. """
     cstr =  vartypes.pass_string_unpack(parse_bracket(ins))
     if len(cstr) < 4:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     return ('!', cstr[:4])
 
 def value_cvd(ins):
     """ CVD: return the double-precision value of a byte representation. """
     cstr =  vartypes.pass_string_unpack(parse_bracket(ins))
     if len(cstr) < 8:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     return ('#', cstr[:8])
 
 def value_mki(ins):
@@ -397,14 +398,14 @@ def value_asc(ins):
     """ ASC: ordinal ASCII value of a character. """
     s = vartypes.pass_string_unpack(parse_bracket(ins))
     if not s:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     return vartypes.pack_int(s[0])
 
 def value_instr(ins):
     """ INSTR: find substring in string. """
     util.require_read(ins, ('(',))
     big, small, n = '', '', 1
-    s = parse_expression(ins, empty_err=2)
+    s = parse_expression(ins, empty_err=error.STX)
     if s[0] != '$':
         n = vartypes.pass_int_unpack(s)
         util.range_check(1, 255, n)
@@ -493,7 +494,7 @@ def value_screen(ins):
     util.require_read(ins, ('(',))
     row, col, z = parse_int_list(ins, 3, 5)
     if row is None or col is None:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     if z is None:
         z = 0
     cmode = state.console_state.screen.mode
@@ -521,7 +522,7 @@ def value_input(ins):
     word = vartypes.pack_string(bytearray(infile.read_raw(num)))
     if len(word) < num:
         # input past end
-        raise error.RunError(62)
+        raise error.RunError(error.INPUT_PAST_END)
     return word
 
 def value_inkey(ins):
@@ -624,8 +625,7 @@ def value_fn(ins):
     try:
         varnames, fncode = state.basic_state.functions[fnname]
     except KeyError:
-        # undefined user function
-        raise error.RunError(18)
+        raise error.RunError(error.UNDEFINED_USER_FUNCTION)
     # save existing vars
     varsave = {}
     for name in varnames:
@@ -634,9 +634,9 @@ def value_fn(ins):
             varsave[name] = state.basic_state.variables[name][:]
     # read variables
     if util.skip_white_read_if(ins, ('(',)):
-        exprs = parse_expr_list(ins, len(varnames), err=2)
+        exprs = parse_expr_list(ins, len(varnames), err=error.STX)
         if None in exprs:
-            raise error.RunError(2)
+            raise error.RunError(error.STX)
         for i in range(len(varnames)):
             var.set_var(varnames[i], exprs[i])
         util.require_read(ins, (')',))
@@ -656,10 +656,10 @@ def value_fn(ins):
 def value_point(ins):
     """ POINT: get pixel attribute at screen location. """
     util.require_read(ins, ('(',))
-    lst = parse_expr_list(ins, 2, err=2)
+    lst = parse_expr_list(ins, 2, err=error.STX)
     util.require_read(ins, (')',))
     if not lst[0]:
-        raise error.RunError(2)
+        raise error.RunError(error.STX)
     screen = state.console_state.screen
     if not lst[1]:
         # single-argument version
@@ -681,7 +681,7 @@ def value_point(ins):
     else:
         # two-argument mode
         if screen.mode.is_text_mode:
-            raise error.RunError(5)
+            raise error.RunError(error.IFC)
         return vartypes.pack_int(screen.drawing.point(
                         (fp.unpack(vartypes.pass_single_keep(lst[0])),
                          fp.unpack(vartypes.pass_single_keep(lst[1])), False)))
@@ -773,7 +773,7 @@ def value_peek(ins):
     """ PEEK: read memory location. """
     addr = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if state.basic_state.protected and not state.basic_state.run_mode:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     return vartypes.pack_int(machine.peek(addr))
 
 def value_varptr(ins):
@@ -788,7 +788,7 @@ def value_varptr(ins):
         var_ptr = machine.varptr(name, indices)
     util.require_read(ins, (')',))
     if var_ptr < 0:
-        raise error.RunError(5) # ill fn cll
+        raise error.RunError(error.IFC)
     if dollar:
         return vartypes.pack_string(bytearray(chr(var.byte_size[name[-1]])) + vartypes.value_to_uint(var_ptr))
     else:
@@ -829,7 +829,7 @@ def value_ioctl(ins):
     util.require_read(ins, (')',))
     devices.get_file(num)
     logging.warning("IOCTL$() function not implemented.")
-    raise error.RunError(5)
+    raise error.RunError(error.IFC)
 
 ###########################################################
 # option_double regulated single & double precision math
@@ -937,7 +937,7 @@ def value_operator(op, left, right):
     elif op == tk.IMP:
         return vartypes.twoscomp_to_int( (~vartypes.pass_twoscomp(left)) | vartypes.pass_twoscomp(right) )
     else:
-        raise error.RunError(2)
+        raise error.RunError(error.STX)
 
 def vcaret(left, right):
     """ Left^right. """

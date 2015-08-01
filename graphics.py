@@ -164,7 +164,7 @@ class Drawing(object):
             y += fy.round_to_int()
         # overflow check
         if x < -0x8000 or y < -0x8000 or x > 0x7fff or y > 0x7fff:
-            raise error.RunError(6)
+            raise error.RunError(error.OVERFLOW)
         return x, y
 
     def get_window_logical(self, x, y):
@@ -642,7 +642,7 @@ class Drawing(object):
         try:
             _, byte_array, version = state.basic_state.arrays[array_name]
         except KeyError:
-            raise error.RunError(5)
+            raise error.RunError(error.IFC)
         dx, dy = x1-x0+1, y1-y0+1
         # Tandy screen 6 simply GETs twice the width, it seems
         if self.screen.mode.name == '640x200x4':
@@ -703,7 +703,7 @@ class Drawing(object):
             elif c == 'T':
                 # 'turn angle' - set (don't turn) the angle to any value
                 if gmls.read(1).upper() != 'A':
-                    raise error.RunError(5)
+                    raise error.RunError(error.IFC)
                 # allow empty spec (default 0), but only if followed by a semicolon
                 if util.skip(gmls, draw_and_play.ml_whitepace) == ';':
                     self.draw_angle = 0
@@ -730,7 +730,7 @@ class Drawing(object):
                 relative =  util.skip(gmls, draw_and_play.ml_whitepace) in ('+','-')
                 x = draw_and_play.ml_parse_number(gmls)
                 if util.skip(gmls, draw_and_play.ml_whitepace) != ',':
-                    raise error.RunError(5)
+                    raise error.RunError(error.IFC)
                 else:
                     gmls.read(1)
                 y = draw_and_play.ml_parse_number(gmls)
@@ -749,7 +749,7 @@ class Drawing(object):
                 # paint - flood fill
                 colour = draw_and_play.ml_parse_number(gmls)
                 if util.skip_read(gmls, draw_and_play.ml_whitepace) != ',':
-                    raise error.RunError(5)
+                    raise error.RunError(error.IFC)
                 bound = draw_and_play.ml_parse_number(gmls)
                 x, y = self.get_window_logical(*self.last_point)
                 self.paint((x, y, False), None, colour, bound, None)
@@ -813,7 +813,7 @@ def get_octant(mbf, rx, ry):
         comp.iadd(fp.Single.pi4)
         octant += 1
         if octant >= 8:
-            raise error.RunError(5) # ill fn call
+            raise error.RunError(error.IFC)
     if octant in (0, 3, 4, 7):
         # running var is y
         coord = abs(fp.mul(fp.Single.from_int(ry), fp.sin(mbf)).round_to_int())

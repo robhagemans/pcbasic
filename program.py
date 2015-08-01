@@ -136,13 +136,13 @@ def check_number_start(linebuf):
     empty = (c in tk.end_line)
     # check if we start with a number
     if c in tk.number:
-        raise error.RunError(2)
+        raise error.RunError(error.STX)
     return empty, scanline
 
 def store_line(linebuf):
     """ Store the given line buffer. """
     if state.basic_state.protected:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     # get the new line number
     linebuf.seek(1)
     scanline = util.parse_line_number(linebuf)
@@ -150,7 +150,7 @@ def store_line(linebuf):
     empty = (util.skip_white_read(linebuf) in tk.end_line)
     pos, afterpos, deleteable, beyond = find_pos_line_dict(scanline, scanline)
     if empty and not deleteable:
-        raise error.RunError(8)
+        raise error.RunError(error.UNDEFINED_LINE_NUMBER)
     # read the remainder of the program into a buffer to be pasted back after the write
     state.basic_state.bytecode.seek(afterpos)
     rest = state.basic_state.bytecode.read()
@@ -193,7 +193,7 @@ def delete(fromline, toline):
     startpos, afterpos, deleteable, beyond = find_pos_line_dict(fromline, toline)
     if not deleteable:
         # no lines selected
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     # do the delete
     state.basic_state.bytecode.seek(afterpos)
     rest = state.basic_state.bytecode.read()
@@ -208,7 +208,7 @@ def edit(from_line, bytepos=None):
     """ Output program line to console and position cursor. """
     if state.basic_state.protected:
         console.write(str(from_line)+'\r')
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     # list line
     state.basic_state.bytecode.seek(state.basic_state.line_numbers[from_line]+1)
     _, output, textpos = tokenise.detokenise_line(state.basic_state.bytecode, bytepos)
@@ -242,7 +242,7 @@ def renum(new_line, start_line, step):
     old_to_new = {}
     for old_line in keys:
         if old_line < 65535 and new_line > 65529:
-            raise error.RunError(5)
+            raise error.RunError(error.IFC)
         if old_line == 65536:
             break
         old_to_new[old_line] = new_line
@@ -324,8 +324,7 @@ def merge(g):
         else:
             # we have read the :
             if util.skip_white(linebuf) not in tk.end_line:
-                # direct statement in file
-                raise error.RunError(66)
+                raise error.RunError(error.DIRECT_STATEMENT_IN_FILE)
 
 def chain(action, g, jumpnum, delete_lines):
     """ Chain load the program from g and hand over execution. """
@@ -335,13 +334,13 @@ def chain(action, g, jumpnum, delete_lines):
     action(g)
     # don't close files!
     # RUN
-    flow.jump(jumpnum, err=5)
+    flow.jump(jumpnum, err=error.IFC)
 
 def save(g):
     """ Save the program to stream g in (A)scii, (B)ytecode or (P)rotected mode. """
     mode = g.filetype
     if state.basic_state.protected and mode != 'P':
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     current = state.basic_state.bytecode.tell()
     # skip first \x00 in bytecode
     state.basic_state.bytecode.seek(1)
@@ -364,7 +363,7 @@ def list_lines(from_line, to_line):
     """ List line range. """
     if state.basic_state.protected:
         # don't list protected files
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     # 65529 is max insertable line number for GW-BASIC 3.23.
     # however, 65530-65535 are executed if present in tokenised form.
     # in GW-BASIC, 65530 appears in LIST, 65531 and above are hidden

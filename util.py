@@ -97,12 +97,12 @@ def skip_to_read(ins, findrange):
 ###############################################################################
 # parsing utilities
 
-def require_read(ins, in_range, err=2):
+def require_read(ins, in_range, err=error.STX):
     """ Skip whitespace, read and raise error if not in range. """
     if skip_white_read(ins, n=len(in_range[0])) not in in_range:
         raise error.RunError(err)
 
-def require(ins, rnge, err=2):
+def require(ins, rnge, err=error.STX):
     """ Skip whitespace, peek and raise error if not in range. """
     a = skip_white(ins, n=len(rnge[0]))
     if a not in rnge:
@@ -125,7 +125,7 @@ def parse_line_number(ins):
     else:
         return vartypes.uint_to_value(bytearray(off))
 
-def parse_jumpnum(ins, allow_empty=False, err=2):
+def parse_jumpnum(ins, allow_empty=False, err=error.STX):
     """ Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc. """
     if skip_white_read_if(ins, (tk.T_UINT,)):
         return vartypes.uint_to_value(bytearray(ins.read(2)))
@@ -153,7 +153,7 @@ def get_var_name(ins, allow_empty=False):
         else:
             ins.seek(-len(d), 1)
     if not name and not allow_empty:
-        raise error.RunError(2)
+        raise error.RunError(error.STX)
     # append type specifier
     name = vartypes.complete_name(name)
     # only the first 40 chars are relevant in GW-BASIC, rest is discarded
@@ -165,9 +165,9 @@ def range_check(lower, upper, *allvars):
     """ Check if all variables in list are within the given inclusive range. """
     for v in allvars:
         if v is not None and not (lower <= v <= upper):
-            raise error.RunError(5)
+            raise error.RunError(error.IFC)
 
-def range_check_err(lower, upper, v, err=5):
+def range_check_err(lower, upper, v, err=error.IFC):
     """ Check if variable is within the given inclusive range. """
     if v is not None and not (lower <= v <= upper):
         raise error.RunError(err)

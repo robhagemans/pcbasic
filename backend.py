@@ -993,7 +993,7 @@ class Screen(object):
                 info = self.text_data[new_width]
         except KeyError:
             # no such mode
-            raise error.RunError(5)
+            raise error.RunError(error.IFC)
         # vpage and apage nums are persistent on mode switch with SCREEN
         # on pcjr only, reset page to zero if current page number would be too high.
         if new_vpagenum is None:
@@ -1028,7 +1028,7 @@ class Screen(object):
             # only switch pages
             if (new_apagenum >= info.num_pages or
                     new_vpagenum >= info.num_pages):
-                raise error.RunError(5)
+                raise error.RunError(error.IFC)
             self.set_page(new_vpagenum, new_apagenum)
 
     def set_mode(self, mode_info, new_mode, new_colorswitch,
@@ -1045,7 +1045,7 @@ class Screen(object):
                 not video.init_screen_mode(mode_info)):
             # reset palette happens even if the SCREEN call fails
             self.palette = Palette(self.mode)
-            raise error.RunError(5)
+            raise error.RunError(error.IFC)
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
                 self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
@@ -1088,7 +1088,7 @@ class Screen(object):
             if video_capabilities in ('pcjr', 'tandy'):
                 self.screen(3, None, 0, 0)
             else:
-                raise error.RunError(5)
+                raise error.RunError(error.IFC)
         elif self.mode.is_text_mode:
             self.screen(0, None, 0, 0, new_width=to_width)
         elif to_width == 40:
@@ -1115,7 +1115,7 @@ class Screen(object):
             elif self.mode.name == '320x200x16':
                 self.screen(8, None, 0, 0)
         else:
-            raise error.RunError(5)
+            raise error.RunError(error.IFC)
 
     def set_colorburst(self, on=True):
         """ Set the composite colorburst bit. """
@@ -1173,7 +1173,7 @@ class Screen(object):
         if new_apagenum is None:
             new_apagenum = self.apagenum
         if (new_vpagenum >= self.mode.num_pages or new_apagenum >= self.mode.num_pages):
-            raise error.RunError(5)
+            raise error.RunError(error.IFC)
         self.vpagenum = new_vpagenum
         self.apagenum = new_apagenum
         self.vpage = self.text.pages[new_vpagenum]
@@ -1421,7 +1421,7 @@ class Palette(object):
         """ Check if the video mode allows palette change. """
         # effective palette change is an error in CGA
         if video_capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
-            raise error.RunError(5)
+            raise error.RunError(error.IFC)
         # ignore palette changes in Tandy/PCjr SCREEN 0
         elif video_capabilities in ('tandy', 'pcjr') and mode.is_text_mode:
             return False

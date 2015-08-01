@@ -101,19 +101,17 @@ class COMDevice(devices.Device):
                        reclen, seg, offset, length):
         """ Open a file on COMn: """
         if not self.stream:
-            # device unavailable
-            raise error.RunError(68)
+            raise error.RunError(error.DEVICE_UNAVAILABLE)
         # open the COM port
         if self.stream.is_open:
-            # file already open
-            raise error.RunError(55)
+            raise error.RunError(error.FILE_ALREADY_OPEN)
         else:
             try:
                 self.stream.open()
             except EnvironmentError as e:
                 # device timeout
                 logging.debug("Serial exception: %s", e)
-                raise error.RunError(24)
+                raise error.RunError(error.DEVICE_TIMEOUT)
         try:
             self.set_parameters(param)
         except Exception:
@@ -130,33 +128,32 @@ class COMDevice(devices.Device):
         max_param = 10
         param_list = param.upper().split(',')
         if len(param_list) > max_param:
-            # Bad file name
-            raise error.RunError(64)
+            raise error.RunError(error.BAD_FILE_NAME)
         param_list += ['']*(max_param-len(param_list))
         speed, parity, data, stop = param_list[:4]
         # set speed
         if speed not in ('75', '110', '150', '300', '600', '1200',
                           '1800', '2400', '4800', '9600', ''):
             # Bad file name
-            raise error.RunError(64)
+            raise error.RunError(error.BAD_FILE_NAME)
         speed = int(speed) if speed else 300
         self.stream.baudrate = speed
         # set parity
         if parity not in ('S', 'M', 'O', 'E', 'N', ''):
-            raise error.RunError(64)
+            raise error.RunError(error.BAD_FILE_NAME)
         parity = parity or 'E'
         self.stream.parity = parity
         # set data bits
         if data not in ('4', '5', '6', '7', '8', ''):
-            raise error.RunError(64)
+            raise error.RunError(error.BAD_FILE_NAME)
         data = int(data) if data else 7
         bytesize = data + (parity != 'N')
         if bytesize not in range(5, 9):
-            raise error.RunError(64)
+            raise error.RunError(error.BAD_FILE_NAME)
         self.stream.bytesize = bytesize
         # set stopbits
         if stop not in ('1', '2', ''):
-            raise error.RunError(64)
+            raise error.RunError(error.BAD_FILE_NAME)
         if not stop:
             stop = 2 if (speed in (75, 110)) else 1
         else:
@@ -190,7 +187,7 @@ class COMDevice(devices.Device):
                 # not implemented
                 pass
             else:
-                raise error.RunError(64)
+                raise error.RunError(error.BAD_FILE_NAME)
 
     def char_waiting(self):
         """ Whether a char is present in buffer. For ON COM(n). """
@@ -217,8 +214,7 @@ class COMFile(devices.CRLFTextFileBase):
         try:
             self.in_buffer += self.fhandle.read(serial_in_size - len(self.in_buffer))
         except (EnvironmentError, ValueError):
-            # device I/O
-            raise error.RunError(57)
+            raise error.RunError(error.DEVICE_IO_ERROR)
 
     def read_raw(self, num=-1):
         """ Read num characters from the port as a string; blocking """
@@ -266,8 +262,7 @@ class COMFile(devices.CRLFTextFileBase):
                 s = s.replace('\r', '\r\n')
             self.fhandle.write(s)
         except (EnvironmentError, ValueError):
-            # device I/O
-            raise error.RunError(57)
+            raise error.RunError(error.DEVICE_IO_ERROR)
 
     def get(self, num):
         """ Read a record - GET. """
@@ -470,15 +465,15 @@ class LPTFile(devices.TextFileBase):
 
     def lof(self):
         """ LOF: bad file mode """
-        raise error.RunError(54)
+        raise error.RunError(error.BAD_FILE_MODE)
 
     def loc(self):
         """ LOC: bad file mode """
-        raise error.RunError(54)
+        raise error.RunError(error.BAD_FILE_MODE)
 
     def eof(self):
         """ EOF: bad file mode """
-        raise error.RunError(54)
+        raise error.RunError(error.BAD_FILE_MODE)
 
     def close(self):
         """ Close the printer device and actually print the output. """

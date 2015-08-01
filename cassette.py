@@ -95,22 +95,18 @@ class CASDevice(object):
                    reclen, seg, offset, length):
         """ Open a file on tape. """
         if not self.tapestream:
-            # device unavailable
-            raise error.RunError(68)
+            raise error.RunError(error.DEVICE_UNAVAILABLE)
         if self.tapestream.is_open:
-            # file already open
-            raise error.RunError(55)
+            raise error.RunError(error.FILE_ALREADY_OPEN)
         try:
             if mode == 'O':
                 self.tapestream.open_write(param, filetype, seg, offset, length)
             elif mode == 'I':
                 _, filetype, seg, offset, length = self._search(param, filetype)
             else:
-                # bad file mode
-                raise error.RunError(54)
+                raise error.RunError(error.BAD_FILE_MODE)
         except EnvironmentError:
-            # device I/O Error
-            raise error.RunError(57)
+            raise error.RunError(error.DEVICE_IO_ERROR)
         if filetype == 'D':
             return CASTextFile(self.tapestream, filetype, mode)
         elif filetype == 'A':
@@ -135,8 +131,7 @@ class CASDevice(object):
                     logging.debug(timestamp(self.tapestream.counter()) + message)
         except EndOfTape:
             # reached end-of-tape without finding appropriate file
-            # device timeout
-            raise error.RunError(24)
+            raise error.RunError(error.DEVICE_TIMEOUT)
 
 #################################################################################
 # Cassette files
@@ -159,11 +154,11 @@ class CASTextFile(devices.TextFileBase):
 
     def lof(self):
         """ LOF: illegal function call. """
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
 
     def loc(self):
         """ LOC: illegal function call. """
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
 
     def close(self):
         """ Close a file on tape. """

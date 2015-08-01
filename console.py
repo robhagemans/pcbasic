@@ -80,7 +80,7 @@ def set_width(to_width):
     """ Change the width of the screen. """
     # raise an error if the width value doesn't make sense
     if to_width not in (20, 40, 80):
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     # if we're currently at that width, do nothing
     if to_width != state.console_state.screen.mode.width:
         # change video mode to one with new width

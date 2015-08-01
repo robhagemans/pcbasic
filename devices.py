@@ -56,10 +56,9 @@ def open_file(number, description, filetype, mode='I', access='R', lock='',
     """ Open a file on a device specified by description. """
     if (not description) or (number < 0) or (number > max_files):
         # bad file number; also for name='', for some reason
-        raise error.RunError(52)
+        raise error.RunError(error.BAD_FILE_NUMBER)
     if number in state.io_state.files:
-        # file already open
-        raise error.RunError(55)
+        raise error.RunError(error.FILE_ALREADY_OPEN)
     name, mode = str(description), mode.upper()
     inst = None
     split_colon = name.split(':')
@@ -71,7 +70,7 @@ def open_file(number, description, filetype, mode='I', access='R', lock='',
         except KeyError:
             # not an allowable device or drive name
             # bad file number, for some reason
-            raise error.RunError(52)
+            raise error.RunError(error.BAD_FILE_NUMBER)
     else:
         device = state.io_state.current_device
         dev_param = name
@@ -87,11 +86,9 @@ def get_file(num, mode='IOAR'):
     try:
         the_file = state.io_state.files[num]
     except KeyError:
-        # bad file number
-        raise error.RunError(52)
+        raise error.RunError(error.BAD_FILE_NUMBER)
     if the_file.mode.upper() not in mode:
-        # bad file mode
-        raise error.RunError(54)
+        raise error.RunError(error.BAD_FILE_MODE)
     return the_file
 
 def close_file(num):
@@ -150,11 +147,9 @@ class Device(object):
                    reclen, seg, offset, length):
         """ Open a file on the device. """
         if not self.device_file:
-            # device unavailable
-            raise error.RunError(68)
+            raise error.RunError(error.DEVICE_UNAVAILABLE)
         if mode not in self.allowed_modes:
-            # bad file mode
-            raise error.RunError(54)
+            raise error.RunError(error.BAD_FILE_MODE)
         new_file = self.device_file.clone(filetype, mode, reclen)
         return new_file
 
@@ -231,8 +226,7 @@ class RawFile(object):
         try:
             return self.fhandle.read(num)
         except EnvironmentError:
-            # Device I/O error
-            raise error.RunError(57)
+            raise error.RunError(error.DEVICE_IO_ERROR)
 
     def read(self, num=-1):
         """ Read num chars. If num==-1, read all available. """
@@ -243,8 +237,7 @@ class RawFile(object):
         try:
             self.fhandle.write(str(s))
         except EnvironmentError:
-            # Device I/O error
-            raise error.RunError(57)
+            raise error.RunError(error.DEVICE_IO_ERROR)
 
     def flush(self):
         """ Write contents of buffers to file. """
@@ -309,8 +302,7 @@ class TextFileBase(RawFile):
             if self.split_long_lines:
                 return True
             else:
-                # line buffer overflow
-                raise error.RunError(23)
+                raise error.RunError(error.LINE_BUFFER_OVERFLOW)
         return False
 
     def write(self, s):
@@ -571,15 +563,15 @@ class SCRNFile(RawFile):
 
     def lof(self):
         """ LOF: bad file mode. """
-        raise error.RunError(54)
+        raise error.RunError(error.BAD_FILE_MODE)
 
     def loc(self):
         """ LOC: bad file mode. """
-        raise error.RunError(54)
+        raise error.RunError(error.BAD_FILE_MODE)
 
     def eof(self):
         """ EOF: bad file mode. """
-        raise error.RunError(54)
+        raise error.RunError(error.BAD_FILE_MODE)
 
 
 prepare()

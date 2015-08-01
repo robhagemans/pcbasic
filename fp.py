@@ -2,7 +2,7 @@
 PC-BASIC - fp.py
 MBF Floating-point arithmetic
 
-(c) 2013, 2014, 2015 Rob Hagemans 
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -510,7 +510,7 @@ def unary(mbf_in, fn):
         msg_overflow()
         return mbf_in.__class__(mbf_in.neg, mbf_in.carry_mask, 0xff)
     except ValueError:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
 
 
 sqrt = partial(unary, fn=math.sqrt)

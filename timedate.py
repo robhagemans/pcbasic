@@ -39,14 +39,14 @@ def set_time(timestr):
             listpos += 1
             word = ''
         elif (c < '0' or c > '9'):
-            raise error.RunError(5)
+            raise error.RunError(error.IFC)
         else:
             word += c
         pos += 1
     if word:
         timelist[listpos] = int(word)
     if timelist[0] > 23 or timelist[1] > 59 or timelist[2] > 59:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     newtime = datetime.datetime(now.year, now.month, now.day, timelist[0], timelist[1], timelist[2], now.microsecond)
     state.basic_state.time_offset += newtime - now
 
@@ -56,7 +56,7 @@ def set_date(datestr):
     datelist = [1, 1, 1]
     pos, listpos, word = 0, 0, ''
     if len(datestr) < 8:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     while pos < len(datestr):
         if listpos > 2:
             break
@@ -69,7 +69,7 @@ def set_date(datestr):
             if listpos == 2:
                 break
             else:
-                raise error.RunError(5)
+                raise error.RunError(error.IFC)
         else:
             word += c
         pos += 1
@@ -78,7 +78,7 @@ def set_date(datestr):
     if (datelist[0] > 12 or datelist[1] > 31 or
             (datelist[2] > 77 and datelist[2] < 80) or
             (datelist[2] > 99 and datelist[2] < 1980 or datelist[2] > 2099)):
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     if datelist[2] <= 77:
         datelist[2] = 2000 + datelist[2]
     elif datelist[2] < 100 and datelist[2] > 79:
@@ -86,7 +86,7 @@ def set_date(datestr):
     try:
         newtime = datetime.datetime(datelist[2], datelist[0], datelist[1], now.hour, now.minute, now.second, now.microsecond)
     except ValueError:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     state.basic_state.time_offset += newtime - now
 
 def get_time():

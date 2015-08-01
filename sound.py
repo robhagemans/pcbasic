@@ -316,7 +316,7 @@ class Sound(object):
                                 volume=vstate.volume, voice=voice)
                             total_time[voice] += dur*vstate.tempo
                         except KeyError:
-                            raise error.RunError(5)
+                            raise error.RunError(error.IFC)
                     next_oct = 0
                 elif c == 'M':
                     c = util.skip_read(gmls, draw_and_play.ml_whitepace).upper()
@@ -331,13 +331,13 @@ class Sound(object):
                     elif c == 'B':
                         self.foreground = False
                     else:
-                        raise error.RunError(5)
+                        raise error.RunError(error.IFC)
                 elif c == 'V' and (pcjr_sound == 'tandy' or
                                     (pcjr_sound == 'pcjr' and self.sound_on)):
                     vstate.volume = min(15,
                                     max(0, draw_and_play.ml_parse_number(gmls)))
                 else:
-                    raise error.RunError(5)
+                    raise error.RunError(error.IFC)
         max_time = max(total_time)
         for voice in range(3):
             if total_time[voice] < max_time:

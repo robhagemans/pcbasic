@@ -22,10 +22,10 @@ def complete_name(name):
 ###############################################################################
 # Int (%) - stored as two's complement, little-endian
 
-def pass_int_keep(inp, maxint=0x7fff, err=13):
+def pass_int_keep(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
     """ Check if variable is numeric, convert to Int. """
     if not inp:
-        raise error.RunError(2)
+        raise error.RunError(error.STX)
     typechar = inp[0]
     if typechar == '%':
         return inp
@@ -33,13 +33,13 @@ def pass_int_keep(inp, maxint=0x7fff, err=13):
         val = fp.unpack(inp).round_to_int()
         if val > maxint or val < -0x8000:
             # overflow
-            raise error.RunError(6)
+            raise error.RunError(error.OVERFLOW)
         return pack_int(val)
     else:
         # type mismatch
         raise error.RunError(err)
 
-def pass_int_unpack(inp, maxint=0x7fff, err=13):
+def pass_int_unpack(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
     """ Convert numeric variable to Python integer. """
     return unpack_int(pass_int_keep(inp, maxint, err))
 
@@ -58,7 +58,7 @@ def pack_int(inp):
 def pass_single_keep(num):
     """ Check if variable is numeric, convert to Single. """
     if not num:
-        raise error.RunError(2)
+        raise error.RunError(error.STX)
     typechar = num[0]
     if typechar == '!':
         return num
@@ -68,7 +68,7 @@ def pass_single_keep(num):
         # *round* to single
         return fp.pack(fp.unpack(num).round_to_single())
     elif typechar == '$':
-        raise error.RunError(13)
+        raise error.RunError(error.TYPE_MISMATCH)
 
 ###############################################################################
 # Double (!) - stored as 8-byte Microsoft Binary Format
@@ -76,7 +76,7 @@ def pass_single_keep(num):
 def pass_double_keep(num):
     """ Check if variable is numeric, convert to Double. """
     if not num:
-        raise error.RunError(2)
+        raise error.RunError(error.STX)
     typechar = num[0]
     if typechar == '#':
         return num
@@ -85,16 +85,16 @@ def pass_double_keep(num):
     elif typechar == '!':
         return ('#', bytearray(4) + num[1])
     elif typechar == '$':
-        raise error.RunError(13)
+        raise error.RunError(error.TYPE_MISMATCH)
 
 ###############################################################################
 # String ($) - stored as 1-byte length plus 2-byte pointer to string space
 
-def pass_string_keep(inp, allow_empty=False, err=13):
+def pass_string_keep(inp, allow_empty=False, err=error.TYPE_MISMATCH):
     """ Check if variable is String-valued. """
     if not inp:
         if not allow_empty:
-            raise error.RunError(2)
+            raise error.RunError(error.STX)
         else:
             return ('$', '')
     if inp[0] == '$':
@@ -102,7 +102,7 @@ def pass_string_keep(inp, allow_empty=False, err=13):
     else:
         raise error.RunError(err)
 
-def pass_string_unpack(inp, allow_empty=False, err=13):
+def pass_string_unpack(inp, allow_empty=False, err=error.TYPE_MISMATCH):
     """ Convert string-valued variable to Python bytearray. """
     return pass_string_keep(inp, allow_empty, err)[1]
 
@@ -124,7 +124,7 @@ def pass_float_keep(num, allow_double=True):
     else:
         return pass_single_keep(num)
 
-def pass_number_keep(inp, err=13):
+def pass_number_keep(inp, err=error.TYPE_MISMATCH):
     """ Check if variable is numeric. """
     if inp[0] not in ('%', '!', '#'):
         raise error.RunError(err)
@@ -141,9 +141,9 @@ def pass_type_keep(typechar, value):
     elif typechar == '#':
         return pass_double_keep(value)
     else:
-        raise error.RunError(2)
+        raise error.RunError(error.STX)
 
-def pass_most_precise_keep(left, right, err=13):
+def pass_most_precise_keep(left, right, err=error.TYPE_MISMATCH):
     """ Check if variables are numeric and convert to highest-precision. """
     left_type, right_type = left[0][-1], right[0][-1]
     if left_type=='#' or right_type=='#':
@@ -179,14 +179,14 @@ def value_to_uint(n):
     """ Convert Python integer to unsigned little-endian token. """
     if n > 0xffff:
         # overflow
-        raise error.RunError(6)
+        raise error.RunError(error.OVERFLOW)
     return bytearray((n&0xff, n >> 8))
 
 def value_to_sint(n):
     """ Convert Python integer to two's complement little-endian token. """
     if n > 0xffff:  # 0x7fff ?
         # overflow
-        raise error.RunError(6)
+        raise error.RunError(error.OVERFLOW)
     if n < 0:
         n = 0x10000 + n
     return bytearray((n&0xff, n >> 8))

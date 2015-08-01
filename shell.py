@@ -55,7 +55,7 @@ def prepare():
 def get_env(parm):
     """ Retrieve environment string by name. """
     if not parm:
-        raise error.RunError(5)
+        raise error.RunError(error.IFC)
     return bytearray(os.getenv(str(parm)) or '')
 
 def get_env_entry(expr):

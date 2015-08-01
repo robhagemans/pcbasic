@@ -219,8 +219,7 @@ def acquire_lock(name, number, lock_type, access):
                 (lock_type == 'S' and not f.lock_type) or
                 # LOCK READ or LOCK WRITE: accept base on ACCESS of open file
                 (lock_type in f.access) or (f.lock_type in access)):
-            # permission denied
-            raise error.RunError(70)
+            raise error.RunError(error.PERMISSION_DENIED)
 
 def release_lock(number):
     """ Release the lock on a file before closing. """
@@ -244,8 +243,7 @@ def handle_oserror(e):
     try:
         basic_err = os_error[e.errno]
     except KeyError:
-        # unknown; internal error
-        basic_err = 51
+        basic_err = error.INTERNAL_ERROR
     raise error.RunError(basic_err)
 
 def get_diskdevice_and_path(path):
@@ -258,12 +256,11 @@ def get_diskdevice_and_path(path):
     else:
         # must be a disk device
         if len(splits[0]) > 1:
-            # 68: device unavailable
-            raise error.RunError(68)
+            raise error.RunError(error.DEVICE_UNAVAILABLE)
         try:
             return state.io_state.devices[splits[0] + ':'], splits[1]
         except KeyError:
-            raise error.RunError(68)
+            raise error.RunError(error.DEVICE_UNAVAILABLE)
 
 
 ##############################################################################
@@ -333,7 +330,7 @@ def match_dosname(dosname, path, isdir, find_case):
             return f
     return None
 
-def match_filename(name, defext, path='', err=53,
+def match_filename(name, defext, path='', err=error.FILE_NOT_FOUND,
                    isdir=False, find_case=True, make_new=False):
     """ Find or create a matching native file name for a given BASIC name. """
     # check if the name exists as-is; should also match Windows short names.
@@ -395,7 +392,7 @@ class DiskDevice(object):
         """ Open a file on a disk drive. """
         if not self.path:
             # undefined disk drive: path not found
-            raise error.RunError(76)
+            raise error.RunError(error.PATH_NOT_FOUND)
         # set default extension for programs
         if set(filetype).intersection(set('MPBA')):
             defext = 'BAS'
@@ -449,24 +446,23 @@ class DiskDevice(object):
             handle_oserror(e)
         except TypeError:
             # bad file number, which is what GW throws for open chr$(0)
-            raise error.RunError(52)
+            raise error.RunError(error.BAD_FILE_NUMBER)
 
     def check_file_not_open(self, path):
         """ Raise an error if the file is open. """
         for f in state.io_state.files:
             if self.native_path(path) == state.io_state.files[f].name:
-                raise error.RunError(55)
+                raise error.RunError(error.FILE_ALREADY_OPEN)
 
     def native_path_elements(self, path_without_drive, err, join_name=False):
         """ Return elements of the native path for a given BASIC path. """
         path_without_drive = str(path_without_drive)
         if '/' in path_without_drive:
             # bad file number - this is what GW produces here
-            raise error.RunError(52)
+            raise error.RunError(error.BAD_FILE_NUMBER)
         if not self.path:
             # this drive letter is not available (not mounted)
-            # path not found
-            raise error.RunError(76)
+            raise error.RunError(error.PATH_NOT_FOUND)
         # get path below drive letter
         if path_without_drive and path_without_drive[0] == '\\':
             # absolute path specified
@@ -504,7 +500,7 @@ class DiskDevice(object):
         # return drive root path, relative path, file name
         return path[:baselen], path[baselen:], name
 
-    def native_path(self, path_and_name, defext='', err=53,
+    def native_path(self, path_and_name, defext='', err=error.FILE_NOT_FOUND,
                     isdir=False, find_case=True, make_new=False):
         """ Find os-native path to match the given BASIC path. """
         # substitute drives and cwds
@@ -520,7 +516,7 @@ class DiskDevice(object):
     def chdir(self, name):
         """ Change working directory to given BASIC path. """
         # get drive path and relative path
-        dpath, rpath, _ = self.native_path_elements(name, err=76, join_name=True)
+        dpath, rpath, _ = self.native_path_elements(name, err=error.PATH_NOT_FOUND, join_name=True)
         # set cwd for the specified drive
         self.cwd = rpath
         # set the cwd in the underlying os (really only useful for SHELL)
@@ -529,11 +525,11 @@ class DiskDevice(object):
 
     def mkdir(self, name):
         """ Create directory at given BASIC path. """
-        safe(os.mkdir, self.native_path(name, err=76, isdir=True, make_new=True))
+        safe(os.mkdir, self.native_path(name, err=error.PATH_NOT_FOUND, isdir=True, make_new=True))
 
     def rmdir(self, name):
         """ Remove directory at given BASIC path. """
-        safe(os.rmdir, self.native_path(name, err=76, isdir=True))
+        safe(os.rmdir, self.native_path(name, err=error.PATH_NOT_FOUND, isdir=True))
 
     def kill(self, name):
         """ Remove regular file at given BASIC path. """
@@ -542,11 +538,10 @@ class DiskDevice(object):
     def rename(self, oldname, newname):
         """ Rename a file or directory. """
         # note that we can't rename to another drive: "Rename across disks"
-        oldname = self.native_path(str(oldname), err=53, isdir=False)
-        newname = self.native_path(str(newname), err=76, isdir=False, make_new=True)
+        oldname = self.native_path(str(oldname), err=error.FILE_NOT_FOUND, isdir=False)
+        newname = self.native_path(str(newname), err=error.PATH_NOT_FOUND, isdir=False, make_new=True)
         if os.path.exists(newname):
-            # file already exists
-            raise error.RunError(58)
+            raise error.RunError(error.FILE_ALREADY_EXISTS)
         safe(os.rename, oldname, newname)
 
     def files(self, pathmask):
@@ -555,12 +550,11 @@ class DiskDevice(object):
         # GW-BASIC sometimes allows leading or trailing slashes
         # and then does weird things I don't understand.
         if '/' in str(pathmask):
-            # file not found
-            raise error.RunError(53)
+            raise error.RunError(error.FILE_NOT_FOUND)
         if not self.path:
             # undefined disk drive: file not found
-            raise error.RunError(53)
-        drivepath, relpath, mask = self.native_path_elements(pathmask, err=53)
+            raise error.RunError(error.FILE_NOT_FOUND)
+        drivepath, relpath, mask = self.native_path_elements(pathmask, err=error.FILE_NOT_FOUND)
         path = os.path.join(drivepath, relpath)
         mask = mask.upper() or '*.*'
         # output working dir in DOS format
@@ -580,7 +574,7 @@ class DiskDevice(object):
             dirs = filter_names(path, dirs + ['.', '..'], mask)
             fils = filter_names(path, fils, mask)
         if not dirs and not fils:
-            raise error.RunError(53)
+            raise error.RunError(error.FILE_NOT_FOUND)
         # format and print contents
         output = (
               [('%-8s.%-3s' % (t, e) if (e or not t) else '%-8s    ' % t) + '<DIR>' for t, e in dirs]
@@ -623,8 +617,7 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
         try:
             filetype_found = devices.magic_to_type[first]
             if filetype_found not in filetype:
-                # bad file mode
-                raise error.RunError(54)
+                raise error.RunError(error.BAD_FILE_MODE)
             filetype = filetype_found
         except KeyError:
             filetype = 'A'
@@ -646,7 +639,7 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
         # internal error - incorrect file type requested
         logging.debug('Incorrect file type %s requested for mode %s',
                       filetype, mode)
-        raise error.RunError(51)
+        raise error.RunError(error.INTERNAL_ERROR)
 
 
 class BinaryFile(devices.RawFile):
@@ -716,8 +709,7 @@ class RandomFile(devices.CRLFTextFileBase):
         write = self.operating_mode == 'O'
         # FIELD overflow happens if last byte in record has been read or written
         if self.fhandle.tell() > self.reclen + write - 1:
-            # FIELD overflow
-            raise error.RunError(50)
+            raise error.RunError(error.FIELD_OVERFLOW)
 
     def read_raw(self, num=-1):
         """ Read num characters from the field. """
@@ -794,7 +786,7 @@ class RandomFile(devices.CRLFTextFileBase):
         for start_1, stop_1 in other_lock_list:
             if (stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1)
                              or (bstop >= start_1 and bstop <= stop_1)):
-                raise error.RunError(70)
+                raise error.RunError(error.PERMISSION_DENIED)
         self.lock_list.add((bstart, bstop))
 
     def unlock(self, start, stop, lock_list):
@@ -804,7 +796,7 @@ class RandomFile(devices.CRLFTextFileBase):
         try:
             self.lock_list.remove((bstart, bstop))
         except KeyError:
-            raise error.RunError(70)
+            raise error.RunError(error.PERMISSION_DENIED)
 
 
 class TextFile(devices.CRLFTextFileBase):
@@ -905,7 +897,7 @@ class TextFile(devices.CRLFTextFileBase):
     def lock(self, start, stop, lock_list):
         """ Lock the file. """
         if set.union(f.lock_list for f in list_locks(self.name)):
-            raise error.RunError(70)
+            raise error.RunError(error.PERMISSION_DENIED)
         self.lock_list.add((0, -1))
 
     def unlock(self, start, stop):
@@ -913,6 +905,6 @@ class TextFile(devices.CRLFTextFileBase):
         try:
             self.lock_list.remove((0, -1))
         except KeyError:
-            raise error.RunError(70)
+            raise error.RunError(error.PERMISSION_DENIED)
 
 prepare()
