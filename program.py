@@ -360,8 +360,8 @@ def save(g):
             g.write_line(str(output))
     state.basic_state.bytecode.seek(current)
 
-def list_lines(dev, from_line, to_line):
-    """ List line range to console or device. """
+def list_lines(from_line, to_line):
+    """ List line range. """
     if state.basic_state.protected:
         # don't list protected files
         raise error.RunError(5)
@@ -374,14 +374,12 @@ def list_lines(dev, from_line, to_line):
     listable = sorted([ state.basic_state.line_numbers[num]
                             for num in state.basic_state.line_numbers
                             if num >= from_line and num <= to_line ])
+    lines = []
     for pos in listable:
         state.basic_state.bytecode.seek(pos + 1)
         _, line, _ = tokenise.detokenise_line(state.basic_state.bytecode)
-        if dev == state.io_state.scrn_file:
-            console.list_line(str(line))
-        else:
-            dev.write_line(str(line))
-    dev.close()
+        lines.append(str(line))
     flow.set_pointer(False)
+    return lines
 
 prepare()

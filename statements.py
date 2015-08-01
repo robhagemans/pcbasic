@@ -891,21 +891,27 @@ def exec_auto(ins):
 def exec_list(ins):
     """ LIST: output program lines. """
     from_line, to_line = parse_line_range(ins)
+    out = None
     if util.skip_white_read_if(ins, (',',)):
-        out = devices.open_file(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)),
-                                filetype='A', mode='O')
-    else:
-        out = state.io_state.scrn_file
+        outname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        out = devices.open_file(0, outname, filetype='A', mode='O')
     util.require(ins, tk.end_statement)
-    with out:
-        program.list_lines(out, from_line, to_line)
-        # note that closing scrn_file has no effect
+    lines = program.list_lines(from_line, to_line)
+    if out:
+        with out:
+            for l in lines:
+                out.write_line(l)
+    else:
+        for l in lines:
+            # LIST on screen is slightly different from just writing
+            console.list_line(l)
 
 def exec_llist(ins):
     """ LLIST: output program lines to LPT1: """
     from_line, to_line = parse_line_range(ins)
     util.require(ins, tk.end_statement)
-    program.list_lines(state.io_state.lpt1_file, from_line, to_line)
+    for l in program.list_lines(from_line, to_line):
+        state.io_state.lpt1_file.write_line(l)
 
 def exec_load(ins):
     """ LOAD: load program from file. """
