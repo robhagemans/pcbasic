@@ -3476,7 +3476,9 @@ the port directly. <code><em>rec_len</em></code> sets the number of bytes read b
 <p>When opening a <code>COM</code> port, additional expressions may be included following the
     colon of the device name. These specify parameters for the serial
     connection. This string has the form</p>
-    <pre>"COMn:[speed][,parity][,data][,stop][,RS][,CS[n]][,DS[n]][,CD[n]][,LF][,PE]"</pre>
+    <pre>"COMn:[speed[,parity[,data[,stop[,RS][,CS[n]][,DS[n]][,CD[n]][,LF][,PE]]]]]"</pre>
+    The first four parameters must be given in that order but the named parameters
+    can be given in any order.
     The meaning of the parameters is:
 <table><tr>
 <th>Parameter</th>
