@@ -5812,6 +5812,35 @@ If no such setting has been made, the default type is single-precision float.</p
     Double-precision floats can hold more decimals, but not larger or smaller numbers, than single-precision floats.
 </li></ul>
 
+<h2>Error trapping</h2>
+<p>
+    Normally, any error will interrupt program execution and print a message on the console (exceptions are <code>OVERFLOW</code>
+    and <code>DIVISION BY ZERO</code>, which print a message but do not interrupt execution). It is possible to handle errors more graciously by
+    setting an error-handling routine with the <code>ON ERROR GOTO <em>line_number</em></code> statement. The error-handling routine starts at
+    the given line number <code><em>line_number</em></code> and continues until a <code>RESUME</code> statement is encountered. Error trapping is in
+    effect both when a program is running and in interactive mode. Error trapping is switched off with the <code>ON ERROR GOTO 0</code> statement.
+    If an error occurs, or error trapping is switched off, while the program is executing an error-trapping routine, the program terminates and an error message is shown.
+</p>
+
+<h2>Event trapping</h2>
+<p>
+    Event trapping allows to define subroutines which are executed outside of the normal course of operation. Events that can be trapped are:
+</p>
+<ul>
+    <li>Time intervals (<code>ON TIMER</code>)</li>
+    <li>Keypresses (<code>ON KEY</code>)</li>
+    <li>Serial port input (<code>ON COM</code>)</li>
+    <li>Music queue exhaustion (<code>ON PLAY</code>)</li>
+    <li>Joystick triggers (<code>ON STRIG</code>)</li>
+    <li>Light pen activation (<code>ON PEN</code>)</li>
+</ul>
+<p>
+    Event trapping subroutines are defined as regular subroutines. At the <code>RETURN</code> statement, the normal course of program execution is resumed.
+    Event trapping can be switched on and off or paused temporarily with statements of the form <code>PEN ON</code>, <code>PEN OFF</code>, <code>PEN STOP</code>.
+    Event trapping only takes place during program execution and is paused while the program is in an error trap.
+    If an event occurs while event-trapping is paused, then the event is triggered immediately when event trapping is resumed.
+</p>
+
 <h2>Internal representation of variables</h2>
 <p>Internal representation:</p>
 <ul><li>
@@ -5872,8 +5901,6 @@ Schematically, MBF floating point numbers are represented as follows.</p>
 <dd>Any float with the exponent byte set to <code>0</code> is interpreted as a zero.</dd>
 </dl>
 <p>A single-precision MBF float therefore has 23 bits of precision, while a double-precision MBF float has 55 bits of precision.</p>
-
-
 
 <h2 id="videomodes">Video modes</h2>
 <p>The video modes are as follows:</p>
