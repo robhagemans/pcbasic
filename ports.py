@@ -208,13 +208,24 @@ class COMFile(devices.CRLFTextFileBase):
         self.field.reset(serial_in_size)
         self.in_buffer = bytearray()
         self.linefeed = linefeed
+        self.overflow = False
 
-    def check_read(self):
+    def check_read(self, allow_overflow=False):
         """ Fill buffer at most up to buffer size; non blocking. """
         try:
             self.in_buffer += self.fhandle.read(serial_in_size - len(self.in_buffer))
         except (EnvironmentError, ValueError):
             raise error.RunError(error.DEVICE_IO_ERROR)
+        # if more to read, signal an overflow
+        if len(self.in_buffer) >= serial_in_size and self.fhandle.read(1):
+            self.overflow = True
+            # drop waiting chars that don't fit in buffer
+            while self.fhandle.read(1):
+                pass
+        if not allow_overflow and self.overflow:
+            # only raise this the first time the overflow is encountered
+            self.overflow = False
+            raise error.RunError(error.COMMUNICATION_BUFFER_OVERFLOW)
 
     def read_raw(self, num=-1):
         """ Read num characters from the port as a string; blocking """
@@ -277,7 +288,7 @@ class COMFile(devices.CRLFTextFileBase):
         """ LOC: Returns number of chars waiting to be read. """
         # don't use inWaiting() as SocketSerial.inWaiting() returns dummy 0
         # fill up buffer insofar possible
-        self.check_read()
+        self.check_read(allow_overflow=True)
         return len(self.in_buffer)
 
     def eof(self):
@@ -351,7 +362,6 @@ class SocketSerialStream(SerialStream):
 
     def read(self, num=1):
         """ Non-blocking read from socket. """
-        # this is the raison d'etre of the wrapper.
         # SocketSerial.read always returns '' if timeout==0
         self._serial._socket.setblocking(0)
         if not self._serial._isOpen:
