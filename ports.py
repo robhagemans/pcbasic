@@ -12,6 +12,7 @@ PySerial (c) 2001-2013 Chris Liechtl <cliechti(at)gmx.net>; All Rights Reserved.
 import logging
 import os
 import socket
+import datetime
 
 try:
     from cStringIO import StringIO
@@ -102,28 +103,33 @@ class COMDevice(devices.Device):
         """ Open a file on COMn: """
         if not self.stream:
             raise error.RunError(error.DEVICE_UNAVAILABLE)
+        # PE setting not implemented
+        speed, parity, bytesize, stop, rs, cs, ds, cd, lf, _ = self.get_params(param)
         # open the COM port
         if self.stream.is_open:
             raise error.RunError(error.FILE_ALREADY_OPEN)
         else:
             try:
-                self.stream.open()
+                self.stream.open(rs, cs, ds, cd)
             except EnvironmentError as e:
                 # device timeout
                 logging.debug("Serial exception: %s", e)
                 raise error.RunError(error.DEVICE_TIMEOUT)
         try:
-            self.set_parameters(param)
+            self.stream.baudrate = speed
+            self.stream.parity = parity
+            self.stream.bytesize = bytesize
+            self.stream.stopbits = stop
         except Exception:
             self.stream.close()
             raise
-        f = COMFile(self.stream, self.linefeed)
+        f = COMFile(self.stream, lf)
         # inherit width settings from device file
         f.width = self.device_file.width
         f.col = self.device_file.col
         return f
 
-    def set_parameters(self, param):
+    def get_params(self, param):
         """ Set serial port connection parameters """
         max_param = 10
         param_list = param.upper().split(',')
@@ -137,12 +143,10 @@ class COMDevice(devices.Device):
             # Bad file name
             raise error.RunError(error.BAD_FILE_NAME)
         speed = int(speed) if speed else 300
-        self.stream.baudrate = speed
         # set parity
         if parity not in ('S', 'M', 'O', 'E', 'N', ''):
             raise error.RunError(error.BAD_FILE_NAME)
         parity = parity or 'E'
-        self.stream.parity = parity
         # set data bits
         if data not in ('4', '5', '6', '7', '8', ''):
             raise error.RunError(error.BAD_FILE_NAME)
@@ -150,7 +154,6 @@ class COMDevice(devices.Device):
         bytesize = data + (parity != 'N')
         if bytesize not in range(5, 9):
             raise error.RunError(error.BAD_FILE_NAME)
-        self.stream.bytesize = bytesize
         # set stopbits
         if stop not in ('1', '2', ''):
             raise error.RunError(error.BAD_FILE_NAME)
@@ -158,36 +161,35 @@ class COMDevice(devices.Device):
             stop = 2 if (speed in (75, 110)) else 1
         else:
             stop = int(stop)
-        self.stream.stopbits = stop
-        self.linefeed = False
+        lf, rs, cs, ds, cd = False, False, None, 1000, 0
         for named_param in param_list[4:]:
             if not named_param:
                 continue
             elif named_param == 'RS':
                 # suppress request to send
-                # not implemented
-                pass
+                rs = True
             elif named_param[:2] == 'CS':
                 # set CTS timeout - clear to send
-                # not implemented
-                timeout = named_param[2:]
+                cs = named_param[2:]
             elif named_param[:2] == 'DS':
                 # set DSR timeout - data set ready
-                # not implemented
-                timeout = named_param[2:]
+                ds = named_param[2:]
             elif named_param[:2] == 'CD':
                 # set CD timeout - carrier detect
-                # not implemented
-                timeout = named_param[2:]
+                cd = named_param[2:]
             elif named_param == 'LF':
                 # send a line feed at each return
-                self.linefeed = True
+                lf = True
             elif named_param == 'PE':
                 # enable parity checking
                 # not implemented
-                pass
+                pe = True
             else:
                 raise error.RunError(error.BAD_FILE_NAME)
+        # CS default depends on RS
+        if cs is None:
+            cs = 1000 if not rs else 0
+        return speed, parity, bytesize, stop, rs, cs, ds, cd, lf, pe
 
     def char_waiting(self):
         """ Whether a char is present in buffer. For ON COM(n). """
@@ -243,6 +245,7 @@ class COMFile(devices.CRLFTextFileBase):
                 out += str(self.in_buffer[:to_read])
                 del self.in_buffer[:to_read]
                 # allow for break & screen updates
+                # this also allows triggering BASIC events
                 backend.wait()
         return out
 
@@ -327,9 +330,36 @@ class SerialStream(object):
     # def __getattr__(self, attr):
     #     return getattr(self._serial, attr)
 
-    def open(self):
+    def open(self, rs=False, cs=1000, ds=1000, cd=0):
         """ Open the serial connection. """
         self._serial.open()
+        # handshake
+        # by default, RTS is up, DTR down
+        # RTS can be suppressed, DTR only accessible through machine ports
+        # https://lbpe.wikispaces.com/AccessingSerialPort
+        if not rs:
+            self._serial.setRTS(True)
+        now = datetime.datetime.now()
+        timeout_cts = now + datetime.timedelta(microseconds=cs)
+        timeout_dsr = now + datetime.timedelta(microseconds=ds)
+        timeout_cd = now + datetime.timedelta(microseconds=cd)
+        have_cts, have_dsr, have_cd = False, False, False
+        while ((now < timeout_cts and not have_cts) and
+                (now < timeout_dsr and not have_dsr) and
+                (now < timeout_cd and not have_cd)):
+            now = datetime.datetime.now()
+            have_cts = have_cts and self._serial.getCTS()
+            have_dsr = have_dsr and self._serial.getDSR()
+            have_cts = have_cd and self._serial.getCD()
+            # update screen, give CPU some time off
+            backend.idle()
+        # only check for status if timeouts are set > 0
+        # http://www.electro-tech-online.com/threads/qbasic-serial-port-control.19286/
+        # https://measurementsensors.honeywell.com/ProductDocuments/Instruments/008-0385-00.pdf
+        if ((cs > 0 and not have_cts) or
+                (ds > 0 and not have_dsr) or
+                (cd > 0 and not have_cd)):
+            raise error.RunError(error.DEVICE_TIMEOUT)
         self.is_open = True
 
     def close(self):
@@ -359,6 +389,11 @@ class SocketSerialStream(SerialStream):
     def __init__(self, socket, do_open=False):
         """ Initialise the stream. """
         SerialStream.__init__(self, 'socket://' + socket, do_open)
+
+    def open(self, rs=False, cs=1000, ds=1000, cd=0):
+        """ Open the serial connection. """
+        self._serial.open()
+        self.is_open = True
 
     def read(self, num=1):
         """ Non-blocking read from socket. """
