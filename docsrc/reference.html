@@ -2178,6 +2178,11 @@ The last character of the field buffer is read: <code>Field overflow</code>.
 <code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
 </li><li>
 <code><em>file_num</em></code> is not open for <code>INPUT</code> or <code>RANDOM</code>: <code>Bad file mode</code>.
+</li><li>
+<code><em>file_num</em></code> is open to a <code>COM</code> port and this is the
+first <code>INPUT</code>, <code>LINE INPUT</code> or <code>INPUT$</code> call on that port
+since the buffer has filled up completely (i.e. <code>LOF(<em>file_num</em>)</code> has become zero):
+<code>Communication buffer overflow</code>.
 </li></ul>
 
 <h3><code>INPUT$</code> function</h3>
@@ -2220,6 +2225,11 @@ if <code><em>file_num</em></code> is provided, from a text file.
 <code><em>file_num</em></code> is not open for <code>INPUT</code>: <code>Bad file mode</code>.
 </li><li>
 <code><em>num_chars</em></code> or <code><em>file_num</em></code> are strings: <code>Type mismatch</code>.
+</li><li>
+<code><em>file_num</em></code> is open to a <code>COM</code> port and this is the
+first <code>INPUT</code>, <code>LINE INPUT</code> or <code>INPUT$</code> call on that port
+since the buffer has filled up completely (i.e. <code>LOF(<em>file_num</em>)</code> has become zero):
+<code>Communication buffer overflow</code>.
 </li></ul>
 
 <h3><code>INSTR</code> function</h3>
@@ -2683,6 +2693,11 @@ The last character of the field buffer is read: <code>Field overflow</code>.
 <code><em>file_num</em></code> is not open for <code>INPUT</code> or <code>RANDOM</code>: <code>Bad file mode</code>.
 </li><li>
 <code><em>file_num</em></code> has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>file_num</em></code> is open to a <code>COM</code> port and this is the
+first <code>INPUT</code>, <code>LINE INPUT</code> or <code>INPUT$</code> call on that port
+since the buffer has filled up completely (i.e. <code>LOF(<em>file_num</em>)</code> has become zero):
+<code>Communication buffer overflow</code>.
 </li></ul>
 
 
