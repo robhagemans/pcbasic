@@ -57,6 +57,20 @@ class OperationNotImplemented(CassetteIOError): pass
 #################################################################################
 # Cassette device
 
+
+class DummyDeviceFile(object):
+    """ CAS device-file settings (WIDTH) are ignored. """
+
+    def __init__(self):
+        """ Setup the basic properties of the file. """
+        self.width = 255
+        self.col = 1
+
+    def set_width(self, width):
+        """ Set file width. """
+        self.width = width
+
+
 class CASDevice(object):
     """ Cassette tape device (CASn:) """
 
@@ -68,6 +82,9 @@ class CASDevice(object):
         if len(valsplit) == 2:
             val, loc = valsplit
         ext = val.split('.')[-1].upper()
+        # we use a dummy device_file
+        # this means WIDTH and LOC on CAS1: directly are ignored
+        self.device_file = DummyDeviceFile()
         try:
             if not val:
                 self.tapestream = None

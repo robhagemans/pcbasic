@@ -2453,7 +2453,7 @@ def exec_width(ins):
             devname = str(vartypes.pass_string_unpack(expr)).upper()
             try:
                 dev = state.io_state.devices[devname].device_file
-            except KeyError, AttributeError:
+            except (KeyError, AttributeError):
                 # bad file name
                 raise error.RunError(error.BAD_FILE_NAME)
             util.require_read(ins, (',',))

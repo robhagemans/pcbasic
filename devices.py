@@ -185,7 +185,6 @@ class KYBDDevice(Device):
 #################################################################################
 # file classes
 
-
 class RawFile(object):
     """ File class for raw access to underlying stream. """
 
