@@ -300,7 +300,7 @@ def get_field_memory(address):
     offset = start % memory.field_mem_offset
     try:
         return state.io_state.fields[number].buffer[offset]
-    except KeyError, IndexError:
+    except (KeyError, IndexError):
         return -1
 
 def get_code_memory(address):
