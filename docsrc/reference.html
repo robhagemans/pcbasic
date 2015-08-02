@@ -3544,17 +3544,6 @@ the port directly. <code><em>rec_len</em></code> sets the number of bytes read b
 <td>The number of stop bits. <code><em>stop</em></code> must be <code>1</code> or <code>2</code>.
             Default is <code>2</code> if <code><em>speed</em></code> is <code>75</code> or <code>110</code>; <code>1</code> otherwise.
 </tr><tr>
-<td><code>LF</code></td>
-<td>no</td>
-<td>Send a line feed after each carriage return.</td>
-</tr></table>
-
-<p>    The following GW-BASIC specifications are ignored by PC-BASIC:</p>
-<table><tr>
-<th>Parameter</th>
-<th>Default</th>
-<th>Meaning</th>
-</tr><tr>
 <td><code>RS</code></td>
 <td>no</td>
 <td>Suppress <em>Request To Send</em>.</td>
@@ -3580,9 +3569,13 @@ Set <em>Carrier Detect</em> timeout to <code><em>n</em></code> milliseconds.
             If <code><em>n</em></code> is not given, set timeout to <code>0</code>.
 </td>
 </tr><tr>
+<td><code>LF</code></td>
+<td>no</td>
+<td>Send a line feed after each carriage return.</td>
+</tr><tr>
     <td><code>PE</code></td>
 <td>no</td>
-    <td>Enable parity checking.</td>
+    <td>Enable parity checking (This setting is ignored by PC-BASIC).</td>
 </tr></table>
 
 
