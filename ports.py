@@ -75,9 +75,6 @@ class COMDevice(devices.Device):
         devices.Device.__init__(self)
         addr, val = devices.parse_protocol_string(arg)
         self.stream = None
-        # wait until socket is open to open file on it
-        # as opening a text file atomatically reads a byte
-        self.device_file = None
         if (not val):
             pass
         elif not serial:
@@ -96,6 +93,9 @@ class COMDevice(devices.Device):
             except (ValueError, EnvironmentError) as e:
                 logging.warning('Could not attach %s to COM device: %s', arg, e)
                 self.stream = None
+        if self.stream:
+            # NOTE: opening a text file automatically tries to read a byte
+            self.device_file = COMFile(self.stream, linefeed=False)
 
     def open(self, number, param, filetype, mode, access, lock,
                        reclen, seg, offset, length):
@@ -117,11 +117,11 @@ class COMDevice(devices.Device):
         except Exception:
             self.stream.close()
             raise
-        # only open file on socket once socket is open
-        if not self.device_file:
-            self.device_file = COMFile(self.stream, self.linefeed)
-        return devices.Device.open(self, number, param, filetype, mode, access, lock,
-                            reclen, seg, offset, length)
+        f = COMFile(self.stream, self.linefeed)
+        # inherit width settings from device file
+        f.width = self.device_file.width
+        f.col = self.device_file.col
+        return f
 
     def set_parameters(self, param):
         """ Set serial port connection parameters """
@@ -363,9 +363,11 @@ class SocketSerialStream(SerialStream):
     def read(self, num=1):
         """ Non-blocking read from socket. """
         # SocketSerial.read always returns '' if timeout==0
-        self._serial._socket.setblocking(0)
         if not self._serial._isOpen:
+            # this is a ValueError for some reason, not an IOError
+            # but also raised by Serial so best to toe the line
             raise serialutil.portNotOpenError
+        self._serial._socket.setblocking(0)
         try:
             # fill buffer at most up to buffer size
             return self._serial._socket.recv(num)

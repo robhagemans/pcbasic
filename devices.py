@@ -264,7 +264,8 @@ class TextFileBase(RawFile):
         if self.mode in 'IR' and not first_char:
             try:
                 self.next_char = self.fhandle.read(1)
-            except IOError:
+            except (EnvironmentError, ValueError):
+                # only catching ValueError here because that's what Serial raises
                 self.next_char = ''
         # handling of >255 char lines (False for programs)
         self.split_long_lines = split_long_lines
