@@ -63,7 +63,7 @@ On **Windows**, you should download all the required packages from the project w
 
 On **OSX**, there are several versions of Python 2.7 and all downloads need to match your version and CPU architecture. It's a bit tricky, I'm afraid. The easiest option seems to be installing both Python and PyGame through MacPorts or Homebrew.  
 
-On **Linux distrubutions with APT or DNF** (including Debian, Ubuntu, Mint and Fedora), the install script will automatically install dependencies if it is run with root privileges.  
+On **Linux distributions with APT or DNF** (including Debian, Ubuntu, Mint and Fedora), the install script will automatically install dependencies if it is run with root privileges.  
 
 The install script can also be used on **other Unix** systems or when not installing as root. Python 2.7 usually comes pre-installed; the other packages can often be installed through your package manager. For example, on Debian-based systems:   
 
