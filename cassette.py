@@ -680,6 +680,17 @@ class CASBitStream(TapeBitStream):
                 self._create()
         self.switch_mode(mode)
 
+    def __getstate__(self):
+        """ Get pickling dict for stream. """
+        return { 'filename': self.cas_name,
+                 'mode': self.operating_mode,
+                 'counter': self.counter() }
+
+    def __setstate__(self, st):
+        """ Initialise stream from pickling dict. """
+        self.__init__(st['filename'], st['mode'])
+        self.wind(st['counter'])
+
     def counter(self):
         """ Time stamp in seconds. """
         # approximate: average 750 us per bit, cut on bytes
@@ -850,7 +861,8 @@ class WAVBitStream(TapeBitStream):
                 self.wav = open(self.filename, 'r+b')
             except EnvironmentError:
                 self.wav = open(self.filename, 'rb')
-            self._read_wav_header()
+            if not self._read_wav_header():
+                raise EndOfTape()
             self.operating_mode = 'r'
         self.wav_pos = 0
         self.buf_len = 1024
@@ -882,6 +894,19 @@ class WAVBitStream(TapeBitStream):
         if self.operating_mode == 'w':
             self.write_intro()
         self.switch_mode(mode)
+
+    def __getstate__(self):
+        """ Get pickling dict for stream. """
+        return { 'filename': self.filename,
+                 'mode': self.operating_mode,
+                 'counter': self.counter() }
+
+    def __setstate__(self, st):
+        """ Initialise stream from pickling dict. """
+        # open for reading to avoid writing intro
+        self.__init__(st['filename'], 'r')
+        self.wind(st['counter'])
+        self.switch_mode(st['mode'])
 
     def switch_mode(self, mode):
         """ Switch tape to reading or writing mode. """
@@ -979,7 +1004,11 @@ class WAVBitStream(TapeBitStream):
 
     def _read_wav_header(self):
         """ Read RIFF WAV header. """
-        ch = Chunk(self.wav, bigendian=0)
+        try:
+            ch = Chunk(self.wav, bigendian=0)
+        except (EOFError):
+            logging.debug('WAV file is corrupted.')
+            return False
         if ch.getname() != 'RIFF' or ch.read(4) != 'WAVE':
             logging.debug('Not a WAV file.')
             return False
