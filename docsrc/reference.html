@@ -3602,8 +3602,8 @@ Set <em>Carrier Detect</em> timeout to <code><em>n</em></code> milliseconds.
 The <code>COM:</code> <code><em>file_name</em></code> parameters do not follow the specification:
     <code>Bad file name</code>.
 </li><li>
-A file is already open for <code>OUTPUT</code> or <code>APPEND</code>: <code>File already open</code>.
-    This is not raised for devices.
+    A file is already open for <code>OUTPUT</code> or <code>APPEND</code>: <code>File already open</code>.
+    This is only raised for <code>COMn:</code>, <code>CASn:</code> and disk devices.
 </li><li>
  <code><em>rec_len</em></code> or <code><em>file_num</em></code> have string values: <code>Type mismatch</code>.
 </li><li>
@@ -6172,7 +6172,9 @@ in a <em>palette</em>.</p>
 
 <h2>Devices</h2>
 <p>PC-BASIC recognises the following DOS-style devices, which can be opened, input
-from and output to much like normal files.</p>
+from and output to. Some devices allow specification of further parameters, such
+as handshake specifications for serial devices, a filename for cassette devices and a path for disk devices.
+When operating on disk devices, specifying a path is mandatory.</p>
 <table><tr>
 <th>device</th><th>      allowed modes</th><th>   description</th>
 </tr><tr>
@@ -6209,6 +6211,12 @@ Opening a printer for <code>RANDOM</code> has the same effect as opening it for 
 <td><code>CAS1:</code></td>
 <td><code>INPUT</code> <code>OUTPUT</code></td>
 <td>Cassette tape driver. In PC-BASIC, <code>CAS</code> devices can be attached to a WAV (RIFF Wave) or a CAS (bitmap tape image) file.</td>
+</tr><tr>
+<td><code>A:</code> &mdash; <code>Z:</code> and <code>@:</code></td>
+<td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
+    <td>Disk devices. In PC-BASIC, these devices can be mounted to a directory on the host file system. They do not automatically match drive letters on Windows,
+    unless the <code>--map-drives</code> option is set.
+</td>
 </tr></table>
 <p>GW-BASIC additionally recognises the following little-used device, which is not implemented in PC-BASIC.</p>
 <table><tr>
