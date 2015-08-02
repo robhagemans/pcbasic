@@ -655,7 +655,10 @@ class Drawing(object):
         byte_array[0:4] = self.screen.mode.sprite_size_to_record(dx, dy)
         # read from screen and convert to byte array
         sprite = self.screen.get_rect(x0, y0, x1, y1)
-        self.screen.mode.sprite_to_array(sprite, dx, dy, byte_array, 4)
+        try:
+            self.screen.mode.sprite_to_array(sprite, dx, dy, byte_array, 4)
+        except ValueError:
+            raise error.RunError(error.IFC)
         # store a copy in the sprite store
         self.sprites[array_name] = (dx, dy, sprite, version)
 
