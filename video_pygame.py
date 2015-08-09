@@ -27,9 +27,6 @@ import scancode
 # for operation tokens for PUT
 import basictoken as tk
 
-#D
-import state
-
 # fallback to curses if not working
 fallback = 'video_curses'
 
