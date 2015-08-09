@@ -2,8 +2,8 @@
 PC-BASIC 3.23  - plat.py
 Platform identification
 
-(c) 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2014 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 try:
@@ -18,14 +18,14 @@ except ImportError:
     elif platform.system() == 'Darwin':
         system = 'OSX'
     else:
-        # Everything else. Assume it's a Unix.            
+        # Everything else. Assume it's a Unix.
         system = 'Unknown_OS'
 
 # get basepath (__file__ is undefined in pyinstaller packages)
 import sys
 import os
 if hasattr(sys, "frozen"):
-    # we're a package, get the directory of the packaged executable 
+    # we're a package, get the directory of the packaged executable
     basepath = os.path.dirname(sys.executable)
 else:
     # get the directory of this file
@@ -85,11 +85,10 @@ if system == 'Android':
 else:
     # create temporary directory
     import tempfile
-    temp_dir = tempfile.mkdtemp(prefix='pcbasic-')    
-    
+    temp_dir = tempfile.mkdtemp(prefix='pcbasic-')
+
 # PC_BASIC version
 try:
     version = open(os.path.join(info_dir, 'VERSION')).read().rstrip()
 except (IOError, OSError):
     version = ''
-
