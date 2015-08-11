@@ -13,7 +13,6 @@ except ImportError:
     import platform
     if platform.system() == 'Windows':
         system = 'Windows'
-        is_win_10 = platform.release() == '10'
     elif platform.system() == 'Linux':
         system = 'Linux'
     elif platform.system() == 'Darwin':
