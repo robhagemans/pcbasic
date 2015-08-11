@@ -30,11 +30,15 @@ import token
 #D
 import state
 
-if plat.system == 'Windows' and plat.is_win_10:
-    # Windows 10 - fix for pygame 'feature' of using the wrong resolution on HiDPI screens
+if plat.system == 'Windows':
+    # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
     # see https://bitbucket.org/pygame/pygame/issues/245/wrong-resolution-unless-you-use-ctypes
     import ctypes
-    ctypes.windll.user32.SetUserDPIAware()
+    try:
+        ctypes.windll.user32.SetProcessDPIAware()
+    except AttributeError:
+        # old versions of Windows don't have this in user32.dll
+        pass
 
 # fallback to curses if not working
 fallback = 'video_curses'
