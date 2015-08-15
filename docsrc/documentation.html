@@ -571,7 +571,7 @@ the text-based interface is very similar to the default graphical interface, but
 <h2 id="gwbasic">Differences with GW-BASIC</h2>
 
 <p>GW-BASIC was a real-mode DOS program, which means that it had full control over an IBM-compatible 8086 computer. It had direct access to all areas of memory and all devices. Some BASIC programs used this fact, by using <code>POKE</code> and <code>OUT</code> statements as well as <code>CALL</code> and <code>USR</code> machine-code subroutines to perform tasks for which BASIC did not provide support. PC-BASIC runs on modern machines which may be based on completely different architectures and anyway do not allow applications to directly access
-memory or devices. Therefore, it is not possible to run machine code on PC-BASIC. It you need machine code, you'll need to use full
+memory or devices. Therefore, it is not possible to run machine code on PC-BASIC. If you need machine code, you'll need to use full
 CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
 
 <p>PC-BASIC <em>does</em> provide limited support for the <code>POKE</code> and <code>PEEK</code> statements: some of the most commonly accessed regions of memory are emulated and can be read and (sometimes) written. There is read and write support for video memory, font RAM and selected locations of the low memory segment, including the keyboard buffer. Additionally, there is read support for font ROM, variable, array and string memory, <code>FIELD</code> buffers as well as the program code itself. Writing into the program code is disabled by default, but can be enabled with the <code>allow-code-poke</code> option. Use with care. A number of machine ports related to keyboard input and video modes are supported as well.</p>
