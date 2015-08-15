@@ -4,11 +4,9 @@
     This file is released under a Creative Commons Attribution-ShareAlike 4.0 International License.
 -->
 
-<h2>Statements and functions</h2>
+<h2 id="statements-functions">Statements and functions</h2>
 
-<h3>
-<code>ABS</code> function
-</h3>
+<h3 id="ABS"><code>ABS</code> function</h3>
 <pre>
 <em>y</em> = ABS(<em>x</em>)
 </pre>
@@ -24,9 +22,7 @@
 </li>
 </ul>
 
-<h3>
-<code>ASC</code> function
-</h3>
+<h3 id="ASC"><code>ASC</code> function</h3>
 <pre>
 <em>val</em> = ASC(<em>char</em>)
 </pre>
@@ -46,9 +42,7 @@ a string value.
 </ul>
 
 
-<h3>
-<code>ATN</code> function
-</h3>
+<h3 id="ATN"><code>ATN</code> function</h3>
 <pre><em>y</em> = ATN(<em>x</em>)</pre>
 <p>Returns the inverse tangent of <code><em>x</em></code>.
 <h4>Parameters</h4>
@@ -72,10 +66,7 @@ returns a single-precision value.</li>
 </li>
 </ul>
 
-<h3>
-<code>
-AUTO</code> statement
-</h3>
+<h3 id="AUTO"><code>AUTO</code> statement</h3>
 <pre>
 AUTO [ { <em>line_number</em> | . } ] [, [<em>increment</em>]]
 </pre>
@@ -106,7 +97,7 @@ When automatic line numbering is enabled and <code class="key">Enter</code> is p
    <code>65519</code>: <code>Undefined line number</code>.
 </li></ul>
 
-<h3><code>BEEP</code> statement</h3>
+<h3 id="BEEP"><code>BEEP</code> statement</h3>
 <pre>
 BEEP
 </pre>
@@ -117,7 +108,7 @@ BEEP
 If a <code>Syntax error</code> is raised, the beep is still produced.
 </li></ul>
 
-<h3><code>BEEP</code> statement (switch)</h3>
+<h3 id="BEEP-switch"><code>BEEP</code> statement (switch)</h3>
 <pre>
 BEEP { ON | OFF }
 </pre>
@@ -131,7 +122,7 @@ On PCjr and Tandy computers, <code>BEEP OFF</code> would turn off the internal s
     the same sound system.
 </li></ul>
 
-<h3><code>BLOAD</code> statement</h3>
+<h3 id="BLOAD"><code>BLOAD</code> statement</h3>
 <pre>
 BLOAD <em>filename</em> [, <em>offset</em> ]
 </pre>
@@ -157,7 +148,7 @@ negative, its two's complement will be used.
 </li></ul>
 
 
-<h3><code>BSAVE</code> statement</h3>
+<h3 id="BSAVE"><code>BSAVE</code> statement</h3>
 <pre>
 BSAVE <em>filename</em>, <em>offset</em>, <em>length</em>
 </pre>
@@ -186,7 +177,7 @@ complement will be used.</li>
 <code><em>length</em></code> is not in the range <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
 </li></ul>
 
-<h3><code>CALL</code> statement</h3>
+<h3 id="CALL"><code>CALL</code> statement</h3>
 <pre>
 CALL <em>address_var</em> [ ( <em>p0</em> [, <em>p1</em> [, ... ] ) ]
 </pre>
@@ -211,7 +202,7 @@ This statement is not implemented in PC-BASIC.
 </li></ul>
 
 
-<h3><code>CALLS</code> statement</h3>
+<h3 id="CALLS"><code>CALLS</code> statement</h3>
 <pre>
 CALLS <em>address_var</em> [ ( <em>p0</em> [, <em>p1</em> [, ... ] ) ]
 </pre>
@@ -236,7 +227,7 @@ This statement is not implemented in PC-BASIC.
 </li></ul>
 
 
-<h3><code>CDBL</code> function</h3>
+<h3 id="CDBL"><code>CDBL</code> function</h3>
 <pre>
 <em>y</em> = CDBL(<em>x</em>)
 </pre>
@@ -250,7 +241,7 @@ Converts the numeric expression <code><em>x</em></code> to a double-precision va
 </li>
 </ul>
 
-<h3><code>CHAIN</code> statement</h3>
+<h3 id="CHAIN"><code>CHAIN</code> statement</h3>
 <pre>
 CHAIN [MERGE] <em>program</em> [, [<em>line_number_expr</em>] [, ALL ] [, DELETE <em>range</em> [, <em>ign</em> ] ] ]
 </pre>
@@ -312,7 +303,7 @@ being performed.
 </li></ul>
 
 
-<h3><code>CHDIR</code> statement</h3>
+<h3 id="CHDIR"><code>CHDIR</code> statement</h3>
 <pre>
 CHDIR <em>pathname</em>
 </pre>
@@ -338,7 +329,7 @@ No matching path is found: <code>Path not found</code>.
 <code><em>pathname</em></code> is empty: <code>Bad file name</code>.
 </li></ul>
 
-<h3><code>CHR$</code> function</h3>
+<h3 id="CHR$"><code>CHR$</code> function</h3>
 <pre><em>char</em> = CHR$(<em>x</em>)
 </pre>
 <p>Returns the character with ASCII code <code><em>x</em></code>.
@@ -357,7 +348,7 @@ No matching path is found: <code>Path not found</code>.
 </li></ul>
 
 
-<h3><code>CINT</code> function</h3>
+<h3 id="CINT"><code>CINT</code> function</h3>
 <pre><em>y</em> = CINT(<em>x</em>)
 </pre>
 <p>Converts the numeric expression <code><em>x</em></code> to a signed integer.</p>
@@ -369,7 +360,7 @@ No matching path is found: <code>Path not found</code>.
 </li></ul>
 
 
-<h3><code>CIRCLE</code> statement</h3>
+<h3 id="CIRCLE"><code>CIRCLE</code> statement</h3>
 <pre>
 CIRCLE [STEP] (<em>x</em>, <em>y</em>), <em>radius</em> [, [<em>colour</em>] [, [<em>start</em>] [, [<em>end</em>] [, <em>aspect</em>] ] ]
 </pre>
@@ -407,7 +398,7 @@ For <code><em>aspect</em> <> 1</code>, the midpoint algorithm used does not pixe
 </li></ul>
 
 
-<h3><code>CLEAR</code> statement</h3>
+<h3 id="CLEAR"><code>CLEAR</code> statement</h3>
 <pre>CLEAR [<em>expr</em>] [, [<em>mem_limit</em>] [, <em>stack_size</em>] ]
 </pre>
 <p>Clears all variables, arrays,<code>DEF FN</code> user functions, <code>DEF<em>type</em></code> type definitions,
@@ -449,7 +440,7 @@ Any of the arguments has a string value: <code>Type mismatch</code>.
 <code><em>expr</em></code> is negative: <code>Illegal function call</code>.
 </li></ul>
 
-<h3><code>CLOSE</code> statement</h3>
+<h3 id="CLOSE"><code>CLOSE</code> statement</h3>
 <pre>CLOSE [[#] <em>file_1</em> [, [#] <em>file_2</em> [, ...] ]</pre>
 <p>Closes files. If no file numbers are specified, all open files are closed.
 The hash (<code>#</code>) is optional and has no effect.</p>
@@ -476,7 +467,7 @@ The statement ends in a comma, <code>Missing operand</code> .
 </li></ul>
 
 
-<h3><code>CLS</code> statement</h3>
+<h3 id="CLS"><code>CLS</code> statement</h3>
 <pre>CLS [<em>x</em>][,]</pre>
 <p>Clears the screen or part of it.
 If <code><em>x</em></code> is not specified, in SCREEN 0 the text view region is cleared;
@@ -506,7 +497,7 @@ A comma is specified followed by more: <code>Syntax error</code>.
 If an error occurs, the screen is not cleared.
 </li></ul>
 
-<h3><code>COLOR</code> statement (text mode)</h3>
+<h3 id="COLOR"><code>COLOR</code> statement (text mode)</h3>
 <pre>COLOR [<em>foreground</em>] [, [<em>background</em>] [, <em>border</em>] ] </pre>
 <p>Changes the current foreground and background attributes.
 All new characters printed will take the newly set attributes. Existing
@@ -541,7 +532,7 @@ Statement is used in <code>SCREEN 2</code>: <code>Illegal function call</code>.
 </li></ul>
 
 
-<h3><code>COLOR</code> statement (<code>SCREEN 1</code>)</h3>
+<h3 id="COLOR-1"><code>COLOR</code> statement (<code>SCREEN 1</code>)</h3>
 <pre>COLOR [<em>palette_0</em>] [, <em>palette</em> [, <em>override</em>] ]</pre>
 <p>Assigns new colours to the palette of attributes. </p>
 <ul><li>
@@ -573,7 +564,7 @@ Any of the parameters is not in <code>[0&mdash;255]</code>: <code>Illegal functi
 </li></ul>
 
 
-<h3><code>COLOR</code> statement (<code>SCREEN 3&mdash;9</code>)</h3>
+<h3 id="COLOR-3-9"><code>COLOR</code> statement (<code>SCREEN 3&mdash;9</code>)</h3>
 <pre>COLOR [<em>foreground</em>] [, <em>palette_0</em> [, <em>dummy</em>] ]</pre>
 <p>Changes the current foreground attribute and the colour for attribute 0.</p>
 <h4>Parameters</h4>
@@ -604,7 +595,7 @@ Any of the parameters is not in <code>[-32768&mdash;32767]</code>: <code>Overflo
 </li></ul>
 
 
-<h3><code>COM</code> statement</h3>
+<h3 id="COM"><code>COM</code> statement</h3>
 <pre>COM(<em>port</em>) { ON | OFF | STOP }</pre>
 <ul>
 <li><code>ON</code>: enables <code>ON COM(<em>port</em>)</code> event trapping of the emulated serial port.
@@ -620,7 +611,7 @@ serial port (<code>COM1:</code> or <code>COM2:</code>) is trapped.
 </li></ul>
 
 
-<h3><code>COMMON</code> statement</h3>
+<h3 id="COMMON"><code>COMMON</code> statement</h3>
 <pre>COMMON [ [<em>var_0</em>] [, [<em>var_1</em>] [, [...] ] ] ]</pre>
 <p>Specifies variables to be passed as common variables to the program called
 with <code>CHAIN</code>.
@@ -632,7 +623,7 @@ must be followed by round or square brackets. Brackets may also be mixed <code>a
 </li></ul>
 
 
-<h3><code>CONT</code> statement</h3>
+<h3 id="CONT"><code>CONT</code> statement</h3>
 <pre>CONT [ <em>anything</em> ]</pre>
 <p>Resumes execution of a program that has been halted by <code>STOP</code>, <code>END</code>, <code class="key">Ctrl</code>+<code class="key">C</code>, or  <code class="key">Ctrl</code>+<code class="key">Break</code>. </p>
 <h4>Notes</h4>
@@ -659,7 +650,7 @@ The break occurred in a direct line: <code>Can't continue</code>
 </li></ul>
 
 
-<h3><code>COS</code> function</h3>
+<h3 id="COS"><code>COS</code> function</h3>
 <pre><em>cosine</em> = COS(<em>angle</em>)</pre>
 <p>Returns the cosine of <code><em>angle</em></code>.
 Unless PC-BASIC is run with the <code>--double</code> option, this function returns a single-precision
@@ -679,7 +670,7 @@ gives the angle in radians.
 </li></ul>
 
 
-<h3><code>CSNG</code> function</h3>
+<h3 id="CSNG"><code>CSNG</code> function</h3>
 <pre><em>y</em> = CSNG(<em>x</em>)</pre>
 <p>
 Converts the numeric expression <code><em>x</em></code> to a single-precision value.</p>
@@ -688,7 +679,7 @@ Converts the numeric expression <code><em>x</em></code> to a single-precision va
 <code><em>x</em></code> has a string value: <code>Type mismatch</code>.
 </li></ul>
 
-<h3><code>CSRLIN</code> function</h3>
+<h3 id="CSRLIN"><code>CSRLIN</code> function</h3>
 <pre><em>y</em> = CSRLIN </pre>
 <p>Returns the screen row of the cursor on the active page.
 The return value is in the range <code>[1&mdash;25]</code>.</p>
@@ -697,7 +688,7 @@ The return value is in the range <code>[1&mdash;25]</code>.</p>
 This function has no brackets.
 </li></ul>
 
-<h3><code>CVI</code> function</h3>
+<h3 id="CVI"><code>CVI</code> function</h3>
 <pre><em>y</em> = CVI(<em>s</em>)</pre>
 <p>Converts a two-byte string to a signed integer.</p>
 <h4>Parameters</h4>
@@ -710,7 +701,7 @@ little-endian two's complement encoding. Only the first two bytes are used.
 <code><em>s</em></code> has a numeric value: <code>Type mismatch</code>.
 </li></ul>
 
-<h3><code>CVS</code> function</h3>
+<h3 id="CVS"><code>CVS</code> function</h3>
 <pre><em>y</em> = CVS(<em>s</em>)</pre>
 <p>Converts a four-byte string to a single-precision floating-point number.</p>
 <h4>Parameters</h4>
@@ -723,7 +714,7 @@ number in Microsoft Binary Format. Only the first four bytes are used.
 <code><em>s</em></code> has a numeric value: <code>Type mismatch</code>.
 </li></ul>
 
-<h3><code>CVD</code> function</h3>
+<h3 id="CVD"><code>CVD</code> function</h3>
 <pre><em>y</em> = CVD(<em>s</em>)</pre>
 <p>Converts an eight-byte string to a double-precision floating-point number.</p>
 <h4>Parameters</h4>
@@ -737,7 +728,7 @@ number in Microsoft Binary Format. Only the first eight bytes are used.
 </li></ul>
 
 
-<h3><code>DATA</code> statement</h3>
+<h3 id="DATA"><code>DATA</code> statement</h3>
 <pre>DATA [<em>const_0</em>] [, [<em>const_1</em>] [, ... ] ]</pre>
 <p>Specifies data that can be read by a READ statement.</p>
 <h4>Parameters</h4>
@@ -754,7 +745,7 @@ If the type of the literal does not match that of the corresponding <code>READ</
 statement, a <code>Syntax error</code> occurs on the <code>DATA</code> statement.
 </li></ul>
 
-<h3><code>DATE$</code> function</h3>
+<h3 id="DATE$"><code>DATE$</code> function</h3>
 <pre><em>s</em> = DATE$</pre>
 <p>Returns the system date as a string in the format <code>"mm-dd-yyyy"</code>.</p>
 <h4>Notes</h4>
@@ -762,7 +753,7 @@ statement, a <code>Syntax error</code> occurs on the <code>DATA</code> statement
 This function has no brackets.
 </li></ul>
 
-<h3><code>DATE$</code> statement</h3>
+<h3 id="DATE$-statement"><code>DATE$</code> statement</h3>
 <pre>DATE$ = <em>date</em></pre>
 <p>Sets the system date. <code><em>date</em></code> is a string expression that represents a
 date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>, <code>"mm-dd-yy"</code>, <code>"mm/dd/yy"</code>.</p>
@@ -798,7 +789,7 @@ date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>
     <code>Illegal function call</code>.
 </li></ul>
 
-<h3><code>DEF FN</code> statement</h3>
+<h3 id="DEF-FN"><code>DEF FN</code> statement</h3>
 <pre>DEF FN[ ]<em>name</em>[( <em>arg_0</em> [, <em>arg_1</em> [, ...] ] )] = <em>expression</em></pre>
 <p>Defines a function called <code>FN<em>name</em></code> (or <code>FN<em> name</em></code>: spaces between <code>FN</code> and <code><em>name</em></code> are optional).
 On calling <code>FN<em>name</em>( ... )</code>, <code><em>expression</em></code> is
@@ -826,7 +817,7 @@ The statement is executed directly instead of in a program line: <code>Illegal d
 </li></ul>
 
 
-<h3><code>DEFINT</code> statement</h3>
+<h3 id="DEFINT"><code>DEFINT</code> statement</h3>
 <pre>DEFINT <em>letters</em></pre>
 <p>Sets the default type for variables starting with <code><em>letters</em></code> to integer (<code>%</code>).
 This is the type that is assumed if no type character is specified. <code><em>letters</em></code>
@@ -834,7 +825,7 @@ are letters of the alphabet separated by commas or ranges specified with a
 dash: for example, <code>DEFINT A,B,C-Z</code>.</p>
 
 
-<h3><code>DEFDBL</code> statement</h3>
+<h3 id="DEFDBL"><code>DEFDBL</code> statement</h3>
 <pre>DEFDBL <em>letters</em></pre>
 <p>Sets the default type for variables starting with <code><em>letters</em></code> to double (<code>#</code>).
 This is the type that is assumed if no type character is specified. <code><em>letters</em></code>
@@ -842,7 +833,7 @@ are letters of the alphabet separated by commas or ranges specified with a
 dash: for example, <code>DEFDBL A,B,C-Z</code>.</p>
 
 
-<h3><code>DEFSNG</code> statement</h3>
+<h3 id="DEFSNG"><code>DEFSNG</code> statement</h3>
 <pre>DEFSNG <em>letters</em></pre>
 <p>Sets the default type for variables starting with <code><em>letters</em></code> to single (<code>!</code>).
 This is the type that is assumed if no type character is specified. <code><em>letters</em></code>
@@ -850,7 +841,7 @@ are letters of the alphabet separated by commas or ranges specified with a
 dash: for example, <code>DEFSNG A,B,C-Z</code>. <code>DEFSNG A-Z</code> is the default setting.</p>
 
 
-<h3><code>DEFSTR</code> statement</h3>
+<h3 id="DEFSTR"><code>DEFSTR</code> statement</h3>
 <pre>DEFSTR <em>letters</em></pre>
 <p>Sets the default type for variables starting with <code><em>letters</em></code> to string (<code>$</code>).
 This is the type that is assumed if no type character is specified. <code><em>letters</em></code>
@@ -858,7 +849,7 @@ are letters of the alphabet separated by commas or ranges specified with a
 dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
 
 
-<h3><code>DEF SEG</code> statement</h3>
+<h3 id="DEF-SEG"><code>DEF SEG</code> statement</h3>
 <pre>DEF SEG [=<em>address</em>]</pre>
 <p>Sets the memory segment to be used by <code>BLOAD</code>, <code>BSAVE</code>, <code>CALL</code>, <code>PEEK</code>, <code>POKE</code>, or <code>USR</code>.
 <code><em>address</em></code> is a numeric expression in <code>[-32768&mdash;65535]</code>.
@@ -877,7 +868,7 @@ dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
 </li></ul>
 
 
-<h3><code>DEF USR</code> statement</h3>
+<h3 id="DEF-USR"><code>DEF USR</code> statement</h3>
 <pre>DEF USR[<em>n</em>] = <em>address</em></pre>
 <p>Does nothing. </p>
 <h4>Parameters</h4>
@@ -903,7 +894,7 @@ dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
  <code><em>address</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
 </li></ul>
 
-<h3><code>DELETE</code> statement</h3>
+<h3 id="DELETE"><code>DELETE</code> statement</h3>
 <pre>DELETE [ <em>line_number_0</em> | . ] [ - [ <em>line_number_1</em> | . ] ]</pre>
 <p>Deletes a range of lines from the program.
 Also stops program execution and returns control to the user.</p>
@@ -929,7 +920,7 @@ The range specified does not include any program lines stored: <code>Illegal fun
 </li></ul>
 
 
-<h3><code>DIM</code> statement</h3>
+<h3 id="DIM"><code>DIM</code> statement</h3>
 <pre>DIM <em>name</em> { ( | [ } <em>limit_0</em> [, <em>limit_1</em> [, ...] ] { ) | } ]</pre>
 <p>Allocates memory for arrays.
 The <code>DIM</code> statement also fixes the number of indices of the array.
@@ -975,7 +966,7 @@ The array exceeds the size of available variable
     </li></ul>
 
 
-<h3><code>DRAW</code> statement</h3>
+<h3 id="DRAW"><code>DRAW</code> statement</h3>
 <pre>DRAW <em>gml_string</em></pre>
 <p>Draws the shape specified by <code><em>gml_string</em></code>, a string expression in Graphics Macro Language (GML). </p>
 <h4>Graphics Macrol Language reference</h4>
@@ -1104,7 +1095,7 @@ A variable referenced in the GML string is of incorrect type: <code>Type mismatc
 </li></ul>
 
 
-<h3><code>EDIT</code> statement</h3>
+<h3 id="EDIT"><code>EDIT</code> statement</h3>
 <pre>EDIT {<em>line_number</em> | .}</pre>
 <p>
 Displays the specified program line with the cursor positioned for editing.
@@ -1121,7 +1112,7 @@ More characters are written after the line number: <code>Illegal function call</
 The specified line number does not exist: <code>Undefined line number</code>.
 </li></ul>
 
-<h3><code>ELSE</code> statement</h3>
+<h3 id="ELSE"><code>ELSE</code> statement</h3>
 <pre>ELSE [<em>anything</em>]</pre>
 <p>
 Unless part of an <code>IF</code> statement on the same line, anything after <code>ELSE</code> is ignored
@@ -1129,7 +1120,7 @@ in the same way as after <code>'</code> or <code>:REM</code>. No colon <code>:</
 the <code>ELSE</code> statement is necessary. See <code>IF</code> for normal usage.</p>
 
 
-<h3><code>END</code> statement</h3>
+<h3 id="END"><code>END</code> statement</h3>
 <pre>END</pre>
 <p>
 Closes all files, stops program execution and returns control to the user.
@@ -1137,7 +1128,7 @@ No message is printed. It is possible to resume execution at the next statement
 using <code>CONT</code>.
 </p>
 
-<h3><code>ENVIRON</code> statement</h3>
+<h3 id="ENVIRON"><code>ENVIRON</code> statement</h3>
 <pre>ENVIRON <em>command_string</em></pre>
 <p>Sets a shell environment variable.</p>
 <h4>Parameters</h4>
@@ -1159,7 +1150,7 @@ using <code>CONT</code>.
 </li></ul>
 
 
-<h3><code>ENVIRON$</code> function</h3>
+<h3 id="ENVIRON$"><code>ENVIRON$</code> function</h3>
 <pre><em>value</em> = ENVIRON[ ]$(<em>x</em>)</pre>
 <p>Returns an environment variable.</p>
 <h4>Parameters</h4>
@@ -1181,7 +1172,7 @@ the environment table.
 </li></ul>
 
 
-<h3><code>EOF</code> function</h3>
+<h3 id="EOF"><code>EOF</code> function</h3>
 <pre><em>is_at_end</em> = EOF(<em>file_num</em>)</pre>
 <p>Returns -1 if file with number <code><em>file_num</em></code> has reached end-of-file; 0 otherwise.
 The file must be open in <code>INPUT</code> or <code>RANDOM</code> mode. <code>EOF(0)</code> returns 0.
@@ -1208,7 +1199,7 @@ The file with number <code><em>file_num</em></code> is in OUTPUT or APPEND mode:
 </li></ul>
 
 
-<h3><code>ERASE</code> statement</h3>
+<h3 id="ERASE"><code>ERASE</code> statement</h3>
 <pre>ERASE <em>array_0</em> [, <em>array_1</em> [, ...] ]</pre>
 <p>De-allocates arrays. The data stored in the
 arrays is lost.</p>
@@ -1227,7 +1218,7 @@ If an error occurs, the arrays named before the error occurred are erased.
 </li></ul>
 
 
-<h3><code>ERDEV</code> function</h3>
+<h3 id="ERDEV"><code>ERDEV</code> function</h3>
 <pre><em>zero</em> = ERDEV</pre>
 <p>Returns 0.</p>
 <h4>Notes</h4>
@@ -1240,7 +1231,7 @@ This function has no brackets.
 </li></ul>
 
 
-<h3><code>ERDEV$</code> function</h3>
+<h3 id="ERDEV$"><code>ERDEV$</code> function</h3>
 <pre><em>empty</em> = ERDEV[ ]$</pre>
 <p>Returns the empty string.</p>
 <h4>Notes</h4>
@@ -1253,7 +1244,7 @@ This function has no brackets.
 </li></ul>
 
 
-<h3><code>ERL</code> function</h3>
+<h3 id="ERL"><code>ERL</code> function</h3>
 <pre><em>error_line</em> = ERL</pre>
 <p>
 Returns the line number where the last error was raised. </p>
@@ -1269,7 +1260,7 @@ This function has no brackets.
 </li></ul>
 
 
-<h3><code>ERR</code> function</h3>
+<h3 id="ERR"><code>ERR</code> function</h3>
 <pre><em>error_code</em> = ERR</pre>
 <p>
 Returns the number of the last error.
@@ -1283,7 +1274,7 @@ This function has no brackets.
 </li></ul>
 
 
-<h3><code>ERROR</code> statement</h3>
+<h3 id="ERROR"><code>ERROR</code> statement</h3>
 <pre>ERROR <em>error_number</em></pre>
 <p>Raises the error with number <code><em>error_number</em></code>.
 <h4>Parameters</h4>
@@ -1301,7 +1292,7 @@ with a numeric value.
 </li></ul>
 
 
-<h3><code>EXP</code> function</h3>
+<h3 id="EXP"><code>EXP</code> function</h3>
 <pre><em>y</em> = EXP(<em>x</em>)</pre>
 <p>Returns the exponential of <code><em>x</em></code>, i.e. <code>e</code> to the power <code><em>x</em></code>.
 <h4>Parameters</h4>
@@ -1326,7 +1317,7 @@ value.
 </li></ul>
 
 
-<h3><code>EXTERR</code> function</h3>
+<h3 id="EXTERR"><code>EXTERR</code> function</h3>
 <pre><em>zero</em> = EXTERR(<em>x</em>)</pre>
 <p>Returns 0.
 <h4>Parameters</h4>
@@ -1349,7 +1340,7 @@ value.
 </li></ul>
 
 
-<h3><code>FIELD</code> statement</h3>
+<h3 id="FIELD"><code>FIELD</code> statement</h3>
 <pre>FIELD [#] <em>file_number</em> [, <em>width_0</em> AS <em>name_0</em> [, <em>width_1</em> AS <em>name_1</em> [, ...] ] ]</pre>
 <p>Assigns variables to the random-access record buffer. The record buffer is a
 region of memory of length defined by the <code>OPEN</code> statement; the default record
@@ -1405,7 +1396,7 @@ record length of the field buffer: <code>Field overflow</code>.
 </li></ul>
 
 
-<h3><code>FILES</code> statement</h3>
+<h3 id="FILES"><code>FILES</code> statement</h3>
 <pre>FILES [<em>path_and_filter</em>]</pre>
 <p>Displays the files fitting the specified filter in the specified directory. If
 <code><em>path_and_filter</em></code> is not specified, displays all files in the current working
@@ -1447,7 +1438,7 @@ The specified filter does not match any files: <code>File not found</code>.
 </li></ul>
 
 
-<h3><code>FIX</code> function</h3>
+<h3 id="FIX"><code>FIX</code> function</h3>
 <pre><em>whole</em> = FIX(<em>number</em>)</pre>
 <p>Returns <code><em>number</em></code> truncated towards zero.</p>
 <h4>Parameters</h4>
@@ -1465,7 +1456,7 @@ The specified filter does not match any files: <code>File not found</code>.
 </li></ul>
 
 
-<h3><code>FN</code> function</h3>
+<h3 id="FN"><code>FN</code> function</h3>
 <pre><em>result</em> = FN[ ]<em>name</em> (<em>arg_0</em> [, <em>arg_1</em> [, ...] ])</pre>
 <p>Evaluates a user-defined function.
 Spaces between <code>FN</code> and <code><em>name</em></code> are optional.
@@ -1488,7 +1479,7 @@ The type of one or more parameters differs from the function definition:
 </li></ul>
 
 
-<h3><code>FOR</code> statement</h3>
+<h3 id="FOR"><code>FOR</code> statement</h3>
 <pre>FOR <em>loop_var</em> = <em>start</em> TO <em>stop</em> [STEP <em>step</em>]</pre>
 <p>Initiates a <code>FOR&mdash;NEXT</code> loop.</p>
 <p>Initially, <code><em>loop_var</em></code> is set to <code><em>start</em></code>. Then, the statements between the <code>FOR</code>
@@ -1514,7 +1505,7 @@ No <code>NEXT</code> statement is found to match the <code>FOR</code> statement:
 </li></ul>
 
 
-<h3><code>FRE</code> function</h3>
+<h3 id="FRE"><code>FRE</code> function</h3>
 <pre><em>free_mem</em> = FRE(<em>x</em>)</pre>
 <p>Returns the available BASIC memory.</p>
 <h4>Parameters</h4>
@@ -1527,7 +1518,7 @@ before returning available memory.
 </li></ul>
 
 
-<h3><code>GET</code> statement (random-access files)</h3>
+<h3 id="GET-files"><code>GET</code> statement (random-access files)</h3>
 <pre>GET [#] <em>file_number</em> [, <em>record_number</em>]</pre>
 <p>Read a record from the random-access file <code><em>file_number</em></code> at position
 <code><em>record_number</em></code>.
@@ -1560,7 +1551,7 @@ If the record number is beyond the end of the file, the file buffer is
 <code><em>file_number</em></code> is not specified: <code>Missing operand</code>.
 </li></ul>
 
-<h3><code>GET</code> statement (serial communications)</h3>
+<h3 id="GET-serial"><code>GET</code> statement (serial communications)</h3>
 <pre>GET [#] <em>com_file_number</em> [, <em>number_bytes</em>]</pre>
 <p>Read <code><em>number_bytes</em></code> bytes from the communications buffer opened under file
 number <code><em>com_file_number</em></code>.
@@ -1603,7 +1594,7 @@ If the serial input buffer is full, i.e. <code>LOF(<em>com_file_number</em>) = 0
 </li></ul>
 
 
-<h3><code>GET</code> statement (graphics)</h3>
+<h3 id="GET-graphics"><code>GET</code> statement (graphics)</h3>
 <pre>GET (<em>x0</em>, <em>y0</em>) - [STEP] (<em>x1</em>, <em>y1</em>), <em>array_name</em></pre>
 <p>Stores a rectangular area of the graphics screen in an array.
 The area stored is a rectangle parallel to the screen edges, bounded by the
@@ -1670,7 +1661,7 @@ The area is too large for the array: <code>Illegal function call</code>.
     <code>Illegal function call</code>
 </li></ul>
 
-<h3><code>GOSUB</code> statement</h3>
+<h3 id="GOSUB"><code>GOSUB</code> statement</h3>
 <pre>GO[ ]SUB <em>line_number</em> [<em>anything</em>]</pre>
 <p>Jumps to a subroutine at <code><em>line_number</em></code>. The next <code>RETURN</code> statement jumps back to
 the statement after <code>GOSUB</code>. Anything after <code><em>line_number</em></code> until the end of the
@@ -1699,7 +1690,7 @@ One optional space is allowed between <code>GO</code> and <code>SUB</code>; it w
 </li></ul>
 
 
-<h3><code>GOTO</code> statement</h3>
+<h3 id="GOTO"><code>GOTO</code> statement</h3>
 <pre>GO[ ]TO <em>line_number</em> [<em>anything</em>]</pre>
 <p>Jumps to <code><em>line_number</em></code>.  Anything after <code><em>line_number</em></code> until the end of the
 statement is ignored. If executed from a direct line, <code>GOTO</code> starts execution of the program at the specified line.
@@ -1722,7 +1713,8 @@ the line are ignored until end of statement.
    If <code><em>line_number</em></code> is greater than <code>65529</code>, only the first 4 characters are
     read (e.g. <code>6553</code>)
 </li></ul>
-<h3><code>HEX$</code> function</h3>
+
+<h3 id="HEX$"><code>HEX$</code> function</h3>
 <pre><em>hex_repr</em> = HEX(<em>x</em>)</pre>
 <p>Returns a string with the hexadecimal representation of <code><em>x</em></code>.
 <h4>Parameters</h4>
@@ -1739,7 +1731,7 @@ negative <code><em>x</em></code> are shown as two's-complement.
 </li></ul>
 
 
-<h3><code>IF</code> statement</h3>
+<h3 id="IF"><code>IF</code> statement</h3>
 <pre>IF <em>truth_value</em> [,] { THEN | GOTO } [ <em>statements_1</em> | <em>line_number_1</em> [<em>anything</em>] ]
                    [ ELSE [ <em>statements_0</em> | <em>line_number_0</em> [<em>anything</em>] ] ]</pre>
 <p>
@@ -1764,7 +1756,7 @@ program line.
 </li></ul>
 
 
-<h3><code>INKEY$</code> function</h3>
+<h3 id="INKEY$"><code>INKEY$</code> function</h3>
 <pre><em>key</em> = INKEY$</pre>
 <p>Returns one key-press from the keyboard buffer. If the keyboard buffer is
 empty, returns the empty string. Otherwise, the return value is either a one
@@ -1841,7 +1833,7 @@ This function has no brackets.
 <td><code class="key">CTRL</code>+<code class="key">F3</code></td><td>       60</td>
 </tr></table>
 
-<h3><code>INP</code> function</h3>
+<h3 id="INP"><code>INP</code> function</h3>
 <pre><em>code</em> = INP(<em>port</em>)</pre>
 <p>
 Returns the value of an emulated machine port.</p>
@@ -2077,7 +2069,7 @@ Returns the value of an emulated machine port.</p>
 </tr>
 </table>
 
-<h3><code>INPUT</code> statement (console)</h3>
+<h3 id="INPUT"><code>INPUT</code> statement (console)</h3>
 <pre>INPUT [;] [<em>prompt</em> {;|,} ]<em>var_0</em> [, <em>var_1</em> [, ... ] ]</pre>
 <p>
 Prints <code><em>prompt</em></code> to the screen and waits for the user to input values for the specified variables.
@@ -2128,7 +2120,7 @@ the prompt is followed by a comma, no question mark is added. </p>
 </li></ul>
 
 
-<h3><code>INPUT#</code> statement (text files, devices, or random-access files)</h3>
+<h3 id="INPUT#"><code>INPUT#</code> statement (text files, devices, or random-access files)</h3>
 <pre>INPUT[ ]# <em>file_num</em>, <em>var_0</em> [, <em>var_1</em> [, ...] ]</pre>
 <p>Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
 of a random access file.</p>
@@ -2185,7 +2177,7 @@ since the buffer has filled up completely (i.e. <code>LOF(<em>file_num</em>)</co
 <code>Communication buffer overflow</code>.
 </li></ul>
 
-<h3><code>INPUT$</code> function</h3>
+<h3 id="INPUT$"><code>INPUT$</code> function</h3>
 <pre><em>chars</em> = INPUT[ ]$(<em>num_chars</em> [, [#] <em>file_num</em>])</pre>
 <p>Returns a string of <code><em>num_chars</em></code> characters from the keyboard or,
 if <code><em>file_num</em></code> is provided, from a text file.
@@ -2232,7 +2224,7 @@ since the buffer has filled up completely (i.e. <code>LOF(<em>file_num</em>)</co
 <code>Communication buffer overflow</code>.
 </li></ul>
 
-<h3><code>INSTR</code> function</h3>
+<h3 id="INSTR"><code>INSTR</code> function</h3>
 <pre><em>position</em> = INSTR([<em>start</em>,] <em>parent</em>, <em>child</em>)</pre>
 <p>
 Returns the location of the first occurrence of the substring <code><em>child</em></code> in
@@ -2260,7 +2252,7 @@ at character 1.
 </li></ul>
 
 
-<h3><code>INT</code> function</h3>
+<h3 id="INT"><code>INT</code> function</h3>
 <pre><em>whole</em> = INT(<em>number</em>)</pre>
 <p>Returns <code><em>number</em></code> truncated towards negative infinity.
 <h4>Parameters</h4>
@@ -2278,7 +2270,7 @@ at character 1.
 </li></ul>
 
 
-<h3><code>IOCTL</code> statement</h3>
+<h3 id="IOCTL"><code>IOCTL</code> statement</h3>
 <pre>IOCTL [#] <em>file_num</em>, <em>control_string</em></pre>
 <p>Raises <code>Illegal function call</code>.</p>
 <h4>Notes</h4>
@@ -2299,7 +2291,7 @@ at character 1.
 </li></ul>
 
 
-<h3><code>IOCTL$</code> function</h3>
+<h3 id="IOCTL$"><code>IOCTL$</code> function</h3>
 <pre><em>result</em> = IOCTL[ ]$([#] <em>file_num</em>)</pre>
 <p>Raises <code>Illegal function call</code>.</p>
 <h4>Notes</h4>
@@ -2320,7 +2312,7 @@ at character 1.
 </li></ul>
 
 
-<h3><code>KEY</code> statement (function-key macro list)</h3>
+<h3 id="KEY-list"><code>KEY</code> statement (function-key macro list)</h3>
 <pre>KEY { ON | OFF | LIST }</pre>
 <p>Turns the list of function-key macros on the bottom of the screen <code>ON</code> or <code>OFF</code>.
 If <code>LIST</code> is specified, prints a list of
@@ -2330,7 +2322,7 @@ Some characters get a special representation: e.g. <code>CHR$(13)</code> is repr
 as a back arrow. </p>
 
 
-<h3><code>KEY</code> statement (function-key macro definition)</h3>
+<h3 id="KEY-def"><code>KEY</code> statement (function-key macro definition)</h3>
 <pre>KEY <em>key_id</em>, <em>string_value</em></pre>
 <p>Defines the string macro for function key <code><em>key_id</em></code>.
 Only the first 15 characters of <code><em>string_value</em></code> are stored.</p>
@@ -2355,7 +2347,7 @@ Only the first 15 characters of <code><em>string_value</em></code> are stored.</
 </li></ul>
 
 
-<h3><code>KEY</code> statement (event-trapping control)</h3>
+<h3 id="KEY-event"><code>KEY</code> statement (event-trapping control)</h3>
 <pre>KEY ( <em>key_id</em> ) { ON | OFF | STOP } </pre>
 <p>Controls event trapping of the key with identifier <code><em>key_id</em></code>.
 Event trapping is switched <code>ON</code> or <code>OFF</code>. <code>STOP</code> suspends event trapping until
@@ -2425,7 +2417,7 @@ With <code>--syntax=tandy</code>, key 11 id <code class="key">F11</code> and key
 </li></ul>
 
 
-<h3><code>KEY</code> statement (event-trapping key definition)</h3>
+<h3 id="KEY-event-def"><code>KEY</code> statement (event-trapping key definition)</h3>
 <pre>KEY <em>key_id</em>, <em>two_char_string</em></pre>
 <p>Defines the key to trap for <code><em>key_id</em></code>.
 <h4>Parameters</h4>
@@ -2483,7 +2475,7 @@ Modifiers are:
 </li></ul>
 
 
-<h3><code>KILL</code> statement</h3>
+<h3 id="KILL"><code>KILL</code> statement</h3>
 <pre>KILL <em>file_path</em></pre>
 <p>Deletes a file. <code><em>file_path</em></code> must be a string expression that specifies a
 valid path to an existing file with MS-DOS path separators <code>\</code>. The extension
@@ -2506,7 +2498,7 @@ If a syntax error occurs after the closing quote, the file is removed    anyway.
 </li></ul>
 
 
-<h3><code>LCOPY</code> statement</h3>
+<h3 id="LCOPY"><code>LCOPY</code> statement</h3>
 <pre>LCOPY [<em>num</em>]</pre>
 <p>Does nothing.</p>
 <h4>Parameters</h4>
@@ -2529,7 +2521,7 @@ If a syntax error occurs after the closing quote, the file is removed    anyway.
 </li></ul>
 
 
-<h3><code>LEFT$</code> function</h3>
+<h3 id="LEFT$"><code>LEFT$</code> function</h3>
 <pre><em>child</em> = LEFT$(<em>parent</em>, <em>num_chars</em>)</pre>
 <p>Returns the leftmost <code><em>num_chars</em></code> characters of <code><em>parent</em></code>.
 <h4>Parameters</h4>
@@ -2556,7 +2548,7 @@ returns <code><em>parent</em></code>.
 </li></ul>
 
 
-<h3><code>LEN</code> function</h3>
+<h3 id="LEN"><code>LEN</code> function</h3>
 <pre><em>length</em> = LEN(<em>string</em>)</pre>
 <p>Returns the number of characters in <code><em>string</em></code>.</p>
 <h4>Parameters</h4>
@@ -2570,7 +2562,7 @@ expression.
 </li></ul>
 
 
-<h3><code>LET</code> statement</h3>
+<h3 id="LET"><code>LET</code> statement</h3>
 <pre>[LET] <em>name</em> = <em>expression</em></pre>
 <p>Assigns the value of <code><em>expression</em></code> to the variable or array element <code><em>name</em></code>.
 <h4>Parameters</h4>
@@ -2587,7 +2579,7 @@ be assigned to each other but strings can only be assigned to strings.
 </li></ul>
 
 
-<h3><code>LINE</code> statement</h3>
+<h3 id="LINE"><code>LINE</code> statement</h3>
 <pre>LINE [ [STEP] (<em>x0</em>, <em>y0</em>)] - [STEP] (<em>x1</em>, <em>y1</em>) [, [<em>attr</em>] [, [B [F]] [, <em>pattern</em>]]]</pre>
 <p>Draws a line or a box in graphics mode. If <code>B</code> is not specified, a line is drawn
 from <code>(<em>x0</em>, <em>y0</em>)</code> to <code>(<em>x1</em>, <em>y1</em>)</code>, endpoints inclusive.
@@ -2634,7 +2626,7 @@ Any of the parameters has a string value: <code>Type mismatch</code>.
 </li></ul>
 
 
-<h3><code>LINE INPUT</code> statement</h3>
+<h3 id="LINE-INPUT"><code>LINE INPUT</code> statement</h3>
 <pre>LINE INPUT [ ; ] [ <em>prompt_literal</em> { ; | , } ] <em>string_name</em></pre>
 <p>Displays the prompt given in <code><em>prompt_literal</em></code> and reads user input from the
 keyboard, storing it into the variable <code><em>string_name</em></code>. All input is read until
@@ -2657,7 +2649,7 @@ followed by a comma or a semicolon.
 </li></ul>
 
 
-<h3><code>LINE INPUT#</code> statement</h3>
+<h3 id="LINE-INPUT#"><code>LINE INPUT#</code> statement</h3>
 <pre>LINE INPUT[ ]# <em>file_num</em>, <em>string_name</em></pre>
 <p>Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
 of a random access file. All input is read until <code class="key">Enter</code> is pressed; the first
@@ -2701,7 +2693,7 @@ since the buffer has filled up completely (i.e. <code>LOF(<em>file_num</em>)</co
 </li></ul>
 
 
-<h3><code>LIST</code> statement</h3>
+<h3 id="LIST"><code>LIST</code> statement</h3>
 <pre>LIST [ <em>line_number_0</em> | . ] [ - [ <em>line_number_1</em> | . ] ] [, <em>file_name</em>]</pre>
 <p>Prints the program to the screen, starting with <code><em>line_number_0</em></code> up to and
 including <code><em>line_number_1</em></code>.
@@ -2726,7 +2718,7 @@ A line number is greater than <code>65529</code>: <code>Syntax error</code>.
     <code>Bad file number</code>.
 </li></ul>
 
-<h3><code>LLIST</code> statement</h3>
+<h3 id="LLIST"><code>LLIST</code> statement</h3>
 <pre>LLIST [ <em>line_number_0</em> | . ] [ - [ <em>line_number_1</em> | . ] ]</pre>
 <p>Prints the program to the screen, starting with <code><em>line_number_0</em></code> up to and
 including <code><em>line_number_1</em></code>.
@@ -2744,7 +2736,7 @@ A line number is greater than <code>65529</code>: <code>Syntax error</code>.
 </li></ul>
 
 
-<h3><code>LOAD</code> statement</h3>
+<h3 id="LOAD"><code>LOAD</code> statement</h3>
 <pre>LOAD <em>file_name</em> [, R]</pre>
 <p>Loads the program stored in file <code><em>file_name</em></code> into memory.
 If <code>,R</code> is specified, runs the file after loading.
@@ -2767,7 +2759,7 @@ A loaded ASCII file contains lines without line numbers:
 </li></ul>
 
 
-<h3><code>LOC</code> function</h3>
+<h3 id="LOC"><code>LOC</code> function</h3>
 <pre><em>location</em> = LOC(<em>file_num</em>)</pre>
 <p>Returns the current location in the file opened under number <code><em>file_num</em></code>.
 <ul><li>
@@ -2810,7 +2802,7 @@ If the file is opened to <code>KYBD:</code>, <code>LOC</code> returns 0.
 </li></ul>
 
 
-<h3><code>LOCATE</code> statement</h3>
+<h3 id="LOCATE"><code>LOCATE</code> statement</h3>
 <pre>LOCATE [<em>row</em>] [, [<em>col</em>] [, [<em>cursor_visible</em>] [, [<em>start_line</em>] [, [<em>stop_line</em>] [ , ] ] ] ] ]</pre>
 <p>Positions the cursor at <code><em>row</em></code>, <code><em>col</em></code> on the screen and changes the cursor shape and visibility.
 <code><em>cursor_visible</em></code> may be 0 or 1. If <code><em>cursor_visible</em></code> is 0, it makes
@@ -2845,7 +2837,7 @@ Any parameter is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>
 </li></ul>
 
 
-<h3><code>LOCK</code> statement</h3>
+<h3 id="LOCK"><code>LOCK</code> statement</h3>
 <pre>LOCK [#] <em>file_number</em> [, <em>record_0</em> ]</pre>
 <pre>LOCK [#] <em>file_number</em>, [<em>record_0</em>] TO <em>record_1</em></pre>
 <p>Locks a file or part of a file against access by other users. On a <code>RANDOM</code> file,
@@ -2885,7 +2877,7 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li></ul>
 
 
-<h3><code>LOF</code> function</h3>
+<h3 id="LOF"><code>LOF</code> function</h3>
 <pre><em>length</em> = LOF(<em>file_num</em>)</pre>
 <p>Returns the number of bytes in the file open under <code><em>file_num</em></code>.
 <h4>Parameters</h4>
@@ -2911,7 +2903,7 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li></ul>
 
 
-<h3><code>LOG</code> function</h3>
+<h3 id="LOG"><code>LOG</code> function</h3>
 <pre><em>y</em> = LOG(<em>x</em>)</pre>
 <p>Returns the natural logarithm of <code><em>x</em></code>.
 <h4>Parameters</h4>
@@ -2932,7 +2924,7 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li></ul>
 
 
-<h3><code>LPOS</code> function</h3>
+<h3 id="LPOS"><code>LPOS</code> function</h3>
 <pre><em>position</em> = LPOS(<em>printer_number</em>)</pre>
 <p>Returns the column position for a printer.
 <h4>Parameters</h4>
@@ -2957,11 +2949,11 @@ or 1, the position for <code>LPT1:</code> is returned. If it is 2, <code>LPT2:</
 </li></ul>
 
 
-<h3><code>LPRINT</code> statement</h3>
+<h3 id="LPRINT"><code>LPRINT</code> statement</h3>
 <p>See <code>PRINT</code>.</p>
 
 
-<h3><code>LSET</code> and <code>RSET</code> statements</h3>
+<h3 id="LSET"><code>LSET</code> and <code>RSET</code> statements</h3>
 <pre>{ LSET | RSET } <em>string_name</em> = <em>expression</em></pre>
 <p>Assigns a value to a <code>FIELD</code> variable such that it overwrites the <code>FIELD</code> record.
 With <code>LSET</code>, the value will be left-justified if it is shorter than the length of
@@ -2990,7 +2982,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
 </li></ul>
 
 
-<h3><code>MERGE</code> statement</h3>
+<h3 id="MERGE"><code>MERGE</code> statement</h3>
 <pre>MERGE <em>file_name</em></pre>
 <p>Overlays the lines of program <code><em>file_name</em></code> into the existing program. The loaded
 lines overwrite existing lines if they have the same line number. <code><em>file_name</em></code>
@@ -3009,7 +3001,7 @@ A loaded ASCII file contains lines without line numbers:
     <code>Direct statement in file</code>.
 </li></ul>
 
-<h3><code>MID$</code> function</h3>
+<h3 id="MID$"><code>MID$</code> function</h3>
 <pre><em>substring</em> = MID$(<em>string</em>, <em>position</em> [, <em>length</em>])</pre>
 <p>Returns a substring of <code><em>string</em></code> starting at <code><em>position</em></code>, counting from 1. The
 substring has length <code><em>length</em></code> if specified, defaulting to 1.
@@ -3033,7 +3025,7 @@ substring has length <code><em>length</em></code> if specified, defaulting to 1.
 </li></ul>
 
 
-<h3><code>MID$</code> statement</h3>
+<h3 id="MID$-statement"><code>MID$</code> statement</h3>
 <pre>MID$(<em>string_name</em>, <em>position</em> [, <em>length</em>]) = <em>substring</em></pre>
 <p>Replaces part of <code><em>string_name</em></code> with <code><em>substring</em></code>.
 <h4>Parameters</h4>
@@ -3064,7 +3056,7 @@ substring has length <code><em>length</em></code> if specified, defaulting to 1.
 </li></ul>
 
 
-<h3><code>MKDIR</code> statement</h3>
+<h3 id="MKDIR"><code>MKDIR</code> statement</h3>
 <pre>MKDIR <em>path</em></pre>
 <p>Creates a directory.  </p>
 <h4>Parameters</h4>
@@ -3088,7 +3080,7 @@ The user has no write permission: <code>Permission denied</code>.
 </li></ul>
 
 
-<h3><code>MKD$</code> function</h3>
+<h3 id="MKD$"><code>MKD$</code> function</h3>
 <pre><em>bytes</em> = MKD$(<em>double</em>)</pre>
 <p>Returns the internal 8-byte Microsoft Binary Format representation of a double-
 precision number.</p>
@@ -3098,7 +3090,7 @@ precision number.</p>
 </li></ul>
 
 
-<h3><code>MKI$</code> function</h3>
+<h3 id="MKI$"><code>MKI$</code> function</h3>
 <pre><em>bytes</em> = MKI$(<em>int</em>)</pre>
 <p>Returns the internal 2-byte little-endian representation of an integer.
 <h4>Errors</h4>
@@ -3109,7 +3101,7 @@ precision number.</p>
 </li></ul>
 
 
-<h3><code>MKS$</code> function</h3>
+<h3 id="MKS$"><code>MKS$</code> function</h3>
 <pre><em>bytes</em> = MKS$(<em>single</em>)</pre>
 <p>Returns the internal 8-byte Microsoft Binary Format representation of a single-
 precision number.</p>
@@ -3119,7 +3111,7 @@ precision number.</p>
 </li></ul>
 
 
-<h3><code>MOTOR</code> statement</h3>
+<h3 id="MOTOR"><code>MOTOR</code> statement</h3>
 <pre>MOTOR [<em>num</em>]</pre>
 <p>Does nothing.
 <h4>Parameters</h4>
@@ -3142,7 +3134,7 @@ precision number.</p>
 </li></ul>
 
 
-<h3><code>NAME</code> statement</h3>
+<h3 id="NAME"><code>NAME</code> statement</h3>
 <pre>NAME <em>old_name</em> AS <em>new_name</em></pre>
 <p>
 Renames the file <code><em>old_name</em></code> into <code><em>new_name</em></code>.
@@ -3167,12 +3159,12 @@ Renames the file <code><em>old_name</em></code> into <code><em>new_name</em></co
 </li></ul>
 
 
-<h3><code>NEW</code> statement</h3>
+<h3 id="NEW"><code>NEW</code> statement</h3>
 <pre>NEW</pre>
 <p>Stops execution of a program, deletes the program in memory, executes <code>CLEAR</code> and <code>RESTORE</code> and returns control to the user.</p>
 
 
-<h3><code>NEXT</code> statement</h3>
+<h3 id="NEXT"><code>NEXT</code> statement</h3>
 <pre>NEXT [<em>var_0</em> [, <em>var_1</em> [, ...] ] ]</pre>
 <p>Iterates a <code>FOR&mdash;NEXT</code> loop: increments the loop variable and jumps to the <code>FOR</code>
 statement. If no variables are specified, next matches the most recent <code>FOR</code>
@@ -3192,7 +3184,7 @@ No <code>FOR</code> statement is found to match the <code>NEXT</code> statement 
 </li></ul>
 
 
-<h3><code>NOISE</code> statement</h3>
+<h3 id="NOISE"><code>NOISE</code> statement</h3>
 <pre>NOISE <em>source</em>, <em>volume</em>, <em>duration</em></pre>
 <p>
     Generates various kinds of noise.</p>
@@ -3242,7 +3234,7 @@ This statement is only available if <code>--syntax={pcjr|tandy}</code> is set.
 </li></ul>
 
 
-<h3><code>OCT$</code> function</h3>
+<h3 id="OCT$"><code>OCT$</code> function</h3>
 <pre><em>octal</em> = OCT$(<em>x</em>)</pre>
 <p>Returns a string with the octal representation of <code><em>x</em></code>.</p>
 <h4>Parameters</h4>
@@ -3259,7 +3251,7 @@ negative <code><em>x</em></code> are shown as two's-complement.
 </li></ul>
 
 
-<h3><code>ON</code> statement (calculated jump)</h3>
+<h3 id="ON-jump"><code>ON</code> statement (calculated jump)</h3>
 <pre>ON <em>n</em> {GOTO | GOSUB} <em>line_number_0</em> [, <em>line_number_1</em> [, ...] ]</pre>
 <p>Jumps to the <code><em>n</em></code>th line number specified in the list. If <code><em>n</em></code> is 0 or greater
 than the number of line numbers in the list, no jump is performed. If <code>GOTO</code> is specified,
@@ -3282,7 +3274,7 @@ The line number jumped to does not exist: <code>Undefined line number</code>.
 </li></ul>
 
 
-<h3><code>ON</code> statement (event trapping)</h3>
+<h3 id="ON-event"><code>ON</code> statement (event trapping)</h3>
 <pre>ON { COM(<em>n</em>) | KEY(<em>n</em>) | STRIG(<em>n</em>) | PEN | PLAY(<em>n</em>) | TIMER(<em>x</em>) } GOSUB <em>line_number</em></pre>
 <p>Defines an event trapping subroutine.
 The type of event is given by one of the following keywords:</p>
@@ -3331,7 +3323,7 @@ Events are only trapped when a program is running.
 </li></ul>
 
 
-<h3><code>ON ERROR</code> statement</h3>
+<h3 id="ON-error"><code>ON ERROR</code> statement</h3>
 <pre>ON ERROR GOTO { <em>line_number</em> | 0 }</pre>
 <p>Turns error trapping on or off. When <code><em>line_number</em></code> is set, any error causes the error handling
 routine starting at that line number to be called; no message is printed and program execution is not stopped. The
@@ -3355,7 +3347,7 @@ It is not possible to start the error handler at line number <code>0</code>.
 </li></ul>
 
 
-<h3><code>OPEN</code> statement</h3>
+<h3 id="OPEN"><code>OPEN</code> statement</h3>
 <pre>OPEN <em>mode_char</em>, [#] <em>file_num</em>, <em>file_name</em> [, <em>rec_len</em>]</pre>
 <pre>OPEN <em>file_name</em> [ FOR { INPUT | OUTPUT | APPEND | RANDOM } ]
                [ ACCESS { READ | WRITE | READ WRITE } ]
@@ -3623,7 +3615,7 @@ The <code>COM:</code> <code><em>file_name</em></code> parameters do not follow t
     <code>["I", "O", "A", "R"]</code>: <code>Bad file mode</code>.
 </li></ul>
 
-<h3><code>OPTION BASE</code> statement</h3>
+<h3 id="OPTION-BASE"><code>OPTION BASE</code> statement</h3>
 <pre>OPTION BASE <em>n</em></pre>
 <p>Sets the starting index of all arrays to <code><em>n</em></code>.</p>
 <h4>Parameters</h4>
@@ -3646,7 +3638,7 @@ The <code>COM:</code> <code><em>file_name</em></code> parameters do not follow t
 </li></ul>
 
 
-<h3><code>OUT</code> statement</h3>
+<h3 id="OUT"><code>OUT</code> statement</h3>
 <pre>OUT <em>port</em>, <em>value</em></pre>
 <p>
 Sends a byte to an emulated machine port.</p>
@@ -3702,7 +3694,7 @@ The initial <code>OUT</code> statements currently have no effect in PC-BASIC.
 </li></ul>
 
 
-<h3><code>PAINT</code> statement</h3>
+<h3 id="PAINT"><code>PAINT</code> statement</h3>
 <pre>PAINT [STEP] (x, y) [, attrib [, border [, background ] ] ]</pre>
 <p>Flood-fills the screen with a colour or pattern, starting from the given seed point.</p>
 <h4>Parameters</h4>
@@ -3818,7 +3810,7 @@ pattern to ignore when determining boundaries (see below).
 </li></ul>
 
 
-<h3><code>PALETTE</code> statement</h3>
+<h3 id="PALETTE"><code>PALETTE</code> statement</h3>
 <pre>PALETTE [ <em>attrib</em>, <em>colour</em> ]</pre>
 <p>Assigns a colour to an attribute. All pixels with that attribute will change
 colour immediately.
@@ -3842,7 +3834,7 @@ the palette remains unchanged.
 </li></ul>
 
 
-<h3><code>PALETTE USING</code> statement</h3>
+<h3 id="PALETTE-USING"><code>PALETTE USING</code> statement</h3>
 <pre>PALETTE USING <em>int_array_name</em> { ( | [ } <em>start_index</em> { ) | ] }</pre>
 <p>Assigns new colours to all attributes.
 <h4>Parameters</h4>
@@ -3871,7 +3863,7 @@ indicates at which index in the array to start mapping to the palette.
 </li></ul>
 
 
-<h3><code>PCOPY</code> statement</h3>
+<h3 id="PCOPY"><code>PCOPY</code> statement</h3>
 <pre>PCOPY <em>src</em>, <em>dst</em></pre>
 <p>Copies the screen page <code><em>src</em></code> to <code><em>dst</em></code>. All text and graphics on <code><em>dst</em></code> is
 replaced by those of <code><em>src</em></code>.</p>
@@ -3890,7 +3882,7 @@ mode's number of pages, less one.
 </li></ul>
 
 
-<h3><code>PEEK</code> function</h3>
+<h3 id="PEEK"><code>PEEK</code> function</h3>
 <pre><em>value</em> = PEEK(<em>address</em>)</pre>
 <p>Returns the value of the memory at  <code><em>segment</em> * 16 + <em>address</em></code> where <code><em>segment</em></code>
 is the current segment set with <code>DEF SEG</code>.
@@ -3917,7 +3909,7 @@ two's complement.
 </li></ul>
 
 
-<h3><code>PEN</code> statement</h3>
+<h3 id="PEN-statement"><code>PEN</code> statement</h3>
 <pre>PEN { ON | OFF | STOP }</pre>
 <p>Controls event trapping and read access of the light pen (emulated through the mouse in PC-BASIC).
 <code>PEN ON</code> switches pen reading and trapping on.  <code>PEN OFF</code> switches it off.
@@ -3927,7 +3919,7 @@ event handling was switched on prior to suspension. The event triggered during
 suspension is handled immediately after the next <code>PEN ON</code> statement.</p>
 
 
-<h3><code>PEN</code> function</h3>
+<h3 id="PEN"><code>PEN</code> function</h3>
 <pre><em>x</em> = PEN(<em>mode</em>)</pre>
 <p>Reads the light pen. What this function returns depends on <code><em>mode</em></code>:
 <table><tr>
@@ -3992,7 +3984,7 @@ suspension is handled immediately after the next <code>PEN ON</code> statement.<
 <code><em>mode</em></code> is not in <code>[0&mdash;9]</code>: <code>Illegal function call</code>.
 </li></ul>
 
-<h3><code>PLAY</code> statement</h3>
+<h3 id="PLAY"><code>PLAY</code> statement</h3>
 <pre>PLAY <em>mml_string</em></pre>
 <p>Plays the tune defined by <code><em>mml_string</em></code>.</p>
 <pre>PLAY [ <em>mml_string_0</em> ] [, [ <em>mml_string_1</em> ] [, <em>mml_string_2</em> ] ]</pre>
@@ -4121,7 +4113,7 @@ On PCjr, if <code>SOUND ON</code> has not been executed, using the three-voice s
 </li></ul>
 
 
-<h3><code>PLAY</code> function</h3>
+<h3 id="PLAY-function"><code>PLAY</code> function</h3>
 <pre><em>length</em> = PLAY(<em>voice</em>)</pre>
 <p>Returns the number of notes in the background music queue. The return value is in <code>[0&mdash;16]</code>.
 </p>
@@ -4154,7 +4146,7 @@ PCjr and Tandy
 </li></ul>
 
 
-<h3><code>PMAP</code> function</h3>
+<h3 id="PMAP"><code>PMAP</code> function</h3>
 <pre><em>physical</em> = PMAP(<em>logical</em>, <em>fn</em>)</pre>
 <p>Maps between viewport and logical (<code>WINDOW</code>) coordinates.
 If no <code>VIEW</code> has been set, the viewport coordinates
@@ -4195,7 +4187,7 @@ A physical coordinate is not in <code>[-32768&mdash;32767]</code>: <code>Overflo
 </li></ul>
 
 
-<h3><code>POINT function</code> (current coordinate)</h3>
+<h3 id="POINT-coord"><code>POINT function</code> (current coordinate)</h3>
 <pre><em>coord</em> = POINT(<em>fn</em>)</pre>
 <p>Returns a currently active coordinate of the graphics screen. This is usually
 the last position at which a pixel has been plotted, the second corner given
@@ -4235,7 +4227,7 @@ The coordinate returned depends on the value of <code><em>fn</em></code>:
 </li></ul>
 
 
-<h3><code>POINT</code> function (pixel attribute)</h3>
+<h3 id="POINT-attr"><code>POINT</code> function (pixel attribute)</h3>
 <pre><em>attrib</em> = POINT (<em>x</em>, <em>y</em>)</pre>
 <p>Returns the attribute of the pixel at logical coordinate <code><em>x</em></code>,<code><em>y</em></code>.
 <h4>Parameters</h4>
@@ -4257,7 +4249,7 @@ Function is called in text mode: <code>Illegal function call</code>.
 </li></ul>
 
 
-<h3><code>POKE</code> statement</h3>
+<h3 id="POKE"><code>POKE</code> statement</h3>
 <pre>POKE <em>address</em>, <em>value</em></pre>
 <p>Sets the value of the memory byte at  <code><em>segment</em> * 16 + <em>address</em></code> to <code><em>value</em></code>, where <code><em>segment</em></code>
 is the current segment set with <code>DEF SEG</code>.</p>
@@ -4285,7 +4277,7 @@ interpreted as their two's complement.
 </li></ul>
 
 
-<h3><code>POS</code> function</h3>
+<h3 id="POS"><code>POS</code> function</h3>
 <pre><em>pos</em> = POS(<em>dummy</em>)</pre>
 <p>Returns the current cursor column position, in the range <code>[1&mdash;80]</code>.
 <h4>Parameters</h4>
@@ -4294,7 +4286,7 @@ interpreted as their two's complement.
 </li></ul>
 
 
-<h3><code>PSET</code> and <code>PRESET</code> statements</h3>
+<h3 id="PSET"><code>PSET</code> and <code>PRESET</code> statements</h3>
 <pre>{ PSET | PRESET } [STEP] (<em>x</em>, <em>y</em>) [, <em>attrib</em>]</pre>
 <p>Change the attribute of a pixel on the screen at position <code>(<em>x</em>, <em>y</em>)</code>.
 If <code>STEP</code> is specified, <code>(<em>x</em>, <em>y</em>)</code> is an offset from the current position.</p>
@@ -4320,7 +4312,7 @@ foreground attribute while <code>PRESET</code> changes it to zero.</p>
 </li></ul>
 
 
-<h3><code>PRINT</code>, <code>PRINT#</code> and <code>LPRINT</code> statements</h3>
+<h3 id="PRINT"><code>PRINT</code>, <code>PRINT#</code> and <code>LPRINT</code> statements</h3>
 <pre>{ LPRINT | {PRINT|?} [# <em>file_num</em>,] } [<em>expr_0</em>] [;|,|SPC(<em>n</em>)|TAB(<em>n</em>)] [<em>expr_1</em>] [...]
          [ USING <em>format</em>; [ <em>uexpr_0</em> [ {;|,} <em>uexpr_1</em> [ {;|,} ...] ] ] [;|,] ]</pre>
 <p>Writes expressions to the screen, printer, file or device. If <code>LPRINT</code> is used,
@@ -4484,7 +4476,7 @@ A number field in the format string contains no <code>#</code> characters: <code
 </li></ul>
 
 
-<h3><code>PUT</code> statement   (random-access files)</h3>
+<h3 id="PUT-files"><code>PUT</code> statement   (random-access files)</h3>
 <pre>PUT [#] <em>file_number</em> [, <em>record_number</em>]</pre>
 <p>Writes a record to the random-access file <code><em>file_number</em></code> at position
 <code><em>record_number</em></code>.
@@ -4512,7 +4504,7 @@ of an open random-access file. The <code>#</code> is optional and has no effect.
 </li></ul>
 
 
-<h3><code>PUT</code> statement   (communications)</h3>
+<h3 id="PUT-serial"><code>PUT</code> statement   (communications)</h3>
 <pre>PUT [#] <em>com_file_number</em>, [, <em>number_bytes</em>]</pre>
 <p>Writes <code><em>number_bytes</em></code> bytes to the communications buffer opened under file
 number <code><em>com_file_number</em></code>. <code><em>number_bytes</em></code> is a numeric expression between 1
@@ -4542,7 +4534,7 @@ The serial input buffer is full, i.e. <code>LOF(<em>com_file_number</em>) = 0</c
 </li></ul>
 
 
-<h3><code>PUT</code> statement (graphics)</h3>
+<h3 id="PUT-graphics"><code>PUT</code> statement (graphics)</h3>
 <pre>PUT (<em>x0</em>, <em>y0</em>), <em>array_name</em> [, { PSET | PRESET | AND | OR | XOR } ]</pre>
 <p>Displays an array to a rectangular area of the graphics screen.
 Usually, <code>PUT</code> is used with arrays that have been stored using <code>GET</code>. See <code>GET</code> for the
@@ -4581,7 +4573,7 @@ The array does not exist: <code>Illegal function call</code>.
 </li></ul>
 
 
-<h3><code>RANDOMIZE</code> statement</h3>
+<h3 id="RANDOMIZE"><code>RANDOMIZE</code> statement</h3>
 <pre>RANDOMIZE [<em>expr</em>]</pre>
 <p>Seeds the random number generator with <code><em>expr</em></code>.
 If no seed is specified, <code>RANDOMIZE</code> will prompt the user
@@ -4610,7 +4602,7 @@ The user provides a seed outside <code>[-32768&mdash;32767]</code>: <code>Overfl
 </li></ul>
 
 
-<h3><code>READ</code> statement</h3>
+<h3 id="READ"><code>READ</code> statement</h3>
 <pre>READ <em>var_0</em> [, <em>var_1</em> [, ... ] ]</pre>
 <p>Assigns data from a <code>DATA</code> statement to variables. Reading starts at the current
 <code>DATA</code> position, which is the <code>DATA</code> entry immediately after the last one read by
@@ -4629,7 +4621,7 @@ The type of the variable is not compatible with that of the data entry
 </li></ul>
 
 
-<h3><code>REM</code> statement</h3>
+<h3 id="REM"><code>REM</code> statement</h3>
 <pre>{ REM | ' } [<em>anything</em>]</pre>
 <p>Ignores everything until the end of the line. The <code>REM</code> statement is intended for
 comments. Everything after <code>REM</code> will be stored in the program unaltered and
@@ -4637,7 +4629,7 @@ uninterpreted. <code>'</code> (apostrophe) is an alias for <code>:REM'</code>; i
 point in the program line and will ensure that the rest of the line is ignored.</p>
 
 
-<h3><code>RENUM</code> statement</h3>
+<h3 id="RENUM"><code>RENUM</code> statement</h3>
 <pre>RENUM [ <em>new</em> | . ] [, [ <em>old</em> | . ] [, <em>increment</em> ] ]</pre>
 <p>Replaces the line numbers in the program by a systematic enumeration starting
 from <code><em>new</em></code> and increasing by <code><em>increment</em></code>. If <code><em>old</em></code> is specified, line numbers
@@ -4677,12 +4669,12 @@ Any of the newly generated line numbers is greater than <code>65529</code>:
 </li></ul>
 
 
-<h3><code>RESET</code> statement</h3>
+<h3 id="RESET"><code>RESET</code> statement</h3>
 <pre>RESET</pre>
 <p>Closes all open files.</p>
 
 
-<h3><code>RESTORE</code> statement</h3>
+<h3 id="RESTORE"><code>RESTORE</code> statement</h3>
 <pre>RESTORE [<em>line</em>]</pre>
 <p>Resets the <code>DATA</code> pointer.
 <code><em>line</em></code> is a line number. If <code><em>line</em></code> is not specified, the <code>DATA</code> pointer is reset
@@ -4694,7 +4686,7 @@ reset to the first <code>DATA</code> entry in or after <code><em>line</em></code
 </li></ul>
 
 
-<h3><code>RESUME</code> statement</h3>
+<h3 id="RESUME"><code>RESUME</code> statement</h3>
 <pre>RESUME [ 0 | NEXT | <em>line</em> ]</pre>
 <p>Continues normal execution after an error handling routine.
 If 0 or no option is specified, re-executes the statement that caused the
@@ -4712,7 +4704,7 @@ The program ends inside an error trapping routine without a <code>RESUME</code>
 </li></ul>
 
 
-<h3><code>RETURN</code> statement</h3>
+<h3 id="RETURN"><code>RETURN</code> statement</h3>
 <pre>RETURN [<em>line</em>]</pre>
 <p>Returns from a <code>GOSUB</code> subroutine. If <code><em>line</em></code> is not specified, <code>RETURN</code> jumps back
 to the statement after the <code>GOSUB</code> that jumped into the subroutine.
@@ -4726,7 +4718,7 @@ trapping which was stopped on entering the trap routine.
 </li></ul>
 
 
-<h3><code>RIGHT$</code> function</h3>
+<h3 id="RIGHT$"><code>RIGHT$</code> function</h3>
 <pre><em>child</em> = RIGHT$(<em>parent</em>, <em>num_chars</em>)</pre>
 <p>Returns the rightmost <code><em>num_chars</em></code> characters of <code><em>parent</em></code>.
 If <code><em>num_chars</em></code> is zero or <code><em>parent</em></code> is empty, <code>RIGHT$</code> returns
@@ -4749,7 +4741,7 @@ returns <code><em>parent</em></code>.
 </li></ul>
 
 
-<h3><code>RMDIR</code> statement</h3>
+<h3 id="RMDIR"><code>RMDIR</code> statement</h3>
 <pre>RMDIR <em>path</em></pre>
 <p>Removes an empty directory. <code><em>path</em></code> is a string expression that specifies
 the path of the directory.
@@ -4767,7 +4759,7 @@ No matching path is found, <code>Path not found</code> .
 </li></ul>
 
 
-<h3><code>RND</code> function</h3>
+<h3 id="RND"><code>RND</code> function</h3>
 <pre>random = RND[(<em>x</em>)]</pre>
 <p>Returns a pseudorandom number in the interval <code>[0&mdash;1)</code>.
 <code><em>x</em></code> is a numeric expression. If <code><em>x</em></code> is zero, <code>RND</code> repeats the last pseudo-
@@ -4781,11 +4773,11 @@ The seed is generated in a different way than by <code>RANDOMIZE</code>.
 </li></ul>
 
 
-<h3><code>RSET</code> statement</h3>
+<h3 id="RSET"><code>RSET</code> statement</h3>
 <p>See <code>LSET</code>.</p>
 
 
-<h3><code>RUN</code> statement</h3>
+<h3 id="RUN"><code>RUN</code> statement</h3>
 <pre>RUN [ <em>line</em> | <em>filename</em> ] [,R]</pre>
 <p>Executes a program.
 If <code><em>line</em></code> is specified, it must be a valid line number in the current program.
@@ -4806,7 +4798,7 @@ A loaded ASCII file contains lines without line numbers:
 </li></ul>
 
 
-<h3><code>SAVE</code> statement</h3>
+<h3 id="SAVE"><code>SAVE</code> statement</h3>
 <pre>SAVE <em>filename</em> [, { A | P }]</pre>
 <p>Stores the program in file <code><em>filename</em></code>. If <code><em>filename</em></code> is not in 8.3 uppercase
 format, additional characters will be clipped off and the name is converted to
@@ -4829,7 +4821,7 @@ form.</p>
 </li></ul>
 
 
-<h3><code>SCREEN</code> function</h3>
+<h3 id="SCREEN-function"><code>SCREEN</code> function</h3>
 <pre><em>value</em> = SCREEN(<em>row</em>, <em>column</em> [, <em>fn</em>])</pre>
 <p>Returns the ASCII code or colour attribute for the character at position
 <code><em>row</em></code>, <code><em>col</em></code>.
@@ -4861,7 +4853,7 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li></ul>
 
 
-<h3><code>SCREEN</code> statement</h3>
+<h3 id="SCREEN-statement"><code>SCREEN</code> statement</h3>
 <pre>SCREEN [<em>mode</em>] [, [<em>colorburst</em>] [, [<em>apage</em>] [, <em>vpage</em>] ] ]</pre>
 <p>Change the video mode, composite colorburst, active page and visible page. Video modes are described in the <a href="#videomodes">Video Modes</a> section.
 <h4>NTSC Composite Colorburst</h4>
@@ -4922,7 +4914,7 @@ Any parameter is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>
 </li></ul>
 
 
-<h3><code>SGN</code> function</h3>
+<h3 id="SGN"><code>SGN</code> function</h3>
 <pre><em>sign</em> = SGN(<em>number</em>)</pre>
 <p>Returns the sign of <code><em>number</em></code>: <code>1</code> for positive, <code>0</code> for zero and <code>-1</code> for negative.
 <h4>Parameters</h4>
@@ -4935,7 +4927,7 @@ Any parameter is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>
 </li></ul>
 
 
-<h3><code>SHELL</code> statement</h3>
+<h3 id="SHELL"><code>SHELL</code> statement</h3>
 <pre>SHELL [<em>command</em>]</pre>
 <p>Starts a subshell on the console.
 The type of shell is determined by your OS. On Unix systems, an <code>sh</code> shell is
@@ -4961,7 +4953,7 @@ Be careful when enabling this command, as it allows the running BASIC program fu
 </li></ul>
 
 
-<h3><code>SIN</code> function</h3>
+<h3 id="SIN"><code>SIN</code> function</h3>
 <pre><em>sine</em> = SIN(<em>angle</em>)</pre>
 <p>Returns the sine of <code><em>angle</em></code>.
 <h4>Parameters</h4>
@@ -4982,7 +4974,7 @@ value.
 </li></ul>
 
 
-<h3><code>SOUND</code> statement</h3>
+<h3 id="SOUND"><code>SOUND</code> statement</h3>
 <pre>SOUND <em>frequency</em>, <em>duration</em> [, <em>volume</em> [, <em>voice</em> ] ]</pre>
 <p>Produces a sound at <code><em>frequency</em></code> Hz for <code><em>duration</em>/18.2</code> seconds.
 On PCjr and Tandy, the volume and voice channel can additionally be specified.</p>
@@ -5045,7 +5037,7 @@ Any argument has a string value: <code>Type mismatch</code>.
 </li></ul>
 
 
-<h3><code>SOUND</code> statement (advanced-sound switch)</h3>
+<h3 id="SOUND-switch"><code>SOUND</code> statement (advanced-sound switch)</h3>
 <pre>SOUND { ON | OFF }</pre>
 <p> Toggles the availability of advanced sound capabilities on PCjr and Tandy. This includes 3-voice
     sound, noise generation and volume control.</p>
@@ -5064,7 +5056,7 @@ This statement is used and <code>--syntax={ pcjr | tandy }</code> is not set:
     <code>Syntax error</code>.
 </li></ul>
 
-<h3><code>SPACE$</code> function</h3>
+<h3 id="SPACE$"><code>SPACE$</code> function</h3>
 <pre><em>spaces</em> = SPACE$(<em>number</em>)</pre>
 <p>Returns a string of <code><em>number</em></code> spaces.
 <h4>Parameters</h4>
@@ -5081,7 +5073,7 @@ This statement is used and <code>--syntax={ pcjr | tandy }</code> is not set:
 </li></ul>
 
 
-<h3><code>SQR</code> function</h3>
+<h3 id="SQR"><code>SQR</code> function</h3>
 <pre><em>root</em> = SQR(<em>number</em>)</pre>
 <p>Returns the square root of <code><em>number</em></code>. </p>
 <h4>Parameters</h4>
@@ -5099,7 +5091,7 @@ value.
 </li></ul>
 
 
-<h3><code>STICK</code> function</h3>
+<h3 id="STICK"><code>STICK</code> function</h3>
 <pre><em>pos</em> = STICK(<em>axis</em>)</pre>
 <p>Returns a coordinate of a joystick axis. All coordinates returned are in the
 range <code>[1&mdash;254]</code> with <code>128</code> indicating the neutral position.
@@ -5128,14 +5120,14 @@ range <code>[1&mdash;254]</code> with <code>128</code> indicating the neutral po
 </li></ul>
 
 
-<h3><code>STOP</code> statement</h3>
+<h3 id="STOP"><code>STOP</code> statement</h3>
 <pre>STOP</pre>
 <p>Breaks program execution, prints a <code>Break</code>
 message on the console and returns control to the user. Files are not closed. It is possible to resume program
 execution at the next statement using <code>CONT</code>.
 </p>
 
-<h3><code>STR$</code> function</h3>
+<h3 id="STR$"><code>STR$</code> function</h3>
 <pre><em>repr</em> = STR$(<em>number</em>)</pre>
 <p>Returns the string representation of <code><em>number</em></code>.
 <h4>Parameters</h4>
@@ -5148,12 +5140,12 @@ execution at the next statement using <code>CONT</code>.
 </li></ul>
 
 
-<h3><code>STRIG</code> statement</h3>
+<h3 id="STRIG-switch"><code>STRIG</code> statement</h3>
 <pre>STRIG { ON | OFF }</pre>
 <p>Has no effect.</p>
 
 
-<h3><code>STRIG</code> statement (events)</h3>
+<h3 id="STRIG-events"><code>STRIG</code> statement (events)</h3>
 <pre>STRIG(<em>button</em>) { ON | OFF | STOP }</pre>
 <p>Switches event trapping of the joystick trigger <code><em>button</em></code> <code>ON</code> or <code>OFF</code>.
 <code>STRIG (<em>button</em>) STOP</code> suspends event trapping until
@@ -5186,7 +5178,7 @@ statement.</p>
 </li></ul>
 
 
-<h3><code>STRIG</code> function</h3>
+<h3 id="STRIG-function"><code>STRIG</code> function</h3>
 <pre><em>result</em> = STRIG(<em>mode</em>)</pre>
 <p>Returns the status of the joystick trigger buttons.
  <code>STRIG</code> returns the following
@@ -5229,7 +5221,7 @@ results, all Boolean values:</p>
 </li></ul>
 
 
-<h3><code>STRING$</code> function</h3>
+<h3 id="STRING$"><code>STRING$</code> function</h3>
 <pre><em>string</em> = STRING$(<em>length</em>, <em>char</em>)</pre>
 <p>Returns a string of <code><em>length</em></code> times character <code><em>char</em></code>.</p>
 <h4>Parameters</h4>
@@ -5251,7 +5243,7 @@ If <code><em>char</em></code> is a string expression, its first character is use
 </li></ul>
 
 
-<h3><code>SWAP</code> statement</h3>
+<h3 id="SWAP"><code>SWAP</code> statement</h3>
 <pre>SWAP <em>var_0</em>, <em>var_1</em></pre>
 <p>Exchanges the values of <code><em>var_0</em></code> and <code><em>var_1</em></code>.
 <h4>Parameters</h4>
@@ -5267,7 +5259,7 @@ The types of <code><em>var_0</em></code> and <code><em>var_1</em></code> are not
 </li></ul>
 
 
-<h3><code>SYSTEM</code> statement</h3>
+<h3 id="SYSTEM"><code>SYSTEM</code> statement</h3>
 <pre>SYSTEM</pre>
 <p>Exits the interpreter.</p>
 <h4>Notes</h4>
@@ -5277,7 +5269,7 @@ The types of <code><em>var_0</em></code> and <code><em>var_1</em></code> are not
 </li></ul>
 
 
-<h3><code>TAN</code> function</h3>
+<h3 id="TAN"><code>TAN</code> function</h3>
 <pre><em>tangent</em> = TAN(<em>angle</em>)</pre>
 <p>Returns the tangent of <code><em>angle</em></code>.
 <h4>Parameters</h4>
@@ -5302,7 +5294,7 @@ value.
 
 
 
-<h3><code>TERM</code> statement</h3>
+<h3 id="TERM"><code>TERM</code> statement</h3>
 <pre>TERM</pre>
 <p>If <code>--preset=pcjr</code> is set, starts a built-in serial terminal emulator application.
     This is a BASIC program that is loaded and run instead of the current
@@ -5311,7 +5303,7 @@ value.
 <p>In the default preset, this keyword is not present. Calling <code>TERM</code> will raise <code>Syntax error</code>.</p>
 
 
-<h3><code>TIME$</code> function</h3>
+<h3 id="TIME$-function"><code>TIME$</code> function</h3>
 <pre><em>time</em> = TIME$</pre>
 <p>Returns the current BASIC time in the form <code>"HH:mm:ss"</code>.</p>
 <h4>Notes</h4>
@@ -5320,7 +5312,7 @@ This function has no brackets.
 </li></ul>
 
 
-<h3><code>TIME$</code> statement</h3>
+<h3 id="TIME$-statement"><code>TIME$</code> statement</h3>
 <pre>TIME$ = <em>time</em></pre>
 <p>Sets the current BASIC time to <code><em>time</em></code>.
 <h4>Parameters</h4>
@@ -5342,7 +5334,7 @@ of the form <code>"HH:mm:ss"</code> where <code>00&lt;=HH&lt;24</code>, <code>00
 </li></ul>
 
 
-<h3><code>TIMER</code> function</h3>
+<h3 id="TIMER"><code>TIMER</code> function</h3>
 <pre><em>seconds</em> = TIMER</pre>
 <p>Returns the number of seconds since midnight on the internal BASIC
 clock.</p>
@@ -5360,7 +5352,7 @@ This function has no brackets.
 </li></ul>
 
 
-<h3><code>TRON</code> and <code>TROFF</code> statements</h3>
+<h3 id="TRON"><code>TRON</code> and <code>TROFF</code> statements</h3>
 <pre>{ TRON | TROFF }</pre>
 <p>Turns line number tracing on or off. If line number tracing is on, BASIC prints
 a tag <code>[100]</code> to the console when program line <code>100</code> is executed, and so forth.
@@ -5370,7 +5362,7 @@ a tag <code>[100]</code> to the console when program line <code>100</code> is ex
 </li></ul>
 
 
-<h3><code>UNLOCK</code> statement</h3>
+<h3 id="UNLOCK"><code>UNLOCK</code> statement</h3>
 <pre>UNLOCK [#] <em>file_number</em> [, <em>record_0</em> ]</pre>
 <pre>UNLOCK [#] <em>file_number</em>, [ <em>record_0</em> ] TO <em>record_1</em></pre>
 <p>
@@ -5398,7 +5390,7 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li></ul>
 
 
-<h3><code>USR</code> function</h3>
+<h3 id="USR"><code>USR</code> function</h3>
 <pre><em>value</em> = USR[<em>n</em>](<em>expr</em>)</pre>
 <p>Returns zero.</p>
 <h4>Parameters</h4>
@@ -5419,7 +5411,7 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li></ul>
 
 
-<h3><code>VAL</code> function</h3>
+<h3 id="VAL"><code>VAL</code> function</h3>
 <pre><em>value</em> = VAL(<em>string</em>)</pre>
 <p>
 Returns the numeric value of the string expression <code><em>string</em></code>.
@@ -5434,7 +5426,7 @@ string is empty, <code>VAL</code> returns zero. </p>
 </li></ul>
 
 
-<h3><code>VARPTR</code> function</h3>
+<h3 id="VARPTR"><code>VARPTR</code> function</h3>
 <pre><em>pointer</em> = VARPTR(<em>name</em>)</pre>
 <p>Returns the memory address of variable <code><em>name</em></code>.
 <pre><em>pointer</em> = VARPTR(#<em>file_num</em>)</pre>
@@ -5450,7 +5442,7 @@ previously defined variable or fully indexed array element.
 <h4>Notes</h4>
 <ul><li>
 <code>VAPTR</code>
-can be used with <code>PEEK</code> to read a variable's internal representation.
+can be used  with <code>PEEK</code> to read a variable's internal representation.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -5462,7 +5454,7 @@ can be used with <code>PEEK</code> to read a variable's internal representation.
 </li></ul>
 
 
-<h3><code>VARPTR$</code> function</h3>
+<h3 id="VARPTR$"><code>VARPTR$</code> function</h3>
 <pre><em>pointer</em> = VARPTR$(<em>name</em>)</pre>
 <p>Returns the memory address of variable <code><em>name</em></code> in the form of a 3-byte string.
 The first byte is the length of the record the pointer points to:</p>
@@ -5483,7 +5475,7 @@ endian order.</p>
 </li></ul>
 
 
-<h3><code>VIEW</code> statement</h3>
+<h3 id="VIEW"><code>VIEW</code> statement</h3>
 <pre>VIEW [ [ SCREEN ] (<em>x0</em>, <em>y0</em>)-(<em>x1</em>, <em>y1</em>) [, [ <em>fill</em> ] [, <em>border</em> ] ] ]</pre>
 <p>Defines a graphics viewport. Graphics drawn outside the viewport will
 not be shown. <code>(<em>x0</em>, <em>y0</em>)</code>, <code>(<em>x1</em>, <em>y1</em>)</code> are absolute screen coordinates of two
@@ -5510,7 +5502,7 @@ Any of the coordinate pairs is outside the physical screen: <code>Illegal functi
 </li></ul>
 
 
-<h3><code>VIEW PRINT</code> statement</h3>
+<h3 id="VIEW-PRINT"><code>VIEW PRINT</code> statement</h3>
 <pre>VIEW PRINT [<em>top_row</em>] TO [<em>bottom_row</em>]</pre>
 <p>Defines the text scrolling area of the screen. <code>LOCATE</code> statements,
 cursor movement and scrolling will be limited to the scrolling area.</p>
@@ -5532,7 +5524,7 @@ Otherwise, screen row 25 cannot be part of the
 
 
 
-<h3><code>WAIT</code> statement</h3>
+<h3 id="WAIT"><code>WAIT</code> statement</h3>
 <pre>WAIT <em>port</em>, <em>and_mask</em> [, <em>xor_mask</em>]</pre>
 <p>Waits for the value of <code>(INP(<em>port</em>) XOR <em>xor_mask</em>) AND <em>and_mask</em></code> to become nonzero.
 Event handling is suspended until <code>WAIT</code> returns. If <code><em>xor_mask</em></code> is not specified, it defaults to <code>0</code>.</p>
@@ -5550,7 +5542,7 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li></ul>
 
 
-<h3><code>WEND</code> statement</h3>
+<h3 id="WEND"><code>WEND</code> statement</h3>
 <pre>WEND</pre>
 <p>Iterates a <code>WHILE&mdash;WEND</code> loop: jumps to the matching <code>WHILE</code> statement, where its
 condition can be checked.</p>
@@ -5566,7 +5558,7 @@ All previous <code>WHILE</code> statements have been closed by another <code>WEN
 </li></ul>
 
 
-<h3><code>WHILE</code> statement</h3>
+<h3 id="WHILE"><code>WHILE</code> statement</h3>
 <pre>WHILE <em>expr</em></pre>
 <p>Initiates a <code>WHILE&mdash;WEND</code> loop.
 If <code><em>expr</em></code> evaluates to zero, <code>WHILE</code> jumps
@@ -5584,7 +5576,7 @@ No matching <code>WEND</code> is found: <code>WHILE without WEND</code>.
 </li></ul>
 
 
-<h3><code>WIDTH</code> statement</h3>
+<h3 id="WIDTH"><code>WIDTH</code> statement</h3>
 <pre>WIDTH { 20 | 40 | 80 | (<em>num_columns</em>) } [, [ <em>num_rows</em>] [ , ] ]</pre>
 <p>Sets the screen width to 20, 40 or 80 columns.</p>
 <p><code><em>num_columns</em></code> can only be an expression
@@ -5651,7 +5643,7 @@ An unbracketed expression is used in the first syntax: <code>Illegal function ca
 </li></ul>
 
 
-<h3><code>WINDOW</code> statement</h3>
+<h3 id="WINDOW"><code>WINDOW</code> statement</h3>
 <pre>WINDOW [ [ SCREEN ] (<em>x0</em>, <em>y0</em>)-(<em>x1</em>, <em>y1</em>) ]</pre>
 <p>Define logical coordinates for the viewport.
 If <code>SCREEN</code> is not specified,
@@ -5676,7 +5668,7 @@ Any of the coordinates have a string value: <code>Type mismatch</code>.
 </li></ul>
 
 
-<h3><code>WRITE</code> and <code>WRITE#</code> statements</h3>
+<h3 id="WRITE"><code>WRITE</code> and <code>WRITE#</code> statements</h3>
 <pre>WRITE [ # <em>file_num</em>, ] <em>expr_0</em> [ { , | ; } <em>expr_1</em> [...] ]</pre>
 <p>Writes values to a file or the screen in machine-readable form. Values are
 separated by commas and the line is ended with a <code>CR LF</code> sequence. Strings are
@@ -5698,7 +5690,7 @@ delimited by double quotes <code>"</code>. No padding spaces are inserted.</p>
 
 
 
-<h2>Literals</h2>
+<h2 id="literals">Literals</h2>
 
 <p>String literals can be specified between double quotes. There is no escaping
 mechanism. To include a double quote or a special character in a string, use
@@ -5765,7 +5757,7 @@ access. To re-allocate an array, the old array must first be deleted
 with <code>CLEAR</code> or <code>ERASE</code>.</p>
 
 
-<h2>Operators</h2>
+<h2 id="operators">Operators</h2>
 <p>Mathematical operators, by order of precedence:</p>
 <pre>
     ^   Exponentiation
@@ -5790,7 +5782,7 @@ with <code>CLEAR</code> or <code>ERASE</code>.</p>
 </pre>
 
 
-<h2>Types</h2>
+<h2 id="types">Types</h2>
 <p>PC-BASIC recognises four variable types, distinguished by their type character
 which is the last character of the variable's full name:</p>
 <table><tr>
@@ -5820,7 +5812,7 @@ If no such setting has been made, the default type is single-precision float.</p
     Double-precision floats can hold more decimals, but not larger or smaller numbers, than single-precision floats.
 </li></ul>
 
-<h2>Error trapping</h2>
+<h2 id="error-trapping">Error trapping</h2>
 <p>
     Normally, any error will interrupt program execution and print a message on the console (exceptions are <code>OVERFLOW</code>
     and <code>DIVISION BY ZERO</code>, which print a message but do not interrupt execution). It is possible to handle errors more graciously by
@@ -5830,7 +5822,7 @@ If no such setting has been made, the default type is single-precision float.</p
     If an error occurs, or error trapping is switched off, while the program is executing an error-trapping routine, the program terminates and an error message is shown.
 </p>
 
-<h2>Event trapping</h2>
+<h2 id="event-trapping">Event trapping</h2>
 <p>
     Event trapping allows to define subroutines which are executed outside of the normal course of operation. Events that can be trapped are:
 </p>
@@ -5849,7 +5841,7 @@ If no such setting has been made, the default type is single-precision float.</p
     If an event occurs while event-trapping is paused, then the event is triggered immediately when event trapping is resumed.
 </p>
 
-<h2>Internal representation of variables</h2>
+<h2 id="internal">Internal representation of variables</h2>
 <p>Internal representation:</p>
 <ul><li>
    Line numbers are two-byte unsigned little-endian ints.
@@ -6005,7 +5997,7 @@ Schematically, MBF floating point numbers are represented as follows.</p>
 </dd>
 </dl>
 
-<h2>Colours</h2>
+<h2 id="colours">Colours</h2>
 <p>The emulated video adapter can produce more colours than can be shown on the
 screen at one time. These <em>colours</em> can be used by assigning them to <em>attributes</em>
 in a <em>palette</em>.</p>
@@ -6170,7 +6162,7 @@ in a <em>palette</em>.</p>
 <tr> <th>31</th> <td><code>8f</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>9f</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>af</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>bf</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>cf</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>df</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ef</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ff</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> </tr>
 </table>
 
-<h2>Devices</h2>
+<h2 id="devices">Devices</h2>
 <p>PC-BASIC recognises the following DOS-style devices, which can be opened, input
 from and output to. Some devices allow specification of further parameters, such
 as handshake specifications for serial devices, a filename for cassette devices and a path for disk devices.
@@ -6285,7 +6277,7 @@ represent them in a BASIC file.</p>
 <code> FFFF DEBUG</code>
 </li></ul>
 
-<h2>Error codes</h2>
+<h2 id="errors">Error codes</h2>
 <table><tr>
 <td><code>
 1</code></td><td><code>NEXT without FOR
