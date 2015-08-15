@@ -4,7 +4,7 @@
     This file is released under a Creative Commons Attribution-ShareAlike 4.0 International License.
 -->
 
-<h2>The working environment</h2>
+<h2 id="workenv">The working environment</h2>
 <p>The first thing you'll see when starting PC-BASIC is the working environment.
 Like GW-BASIC, but unlike practically all modern compilers and interpreters,
 PC-BASIC's working environment serves both as a development environment and as a
@@ -203,7 +203,7 @@ If your operating system does not catch the
 </dl>
 
 
-<h2>Keyboard shortcuts</h2>
+<h2 id="shortcuts">Keyboard shortcuts</h2>
 <p>The function keys and the alt key can be used as keyboard shortcuts for some
 keywords.
 The default values for the function keys are:</p>
@@ -251,7 +251,7 @@ This is done by pressing the <code class="key">Alt</code> key and typing the dec
  ASCII code on the numeric keypad, then releasing the <code class="key">Alt</code> key.
 </p>
 
-<h2>Changing settings</h2>
+<h2 id="settings">Changing settings</h2>
 <p>PC-BASIC has a number of settings that change the way it operates. There are
 two ways to change these settings:</p>
 <dl>
@@ -281,7 +281,7 @@ You cannot use the sort name of options in the configuration file. You also cann
 <p>In either method, the options have the same name and syntax. In what follows, we will often refer to
 a particular option setting; remember that you can always set this from the command line as well as from the configuration file.</p>
 
-<h2>BASIC programs</h2>
+<h2 id="programs">BASIC programs</h2>
 <p>PC-BASIC can hold one BASIC program at a time in memory. To enter a program line, start with a <em>line number</em> and enter BASIC commands after that. The maximum length of a program line is 255 characters, including the line number and any spaces. The program line will not be immediately executed, but stored in the program. Program lines are sorted by line number, so that line <code>10</code> is executed before line <code>20</code>.
 All program
 lines must have a line number. Line numbers range from <code>0</code> to <code>65535</code> inclusive.
@@ -357,7 +357,7 @@ with no extension, end the filename in a dot. On file systems without
 short filenames, it is not possible to load a program if its filename is
 longer than 8.3 or ends in a dot.</p>
 
-<h3>Accessing your drives</h3>
+<h3 id="mounting">Accessing your drives</h3>
 <p>By default, drive letter <code>Z:</code> is mapped to the current working directory and
 is the current drive. In particular, it is not mapped to the Windows <code>Z:</code>
 drive, if that exists. You can map drives and other file system locations as PC-BASIC drive letters by
@@ -372,7 +372,7 @@ using the <code>mount</code> option. For example, </p>
 <p>If you want PC-BASIC's drive letters to be the same as those in Windows, enable the option <code>map-drives</code>. Use this with caution, since it means that your programs can now read and write on all drives that Windows allows you access to. On non-Windows systems, <code>map-drives</code> will map <code>C:</code> to your file system root, <code>H:</code> to your home directory and <code>Z:</code> to your current working directory.</p>
 
 
-<h3>Compatible BASIC files</h3>
+<h3 id="program-files">Compatible BASIC files</h3>
 <p>Many BASIC dialects use the same extension <code>.BAS</code>, but their files are not compatible.
 PC-BASIC runs GW-BASIC program files only. Some tips to recognise GW-BASIC programs:  </p>
 <ul>
@@ -388,7 +388,7 @@ If <code>strict-newline</code> is enabled, ASCII files in standard Unix format (
 </p>
 
 
-<h2>Packages</h2>
+<h2 id="packages">Packages</h2>
 <p>PC-BASIC can run packaged programs. A package is simply a zip archive
 that contains (at least) a configuration file named <code>PCBASIC.INI</code>. Settings
 from the config file are loaded; usually, one of those settings will be a
@@ -402,7 +402,7 @@ The temporary directory is removed when PC-BASIC closes and it is therefore
 not possible to save files and re-open them on the next run of the package.</p>
 
 
-<h2>Printing</h2>
+<h2 id="printing">Printing</h2>
 <p>You can print from PC-BASIC programs
 by accessing the <code>LPT1:</code> device. PC-BASIC will send the output to
 your operating system's default printer, unless you change the <code>lpt1=</code>
@@ -431,7 +431,7 @@ printer font that includes the characters you need to print. On Unix systems,
 PC-BASIC will use the <code>paps</code> utility if it is available; this will
 automatically select fonts that support the characters you need.</p>
 
-<h2>Accessing serial and parallel ports</h2>
+<h2 id="ports">Accessing serial and parallel ports</h2>
 <p>PC-BASIC provides the serial devices <code>COM1:</code> and <code>COM2:</code>.
 To make use of these, you need to attach them to a communications port on your
 computer with the <code>com1=</code> or <code>com2=</code> option. To attach to
@@ -446,7 +446,7 @@ For example, set <code>lpt2=PARPORT:0</code> to attach your computer's first
 parallel port to <code>LPT2:</code>.</p>
 
 
-<h2>Emulation targets</h2>
+<h2 id="presets">Emulation targets</h2>
 <p>By default, PC-BASIC emulates GW-BASIC on a system with VGA video capabilities.
 However, it can emulate several other setups, which differ from each other in
 terms of video and audio capacity, fonts, memory size, as well as available BASIC syntax.
@@ -507,14 +507,14 @@ you can now run <code>pcbasic --preset=my_preset</code> to start an emulation of
 a hypothetical machine with a VGA video card running PCjr Cartridge BASIC.
 </p>
 
-<h2>International encoding standards</h2>
+<h2 id="codepages">International encoding standards</h2>
 <p>PC-BASIC supports a large number of legacy codepages that were common at the time GW-BASIC was popular, including double-byte character set codepages used for Chinese, Japanese and Korean. You can select your codepage by using the <code>codepage=</code> option. For example, <code>codepage=936</code> selects the GBK codepage commonly used on the Chinese mainland.
 PC-BASIC will load and save all program files as if encoded in the codepage you select.</p>
 
 <p>It is also possible to load and save programs in the nowadays common UTF-8 standard format, by enabling the <code>utf8</code> option. When <code>utf8</code> is enabled, "ASCII" program source will be saved and loaded in standard UTF-8 encoding. Please note that you will still need to select a codepage that provides all the Unicode characters that your program needs.</p>
 
 
-<h2>Fonts</h2>
+<h2 id="fonts">Fonts</h2>
 <p>PC-BASIC emulates the distinctive raster fonts of IBM-compatible machines. The ROM
 fonts of the original IBM and Tandy adapters (which are in the public
 domain in a number of countries) have been included in PC-BASIC. These provide the most
@@ -538,12 +538,12 @@ See the UniFont project for an authoring tool. You can add custom fonts to PC-BA
 installing them into the <code>font/</code> subdirectory of PC-BASIC's installation
 directory.</p>
 
-<h2>Redirecting input and output</h2>
+<h2 id="redirecting">Redirecting input and output</h2>
 <p>PC-BASIC supports redirecting input and output the GW-BASIC way: output redirected with the <code>output=</code> option will be sent to the screen as well as the specified file, while input redirected with <code>input=</code> is taken only from the specified file. Note that screen output through the <code>SCRN:</code> device and keyboard input through the <code>KYBD:</code> device are not redirected. Files are read and written in the codepage set with PC-BASIC.</p>
 
 <p>Note that it is also possible to use your operating system's facility to redirect console output using the <code>&lt;</code> and <code>&gt;</code> operators. It's best to set <code>interface=none</code> so that I/O is redirected through the console. This will produce files in UTF-8 encoding.</p>
 
-<h2>Command-line interface</h2>
+<h2 id="cli">Command-line interface</h2>
 <p>You can run PC-BASIC as a command-line interface by setting the <code>interface=cli</code> (or <code>-b</code>) option. No window will be opened: you can type BASIC commands straight into your Command Prompt/Terminal. Use the horizontal arrow keys to move on the current line you're editing; use the vertical arrow keys to show screen rows above and below. Copy and
 paste are available only if the calling shell provides them. On Windows, <code class="key">Ctrl</code>+<code class="key">Break</code> will terminate PC-BASIC immediately. You can use <code class="key">Ctrl</code>+<code class="key">C</code> to interrupt the program. The end-of-file key combination (<code class="key">Ctrl</code>+<code class="key">D</code> on Unix, <code class="key">Ctrl</code>+<code class="key">Z</code> on Windows) will exit PC-BASIC.
 
@@ -556,7 +556,7 @@ paste are available only if the calling shell provides them. On Windows, <code c
 
 <p>For scripting purposes, it is also possible to run PC-BASIC without any interface by setting <code>interface=none</code> or <code>-n</code>. If this is set, PC-BASIC will take input from and send output to the console as UTF-8 without further modification. This is useful in combination with redirection and pipes.</p>
 
-<h2>Text-based interface</h2>
+<h2 id="curses">Text-based interface</h2>
 <p>There is also a full-screen text interface available: enable it by setting <code>interface=text</code> (or <code>-t</code>).
 the text-based interface is very similar to the default graphical interface, but runs in your Command Prompt or Terminal window. </p>
 
@@ -565,10 +565,10 @@ the text-based interface is very similar to the default graphical interface, but
 <p>On Unix systems only, you can get sound in the text and command-line interfaces over the PC speaker if you install the <code>beep</code> utility. If you use Ubuntu, be aware that the PC speaker is switched off by default. You'll need to edit <code>/etc/modprobe.d/blacklist.conf</code> and comment out the line <code>blacklist pcspkr</code>. Then, <code>apt-get install beep</code> and be sure to wear appropriate ear protection: the default sound volume is <strong>loud</strong>.</p>
 
 
-<h2>Security</h2>
+<h2 id="security">Security</h2>
 <p>PC-BASIC makes some default choices with basic security in mind, but does not sandbox its programs in any meaningful way. BASIC programs have more or less full access to your computer. You should treat them with the same caution as you would shell scripts or binaries. Therefore, do not run a program from the internet that you have not inspected first using <code>LIST</code> or <code>--convert=A</code> on the command line. You wouldn't just download an executable from the internet and run it either, right?</p>
 
-<h2>Differences with GW-BASIC</h2>
+<h2 id="gwbasic">Differences with GW-BASIC</h2>
 
 <p>GW-BASIC was a real-mode DOS program, which means that it had full control over an IBM-compatible 8086 computer. It had direct access to all areas of memory and all devices. Some BASIC programs used this fact, by using <code>POKE</code> and <code>OUT</code> statements as well as <code>CALL</code> and <code>USR</code> machine-code subroutines to perform tasks for which BASIC did not provide support. PC-BASIC runs on modern machines which may be based on completely different architectures and anyway do not allow applications to directly access
 memory or devices. Therefore, it is not possible to run machine code on PC-BASIC. It you need machine code, you'll need to use full
@@ -649,7 +649,7 @@ CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
 which switches off all convenience and security features that cause differences with
 GWBASIC.</p>
 
-<h2>GW-BASIC command-line options</h2>
+<h2 id="gwbasic-options">GW-BASIC command-line options</h2>
 <p>GW-BASIC recognised a number of options on the command-line.
 These are matched by PC-BASIC with only minor modifications:
 <table>
