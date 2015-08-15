@@ -3,7 +3,7 @@ html {
     font-family: sans;
     font-size: 90%;
     line-height: 140%;
-    
+
 }
 body {
     margin-left: 2em;
@@ -41,6 +41,7 @@ h4 {
 
 ul {
     margin-top: 0em;
+    padding-left: 1em;
 }
 
 p {
@@ -84,7 +85,7 @@ table {
     margin-bottom: 1em;
     line-height: 140%;
     border-bottom: 1px dotted lightblue;
-}  
+}
 
 tr:nth-child(odd)		{ background-color:#eeeeff; }
 tr:nth-child(even)		{ background-color:#ffffff; }
@@ -117,4 +118,3 @@ pre {
     border-bottom: 1px dotted;
     padding: 0.1em 0.5em 0.1em 0.5em;
 }
-
