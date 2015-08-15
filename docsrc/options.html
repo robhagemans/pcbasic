@@ -24,7 +24,7 @@ options.</dd>
 <dd>See the full table of options below. If no options are present, the
 interpreter will run in interactive mode.</dd>
 <dt><code>--allow-code-poke[=True|=False]</code></dt>
-<dd>Allow programs to <code>POKE</code> into code memory.</dd>
+<dd>Allow programs to <code><a href="#POKE">POKE</a></code> into code memory.</dd>
 <dt><code>--altgr[=True|=False]</code></dt>
 <dd>If <code>True</code> (default), interpret the right
 <code class="key">Alt</code> key as
@@ -369,9 +369,9 @@ one of <code>left</code>,<code>middle</code>,<code>right</code>,<code>none</code
 <dt><code>--ctrl-c-break[=True|=False]</code></dt>
 <dd>
 If <code>False</code>, follow GW-BASIC behaviour
-where <code class="key">Ctrl</code>+<code class="key">C</code> breaks <code>AUTO</code>
-and <code>INPUT</code> but not program execution or
-<code>LIST</code>.<br />
+where <code class="key">Ctrl</code>+<code class="key">C</code> breaks <code><a href="#AUTO">AUTO</a></code>
+and <code><a href="#INPUT">INPUT</a></code> but not program execution or
+<code><a href="#LIST">LIST</a></code>.<br />
 If <code>True</code>, treat
 <code class="key">Ctrl</code>+<code class="key">C</code> exactly like
 <code class="key">Ctrl</code>+<code class="key">Break</code> and
@@ -635,11 +635,11 @@ if <code>SCRN:</code> is written to explicitly. Output to
 <code>SCRN:</code> files will always be shown on the screen, as in
 GW-BASIC.</dd>
 <dt><code>--pcjr-term=<em>terminal_program</em></code></dt>
-<dd>Set the terminal program run by the PCjr <code>TERM</code>
+<dd>Set the terminal program run by the PCjr <code><a href="#TERM">TERM</a></code>
 command to <code><em>terminal_program</em></code>. This only has an
 effect with <code>--syntax={pcjr|tandy}</code>.</dd>
 <dt><code>--peek=[<em>seg</em>:<em>addr</em>:<em>val</em>,[<em>seg</em>:<em>addr</em>:<em>val</em>...]]</code></dt>
-<dd>Define <code>PEEK</code> preset values. If defined, <code>DEF
+<dd>Define <code><a href="#PEEK">PEEK</a></code> preset values. If defined, <code>DEF
 SEG:? PEEK(<em>addr</em>)</code> will return
 <code><em>val</em></code>.</dd>
 <dt><code>--pen={left|middle|right|none}</code></dt>
@@ -744,7 +744,7 @@ Default is <code>smooth</code>. Graphical interface only.</dd>
 <dd>Set serial input buffer <code><em>size</em></code> (default is
 256). If set to 0, serial communications are disabled.</dd>
 <dt><code>--shell={none|native|<em>command</em>]</code></dt>
-<dd>Set the command interpreter run on the <code>SHELL</code>
+<dd>Set the command interpreter run on the <code><a href="#SHELL">SHELL</a></code>
 command to the operating system's native shell or a custom shell
 run by <code><em>command</em></code>. Default is <code>none</code>,
 which disables the <code>SHELL</code> command.</dd>
@@ -838,7 +838,7 @@ from UTF-8 on <code>LOAD</code> and to UTF-8 on <code>SAVE</code>.</dd>
 <dt><code>--video-memory=<em>size</em></code></dt>
 <dd>Set the amount of emulated video memory available. This affects
 the number of video pages that can be used. On PCjr and Tandy, this
-can be changed at runtime through the <code>CLEAR</code> statement;
+can be changed at runtime through the <code><a href="#CLEAR">CLEAR</a></code> statement;
 more than 16384 needs to be available to enter <code>SCREEN
 5</code> and <code>SCREEN 6</code>. Default is 262144.</dd>
 <dt><code>-w</code><br>
