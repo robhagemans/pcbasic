@@ -1,4 +1,4 @@
-#!/bin/env python2
+#!/usr/bin/env python2
 from lxml import etree
 import sys
 parser = etree.HTMLParser()
