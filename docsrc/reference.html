@@ -53,7 +53,7 @@ the angle in radians.
 <h4>Notes</h4>
 <ul>
 <li>
-Unless PC-BASIC is run with the <code>double</code> option, this function
+Unless PC-BASIC is run with the <code><a href="#--double">double</a></code> option, this function
 returns a single-precision value.</li>
 <li>
 <code>ATN(x)</code> differs in the least significant digit from GW-BASIC.
@@ -134,8 +134,8 @@ BLOAD <em>filename</em> [, <em>offset</em> ]
 file to read from.
 </li><li>
 <code><em>offset</em></code> is a numeric expression in the range <code>[-32768&mdash;65535]</code>.
-It indicates an offset in the current <code>DEF SEG</code> segment where the file is to be
-stored. If not specified, the offset stored in the <code>BSAVE</code> file will be used. If
+It indicates an offset in the current <code><a href="#DEF-SEG">DEF SEG</a></code> segment where the file is to be
+stored. If not specified, the offset stored in the <code><a href="BSAVE">BSAVE</a></code> file will be used. If
 negative, its two's complement will be used.
 </li>
 </ul>
@@ -160,7 +160,7 @@ BSAVE <em>filename</em>, <em>offset</em>, <em>length</em>
 file to read from.
 </li><li>
 <code><em>offset</em></code> is a numeric expression in the range <code>[-32768&mdash;65535]</code> indicating
-the offset into the current <code>DEF SEG</code> segment from where to start reading.
+the offset into the current <code><a href="#DEF-SEG">DEF SEG</a></code> segment from where to start reading.
 </li><li>
 <code><em>length</em></code> is a numeric expression in the range <code>[-32768&mdash;65535]</code> indicating
 the number of bytes to read.
@@ -248,7 +248,7 @@ CHAIN [MERGE] <em>program</em> [, [<em>line_number_expr</em>] [, ALL ] [, DELETE
 <p>Loads <code><em>program</em></code> into memory and runs it, optionally transferring variables.</p>
 <ul>
 <li>If <code>ALL</code> is specified, all variables are transferred. If not, the variables
-specified in a <code>COMMON</code> statement are transferred. </li>
+specified in a <code><a href="#COMMON">COMMON</a></code> statement are transferred. </li>
 <li>If <code>MERGE</code> is specified, <code><em>program</em></code> is merged into the existing program. To be
 able to use this, <code><em>program</em></code> must be saved as ASCII.
 </li><li>
@@ -271,13 +271,13 @@ specified and exists before the merge.
 
 <h4>Notes</h4>
 <ul><li>
-<code>CHAIN</code> preserves the <code>OPTION BASE</code> setting.
+<code>CHAIN</code> preserves the <code><a href="#OPTION-BASE">OPTION BASE</a></code> setting.
 </li><li>
 <code>COMMON</code> variables remain <code>COMMON</code> for the next CHAIN.
 </li><li>
-Only if <code>ALL</code> is specified, <code>DEF FN</code> definitions are preserved.
+Only if <code>ALL</code> is specified, <code><a href="DEF-FN">DEF FN</a></code> definitions are preserved.
 </li><li>
-Only if <code>MERGE</code> is specified, <code>DEFINT</code>, <code>DEFSTR</code>, <code>DEFSNG</code>, <code>DEFDBL</code> definitions
+Only if <code>MERGE</code> is specified, <code><a href="#DEFINT">DEFINT</a></code>, <code><a href="#DEFSTR">DEFSTR</a></code>, <code><a href="#DEFSNG">DEFSNG</a></code>, <code><a href="#DEFDBL">DEFDBL</a></code> definitions
     are preserved.
 </li><li>
 If specified, <code>ALL</code> must precede <code>DELETE</code>; if unspecified, no comma must
@@ -380,12 +380,12 @@ right-hand x axis. If a negative value is specified, the arc sector is
 connected by a line to the midpoint.
 </li><li>
 <code><em>aspect</em></code> specifies the ratio between the y radius and the x radius. If it is
-not specified, the standard value for the <code>SCREEN</code> mode is used (see there), so
+not specified, the standard value for the <code><a href="#SCREEN-statement">SCREEN</a></code> mode is used (see there), so
 as to make the ellipse appear like a circle on the original hardware.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-For <code><em>aspect</em> <> 1</code>, the midpoint algorithm used does not pixel-perfectly
+For <code><em>aspect</em> &lt;&gt; 1</code>, the midpoint algorithm used does not pixel-perfectly
    reproduce GW-BASIC's ellipses.
 </li></ul>
 <h4>Errors</h4>
@@ -401,12 +401,12 @@ For <code><em>aspect</em> <> 1</code>, the midpoint algorithm used does not pixe
 <h3 id="CLEAR"><code>CLEAR</code> statement</h3>
 <pre>CLEAR [<em>expr</em>] [, [<em>mem_limit</em>] [, <em>stack_size</em>] ]
 </pre>
-<p>Clears all variables, arrays,<code>DEF FN</code> user functions, <code>DEF<em>type</em></code> type definitions,
-and <code>COMMON</code> declarations. Closes all files.
-Turns off all sound. Resets <code>PLAY</code> state and sets music to foreground.
-Clears all <code>ON ERROR</code> traps. Resets <code>ERR</code> and <code>ERL</code> to zero. Disables all events.
-Turns <code>PEN</code> and <code>STRIG</code> off. Resets the random number generator.
-Clears the loop stack. Resets the <code>DRAW</code> state and the current graphics position.
+<p>Clears all variables, arrays,<code><a href="#DEF-FN">DEF FN</a></code> user functions, <code><a href="#DEFINT">DEF<em>type</em></a></code> type definitions,
+and <code><a href="#COMMON">COMMON</a></code> declarations. Closes all files.
+Turns off all sound. Resets <code><a href="#PLAY">PLAY</a></code> state and sets music to foreground.
+Clears all <code><a href="#ON-ERROR">ON ERROR</a></code> traps. Resets <code><a href="#ERR">ERR</a></code> and <code><a href="#ERL">ERL</a></code> to zero. Disables all events.
+Turns <code><a href="#PEN-statement">PEN</a></code> and <code><a href="#STRIG-switch">STRIG</a></code> off. Resets the random number generator.
+Clears the loop stack. Resets the <code><a href="#DRAW">DRAW</a></code> state and the current graphics position.
 </p>
 <h4>Parameters</h4>
 <ul><li>
@@ -420,7 +420,7 @@ Default is previous stack size. Default stack size is 512.
 <ul><li>
   The purpose of <em>expr</em> is unknown.
 </li><li>
-  If called inside a <code>FOR</code>&mdash;<code>NEXT</code> or <code>WHILE</code>&mdash;<code>WEND</code> loop, an error will be raised at
+  If called inside a <code><a href="#FOR">FOR</a></code>&mdash;<code><a href="#NEXT">NEXT</a></code> or <code><a href="#WHILE">WHILE</a></code>&mdash;<code><a href="#WEND">WEND</a></code> loop, an error will be raised at
    the iteration keyword as the loop stacks are cleared.
 </li></ul>
 <h4>Errors</h4>
@@ -598,7 +598,7 @@ Any of the parameters is not in <code>[-32768&mdash;32767]</code>: <code>Overflo
 <h3 id="COM"><code>COM</code> statement</h3>
 <pre>COM(<em>port</em>) { ON | OFF | STOP }</pre>
 <ul>
-<li><code>ON</code>: enables <code>ON COM(<em>port</em>)</code> event trapping of the emulated serial port.
+<li><code>ON</code>: enables <code><a href="#ON-event">ON COM(<em>port</em>)</a></code> event trapping of the emulated serial port.
 </li><li>
 <code>OFF</code>: disables trapping.
 </li><li>
@@ -614,7 +614,7 @@ serial port (<code>COM1:</code> or <code>COM2:</code>) is trapped.
 <h3 id="COMMON"><code>COMMON</code> statement</h3>
 <pre>COMMON [ [<em>var_0</em>] [, [<em>var_1</em>] [, [...] ] ] ]</pre>
 <p>Specifies variables to be passed as common variables to the program called
-with <code>CHAIN</code>.
+with <code><a href="#CHAIN">CHAIN</a></code>.
 The statement may end with one or more commas. </p>
 <h4>Parameters</h4>
 <ul><li>
@@ -625,14 +625,14 @@ must be followed by round or square brackets. Brackets may also be mixed <code>a
 
 <h3 id="CONT"><code>CONT</code> statement</h3>
 <pre>CONT [ <em>anything</em> ]</pre>
-<p>Resumes execution of a program that has been halted by <code>STOP</code>, <code>END</code>, <code class="key">Ctrl</code>+<code class="key">C</code>, or  <code class="key">Ctrl</code>+<code class="key">Break</code>. </p>
+<p>Resumes execution of a program that has been halted by <code><a href="#STOP">STOP</a></code>, <code><a href="#END">END</a></code>, <code class="key">Ctrl</code>+<code class="key">C</code>, or  <code class="key">Ctrl</code>+<code class="key">Break</code>. </p>
 <h4>Notes</h4>
 <ul><li>
 Anything after the <code>CONT</code> keyword is ignored.
 </li><li>
-   If a break is encountered in <code>GOSUB</code> routine called from a continuing
+   If a break is encountered in <code><a href="#GOSUB">GOSUB</a></code> routine called from a continuing
     direct line (e.g. <code>GOSUB 100:PRINT A$</code>), <code>CONT</code> will overwrite the running
-    direct line. As the subroutine <code>RETURN</code>s to the position after the <code>GOSUB</code> in
+    direct line. As the subroutine <code><a href="#RETURN">RETURN</a></code>s to the position after the <code>GOSUB</code> in
     the old direct line, strange things may happen if commands are given after
     <code>CONT</code>. In GW-BASIC, this can lead to strange errors in non-existing
     program lines as the parser executes bytes that are not part of a program
@@ -644,7 +644,7 @@ Anything after the <code>CONT</code> keyword is ignored.
 <h4>Errors</h4>
 <ul><li>
 No program is loaded, a program has not been run, after a program line
-    has been modified or after <code>CLEAR</code>: <code>Can't continue</code>.
+    has been modified or after <code><a href="#CLEAR">CLEAR</a></code>: <code>Can't continue</code>.
 </li><li>
 The break occurred in a direct line: <code>Can't continue</code>
 </li></ul>
@@ -653,7 +653,7 @@ The break occurred in a direct line: <code>Can't continue</code>
 <h3 id="COS"><code>COS</code> function</h3>
 <pre><em>cosine</em> = COS(<em>angle</em>)</pre>
 <p>Returns the cosine of <code><em>angle</em></code>.
-Unless PC-BASIC is run with the <code>--double</code> option, this function returns a single-precision
+Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option, this function returns a single-precision
 value.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -741,7 +741,7 @@ statement.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-If the type of the literal does not match that of the corresponding <code>READ</code>
+If the type of the literal does not match that of the corresponding <code><a href="#READ">READ</a></code>
 statement, a <code>Syntax error</code> occurs on the <code>DATA</code> statement.
 </li></ul>
 
@@ -791,7 +791,7 @@ date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>
 
 <h3 id="DEF-FN"><code>DEF FN</code> statement</h3>
 <pre>DEF FN[ ]<em>name</em>[( <em>arg_0</em> [, <em>arg_1</em> [, ...] ] )] = <em>expression</em></pre>
-<p>Defines a function called <code>FN<em>name</em></code> (or <code>FN<em> name</em></code>: spaces between <code>FN</code> and <code><em>name</em></code> are optional).
+<p>Defines a function called <code><a href="#FN">FN</a><em>name</em></code> (or <code>FN<em> name</em></code>: spaces between <code>FN</code> and <code><em>name</em></code> are optional).
 On calling <code>FN<em>name</em>( ... )</code>, <code><em>expression</em></code> is
 evaluated with the supplied parameters substituted. The result of the
 evaluation is the return value of <code>FN<em>name</em></code>.
@@ -851,7 +851,8 @@ dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
 
 <h3 id="DEF-SEG"><code>DEF SEG</code> statement</h3>
 <pre>DEF SEG [=<em>address</em>]</pre>
-<p>Sets the memory segment to be used by <code>BLOAD</code>, <code>BSAVE</code>, <code>CALL</code>, <code>PEEK</code>, <code>POKE</code>, or <code>USR</code>.
+<p>Sets the memory segment to be used by <code><a href="#BLOAD">BLOAD</a></code>, <code><a href="#BSAVE">BSAVE</a></code>, <code><a href="#CALL">CALL</a></code>,
+    <code><a href="#PEEK">PEEK</a></code>, <code><a href="#POKE">POKE</a></code>, or <code><a href="#USR">USR</a></code>.
 <code><em>address</em></code> is a numeric expression in <code>[-32768&mdash;65535]</code>.
 <h4>Notes</h4>
 <ul><li>
@@ -924,12 +925,12 @@ The range specified does not include any program lines stored: <code>Illegal fun
 <pre>DIM <em>name</em> { ( | [ } <em>limit_0</em> [, <em>limit_1</em> [, ...] ] { ) | } ]</pre>
 <p>Allocates memory for arrays.
 The <code>DIM</code> statement also fixes the number of indices of the array.
-An array can only be allocated once; to re-allocate an array, <code>ERASE</code> or
- <code>CLEAR</code> must be executed first.
+An array can only be allocated once; to re-allocate an array, <code><a href="#ERASE">ERASE</a></code> or
+ <code><a href="#CLEAR">CLEAR</a></code> must be executed first.
 If an array is first used without a <code>DIM</code> statement, it is automatically allocated with its maximum indices set at <code>10</code>
 for each index position used. If an array's <code>DIM</code> statement specifies no indices,
  it is allocated with a single index with maximum <code>10</code>.
-The least index allowed is determined by <code>OPTION BASE</code>.
+The least index allowed is determined by <code><a href="#OPTION-BASE">OPTION BASE</a></code>.
 <h4>Parameters</h4>
 <ul><li>
 <code><em>name</em></code> is a legal variable name
@@ -1064,7 +1065,7 @@ The array exceeds the size of available variable
     <ul><li>
        a string variable name followed by semicolon (<code>;</code>)
     </li><li>
-       the result of <code>VARPTR$()</code> on a string variable
+       the result of <code><a href="#VARPTR$">VARPTR$()</a></code> on a string variable
     </li></ul>
 </dd>
 </dl>
@@ -1115,9 +1116,9 @@ The specified line number does not exist: <code>Undefined line number</code>.
 <h3 id="ELSE"><code>ELSE</code> statement</h3>
 <pre>ELSE [<em>anything</em>]</pre>
 <p>
-Unless part of an <code>IF</code> statement on the same line, anything after <code>ELSE</code> is ignored
-in the same way as after <code>'</code> or <code>:REM</code>. No colon <code>:</code> preceding
-the <code>ELSE</code> statement is necessary. See <code>IF</code> for normal usage.</p>
+Unless part of an <code><a href="#IF">IF</a></code> statement on the same line, anything after <code>ELSE</code> is ignored
+in the same way as after <code>'</code> or <code>:<a href="#REM">REM</a></code>. No colon <code>:</code> preceding
+the <code>ELSE</code> statement is necessary. See <code><a href="#IF">IF</a></code> for normal usage.</p>
 
 
 <h3 id="END"><code>END</code> statement</h3>
@@ -1125,7 +1126,7 @@ the <code>ELSE</code> statement is necessary. See <code>IF</code> for normal usa
 <p>
 Closes all files, stops program execution and returns control to the user.
 No message is printed. It is possible to resume execution at the next statement
-using <code>CONT</code>.
+using <code><a href="#CONT">CONT</a></code>.
 </p>
 
 <h3 id="ENVIRON"><code>ENVIRON</code> statement</h3>
@@ -1302,7 +1303,7 @@ valued expression.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-Unless PC-BASIC is run with the <code>--double</code> option, this function returns a single-precision
+Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option, this function returns a single-precision
 value.
 </li><li>
    The return value sometimes differs in the least significant digit from GW-BASIC. For
@@ -1343,8 +1344,8 @@ value.
 <h3 id="FIELD"><code>FIELD</code> statement</h3>
 <pre>FIELD [#] <em>file_number</em> [, <em>width_0</em> AS <em>name_0</em> [, <em>width_1</em> AS <em>name_1</em> [, ...] ] ]</pre>
 <p>Assigns variables to the random-access record buffer. The record buffer is a
-region of memory of length defined by the <code>OPEN</code> statement; the default record
-length is 128 bytes. The <code>FIELD</code> statement assigns a portion of this region to
+region of memory of length defined by the <code><a href="#OPEN">OPEN</a></code> statement; the default record
+length is 128 bytes. The <code><a href="#FIELD">FIELD</a></code> statement assigns a portion of this region to
 one or more fixed-length string variables, so that the value of these strings
 is whatever happens to be in the record buffer at that location.
 <h4>Notes</h4>
@@ -1355,16 +1356,16 @@ without any variables specified has no effect.
 Another  <code>FIELD</code> statement on the same file will specify an alternative mapping of the
 same file buffer; all mappings will be in effect simultaneously.
 </li><li>
-A subsequent assignment or <code>LET</code> or <code>MID$</code> statement on <code><em>name_0</em> , <em>name_1</em> ...</code> will dis-
+A subsequent assignment or <code><a href="#LET">LET</a></code> or <code><a href="#MID$">MID$</a></code> statement on <code><em>name_0</em> , <em>name_1</em> ...</code> will dis-
 associate the string variable from the field buffer.
 </li><li>
-Use <code>LSET</code> or <code>RSET</code> to change
+Use <code><a href="#LSET">LSET</a></code> or <code><a href="#RSET">RSET</a></code> to change
 values in the field buffer.
 </li><li>
-Use <code>GET</code> to read values from the file into the field
+Use <code><a href="#GET-files">GET</a></code> to read values from the file into the field
 buffer, changing the variables.
 </li><li>
-Use <code>PUT</code> to write the field buffer to the file.
+Use <code><a href="#PUT-files">PUT</a></code> to write the field buffer to the file.
 </li></ul>
 <h4>Parameters</h4>
 <ul><li>
@@ -1389,12 +1390,11 @@ The statement ends in a comma: <code>Missing operand</code>.
 </li><li>
 No file number is specified: <code>Missing operand</code>.
 </li><li>
-The lengths in a <code>FIELD</code> statement add up to a number larger than the
+The lengths in a <code><a href="#FIELD">FIELD</a></code> statement add up to a number larger than the
 record length of the field buffer: <code>Field overflow</code>.
 </li><li>
 <code><em>name_0</em> , <em>name_1</em> ...</code> specify a non-string variable: <code>Type mismatch</code>.
 </li></ul>
-
 
 <h3 id="FILES"><code>FILES</code> statement</h3>
 <pre>FILES [<em>path_and_filter</em>]</pre>
@@ -1447,7 +1447,7 @@ The specified filter does not match any files: <code>File not found</code>.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
- <code>FIX</code> truncates towards zero: it removes the fractional part. By contrast, <code>INT</code>
+ <code>FIX</code> truncates towards zero: it removes the fractional part. By contrast, <code><a href="#INT">INT</a></code>
     truncates towards negative infinity. For negative <code><em>x</em></code>, <code>FIX(<em>x</em>)-INT(<em>x</em>)=1</code>.
 </li></ul>
 <h4>Errors</h4>
@@ -1458,7 +1458,7 @@ The specified filter does not match any files: <code>File not found</code>.
 
 <h3 id="FN"><code>FN</code> function</h3>
 <pre><em>result</em> = FN[ ]<em>name</em> (<em>arg_0</em> [, <em>arg_1</em> [, ...] ])</pre>
-<p>Evaluates a user-defined function.
+<p>Evaluates the user-defined function previously defined with <code><a href="#DEF-FN">DEF FN</a> <em>name</em></code>.
 Spaces between <code>FN</code> and <code><em>name</em></code> are optional.
 <h4>Parameters</h4>
 <ul><li>
@@ -1483,7 +1483,7 @@ The type of one or more parameters differs from the function definition:
 <pre>FOR <em>loop_var</em> = <em>start</em> TO <em>stop</em> [STEP <em>step</em>]</pre>
 <p>Initiates a <code>FOR&mdash;NEXT</code> loop.</p>
 <p>Initially, <code><em>loop_var</em></code> is set to <code><em>start</em></code>. Then, the statements between the <code>FOR</code>
-statement and the <code>NEXT</code> statement are executed and <code><em>loop_var</em></code> is incremented by
+statement and the <code><a href="#NEXT">NEXT</a></code> statement are executed and <code><em>loop_var</em></code> is incremented by
 <code><em>step</em></code> (if <code><em>step</em></code> is not specified, by 1). This is repeated until <code><em>loop_var</em></code>
 has become greater than <code><em>stop</em></code>. Execution then continues at the statement
 following <code>NEXT</code>. The value of <code><em>loop_var</em></code> equals <code><em>stop</em>+<em>step</em></code> after the loop.</p>
@@ -1522,8 +1522,11 @@ before returning available memory.
 <pre>GET [#] <em>file_number</em> [, <em>record_number</em>]</pre>
 <p>Read a record from the random-access file <code><em>file_number</em></code> at position
 <code><em>record_number</em></code>.
-The record can be accessed through the <code>FIELD</code> variables or through <code>INPUT$</code>,
- <code>INPUT</code> or <code>LINE INPUT</code>.
+    The record can be accessed through the <code><a href="#FIELD">FIELD</a></code>
+    variables or through <code><a href="#INPUT$">INPUT$</a></code>,
+    <code><a href="#INPUT">INPUT</a></code> or
+    <code><a href="#LINE-INPUT">LINE INPUT</a></code>.
+</p>
 <h4>Parameters</h4>
 <ul><li>
 <code><em>file_number</em></code> is a numeric expression that yields the number
@@ -1555,8 +1558,11 @@ If the record number is beyond the end of the file, the file buffer is
 <pre>GET [#] <em>com_file_number</em> [, <em>number_bytes</em>]</pre>
 <p>Read <code><em>number_bytes</em></code> bytes from the communications buffer opened under file
 number <code><em>com_file_number</em></code>.
-The record can be accessed through the <code>FIELD</code> variables or through <code>INPUT$</code>,
- <code>INPUT</code> or <code>LINE INPUT</code>.</p>
+    The record can be accessed through the <code><a href="#FIELD">FIELD</a></code>
+    variables or through <code><a href="#INPUT$">INPUT$</a></code>,
+    <code><a href="#INPUT">INPUT</a></code> or
+    <code><a href="#LINE-INPUT">LINE INPUT</a></code>.
+</p>
 <h4>Parameters</h4>
 <ul><li>
 <code><em>file_number</em></code> is a numeric expression that yields the number
@@ -1587,8 +1593,8 @@ and the <code>COM</code> buffer length, inclusive.
 <code><em>com_file_number</em></code> is not the number of an open file:
     <code>Bad file number</code>.
 </li><li>
-If the serial input buffer is full, i.e. <code>LOF(<em>com_file_number</em>) = 0</code>, and
-    <code>LOC(<em>com_file_number</em>) = 255</code>: <code>Communication buffer overflow</code>
+If the serial input buffer is full, i.e. <code><a href="#LOF">LOF</a>(<em>com_file_number</em>) = 0</code>, and
+    <code><a href="#LOC">LOC</a>(<em>com_file_number</em>) = 255</code>: <code>Communication buffer overflow</code>
 </li><li>
    If the carrier drops during <code>GET</code>, hangs until the <code class="key">Ctrl</code>+<code class="key">Break</code> key is pressed.
 </li></ul>
@@ -1607,7 +1613,7 @@ array can be calculated as <code><em>number_elements</em> * <em>byte_size</em></
 <code>2</code> for integers (<code>%</code>), 4 for single (<code>!</code>) and 8 for double (<code>#</code>).
 Array byte size for
 string is 3, but string arrays are not allowed in <code>GET</code>. For calculating the
-number of elements, keep in mind that <code>OPTION BASE 0</code> is the default; in which
+number of elements, keep in mind that <code><a href="#OPTION-BASE">OPTION BASE</a> 0</code> is the default; in which
 case an array with maximum index 10 has 11 elements. This works through in
 multidimensional arrays.</p>
 
@@ -1630,7 +1636,7 @@ multidimensional arrays.</p>
     etc. Data is word-aligned at the end of each row. Thus, in a screen mode
     with 4 bits per pixel, the first row takes at least 8 bytes (4 words), even
     if it consists of only one pixel. The number of bits per pixel depends on
-    the <code>SCREEN</code> mode.
+    the <code><a href="#SCREEN-statement">SCREEN</a></code> mode.
 </td>
 </tr>
 </table>
@@ -1663,7 +1669,9 @@ The area is too large for the array: <code>Illegal function call</code>.
 
 <h3 id="GOSUB"><code>GOSUB</code> statement</h3>
 <pre>GO[ ]SUB <em>line_number</em> [<em>anything</em>]</pre>
-<p>Jumps to a subroutine at <code><em>line_number</em></code>. The next <code>RETURN</code> statement jumps back to
+<p>
+    Jumps to a subroutine at <code><em>line_number</em></code>. The next
+    <code><a href="#RETURN">RETURN</a></code> statement jumps back to
 the statement after <code>GOSUB</code>. Anything after <code><em>line_number</em></code> until the end of the
 statement is ignored. If executed from a direct line, <code>GOSUB</code> runs the subroutine and
 the following <code>RETURN</code> returns execution to the direct line.
@@ -1741,7 +1749,8 @@ is a numeric expression. The comma is optional and ignored.
 <code><em>line_number_0</em></code> and <code><em>line_number_1</em></code> are existing line numbers.
 Statements <code><em>statements_0</em></code> and <code><em>statements_1</em></code> can be compound statements with
 one or more colons (<code>:</code>) separating single statements. The compound statements
-can contain nested <code>IF&mdash;THEN&mdash;ELSE</code> statements. <code>ELSE</code> clauses are optional; they
+can contain nested <code>IF&mdash;THEN&mdash;ELSE</code> statements.
+<code><a href="#ELSE">ELSE</a></code> clauses are optional; they
 are bound to the innermost free <code>IF</code> statement if nested. Additional <code>ELSE</code>
 clauses that have no matching <code>IF</code> are ignored. All clauses must be on the same
 program line.
@@ -1750,7 +1759,7 @@ program line.
    <code>THEN</code> and <code>GOTO</code> are interchangeable; which one is chosen is independent
     of whether a statement or a line number is given. <code>GOTO PRINT 1</code> is fine.
 </li><li>
-   As in <code>GOTO</code>, anything after the line number is ignored.
+    As in <code><a href="#GOTO">GOTO</a></code>, anything after the line number is ignored.
 </li><li>
    If <code><em>truth_value</em></code> has a string value: <code>Type mismatch</code>.
 </li></ul>
@@ -1875,7 +1884,7 @@ Returns the value of an emulated machine port.</p>
     <td>    7       </td><td>joystick 2 button 2</td>
     </tr></table>
     The button bits are 0 when the button is fired, 1 otherwise. The axis values
-    are normally 0 but are set to 1 by OUT &amp;H201, x and then fall back to 0
+    are normally 0 but are set to 1 by <code><a href="#OUT">OUT</a> &amp;H201, <em>x</em></code> and then fall back to 0
     after a delay. The longer the delay, the higher the axis value.
 </td>
 </tr><tr>
@@ -2105,8 +2114,9 @@ the prompt is followed by a comma, no question mark is added. </p>
 </li><li>
    Characters beyond the 255th character of the screen line are discarded.
 </li><li>
-   If user input is interrupted by <code class="key">Ctrl</code>+<code class="key">Break</code>, <code>CONT</code> will re-execute the
-   <code>INPUT</code> statement.
+    If user input is interrupted by <code class="key">Ctrl</code>+<code class="key">Break</code>,
+    <code><a href="#CONT">CONT</a></code> will re-execute the
+    <code>INPUT</code> statement.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -2152,7 +2162,7 @@ of a random access file.</p>
 </li><li>
    If <code><em>file_num</em></code> is open to <code>KYBD:</code>, <code>INPUT#</code> reads from the keyboard until a
     return or comma is encountered (as in a file). Arrow keys and delete are
-    passed as their control characters (<em>not</em> scancodes!) preceded by <code>CHR$(&amp;HFF)</code>.
+    passed as their control characters (<em>not</em> scancodes!) preceded by <code><a href="#CHR$">CHR$</a>(&amp;HFF)</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -2171,10 +2181,10 @@ The last character of the field buffer is read: <code>Field overflow</code>.
 </li><li>
 <code><em>file_num</em></code> is not open for <code>INPUT</code> or <code>RANDOM</code>: <code>Bad file mode</code>.
 </li><li>
-<code><em>file_num</em></code> is open to a <code>COM</code> port and this is the
-first <code>INPUT</code>, <code>LINE INPUT</code> or <code>INPUT$</code> call on that port
-since the buffer has filled up completely (i.e. <code>LOF(<em>file_num</em>)</code> has become zero):
-<code>Communication buffer overflow</code>.
+    <code><em>file_num</em></code> is open to a <code>COM</code> port and this is the
+    first <code><a href="#INPUT#">INPUT</a></code>, <code><a href="#LINE-INPUT#">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
+    since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<em>file_num</em>)</code> has become zero):
+    <code>Communication buffer overflow</code>.
 </li></ul>
 
 <h3 id="INPUT$"><code>INPUT$</code> function</h3>
@@ -2218,10 +2228,10 @@ if <code><em>file_num</em></code> is provided, from a text file.
 </li><li>
 <code><em>num_chars</em></code> or <code><em>file_num</em></code> are strings: <code>Type mismatch</code>.
 </li><li>
-<code><em>file_num</em></code> is open to a <code>COM</code> port and this is the
-first <code>INPUT</code>, <code>LINE INPUT</code> or <code>INPUT$</code> call on that port
-since the buffer has filled up completely (i.e. <code>LOF(<em>file_num</em>)</code> has become zero):
-<code>Communication buffer overflow</code>.
+    <code><em>file_num</em></code> is open to a <code>COM</code> port and this is the
+    first <code><a href="#INPUT#">INPUT</a></code>, <code><a href="#LINE-INPUT#">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
+    since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<em>file_num</em>)</code> has become zero):
+    <code>Communication buffer overflow</code>.
 </li></ul>
 
 <h3 id="INSTR"><code>INSTR</code> function</h3>
@@ -2261,8 +2271,9 @@ at character 1.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
- <code>FIX</code> truncates towards zero: it removes the fractional part. By contrast, <code>INT</code>
-    truncates towards negative infinity. For negative <code><em>x</em></code>, <code>FIX(<em>x</em>)-INT(<em>x</em>)=1</code>.
+    <code><a href="#FIX">FIX</a></code> truncates towards zero: it removes the
+    fractional part. By contrast, <code>INT</code> truncates towards negative infinity.
+    For negative <code><em>x</em></code>, <code>FIX(<em>x</em>)-INT(<em>x</em>)=1</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -2296,7 +2307,8 @@ at character 1.
 <p>Raises <code>Illegal function call</code>.</p>
 <h4>Notes</h4>
 <ul><li>
-   In GW-BASIC, <code>IOCTL$</code> reads the reply to <code>IOCTL</code> from a device.
+    In GW-BASIC, <code>IOCTL$</code> reads the reply to
+    <code><a href="#IOCTL">IOCTL</a></code> from a device.
 </li><li>
    This function is not implemented in PC-BASIC.
 </li></ul>
@@ -2318,7 +2330,7 @@ at character 1.
 If <code>LIST</code> is specified, prints a list of
 the 10 function keys with the function-key macros defined for those keys to the console. Special
 characters are represented by their symbol equivalent in the loaded codepage.
-Some characters get a special representation: e.g. <code>CHR$(13)</code> is represented
+Some characters get a special representation: e.g. <code><a href="#CHR$">CHR$</a>(13)</code> is represented
 as a back arrow. </p>
 
 
@@ -2334,8 +2346,9 @@ Only the first 15 characters of <code><em>string_value</em></code> are stored.</
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-   If <code><em>key_id</em></code> is not in the range <code>[1&mdash;10]</code>, the statement is interpreted as an
-    event-trapping <code>KEY</code> statement (see below).
+    If <code><em>key_id</em></code> is not in the range <code>[1&mdash;10]</code>,
+    the statement is interpreted as an
+    event-trapping <code><a href="#KEY-event">KEY</a></code> statement.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -2401,8 +2414,10 @@ Keys are:</p>
 <td>14</td>
 <td><code class="key">&#8595;<!--down--></code></td>
 </tr></table>
-<p>Keys 15 to 20 are defined using the event trapping <code>KEY</code> definition statement
-as described below.</p>
+<p>
+    Keys 15 to 20 are defined using the event trapping
+    <code><a href="#KEY-event-def">KEY</a></code> definition statement.
+</p>
 <h4>Notes</h4>
 <ul><li>
 With <code>--syntax=tandy</code>, key 11 id <code class="key">F11</code> and key 12 is <code class="key">F12</code>. Pre-defined keys 11&mdash;14 shift to 13&mdash;16.
@@ -2426,7 +2441,7 @@ With <code>--syntax=tandy</code>, key 11 id <code class="key">F11</code> and key
 expression in <code>[15&mdash;20]</code>.
 </li><li>
 <code><em>string_value</em></code> is a string expression of length 2. The first character is interpreted as a modifier
-while the second character is interpreted as a scancode. See <code>INP</code> for scancodes.
+while the second character is interpreted as a scancode. See <code><a href="#INP">INP</a></code> for scancodes.
 Modifiers are:
 <table><tr>
     <td><code>CHR$(&amp;h80)</code></td>
@@ -2645,7 +2660,8 @@ followed by a comma or a semicolon.
    If user input is interrupted by <code class="key">Ctrl</code>+<code class="key">Break</code>, <code>CONT</code> will re-execute the <code>LINE
     INPUT</code> statement.
 </li><li>
-   Unlike <code>INPUT</code>, <code>LINE INPUT</code> does not end the prompt with <code>?</code>.
+    Unlike <code><a href="#INPUT">INPUT</a></code>, <code>LINE INPUT</code>
+    does not end the prompt with <code>?</code>.
 </li></ul>
 
 
@@ -2686,10 +2702,10 @@ The last character of the field buffer is read: <code>Field overflow</code>.
 </li><li>
 <code><em>file_num</em></code> has a string value: <code>Type mismatch</code>.
 </li><li>
-<code><em>file_num</em></code> is open to a <code>COM</code> port and this is the
-first <code>INPUT</code>, <code>LINE INPUT</code> or <code>INPUT$</code> call on that port
-since the buffer has filled up completely (i.e. <code>LOF(<em>file_num</em>)</code> has become zero):
-<code>Communication buffer overflow</code>.
+    <code><em>file_num</em></code> is open to a <code>COM</code> port and this is the
+    first <code><a href="#INPUT#">INPUT</a></code>, <code><a href="#LINE-INPUT#">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
+    since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<em>file_num</em>)</code> has become zero):
+    <code>Communication buffer overflow</code>.
 </li></ul>
 
 
@@ -2741,7 +2757,9 @@ A line number is greater than <code>65529</code>: <code>Syntax error</code>.
 <p>Loads the program stored in file <code><em>file_name</em></code> into memory.
 If <code>,R</code> is specified, runs the file after loading.
 <code>LOAD ,R</code> keeps all data files open. Existing variables will be
-cleared and any program in memory will be erased. <code>LOAD</code> implies a <code>CLEAR</code>.</p>
+    cleared and any program in memory will be erased. <code>LOAD</code> implies a
+    <code><a href="#CLEAR">CLEAR</a></code>.
+</p>
 <h4>Parameters</h4>
 <ul><li>
 <code><em>file_name</em></code> is a string expression yielding the name of an existing program file.
@@ -2857,8 +2875,10 @@ are specified, the whole file is locked.
     not been activated or all locks are used, <code>LOCK</code> raises <code>Permission denied</code>.
     PC-BASIC behaves as if <code>SHARE</code> has been activated with unlimited locks.
 </li><li>
-   If <code><em>file_number</em></code> is open for <code>RANDOM</code>, <code>LOCK</code> and <code>UNLOCK</code> statements must match
-    in terms of <code><em>record_0</em></code> and <code><em>record_1</em></code>. An non-matching <code>UNLOCK</code> will raise
+    If <code><em>file_number</em></code> is open for <code>RANDOM</code>,
+    <code><a href="#LOCK">LOCK</a></code> and <code><a href="#UNLOCK">UNLOCK</a></code>
+    statements must match in terms of <code><em>record_0</em></code> and
+    <code><em>record_1</em></code>. An non-matching <code>UNLOCK</code> will raise
     <code>Permission denied</code>.
 </li></ul>
 <h4>Errors</h4>
@@ -2912,7 +2932,8 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-   Unless PC-BASIC is run with the <code>--double</code> option, this function returns a single-precision value.
+    Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+    option, this function returns a single-precision value.
 </li><li>
    <code>LOG(<em>x</em>)</code> can differ from GW-BASIC by 1 in the least significant digit.
 </li></ul>
@@ -2950,12 +2971,16 @@ or 1, the position for <code>LPT1:</code> is returned. If it is 2, <code>LPT2:</
 
 
 <h3 id="LPRINT"><code>LPRINT</code> statement</h3>
-<p>See <code>PRINT</code>.</p>
+<p>
+    See <code><a href="#PRINT">PRINT</a></code>.
+</p>
 
 
 <h3 id="LSET"><code>LSET</code> and <code>RSET</code> statements</h3>
 <pre>{ LSET | RSET } <em>string_name</em> = <em>expression</em></pre>
-<p>Assigns a value to a <code>FIELD</code> variable such that it overwrites the <code>FIELD</code> record.
+<p>
+    Assigns a value to a <code><a href="#FIELD">FIELD</a></code> variable such that
+    it overwrites the <code>FIELD</code> record.
 With <code>LSET</code>, the value will be left-justified if it is shorter than the length of
 the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justified.
 </p>
@@ -2972,7 +2997,8 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
    If <code><em>expression</em></code> has a value that is longer than the length of the variable,
     it is truncated at the back at the length of the variable.
 </li><li>
-   If <code>LET</code> is used on a <code>FIELD</code> variable instead of <code>L|RSET</code>, the variable is
+    If <code><a href="#LET">LET</a></code> is used on a <code>FIELD</code> variable
+    instead of <code>L|RSET</code>, the variable is
     detached from the field and becomes a normal string variable.
 </li></ul>
 <h4>Errors</h4>
@@ -3161,12 +3187,18 @@ Renames the file <code><em>old_name</em></code> into <code><em>new_name</em></co
 
 <h3 id="NEW"><code>NEW</code> statement</h3>
 <pre>NEW</pre>
-<p>Stops execution of a program, deletes the program in memory, executes <code>CLEAR</code> and <code>RESTORE</code> and returns control to the user.</p>
+<p>
+    Stops execution of a program, deletes the program in memory, executes
+    <code><a href="#CLEAR">CLEAR</a></code> and <code><a href="#RESTORE">RESTORE</a></code>
+    and returns control to the user.
+</p>
 
 
 <h3 id="NEXT"><code>NEXT</code> statement</h3>
 <pre>NEXT [<em>var_0</em> [, <em>var_1</em> [, ...] ] ]</pre>
-<p>Iterates a <code>FOR&mdash;NEXT</code> loop: increments the loop variable and jumps to the <code>FOR</code>
+<p>
+    Iterates a <code>FOR&mdash;NEXT</code> loop: increments the loop variable and
+    jumps to the <code><a href="#FOR">FOR</a></code>
 statement. If no variables are specified, next matches the most recent <code>FOR</code>
 statement. Several nested <code>NEXT</code> statements can be consolidated into one by
 using the variable list. If one or more variables are specified, their order
@@ -3216,11 +3248,14 @@ No <code>FOR</code> statement is found to match the <code>NEXT</code> statement 
 </li><li>
     <code><em>duration</em></code> is a numeric expression.
 </li></ul>
-<p>    Volume and duration are determined in the same way as for the <code>SOUND</code>
-    statement; see there.</p>
+<p>
+    Volume and duration are determined in the same way as for the
+    <code><a href="#SOUND">SOUND</a></code> statement; see there.
+</p>
 <h4>Notes</h4>
 <ul><li>
-This statement is only available if <code>--syntax={pcjr|tandy}</code> is set.
+    This statement is only available if
+    <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code> is set.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -3274,6 +3309,9 @@ The line number jumped to does not exist: <code>Undefined line number</code>.
 </li></ul>
 
 
+<!-- here -->
+
+
 <h3 id="ON-event"><code>ON</code> statement (event trapping)</h3>
 <pre>ON { COM(<em>n</em>) | KEY(<em>n</em>) | STRIG(<em>n</em>) | PEN | PLAY(<em>n</em>) | TIMER(<em>x</em>) } GOSUB <em>line_number</em></pre>
 <p>Defines an event trapping subroutine.
@@ -3323,7 +3361,7 @@ Events are only trapped when a program is running.
 </li></ul>
 
 
-<h3 id="ON-error"><code>ON ERROR</code> statement</h3>
+<h3 id="ON-ERROR"><code>ON ERROR</code> statement</h3>
 <pre>ON ERROR GOTO { <em>line_number</em> | 0 }</pre>
 <p>Turns error trapping on or off. When <code><em>line_number</em></code> is set, any error causes the error handling
 routine starting at that line number to be called; no message is printed and program execution is not stopped. The
@@ -5382,8 +5420,10 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li><li>
 <code><em>file_number</em></code> is not an open file: <code>Bad file number</code>.
 </li><li>
-<code><em>file_number</em></code> is open for <code>RANDOM</code>, <code>LOCK</code> and <code>UNLOCK</code> statements must match
-    in terms of <code><em>record_0</em></code> and <code><em>record_1</em></code>. An unmatching <code>UNLOCK</code> will raise
+    If <code><em>file_number</em></code> is open for <code>RANDOM</code>,
+    <code><a href="#LOCK">LOCK</a></code> and <code><a href="#UNLOCK">UNLOCK</a></code>
+    statements must match in terms of <code><em>record_0</em></code> and
+    <code><em>record_1</em></code>. An non-matching <code>UNLOCK</code> will raise
     <code>Permission denied</code>.
 </li><li>
 <code><em>record_0</em></code> or <code><em>record_1</em></code> is not in <code>[1&mdash;2^25-2]</code>: <code>Bad record number</code>.
