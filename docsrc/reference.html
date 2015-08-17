@@ -3309,9 +3309,6 @@ The line number jumped to does not exist: <code>Undefined line number</code>.
 </li></ul>
 
 
-<!-- here -->
-
-
 <h3 id="ON-event"><code>ON</code> statement (event trapping)</h3>
 <pre>ON { COM(<em>n</em>) | KEY(<em>n</em>) | STRIG(<em>n</em>) | PEN | PLAY(<em>n</em>) | TIMER(<em>x</em>) } GOSUB <em>line_number</em></pre>
 <p>Defines an event trapping subroutine.
@@ -3322,9 +3319,11 @@ The type of event is given by one of the following keywords:</p>
             if data is present in the input buffer of the <code>COM<em>n</em>:</code>. <code><em>n</em></code> is the port number in <code>[1,2]</code>.
 </tr><tr>
 <td><code>KEY(<em>n</em>)</code></td>
-<td>The event is
-            triggered if key <code><em>n</em></code> is pressed.
-            <code><em>n</em></code> is the key number <code>[1&mdash;10]</code> defined in the <code>KEY</code> statement.</td>
+    <td>
+        The event is triggered if key <code><em>n</em></code> is pressed.
+        <code><em>n</em></code> is the key number <code>[1&mdash;10]</code>
+        defined in the <code><a href="#KEY-event-def">KEY</a></code> statement.
+    </td>
 </tr><tr>
 <td><code>STRIG(<em>n</em>)</code></td>
 <td>They event is triggered if fire button <code><em>n</em></code> is pressed.
@@ -3340,14 +3339,18 @@ The type of event is given by one of the following keywords:</p>
             music background queue. <code><em>n</em></code> is a numeric expression in <code>[1&mdash;32]</code>.</td>
 </tr><tr>
 <td><code>TIMER(<em>x</em>)</code></td>
-<td>The event is triggered every <code><em>x</em></code> seconds after the TIMER ON
+<td>The event is triggered every <code><em>x</em></code> seconds after the <code><a href="#TIMER">TIMER ON</a></code>
             statement. <code><em>x</em></code> is a numeric expression in <code>[1&mdash;86400]</code>.</td>
 </tr></table>
             <h4>Notes</h4>
 <ul><li>
 Event trapping for your chosen event first needs to be enabled using one of the
-statements: <code>COM(<em>n</em>) ON</code>, <code>KEY(<em>n</em>) ON</code>, <code>STRIG(<em>n</em>) ON</code>, <code>PEN ON</code>,
-<code>PLAY ON</code>, <code>TIMER ON.</code>
+statements: <code><a href="#COM">COM(<em>n</em>) ON</a></code>,
+    <code><a href="#KEY-event">KEY(<em>n</em>) ON</a></code>,
+    <code><a href="#STRIG-events">STRIG(<em>n</em>) ON</a></code>,
+    <code><a href="#PEN-statement">PEN ON</a></code>,
+    <code><a href="#PLAY-event">PLAY ON</a></code>,
+    <code><a href="#TIMER-event">TIMER ON</a></code>
 </li><li>
 Events are only trapped when a program is running.
 </li></ul>
@@ -3365,7 +3368,7 @@ Events are only trapped when a program is running.
 <pre>ON ERROR GOTO { <em>line_number</em> | 0 }</pre>
 <p>Turns error trapping on or off. When <code><em>line_number</em></code> is set, any error causes the error handling
 routine starting at that line number to be called; no message is printed and program execution is not stopped. The
-error handling routine is ended by a <code>RESUME</code> statement.
+error handling routine is ended by a <code<a href="#RESUME">RESUME</a></code> statement.
 While in an error handling routine, events are paused and error trapping is
 disabled. After the <code>RESUME</code> statement, any triggered events are picked up in the following
 order: <code>KEY</code>, <code>TIMER</code>, <code>PLAY</code> - the order of the others is unknown.
@@ -3430,9 +3433,10 @@ It is not possible to start the error handler at line number <code>0</code>.
 <td><code>RANDOM</code></td>
 <td>Opens a file for random access; the file is divided in records of
     length <code><em>rec_len</em></code>. If <code>LEN</code> is not specified, the record length defaults to
-    128. The file contents can be accessed using <code>GET</code> and <code>PUT</code> of the <code>FIELD</code>
+    128. The file contents can be accessed using <code><a href="#GET-files">GET</a></code>
+    and <code><a href="#PUT-files">PUT</a></code> of the <code><a href="#FIELD">FIELD</a></code>
     buffer; the <code>FIELD</code> buffer can be accessed through <code>FIELD</code> variables or through
-    <code>PRINT#</code> and <code>INPUT#</code> statements.
+    <code><a href="#PRINT">PRINT#</code> and <code><a href="#INPUT#">INPUT#</a></code> statements.
 </td></tr></table>
 <p>
 If no <code>FOR</code> mode or <code><em>mode_char</em></code> is specified, the file is opened for <code>RANDOM</code>.</p>
@@ -3661,10 +3665,12 @@ The <code>COM:</code> <code><em>file_name</em></code> parameters do not follow t
 <code><em>n</em></code> is a literal digit  <code>0</code> or <code>1</code>. Expressions are not allowed.
 </li></ul>
 <h4>Notes</h4>
-<ul><li>
-   If <code>OPTION BASE</code> has not been called, the first array allocation defaults to starting
-    index 0.
-</li></ul>
+<ul>
+    <li>
+        If <code>OPTION BASE</code> has not been called,
+        the first array allocation defaults to starting index 0.
+    </li>
+</ul>
 <h4>Errors</h4>
 <ul><li>
 <code><em>n</em></code> is not a digit <code>0</code> or <code>1</code>: <code>Syntax error</code>.
@@ -3935,7 +3941,7 @@ two's complement.
    Outside emulated areas, <code>PEEK</code> returns 0.
 </li><li>
    Values for particular memory address can be preset on the command line
-    using the <code>--peek</code> option. This can be used for compatibility with old
+    using the <code><a href="#--peek">--peek</a></code> option. This can be used for compatibility with old
     programs. These values will override video or data segment values, if they
     are in those locations.
 </li></ul>
@@ -4026,7 +4032,7 @@ suspension is handled immediately after the next <code>PEN ON</code> statement.<
 <pre>PLAY <em>mml_string</em></pre>
 <p>Plays the tune defined by <code><em>mml_string</em></code>.</p>
 <pre>PLAY [ <em>mml_string_0</em> ] [, [ <em>mml_string_1</em> ] [, <em>mml_string_2</em> ] ]</pre>
-<p>The three-voice syntax is only available if <code>--syntax={tandy | pcjr}</code> is set.
+<p>The three-voice syntax is only available if <code><a href="#--syntax">--syntax</a>={tandy | pcjr}</code> is set.
     The three separate MML strings correspond to the three voices of the PCjr/Tandy sound adapter.
     The notes in these strings are played synchronously.
 </p>
@@ -4092,7 +4098,10 @@ Play a note. <code><em>note</em></code> can be
 <td>Sets the tempo to <code><em>n</em></code> <code>L4</code>s per minute. Default is 120.</td>
 </tr></table>
 </dd>
-<dt>Background-mode commands (affect <code>SOUND</code>, <code>PLAY</code> and <code>BEEP</code>)</dt>
+    <dt>
+        Background-mode commands (affect <code><a href="#SOUND">SOUND</a></code>,
+        <code><a href="#PLAY">PLAY</a></code> and <code><a href="#BEEP">BEEP</a></code>)
+    </dt>
 <dd>
 <table><tr>
 <td><code>MB</code></td>
@@ -4114,18 +4123,24 @@ Play a note. <code><em>note</em></code> can be
             <ul><li>
                a string variable name followed by a<code>;</code>
             </li><li>
-               the result of <code>VARPTR$()</code> on a string variable
+               the result of <code><a href="#VARPTR$">VARPTR$()</a></code> on a string variable
             </li></ul>
 </td></tr></table>
 </dd>
-<dt>Volume control (Tandy and PCjr only):</dt>
+<dt>
+    Volume control (<code><a href="#--syntax">--syntax</a>={tandy | pcjr}</code> only):
+</dt>
 <dd>
-<table><tr>
-<td><code>V<em>n</em></code></td>
-<td>Set the volume to <code><em>n</em></code>, in the range <code>[0&mdash;15]</code>. On PCjr, if <code>SOUND ON</code>
+    <table><tr>
+        <td>
+            <code>V<em>n</em></code>
+        </td>
+        <td>
+            Set the volume to <code><em>n</em></code>, in the range <code>[0&mdash;15]</code>.
+            On PCjr, if <code><a href="#SOUND-switch">SOUND ON</a></code>
             has not been executed, this has no effect. On Tandy it does have.
-</td>
-</tr></table>
+        </td>
+    </tr></table>
 </dd>
 </dl>
 <p>Numeric variables <code><em>n</em></code> in the commands above can be:</p>
@@ -4186,8 +4201,8 @@ PCjr and Tandy
 
 <h3 id="PMAP"><code>PMAP</code> function</h3>
 <pre><em>physical</em> = PMAP(<em>logical</em>, <em>fn</em>)</pre>
-<p>Maps between viewport and logical (<code>WINDOW</code>) coordinates.
-If no <code>VIEW</code> has been set, the viewport coordinates
+<p>Maps between viewport and logical (<code><a href="#WINDOW">WINDOW</a></code>) coordinates.
+If no <code><a href="#VIEW">VIEW</a></code> has been set, the viewport coordinates
 are physical coordinates.</p>
 <p>The return value depends on <code><em>fn</em></code>:</p>
 <table><tr>
@@ -4209,7 +4224,7 @@ are physical coordinates.</p>
 <ul><li>
    Initially, in text mode, <code>PMAP</code> returns 0.
 </li><li>
-   In GW-BASIC, <code>PMAP</code> behaves anomalously on <code>SCREEN</code> changes, where it sometimes
+   In GW-BASIC, <code>PMAP</code> behaves anomalously on <code><a href="#SCREEN-statement">SCREEN</a></code> changes, where it sometimes
     returns results as if the last <code>WINDOW</code> setting had persisted. This behaviour is not
     implemented in PC-BASIC.
 </li></ul>
@@ -4289,8 +4304,12 @@ Function is called in text mode: <code>Illegal function call</code>.
 
 <h3 id="POKE"><code>POKE</code> statement</h3>
 <pre>POKE <em>address</em>, <em>value</em></pre>
-<p>Sets the value of the memory byte at  <code><em>segment</em> * 16 + <em>address</em></code> to <code><em>value</em></code>, where <code><em>segment</em></code>
-is the current segment set with <code>DEF SEG</code>.</p>
+<p>
+    Sets the value of the memory byte at
+    <code><em>segment</em> * 16 + <em>address</em></code> to <code><em>value</em></code>,
+    where <code><em>segment</em></code> is the current segment set with
+    <code><a href="#DEF-SEG">DEF SEG</a></code>.
+</p>
 <h4>Parameters</h4>
 <ul><li>
 <code><em>address</em></code> is anumeric expression in <code>[-32768&mdash;65535]</code>. Negative values are
@@ -4567,15 +4586,15 @@ and the <code>COM</code> buffer length, inclusive.
 <code><em>com_file_number</em></code> is not the number of an open file:
     <code>Bad file number</code>.
 </li><li>
-The serial input buffer is full, i.e. <code>LOF(<em>com_file_number</em>) = 0</code> and
-    <code>LOC(<em>com_file_number</em>)=255</code>: <code>Communication buffer overflow</code>.
+The serial input buffer is full, i.e. <code><a href="#LOF">LOF</a>(<em>com_file_number</em>) = 0</code> and
+    <code><a href="#LOC">LOC</a>(<em>com_file_number</em>)=255</code>: <code>Communication buffer overflow</code>.
 </li></ul>
 
 
 <h3 id="PUT-graphics"><code>PUT</code> statement (graphics)</h3>
 <pre>PUT (<em>x0</em>, <em>y0</em>), <em>array_name</em> [, { PSET | PRESET | AND | OR | XOR } ]</pre>
 <p>Displays an array to a rectangular area of the graphics screen.
-Usually, <code>PUT</code> is used with arrays that have been stored using <code>GET</code>. See <code>GET</code> for the
+Usually, <code>PUT</code> is used with arrays that have been stored using <code>GET</code>. See <code><a href="#GET-graphics">GET</a></code> for the
 format of the array.</p>
 <p>
 The keywords have the following effect:
@@ -4617,16 +4636,15 @@ The array does not exist: <code>Illegal function call</code>.
 If no seed is specified, <code>RANDOMIZE</code> will prompt the user
 to enter a random seed. The user-provided value is rounded to an integer.
 The random seed is formed of the last two bytes of that integer or <code><em>expr</em></code>.
-If <code><em>expr</em></code> is a float (4 or 8 bytes), these are <code>XOR</code>ed with the preceding 2. The
+If <code><em>expr</em></code> is a float (4 or 8 bytes), these are
+<code><a href="#XOR">XOR</a></code>ed with the preceding 2. The
 first 4 bytes of a double are ignored.
 The same random seed will lead to the same sequence of pseudorandom numbers
-being generated by the <code>RND</code> function.
+being generated by the <code><a href="#RND">RND</a></code> function.
 <h4>Parameters</h4>
 <ul><li>
-
-<code><em>expr</em></code> ia a numeric expression.
+    <code><em>expr</em></code> is a numeric expression.
 </li></ul>
-
 <h4>Notes</h4>
 <ul><li>
    For the same seed, PC-BASIC produces the same pseudorandom numbers as
@@ -4642,10 +4660,13 @@ The user provides a seed outside <code>[-32768&mdash;32767]</code>: <code>Overfl
 
 <h3 id="READ"><code>READ</code> statement</h3>
 <pre>READ <em>var_0</em> [, <em>var_1</em> [, ... ] ]</pre>
-<p>Assigns data from a <code>DATA</code> statement to variables. Reading starts at the current
-<code>DATA</code> position, which is the <code>DATA</code> entry immediately after the last one read by
-previous <code>READ</code> statements. The <code>DATA</code> position is reset to the start by the <code>RUN</code>
-and <code>RESTORE</code> statements.
+<p>
+    Assigns data from a <code><a href="#DATA">DATA</a></code> statement to variables. Reading starts at the current
+    <code>DATA</code> position, which is the <code>DATA</code> entry immediately after the last one read by
+    previous <code>READ</code> statements. The <code>DATA</code> position is reset
+    to the start by the <code><a href="#RUN">RUN</a></code>
+    and <code><a href="#RESTORE">RESTORE</a></code> statements.
+</p>
 <h4>Parameters</h4>
 <ul><li>
 <code><em>var_0</em></code>, <code><em>var_1</em></code> are variables or array elements.
@@ -4676,13 +4697,19 @@ less than 'old remain unchanged.
 <code><em>increment</em></code> is a line number but must not be a dot or zero.
 <h4>Notes</h4>
 <ul><li>
-   The following keywords can reference line numbers, which will be renumbered
-    by renum: <code>AUTO</code>, <code>EDIT</code>, <code>ELSE</code>, <code>ERL</code>, <code>DELETE</code>,
-<code>GOSUB</code>, <code>GOTO</code>, <code>LIST</code>, <code>LLIST</code>, <code>RENUM</code>,
-    <code>RESTORE</code>, <code>RESUME</code>, <code>RETURN</code>, <code>RUN</code>, <code>THEN</code>.
+    The following keywords can reference line numbers, which will be renumbered
+    by renum: <code><a href="#AUTO">AUTO</a></code>, <code><a href="#EDIT">EDIT</a></code>,
+    <code><a href="#ELSE">ELSE</a></code>, <code><a href="#ERL">ERL</a></code>,
+    <code><a href="#DELETE">DELETE</a></code>, <code><a href="#GOSUB">GOSUB</a></code>,
+    <code><a href="#GOTO">GOTO</a></code>, <code><a href="#LIST">LIST</a></code>,
+    <code><a href="#LLIST">LLIST</a></code>, <code><a href="#RENUM">RENUM</a></code>,
+    <code><a href="#RESTORE">RESTORE</a></code>, <code><a href="#RESUME">RESUME</a></code>,
+    <code><a href="#RETURN">RETURN</a></code>, <code><a href="#RUN">RUN</a></code>,
+    <code><a href="#THEN">THEN</a></code>.
 </li><li>
-   One keyword contains line numbers in a different program, which will not be
-    renumbered: <code>CHAIN</code>. However, a line number in a <code>RUN</code> statement that
+    One keyword contains line numbers in a different program, which will not be
+    renumbered: <code><a href="#CHAIN">CHAIN</a></code>. However, a line number
+    in a <code>RUN</code> statement that
     opens a new file <em>will</em> be renumbered, and incorrectly so. Furthermore, any <code>RENUM</code>
     or <code>AUTO</code> statements in a program will have all their arguments 'renumbered',
     including any line number offsets or increments. However silly, this agrees with GW-BASIC's behaviour.
@@ -4714,10 +4741,13 @@ Any of the newly generated line numbers is greater than <code>65529</code>:
 
 <h3 id="RESTORE"><code>RESTORE</code> statement</h3>
 <pre>RESTORE [<em>line</em>]</pre>
-<p>Resets the <code>DATA</code> pointer.
-<code><em>line</em></code> is a line number. If <code><em>line</em></code> is not specified, the <code>DATA</code> pointer is reset
-to the first <code>DATA</code> entry in the program. If it is specified, the <code>DATA</code> pointer is
-reset to the first <code>DATA</code> entry in or after <code><em>line</em></code>.
+<p>
+    Resets the <code><a href="#DATA">DATA</a></code> pointer.
+    <code><em>line</em></code> is a line number. If <code><em>line</em></code>
+    is not specified, the <code>DATA</code> pointer is reset to the first
+    <code>DATA</code> entry in the program. If it is specified, the <code>DATA</code> pointer is
+    reset to the first <code>DATA</code> entry in or after <code><em>line</em></code>.
+</p>
 <h4>Errors</h4>
 <ul><li>
 <code><em>line</em></code> is not an existing line number: <code>Undefined line number</code>.
@@ -4744,7 +4774,7 @@ The program ends inside an error trapping routine without a <code>RESUME</code>
 
 <h3 id="RETURN"><code>RETURN</code> statement</h3>
 <pre>RETURN [<em>line</em>]</pre>
-<p>Returns from a <code>GOSUB</code> subroutine. If <code><em>line</em></code> is not specified, <code>RETURN</code> jumps back
+<p>Returns from a <code><a href="#GOSUB">GOSUB</a></code> subroutine. If <code><em>line</em></code> is not specified, <code>RETURN</code> jumps back
 to the statement after the <code>GOSUB</code> that jumped into the subroutine.
 If <code><em>line</em></code> is specified, it must be a valid line number. <code>RETURN</code> jumps to that
 line (and pops the <code>GOSUB</code> stack).
@@ -4804,7 +4834,7 @@ No matching path is found, <code>Path not found</code> .
 random number. If <code><em>x</em></code> is greater than zero, a new pseudorandom number is
 returned. If <code><em>x</em></code> is negative, the value of <code><em>x</em></code> is used to generate a new
 random number seed; after that, a new pseudorandom number is returned.
-The seed is generated in a different way than by <code>RANDOMIZE</code>.
+The seed is generated in a different way than by <code><a href="#RANDOMIZE">RANDOMIZE</a></code>.
 <h4>Errors</h4>
 <ul><li>
 <code><em>x</em></code> has a string value: <code>Type mismatch</code>.
@@ -4812,7 +4842,7 @@ The seed is generated in a different way than by <code>RANDOMIZE</code>.
 
 
 <h3 id="RSET"><code>RSET</code> statement</h3>
-<p>See <code>LSET</code>.</p>
+<p>See <code><a href="#LSET">LSET</a></code>.</p>
 
 
 <h3 id="RUN"><code>RUN</code> statement</h3>
@@ -4822,7 +4852,7 @@ If <code><em>line</em></code> is specified, it must be a valid line number in th
 Execution starts from this line number.
 If <code><em>filename</em></code> is specified, the file with that name is loaded and executed.
 <code>RUN ,R</code> keeps all data files open. Existing variables will be
-cleared and any program in memory will be erased. <code>RUN</code> implies a <code>CLEAR</code>.
+cleared and any program in memory will be erased. <code>RUN</code> implies a <code><a href="#CLEAR">CLEAR</a></code>.
 <h4>Errors</h4>
 <ul><li>
 <code><em>line</em></code> does not exist: <code>Undefined line number</code>.
@@ -4885,7 +4915,7 @@ Any parameter has a string value: <code>Type mismatch</code>.
 <code><em>row</em></code> is not inside the current <code>VIEW PRINT</code> area:
     <code>Illegal function call</code>.
 </li><li>
-<code>KEY ON</code> and <code><em>row</em>=25</code>: <code>Illegal function call</code>.
+<code><a href="#KEY-list">KEY ON</a></code> and <code><em>row</em>=25</code>: <code>Illegal function call</code>.
 </li><li>
 <code><em>col</em></code> is not in <code>[1, <em>width</em>]</code>: <code>Illegal function call</code>.
 </li></ul>
@@ -4978,7 +5008,7 @@ returns to the program.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-   If the <code>--shell=native</code> option is not specified, this statement does nothing.
+   If the <code><a href="#--shell">--shell</a>=native</code> option is not specified, this statement does nothing.
 </li><li>
 Be careful when enabling this command, as it allows the running BASIC program full access to your files and operating system.
 </li></ul>
@@ -5001,8 +5031,8 @@ the angle in radians.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-Unless PC-BASIC is run with the <code>--double</code> option, this function returns a single-precision
-value.
+    Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+    option, this function returns a single-precision value.
 </li><li>
   The sine returned usually differs from the value returned by GW-BASIC in the least significant figure.
 </li></ul>
@@ -5018,10 +5048,10 @@ value.
 On PCjr and Tandy, the volume and voice channel can additionally be specified.</p>
 <p>If <code>PLAY "MB"</code> has been executed, <code>SOUND</code> plays in the background. If <code>PLAY "MF"</code>
 has been executed, sound plays in the foreground and the interpreter blocks
-until the sound is finished. Foreground mode is default. Unlike <code>PLAY</code>, the
+until the sound is finished. Foreground mode is default. Unlike <code><a href="#PLAY">PLAY</a></code>, the
 sound played by the most recent <code>SOUND</code> statement always plays in the background,
 even if <code>PLAY "MF"</code> has been entered. In background mode, each <code>SOUND</code> statement
-counts as 1 toward the length of the queue reported by the <code>PLAY</code> function.</p>
+counts as 1 toward the length of the queue reported by the <code><a href="#PLAY-function">PLAY</a></code> function.</p>
 <h4>Parameters</h4>
 <ul><li>
 
@@ -5030,12 +5060,11 @@ or in <code>[-32768&mdash;32767]</code> (for <code>--syntax=tandy</code>).
 </li><li>
 <code><em>duration</em></code> is a numeric expression in <code>[0&mdash;65535]</code>.
 </li><li>
-
     <code><em>volume</em></code> is a numeric expression in [0, 15]. 0 is silent, 15 is full
     volume; every step less reduces the volume by 2 dB. (For <code>--syntax={pcjr | tandy}</code>)
 </li><li>
     <code><em>voice</em></code> is a numeric expression in [0, 2], indicating which of the
-    three tone voice channels is used for this sound. (For <code>--syntax={pcjr | tandy}</code>)
+    three tone voice channels is used for this sound. (For <code><a href="#--syntax">--syntax</a>={pcjr | tandy}</code>)
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
@@ -5090,7 +5119,7 @@ Only available with <code>--syntax={pcjr | tandy}</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-This statement is used and <code>--syntax={ pcjr | tandy }</code> is not set:
+This statement is used and <code><a href="#--syntax">--syntax</a>={ pcjr | tandy }</code> is not set:
     <code>Syntax error</code>.
 </li></ul>
 
@@ -5120,7 +5149,7 @@ This statement is used and <code>--syntax={ pcjr | tandy }</code> is not set:
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-Unless PC-BASIC is run with the <code>--double</code> option, this function returns a single-precision
+Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option, this function returns a single-precision
 value.
 </li></ul>
 <h4>Errors</h4>
@@ -5160,9 +5189,11 @@ range <code>[1&mdash;254]</code> with <code>128</code> indicating the neutral po
 
 <h3 id="STOP"><code>STOP</code> statement</h3>
 <pre>STOP</pre>
-<p>Breaks program execution, prints a <code>Break</code>
-message on the console and returns control to the user. Files are not closed. It is possible to resume program
-execution at the next statement using <code>CONT</code>.
+<p>
+    Breaks program execution, prints a <code>Break</code>
+    message on the console and returns control to the user. Files are not closed.
+    It is possible to resume program execution at the next statement using
+    <code><a href="#CONT">CONT</a></code>.
 </p>
 
 <h3 id="STR$"><code>STR$</code> function</h3>
@@ -5246,8 +5277,10 @@ results, all Boolean values:</p>
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-   The <code>STRIG</code> function returns correct results regardless of the <code>STRIG ON</code>
-    status or whether <code>STRIG(0)</code> has been called first.
+    The <code>STRIG</code> function returns correct results regardless of the
+    <code><a href="#STRIG-switch">STRIG ON</a></code>
+    status or whether <code><a href="#STRIG-function">STRIG(0)</a></code>
+    has been called first.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -5317,8 +5350,8 @@ the angle in radians.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-Unless PC-BASIC is run with the <code>--double</code> option, this function returns a single-precision
-value.
+    Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+    option, this function returns a single-precision value.
 </li><li>
   The tangent returned usually differs from the value returned by GW-BASIC in the least significant figure.
 </li><li>
@@ -5334,11 +5367,20 @@ value.
 
 <h3 id="TERM"><code>TERM</code> statement</h3>
 <pre>TERM</pre>
-<p>If <code>--preset=pcjr</code> is set, starts a built-in serial terminal emulator application.
-    This is a BASIC program that is loaded and run instead of the current
-    program.</p>
-<p>If <code>--preset=tandy</code> is set, this statement raises <code>Internal error</code>.</p>
-<p>In the default preset, this keyword is not present. Calling <code>TERM</code> will raise <code>Syntax error</code>.</p>
+<p>
+    If <code><a href="#--pcjr-term">--pcjr-term</a></code> is set, starts a
+    built-in serial terminal emulator application. This is a BASIC program that
+    is loaded and run instead of the current program.
+</p>
+<p>
+    If <code><a href="#--pcjr-term">--pcjr-term</a></code> is not set,
+    this statement raises <code>Internal error</code>.
+</p>
+<p>
+    If <code><a href="#--syntax">--syntax</a></code> is not set to
+    <code>pcjr</code> or <code>tandy</code>, this keyword is not present.
+    Calling <code>TERM</code> will raise <code>Syntax error</code>.
+</p>
 
 
 <h3 id="TIME$-function"><code>TIME$</code> function</h3>
@@ -5361,8 +5403,9 @@ of the form <code>"HH:mm:ss"</code> where <code>00&lt;=HH&lt;24</code>, <code>00
 <h4>Notes</h4>
 <ul><li>
    PC-BASIC stores an offset to the system time and uses this for future
-    calls to <code>TIME</code> and <code>DATE</code> functions in the same interpreter session. The
-    system time is not changed, unlike GW-BASIC under MS-DOS.
+    calls to <code><a href="TIME$-function">TIME$</a></code> and
+    <code><a href="DATE$-function">DATE$</a></code> functions in the same interpreter session.
+    The system time is not changed, unlike GW-BASIC under MS-DOS.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -5380,11 +5423,11 @@ clock.</p>
 <ul><li>
    <code>TIMER</code> updates in ticks of 1/20 second.
 </li><li>
-   The least-significant two bytes of <code>TIMER</code> are often used as a seed for the
-    pseudorandom number generator through <code>RANDOMIZE TIMER</code>. Since these bytes
+    The least-significant two bytes of <code>TIMER</code> are often used as a seed for the
+    pseudorandom number generator through <code><a href="#RANDOMIZE">RANDOMIZE</a> TIMER</code>. Since these bytes
     only take values from a limited set, that's not in fact a particularly good
     random seed. However, the pseudorandom number generator included with GW-BASIC and PC-BASIC
-    is so weak that is should not be used for anything serious anyway.
+    is so weak that it should not be used for anything serious anyway.
 </li><li>
 This function has no brackets.
 </li></ul>
@@ -5396,7 +5439,8 @@ This function has no brackets.
 a tag <code>[100]</code> to the console when program line <code>100</code> is executed, and so forth.
 <h4>Notes</h4>
 <ul><li>
-   Tracing is turned off by the <code>NEW</code> and <code>LOAD</code> statements.
+   Tracing is turned off by the <code><a href="#NEW">NEW</a></code> and
+   <code><a href="#LOAD">LOAD</a></code> statements.
 </li></ul>
 
 
@@ -5481,8 +5525,8 @@ previously defined variable or fully indexed array element.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-<code>VAPTR</code>
-can be used  with <code>PEEK</code> to read a variable's internal representation.
+    <code>VAPTR</code> can be used with <code><a href="#PEEK">PEEK</a></code>
+    to read a variable's internal representation.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -5507,8 +5551,10 @@ The first byte is the length of the record the pointer points to:</p>
 </tr><tr>
     <td>8</td>   <td>for double-precision floats</td>
 </tr></table>
-<p>The last two bytes are the pointer address (as returned by <code>VAPTR</code>) in little-
-endian order.</p>
+<p>
+    The last two bytes are the pointer address (as returned by
+    <code><a href="#VARPTR">VAPTR</a></code>) in little-endian order.
+</p>
 <h4>Errors</h4>
 <ul><li>
 <code><em>name</em></code> has not been previously defined: <code>Illegal function call</code>.
@@ -5566,11 +5612,17 @@ Otherwise, screen row 25 cannot be part of the
 
 <h3 id="WAIT"><code>WAIT</code> statement</h3>
 <pre>WAIT <em>port</em>, <em>and_mask</em> [, <em>xor_mask</em>]</pre>
-<p>Waits for the value of <code>(INP(<em>port</em>) XOR <em>xor_mask</em>) AND <em>and_mask</em></code> to become nonzero.
-Event handling is suspended until <code>WAIT</code> returns. If <code><em>xor_mask</em></code> is not specified, it defaults to <code>0</code>.</p>
+<p>
+    Waits for the value of <code>(<a href="#INP">INP</a>(<em>port</em>)
+    <a href="#XOR">XOR</a> <em>xor_mask</em>) <a href="#AND">AND</a>
+    <em>and_mask</em></code> to become nonzero.
+    Event handling is suspended until <code>WAIT</code> returns.
+    If <code><em>xor_mask</em></code> is not specified, it defaults to <code>0</code>.
+</p>
 <h4>Notes</h4>
 <ul><li>
-A limited number of machine ports are emulated in PC-BASIC. See <code>INP</code>.
+    A limited number of machine ports are emulated in PC-BASIC.
+    See <code><a href="#INP">INP</a></code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -5584,8 +5636,11 @@ Any parameter has a string value: <code>Type mismatch</code>.
 
 <h3 id="WEND"><code>WEND</code> statement</h3>
 <pre>WEND</pre>
-<p>Iterates a <code>WHILE&mdash;WEND</code> loop: jumps to the matching <code>WHILE</code> statement, where its
-condition can be checked.</p>
+<p>
+    Iterates a <code>WHILE&mdash;WEND</code> loop: jumps to the matching
+    <code><a href="#WHILE">WHILE</a></code> statement, where its
+    condition can be checked.
+</p>
 <h4>Notes</h4>
 <ul><li>
    <code>WHILE&mdash;WEND</code> loops can be nested. <code>WEND</code> jumps to the most recent <code>WHILE</code>
@@ -5600,10 +5655,12 @@ All previous <code>WHILE</code> statements have been closed by another <code>WEN
 
 <h3 id="WHILE"><code>WHILE</code> statement</h3>
 <pre>WHILE <em>expr</em></pre>
-<p>Initiates a <code>WHILE&mdash;WEND</code> loop.
-If <code><em>expr</em></code> evaluates to zero, <code>WHILE</code> jumps
-to the statement immediately after the matching <code>WEND</code>. If not, execution
-continues. </p>
+<p>
+    Initiates a <code>WHILE&mdash;WEND</code> loop.
+    If <code><em>expr</em></code> evaluates to zero, <code>WHILE</code> jumps
+    to the statement immediately after the matching
+    <code><a href="#WEND">WEND</a></code>. If not, execution continues.
+</p>
 <h4>Parameters</h4>
 <ul><li>
 <code><em>expr</em></code> is a numeric expression.
@@ -5628,10 +5685,13 @@ inserted.
 </p><p>
 If a device is specified, it does not need to have a file open to it; the width setting will
 be the default width next time a file is opened to that device.
-</p><p>
-If <code><em>device_name</em></code> is <code>"LPT1:"</code> or <code>LPRINT</code> is specified, the device width setting
-affects <code>LPRINT</code> and <code>LLIST</code>.
-</p><p>
+</p>
+<p>
+    If <code><em>device_name</em></code> is <code>"LPT1:"</code> or <code>LPRINT</code>
+    is specified, the device width setting affects <code><a href="#LPRINT">LPRINT</a></code>
+    and <code><A href="#LLIST">LLIST</a></code>.
+</p>
+<p>
 If <code><em>device_name</em></code> is <code>"SCRN:"</code>, <code>"KYBD:"</code>, or omitted, the screen width is changed.
 In this case, <code><em>num_columns</em></code> must be one of 20, 40 or 80.
 </p>
@@ -5659,8 +5719,10 @@ In this case, <code><em>num_columns</em></code> must be one of 20, 40 or 80.
 </li><li>
 <code><em>num_columns</em></code> is a numeric expression.
 </li><li>
-<code><em>num_rows</em></code> is optional and must equal 25. If <code>--syntax={pcjr | tandy}</code> is set, <code><em>num_rows</em></code>
-may be in <code>[0&mdash;25]</code> but its value is ignored.
+    <code><em>num_rows</em></code> is optional and must equal 25. If
+    <code><a href="#--syntax">--syntax</a>={pcjr | tandy}</code> is set,
+    <code><em>num_rows</em></code>
+    may be in <code>[0&mdash;25]</code> but its value is ignored.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -5776,12 +5838,17 @@ Only the first 40 characters in the name are significant. Variable names must
 not be identical to <a href="#keywords">keywords</a>. Variable
 names may start with a keyword, with the exception of <code>USR</code> and <code>FN</code>. Thus, <code>FNORD$</code>
 is not a legal variable name while <code>FRECKLE%</code> is.</p>
-<p>For each name, four different
-variables may exist corresponding to the four types. That is, you can have <code>A$</code>,
-<code>A%</code>, <code>A!</code> and <code>A#</code> as different variables. Which one of those is also known as <code>A</code> depends on
-the settings in <code>DEFINT</code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>. The default is <code> A = A!</code>. In addition,
-you can have <a href="#arrays">arrays</a> <code>A$()</code>, <code>A%()</code>, <code>A!()</code>, <code>A#()</code> which are separate from the scalar variables of the same name.
-
+<p>
+    For each name, four different
+    variables may exist corresponding to the four types. That is, you can have <code>A$</code>,
+    <code>A%</code>, <code>A!</code> and <code>A#</code> as different variables.
+    Which one of those is also known as <code>A</code> depends on the settings in
+    <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
+    The default is <code> A = A!</code>. In addition, you can have
+    <a href="#arrays">arrays</a> <code>A$()</code>, <code>A%()</code>,
+    <code>A!()</code>, <code>A#()</code> which are separate from the scalar
+    variables of the same name.
+</p>
 
 <h2 id="arrays">Arrays</h2>
 <p>Arrays are groups of variables and can have the same types as variables. Arrays are indexed with round or square
@@ -5789,12 +5856,15 @@ brackets; even mixing brackets is allowed. The following all work: <code>A[0]</c
 <code>A(0]</code>, <code>A[0)</code>. Multidimensional arrays are specified with commas: <code>A(0, 0)</code>, <code>A[0, 0, 0]</code>, etc.</p>
 <p>By default, arrays are indexed from <code>0</code>. This can be changed to <code>1</code> using
  <code>OPTION BASE 1</code>.</p>
-<p>Arrays can be allocated using <code>DIM</code>. If all indices of the array
-are <code>10</code> or less, they need not be explicitly allocated. The first
-access of the array (read or write) will automatically allocate it with
-a maximum index of <code>10</code> and the same number of indices as in the first
-access. To re-allocate an array, the old array must first be deleted
-with <code>CLEAR</code> or <code>ERASE</code>.</p>
+<p>
+    Arrays can be allocated using <code><a href="#DIM">DIM</a></code>. If all indices of the array
+    are <code>10</code> or less, they need not be explicitly allocated. The first
+    access of the array (read or write) will automatically allocate it with
+    a maximum index of <code>10</code> and the same number of indices as in the first
+    access. To re-allocate an array, the old array must first be deleted
+    with <code><a href="#CLEAR">CLEAR</a></code> or
+    <code><a href="#ERASE">ERASE</a></code>.
+</p>
 
 
 <h2 id="operators">Operators</h2>
@@ -5810,16 +5880,21 @@ with <code>CLEAR</code> or <code>ERASE</code>.</p>
 <p>Relational operators:</p>
 <pre>
     =       Equal
-    <> ><   Not equal
-    <       Less than
-    >       Greater than
-    <= =<   Less than or equal
-    >= =>   Greater than or equal
+    &lt;&gt; &gt;&lt;   Not equal
+    &lt;       Less than
+    &gt;       Greater than
+    &lt;= =&lt;   Less than or equal
+    &gt;= =&gt;   Greater than or equal
 </pre>
 <p>Boolean operators:</p>
-<pre>
-    NOT, AND, OR, XOR, EQV, IMP
-</pre>
+<ul class="compact">
+    <li><code><a href="#NOT">NOT</a></code></li>
+    <li><code><a href="#AND">AND</a></code></li>
+    <li><code><a href="#OR">OR</a></code></li>
+    <li><code><a href="#XOR">XOR</a></code></li>
+    <li><code><a href="#EQV">EQV</a></code></li>
+    <li><code><a href="#IMP">IMP</a></code></li>
+</ul>
 
 
 <h2 id="types">Types</h2>
@@ -5836,9 +5911,12 @@ which is the last character of the variable's full name:</p>
 </tr><tr>
  <td><code>#</code></td>      <td>double-precision float</td>  <td>8 bytes</td>
 </tr></table>
-<p>If no type character is specified, the first letter of the name determines
-the type according to the settings of <code>DEFINT</code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>.
-If no such setting has been made, the default type is single-precision float.</p>
+<p>
+    If no type character is specified, the first letter of the name determines
+    the type according to the settings of
+    <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
+    If no such setting has been made, the default type is single-precision float.
+</p>
 <p>Machine limits:</p>
 <ul><li>
     Line numbers are in <code>[0&mdash;65535]</code>, although line numbers <code>65530&mdash;65535</code> cannot be entered from the console.
@@ -5854,12 +5932,20 @@ If no such setting has been made, the default type is single-precision float.</p
 
 <h2 id="error-trapping">Error trapping</h2>
 <p>
-    Normally, any error will interrupt program execution and print a message on the console (exceptions are <code>OVERFLOW</code>
-    and <code>DIVISION BY ZERO</code>, which print a message but do not interrupt execution). It is possible to handle errors more graciously by
-    setting an error-handling routine with the <code>ON ERROR GOTO <em>line_number</em></code> statement. The error-handling routine starts at
-    the given line number <code><em>line_number</em></code> and continues until a <code>RESUME</code> statement is encountered. Error trapping is in
-    effect both when a program is running and in interactive mode. Error trapping is switched off with the <code>ON ERROR GOTO 0</code> statement.
-    If an error occurs, or error trapping is switched off, while the program is executing an error-trapping routine, the program terminates and an error message is shown.
+    Normally, any error will interrupt program execution and print a message on
+    the console (exceptions are <code>Overflow</code> and
+    <code>Division by zero</code>, which print a message but do not interrupt
+    execution). It is possible to handle errors more graciously by
+    setting an error-handling routine with the
+    <code><a href="#ON-ERROR">ON ERROR</a> GOTO <em>line_number</em></code>
+    statement. The error-handling routine starts at the given line number
+    <code><em>line_number</em></code> and continues until a
+    <code><a href="#RESUME">RESUME</a></code> statement is encountered.
+    Error trapping is in effect both when a program is running and in interactive
+    mode. Error trapping is switched off with the <code>ON ERROR GOTO 0</code>
+    statement. If an error occurs, or error trapping is switched off, while the
+    program is executing an error-trapping routine, the program terminates and
+    an error message is shown.
 </p>
 
 <h2 id="event-trapping">Event trapping</h2>
@@ -5867,18 +5953,23 @@ If no such setting has been made, the default type is single-precision float.</p
     Event trapping allows to define subroutines which are executed outside of the normal course of operation. Events that can be trapped are:
 </p>
 <ul>
-    <li>Time intervals (<code>ON TIMER</code>)</li>
-    <li>Keypresses (<code>ON KEY</code>)</li>
-    <li>Serial port input (<code>ON COM</code>)</li>
-    <li>Music queue exhaustion (<code>ON PLAY</code>)</li>
-    <li>Joystick triggers (<code>ON STRIG</code>)</li>
-    <li>Light pen activation (<code>ON PEN</code>)</li>
+    <li>Time intervals (<code><a href="#ON-event">ON TIMER</a></code>)</li>
+    <li>Keypresses (<code><a href="#ON-event">ON KEY</a></code>)</li>
+    <li>Serial port input (<code><a href="#ON-event">ON COM</a></code>)</li>
+    <li>Music queue exhaustion (<code><a href="#ON-event">ON PLAY</a></code>)</li>
+    <li>Joystick triggers (<code><a href="#ON-event">ON STRIG</a></code>)</li>
+    <li>Light pen activation (<code><a href="#ON-event">ON PEN</a></code>)</li>
 </ul>
 <p>
-    Event trapping subroutines are defined as regular subroutines. At the <code>RETURN</code> statement, the normal course of program execution is resumed.
-    Event trapping can be switched on and off or paused temporarily with statements of the form <code>PEN ON</code>, <code>PEN OFF</code>, <code>PEN STOP</code>.
-    Event trapping only takes place during program execution and is paused while the program is in an error trap.
-    If an event occurs while event-trapping is paused, then the event is triggered immediately when event trapping is resumed.
+    Event trapping subroutines are defined as regular subroutines. At the
+    <code><a href="#RETURN">RETURN</a></code> statement, the normal course of
+    program execution is resumed. Event trapping can be switched on and off or
+    paused temporarily with statements of the form
+    <code><a href="#PEN-statement">PEN ON</a></code>, <code>PEN OFF</code>,
+    <code>PEN STOP</code>.
+    Event trapping only takes place during program execution and is paused while
+    the program is in an error trap. If an event occurs while event-trapping is
+    paused, then the event is triggered immediately when event trapping is resumed.
 </p>
 
 <h2 id="internal">Internal representation of variables</h2>
@@ -6213,26 +6304,29 @@ When operating on disk devices, specifying a path is mandatory.</p>
 <td><code>SCRN:</code></td>
 <td><code>OUTPUT</code></td>
 <td>
-The screen. Output to <code>SCRN:</code> has largely the same
-                            effect as straight output using <code>PRINT</code>. A difference
-                            is the <code>WIDTH</code> setting which is independent of the
-                            real screen width.
+    The screen. Output to <code>SCRN:</code> has largely the same
+    effect as straight output using <code><a href="#PRINT">PRINT</a></code>.
+    A difference is the <code><a href="#WIDTH">WIDTH</a></code> setting which is
+    independent of the real screen width.
 </td>
 </tr><tr>
 <td><code>KYBD:</code></td>
        <td><code>INPUT</code></td>
 <td>
-           The keyboard. Input read from <code>KYBD:</code> is not echoed
-                            to the screen. Special keys like arrow keys are
-                            registered differently than when using <code>INPUT</code> or
-                            <code>INPUT$</code> straight (see the keyword reference).
+    The keyboard. Input read from <code>KYBD:</code> is not echoed
+    to the screen. Special keys like arrow keys are
+    registered differently than when using <code><a href="#INPUT">INPUT</a></code>
+    or <code><a href="#INPUT$">INPUT$</a></code> straight.
 </td>
 </tr><tr>
 <td><code>LPT1:</code> <code>LPT2:</code> <code>LPT3:</code></td>
 <td><code>OUTPUT</code> <code>RANDOM</code></td>
 <td>
-Parallel ports 1&mdash;3.  In PC-BASIC, <code>LPT</code> devices can be attached to the physical parallel port, to a printer or to a text file.
-Opening a printer for <code>RANDOM</code> has the same effect as opening it for <code>OUTPUT</code>; attempting random-file operations will raise <code>BAD FILE MODE</code>.
+    Parallel ports 1&mdash;3.  In PC-BASIC, <code>LPT</code> devices can be
+    attached to the physical parallel port, to a printer or to a text file.
+    Opening a printer for <code>RANDOM</code> has the same effect as opening it
+    for <code>OUTPUT</code>; attempting random-file operations will raise
+    <code>Bad file mode</code>.
 </td>
 </tr><tr>
 <td><code>COM1:</code> <code>COM2:</code></td>
@@ -6246,8 +6340,10 @@ Opening a printer for <code>RANDOM</code> has the same effect as opening it for 
 </tr><tr>
 <td><code>A:</code> &mdash; <code>Z:</code> and <code>@:</code></td>
 <td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
-    <td>Disk devices. In PC-BASIC, these devices can be mounted to a directory on the host file system. They do not automatically match drive letters on Windows,
-    unless the <code>--map-drives</code> option is set.
+<td>
+    Disk devices. In PC-BASIC, these devices can be mounted to a directory on
+    the host file system. They do not automatically match drive letters on Windows,
+    unless the <code><a href="#--map-drives">--map-drives</a></code> option is set.
 </td>
 </tr></table>
 <p>GW-BASIC additionally recognises the following little-used device, which is not implemented in PC-BASIC.</p>

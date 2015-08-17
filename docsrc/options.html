@@ -559,7 +559,7 @@ unavailable.</dd>
 <dd>Attach a resource to the <code>LPT3:</code> parallel device.
 See <code>--lpt1</code>. If not specified, <code>LPT3:</code> is
 unavailable.</dd>
-<dt><code>--map-drives[=True|=False]</code></dt>
+<dt><code id="--map-drives">--map-drives[=True|=False]</code></dt>
 <dd>On Windows, assign all Windows drive letters to PC-BASIC drive
 letters. On other systems, assign <code>Z:</code> to the current
 working directory, <code>C:</code> to the filesystem root and
@@ -638,7 +638,7 @@ GW-BASIC.</dd>
 <dd>Set the terminal program run by the PCjr <code><a href="#TERM">TERM</a></code>
 command to <code><em>terminal_program</em></code>. This only has an
 effect with <code>--syntax={pcjr|tandy}</code>.</dd>
-<dt><code>--peek=[<em>seg</em>:<em>addr</em>:<em>val</em>,[<em>seg</em>:<em>addr</em>:<em>val</em>...]]</code></dt>
+<dt><code id="--peek">--peek=[<em>seg</em>:<em>addr</em>:<em>val</em>,[<em>seg</em>:<em>addr</em>:<em>val</em>...]]</code></dt>
 <dd>Define <code><a href="#PEEK">PEEK</a></code> preset values. If defined, <code>DEF
 SEG:? PEEK(<em>addr</em>)</code> will return
 <code><em>val</em></code>.</dd>
@@ -743,7 +743,7 @@ Default is <code>smooth</code>. Graphical interface only.</dd>
 <code>--serial-buffer-size=<em>size</em></code></dt>
 <dd>Set serial input buffer <code><em>size</em></code> (default is
 256). If set to 0, serial communications are disabled.</dd>
-<dt><code>--shell={none|native|<em>command</em>]</code></dt>
+<dt><code id="#--shell">--shell={none|native|<em>command</em>]</code></dt>
 <dd>Set the command interpreter run on the <code><a href="#SHELL">SHELL</a></code>
 command to the operating system's native shell or a custom shell
 run by <code><em>command</em></code>. Default is <code>none</code>,
