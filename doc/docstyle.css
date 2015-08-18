@@ -50,6 +50,15 @@ ul {
     width: 5em;
 }
 
+/* horizontal list */
+.horizontal {
+    padding-left: 0;
+}
+
+.horizontal li {
+    display: inline-block;
+}
+
 p {
     margin-top: 0.5em;
     margin-bottom: 1em;

@@ -5905,34 +5905,237 @@ brackets; even mixing brackets is allowed. The following all work: <code>A[0]</c
 </p>
 
 
+
 <h2 id="operators">Operators</h2>
-<p>Mathematical operators, by order of precedence:</p>
-<pre>
-    ^   Exponentiation
-    -   Negation
-    *   Multiplication
-    /   Floating-point Division   \   Integer division   MOD  Integer modulo
-    +   Addition   - Subtraction
-</pre>
-<p>Nothe that exponentiation is more tightly bound than negation: <code>-1^2 = -1</code> but <code>(-1)^2 = 1</code>.</p>
-<p>Relational operators:</p>
-<pre>
-    =       Equal
-    &lt;&gt; &gt;&lt;   Not equal
-    &lt;       Less than
-    &gt;       Greater than
-    &lt;= =&lt;   Less than or equal
-    &gt;= =&gt;   Greater than or equal
-</pre>
-<p>Boolean operators:</p>
-<ul class="compact">
+
+<h3>Order of precedence</h3>
+<p>
+    The order of precedence of operators is as follows, from tightly bound
+    (high priority) to loosely bound (low priority):
+</p>
+<ol>
+    <li><code>^</code></li>
+    <li><code>-</code> (unary)</li>
+    <li><code>*</code></li>
+    <li>
+        <ul class="horizontal">
+            <li><code>/</code></li>
+            <li><code>\</code></li>
+            <li><code>MOD</code></li>
+        </ul>
+    </li>
+    <li>
+        <ul class="horizontal">
+            <li><code>+</code></li>
+            <li><code>-</code> (binary)</li>
+        </ul>
+    </li>
+    <li><code>=</code></li>
+    <li>
+        <ul class="horizontal">
+            <li><code>&lt;&gt;</code></li>
+            <li><code>&gt;&lt;</code></li>
+            <li><code>&lt;</code></li>
+            <li><code>&gt;</code></li>
+            <li><code>&lt;=</code></li>
+            <li><code>=&lt;</code></li>
+            <li><code>&gt;=</code></li>
+            <li><code>=&gt;</code></li>
+        </ul>
+    </li>
     <li><code><a href="#NOT">NOT</a></code></li>
     <li><code><a href="#AND">AND</a></code></li>
     <li><code><a href="#OR">OR</a></code></li>
     <li><code><a href="#XOR">XOR</a></code></li>
     <li><code><a href="#EQV">EQV</a></code></li>
     <li><code><a href="#IMP">IMP</a></code></li>
-</ul>
+</ol>
+<p>
+    Note in particular that exponentiation is more tightly bound than negation:
+    <code>-1^2 = -1</code> but <code>(-1)^2 = 1</code>.
+</p>
+
+<h3 id="math-operators">Mathematical operators</h3>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Operation</th>
+        <th>Result</th>
+    </tr>
+    <tr>
+        <td id="^"><code><em>x</em> ^ <em>y</em></code></td>
+        <td>Exponentiation</td>
+        <td>
+            <code><em>x</em></code> raised to the power of
+            <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="unary-"><code>- <em>y</em></code></td>
+        <td>Negation</td>
+        <td>
+            Negative value of <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="*"><code><em>x</em> * <em>y</em></code></td>
+        <td>Multiplication</td>
+        <td>
+            Product of <code><em>x</em></code> and
+            <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="/"><code><em>x</em> / <em>y</em></code></td>
+        <td>Floating-point division</td>
+        <td>
+            Quotient of <code><em>x</em></code> and
+            <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="\"><code><em>x</em> \ <em>y</em></code></td>
+        <td>Integer division</td>
+        <td>
+            Integer part of quotient of <code><em>x</em></code> and
+            <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="MOD"><code><em>x</em> MOD <em>y</em></code></td>
+        <td>Integer modulo</td>
+        <td>
+            Remainder of the integer division of <code><em>x</em></code> by
+            <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="+"><code><em>x</em> + <em>y</em></code></td>
+        <td>Addition</td>
+        <td>
+            Sum of <code><em>x</em></code> and <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="-"><code><em>x</em> - <em>y</em></code></td>
+        <td>Subtraction</td>
+        <td>
+            Difference of <code><em>x</em></code> and <code><em>y</em></code>
+        </td>
+    </tr>
+</table>
+
+<h3 id="relational-operators">Relational operators</h3>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Operation</th>
+        <th>Result</th>
+    </tr>
+    <tr>
+        <td id="="><code>=</doe></td>
+        <td>Equal</td>
+        <td>
+            True (-1) if <code><em>a</em></code> equals <code><em>b</em></code>,
+            false (0) otherwise.
+        </td>
+    </tr>
+    <tr>
+        <td id="<>"><code>&lt;&gt;</code> <code>&gt;&lt;</code></td>
+        <td>Not equal</td>
+    <td>
+        False (0) if <code><em>a</em></code> equals <code><em>b</em></code>,
+        true (-1) otherwise.
+    </td>
+    </tr>
+    <tr>
+        <td id="<"><code>&lt;</code></td>
+        <td>Less than</td>
+        <td>
+            True if <code><em>a</em></code> is less than <code><em>b</em></code>,
+            false otherwise.
+        </td>
+    </tr>
+    <tr>
+        <td id=">"><code>&gt;</code></td>
+        <td>Greater than</td>
+        <td>
+            True if <code><em>a</em></code> is greater than <code><em>b</em></code>,
+            false otherwise.
+        </td>
+    </tr>
+    <tr>
+        <td id="<="><code>&lt;=</code> <code>=&lt;</code></td>
+        <td>Less than or equal</td>
+        <td>
+            False if <code><em>a</em></code> is greater than <code><em>b</em></code>,
+            true otherwise.
+        </td>
+    </tr>
+    <tr>
+        <td id=">="><code>&gt;=</code> <code>=&gt;</code></td>
+        <td>Greater than or equal</td>
+        <td>
+            False if <code><em>a</em></code> is less than <code><em>b</em></code>,
+            true otherwise.
+        </td>
+</table>
+
+<h3 id="boolean-operators">Boolean operators</h3>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Operation</th>
+        <th>Result</th>
+    </tr>
+    <tr>
+        <td id="NOT"><code>NOT <em>y</em></code></td>
+        <td>Logical negation</td>
+        <td>True (nonzero) if <code><em>y</em></code> is false (0) and vice versa</td>
+    </tr>
+    <tr>
+        <td id="AND"><code><em>x</em> AND </em>y</em></code></td>
+        <td>Conjunction</td>
+        <td>
+            Only true if both  <code><em>x</em></code> and
+            <code><em>y</em></code> are true
+        </td>
+    </tr>
+    <tr>
+        <td id="OR"><code><em>x</em> OR <em>y</em></code></td>
+        <td>Disjunction</td>
+        <td>
+            Only false if both <code><em>x</em></code> and
+            <code><em>y</em></code> are false
+        </td>
+    </tr>
+    <tr>
+        <td id="XOR"><code><em>x</em> XOR <em>y</em></code></td>
+        <td>Exclusive or</td>
+        <td>
+            True if the truth values of <code><em>x</em></code> and
+            <code><em>y</em></code> differ
+        </td>
+    </tr>
+    <tr>
+        <td id="EQV"><code><em>x</em> EQV <em>y</em></code></td>
+        <td>Equivalence</td>
+        <td>
+            True if the truth values of <code><em>x</em></code> and
+            <code><em>y</em></code> are the same
+        </td>
+    </tr>
+    <tr>
+        <td id="IMP"><code><em>x</em> IMP <em>y</em></code></td>
+        <td>Implication</td>
+        <td>
+            True if <code><em>x</em></code> is false or
+            <code><em>y</em></code> is true
+        </td>
+    </tr>
+</table>
+
+
 
 
 <h2 id="types">Types</h2>
