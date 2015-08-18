@@ -4028,7 +4028,26 @@ suspension is handled immediately after the next <code>PEN ON</code> statement.<
 <code><em>mode</em></code> is not in <code>[0&mdash;9]</code>: <code>Illegal function call</code>.
 </li></ul>
 
-<h3 id="PLAY"><code>PLAY</code> statement</h3>
+
+<h3 id="PLAY-event"><code>PLAY</code> statement (event-trapping control)</h3>
+<pre>PLAY { ON | OFF | STOP }</pre>
+<ul>
+    <li>
+        <code>ON</code>: enables <code><a href="#ON-event">ON PLAY</a></code> event
+        trapping of the music queue.
+    </li>
+    <li>
+        <code>OFF</code>: disables trapping.
+    </li>
+    <li>
+        <code>STOP</code>: halts trapping until <code>PLAY ON</code> is used.
+        Events that occur while trapping is halted will trigger immediately when
+        trapping is re-enabled.
+    </li>
+</ul>
+
+
+<h3 id="PLAY"><code>PLAY</code> statement (music)</h3>
 <pre>PLAY <em>mml_string</em></pre>
 <p>Plays the tune defined by <code><em>mml_string</em></code>.</p>
 <pre>PLAY [ <em>mml_string_0</em> ] [, [ <em>mml_string_1</em> ] [, <em>mml_string_2</em> ] ]</pre>
@@ -5413,6 +5432,25 @@ of the form <code>"HH:mm:ss"</code> where <code>00&lt;=HH&lt;24</code>, <code>00
 </li><li>
 <code><em>time</em></code> is not of the correct form: <code>Illegal function call</code>.
 </li></ul>
+
+
+<h3 id="TIMER-event"><code>TIMER</code> statement</h3>
+<pre>TIMER { ON | OFF | STOP }</pre>
+<ul>
+    <li>
+        <code>ON</code>: enables <code><a href="#ON-event">ON TIMER</a></code> event
+        trapping of the timer clock.
+    </li>
+    <li>
+        <code>OFF</code>: disables trapping.
+    </li>
+    <li>
+        <code>STOP</code>: halts trapping until <code>TIMER ON</code> is used.
+        Events that occur while trapping is halted will trigger immediately when
+        trapping is re-enabled.
+    </li>
+</ul>
+
 
 
 <h3 id="TIMER"><code>TIMER</code> function</h3>
