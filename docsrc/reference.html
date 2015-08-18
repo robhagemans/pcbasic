@@ -4,6 +4,394 @@
     This file is released under a Creative Commons Attribution-ShareAlike 4.0 International License.
 -->
 
+<h1 id="features">Language features</h1>
+
+<h2 id="literals">Literals</h2>
+
+<p>String literals can be specified between double quotes. There is no escaping
+mechanism. To include a double quote or a special character in a string, use
+the <code>CHR$</code> function.</p>
+
+<p>Numeric literals have the following form:</p>
+<pre>
+  [{+|-}] [digits] [.] [digits] [ { {E|D} [{+|-}] [digits] | # | ! | % } ]
+  &amp;{H|h}hexadecimal_digits
+  &amp;[O|o]octal_digits
+</pre>
+<p>Trailing <code>%</code> is ignored; trailing <code>!</code> or <code>#</code> <a href="#typechars">specify the type</a>.
+Examples of valid numeric literals:</p>
+<pre>
+  -1
+  42
+  42!
+  42#
+  1.3523523
+  .235435
+  -.3
+  3.
+  .         (this equals 0!)
+  .e        (0!)
+  .D        (0#)
+  1.1e+7
+  1.1d+7
+  1e2
+  1e-2
+  &amp;7
+  &amp;hffff
+  &amp;O20
+</pre>
+<p>Hexadecimal literals can be specified like <code>&amp;hFFFF</code>. They must range between
+<code>-&amp;h7FFF</code> and <code>&amp;hFFFF</code>. <code>&amp;hFFFF = -&amp;h1 = &amp;h-1</code>.
+<p>Octal literals can be specified as <code>&amp;o777</code> or <code>&amp;777</code>.</p>
+
+
+<h2 id="variables">Variables</h2>
+<p>Variable names must start with a letter; all characters of the variable name
+(except the <a href="#typechars">type character</a>) must be letters <code>A&mdash;Z</code>, figures <code>0&mdash;9</code>, or a dot <code>.</code>
+Only the first 40 characters in the name are significant. Variable names must
+not be identical to <a href="#keywords">keywords</a>. Variable
+names may start with a keyword, with the exception of <code>USR</code> and <code>FN</code>. Thus, <code>FNORD$</code>
+is not a legal variable name while <code>FRECKLE%</code> is.</p>
+<p>
+    For each name, four different
+    variables may exist corresponding to the four types. That is, you can have <code>A$</code>,
+    <code>A%</code>, <code>A!</code> and <code>A#</code> as different variables.
+    Which one of those is also known as <code>A</code> depends on the settings in
+    <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
+    The default is <code> A = A!</code>. In addition, you can have
+    <a href="#arrays">arrays</a> <code>A$()</code>, <code>A%()</code>,
+    <code>A!()</code>, <code>A#()</code> which are separate from the scalar
+    variables of the same name.
+</p>
+
+<h2 id="arrays">Arrays</h2>
+<p>Arrays are groups of variables and can have the same <a href="#types">types</a> as <a href="#variables">variables</a>. Arrays are indexed with round or square
+brackets; even mixing brackets is allowed. The following all work: <code>A[0]</code>, <code>A(0)</code>,
+<code>A(0]</code>, <code>A[0)</code>. Multidimensional arrays are specified with commas: <code>A(0, 0)</code>, <code>A[0, 0, 0]</code>, etc.</p>
+<p>
+    By default, arrays are indexed from <code>0</code>. This can be changed to
+    <code>1</code> using <code><a href="#OPTION-BASE">OPTION BASE</a> 1</code>.
+</p>
+<p>
+    Arrays can be allocated using <code><a href="#DIM">DIM</a></code>. If all indices of the array
+    are <code>10</code> or less, they need not be explicitly allocated. The first
+    access of the array (read or write) will automatically allocate it with
+    a maximum index of <code>10</code> and the same number of indices as in the first
+    access. To re-allocate an array, the old array must first be deleted
+    with <code><a href="#CLEAR">CLEAR</a></code> or
+    <code><a href="#ERASE">ERASE</a></code>.
+</p>
+
+<h2 id="error-trapping">Error trapping</h2>
+<p>
+    Normally, any error will interrupt program execution and print a message on
+    the console (exceptions are <code>Overflow</code> and
+    <code>Division by zero</code>, which print a message but do not interrupt
+    execution). It is possible to handle errors more graciously by
+    setting an error-handling routine with the
+    <code><a href="#ON-ERROR">ON ERROR</a> GOTO <em>line_number</em></code>
+    statement. The error-handling routine starts at the given line number
+    <code><em>line_number</em></code> and continues until a
+    <code><a href="#RESUME">RESUME</a></code> statement is encountered.
+    Error trapping is in effect both when a program is running and in interactive
+    mode. Error trapping is switched off with the <code>ON ERROR GOTO 0</code>
+    statement. If an error occurs, or error trapping is switched off, while the
+    program is executing an error-trapping routine, the program terminates and
+    an error message is shown.
+</p>
+
+<h2 id="event-trapping">Event trapping</h2>
+<p>
+    Event trapping allows to define subroutines which are executed outside of the normal course of operation. Events that can be trapped are:
+</p>
+<ul>
+    <li>Time intervals (<code><a href="#ON-event">ON TIMER</a></code>)</li>
+    <li>Keypresses (<code><a href="#ON-event">ON KEY</a></code>)</li>
+    <li>Serial port input (<code><a href="#ON-event">ON COM</a></code>)</li>
+    <li>Music queue exhaustion (<code><a href="#ON-event">ON PLAY</a></code>)</li>
+    <li>Joystick triggers (<code><a href="#ON-event">ON STRIG</a></code>)</li>
+    <li>Light pen activation (<code><a href="#ON-event">ON PEN</a></code>)</li>
+</ul>
+<p>
+    Event trapping subroutines are defined as regular subroutines. At the
+    <code><a href="#RETURN">RETURN</a></code> statement, the normal course of
+    program execution is resumed. Event trapping can be switched on and off or
+    paused temporarily with statements of the form
+    <code><a href="#PEN-statement">PEN ON</a></code>, <code>PEN OFF</code>,
+    <code>PEN STOP</code>.
+    Event trapping only takes place during program execution and is paused while
+    the program is in an error trap. If an event occurs while event-trapping is
+    paused, then the event is triggered immediately when event trapping is resumed.
+</p>
+
+<h1 id="reference">Language reference</h1>
+
+
+<h2 id="types">Types</h2>
+<h3 id="typechars">Type characters</h3>
+<p>PC-BASIC recognises four variable types, distinguished by their type character
+which is the last character of the variable's full name:</p>
+<table><tr>
+<th>char</th>    <th>type</th>                    <th>size</th>
+</tr><tr>
+<td><code>$</code></td>      <td>string</td>                  <td>3 bytes plus allocated string space</td>
+</tr><tr>
+ <td><code>%</code></td>      <td>integer</td>                 <td>2 bytes </td>
+</tr><tr>
+ <td><code>!</code></td>      <td>single-precision float</td>  <td>4 bytes</td>
+</tr><tr>
+ <td><code>#</code></td>      <td>double-precision float</td>  <td>8 bytes</td>
+</tr></table>
+<p>
+    If no type character is specified, the first letter of the name determines
+    the type according to the settings of
+    <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
+    If no such setting has been made, the default type is single-precision float.
+</p>
+<h3 id="limits">Machine limits</h3>
+<ul><li>
+    Line numbers are in <code>[0&mdash;65535]</code>, although line numbers <code>65530&mdash;65535</code> cannot be entered from the console.
+</li><li>
+    Booleans are integers: <code>0</code> for False; <code>-1</code> or other non-zero for True.
+</li><li>
+    Integers are in <code>[-32768&mdash;32767]</code>.
+</li><li>
+    Floats: largest <code>1.701412E+38</code>; smallest <code>2.938726E-39</code>
+</li><li>
+    Double-precision floats can hold more decimals, but not larger or smaller numbers, than single-precision floats.
+</li></ul>
+
+
+<h2 id="operators">Operators</h2>
+
+<h3 id="order-of-preference">Order of precedence</h3>
+<p>
+    The order of precedence of operators is as follows, from tightly bound
+    (high priority) to loosely bound (low priority):
+</p>
+<ol>
+    <li><code>^</code></li>
+    <li><code>-</code> (unary)</li>
+    <li><code>*</code></li>
+    <li>
+        <ul class="horizontal">
+            <li><code>/</code></li>
+            <li><code>\</code></li>
+            <li><code>MOD</code></li>
+        </ul>
+    </li>
+    <li>
+        <ul class="horizontal">
+            <li><code>+</code></li>
+            <li><code>-</code> (binary)</li>
+        </ul>
+    </li>
+    <li><code>=</code></li>
+    <li>
+        <ul class="horizontal">
+            <li><code>&lt;&gt;</code></li>
+            <li><code>&gt;&lt;</code></li>
+            <li><code>&lt;</code></li>
+            <li><code>&gt;</code></li>
+            <li><code>&lt;=</code></li>
+            <li><code>=&lt;</code></li>
+            <li><code>&gt;=</code></li>
+            <li><code>=&gt;</code></li>
+        </ul>
+    </li>
+    <li><code><a href="#NOT">NOT</a></code></li>
+    <li><code><a href="#AND">AND</a></code></li>
+    <li><code><a href="#OR">OR</a></code></li>
+    <li><code><a href="#XOR">XOR</a></code></li>
+    <li><code><a href="#EQV">EQV</a></code></li>
+    <li><code><a href="#IMP">IMP</a></code></li>
+</ol>
+<p>
+    Note in particular that exponentiation is more tightly bound than negation:
+    <code>-1^2 = -1</code> but <code>(-1)^2 = 1</code>.
+</p>
+
+<h3 id="math-operators">Mathematical operators</h3>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Operation</th>
+        <th>Result</th>
+    </tr>
+    <tr>
+        <td id="^"><code><em>x</em> ^ <em>y</em></code></td>
+        <td>Exponentiation</td>
+        <td>
+            <code><em>x</em></code> raised to the power of
+            <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="unary-"><code>- <em>y</em></code></td>
+        <td>Negation</td>
+        <td>
+            Negative value of <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="*"><code><em>x</em> * <em>y</em></code></td>
+        <td>Multiplication</td>
+        <td>
+            Product of <code><em>x</em></code> and
+            <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="/"><code><em>x</em> / <em>y</em></code></td>
+        <td>Floating-point division</td>
+        <td>
+            Quotient of <code><em>x</em></code> and
+            <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="\"><code><em>x</em> \ <em>y</em></code></td>
+        <td>Integer division</td>
+        <td>
+            Integer part of quotient of <code><em>x</em></code> and
+            <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="MOD"><code><em>x</em> MOD <em>y</em></code></td>
+        <td>Integer modulo</td>
+        <td>
+            Remainder of the integer division of <code><em>x</em></code> by
+            <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="+"><code><em>x</em> + <em>y</em></code></td>
+        <td>Addition</td>
+        <td>
+            Sum of <code><em>x</em></code> and <code><em>y</em></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="-"><code><em>x</em> - <em>y</em></code></td>
+        <td>Subtraction</td>
+        <td>
+            Difference of <code><em>x</em></code> and <code><em>y</em></code>
+        </td>
+    </tr>
+</table>
+
+<h3 id="relational-operators">Relational operators</h3>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Operation</th>
+        <th>Result</th>
+    </tr>
+    <tr>
+        <td id="="><code>=</doe></td>
+        <td>Equal</td>
+        <td>
+            True (-1) if <code><em>a</em></code> equals <code><em>b</em></code>,
+            false (0) otherwise.
+        </td>
+    </tr>
+    <tr>
+        <td id="<>"><code>&lt;&gt;</code> <code>&gt;&lt;</code></td>
+        <td>Not equal</td>
+    <td>
+        False (0) if <code><em>a</em></code> equals <code><em>b</em></code>,
+        true (-1) otherwise.
+    </td>
+    </tr>
+    <tr>
+        <td id="<"><code>&lt;</code></td>
+        <td>Less than</td>
+        <td>
+            True if <code><em>a</em></code> is less than <code><em>b</em></code>,
+            false otherwise.
+        </td>
+    </tr>
+    <tr>
+        <td id=">"><code>&gt;</code></td>
+        <td>Greater than</td>
+        <td>
+            True if <code><em>a</em></code> is greater than <code><em>b</em></code>,
+            false otherwise.
+        </td>
+    </tr>
+    <tr>
+        <td id="<="><code>&lt;=</code> <code>=&lt;</code></td>
+        <td>Less than or equal</td>
+        <td>
+            False if <code><em>a</em></code> is greater than <code><em>b</em></code>,
+            true otherwise.
+        </td>
+    </tr>
+    <tr>
+        <td id=">="><code>&gt;=</code> <code>=&gt;</code></td>
+        <td>Greater than or equal</td>
+        <td>
+            False if <code><em>a</em></code> is less than <code><em>b</em></code>,
+            true otherwise.
+        </td>
+</table>
+
+<h3 id="boolean-operators">Boolean operators</h3>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Operation</th>
+        <th>Result</th>
+    </tr>
+    <tr>
+        <td id="NOT"><code>NOT <em>y</em></code></td>
+        <td>Logical negation</td>
+        <td>True (nonzero) if <code><em>y</em></code> is false (0) and vice versa</td>
+    </tr>
+    <tr>
+        <td id="AND"><code><em>x</em> AND </em>y</em></code></td>
+        <td>Conjunction</td>
+        <td>
+            Only true if both  <code><em>x</em></code> and
+            <code><em>y</em></code> are true
+        </td>
+    </tr>
+    <tr>
+        <td id="OR"><code><em>x</em> OR <em>y</em></code></td>
+        <td>Disjunction</td>
+        <td>
+            Only false if both <code><em>x</em></code> and
+            <code><em>y</em></code> are false
+        </td>
+    </tr>
+    <tr>
+        <td id="XOR"><code><em>x</em> XOR <em>y</em></code></td>
+        <td>Exclusive or</td>
+        <td>
+            True if the truth values of <code><em>x</em></code> and
+            <code><em>y</em></code> differ
+        </td>
+    </tr>
+    <tr>
+        <td id="EQV"><code><em>x</em> EQV <em>y</em></code></td>
+        <td>Equivalence</td>
+        <td>
+            True if the truth values of <code><em>x</em></code> and
+            <code><em>y</em></code> are the same
+        </td>
+    </tr>
+    <tr>
+        <td id="IMP"><code><em>x</em> IMP <em>y</em></code></td>
+        <td>Implication</td>
+        <td>
+            True if <code><em>x</em></code> is false or
+            <code><em>y</em></code> is true
+        </td>
+    </tr>
+</table>
+
+
 <h2 id="statements-functions">Statements and functions</h2>
 
 <h3 id="ABS"><code>ABS</code> function</h3>
@@ -5830,388 +6218,81 @@ delimited by double quotes <code>"</code>. No padding spaces are inserted.</p>
 
 
 
-<h2 id="literals">Literals</h2>
 
-<p>String literals can be specified between double quotes. There is no escaping
-mechanism. To include a double quote or a special character in a string, use
-the <code>CHR$</code> function.</p>
-
-<p>Numeric literals have the following form:</p>
-<pre>
-  [{+|-}] [digits] [.] [digits] [ { {E|D} [{+|-}] [digits] | # | ! | % } ]
-  &amp;{H|h}hexadecimal_digits
-  &amp;[O|o]octal_digits
-</pre>
-<p>Trailing <code>%</code> is ignored; trailing <code>!</code> or <code>#</code> specify the type.
-Examples of valid numeric literals:</p>
-<pre>
-  -1
-  42
-  42!
-  42#
-  1.3523523
-  .235435
-  -.3
-  3.
-  .         (this equals 0!)
-  .e        (0!)
-  .D        (0#)
-  1.1e+7
-  1.1d+7
-  1e2
-  1e-2
-  &amp;7
-  &amp;hffff
-  &amp;O20
-</pre>
-<p>Hexadecimal literals can be specified like <code>&amp;hFFFF</code>. They must range between
-<code>-&amp;h7FFF</code> and <code>&amp;hFFFF</code>. <code>&amp;hFFFF = -&amp;h1 = &amp;h-1</code>.
-<p>Octal literals can be specified as <code>&amp;o777</code> or <code>&amp;777</code>.</p>
+<h1 id="technical">Technical reference</h1>
 
 
-<h2 id="variables">Variables</h2>
-<p>Variable names must start with a letter; all characters of the variable name
-(except the type character) must be letters <code>A&mdash;Z</code>, figures <code>0&mdash;9</code>, or a dot <code>.</code>
-Only the first 40 characters in the name are significant. Variable names must
-not be identical to <a href="#keywords">keywords</a>. Variable
-names may start with a keyword, with the exception of <code>USR</code> and <code>FN</code>. Thus, <code>FNORD$</code>
-is not a legal variable name while <code>FRECKLE%</code> is.</p>
-<p>
-    For each name, four different
-    variables may exist corresponding to the four types. That is, you can have <code>A$</code>,
-    <code>A%</code>, <code>A!</code> and <code>A#</code> as different variables.
-    Which one of those is also known as <code>A</code> depends on the settings in
-    <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
-    The default is <code> A = A!</code>. In addition, you can have
-    <a href="#arrays">arrays</a> <code>A$()</code>, <code>A%()</code>,
-    <code>A!()</code>, <code>A#()</code> which are separate from the scalar
-    variables of the same name.
-</p>
-
-<h2 id="arrays">Arrays</h2>
-<p>Arrays are groups of variables and can have the same types as variables. Arrays are indexed with round or square
-brackets; even mixing brackets is allowed. The following all work: <code>A[0]</code>, <code>A(0)</code>,
-<code>A(0]</code>, <code>A[0)</code>. Multidimensional arrays are specified with commas: <code>A(0, 0)</code>, <code>A[0, 0, 0]</code>, etc.</p>
-<p>By default, arrays are indexed from <code>0</code>. This can be changed to <code>1</code> using
- <code>OPTION BASE 1</code>.</p>
-<p>
-    Arrays can be allocated using <code><a href="#DIM">DIM</a></code>. If all indices of the array
-    are <code>10</code> or less, they need not be explicitly allocated. The first
-    access of the array (read or write) will automatically allocate it with
-    a maximum index of <code>10</code> and the same number of indices as in the first
-    access. To re-allocate an array, the old array must first be deleted
-    with <code><a href="#CLEAR">CLEAR</a></code> or
-    <code><a href="#ERASE">ERASE</a></code>.
-</p>
-
-
-
-<h2 id="operators">Operators</h2>
-
-<h3>Order of precedence</h3>
-<p>
-    The order of precedence of operators is as follows, from tightly bound
-    (high priority) to loosely bound (low priority):
-</p>
-<ol>
-    <li><code>^</code></li>
-    <li><code>-</code> (unary)</li>
-    <li><code>*</code></li>
-    <li>
-        <ul class="horizontal">
-            <li><code>/</code></li>
-            <li><code>\</code></li>
-            <li><code>MOD</code></li>
-        </ul>
-    </li>
-    <li>
-        <ul class="horizontal">
-            <li><code>+</code></li>
-            <li><code>-</code> (binary)</li>
-        </ul>
-    </li>
-    <li><code>=</code></li>
-    <li>
-        <ul class="horizontal">
-            <li><code>&lt;&gt;</code></li>
-            <li><code>&gt;&lt;</code></li>
-            <li><code>&lt;</code></li>
-            <li><code>&gt;</code></li>
-            <li><code>&lt;=</code></li>
-            <li><code>=&lt;</code></li>
-            <li><code>&gt;=</code></li>
-            <li><code>=&gt;</code></li>
-        </ul>
-    </li>
-    <li><code><a href="#NOT">NOT</a></code></li>
-    <li><code><a href="#AND">AND</a></code></li>
-    <li><code><a href="#OR">OR</a></code></li>
-    <li><code><a href="#XOR">XOR</a></code></li>
-    <li><code><a href="#EQV">EQV</a></code></li>
-    <li><code><a href="#IMP">IMP</a></code></li>
-</ol>
-<p>
-    Note in particular that exponentiation is more tightly bound than negation:
-    <code>-1^2 = -1</code> but <code>(-1)^2 = 1</code>.
-</p>
-
-<h3 id="math-operators">Mathematical operators</h3>
-<table>
-    <tr>
-        <th>Code</th>
-        <th>Operation</th>
-        <th>Result</th>
-    </tr>
-    <tr>
-        <td id="^"><code><em>x</em> ^ <em>y</em></code></td>
-        <td>Exponentiation</td>
-        <td>
-            <code><em>x</em></code> raised to the power of
-            <code><em>y</em></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="unary-"><code>- <em>y</em></code></td>
-        <td>Negation</td>
-        <td>
-            Negative value of <code><em>y</em></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="*"><code><em>x</em> * <em>y</em></code></td>
-        <td>Multiplication</td>
-        <td>
-            Product of <code><em>x</em></code> and
-            <code><em>y</em></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="/"><code><em>x</em> / <em>y</em></code></td>
-        <td>Floating-point division</td>
-        <td>
-            Quotient of <code><em>x</em></code> and
-            <code><em>y</em></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="\"><code><em>x</em> \ <em>y</em></code></td>
-        <td>Integer division</td>
-        <td>
-            Integer part of quotient of <code><em>x</em></code> and
-            <code><em>y</em></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="MOD"><code><em>x</em> MOD <em>y</em></code></td>
-        <td>Integer modulo</td>
-        <td>
-            Remainder of the integer division of <code><em>x</em></code> by
-            <code><em>y</em></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="+"><code><em>x</em> + <em>y</em></code></td>
-        <td>Addition</td>
-        <td>
-            Sum of <code><em>x</em></code> and <code><em>y</em></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="-"><code><em>x</em> - <em>y</em></code></td>
-        <td>Subtraction</td>
-        <td>
-            Difference of <code><em>x</em></code> and <code><em>y</em></code>
-        </td>
-    </tr>
-</table>
-
-<h3 id="relational-operators">Relational operators</h3>
-<table>
-    <tr>
-        <th>Code</th>
-        <th>Operation</th>
-        <th>Result</th>
-    </tr>
-    <tr>
-        <td id="="><code>=</doe></td>
-        <td>Equal</td>
-        <td>
-            True (-1) if <code><em>a</em></code> equals <code><em>b</em></code>,
-            false (0) otherwise.
-        </td>
-    </tr>
-    <tr>
-        <td id="<>"><code>&lt;&gt;</code> <code>&gt;&lt;</code></td>
-        <td>Not equal</td>
-    <td>
-        False (0) if <code><em>a</em></code> equals <code><em>b</em></code>,
-        true (-1) otherwise.
-    </td>
-    </tr>
-    <tr>
-        <td id="<"><code>&lt;</code></td>
-        <td>Less than</td>
-        <td>
-            True if <code><em>a</em></code> is less than <code><em>b</em></code>,
-            false otherwise.
-        </td>
-    </tr>
-    <tr>
-        <td id=">"><code>&gt;</code></td>
-        <td>Greater than</td>
-        <td>
-            True if <code><em>a</em></code> is greater than <code><em>b</em></code>,
-            false otherwise.
-        </td>
-    </tr>
-    <tr>
-        <td id="<="><code>&lt;=</code> <code>=&lt;</code></td>
-        <td>Less than or equal</td>
-        <td>
-            False if <code><em>a</em></code> is greater than <code><em>b</em></code>,
-            true otherwise.
-        </td>
-    </tr>
-    <tr>
-        <td id=">="><code>&gt;=</code> <code>=&gt;</code></td>
-        <td>Greater than or equal</td>
-        <td>
-            False if <code><em>a</em></code> is less than <code><em>b</em></code>,
-            true otherwise.
-        </td>
-</table>
-
-<h3 id="boolean-operators">Boolean operators</h3>
-<table>
-    <tr>
-        <th>Code</th>
-        <th>Operation</th>
-        <th>Result</th>
-    </tr>
-    <tr>
-        <td id="NOT"><code>NOT <em>y</em></code></td>
-        <td>Logical negation</td>
-        <td>True (nonzero) if <code><em>y</em></code> is false (0) and vice versa</td>
-    </tr>
-    <tr>
-        <td id="AND"><code><em>x</em> AND </em>y</em></code></td>
-        <td>Conjunction</td>
-        <td>
-            Only true if both  <code><em>x</em></code> and
-            <code><em>y</em></code> are true
-        </td>
-    </tr>
-    <tr>
-        <td id="OR"><code><em>x</em> OR <em>y</em></code></td>
-        <td>Disjunction</td>
-        <td>
-            Only false if both <code><em>x</em></code> and
-            <code><em>y</em></code> are false
-        </td>
-    </tr>
-    <tr>
-        <td id="XOR"><code><em>x</em> XOR <em>y</em></code></td>
-        <td>Exclusive or</td>
-        <td>
-            True if the truth values of <code><em>x</em></code> and
-            <code><em>y</em></code> differ
-        </td>
-    </tr>
-    <tr>
-        <td id="EQV"><code><em>x</em> EQV <em>y</em></code></td>
-        <td>Equivalence</td>
-        <td>
-            True if the truth values of <code><em>x</em></code> and
-            <code><em>y</em></code> are the same
-        </td>
-    </tr>
-    <tr>
-        <td id="IMP"><code><em>x</em> IMP <em>y</em></code></td>
-        <td>Implication</td>
-        <td>
-            True if <code><em>x</em></code> is false or
-            <code><em>y</em></code> is true
-        </td>
-    </tr>
-</table>
-
-
-
-
-<h2 id="types">Types</h2>
-<p>PC-BASIC recognises four variable types, distinguished by their type character
-which is the last character of the variable's full name:</p>
+<h2 id="devices">Devices</h2>
+<p>PC-BASIC recognises the following DOS-style devices, which can be opened, input
+from and output to. Some devices allow specification of further parameters, such
+as handshake specifications for serial devices, a filename for cassette devices and a path for disk devices.
+When operating on disk devices, specifying a path is mandatory.</p>
 <table><tr>
-<th>char</th>    <th>type</th>                    <th>size</th>
+<th>device</th><th>      allowed modes</th><th>   description</th>
 </tr><tr>
-<td><code>$</code></td>      <td>string</td>                  <td>3 bytes plus allocated string space</td>
+<td><code>SCRN:</code></td>
+<td><code>OUTPUT</code></td>
+<td>
+    The screen. Output to <code>SCRN:</code> has largely the same
+    effect as straight output using <code><a href="#PRINT">PRINT</a></code>.
+    A difference is the <code><a href="#WIDTH">WIDTH</a></code> setting which is
+    independent of the real screen width.
+</td>
 </tr><tr>
- <td><code>%</code></td>      <td>integer</td>                 <td>2 bytes </td>
+<td><code>KYBD:</code></td>
+       <td><code>INPUT</code></td>
+<td>
+    The keyboard. Input read from <code>KYBD:</code> is not echoed
+    to the screen. Special keys like arrow keys are
+    registered differently than when using <code><a href="#INPUT">INPUT</a></code>
+    or <code><a href="#INPUT$">INPUT$</a></code> straight.
+</td>
 </tr><tr>
- <td><code>!</code></td>      <td>single-precision float</td>  <td>4 bytes</td>
+<td><code>LPT1:</code> <code>LPT2:</code> <code>LPT3:</code></td>
+<td><code>OUTPUT</code> <code>RANDOM</code></td>
+<td>
+    Parallel ports 1&mdash;3.  In PC-BASIC, <code>LPT</code> devices can be
+    attached to the physical parallel port, to a printer or to a text file.
+    Opening a printer for <code>RANDOM</code> has the same effect as opening it
+    for <code>OUTPUT</code>; attempting random-file operations will raise
+    <code>Bad file mode</code>.
+</td>
 </tr><tr>
- <td><code>#</code></td>      <td>double-precision float</td>  <td>8 bytes</td>
+<td><code>COM1:</code> <code>COM2:</code></td>
+<td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
+<td>Serial ports 1&mdash;2. In PC-BASIC, <code>COM</code> devices can be attached to the physical serial port or to a network socket.
+</td>
+</tr><tr>
+<td><code>CAS1:</code></td>
+<td><code>INPUT</code> <code>OUTPUT</code></td>
+<td>Cassette tape driver. In PC-BASIC, <code>CAS</code> devices can be attached to a WAV (RIFF Wave) or a CAS (bitmap tape image) file.</td>
+</tr><tr>
+<td><code>A:</code> &mdash; <code>Z:</code> and <code>@:</code></td>
+<td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
+<td>
+    Disk devices. In PC-BASIC, these devices can be mounted to a directory on
+    the host file system. They do not automatically match drive letters on Windows,
+    unless the <code><a href="#--map-drives">--map-drives</a></code> option is set.
+</td>
 </tr></table>
-<p>
-    If no type character is specified, the first letter of the name determines
-    the type according to the settings of
-    <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
-    If no such setting has been made, the default type is single-precision float.
-</p>
-<p>Machine limits:</p>
-<ul><li>
-    Line numbers are in <code>[0&mdash;65535]</code>, although line numbers <code>65530&mdash;65535</code> cannot be entered from the console.
-</li><li>
-    Booleans are integers: <code>0</code> for False; <code>-1</code> or other non-zero for True.
-</li><li>
-    Integers are in <code>[-32768&mdash;32767]</code>.
-</li><li>
-    Floats: largest <code>1.701412E+38</code>; smallest <code>2.938726E-39</code>
-</li><li>
-    Double-precision floats can hold more decimals, but not larger or smaller numbers, than single-precision floats.
-</li></ul>
+<p>GW-BASIC additionally recognises the following little-used device, which is not implemented in PC-BASIC.</p>
+<table><tr>
+<th>device</th><th>      allowed modes</th><th>   description</th>
+</tr><tr>
+<td><code>CONS:</code></td>
+<td><code>OUTPUT</code></td>
+<td>The screen (console). Output to <code>CONS:</code> is displayed
+                            directly at the cursor position when <code class="key">Enter</code> is
+                            pressed. It does not update the end-of-line value
+                            for the interpreter, which means that it does not
+                            move with <code class="key">Backspace</code> or <code class="key">Del</code> and is not
+                            stored in program lines if it appears beyond the
+                            end of the existing line. <code>CONS:</code> can be opened with
+                            any access mode, but the effect is always to open
+                            it for <code>OUTPUT</code>.
+</td>
+</tr></table>
 
-<h2 id="error-trapping">Error trapping</h2>
-<p>
-    Normally, any error will interrupt program execution and print a message on
-    the console (exceptions are <code>Overflow</code> and
-    <code>Division by zero</code>, which print a message but do not interrupt
-    execution). It is possible to handle errors more graciously by
-    setting an error-handling routine with the
-    <code><a href="#ON-ERROR">ON ERROR</a> GOTO <em>line_number</em></code>
-    statement. The error-handling routine starts at the given line number
-    <code><em>line_number</em></code> and continues until a
-    <code><a href="#RESUME">RESUME</a></code> statement is encountered.
-    Error trapping is in effect both when a program is running and in interactive
-    mode. Error trapping is switched off with the <code>ON ERROR GOTO 0</code>
-    statement. If an error occurs, or error trapping is switched off, while the
-    program is executing an error-trapping routine, the program terminates and
-    an error message is shown.
-</p>
-
-<h2 id="event-trapping">Event trapping</h2>
-<p>
-    Event trapping allows to define subroutines which are executed outside of the normal course of operation. Events that can be trapped are:
-</p>
-<ul>
-    <li>Time intervals (<code><a href="#ON-event">ON TIMER</a></code>)</li>
-    <li>Keypresses (<code><a href="#ON-event">ON KEY</a></code>)</li>
-    <li>Serial port input (<code><a href="#ON-event">ON COM</a></code>)</li>
-    <li>Music queue exhaustion (<code><a href="#ON-event">ON PLAY</a></code>)</li>
-    <li>Joystick triggers (<code><a href="#ON-event">ON STRIG</a></code>)</li>
-    <li>Light pen activation (<code><a href="#ON-event">ON PEN</a></code>)</li>
-</ul>
-<p>
-    Event trapping subroutines are defined as regular subroutines. At the
-    <code><a href="#RETURN">RETURN</a></code> statement, the normal course of
-    program execution is resumed. Event trapping can be switched on and off or
-    paused temporarily with statements of the form
-    <code><a href="#PEN-statement">PEN ON</a></code>, <code>PEN OFF</code>,
-    <code>PEN STOP</code>.
-    Event trapping only takes place during program execution and is paused while
-    the program is in an error trap. If an event occurs while event-trapping is
-    paused, then the event is triggered immediately when event trapping is resumed.
-</p>
 
 <h2 id="internal">Internal representation of variables</h2>
 <p>Internal representation:</p>
@@ -6273,6 +6354,177 @@ Schematically, MBF floating point numbers are represented as follows.</p>
 <dd>Any float with the exponent byte set to <code>0</code> is interpreted as a zero.</dd>
 </dl>
 <p>A single-precision MBF float therefore has 23 bits of precision, while a double-precision MBF float has 55 bits of precision.</p>
+
+<h2 id="keywords">Keyword tokens</h2>
+<p>Not all keywords are statements or functions. Conversely, some parts of statement or
+function syntax are not keywords. Keywords are
+not legal variable names. Therefore, you cannot name a variable <code>TO!</code> but you can
+name it <code>AS!</code>. The keywords are here listed with the bytecode token used to
+represent them in a BASIC file.</p>
+<pre>
+ 81 END     82 FOR     83 NEXT    84 DATA    85 INPUT   86 DIM     87 READ
+ 88 LET     89 GOTO    8A RUN     8B IF      8C RESTORE 8D <code>GOSUB</code>   8E <code>RETURN</code>
+ 8F REM     90 STOP    91 PRINT   92 CLEAR   93 LIST    94 NEW     95 ON
+ 96 WAIT    97 DEF     98 POKE    99 CONT    9C OUT     9D LPRINT  9E LLIST
+ A0 WIDTH   A1 ELSE    A2 TRON    A3 TROFF   A4 SWAP    A5 ERASE   A6 EDIT
+ A7 ERROR   A8 RESUME  A9 DELETE  AA AUTO    AB RENUM   AC DEFSTR  AD DEFINT
+ AE DEFSNG  AF DEFDBL  B0 LINE    B1 WHILE   B2 WEND    B3 CALL    B7 WRITE
+ B8 OPTION B9 RANDOMIZE BA OPEN   BB CLOSE   BC LOAD    BD <code>MERGE</code>   BE SAVE
+ BF COLOR   C0 CLS     C1 MOTOR   C2 BSAVE   C3 BLOAD   C4 SOUND   C5 BEEP
+ C6 PSET    C7 PRESET  C8 SCREEN  C9 KEY     CA LOCATE  CC TO      CD THEN
+ CE TAB(    CF STEP    D0 USR     D1 FN      D2 SPC(    D3 NOT     D4 ERL
+ D5 ERR     D6 STRING$ D7 USING   D8 INSTR   D9 '       DA VARPTR  DB CSRLIN
+ DC POINT   DD OFF     DE INKEY$  E6 &gt;       E7 =       E8 &lt;       E9 +
+ EA -       EB *       EC /       ED ^       EE AND     EF OR      F0 XOR
+ F1 EQV     F2 IMP     F3 MOD     F4 \
+ FD81 CVI     FD82 CVS     FD83 CVD     FD84 MKI$    FD85 MKS$    FD86 MKD$
+ FD8B EXTERR  FE81 FILES   FE82 FIELD   FE83 SYSTEM  FE84 NAME    FE85 LSET
+ FE86 RSET    FE87 KILL    FE88 PUT     FE89 GET     FE8A RESET   FE8B <code>COMMON</code>
+ FE8C CHAIN   FE8D DATE$   FE8E TIME$   FE8F PAINT   FE90 COM     FE91 CIRCLE
+ FE92 DRAW    FE93 PLAY    FE94 TIMER   FE95 ERDEV   FE96 IOCTL   FE97 CHDIR
+ FE98 MKDIR   FE99 RMDIR   FE9A SHELL   FE9B ENVIRON FE9C VIEW    FE9D WINDOW
+ FE9E PMAP    FE9F PALETTE FEA0 LCOPY   FEA1 CALLS   FEA5 PCOPY
+ FEA7 <code>LOCK</code>    FEA8 <code>UNLOCK</code>  FF81 LEFT$   FF82 RIGHT$  FF83 MID$    FF84 SGN
+ FF85 INT     FF86 ABS     FF87 SQR     FF88 RND     FF89 SIN     FF8A LOG
+ FF8B EXP     FF8C COS     FF8D TAN     FF8E ATN     FF8F FRE     FF90 INP
+ FF91 POS     FF92 LEN     FF93 STR$    FF94 VAL     FF95 ASC     FF96 CHR$
+ FF97 PEEK    FF98 SPACE$  FF99 OCT$    FF9A HEX$    FF9B LPOS    FF9C CINT
+ FF9D CSNG    FF9E CDBL    FF9F FIX     FFA0 PEN     FFA1 STICK   FFA2 STRIG
+ FFA3 EOF     FFA4 LOC     FFA5 LOF
+</pre>
+<h4>Notes</h4>
+<ul><li>
+   On the IBM PCjr's Cartridge BASIC and Tandy 1000 GW-BASIC, additional
+    keywords were present, which can be activated using the <code>--syntax=pcjr</code> or
+    <code>--syntax=tandy</code> command-line option:
+<code> FEA4 NOISE   FEA6 TERM</code>
+</li><li>
+   If PC-BASIC is run with the <code>--debug</code> flag, the following additional
+    keyword is reserved, which is not present in GW-BASIC:
+<code> FFFF DEBUG</code>
+</li></ul>
+
+<h2 id="errors">Error codes</h2>
+<table><tr>
+<td><code>
+1</code></td><td><code>NEXT without FOR
+</code></td></tr><tr><td><code>
+2</code></td><td><code>Syntax error
+</code></td></tr><tr><td><code>
+3</code></td><td><code>RETURN without GOSUB
+</code></td></tr><tr><td><code>
+4</code></td><td><code>Out of DATA
+</code></td></tr><tr><td><code>
+5</code></td><td><code>Illegal function call
+</code></td></tr><tr><td><code>
+6</code></td><td><code>Overflow
+</code></td></tr><tr><td><code>
+7</code></td><td><code>Out of memory
+</code></td></tr><tr><td><code>
+8</code></td><td><code>Undefined line number
+</code></td></tr><tr><td><code>
+9</code></td><td><code>Subscript out of range
+</code></td></tr><tr><td><code>
+10</code></td><td><code>Duplicate Definition
+</code></td></tr><tr><td><code>
+11</code></td><td><code>Division by zero
+</code></td></tr><tr><td><code>
+12</code></td><td><code>Illegal direct
+</code></td></tr><tr><td><code>
+13</code></td><td><code>Type mismatch
+</code></td></tr><tr><td><code>
+14</code></td><td><code>Out of string space
+</code></td></tr><tr><td><code>
+15</code></td><td><code>String too long
+</code></td></tr><tr><td><code>
+16</code></td><td><code>String formula too complex
+</code></td></tr><tr><td><code>
+17</code></td><td><code>Can't continue
+</code></td></tr><tr><td><code>
+18</code></td><td><code>Undefined user function
+</code></td></tr><tr><td><code>
+19</code></td><td><code>No RESUME
+</code></td></tr><tr><td><code>
+20</code></td><td><code>RESUME without error
+</code></td></tr><tr><td><code>
+21</code></td><td><em>unused</em>
+</td></tr><tr><td><code>
+22</code></td><td><code>Missing operand
+</code></td></tr><tr><td><code>
+23</code></td><td><code>Line buffer overflow
+</code></td></tr><tr><td><code>
+24</code></td><td><code>Device Timeout
+</code></td></tr><tr><td><code>
+25</code></td><td><code>Device Fault
+</code></td></tr><tr><td><code>
+26</code></td><td><code>FOR without NEXT
+</code></td></tr><tr><td><code>
+27</code></td><td><code>Out of paper
+</code></td></tr><tr><td><code>
+28</code></td><td><em>unused</em>
+</td></tr><tr><td><code>
+29</code></td><td><code>WHILE without WEND
+</code></td></tr><tr><td><code>
+30</code></td><td><code>WEND without WHILE
+</code></td></tr><tr><td><code>
+31&mdash;49</code></td><td><em>unused</em>
+</td></tr><tr><td><code>
+50</code></td><td><code>FIELD overflow
+</code></td></tr><tr><td><code>
+51</code></td><td><code>Internal error
+</code></td></tr><tr><td><code>
+52</code></td><td><code>Bad file number
+</code></td></tr><tr><td><code>
+53</code></td><td><code>File not found
+</code></td></tr><tr><td><code>
+54</code></td><td><code>Bad file mode
+</code></td></tr><tr><td><code>
+55</code></td><td><code>File already open
+</code></td></tr><tr><td><code>
+56</code></td><td><em>unused</em>
+</td></tr><tr><td><code>
+57</code></td><td><code>Device I/O error
+</code></td></tr><tr><td><code>
+58</code></td><td><code>File already exists
+</code></td></tr><tr><td><code>
+59&mdash;60</code></td><td><em>unused</em>
+</td></tr><tr><td><code>
+61</code></td><td><code>Disk full
+</code></td></tr><tr><td><code>
+62</code></td><td><code>Input past end
+</code></td></tr><tr><td><code>
+63</code></td><td><code>Bad record number
+</code></td></tr><tr><td><code>
+64</code></td><td><code>Bad file name
+</code></td></tr><tr><td><code>
+65</code></td><td><em>unused</em>
+</td></tr><tr><td><code>
+66</code></td><td><code>Direct statement in file
+</code></td></tr><tr><td><code>
+67</code></td><td><code>Too many files
+</code></td></tr><tr><td><code>
+68</code></td><td><code>Device Unavailable
+</code></td></tr><tr><td><code>
+69</code></td><td><code>Communication buffer overflow
+</code></td></tr><tr><td><code>
+70</code></td><td><code>Permission Denied
+</code></td></tr><tr><td><code>
+71</code></td><td><code>Disk not Ready
+</code></td></tr><tr><td><code>
+72</code></td><td><code>Disk media error
+</code></td></tr><tr><td><code>
+73</code></td><td><code>Advanced Feature
+</code></td></tr><tr><td><code>
+74</code></td><td><code>Rename across disks
+</code></td></tr><tr><td><code>
+75</code></td><td><code>Path/File access error
+</code></td></tr><tr><td><code>
+76</code></td><td><code>Path not found
+</code></td></tr><tr><td><code>
+77</code></td><td><code>Deadlock</code>
+</tr></table>
+<p>Any error code that does not have a message associated to it will generate
+the message <code>Unprintable error</code>.</p>
 
 <h2 id="videomodes">Video modes</h2>
 <p>The video modes are as follows:</p>
@@ -6533,245 +6785,3 @@ in a <em>palette</em>.</p>
 <tr> <th>30</th> <td><code>8e</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>9e</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ae</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>be</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ce</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>de</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ee</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>fe</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> </tr>
 <tr> <th>31</th> <td><code>8f</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>9f</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>af</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>bf</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>cf</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>df</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ef</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ff</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> </tr>
 </table>
-
-<h2 id="devices">Devices</h2>
-<p>PC-BASIC recognises the following DOS-style devices, which can be opened, input
-from and output to. Some devices allow specification of further parameters, such
-as handshake specifications for serial devices, a filename for cassette devices and a path for disk devices.
-When operating on disk devices, specifying a path is mandatory.</p>
-<table><tr>
-<th>device</th><th>      allowed modes</th><th>   description</th>
-</tr><tr>
-<td><code>SCRN:</code></td>
-<td><code>OUTPUT</code></td>
-<td>
-    The screen. Output to <code>SCRN:</code> has largely the same
-    effect as straight output using <code><a href="#PRINT">PRINT</a></code>.
-    A difference is the <code><a href="#WIDTH">WIDTH</a></code> setting which is
-    independent of the real screen width.
-</td>
-</tr><tr>
-<td><code>KYBD:</code></td>
-       <td><code>INPUT</code></td>
-<td>
-    The keyboard. Input read from <code>KYBD:</code> is not echoed
-    to the screen. Special keys like arrow keys are
-    registered differently than when using <code><a href="#INPUT">INPUT</a></code>
-    or <code><a href="#INPUT$">INPUT$</a></code> straight.
-</td>
-</tr><tr>
-<td><code>LPT1:</code> <code>LPT2:</code> <code>LPT3:</code></td>
-<td><code>OUTPUT</code> <code>RANDOM</code></td>
-<td>
-    Parallel ports 1&mdash;3.  In PC-BASIC, <code>LPT</code> devices can be
-    attached to the physical parallel port, to a printer or to a text file.
-    Opening a printer for <code>RANDOM</code> has the same effect as opening it
-    for <code>OUTPUT</code>; attempting random-file operations will raise
-    <code>Bad file mode</code>.
-</td>
-</tr><tr>
-<td><code>COM1:</code> <code>COM2:</code></td>
-<td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
-<td>Serial ports 1&mdash;2. In PC-BASIC, <code>COM</code> devices can be attached to the physical serial port or to a network socket.
-</td>
-</tr><tr>
-<td><code>CAS1:</code></td>
-<td><code>INPUT</code> <code>OUTPUT</code></td>
-<td>Cassette tape driver. In PC-BASIC, <code>CAS</code> devices can be attached to a WAV (RIFF Wave) or a CAS (bitmap tape image) file.</td>
-</tr><tr>
-<td><code>A:</code> &mdash; <code>Z:</code> and <code>@:</code></td>
-<td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
-<td>
-    Disk devices. In PC-BASIC, these devices can be mounted to a directory on
-    the host file system. They do not automatically match drive letters on Windows,
-    unless the <code><a href="#--map-drives">--map-drives</a></code> option is set.
-</td>
-</tr></table>
-<p>GW-BASIC additionally recognises the following little-used device, which is not implemented in PC-BASIC.</p>
-<table><tr>
-<th>device</th><th>      allowed modes</th><th>   description</th>
-</tr><tr>
-<td><code>CONS:</code></td>
-<td><code>OUTPUT</code></td>
-<td>The screen (console). Output to <code>CONS:</code> is displayed
-                            directly at the cursor position when <code class="key">Enter</code> is
-                            pressed. It does not update the end-of-line value
-                            for the interpreter, which means that it does not
-                            move with <code class="key">Backspace</code> or <code class="key">Del</code> and is not
-                            stored in program lines if it appears beyond the
-                            end of the existing line. <code>CONS:</code> can be opened with
-                            any access mode, but the effect is always to open
-                            it for <code>OUTPUT</code>.
-</td>
-</tr></table>
-
-<h2 id="keywords">Keywords</h2>
-<p>Not all keywords are statements or functions. Conversely, some parts of statement or
-function syntax are not keywords. Keywords are
-not legal variable names. Therefore, you cannot name a variable <code>TO!</code> but you can
-name it <code>AS!</code>. The keywords are here listed with the bytecode token used to
-represent them in a BASIC file.</p>
-<pre>
- 81 END     82 FOR     83 NEXT    84 DATA    85 INPUT   86 DIM     87 READ
- 88 LET     89 GOTO    8A RUN     8B IF      8C RESTORE 8D <code>GOSUB</code>   8E <code>RETURN</code>
- 8F REM     90 STOP    91 PRINT   92 CLEAR   93 LIST    94 NEW     95 ON
- 96 WAIT    97 DEF     98 POKE    99 CONT    9C OUT     9D LPRINT  9E LLIST
- A0 WIDTH   A1 ELSE    A2 TRON    A3 TROFF   A4 SWAP    A5 ERASE   A6 EDIT
- A7 ERROR   A8 RESUME  A9 DELETE  AA AUTO    AB RENUM   AC DEFSTR  AD DEFINT
- AE DEFSNG  AF DEFDBL  B0 LINE    B1 WHILE   B2 WEND    B3 CALL    B7 WRITE
- B8 OPTION B9 RANDOMIZE BA OPEN   BB CLOSE   BC LOAD    BD <code>MERGE</code>   BE SAVE
- BF COLOR   C0 CLS     C1 MOTOR   C2 BSAVE   C3 BLOAD   C4 SOUND   C5 BEEP
- C6 PSET    C7 PRESET  C8 SCREEN  C9 KEY     CA LOCATE  CC TO      CD THEN
- CE TAB(    CF STEP    D0 USR     D1 FN      D2 SPC(    D3 NOT     D4 ERL
- D5 ERR     D6 STRING$ D7 USING   D8 INSTR   D9 '       DA VARPTR  DB CSRLIN
- DC POINT   DD OFF     DE INKEY$  E6 &gt;       E7 =       E8 &lt;       E9 +
- EA -       EB *       EC /       ED ^       EE AND     EF OR      F0 XOR
- F1 EQV     F2 IMP     F3 MOD     F4 \
- FD81 CVI     FD82 CVS     FD83 CVD     FD84 MKI$    FD85 MKS$    FD86 MKD$
- FD8B EXTERR  FE81 FILES   FE82 FIELD   FE83 SYSTEM  FE84 NAME    FE85 LSET
- FE86 RSET    FE87 KILL    FE88 PUT     FE89 GET     FE8A RESET   FE8B <code>COMMON</code>
- FE8C CHAIN   FE8D DATE$   FE8E TIME$   FE8F PAINT   FE90 COM     FE91 CIRCLE
- FE92 DRAW    FE93 PLAY    FE94 TIMER   FE95 ERDEV   FE96 IOCTL   FE97 CHDIR
- FE98 MKDIR   FE99 RMDIR   FE9A SHELL   FE9B ENVIRON FE9C VIEW    FE9D WINDOW
- FE9E PMAP    FE9F PALETTE FEA0 LCOPY   FEA1 CALLS   FEA5 PCOPY
- FEA7 <code>LOCK</code>    FEA8 <code>UNLOCK</code>  FF81 LEFT$   FF82 RIGHT$  FF83 MID$    FF84 SGN
- FF85 INT     FF86 ABS     FF87 SQR     FF88 RND     FF89 SIN     FF8A LOG
- FF8B EXP     FF8C COS     FF8D TAN     FF8E ATN     FF8F FRE     FF90 INP
- FF91 POS     FF92 LEN     FF93 STR$    FF94 VAL     FF95 ASC     FF96 CHR$
- FF97 PEEK    FF98 SPACE$  FF99 OCT$    FF9A HEX$    FF9B LPOS    FF9C CINT
- FF9D CSNG    FF9E CDBL    FF9F FIX     FFA0 PEN     FFA1 STICK   FFA2 STRIG
- FFA3 EOF     FFA4 LOC     FFA5 LOF
-</pre>
-<h4>Notes</h4>
-<ul><li>
-   On the IBM PCjr's Cartridge BASIC and Tandy 1000 GW-BASIC, additional
-    keywords were present, which can be activated using the <code>--syntax=pcjr</code> or
-    <code>--syntax=tandy</code> command-line option:
-<code> FEA4 NOISE   FEA6 TERM</code>
-</li><li>
-   If PC-BASIC is run with the <code>--debug</code> flag, the following additional
-    keyword is reserved, which is not present in GW-BASIC:
-<code> FFFF DEBUG</code>
-</li></ul>
-
-<h2 id="errors">Error codes</h2>
-<table><tr>
-<td><code>
-1</code></td><td><code>NEXT without FOR
-</code></td></tr><tr><td><code>
-2</code></td><td><code>Syntax error
-</code></td></tr><tr><td><code>
-3</code></td><td><code>RETURN without GOSUB
-</code></td></tr><tr><td><code>
-4</code></td><td><code>Out of DATA
-</code></td></tr><tr><td><code>
-5</code></td><td><code>Illegal function call
-</code></td></tr><tr><td><code>
-6</code></td><td><code>Overflow
-</code></td></tr><tr><td><code>
-7</code></td><td><code>Out of memory
-</code></td></tr><tr><td><code>
-8</code></td><td><code>Undefined line number
-</code></td></tr><tr><td><code>
-9</code></td><td><code>Subscript out of range
-</code></td></tr><tr><td><code>
-10</code></td><td><code>Duplicate Definition
-</code></td></tr><tr><td><code>
-11</code></td><td><code>Division by zero
-</code></td></tr><tr><td><code>
-12</code></td><td><code>Illegal direct
-</code></td></tr><tr><td><code>
-13</code></td><td><code>Type mismatch
-</code></td></tr><tr><td><code>
-14</code></td><td><code>Out of string space
-</code></td></tr><tr><td><code>
-15</code></td><td><code>String too long
-</code></td></tr><tr><td><code>
-16</code></td><td><code>String formula too complex
-</code></td></tr><tr><td><code>
-17</code></td><td><code>Can't continue
-</code></td></tr><tr><td><code>
-18</code></td><td><code>Undefined user function
-</code></td></tr><tr><td><code>
-19</code></td><td><code>No RESUME
-</code></td></tr><tr><td><code>
-20</code></td><td><code>RESUME without error
-</code></td></tr><tr><td><code>
-21</code></td><td><em>unused</em>
-</td></tr><tr><td><code>
-22</code></td><td><code>Missing operand
-</code></td></tr><tr><td><code>
-23</code></td><td><code>Line buffer overflow
-</code></td></tr><tr><td><code>
-24</code></td><td><code>Device Timeout
-</code></td></tr><tr><td><code>
-25</code></td><td><code>Device Fault
-</code></td></tr><tr><td><code>
-26</code></td><td><code>FOR without NEXT
-</code></td></tr><tr><td><code>
-27</code></td><td><code>Out of paper
-</code></td></tr><tr><td><code>
-28</code></td><td><em>unused</em>
-</td></tr><tr><td><code>
-29</code></td><td><code>WHILE without WEND
-</code></td></tr><tr><td><code>
-30</code></td><td><code>WEND without WHILE
-</code></td></tr><tr><td><code>
-31&mdash;49</code></td><td><em>unused</em>
-</td></tr><tr><td><code>
-50</code></td><td><code>FIELD overflow
-</code></td></tr><tr><td><code>
-51</code></td><td><code>Internal error
-</code></td></tr><tr><td><code>
-52</code></td><td><code>Bad file number
-</code></td></tr><tr><td><code>
-53</code></td><td><code>File not found
-</code></td></tr><tr><td><code>
-54</code></td><td><code>Bad file mode
-</code></td></tr><tr><td><code>
-55</code></td><td><code>File already open
-</code></td></tr><tr><td><code>
-56</code></td><td><em>unused</em>
-</td></tr><tr><td><code>
-57</code></td><td><code>Device I/O error
-</code></td></tr><tr><td><code>
-58</code></td><td><code>File already exists
-</code></td></tr><tr><td><code>
-59&mdash;60</code></td><td><em>unused</em>
-</td></tr><tr><td><code>
-61</code></td><td><code>Disk full
-</code></td></tr><tr><td><code>
-62</code></td><td><code>Input past end
-</code></td></tr><tr><td><code>
-63</code></td><td><code>Bad record number
-</code></td></tr><tr><td><code>
-64</code></td><td><code>Bad file name
-</code></td></tr><tr><td><code>
-65</code></td><td><em>unused</em>
-</td></tr><tr><td><code>
-66</code></td><td><code>Direct statement in file
-</code></td></tr><tr><td><code>
-67</code></td><td><code>Too many files
-</code></td></tr><tr><td><code>
-68</code></td><td><code>Device Unavailable
-</code></td></tr><tr><td><code>
-69</code></td><td><code>Communication buffer overflow
-</code></td></tr><tr><td><code>
-70</code></td><td><code>Permission Denied
-</code></td></tr><tr><td><code>
-71</code></td><td><code>Disk not Ready
-</code></td></tr><tr><td><code>
-72</code></td><td><code>Disk media error
-</code></td></tr><tr><td><code>
-73</code></td><td><code>Advanced Feature
-</code></td></tr><tr><td><code>
-74</code></td><td><code>Rename across disks
-</code></td></tr><tr><td><code>
-75</code></td><td><code>Path/File access error
-</code></td></tr><tr><td><code>
-76</code></td><td><code>Path not found
-</code></td></tr><tr><td><code>
-77</code></td><td><code>Deadlock</code>
-</tr></table>
-<p>Any error code that does not have a message associated to it will generate
-the message <code>Unprintable error</code>.</p>
