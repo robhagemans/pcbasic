@@ -5,12 +5,12 @@
 -->
 
 <h2 id="synopsis">Synopsis</h2>
-<p><code>pcbasic <em>[program|package] [convert_output]
-[options]</em></code></p>
+<p><code>pcbasic <var>[program|package] [convert_output]
+[options]</var></code></p>
 
 <h2 id="options">Options</h2>
 <dl>
-<dt><code><em>program|package</em></code></dt>
+<dt><code><var>program|package</var></code></dt>
 <dd>A <code>.bas</code> program or <code>.zip</code> package can be
 specified as the first argument. If a program is specified, it will
 be run. If a package is specified, its configuration file
@@ -18,56 +18,56 @@ be run. If a package is specified, its configuration file
 packaged program file. This behaviour is affected by the
 <code>--run</code>, <code>--load</code> and <code>--convert</code>
 options.</dd>
-<dt><code><em>convert_output</em></code></dt>
+<dt><code><var>convert_output</var></code></dt>
 <dd>Set the output file for file format conversion. See the <code>--convert</code> option.</dd>
-<dt><code><em>options</em></code></dt>
+<dt><code><var>options</var></code></dt>
 <dd>See the full table of options below. If no options are present, the
 interpreter will run in interactive mode.</dd>
 <dt><code>--allow-code-poke[=True|=False]</code></dt>
 <dd>Allow programs to <code><a href="#POKE">POKE</a></code> into code memory.</dd>
 <dt><code>--altgr[=True|=False]</code></dt>
 <dd>If <code>True</code> (default), interpret the right
-<code class="key">Alt</code> key as
-<code class="key">Alt Gr</code> instead of
-<code class="key">Alt</code>. The left
-<code class="key">Alt</code> key is always seen as
-<code class="key">Alt</code>.</dd>
+<kbd>Alt</kbd> key as
+<kbd>Alt Gr</kbd> instead of
+<kbd>Alt</kbd>. The left
+<kbd>Alt</kbd> key is always seen as
+<kbd>Alt</kbd>.</dd>
 <dt><code>--append[=True|=False]</code></dt>
 <dd>Use with
-<code>--output=<em>output_file</em></code>. Append to
-<code><em>output_file</em></code>, do not overwrite.</dd>
-<dt><code>--aspect=<em>x,y</em></code></dt>
-<dd>Set the display aspect ratio to <code><em>x</em>:<em>y</em></code>.
+<code>--output=<var>output_file</var></code>. Append to
+<code><var>output_file</var></code>, do not overwrite.</dd>
+<dt><code>--aspect=<var>x,y</var></code></dt>
+<dd>Set the display aspect ratio to <code><var>x</var>:<var>y</var></code>.
 Graphical interface only.</dd>
 <dt><code>-b</code></dt>
 <dd>Use command-line text interface. Same as
 <code>--interface=cli</code>.</dd>
-<dt><code>--border=<em>width</em></code></dt>
+<dt><code>--border=<var>width</var></code></dt>
 <dd>Set the width of the screen border as a
-percentage from 0&mdash;100. The percentage refers to the total
+percentage from 0&#8212;100. The percentage refers to the total
 width of the borders on both sides as a fraction of the usable
 screen width. Graphical interface only.</dd>
-<dt><code>--caption=<em>title</em></code></dt>
+<dt><code>--caption=<var>title</var></code></dt>
 <dd>Set the title of the PC-BASIC window.
 Default is <em>PC-BASIC</em>.</dd>
 <dt><code>--capture-caps[=True|=False]</code></dt>
-<dd>Handle the <code class="key">Caps Lock</code> key. This
+<dd>Handle the <kbd>Caps Lock</kbd> key. This
 may collide with the operating system's own handling.</dd>
-<dt><code>--cas1=<em>type</em>:<em>value</em>[:<em>loc</em>]</code></dt>
+<dt><code>--cas1=<var>type</var>:<var>value</var>[:<var>loc</var>]</code></dt>
 <dd>Attach a resource to the <code>CAS1:</code> cassette device
-and wind the virtual tape to <code><em>loc</em></code> seconds.
-<code><em>type:value</em></code> can be
+and wind the virtual tape to <code><var>loc</var></code> seconds.
+<code><var>type:value</var></code> can be
 <table>
 <tr>
-<td><code>WAV:<em>wav_file</em></code></td>
+<td><code>WAV:<var>wav_file</var></code></td>
 <td>Connect to a RIFF Wave file with audio in IBM PC cassette format.</td>
 </tr>
 <tr>
-<td><code>CAS:<em>cas_file</em></code></td>
+<td><code>CAS:<var>cas_file</var></code></td>
 <td>Connect to a CAS tape image.
-</tr>
+</td></tr>
 <tr>
-<td><code>BC:<em>wav_file</em></code></td>
+<td><code>BC:<var>wav_file</var></code></td>
 <td>Connect to a RIFF Wave file with audio in BASICODE format.</td>
 </tr>
 </table>
@@ -75,14 +75,14 @@ and wind the virtual tape to <code><em>loc</em></code> seconds.
 <dt><code>--cga-low[=True|=False]</code></dt>
 <dd>Use low-intensity palettes in CGA. This only has an effect on
 CGA, EGA or VGA card emulation.</dd>
-<dt><code>--codepage=<em>codepage_id</em></code></dt>
+<dt><code>--codepage=<var>codepage_id</var></code></dt>
 <dd>Load the specified codepage. The codepage determines which
 characters are associated to a given character byte or, in the case
 of double-byte codepages, two character bytes.
 The following codepages are available:
 <table>
 <tr>
-<th><code><em>codepage_id</em></code></th>
+<th><code><var>codepage_id</var></code></th>
 <th>Codepage</th>
 <th>Languages</th>
 </tr>
@@ -237,7 +237,7 @@ The following codepages are available:
 </tr>
 <tr>
 <td><code>Kamenicky</code></td>
-<td>Kamenick&yacute;</td><td>Czech</td>
+<td>Kamenick&#253;</td><td>Czech</td>
 </tr>
 <tr>
 <td><code>Mazovia</code></td>
@@ -311,35 +311,35 @@ The following codepages are available:
 You can add custom codepages to PC-BASIC, by adding a file with
 its mapping to Unicode to the <code>encodings/</code> directory.
 </dd>
-<dt><code>--config=<em>config_file</em></code></dt>
+<dt><code>--config=<var>config_file</var></code></dt>
 <dd>Read a configuration file. The default configuration file
 <code>config/PCBASIC.INI</code> is always read, but any preset
 section in a specified configuration file replaces the whole
 equivalent section in the default file.</dd>
-<dt><code>--com1=<em>type</em>:<em>value</em></code></dt>
+<dt><code>--com1=<var>type</var>:<var>value</var></code></dt>
 <dd>Attach a resource to the <code>COM1:</code> serial device.
-<code><em>type:value</em></code> can be
+<code><var>type:value</var></code> can be
 <table>
 <tr>
-<td><code>PORT:<em>device_name</em></code></td>
-<td>connect to a serial device. <code><em>device_name</em></code>
+<td><code>PORT:<var>device_name</var></code></td>
+<td>connect to a serial device. <code><var>device_name</var></code>
 can be a device name such as <code>COM1</code> or
 <code>/dev/ttyS0</code> or a number, where the first serial port is
 number 0.</td>
 </tr>
 <tr>
-<td><code>SOCKET:<em>host</em>:<em>socket</em></code></td>
+<td><code>SOCKET:<var>host</var>:<var>socket</var></code></td>
 <td>connect to a TCP socket on a remote or
 local host.</td>
 </tr>
 </table>
 If this option is not specified, the <code>COM1</code> device is
 unavailable.</dd>
-<dt><code>--com2=<em>type</em>:<em>value</em></code></dt>
+<dt><code>--com2=<var>type</var>:<var>value</var></code></dt>
 <dd>Attach a resource to the <code>COM2:</code> serial device. See
 <code>--com1</code>.</dd>
-<dt><code>--convert=<em>mode</em></code></dt>
-<dd>Convert program to <code><em>mode</em></code>, which can be
+<dt><code>--convert=<var>mode</var></code></dt>
+<dd>Convert program to <code><var>mode</var></code>, which can be
 <table>
 <tr>
 <td><code>A</code></td>
@@ -354,60 +354,60 @@ unavailable.</dd>
 <td>Protected (encrypted)</td>
 </tr>
 </table>
-If <code><em>convert_output</em></code> is not specified, write to
+If <code><var>convert_output</var></code> is not specified, write to
 standard output. If program is not specified, use the argument of
 <code>--run</code> or <code>--load</code>. If none of those are
 given, read from standard input. Overrides <code>--resume</code>,
 <code>--run</code> and <code>--load</code>.</dd>
-<dt><code>--copy-paste=<em>copy_button</em>,<em>paste_button</em></code></dt>
+<dt><code>--copy-paste=<var>copy_button</var>,<var>paste_button</var></code></dt>
 <dd>
 Choose the mouse buttons for clipboard operations.
-<code><em>copy_button</em></code> and <code><em>paste_button</em></code> are
+<code><var>copy_button</var></code> and <code><var>paste_button</var></code> are
 one of <code>left</code>,<code>middle</code>,<code>right</code>,<code>none</code>.
 </dd>
 
 <dt><code>--ctrl-c-break[=True|=False]</code></dt>
 <dd>
 If <code>False</code>, follow GW-BASIC behaviour
-where <code class="key">Ctrl</code>+<code class="key">C</code> breaks <code><a href="#AUTO">AUTO</a></code>
+where <kbd>Ctrl</kbd>+<kbd>C</kbd> breaks <code><a href="#AUTO">AUTO</a></code>
 and <code><a href="#INPUT">INPUT</a></code> but not program execution or
-<code><a href="#LIST">LIST</a></code>.<br />
+<code><a href="#LIST">LIST</a></code>.<br/>
 If <code>True</code>, treat
-<code class="key">Ctrl</code>+<code class="key">C</code> exactly like
-<code class="key">Ctrl</code>+<code class="key">Break</code> and
-<code class="key">Ctrl</code>+<code class="key">Scroll Lock</code> in graphical
+<kbd>Ctrl</kbd>+<kbd>C</kbd> exactly like
+<kbd>Ctrl</kbd>+<kbd>Break</kbd> and
+<kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> in graphical
 interface mode.  Use if your keyboard does
-not have a <code class="key">Break</code> or
-<code class="key">Scroll Lock</code> key.<br />
+not have a <kbd>Break</kbd> or
+<kbd>Scroll Lock</kbd> key.<br/>
 Default is <code>False</code> on
 Windows and Linux and <code>True</code> on OSX. In <code>text</code> and
 <code>cli</code> interface mode,
-<code class="key">Ctrl</code>+<code class="key">C</code> is always treated like
-<code class="key">Ctrl</code>+<code class="key">Break</code>.
-<dt><code>--dimensions=<em>X</em>,<em>Y</em></code></dt>
-<dd>Set window dimensions to <code><em>X</em></code> by
-<code><em>Y</em></code> pixels. This overrides
+<kbd>Ctrl</kbd>+<kbd>C</kbd> is always treated like
+<kbd>Ctrl</kbd>+<kbd>Break</kbd>.
+</dd><dt><code>--dimensions=<var>X</var>,<var>Y</var></code></dt>
+<dd>Set window dimensions to <code><var>X</var></code> by
+<code><var>Y</var></code> pixels. This overrides
 <code>--scaling=native</code> and <code>--aspect</code>. Graphical
 interface only.</dd>
 
-<dt><code>--current-device=<em>{A|B...|Z}</em></code></dt>
+<dt><code>--current-device=<var>{A|B...|Z}</var></code></dt>
 <dd>
 Set the current disk device to the indicated PC-BASIC drive letter. The device chosen
 should be mounted to an actual location using --mount. Default is <code>Z</code>,
 with the <code>Z:</code> device mounted to your current drive.
 </dd>
 
-<dt><code>-d</code><br>
+<dt><code>-d</code><br/>
 <code id="--double">--double[=True|=False]</code></dt>
 <dd>Allow double-precision transcendental math functions. This is
 equivalent to the <code>/d</code> option in GW-BASIC.</dd>
-<dt><code>-e=<em>command_line</em></code><br>
-<code>--exec=<em>command_line</em></code></dt>
-<dd>Execute BASIC <code><em>command_line</em></code>. The specified
+<dt><code>-e=<var>command_line</var></code><br/>
+<code>--exec=<var>command_line</var></code></dt>
+<dd>Execute BASIC <code><var>command_line</var></code>. The specified
 commands are executed before entering into interactive mode or
 running a program.</dd>
-<dt><code>--font=<em>font_name</em>[,<em>font_name
-</em>...]</code></dt>
+<dt><code>--font=<var>font_name</var>[,<var>font_name
+</var>...]</code></dt>
 <dd>Load current codepage from specified <code>font_name.hex</code>
 fonts. The last fonts specified take precedence, previous ones are
 fallback. Default is <code>unifont,univga,freedos</code> (i.e. the
@@ -416,7 +416,7 @@ depend on what is stored in font/. By default, the following fonts
 are available:
 <table>
 <tr>
-<th><code><em>font_name</em></code></th>
+<th><code><var>font_name</var></code></th>
 <th>Name</th>
 <th>Sizes</th>
 <th>Codepages</th>
@@ -484,14 +484,14 @@ FreeDOS CPIDOS fonts are therefore more suitable, when they have
 the required glyphs.</dd>
 <dt><code>--fullscreen[={True|False}]</code></dt>
 <dd>Fullscreen mode. Graphical interface only.</dd>
-<dt><code>-h</code><br>
+<dt><code>-h</code><br/>
 <code>--help</code></dt>
 <dd>Show a usage message and exit.</dd>
 <dt><code>-i</code></dt>
 <dd>This option is ignored. It is included for compatibility with
 GW-BASIC <code>/i</code>.</dd>
-<dt><code>--input=<em>input_file</em></code></dt>
-<dd>Retrieve keyboard input from <code><em>input_file</em></code>,
+<dt><code>--input=<var>input_file</var></code></dt>
+<dd>Retrieve keyboard input from <code><var>input_file</var></code>,
 except if <code>KYBD:</code> is read explicitly. Input from
 <code>KYBD:</code> files is always read from the keyboard,
 following GW-BASIC behaviour.</dd>
@@ -518,44 +518,44 @@ available:
 </tr>
 </table>
 </dd>
-<dt><code>-k=<em>keystring</em></code><br>
-<code>--keys=<em>keystring</em></code></dt>
+<dt><code>-k=<var>keystring</var></code><br/>
+<code>--keys=<var>keystring</var></code></dt>
 <dd>Insert keys into the key buffer.</dd>
-<dt><code>-l=<em>program</em></code><br>
-<code>--load=<em>program</em></code></dt>
+<dt><code>-l=<var>program</var></code><br/>
+<code>--load=<var>program</var></code></dt>
 <dd>Load the specified <code>.BAS</code> program and return to
 interactive mode.</dd>
-<dt><code>--logfile=<em>log_file</em></code></dt>
+<dt><code>--logfile=<var>log_file</var></code></dt>
 <dd>Write error and warning output to
-<code><em>log_file</em></code> instead of <code>stderr</code>.</dd>
-<dt><code>--lpt1=<em>type</em>:<em>value</em></code></dt>
+<code><var>log_file</var></code> instead of <code>stderr</code>.</dd>
+<dt><code>--lpt1=<var>type</var>:<var>value</var></code></dt>
 <dd>Attach a resource to the <code>LPT1:</code> parallel device.
-<code><em>type:value</em></code> can be
+<code><var>type:value</var></code> can be
 <table>
 <tr>
-<td><code>PARPORT:<em>device_name</em></code></td>
-<td>Connect to a parallel device. <code><em>device_name</em></code>
+<td><code>PARPORT:<var>device_name</var></code></td>
+<td>Connect to a parallel device. <code><var>device_name</var></code>
 such as <code>LPT1</code> or <code>/dev/parport0</code>.</td>
 </tr>
 <tr>
-<td><code>PRINTER:<em>printer_name</em></code></td>
+<td><code>PRINTER:<var>printer_name</var></code></td>
 <td>Connect to a Windows or CUPS printer. If
-<code><em>printer_name</em></code> is not specified, the default
+<code><var>printer_name</var></code> is not specified, the default
 printer is used.</td>
 </tr>
 <tr>
-<td><code>FILE:<em>file_name</em></code></td>
+<td><code>FILE:<var>file_name</var></code></td>
 <td>Connect to any file or to a character device such as
 <code>/dev/stdout</code>. If not specified, <code>LPT1:</code> is
 connected to the default printer.</td>
 </tr>
 </table>
 </dd>
-<dt><code>--lpt2=<em>type</em>:<em>value</em></code></dt>
+<dt><code>--lpt2=<var>type</var>:<var>value</var></code></dt>
 <dd>Attach a resource to the <code>LPT2:</code> parallel device.
 See <code>--lpt1</code>. If not specified, <code>LPT2:</code> is
 unavailable.</dd>
-<dt><code>--lpt3=<em>type</em>:<em>value</em></code></dt>
+<dt><code>--lpt3=<var>type</var>:<var>value</var></code></dt>
 <dd>Attach a resource to the <code>LPT3:</code> parallel device.
 See <code>--lpt1</code>. If not specified, <code>LPT3:</code> is
 unavailable.</dd>
@@ -564,24 +564,24 @@ unavailable.</dd>
 letters. On other systems, assign <code>Z:</code> to the current
 working directory, <code>C:</code> to the filesystem root and
 <code>H:</code> to the home directory.</dd>
-<dt><code>-f=<em>number_of_files</em></code><br>
-<code>--max-files=<em>number_of_files</em></code></dt>
+<dt><code>-f=<var>number_of_files</var></code><br/>
+<code>--max-files=<var>number_of_files</var></code></dt>
 <dd>Set maximum number of open files to
-<code><em>number_of_files</em></code> (default is 3). This is
+<code><var>number_of_files</var></code> (default is 3). This is
 equivalent to GWBASIC's <code>/f</code> option.</dd>
-<dt><code>-m=<em>max_memory</em>[,<em>basic_memory_blocks</em>]</code><br>
-<code>--max-memory=<em>max_memory</em>[,<em>basic_memory_blocks</em>]</code></dt>
+<dt><code>-m=<var>max_memory</var>[,<var>basic_memory_blocks</var>]</code><br/>
+<code>--max-memory=<var>max_memory</var>[,<var>basic_memory_blocks</var>]</code></dt>
 <dd>Set the maximum size of the data memory segment to
-<code><em>max_memory</em></code> and the maximum size of the data
+<code><var>max_memory</var></code> and the maximum size of the data
 memory available to BASIC to
-<code><em>basic_memory_blocks</em>*16</code>. In PC-BASIC, the
+<code><var>basic_memory_blocks</var>*16</code>. In PC-BASIC, the
 minimum of these values is simply the data memory size; the two
 values are allowed for compatibility with GW-BASIC
 <code>/m</code>.</dd>
-<dt><code>-s=<em>record_length</em></code><br>
-<code>--max-reclen=<em>record_length</em></code></dt>
+<dt><code>-s=<var>record_length</var></code><br/>
+<code>--max-reclen=<var>record_length</var></code></dt>
 <dd>Set maximum record length for <code>RANDOM</code> files to
-<code><em>record_length</em></code>. Default is 128, maximum is
+<code><var>record_length</var></code>. Default is 128, maximum is
 32767. This is equivalent to GWBASIC's <code>/s</code> option.</dd>
 <dt><code>--monitor={rgb|composite|mono}</code></dt>
 <dd>Sets the monitor type to emulate. Available types:
@@ -602,12 +602,12 @@ values are allowed for compatibility with GW-BASIC
 </tr>
 </table>
 </dd>
-<dt><code>--mono-tint=<em>r</em>,<em>g</em>,<em>b</em></code></dt>
+<dt><code>--mono-tint=<var>r</var>,<var>g</var>,<var>b</var></code></dt>
 <dd>Specify the monochrome tint as RGB, each in the range
-0&mdash;255.</dd>
-<dt><code>--mount=<em>drive</em>:<em>path</em>,[<em>drive</em>:<em>path</em>...]</code></dt>
-<dd>Assign drive letter <code><em>drive:</em></code> to the path
-<code><em>path</em></code>. Path can be absolute or relative. By
+0&#8212;255.</dd>
+<dt><code>--mount=<var>drive</var>:<var>path</var>,[<var>drive</var>:<var>path</var>...]</code></dt>
+<dd>Assign drive letter <code><var>drive:</var></code> to the path
+<code><var>path</var></code>. Path can be absolute or relative. By
 default, <code>Z:</code> is assigned to the current working
 directory and no other drive letters are assigned.</dd>
 <dt><code>-n</code></dt>
@@ -620,33 +620,33 @@ algorithm that isn't as smart as it thinks it is, and displayed as
 box drawing rather than as DBCS characters. If <code>--nobox</code>
 is set, they will be displayed as DBCS.</dd>
 <dt><code>--nokill[=True|=False]</code></dt>
-<dd>Allow BASIC to capture <code class="key">Alt+F4</code>.
+<dd>Allow BASIC to capture <kbd>Alt+F4</kbd>.
 Graphical interface only. By default,
-<code class="key">Alt</code>+<code class="key">F4</code> is captured by most operating
+<kbd>Alt</kbd>+<kbd>F4</kbd> is captured by most operating
 systems as a quit signal, and will terminate PC-BASIC. Set
 <code>--nokill</code> to allow BASIC to capture
-<code class="key">Alt</code>+<code class="key">F4</code> instead. This is useful if
+<kbd>Alt</kbd>+<kbd>F4</kbd> instead. This is useful if
 your program uses this key combination.</dd>
 <dt><code>--nosound[=True|=False]</code></dt>
 <dd>Disable sound output.</dd>
-<dt><code>--output=<em>output_file</em></code></dt>
-<dd>Send screen output to <code><em>output_file</em></code>, except
+<dt><code>--output=<var>output_file</var></code></dt>
+<dd>Send screen output to <code><var>output_file</var></code>, except
 if <code>SCRN:</code> is written to explicitly. Output to
 <code>SCRN:</code> files will always be shown on the screen, as in
 GW-BASIC.</dd>
-<dt><code>--pcjr-term=<em>terminal_program</em></code></dt>
+<dt><code>--pcjr-term=<var>terminal_program</var></code></dt>
 <dd>Set the terminal program run by the PCjr <code><a href="#TERM">TERM</a></code>
-command to <code><em>terminal_program</em></code>. This only has an
+command to <code><var>terminal_program</var></code>. This only has an
 effect with <code>--syntax={pcjr|tandy}</code>.</dd>
-<dt><code id="--peek">--peek=[<em>seg</em>:<em>addr</em>:<em>val</em>,[<em>seg</em>:<em>addr</em>:<em>val</em>...]]</code></dt>
+<dt><code id="--peek">--peek=[<var>seg</var>:<var>addr</var>:<var>val</var>,[<var>seg</var>:<var>addr</var>:<var>val</var>...]]</code></dt>
 <dd>Define <code><a href="#PEEK">PEEK</a></code> preset values. If defined, <code>DEF
-SEG:? PEEK(<em>addr</em>)</code> will return
-<code><em>val</em></code>.</dd>
+SEG:? PEEK(<var>addr</var>)</code> will return
+<code><var>val</var></code>.</dd>
 <dt><code>--pen={left|middle|right|none}</code></dt>
 <dd>Set the mouse button for light pen emulation. Default is <code>left</code>.
 If set to <code>none</code>, light pen emulation is switched off.
 On Android, <code>left</code> means touch input.</dd>
-<dt><code>--preset=<em>option_block</em></code></dt>
+<dt><code>--preset=<var>option_block</var></code></dt>
 <dd>Load machine preset options. A preset option corresponds to a
 section defined in a config file by a name between square brackets,
 like <code>[this]</code>. <code>--preset=this</code> will load all
@@ -701,22 +701,22 @@ Set the trigger to flush the print buffer to the printer. If <code>line</code>,
 the printer is activated after every line break; if <code>page</code>, the printer is activated after every page break.
 If <code>close</code> (default), the printer is activated only on cloging PC-BASIC.
 </dd>
-<dt><code>-q</code><br>
+<dt><code>-q</code><br/>
 <code>--quit[=True|=False]</code></dt>
 <dd>Quit interpreter when execution stops. If combined with
 <code>--run</code>, this is when the program ends; in interactive
 mode, after the first command is executed.</dd>
-<dt><code>--reserved-memory=<em>number_of_bytes</em></code></dt>
-<dd>Reserve <code><em>number_of_bytes</em></code> of memory at the
+<dt><code>--reserved-memory=<var>number_of_bytes</var></code></dt>
+<dd>Reserve <code><var>number_of_bytes</var></code> of memory at the
 bottom of the data segment. For compatibility with GW-BASIC.
 Default is 3429 bytes. Lowering this value makes more string and
 variable space available for use by programs.</dd>
 <dt><code>--resume[=True|=False]</code></dt>
 <dd>Resume from saved state. Overrides <code>--run</code> and
 <code>--load</code>.</dd>
-<dt><code>-r=<em>program</em></code><br>
-<code>--run=<em>program</em></code></dt>
-<dd>Run the specified <code><em>program</em></code>. Overrides
+<dt><code>-r=<var>program</var></code><br/>
+<code>--run=<var>program</var></code></dt>
+<dd>Run the specified <code><var>program</var></code>. Overrides
 <code>--load</code>.</dd>
 <dt><code>--scaling={smooth|crisp|native}</code></dt>
 <dd>Choose scaling method.
@@ -739,17 +739,17 @@ overrides <code>--aspect.</code></td>
 </tr>
 </table>
 Default is <code>smooth</code>. Graphical interface only.</dd>
-<dt><code>-c=<em>size</em></code><br>
-<code>--serial-buffer-size=<em>size</em></code></dt>
-<dd>Set serial input buffer <code><em>size</em></code> (default is
+<dt><code>-c=<var>size</var></code><br/>
+<code>--serial-buffer-size=<var>size</var></code></dt>
+<dd>Set serial input buffer <code><var>size</var></code> (default is
 256). If set to 0, serial communications are disabled.</dd>
-<dt><code id="#--shell">--shell={none|native|<em>command</em>]</code></dt>
+<dt><code id="#--shell">--shell={none|native|<var>command</var>]</code></dt>
 <dd>Set the command interpreter run on the <code><a href="#SHELL">SHELL</a></code>
 command to the operating system's native shell or a custom shell
-run by <code><em>command</em></code>. Default is <code>none</code>,
+run by <code><var>command</var></code>. Default is <code>none</code>,
 which disables the <code>SHELL</code> command.</dd>
-<dt><code>--state=<em>state_file</em></code></dt>
-<dd>Set the save-state file to <code><em>state_file</em></code>.
+<dt><code>--state=<var>state_file</var></code></dt>
+<dd>Set the save-state file to <code><var>state_file</var></code>.
 Default is <code>PCBASIC.SAV</code> in the Application Data
 directory.</dd>
 <dt><code>--strict-hidden-lines[=True|=False]</code></dt>
@@ -791,10 +791,10 @@ statements.</dd>
 <dd>Use UTF-8 for ASCII-mode programs. If <code>True</code>,
 programs stored as ASCII (rather than bytecode) will be converted
 from UTF-8 on <code><a href="#LOAD">LOAD</a></code> and to UTF-8 on <code><a href="#SAVE">SAVE</a></code>.</dd>
-<dt><code>-v</code><br>
+<dt><code>-v</code><br/>
 <code>--version</code></dt>
 <dd>Print PC-BASIC version and exit.</dd>
-<dt><code>--video=<em>card</em></code></dt>
+<dt><code>--video=<var>card</var></code></dt>
 <dd>Set the video card to emulate. Available video cards:
 <table>
 <tr>
@@ -835,13 +835,13 @@ from UTF-8 on <code><a href="#LOAD">LOAD</a></code> and to UTF-8 on <code><a hre
 </tr>
 </table>
 </dd>
-<dt><code>--video-memory=<em>size</em></code></dt>
+<dt><code>--video-memory=<var>size</var></code></dt>
 <dd>Set the amount of emulated video memory available. This affects
 the number of video pages that can be used. On PCjr and Tandy, this
 can be changed at runtime through the <code><a href="#CLEAR">CLEAR</a></code> statement;
 more than 16384 needs to be available to enter <code>SCREEN
 5</code> and <code>SCREEN 6</code>. Default is 262144.</dd>
-<dt><code>-w</code><br>
+<dt><code>-w</code><br/>
 <code>--wait[=True|=False]</code></dt>
 <dd>If <code>True</code>, PC-BASIC waits for a keystroke before
 closing the window on exit. Only works for
