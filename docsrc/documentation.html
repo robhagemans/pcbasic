@@ -25,7 +25,9 @@ characters, it will ignore the remainder. A line can also be wrapped by a
 line-feed, entered with <kbd>Ctrl</kbd>+<kbd>Enter</kbd>.</p>
 
 <p>If you press <kbd>Enter</kbd>, PC-BASIC will attempt to execute the
-logical line on which the cursor is placed as a command. When the command is executed correctly, PC-BASIC will display the prompt <code>Ok</code>. If there is an error, it will display an error message followed by <code>Ok</code>.
+logical line on which the cursor is placed as a command. When the command is executed correctly,
+PC-BASIC will display the prompt <samp>Ok</samp>. If there is an error, it will
+display an error message followed by <samp>Ok</samp>.
 If the line starts with a number, it will be stored as a program line. No prompt is displayed.</p>
 
 <p>The following keys have a special effect in the working environment:</p>
@@ -152,7 +154,7 @@ Pause execution. Press another key to resume.
 or <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd>
 </td>
 <td>
-Stop execution and return to interactive mode. A <code>Break</code> message is printed.
+Stop execution and return to interactive mode. A <samp>Break</samp> message is printed.
 </td>
 </tr>
 </table>
@@ -166,7 +168,7 @@ most keys have the same effect as in interactive mode. The following keys have a
 or <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd>
 </td><td>
 Stop execution and return to interactive mode.
-A <code>Break</code> message is printed.
+A <samp>Break</samp> message is printed.
 </td></tr><tr><td>
 <kbd>Enter</kbd>
 </td><td>
@@ -317,7 +319,7 @@ lines between <code>65530</code> and <code>65535</code> are not visible in
 the program's <code>LIST</code>.
 Within one program line, statements are separated by colons <code>:</code>.</p>
 
-<p>To run the program, type the command <code>RUN</code>. PC-BASIC will now execute all program lines in order inside the working environment. You cannot move the cursor around or enter commands while the program is running. If and when the program finishes, it will return control of the working environment to you. You can interrupt a program at any time by using one of the key combinations <kbd>Ctrl</kbd>+<kbd>Break</kbd> or <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd>. The program will stop immediately, print a <code>Break</code> message and return control to you.</p>
+<p>To run the program, type the command <code>RUN</code>. PC-BASIC will now execute all program lines in order inside the working environment. You cannot move the cursor around or enter commands while the program is running. If and when the program finishes, it will return control of the working environment to you. You can interrupt a program at any time by using one of the key combinations <kbd>Ctrl</kbd>+<kbd>Break</kbd> or <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd>. The program will stop immediately, print a <samp>Break</samp> message and return control to you.</p>
 
 
 <p>Normally, you can <em>not</em> use  <kbd>Ctrl</kbd>+<kbd>C</kbd> to interrupt a running program. However, some keyboards do not have a <kbd>Ctrl</kbd>+<kbd>Break</kbd> or <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> key, which would make it impossible to interrupt a program that does not exit. If you have such a system, you can enable the <code>ctrl-c-break</code> option. This is enabled by default on OS X systems as well as when using the text-based or command-line interface.

@@ -84,8 +84,8 @@ brackets; even mixing brackets is allowed. The following all work: <code>A[0]</c
 <h2 id="error-trapping">Error trapping</h2>
 <p>
     Normally, any error will interrupt program execution and print a message on
-    the console (exceptions are <code>Overflow</code> and
-    <code>Division by zero</code>, which print a message but do not interrupt
+    the console (exceptions are <samp>Overflow</samp> and
+    <samp>Division by zero</samp>, which print a message but do not interrupt
     execution). It is possible to handle errors more graciously by
     setting an error-handling routine with the
     <code><a href="#ON-ERROR">ON ERROR</a> GOTO <var>line_number</var></code>
@@ -405,14 +405,14 @@ which is the last character of the variable's full name:</p>
 <h4>Errors</h4>
 <ul>
 <li>
-<code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li>
 </ul>
 
 <h3 id="ASC"><code>ASC</code> function</h3>
-<pre>
+<pre><code>
 <em>val</em> = ASC(<em>char</em>)
-</pre>
+</code></pre>
 <p>Returns the ASCII code for the first character of <code><var>char</var></code>. </p>
 <h4>Parameters</h4>
 <ul><li>
@@ -422,9 +422,9 @@ a string value.
 <h4>Errors</h4>
 <ul>
 <li>
-<code><var>char</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>char</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>char</var></code> equals <code>""</code>: <code>Illegal function call</code>.
+<code><var>char</var></code> equals <code>""</code>: <samp>Illegal function call</samp>.
 </li>
 </ul>
 
@@ -449,7 +449,7 @@ returns a single-precision value.</li>
 <h4>Errors</h4>
 <ul>
 <li>
-<code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li>
 </ul>
 
@@ -478,10 +478,10 @@ is used without specifying an increment, the last increment specified in an
 <ul>
 <li>
 <code><var>line_number</var></code> is not an unsigned-integer value in <code>[0&#8212;65529]</code>:
-   <code>Syntax error</code>.
+   <samp>Syntax error</samp>.
 </li><li>
 When automatic line numbering is enabled and <kbd>Enter</kbd> is pressed on an empty line with number larger than
-   <code>65519</code>: <code>Undefined line number</code>.
+   <code>65519</code>: <samp>Undefined line number</samp>.
 </li></ul>
 
 <h3 id="BEEP"><code>BEEP</code> statement</h3>
@@ -492,7 +492,7 @@ BEEP
 <h4>Errors</h4>
 <ul>
 <li>
-If a <code>Syntax error</code> is raised, the beep is still produced.
+If a <samp>Syntax error</samp> is raised, the beep is still produced.
 </li></ul>
 
 <h3 id="BEEP-switch"><code>BEEP</code> statement (switch)</h3>
@@ -527,11 +527,11 @@ negative, its two's complement will be used.
 </li>
 </ul>
 <h4>Errors</h4>
-<ul><li><code><var>filename</var></code> is not in <code>BSAVE</code> format: <code>Bad file mode</code>.</li>
+<ul><li><code><var>filename</var></code> is not in <code>BSAVE</code> format: <samp>Bad file mode</samp>.</li>
 <li>
-<code><var>filename</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>filename</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>offset</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+<code><var>offset</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li></ul>
 
 
@@ -557,11 +557,11 @@ complement will be used.</li>
 </ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>filename</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>filename</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>offset</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+<code><var>offset</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>length</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+<code><var>length</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li></ul>
 
 <h3 id="CALL"><code>CALL</code> statement</h3>
@@ -583,9 +583,9 @@ This statement is not implemented in PC-BASIC.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>address_var</var></code> is a string variable: <code>Type mismatch</code>.
+<code><var>address_var</var></code> is a string variable: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>address_var</var></code> is a literal: <code>Syntax error</code>.
+<code><var>address_var</var></code> is a literal: <samp>Syntax error</samp>.
 </li></ul>
 
 
@@ -608,9 +608,9 @@ This statement is not implemented in PC-BASIC.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>address_var</var></code> is a string variable: <code>Type mismatch</code>.
+<code><var>address_var</var></code> is a string variable: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>address_var</var></code> is a literal: <code>Syntax error</code>.
+<code><var>address_var</var></code> is a literal: <samp>Syntax error</samp>.
 </li></ul>
 
 
@@ -624,7 +624,7 @@ Converts the numeric expression <code><var>x</var></code> to a double-precision 
 <h4>Errors</h4>
 <ul>
 <li>
-<code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li>
 </ul>
 
@@ -674,18 +674,18 @@ If specified, <code>ALL</code> must precede <code>DELETE</code>; if unspecified,
 <ul>
 <li>
 <code>MERGE</code> is specified and <code><var>program</var></code> was not saved in ASCII mode:
-<code>Bad file mode</code>.
+<samp>Bad file mode</samp>.
 </li><li>
-A line number in <code><var>range</var></code> is greater than 65529: <code>Syntax error</code>.
+A line number in <code><var>range</var></code> is greater than 65529: <samp>Syntax error</samp>.
 </li>
 <li>
-If a <code>Syntax error</code> is raised by <code>CHAIN</code>, no lines are deleted and the new
+If a <samp>Syntax error</samp> is raised by <code>CHAIN</code>, no lines are deleted and the new
 program is not loaded.
 </li>
-<li>The closing line number in <code><var>range</var></code> does not exist: <code>Illegal function call</code></li>
+<li>The closing line number in <code><var>range</var></code> does not exist: <samp>Illegal function call</samp></li>
 <li>
 If <code><var>line_number_expr</var></code> does not evaluate to an existing line number in the
-new program, <code>Illegal function call</code> is raised but the load or merge is
+new program, <samp>Illegal function call</samp> is raised but the load or merge is
 being performed.
 </li></ul>
 
@@ -709,11 +709,11 @@ Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for info
 </ul>
 <h4>Errors</h4>
 <ul><li>
-No matching path is found: <code>Path not found</code>.
+No matching path is found: <samp>Path not found</samp>.
 </li><li>
-<code><var>pathname</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>pathname</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>pathname</var></code> is empty: <code>Bad file name</code>.
+<code><var>pathname</var></code> is empty: <samp>Bad file name</samp>.
 </li></ul>
 
 <h3 id="CHR$"><code>CHR$</code> function</h3>
@@ -727,11 +727,11 @@ No matching path is found: <code>Path not found</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>x</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>x</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -741,9 +741,9 @@ No matching path is found: <code>Path not found</code>.
 <p>Converts the numeric expression <code><var>x</var></code> to a signed integer.</p>
 <h4>Errors</h4>
 <ul><li>
-<code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li></ul>
 
 
@@ -777,11 +777,11 @@ For <code><var>aspect</var> &lt;&gt; 1</code>, the midpoint algorithm used does 
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-  The statement is executed in text mode: <code>Illegal function call</code>.
+  The statement is executed in text mode: <samp>Illegal function call</samp>.
 </li><li>
-  <code><var>start</var></code> or <code><var>end</var></code> is not in <code>[0&#8212;2&#960;]</code>: <code>Illegal function call</code>.
+  <code><var>start</var></code> or <code><var>end</var></code> is not in <code>[0&#8212;2&#960;]</code>: <samp>Illegal function call</samp>.
 </li><li>
-  The statement ends with a comma: <code>Missing operand</code>.
+  The statement ends with a comma: <samp>Missing operand</samp>.
 </li></ul>
 
 
@@ -812,19 +812,19 @@ Default is previous stack size. Default stack size is 512.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any of the arguments has a string value: <code>Type mismatch</code>.
+Any of the arguments has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>mem_limit</var></code>, <code><var>stack_size</var></code> are not in <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+<code><var>mem_limit</var></code>, <code><var>stack_size</var></code> are not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>mem_limit</var></code> or <code><var>stack_size</var></code> equal <code>0</code>: <code>Illegal function call</code>.
+<code><var>mem_limit</var></code> or <code><var>stack_size</var></code> equal <code>0</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>mem_limit</var></code> equals <code>-1</code> or <code>65535</code>: <code>Out of memory</code>.
+<code><var>mem_limit</var></code> equals <code>-1</code> or <code>65535</code>: <samp>Out of memory</samp>.
 </li><li>
-<code><var>mem_limit</var></code> or <code><var>expr</var></code> are too low: <code>Out of memory</code>.
+<code><var>mem_limit</var></code> or <code><var>expr</var></code> are too low: <samp>Out of memory</samp>.
 </li><li>
-<code><var>expr</var></code> is not  in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>expr</var></code> is not  in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>expr</var></code> is negative: <code>Illegal function call</code>.
+<code><var>expr</var></code> is negative: <samp>Illegal function call</samp>.
 </li></ul>
 
 <h3 id="CLOSE"><code>CLOSE</code> statement</h3>
@@ -842,13 +842,13 @@ No error is raised if the specified file numbers were not open.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>file_1</var>, <var>file_2</var>, ...</code> are not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>file_1</var>, <var>file_2</var>, ...</code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_1</var>, <var>file_2</var>, ...</code> are not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>file_1</var>, <var>file_2</var>, ...</code> are not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_1</var>, <var>file_2</var>, ...</code> have a string value: <code>Type mismatch</code>.
+<code><var>file_1</var>, <var>file_2</var>, ...</code> have a string value: <samp>Type mismatch</samp>.
 </li><li>
-The statement ends in a comma, <code>Missing operand</code> .
+The statement ends in a comma, <samp>Missing operand</samp> .
 </li><li>
  If an error occurs, only the files before the erratic value are closed.
 </li></ul>
@@ -871,15 +871,15 @@ The comma is optional and has no effect.</p>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>x</var></code> is has a string value: <code>Type mismatch</code>.
+<code><var>x</var></code> is has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code> .
+<code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp> .
 </li><li>
-<code><var>x</var></code> is not in <code>[0, 1, 2]</code>: <code>Illegal function call</code>.
+<code><var>x</var></code> is not in <code>[0, 1, 2]</code>: <samp>Illegal function call</samp>.
 </li><li>
-No comma is specified but more text follows: <code>Illegal function call</code>.
+No comma is specified but more text follows: <samp>Illegal function call</samp>.
 </li><li>
-A comma is specified followed by more: <code>Syntax error</code>.
+A comma is specified followed by more: <samp>Syntax error</samp>.
 </li><li>
 If an error occurs, the screen is not cleared.
 </li></ul>
@@ -908,14 +908,14 @@ characters on the screen are not affected.</p>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any of the parameters has a string value: <code>Type mismatch</code>.
+Any of the parameters has a string value: <samp>Type mismatch</samp>.
 </li><li>
-Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
 <code><var>foreground</var></code> is not in <code>[0&#8212;31]</code>, <code><var>background</var></code> is not in
-    <code>[0&#8212;15]</code> or <code><var>border</var></code> is not in <code>[0&#8212;15]</code>: <code>Illegal function call</code>.
+    <code>[0&#8212;15]</code> or <code><var>border</var></code> is not in <code>[0&#8212;15]</code>: <samp>Illegal function call</samp>.
 </li><li>
-Statement is used in <code>SCREEN 2</code>: <code>Illegal function call</code>.
+Statement is used in <code>SCREEN 2</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -943,11 +943,11 @@ Statement is used in <code>SCREEN 2</code>: <code>Illegal function call</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any of the parameters has a string value: <code>Type mismatch</code>.
+Any of the parameters has a string value: <samp>Type mismatch</samp>.
 </li><li>
-Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-Any of the parameters is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+Any of the parameters is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -973,12 +973,12 @@ IN <code>SCREEN 9</code>, the colour value is taken from the 64-colour VGA set.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any of the parameters has a string value: <code>Type mismatch</code>.
+Any of the parameters has a string value: <samp>Type mismatch</samp>.
 </li><li>
-Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
 <code><var>foreground</var></code> is not in <code>[1&#8212;15]</code>; <code><var>background</var></code> is not in <code>[0&#8212;15]</code>; or
-    <code><var>dummy</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+    <code><var>dummy</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -1031,9 +1031,9 @@ Anything after the <code>CONT</code> keyword is ignored.
 <h4>Errors</h4>
 <ul><li>
 No program is loaded, a program has not been run, after a program line
-    has been modified or after <code><a href="#CLEAR">CLEAR</a></code>: <code>Can't continue</code>.
+    has been modified or after <code><a href="#CLEAR">CLEAR</a></code>: <samp>Can't continue</samp>.
 </li><li>
-The break occurred in a direct line: <code>Can't continue</code>
+The break occurred in a direct line: <samp>Can't continue</samp>
 </li></ul>
 
 
@@ -1053,7 +1053,7 @@ gives the angle in radians.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>angle</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -1063,7 +1063,7 @@ gives the angle in radians.
 Converts the numeric expression <code><var>x</var></code> to a single-precision value.</p>
 <h4>Errors</h4>
 <ul><li>
-<code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 <h3 id="CSRLIN"><code>CSRLIN</code> function</h3>
@@ -1085,7 +1085,7 @@ little-endian two's complement encoding. Only the first two bytes are used.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>s</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li></ul>
 
 <h3 id="CVS"><code>CVS</code> function</h3>
@@ -1098,7 +1098,7 @@ number in Microsoft Binary Format. Only the first four bytes are used.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>s</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li></ul>
 
 <h3 id="CVD"><code>CVD</code> function</h3>
@@ -1111,7 +1111,7 @@ number in Microsoft Binary Format. Only the first eight bytes are used.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>s</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -1129,7 +1129,7 @@ statement.
 <h4>Errors</h4>
 <ul><li>
 If the type of the literal does not match that of the corresponding <code><a href="#READ">READ</a></code>
-statement, a <code>Syntax error</code> occurs on the <code>DATA</code> statement.
+statement, a <samp>Syntax error</samp> occurs on the <code>DATA</code> statement.
 </li></ul>
 
 <h3 id="DATE$"><code>DATE$</code> function</h3>
@@ -1166,14 +1166,14 @@ date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>
     to change the system time.
 </li><li>
    GW-BASIC appears to accept invalid dates such as <code>"02-31-2000"</code>. PC-BASIC
-    raises <code>Illegal function call</code> for these.
+    raises <samp>Illegal function call</samp> for these.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>date</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>date</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li><li>
 <code><var>date</var></code> is not in the format specified above:
-    <code>Illegal function call</code>.
+    <samp>Illegal function call</samp>.
 </li></ul>
 
 <h3 id="DEF-FN"><code>DEF FN</code> statement</h3>
@@ -1200,7 +1200,7 @@ parameters <code><var>arg_0</var>, <var>arg_1</var>, ...</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-The statement is executed directly instead of in a program line: <code>Illegal direct</code>.
+The statement is executed directly instead of in a program line: <samp>Illegal direct</samp>.
 </li></ul>
 
 
@@ -1250,9 +1250,9 @@ dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
- <code><var>address</var></code> has a string value: <code>Type mismatch</code>.
+ <code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
- <code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+ <code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li></ul>
 
 
@@ -1275,11 +1275,11 @@ dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
- <code><var>n</var></code> is not a digit in <code>[0&#8212;9]</code>: <code>Syntax error</code>.
+ <code><var>n</var></code> is not a digit in <code>[0&#8212;9]</code>: <samp>Syntax error</samp>.
 </li><li>
- <code><var>address</var></code> has a string value: <code>Type mismatch</code>.
+ <code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
- <code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+ <code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li></ul>
 
 <h3 id="DELETE"><code>DELETE</code> statement</h3>
@@ -1302,9 +1302,9 @@ If no range is specified, the whole program will be deleted.
 <h4>Errors</h4>
 <ul><li>
 <code><var>line_number_0</var></code> or
-<code><var>line_number_1</var></code> is greater than <code>65529</code>: <code>Syntax error</code>.
+<code><var>line_number_1</var></code> is greater than <code>65529</code>: <samp>Syntax error</samp>.
 </li><li>
-The range specified does not include any program lines stored: <code>Illegal function call</code>.
+The range specified does not include any program lines stored: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -1337,20 +1337,20 @@ Mixed brackets are allowed.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>name</var></code> has already been dimensioned: <code>Duplicate definition</code>.
+<code><var>name</var></code> has already been dimensioned: <samp>Duplicate definition</samp>.
 </li><li>
-An index is empty: <code>Syntax error</code>.
+An index is empty: <samp>Syntax error</samp>.
 </li><li>
-An index is missing at the end: <code>Missing operand</code>.
+An index is missing at the end: <samp>Missing operand</samp>.
 </li><li>
-<code><var>limit_0</var>, <var>limit_1</var>, ...</code> have a string value: <code>Type mismatch</code>.
+<code><var>limit_0</var>, <var>limit_1</var>, ...</code> have a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>limit_0</var>, <var>limit_1</var>, ...</code> are not within <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>limit_0</var>, <var>limit_1</var>, ...</code> are not within <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>limit_0</var>, <var>limit_1</var>, ...</code> are negative: <code>Illegal function call</code>.
+<code><var>limit_0</var>, <var>limit_1</var>, ...</code> are negative: <samp>Illegal function call</samp>.
 </li><li>
 The array exceeds the size of available variable
-    space:    <code>Out of memory</code>.
+    space:    <samp>Out of memory</samp>.
     </li></ul>
 
 
@@ -1475,11 +1475,11 @@ a numeric variable name <code><var>var</var></code> preceded by <code>=</code> a
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
- <code><var>gml_string</var></code> has a numeric value: <code>Type mismatch</code>.
+ <code><var>gml_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li><li>
- <code><var>gml_string</var></code> has errors in the GML: <code>Illegal function call</code>.
+ <code><var>gml_string</var></code> has errors in the GML: <samp>Illegal function call</samp>.
 </li><li>
-A variable referenced in the GML string is of incorrect type: <code>Type mismatch</code>.
+A variable referenced in the GML string is of incorrect type: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -1491,13 +1491,13 @@ Displays the specified program line with the cursor positioned for editing.
 indicate the last line stored.</p>
 <h4>Errors</h4>
 <ul><li>
-No line_number is specified: <code>Undefined line number</code>.
+No line_number is specified: <samp>Undefined line number</samp>.
 </li><li>
-More characters are written after the line number: <code>Illegal function call</code>.
+More characters are written after the line number: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>line_number</var></code> is not in <code>[0&#8212;65529]</code>: <code>Illegal function call</code>.
+<code><var>line_number</var></code> is not in <code>[0&#8212;65529]</code>: <samp>Illegal function call</samp>.
 </li><li>
-The specified line number does not exist: <code>Undefined line number</code>.
+The specified line number does not exist: <samp>Undefined line number</samp>.
 </li></ul>
 
 <h3 id="ELSE"><code>ELSE</code> statement</h3>
@@ -1532,9 +1532,9 @@ using <code><a href="#CONT">CONT</a></code>.
 </tr></table>
 <h4>Errors</h4>
 <ul><li>
-<code><var>command_string</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>command_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>command_string</var></code> is not of the required form: <code>Illegal function call</code>.
+<code><var>command_string</var></code> is not of the required form: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -1552,11 +1552,11 @@ the environment table.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>x</var></code> is the empty string: <code>Illegal function call</code>.
+<code><var>x</var></code> is the empty string: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>x</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>x</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>x</var></code> is a number not in <code>[1&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>x</var></code> is a number not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -1573,17 +1573,17 @@ the console.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>file_num</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_num</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>file_num</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> is a number not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>file_num</var></code> is a number not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
 <code><var>file_num</var></code> is not 0 or the number of an open file:
-    <code>Bad file number</code>.
+    <samp>Bad file number</samp>.
 </li><li>
 The file with number <code><var>file_num</var></code> is in OUTPUT or APPEND mode:
-    <code>Bad file mode</code>.
+    <samp>Bad file mode</samp>.
 </li></ul>
 
 
@@ -1598,9 +1598,9 @@ specified without brackets.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-No array names are given: <code>Syntax error</code>.
+No array names are given: <samp>Syntax error</samp>.
 </li><li>
-<code><var>array_0</var>, <var>array_1</var> ...</code> do not exist: <code>Illegal function call</code>.
+<code><var>array_0</var>, <var>array_1</var> ...</code> do not exist: <samp>Illegal function call</samp>.
 </li><li>
 If an error occurs, the arrays named before the error occurred are erased.
 </li></ul>
@@ -1656,7 +1656,7 @@ Returns the number of the last error.
 <ul><li>
 If no error has been raised, returns 0.
 </li><li>
-   If the last error was a <code>Syntax error</code> raised by a direct statement, returns 0.
+   If the last error was a <samp>Syntax error</samp> raised by a direct statement, returns 0.
 </li><li>
 This function has no brackets.
 </li></ul>
@@ -1672,11 +1672,11 @@ with a numeric value.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
- <code><var>error_number</var></code> has a string value: <code>Type mismatch</code>.
+ <code><var>error_number</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
- <code><var>error_number</var></code> is not in  <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+ <code><var>error_number</var></code> is not in  <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
- <code><var>error_number</var></code> is not in <code>[1&#8212;255]</code>: <code>Illegal function call</code>.
+ <code><var>error_number</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -1698,10 +1698,10 @@ value.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
- <code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+ <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
  <code><var>x</var></code> is larger than the natural logarithm of the maximum single-precision
-    value: <code>Overflow</code>.
+    value: <samp>Overflow</samp>.
 </li></ul>
 
 
@@ -1720,11 +1720,11 @@ value.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
- <code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+ <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
- <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+ <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
- <code><var>x</var></code> is not in <code>[0&#8212;3]</code>: <code>Illegal function call</code>.
+ <code><var>x</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -1765,22 +1765,22 @@ expressions giving the length of the string variables
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
 <code><var>file_number</var></code> is not the number of an open file:
-<code>Bad file number</code>.
+<samp>Bad file number</samp>.
 </li><li>
 <code><var>file_number</var></code> is open under a mode other than <code>RANDOM</code>:
-<code>Bad file mode</code>.
+<samp>Bad file mode</samp>.
 </li><li>
-The statement ends in a comma: <code>Missing operand</code>.
+The statement ends in a comma: <samp>Missing operand</samp>.
 </li><li>
-No file number is specified: <code>Missing operand</code>.
+No file number is specified: <samp>Missing operand</samp>.
 </li><li>
 The lengths in a <code><a href="#FIELD">FIELD</a></code> statement add up to a number larger than the
-record length of the field buffer: <code>Field overflow</code>.
+record length of the field buffer: <samp>Field overflow</samp>.
 </li><li>
-<code><var>name_0</var> , <var>name_1</var> ...</code> specify a non-string variable: <code>Type mismatch</code>.
+<code><var>name_0</var> , <var>name_1</var> ...</code> specify a non-string variable: <samp>Type mismatch</samp>.
 </li></ul>
 
 <h3 id="FILES"><code>FILES</code> statement</h3>
@@ -1817,11 +1817,11 @@ specified directory are required, end the directory name with a backslash <code>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
- <code><var>path_and_filter</var></code> has a numeric value: <code>Type mismatch</code>.
+ <code><var>path_and_filter</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li><li>
- <code><var>path_and_filter</var></code> is the empty string: <code>Bad file name</code>.
+ <code><var>path_and_filter</var></code> is the empty string: <samp>Bad file name</samp>.
 </li><li>
-The specified filter does not match any files: <code>File not found</code>.
+The specified filter does not match any files: <samp>File not found</samp>.
 </li></ul>
 
 
@@ -1839,7 +1839,7 @@ The specified filter does not match any files: <code>File not found</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>number</var></code> is a string expression: <code>Type mismatch</code>.
+<code><var>number</var></code> is a string expression: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -1856,13 +1856,13 @@ Spaces between <code>FN</code> and <code><var>name</var></code> are optional.
 <h4>Errors</h4>
 <ul><li>
 No function named <code><var>name</var></code> is defined:
-    <code>Undefined user function</code>.
+    <samp>Undefined user function</samp>.
 </li><li>
 The number of parameters differs from the function definition:
-    <code>Syntax error</code>.
+    <samp>Syntax error</samp>.
 </li><li>
 The type of one or more parameters differs from the function definition:
-    <code>Type mismatch</code>.
+    <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -1882,13 +1882,15 @@ following <code>NEXT</code>. The value of <code><var>loop_var</var></code> equal
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-No <code>NEXT</code> statement is found to match the <code>FOR</code> statement: <code>FOR without NEXT</code>
-    occurs at the <code>FOR</code> statement.
+    No <code>NEXT</code> statement is found to match the <code>FOR</code>
+    statement: <samp>FOR without NEXT</samp> occurs at the <code>FOR</code>
+    statement.
 </li><li>
- <code><var>loop_var</var></code> is a string variable or <code><var>start</var></code>, <code><var>stop</var></code>, or <code><var>end</var></code> has a string value:
-    <code>Type mismatch</code>.
+    <code><var>loop_var</var></code> is a string variable or <code><var>start</var></code>,
+    <code><var>stop</var></code>, or <code><var>end</var></code> has a string value:
+    <samp>Type mismatch</samp>.
 </li><li>
- <code><var>loop_var</var></code> is an array element: <code>Syntax error</code> .
+    <code><var>loop_var</var></code> is an array element: <samp>Syntax error</samp> .
 </li></ul>
 
 
@@ -1928,17 +1930,17 @@ If the record number is beyond the end of the file, the file buffer is
 </li></ul>
     <h4>Errors</h4>
 <ul><li>
-<code><var>record_number</var></code> is not in <code>[1&#8212;33554432]</code>: <code>Bad record number</code>.
+<code><var>record_number</var></code> is not in <code>[1&#8212;33554432]</code>: <samp>Bad record number</samp>.
 </li><li>
-<code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
 <code><var>file_number</var></code> is not the number of an open file:
-    <code>Bad file number</code>.
+    <samp>Bad file number</samp>.
 </li><li>
 <code><var>file_number</var></code> is open under a mode other than <code>RANDOM</code>:
-    <code>Bad file mode</code>.
+    <samp>Bad file mode</samp>.
 </li><li>
-<code><var>file_number</var></code> is not specified: <code>Missing operand</code>.
+<code><var>file_number</var></code> is not specified: <samp>Missing operand</samp>.
 </li></ul>
 
 <h3 id="GET-serial"><code>GET</code> statement (serial communications)</h3>
@@ -1962,26 +1964,26 @@ and the <code>COM</code> buffer length, inclusive.
 <ul><li>
    If <code><var>bytes</var></code> is <code>32768</code> or greater, GW-BASIC hangs. This functionality is not implemented in PC-BASIC.
 </li><li>
-   In GW-BASIC, <code>Device I/O error</code> is raised for overrun error, framing error,
-    and break interrupt. <code>Device fault</code> is raised if DSR is lost during I/O.
-    <code>Parity error</code> is raised if parity is enabled and incorrect parity is
+    In GW-BASIC, <samp>Device I/O error</samp> is raised for overrun error, framing error,
+    and break interrupt. <samp>Device fault</samp> is raised if DSR is lost during I/O.
+    <samp>Parity error</samp> is raised if parity is enabled and incorrect parity is
     encountered. This is according to the manual; it is untested.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>bytes</var></code> is less than 1: <code>Bad record number</code>
+<code><var>bytes</var></code> is less than 1: <samp>Bad record number</samp>
 </li><li>
-<code><var>bytes</var></code> is less than <code>32768</code> and greater than the <code>COM</code> buffer length: <code>Illegal function call</code>.
+<code><var>bytes</var></code> is less than <code>32768</code> and greater than the <code>COM</code> buffer length: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>com_file_number</var></code> is not specified: <code>Missing operand</code>.
+<code><var>com_file_number</var></code> is not specified: <samp>Missing operand</samp>.
 </li><li>
-<code><var>com_file_number</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>com_file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
 <code><var>com_file_number</var></code> is not the number of an open file:
-    <code>Bad file number</code>.
+    <samp>Bad file number</samp>.
 </li><li>
-If the serial input buffer is full, i.e. <code><a href="#LOF">LOF</a>(<var>com_file_number</var>) = 0</code>, and
-    <code><a href="#LOC">LOC</a>(<var>com_file_number</var>) = 255</code>: <code>Communication buffer overflow</code>
+    If the serial input buffer is full, i.e. <code><a href="#LOF">LOF</a>(<var>com_file_number</var>) = 0</code>, and
+    <code><a href="#LOC">LOC</a>(<var>com_file_number</var>) = 255</code>: <samp>Communication buffer overflow</samp>
 </li><li>
    If the carrier drops during <code>GET</code>, hangs until the <kbd>Ctrl</kbd>+<kbd>Break</kbd> key is pressed.
 </li></ul>
@@ -2040,19 +2042,20 @@ multidimensional arrays.</p>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-The array does not exist: <code>Illegal function call</code>.
+The array does not exist: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>array_name</var></code> refers to a string array: <code>Type mismatch</code>.
+<code><var>array_name</var></code> refers to a string array: <samp>Type mismatch</samp>.
 </li><li>
-The area is too large for the array: <code>Illegal function call</code>.
+The area is too large for the array: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>x0</var></code>, ... <code><var>y1</var></code> are string expressions: <code>Type mismatch</code>.
+<code><var>x0</var></code>, ... <code><var>y1</var></code> are string expressions: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>x0</var></code>, ... <code><var>y1</var></code> are not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>x0</var></code>, ... <code><var>y1</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
 <code><var>x0</var></code>, ... <code><var>y1</var></code> are outside the current <code>VIEW</code> or <code>WINDOW</code>:
-    <code>Illegal function call</code>
+    <samp>Illegal function call</samp>
 </li></ul>
+
 
 <h3 id="GOSUB"><code>GOSUB</code> statement</h3>
 <pre>GO[ ]SUB <em>line_number</em> [<em>anything</em>]</pre>
@@ -2078,11 +2081,12 @@ One optional space is allowed between <code>GO</code> and <code>SUB</code>; it w
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-   If <code><var>line_number</var></code> does not exist: <code>Undefined line number</code>.
+   If <code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
 </li><li>
    If <code><var>line_number</var></code> is greater than <code>65529</code>, only the first 4 characters are
     read (e.g. <code>6553</code>)
 </li></ul>
+
 
 
 <h3 id="GOTO"><code>GOTO</code> statement</h3>
@@ -2103,7 +2107,7 @@ the line are ignored until end of statement.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>line_number</var></code> does not exist: <code>Undefined line number</code>.
+<code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
 </li><li>
    If <code><var>line_number</var></code> is greater than <code>65529</code>, only the first 4 characters are
     read (e.g. <code>6553</code>)
@@ -2120,9 +2124,9 @@ negative <code><var>x</var></code> are shown as two's-complement.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
- <code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+ <code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li><li>
- <code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+ <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -2148,7 +2152,7 @@ program line.
 </li><li>
     As in <code><a href="#GOTO">GOTO</a></code>, anything after the line number is ignored.
 </li><li>
-   If <code><var>truth_value</var></code> has a string value: <code>Type mismatch</code>.
+   If <code><var>truth_value</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -2285,9 +2289,9 @@ Returns the value of an emulated machine port.</p>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
- <code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+ <code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>port</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>port</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -2510,9 +2514,9 @@ the prompt is followed by a comma, no question mark is added. </p>
    If the value entered for a numeric variable is not a valid numeric literal,
     or the number of values entered does not match the number of variables in
     the statement,
-    <code>?Redo from start</code> is printed and all values must be entered again.
+    <samp>?Redo from start</samp> is printed and all values must be entered again.
 </li><li>
-   A <code>Syntax error</code> that is caused after the prompt is printed is only raised
+   A <samp>Syntax error</samp> that is caused after the prompt is printed is only raised
     after the value shave been entered. No values are stored.
 </li></ul>
 
@@ -2554,24 +2558,24 @@ of a random access file.</p>
 <h4>Errors</h4>
 <ul><li>
 Input is requested after the end of a text file has been reached or an
-    <code>EOF</code> character has been encountered: <code>Input past end</code>.
+    <code>EOF</code> character has been encountered: <samp>Input past end</samp>.
 </li><li>
-The last character of the field buffer is read: <code>Field overflow</code>.
+The last character of the field buffer is read: <samp>Field overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_num</var></code> is greater than <code>32767</code>: <code>Overflow</code>.
+<code><var>file_num</var></code> is greater than <code>32767</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> is less than zero: <code>Illegal function call</code>.
+<code><var>file_num</var></code> is less than zero: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_num</var></code> is not an open file: <code>Bad file number</code>.
+<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
 </li><li>
-<code><var>file_num</var></code> is not open for <code>INPUT</code> or <code>RANDOM</code>: <code>Bad file mode</code>.
+<code><var>file_num</var></code> is not open for <code>INPUT</code> or <code>RANDOM</code>: <samp>Bad file mode</samp>.
 </li><li>
     <code><var>file_num</var></code> is open to a <code>COM</code> port and this is the
     first <code><a href="#INPUT-file">INPUT</a></code>, <code><a href="#LINE-INPUT-file">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
     since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<var>file_num</var>)</code> has become zero):
-    <code>Communication buffer overflow</code>.
+    <samp>Communication buffer overflow</samp>.
 </li></ul>
 
 <h3 id="INPUT$"><code>INPUT$</code> function</h3>
@@ -2601,24 +2605,24 @@ if <code><var>file_num</var></code> is provided, from a text file.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>num_chars</var></code> is not in <code>[1&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>num_chars</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_num</var></code> is not an open file: <code>Bad file number</code>.
+<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
 </li><li>
-<code><var>file_num</var></code> is less than zero: <code>Illegal function call</code>.
+<code><var>file_num</var></code> is less than zero: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_num</var></code> is greater than <code>32767</code>: <code>Overflow</code>.
+<code><var>file_num</var></code> is greater than <code>32767</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> is not open for <code>INPUT</code>: <code>Bad file mode</code>.
+<code><var>file_num</var></code> is not open for <code>INPUT</code>: <samp>Bad file mode</samp>.
 </li><li>
-<code><var>num_chars</var></code> or <code><var>file_num</var></code> are strings: <code>Type mismatch</code>.
+<code><var>num_chars</var></code> or <code><var>file_num</var></code> are strings: <samp>Type mismatch</samp>.
 </li><li>
     <code><var>file_num</var></code> is open to a <code>COM</code> port and this is the
     first <code><a href="#INPUT-file">INPUT</a></code>, <code><a href="#LINE-INPUT-file">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
     since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<var>file_num</var>)</code> has become zero):
-    <code>Communication buffer overflow</code>.
+    <samp>Communication buffer overflow</samp>.
 </li></ul>
 
 <h3 id="INSTR"><code>INSTR</code> function</h3>
@@ -2641,11 +2645,11 @@ at character 1.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>start</var></code> has a string value or <code><var>parent</var></code> or <code><var>child</var></code> have numeric values: <code>Type mismatch</code>.
+<code><var>start</var></code> has a string value or <code><var>parent</var></code> or <code><var>child</var></code> have numeric values: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>start</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>start</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>start</var></code> is not in <code>[1&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>start</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -2664,13 +2668,13 @@ at character 1.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>number</var></code> is a string expression, <code>Type mismatch</code> .
+<code><var>number</var></code> is a string expression, <samp>Type mismatch</samp> .
 </li></ul>
 
 
 <h3 id="IOCTL"><code>IOCTL</code> statement</h3>
 <pre>IOCTL [#] <em>file_num</em>, <em>control_string</em></pre>
-<p>Raises <code>Illegal function call</code>.</p>
+<p>Raises <samp>Illegal function call</samp>.</p>
 <h4>Notes</h4>
 <ul><li>
    In GW-BASIC, <code>IOCTL</code> sends a control string to a device.
@@ -2679,19 +2683,19 @@ at character 1.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>file_num</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> is not an open file: <code>Bad file number</code>.
+<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
 </li><li>
-   Otherwise: <code>Illegal function call</code>
+   Otherwise: <samp>Illegal function call</samp>
 </li></ul>
 
 
 <h3 id="IOCTL$"><code>IOCTL$</code> function</h3>
 <pre><em>result</em> = IOCTL[ ]$([#] <em>file_num</em>)</pre>
-<p>Raises <code>Illegal function call</code>.</p>
+<p>Raises <samp>Illegal function call</samp>.</p>
 <h4>Notes</h4>
 <ul><li>
     In GW-BASIC, <code>IOCTL$</code> reads the reply to
@@ -2701,13 +2705,13 @@ at character 1.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>file_num</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> is not an open file: <code>Bad file number</code>.
+<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
 </li><li>
-   Otherwise: <code>Illegal function call</code>
+   Otherwise: <samp>Illegal function call</samp>
 </li></ul>
 
 
@@ -2739,11 +2743,11 @@ Only the first 15 characters of <code><var>string_value</var></code> are stored.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>key_id</var></code> is not in <code>[1&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>key_id</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>key_id</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>key_id</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -2811,11 +2815,11 @@ With <code>--syntax=tandy</code>, key 11 id <kbd>F11</kbd> and key 12 is <kbd>F1
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>key_id</var></code> is not in <code>[0&#8212;20]</code>: <code>Illegal function call</code>.
+<code><var>key_id</var></code> is not in <code>[0&#8212;20]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>key_id</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>key_id</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -2865,15 +2869,15 @@ Modifiers are:
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>key_id</var></code> is not in <code>[1&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>key_id</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>key_id</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>key_id</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>two_char_string</var></code> is longer than two: <code>Illegal function call</code>.
+<code><var>two_char_string</var></code> is longer than two: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>two_char_string</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>two_char_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -2888,13 +2892,13 @@ Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for info
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>file_path</var></code> has a number value: <code>Type mismatch</code>.
+<code><var>file_path</var></code> has a number value: <samp>Type mismatch</samp>.
 </li><li>
-The file <code><var>file_path</var></code> is open: <code>File already open</code>
+The file <code><var>file_path</var></code> is open: <samp>File already open</samp>
 </li><li>
-The file or path <code><var>file_path</var></code> does not exist: <code>File not found</code>
+The file or path <code><var>file_path</var></code> does not exist: <samp>File not found</samp>
 </li><li>
-The user has no write permission: <code>Permission denied</code>
+The user has no write permission: <samp>Permission denied</samp>
 </li><li>
 If a syntax error occurs after the closing quote, the file is removed    anyway.
 </li></ul>
@@ -2915,11 +2919,11 @@ If a syntax error occurs after the closing quote, the file is removed    anyway.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>num</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>num</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>num</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>num</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -2942,11 +2946,11 @@ returns <code><var>parent</var></code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>parent</var></code> has a numeric value or <code><var>num_chars</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>parent</var></code> has a numeric value or <code><var>num_chars</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>num_chars</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>num_chars</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -2960,7 +2964,7 @@ expression.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>string</var></code> has a number value: <code>Type mismatch</code>.
+<code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -2977,7 +2981,7 @@ be assigned to each other but strings can only be assigned to strings.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>name</var></code> and <code><var>expression</var></code> are not of matching types: <code>Type mismatch</code>.
+<code><var>name</var></code> and <code><var>expression</var></code> are not of matching types: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -3020,11 +3024,11 @@ If <code>F</code> is specified with <code>B</code>, the rectangle is filled with
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-The statement ends in a comma and it is the first or third: <code>Missing operand</code>. If it is the second: <code>Syntax error</code>.
+The statement ends in a comma and it is the first or third: <samp>Missing operand</samp>. If it is the second: <samp>Syntax error</samp>.
 </li><li>
-Any of the coordinates is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+Any of the coordinates is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-Any of the parameters has a string value: <code>Type mismatch</code>.
+Any of the parameters has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -3075,24 +3079,24 @@ of a random access file. All input is read until <kbd>Enter</kbd> is pressed; th
 <h4>Errors</h4>
 <ul><li>
 Input is requested after the end of a text file has been reached or an
-    <code>EOF</code> char has been encountered: <code>Input past end</code>.
+    <code>EOF</code> char has been encountered: <samp>Input past end</samp>.
 </li><li>
-The last character of the field buffer is read: <code>Field overflow</code>.
+The last character of the field buffer is read: <samp>Field overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> is not an open file: <code>Bad file number</code>.
+<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
 </li><li>
-<code><var>file_num</var></code> is less than zero: <code>Illegal function call</code>.
+<code><var>file_num</var></code> is less than zero: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> is not open for <code>INPUT</code> or <code>RANDOM</code>: <code>Bad file mode</code>.
+<code><var>file_num</var></code> is not open for <code>INPUT</code> or <code>RANDOM</code>: <samp>Bad file mode</samp>.
 </li><li>
-<code><var>file_num</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
     <code><var>file_num</var></code> is open to a <code>COM</code> port and this is the
     first <code><a href="#INPUT-file">INPUT</a></code>, <code><a href="#LINE-INPUT-file">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
     since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<var>file_num</var>)</code> has become zero):
-    <code>Communication buffer overflow</code>.
+    <samp>Communication buffer overflow</samp>.
 </li></ul>
 
 
@@ -3113,19 +3117,19 @@ exists, it will be overwritten.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-A line number is greater than <code>65529</code>: <code>Syntax error</code>.
+A line number is greater than <code>65529</code>: <samp>Syntax error</samp>.
 </li><li>
-<code><var>file_name</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>file_name</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li><li>
 <code><var>file_name</var></code> ends in a colon but is not a device name or drive letter:
-    <code>Bad file number</code>.
+    <samp>Bad file number</samp>.
 </li></ul>
 
 <h3 id="LLIST"><code>LLIST</code> statement</h3>
 <pre>LLIST [ <em>line_number_0</em> | . ] [ - [ <em>line_number_1</em> | . ] ]</pre>
 <p>Prints the program to the screen, starting with <code><var>line_number_0</var></code> up to and
 including <code><var>line_number_1</var></code>.
-Also stops program execution and returns cotrol to the user. Any further
+Also stops program execution and returns control to the user. Any further
 statements on a line after <code>LLIST</code> will be ignored, both in a program andon a direct line.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -3135,7 +3139,7 @@ they specify a range. If the range is empty, nothing is printed.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-A line number is greater than <code>65529</code>: <code>Syntax error</code>.
+A line number is greater than <code>65529</code>: <samp>Syntax error</samp>.
 </li></ul>
 
 
@@ -3157,10 +3161,10 @@ Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for info
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>file_name</var></code> cannot be found: <code>File not found</code>.
+<code><var>file_name</var></code> cannot be found: <samp>File not found</samp>.
 </li><li>
-A loaded ASCII file contains lines without line numbers:
-    <code>Direct statement in file</code>.
+    A loaded ASCII file contains lines without line numbers:
+    <samp>Direct statement in file</samp>.
 </li></ul>
 
 
@@ -3195,15 +3199,15 @@ If the file is opened to <code>KYBD:</code>, <code>LOC</code> returns 0.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>file_num</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_num</var></code> is not an open file: <code>Bad file number</code>.
+<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
 </li><li>
-<code><var>file_num</var></code> is open for output to a device: <code>Bad file mode</code>.
+<code><var>file_num</var></code> is open for output to a device: <samp>Bad file mode</samp>.
 </li></ul>
 
 
@@ -3230,15 +3234,15 @@ On emulated VGA cards, the cursor shape parameters are interpreted
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any parameter has a string value: <code>Type mismatch</code>.
+Any parameter has a string value: <samp>Type mismatch</samp>.
 </li><li>
-Any parameter is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+Any parameter is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>row</var></code> is outside the current view area: <code>Illegal function call</code>.
+<code><var>row</var></code> is outside the current view area: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>col</var></code> is greater than the current width: <code>Illegal function call</code>.
+<code><var>col</var></code> is greater than the current width: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>cursor_visible</var></code> is not in <code>[0, 1]</code> (<code>[0&#8212;255]</code> on Tandy/PCjr): <code>Illegal function call</code>.
+<code><var>cursor_visible</var></code> is not in <code>[0, 1]</code> (<code>[0&#8212;255]</code> on Tandy/PCjr): <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -3259,28 +3263,28 @@ are specified, the whole file is locked.
 <ul><li>
    In GW-BASIC under MS-DOS, the <code>LOCK</code> command requires <code>SHARE.EXE</code> to be loaded.
     The maximum number of locks is specified in the MS-DOS <code>SHARE</code> command. If <code>SHARE</code> has
-    not been activated or all locks are used, <code>LOCK</code> raises <code>Permission denied</code>.
+    not been activated or all locks are used, <code>LOCK</code> raises <samp>Permission denied</samp>.
     PC-BASIC behaves as if <code>SHARE</code> has been activated with unlimited locks.
 </li><li>
     If <code><var>file_number</var></code> is open for <code>RANDOM</code>,
     <code><a href="#LOCK">LOCK</a></code> and <code><a href="#UNLOCK">UNLOCK</a></code>
     statements must match in terms of <code><var>record_0</var></code> and
     <code><var>record_1</var></code>. An non-matching <code>UNLOCK</code> will raise
-    <code>Permission denied</code>.
+    <samp>Permission denied</samp>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any parameter has a string value: <code>Type mismatch</code>.
+Any parameter has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_num</var></code> is not an open file: <code>Bad file number</code>.
+<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
 </li><li>
-<code>LOCK</code> (part of) a file already locked: <code>Permission denied</code>.
+<code>LOCK</code> (part of) a file already locked: <samp>Permission denied</samp>.
 </li><li>
-<code><var>record_0</var></code> or <code><var>record_1</var></code> is not in <code>[1&#8212;2^25-2]</code>: <code>Bad record number</code>.
+<code><var>record_0</var></code> or <code><var>record_1</var></code> is not in <code>[1&#8212;2^25-2]</code>: <samp>Bad record number</samp>.
 </li></ul>
 
 
@@ -3298,15 +3302,15 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>file_num</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_num</var></code> is not an open file: <code>Bad file number</code>.
+<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
 </li><li>
-<code><var>file_num</var></code> is open for output to a device: <code>Bad file mode</code>.
+<code><var>file_num</var></code> is open for output to a device: <samp>Bad file mode</samp>.
 </li></ul>
 
 
@@ -3326,9 +3330,9 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>x</var></code> is zero or negative: <code>Illegal function call</code>.
+<code><var>x</var></code> is zero or negative: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -3349,11 +3353,11 @@ or 1, the position for <code>LPT1:</code> is returned. If it is 2, <code>LPT2:</
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>printer_number</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>printer_number</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>printer_number</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>printer_number</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>printer_number</var></code> is not in <code>[0&#8212;3]</code>: <code>Illegal function call</code>.
+<code><var>printer_number</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -3390,8 +3394,8 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>string_name</var></code> is not a string variable: <code>Type mismatch</code>.
-<code><var>expression</var></code> does not have a string value: <code>Type mismatch</code>.
+<code><var>string_name</var></code> is not a string variable: <samp>Type mismatch</samp>.
+<code><var>expression</var></code> does not have a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -3406,12 +3410,12 @@ Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for info
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>file_name</var></code> cannot be found: <code>File not found</code>.
+<code><var>file_name</var></code> cannot be found: <samp>File not found</samp>.
 </li><li>
-<code><var>file_name</var></code> was not saved as ASCII: <code>Bad file mode</code>.
+<code><var>file_name</var></code> was not saved as ASCII: <samp>Bad file mode</samp>.
 </li><li>
 A loaded ASCII file contains lines without line numbers:
-    <code>Direct statement in file</code>.
+    <samp>Direct statement in file</samp>.
 </li></ul>
 
 <h3 id="MID$"><code>MID$</code> function</h3>
@@ -3428,13 +3432,13 @@ substring has length <code><var>length</var></code> if specified, defaulting to 
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>string</var></code> has a number value or <code><var>position</var></code> or <code><var>length</var></code> have string values: <code>Type mismatch</code>.
+<code><var>string</var></code> has a number value or <code><var>position</var></code> or <code><var>length</var></code> have string values: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>position</var></code> or <code><var>length</var></code> are not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>position</var></code> or <code><var>length</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>position</var></code> is not in <code>[1&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>position</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -3459,13 +3463,14 @@ substring has length <code><var>length</var></code> if specified, defaulting to 
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>position</var></code> is greater than the length of <code><var>string_name</var></code>: <code>Illegal function call</code>, except if <code><var>length</var></code> is specified as 0.
+    <code><var>position</var></code> is greater than the length of <code><var>string_name</var></code>:
+    <samp>Illegal function call</samp>, except if <code><var>length</var></code> is specified as 0.
 </li><li>
-<code><var>position</var></code> is not in <code>[1&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>position</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>position</var></code> or <code><var>length</var></code> are not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>position</var></code> or <code><var>length</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li></ul>
 
 
@@ -3483,13 +3488,13 @@ path of the new directory.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>path</var></code> is not a string: <code>Type mismatch</code>.
+<code><var>path</var></code> is not a string: <samp>Type mismatch</samp>.
 </li><li>
-The parent directory of <code><var>path</var></code> does not exist: <code>Path not found</code>.
+The parent directory of <code><var>path</var></code> does not exist: <samp>Path not found</samp>.
 </li><li>
-The pathname already exists: <code>Path/File access error</code>.
+The pathname already exists: <samp>Path/File access error</samp>.
 </li><li>
-The user has no write permission: <code>Permission denied</code>.
+The user has no write permission: <samp>Permission denied</samp>.
 </li></ul>
 
 
@@ -3499,7 +3504,7 @@ The user has no write permission: <code>Permission denied</code>.
 precision number.</p>
 <h4>Errors</h4>
 <ul><li>
-<code><var>double</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>double</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -3508,9 +3513,9 @@ precision number.</p>
 <p>Returns the internal 2-byte little-endian representation of an integer.
 </p><h4>Errors</h4>
 <ul><li>
-<code><var>int</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>int</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>int</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>int</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li></ul>
 
 
@@ -3520,7 +3525,7 @@ precision number.</p>
 precision number.</p>
 <h4>Errors</h4>
 <ul><li>
-<code><var>single</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>single</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -3539,11 +3544,11 @@ precision number.</p>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>num</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>num</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>num</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>num</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -3562,13 +3567,13 @@ Renames the file <code><var>old_name</var></code> into <code><var>new_name</var>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>old_name</var></code> or <code><var>new_name</var></code> have number values: <code>Type mismatch</code>.
+<code><var>old_name</var></code> or <code><var>new_name</var></code> have number values: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>old_name</var></code> does not exist: <code>File not found</code>.
+<code><var>old_name</var></code> does not exist: <samp>File not found</samp>.
 </li><li>
-<code><var>old_name</var></code> is open: <code>File already open</code>.
+<code><var>old_name</var></code> is open: <samp>File already open</samp>.
 </li><li>
-<code><var>new_name</var></code> exists: <code>File already exists</code>.
+<code><var>new_name</var></code> exists: <samp>File already exists</samp>.
 </li></ul>
 
 
@@ -3597,9 +3602,9 @@ must match the order of earlier <code>FOR</code> statements.</p>
 <h4>Errors</h4>
 <ul><li>
 No <code>FOR</code> statement is found to match the <code>NEXT</code> statement and variables:
-    <code>NEXT without FOR</code>.
+    <samp>NEXT without FOR</samp>.
 </li><li>
-<code><var>var_0</var>, <var>var_1</var>, ...</code> are string variables: <code>NEXT without FOR</code>.
+<code><var>var_0</var>, <var>var_1</var>, ...</code> are string variables: <samp>NEXT without FOR</samp>.
 </li></ul>
 
 
@@ -3646,13 +3651,13 @@ No <code>FOR</code> statement is found to match the <code>NEXT</code> statement 
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code>SOUND ON</code> has not been executed: <code>Illegal function call</code>.
+<code>SOUND ON</code> has not been executed: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>duration</var></code> is not in <code>[-65535&#8212;65535]</code>: <code>Illegal function call</code>.
+<code><var>duration</var></code> is not in <code>[-65535&#8212;65535]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>volume</var></code> is not in <code>[0&#8212;15]</code>: <code>Illegal function call</code>.
+<code><var>volume</var></code> is not in <code>[0&#8212;15]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>source</var></code> is not in <code>[0&#8212;7]</code>: <code>Illegal function call</code>.
+<code><var>source</var></code> is not in <code>[0&#8212;7]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -3667,9 +3672,9 @@ negative <code><var>x</var></code> are shown as two's-complement.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+<code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li></ul>
 
 
@@ -3686,13 +3691,13 @@ the jump is unconditional; if <code>GOSUB</code> is specified, jumps to a subrou
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>n</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>n</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>n</var></code> is not in <code>[-32768&#8212;32767]</code>, <code>Overflow</code> .
+<code><var>n</var></code> is not in <code>[-32768&#8212;32767]</code>, <samp>Overflow</samp> .
 </li><li>
-<code><var>n</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>n</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-The line number jumped to does not exist: <code>Undefined line number</code>.
+The line number jumped to does not exist: <samp>Undefined line number</samp>.
 </li></ul>
 
 
@@ -3743,11 +3748,11 @@ Events are only trapped when a program is running.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>n</var></code> or <code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>n</var></code> or <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>n</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>n</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>n</var></code> or <code><var>x</var></code> is outside the specified range: <code>Illegal function call</code>.
+<code><var>n</var></code> or <code><var>x</var></code> is outside the specified range: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -3771,7 +3776,7 @@ It is not possible to start the error handler at line number <code>0</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>line_number</var></code> does not exist: <code>Undefined line number</code>.
+<code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
 </li></ul>
 
 
@@ -4005,43 +4010,43 @@ Set <em>Carrier Detect</em> timeout to <code><var>n</var></code> milliseconds.
    For <code>INPUT</code>, <code>OUTPUT</code> and <code>APPEND</code> modes, <code>LEN</code> may be specified but is ignored.
 </li><li>
    If I/O is attempted contravening the <code>FOR</code> mode specified, the <code>PRINT</code> or <code>INPUT</code>
-    statement will raise <code>Bad file mode</code>.
+    statement will raise <samp>Bad file mode</samp>.
 </li><li>
    If <code>RANDOM</code> I/O is attempted contravening the <code>ACCESS</code> mode specified, the
-    <code>PUT</code> or <code>GET</code> statement will raise <code>Path/File access error</code>.
+    <code>PUT</code> or <code>GET</code> statement will raise <samp>Path/File access error</samp>.
 </li><li>
    The <code>#</code> is optional and has no effect.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>file_name</var></code> is empty or a non-existent device: <code>Bad file number</code>.
+<code><var>file_name</var></code> is empty or a non-existent device: <samp>Bad file number</samp>.
 </li><li>
-<code>FOR APPEND ACCESS WRITE</code> is specified: <code>Path/File access error</code>.
+<code>FOR APPEND ACCESS WRITE</code> is specified: <samp>Path/File access error</samp>.
 </li><li>
-<code>FOR</code> and <code>ACCESS</code> mismatch in other ways: <code>Syntax error</code>.
+<code>FOR</code> and <code>ACCESS</code> mismatch in other ways: <samp>Syntax error</samp>.
 </li><li>
 The <code>COM:</code> <code><var>file_name</var></code> parameters do not follow the specification:
-    <code>Bad file name</code>.
+    <samp>Bad file name</samp>.
 </li><li>
-    A file is already open for <code>OUTPUT</code> or <code>APPEND</code>: <code>File already open</code>.
+    A file is already open for <code>OUTPUT</code> or <code>APPEND</code>: <samp>File already open</samp>.
     This is only raised for <code>COMn:</code>, <code>CASn:</code> and disk devices.
 </li><li>
- <code><var>rec_len</var></code> or <code><var>file_num</var></code> have string values: <code>Type mismatch</code>.
+ <code><var>rec_len</var></code> or <code><var>file_num</var></code> have string values: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_name</var></code> or <code><var>mode_char</var></code> have number values: <code>Type mismatch</code>.
+<code><var>file_name</var></code> or <code><var>mode_char</var></code> have number values: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[1&#8212;3]</code>: <code>Bad file number</code>.
+<code><var>file_num</var></code> is not in <code>[1&#8212;3]</code>: <samp>Bad file number</samp>.
 </li><li>
-<code><var>rec_len</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>rec_len</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>rec_len</var></code> is not in <code>[1&#8212;128]</code>: <code>Illegal function call</code>.
+<code><var>rec_len</var></code> is not in <code>[1&#8212;128]</code>: <samp>Illegal function call</samp>.
 </li><li>
 <code><var>mode_char</var></code> is empty or the first character is not in
-    <code>["I", "O", "A", "R"]</code>: <code>Bad file mode</code>.
+    <code>["I", "O", "A", "R"]</code>: <samp>Bad file mode</samp>.
 </li></ul>
 
 <h3 id="OPTION-BASE"><code>OPTION BASE</code> statement</h3>
@@ -4060,12 +4065,12 @@ The <code>COM:</code> <code><var>file_name</var></code> parameters do not follow
 </ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>n</var></code> is not a digit <code>0</code> or <code>1</code>: <code>Syntax error</code>.
+<code><var>n</var></code> is not a digit <code>0</code> or <code>1</code>: <samp>Syntax error</samp>.
 </li><li>
-<code>OPTION BASE 1</code> is called but an array has already been allocated before: <code>Duplicate definition</code>.
+<code>OPTION BASE 1</code> is called but an array has already been allocated before: <samp>Duplicate definition</samp>.
 </li><li>
 <code>OPTION BASE</code> is called more than once with different starting index:
-    <code>Duplicate definition</code>.
+    <samp>Duplicate definition</samp>.
 </li></ul>
 
 
@@ -4115,13 +4120,13 @@ The initial <code>OUT</code> statements currently have no effect in PC-BASIC.
 
 <h4>Errors</h4>
 <ul><li>
-<code><var>port</var></code> or <code><var>value</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>port</var></code> or <code><var>value</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+<code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>value</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>value</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>value</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>value</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -4225,19 +4230,19 @@ pattern to ignore when determining boundaries (see below).
 <h4>Errors</h4>
 <ul><li>
    In <code>SCREEN 7</code>, <code>8</code>, <code>9</code>, if <code><var>background</var></code> equals <code><var>attrib</var></code> up to the length of
-    <code><var>attrib</var></code>: <code>Illegal function call</code>.
+    <code><var>attrib</var></code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>background</var></code> has a number value: <code>Illegal function call</code>.
+<code><var>background</var></code> has a number value: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>border</var></code>,<code><var>x</var></code>, or <code><var>y</var></code> have a string value: <code>Type mismatch</code>.
+<code><var>border</var></code>,<code><var>x</var></code>, or <code><var>y</var></code> have a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>border</var></code>,<code><var>x</var></code>, or <code><var>y</var></code> are not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>border</var></code>,<code><var>x</var></code>, or <code><var>y</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>border</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>border</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>attrib</var></code> is numeric and not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>attrib</var></code> is numeric and not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>attrib</var></code> is numeric and not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>attrib</var></code> is numeric and not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -4257,11 +4262,11 @@ the palette remains unchanged.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>attrib</var></code> or <code><var>colour</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>attrib</var></code> or <code><var>colour</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>attrib</var></code> or <code><var>colour</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>
+<code><var>attrib</var></code> or <code><var>colour</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>
 </li><li>
-<code><var>attrib</var></code> or <code><var>colour</var></code> is not in range: <code>Illegal function call</code>
+<code><var>attrib</var></code> or <code><var>colour</var></code> is not in range: <samp>Illegal function call</samp>
 </li></ul>
 
 
@@ -4279,18 +4284,18 @@ indicates at which index in the array to start mapping to the palette.
 <p>If an array entry has value <code>-1</code>, the matching attribute is left unchanged.</p>
 <h4>Errors</h4>
 <ul><li>
-<code><var>int_array_name</var></code> has not been allocated: <code>Illegal function call</code>.
+<code><var>int_array_name</var></code> has not been allocated: <samp>Illegal function call</samp>.
     The array will not be automatically allocated.
 </li><li>
-<code><var>int_array_name</var></code> is not an integer array: <code>Type mismatch</code>.
+<code><var>int_array_name</var></code> is not an integer array: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>int_array_name</var></code> is too short: <code>Illegal function call</code>.
+<code><var>int_array_name</var></code> is too short: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>start_index</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>start_index</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>start_index</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>
+<code><var>start_index</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>
 </li><li>
-<code><var>start_index</var></code> is outside array dimensions: <code>Subscript out of range</code>
+<code><var>start_index</var></code> is outside array dimensions: <samp>Subscript out of range</samp>
 </li></ul>
 
 
@@ -4305,11 +4310,11 @@ mode's number of pages, less one.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>src</var></code> or <code><var>dst</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>src</var></code> or <code><var>dst</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>src</var></code> or <code><var>dst</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>src</var></code> or <code><var>dst</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>src</var></code> or <code><var>dst</var></code> is out of range: <code>Illegal function call</code>.
+<code><var>src</var></code> or <code><var>dst</var></code> is out of range: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -4334,9 +4339,9 @@ two's complement.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>address</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+<code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li></ul>
 
 
@@ -4408,11 +4413,11 @@ suspension is handled immediately after the next <code>PEN ON</code> statement.<
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>mode</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>mode</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>mode</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>mode</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>mode</var></code> is not in <code>[0&#8212;9]</code>: <code>Illegal function call</code>.
+<code><var>mode</var></code> is not in <code>[0&#8212;9]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -4559,16 +4564,16 @@ a numeric variable name <code><var>var</var></code> preceded by <code>=</code> a
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>mml_string</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>mml_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>mml_string</var></code> has errors in the MML: <code>Illegal function call</code>.
+<code><var>mml_string</var></code> has errors in the MML: <samp>Illegal function call</samp>.
 </li><li>
-A variable in an MML string is of incorrect type: <code>Type mismatch</code>.
+A variable in an MML string is of incorrect type: <samp>Type mismatch</samp>.
 </li><li>
-No MML string is specified: <code>Missing operand</code>.
+No MML string is specified: <samp>Missing operand</samp>.
 </li><li>
 On PCjr, if <code>SOUND ON</code> has not been executed, using the three-voice syntax
-    will raise <code>Syntax error</code>. This is not the case on Tandy.
+    will raise <samp>Syntax error</samp>. This is not the case on Tandy.
 </li></ul>
 
 
@@ -4597,12 +4602,15 @@ PCjr and Tandy
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>voice</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>voice</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>voice</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>voice</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>voice</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>voice</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li></ul>
+
+
+<!-- here -->
 
 
 <h3 id="PMAP"><code>PMAP</code> function</h3>
@@ -4636,13 +4644,13 @@ are physical coordinates.</p>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any of the parameters has a string value: <code>Type mismatch</code>.
+Any of the parameters has a string value: <samp>Type mismatch</samp>.
 </li><li>
-A physical coordinate is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+A physical coordinate is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>fn</var></code> is not in <code>[0&#8212;3]</code>: <code>Illegal function call</code>.
+<code><var>fn</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -4678,11 +4686,11 @@ The coordinate returned depends on the value of <code><var>fn</var></code>:
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>fn</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>fn</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>fn</var></code> is not in <code>[0&#8212;3]</code>: <code>Illegal function call</code>.
+<code><var>fn</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -4699,12 +4707,12 @@ The coordinate returned depends on the value of <code><var>fn</var></code>:
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Function is called in text mode: <code>Illegal function call</code>.
+Function is called in text mode: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>x</var></code> or <code><var>y</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>x</var></code> or <code><var>y</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
 <code><var>x</var></code> or <code><var>y</var></code> or the physical coordinates they translate into are not in
-    <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+    <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li></ul>
 
 
@@ -4730,13 +4738,13 @@ interpreted as their two's complement.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>address</var></code> or <code><var>value</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>address</var></code> or <code><var>value</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+<code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>value</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>value</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>value</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>value</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -4766,12 +4774,12 @@ foreground attribute while <code>PRESET</code> changes it to zero.</p>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>x</var></code> or <code><var>y</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>x</var></code> or <code><var>y</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
 <code><var>attrib</var></code>, <code><var>x</var></code> or <code><var>y</var></code> or the physical coordinates they translate into are not in
-    <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+    <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>attrib</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>attrib</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -4925,17 +4933,17 @@ printed preceding it.</p>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>n</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>n</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>n</var></code> is not in <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+<code><var>n</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li><li>
-The format string contains no tokens: <code>Illegal function call</code>.
+The format string contains no tokens: <samp>Illegal function call</samp>.
 </li><li>
-An expression doesn't match the corresponding format token type: <code>Type mismatch</code>.
+An expression doesn't match the corresponding format token type: <samp>Type mismatch</samp>.
 </li><li>
-A number field in the format string exceeds 24 characters: <code>Illegal function call</code>.
+A number field in the format string exceeds 24 characters: <samp>Illegal function call</samp>.
 </li><li>
-A number field in the format string contains no <code>#</code> characters: <code>Illegal function call</code>.
+A number field in the format string contains no <code>#</code> characters: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -4953,17 +4961,17 @@ of an open random-access file. The <code>#</code> is optional and has no effect.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>record_number</var></code> is not in <code>[1&#8212;33554432]</code>: <code>Bad record number</code>.
+<code><var>record_number</var></code> is not in <code>[1&#8212;33554432]</code>: <samp>Bad record number</samp>.
 </li><li>
-<code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
 <code><var>file_number</var></code> is not the number of an open file:
-    <code>Bad file number</code>.
+    <samp>Bad file number</samp>.
 </li><li>
 <code><var>file_number</var></code> is open under a mode other than <code>RANDOM</code>:
-    <code>Bad file mode</code>.
+    <samp>Bad file mode</samp>.
 </li><li>
-<code><var>file_number</var></code> is not specified: <code>Missing operand</code>.
+<code><var>file_number</var></code> is not specified: <samp>Missing operand</samp>.
 </li></ul>
 
 
@@ -4974,26 +4982,26 @@ number <code><var>com_file_number</var></code>. <code><var>number_bytes</var></c
 and the <code>COM</code> buffer length, inclusive.
 </p><h4>Notes</h4>
 <ul><li>
-   In GW-BASIC, <code>Device I/O error</code> is raised for overrun error, framing error,
-    and break interrupt. <code>Device fault</code> is raised if DSR is lost during I/O. A
-    <code>Parity error</code> is raised if parity is enabled and incorrect parity is
+   In GW-BASIC, <samp>Device I/O error</samp> is raised for overrun error, framing error,
+    and break interrupt. <samp>Device fault</samp> is raised if DSR is lost during I/O. A
+    <samp>Parity error</samp> is raised if parity is enabled and incorrect parity is
     encountered. This is according to the manual; it is untested.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>bytes</var></code> is less than 1: <code>Bad record number</code>.
+<code><var>bytes</var></code> is less than 1: <samp>Bad record number</samp>.
 </li><li>
-<code><var>bytes</var></code> is less than <code>32768</code> and greater than the <code>COM</code> buffer length: <code>Illegal function call</code>.
+<code><var>bytes</var></code> is less than <code>32768</code> and greater than the <code>COM</code> buffer length: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>com_file_number</var></code> is not specified: <code>Missing operand</code>.
+<code><var>com_file_number</var></code> is not specified: <samp>Missing operand</samp>.
 </li><li>
-<code><var>com_file_number</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>com_file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
 <code><var>com_file_number</var></code> is not the number of an open file:
-    <code>Bad file number</code>.
+    <samp>Bad file number</samp>.
 </li><li>
 The serial input buffer is full, i.e. <code><a href="#LOF">LOF</a>(<var>com_file_number</var>) = 0</code> and
-    <code><a href="#LOC">LOC</a>(<var>com_file_number</var>)=255</code>: <code>Communication buffer overflow</code>.
+    <code><a href="#LOC">LOC</a>(<var>com_file_number</var>)=255</code>: <samp>Communication buffer overflow</samp>.
 </li></ul>
 
 
@@ -5023,16 +5031,16 @@ The keywords have the following effect:
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-The array does not exist: <code>Illegal function call</code>.
+The array does not exist: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>array_name</var></code> refers to a string array: <code>Type mismatch</code>.
+<code><var>array_name</var></code> refers to a string array: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>x0</var></code>, <code><var>y0</var></code> are string expressions: <code>Type mismatch</code>.
+<code><var>x0</var></code>, <code><var>y0</var></code> are string expressions: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>x0</var></code>, <code><var>y0</var></code> are not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>x0</var></code>, <code><var>y0</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
 <code><var>x0</var></code>, <code><var>y0</var></code> is outside the current <code>VIEW</code> or <code>WINDOW</code>:
-    <code>Illegal function call</code>
+    <samp>Illegal function call</samp>
 </li></ul>
 
 
@@ -5058,9 +5066,9 @@ being generated by the <code><a href="#RND">RND</a></code> function.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>expr</var></code> has a string value: <code>Illegal function call</code>.
+<code><var>expr</var></code> has a string value: <samp>Illegal function call</samp>.
 </li><li>
-The user provides a seed outside <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+The user provides a seed outside <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li></ul>
 
 
@@ -5079,10 +5087,10 @@ The user provides a seed outside <code>[-32768&#8212;32767]</code>: <code>Overfl
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Not enough data is present in <code>DATA</code> statements: <code>Out of DATA</code>.
+Not enough data is present in <code>DATA</code> statements: <samp>Out of DATA</samp>.
 </li><li>
 The type of the variable is not compatible with that of the data entry
-    being read: a <code>Syntax error</code> occurs on the <code>DATA</code> line.
+    being read: a <samp>Syntax error</samp> occurs on the <code>DATA</code> line.
 </li></ul>
 
 
@@ -5127,16 +5135,16 @@ less than 'old remain unchanged.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any of the parameters is not in <code>[0&#8212;65529]</code>: <code>Syntax error</code>.
+Any of the parameters is not in <code>[0&#8212;65529]</code>: <samp>Syntax error</samp>.
 </li><li>
 Any of the newly generated line numbers is greater than <code>65529</code>:
-    <code>Illegal function call</code>. The line numbers up to the error have not been
+    <samp>Illegal function call</samp>. The line numbers up to the error have not been
     changed.
 </li><li>
-<code><var>increment</var></code> is empty or zero: <code>Illegal function call</code>.
+<code><var>increment</var></code> is empty or zero: <samp>Illegal function call</samp>.
 </li><li>
 <code><var>old</var></code> is specified and <code><var>new</var></code> is less than or equal to an existing line
-    number less than old: <code>Illegal function call</code>.
+    number less than old: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -5156,7 +5164,7 @@ Any of the newly generated line numbers is greater than <code>65529</code>:
 </p>
 <h4>Errors</h4>
 <ul><li>
-<code><var>line</var></code> is not an existing line number: <code>Undefined line number</code>.
+<code><var>line</var></code> is not an existing line number: <samp>Undefined line number</samp>.
 </li></ul>
 
 
@@ -5169,12 +5177,12 @@ caused the error. If <code><var>line</var></code> is specified, it must be a val
 </p><h4>Errors</h4>
 <ul><li>
 <code>RESUME</code> is encountered outside of an error trapping routine:
-    <code>RESUME without error</code>.
+    <samp>RESUME without error</samp>.
 </li><li>
 The program ends inside an error trapping routine without a <code>RESUME</code>
-    or <code>END</code> statement: <code>No RESUME</code>.
+    or <code>END</code> statement: <samp>No RESUME</samp>.
 </li><li>
-<code><var>line</var></code> is not an existing line number: <code>Undefined line number</code>.
+<code><var>line</var></code> is not an existing line number: <samp>Undefined line number</samp>.
 </li></ul>
 
 
@@ -5188,7 +5196,7 @@ When returning from an error trapping routine, <code>RETURN</code> re-enables th
 trapping which was stopped on entering the trap routine.
 </p><h4>Errors</h4>
 <ul><li>
-<code><var>line</var></code> is not an existing line number: <code>Undefined line number</code>.
+<code><var>line</var></code> is not an existing line number: <samp>Undefined line number</samp>.
 </li></ul>
 
 
@@ -5207,11 +5215,11 @@ returns <code><var>parent</var></code>.
 
 <h4>Errors</h4>
 <ul><li>
-<code><var>num_chars</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>num_chars</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>num_chars</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>num_chars</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -5225,11 +5233,11 @@ Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for info
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>pathname</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>pathname</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>pathname</var></code> is empty, <code>Bad file name</code> .
+<code><var>pathname</var></code> is empty, <samp>Bad file name</samp> .
 </li><li>
-No matching path is found, <code>Path not found</code> .
+No matching path is found, <samp>Path not found</samp> .
 </li></ul>
 
 
@@ -5243,7 +5251,7 @@ random number seed; after that, a new pseudorandom number is returned.
 The seed is generated in a different way than by <code><a href="#RANDOMIZE">RANDOMIZE</a></code>.
 </p><h4>Errors</h4>
 <ul><li>
-<code><var>x</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -5261,14 +5269,14 @@ If <code><var>filename</var></code> is specified, the file with that name is loa
 cleared and any program in memory will be erased. <code>RUN</code> implies a <code><a href="#CLEAR">CLEAR</a></code>.
 </p><h4>Errors</h4>
 <ul><li>
-<code><var>line</var></code> does not exist: <code>Undefined line number</code>.
+<code><var>line</var></code> does not exist: <samp>Undefined line number</samp>.
 </li><li>
-<code><var>filename</var></code> cannot be found: <code>File not found</code>.
+<code><var>filename</var></code> cannot be found: <samp>File not found</samp>.
 </li><li>
-<code><var>filename</var></code> is an empty string: <code>Bad file number</code>.
+<code><var>filename</var></code> is an empty string: <samp>Bad file number</samp>.
 </li><li>
 A loaded ASCII file contains lines without line numbers:
-    <code>Direct statement in file</code>.
+    <samp>Direct statement in file</samp>.
 </li></ul>
 
 
@@ -5286,12 +5294,12 @@ encrypted program is loaded in GW-BASIC, it cannot be <code>LIST</code>ed or <co
 form.</p>
 <h4>Errors</h4>
 <ul><li>
-<code><var>filename</var></code> has a number value: <code>Type mismatch</code>.
+<code><var>filename</var></code> has a number value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>filename</var></code> is an empty string: <code>Bad file number</code>.
+<code><var>filename</var></code> is an empty string: <samp>Bad file number</samp>.
 </li><li>
 <code>--strict-protect</code> is enabled, the current program is encrypted and <code>,P</code> is not specified:
-    <code>Illegal function call</code>.
+    <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -5312,18 +5320,18 @@ attribute is returned; in other screens, 0 is returned.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any parameter has a string value: <code>Type mismatch</code>.
+Any parameter has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>fn</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>fn</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
 <code><var>row</var></code> is not inside the current <code>VIEW PRINT</code> area:
-    <code>Illegal function call</code>.
+    <samp>Illegal function call</samp>.
 </li><li>
-<code><a href="#KEY-list">KEY ON</a></code> and <code><var>row</var>=25</code>: <code>Illegal function call</code>.
+<code><a href="#KEY-list">KEY ON</a></code> and <code><var>row</var>=25</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>col</var></code> is not in <code>[1, <var>width</var>]</code>: <code>Illegal function call</code>.
+<code><var>col</var></code> is not in <code>[1, <var>width</var>]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -5373,18 +5381,18 @@ zero and non-zero, the screen is cleared.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-No parameters are specified: <code>Missing operand</code>.
+No parameters are specified: <samp>Missing operand</samp>.
 </li><li>
-Any parameter has a string value: <code>Type mismatch</code>.
+Any parameter has a string value: <samp>Type mismatch</samp>.
 </li><li>
-Any parameter is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+Any parameter is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>mode</var></code> is not an available video mode number for your video card setting: <code>Illegal function call</code>.
+<code><var>mode</var></code> is not an available video mode number for your video card setting: <samp>Illegal function call</samp>.
 </li><li>
 <code><var>vpage</var></code>, <code><var>apage</var></code> are not between 0 and the number of pages for the
-    chosen video mode, less one:  <code>Illegal function call</code>.
+    chosen video mode, less one:  <samp>Illegal function call</samp>.
 </li><li>
-<code><var>colorburst</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>colorburst</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -5397,7 +5405,7 @@ Any parameter is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>number</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>number</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -5420,7 +5428,7 @@ Be careful when enabling this command, as it allows the running BASIC program fu
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>command</var></code> has a number value: <code>Type mismatch</code>.
+<code><var>command</var></code> has a number value: <samp>Type mismatch</samp>.
 </li><li>
    All output from the operating system subshell, including error messages, is displayed
     on the PC-BASIC screen.
@@ -5444,7 +5452,7 @@ the angle in radians.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>angle</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -5489,24 +5497,24 @@ If <code><var>duration</var></code> is zero, <code><var>volume</var></code> and 
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any argument has a string value: <code>Type mismatch</code>.
+Any argument has a string value: <samp>Type mismatch</samp>.
 </li><li>
 <code><var>frequency</var></code> is not in its allowed range, and <code><var>duration</var></code> is not zero:
-    <code>Illegal function call</code>.
+    <samp>Illegal function call</samp>.
 </li><li>
 <code><var>duration</var></code> is zero and more than two arguments are specified:
-    <code>Syntax error</code>.
+    <samp>Syntax error</samp>.
 </li><li>
 <code>--syntax={ pcjr | tandy }</code> is not set and more than two arguments are specified:
-    <code>Syntax error</code>.
+    <samp>Syntax error</samp>.
 </li><li>
-<code><var>frequency</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>frequency</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>duration</var></code> is not in <code>[-65535&#8212;65535]</code>: <code>Illegal function call</code>.
+<code><var>duration</var></code> is not in <code>[-65535&#8212;65535]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>volume</var></code> is not in <code>[0&#8212;15]</code>: <code>Illegal function call</code>.
+<code><var>volume</var></code> is not in <code>[0&#8212;15]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>voice</var></code> is not in <code>[0&#8212;2]</code>: <code>Illegal function call</code>.
+<code><var>voice</var></code> is not in <code>[0&#8212;2]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -5526,7 +5534,7 @@ Only available with <code>--syntax={pcjr | tandy}</code>.
 <h4>Errors</h4>
 <ul><li>
 This statement is used and <code><a href="#--syntax">--syntax</a>={ pcjr | tandy }</code> is not set:
-    <code>Syntax error</code>.
+    <samp>Syntax error</samp>.
 </li></ul>
 
 <h3 id="SPACE$"><code>SPACE$</code> function</h3>
@@ -5538,11 +5546,11 @@ This statement is used and <code><a href="#--syntax">--syntax</a>={ pcjr | tandy
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>number</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>number</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>number</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>number</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>number</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -5560,7 +5568,7 @@ value.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>number</var></code> has a string value: <code>Type mismatch</code>
+<code><var>number</var></code> has a string value: <samp>Type mismatch</samp>
 </li></ul>
 
 
@@ -5585,18 +5593,18 @@ range <code>[1&#8212;254]</code> with <code>128</code> indicating the neutral po
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>axis</var></code> has a string value: <code>Type mismatch</code>
+<code><var>axis</var></code> has a string value: <samp>Type mismatch</samp>
 </li><li>
-<code><var>axis</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>axis</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>axis</var></code> is not in <code>[0&#8212;3]</code>: <code>Illegal function call</code>.
+<code><var>axis</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
 <h3 id="STOP"><code>STOP</code> statement</h3>
 <pre>STOP</pre>
 <p>
-    Breaks program execution, prints a <code>Break</code>
+    Breaks program execution, prints a <samp>Break</samp>
     message on the console and returns control to the user. Files are not closed.
     It is possible to resume program execution at the next statement using
     <code><a href="#CONT">CONT</a></code>.
@@ -5611,7 +5619,7 @@ range <code>[1&#8212;254]</code> with <code>128</code> indicating the neutral po
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>number</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>number</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -5645,11 +5653,11 @@ statement.</p>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>button</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>button</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>button</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>button</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>button</var></code> is not in <code>[0, 2, 4, 6]</code>: <code>Illegal function call</code>.
+<code><var>button</var></code> is not in <code>[0, 2, 4, 6]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -5690,11 +5698,11 @@ results, all Boolean values:</p>
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>mode</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>mode</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>mode</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>mode</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>mode</var></code> is not in <code>[0&#8212;7]</code>: <code>Illegal function call</code>.
+<code><var>mode</var></code> is not in <code>[0&#8212;7]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -5710,13 +5718,13 @@ If <code><var>char</var></code> is a string expression, its first character is u
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>length</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>length</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>char</var></code> is the empty string: <code>Illegal function call</code>.
+<code><var>char</var></code> is the empty string: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>char</var></code> or <code><var>length</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>char</var></code> or <code><var>length</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>char</var></code> or <code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>char</var></code> or <code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -5730,9 +5738,9 @@ the same type.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>var_0</var></code> or <code><var>var_1</var></code> is undefined: <code>Illegal function call</code>.
+<code><var>var_0</var></code> or <code><var>var_1</var></code> is undefined: <samp>Illegal function call</samp>.
 </li><li>
-The types of <code><var>var_0</var></code> and <code><var>var_1</var></code> are not the same: <code>Type mismatch</code>.
+The types of <code><var>var_0</var></code> and <code><var>var_1</var></code> are not the same: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -5766,7 +5774,7 @@ the angle in radians.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>angle</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -5785,7 +5793,7 @@ the angle in radians.
 <p>
     If <code><a href="#--syntax">--syntax</a></code> is not set to
     <code>pcjr</code> or <code>tandy</code>, this keyword is not present.
-    Calling <code>TERM</code> will raise <code>Syntax error</code>.
+    Calling <code>TERM</code> will raise <samp>Syntax error</samp>.
 </p>
 
 
@@ -5815,9 +5823,9 @@ of the form <code>"HH:mm:ss"</code> where <code>00&lt;=HH&lt;24</code>, <code>00
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>time</var></code> has a numeric value: <code>Type mismatch</code>.
+<code><var>time</var></code> has a numeric value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>time</var></code> is not of the correct form: <code>Illegal function call</code>.
+<code><var>time</var></code> is not of the correct form: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -5861,7 +5869,7 @@ This function has no brackets.
 <h3 id="TRON"><code>TRON</code> and <code>TROFF</code> statements</h3>
 <pre>{ TRON | TROFF }</pre>
 <p>Turns line number tracing on or off. If line number tracing is on, BASIC prints
-a tag <code>[100]</code> to the console when program line <code>100</code> is executed, and so forth.
+a tag <samp>[100]</samp> to the console when program line <code>100</code> is executed, and so forth.
 </p><h4>Notes</h4>
 <ul><li>
    Tracing is turned off by the <code><a href="#NEW">NEW</a></code> and
@@ -5881,21 +5889,21 @@ Unlocks a file or part of it that has previously been locked with <code>LOCK</co
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any parameter has a string value: <code>Type mismatch</code>.
+Any parameter has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_number</var></code> is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>file_number</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <code>Illegal function call</code>.
+<code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_number</var></code> is not an open file: <code>Bad file number</code>.
+<code><var>file_number</var></code> is not an open file: <samp>Bad file number</samp>.
 </li><li>
     If <code><var>file_number</var></code> is open for <code>RANDOM</code>,
     <code><a href="#LOCK">LOCK</a></code> and <code><a href="#UNLOCK">UNLOCK</a></code>
     statements must match in terms of <code><var>record_0</var></code> and
     <code><var>record_1</var></code>. An non-matching <code>UNLOCK</code> will raise
-    <code>Permission denied</code>.
+    <samp>Permission denied</samp>.
 </li><li>
-<code><var>record_0</var></code> or <code><var>record_1</var></code> is not in <code>[1&#8212;2^25-2]</code>: <code>Bad record number</code>.
+<code><var>record_0</var></code> or <code><var>record_1</var></code> is not in <code>[1&#8212;2^25-2]</code>: <samp>Bad record number</samp>.
 </li></ul>
 
 
@@ -5916,7 +5924,7 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>n</var></code> is not a digit <code>[0&#8212;9]</code>: <code>Syntax error</code>.
+<code><var>n</var></code> is not a digit <code>[0&#8212;9]</code>: <samp>Syntax error</samp>.
 </li></ul>
 
 
@@ -5931,7 +5939,7 @@ part of a number. If that is the first character of the string, or the
 string is empty, <code>VAL</code> returns zero. </p>
 <h4>Errors</h4>
 <ul><li>
-<code><var>string</var></code> has a number value: <code>Type mismatch</code>.
+<code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -5955,11 +5963,11 @@ previously defined variable or fully indexed array element.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>name</var></code> has not been previously defined: <code>Illegal function call</code>.
+<code><var>name</var></code> has not been previously defined: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_num</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_num</var></code> is not in <code>[1, max number of files]</code>: <code>Bad file number</code>.
+<code><var>file_num</var></code> is not in <code>[1, max number of files]</code>: <samp>Bad file number</samp>.
 </li></ul>
 
 
@@ -5982,7 +5990,7 @@ The first byte is the length of the record the pointer points to:</p>
 </p>
 <h4>Errors</h4>
 <ul><li>
-<code><var>name</var></code> has not been previously defined: <code>Illegal function call</code>.
+<code><var>name</var></code> has not been previously defined: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -6005,11 +6013,11 @@ filled with this attribute.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any of the parameters has a string value: <code>Type mismatch</code>.
+Any of the parameters has a string value: <samp>Type mismatch</samp>.
 </li><li>
-Any of the coordinates is not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+Any of the coordinates is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-Any of the coordinate pairs is outside the physical screen: <code>Illegal function call</code>.
+Any of the coordinate pairs is outside the physical screen: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -6030,7 +6038,7 @@ Otherwise, screen row 25 cannot be part of the
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>top_row</var></code> or <code><var>bottom_row</var></code> is not in <code>[1&#8212;24]</code>: <code>Illegal function call</code>.
+<code><var>top_row</var></code> or <code><var>bottom_row</var></code> is not in <code>[1&#8212;24]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -6051,11 +6059,11 @@ Otherwise, screen row 25 cannot be part of the
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-Any parameter has a string value: <code>Type mismatch</code>.
+Any parameter has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <code>Overflow</code>.
+<code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>and_mask</var></code> or <code><var>xor_mask</var></code> are not in <code>[0&#8212;255]</code>: <code>Type mismatch</code>.
+<code><var>and_mask</var></code> or <code><var>xor_mask</var></code> are not in <code>[0&#8212;255]</code>: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -6073,8 +6081,9 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-All previous <code>WHILE</code> statements have been closed by another <code>WEND</code> or no <code>WHILE</code> statement has been executed before:
-    <code>WEND without WHILE</code>.
+    All previous <code>WHILE</code> statements have been closed by another
+    <code>WEND</code> or no <code>WHILE</code> statement has been executed before:
+    <samp>WEND without WHILE</samp>.
 </li></ul>
 
 
@@ -6092,9 +6101,9 @@ All previous <code>WHILE</code> statements have been closed by another <code>WEN
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-No matching <code>WEND</code> is found: <code>WHILE without WEND</code>.
+    No matching <code>WEND</code> is found: <samp>WHILE without WEND</samp>.
 </li><li>
-<code><var>expr</var></code> has a string value: <code>Type mismatch</code>.
+    <code><var>expr</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
@@ -6151,22 +6160,22 @@ In this case, <code><var>num_columns</var></code> must be one of 20, 40 or 80.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><var>device_name</var></code> is not one of the allowed devices: <code>Bad file name</code>.
+<code><var>device_name</var></code> is not one of the allowed devices: <samp>Bad file name</samp>.
 </li><li>
 <code><var>device_name</var></code> is <code>"SCRN:"</code>, <code>"KYBD:"</code> or omitted, and <code><var>num_columns</var></code> is not 40 or
-    80: <code>Illegal function call</code>.
+    80: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_num</var></code> or <code><var>num_columns</var></code> are strings: <code>Type mismatch</code>.
+<code><var>file_num</var></code> or <code><var>num_columns</var></code> are strings: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_num</var></code> or <code><var>num_columns</var></code> are not in <code>[-32768&#8212;32767]</code>: <code>Overflow</code>.
+<code><var>file_num</var></code> or <code><var>num_columns</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
 </li><li>
-<code><var>file_num</var></code> or <code><var>num_columns</var></code> are not in <code>[0&#8212;255]</code>:    <code>Illegal function call</code>.
+<code><var>file_num</var></code> or <code><var>num_columns</var></code> are not in <code>[0&#8212;255]</code>:    <samp>Illegal function call</samp>.
 </li><li>
-<code><var>file_num</var></code> is not an open file: <code>Bad file mode</code>.
+<code><var>file_num</var></code> is not an open file: <samp>Bad file mode</samp>.
 </li><li>
-An unbracketed expression is used in the first syntax: <code>Illegal function call</code>.
+An unbracketed expression is used in the first syntax: <samp>Illegal function call</samp>.
 </li><li>
-<code><var>num_rows</var></code> is not in its accepted range: <code>Illegal function call</code>.
+<code><var>num_rows</var></code> is not in its accepted range: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -6189,9 +6198,9 @@ reset to the viewport coordinates.</p>
 
 <h4>Errors</h4>
 <ul><li>
-Any of the coordinates have a string value: <code>Type mismatch</code>.
+Any of the coordinates have a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>x0</var> = <var>x1</var></code> or <code><var>y0</var> = <var>y1</var></code>: <code>Illegal function call</code>.
+<code><var>x0</var> = <var>x1</var></code> or <code><var>y0</var> = <var>y1</var></code>: <samp>Illegal function call</samp>.
 </li></ul>
 
 
@@ -6208,9 +6217,9 @@ delimited by double quotes <code>"</code>. No padding spaces are inserted.</p>
 
 <h4>Errors</h4>
 <ul><li>
-<code><var>file_num</var></code> has a string value: <code>Type mismatch</code>.
+<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
 </li><li>
-<code><var>file_num</var></code> is open for <code>INPUT</code>: <code>Bad file mode</code>.
+<code><var>file_num</var></code> is open for <code>INPUT</code>: <samp>Bad file mode</samp>.
 </li></ul>
 
 
@@ -6254,7 +6263,7 @@ When operating on disk devices, specifying a path is mandatory.</p>
     attached to the physical parallel port, to a printer or to a text file.
     Opening a printer for <code>RANDOM</code> has the same effect as opening it
     for <code>OUTPUT</code>; attempting random-file operations will raise
-    <code>Bad file mode</code>.
+    <samp>Bad file mode</samp>.
 </td>
 </tr><tr>
 <td><code>COM1:</code> <code>COM2:</code></td>
@@ -6405,125 +6414,67 @@ represent them in a BASIC file.</p>
 
 <h2 id="errors">Error codes</h2>
 <table><tr>
-<td><code>
-1</code></td><td><code>NEXT without FOR
-</code></td></tr><tr><td><code>
-2</code></td><td><code>Syntax error
-</code></td></tr><tr><td><code>
-3</code></td><td><code>RETURN without GOSUB
-</code></td></tr><tr><td><code>
-4</code></td><td><code>Out of DATA
-</code></td></tr><tr><td><code>
-5</code></td><td><code>Illegal function call
-</code></td></tr><tr><td><code>
-6</code></td><td><code>Overflow
-</code></td></tr><tr><td><code>
-7</code></td><td><code>Out of memory
-</code></td></tr><tr><td><code>
-8</code></td><td><code>Undefined line number
-</code></td></tr><tr><td><code>
-9</code></td><td><code>Subscript out of range
-</code></td></tr><tr><td><code>
-10</code></td><td><code>Duplicate Definition
-</code></td></tr><tr><td><code>
-11</code></td><td><code>Division by zero
-</code></td></tr><tr><td><code>
-12</code></td><td><code>Illegal direct
-</code></td></tr><tr><td><code>
-13</code></td><td><code>Type mismatch
-</code></td></tr><tr><td><code>
-14</code></td><td><code>Out of string space
-</code></td></tr><tr><td><code>
-15</code></td><td><code>String too long
-</code></td></tr><tr><td><code>
-16</code></td><td><code>String formula too complex
-</code></td></tr><tr><td><code>
-17</code></td><td><code>Can't continue
-</code></td></tr><tr><td><code>
-18</code></td><td><code>Undefined user function
-</code></td></tr><tr><td><code>
-19</code></td><td><code>No RESUME
-</code></td></tr><tr><td><code>
-20</code></td><td><code>RESUME without error
-</code></td></tr><tr><td><code>
-21</code></td><td><em>unused</em>
-</td></tr><tr><td><code>
-22</code></td><td><code>Missing operand
-</code></td></tr><tr><td><code>
-23</code></td><td><code>Line buffer overflow
-</code></td></tr><tr><td><code>
-24</code></td><td><code>Device Timeout
-</code></td></tr><tr><td><code>
-25</code></td><td><code>Device Fault
-</code></td></tr><tr><td><code>
-26</code></td><td><code>FOR without NEXT
-</code></td></tr><tr><td><code>
-27</code></td><td><code>Out of paper
-</code></td></tr><tr><td><code>
-28</code></td><td><em>unused</em>
-</td></tr><tr><td><code>
-29</code></td><td><code>WHILE without WEND
-</code></td></tr><tr><td><code>
-30</code></td><td><code>WEND without WHILE
-</code></td></tr><tr><td><code>
-31&#8212;49</code></td><td><em>unused</em>
-</td></tr><tr><td><code>
-50</code></td><td><code>FIELD overflow
-</code></td></tr><tr><td><code>
-51</code></td><td><code>Internal error
-</code></td></tr><tr><td><code>
-52</code></td><td><code>Bad file number
-</code></td></tr><tr><td><code>
-53</code></td><td><code>File not found
-</code></td></tr><tr><td><code>
-54</code></td><td><code>Bad file mode
-</code></td></tr><tr><td><code>
-55</code></td><td><code>File already open
-</code></td></tr><tr><td><code>
-56</code></td><td><em>unused</em>
-</td></tr><tr><td><code>
-57</code></td><td><code>Device I/O error
-</code></td></tr><tr><td><code>
-58</code></td><td><code>File already exists
-</code></td></tr><tr><td><code>
-59&#8212;60</code></td><td><em>unused</em>
-</td></tr><tr><td><code>
-61</code></td><td><code>Disk full
-</code></td></tr><tr><td><code>
-62</code></td><td><code>Input past end
-</code></td></tr><tr><td><code>
-63</code></td><td><code>Bad record number
-</code></td></tr><tr><td><code>
-64</code></td><td><code>Bad file name
-</code></td></tr><tr><td><code>
-65</code></td><td><em>unused</em>
-</td></tr><tr><td><code>
-66</code></td><td><code>Direct statement in file
-</code></td></tr><tr><td><code>
-67</code></td><td><code>Too many files
-</code></td></tr><tr><td><code>
-68</code></td><td><code>Device Unavailable
-</code></td></tr><tr><td><code>
-69</code></td><td><code>Communication buffer overflow
-</code></td></tr><tr><td><code>
-70</code></td><td><code>Permission Denied
-</code></td></tr><tr><td><code>
-71</code></td><td><code>Disk not Ready
-</code></td></tr><tr><td><code>
-72</code></td><td><code>Disk media error
-</code></td></tr><tr><td><code>
-73</code></td><td><code>Advanced Feature
-</code></td></tr><tr><td><code>
-74</code></td><td><code>Rename across disks
-</code></td></tr><tr><td><code>
-75</code></td><td><code>Path/File access error
-</code></td></tr><tr><td><code>
-76</code></td><td><code>Path not found
-</code></td></tr><tr><td><code>
-77</code></td><td><code>Deadlock</code>
-</td></tr></table>
+    <td><code>1</code></td><td><samp>NEXT without FOR</samp></td></tr><tr>
+    <td><code>2</code></td><td><samp>Syntax error</samp></td></tr><tr>
+    <td><code>3</code></td><td><samp>RETURN without GOSUB</samp></td></tr><tr>
+    <td><code>4</code></td><td><samp>Out of DATA</samp></td></tr><tr>
+    <td><code>5</code></td><td><samp>Illegal function call</samp></td></tr><tr>
+    <td><code>6</code></td><td><samp>Overflow</samp></td></tr><tr>
+    <td><code>7</code></td><td><samp>Out of memory</samp></td></tr><tr>
+    <td><code>8</code></td><td><samp>Undefined line number</samp></td></tr><tr>
+    <td><code>9</code></td><td><samp>Subscript out of range</samp></td></tr><tr>
+    <td><code>10</code></td><td><samp>Duplicate Definition</samp></td></tr><tr>
+    <td><code>11</code></td><td><samp>Division by zero</samp></td></tr><tr>
+    <td><code>12</code></td><td><samp>Illegal direct</samp></td></tr><tr>
+    <td><code>13</code></td><td><samp>Type mismatch</samp></td></tr><tr>
+    <td><code>14</code></td><td><samp>Out of string space</samp></td></tr><tr>
+    <td><code>15</code></td><td><samp>String too long</samp></td></tr><tr>
+    <td><code>16</code></td><td><samp>String formula too complex</samp></td></tr><tr>
+    <td><code>17</code></td><td><samp>Can't continue</samp></td></tr><tr>
+    <td><code>18</code></td><td><samp>Undefined user function</samp></td></tr><tr>
+    <td><code>19</code></td><td><samp>No RESUME</samp></td></tr><tr>
+    <td><code>20</code></td><td><samp>RESUME without error</samp></td></tr><tr>
+    <td><code>21</code></td><td><em>unused</em></td></tr><tr>
+    <td><code>22</code></td><td><samp>Missing operand</samp></td></tr><tr>
+    <td><code>23</code></td><td><samp>Line buffer overflow</samp></td></tr><tr>
+    <td><code>24</code></td><td><samp>Device Timeout</samp></td></tr><tr>
+    <td><code>25</code></td><td><samp>Device Fault</samp></td></tr><tr>
+    <td><code>26</code></td><td><samp>FOR without NEXT</samp></td></tr><tr>
+    <td><code>27</code></td><td><samp>Out of paper</samp></td></tr><tr>
+    <td><code>28</code></td><td><em>unused</em></td></tr><tr>
+    <td><code>29</code></td><td><samp>WHILE without WEND</samp></td></tr><tr>
+    <td><code>30</code></td><td><samp>WEND without WHILE</samp></td></tr><tr>
+    <td><code>31&#8212;49</code></td><td><em>unused</em></td></tr><tr>
+    <td><code>50</code></td><td><samp>FIELD overflow</samp></td></tr><tr>
+    <td><code>51</code></td><td><samp>Internal error</samp></td></tr><tr>
+    <td><code>52</code></td><td><samp>Bad file number</samp></td></tr><tr>
+    <td><code>53</code></td><td><samp>File not found</samp></td></tr><tr>
+    <td><code>54</code></td><td><samp>Bad file mode</samp></td></tr><tr>
+    <td><code>55</code></td><td><samp>File already open</samp></td></tr><tr>
+    <td><code>56</code></td><td><em>unused</em></td></tr><tr>
+    <td><code>57</code></td><td><samp>Device I/O error</samp></td></tr><tr>
+    <td><code>58</code></td><td><samp>File already exists</samp></td></tr><tr>
+    <td><code>59&#8212;60</code></td><td><em>unused</em></td></tr><tr>
+    <td><code>61</code></td><td><samp>Disk full</samp></td></tr><tr>
+    <td><code>62</code></td><td><samp>Input past end</samp></td></tr><tr>
+    <td><code>63</code></td><td><samp>Bad record number</samp></td></tr><tr>
+    <td><code>64</code></td><td><samp>Bad file name</samp></td></tr><tr>
+    <td><code>65</code></td><td><em>unused</em></td></tr><tr>
+    <td><code>66</code></td><td><samp>Direct statement in file</samp></td></tr><tr>
+    <td><code>67</code></td><td><samp>Too many files</samp></td></tr><tr>
+    <td><code>68</code></td><td><samp>Device Unavailable</samp></td></tr><tr>
+    <td><code>69</code></td><td><samp>Communication buffer overflow</samp></td></tr><tr>
+    <td><code>70</code></td><td><samp>Permission Denied</samp></td></tr><tr>
+    <td><code>71</code></td><td><samp>Disk not Ready</samp></td></tr><tr>
+    <td><code>72</code></td><td><samp>Disk media error</samp></td></tr><tr>
+    <td><code>73</code></td><td><samp>Advanced Feature</samp></td></tr><tr>
+    <td><code>74</code></td><td><samp>Rename across disks</samp></td></tr><tr>
+    <td><code>75</code></td><td><samp>Path/File access error</samp></td></tr><tr>
+    <td><code>76</code></td><td><samp>Path not found</samp></td></tr><tr>
+    <td><code>77</code></td><td><samp>Deadlock</samp></td>
+</tr></table>
 <p>Any error code that does not have a message associated to it will generate
-the message <code>Unprintable error</code>.</p>
+the message <samp>Unprintable error</samp>.</p>
 
 <h2 id="videomodes">Video modes</h2>
 <p>The video modes are as follows:</p>
