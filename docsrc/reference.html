@@ -3,7 +3,6 @@
     (c) 2014-2015 Rob Hagemans
     This file is released under a Creative Commons Attribution-ShareAlike 4.0 International License.
 -->
-
 <h1 id="features">Language features</h1>
 <h2 id="literals">Literals</h2>
 
@@ -395,7 +394,7 @@ which is the last character of the variable's full name:</p>
 
 <h3 id="ABS"><code>ABS</code> function</h3>
 <pre>
-<em>y</em> = ABS(<em>x</em>)
+<var>y</var> = ABS(<var>x</var>)
 </pre>
 <p>Returns the absolute value of <code><var>x</var></code>.
 </p><h4>Parameters</h4>
@@ -411,7 +410,7 @@ which is the last character of the variable's full name:</p>
 
 <h3 id="ASC"><code>ASC</code> function</h3>
 <pre><code>
-<em>val</em> = ASC(<em>char</em>)
+<var>val</var> = ASC(<var>char</var>)
 </code></pre>
 <p>Returns the ASCII code for the first character of <code><var>char</var></code>. </p>
 <h4>Parameters</h4>
@@ -430,7 +429,7 @@ a string value.
 
 
 <h3 id="ATN"><code>ATN</code> function</h3>
-<pre><em>y</em> = ATN(<em>x</em>)</pre>
+<pre><var>y</var> = ATN(<var>x</var>)</pre>
 <p>Returns the inverse tangent of <code><var>x</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -455,7 +454,7 @@ returns a single-precision value.</li>
 
 <h3 id="AUTO"><code>AUTO</code> statement</h3>
 <pre>
-AUTO [ { <em>line_number</em> | . } ] [, [<em>increment</em>]]
+AUTO [ { <var>line_number</var> | . } ] [, [<var>increment</var>]]
 </pre>
 <p>Start automatic line numbering. Line numbers
 are automatically generated when <kbd>Enter</kbd> is pressed.
@@ -511,7 +510,7 @@ On PCjr and Tandy computers, <code>BEEP OFF</code> would turn off the internal s
 
 <h3 id="BLOAD"><code>BLOAD</code> statement</h3>
 <pre>
-BLOAD <em>filename</em> [, <em>offset</em> ]
+BLOAD <var>filename</var> [, <var>offset</var> ]
 </pre>
 <p>Loads an image file into memory. </p>
 <h4>Parameters</h4>
@@ -537,7 +536,7 @@ negative, its two's complement will be used.
 
 <h3 id="BSAVE"><code>BSAVE</code> statement</h3>
 <pre>
-BSAVE <em>filename</em>, <em>offset</em>, <em>length</em>
+BSAVE <var>filename</var>, <var>offset</var>, <var>length</var>
 </pre>
 <p>Saves a region of memory to an image file.</p>
 <h4>Parameters</h4>
@@ -566,7 +565,7 @@ complement will be used.</li>
 
 <h3 id="CALL"><code>CALL</code> statement</h3>
 <pre>
-CALL <em>address_var</em> [ ( <em>p0</em> [, <em>p1</em> [, ... ] ) ]
+CALL <var>address_var</var> [ ( <var>p0</var> [, <var>p1</var> [, ... ] ) ]
 </pre>
 <p>Does nothing.</p>
 <h4>Notes</h4>
@@ -591,7 +590,7 @@ This statement is not implemented in PC-BASIC.
 
 <h3 id="CALLS"><code>CALLS</code> statement</h3>
 <pre>
-CALLS <em>address_var</em> [ ( <em>p0</em> [, <em>p1</em> [, ... ] ) ]
+CALLS <var>address_var</var> [ ( <var>p0</var> [, <var>p1</var> [, ... ] ) ]
 </pre>
 <p>Does nothing.</p>
 <h4>Notes</h4>
@@ -616,7 +615,7 @@ This statement is not implemented in PC-BASIC.
 
 <h3 id="CDBL"><code>CDBL</code> function</h3>
 <pre>
-<em>y</em> = CDBL(<em>x</em>)
+<var>y</var> = CDBL(<var>x</var>)
 </pre>
 <p>
 Converts the numeric expression <code><var>x</var></code> to a double-precision value.
@@ -630,7 +629,7 @@ Converts the numeric expression <code><var>x</var></code> to a double-precision 
 
 <h3 id="CHAIN"><code>CHAIN</code> statement</h3>
 <pre>
-CHAIN [MERGE] <em>program</em> [, [<em>line_number_expr</em>] [, ALL ] [, DELETE <em>range</em> [, <em>ign</em> ] ] ]
+CHAIN [MERGE] <var>program</var> [, [<var>line_number_expr</var>] [, ALL ] [, DELETE <var>range</var> [, <var>ign</var> ] ] ]
 </pre>
 <p>Loads <code><var>program</var></code> into memory and runs it, optionally transferring variables.</p>
 <ul>
@@ -692,7 +691,7 @@ being performed.
 
 <h3 id="CHDIR"><code>CHDIR</code> statement</h3>
 <pre>
-CHDIR <em>pathname</em>
+CHDIR <var>pathname</var>
 </pre>
 <p>Change the working directory to <code><var>pathname</var></code>.</p>
 <h4>Parameters</h4>
@@ -717,7 +716,7 @@ No matching path is found: <samp>Path not found</samp>.
 </li></ul>
 
 <h3 id="CHR$"><code>CHR$</code> function</h3>
-<pre><em>char</em> = CHR$(<em>x</em>)
+<pre><var>char</var> = CHR$(<var>x</var>)
 </pre>
 <p>Returns the character with ASCII code <code><var>x</var></code>.
 </p>
@@ -736,7 +735,7 @@ No matching path is found: <samp>Path not found</samp>.
 
 
 <h3 id="CINT"><code>CINT</code> function</h3>
-<pre><em>y</em> = CINT(<em>x</em>)
+<pre><var>y</var> = CINT(<var>x</var>)
 </pre>
 <p>Converts the numeric expression <code><var>x</var></code> to a signed integer.</p>
 <h4>Errors</h4>
@@ -749,7 +748,7 @@ No matching path is found: <samp>Path not found</samp>.
 
 <h3 id="CIRCLE"><code>CIRCLE</code> statement</h3>
 <pre>
-CIRCLE [STEP] (<em>x</em>, <em>y</em>), <em>radius</em> [, [<em>colour</em>] [, [<em>start</em>] [, [<em>end</em>] [, <em>aspect</em>] ] ]
+CIRCLE [STEP] (<var>x</var>, <var>y</var>), <var>radius</var> [, [<var>colour</var>] [, [<var>start</var>] [, [<var>end</var>] [, <var>aspect</var>] ] ]
 </pre>
 <p>Draw an ellipse or ellipse sector. </p>
 <h4>Parameters</h4>
@@ -786,7 +785,7 @@ For <code><var>aspect</var> &lt;&gt; 1</code>, the midpoint algorithm used does 
 
 
 <h3 id="CLEAR"><code>CLEAR</code> statement</h3>
-<pre>CLEAR [<em>expr</em>] [, [<em>mem_limit</em>] [, <em>stack_size</em>] ]
+<pre>CLEAR [<var>expr</var>] [, [<var>mem_limit</var>] [, <var>stack_size</var>] ]
 </pre>
 <p>Clears all variables, arrays,<code><a href="#DEF-FN">DEF FN</a></code> user functions, <code><a href="#DEFINT">DEF<var>type</var></a></code> type definitions,
 and <code><a href="#COMMON">COMMON</a></code> declarations. Closes all files.
@@ -828,7 +827,7 @@ Any of the arguments has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 <h3 id="CLOSE"><code>CLOSE</code> statement</h3>
-<pre>CLOSE [[#] <em>file_1</em> [, [#] <em>file_2</em> [, ...] ]</pre>
+<pre>CLOSE [[#] <var>file_1</var> [, [#] <var>file_2</var> [, ...] ]</pre>
 <p>Closes files. If no file numbers are specified, all open files are closed.
 The hash (<code>#</code>) is optional and has no effect.</p>
 <h4>Parameters</h4>
@@ -855,7 +854,7 @@ The statement ends in a comma, <samp>Missing operand</samp> .
 
 
 <h3 id="CLS"><code>CLS</code> statement</h3>
-<pre>CLS [<em>x</em>][,]</pre>
+<pre>CLS [<var>x</var>][,]</pre>
 <p>Clears the screen or part of it.
 If <code><var>x</var></code> is not specified, in SCREEN 0 the text view region is cleared;
 in other screens, the graphics view region is cleared.
@@ -885,7 +884,7 @@ If an error occurs, the screen is not cleared.
 </li></ul>
 
 <h3 id="COLOR"><code>COLOR</code> statement (text mode)</h3>
-<pre>COLOR [<em>foreground</em>] [, [<em>background</em>] [, <em>border</em>] ] </pre>
+<pre>COLOR [<var>foreground</var>] [, [<var>background</var>] [, <var>border</var>] ] </pre>
 <p>Changes the current foreground and background attributes.
 All new characters printed will take the newly set attributes. Existing
 characters on the screen are not affected.</p>
@@ -920,7 +919,7 @@ Statement is used in <code>SCREEN 2</code>: <samp>Illegal function call</samp>.
 
 
 <h3 id="COLOR-1"><code>COLOR</code> statement (<code>SCREEN 1</code>)</h3>
-<pre>COLOR [<em>palette_0</em>] [, <em>palette</em> [, <em>override</em>] ]</pre>
+<pre>COLOR [<var>palette_0</var>] [, <var>palette</var> [, <var>override</var>] ]</pre>
 <p>Assigns new colours to the palette of attributes. </p>
 <ul><li>
 <code><var>palette_0</var></code> is a numeric expression  in <code>[0&#8212;255]</code>.
@@ -952,7 +951,7 @@ Any of the parameters is not in <code>[0&#8212;255]</code>: <samp>Illegal functi
 
 
 <h3 id="COLOR-3-9"><code>COLOR</code> statement (<code>SCREEN 3&#8212;9</code>)</h3>
-<pre>COLOR [<em>foreground</em>] [, <em>palette_0</em> [, <em>dummy</em>] ]</pre>
+<pre>COLOR [<var>foreground</var>] [, <var>palette_0</var> [, <var>dummy</var>] ]</pre>
 <p>Changes the current foreground attribute and the colour for attribute 0.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -983,7 +982,7 @@ Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <samp>Overflo
 
 
 <h3 id="COM"><code>COM</code> statement</h3>
-<pre>COM(<em>port</em>) { ON | OFF | STOP }</pre>
+<pre>COM(<var>port</var>) { ON | OFF | STOP }</pre>
 <ul>
 <li><code>ON</code>: enables <code><a href="#ON-event">ON COM(<var>port</var>)</a></code> event trapping of the emulated serial port.
 </li><li>
@@ -999,7 +998,7 @@ serial port (<code>COM1:</code> or <code>COM2:</code>) is trapped.
 
 
 <h3 id="COMMON"><code>COMMON</code> statement</h3>
-<pre>COMMON [ [<em>var_0</em>] [, [<em>var_1</em>] [, [...] ] ] ]</pre>
+<pre>COMMON [ [<var>var_0</var>] [, [<var>var_1</var>] [, [...] ] ] ]</pre>
 <p>Specifies variables to be passed as common variables to the program called
 with <code><a href="#CHAIN">CHAIN</a></code>.
 The statement may end with one or more commas. </p>
@@ -1011,7 +1010,7 @@ must be followed by round or square brackets. Brackets may also be mixed <code>a
 
 
 <h3 id="CONT"><code>CONT</code> statement</h3>
-<pre>CONT [ <em>anything</em> ]</pre>
+<pre>CONT [ <var>anything</var> ]</pre>
 <p>Resumes execution of a program that has been halted by <code><a href="#STOP">STOP</a></code>, <code><a href="#END">END</a></code>, <kbd>Ctrl</kbd>+<kbd>C</kbd>, or  <kbd>Ctrl</kbd>+<kbd>Break</kbd>. </p>
 <h4>Notes</h4>
 <ul><li>
@@ -1038,7 +1037,7 @@ The break occurred in a direct line: <samp>Can't continue</samp>
 
 
 <h3 id="COS"><code>COS</code> function</h3>
-<pre><em>cosine</em> = COS(<em>angle</em>)</pre>
+<pre><var>cosine</var> = COS(<var>angle</var>)</pre>
 <p>Returns the cosine of <code><var>angle</var></code>.
 Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option, this function returns a single-precision
 value.</p>
@@ -1058,7 +1057,7 @@ gives the angle in radians.
 
 
 <h3 id="CSNG"><code>CSNG</code> function</h3>
-<pre><em>y</em> = CSNG(<em>x</em>)</pre>
+<pre><var>y</var> = CSNG(<var>x</var>)</pre>
 <p>
 Converts the numeric expression <code><var>x</var></code> to a single-precision value.</p>
 <h4>Errors</h4>
@@ -1067,7 +1066,7 @@ Converts the numeric expression <code><var>x</var></code> to a single-precision 
 </li></ul>
 
 <h3 id="CSRLIN"><code>CSRLIN</code> function</h3>
-<pre><em>y</em> = CSRLIN </pre>
+<pre><var>y</var> = CSRLIN </pre>
 <p>Returns the screen row of the cursor on the active page.
 The return value is in the range <code>[1&#8212;25]</code>.</p>
 <h4>Notes</h4>
@@ -1076,7 +1075,7 @@ This function has no brackets.
 </li></ul>
 
 <h3 id="CVI"><code>CVI</code> function</h3>
-<pre><em>y</em> = CVI(<em>s</em>)</pre>
+<pre><var>y</var> = CVI(<var>s</var>)</pre>
 <p>Converts a two-byte string to a signed integer.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -1089,7 +1088,7 @@ little-endian two's complement encoding. Only the first two bytes are used.
 </li></ul>
 
 <h3 id="CVS"><code>CVS</code> function</h3>
-<pre><em>y</em> = CVS(<em>s</em>)</pre>
+<pre><var>y</var> = CVS(<var>s</var>)</pre>
 <p>Converts a four-byte string to a single-precision floating-point number.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -1102,7 +1101,7 @@ number in Microsoft Binary Format. Only the first four bytes are used.
 </li></ul>
 
 <h3 id="CVD"><code>CVD</code> function</h3>
-<pre><em>y</em> = CVD(<em>s</em>)</pre>
+<pre><var>y</var> = CVD(<var>s</var>)</pre>
 <p>Converts an eight-byte string to a double-precision floating-point number.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -1116,7 +1115,7 @@ number in Microsoft Binary Format. Only the first eight bytes are used.
 
 
 <h3 id="DATA"><code>DATA</code> statement</h3>
-<pre>DATA [<em>const_0</em>] [, [<em>const_1</em>] [, ... ] ]</pre>
+<pre>DATA [<var>const_0</var>] [, [<var>const_1</var>] [, ... ] ]</pre>
 <p>Specifies data that can be read by a READ statement.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -1133,7 +1132,7 @@ statement, a <samp>Syntax error</samp> occurs on the <code>DATA</code> statement
 </li></ul>
 
 <h3 id="DATE$"><code>DATE$</code> function</h3>
-<pre><em>s</em> = DATE$</pre>
+<pre><var>s</var> = DATE$</pre>
 <p>Returns the system date as a string in the format <code>"mm-dd-yyyy"</code>.</p>
 <h4>Notes</h4>
 <ul><li>
@@ -1141,7 +1140,7 @@ This function has no brackets.
 </li></ul>
 
 <h3 id="DATE$-statement"><code>DATE$</code> statement</h3>
-<pre>DATE$ = <em>date</em></pre>
+<pre>DATE$ = <var>date</var></pre>
 <p>Sets the system date. <code><var>date</var></code> is a string expression that represents a
 date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>, <code>"mm-dd-yy"</code>, <code>"mm/dd/yy"</code>.</p>
 <p>Of these, </p>
@@ -1177,7 +1176,7 @@ date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>
 </li></ul>
 
 <h3 id="DEF-FN"><code>DEF FN</code> statement</h3>
-<pre>DEF FN[ ]<em>name</em>[( <em>arg_0</em> [, <em>arg_1</em> [, ...] ] )] = <em>expression</em></pre>
+<pre>DEF FN[ ]<var>name</var>[( <var>arg_0</var> [, <var>arg_1</var> [, ...] ] )] = <var>expression</var></pre>
 <p>Defines a function called <code><a href="#FN">FN</a><var>name</var></code> (or <code>FN<var> name</var></code>: spaces between <code>FN</code> and <code><var>name</var></code> are optional).
 On calling <code>FN<var>name</var>( ... )</code>, <code><var>expression</var></code> is
 evaluated with the supplied parameters substituted. The result of the
@@ -1205,7 +1204,7 @@ The statement is executed directly instead of in a program line: <samp>Illegal d
 
 
 <h3 id="DEFINT"><code>DEFINT</code> statement</h3>
-<pre>DEFINT <em>letters</em></pre>
+<pre>DEFINT <var>letters</var></pre>
 <p>Sets the default type for variables starting with <code><var>letters</var></code> to integer (<code>%</code>).
 This is the type that is assumed if no type character is specified. <code><var>letters</var></code>
 are letters of the alphabet separated by commas or ranges specified with a
@@ -1213,7 +1212,7 @@ dash: for example, <code>DEFINT A,B,C-Z</code>.</p>
 
 
 <h3 id="DEFDBL"><code>DEFDBL</code> statement</h3>
-<pre>DEFDBL <em>letters</em></pre>
+<pre>DEFDBL <var>letters</var></pre>
 <p>Sets the default type for variables starting with <code><var>letters</var></code> to double (<code>#</code>).
 This is the type that is assumed if no type character is specified. <code><var>letters</var></code>
 are letters of the alphabet separated by commas or ranges specified with a
@@ -1221,7 +1220,7 @@ dash: for example, <code>DEFDBL A,B,C-Z</code>.</p>
 
 
 <h3 id="DEFSNG"><code>DEFSNG</code> statement</h3>
-<pre>DEFSNG <em>letters</em></pre>
+<pre>DEFSNG <var>letters</var></pre>
 <p>Sets the default type for variables starting with <code><var>letters</var></code> to single (<code>!</code>).
 This is the type that is assumed if no type character is specified. <code><var>letters</var></code>
 are letters of the alphabet separated by commas or ranges specified with a
@@ -1229,7 +1228,7 @@ dash: for example, <code>DEFSNG A,B,C-Z</code>. <code>DEFSNG A-Z</code> is the d
 
 
 <h3 id="DEFSTR"><code>DEFSTR</code> statement</h3>
-<pre>DEFSTR <em>letters</em></pre>
+<pre>DEFSTR <var>letters</var></pre>
 <p>Sets the default type for variables starting with <code><var>letters</var></code> to string (<code>$</code>).
 This is the type that is assumed if no type character is specified. <code><var>letters</var></code>
 are letters of the alphabet separated by commas or ranges specified with a
@@ -1237,7 +1236,7 @@ dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
 
 
 <h3 id="DEF-SEG"><code>DEF SEG</code> statement</h3>
-<pre>DEF SEG [=<em>address</em>]</pre>
+<pre>DEF SEG [=<var>address</var>]</pre>
 <p>Sets the memory segment to be used by <code><a href="#BLOAD">BLOAD</a></code>, <code><a href="#BSAVE">BSAVE</a></code>, <code><a href="#CALL">CALL</a></code>,
     <code><a href="#PEEK">PEEK</a></code>, <code><a href="#POKE">POKE</a></code>, or <code><a href="#USR">USR</a></code>.
 <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>.
@@ -1257,7 +1256,7 @@ dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
 
 
 <h3 id="DEF-USR"><code>DEF USR</code> statement</h3>
-<pre>DEF USR[<em>n</em>] = <em>address</em></pre>
+<pre>DEF USR[<var>n</var>] = <var>address</var></pre>
 <p>Does nothing. </p>
 <h4>Parameters</h4>
 <ul><li>
@@ -1283,7 +1282,7 @@ dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
 </li></ul>
 
 <h3 id="DELETE"><code>DELETE</code> statement</h3>
-<pre>DELETE [ <em>line_number_0</em> | . ] [ - [ <em>line_number_1</em> | . ] ]</pre>
+<pre>DELETE [ <var>line_number_0</var> | . ] [ - [ <var>line_number_1</var> | . ] ]</pre>
 <p>Deletes a range of lines from the program.
 Also stops program execution and returns control to the user.</p>
 <h4>Parameters</h4>
@@ -1309,7 +1308,7 @@ The range specified does not include any program lines stored: <samp>Illegal fun
 
 
 <h3 id="DIM"><code>DIM</code> statement</h3>
-<pre>DIM <em>name</em> { ( | [ } <em>limit_0</em> [, <em>limit_1</em> [, ...] ] { ) | } ]</pre>
+<pre>DIM <var>name</var> { ( | [ } <var>limit_0</var> [, <var>limit_1</var> [, ...] ] { ) | } ]</pre>
 <p>Allocates memory for arrays.
 The <code>DIM</code> statement also fixes the number of indices of the array.
 An array can only be allocated once; to re-allocate an array, <code><a href="#ERASE">ERASE</a></code> or
@@ -1355,13 +1354,13 @@ The array exceeds the size of available variable
 
 
 <h3 id="DRAW"><code>DRAW</code> statement</h3>
-<pre>DRAW <em>gml_string</em></pre>
+<pre>DRAW <var>gml_string</var></pre>
 <p>Draws the shape specified by <code><var>gml_string</var></code>, a string expression in Graphics Macro Language (GML). </p>
 <h4>Graphics Macrol Language reference</h4>
 <dl>
 <dt>Movement commands</dt>
 <dd>
-    <pre>[B][N] <em>movement</em> </pre>
+    <pre>[B][N] <var>movement</var> </pre>
     where the default is to move and draw; the optional prefixes mean:
     <table>
     <tr>
@@ -1484,7 +1483,7 @@ A variable referenced in the GML string is of incorrect type: <samp>Type mismatc
 
 
 <h3 id="EDIT"><code>EDIT</code> statement</h3>
-<pre>EDIT {<em>line_number</em> | .}</pre>
+<pre>EDIT {<var>line_number</var> | .}</pre>
 <p>
 Displays the specified program line with the cursor positioned for editing.
 <code><var>line_number</var></code> must be a line that exists in the program, or a period (.) to
@@ -1501,7 +1500,7 @@ The specified line number does not exist: <samp>Undefined line number</samp>.
 </li></ul>
 
 <h3 id="ELSE"><code>ELSE</code> statement</h3>
-<pre>ELSE [<em>anything</em>]</pre>
+<pre>ELSE [<var>anything</var>]</pre>
 <p>
 Unless part of an <code><a href="#IF">IF</a></code> statement on the same line, anything after <code>ELSE</code> is ignored
 in the same way as after <code>'</code> or <code>:<a href="#REM">REM</a></code>. No colon <code>:</code> preceding
@@ -1517,7 +1516,7 @@ using <code><a href="#CONT">CONT</a></code>.
 </p>
 
 <h3 id="ENVIRON"><code>ENVIRON</code> statement</h3>
-<pre>ENVIRON <em>command_string</em></pre>
+<pre>ENVIRON <var>command_string</var></pre>
 <p>Sets a shell environment variable.</p>
 <h4>Parameters</h4>
 <p>
@@ -1539,7 +1538,7 @@ using <code><a href="#CONT">CONT</a></code>.
 
 
 <h3 id="ENVIRON$"><code>ENVIRON$</code> function</h3>
-<pre><em>value</em> = ENVIRON[ ]$(<em>x</em>)</pre>
+<pre><var>value</var> = ENVIRON[ ]$(<var>x</var>)</pre>
 <p>Returns an environment variable.</p>
 <h4>Parameters</h4>
 <p><code><var>x</var></code> is an expression.</p>
@@ -1561,7 +1560,7 @@ the environment table.
 
 
 <h3 id="EOF"><code>EOF</code> function</h3>
-<pre><em>is_at_end</em> = EOF(<em>file_num</em>)</pre>
+<pre><var>is_at_end</var> = EOF(<var>file_num</var>)</pre>
 <p>Returns -1 if file with number <code><var>file_num</var></code> has reached end-of-file; 0 otherwise.
 The file must be open in <code>INPUT</code> or <code>RANDOM</code> mode. <code>EOF(0)</code> returns 0.
 </p>
@@ -1588,7 +1587,7 @@ The file with number <code><var>file_num</var></code> is in OUTPUT or APPEND mod
 
 
 <h3 id="ERASE"><code>ERASE</code> statement</h3>
-<pre>ERASE <em>array_0</em> [, <em>array_1</em> [, ...] ]</pre>
+<pre>ERASE <var>array_0</var> [, <var>array_1</var> [, ...] ]</pre>
 <p>De-allocates arrays. The data stored in the
 arrays is lost.</p>
 <h4>Parameters</h4>
@@ -1607,7 +1606,7 @@ If an error occurs, the arrays named before the error occurred are erased.
 
 
 <h3 id="ERDEV"><code>ERDEV</code> function</h3>
-<pre><em>zero</em> = ERDEV</pre>
+<pre><var>zero</var> = ERDEV</pre>
 <p>Returns 0.</p>
 <h4>Notes</h4>
 <ul><li>
@@ -1620,7 +1619,7 @@ This function has no brackets.
 
 
 <h3 id="ERDEV$"><code>ERDEV$</code> function</h3>
-<pre><em>empty</em> = ERDEV[ ]$</pre>
+<pre><var>empty</var> = ERDEV[ ]$</pre>
 <p>Returns the empty string.</p>
 <h4>Notes</h4>
 <ul><li>
@@ -1633,7 +1632,7 @@ This function has no brackets.
 
 
 <h3 id="ERL"><code>ERL</code> function</h3>
-<pre><em>error_line</em> = ERL</pre>
+<pre><var>error_line</var> = ERL</pre>
 <p>
 Returns the line number where the last error was raised. </p>
 <h4>Notes</h4>
@@ -1649,7 +1648,7 @@ This function has no brackets.
 
 
 <h3 id="ERR"><code>ERR</code> function</h3>
-<pre><em>error_code</em> = ERR</pre>
+<pre><var>error_code</var> = ERR</pre>
 <p>
 Returns the number of the last error.
 </p><h4>Notes</h4>
@@ -1663,7 +1662,7 @@ This function has no brackets.
 
 
 <h3 id="ERROR"><code>ERROR</code> statement</h3>
-<pre>ERROR <em>error_number</em></pre>
+<pre>ERROR <var>error_number</var></pre>
 <p>Raises the error with number <code><var>error_number</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -1681,7 +1680,7 @@ with a numeric value.
 
 
 <h3 id="EXP"><code>EXP</code> function</h3>
-<pre><em>y</em> = EXP(<em>x</em>)</pre>
+<pre><var>y</var> = EXP(<var>x</var>)</pre>
 <p>Returns the exponential of <code><var>x</var></code>, i.e. <code>e</code> to the power <code><var>x</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -1706,7 +1705,7 @@ value.
 
 
 <h3 id="EXTERR"><code>EXTERR</code> function</h3>
-<pre><em>zero</em> = EXTERR(<em>x</em>)</pre>
+<pre><var>zero</var> = EXTERR(<var>x</var>)</pre>
 <p>Returns 0.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -1729,7 +1728,7 @@ value.
 
 
 <h3 id="FIELD"><code>FIELD</code> statement</h3>
-<pre>FIELD [#] <em>file_number</em> [, <em>width_0</em> AS <em>name_0</em> [, <em>width_1</em> AS <em>name_1</em> [, ...] ] ]</pre>
+<pre>FIELD [#] <var>file_number</var> [, <var>width_0</var> AS <var>name_0</var> [, <var>width_1</var> AS <var>name_1</var> [, ...] ] ]</pre>
 <p>Assigns variables to the random-access record buffer. The record buffer is a
 region of memory of length defined by the <code><a href="#OPEN">OPEN</a></code> statement; the default record
 length is 128 bytes. The <code><a href="#FIELD">FIELD</a></code> statement assigns a portion of this region to
@@ -1784,7 +1783,7 @@ record length of the field buffer: <samp>Field overflow</samp>.
 </li></ul>
 
 <h3 id="FILES"><code>FILES</code> statement</h3>
-<pre>FILES [<em>path_and_filter</em>]</pre>
+<pre>FILES [<var>path_and_filter</var>]</pre>
 <p>Displays the files fitting the specified filter in the specified directory. If
 <code><var>path_and_filter</var></code> is not specified, displays all files in the current working
 directory. </p>
@@ -1826,7 +1825,7 @@ The specified filter does not match any files: <samp>File not found</samp>.
 
 
 <h3 id="FIX"><code>FIX</code> function</h3>
-<pre><em>whole</em> = FIX(<em>number</em>)</pre>
+<pre><var>whole</var> = FIX(<var>number</var>)</pre>
 <p>Returns <code><var>number</var></code> truncated towards zero.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -1844,7 +1843,7 @@ The specified filter does not match any files: <samp>File not found</samp>.
 
 
 <h3 id="FN"><code>FN</code> function</h3>
-<pre><em>result</em> = FN[ ]<em>name</em> (<em>arg_0</em> [, <em>arg_1</em> [, ...] ])</pre>
+<pre><var>result</var> = FN[ ]<var>name</var> (<var>arg_0</var> [, <var>arg_1</var> [, ...] ])</pre>
 <p>Evaluates the user-defined function previously defined with <code><a href="#DEF-FN">DEF FN</a> <var>name</var></code>.
 Spaces between <code>FN</code> and <code><var>name</var></code> are optional.
 </p><h4>Parameters</h4>
@@ -1867,7 +1866,7 @@ The type of one or more parameters differs from the function definition:
 
 
 <h3 id="FOR"><code>FOR</code> statement</h3>
-<pre>FOR <em>loop_var</em> = <em>start</em> TO <em>stop</em> [STEP <em>step</em>]</pre>
+<pre>FOR <var>loop_var</var> = <var>start</var> TO <var>stop</var> [STEP <var>step</var>]</pre>
 <p>Initiates a <code>FOR&#8212;NEXT</code> loop.</p>
 <p>Initially, <code><var>loop_var</var></code> is set to <code><var>start</var></code>. Then, the statements between the <code>FOR</code>
 statement and the <code><a href="#NEXT">NEXT</a></code> statement are executed and <code><var>loop_var</var></code> is incremented by
@@ -1895,7 +1894,7 @@ following <code>NEXT</code>. The value of <code><var>loop_var</var></code> equal
 
 
 <h3 id="FRE"><code>FRE</code> function</h3>
-<pre><em>free_mem</em> = FRE(<em>x</em>)</pre>
+<pre><var>free_mem</var> = FRE(<var>x</var>)</pre>
 <p>Returns the available BASIC memory.</p>
 <h4>Parameters</h4>
 <p><code><var>x</var></code> is an expression.</p>
@@ -1908,7 +1907,7 @@ before returning available memory.
 
 
 <h3 id="GET-files"><code>GET</code> statement (random-access files)</h3>
-<pre>GET [#] <em>file_number</em> [, <em>record_number</em>]</pre>
+<pre>GET [#] <var>file_number</var> [, <var>record_number</var>]</pre>
 <p>Read a record from the random-access file <code><var>file_number</var></code> at position
 <code><var>record_number</var></code>.
     The record can be accessed through the <code><a href="#FIELD">FIELD</a></code>
@@ -1944,7 +1943,7 @@ If the record number is beyond the end of the file, the file buffer is
 </li></ul>
 
 <h3 id="GET-serial"><code>GET</code> statement (serial communications)</h3>
-<pre>GET [#] <em>com_file_number</em> [, <em>number_bytes</em>]</pre>
+<pre>GET [#] <var>com_file_number</var> [, <var>number_bytes</var>]</pre>
 <p>Read <code><var>number_bytes</var></code> bytes from the communications buffer opened under file
 number <code><var>com_file_number</var></code>.
     The record can be accessed through the <code><a href="#FIELD">FIELD</a></code>
@@ -1990,7 +1989,7 @@ and the <code>COM</code> buffer length, inclusive.
 
 
 <h3 id="GET-graphics"><code>GET</code> statement (graphics)</h3>
-<pre>GET (<em>x0</em>, <em>y0</em>) - [STEP] (<em>x1</em>, <em>y1</em>), <em>array_name</em></pre>
+<pre>GET (<var>x0</var>, <var>y0</var>) - [STEP] (<var>x1</var>, <var>y1</var>), <var>array_name</var></pre>
 <p>Stores a rectangular area of the graphics screen in an array.
 The area stored is a rectangle parallel to the screen edges, bounded by the
 top-left and bottom-right coordinates <code><var>x0</var></code>,<code><var>y0</var></code> and <code><var>x1</var></code>,<code><var>y1</var></code>. If <code>STEP</code> is
@@ -2058,7 +2057,7 @@ The area is too large for the array: <samp>Illegal function call</samp>.
 
 
 <h3 id="GOSUB"><code>GOSUB</code> statement</h3>
-<pre>GO[ ]SUB <em>line_number</em> [<em>anything</em>]</pre>
+<pre>GO[ ]SUB <var>line_number</var> [<var>anything</var>]</pre>
 <p>
     Jumps to a subroutine at <code><var>line_number</var></code>. The next
     <code><a href="#RETURN">RETURN</a></code> statement jumps back to
@@ -2090,7 +2089,7 @@ One optional space is allowed between <code>GO</code> and <code>SUB</code>; it w
 
 
 <h3 id="GOTO"><code>GOTO</code> statement</h3>
-<pre>GO[ ]TO <em>line_number</em> [<em>anything</em>]</pre>
+<pre>GO[ ]TO <var>line_number</var> [<var>anything</var>]</pre>
 <p>Jumps to <code><var>line_number</var></code>.  Anything after <code><var>line_number</var></code> until the end of the
 statement is ignored. If executed from a direct line, <code>GOTO</code> starts execution of the program at the specified line.
 </p><h4>Parameters</h4>
@@ -2114,7 +2113,7 @@ the line are ignored until end of statement.
 </li></ul>
 
 <h3 id="HEX$"><code>HEX$</code> function</h3>
-<pre><em>hex_repr</em> = HEX(<em>x</em>)</pre>
+<pre><var>hex_repr</var> = HEX(<var>x</var>)</pre>
 <p>Returns a string with the hexadecimal representation of <code><var>x</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -2131,8 +2130,8 @@ negative <code><var>x</var></code> are shown as two's-complement.
 
 
 <h3 id="IF"><code>IF</code> statement</h3>
-<pre>IF <em>truth_value</em> [,] { THEN | GOTO } [ <em>statements_1</em> | <em>line_number_1</em> [<em>anything</em>] ]
-                   [ ELSE [ <em>statements_0</em> | <em>line_number_0</em> [<em>anything</em>] ] ]</pre>
+<pre>IF <var>truth_value</var> [,] { THEN | GOTO } [ <var>statements_1</var> | <var>line_number_1</var> [<var>anything</var>] ]
+                   [ ELSE [ <var>statements_0</var> | <var>line_number_0</var> [<var>anything</var>] ] ]</pre>
 <p>
 If <code><var>truth_value</var></code> is non-zero, executes <code><var>statements_1</var></code> or jumps to <code><var>line_number_1</var></code> .
 If it is zero, executes <code><var>statements_0</var></code> or jumps to <code><var>line_number_0</var></code> . <code><var>truth_value</var></code>
@@ -2157,7 +2156,7 @@ program line.
 
 
 <h3 id="INKEY$"><code>INKEY$</code> function</h3>
-<pre><em>key</em> = INKEY$</pre>
+<pre><var>key</var> = INKEY$</pre>
 <p>Returns one key-press from the keyboard buffer. If the keyboard buffer is
 empty, returns the empty string. Otherwise, the return value is either a one
 character string or a two-character string of which the first is <code>CHR$(0)</code> and
@@ -2234,7 +2233,7 @@ This function has no brackets.
 </tr></table>
 
 <h3 id="INP"><code>INP</code> function</h3>
-<pre><em>code</em> = INP(<em>port</em>)</pre>
+<pre><var>code</var> = INP(<var>port</var>)</pre>
 <p>
 Returns the value of an emulated machine port.</p>
 <h4>Parameters</h4>
@@ -2470,7 +2469,7 @@ Returns the value of an emulated machine port.</p>
 </table>
 
 <h3 id="INPUT"><code>INPUT</code> statement (console)</h3>
-<pre>INPUT [;] [<em>prompt</em> {;|,} ]<em>var_0</em> [, <em>var_1</em> [, ... ] ]</pre>
+<pre>INPUT [;] [<var>prompt</var> {;|,} ]<var>var_0</var> [, <var>var_1</var> [, ... ] ]</pre>
 <p>
 Prints <code><var>prompt</var></code> to the screen and waits for the user to input values for the specified variables.
 The semicolon before the prompt, if present,
@@ -2522,7 +2521,7 @@ the prompt is followed by a comma, no question mark is added. </p>
 
 
 <h3 id="INPUT-file"><code>INPUT#</code> statement (text files, devices, or random-access files)</h3>
-<pre>INPUT[ ]# <em>file_num</em>, <em>var_0</em> [, <em>var_1</em> [, ...] ]</pre>
+<pre>INPUT[ ]# <var>file_num</var>, <var>var_0</var> [, <var>var_1</var> [, ...] ]</pre>
 <p>Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
 of a random access file.</p>
 <h4>Parameters</h4>
@@ -2579,7 +2578,7 @@ The last character of the field buffer is read: <samp>Field overflow</samp>.
 </li></ul>
 
 <h3 id="INPUT$"><code>INPUT$</code> function</h3>
-<pre><em>chars</em> = INPUT[ ]$(<em>num_chars</em> [, [#] <em>file_num</em>])</pre>
+<pre><var>chars</var> = INPUT[ ]$(<var>num_chars</var> [, [#] <var>file_num</var>])</pre>
 <p>Returns a string of <code><var>num_chars</var></code> characters from the keyboard or,
 if <code><var>file_num</var></code> is provided, from a text file.
 </p><h4>Parameters</h4>
@@ -2626,7 +2625,7 @@ if <code><var>file_num</var></code> is provided, from a text file.
 </li></ul>
 
 <h3 id="INSTR"><code>INSTR</code> function</h3>
-<pre><em>position</em> = INSTR([<em>start</em>,] <em>parent</em>, <em>child</em>)</pre>
+<pre><var>position</var> = INSTR([<var>start</var>,] <var>parent</var>, <var>child</var>)</pre>
 <p>
 Returns the location of the first occurrence of the substring <code><var>child</var></code> in
 <code><var>parent</var></code>.</p>
@@ -2654,7 +2653,7 @@ at character 1.
 
 
 <h3 id="INT"><code>INT</code> function</h3>
-<pre><em>whole</em> = INT(<em>number</em>)</pre>
+<pre><var>whole</var> = INT(<var>number</var>)</pre>
 <p>Returns <code><var>number</var></code> truncated towards negative infinity.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -2673,7 +2672,7 @@ at character 1.
 
 
 <h3 id="IOCTL"><code>IOCTL</code> statement</h3>
-<pre>IOCTL [#] <em>file_num</em>, <em>control_string</em></pre>
+<pre>IOCTL [#] <var>file_num</var>, <var>control_string</var></pre>
 <p>Raises <samp>Illegal function call</samp>.</p>
 <h4>Notes</h4>
 <ul><li>
@@ -2694,7 +2693,7 @@ at character 1.
 
 
 <h3 id="IOCTL$"><code>IOCTL$</code> function</h3>
-<pre><em>result</em> = IOCTL[ ]$([#] <em>file_num</em>)</pre>
+<pre><var>result</var> = IOCTL[ ]$([#] <var>file_num</var>)</pre>
 <p>Raises <samp>Illegal function call</samp>.</p>
 <h4>Notes</h4>
 <ul><li>
@@ -2726,7 +2725,7 @@ as a back arrow. </p>
 
 
 <h3 id="KEY-def"><code>KEY</code> statement (function-key macro definition)</h3>
-<pre>KEY <em>key_id</em>, <em>string_value</em></pre>
+<pre>KEY <var>key_id</var>, <var>string_value</var></pre>
 <p>Defines the string macro for function key <code><var>key_id</var></code>.
 Only the first 15 characters of <code><var>string_value</var></code> are stored.</p>
 <h4>Parameters</h4>
@@ -2752,7 +2751,7 @@ Only the first 15 characters of <code><var>string_value</var></code> are stored.
 
 
 <h3 id="KEY-event"><code>KEY</code> statement (event-trapping control)</h3>
-<pre>KEY ( <em>key_id</em> ) { ON | OFF | STOP } </pre>
+<pre>KEY ( <var>key_id</var> ) { ON | OFF | STOP } </pre>
 <p>Controls event trapping of the key with identifier <code><var>key_id</var></code>.
 Event trapping is switched <code>ON</code> or <code>OFF</code>. <code>STOP</code> suspends event trapping until
 a <code>KEY() ON</code> is executed. Up to one event can be triggered during
@@ -2824,7 +2823,7 @@ With <code>--syntax=tandy</code>, key 11 id <kbd>F11</kbd> and key 12 is <kbd>F1
 
 
 <h3 id="KEY-event-def"><code>KEY</code> statement (event-trapping key definition)</h3>
-<pre>KEY <em>key_id</em>, <em>two_char_string</em></pre>
+<pre>KEY <var>key_id</var>, <var>two_char_string</var></pre>
 <p>Defines the key to trap for <code><var>key_id</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -2882,7 +2881,7 @@ Modifiers are:
 
 
 <h3 id="KILL"><code>KILL</code> statement</h3>
-<pre>KILL <em>file_path</em></pre>
+<pre>KILL <var>file_path</var></pre>
 <p>Deletes a file. <code><var>file_path</var></code> must be a string expression that specifies a
 valid path to an existing file with MS-DOS path separators <code>\</code>. The extension
 must be specified: no default extensions are assumed.
@@ -2905,7 +2904,7 @@ If a syntax error occurs after the closing quote, the file is removed    anyway.
 
 
 <h3 id="LCOPY"><code>LCOPY</code> statement</h3>
-<pre>LCOPY [<em>num</em>]</pre>
+<pre>LCOPY [<var>num</var>]</pre>
 <p>Does nothing.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -2928,7 +2927,7 @@ If a syntax error occurs after the closing quote, the file is removed    anyway.
 
 
 <h3 id="LEFT$"><code>LEFT$</code> function</h3>
-<pre><em>child</em> = LEFT$(<em>parent</em>, <em>num_chars</em>)</pre>
+<pre><var>child</var> = LEFT$(<var>parent</var>, <var>num_chars</var>)</pre>
 <p>Returns the leftmost <code><var>num_chars</var></code> characters of <code><var>parent</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -2955,7 +2954,7 @@ returns <code><var>parent</var></code>.
 
 
 <h3 id="LEN"><code>LEN</code> function</h3>
-<pre><em>length</em> = LEN(<em>string</em>)</pre>
+<pre><var>length</var> = LEN(<var>string</var>)</pre>
 <p>Returns the number of characters in <code><var>string</var></code>.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -2969,7 +2968,7 @@ expression.
 
 
 <h3 id="LET"><code>LET</code> statement</h3>
-<pre>[LET] <em>name</em> = <em>expression</em></pre>
+<pre>[LET] <var>name</var> = <var>expression</var></pre>
 <p>Assigns the value of <code><var>expression</var></code> to the variable or array element <code><var>name</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -2986,7 +2985,7 @@ be assigned to each other but strings can only be assigned to strings.
 
 
 <h3 id="LINE"><code>LINE</code> statement</h3>
-<pre>LINE [ [STEP] (<em>x0</em>, <em>y0</em>)] - [STEP] (<em>x1</em>, <em>y1</em>) [, [<em>attr</em>] [, [B [F]] [, <em>pattern</em>]]]</pre>
+<pre>LINE [ [STEP] (<var>x0</var>, <var>y0</var>)] - [STEP] (<var>x1</var>, <var>y1</var>) [, [<var>attr</var>] [, [B [F]] [, <var>pattern</var>]]]</pre>
 <p>Draws a line or a box in graphics mode. If <code>B</code> is not specified, a line is drawn
 from <code>(<var>x0</var>, <var>y0</var>)</code> to <code>(<var>x1</var>, <var>y1</var>)</code>, endpoints inclusive.
 If <code>B</code> is specified, a
@@ -3033,7 +3032,7 @@ Any of the parameters has a string value: <samp>Type mismatch</samp>.
 
 
 <h3 id="LINE-INPUT"><code>LINE INPUT</code> statement</h3>
-<pre>LINE INPUT [ ; ] [ <em>prompt_literal</em> { ; | , } ] <em>string_name</em></pre>
+<pre>LINE INPUT [ ; ] [ <var>prompt_literal</var> { ; | , } ] <var>string_name</var></pre>
 <p>Displays the prompt given in <code><var>prompt_literal</var></code> and reads user input from the
 keyboard, storing it into the variable <code><var>string_name</var></code>. All input is read until
 <kbd>Enter</kbd> is pressed; the first 255 characters are stored. If the <code>;</code> is given
@@ -3057,7 +3056,7 @@ followed by a comma or a semicolon.
 
 
 <h3 id="LINE-INPUT-file"><code>LINE INPUT#</code> statement</h3>
-<pre>LINE INPUT[ ]# <em>file_num</em>, <em>string_name</em></pre>
+<pre>LINE INPUT[ ]# <var>file_num</var>, <var>string_name</var></pre>
 <p>Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
 of a random access file. All input is read until <kbd>Enter</kbd> is pressed; the first
 255 characters are stored. <code><var>file_num</var></code> must be the number of a file open in
@@ -3101,7 +3100,7 @@ The last character of the field buffer is read: <samp>Field overflow</samp>.
 
 
 <h3 id="LIST"><code>LIST</code> statement</h3>
-<pre>LIST [ <em>line_number_0</em> | . ] [ - [ <em>line_number_1</em> | . ] ] [, <em>file_name</em>]</pre>
+<pre>LIST [ <var>line_number_0</var> | . ] [ - [ <var>line_number_1</var> | . ] ] [, <var>file_name</var>]</pre>
 <p>Prints the program to the screen, starting with <code><var>line_number_0</var></code> up to and
 including <code><var>line_number_1</var></code>.
 Also stops program execution and returns cotrol to the user. Any further
@@ -3126,7 +3125,7 @@ A line number is greater than <code>65529</code>: <samp>Syntax error</samp>.
 </li></ul>
 
 <h3 id="LLIST"><code>LLIST</code> statement</h3>
-<pre>LLIST [ <em>line_number_0</em> | . ] [ - [ <em>line_number_1</em> | . ] ]</pre>
+<pre>LLIST [ <var>line_number_0</var> | . ] [ - [ <var>line_number_1</var> | . ] ]</pre>
 <p>Prints the program to the screen, starting with <code><var>line_number_0</var></code> up to and
 including <code><var>line_number_1</var></code>.
 Also stops program execution and returns control to the user. Any further
@@ -3144,7 +3143,7 @@ A line number is greater than <code>65529</code>: <samp>Syntax error</samp>.
 
 
 <h3 id="LOAD"><code>LOAD</code> statement</h3>
-<pre>LOAD <em>file_name</em> [, R]</pre>
+<pre>LOAD <var>file_name</var> [, R]</pre>
 <p>Loads the program stored in file <code><var>file_name</var></code> into memory.
 If <code>,R</code> is specified, runs the file after loading.
 <code>LOAD ,R</code> keeps all data files open. Existing variables will be
@@ -3169,7 +3168,7 @@ Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for info
 
 
 <h3 id="LOC"><code>LOC</code> function</h3>
-<pre><em>location</em> = LOC(<em>file_num</em>)</pre>
+<pre><var>location</var> = LOC(<var>file_num</var>)</pre>
 <p>Returns the current location in the file opened under number <code><var>file_num</var></code>.
 </p><ul><li>
 If the file is opened for <code>INPUT</code>, <code>OUTPUT</code> or <code>APPEND</code>, <code>LOC</code> returns the number
@@ -3212,7 +3211,7 @@ If the file is opened to <code>KYBD:</code>, <code>LOC</code> returns 0.
 
 
 <h3 id="LOCATE"><code>LOCATE</code> statement</h3>
-<pre>LOCATE [<em>row</em>] [, [<em>col</em>] [, [<em>cursor_visible</em>] [, [<em>start_line</em>] [, [<em>stop_line</em>] [ , ] ] ] ] ]</pre>
+<pre>LOCATE [<var>row</var>] [, [<var>col</var>] [, [<var>cursor_visible</var>] [, [<var>start_line</var>] [, [<var>stop_line</var>] [ , ] ] ] ] ]</pre>
 <p>Positions the cursor at <code><var>row</var></code>, <code><var>col</var></code> on the screen and changes the cursor shape and visibility.
 <code><var>cursor_visible</var></code> may be 0 or 1. If <code><var>cursor_visible</var></code> is 0, it makes
     the cursor invisible; if it is 1, makes the cursor visible. This works only while a program is running.
@@ -3247,8 +3246,8 @@ Any parameter is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>
 
 
 <h3 id="LOCK"><code>LOCK</code> statement</h3>
-<pre>LOCK [#] <em>file_number</em> [, <em>record_0</em> ]</pre>
-<pre>LOCK [#] <em>file_number</em>, [<em>record_0</em>] TO <em>record_1</em></pre>
+<pre>LOCK [#] <var>file_number</var> [, <var>record_0</var> ]</pre>
+<pre>LOCK [#] <var>file_number</var>, [<var>record_0</var>] TO <var>record_1</var></pre>
 <p>Locks a file or part of a file against access by other users. On a <code>RANDOM</code> file,
  <code><var>record_0</var></code> is the first record locked and <code><var>record_1</var></code> is the last
 record locked. On any other kind of file <code><var>record_0</var></code> and <code><var>record_1</var></code> have no
@@ -3289,7 +3288,7 @@ Any parameter has a string value: <samp>Type mismatch</samp>.
 
 
 <h3 id="LOF"><code>LOF</code> function</h3>
-<pre><em>length</em> = LOF(<em>file_num</em>)</pre>
+<pre><var>length</var> = LOF(<var>file_num</var>)</pre>
 <p>Returns the number of bytes in the file open under <code><var>file_num</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -3315,7 +3314,7 @@ Any parameter has a string value: <samp>Type mismatch</samp>.
 
 
 <h3 id="LOG"><code>LOG</code> function</h3>
-<pre><em>y</em> = LOG(<em>x</em>)</pre>
+<pre><var>y</var> = LOG(<var>x</var>)</pre>
 <p>Returns the natural logarithm of <code><var>x</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -3337,7 +3336,7 @@ Any parameter has a string value: <samp>Type mismatch</samp>.
 
 
 <h3 id="LPOS"><code>LPOS</code> function</h3>
-<pre><em>position</em> = LPOS(<em>printer_number</em>)</pre>
+<pre><var>position</var> = LPOS(<var>printer_number</var>)</pre>
 <p>Returns the column position for a printer.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -3368,7 +3367,7 @@ or 1, the position for <code>LPT1:</code> is returned. If it is 2, <code>LPT2:</
 
 
 <h3 id="LSET"><code>LSET</code> and <code>RSET</code> statements</h3>
-<pre>{ LSET | RSET } <em>string_name</em> = <em>expression</em></pre>
+<pre>{ LSET | RSET } <var>string_name</var> = <var>expression</var></pre>
 <p>
     Assigns a value to a <code><a href="#FIELD">FIELD</a></code> variable such that
     it overwrites the <code>FIELD</code> record.
@@ -3400,7 +3399,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
 
 
 <h3 id="MERGE"><code>MERGE</code> statement</h3>
-<pre>MERGE <em>file_name</em></pre>
+<pre>MERGE <var>file_name</var></pre>
 <p>Overlays the lines of program <code><var>file_name</var></code> into the existing program. The loaded
 lines overwrite existing lines if they have the same line number. <code><var>file_name</var></code>
 must be the name of an existing program file stored in ASCII format only.
@@ -3419,7 +3418,7 @@ A loaded ASCII file contains lines without line numbers:
 </li></ul>
 
 <h3 id="MID$"><code>MID$</code> function</h3>
-<pre><em>substring</em> = MID$(<em>string</em>, <em>position</em> [, <em>length</em>])</pre>
+<pre><var>substring</var> = MID$(<var>string</var>, <var>position</var> [, <var>length</var>])</pre>
 <p>Returns a substring of <code><var>string</var></code> starting at <code><var>position</var></code>, counting from 1. The
 substring has length <code><var>length</var></code> if specified, defaulting to 1.
 </p><h4>Parameters</h4>
@@ -3443,7 +3442,7 @@ substring has length <code><var>length</var></code> if specified, defaulting to 
 
 
 <h3 id="MID$-statement"><code>MID$</code> statement</h3>
-<pre>MID$(<em>string_name</em>, <em>position</em> [, <em>length</em>]) = <em>substring</em></pre>
+<pre>MID$(<var>string_name</var>, <var>position</var> [, <var>length</var>]) = <var>substring</var></pre>
 <p>Replaces part of <code><var>string_name</var></code> with <code><var>substring</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -3475,7 +3474,7 @@ substring has length <code><var>length</var></code> if specified, defaulting to 
 
 
 <h3 id="MKDIR"><code>MKDIR</code> statement</h3>
-<pre>MKDIR <em>path</em></pre>
+<pre>MKDIR <var>path</var></pre>
 <p>Creates a directory.  </p>
 <h4>Parameters</h4>
 <ul><li>
@@ -3499,7 +3498,7 @@ The user has no write permission: <samp>Permission denied</samp>.
 
 
 <h3 id="MKD$"><code>MKD$</code> function</h3>
-<pre><em>bytes</em> = MKD$(<em>double</em>)</pre>
+<pre><var>bytes</var> = MKD$(<var>double</var>)</pre>
 <p>Returns the internal 8-byte Microsoft Binary Format representation of a double-
 precision number.</p>
 <h4>Errors</h4>
@@ -3509,7 +3508,7 @@ precision number.</p>
 
 
 <h3 id="MKI$"><code>MKI$</code> function</h3>
-<pre><em>bytes</em> = MKI$(<em>int</em>)</pre>
+<pre><var>bytes</var> = MKI$(<var>int</var>)</pre>
 <p>Returns the internal 2-byte little-endian representation of an integer.
 </p><h4>Errors</h4>
 <ul><li>
@@ -3520,7 +3519,7 @@ precision number.</p>
 
 
 <h3 id="MKS$"><code>MKS$</code> function</h3>
-<pre><em>bytes</em> = MKS$(<em>single</em>)</pre>
+<pre><var>bytes</var> = MKS$(<var>single</var>)</pre>
 <p>Returns the internal 8-byte Microsoft Binary Format representation of a single-
 precision number.</p>
 <h4>Errors</h4>
@@ -3530,7 +3529,7 @@ precision number.</p>
 
 
 <h3 id="MOTOR"><code>MOTOR</code> statement</h3>
-<pre>MOTOR [<em>num</em>]</pre>
+<pre>MOTOR [<var>num</var>]</pre>
 <p>Does nothing.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -3553,7 +3552,7 @@ precision number.</p>
 
 
 <h3 id="NAME"><code>NAME</code> statement</h3>
-<pre>NAME <em>old_name</em> AS <em>new_name</em></pre>
+<pre>NAME <var>old_name</var> AS <var>new_name</var></pre>
 <p>
 Renames the file <code><var>old_name</var></code> into <code><var>new_name</var></code>.
 </p>
@@ -3587,7 +3586,7 @@ Renames the file <code><var>old_name</var></code> into <code><var>new_name</var>
 
 
 <h3 id="NEXT"><code>NEXT</code> statement</h3>
-<pre>NEXT [<em>var_0</em> [, <em>var_1</em> [, ...] ] ]</pre>
+<pre>NEXT [<var>var_0</var> [, <var>var_1</var> [, ...] ] ]</pre>
 <p>
     Iterates a <code>FOR&#8212;NEXT</code> loop: increments the loop variable and
     jumps to the <code><a href="#FOR">FOR</a></code>
@@ -3609,7 +3608,7 @@ No <code>FOR</code> statement is found to match the <code>NEXT</code> statement 
 
 
 <h3 id="NOISE"><code>NOISE</code> statement</h3>
-<pre>NOISE <em>source</em>, <em>volume</em>, <em>duration</em></pre>
+<pre>NOISE <var>source</var>, <var>volume</var>, <var>duration</var></pre>
 <p>
     Generates various kinds of noise.</p>
 <h4>Parameters</h4>
@@ -3662,7 +3661,7 @@ No <code>FOR</code> statement is found to match the <code>NEXT</code> statement 
 
 
 <h3 id="OCT$"><code>OCT$</code> function</h3>
-<pre><em>octal</em> = OCT$(<em>x</em>)</pre>
+<pre><var>octal</var> = OCT$(<var>x</var>)</pre>
 <p>Returns a string with the octal representation of <code><var>x</var></code>.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -3679,7 +3678,7 @@ negative <code><var>x</var></code> are shown as two's-complement.
 
 
 <h3 id="ON-jump"><code>ON</code> statement (calculated jump)</h3>
-<pre>ON <em>n</em> {GOTO | GOSUB} <em>line_number_0</em> [, <em>line_number_1</em> [, ...] ]</pre>
+<pre>ON <var>n</var> {GOTO | GOSUB} <var>line_number_0</var> [, <var>line_number_1</var> [, ...] ]</pre>
 <p>Jumps to the <code><var>n</var></code>th line number specified in the list. If <code><var>n</var></code> is 0 or greater
 than the number of line numbers in the list, no jump is performed. If <code>GOTO</code> is specified,
 the jump is unconditional; if <code>GOSUB</code> is specified, jumps to a subroutine.</p>
@@ -3702,7 +3701,7 @@ The line number jumped to does not exist: <samp>Undefined line number</samp>.
 
 
 <h3 id="ON-event"><code>ON</code> statement (event trapping)</h3>
-<pre>ON { COM(<em>n</em>) | KEY(<em>n</em>) | STRIG(<em>n</em>) | PEN | PLAY(<em>n</em>) | TIMER(<em>x</em>) } GOSUB <em>line_number</em></pre>
+<pre>ON { COM(<var>n</var>) | KEY(<var>n</var>) | STRIG(<var>n</var>) | PEN | PLAY(<var>n</var>) | TIMER(<var>x</var>) } GOSUB <var>line_number</var></pre>
 <p>Defines an event trapping subroutine.
 The type of event is given by one of the following keywords:</p>
 <table><tr>
@@ -3757,7 +3756,7 @@ Events are only trapped when a program is running.
 
 
 <h3 id="ON-ERROR"><code>ON ERROR</code> statement</h3>
-<pre>ON ERROR GOTO { <em>line_number</em> | 0 }</pre>
+<pre>ON ERROR GOTO { <var>line_number</var> | 0 }</pre>
 <p>Turns error trapping on or off. When <code><var>line_number</var></code> is set, any error causes the error handling
 routine starting at that line number to be called; no message is printed and program execution is not stopped. The
 error handling routine is ended by a <code><a href="#RESUME">RESUME</a></code> statement.
@@ -3781,11 +3780,11 @@ It is not possible to start the error handler at line number <code>0</code>.
 
 
 <h3 id="OPEN"><code>OPEN</code> statement</h3>
-<pre>OPEN <em>mode_char</em>, [#] <em>file_num</em>, <em>file_name</em> [, <em>rec_len</em>]</pre>
-<pre>OPEN <em>file_name</em> [ FOR { INPUT | OUTPUT | APPEND | RANDOM } ]
+<pre>OPEN <var>mode_char</var>, [#] <var>file_num</var>, <var>file_name</var> [, <var>rec_len</var>]</pre>
+<pre>OPEN <var>file_name</var> [ FOR { INPUT | OUTPUT | APPEND | RANDOM } ]
                [ ACCESS { READ | WRITE | READ WRITE } ]
                [ SHARED | LOCK { READ | WRITE | READ WRITE } ]
-               AS [#] <em>file_num</em> [ LEN = <em>rec_len</em> ]</pre>
+               AS [#] <var>file_num</var> [ LEN = <var>rec_len</var> ]</pre>
 <p>Opens a data file or device.</p>
 
 <h4>Parameters</h4>
@@ -3884,8 +3883,8 @@ If <code>SHARED</code>, <code>LOCK READ</code>, <code>LOCK WRITE</code> or <code
     and the other's <code>ACCESS</code> status and vice versa.
     Assuming the following:
 </p>
-<pre>OPEN "file" ACCESS <em>acc_1</em> <em>lock_1</em> AS 1
-OPEN "file" ACCESS <em>acc_2</em> <em>lock_2</em> AS 2</pre>
+<pre>OPEN "file" ACCESS <var>acc_1</var> <var>lock_1</var> AS 1
+OPEN "file" ACCESS <var>acc_2</var> <var>lock_2</var> AS 2</pre>
 <p>The following combinations are allowed:
 </p><table>
 <tr>
@@ -4050,7 +4049,7 @@ The <code>COM:</code> <code><var>file_name</var></code> parameters do not follow
 </li></ul>
 
 <h3 id="OPTION-BASE"><code>OPTION BASE</code> statement</h3>
-<pre>OPTION BASE <em>n</em></pre>
+<pre>OPTION BASE <var>n</var></pre>
 <p>Sets the starting index of all arrays to <code><var>n</var></code>.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -4075,7 +4074,7 @@ The <code>COM:</code> <code><var>file_name</var></code> parameters do not follow
 
 
 <h3 id="OUT"><code>OUT</code> statement</h3>
-<pre>OUT <em>port</em>, <em>value</em></pre>
+<pre>OUT <var>port</var>, <var>value</var></pre>
 <p>
 Sends a byte to an emulated machine port.</p>
 <p>The following machine ports are emulated in PC-BASIC:</p>
@@ -4104,10 +4103,10 @@ Requires <code>--video={cga, tandy, pcjr}</code>.
 </li><li>
    In GW-BASIC under MS-DOS, the sequence needed to set the colour plane mask is:
 <pre>OUT &amp;h3C4, 2
-OUT &amp;h3C5, 2 ^ <em>plane</em></pre>
+OUT &amp;h3C5, 2 ^ <var>plane</var></pre>
     The sequence needed to set the colour plane is:
 <pre>OUT &amp;h3CE, 4
-OUT &amp;h3CF, <em>plane</em></pre>
+OUT &amp;h3CF, <var>plane</var></pre>
 The initial <code>OUT</code> statements currently have no effect in PC-BASIC.
 </li></ul>
 
@@ -4247,7 +4246,7 @@ pattern to ignore when determining boundaries (see below).
 
 
 <h3 id="PALETTE"><code>PALETTE</code> statement</h3>
-<pre>PALETTE [ <em>attrib</em>, <em>colour</em> ]</pre>
+<pre>PALETTE [ <var>attrib</var>, <var>colour</var> ]</pre>
 <p>Assigns a colour to an attribute. All pixels with that attribute will change
 colour immediately.
 If no parameters are specified, <code>PALETTE</code> resets to the initial setting.
@@ -4271,7 +4270,7 @@ the palette remains unchanged.
 
 
 <h3 id="PALETTE-USING"><code>PALETTE USING</code> statement</h3>
-<pre>PALETTE USING <em>int_array_name</em> { ( | [ } <em>start_index</em> { ) | ] }</pre>
+<pre>PALETTE USING <var>int_array_name</var> { ( | [ } <var>start_index</var> { ) | ] }</pre>
 <p>Assigns new colours to all attributes.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -4300,7 +4299,7 @@ indicates at which index in the array to start mapping to the palette.
 
 
 <h3 id="PCOPY"><code>PCOPY</code> statement</h3>
-<pre>PCOPY <em>src</em>, <em>dst</em></pre>
+<pre>PCOPY <var>src</var>, <var>dst</var></pre>
 <p>Copies the screen page <code><var>src</var></code> to <code><var>dst</var></code>. All text and graphics on <code><var>dst</var></code> is
 replaced by those of <code><var>src</var></code>.</p>
 <h4>Parameters</h4>
@@ -4319,7 +4318,7 @@ mode's number of pages, less one.
 
 
 <h3 id="PEEK"><code>PEEK</code> function</h3>
-<pre><em>value</em> = PEEK(<em>address</em>)</pre>
+<pre><var>value</var> = PEEK(<var>address</var>)</pre>
 <p>Returns the value of the memory at  <code><var>segment</var> * 16 + <var>address</var></code> where <code><var>segment</var></code>
 is the current segment set with <code>DEF SEG</code>.
 </p><h4>Parameters</h4>
@@ -4356,7 +4355,7 @@ suspension is handled immediately after the next <code>PEN ON</code> statement.<
 
 
 <h3 id="PEN"><code>PEN</code> function</h3>
-<pre><em>x</em> = PEN(<em>mode</em>)</pre>
+<pre><var>x</var> = PEN(<var>mode</var>)</pre>
 <p>Reads the light pen. What this function returns depends on <code><var>mode</var></code>:
 </p><table><tr>
 <th><code><var>mode</var></code></th>
@@ -4440,9 +4439,9 @@ suspension is handled immediately after the next <code>PEN ON</code> statement.<
 
 
 <h3 id="PLAY"><code>PLAY</code> statement (music)</h3>
-<pre>PLAY <em>mml_string</em></pre>
+<pre>PLAY <var>mml_string</var></pre>
 <p>Plays the tune defined by <code><var>mml_string</var></code>.</p>
-<pre>PLAY [ <em>mml_string_0</em> ] [, [ <em>mml_string_1</em> ] [, <em>mml_string_2</em> ] ]</pre>
+<pre>PLAY [ <var>mml_string_0</var> ] [, [ <var>mml_string_1</var> ] [, <var>mml_string_2</var> ] ]</pre>
 <p>The three-voice syntax is only available if <code><a href="#--syntax">--syntax</a>={tandy | pcjr}</code> is set.
     The three separate MML strings correspond to the three voices of the PCjr/Tandy sound adapter.
     The notes in these strings are played synchronously.
@@ -4578,7 +4577,7 @@ On PCjr, if <code>SOUND ON</code> has not been executed, using the three-voice s
 
 
 <h3 id="PLAY-function"><code>PLAY</code> function</h3>
-<pre><em>length</em> = PLAY(<em>voice</em>)</pre>
+<pre><var>length</var> = PLAY(<var>voice</var>)</pre>
 <p>Returns the number of notes in the background music queue. The return value is in <code>[0&#8212;16]</code>.
 </p>
 <h4>Parameters</h4>
@@ -4614,7 +4613,7 @@ PCjr and Tandy
 
 
 <h3 id="PMAP"><code>PMAP</code> function</h3>
-<pre><em>physical</em> = PMAP(<em>logical</em>, <em>fn</em>)</pre>
+<pre><var>physical</var> = PMAP(<var>logical</var>, <var>fn</var>)</pre>
 <p>Maps between viewport and logical (<code><a href="#WINDOW">WINDOW</a></code>) coordinates.
 If no <code><a href="#VIEW">VIEW</a></code> has been set, the viewport coordinates
 are physical coordinates.</p>
@@ -4655,7 +4654,7 @@ A physical coordinate is not in <code>[-32768&#8212;32767]</code>: <samp>Overflo
 
 
 <h3 id="POINT-coord"><code>POINT function</code> (current coordinate)</h3>
-<pre><em>coord</em> = POINT(<em>fn</em>)</pre>
+<pre><var>coord</var> = POINT(<var>fn</var>)</pre>
 <p>Returns a currently active coordinate of the graphics screen. This is usually
 the last position at which a pixel has been plotted, the second corner given
 in a <code>LINE</code> command, or the centre of the viewport if nothing has been plotted.
@@ -4695,7 +4694,7 @@ The coordinate returned depends on the value of <code><var>fn</var></code>:
 
 
 <h3 id="POINT-attr"><code>POINT</code> function (pixel attribute)</h3>
-<pre><em>attrib</em> = POINT (<em>x</em>, <em>y</em>)</pre>
+<pre><var>attrib</var> = POINT (<var>x</var>, <var>y</var>)</pre>
 <p>Returns the attribute of the pixel at logical coordinate <code><var>x</var></code>,<code><var>y</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -4717,7 +4716,7 @@ Function is called in text mode: <samp>Illegal function call</samp>.
 
 
 <h3 id="POKE"><code>POKE</code> statement</h3>
-<pre>POKE <em>address</em>, <em>value</em></pre>
+<pre>POKE <var>address</var>, <var>value</var></pre>
 <p>
     Sets the value of the memory byte at
     <code><var>segment</var> * 16 + <var>address</var></code> to <code><var>value</var></code>,
@@ -4749,7 +4748,7 @@ interpreted as their two's complement.
 
 
 <h3 id="POS"><code>POS</code> function</h3>
-<pre><em>pos</em> = POS(<em>dummy</em>)</pre>
+<pre><var>pos</var> = POS(<var>dummy</var>)</pre>
 <p>Returns the current cursor column position, in the range <code>[1&#8212;80]</code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -4758,7 +4757,7 @@ interpreted as their two's complement.
 
 
 <h3 id="PSET"><code>PSET</code> and <code>PRESET</code> statements</h3>
-<pre>{ PSET | PRESET } [STEP] (<em>x</em>, <em>y</em>) [, <em>attrib</em>]</pre>
+<pre>{ PSET | PRESET } [STEP] (<var>x</var>, <var>y</var>) [, <var>attrib</var>]</pre>
 <p>Change the attribute of a pixel on the screen at position <code>(<var>x</var>, <var>y</var>)</code>.
 If <code>STEP</code> is specified, <code>(<var>x</var>, <var>y</var>)</code> is an offset from the current position.</p>
 <p>If <code><var>attrib</var></code> is between 0 and the screen mode's palette size, the pixel is changed to
@@ -4784,8 +4783,8 @@ foreground attribute while <code>PRESET</code> changes it to zero.</p>
 
 
 <h3 id="PRINT"><code>PRINT</code>, <code>PRINT#</code> and <code>LPRINT</code> statements</h3>
-<pre>{ LPRINT | {PRINT|?} [# <em>file_num</em>,] } [<em>expr_0</em>] [;|,|SPC(<em>n</em>)|TAB(<em>n</em>)] [<em>expr_1</em>] [...]
-         [ USING <em>format</em>; [ <em>uexpr_0</em> [ {;|,} <em>uexpr_1</em> [ {;|,} ...] ] ] [;|,] ]</pre>
+<pre>{ LPRINT | {PRINT|?} [# <var>file_num</var>,] } [<var>expr_0</var>] [;|,|SPC(<var>n</var>)|TAB(<var>n</var>)] [<var>expr_1</var>] [...]
+         [ USING <var>format</var>; [ <var>uexpr_0</var> [ {;|,} <var>uexpr_1</var> [ {;|,} ...] ] ] [;|,] ]</pre>
 <p>Writes expressions to the screen, printer, file or device. If <code>LPRINT</code> is used,
 output goes to <code>LPT1:</code>. If <code><var>file_num</var></code> is specified, output goes to the file or
 device open under that number. <code>?</code> is a shorthand for <code>PRINT</code> and has the same
@@ -4948,7 +4947,7 @@ A number field in the format string contains no <code>#</code> characters: <samp
 
 
 <h3 id="PUT-files"><code>PUT</code> statement   (random-access files)</h3>
-<pre>PUT [#] <em>file_number</em> [, <em>record_number</em>]</pre>
+<pre>PUT [#] <var>file_number</var> [, <var>record_number</var>]</pre>
 <p>Writes a record to the random-access file <code><var>file_number</var></code> at position
 <code><var>record_number</var></code>.
 </p><h4>Parameters</h4>
@@ -4976,7 +4975,7 @@ of an open random-access file. The <code>#</code> is optional and has no effect.
 
 
 <h3 id="PUT-serial"><code>PUT</code> statement   (communications)</h3>
-<pre>PUT [#] <em>com_file_number</em>, [, <em>number_bytes</em>]</pre>
+<pre>PUT [#] <var>com_file_number</var>, [, <var>number_bytes</var>]</pre>
 <p>Writes <code><var>number_bytes</var></code> bytes to the communications buffer opened under file
 number <code><var>com_file_number</var></code>. <code><var>number_bytes</var></code> is a numeric expression between 1
 and the <code>COM</code> buffer length, inclusive.
@@ -5006,7 +5005,7 @@ The serial input buffer is full, i.e. <code><a href="#LOF">LOF</a>(<var>com_file
 
 
 <h3 id="PUT-graphics"><code>PUT</code> statement (graphics)</h3>
-<pre>PUT (<em>x0</em>, <em>y0</em>), <em>array_name</em> [, { PSET | PRESET | AND | OR | XOR } ]</pre>
+<pre>PUT (<var>x0</var>, <var>y0</var>), <var>array_name</var> [, { PSET | PRESET | AND | OR | XOR } ]</pre>
 <p>Displays an array to a rectangular area of the graphics screen.
 Usually, <code>PUT</code> is used with arrays that have been stored using <code>GET</code>. See <code><a href="#GET-graphics">GET</a></code> for the
 format of the array.</p>
@@ -5045,7 +5044,7 @@ The array does not exist: <samp>Illegal function call</samp>.
 
 
 <h3 id="RANDOMIZE"><code>RANDOMIZE</code> statement</h3>
-<pre>RANDOMIZE [<em>expr</em>]</pre>
+<pre>RANDOMIZE [<var>expr</var>]</pre>
 <p>Seeds the random number generator with <code><var>expr</var></code>.
 If no seed is specified, <code>RANDOMIZE</code> will prompt the user
 to enter a random seed. The user-provided value is rounded to an integer.
@@ -5073,7 +5072,7 @@ The user provides a seed outside <code>[-32768&#8212;32767]</code>: <samp>Overfl
 
 
 <h3 id="READ"><code>READ</code> statement</h3>
-<pre>READ <em>var_0</em> [, <em>var_1</em> [, ... ] ]</pre>
+<pre>READ <var>var_0</var> [, <var>var_1</var> [, ... ] ]</pre>
 <p>
     Assigns data from a <code><a href="#DATA">DATA</a></code> statement to variables. Reading starts at the current
     <code>DATA</code> position, which is the <code>DATA</code> entry immediately after the last one read by
@@ -5095,7 +5094,7 @@ The type of the variable is not compatible with that of the data entry
 
 
 <h3 id="REM"><code>REM</code> statement</h3>
-<pre>{ REM | ' } [<em>anything</em>]</pre>
+<pre>{ REM | ' } [<var>anything</var>]</pre>
 <p>Ignores everything until the end of the line. The <code>REM</code> statement is intended for
 comments. Everything after <code>REM</code> will be stored in the program unaltered and
 uninterpreted. <code>'</code> (apostrophe) is an alias for <code>:REM'</code>; it can be placed at any
@@ -5103,7 +5102,7 @@ point in the program line and will ensure that the rest of the line is ignored.<
 
 
 <h3 id="RENUM"><code>RENUM</code> statement</h3>
-<pre>RENUM [ <em>new</em> | . ] [, [ <em>old</em> | . ] [, <em>increment</em> ] ]</pre>
+<pre>RENUM [ <var>new</var> | . ] [, [ <var>old</var> | . ] [, <var>increment</var> ] ]</pre>
 <p>Replaces the line numbers in the program by a systematic enumeration starting
 from <code><var>new</var></code> and increasing by <code><var>increment</var></code>. If <code><var>old</var></code> is specified, line numbers
 less than 'old remain unchanged.
@@ -5154,7 +5153,7 @@ Any of the newly generated line numbers is greater than <code>65529</code>:
 
 
 <h3 id="RESTORE"><code>RESTORE</code> statement</h3>
-<pre>RESTORE [<em>line</em>]</pre>
+<pre>RESTORE [<var>line</var>]</pre>
 <p>
     Resets the <code><a href="#DATA">DATA</a></code> pointer.
     <code><var>line</var></code> is a line number. If <code><var>line</var></code>
@@ -5169,7 +5168,7 @@ Any of the newly generated line numbers is greater than <code>65529</code>:
 
 
 <h3 id="RESUME"><code>RESUME</code> statement</h3>
-<pre>RESUME [ 0 | NEXT | <em>line</em> ]</pre>
+<pre>RESUME [ 0 | NEXT | <var>line</var> ]</pre>
 <p>Continues normal execution after an error handling routine.
 If 0 or no option is specified, re-executes the statement that caused the
 error. If <code>NEXT</code> is specified, executes the statement following the one that
@@ -5187,7 +5186,7 @@ The program ends inside an error trapping routine without a <code>RESUME</code>
 
 
 <h3 id="RETURN"><code>RETURN</code> statement</h3>
-<pre>RETURN [<em>line</em>]</pre>
+<pre>RETURN [<var>line</var>]</pre>
 <p>Returns from a <code><a href="#GOSUB">GOSUB</a></code> subroutine. If <code><var>line</var></code> is not specified, <code>RETURN</code> jumps back
 to the statement after the <code>GOSUB</code> that jumped into the subroutine.
 If <code><var>line</var></code> is specified, it must be a valid line number. <code>RETURN</code> jumps to that
@@ -5201,7 +5200,7 @@ trapping which was stopped on entering the trap routine.
 
 
 <h3 id="RIGHT$"><code>RIGHT$</code> function</h3>
-<pre><em>child</em> = RIGHT$(<em>parent</em>, <em>num_chars</em>)</pre>
+<pre><var>child</var> = RIGHT$(<var>parent</var>, <var>num_chars</var>)</pre>
 <p>Returns the rightmost <code><var>num_chars</var></code> characters of <code><var>parent</var></code>.
 If <code><var>num_chars</var></code> is zero or <code><var>parent</var></code> is empty, <code>RIGHT$</code> returns
 an empty string. If <code><var>num_chars</var></code> is greater than the length of <code><var>parent</var></code>,
@@ -5224,7 +5223,7 @@ returns <code><var>parent</var></code>.
 
 
 <h3 id="RMDIR"><code>RMDIR</code> statement</h3>
-<pre>RMDIR <em>path</em></pre>
+<pre>RMDIR <var>path</var></pre>
 <p>Removes an empty directory. <code><var>path</var></code> is a string expression that specifies
 the path of the directory.
 </p><h4>Notes</h4>
@@ -5242,7 +5241,7 @@ No matching path is found, <samp>Path not found</samp> .
 
 
 <h3 id="RND"><code>RND</code> function</h3>
-<pre>random = RND[(<em>x</em>)]</pre>
+<pre>random = RND[(<var>x</var>)]</pre>
 <p>Returns a pseudorandom number in the interval <code>[0&#8212;1)</code>.
 <code><var>x</var></code> is a numeric expression. If <code><var>x</var></code> is zero, <code>RND</code> repeats the last pseudo-
 random number. If <code><var>x</var></code> is greater than zero, a new pseudorandom number is
@@ -5260,7 +5259,7 @@ The seed is generated in a different way than by <code><a href="#RANDOMIZE">RAND
 
 
 <h3 id="RUN"><code>RUN</code> statement</h3>
-<pre>RUN [ <em>line</em> | <em>filename</em> ] [,R]</pre>
+<pre>RUN [ <var>line</var> | <var>filename</var> ] [,R]</pre>
 <p>Executes a program.
 If <code><var>line</var></code> is specified, it must be a valid line number in the current program.
 Execution starts from this line number.
@@ -5281,7 +5280,7 @@ A loaded ASCII file contains lines without line numbers:
 
 
 <h3 id="SAVE"><code>SAVE</code> statement</h3>
-<pre>SAVE <em>filename</em> [, { A | P }]</pre>
+<pre>SAVE <var>filename</var> [, { A | P }]</pre>
 <p>Stores the program in file <code><var>filename</var></code>. If <code><var>filename</var></code> is not in 8.3 uppercase
 format, additional characters will be clipped off and the name is converted to
 uppercase. If <code><var>filename</var></code> contains no <code>.</code>, a default extension <code>.BAS</code> will
@@ -5304,7 +5303,7 @@ form.</p>
 
 
 <h3 id="SCREEN-function"><code>SCREEN</code> function</h3>
-<pre><em>value</em> = SCREEN(<em>row</em>, <em>column</em> [, <em>fn</em>])</pre>
+<pre><var>value</var> = SCREEN(<var>row</var>, <var>column</var> [, <var>fn</var>])</pre>
 <p>Returns the ASCII code or colour attribute for the character at position
 <code><var>row</var></code>, <code><var>col</var></code>.
 </p><h4>Parameters</h4>
@@ -5336,7 +5335,7 @@ Any parameter has a string value: <samp>Type mismatch</samp>.
 
 
 <h3 id="SCREEN-statement"><code>SCREEN</code> statement</h3>
-<pre>SCREEN [<em>mode</em>] [, [<em>colorburst</em>] [, [<em>apage</em>] [, <em>vpage</em>] ] ]</pre>
+<pre>SCREEN [<var>mode</var>] [, [<var>colorburst</var>] [, [<var>apage</var>] [, <var>vpage</var>] ] ]</pre>
 <p>Change the video mode, composite colorburst, active page and visible page. Video modes are described in the <a href="#videomodes">Video Modes</a> section.
 </p><h4>NTSC Composite Colorburst</h4>
 On CGA, Tandy and PCjr, <code><var>colorburst</var></code> has the following effects, depending on the
@@ -5397,7 +5396,7 @@ Any parameter is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>
 
 
 <h3 id="SGN"><code>SGN</code> function</h3>
-<pre><em>sign</em> = SGN(<em>number</em>)</pre>
+<pre><var>sign</var> = SGN(<var>number</var>)</pre>
 <p>Returns the sign of <code><var>number</var></code>: <code>1</code> for positive, <code>0</code> for zero and <code>-1</code> for negative.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -5410,7 +5409,7 @@ Any parameter is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>
 
 
 <h3 id="SHELL"><code>SHELL</code> statement</h3>
-<pre>SHELL [<em>command</em>]</pre>
+<pre>SHELL [<var>command</var>]</pre>
 <p>Starts a subshell on the console.
 The type of shell is determined by your OS. On Unix systems, an <code>sh</code> shell is
 started. On Windows systems, a <code>CMD.EXE</code> shell is started.
@@ -5436,7 +5435,7 @@ Be careful when enabling this command, as it allows the running BASIC program fu
 
 
 <h3 id="SIN"><code>SIN</code> function</h3>
-<pre><em>sine</em> = SIN(<em>angle</em>)</pre>
+<pre><var>sine</var> = SIN(<var>angle</var>)</pre>
 <p>Returns the sine of <code><var>angle</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -5457,7 +5456,7 @@ the angle in radians.
 
 
 <h3 id="SOUND"><code>SOUND</code> statement</h3>
-<pre>SOUND <em>frequency</em>, <em>duration</em> [, <em>volume</em> [, <em>voice</em> ] ]</pre>
+<pre>SOUND <var>frequency</var>, <var>duration</var> [, <var>volume</var> [, <var>voice</var> ] ]</pre>
 <p>Produces a sound at <code><var>frequency</var></code> Hz for <code><var>duration</var>/18.2</code> seconds.
 On PCjr and Tandy, the volume and voice channel can additionally be specified.</p>
 <p>If <code>PLAY "MB"</code> has been executed, <code>SOUND</code> plays in the background. If <code>PLAY "MF"</code>
@@ -5538,7 +5537,7 @@ This statement is used and <code><a href="#--syntax">--syntax</a>={ pcjr | tandy
 </li></ul>
 
 <h3 id="SPACE$"><code>SPACE$</code> function</h3>
-<pre><em>spaces</em> = SPACE$(<em>number</em>)</pre>
+<pre><var>spaces</var> = SPACE$(<var>number</var>)</pre>
 <p>Returns a string of <code><var>number</var></code> spaces.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -5555,7 +5554,7 @@ This statement is used and <code><a href="#--syntax">--syntax</a>={ pcjr | tandy
 
 
 <h3 id="SQR"><code>SQR</code> function</h3>
-<pre><em>root</em> = SQR(<em>number</em>)</pre>
+<pre><var>root</var> = SQR(<var>number</var>)</pre>
 <p>Returns the square root of <code><var>number</var></code>. </p>
 <h4>Parameters</h4>
 <ul><li>
@@ -5573,7 +5572,7 @@ value.
 
 
 <h3 id="STICK"><code>STICK</code> function</h3>
-<pre><em>pos</em> = STICK(<em>axis</em>)</pre>
+<pre><var>pos</var> = STICK(<var>axis</var>)</pre>
 <p>Returns a coordinate of a joystick axis. All coordinates returned are in the
 range <code>[1&#8212;254]</code> with <code>128</code> indicating the neutral position.
 </p><table><tr>
@@ -5611,7 +5610,7 @@ range <code>[1&#8212;254]</code> with <code>128</code> indicating the neutral po
 </p>
 
 <h3 id="STR$"><code>STR$</code> function</h3>
-<pre><em>repr</em> = STR$(<em>number</em>)</pre>
+<pre><var>repr</var> = STR$(<var>number</var>)</pre>
 <p>Returns the string representation of <code><var>number</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -5629,7 +5628,7 @@ range <code>[1&#8212;254]</code> with <code>128</code> indicating the neutral po
 
 
 <h3 id="STRIG-events"><code>STRIG</code> statement (events)</h3>
-<pre>STRIG(<em>button</em>) { ON | OFF | STOP }</pre>
+<pre>STRIG(<var>button</var>) { ON | OFF | STOP }</pre>
 <p>Switches event trapping of the joystick trigger <code><var>button</var></code> <code>ON</code> or <code>OFF</code>.
 <code>STRIG (<var>button</var>) STOP</code> suspends event trapping until
 <code>STRIG (<var>button</var>) ON</code> is executed. Up to one event can be triggered during
@@ -5662,7 +5661,7 @@ statement.</p>
 
 
 <h3 id="STRIG-function"><code>STRIG</code> function</h3>
-<pre><em>result</em> = STRIG(<em>mode</em>)</pre>
+<pre><var>result</var> = STRIG(<var>mode</var>)</pre>
 <p>Returns the status of the joystick trigger buttons.
  <code>STRIG</code> returns the following
 results, all Boolean values:</p>
@@ -5707,7 +5706,7 @@ results, all Boolean values:</p>
 
 
 <h3 id="STRING$"><code>STRING$</code> function</h3>
-<pre><em>string</em> = STRING$(<em>length</em>, <em>char</em>)</pre>
+<pre><var>string</var> = STRING$(<var>length</var>, <var>char</var>)</pre>
 <p>Returns a string of <code><var>length</var></code> times character <code><var>char</var></code>.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -5729,7 +5728,7 @@ If <code><var>char</var></code> is a string expression, its first character is u
 
 
 <h3 id="SWAP"><code>SWAP</code> statement</h3>
-<pre>SWAP <em>var_0</em>, <em>var_1</em></pre>
+<pre>SWAP <var>var_0</var>, <var>var_1</var></pre>
 <p>Exchanges the values of <code><var>var_0</var></code> and <code><var>var_1</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -5755,7 +5754,7 @@ The types of <code><var>var_0</var></code> and <code><var>var_1</var></code> are
 
 
 <h3 id="TAN"><code>TAN</code> function</h3>
-<pre><em>tangent</em> = TAN(<em>angle</em>)</pre>
+<pre><var>tangent</var> = TAN(<var>angle</var>)</pre>
 <p>Returns the tangent of <code><var>angle</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -5798,7 +5797,7 @@ the angle in radians.
 
 
 <h3 id="TIME$-function"><code>TIME$</code> function</h3>
-<pre><em>time</em> = TIME$</pre>
+<pre><var>time</var> = TIME$</pre>
 <p>Returns the current BASIC time in the form <code>"HH:mm:ss"</code>.</p>
 <h4>Notes</h4>
 <ul><li>
@@ -5807,7 +5806,7 @@ This function has no brackets.
 
 
 <h3 id="TIME$-statement"><code>TIME$</code> statement</h3>
-<pre>TIME$ = <em>time</em></pre>
+<pre>TIME$ = <var>time</var></pre>
 <p>Sets the current BASIC time to <code><var>time</var></code>.
 </p><h4>Parameters</h4>
 <ul><li>
@@ -5849,7 +5848,7 @@ of the form <code>"HH:mm:ss"</code> where <code>00&lt;=HH&lt;24</code>, <code>00
 
 
 <h3 id="TIMER"><code>TIMER</code> function</h3>
-<pre><em>seconds</em> = TIMER</pre>
+<pre><var>seconds</var> = TIMER</pre>
 <p>Returns the number of seconds since midnight on the internal BASIC
 clock.</p>
 <h4>Notes</h4>
@@ -5878,8 +5877,8 @@ a tag <samp>[100]</samp> to the console when program line <code>100</code> is ex
 
 
 <h3 id="UNLOCK"><code>UNLOCK</code> statement</h3>
-<pre>UNLOCK [#] <em>file_number</em> [, <em>record_0</em> ]</pre>
-<pre>UNLOCK [#] <em>file_number</em>, [ <em>record_0</em> ] TO <em>record_1</em></pre>
+<pre>UNLOCK [#] <var>file_number</var> [, <var>record_0</var> ]</pre>
+<pre>UNLOCK [#] <var>file_number</var>, [ <var>record_0</var> ] TO <var>record_1</var></pre>
 <p>
 Unlocks a file or part of it that has previously been locked with <code>LOCK</code>. </p>
 <h4>Parameters</h4>
@@ -5908,7 +5907,7 @@ Any parameter has a string value: <samp>Type mismatch</samp>.
 
 
 <h3 id="USR"><code>USR</code> function</h3>
-<pre><em>value</em> = USR[<em>n</em>](<em>expr</em>)</pre>
+<pre><var>value</var> = USR[<var>n</var>](<var>expr</var>)</pre>
 <p>Returns zero.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -5929,7 +5928,7 @@ Any parameter has a string value: <samp>Type mismatch</samp>.
 
 
 <h3 id="VAL"><code>VAL</code> function</h3>
-<pre><em>value</em> = VAL(<em>string</em>)</pre>
+<pre><var>value</var> = VAL(<var>string</var>)</pre>
 <p>
 Returns the numeric value of the string expression <code><var>string</var></code>.
 The interpretation is the same a that used in program lines. For instance,
@@ -5944,9 +5943,9 @@ string is empty, <code>VAL</code> returns zero. </p>
 
 
 <h3 id="VARPTR"><code>VARPTR</code> function</h3>
-<pre><em>pointer</em> = VARPTR(<em>name</em>)</pre>
+<pre><var>pointer</var> = VARPTR(<var>name</var>)</pre>
 <p>Returns the memory address of variable <code><var>name</var></code>.
-</p><pre><em>pointer</em> = VARPTR(#<em>file_num</em>)</pre>
+</p><pre><var>pointer</var> = VARPTR(#<var>file_num</var>)</pre>
 <p>Returns the memory address of the File Control Block of
 file number <code><var>file_num</var></code>.</p>
 <h4>Parameters</h4>
@@ -5972,7 +5971,7 @@ previously defined variable or fully indexed array element.
 
 
 <h3 id="VARPTR$"><code>VARPTR$</code> function</h3>
-<pre><em>pointer</em> = VARPTR$(<em>name</em>)</pre>
+<pre><var>pointer</var> = VARPTR$(<var>name</var>)</pre>
 <p>Returns the memory address of variable <code><var>name</var></code> in the form of a 3-byte string.
 The first byte is the length of the record the pointer points to:</p>
 <table><tr>
@@ -5995,7 +5994,7 @@ The first byte is the length of the record the pointer points to:</p>
 
 
 <h3 id="VIEW"><code>VIEW</code> statement</h3>
-<pre>VIEW [ [ SCREEN ] (<em>x0</em>, <em>y0</em>)-(<em>x1</em>, <em>y1</em>) [, [ <em>fill</em> ] [, <em>border</em> ] ] ]</pre>
+<pre>VIEW [ [ SCREEN ] (<var>x0</var>, <var>y0</var>)-(<var>x1</var>, <var>y1</var>) [, [ <var>fill</var> ] [, <var>border</var> ] ] ]</pre>
 <p>Defines a graphics viewport. Graphics drawn outside the viewport will
 not be shown. <code>(<var>x0</var>, <var>y0</var>)</code>, <code>(<var>x1</var>, <var>y1</var>)</code> are absolute screen coordinates of two
 opposing corners of the area.</p>
@@ -6022,7 +6021,7 @@ Any of the coordinate pairs is outside the physical screen: <samp>Illegal functi
 
 
 <h3 id="VIEW-PRINT"><code>VIEW PRINT</code> statement</h3>
-<pre>VIEW PRINT [<em>top_row</em>] TO [<em>bottom_row</em>]</pre>
+<pre>VIEW PRINT [<var>top_row</var>] TO [<var>bottom_row</var>]</pre>
 <p>Defines the text scrolling area of the screen. <code>LOCATE</code> statements,
 cursor movement and scrolling will be limited to the scrolling area.</p>
 <h4>Parameters</h4>
@@ -6044,7 +6043,7 @@ Otherwise, screen row 25 cannot be part of the
 
 
 <h3 id="WAIT"><code>WAIT</code> statement</h3>
-<pre>WAIT <em>port</em>, <em>and_mask</em> [, <em>xor_mask</em>]</pre>
+<pre>WAIT <var>port</var>, <var>and_mask</var> [, <var>xor_mask</var>]</pre>
 <p>
     Waits for the value of <code>(<a href="#INP">INP</a>(<var>port</var>)
     <a href="#XOR">XOR</a> <var>xor_mask</var>) <a href="#AND">AND</a>
@@ -6088,7 +6087,7 @@ Any parameter has a string value: <samp>Type mismatch</samp>.
 
 
 <h3 id="WHILE"><code>WHILE</code> statement</h3>
-<pre>WHILE <em>expr</em></pre>
+<pre>WHILE <var>expr</var></pre>
 <p>
     Initiates a <code>WHILE&#8212;WEND</code> loop.
     If <code><var>expr</var></code> evaluates to zero, <code>WHILE</code> jumps
@@ -6108,11 +6107,11 @@ Any parameter has a string value: <samp>Type mismatch</samp>.
 
 
 <h3 id="WIDTH"><code>WIDTH</code> statement</h3>
-<pre>WIDTH { 20 | 40 | 80 | (<em>num_columns</em>) } [, [ <em>num_rows</em>] [ , ] ]</pre>
+<pre>WIDTH { 20 | 40 | 80 | (<var>num_columns</var>) } [, [ <var>num_rows</var>] [ , ] ]</pre>
 <p>Sets the screen width to 20, 40 or 80 columns.</p>
 <p><code><var>num_columns</var></code> can only be an expression
     if it is bracketed. Otherwise it must be a literal 20, 40 or 80. The trailing comma is optional and has no effect.</p>
-<pre>WIDTH { # <em>file_num</em>, | <em>device_name</em>, | LPRINT } <em>num_columns</em> </pre>
+<pre>WIDTH { # <var>file_num</var>, | <var>device_name</var>, | LPRINT } <var>num_columns</var> </pre>
 <p>Sets the line width for a file or a device.
 When a write operation passes beyond the column width, a <code>CR LF</code> sequence is
 inserted.
@@ -6180,7 +6179,7 @@ An unbracketed expression is used in the first syntax: <samp>Illegal function ca
 
 
 <h3 id="WINDOW"><code>WINDOW</code> statement</h3>
-<pre>WINDOW [ [ SCREEN ] (<em>x0</em>, <em>y0</em>)-(<em>x1</em>, <em>y1</em>) ]</pre>
+<pre>WINDOW [ [ SCREEN ] (<var>x0</var>, <var>y0</var>)-(<var>x1</var>, <var>y1</var>) ]</pre>
 <p>Define logical coordinates for the viewport.
 If <code>SCREEN</code> is not specified,
 the bottom left of the screen is mapped to the lower coordinates;
@@ -6205,7 +6204,7 @@ Any of the coordinates have a string value: <samp>Type mismatch</samp>.
 
 
 <h3 id="WRITE"><code>WRITE</code> and <code>WRITE#</code> statements</h3>
-<pre>WRITE [ # <em>file_num</em>, ] <em>expr_0</em> [ { , | ; } <em>expr_1</em> [...] ]</pre>
+<pre>WRITE [ # <var>file_num</var>, ] <var>expr_0</var> [ { , | ; } <var>expr_1</var> [...] ]</pre>
 <p>Writes values to a file or the screen in machine-readable form. Values are
 separated by commas and the line is ended with a <code>CR LF</code> sequence. Strings are
 delimited by double quotes <code>"</code>. No padding spaces are inserted.</p>
@@ -6325,12 +6324,12 @@ Schematically, MBF floating point numbers are represented as follows.</p>
 <h4>Single precision</h4>
 <pre>
     offset                             00   01   02   03
-       use <em>                            m3   m2   m1   exp</em>
+       use <var>                            m3   m2   m1   exp</var>
 </pre>
 <h4>Double precision</h4>
 <pre>
     offset         00   01   02   03   04   05   06   07
-       use <em>        m7   m6   m5   m4   m3   m2   m1   exp</em>
+       use <var>        m7   m6   m5   m4   m3   m2   m1   exp</var>
 </pre>
 <p>where:</p>
 <table><tr>
@@ -6588,77 +6587,77 @@ in a <em>palette</em>.</p>
 <th>Colour</th><th>Lo</th><th>Hi</th>
 <th>Colour</th><th>Lo</th><th>Hi</th>
 </tr><tr>
-<td>0</td><td>Black</td><td style="background-color: #000000;"></td><td style="background-color: #000000;"></td>
-<td>Black</td><td style="background-color: #000000;"></td><td style="background-color: #000000;"></td>
-<td>Black</td><td style="background-color: #000000;"></td><td style="background-color: #000000;"></td>
+<td>0</td><td>Black</td><td style="background-color: #000000;"/><td style="background-color: #000000;"/>
+<td>Black</td><td style="background-color: #000000;"/><td style="background-color: #000000;"/>
+<td>Black</td><td style="background-color: #000000;"/><td style="background-color: #000000;"/>
 </tr><tr>
-<td>1</td><td>Green</td><td style="background-color: #00aa00;"></td><td style="background-color: #55ff55;"></td>
-<td>Cyan</td><td style="background-color: #00aaaa;"></td><td style="background-color: #aaffff;"></td>
-<td>Cyan</td><td style="background-color: #00aaaa;"></td><td style="background-color: #aaffff;"></td>
+<td>1</td><td>Green</td><td style="background-color: #00aa00;"/><td style="background-color: #55ff55;"/>
+<td>Cyan</td><td style="background-color: #00aaaa;"/><td style="background-color: #aaffff;"/>
+<td>Cyan</td><td style="background-color: #00aaaa;"/><td style="background-color: #aaffff;"/>
 </tr><tr>
-<td>2</td><td>Red</td><td style="background-color: #aa0000;"></td><td style="background-color: #ff5555;"></td>
-<td>Magenta</td><td style="background-color: #aa00aa;"></td><td style="background-color: #ff55ff;"></td>
-<td>Red</td><td style="background-color: #aa0000;"></td><td style="background-color: #ff5555;"></td>
+<td>2</td><td>Red</td><td style="background-color: #aa0000;"/><td style="background-color: #ff5555;"/>
+<td>Magenta</td><td style="background-color: #aa00aa;"/><td style="background-color: #ff55ff;"/>
+<td>Red</td><td style="background-color: #aa0000;"/><td style="background-color: #ff5555;"/>
 </tr><tr>
-<td>3</td><td>Brown</td><td style="background-color: #aa5500;"></td><td style="background-color: #ffff55;"></td>
-<td>White</td><td style="background-color: #aaaaaa;"></td><td style="background-color: #ffffff;"></td>
-<td>White</td><td style="background-color: #aaaaaa;"></td><td style="background-color: #ffffff;"></td>
+<td>3</td><td>Brown</td><td style="background-color: #aa5500;"/><td style="background-color: #ffff55;"/>
+<td>White</td><td style="background-color: #aaaaaa;"/><td style="background-color: #ffffff;"/>
+<td>White</td><td style="background-color: #aaaaaa;"/><td style="background-color: #ffffff;"/>
 </tr></table>
 
 <h4>EGA default palette</h4>
 <table><tr>
-<th>Attribute</th><th>Colour</th><th></th>
+<th>Attribute</th><th>Colour</th><th/>
 </tr><tr>
-<td>0</td><td>Black</td><td style="background-color: #000000;"></td>
+<td>0</td><td>Black</td><td style="background-color: #000000;"/>
 </tr><tr>
-<td>1</td><td>Blue</td><td style="background-color: #0000aa;"></td>
+<td>1</td><td>Blue</td><td style="background-color: #0000aa;"/>
 </tr><tr>
-<td>2</td><td>Green</td><td style="background-color: #00aa00;"></td>
+<td>2</td><td>Green</td><td style="background-color: #00aa00;"/>
 </tr><tr>
-<td>3</td><td>Cyan</td><td style="background-color: #00aaaa;"></td>
+<td>3</td><td>Cyan</td><td style="background-color: #00aaaa;"/>
 </tr><tr>
-<td>4</td><td>Red</td><td style="background-color: #aa0000;"></td>
+<td>4</td><td>Red</td><td style="background-color: #aa0000;"/>
 </tr><tr>
-<td>5</td><td>Magenta</td><td style="background-color: #aa00aa;"></td>
+<td>5</td><td>Magenta</td><td style="background-color: #aa00aa;"/>
 </tr><tr>
-<td>6</td><td>Brown</td><td style="background-color: #aa5500;"></td>
+<td>6</td><td>Brown</td><td style="background-color: #aa5500;"/>
 </tr><tr>
-<td>7</td><td>Low-intensity white</td><td style="background-color: #aaaaaa;"></td>
+<td>7</td><td>Low-intensity white</td><td style="background-color: #aaaaaa;"/>
 </tr><tr>
-<td>8</td><td>Grey</td><td style="background-color: #555555;"></td>
+<td>8</td><td>Grey</td><td style="background-color: #555555;"/>
 </tr><tr>
-<td>9</td><td>Light Blue</td><td style="background-color: #5555ff;"></td>
+<td>9</td><td>Light Blue</td><td style="background-color: #5555ff;"/>
 </tr><tr>
-<td>10</td><td>Light Green</td><td style="background-color: #55ff55;"></td>
+<td>10</td><td>Light Green</td><td style="background-color: #55ff55;"/>
 </tr><tr>
-<td>11</td><td>Light Cyan</td><td style="background-color: #55ffff;"></td>
+<td>11</td><td>Light Cyan</td><td style="background-color: #55ffff;"/>
 </tr><tr>
-<td>12</td><td>Light Red</td><td style="background-color: #ff5555;"></td>
+<td>12</td><td>Light Red</td><td style="background-color: #ff5555;"/>
 </tr><tr>
-<td>13</td><td>Light Magenta</td><td style="background-color: #ff55ff;"></td>
+<td>13</td><td>Light Magenta</td><td style="background-color: #ff55ff;"/>
 </tr><tr>
-<td>14</td><td>Light Yellow</td><td style="background-color: #ffff55;"></td>
+<td>14</td><td>Light Yellow</td><td style="background-color: #ffff55;"/>
 </tr><tr>
-<td>15</td><td>High-intensity white</td><td style="background-color: #ffffff;"></td>
+<td>15</td><td>High-intensity white</td><td style="background-color: #ffffff;"/>
 </tr>
 </table>
 
 <h4>EGA colour list</h4>
 
 <table>
-<tr> <td>0</td><td style="background-color:#000000;"></td> <td>8</td><td style="background-color:#000055;"></td> <td>16</td><td style="background-color:#005500;"></td> <td>24</td><td style="background-color:#005555;"></td> <td>32</td><td style="background-color:#550000;"></td> <td>40</td><td style="background-color:#550055;"></td> <td>48</td><td style="background-color:#555500;"></td> <td>56</td><td style="background-color:#555555;"></td> </tr>
-<tr> <td>1</td><td style="background-color:#0000aa;"></td> <td>9</td><td style="background-color:#0000ff;"></td> <td>17</td><td style="background-color:#0055aa;"></td> <td>25</td><td style="background-color:#0055ff;"></td> <td>33</td><td style="background-color:#5500aa;"></td> <td>41</td><td style="background-color:#5500ff;"></td> <td>49</td><td style="background-color:#5555aa;"></td> <td>57</td><td style="background-color:#5555ff;"></td> </tr>
-<tr> <td>2</td><td style="background-color:#00aa00;"></td> <td>10</td><td style="background-color:#00aa55;"></td> <td>18</td><td style="background-color:#00ff00;"></td> <td>26</td><td style="background-color:#00ff55;"></td> <td>34</td><td style="background-color:#55aa00;"></td> <td>42</td><td style="background-color:#55aa55;"></td> <td>50</td><td style="background-color:#55ff00;"></td> <td>58</td><td style="background-color:#55ff55;"></td> </tr>
-<tr> <td>3</td><td style="background-color:#00aaaa;"></td> <td>11</td><td style="background-color:#00aaff;"></td> <td>19</td><td style="background-color:#00ffaa;"></td> <td>27</td><td style="background-color:#00ffff;"></td> <td>35</td><td style="background-color:#55aaaa;"></td> <td>43</td><td style="background-color:#55aaff;"></td> <td>51</td><td style="background-color:#55ffaa;"></td> <td>59</td><td style="background-color:#55ffff;"></td> </tr>
-<tr> <td>4</td><td style="background-color:#aa0000;"></td> <td>12</td><td style="background-color:#aa0055;"></td> <td>20</td><td style="background-color:#aa5500;"></td> <td>28</td><td style="background-color:#aa5555;"></td> <td>36</td><td style="background-color:#ff0000;"></td> <td>44</td><td style="background-color:#ff0055;"></td> <td>52</td><td style="background-color:#ff5500;"></td> <td>60</td><td style="background-color:#ff5555;"></td> </tr>
-<tr> <td>5</td><td style="background-color:#aa00aa;"></td> <td>13</td><td style="background-color:#aa00ff;"></td> <td>21</td><td style="background-color:#aa55aa;"></td> <td>29</td><td style="background-color:#aa55ff;"></td> <td>37</td><td style="background-color:#ff00aa;"></td> <td>45</td><td style="background-color:#ff00ff;"></td> <td>53</td><td style="background-color:#ff55aa;"></td> <td>61</td><td style="background-color:#ff55ff;"></td> </tr>
-<tr> <td>6</td><td style="background-color:#aaaa00;"></td> <td>14</td><td style="background-color:#aaaa55;"></td> <td>22</td><td style="background-color:#aaff00;"></td> <td>30</td><td style="background-color:#aaff55;"></td> <td>38</td><td style="background-color:#ffaa00;"></td> <td>46</td><td style="background-color:#ffaa55;"></td> <td>54</td><td style="background-color:#ffff00;"></td> <td>62</td><td style="background-color:#ffff55;"></td> </tr>
-<tr> <td>7</td><td style="background-color:#aaaaaa;"></td> <td>15</td><td style="background-color:#aaaaff;"></td> <td>23</td><td style="background-color:#aaffaa;"></td> <td>31</td><td style="background-color:#aaffff;"></td> <td>39</td><td style="background-color:#ffaaaa;"></td> <td>47</td><td style="background-color:#ffaaff;"></td> <td>55</td><td style="background-color:#ffffaa;"></td> <td>63</td><td style="background-color:#ffffff;"></td> </tr>
+<tr> <td>0</td><td style="background-color:#000000;"/> <td>8</td><td style="background-color:#000055;"/> <td>16</td><td style="background-color:#005500;"/> <td>24</td><td style="background-color:#005555;"/> <td>32</td><td style="background-color:#550000;"/> <td>40</td><td style="background-color:#550055;"/> <td>48</td><td style="background-color:#555500;"/> <td>56</td><td style="background-color:#555555;"/> </tr>
+<tr> <td>1</td><td style="background-color:#0000aa;"/> <td>9</td><td style="background-color:#0000ff;"/> <td>17</td><td style="background-color:#0055aa;"/> <td>25</td><td style="background-color:#0055ff;"/> <td>33</td><td style="background-color:#5500aa;"/> <td>41</td><td style="background-color:#5500ff;"/> <td>49</td><td style="background-color:#5555aa;"/> <td>57</td><td style="background-color:#5555ff;"/> </tr>
+<tr> <td>2</td><td style="background-color:#00aa00;"/> <td>10</td><td style="background-color:#00aa55;"/> <td>18</td><td style="background-color:#00ff00;"/> <td>26</td><td style="background-color:#00ff55;"/> <td>34</td><td style="background-color:#55aa00;"/> <td>42</td><td style="background-color:#55aa55;"/> <td>50</td><td style="background-color:#55ff00;"/> <td>58</td><td style="background-color:#55ff55;"/> </tr>
+<tr> <td>3</td><td style="background-color:#00aaaa;"/> <td>11</td><td style="background-color:#00aaff;"/> <td>19</td><td style="background-color:#00ffaa;"/> <td>27</td><td style="background-color:#00ffff;"/> <td>35</td><td style="background-color:#55aaaa;"/> <td>43</td><td style="background-color:#55aaff;"/> <td>51</td><td style="background-color:#55ffaa;"/> <td>59</td><td style="background-color:#55ffff;"/> </tr>
+<tr> <td>4</td><td style="background-color:#aa0000;"/> <td>12</td><td style="background-color:#aa0055;"/> <td>20</td><td style="background-color:#aa5500;"/> <td>28</td><td style="background-color:#aa5555;"/> <td>36</td><td style="background-color:#ff0000;"/> <td>44</td><td style="background-color:#ff0055;"/> <td>52</td><td style="background-color:#ff5500;"/> <td>60</td><td style="background-color:#ff5555;"/> </tr>
+<tr> <td>5</td><td style="background-color:#aa00aa;"/> <td>13</td><td style="background-color:#aa00ff;"/> <td>21</td><td style="background-color:#aa55aa;"/> <td>29</td><td style="background-color:#aa55ff;"/> <td>37</td><td style="background-color:#ff00aa;"/> <td>45</td><td style="background-color:#ff00ff;"/> <td>53</td><td style="background-color:#ff55aa;"/> <td>61</td><td style="background-color:#ff55ff;"/> </tr>
+<tr> <td>6</td><td style="background-color:#aaaa00;"/> <td>14</td><td style="background-color:#aaaa55;"/> <td>22</td><td style="background-color:#aaff00;"/> <td>30</td><td style="background-color:#aaff55;"/> <td>38</td><td style="background-color:#ffaa00;"/> <td>46</td><td style="background-color:#ffaa55;"/> <td>54</td><td style="background-color:#ffff00;"/> <td>62</td><td style="background-color:#ffff55;"/> </tr>
+<tr> <td>7</td><td style="background-color:#aaaaaa;"/> <td>15</td><td style="background-color:#aaaaff;"/> <td>23</td><td style="background-color:#aaffaa;"/> <td>31</td><td style="background-color:#aaffff;"/> <td>39</td><td style="background-color:#ffaaaa;"/> <td>47</td><td style="background-color:#ffaaff;"/> <td>55</td><td style="background-color:#ffffaa;"/> <td>63</td><td style="background-color:#ffffff;"/> </tr>
 </table>
 
 <h4>Textmode attributes (colour)</h4>
 <table>
-<tr><th rowspan="2" colspan="2"></th><th colspan="8">Background attribute</th></tr> <tr> <th>0</th> <th>1</th> <th>2</th> <th>3</th> <th>4</th> <th>5</th> <th>6</th> <th>7</th> </tr>
+<tr><th rowspan="2" colspan="2"/><th colspan="8">Background attribute</th></tr> <tr> <th>0</th> <th>1</th> <th>2</th> <th>3</th> <th>4</th> <th>5</th> <th>6</th> <th>7</th> </tr>
 
 <tr><th rowspan="32">FG</th>
 
@@ -6700,7 +6699,7 @@ in a <em>palette</em>.</p>
 
 <h4>Textmode attributes (monochrome)</h4>
 <table>
-<tr><th rowspan="2" colspan="2"></th><th colspan="8">Background attribute</th></tr> <tr> <th>0</th> <th>1</th> <th>2</th> <th>3</th> <th>4</th> <th>5</th> <th>6</th> <th>7</th> </tr>
+<tr><th rowspan="2" colspan="2"/><th colspan="8">Background attribute</th></tr> <tr> <th>0</th> <th>1</th> <th>2</th> <th>3</th> <th>4</th> <th>5</th> <th>6</th> <th>7</th> </tr>
 <tr><th rowspan="32">FG</th>
 <th>0</th> <td><code>00</code> <b><span style="color: #000000; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>10</code> <b><span style="color: #00aa00; background-color:#000000;">X</span><span style="color: #00aa00; background-color:#000000;">X</span></b> </td> <td><code>20</code> <b><span style="color: #00aa00; background-color:#000000;">X</span><span style="color: #00aa00; background-color:#000000;">X</span></b> </td> <td><code>30</code> <b><span style="color: #00aa00; background-color:#000000;">X</span><span style="color: #00aa00; background-color:#000000;">X</span></b> </td> <td><code>40</code> <b><span style="color: #00aa00; background-color:#000000;">X</span><span style="color: #00aa00; background-color:#000000;">X</span></b> </td> <td><code>50</code> <b><span style="color: #00aa00; background-color:#000000;">X</span><span style="color: #00aa00; background-color:#000000;">X</span></b> </td> <td><code>60</code> <b><span style="color: #00aa00; background-color:#000000;">X</span><span style="color: #00aa00; background-color:#000000;">X</span></b> </td> <td><code>70</code> <b><span style="color: #000000; background-color:#00aa00;">X</span><span style="color: #000000; background-color:#00aa00;">X</span></b> </td> </tr>
 <tr> <th>1</th> <td><code>01</code> <b><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span></b> </td> <td><code>11</code> <b><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span></b> </td> <td><code>21</code> <b><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span></b> </td> <td><code>31</code> <b><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span></b> </td> <td><code>41</code> <b><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span></b> </td> <td><code>51</code> <b><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span></b> </td> <td><code>61</code> <b><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span></b> </td> <td><code>71</code> <b><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span><span style="color: #00aa00; background-color:#000000; text-decoration: underline;">X</span></b> </td> </tr>
