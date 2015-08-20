@@ -3,7 +3,9 @@
     (c) 2014-2015 Rob Hagemans
     This file is released under a Creative Commons Attribution-ShareAlike 4.0 International License.
 -->
+<article>
 <h1 id="features">Language features</h1>
+<section>
 <h2 id="literals">Literals</h2>
 
 <p>String literals can be specified between double quotes. There is no escaping
@@ -41,8 +43,9 @@ Examples of valid numeric literals:</p>
 <p>Hexadecimal literals can be specified like <code>&amp;hFFFF</code>. They must range between
 <code>-&amp;h7FFF</code> and <code>&amp;hFFFF</code>. <code>&amp;hFFFF = -&amp;h1 = &amp;h-1</code>.
 </p><p>Octal literals can be specified as <code>&amp;o777</code> or <code>&amp;777</code>.</p>
+</section>
 
-
+<section>
 <h2 id="variables">Variables</h2>
 <p>Variable names must start with a letter; all characters of the variable name
 (except the <a href="#typechars">type character</a>) must be letters <code>A&#8212;Z</code>, figures <code>0&#8212;9</code>, or a dot <code>.</code>
@@ -61,7 +64,9 @@ is not a legal variable name while <code>FRECKLE%</code> is.</p>
     <code>A!()</code>, <code>A#()</code> which are separate from the scalar
     variables of the same name.
 </p>
+</section>
 
+<section>
 <h2 id="arrays">Arrays</h2>
 <p>Arrays are groups of variables and can have the same <a href="#types">types</a> as <a href="#variables">variables</a>. Arrays are indexed with round or square
 brackets; even mixing brackets is allowed. The following all work: <code>A[0]</code>, <code>A(0)</code>,
@@ -79,7 +84,9 @@ brackets; even mixing brackets is allowed. The following all work: <code>A[0]</c
     with <code><a href="#CLEAR">CLEAR</a></code> or
     <code><a href="#ERASE">ERASE</a></code>.
 </p>
+</section>
 
+<section>
 <h2 id="error-trapping">Error trapping</h2>
 <p>
     Normally, any error will interrupt program execution and print a message on
@@ -97,7 +104,9 @@ brackets; even mixing brackets is allowed. The following all work: <code>A[0]</c
     program is executing an error-trapping routine, the program terminates and
     an error message is shown.
 </p>
+</section>
 
+<section>
 <h2 id="event-trapping">Event trapping</h2>
 <p>
     Event trapping allows to define subroutines which are executed outside of the normal course of operation. Events that can be trapped are:
@@ -121,10 +130,13 @@ brackets; even mixing brackets is allowed. The following all work: <code>A[0]</c
     the program is in an error trap. If an event occurs while event-trapping is
     paused, then the event is triggered immediately when event trapping is resumed.
 </p>
+</section>
+</article>
 
+<article>
 <h1 id="reference">Language reference</h1>
 
-
+<section>
 <h2 id="types">Types</h2>
 <h3 id="typechars">Type characters</h3>
 <p>PC-BASIC recognises four variable types, distinguished by their type character
@@ -146,6 +158,7 @@ which is the last character of the variable's full name:</p>
     <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
     If no such setting has been made, the default type is single-precision float.
 </p>
+
 <h3 id="limits">Machine limits</h3>
 <ul><li>
     Line numbers are in <code>[0&#8212;65535]</code>, although line numbers <code>65530&#8212;65535</code> cannot be entered from the console.
@@ -158,8 +171,9 @@ which is the last character of the variable's full name:</p>
 </li><li>
     Double-precision floats can hold more decimals, but not larger or smaller numbers, than single-precision floats.
 </li></ul>
+</section>
 
-
+<section>
 <h2 id="operators">Operators</h2>
 
 <h3 id="order-of-preference">Order of precedence</h3>
@@ -388,8 +402,9 @@ which is the last character of the variable's full name:</p>
         </td>
     </tr>
 </table>
+</section>
 
-
+<section>
 <h2 id="statements-functions">Statements and functions</h2>
 
 <h3 id="ABS"><code>ABS</code> function</h3>
@@ -6229,13 +6244,14 @@ delimited by double quotes <code>"</code>. No padding spaces are inserted.</p>
 </li></ul>
 
 
+</section>
+</article>
 
 
-
-
+<article>
 <h1 id="technical">Technical reference</h1>
 
-
+<section>
 <h2 id="devices">Devices</h2>
 <p>PC-BASIC recognises the following DOS-style devices, which can be opened, input
 from and output to. Some devices allow specification of further parameters, such
@@ -6306,8 +6322,9 @@ When operating on disk devices, specifying a path is mandatory.</p>
                             it for <code>OUTPUT</code>.
 </td>
 </tr></table>
+</section>
 
-
+<section>
 <h2 id="internal">Internal representation of variables</h2>
 <p>Internal representation:</p>
 <ul><li>
@@ -6368,7 +6385,9 @@ Schematically, MBF floating point numbers are represented as follows.</p>
 <dd>Any float with the exponent byte set to <code>0</code> is interpreted as a zero.</dd>
 </dl>
 <p>A single-precision MBF float therefore has 23 bits of precision, while a double-precision MBF float has 55 bits of precision.</p>
+</section>
 
+<section>
 <h2 id="keywords">Keyword tokens</h2>
 <p>Not all keywords are statements or functions. Conversely, some parts of statement or
 function syntax are not keywords. Keywords are
@@ -6417,7 +6436,9 @@ represent them in a BASIC file.</p>
     keyword is reserved, which is not present in GW-BASIC:
 <code> FFFF DEBUG</code>
 </li></ul>
+</section>
 
+<section>
 <h2 id="errors">Error codes</h2>
 <table><tr>
     <td><code>1</code></td><td><samp>NEXT without FOR</samp></td></tr><tr>
@@ -6481,7 +6502,9 @@ represent them in a BASIC file.</p>
 </tr></table>
 <p>Any error code that does not have a message associated to it will generate
 the message <samp>Unprintable error</samp>.</p>
+</section>
 
+<section>
 <h2 id="videomodes">Video modes</h2>
 <p>The video modes are as follows:</p>
 <dl>
@@ -6576,7 +6599,9 @@ the message <samp>Unprintable error</samp>.</p>
             2 pages<br/>
 </dd>
 </dl>
+</section>
 
+<section>
 <h2 id="colours">Colours</h2>
 <p>The emulated video adapter can produce more colours than can be shown on the
 screen at one time. These <em>colours</em> can be used by assigning them to <em>attributes</em>
@@ -6741,3 +6766,5 @@ in a <em>palette</em>.</p>
 <tr> <th>30</th> <td><code>8e</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>9e</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ae</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>be</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ce</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>de</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ee</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>fe</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> </tr>
 <tr> <th>31</th> <td><code>8f</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>9f</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>af</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>bf</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>cf</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>df</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ef</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ff</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> </tr>
 </table>
+</section>
+</article>
