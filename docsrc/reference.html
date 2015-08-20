@@ -1435,10 +1435,16 @@ The array exceeds the size of available variable
 <dd>
     <table><tr>
     <td><code>C<var>n</var></code></td>
-    <td>      set the foreground attribute to <code><var>n</var></code>. See <code>COLOR</code>. </td>
+    <td>
+        set the foreground attribute to <code><var>n</var></code>.
+        See <code><a href="#COLOR">COLOR</a></code>.
+    </td>
     </tr><tr>
     <td><code>P<var>n</var>,<var>b</var></code></td>
-    <td>flood fill with attribute <code><var>n</var></code> and boundary attribute <code><var>b</var></code>. See <code>PAINT</code>.
+    <td>
+        flood fill with attribute <code><var>n</var></code> and boundary
+        attribute <code><var>b</var></code>.
+        See <code><a href="#PAINT">PAINT</a></code>.
     </td></tr></table>
 </dd>
 <dt>Subroutine command</dt>
@@ -4093,9 +4099,10 @@ Sends a byte to an emulated machine port.</p>
 <td>sets the read colour plane to <code><var>value</var></code>.</td>
 </tr><tr>
 <td><code>&amp;h3D8</code></td>
-<td>if <code><var>value</var> = &amp;h1A</code>, enable composite colorburst.<br/>
+<td>
+    if <code><var>value</var> = &amp;h1A</code>, enable composite colorburst.<br/>
     if <code><var>value</var> = &amp;h1E</code>, disable composite colorburst.<br/>
-Requires <code>--video={cga, tandy, pcjr}</code>.
+    Requires <code><a href="#--video">--video</a>={cga, tandy, pcjr}</code>.
 </td></tr></table>
 <h4>Notes</h4>
 <ul><li>
