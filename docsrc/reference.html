@@ -5365,8 +5365,25 @@ Any parameter has a string value: <samp>Type mismatch</samp>.
 
 
 <h3 id="SCREEN-statement"><code>SCREEN</code> statement</h3>
-<pre>SCREEN [<var>mode</var>] [, [<var>colorburst</var>] [, [<var>apage</var>] [, <var>vpage</var>] ] ]</pre>
+<pre>SCREEN [<var>mode</var>] [, [<var>colorburst</var>] [, [<var>apage</var>] [, [<var>vpage</var>] [, <var>erase</var> ]]]]</pre>
 <p>Change the video mode, composite colorburst, active page and visible page. Video modes are described in the <a href="#videomodes">Video Modes</a> section.
+<h4>Parameters</h4>
+<ul><li>
+<code><var>mode</var></code> is a numeric expression that sets the screen mode.
+</li>
+<li>
+    <code><var>colorburst</var></code> is a numeric expression. See notes below.
+</li>
+<li>
+<code><var>apage</var></code> is a numeric expression that sets the active page.
+</li><li>
+<code><var>vpage</var></code> is a numeric expression that sets the visible page.
+</li>
+<li>
+    <code><var>erase</var></code> is a numeric expression in the range <code>[0, 1, 2]</code>.
+    It is only legal with <code><a href="#--syntax">--syntax</a>={pcjr, tandy}</code>. See notes below.
+</li></ul>
+
 </p><h4>NTSC Composite Colorburst</h4>
 On CGA, Tandy and PCjr, <code><var>colorburst</var></code> has the following effects, depending on the
 type of monitor - RGB (default) or composite:
@@ -5385,29 +5402,49 @@ type of monitor - RGB (default) or composite:
 </tr><tr>
     <td>1</td><td>       1</td><td>   5</td><td>           greyscale</td><td>               alternate palette</td>
 </tr></table>
+<p>
 On <code>SCREEN 2</code>, <code><var>colorburst</var></code> has no effect; on a composite monitor, colour artifacts
 can be enabled on this screen through <code>OUT</code> (see there). On <code>SCREEN 3</code> and up, <code><var>colorburst</var></code> has no effect.
-<h4>Parameters</h4>
-<ul><li>
-<code><var>mode</var></code> is a numeric expression that sets the screen mode.
-</li><li>
-<code><var>apage</var></code> is a numeric expression that sets the active page.
-</li><li>
-<code><var>vpage</var></code> is a numeric expression that sets the visible page.
-</li><li>
-<code><var>colorburst</var></code> is a numeric expression.
-</li></ul>
+</p>
+
+<h4>Erase</h4>
+<p>
+    By default, if the <code><var>mode</var></code> changes or the <code><var>colorburst</var></code>
+    changes between zero and non-zero, the old page and the new page of the screen
+    are cleared. On <code><a href="#--syntax">--syntax</a>={pcjr, tandy}</code>,
+    the <code><var>erase</var></code> parameter can be used to change this behaviour.
+    Its values are as follows:
+</p>
+<table>
+    <tr>
+        <th><code><var>erase</var></code></th>
+        <th>Effect</th>
+    </tr>
+    <tr>
+        <td><code>0</code></td>
+        <td>Do not erase any screen page</td>
+    </tr>
+    <tr>
+        <td><code>1</code> (default)</td>
+        <td>If the <code><var>mode</var></code> changes or the <code><var>colorburst</var></code>
+        changes between zero and non-zero, the old page and the new page of the screen
+        are cleared.</td>
+    </tr>
+    <tr>
+        <td><code>2</code></td>
+        <td>If the <code><var>mode</var></code> changes or the <code><var>colorburst</var></code>
+        changes between zero and non-zero, all pages of the screen are cleared.</td>
+    </tr>
+</table>
+
 <h4>Notes</h4>
 <ul><li>
    At least one parameter must be specified.
 </li><li>
-   Composite colour artifacts are emulated only crudely in PC-BASIC, and not at
+    Composite colour artifacts are emulated only crudely in PC-BASIC, and not at
     all in <code>SCREEN 1</code>.
-</li><li>
-If the <code><var>mode</var></code> changes or the <code><var>colorburst</var></code>
-changes between
-zero and non-zero, the screen is cleared.
 </li></ul>
+
 <h4>Errors</h4>
 <ul><li>
 No parameters are specified: <samp>Missing operand</samp>.
@@ -5422,7 +5459,12 @@ Any parameter is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>
     chosen video mode, less one:  <samp>Illegal function call</samp>.
 </li><li>
 <code><var>colorburst</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    </li>
+    <li>
+        <code><var>erase</var></code> is not in <code>[0, 1, 2]</code>:
+        <samp>Illegal function call</samp>.
+    </li>
+</ul>
 
 
 <h3 id="SGN"><code>SGN</code> function</h3>
