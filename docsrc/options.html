@@ -838,11 +838,11 @@ from UTF-8 on <code><a href="#LOAD">LOAD</a></code> and to UTF-8 on <code><a hre
 </tr>
 </table>
 </dd>
-<dt><code>--video-memory=<var>size</var></code></dt>
+<dt><code id="--video-memory">--video-memory=<var>size</var></code></dt>
 <dd>Set the amount of emulated video memory available. This affects
 the number of video pages that can be used. On PCjr and Tandy, this
 can be changed at runtime through the <code><a href="#CLEAR">CLEAR</a></code> statement;
-more than 16384 needs to be available to enter <code>SCREEN
+more than 32768 needs to be available to enter <code>SCREEN
 5</code> and <code>SCREEN 6</code>. Default is 262144.</dd>
 <dt><code>-w</code><br/>
 <code>--wait[=True|=False]</code></dt>

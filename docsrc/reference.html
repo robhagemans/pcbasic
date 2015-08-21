@@ -800,7 +800,7 @@ For <code><var>aspect</var> &lt;&gt; 1</code>, the midpoint algorithm used does 
 
 
 <h3 id="CLEAR"><code>CLEAR</code> statement</h3>
-<pre>CLEAR [<var>expr</var>] [, [<var>mem_limit</var>] [, <var>stack_size</var>] ]
+<pre>CLEAR [<var>expr</var>] [, [<var>mem_limit</var>] [, [<var>stack_size</var>] [, <var>video_memory</var> ]]]
 </pre>
 <p>Clears all variables, arrays,<code><a href="#DEF-FN">DEF FN</a></code> user functions, <code><a href="#DEFINT">DEF<var>type</var></a></code> type definitions,
 and <code><a href="#COMMON">COMMON</a></code> declarations. Closes all files.
@@ -816,7 +816,15 @@ memory size. Default memory size is 65534.
 </li><li>
 <code><var>stack_size</var></code> specifies the amount of memory available to the BASIC stack.
 Default is previous stack size. Default stack size is 512.
-</li></ul>
+</li>
+    <li>
+        <code><var>video_memory</var></code> specifies the amount of memory available
+        to the video adapter. This parameter is only legal with one of the options
+        <code><a href="#--syntax">--syntax</a>={pcjr, tandy}</a></code>. Instead of using
+        <code>CLEAR</code>, the option <code><a href="#--video-memory">--video-memory</a></code>
+        can also be used to set video memory size.
+    </li>
+</ul>
 <h4>Notes</h4>
 <ul><li>
   The purpose of <em>expr</em> is unknown.
@@ -6562,6 +6570,11 @@ the message <samp>Unprintable error</samp>.</p>
             40x25 characters of 8x8 pixels<br/>
             16 attributes picked from 16 colours; 4 bits per pixel<br/>
             1 page<br/>
+            <p><em>Note: a minimum of 32768 bytes of video memory must be
+            reserved to use this video mode.</em> Use the statement
+            <code><a href="#CLEAR">CLEAR</a> ,,,32768!</code>
+            or the option
+            <code><a href="#--video-memory">video-memory</a>=32768</code>.</p>
 </dd>
 <dt><code>SCREEN 6</code> High-res 4-colour <code>pcjr</code> <code>tandy</code><br/></dt>
 <dd>
@@ -6569,6 +6582,11 @@ the message <samp>Unprintable error</samp>.</p>
             80x25 characters of 8x8 pixels<br/>
             4 attributes picked from 16 colours; 2 bits per pixel<br/>
             1 page<br/>
+            <p><em>Note: a minimum of 32768 bytes of video memory must be
+            reserved to use this video mode.</em> Use the statement
+            <code><a href="#CLEAR">CLEAR</a> ,,,32768!</code>
+            or the option
+            <code><a href="#--video-memory">video-memory</a>=32768</code>.</p>
 </dd>
 <dt><code>SCREEN 7</code> EGA colour <code>ega</code></dt>
 <dd>
