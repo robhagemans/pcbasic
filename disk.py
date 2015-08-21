@@ -330,8 +330,8 @@ def match_dosname(dosname, path, isdir, find_case):
             return f
     return None
 
-def match_filename(name, defext, path='', err=error.FILE_NOT_FOUND,
-                   isdir=False, find_case=True, make_new=False):
+def match_filename(name, defext, path, err,
+                   isdir, find_case=True, make_new=False):
     """ Find or create a matching native file name for a given BASIC name. """
     # check if the name exists as-is; should also match Windows short names.
     # EXCEPT if default extension is not empty, in which case
@@ -344,7 +344,7 @@ def match_filename(name, defext, path='', err=error.FILE_NOT_FOUND,
     if fullname:
         return fullname
     # not found
-    if make_new:
+    if make_new or not err:
         return dosname
     else:
         raise error.RunError(err)
@@ -451,8 +451,12 @@ class DiskDevice(object):
     def check_file_not_open(self, path):
         """ Raise an error if the file is open. """
         for f in state.io_state.files:
-            if self.native_path(path) == state.io_state.files[f].name:
-                raise error.RunError(error.FILE_ALREADY_OPEN)
+            try:
+                if self.native_path(path, err=0) == state.io_state.files[f].name:
+                    raise error.RunError(error.FILE_ALREADY_OPEN)
+            except AttributeError:
+                # only disk files have a name, so ignore
+                pass
 
     def native_path_elements(self, path_without_drive, err, join_name=False):
         """ Return elements of the native path for a given BASIC path. """
