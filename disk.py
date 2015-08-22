@@ -331,7 +331,7 @@ def match_dosname(dosname, path, isdir, find_case):
     return None
 
 def match_filename(name, defext, path, err,
-                   isdir, find_case=True, make_new=False):
+                   isdir, find_case=True, allow_new_name=False):
     """ Find or create a matching native file name for a given BASIC name. """
     # check if the name exists as-is; should also match Windows short names.
     # EXCEPT if default extension is not empty, in which case
@@ -344,7 +344,7 @@ def match_filename(name, defext, path, err,
     if fullname:
         return fullname
     # not found
-    if make_new or not err:
+    if allow_new_name or not err:
         return dosname
     else:
         raise error.RunError(err)
@@ -406,8 +406,8 @@ class DiskDevice(object):
             name = self.native_path(param, defext)
         else:
             # random files: try to open matching file
-            # if it doesn't exist, create an all-caps 8.3 file name
-            name = self.native_path(param, defext, make_new=True)
+            # if it doesn't exist, use an all-caps 8.3 file name
+            name = self.native_path(param, defext, allow_new_name=True)
         # obtain a lock
         acquire_lock(name, number, lock, access)
         # open the underlying stream
@@ -505,7 +505,7 @@ class DiskDevice(object):
         return path[:baselen], path[baselen:], name
 
     def native_path(self, path_and_name, defext='', err=error.FILE_NOT_FOUND,
-                    isdir=False, find_case=True, make_new=False):
+                    isdir=False, find_case=True, allow_new_name=False):
         """ Find os-native path to match the given BASIC path. """
         # substitute drives and cwds
         drivepath, relpath, name = self.native_path_elements(path_and_name, err)
@@ -513,7 +513,7 @@ class DiskDevice(object):
         path = os.path.join(drivepath, relpath)
         if name:
             path = os.path.join(path,
-                match_filename(name, defext, path, err, isdir, find_case, make_new))
+                match_filename(name, defext, path, err, isdir, find_case, allow_new_name))
         # get full normalised path
         return os.path.abspath(path)
 
@@ -529,7 +529,7 @@ class DiskDevice(object):
 
     def mkdir(self, name):
         """ Create directory at given BASIC path. """
-        safe(os.mkdir, self.native_path(name, err=error.PATH_NOT_FOUND, isdir=True, make_new=True))
+        safe(os.mkdir, self.native_path(name, err=error.PATH_NOT_FOUND, isdir=True, allow_new_name=True))
 
     def rmdir(self, name):
         """ Remove directory at given BASIC path. """
@@ -543,7 +543,7 @@ class DiskDevice(object):
         """ Rename a file or directory. """
         # note that we can't rename to another drive: "Rename across disks"
         oldname = self.native_path(str(oldname), err=error.FILE_NOT_FOUND, isdir=False)
-        newname = self.native_path(str(newname), err=error.PATH_NOT_FOUND, isdir=False, make_new=True)
+        newname = self.native_path(str(newname), err=error.PATH_NOT_FOUND, isdir=False, allow_new_name=True)
         if os.path.exists(newname):
             raise error.RunError(error.FILE_ALREADY_EXISTS)
         safe(os.rename, oldname, newname)
