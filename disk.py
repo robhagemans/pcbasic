@@ -330,7 +330,7 @@ def match_dosname(dosname, path, isdir, find_case):
             return f
     return None
 
-def match_filename(name, defext, path, err,
+def match_filename(name, defext, path, name_err,
                    isdir, find_case=True, allow_new_name=False):
     """ Find or create a matching native file name for a given BASIC name. """
     # check if the name exists as-is; should also match Windows short names.
@@ -344,10 +344,10 @@ def match_filename(name, defext, path, err,
     if fullname:
         return fullname
     # not found
-    if allow_new_name or not err:
+    if allow_new_name:
         return dosname
     else:
-        raise error.RunError(err)
+        raise error.RunError(name_err)
 
 def filter_names(path, files_list, mask='*.*'):
     """ Apply filename filter to short version of names. """
@@ -399,15 +399,15 @@ class DiskDevice(object):
         else:
             defext = ''
         # translate the file name to something DOS-ish if necessary
-        if mode in ('O', 'A'):
-            # don't open output or append files more than once
-            self.check_file_not_open(param)
         if mode == 'I':
             name = self.native_path(param, defext)
         else:
             # random files: try to open matching file
             # if it doesn't exist, use an all-caps 8.3 file name
             name = self.native_path(param, defext, allow_new_name=True)
+        # don't open output or append files more than once
+        if mode in ('O', 'A'):
+            self.check_file_not_open(param)
         # obtain a lock
         acquire_lock(name, number, lock, access)
         # open the underlying stream
@@ -452,13 +452,13 @@ class DiskDevice(object):
         """ Raise an error if the file is open. """
         for f in state.io_state.files:
             try:
-                if self.native_path(path, err=0) == state.io_state.files[f].name:
+                if self.native_path(path, allow_new_name=True) == state.io_state.files[f].name:
                     raise error.RunError(error.FILE_ALREADY_OPEN)
             except AttributeError:
                 # only disk files have a name, so ignore
                 pass
 
-    def native_path_elements(self, path_without_drive, err, join_name=False):
+    def native_path_elements(self, path_without_drive, path_err, join_name=False):
         """ Return elements of the native path for a given BASIC path. """
         path_without_drive = str(path_without_drive)
         if '/' in path_without_drive:
@@ -500,27 +500,28 @@ class DiskDevice(object):
             if e:
                 # find a matching directory for every step in the path;
                 # append found name to path
-                path = os.path.join(path, match_filename(e, '', path, err, isdir=True))
+                path = os.path.join(path, match_filename(e, '', path, name_err=path_err, isdir=True))
         # return drive root path, relative path, file name
         return path[:baselen], path[baselen:], name
 
-    def native_path(self, path_and_name, defext='', err=error.FILE_NOT_FOUND,
+    def native_path(self, path_and_name, defext='', name_err=error.FILE_NOT_FOUND,
                     isdir=False, find_case=True, allow_new_name=False):
         """ Find os-native path to match the given BASIC path. """
         # substitute drives and cwds
-        drivepath, relpath, name = self.native_path_elements(path_and_name, err)
+        # always use Path Not Found error if not found at this stage
+        drivepath, relpath, name = self.native_path_elements(path_and_name, path_err=error.PATH_NOT_FOUND)
         # return absolute path to file
         path = os.path.join(drivepath, relpath)
         if name:
             path = os.path.join(path,
-                match_filename(name, defext, path, err, isdir, find_case, allow_new_name))
+                match_filename(name, defext, path, name_err, isdir, find_case, allow_new_name))
         # get full normalised path
         return os.path.abspath(path)
 
     def chdir(self, name):
         """ Change working directory to given BASIC path. """
         # get drive path and relative path
-        dpath, rpath, _ = self.native_path_elements(name, err=error.PATH_NOT_FOUND, join_name=True)
+        dpath, rpath, _ = self.native_path_elements(name, path_err=error.PATH_NOT_FOUND, join_name=True)
         # set cwd for the specified drive
         self.cwd = rpath
         # set the cwd in the underlying os (really only useful for SHELL)
@@ -529,11 +530,11 @@ class DiskDevice(object):
 
     def mkdir(self, name):
         """ Create directory at given BASIC path. """
-        safe(os.mkdir, self.native_path(name, err=error.PATH_NOT_FOUND, isdir=True, allow_new_name=True))
+        safe(os.mkdir, self.native_path(name, name_err=error.PATH_NOT_FOUND, isdir=True, allow_new_name=True))
 
     def rmdir(self, name):
         """ Remove directory at given BASIC path. """
-        safe(os.rmdir, self.native_path(name, err=error.PATH_NOT_FOUND, isdir=True))
+        safe(os.rmdir, self.native_path(name, name_err=error.PATH_NOT_FOUND, isdir=True))
 
     def kill(self, name):
         """ Remove regular file at given BASIC path. """
@@ -542,8 +543,8 @@ class DiskDevice(object):
     def rename(self, oldname, newname):
         """ Rename a file or directory. """
         # note that we can't rename to another drive: "Rename across disks"
-        oldname = self.native_path(str(oldname), err=error.FILE_NOT_FOUND, isdir=False)
-        newname = self.native_path(str(newname), err=error.PATH_NOT_FOUND, isdir=False, allow_new_name=True)
+        oldname = self.native_path(str(oldname), name_err=error.FILE_NOT_FOUND, isdir=False)
+        newname = self.native_path(str(newname), name_err=error.PATH_NOT_FOUND, isdir=False, allow_new_name=True)
         if os.path.exists(newname):
             raise error.RunError(error.FILE_ALREADY_EXISTS)
         safe(os.rename, oldname, newname)
@@ -558,7 +559,7 @@ class DiskDevice(object):
         if not self.path:
             # undefined disk drive: file not found
             raise error.RunError(error.FILE_NOT_FOUND)
-        drivepath, relpath, mask = self.native_path_elements(pathmask, err=error.FILE_NOT_FOUND)
+        drivepath, relpath, mask = self.native_path_elements(pathmask, path_err=error.FILE_NOT_FOUND)
         path = os.path.join(drivepath, relpath)
         mask = mask.upper() or '*.*'
         # output working dir in DOS format
