@@ -3,9 +3,22 @@
     (c) 2014-2015 Rob Hagemans
     This file is released under a Creative Commons Attribution-ShareAlike 4.0 International License.
 -->
-<article>
-<h1 id="features">Language features</h1>
 
+<article>
+<h1 id="reference">Language reference</h1>
+
+<p>
+    This documentation describes the PC-BASIC language. Since PC-BASIC emulates
+    GW-BASIC 3.23, IBM Advanced BASIC, IBM Cartridge BASIC and Tandy 1000 GW-BASIC,
+    it can also be used as documentation for those languages. Any differences
+    between these original dialects and the PC-BASIC implementation are
+    documented as well.
+</p>
+<p>
+    Please note that the original Microsoft documentation, as found in various
+    forms on the internet, is rather hit-and-miss;
+    GW-BASIC often behaves differently than documented by Microsoft.
+</p>
 
 <section>
 <h2 id="literals">Literals</h2>
@@ -88,68 +101,6 @@ brackets; even mixing brackets is allowed. The following all work: <code>A[0]</c
 </p>
 </section>
 
-<section>
-<h2 id="error-trapping">Error trapping</h2>
-<p>
-    Normally, any error will interrupt program execution and print a message on
-    the console (exceptions are <samp>Overflow</samp> and
-    <samp>Division by zero</samp>, which print a message but do not interrupt
-    execution). It is possible to handle errors more graciously by
-    setting an error-handling routine with the
-    <code><a href="#ON-ERROR">ON ERROR</a> GOTO <var>line_number</var></code>
-    statement. The error-handling routine starts at the given line number
-    <code><var>line_number</var></code> and continues until a
-    <code><a href="#RESUME">RESUME</a></code> statement is encountered.
-    Error trapping is in effect both when a program is running and in interactive
-    mode. Error trapping is switched off with the <code>ON ERROR GOTO 0</code>
-    statement. If an error occurs, or error trapping is switched off, while the
-    program is executing an error-trapping routine, the program terminates and
-    an error message is shown.
-</p>
-</section>
-
-<section>
-<h2 id="event-trapping">Event trapping</h2>
-<p>
-    Event trapping allows to define subroutines which are executed outside of the normal course of operation. Events that can be trapped are:
-</p>
-<ul>
-    <li>Time intervals (<code><a href="#ON-event">ON TIMER</a></code>)</li>
-    <li>Keypresses (<code><a href="#ON-event">ON KEY</a></code>)</li>
-    <li>Serial port input (<code><a href="#ON-event">ON COM</a></code>)</li>
-    <li>Music queue exhaustion (<code><a href="#ON-event">ON PLAY</a></code>)</li>
-    <li>Joystick triggers (<code><a href="#ON-event">ON STRIG</a></code>)</li>
-    <li>Light pen activation (<code><a href="#ON-event">ON PEN</a></code>)</li>
-</ul>
-<p>
-    Event trapping subroutines are defined as regular subroutines. At the
-    <code><a href="#RETURN">RETURN</a></code> statement, the normal course of
-    program execution is resumed. Event trapping can be switched on and off or
-    paused temporarily with statements of the form
-    <code><a href="#PEN-statement">PEN ON</a></code>, <code>PEN OFF</code>,
-    <code>PEN STOP</code>.
-    Event trapping only takes place during program execution and is paused while
-    the program is in an error trap. If an event occurs while event-trapping is
-    paused, then the event is triggered immediately when event trapping is resumed.
-</p>
-</section>
-</article>
-
-<article>
-<h1 id="reference">Language reference</h1>
-
-<p>
-    This documentation describes the PC-BASIC language. Since PC-BASIC emulates
-    GW-BASIC 3.23, IBM Advanced BASIC, IBM Cartridge BASIC and Tandy 1000 GW-BASIC,
-    it can also be used as documentation for those languages. Any differences
-    between these original dialects and the PC-BASIC implementation are
-    documented as well.
-</p>
-<p>
-    Please note that the original Microsoft documentation, as found in various
-    forms on the internet, is rather hit-and-miss;
-    GW-BASIC often behaves differently than documented by Microsoft.
-</p>
 
 <section>
 <h2 id="types">Types</h2>
@@ -6310,6 +6261,55 @@ delimited by double quotes <code>"</code>. No padding spaces are inserted.</p>
 
 
 </section>
+
+
+
+<section>
+<h2 id="error-trapping">Error trapping</h2>
+<p>
+    Normally, any error will interrupt program execution and print a message on
+    the console (exceptions are <samp>Overflow</samp> and
+    <samp>Division by zero</samp>, which print a message but do not interrupt
+    execution). It is possible to handle errors more graciously by
+    setting an error-handling routine with the
+    <code><a href="#ON-ERROR">ON ERROR</a> GOTO <var>line_number</var></code>
+    statement. The error-handling routine starts at the given line number
+    <code><var>line_number</var></code> and continues until a
+    <code><a href="#RESUME">RESUME</a></code> statement is encountered.
+    Error trapping is in effect both when a program is running and in interactive
+    mode. Error trapping is switched off with the <code>ON ERROR GOTO 0</code>
+    statement. If an error occurs, or error trapping is switched off, while the
+    program is executing an error-trapping routine, the program terminates and
+    an error message is shown.
+</p>
+</section>
+
+<section>
+<h2 id="event-trapping">Event trapping</h2>
+<p>
+    Event trapping allows to define subroutines which are executed outside of the normal course of operation. Events that can be trapped are:
+</p>
+<ul>
+    <li>Time intervals (<code><a href="#ON-event">ON TIMER</a></code>)</li>
+    <li>Keypresses (<code><a href="#ON-event">ON KEY</a></code>)</li>
+    <li>Serial port input (<code><a href="#ON-event">ON COM</a></code>)</li>
+    <li>Music queue exhaustion (<code><a href="#ON-event">ON PLAY</a></code>)</li>
+    <li>Joystick triggers (<code><a href="#ON-event">ON STRIG</a></code>)</li>
+    <li>Light pen activation (<code><a href="#ON-event">ON PEN</a></code>)</li>
+</ul>
+<p>
+    Event trapping subroutines are defined as regular subroutines. At the
+    <code><a href="#RETURN">RETURN</a></code> statement, the normal course of
+    program execution is resumed. Event trapping can be switched on and off or
+    paused temporarily with statements of the form
+    <code><a href="#PEN-statement">PEN ON</a></code>, <code>PEN OFF</code>,
+    <code>PEN STOP</code>.
+    Event trapping only takes place during program execution and is paused while
+    the program is in an error trap. If an event occurs while event-trapping is
+    paused, then the event is triggered immediately when event trapping is resumed.
+</p>
+</section>
+
 </article>
 
 
