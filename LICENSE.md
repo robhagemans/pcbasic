@@ -1,4 +1,5 @@
-PC-BASIC, a BASIC interpreter.  
+PC-BASIC, a BASIC interpreter  
+-----------------------------
 Copyright (c) 2013--2015 Rob Hagemans.  
 
 Source code available at https://github.com/robhagemans/pcbasic
@@ -15,9 +16,3 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-The documentation files are copyright (c) 2014--2015 Rob Hagemans and licensed
-under a Creative Commons Attribution-ShareAlike 4.0 International License.
-The files to which this applies are marked as such. You should have received a
-copy of the licence along with this program; it can also be downloaded from
-http://creativecommons.org/licenses/by-sa/4.0/
