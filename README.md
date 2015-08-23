@@ -64,7 +64,9 @@ For example, you could include the following line in `PCBASIC.INI` to emulate IB
     preset=pcjr  
 
 
-For a full list of options, run `pcbasic -h`.
+For a full list of options, run `pcbasic -h` or consult the
+[PC-BASIC usage documentation](http://pc-basic.org/doc#invocation)
+included with PC-BASIC and available online.
 
 
 #### Basic BASIC commands ####
@@ -75,11 +77,9 @@ A few essential statements:
 `RUN` starts the currently loaded program.  
 `RUN "PROGRAM"` loads and starts `PROGRAM.BAS`.  
 
-A full CC-licensed GW-BASIC language reference is included with PC-BASIC. This documentation aims to document the actual behaviour of GW-BASIC 3.23, on which PC-BASIC is modelled. Please note that the original Microsoft help file, which can be found on the internet, is rather hit-and-miss; GW-BASIC often behaves differently than documented by Microsoft.
-
-
-#### Free BASIC compilers and saner dialects ####
-If you're starting a new project in BASIC, please consider one of the more sensible free versions of the language, such as [FreeBasic](www.freebasic.net), [QB64](http://www.qb64.net/) or [SmallBASIC](https://sourceforge.net/projects/smallbasic/). Under FreeDOS, you can use the [Bywater BASIC](https://sourceforge.net/projects/bwbasic/) interpreter.
+For more information, please consult the comprehensive
+[PC-BASIC language reference](http://pc-basic.org/doc#reference)
+included with PC-BASIC and available online.
 
 
 #### GW-BASIC links and downloads ####
