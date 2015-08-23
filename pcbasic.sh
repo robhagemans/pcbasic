@@ -1,2 +1,2 @@
 #!/bin/sh
-/usr/bin/env python2 pcbasic
+/usr/bin/env python2 pcbasic "$@"
