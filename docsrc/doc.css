@@ -19,6 +19,7 @@ article, header, nav.toc, footer {
     background-color: white;
     padding: 1em;
     line-height: 1.4em;
+    font-family: sans;
 }
 
 h1 {
