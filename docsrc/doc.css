@@ -1,33 +1,48 @@
-html {
-    background-color: #eeeeff;
-    font-family: sans;
-    font-size: 90%;
-    line-height: 140%;
+/*!
+PC-BASIC doc.css
+Copyright (c) 2015 Rob Hagemans.
+This work is licensed under a Creative Commons Attribution 4.0 International License.
+http://creativecommons.org/licenses/by/4.0/
+*/
 
+
+html {
+    background-color: white;
 }
-body {
-    margin-left: 2em;
-    margin-right: 2em;
-    max-width: 40em;
-    max-width: 40em;
+
+
+article, header, nav.toc, footer {
+    margin-left: 0;
+    margin-right: 0;
+    max-width: 45em;
+    max-width: 45em;
     background-color: white;
     padding: 1em;
+    line-height: 1.4em;
 }
-
 
 h1 {
     font-size: 130%;
     border-bottom: 2px solid #333333;
 }
 h2 {
-    margin-top: 2em;
-    margin-bottom: 0em;
+    margin-top: 2rem;
+    margin-bottom: 0;
     font-size: 120%;
     border-bottom: 2px solid #333333;
 }
+
+h3:before {
+    display: block;
+    content: " ";
+    border-bottom: 1px solid black;
+}
+
 h3 {
+    /*
     border-top: 1px solid #333333;
-/*    border-bottom: 1px solid #333333; */
+    border-top: 1em dashed red;
+    */
     margin-top: 2.5em;
     margin-bottom: 0em;
     font-size: 110%;
@@ -79,6 +94,7 @@ dd {
 }
 
 code, samp {
+    font-size: 80%;
     word-break: keep-all;
     white-space: nowrap;
 }
@@ -114,6 +130,7 @@ td, th {
 }
 
 kbd {
+    font-size: 70%;
     word-break: keep-all;
     white-space: nowrap;
     background-color: gray;
@@ -123,9 +140,65 @@ kbd {
     margin: 0px 1px 0px 1px;
 }
 pre {
+    font-size: 80%;
     background-color: #eeeeff;
     margin-top: 0.5em;
     border-top: 1px dotted;
     border-bottom: 1px dotted;
     padding: 0.1em 0.5em 0.1em 0.5em;
+}
+
+
+/* tablets and desktops */
+
+@media (min-width: 55em) {
+
+    /* push link target below fixed menu */
+    :target:before {
+        display: block;
+        content: " ";
+        height: 6em;
+    }
+
+    header {
+        margin-top: 4rem;
+    }
+
+    article, header, footer {
+        /* make space for scroll-under menu */
+        position: relative;
+        margin-left: 20rem;
+        line-height: 1.5em;
+    }
+
+    nav.toc {
+        position: fixed;
+        overflow-y: scroll;
+        left: 0;
+        top: 0;
+        padding: 5rem 1em 0 1em;
+        width: 18rem;
+        background: black;
+        height: 90vh;
+    }
+    nav.toc h2 {
+        display: none;
+    }
+    nav.toc li {
+        color: grey;
+    }
+
+    nav.toc a, nav.toc a:visited {
+        color: grey;
+        text-decoration: none;
+    }
+    nav.toc a:hover {
+        color: white;
+    }
+    nav.toc>ul>li, nav.toc>ul>li>a, nav.toc>ul>li>a:visited  {
+        color: white;
+    }
+    nav.toc>ul>li>a, nav.toc>ul>li>a:visited  {
+        font-weight: bold;
+    }
 }

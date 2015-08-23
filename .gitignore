@@ -2,4 +2,4 @@
 *.pyo
 .android.*
 pcbasic/data/USAGE
-doc/PC-BASIC_documentation.html
+doc/
