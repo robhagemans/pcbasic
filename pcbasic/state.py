@@ -34,15 +34,18 @@ console_state = State()
 # a state has been loaded
 loaded = False
 
+# name of state file
+state_name = 'PCBASIC.SAV'
+
 
 def prepare():
     """ Initialise the state module. """
     global state_file, loaded
     state_file = config.get('state')
-    if os.path.exists(plat.state_name):
-        state_file = plat.state_name
+    if os.path.exists(state_name):
+        state_file = state_name
     else:
-        state_file = os.path.join(plat.state_path, plat.state_name)
+        state_file = os.path.join(plat.state_path, state_name)
     # do not load any state file from a package
     if config.package:
         state_file = ''

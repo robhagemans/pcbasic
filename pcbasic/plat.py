@@ -35,13 +35,11 @@ else:
 encoding_dir = os.path.join(basepath, 'encoding')
 font_dir = os.path.join(basepath, 'font')
 info_dir = os.path.join(basepath, 'data')
-# use home
+system_config_dir = info_dir
+# user home
 home_dir = os.path.expanduser('~')
 
-# configuration and state
-config_name = 'PCBASIC.INI'
-state_name = 'PCBASIC.SAV'
-system_config_dir = os.path.join(basepath, 'config')
+# user configuration and state directories
 if system == 'Windows':
     user_config_dir = os.path.join(os.getenv('APPDATA'), 'pcbasic')
     state_path = user_config_dir

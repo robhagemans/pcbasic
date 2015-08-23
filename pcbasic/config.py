@@ -14,8 +14,11 @@ import zipfile
 import plat
 
 # system-wide config path
-system_config_path = os.path.join(plat.system_config_dir, plat.config_name)
-user_config_path = os.path.join(plat.user_config_dir, plat.config_name)
+system_config_path = os.path.join(plat.system_config_dir, 'default.ini')
+
+#user and local config files
+config_name = 'PCBASIC.INI'
+user_config_path = os.path.join(plat.user_config_dir, config_name)
 
 # by default, load what's in section [pcbasic] and override with anything
 # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
@@ -327,8 +330,8 @@ def parse_config(remaining):
     try:
         config_file = remaining.pop('config')
     except KeyError:
-        if os.path.exists(plat.config_name):
-            config_file = plat.config_name
+        if os.path.exists(config_name):
+            config_file = config_name
     if config_file:
         conf_dict.update(read_config_file(config_file))
     return conf_dict

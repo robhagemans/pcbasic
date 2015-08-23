@@ -23,7 +23,6 @@ coll = COLLECT(exe,
                Tree(basedir+'\\encoding', prefix='encoding'),
                Tree(basedir+'\\data', prefix='data'),
                Tree(basedir+'\\doc', prefix='doc'),
-               Tree(basedir+'\\config', prefix='config'),
                strip=None,
                upx=True,
                name='pcbasic')
