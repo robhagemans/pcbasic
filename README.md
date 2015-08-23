@@ -41,82 +41,8 @@ On **Linux**:
 - run `sudo ./install.sh`  
 - to start, click PC-BASIC in your Applications menu or run `pcbasic` on the command line.  
 
-
-#### Installation from source ####
-If your system is not supported or you prefer to install from source, download the source distribution and unpack the TGZ archive.
-The following packages are needed or recommended when installing PC-BASIC from source:
-
-| Package                                                         | OS                 | Status       | Needed for  
-|-----------------------------------------------------------------|--------------------|--------------|----------------------------  
-| [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all                | required     |
-| [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows            | required     |  
-| [PyXDG](http://freedesktop.org/wiki/Software/pyxdg/)            | Linux, other       | required     |  
-| [PyGame 1.9.1](http://www.pygame.org/download.shtml)            | all                | essential    | sound and graphics  
-| [NumPy](https://sourceforge.net/projects/numpy/files/)          | all                | essential    | sound and graphics  
-| [PySerial](https://pypi.python.org/pypi/pyserial)               | all                | recommended  | physical or emulated serial port access  
-| [PyParallel](https://pypi.python.org/pypi/pyserial)             | Windows, Linux     | optional     | physical parallel port access  
-| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| OSX, Linux, other  | optional     | native `SHELL`  
-
-In this list, _other_ refers to operating systems other than Windows, Linux or OSX.  
-
-On **Windows**, you should download all the required packages from the project web sites linked above.  
-
-On **OSX**, there are several versions of Python 2.7 and all downloads need to match your version and CPU architecture. It's a bit tricky, I'm afraid. The easiest option seems to be installing both Python and PyGame through MacPorts or Homebrew.  
-
-On **Linux distributions with APT or DNF** (including Debian, Ubuntu, Mint and Fedora), the install script will automatically install dependencies if it is run with root privileges.  
-
-The install script can also be used on **other Unix** systems or when not installing as root. Python 2.7 usually comes pre-installed; the other packages can often be installed through your package manager. For example, on Debian-based systems:
-
-        sudo apt-get install python2.7 python-xdg python-pygame python-numpy python-serial python-pexpect python-parallel xsel
-
-On Fedora:  
-
-        sudo dnf install python pyxdg pygame numpy pyserial python-pexpect xsel
-
-On FreeBSD:  
-
-        sudo pkg install python27 py27-xdg py27-game py27-numpy py27-serial py27-pexpect xsel
-
-Note that PyParallel is not available from the Fedora and FreeBSD repos. PyParallel does not support BSD; on Fedora, you'll need to install from source if you need access to physical parallel ports. However, since most modern machines do not actually have parallel ports, you probably don't need it. PyParallel is _not_ needed for printing to a CUPS or Windows printer.  
-
-The official Pygame release 1.9.1 has a bug in its handling of copy & paste on X11-based systems.
-If you run into this, install one of the [`xsel`](http://www.vergenet.net/~conrad/software/xsel/) or [`xclip`](https://sourceforge.net/projects/xclip/)  utilities and PC-BASIC will work around the issue.  
-
-#### Pygame issues on Linux ####
-If you get the following error when running PC-BASIC:
-
-    Fatal Python error: (pygame parachute) Segmentation Fault
-    Aborted (core dumped)
-
-then you've run into a bug in the PyGame package for your distribution. It appears the 1.9.1 release of PyGame (as currently distributed with Ubuntu) has a few issues; another one is an annoying stream of debug messages on the console that occurs when you use a joystick.
-
-Unfortunately, until a newer build of PyGame is released with major distributions, the only workaround that I know of is to install PyGame from current development sources.
-
-1. Install dependencies. These are the packages I needed on Ubuntu 15.04:
-
-        sudo apt-get install mercurial libpython-dev python-numpy ffmpeg libsdl1.2-dev libsdl-ttf2.0-dev libsdl-font1.2-dev libsdl-mixer1.2-dev libsdl-image1.2-dev libportmidi-dev libswscale-dev libavformat-dev libftgl-dev libsmpeg-dev
-
-
-2. Make a working directory for your build, change into it and get the source
-
-        hg clone https://bitbucket.org/pygame/pygame
-
-3. Configure
-
-        ./configure
-
-    The script will notify you if you're missing dependencies.
-
-4. Compile
-
-        make
-
-5. Install into your `/usr/local` tree
-
-        sudo make install
-
-See also the [PyGame source repository on BitBucket](https://bitbucket.org/pygame/pygame/wiki/VersionControl).
-
+If the options above are not applicable or you prefer to install from source, please
+consult `SOURCE.md` for instructions.
 
 #### Usage essentials ####
 Double-click on `pcbasic` or run `pcbasic` on the command line to start in interactive mode with no programs.  
@@ -157,9 +83,6 @@ If you're starting a new project in BASIC, please consider one of the more sensi
 
 
 #### GW-BASIC links and downloads ####
-[Norman De Forest's description of the tokenised file format](http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html) is where this project started.  
-[Dan Vanderkam's online GW-BASIC decoder](http://www.danvk.org/wp/gw-basic-program-decoder/) was another inspiration.  
-
 BASIC program downloads and further links can be found on the following pages.
 - [KindlyRat's geocities page](http://www.oocities.org/KindlyRat/GWBASIC.html)  
 - [PeatSoft GW-BASIC documentation](http://archive.is/AUm6G)  
