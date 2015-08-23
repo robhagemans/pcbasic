@@ -1,5 +1,5 @@
 *.pyc
 *.pyo
 .android.*
-pcbasic/data/USAGE
+pcbasic/data/usage.txt
 doc/

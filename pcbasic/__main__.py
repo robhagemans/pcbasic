@@ -45,7 +45,7 @@ def main():
                 debug_details()
         elif config.get('help'):
             # in help mode, print usage and exit
-            with open(os.path.join(plat.info_dir, 'USAGE')) as f:
+            with open(os.path.join(plat.info_dir, 'usage.txt')) as f:
                 for line in f:
                     sys.stdout.write(line)
         elif config.get('convert'):
