@@ -1,5 +1,5 @@
 *.pyc
 *.pyo
 .android.*
-data/USAGE
+pcbasic/data/USAGE
 doc/PC-BASIC_documentation.html
