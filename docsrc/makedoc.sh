@@ -1,3 +1,4 @@
+#!/bin/sh
 pandoc ../DESCRIPTION.md -o description.html
 cat header.html description.html options.html footer.html | pandoc -f html -t plain > ../pcbasic/data/usage.txt
 mkdir ../doc
