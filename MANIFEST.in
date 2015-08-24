@@ -1,0 +1,4 @@
+include DESCRIPTION.md
+include doc/*
+include LICENSE.md
+include GPL3.txt
