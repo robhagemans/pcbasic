@@ -140,7 +140,6 @@ def start_basic():
             # override selected settings from command line
             cassette.override()
             disk.override()
-            print state.io_state.devices['C:'].path
             # suppress double prompt
             if not state.basic_state.execute_mode:
                 state.basic_state.prompt = False
@@ -241,8 +240,9 @@ def prepare_console():
     # initialise video backend before console
     while True:
         try:
-            video = __import__(video_name)
-        except ImportError:
+            # __name__ global is needed when calling from setuptools package
+            video = __import__(video_name, globals={"__name__": __name__})
+        except ImportError as e:
             video = None
         if not video:
             if not video_name or video_name == 'video_none':
@@ -260,11 +260,11 @@ def prepare_console():
             if video_name:
                 logging.info('Falling back to %s interface.', video_name)
     if config.get('nosound'):
-        sound.audio = __import__('audio_none')
+        sound.audio = __import__('audio_none', globals={"__name__": __name__})
     else:
-        sound.audio = __import__(audio_name)
+        sound.audio = __import__(audio_name, globals={"__name__": __name__})
     if not sound.init():
-        sound.audio = __import__('audio_none')
+        sound.audio = __import__('audio_none', globals={"__name__": __name__})
         logging.warning('Failed to initialise sound. Sound will be disabled.')
     if not state.loaded:
         console.init_mode()
