@@ -8,3 +8,7 @@ data/*.SAV
 *.pyo
 *~
 .git*
+setup.py
+prepare.py
+MANIFEST.in
+DESCRIPTION.md
