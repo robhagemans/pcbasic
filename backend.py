@@ -2,8 +2,8 @@
 PC-BASIC 3.23 - backend.py
 Event loop; video, audio, keyboard, pen and joystick handling
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 
@@ -17,7 +17,7 @@ from copy import copy
 
 import plat
 import config
-import state 
+import state
 import timedate
 import unicodepage
 import typeface
@@ -35,7 +35,7 @@ import clipboard
 
 # backend implementations
 video = None
-audio = None 
+audio = None
 
 ### devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
 devices = {}
@@ -54,11 +54,11 @@ def prepare():
 
 ###############################################################################
 # main event checker
-    
+
 def wait():
     """ Wait and check events. """
     video.idle()
-    check_events()    
+    check_events()
 
 def idle():
     """ Wait a tick. """
@@ -70,7 +70,7 @@ def check_events():
     audio.check_sound()
     state.console_state.sound.check_quit()
     # check video, keyboard, pen and joystick events
-    video.check_events()   
+    video.check_events()
     # trigger & handle BASIC events
     if state.basic_state.run_mode:
         # trigger TIMER, PLAY and COM events
@@ -80,17 +80,17 @@ def check_events():
             c.check()
         # KEY, PEN and STRIG are triggered on handling the queue
 
-   
+
 ###############################################################################
-# BASIC event triggers        
-        
+# BASIC event triggers
+
 class EventHandler(object):
     """ Manage event triggers. """
-    
+
     def __init__(self):
         """ Initialise untriggered and disabled. """
         self.reset()
-        
+
     def reset(self):
         """ Reset to untriggered and disabled initial state. """
         self.gosub = None
@@ -104,14 +104,14 @@ class EventHandler(object):
 
     def command(self, command_char):
         """ Turn the event ON, OFF and STOP. """
-        if command_char == '\x95': 
+        if command_char == '\x95':
             # ON
             self.enabled = True
             self.stopped = False
-        elif command_char == '\xDD': 
+        elif command_char == '\xDD':
             # OFF
             self.enabled = False
-        elif command_char == '\x90': 
+        elif command_char == '\x90':
             # STOP
             self.stopped = True
         else:
@@ -129,25 +129,25 @@ class EventHandler(object):
 
 class PlayHandler(EventHandler):
     """ Manage PLAY (music queue) events. """
-    
+
     def __init__(self):
         """ Initialise PLAY trigger. """
         EventHandler.__init__(self)
         self.last = [0, 0, 0]
         self.trig = 1
-    
+
     def check(self):
         """ Check and trigger PLAY (music queue) events. """
         play_now = [state.console_state.sound.queue_length(voice) for voice in range(3)]
-        if pcjr_sound: 
+        if pcjr_sound:
             for voice in range(3):
-                if (play_now[voice] <= self.trig and 
-                        play_now[voice] > 0 and 
+                if (play_now[voice] <= self.trig and
+                        play_now[voice] > 0 and
                         play_now[voice] != self.last[voice]):
-                    self.trigger() 
-        else:    
-            if (self.last[0] >= self.trig and 
-                    play_now[0] < self.trig):    
+                    self.trigger()
+        else:
+            if (self.last[0] >= self.trig and
+                    play_now[0] < self.trig):
                 self.trigger()
         self.last = play_now
 
@@ -158,7 +158,7 @@ class PlayHandler(EventHandler):
 
 class TimerHandler(EventHandler):
     """ Manage TIMER events. """
-    
+
     def __init__(self):
         """ Initialise TIMER trigger. """
         EventHandler.__init__(self)
@@ -171,7 +171,7 @@ class TimerHandler(EventHandler):
 
     def check(self):
         """ Trigger TIMER events. """
-        mutimer = timedate.timer_milliseconds() 
+        mutimer = timedate.timer_milliseconds()
         if mutimer >= self.start + self.period:
             self.start = mutimer
             self.trigger()
@@ -179,13 +179,13 @@ class TimerHandler(EventHandler):
 
 class ComHandler(EventHandler):
     """ Manage COM-port events. """
-    
+
     def __init__(self, port):
         """ Initialise COM trigger. """
         EventHandler.__init__(self)
         # devices aren't initialised at this time so just keep the name
         self.portname = ('COM1:', 'COM2:')[port]
-    
+
     def check(self):
         """ Trigger COM-port events. """
         if devices[self.portname] and devices[self.portname].char_waiting():
@@ -194,27 +194,27 @@ class ComHandler(EventHandler):
 
 class KeyHandler(EventHandler):
     """ Manage KEY events. """
-    
+
     def __init__(self, scancode=None):
         """ Initialise KEY trigger. """
         EventHandler.__init__(self)
         self.modcode = None
         self.scancode = scancode
         self.predefined = (scancode != None)
-    
+
     #D
     # access keyqueue from check() instead
     def set_scancode_for_check(self, scancode, modifiers):
         """ Kludge. """
         self.check_scancode = scancode
         self.check_modifiers = modifiers
-    
+
     def check(self):
         """ Trigger KEY events. """
         scancode = self.check_scancode
         modifiers = self.check_modifiers
         # build KEY trigger code
-        # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt                
+        # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt
         # second byte is scan code; first byte
         #  0       if the key is pressed alone
         #  1 to 3    if any Shift and the key are combined
@@ -230,12 +230,12 @@ class KeyHandler(EventHandler):
             modcode = None
         else:
             # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
-            modcode = modifiers & 0x6f 
-        if (self.modcode == modcode and self.scancode and 
+            modcode = modifiers & 0x6f
+        if (self.modcode == modcode and self.scancode and
                     self.scancode == scancode):
             self.trigger()
             return self.enabled
-        return False            
+        return False
 
     def set_trigger(self, keystr):
         """ Set KEY trigger to chr(modcode)+chr(scancode). """
@@ -268,7 +268,7 @@ class Events(object):
         """ Initialise or reset event triggers. """
         # KEY: init key events
         keys = [
-            scancode.F1, scancode.F2, scancode.F3, scancode.F4, scancode.F5, 
+            scancode.F1, scancode.F2, scancode.F3, scancode.F4, scancode.F5,
             scancode.F6, scancode.F7, scancode.F8, scancode.F9, scancode.F10]
         if num_fn_keys == 12:
             # Tandy only
@@ -276,10 +276,10 @@ class Events(object):
         keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
         keys += [None] * (20 - num_fn_keys - 4)
         self.key = [KeyHandler(sc) for sc in keys]
-        # other events            
+        # other events
         self.timer = TimerHandler()
         self.play = PlayHandler()
-        self.com = [ComHandler(0), ComHandler(1)]  
+        self.com = [ComHandler(0), ComHandler(1)]
         self.pen = EventHandler()
         self.strig = [EventHandler() for _ in xrange(4)]
         # all handlers in order of handling; TIMER first
@@ -301,24 +301,24 @@ ignore_caps = True
 # default function key scancodes for KEY autotext. F1-F10
 # F11 and F12 here are TANDY scancodes only!
 function_key = {
-    scancode.F1: 0, scancode.F2: 1, scancode.F3: 2, scancode.F4: 3, 
+    scancode.F1: 0, scancode.F2: 1, scancode.F3: 2, scancode.F4: 3,
     scancode.F5: 4, scancode.F6: 5, scancode.F7: 6, scancode.F8: 7,
     scancode.F9: 8, scancode.F10: 9, scancode.F11: 10, scancode.F12: 11}
 # bit flags for modifier keys
 toggle = {
-    scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,  
+    scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,
     scancode.NUMLOCK: 0x20, scancode.SCROLLOCK: 0x10}
-modifier = {    
-    scancode.ALT: 0x8, scancode.CTRL: 0x4, 
+modifier = {
+    scancode.ALT: 0x8, scancode.CTRL: 0x4,
     scancode.LSHIFT: 0x2, scancode.RSHIFT: 0x1}
 
 
 # user definable key list
-state.console_state.key_replace = [ 
+state.console_state.key_replace = [
     'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
     'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
 # switch off macro repacements
-state.basic_state.key_macros_off = False    
+state.basic_state.key_macros_off = False
 
 
 def prepare_keyboard():
@@ -331,7 +331,7 @@ def prepare_keyboard():
         # string_escape not available on PGS4A
         keystring = config.options['keys'].decode('utf-8')
     else:
-        keystring = config.options['keys'].decode('string_escape').decode('utf-8')    
+        keystring = config.options['keys'].decode('string_escape').decode('utf-8')
     state.console_state.keyb = Keyboard()
     for u in keystring:
         c = u.encode('utf-8')
@@ -367,7 +367,7 @@ class KeyboardBuffer(object):
     def is_empty(self):
         """ True if no keystrokes in buffer. """
         return len(self.buffer) == 0
-    
+
     def insert(self, s, check_full=True):
         """ Append a string of e-ascii keystrokes. """
         d = ''
@@ -380,7 +380,7 @@ class KeyboardBuffer(object):
             elif c == '\0':
                 d = c
         return True
-        
+
     def getc(self):
         """ Read a keystroke. """
         try:
@@ -390,31 +390,31 @@ class KeyboardBuffer(object):
         if c:
             self.start = (self.start + 1) % self.ring_length
         return c
-            
+
     def peek(self):
         """ Show top keystroke in keyboard buffer. """
         try:
             return self.buffer[0]
         except IndexError:
             return ''
-            
+
     def drop(self, n):
         """ Drop n characters from keyboard buffer. """
         n = min(n, len(self.buffer))
-        self.buffer = self.buffer[n:]        
+        self.buffer = self.buffer[n:]
         self.start = (self.start + n) % self.ring_length
-    
+
     def stop(self):
         """ Ring buffer stopping index. """
         return (self.start + self.length()) % self.ring_length
-    
+
     def ring_index(self, index):
         """ Get index for ring position. """
         index -= self.start
         if index < 0:
             index += self.ring_length + 1
         return index
-        
+
     def ring_read(self, index):
         """ Read character at position i in ring. """
         index = self.ring_index(index)
@@ -425,7 +425,7 @@ class KeyboardBuffer(object):
             return self.buffer[index]
         except IndexError:
             return '\0\0'
-    
+
     def ring_write(self, index, c):
         """ Write e-ascii character at position i in ring. """
         index = self.ring_index(index)
@@ -434,9 +434,9 @@ class KeyboardBuffer(object):
                 self.buffer[index] = c
             except IndexError:
                 pass
-    
+
     def ring_set_boundaries(self, start, stop):
-        """ Set start and stop index. """ 
+        """ Set start and stop index. """
         length = (stop - start) % self.ring_length
         # rotate buffer to account for new start and stop
         start_index = self.ring_index(start)
@@ -444,8 +444,8 @@ class KeyboardBuffer(object):
         self.buffer = self.buffer[start_index:] + self.buffer[:stop_index]
         self.buffer += ['\0']*(length - len(self.buffer))
         self.start = start
-        
-        
+
+
 ###############################################################################
 # keyboard operations
 
@@ -460,7 +460,7 @@ class Keyboard(object):
         self.last_scancode = 0
         # active status of caps, num, scroll, alt, ctrl, shift modifiers
         self.mod = 0
-        # store for alt+keypad ascii insertion    
+        # store for alt+keypad ascii insertion
         self.keypad_ascii = ''
 
     def read_chars(self, num):
@@ -472,7 +472,7 @@ class Keyboard(object):
 
     def get_char(self):
         """ Read any keystroke, nonblocking. """
-        wait()    
+        wait()
         return self.buf.getc()
 
     def wait_char(self):
@@ -497,43 +497,43 @@ class Keyboard(object):
         # set port and low memory address regardless of event triggers
         if scan != None:
             self.last_scancode = scan
-        # set modifier status    
+        # set modifier status
         try:
             self.mod |= modifier[scan]
         except KeyError:
-           pass 
-        # set toggle-key modifier status    
+           pass
+        # set toggle-key modifier status
         try:
            self.mod ^= toggle[scan]
         except KeyError:
-           pass 
+           pass
         # handle BIOS events
-        if (scan == scancode.DELETE and 
+        if (scan == scancode.DELETE and
                     self.mod & modifier[scancode.CTRL] and
                     self.mod & modifier[scancode.ALT]):
                 # ctrl-alt-del: if not captured by the OS, reset the emulator
                 # meaning exit and delete state. This is useful on android.
                 raise error.Reset()
         if ((scan in (scancode.BREAK, scancode.SCROLLOCK) or
-                        ctrl_c_is_break and scan==scancode.c) 
+                        ctrl_c_is_break and scan==scancode.c)
                     and self.mod & modifier[scancode.CTRL]):
                 raise error.Break()
         if scan == scancode.PRINT:
-            if (self.mod & 
+            if (self.mod &
                     (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])):
                 # shift + printscreen
                 state.console_state.screen.print_screen()
             if self.mod & modifier[scancode.CTRL]:
                 # ctrl + printscreen
                 redirect.toggle_echo(devices['LPT1:'])
-        # alt+keypad ascii replacement        
+        # alt+keypad ascii replacement
         # we can't depend on internal NUM LOCK state as it doesn't get updated
-        if (self.mod & modifier[scancode.ALT] and 
+        if (self.mod & modifier[scancode.ALT] and
                 len(eascii) == 1 and eascii >= '0' and eascii <= '9'):
             try:
                 self.keypad_ascii += scancode.keypad[scan]
                 return
-            except KeyError:    
+            except KeyError:
                 pass
         # trigger events
         if check_key_event(scan, self.mod):
@@ -544,7 +544,7 @@ class Keyboard(object):
             # only check function keys
             # can't be redefined in events - so must be fn 1-10 (1-12 on Tandy).
             keynum = function_key[scan]
-            if (state.basic_state.key_macros_off or state.basic_state.run_mode 
+            if (state.basic_state.key_macros_off or state.basic_state.run_mode
                     and state.basic_state.events.key[keynum].enabled):
                 # this key is paused from being trapped, don't replace
                 self.insert_chars(scan_to_eascii(scan, self.mod), check_full)
@@ -556,14 +556,14 @@ class Keyboard(object):
                 return
         except KeyError:
             pass
-        if not eascii or (scan != None and self.mod & 
+        if not eascii or (scan != None and self.mod &
                     (modifier[scancode.ALT] | modifier[scancode.CTRL])):
             # any provided e-ASCII value overrides when CTRL & ALT are off
-            # this helps make keyboards do what's expected 
+            # this helps make keyboards do what's expected
             # independent of language setting
             try:
                 eascii = scan_to_eascii(scan, self.mod)
-            except KeyError:            
+            except KeyError:
                 # no eascii found
                 return
         if (self.mod & toggle[scancode.CAPSLOCK]
@@ -572,7 +572,7 @@ class Keyboard(object):
                 eascii = chr(ord(eascii)-32)
             elif eascii >= 'A' and eascii <= 'Z':
                 eascii = chr(ord(eascii)+32)
-        self.insert_chars(eascii, check_full=True)        
+        self.insert_chars(eascii, check_full=True)
 
     def key_up(self, scan):
         """ Insert a key-up event. """
@@ -581,7 +581,7 @@ class Keyboard(object):
         try:
             # switch off ephemeral modifiers
             self.mod &= ~modifier[scan]
-            # ALT+keycode    
+            # ALT+keycode
             if scan == scancode.ALT and self.keypad_ascii:
                 char = chr(int(self.keypad_ascii)%256)
                 if char == '\0':
@@ -589,7 +589,7 @@ class Keyboard(object):
                 self.insert_chars(char, check_full=True)
                 self.keypad_ascii = ''
         except KeyError:
-           pass 
+           pass
 
 
 #D
@@ -606,8 +606,8 @@ def key_down(scan, eascii='', check_full=True):
 def key_up(scan):
     """ Insert a key-up event. """
     state.console_state.keyb.key_up(scan)
-  
-#D?    
+
+#D?
 def insert_special_key(name):
     """ Insert break, reset or quit events. """
     if name == 'quit':
@@ -666,7 +666,7 @@ def paste_clipboard(mouse):
 
 class TextRow(object):
     """ Buffer for a single row of the screen. """
-    
+
     def __init__(self, battr, bwidth):
         """ Set up screen row empty and unwrapped. """
         # screen buffer, initialised to spaces, dim white on black
@@ -674,10 +674,10 @@ class TextRow(object):
         # character is part of double width char; 0 = no; 1 = lead, 2 = trail
         self.double = [ 0 ] * bwidth
         # last non-whitespace character
-        self.end = 0    
+        self.end = 0
         # line continues on next row (either LF or word wrap happened)
         self.wrap = False
-    
+
     def clear(self, battr):
         """ Clear the screen row buffer. Leave wrap untouched. """
         bwidth = len(self.buf)
@@ -685,12 +685,12 @@ class TextRow(object):
         # character is part of double width char; 0 = no; 1 = lead, 2 = trail
         self.double = [ 0 ] * bwidth
         # last non-whitespace character
-        self.end = 0    
+        self.end = 0
 
 
 class TextPage(object):
     """ Buffer for a screen page. """
-    
+
     def __init__(self, battr, bwidth, bheight, pagenum):
         """ Initialise the screen buffer to given dimensions. """
         self.row = [TextRow(battr, bwidth) for _ in xrange(bheight)]
@@ -718,20 +718,20 @@ class TextPage(object):
         if unicodepage.dbcs and self.width == 80:
             orig_col = ccol
             # replace chars from here until necessary to update double-width chars
-            therow = self.row[crow-1]    
+            therow = self.row[crow-1]
             # replacing a trail byte? take one step back
             # previous char could be a lead byte? take a step back
-            if (ccol > 1 and therow.double[ccol-2] != 2 and 
-                    (therow.buf[ccol-1][0] in unicodepage.trail or 
+            if (ccol > 1 and therow.double[ccol-2] != 2 and
+                    (therow.buf[ccol-1][0] in unicodepage.trail or
                      therow.buf[ccol-2][0] in unicodepage.lead)):
                 ccol -= 1
                 start -= 1
             # check all dbcs characters between here until it doesn't matter anymore
             while ccol < self.width:
                 c = therow.buf[ccol-1][0]
-                d = therow.buf[ccol][0]  
+                d = therow.buf[ccol][0]
                 if (c in unicodepage.lead and d in unicodepage.trail):
-                    if (therow.double[ccol-1] == 1 and 
+                    if (therow.double[ccol-1] == 1 and
                             therow.double[ccol] == 2 and ccol > orig_col):
                         break
                     therow.double[ccol-1] = 1
@@ -744,9 +744,9 @@ class TextPage(object):
                     therow.double[ccol-1] = 0
                     start, stop = min(start, ccol), max(stop, ccol+1)
                     ccol += 1
-                if (ccol >= self.width or 
+                if (ccol >= self.width or
                         (one_only and ccol > orig_col)):
-                    break  
+                    break
             # check for box drawing
             if unicodepage.box_protect:
                 ccol = start-2
@@ -754,8 +754,8 @@ class TextPage(object):
                 bset = -1
                 while ccol < stop+2 and ccol < self.width:
                     c = therow.buf[ccol-1][0]
-                    d = therow.buf[ccol][0]  
-                    if bset > -1 and unicodepage.connects(c, d, bset): 
+                    d = therow.buf[ccol][0]
+                    if bset > -1 and unicodepage.connects(c, d, bset):
                         connecting += 1
                     else:
                         connecting = 0
@@ -773,11 +773,11 @@ class TextPage(object):
                         if ccol > 2 and therow.double[ccol-3] == 1:
                             therow.double[ccol-3] = 0
                             start = min(start, ccol-2)
-                        if (ccol < self.width-1 and 
+                        if (ccol < self.width-1 and
                                 therow.double[ccol+1] == 2):
                             therow.double[ccol+1] = 0
                             stop = max(stop, ccol+2)
-                    ccol += 1        
+                    ccol += 1
         return start, stop
 
 class TextBuffer(object):
@@ -796,7 +796,7 @@ class TextBuffer(object):
             srcrow = self.pages[src].row[x]
             dstrow.buf[:] = srcrow.buf[:]
             dstrow.end = srcrow.end
-            dstrow.wrap = srcrow.wrap            
+            dstrow.wrap = srcrow.wrap
 
 
 ###############################################################################
@@ -808,7 +808,7 @@ def prepare_video():
     global video_capabilities, composite_monitor, mono_monitor
     global font_8, heights_needed
     video_capabilities = config.options['video']
-    # do all text modes with >8 pixels have an ega-cursor?    
+    # do all text modes with >8 pixels have an ega-cursor?
     egacursor = config.options['video'] in (
         'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules')
     composite_monitor = config.options['monitor'] == 'composite'
@@ -819,7 +819,7 @@ def prepare_video():
     # only allow the screen modes that the given machine supports
     # PCjr starts in 40-column mode
     # video memory size - default is EGA 256K
-    state.console_state.screen = Screen(config.options['text-width'], 
+    state.console_state.screen = Screen(config.options['text-width'],
                                         config.options['video-memory'])
 
     heights_needed = set()
@@ -828,10 +828,10 @@ def prepare_video():
     for mode in state.console_state.screen.mode_data.values():
         heights_needed.add(mode.font_height)
     # load the 8-pixel font that's available in RAM.
-    font_8 = typeface.load(config.options['font'], 8, 
+    font_8 = typeface.load(config.options['font'], 8,
                            unicodepage.cp_to_unicodepoint)
-    
-    
+
+
 def init_video(video_module):
     """ Initialise the video backend. """
     global video
@@ -849,7 +849,7 @@ def init_video(video_module):
     if state.loaded:
         # reload the screen in resumed state
         return state.console_state.screen.resume()
-    else:        
+    else:
         # initialise a fresh textmode screen
         info = state.console_state.screen.mode
         state.console_state.screen.set_mode(info, 0, 1, 0, 0)
@@ -881,7 +881,7 @@ class Screen(object):
 
     def prepare_modes(self):
         """ Build lists of allowed graphics modes. """
-        self.text_data, self.mode_data = modes.get_modes(self, 
+        self.text_data, self.mode_data = modes.get_modes(self,
                                     self.cga4_palette, self.video_mem_size)
 
     def close(self):
@@ -903,14 +903,14 @@ class Screen(object):
         self.prepare_modes()
         cmode = self.mode
         nmode = self.screen_mode
-        if (not cmode.is_text_mode and 
-                (nmode not in self.mode_data or 
+        if (not cmode.is_text_mode and
+                (nmode not in self.mode_data or
                  cmode.name != self.mode_data[nmode].name)):
             logging.warning(
                 "Resumed screen mode %d (%s) not supported by this setup",
                 nmode, cmode.name)
             return False
-        if not cmode.is_text_mode:    
+        if not cmode.is_text_mode:
             mode_info = self.mode_data[nmode]
         else:
             mode_info = self.text_data[cmode.width]
@@ -929,8 +929,8 @@ class Screen(object):
             self.palette.set_all(self.palette.palette, check_mode=False)
             video.set_attr(self.attr)
             # fix the cursor
-            video.build_cursor(self.cursor.width, mode_info.font_height, 
-                               self.cursor.from_line, self.cursor.to_line)    
+            video.build_cursor(self.cursor.width, mode_info.font_height,
+                               self.cursor.from_line, self.cursor.to_line)
             video.move_cursor(state.console_state.row, state.console_state.col)
             video.update_cursor_attr(
                 self.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
@@ -956,7 +956,7 @@ class Screen(object):
         self.display_storage = None
         return True
 
-    def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum, 
+    def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum,
                erase=1, new_width=None):
         """ SCREEN: change the video mode, colourburst, visible or active page. """
         # set default arguments
@@ -984,13 +984,13 @@ class Screen(object):
         new_colorswitch = (new_colorswitch != 0)
         if new_mode == 0 and new_width == None:
             # width persists on change to screen 0
-            new_width = self.mode.width 
+            new_width = self.mode.width
             # if we switch out of a 20-col mode (Tandy screen 3), switch to 40-col.
             if new_width == 20:
                 new_width = 40
         # retrieve the specs for the new video mode
         try:
-            if new_mode != 0:    
+            if new_mode != 0:
                 info = self.mode_data[new_mode]
             else:
                 info = self.text_data[new_width]
@@ -999,16 +999,16 @@ class Screen(object):
             raise error.RunError(5)
         # vpage and apage nums are persistent on mode switch with SCREEN
         # on pcjr only, reset page to zero if current page number would be too high.
-        if new_vpagenum == None:    
-            new_vpagenum = self.vpagenum 
-            if (video_capabilities == 'pcjr' and info and 
+        if new_vpagenum == None:
+            new_vpagenum = self.vpagenum
+            if (video_capabilities == 'pcjr' and info and
                     new_vpagenum >= info.num_pages):
                 new_vpagenum = 0
         if new_apagenum == None:
             new_apagenum = self.apagenum
-            if (video_capabilities == 'pcjr' and info and 
+            if (video_capabilities == 'pcjr' and info and
                     new_apagenum >= info.num_pages):
-                new_apagenum = 0    
+                new_apagenum = 0
         if ((not info.is_text_mode and info.name != self.mode.name) or
                 (info.is_text_mode and not self.mode.is_text_mode) or
                 (info.width != self.mode.width) or
@@ -1016,14 +1016,14 @@ class Screen(object):
             # Erase tells basic how much video memory to erase
             # 0: do not erase video memory
             # 1: (default) erase old and new page if screen or width changes
-            # 2: erase all video memory if screen or width changes 
+            # 2: erase all video memory if screen or width changes
             # -> we're not distinguishing between 1 and 2 here
             if (erase == 0 and self.mode.video_segment == info.video_segment):
                 save_mem = self.mode.get_memory(
                                 self.mode.video_segment*0x10, self.video_mem_size)
             else:
                 save_mem = None
-            self.set_mode(info, new_mode, new_colorswitch, 
+            self.set_mode(info, new_mode, new_colorswitch,
                           new_apagenum, new_vpagenum)
             if save_mem:
                 self.mode.set_memory(self.mode.video_segment*0x10, save_mem)
@@ -1034,16 +1034,16 @@ class Screen(object):
                 raise error.RunError(5)
             self.set_page(new_vpagenum, new_apagenum)
 
-    def set_mode(self, mode_info, new_mode, new_colorswitch, 
+    def set_mode(self, mode_info, new_mode, new_colorswitch,
                  new_apagenum, new_vpagenum):
         """ Change the video mode, colourburst, visible or active page. """
         # reset palette happens even if the SCREEN call fails
         self.set_cga4_palette(1)
-        # if the new mode has fewer pages than current vpage/apage, 
+        # if the new mode has fewer pages than current vpage/apage,
         # illegal fn call before anything happens.
         # signal the backend to change the screen resolution
         if (not mode_info or
-                new_apagenum >= mode_info.num_pages or 
+                new_apagenum >= mode_info.num_pages or
                 new_vpagenum >= mode_info.num_pages or
                 not video.init_screen_mode(mode_info)):
             # reset palette happens even if the SCREEN call fails
@@ -1056,19 +1056,19 @@ class Screen(object):
             self.attr = mode_info.attr
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) and
                 mode_info.name != self.mode.name):
-            # start with black border 
+            # start with black border
             self.set_border(0)
         # set the screen parameters
         self.screen_mode = new_mode
-        self.colorswitch = new_colorswitch 
+        self.colorswitch = new_colorswitch
         # set all state vars
         self.mode = mode_info
-        # build the screen buffer    
-        self.text = TextBuffer(self.attr, self.mode.width, 
+        # build the screen buffer
+        self.text = TextBuffer(self.attr, self.mode.width,
                                self.mode.height, self.mode.num_pages)
         # ensure current position is not outside new boundaries
         state.console_state.row, state.console_state.col = 1, 1
-        # set active page & visible page, counting from 0. 
+        # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics characteristics
         self.drawing = graphics.Drawing(self)
@@ -1080,10 +1080,10 @@ class Screen(object):
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
         if self.mode.is_text_mode:
             self.set_colorburst(new_colorswitch)
-        elif self.mode.name == '320x200x4':    
+        elif self.mode.name == '320x200x4':
             self.set_colorburst(not new_colorswitch)
         elif self.mode.name == '640x200x2':
-            self.set_colorburst(False)    
+            self.set_colorburst(False)
 
     def set_width(self, to_width):
         """ Set the character width of the screen, reset pages and change modes. """
@@ -1093,7 +1093,7 @@ class Screen(object):
             else:
                 raise error.RunError(5)
         elif self.mode.is_text_mode:
-            self.screen(0, None, 0, 0, new_width=to_width) 
+            self.screen(0, None, 0, 0, new_width=to_width)
         elif to_width == 40:
             if self.mode.name == '640x200x2':
                 self.screen(1, None, 0, 0)
@@ -1151,7 +1151,7 @@ class Screen(object):
             self.cga4_palette[:] = modes.cga4_palettes[5]
         else:
             self.cga4_palette[:] = modes.cga4_palettes[num]
-        
+
     def set_video_memory_size(self, new_size):
         """ Change the amount of memory available to the video card. """
         self.video_mem_size = new_size
@@ -1165,7 +1165,7 @@ class Screen(object):
         # reload max number of pages; do we fit? if not, drop to text
         new_mode = self.mode_data[self.screen_mode]
         if (page >= new_mode.num_pages):
-            return False        
+            return False
         self.mode = new_mode
         return True
 
@@ -1176,7 +1176,7 @@ class Screen(object):
         if new_apagenum == None:
             new_apagenum = self.apagenum
         if (new_vpagenum >= self.mode.num_pages or new_apagenum >= self.mode.num_pages):
-            raise error.RunError(5)    
+            raise error.RunError(5)
         self.vpagenum = new_vpagenum
         self.apagenum = new_apagenum
         self.vpage = self.text.pages[new_vpagenum]
@@ -1194,14 +1194,14 @@ class Screen(object):
 
     def copy_page(self, src, dst):
         """ Copy source to destination page. """
-        self.text.copy_page(src, dst)    
+        self.text.copy_page(src, dst)
         video.copy_page(src, dst)
 
     def get_char_attr(self, pagenum, crow, ccol, want_attr):
         """ Retrieve a byte from the screen. """
         return self.text.pages[pagenum].get_char_attr(crow, ccol, want_attr)
 
-    def put_char_attr(self, pagenum, crow, ccol, c, cattr, 
+    def put_char_attr(self, pagenum, crow, ccol, c, cattr,
                             one_only=False, for_keys=False, force=False):
         """ Put a byte to the screen, redrawing as necessary. """
         if not self.mode.is_text_mode:
@@ -1210,11 +1210,11 @@ class Screen(object):
             if c == ' ':
                 force = True
         start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr, one_only, force)
-        # update the screen 
+        # update the screen
         self.refresh_range(pagenum, crow, start, stop, for_keys)
 
-    def get_text(self, start_row, start_col, stop_row, stop_col):   
-        """ Retrieve a clip of the text between start and stop. """     
+    def get_text(self, start_row, start_col, stop_row, stop_col):
+        """ Retrieve a clip of the text between start and stop. """
         r, c = start_row, start_col
         full = ''
         clip = ''
@@ -1225,7 +1225,7 @@ class Screen(object):
             # include trail byte
             stop_col += 1
         while r < stop_row or (r == stop_row and c <= stop_col):
-            clip += self.vpage.row[r-1].buf[c-1][0]    
+            clip += self.vpage.row[r-1].buf[c-1][0]
             c += 1
             if c > self.mode.width:
                 if not self.vpage.row[r-1].wrap:
@@ -1233,7 +1233,7 @@ class Screen(object):
                     clip = ''
                 r += 1
                 c = 1
-        full += unicodepage.UTF8Converter().to_utf8(clip)        
+        full += unicodepage.UTF8Converter().to_utf8(clip)
         return full
 
     def refresh_range(self, pagenum, crow, start, stop, for_keys=False):
@@ -1245,7 +1245,7 @@ class Screen(object):
             if double == 1:
                 ca = therow.buf[ccol-1]
                 da = therow.buf[ccol]
-                video.set_attr(da[1]) 
+                video.set_attr(da[1])
                 video.putwc_at(pagenum, crow, ccol, ca[0], da[0], for_keys)
                 therow.double[ccol-1] = 1
                 therow.double[ccol] = 2
@@ -1253,8 +1253,8 @@ class Screen(object):
             else:
                 if double != 0:
                     logging.debug('DBCS buffer corrupted at %d, %d (%d)', crow, ccol, double)
-                ca = therow.buf[ccol-1]        
-                video.set_attr(ca[1]) 
+                ca = therow.buf[ccol-1]
+                video.set_attr(ca[1])
                 video.putc_at(pagenum, crow, ccol, ca[0], for_keys)
                 ccol += 1
 
@@ -1262,18 +1262,18 @@ class Screen(object):
     def redraw_row(self, start, crow, wrap=True):
         """ Draw the screen row, wrapping around and reconstructing DBCS buffer. """
         while True:
-            therow = self.apage.row[crow-1]  
-            for i in range(start, therow.end): 
+            therow = self.apage.row[crow-1]
+            for i in range(start, therow.end):
                 # redrawing changes colour attributes to current foreground (cf. GW)
                 # don't update all dbcs chars behind at each put
-                self.put_char_attr(self.apagenum, crow, i+1, 
+                self.put_char_attr(self.apagenum, crow, i+1,
                         therow.buf[i][0], self.attr, one_only=True, force=True)
-            if (wrap and therow.wrap and 
+            if (wrap and therow.wrap and
                     crow >= 0 and crow < self.text.height-1):
                 crow += 1
                 start = 0
             else:
-                break    
+                break
 
     def redraw_text_screen(self):
         """ Redraw the active screen page, reconstructing DBCS buffers. """
@@ -1283,14 +1283,14 @@ class Screen(object):
         video.clear_rows(self.attr, 1, self.mode.height)
         # redraw every character
         for crow in range(self.mode.height):
-            therow = self.apage.row[crow]  
-            for i in range(self.mode.width): 
+            therow = self.apage.row[crow]
+            for i in range(self.mode.width):
                 # set for_keys to avoid echoing to CLI
                 # set force to force actual redrawing of non-updated chars
-                self.put_char_attr(self.apagenum, crow+1, i+1, 
-                             therow.buf[i][0], therow.buf[i][1], 
+                self.put_char_attr(self.apagenum, crow+1, i+1,
+                             therow.buf[i][0], therow.buf[i][1],
                              for_keys=True, force=True)
-        # set cursor back to previous state                             
+        # set cursor back to previous state
         self.cursor.reset_visibility()
 
     #D -> devices['LPT1'].write(get_text(...))
@@ -1313,10 +1313,10 @@ class Screen(object):
     def clear_text_area(self, x0, y0, x1, y1):
         """ Remove all characters from a rectangle of the graphics screen. """
         fx, fy = self.mode.font_width, self.mode.font_height
-        cymax, cxmax = self.mode.height-1, self.mode.width-1 
-        cx0 = min(cxmax, max(0, x0 // fx)) 
+        cymax, cxmax = self.mode.height-1, self.mode.width-1
+        cx0 = min(cxmax, max(0, x0 // fx))
         cy0 = min(cymax, max(0, y0 // fy))
-        cx1 = min(cxmax, max(0, x1 // fx)) 
+        cx1 = min(cxmax, max(0, x1 // fx))
         cy1 = min(cymax, max(0, y1 // fy))
         for r in range(cy0, cy1+1):
             self.apage.row[r].buf[cx0:cx1+1] = [
@@ -1343,7 +1343,7 @@ class Screen(object):
         video.put_pixel(x, y, index, pagenum)
         self.clear_text_at(x, y)
 
-    def get_pixel(self, x, y, pagenum=None):    
+    def get_pixel(self, x, y, pagenum=None):
         """ Return the attribute a pixel on the screen. """
         if pagenum == None:
             pagenum = self.apagenum
@@ -1381,13 +1381,13 @@ class Screen(object):
         video.fill_rect(x0, y0, x1, y1, index)
         self.clear_text_area(x0, y0, x1, y1)
 
- 
+
 ###############################################################################
 # palette
 
 class Palette(object):
     """ Colour palette. """
-    
+
     def __init__(self, mode):
         """ Initialise palette. """
         self.set_all(mode.palette, check_mode=False)
@@ -1445,7 +1445,7 @@ class Cursor(object):
         self.visible_run = False
         # cursor shape
         self.from_line = 0
-        self.to_line = 0    
+        self.to_line = 0
         self.width = screen.mode.font_width
         self.height = screen.mode.font_height
 
@@ -1455,7 +1455,7 @@ class Cursor(object):
         self.height = mode.font_height
         self.set_default_shape(True)
         self.reset_attr()
-    
+
     def reset_attr(self):
         """ Set the text cursor attribute to that of the current location. """
         video.update_cursor_attr(self.screen.apage.row[
@@ -1470,7 +1470,7 @@ class Cursor(object):
         """ Set default cursor visibility. """
         self.visible_run = visible_run
         self.reset_visibility()
-        
+
     def reset_visibility(self):
         """ Set cursor visibility to its default state. """
         # visible if in interactive mode, unless forced visible in text mode.
@@ -1487,19 +1487,19 @@ class Cursor(object):
         mode = self.screen.mode
         fx, fy = self.width, self.height
         if egacursor:
-            # odd treatment of cursors on EGA machines, 
+            # odd treatment of cursors on EGA machines,
             # presumably for backward compatibility
-            # the following algorithm is based on DOSBox source int10_char.cpp 
-            #     INT10_SetCursorShape(Bit8u first,Bit8u last)    
+            # the following algorithm is based on DOSBox source int10_char.cpp
+            #     INT10_SetCursorShape(Bit8u first,Bit8u last)
             max_line = fy - 1
             if from_line & 0xe0 == 0 and to_line & 0xe0 == 0:
                 if (to_line < from_line):
                     # invisible only if to_line is zero and to_line < from_line
-                    if to_line != 0: 
+                    if to_line != 0:
                         # block shape from *to_line* to end
                         from_line = to_line
                         to_line = max_line
-                elif ((from_line | to_line) >= max_line or 
+                elif ((from_line | to_line) >= max_line or
                             to_line != max_line-1 or from_line != max_line):
                     if to_line > 3:
                         if from_line+2 < to_line:
@@ -1516,11 +1516,11 @@ class Cursor(object):
         self.to_line = max(0, min(to_line, fy-1))
         video.build_cursor(self.width, fy, self.from_line, self.to_line)
         self.reset_attr()
-        
+
     def set_default_shape(self, overwrite_shape):
         """ Set the cursor to one of two default shapes. """
         if overwrite_shape:
-            if not self.screen.mode.is_text_mode: 
+            if not self.screen.mode.is_text_mode:
                 # always a block cursor in graphics mode
                 self.set_shape(0, self.height-1)
             elif video_capabilities == 'ega':
@@ -1539,10 +1539,10 @@ class Cursor(object):
     def set_width(self, num_chars):
         """ Set the cursor with to num_chars characters. """
         new_width = num_chars * self.screen.mode.font_width
-        # update cursor shape to new width if necessary    
+        # update cursor shape to new width if necessary
         if new_width != self.width:
             self.width = new_width
-            video.build_cursor(self.width, self.height, 
+            video.build_cursor(self.width, self.height,
                                self.from_line, self.to_line)
             self.reset_attr()
 
@@ -1555,7 +1555,7 @@ pen_pos = (0, 0)
 
 class Pen(object):
     """ Light pen support. """
-    
+
     def __init__(self):
         """ Initialise light pen. """
         self.was_down = False
@@ -1567,9 +1567,9 @@ class Pen(object):
         # trigger PEN event
         state.basic_state.events.pen.trigger()
         # TRUE until polled
-        self.was_down = True 
+        self.was_down = True
         # TRUE until pen up
-        pen_is_down = True 
+        pen_is_down = True
         self.down_pos = x, y
 
     def up(self):
@@ -1595,7 +1595,7 @@ class Pen(object):
         elif fn == 2:
             return self.down_pos[1]
         elif fn == 3:
-            return -1 if pen_is_down else 0 
+            return -1 if pen_is_down else 0
         elif fn == 4:
             return posx
         elif fn == 5:
@@ -1614,17 +1614,17 @@ state.console_state.pen = Pen()
 #D
 def pen_down(x, y):
     """ Report a pen-down event at graphical x,y """
-    state.console_state.pen.down(x, y)    
+    state.console_state.pen.down(x, y)
 #D
 def pen_up():
     """ Report a pen-up event at graphical x,y """
-    state.console_state.pen.up()    
+    state.console_state.pen.up()
 #D
 def pen_moved(x, y):
     """ Report a pen-move event at graphical x,y """
-    state.console_state.pen.moved(x, y)    
-    
- 
+    state.console_state.pen.moved(x, y)
+
+
 ###############################################################################
 # joysticks
 
@@ -1633,7 +1633,7 @@ stick_is_firing = [[False, False], [False, False]]
 stick_axis = [[0, 0], [0, 0]]
 
 class Stick(object):
-    """ Joystick support. """    
+    """ Joystick support. """
 
     def __init__(self):
         """ Initialise joysticks. """
@@ -1660,12 +1660,12 @@ class Stick(object):
         stick_axis[joy][axis] = value
 
     def poll(self, fn):
-        """ Poll the joystick axes. """    
+        """ Poll the joystick axes. """
         joy, axis = fn // 2, fn % 2
         return stick_axis[joy][axis]
-        
-    def poll_trigger(self, fn):       
-        """ Poll the joystick buttons. """    
+
+    def poll_trigger(self, fn):
+        """ Poll the joystick buttons. """
         joy, trig = fn // 4, (fn//2) % 2
         if fn % 2 == 0:
             # has been fired
@@ -1679,20 +1679,30 @@ class Stick(object):
 
 state.console_state.stick = Stick()
 
-
 #D
 def stick_down(joy, button):
     """ Report a joystick button down event. """
-    state.console_state.stick.down(joy, button)
+    try:
+        state.console_state.stick.down(joy, button)
+    except IndexError:
+        # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+        pass
+
 #D
 def stick_up(joy, button):
     """ Report a joystick button up event. """
-    state.console_state.stick.up(joy, button)
+    try:
+        state.console_state.stick.up(joy, button)
+    except IndexError:
+        pass
+
 #D
 def stick_moved(joy, axis, value):
     """ Report a joystick axis move. """
-    state.console_state.stick.moved(joy, axis, value)
-    
+    try:
+        state.console_state.stick.moved(joy, axis, value)
+    except IndexError:
+        pass
 
 ###############################################################################
 # sound queue
@@ -1709,7 +1719,7 @@ base_freq = 3579545./1024.
 # 12-tone equal temperament
 # C, C#, D, D#, E, F, F#, G, G#, A, A#, B
 note_freq = [ 440.*2**((i-33.)/12.) for i in range(84) ]
-notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6, 
+notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6,
             'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
 
 
@@ -1732,7 +1742,7 @@ def init_audio():
     if not audio or not audio.init_sound():
         return False
     # rebuild sound queue
-    for voice in range(4):    
+    for voice in range(4):
         for note in state.console_state.sound.queue[voice]:
             frequency, duration, fill, loop, volume = note
             audio.play_sound(frequency, duration, fill, loop, voice, volume)
@@ -1741,7 +1751,7 @@ def init_audio():
 
 class PlayState(object):
     """ State variables of the PLAY command. """
-    
+
     def __init__(self):
         """ Initialise play state. """
         self.octave = 4
@@ -1769,7 +1779,7 @@ class Sound(object):
 
     def reset(self):
         """ Reset PLAY state (CLEAR). """
-        # music foreground (MF) mode        
+        # music foreground (MF) mode
         self.foreground = True
         # reset all PLAY state
         self.play_state = [ PlayState(), PlayState(), PlayState() ]
@@ -1782,20 +1792,20 @@ class Sound(object):
         """ Play a sound on the tone generator. """
         if frequency < 0:
             frequency = 0
-        if ((pcjr_sound == 'tandy' or 
+        if ((pcjr_sound == 'tandy' or
                 (pcjr_sound == 'pcjr' and self.sound_on)) and
                 frequency < 110. and frequency != 0):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
         self.queue[voice].append((frequency, duration, fill, loop, volume))
-        audio.play_sound(frequency, duration, fill, loop, voice, volume) 
+        audio.play_sound(frequency, duration, fill, loop, voice, volume)
         if voice == 2:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
             self.noise_freq[3] = frequency/2.
             self.noise_freq[7] = frequency/2.
         # at most 16 notes in the sound queue (not 32 as the guide says!)
-        self.wait_music(15, wait_last=False)    
+        self.wait_music(15, wait_last=False)
 
     def wait_music(self, wait_length=0, wait_last=True):
         """ Wait until the music has finished playing. """
@@ -1809,13 +1819,13 @@ class Sound(object):
         """ Terminate all sounds immediately. """
         self.queue = [ [], [], [], [] ]
         audio.stop_all_sound()
-        
+
     def play_noise(self, source, volume, duration, loop=False):
         """ Play a sound on the noise generator. """
         audio.set_noise(source > 3)
         frequency = self.noise_freq[source]
         self.queue[3].append((frequency, duration, 1, loop, volume))
-        audio.play_sound(frequency, duration, 1, loop, 3, volume) 
+        audio.play_sound(frequency, duration, 1, loop, 3, volume)
         # don't wait for noise
 
     def queue_length(self, voice=0):
@@ -1824,7 +1834,7 @@ class Sound(object):
         return max(0, len(self.queue[voice])-1)
 
     def done(self, voice, number_left):
-        """ Report a sound has finished playing, remove from queue. """ 
+        """ Report a sound has finished playing, remove from queue. """
         # remove the notes that have been played
         while len(self.queue[voice]) > number_left:
             self.queue[voice].pop(0)
@@ -1832,12 +1842,12 @@ class Sound(object):
     def check_quit(self):
         """ Quit the mixer if not running a program and sound quiet for a while. """
         if self.queue != [[], [], [], []] or audio.busy():
-            # could leave out the is_quiet call but for looping sounds 
+            # could leave out the is_quiet call but for looping sounds
             self.quiet_ticks = 0
         else:
-            self.quiet_ticks += 1    
+            self.quiet_ticks += 1
             if self.quiet_ticks > quiet_quit:
-                # mixer is quiet and we're not running a program. 
+                # mixer is quiet and we're not running a program.
                 # quit to reduce pulseaudio cpu load
                 if not state.basic_state.run_mode:
                     # this takes quite a while and leads to missed frames...
@@ -1887,7 +1897,7 @@ class Sound(object):
                         gmls.read(1)
                         dur *= 1.5
                     if note > 0 and note <= 84:
-                        self.play_sound(note_freq[note-1], dur*vstate.tempo, 
+                        self.play_sound(note_freq[note-1], dur*vstate.tempo,
                                          vstate.speed, volume=vstate.volume,
                                          voice=voice)
                         total_time[voice] += dur*vstate.tempo
@@ -1896,9 +1906,9 @@ class Sound(object):
                                         volume=0, voice=voice)
                         total_time[voice] += dur*vstate.tempo
                 elif c == 'L':
-                    vstate.length = 1./draw_and_play.ml_parse_number(gmls)    
+                    vstate.length = 1./draw_and_play.ml_parse_number(gmls)
                 elif c == 'T':
-                    vstate.tempo = 240./draw_and_play.ml_parse_number(gmls)    
+                    vstate.tempo = 240./draw_and_play.ml_parse_number(gmls)
                 elif c == 'O':
                     vstate.octave = min(6, max(0, draw_and_play.ml_parse_number(gmls)))
                 elif c == '>':
@@ -1912,7 +1922,7 @@ class Sound(object):
                 elif c in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'P'):
                     note = c
                     dur = vstate.length
-                    while True:    
+                    while True:
                         c = util.skip(gmls, draw_and_play.ml_whitepace).upper()
                         if c == '.':
                             gmls.read(1)
@@ -1921,8 +1931,8 @@ class Sound(object):
                             numstr = ''
                             while c in representation.ascii_digits:
                                 gmls.read(1)
-                                numstr += c 
-                                c = util.skip(gmls, draw_and_play.ml_whitepace) 
+                                numstr += c
+                                c = util.skip(gmls, draw_and_play.ml_whitepace)
                             length = vartypes.pass_int_unpack(representation.str_to_value_keep(('$', numstr)))
                             dur = 1. / float(length)
                         elif c in ('#', '+'):
@@ -1932,7 +1942,7 @@ class Sound(object):
                             gmls.read(1)
                             note += '-'
                         else:
-                            break                    
+                            break
                     if note == 'P':
                         self.play_sound(0, dur * vstate.tempo, vstate.speed,
                                         volume=vstate.volume, voice=voice)
@@ -1940,8 +1950,8 @@ class Sound(object):
                     else:
                         try:
                             self.play_sound(
-                                note_freq[(vstate.octave+next_oct)*12 + notes[note]], 
-                                dur * vstate.tempo, vstate.speed, 
+                                note_freq[(vstate.octave+next_oct)*12 + notes[note]],
+                                dur * vstate.tempo, vstate.speed,
                                 volume=vstate.volume, voice=voice)
                             total_time[voice] += dur*vstate.tempo
                         except KeyError:
@@ -1949,24 +1959,24 @@ class Sound(object):
                     next_oct = 0
                 elif c == 'M':
                     c = util.skip_read(gmls, draw_and_play.ml_whitepace).upper()
-                    if c == 'N':        
+                    if c == 'N':
                         vstate.speed = 7./8.
-                    elif c == 'L':      
+                    elif c == 'L':
                         vstate.speed = 1.
-                    elif c == 'S':      
-                        vstate.speed = 3./4.        
-                    elif c == 'F':      
+                    elif c == 'S':
+                        vstate.speed = 3./4.
+                    elif c == 'F':
                         self.foreground = True
-                    elif c == 'B':      
+                    elif c == 'B':
                         self.foreground = False
                     else:
-                        raise error.RunError(5)    
-                elif c == 'V' and (pcjr_sound == 'tandy' or 
-                                    (pcjr_sound == 'pcjr' and self.sound_on)): 
-                    vstate.volume = min(15, 
+                        raise error.RunError(5)
+                elif c == 'V' and (pcjr_sound == 'tandy' or
+                                    (pcjr_sound == 'pcjr' and self.sound_on)):
+                    vstate.volume = min(15,
                                     max(0, draw_and_play.ml_parse_number(gmls)))
                 else:
-                    raise error.RunError(5)    
+                    raise error.RunError(5)
         max_time = max(total_time)
         for voice in range(3):
             if total_time[voice] < max_time:
@@ -1974,11 +1984,11 @@ class Sound(object):
         if self.foreground:
             self.wait_music()
 
-#D        
+#D
 def sound_done(voice, number_left):
-    """ Report a sound has finished playing, remove from queue. """ 
+    """ Report a sound has finished playing, remove from queue. """
     state.console_state.sound.done(voice, number_left)
 
 ###############################################################################
-         
+
 prepare()
