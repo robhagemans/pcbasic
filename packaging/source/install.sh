@@ -229,7 +229,7 @@ do_install () {
 
     if [ "$(id -u)" = "0" ]; then
         echo "Creating symlink ... "
-        ln -s "$INSTALL_DIR/pcbasic" "/usr/bin/pcbasic"
+        ln -s "$INSTALL_DIR/pcbasic.py" "/usr/bin/pcbasic"
     fi
 
     echo "Creating menu entry ... "

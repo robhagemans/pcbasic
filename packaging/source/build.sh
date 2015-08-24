@@ -11,7 +11,6 @@ cp install.sh pcbasic/
 cp pcbasic.png pcbasic/
 cp pcbasic.bat pcbasic/
 cp ansipipe.exe pcbasic/
-cp pcbasic.py pcbasic/pcbasic.py
 mv pcbasic $NAME
 tar cvfz "$NAME.tgz" "$NAME/"
 rm -rf "$NAME/"
