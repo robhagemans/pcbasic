@@ -1680,15 +1680,27 @@ state.console_state.stick = Stick()
 #D
 def stick_down(joy, button):
     """ Report a joystick button down event. """
-    state.console_state.stick.down(joy, button)
+    try:
+        state.console_state.stick.down(joy, button)
+    except IndexError:
+        # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+        pass
+
 #D
 def stick_up(joy, button):
     """ Report a joystick button up event. """
-    state.console_state.stick.up(joy, button)
+    try:
+        state.console_state.stick.up(joy, button)
+    except IndexError:
+        pass
+
 #D
 def stick_moved(joy, axis, value):
     """ Report a joystick axis move. """
-    state.console_state.stick.moved(joy, axis, value)
+    try:
+        state.console_state.stick.moved(joy, axis, value)
+    except IndexError:
+        pass
 
 
 ###############################################################################
