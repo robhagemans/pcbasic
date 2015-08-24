@@ -3,3 +3,6 @@
 .android.*
 pcbasic/data/usage.txt
 doc/
+build/
+dist/
+pcbasic.egg-info/
