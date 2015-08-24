@@ -17,7 +17,7 @@ then
 fi
 mkdir output/$name
 pushd output/$name > /dev/null
-../../../pcbasic "../../$name.BAS" --font=freedos -q --map-drives
+../../../pcbasic.py "../../$name.BAS" --font=freedos -q --map-drives
 pass=1
 for file in *
 do

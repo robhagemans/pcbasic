@@ -13,7 +13,7 @@ then
 fi
 mkdir output/$name
 pushd output/$name > /dev/null
-../../../pcbasic -q "../../$name.BAS" --preset=tandy --font=freedos
+../../../pcbasic.py -q "../../$name.BAS" --preset=tandy --font=freedos
 pass=1
 for file in *
 do
