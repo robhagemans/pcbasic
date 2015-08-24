@@ -101,8 +101,8 @@ code, samp {
 }
 
 dd>code, p>code, dt>code, li>code,
-dd>samp, p>samp, dt>samp, li>samp,
- {
+dd>samp, p>samp, dt>samp, li>samp
+{
     background-color: #eeeeff;
     border-radius: 0.2em;
     padding: 0.1em 0.5em 0.1em 0.5em;
