@@ -78,3 +78,29 @@ Unfortunately, until a newer build of PyGame is released with major distribution
         sudo make install
 
 See also the [PyGame source repository on BitBucket](https://bitbucket.org/pygame/pygame/wiki/VersionControl).
+
+
+#### Running from GitHub repository source ####
+
+The instructions above refer to the source *distribution*, which has pre-built
+documentation files and other niceties.
+If you wish to use the source code as-is in the GitHub repo,
+you'll need to build the docs yourself. Note that `pcbasic -h` will fail if you omit
+this. Compiling the documentation requires [`pandoc`](http://pandoc.org) and is
+currently only possible on Linux. Of course, you'll also need
+[`git`](https://git-scm.com/) and all the dependencies listed above.  
+
+1. Clone the github repo, including the `ansipipe` submodule
+
+        git clone --recursive https://github.com/robhagemans/pcbasic.git
+
+2. Compile the documentation
+
+        python prepare.py
+
+3. Run pcbasic directly from the source directory
+
+        python pcbasic
+
+For the avoidance of doubt, you should ignore `setup.py`, which is only needed
+to generate packages with `setuptools`.
