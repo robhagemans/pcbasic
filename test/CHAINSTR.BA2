@@ -1,0 +1,4 @@
+5 OPEN "chainstr.dat" FOR OUTPUT AS 1
+10 PRINT#1, C$(0), C$(1), A$
+20 CLOSE
+
