@@ -22,33 +22,33 @@ article, header, nav.toc, footer {
     font-family: sans;
 }
 
-h1 {
-    font-size: 130%;
+h1, h2 {
+    font-size: 1.3em;
     border-bottom: 2px solid #333333;
 }
-h2 {
+h3 {
     margin-top: 2rem;
     margin-bottom: 0;
-    font-size: 120%;
+    font-size: 1.2em;
     border-bottom: 2px solid #333333;
 }
 
-h3:before {
+h4:before {
     display: block;
     content: " ";
     border-bottom: 1px solid black;
 }
 
-h3 {
+h4 {
     /*
     border-top: 1px solid #333333;
     border-top: 1em dashed red;
     */
     margin-top: 2.5em;
     margin-bottom: 0em;
-    font-size: 110%;
+    font-size: 1.1em;
 }
-h4 {
+h5 {
     margin-top: 0em;
     margin-bottom: 0em;
     font-weight: 600;
@@ -95,7 +95,7 @@ dd {
 }
 
 code, samp {
-    font-size: 80%;
+    font-size: 0.8em;
     word-break: keep-all;
     white-space: nowrap;
 }
@@ -114,7 +114,7 @@ th {
 }
 
 table {
-    font-size: 100%;
+    font-size: 1em;
     margin-top: 1em;
     margin-bottom: 1em;
     line-height: 140%;
@@ -131,7 +131,7 @@ td, th {
 }
 
 kbd {
-    font-size: 70%;
+    font-size: 0.7em;
     word-break: keep-all;
     white-space: nowrap;
     background-color: gray;
@@ -141,7 +141,7 @@ kbd {
     margin: 0px 1px 0px 1px;
 }
 pre {
-    font-size: 80%;
+    font-size: 0.8em;
     background-color: #eeeeff;
     margin-top: 0.5em;
     border-top: 1px dotted;
