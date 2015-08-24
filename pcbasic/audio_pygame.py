@@ -62,6 +62,7 @@ def close():
     if sound.message_queue:
         sound.message_queue.put(sound.AudioEvent(sound.AUDIO_QUIT))
         sound.message_queue.join()
+    print "message thread joined"
     # don't wait for tone que, it will not drain but be pickled later.
     if thread and thread.is_alive():
         # signal quit and wait for thread to finish

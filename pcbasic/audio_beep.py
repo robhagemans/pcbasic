@@ -72,7 +72,8 @@ def consumer_thread():
 def drain_message_queue():
     """ Drain signal queue. """
     global next_tone, now_playing, now_looping
-    while True:
+    alive = True
+    while alive:
         try:
             signal = sound.message_queue.get(False)
         except Queue.Empty:
@@ -87,11 +88,9 @@ def drain_message_queue():
             now_looping = [None, None, None, None]
             hush()
         elif signal.event_type == sound.AUDIO_QUIT:
-            # close thread
-            return False
-        elif signal.event_type == sound.AUDIO_PERSIST:
-            # allow/disallow mixer to quit
-            pass
+            # close thread after task_done
+            alive = False
+        # drop other messages
         sound.message_queue.task_done()
 
 def drain_tone_queue():
