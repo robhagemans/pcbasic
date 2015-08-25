@@ -90,7 +90,7 @@ this. Compiling the documentation requires [`pandoc`](http://pandoc.org) and is
 currently only possible on Linux. Of course, you'll also need
 [`git`](https://git-scm.com/) and all the dependencies listed above.  
 
-1. Clone the github repo, including the `ansipipe` submodule
+1. Clone the github repo
 
         git clone --recursive https://github.com/robhagemans/pcbasic.git
 
