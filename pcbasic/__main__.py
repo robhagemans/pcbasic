@@ -286,6 +286,7 @@ def print_greeting(console):
              not config.get('interface') == 'none'):
         debugstr = ' [DEBUG mode]' if config.get('debug') else ''
         params = { 'version': plat.version, 'note': debugstr, 'free': var.fre()}
+        console.clear()
         console.write_line(greeting.format(**params))
         console.show_keys(True)
 
