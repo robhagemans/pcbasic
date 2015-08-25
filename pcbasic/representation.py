@@ -490,30 +490,30 @@ def skip_white_read_input(stream, c):
             c = stream.read(1)
     return c
 
+input_vars_file_last_sep = ''
 def input_vars_file(readvar, stream):
     """ Read a list of variables for INPUT from a file. """
     for v in readvar:
         typechar = v[0][-1]
-        if typechar == '$':
-            valstr, c = input_entry(stream,
-                                    allow_quotes=True, allow_past_end=False,
-                                    end_all=('\r',),
-                                    end_not_quoted=(',',))
-        else:
-            valstr, c = input_entry(stream,
-                                    allow_quotes=False, allow_past_end=False,
-                                    end_all=('\r',),
-                                    end_not_quoted=(',',))
+        while True:
+            if typechar == '$':
+                valstr, sep = input_entry(stream, '$', allow_past_end=False,
+                                        end_all=('\r',),
+                                        end_not_quoted=(',',))
+            else:
+                valstr, sep = input_entry(stream, '#', allow_past_end=False,
+                                        end_all=('\r', ' '),
+                                        end_not_quoted=(',',))
+            # ignore empty entry if last separator was a space
+            # this covers things like "1   , 2" vs "1 2"
+            if valstr or input_vars_file_last_sep != ' ':
+                break
         value = str_to_type(valstr, typechar)
         if value is None:
             value = vartypes.null[typechar]
-        # skip trailing whitespace
-        # note that separation character (',', '\r', '\x1a', ...)
-        # is swallowed here. SEPARATION CHAR MUST NOT BE WHITESPACE
-        # (space, NUL or \n) or the first char of the next entry is lost.
-        skip_white_read_input(stream, c)
-        # and then set the value
         v.append(value)
+    global input_vars_file_last_sep
+    input_vars_file_last_sep = sep
     return readvar
 
 def input_vars(readvar, stream):
@@ -522,7 +522,7 @@ def input_vars(readvar, stream):
     count_commas, count_values, has_empty = 0, 0, False
     for v in readvar:
         typechar = v[0][-1]
-        valstr, c = input_entry(stream, allow_quotes=(typechar=='$'),
+        valstr, c = input_entry(stream, typechar,
                                 end_all=('',), end_not_quoted=(',',),
                                 allow_past_end=True)
         val = str_to_type(valstr, typechar)
@@ -538,11 +538,12 @@ def input_vars(readvar, stream):
         return None
     return readvar
 
-def input_entry(stream, allow_quotes, end_all, end_not_quoted, allow_past_end):
+def input_entry(stream, typechar, end_all, end_not_quoted, allow_past_end):
     """ Read a number or string entry for INPUT """
+    allow_quotes=(typechar=='$')
     word, blanks = '', ''
     c = skip_white_read_input(stream, stream.read(1))
-    quoted = (c == '"' and allow_quotes)
+    quoted = (c == '"' and typechar=='$')
     if quoted:
         c = stream.read(1)
     if not c and not allow_past_end:
@@ -562,7 +563,8 @@ def input_entry(stream, allow_quotes, end_all, end_not_quoted, allow_past_end):
                 c = stream.read(1)
             continue
         elif c in whitespace_input and not quoted:
-            blanks += c
+            if typechar == '$':
+                blanks += c
         else:
             word += blanks + c
             blanks = ''
