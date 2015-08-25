@@ -249,6 +249,7 @@ class RawFile(object):
 # Text file base
 
 import representation
+import vartypes
 
 class TextFileBase(RawFile):
     """ Base for text files on disk, KYBD file, field buffer. """
@@ -366,7 +367,6 @@ class TextFileBase(RawFile):
 
     def _skip_white_read(self):
         """ Skip spaces and line feeds and NUL. """
-
         c = self.read(1)
         while c and c in self.whitespace_input:
             if c == '\n':
@@ -440,27 +440,6 @@ class TextFileBase(RawFile):
             if (self.next_char in ',\r'):
                 c = self.read(1)
         return representation.str_to_type(word, typechar), c
-
-# INPUT from console
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
-class InputTextFile(TextFileBase):
-    """ Handle INPUT from console. """
-
-    soft_sep = ''
-
-    def __init__(self, line):
-        """ Initialise InputStream. """
-        TextFileBase.__init__(self, StringIO(line), 'D', 'I')
-
-    def read_var(self, v):
-        """ Read a variable for INPUT from the console. """
-        return self._input_entry(v[0][-1], allow_past_end=True)
-
 
 
 class CRLFTextFileBase(TextFileBase):

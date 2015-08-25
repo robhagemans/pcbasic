@@ -31,6 +31,7 @@ import devices
 import machine
 import memory
 import ports
+import print_and_input
 import program
 import representation
 import reset
@@ -1941,9 +1942,6 @@ def exec_read(ins):
         var.set_var_or_array(*v, value=num)
     util.require(ins, tk.end_statement)
 
-####
-# Console INPUT
-
 def parse_prompt(ins, question_mark):
     """ Helper function for INPUT: parse prompt definition. """
     # parse prompt
@@ -1965,33 +1963,6 @@ def parse_prompt(ins, question_mark):
         prompt = question_mark
     return prompt
 
-def input_console(prompt, readvar, newline):
-    """ Read a list of variables for INPUT. """
-    while True:
-        console.write(prompt)
-        line = console.wait_screenline(write_endl=newline)
-        inputstream = devices.InputTextFile(line)
-        # copy to allow multiple calls (for Redo)
-        count_commas, count_values, has_empty = 0, 0, False
-        varlist = []
-        for v in readvar:
-            val, sep = inputstream.read_var(v)
-            varlist.append( [v[0], v[1], val] )
-            count_values += 1
-            if val is None:
-                has_empty = True
-            if sep == ',':
-                count_commas += 1
-            else:
-                return varlist
-        if count_values != len(varlist) or count_commas != len(varlist)-1 or has_empty:
-            # good old Redo!
-            console.write_line('?Redo from start')
-        else:
-            return varlist
-
-####
-
 def exec_input(ins):
     """ INPUT: request input from user. """
     finp = expressions.parse_file_number(ins, 'IR')
@@ -2009,7 +1980,7 @@ def exec_input(ins):
         ins.seek(state.basic_state.current_statement)
         # read the input
         state.basic_state.input_mode = True
-        varlist = input_console(prompt, readvar, newline)
+        varlist = print_and_input.input_console(prompt, readvar, newline)
         state.basic_state.input_mode = False
         for v in varlist:
             var.set_var_or_array(*v)
@@ -2416,7 +2387,7 @@ def exec_print_using(ins, output):
             # escape char; write next char in fors or _ if this is the last char
             output.write(fors.read(2)[-1])
         else:
-            string_field = representation.get_string_tokens(fors)
+            string_field = print_and_input.get_string_tokens(fors)
             if string_field:
                 if not data_ends:
                     s = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
@@ -2425,7 +2396,7 @@ def exec_print_using(ins, output):
                     else:
                         output.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
             else:
-                number_field, digits_before, decimals = representation.get_number_tokens(fors)
+                number_field, digits_before, decimals = print_and_input.get_number_tokens(fors)
                 if number_field:
                     if not data_ends:
                         num = vartypes.pass_float_keep(expressions.parse_expression(ins))
