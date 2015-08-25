@@ -50,7 +50,7 @@ max_reclen = 128
 def prepare():
     # parallel devices - LPT1: must always be defined
     print_trigger = config.get('print-trigger')
-    state.io_state.devices['LPT1:'] = LPTDevice(config.get('lpt1'), devices.nullstream, print_trigger)
+    state.io_state.devices['LPT1:'] = LPTDevice(config.get('lpt1'), devices.nullstream(), print_trigger)
     state.io_state.devices['LPT2:'] = LPTDevice(config.get('lpt2'), None, print_trigger)
     state.io_state.devices['LPT3:'] = LPTDevice(config.get('lpt3'), None, print_trigger)
     state.io_state.lpt1_file = state.io_state.devices['LPT1:'].device_file

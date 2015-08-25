@@ -22,7 +22,8 @@ state.io_state.files = {}
 # this is a command line option -f
 max_files = 3
 
-nullstream = open(os.devnull, 'r+')
+def nullstream():
+    return open(os.devnull, 'r+')
 
 # devices - SCRN: KYBD: LPT1: etc.
 state.io_state.devices = {}
@@ -425,7 +426,7 @@ class KYBDFile(TextFileBase):
     def __init__(self):
         """ Initialise keyboard file. """
         # use mode = 'A' to avoid needing a first char from nullstream
-        TextFileBase.__init__(self, nullstream, filetype='D', mode='A')
+        TextFileBase.__init__(self, nullstream(), filetype='D', mode='A')
 
     def read_raw(self, n=1):
         """ Read a list of chars from the keyboard - INPUT$ """
@@ -481,7 +482,7 @@ class SCRNFile(RawFile):
 
     def __init__(self):
         """ Initialise screen file. """
-        RawFile.__init__(self, nullstream, filetype='D', mode='O')
+        RawFile.__init__(self, nullstream(), filetype='D', mode='O')
         self._width = state.console_state.screen.mode.width
         self._col = state.console_state.col
 
