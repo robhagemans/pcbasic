@@ -268,6 +268,7 @@ class TextFileBase(RawFile):
                 self.next_char = ''
         # handling of >255 char lines (False for programs)
         self.split_long_lines = split_long_lines
+        self.char, self.last = '', ''
 
     def read_raw(self, num=-1):
         """ Read num characters as string. """
@@ -280,7 +281,7 @@ class TextFileBase(RawFile):
             if self.next_char in ('\x1a', ''):
                 break
             s += self.next_char
-            self.next_char = self.fhandle.read(1)
+            self.next_char, self.char, self.last = self.fhandle.read(1), self.next_char, self.char
         return s
 
     def read_line(self):
@@ -361,17 +362,20 @@ class CRLFTextFileBase(TextFileBase):
             if not c:
                 break
             s += c
-            # ignore LF after CR
-            if c == '\r' and self.next_char == '\n':
+            # report CRLF as CR
+            # but LFCR, LFCRLF, LFCRLFCR etc pass unmodified
+            if (c == '\r' and self.last != '\n') and self.next_char == '\n':
+                last, char = self.last, self.char
                 self.read_raw(1)
+                self.last, self.char = last, char
         return s
 
     def read_line(self):
         """ Read line from text file, break on CR or CRLF (not LF). """
-        s, c = '', ''
+        s = ''
         while not self._check_long_line(s):
-            c, last = self.read(1), c
-            if not c or (c == '\r' and last != '\n'):
+            c = self.read(1)
+            if not c or (c == '\r' and self.last != '\n'):
                 # break on CR, CRLF but allow LF, LFCR to pass
                 break
             else:

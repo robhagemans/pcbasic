@@ -478,6 +478,18 @@ def get_number_tokens(fors):
 ########################################
 
 
+def skip_white_read_input(stream, c):
+    # skip leading spaces and line feeds and NUL.
+    while c and c in whitespace_input:
+        if c == '\n':
+            # LF causes following CR to be ignored;
+            c = stream.read(1)
+            if c == '\r':
+                c = stream.read(1)
+        else:
+            c = stream.read(1)
+    return c
+
 def input_vars_file(readvar, stream):
     """ Read a list of variables for INPUT from a file. """
     for v in readvar:
@@ -485,20 +497,21 @@ def input_vars_file(readvar, stream):
         if typechar == '$':
             valstr, c = input_entry(stream,
                                     allow_quotes=True, allow_past_end=False,
-                                    end_all = ('\r', ),
-                                    end_not_quoted = (',', '\n'))
+                                    end_all=('\r',),
+                                    end_not_quoted=(',',))
         else:
             valstr, c = input_entry(stream,
                                     allow_quotes=False, allow_past_end=False,
-                                    end_all = ('\r', ',', '\n', ' '))
+                                    end_all=('\r',),
+                                    end_not_quoted=(',',))
         value = str_to_type(valstr, typechar)
         if value is None:
             value = vartypes.null[typechar]
-        while c and c in whitespace_input:
-            # skip trailing whitespace
-            # note that ending character (',', '\r', '\x1a', '\n', ...)
-            # is swallowed here
-            c = stream.read(1)
+        # skip trailing whitespace
+        # note that separation character (',', '\r', '\x1a', ...)
+        # is swallowed here. SEPARATION CHAR MUST NOT BE WHITESPACE
+        # (space, NUL or \n) or the first char of the next entry is lost.
+        skip_white_read_input(stream, c)
         # and then set the value
         v.append(value)
     return readvar
@@ -509,7 +522,9 @@ def input_vars(readvar, stream):
     count_commas, count_values, has_empty = 0, 0, False
     for v in readvar:
         typechar = v[0][-1]
-        valstr, c = input_entry(stream, allow_quotes=(typechar=='$'), end_all=('',))
+        valstr, c = input_entry(stream, allow_quotes=(typechar=='$'),
+                                end_all=('',), end_not_quoted=(',',),
+                                allow_past_end=True)
         val = str_to_type(valstr, typechar)
         v.append(val)
         count_values += 1
@@ -523,14 +538,10 @@ def input_vars(readvar, stream):
         return None
     return readvar
 
-def input_entry(stream, allow_quotes,
-                end_all=(), end_not_quoted=(',',), allow_past_end=True):
+def input_entry(stream, allow_quotes, end_all, end_not_quoted, allow_past_end):
     """ Read a number or string entry for INPUT """
     word, blanks = '', ''
-    # skip leading spaces and line feeds and NUL.
-    c = stream.read(1)
-    while c and c in whitespace_input:
-        c = stream.read(1)
+    c = skip_white_read_input(stream, stream.read(1))
     quoted = (c == '"' and allow_quotes)
     if quoted:
         c = stream.read(1)
@@ -543,10 +554,13 @@ def input_entry(stream, allow_quotes,
     while c and not (c in end_all or (c in end_not_quoted and not quoted)):
         if c == '"' and quoted:
             quoted = False
-            # ignore blanks after the quotes
-            while c and c in whitespace_input:
-                c = stream.read(1)
             break
+        elif c == '\n':
+            # LF causes following CR to be ignored;
+            c = stream.read(1)
+            if c == '\r':
+                c = stream.read(1)
+            continue
         elif c in whitespace_input and not quoted:
             blanks += c
         else:
