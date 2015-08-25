@@ -25,10 +25,6 @@ import vartypes
 
 import basictoken as tk
 
-# whitespace for INPUT#, INPUT
-# TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are.
-whitespace_input = ' \0\n'
-
 
 def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=False):
     """ Convert BASIC number to BASIC string. """
@@ -477,98 +473,6 @@ def get_number_tokens(fors):
 
 ########################################
 
-
-def skip_white_read_input(stream, c):
-    # skip leading spaces and line feeds and NUL.
-    while c and c in whitespace_input:
-        if c == '\n':
-            # LF causes following CR to be ignored;
-            c = stream.read(1)
-            if c == '\r':
-                c = stream.read(1)
-        else:
-            c = stream.read(1)
-    return c
-
-input_vars_file_last_sep = ''
-def input_vars_file(readvar, stream):
-    """ Read a list of variables for INPUT from a file. """
-    global input_vars_file_last_sep
-    for v in readvar:
-        typechar = v[0][-1]
-        # separator is CR or CRLF, both returned as CR by TextFile object
-        end_all = '\r'
-        if typechar != '$':
-            # numbers read from file can be separated by spaces too
-            end_all += ' '
-        while True:
-            valstr, sep = input_entry(stream, typechar, end_all, allow_past_end=False)
-            # ignore empty entry if last separator was a space
-            # this covers things like "1   , 2" vs "1 2"
-            if valstr or input_vars_file_last_sep != ' ':
-                break
-        value = str_to_type(valstr, typechar)
-        if value is None:
-            value = vartypes.null[typechar]
-        v.append(value)
-    input_vars_file_last_sep = sep
-    return readvar
-
-def input_vars(readvar, stream):
-    """ Read a variable for INPUT. """
-    # copy to allow multiple calls (for Redo)
-    count_commas, count_values, has_empty = 0, 0, False
-    for v in readvar:
-        typechar = v[0][-1]
-        valstr, c = input_entry(stream, typechar, '', allow_past_end=True)
-        val = str_to_type(valstr, typechar)
-        v.append(val)
-        count_values += 1
-        if val is None:
-            has_empty = True
-        if c == ',':
-            count_commas += 1
-        else:
-            break
-    if count_values != len(readvar) or count_commas != len(readvar)-1 or has_empty:
-        # Redo from start
-        return None
-    return readvar
-
-def input_entry(stream, typechar, end_all, allow_past_end):
-    """ Read a number or string entry for INPUT """
-    end_not_quoted=(',',)
-    word, blanks = '', ''
-    c = skip_white_read_input(stream, stream.read(1))
-    quoted = (c == '"' and typechar=='$')
-    if quoted:
-        c = stream.read(1)
-    if not c and not allow_past_end:
-        raise error.RunError(error.INPUT_PAST_END)
-    # we read the ending char before breaking the loop
-    # this may raise FIELD OVERFLOW
-    # on reading from a KYBD: file, control char replacement takes place
-    # which means we need to use read() not read_chars()
-    while c and not (c in end_all or (c in end_not_quoted and not quoted)):
-        if c == '"' and quoted:
-            quoted = False
-            break
-        elif c == '\n':
-            # LF causes following CR to be ignored;
-            c = stream.read(1)
-            if c == '\r':
-                c = stream.read(1)
-            continue
-        elif c in whitespace_input and not quoted:
-            if typechar == '$':
-                blanks += c
-        else:
-            word += blanks + c
-            blanks = ''
-        if len(word) + len(blanks) >= 255:
-            break
-        c = stream.read(1)
-    return word, c
 
 def str_to_type(word, type_char):
     """ Convert Python-string to requested type. """

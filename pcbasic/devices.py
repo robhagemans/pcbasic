@@ -248,6 +248,8 @@ class RawFile(object):
 #################################################################################
 # Text file base
 
+import representation
+
 class TextFileBase(RawFile):
     """ Base for text files on disk, KYBD file, field buffer. """
 
@@ -350,6 +352,115 @@ class TextFileBase(RawFile):
     def set_width(self, new_width=255):
         """ Set file width. """
         self.width = new_width
+
+
+
+    # support for INPUT#
+
+
+    # whitespace for INPUT#, INPUT
+    # TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are.
+    whitespace_input = ' \0\n'
+    # numbers read from file can be separated by spaces too
+    soft_sep = ' '
+
+    def _skip_white_read(self):
+        """ Skip spaces and line feeds and NUL. """
+
+        c = self.read(1)
+        while c and c in self.whitespace_input:
+            if c == '\n':
+                # LF causes following CR to be ignored;
+                c = self.read(1)
+                if c == '\r':
+                    c = self.read(1)
+            else:
+                c = self.read(1)
+        return c
+
+    def _skip_white(self):
+        """ Skip spaces and line feeds and NUL. """
+        while self.next_char and self.next_char in self.whitespace_input:
+            # drop whitespace char
+            c = self.read(1)
+            # LF causes following CR to be ignored
+            if c == '\n' and self.next_char == '\r':
+                # drop the CR
+                c = self.read(1)
+
+    def read_var(self, v):
+        """ Read a variable for INPUT from a file. """
+        typechar = v[0][-1]
+        value, sep = self._input_entry(typechar, allow_past_end=False)
+        if value is None:
+            value = vartypes.null[typechar]
+        return value, sep
+
+    def _input_entry(self, typechar, allow_past_end):
+        """ Read a number or string entry for INPUT """
+        word, blanks = '', ''
+        self._skip_white()
+        # read first non-whitespace char
+        c = self.read(1)
+        quoted = (c == '"' and typechar=='$')
+        if quoted:
+            c = self.read(1)
+        if not c and not allow_past_end:
+            raise error.RunError(error.INPUT_PAST_END)
+        # we read the ending char before breaking the loop
+        # this may raise FIELD OVERFLOW
+        # on reading from a KYBD: file, control char replacement takes place
+        # which means we need to use read() not read_chars()
+        while c and not (c == '\r' or
+                        (typechar != '$' and c in self.soft_sep) or
+                        (c == ',' and not quoted)):
+            if c == '"' and quoted:
+                quoted = False
+                self._skip_white()
+                c = self.read(1)
+                break
+            elif c == '\n':
+                # LF causes following CR to be ignored;
+                c = self.read(1)
+                if c == '\r':
+                    c = self.read(1)
+                continue
+            elif c in self.whitespace_input and not quoted:
+                if typechar == '$':
+                    blanks += c
+            else:
+                word += blanks + c
+                blanks = ''
+            if len(word) + len(blanks) >= 255:
+                break
+            c = self.read(1)
+        # skip trailing whitespace before comma or hard separator
+        if c in self.whitespace_input:
+            self._skip_white()
+            if (self.next_char in ',\r'):
+                c = self.read(1)
+        return representation.str_to_type(word, typechar), c
+
+# INPUT from console
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
+class InputTextFile(TextFileBase):
+    """ Handle INPUT from console. """
+
+    soft_sep = ''
+
+    def __init__(self, line):
+        """ Initialise InputStream. """
+        TextFileBase.__init__(self, StringIO(line), 'D', 'I')
+
+    def read_var(self, v):
+        """ Read a variable for INPUT from the console. """
+        return self._input_entry(v[0][-1], allow_past_end=True)
+
 
 
 class CRLFTextFileBase(TextFileBase):

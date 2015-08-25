@@ -1941,6 +1941,9 @@ def exec_read(ins):
         var.set_var_or_array(*v, value=num)
     util.require(ins, tk.end_statement)
 
+####
+# Console INPUT
+
 def parse_prompt(ins, question_mark):
     """ Helper function for INPUT: parse prompt definition. """
     # parse prompt
@@ -1962,13 +1965,40 @@ def parse_prompt(ins, question_mark):
         prompt = question_mark
     return prompt
 
+def input_console(prompt, readvar, newline):
+    """ Read a list of variables for INPUT. """
+    while True:
+        console.write(prompt)
+        line = console.wait_screenline(write_endl=newline)
+        inputstream = devices.InputTextFile(line)
+        # copy to allow multiple calls (for Redo)
+        count_commas, count_values, has_empty = 0, 0, False
+        varlist = []
+        for v in readvar:
+            val, sep = inputstream.read_var(v)
+            varlist.append( [v[0], v[1], val] )
+            count_values += 1
+            if val is None:
+                has_empty = True
+            if sep == ',':
+                count_commas += 1
+            else:
+                return varlist
+        if count_values != len(varlist) or count_commas != len(varlist)-1 or has_empty:
+            # good old Redo!
+            console.write_line('?Redo from start')
+        else:
+            return varlist
+
+####
+
 def exec_input(ins):
     """ INPUT: request input from user. """
     finp = expressions.parse_file_number(ins, 'IR')
     if finp is not None:
-        varlist = representation.input_vars_file(parse_var_list(ins), finp)
-        for v in varlist:
-            var.set_var_or_array(*v)
+        for v in parse_var_list(ins):
+            value, _ = finp.read_var(v)
+            var.set_var_or_array(v[0], v[1], value)
     else:
         # ; to avoid echoing newline
         newline = not util.skip_white_read_if(ins, (';',))
@@ -1979,15 +2009,7 @@ def exec_input(ins):
         ins.seek(state.basic_state.current_statement)
         # read the input
         state.basic_state.input_mode = True
-        while True:
-            console.write(prompt)
-            line = console.wait_screenline(write_endl=newline)
-            varlist = [ v[:] for v in readvar ]
-            varlist = representation.input_vars(varlist, StringIO(line))
-            if not varlist:
-                console.write_line('?Redo from start')  # ... good old Redo!
-            else:
-                break
+        varlist = input_console(prompt, readvar, newline)
         state.basic_state.input_mode = False
         for v in varlist:
             var.set_var_or_array(*v)
