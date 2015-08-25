@@ -1,16 +1,16 @@
-[lf
-cr]
-[crlf]
-[lfcr
-lfcrlf
+[Lf
+Cr]
+[Crlf]
+[Lfcr
+Lfcrlf
 
-lfcrlfcr
+Lfcrlfcr
 
-lfcrcrlf
+Lfcrcrlf
 ]
-[crlfcr]
+[Crlfcr]
 []
-[crlflfcr]
+[Crlflfcr]
 [
 END]
 
