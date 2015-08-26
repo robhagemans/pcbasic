@@ -549,14 +549,6 @@ def str_to_value_keep(strval, allow_nonnum=True):
             return None
     return value
 
-def str_to_type(word, type_char):
-    """ Convert Python-string to requested type. """
-    packed = vartypes.pack_string(bytearray(word))
-    if type_char == '$':
-        return packed
-    else:
-        return str_to_value_keep(packed, allow_nonnum=False)
-
 def detokenise_number(ins, output):
     """ Convert number token to Python string. """
     s = ins.read(1)

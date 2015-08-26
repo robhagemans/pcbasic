@@ -1934,12 +1934,14 @@ def exec_read(ins):
     # reading loop
     for v in parse_var_list(ins):
         # syntax error in DATA line (not type mismatch!) if can't convert to var type
-        num = representation.str_to_type(flow.read_entry(), v[0][-1])
-        if num is None:
-            # set pointer for EDIT gadget
+        entry = vartypes.pack_string(bytearray(flow.read_entry()))
+        if v[0][-1] != '$':
+            entry = representation.str_to_value_keep(entry, allow_nonnum=False)
+        if entry is None:
+            # set pointer for EDIT gadget to position in DATA statement
             state.basic_state.bytecode.seek(state.basic_state.data_pos)
             raise error.RunError(error.STX, state.basic_state.data_pos-1)
-        var.set_var_or_array(*v, value=num)
+        var.set_var_or_array(*v, value=entry)
     util.require(ins, tk.end_statement)
 
 def parse_prompt(ins, question_mark):

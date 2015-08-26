@@ -431,8 +431,11 @@ class TextFileBase(RawFile):
             if (self.next_char in ',\r'):
                 c = self.read(1)
         # file position is at one past the separator char
-        return representation.str_to_type(word, typechar), c
-
+        # convert result to requested type, be strict about non-numeric chars
+        value = vartypes.pack_string(bytearray(word))
+        if typechar != '$':
+            value = representation.str_to_value_keep(value, allow_nonnum=False)
+        return value, c
 
 class CRLFTextFileBase(TextFileBase):
     """ Text file with CRLF line endings, on disk device or field buffer. """
