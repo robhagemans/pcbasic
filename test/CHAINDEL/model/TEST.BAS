@@ -1,0 +1,5 @@
+10 REM CHAIN DELETE
+20 A=1:B=2
+25 COMMON B
+30 CHAIN MERGE "c:..\..\chaindel.ba2",40,DELETE 30
+

@@ -1,0 +1,5 @@
+30 END
+40 OPEN "chaindel.dat" FOR OUTPUT AS 1
+50 PRINT#1,A,B
+60 CLOSE 1
+
