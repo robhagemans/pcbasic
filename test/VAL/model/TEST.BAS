@@ -1,0 +1,8 @@
+5 OPEN "val.dat" FOR OUTPUT AS 1
+10 FOR I=0 TO 255
+30 A=VAL("1"+CHR$(I)+"2")
+35 IF A=1 GOTO 50
+40 PRINT#1, I; A; " ";
+50 NEXT
+60 CLOSE
+
