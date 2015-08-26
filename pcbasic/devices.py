@@ -370,7 +370,8 @@ class TextFileBase(RawFile):
         return value, sep
 
     def _skip_whitespace(self):
-        """ Skip spaces and line feeds and NUL. """
+        """ Skip spaces and line feeds and NUL; return last whitespace char """
+        c = ''
         while self.next_char and self.next_char in self.whitespace_input:
             # drop whitespace char
             c = self.read(1)
@@ -378,14 +379,16 @@ class TextFileBase(RawFile):
             if c == '\n' and self.next_char == '\r':
                 # drop the CR
                 c = self.read(1)
+        return c
 
     def _input_entry(self, typechar, allow_past_end):
         """ Read a number or string entry for INPUT """
         word, blanks = '', ''
-        self._skip_whitespace()
+        last = self._skip_whitespace()
         # read first non-whitespace char
         c = self.read(1)
-        quoted = (c == '"' and typechar=='$')
+        # LF escapes quotes
+        quoted = (c == '"' and typechar=='$' and last != '\n')
         if quoted:
             c = self.read(1)
         if not c and not allow_past_end:
@@ -400,7 +403,7 @@ class TextFileBase(RawFile):
                 # whitespace after quote will be skipped below
                 break
             elif c == '\n' and not quoted:
-                # LF causes following CR to be ignored;
+                # LF, LFCR are dropped entirely
                 c = self.read(1)
                 if c == '\r':
                     c = self.read(1)
