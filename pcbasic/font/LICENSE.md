@@ -12,7 +12,7 @@ licence: GNU GPL v2.0+ with font exception
 
 **univga**: UNI-VGA - Dmitry Bolkhovityanov  
 http://www.inp.nsk.su/~bolkhov/files/fonts/univga/  
-licence: XFree86 License 1.0  
+licence: X11 license
 
 **freedos**: FreeDOS CPIDOS pack - Henrique Perón  
 http://www.freedos.org/software/?prog=cpidos  
