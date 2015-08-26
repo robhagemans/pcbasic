@@ -28,33 +28,27 @@ class InputTextFile(devices.TextFileBase):
 
     def read_var(self, v):
         """ Read a variable for INPUT from the console. """
+        # we return a tuple (value, separator)
         return self._input_entry(v[0][-1], allow_past_end=True)
 
 
 def input_console(prompt, readvar, newline):
     """ Read a list of variables for INPUT. """
+    # readvar is a list of (name, indices) tuples
+    # we return a list of (name, indices, values) tuples
     while True:
         console.write(prompt)
         line = console.wait_screenline(write_endl=newline)
         inputstream = InputTextFile(line)
-        # copy to allow multiple calls (for Redo)
-        count_commas, has_empty = 0, False
-        varlist = []
-        for v in readvar:
-            val, sep = inputstream.read_var(v)
-            varlist.append( [v[0], v[1], val] )
-            if val is None:
-                has_empty = True
-            if sep == ',':
-                count_commas += 1
-            else:
-                break
-        if (len(varlist) != len(readvar) or
-                count_commas != len(readvar)-1 or has_empty):
+        # read the values and group them and the separators
+        values, seps = zip(*[inputstream.read_var(v) for v in readvar])
+        # last separator not empty: there were too many values or commas
+        # if there are Nones: there were too few or empty values
+        if (seps[-1] or None in values):
             # good old Redo!
             console.write_line('?Redo from start')
         else:
-            return varlist
+            return [ r + [v] for r, v in zip(readvar, values) ]
 
 
 ########################################
