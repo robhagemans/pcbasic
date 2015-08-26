@@ -393,19 +393,21 @@ class TextFileBase(RawFile):
         # we read the ending char before breaking the loop
         # this may raise FIELD OVERFLOW
         # on reading from a KYBD: file, control char replacement takes place
-        # which means we need to use read() not read_chars()
-        while c and not (c == '\r' or
-                        (typechar != '$' and c in self.soft_sep) or
-                        (c == ',' and not quoted)):
+        # which means we need to use read() not read_raw()
+        while c and not ((typechar != '$' and c in self.soft_sep) or
+                        (c in ',\r' and not quoted)):
             if c == '"' and quoted:
                 # whitespace after quote will be skipped below
                 break
-            elif c == '\n':
+            elif c == '\n' and not quoted:
                 # LF causes following CR to be ignored;
                 c = self.read(1)
                 if c == '\r':
                     c = self.read(1)
                 continue
+            elif c == '\0':
+                # NUL is dropped even within quotes
+                pass
             elif c in self.whitespace_input and not quoted:
                 # ignore whitespace in numbers, except soft separators
                 # include internal whitespace in strings
@@ -416,7 +418,12 @@ class TextFileBase(RawFile):
                 blanks = ''
             if len(word) + len(blanks) >= 255:
                 break
-            c = self.read(1)
+            if not quoted:
+                c = self.read(1)
+            else:
+                # no CRLF replacement inside quotes.
+                # -- but should there be KYBD: control char replacement?
+                c = self.read_raw(1)
         # if separator was a whitespace char or closing quote
         # skip trailing whitespace before any comma or hard separator
         if c in self.whitespace_input or (quoted and c == '"'):
@@ -508,7 +515,7 @@ class KYBDFile(TextFileBase):
         word = ''
         for char in state.console_state.keyb.read_chars(n):
             if len(char) > 1 and char[0] == '\0':
-                # replace some scancodes than console can return
+                # replace some scancodes that console can return
                 if char[1] in ('\x4b', '\x4d', '\x48', '\x50',
                                 '\x47', '\x49', '\x4f', '\x51', '\x53'):
                     word += '\0'
