@@ -207,7 +207,7 @@ class RawFile(object):
 
     def clone(self, filetype, mode, reclen=128):
         """ Clone device file. """
-        inst = copy.copy(self)
+        inst = copy.deepcopy(self)
         inst.mode = mode
         inst.reclen = reclen
         inst.filetype = filetype
