@@ -1,0 +1,6 @@
+5 CLS
+10 A$=STRING$(128,"0")
+20 OPEN "O",#1,"test.dat":WIDTH#1, 10
+40 FOR I = 1 TO 25:WRITE #1,I,I+1,I+2,I+3,I+4,I+5:NEXT
+50 CLOSE#1
+
