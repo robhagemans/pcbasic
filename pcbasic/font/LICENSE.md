@@ -14,7 +14,7 @@ licence: GNU GPL v2.0+ with font exception
 http://www.inp.nsk.su/~bolkhov/files/fonts/univga/  
 licence: X11 license
 
-**freedos**: FreeDOS CPIDOS pack - Henrique Perón  
+**freedos**: FreeDOS CPIDOS pack - Henrique Peron  
 http://www.freedos.org/software/?prog=cpidos  
 licence: GNU GPL v2.0+
 
