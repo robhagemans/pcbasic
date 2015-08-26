@@ -48,14 +48,13 @@ def input_console(prompt, readvar, newline):
             if sep == ',':
                 count_commas += 1
             else:
-                return varlist
+                break
         if (count_values != len(readvar) or
                 count_commas != len(readvar)-1 or has_empty):
             # good old Redo!
             console.write_line('?Redo from start')
         else:
             return varlist
-
 
 
 ########################################
