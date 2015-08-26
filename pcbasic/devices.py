@@ -388,7 +388,8 @@ class TextFileBase(RawFile):
         # read first non-whitespace char
         c = self.read(1)
         # LF escapes quotes
-        quoted = (c == '"' and typechar=='$' and last != '\n')
+        # may be true if last == '', hence "in ('\n', '\0')" not "in '\n0'"
+        quoted = (c == '"' and typechar == '$' and last not in ('\n', '\0'))
         if quoted:
             c = self.read(1)
         if not c and not allow_past_end:
