@@ -22,7 +22,10 @@ packaged program file. This behaviour is affected by the
 <code>--run</code>, <code>--load</code> and <code>--convert</code>
 options.</dd>
 <dt><code><var>convert_output</var></code></dt>
-<dd>Set the output file for file format conversion. See the <code>--convert</code> option.</dd>
+<dd>
+    Set the output file for file format conversion. See the
+    <code><a href="#--convert">--convert</a></code> option.
+</dd>
 <dt><code><var>options</var></code></dt>
 <dd>See the full table of options below. If no options are present, the
 interpreter will run in interactive mode.</dd>
@@ -315,10 +318,11 @@ You can add custom codepages to PC-BASIC, by adding a file with
 its mapping to Unicode to the <code>encodings/</code> directory.
 </dd>
 <dt><code>--config=<var>config_file</var></code></dt>
-<dd>Read a configuration file. The default configuration file
-<code>config/PCBASIC.INI</code> is always read, but any preset
-section in a specified configuration file replaces the whole
-equivalent section in the default file.</dd>
+<dd>
+    Read a configuration file. The system default configuration is always
+    read first, but any <a href="#--preset">preset</a> group of options in a configuration file
+    replaces the whole equivalent default preset group.
+</dd>
 <dt><code>--com1=<var>type</var>:<var>value</var></code></dt>
 <dd>Attach a resource to the <code>COM1:</code> serial device.
 <code><var>type:value</var></code> can be
@@ -341,7 +345,7 @@ unavailable.</dd>
 <dt><code>--com2=<var>type</var>:<var>value</var></code></dt>
 <dd>Attach a resource to the <code>COM2:</code> serial device. See
 <code>--com1</code>.</dd>
-<dt><code>--convert=<var>mode</var></code></dt>
+<dt><code id="--convert">--convert=<var>mode</var></code></dt>
 <dd>Convert program to <code><var>mode</var></code>, which can be
 <table>
 <tr>
@@ -649,7 +653,7 @@ SEG:? PEEK(<var>addr</var>)</code> will return
 <dd>Set the mouse button for light pen emulation. Default is <code>left</code>.
 If set to <code>none</code>, light pen emulation is switched off.
 On Android, <code>left</code> means touch input.</dd>
-<dt><code>--preset=<var>option_block</var></code></dt>
+<dt><code id="--preset">--preset=<var>option_block</var></code></dt>
 <dd>Load machine preset options. A preset option corresponds to a
 section defined in a config file by a name between square brackets,
 like <code>[this]</code>. <code>--preset=this</code> will load all
