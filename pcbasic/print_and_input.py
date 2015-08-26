@@ -38,19 +38,18 @@ def input_console(prompt, readvar, newline):
         line = console.wait_screenline(write_endl=newline)
         inputstream = InputTextFile(line)
         # copy to allow multiple calls (for Redo)
-        count_commas, count_values, has_empty = 0, 0, False
+        count_commas, has_empty = 0, False
         varlist = []
         for v in readvar:
             val, sep = inputstream.read_var(v)
             varlist.append( [v[0], v[1], val] )
-            count_values += 1
             if val is None:
                 has_empty = True
             if sep == ',':
                 count_commas += 1
             else:
                 break
-        if (count_values != len(readvar) or
+        if (len(varlist) != len(readvar) or
                 count_commas != len(readvar)-1 or has_empty):
             # good old Redo!
             console.write_line('?Redo from start')
