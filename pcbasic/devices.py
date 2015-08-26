@@ -354,29 +354,20 @@ class TextFileBase(RawFile):
         """ Set file width. """
         self.width = new_width
 
-
-
     # support for INPUT#
 
-
-    # whitespace for INPUT#, INPUT
     # TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are.
     whitespace_input = ' \0\n'
     # numbers read from file can be separated by spaces too
     soft_sep = ' '
 
-    def _skip_white_read(self):
-        """ Skip spaces and line feeds and NUL. """
-        c = self.read(1)
-        while c and c in self.whitespace_input:
-            if c == '\n':
-                # LF causes following CR to be ignored;
-                c = self.read(1)
-                if c == '\r':
-                    c = self.read(1)
-            else:
-                c = self.read(1)
-        return c
+    def read_var(self, name):
+        """ Read the value for a variable from a file (INPUT#). """
+        typechar = name[0][-1]
+        value, sep = self._input_entry(typechar, allow_past_end=False)
+        if value is None:
+            value = vartypes.null[typechar]
+        return value, sep
 
     def _skip_white(self):
         """ Skip spaces and line feeds and NUL. """
@@ -387,14 +378,6 @@ class TextFileBase(RawFile):
             if c == '\n' and self.next_char == '\r':
                 # drop the CR
                 c = self.read(1)
-
-    def read_var(self, v):
-        """ Read a variable for INPUT from a file. """
-        typechar = v[0][-1]
-        value, sep = self._input_entry(typechar, allow_past_end=False)
-        if value is None:
-            value = vartypes.null[typechar]
-        return value, sep
 
     def _input_entry(self, typechar, allow_past_end):
         """ Read a number or string entry for INPUT """

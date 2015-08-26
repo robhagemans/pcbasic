@@ -19,6 +19,7 @@ import devices
 class InputTextFile(devices.TextFileBase):
     """ Handle INPUT from console. """
 
+    # spaces do not separate numbers on console INPUT
     soft_sep = ''
 
     def __init__(self, line):
