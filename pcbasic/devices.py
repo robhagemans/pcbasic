@@ -369,7 +369,7 @@ class TextFileBase(RawFile):
             value = vartypes.null[typechar]
         return value, sep
 
-    def _skip_white(self):
+    def _skip_whitespace(self):
         """ Skip spaces and line feeds and NUL. """
         while self.next_char and self.next_char in self.whitespace_input:
             # drop whitespace char
@@ -382,7 +382,7 @@ class TextFileBase(RawFile):
     def _input_entry(self, typechar, allow_past_end):
         """ Read a number or string entry for INPUT """
         word, blanks = '', ''
-        self._skip_white()
+        self._skip_whitespace()
         # read first non-whitespace char
         c = self.read(1)
         quoted = (c == '"' and typechar=='$')
@@ -398,9 +398,7 @@ class TextFileBase(RawFile):
                         (typechar != '$' and c in self.soft_sep) or
                         (c == ',' and not quoted)):
             if c == '"' and quoted:
-                quoted = False
-                self._skip_white()
-                c = self.read(1)
+                # whitespace after quote will be skipped below
                 break
             elif c == '\n':
                 # LF causes following CR to be ignored;
@@ -409,6 +407,8 @@ class TextFileBase(RawFile):
                     c = self.read(1)
                 continue
             elif c in self.whitespace_input and not quoted:
+                # ignore whitespace in numbers, except soft separators
+                # include internal whitespace in strings
                 if typechar == '$':
                     blanks += c
             else:
@@ -417,11 +417,13 @@ class TextFileBase(RawFile):
             if len(word) + len(blanks) >= 255:
                 break
             c = self.read(1)
-        # skip trailing whitespace before comma or hard separator
-        if c in self.whitespace_input:
-            self._skip_white()
+        # if separator was a whitespace char or closing quote
+        # skip trailing whitespace before any comma or hard separator
+        if c in self.whitespace_input or (quoted and c == '"'):
+            self._skip_whitespace()
             if (self.next_char in ',\r'):
                 c = self.read(1)
+        # file position is at one past the separator char
         return representation.str_to_type(word, typechar), c
 
 
