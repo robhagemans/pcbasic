@@ -400,16 +400,6 @@ def from_str(s, allow_nonnum = True):
     return mbf
 
 
-def str_to_type(word, type_char):
-    """ Convert Python-string to requested type. """
-    packed = vartypes.pack_string(bytearray(word))
-    if type_char == '$':
-        return packed
-    else:
-        try:
-            return str_to_value_keep(packed, allow_nonnum=False)
-        except AttributeError:
-            return None
 #####
 
 def tokenise_number(ins, outs):
@@ -541,7 +531,10 @@ def parse_value(ins):
 def str_to_value_keep(strval, allow_nonnum=True):
     """ Convert BASIC string to BASIC value. """
     if strval == ('$', ''):
-        return vartypes.null['%']
+        if allow_nonnum:
+            return vartypes.null['%']
+        else:
+            return None
     strval = str(vartypes.pass_string_unpack(strval))
     ins = StringIO(strval)
     outs = StringIO()
@@ -555,6 +548,14 @@ def str_to_value_keep(strval, allow_nonnum=True):
             # not everything has been parsed - error
             return None
     return value
+
+def str_to_type(word, type_char):
+    """ Convert Python-string to requested type. """
+    packed = vartypes.pack_string(bytearray(word))
+    if type_char == '$':
+        return packed
+    else:
+        return str_to_value_keep(packed, allow_nonnum=False)
 
 def detokenise_number(ins, output):
     """ Convert number token to Python string. """
