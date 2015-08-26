@@ -369,22 +369,22 @@ class TextFileBase(RawFile):
             value = vartypes.null[typechar]
         return value, sep
 
-    def _skip_whitespace(self):
+    def _skip_whitespace(self, whitespace):
         """ Skip spaces and line feeds and NUL; return last whitespace char """
         c = ''
-        while self.next_char and self.next_char in self.whitespace_input:
+        while self.next_char and self.next_char in whitespace:
             # drop whitespace char
             c = self.read(1)
-            # LF causes following CR to be ignored
+            # LF causes following CR to be dropped
             if c == '\n' and self.next_char == '\r':
-                # drop the CR
-                c = self.read(1)
+                # LFCR: drop the CR, report as LF
+                self.read(1)
         return c
 
     def _input_entry(self, typechar, allow_past_end):
         """ Read a number or string entry for INPUT """
         word, blanks = '', ''
-        last = self._skip_whitespace()
+        last = self._skip_whitespace(self.whitespace_input)
         # read first non-whitespace char
         c = self.read(1)
         # LF escapes quotes
@@ -431,7 +431,7 @@ class TextFileBase(RawFile):
         # if separator was a whitespace char or closing quote
         # skip trailing whitespace before any comma or hard separator
         if c in self.whitespace_input or (quoted and c == '"'):
-            self._skip_whitespace()
+            self._skip_whitespace(' ')
             if (self.next_char in ',\r'):
                 c = self.read(1)
         # file position is at one past the separator char
