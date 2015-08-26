@@ -8,5 +8,5 @@
 37 G(1)=1:H(1)=1
 40 COMMON A,B,C,S,G(), K
 45 K=5
-50 CHAIN "c:..\..\chain.ba2"
+50 CHAIN "chain.ba2"
 
