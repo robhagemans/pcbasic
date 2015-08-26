@@ -392,7 +392,8 @@ class TextFileBase(RawFile):
         quoted = (c == '"' and typechar == '$' and last not in ('\n', '\0'))
         if quoted:
             c = self.read(1)
-        if not c and not allow_past_end:
+        # LF escapes end of file, return empty string
+        if not c and not allow_past_end and last not in ('\n', '\0'):
             raise error.RunError(error.INPUT_PAST_END)
         # we read the ending char before breaking the loop
         # this may raise FIELD OVERFLOW
@@ -430,7 +431,7 @@ class TextFileBase(RawFile):
                 c = self.read_raw(1)
         # if separator was a whitespace char or closing quote
         # skip trailing whitespace before any comma or hard separator
-        if c in self.whitespace_input or (quoted and c == '"'):
+        if c and c in self.whitespace_input or (quoted and c == '"'):
             self._skip_whitespace(' ')
             if (self.next_char in ',\r'):
                 c = self.read(1)
