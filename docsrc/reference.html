@@ -23,16 +23,35 @@
 <section>
 <h2 id="literals">Literals</h2>
 
-<p>String literals can be specified between double quotes. There is no escaping
-mechanism. To include a double quote or a special character in a string, use
-the <code>CHR$</code> function.</p>
+<h4>String literals</h4>
+<p>
+    String literals are of the following form:
+</p>
+<pre>"[<var>characters</var>]"</pre>
+<p>
+    where <code><var>characters</var></code> is a string of characters. Any
+    character from the current code page can be used, with the following
+    exceptions:
+    <ul>
+        <li><code>NUL</code> (<code>CHR$(0)</code>)</li>
+        <li><code>CR</code> (<code>CHR$(13)</code>)</li>
+        <li><code>"</code> (<code>CHR$(34))</code>)</li>
+    </ul>
+    There is no escaping mechanism. To include one of the above
+    characters in a string, use string concatenation and
+    the <code><a href="#CHR$">CHR$</a></code> function.
+</p>
 
-<p>Numeric literals have the following form:</p>
-<pre>
-  [{+|-}] [digits] [.] [digits] [ { {E|D} [{+|-}] [digits] | # | ! | % } ]
-  &amp;{H|h}hexadecimal_digits
-  &amp;[O|o]octal_digits
-</pre>
+<h4>Numeric literals</h4>
+<p>Numeric literals have one of the following forms:</p>
+<pre>[{+|-}] [<var>digits</var>] [.] [<var>digits</var>] [ { {E|D} [{+|-}] [<var>digits</var>] | # | ! | % } ]</pre>
+<pre>&amp;{H|h}<var>hexadecimal_digits</var></pre>
+<pre>&amp;[O|o]<var>octal_digits</var></pre>
+<p>
+    where <code><var>octal_digits</var></code> is a string of characters from <code>01234567</code>,
+    <code><var>digits</var></code> is a string of characters from <code>0123456789</code>, and
+    <code><var>hexadecimal_digits</var></code> is a case-insensitive string of characters from <code>0123456789ABCDEF</code>.
+</p>
 <p>Trailing <code>%</code> is ignored; trailing <code>!</code> or <code>#</code> <a href="#typechars">specify the type</a>.
 Examples of valid numeric literals:</p>
 <pre>
@@ -55,9 +74,18 @@ Examples of valid numeric literals:</p>
   &amp;hffff
   &amp;O20
 </pre>
-<p>Hexadecimal literals can be specified like <code>&amp;hFFFF</code>. They must range between
-<code>-&amp;h7FFF</code> and <code>&amp;hFFFF</code>. <code>&amp;hFFFF = -&amp;h1 = &amp;h-1</code>.
-</p><p>Octal literals can be specified as <code>&amp;o777</code> or <code>&amp;777</code>.</p>
+
+    <h4>Notes</h4>
+    <ul>
+        <li>
+            Hexadecimal and octal literals are treated as unsigned integers. They must range between
+            <code>-&amp;h7FFF</code> and <code>&amp;hFFFF</code>. <code>&amp;hFFFF = -&amp;h1 = &amp;h-1</code>.
+        </li>
+        <li>
+            The <code>O</code> character in octal literals is optional. They can be
+            specified equally as <code>&amp;o777</code> or <code>&amp;777</code>.
+        </li>
+    </ul>
 </section>
 
 <section>
@@ -66,8 +94,9 @@ Examples of valid numeric literals:</p>
 (except the <a href="#typechars">type character</a>) must be letters <code>A&#8212;Z</code>, figures <code>0&#8212;9</code>, or a dot <code>.</code>
 Only the first 40 characters in the name are significant. Variable names must
 not be identical to <a href="#keywords">keywords</a>. Variable
-names may start with a keyword, with the exception of <code>USR</code> and <code>FN</code>. Thus, <code>FNORD$</code>
-is not a legal variable name while <code>FRECKLE%</code> is.</p>
+names may start with a keyword, with the exception of <code><a href="#USR">USR</a></code> and
+<code><a href="#FN">FN</a></code>. Thus, <code><a href="#FN">FN</a>ORD$</code>
+is not a legal variable name while <code><a href="#FRE">FRE</a>CKLE%</code> is.</p>
 <p>
     For each name, four different
     variables may exist corresponding to the four types. That is, you can have <code>A$</code>,
