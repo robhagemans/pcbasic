@@ -38,7 +38,9 @@
         <li><code>EOF</code> (<code>CHR$(26)</code>)</li>
         <li><code>"</code> (<code>CHR$(34)</code>)</li>
     </ul>
-    There is no escaping mechanism. To include one of the above termination
+    Apart from these, string literals should not contain any of the characters
+    in the ASCII range <code>13&mdash;31</code>, whcih lead to unpredictable results.
+    There is no escaping mechanism. To include one of the above
     characters in a string, use <a href="#string-operators">string concatenation</a> and
     the <code><a href="#CHR$">CHR$</a></code> function.
 </p>
