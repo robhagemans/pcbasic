@@ -2,11 +2,11 @@ PC-BASIC, a BASIC interpreter
 -----------------------------
 Copyright (c) 2013--2015 Rob Hagemans.  
 
-Source code available at https://github.com/robhagemans/pcbasic
+Source code available at [https://github.com/robhagemans/pcbasic](https://github.com/robhagemans/pcbasic).
 
 This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License, Version 3, as published
-by the Free Software Foundation.
+it under the terms of the [GNU General Public License, Version 3](http://www.gnu.org/licenses/gpl-3.0.en.html),
+as published by the Free Software Foundation.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
