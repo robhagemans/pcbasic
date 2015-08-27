@@ -291,35 +291,21 @@ def format_float_fixed(expr, decimals, force_dot):
 
 def from_str(s, allow_nonnum = True):
     """ Return Float value for Python string. """
-    found_sign = False
-    found_point = False
-    found_exp = False
-    found_exp_sign = False
-    exp_neg = False
-    neg = False
-    exp10 = 0
-    exponent = 0
-    mantissa = 0
-    digits = 0
-    zeros = 0
-    is_double = False
-    is_single = False
+    found_sign, found_point, found_exp = False, False, False
+    found_exp_sign, exp_neg, neg = False, False, False
+    exp10, exponent, mantissa, digits, zeros = 0, 0, 0, 0, 0
+    is_double, is_single = False, False
     for c in s:
         # ignore whitespace throughout (x = 1   234  56  .5  means x=123456.5 in gw!)
-        if c in ascii_whitespace:   #(' ', '\t'):
+        if c in ascii_whitespace:
             continue
-        # find sign
+        # determine sign
         if (not found_sign):
-            if c=='+':
-                found_sign=True
+            found_sign = True
+            # number has started; if no sign encountered here, sign must be pos.
+            if c in '+-':
+                neg = (c == '-')
                 continue
-            elif c=='-':
-                found_sign=True
-                neg=True
-                continue
-            else:
-                # number has started, sign must be pos. parse chars below.
-                found_sign=True
         # parse numbers and decimal points, until 'E' or 'D' is found
         if (not found_exp):
             if c >= '0' and c <= '9':
@@ -331,52 +317,43 @@ def from_str(s, allow_nonnum = True):
                 if mantissa != 0:
                     digits += 1
                     if found_point and c=='0':
-                        zeros+=1
+                        zeros += 1
                     else:
                         zeros=0
                 continue
-            elif c=='.':
+            elif c == '.':
                 found_point = True
                 continue
-            elif c.upper()=='E':
+            elif c.upper() in 'DE':
                 found_exp = True
+                is_double = (c.upper() == 'D')
                 continue
-            elif c.upper()=='D':
-                found_exp = True
-                is_double = True
-                continue
-            elif c=='!':
+            elif c == '!':
                 # makes it a single, even if more than eight digits specified
-                is_single=True
+                is_single = True
                 break
-            elif c=='#':
+            elif c == '#':
                 is_double = True
                 break
             else:
                 if allow_nonnum:
                     break
-                else:
-                    return None
+                return None
+        # parse exponent
         elif (not found_exp_sign):
-            if c=='+':
-                found_exp_sign = True
+            # exponent has started; if no sign given, it must be pos.
+            found_exp_sign = True
+            if c in '+-':
+                exp_neg = (c == '-')
                 continue
-            elif c=='-':
-                found_exp_sign = True
-                exp_neg = True
-                continue
-            else:
-                # number has started, sign must be pos. parse chars below.
-                found_exp_sign = True
         if (c >= '0' and c <= '9'):
             exponent *= 10
-            exponent += ord(c)-ord('0')
+            exponent += ord(c) - ord('0')
             continue
         else:
             if allow_nonnum:
                 break
-            else:
-                return None
+            return None
     if exp_neg:
         exp10 -= exponent
     else:
