@@ -1,6 +1,6 @@
 #!/bin/bash
 # create usage file
-pandoc ../DESCRIPTION.md -o description.html
+pandoc ../DESCRIPTION.md  -o description.html
 cat header.html description.html options.html footer.html | pandoc -f html -t plain > ../pcbasic/data/usage.txt
 # create documentation
 if [ -e $1 ]
@@ -21,8 +21,12 @@ pandoc ../README.md -o readme.html
 mkdir ../doc
 cp doc.css ../doc
 cp LICENSE.md ../doc
-(cat readme2.html documentation.html; echo -e "<article>\n<h1 id=\"invocation\">Invocation</h1>"; cat options.html examples.html; echo "</article>"; cat reference.html acknowledgements.html footer.html) > predoc.html
+pandoc ../LICENSE.md -o pcbasiclicense.html
+pandoc LICENSE.md -o doclicense.html
+
+(echo "<footer><h1 id=\"licence\">Licences</h1>"; cat pcbasiclicense.html doclicense.html; echo "</footer>") > licences.html
+(cat readme2.html documentation.html; echo -e "<article>\n<h1 id=\"invocation\">Invocation</h1>"; cat options.html examples.html; echo "</article>"; cat reference.html acknowledgements.html licences.html footer.html) > predoc.html
 ./maketoc.py predoc.html > toc.html
 echo -e "<header>\n<h1>PC-BASIC Documentation</h1>\n<p>This is the documentation for PC-BASIC <em>$(cat ../pcbasic/data/version.txt)</em>.</p><small>This file was compiled on $(date --utc).</p></small></header>" > subheader.html
 (cat ../../$HEADER subheader.html toc.html predoc.html) > ../../$OUTPUT
-rm predoc.html toc.html description.html readme.html readme2.html subheader.html
+rm predoc.html toc.html description.html readme.html readme2.html subheader.html pcbasiclicense.html doclicense.html licences.html
