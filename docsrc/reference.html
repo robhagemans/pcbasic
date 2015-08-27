@@ -38,7 +38,7 @@
         <li><code>"</code> (<code>CHR$(34))</code>)</li>
     </ul>
     There is no escaping mechanism. To include one of the above
-    characters in a string, use string concatenation and
+    characters in a string, use <a href="#string-operators">string concatenation</a> and
     the <code><a href="#CHR$">CHR$</a></code> function.
 </p>
 
@@ -398,6 +398,21 @@ which is the last character of the variable's full name:</p>
     </tr>
 </table>
 </section>
+
+<h3 id="string-operators">String operators</h3>
+<p>There is one string operator, <code>+</code> for concatenation.</p>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Operation</th>
+        <th>Result</th>
+    </tr>
+    <tr>
+        <td id="concat"><code><var>x</var> + <var>y</var></code></td>
+        <td>Concatenation</td>
+        <td>The string formed by <code><var>x</var></code> followed by <code><var>y</var></code></td>
+    </tr>
+</table>
 
 <section>
 <h2 id="statements-functions">Statements and functions</h2>
