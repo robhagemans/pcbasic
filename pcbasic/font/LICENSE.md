@@ -1,5 +1,6 @@
 PC-BASIC typefaces
 ------------------
+
 This directory contains 8-bit typefaces in unifont .HEX format for use with PC-BASIC. They have been derived from the sources below.
 In most cases, the only change has been to extract a subset and to encode them in the .HEX format.
 
@@ -22,13 +23,27 @@ licence: GNU GPL v2.0+
 http://www.dosbox.com  
 licence: GNU GPL v2.0+  
 
-**cgathin, cga, mda**: IBM  
-source: These typefaces were used in the IBM PC and its successors (USA; 1981, 1984, 1987).  
+**cgathin**, **cga**, **mda**: IBM  
+These typefaces were used in the IBM PC and its successors (USA; 1981, 1984, 1987).  
 
-**tandy1, tandy2**: Tandy Corporation  
-source: These typefaces were used in various Tandy 1000 models (USA; 1985 and 1987).  
+**tandy1**, **tandy2**: Tandy Corporation  
+These typefaces were used in various Tandy 1000 models (USA; 1985 and 1987).  
 
-As to those typefaces not covered by a GPL or MIT-style licence, it is my understanding that:  
-- In the USA, where these typefaces originate, typefaces are not copyrightable.  
+
+## Typefaces not explicitly licensed above
+
+The HEX files identified as **cgathin**, **cga**, **mda**, **tandy1**, **tandy2** have been
+produced by me (Rob Hagemans) based on a visual representation of the original typeface,
+which was first published in the USA in 1987 or earlier.
+
+It is my understanding that:  
+
+- In the USA, such typefaces are not copyrightable.  
 - In the UK, the 25-year term of copyright for these typefaces has expired.  
-Please ensure you have the right to copy and use these typefaces in your jurisdiction.  
+
+However, you should ensure that you have the right to copy and use these typefaces in your jurisdiction.  
+
+Insofar as I have created a copyrightable work by encoding these typefaces into the
+present files, to the extent possible under law, I waive all copyright
+and related or neighbouring rights to that work under the
+[Creative Commons Zero dedication](http://creativecommons.org/publicdomain/zero/1.0/).
