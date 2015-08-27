@@ -402,6 +402,34 @@ def from_str(s, allow_nonnum = True):
 
 #####
 
+def tokenise_hex(ins, outs):
+    """ Convert hex expression in Python string to number token. """
+    ins.read(1)
+    word = ''
+    while True:
+        c = util.peek(ins).upper()
+        if not c or c not in ascii_hexits:
+            break
+        else:
+            word += ins.read(1).upper()
+    val = int(word, 16) if word else 0
+    outs.write(tk.T_HEX + str(vartypes.value_to_uint(val)))
+
+def tokenise_oct(ins, outs):
+    """ Convert octal expression in Python string to number token. """
+    # O is optional, could also be &777 instead of &O777
+    if nxt == 'O':
+        ins.read(1)
+    word = ''
+    while True:
+        c = util.peek(ins).upper()
+        if not c or c not in ascii_octits:
+            break
+        else:
+            word += ins.read(1).upper()
+    val = int(word, 8) if word else 0
+    outs.write(tk.T_OCT + str(vartypes.value_to_uint(val)))
+
 def tokenise_number(ins, outs):
     """ Convert Python-string number representation to number token. """
     c = util.peek(ins)
@@ -411,29 +439,12 @@ def tokenise_number(ins, outs):
     elif c == '&':
         ins.read(1)
         nxt = util.peek(ins).upper()
-        if nxt == 'H': # hex constant
-            ins.read(1)
-            word = ''
-            while True:
-                c = util.peek(ins).upper()
-                if not c or c not in ascii_hexits:
-                    break
-                else:
-                    word += ins.read(1).upper()
-            val = int(word, 16) if word else 0
-            outs.write(tk.T_HEX + str(vartypes.value_to_uint(val)))
-        else: # nxt == 'O': # octal constant
-            if nxt == 'O':
-                ins.read(1)
-            word = ''
-            while True:
-                c = util.peek(ins).upper()
-                if not c or c not in ascii_octits:
-                    break
-                else:
-                    word += ins.read(1).upper()
-            val = int(word, 8) if word else 0
-            outs.write(tk.T_OCT + str(vartypes.value_to_uint(val)))
+        if nxt == 'H':
+            # hex constant
+            tokenise_hex(ins, outs)
+        else:
+            # octal constant
+            tokenise_oct(ins, out)
     # handle other numbers
     # note GW passes signs separately as a token and only stores positive numbers in the program
     elif c in ascii_digits + '.+-':
@@ -529,7 +540,7 @@ def parse_value(ins):
     return None
 
 def str_to_value_keep(strval, allow_nonnum=True):
-    """ Convert BASIC string to BASIC value. """
+    """ Convert BASIC string to BASIC value (VAL). """
     if strval == ('$', ''):
         if allow_nonnum:
             return vartypes.null['%']
