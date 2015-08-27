@@ -27,17 +27,18 @@
 <p>
     String literals are of the following form:
 </p>
-<pre>"[<var>characters</var>]"</pre>
+<pre>"[<var>characters</var>][<code>NUL</code>|<code>CR</code>|<code>EOF</code>|"]</pre>
 <p>
     where <code><var>characters</var></code> is a string of characters. Any
     character from the current code page can be used, with the following
-    exceptions:
+    exceptions, all of which terminate the string literal (aside from other effects they may have):
     <ul>
         <li><code>NUL</code> (<code>CHR$(0)</code>)</li>
         <li><code>CR</code> (<code>CHR$(13)</code>)</li>
-        <li><code>"</code> (<code>CHR$(34))</code>)</li>
+        <li><code>EOF</code> (<code>CHR$(26)</code>)</li>
+        <li><code>"</code> (<code>CHR$(34)</code>)</li>
     </ul>
-    There is no escaping mechanism. To include one of the above
+    There is no escaping mechanism. To include one of the above termination
     characters in a string, use <a href="#string-operators">string concatenation</a> and
     the <code><a href="#CHR$">CHR$</a></code> function.
 </p>
