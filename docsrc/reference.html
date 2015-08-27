@@ -158,9 +158,8 @@ which is the last character of the variable's full name:</p>
 <ul><li>
     Line numbers are in <code>[0&#8212;65535]</code>, although line numbers <code>65530&#8212;65535</code> cannot be entered from the console.
 </li><li>
-    Booleans are integers: <code>0</code> for False; <code>-1</code> or other non-zero for True.
-</li><li>
-    Integers are in <code>[-32768&#8212;32767]</code>.
+    Integers are in <code>[-32768&#8212;32767]</code>. Negative integers are represented by the two's complement.
+    Depending on context they may be interpreted as unsigned integers in the range <code>[0&#8212;65535]</code>.
 </li><li>
     Floats: largest <code>1.701412E+38</code>; smallest <code>2.938726E-39</code>
 </li><li>
@@ -289,6 +288,10 @@ which is the last character of the variable's full name:</p>
 </table>
 
 <h3 id="relational-operators">Relational operators</h3>
+<p>
+    Relational operators return either <code>0</code> (for <em>false</em>) or
+    <code>-1</code> for <em>true</em>.
+</p>
 <table>
     <tr>
         <th>Code</th>
@@ -299,16 +302,16 @@ which is the last character of the variable's full name:</p>
         <td id="="><code>=</code></td>
         <td>Equal</td>
         <td>
-            True (-1) if <code><var>a</var></code> equals <code><var>b</var></code>,
-            false (0) otherwise.
+            True if <code><var>a</var></code> equals <code><var>b</var></code>,
+            false otherwise.
         </td>
     </tr>
     <tr>
         <td id="&lt;&gt;"><code>&lt;&gt;</code> <code>&gt;&lt;</code></td>
         <td>Not equal</td>
     <td>
-        False (0) if <code><var>a</var></code> equals <code><var>b</var></code>,
-        true (-1) otherwise.
+        False if <code><var>a</var></code> equals <code><var>b</var></code>,
+        true otherwise.
     </td>
     </tr>
     <tr>
@@ -344,7 +347,12 @@ which is the last character of the variable's full name:</p>
         </td>
 </tr></table>
 
-<h3 id="boolean-operators">Boolean operators</h3>
+<h3 id="boolean-operators">Bitwise operators</h3>
+<p>
+    PC-BASIC has no Boolean type and does not implement Boolean operators.
+    It does, however, implement <em>bitwise</em> operators. Note that PC-BASIC represents
+    negative integers using the two's complement.
+</p>
 <table>
     <tr>
         <th>Code</th>
@@ -353,11 +361,63 @@ which is the last character of the variable's full name:</p>
     </tr>
     <tr>
         <td id="NOT"><code>NOT <var>y</var></code></td>
-        <td>Logical negation</td>
-        <td>True (nonzero) if <code><var>y</var></code> is false (0) and vice versa</td>
+        <td>Complement</td>
+        <td><code>-<var>y</var>-1</code></td>
     </tr>
     <tr>
         <td id="AND"><code><var>x</var> AND y</code></td>
+        <td>Bitwise conjunction</td>
+        <td>
+            The bitwise AND of <code><var>x</var></code> and <code><var>y</var></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="OR"><code><var>x</var> OR <var>y</var></code></td>
+        <td>Bitwise disjunction</td>
+        <td>
+            The bitwise OR of <code><var>x</var></code> and <code><var>y</var></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="XOR"><code><var>x</var> XOR <var>y</var></code></td>
+        <td>Bitwise exclusive or</td>
+        <td>
+            The bitwise XOR of <code><var>x</var></code> and <code><var>y</var></code>
+        </td>
+    </tr>
+    <tr>
+        <td id="EQV"><code><var>x</var> EQV <var>y</var></code></td>
+        <td>Bitwise equivalence</td>
+        <td>
+            <code>NOT(<var>x</var> XOR <var>y</var>)
+        </td>
+    </tr>
+    <tr>
+        <td id="IMP"><code><var>x</var> IMP <var>y</var></code></td>
+        <td>Bitwise implication</td>
+        <td>
+            <code>NOT(<var>x</var>) OR <var>y</var></code>
+        </td>
+    </tr>
+</table>
+<p>
+    These operators can be used
+    as Boolean operators only if <code>-1</code> is used to represent <em>true</em> while <code>0</code>
+    represents <em>false</em>. This interpretation is given in the table below.
+</p>
+<table>
+    <tr>
+        <th>Code</th>
+        <th>Operation</th>
+        <th>Result</th>
+    </tr>
+    <tr>
+        <td><code>NOT <var>y</var></code></td>
+        <td>Logical negation</td>
+        <td>True if <code><var>y</var></code> is false and vice versa</td>
+    </tr>
+    <tr>
+        <td><code><var>x</var> AND y</code></td>
         <td>Conjunction</td>
         <td>
             Only true if both  <code><var>x</var></code> and
@@ -365,7 +425,7 @@ which is the last character of the variable's full name:</p>
         </td>
     </tr>
     <tr>
-        <td id="OR"><code><var>x</var> OR <var>y</var></code></td>
+        <td><code><var>x</var> OR <var>y</var></code></td>
         <td>Disjunction</td>
         <td>
             Only false if both <code><var>x</var></code> and
@@ -373,7 +433,7 @@ which is the last character of the variable's full name:</p>
         </td>
     </tr>
     <tr>
-        <td id="XOR"><code><var>x</var> XOR <var>y</var></code></td>
+        <td><code><var>x</var> XOR <var>y</var></code></td>
         <td>Exclusive or</td>
         <td>
             True if the truth values of <code><var>x</var></code> and
@@ -381,7 +441,7 @@ which is the last character of the variable's full name:</p>
         </td>
     </tr>
     <tr>
-        <td id="EQV"><code><var>x</var> EQV <var>y</var></code></td>
+        <td><code><var>x</var> EQV <var>y</var></code></td>
         <td>Equivalence</td>
         <td>
             True if the truth values of <code><var>x</var></code> and
@@ -389,7 +449,7 @@ which is the last character of the variable's full name:</p>
         </td>
     </tr>
     <tr>
-        <td id="IMP"><code><var>x</var> IMP <var>y</var></code></td>
+        <td><code><var>x</var> IMP <var>y</var></code></td>
         <td>Implication</td>
         <td>
             True if <code><var>x</var></code> is false or
@@ -397,6 +457,12 @@ which is the last character of the variable's full name:</p>
         </td>
     </tr>
 </table>
+<p>
+    Be aware that when used on integers other than <code>0</code> and <code>-1</code>,
+    bitwise operators can <em>not</em>
+    be interpreted as Boolean operators. For example,
+    <code>2 AND 1</code> returns <code>0</code>.
+</p>
 </section>
 
 <h3 id="string-operators">String operators</h3>
