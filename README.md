@@ -27,19 +27,23 @@ If you find bugs, please report them on the SourceForge discussion page at [http
 Packaged distributions are currently available for Windows XP and above and Mac OSX 10.6 and above. For Debian, Ubuntu, Mint and Fedora Linux an install script is provided in the source distribution.
 
 They can be downloaded from one of the following locations:  
+
 - GitHub at [https://github.com/robhagemans/pcbasic/releases](https://github.com/robhagemans/pcbasic/releases).  
 - SourceForge at [https://sourceforge.net/projects/pcbasic/files/](https://sourceforge.net/projects/pcbasic/files/).  
 
 On **Windows**:  
+
 - run the installer  
 - to start, click PC-BASIC in your Start menu  
 
 On **OS X**:  
+
 - mount the disk image  
 - move `PC-BASIC.app` to your Applications folder  
 - to start, double click the PC-BASIC app  
 
 On **Linux**:  
+
 - untar the archive  
 - run `sudo ./install.sh`  
 - to start, click PC-BASIC in your Applications menu or run `pcbasic` on the command line.  
@@ -86,13 +90,14 @@ included with PC-BASIC and available online.
 
 
 #### GW-BASIC links and downloads ####
-BASIC program downloads and further links can be found on the following pages.
+BASIC program downloads and further links can be found on the following pages.  
+
 - [KindlyRat's geocities page](http://www.oocities.org/KindlyRat/GWBASIC.html)  
 - [PeatSoft GW-BASIC documentation](http://archive.is/AUm6G)  
 - [Neil C. Obremski's gw-basic.com](http://www.gw-basic.com/)  
 - [Leon Peyre](http://peyre.x10.mx/GWBASIC/) has a nice collection of GW-BASIC programs including the original IBM PC-DOS 1.1 samples and the (in)famous DONKEY.BAS  
-- [Phillip Bigelow](http://www.scn.org/~bh162/basic_programs.html)  
-- [Gary Peek](http://www.garypeek.com/basic/gwprograms.htm)  
+- [Phillip Bigelow's scientific programs written in BASIC](http://www.scn.org/~bh162/basic_programs.html)  
+- [Gary Peek's BASIC source code archive](http://www.garypeek.com/basic/gwprograms.htm)  
 - [S.A. Moore's Classic BASIC Games](http://www.moorecad.com/classicbasic/index.html)  
 - [Joseph Sixpack's Last Book of GW-BASIC](http://www.geocities.ws/joseph_sixpack/btoc.html) has lots of GW-BASIC office and utility programs, including the PC-CALC spreadsheet.  
 - [cd.textfiles.com](http://cd.textfiles.com) has tons of old shareware, among which some good GW-BASIC games. Click on the image to enter, like in the olden days. Have fun digging.  
