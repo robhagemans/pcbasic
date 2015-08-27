@@ -1,10 +1,28 @@
-#!/bin/sh
+#!/bin/bash
+# create usage file
 pandoc ../DESCRIPTION.md -o description.html
 cat header.html description.html options.html footer.html | pandoc -f html -t plain > ../pcbasic/data/usage.txt
+# create documentation
+if [ -e $1 ]
+then
+  HEADER=pc-basic/docsrc/header.html
+else
+  HEADER=$1
+fi
+if [ -e $2 ]
+then
+   OUTPUT=pc-basic/doc/PC-BASIC_documentation.html
+else
+   OUTPUT=$2
+fi
+echo $HEADER $OUTPUT
+pandoc ../README.md -o readme.html
+(echo "<article>"; cat readme.html; echo "</article>") | sed -e "s/h3/h1/g" -e "s/h4/h2/g" -e "s_PC-BASIC</h1>_Overview</h1>_"> readme2.html
 mkdir ../doc
 cp doc.css ../doc
 cp LICENSE.md ../doc
-(cat documentation.html; echo "<article>\n<h1 id=\"invocation\">Invocation</h1>"; cat options.html examples.html; echo "</article>"; cat reference.html acknowledgements.html footer.html) > predoc.html
+(cat readme2.html documentation.html; echo -e "<article>\n<h1 id=\"invocation\">Invocation</h1>"; cat options.html examples.html; echo "</article>"; cat reference.html acknowledgements.html footer.html) > predoc.html
 ./maketoc.py predoc.html > toc.html
-(cat header.html; echo "<header>\n<h1>PC-BASIC $(cat ../pcbasic/data/version.txt)</h1>\n<p><small>Documentation compiled on $(date --utc).</small></p></header>"; cat toc.html predoc.html) > ../doc/PC-BASIC_documentation.html
-rm predoc.html toc.html description.html
+echo -e "<header>\n<h1>PC-BASIC Documentation</h1>\n<p>This is the documentation for PC-BASIC <em>$(cat ../pcbasic/data/version.txt)</em>.</p><small>This file was compiled on $(date --utc).</p></small></header>" > subheader.html
+(cat ../../$HEADER subheader.html toc.html predoc.html) > ../../$OUTPUT
+rm predoc.html toc.html description.html readme.html readme2.html subheader.html
