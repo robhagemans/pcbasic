@@ -443,10 +443,8 @@ def tokenise_dec(ins, outs):
     # ascii separators encountered: zero output
     if kill:
         word = '0'
-    # don't claim trailing whitespace, don't end in D or E
-    while len(word)>0 and (word[-1] in ascii_whitespace + 'DE'):
-        if word[-1] in 'DE':
-            have_exp = False
+    # don't claim trailing whitespace
+    while len(word)>0 and (word[-1] in ascii_whitespace):
         word = word[:-1]
         ins.seek(-1,1) # even if c==''
     # remove all internal whitespace
