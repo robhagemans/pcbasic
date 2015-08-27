@@ -391,7 +391,7 @@ def tokenise_hex(ins, outs):
 def tokenise_oct(ins, outs):
     """ Convert octal expression in Python string to number token. """
     # O is optional, could also be &777 instead of &O777
-    if nxt == 'O':
+    if util.peek(ins).upper() == 'O':
         ins.read(1)
     word = ''
     while True:
@@ -482,13 +482,12 @@ def tokenise_number(ins, outs):
     elif c == '&':
         # handle hex or oct constants
         ins.read(1)
-        nxt = util.peek(ins).upper()
-        if nxt == 'H':
+        if util.peek(ins).upper() == 'H':
             # hex constant
             tokenise_hex(ins, outs)
         else:
             # octal constant
-            tokenise_oct(ins, out)
+            tokenise_oct(ins, outs)
     elif c in ascii_digits + '.+-':
         # handle other numbers
         # note GW passes signs separately as a token
