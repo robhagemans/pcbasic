@@ -310,8 +310,6 @@ def from_str(s, allow_nonnum = True):
         # ignore whitespace throughout (x = 1   234  56  .5  means x=123456.5 in gw!)
         if c in ascii_whitespace:   #(' ', '\t'):
             continue
-        if c in kill_char:
-            return Single.zero
         # find sign
         if (not found_sign):
             if c=='+':
@@ -435,10 +433,14 @@ def tokenise_dec(ins, outs):
     have_exp = False
     have_point = False
     word = ''
+    kill = False
     while True:
         c = ins.read(1).upper()
         if not c:
             break
+        elif c in kill_char:
+            # ASCII separator chars invariably lead to zero result
+            kill = True
         elif c == '.' and not have_point and not have_exp:
             have_point = True
             word += c
@@ -463,6 +465,9 @@ def tokenise_dec(ins, outs):
         else:
             ins.seek(-1, 1)
             break
+    # ascii separators encountered: zero output
+    if kill:
+        word = '0'
     # don't claim trailing whitespace, don't end in D or E
     while len(word)>0 and (word[-1] in ascii_whitespace + 'DE'):
         if word[-1] in 'DE':
@@ -479,7 +484,8 @@ def tokenise_dec(ins, outs):
     if len(word) == 1 and word in ascii_digits:
         # digit
         outs.write(chr(0x11+int(word)))
-    elif not (have_exp or have_point or word[-1] in '!#') and int(word) <= 0x7fff and int(word) >= -0x8000:
+    elif (not (have_exp or have_point or word[-1] in '!#') and
+                            int(word) <= 0x7fff and int(word) >= -0x8000):
         if int(word) <= 0xff and int(word)>=0:
             # one-byte constant
             outs.write(tk.T_BYTE + chr(int(word)))
