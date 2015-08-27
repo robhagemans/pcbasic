@@ -5968,12 +5968,28 @@ Any parameter has a string value: <samp>Type mismatch</samp>.
 <h3 id="VAL"><code>VAL</code> function</h3>
 <pre><var>value</var> = VAL(<var>string</var>)</pre>
 <p>
-Returns the numeric value of the string expression <code><var>string</var></code>.
-The interpretation is the same a that used in program lines. For instance,
-spaces before or even inside a number are ignored: <code>VAL(" 1 0")</code> returns <code>10</code>.
-Parsing stops as soon as the first character is encountered that cannot be
-part of a number. If that is the first character of the string, or the
-string is empty, <code>VAL</code> returns zero. </p>
+    Returns the numeric value of the string expression <code><var>string</var></code>.
+    Parsing stops as soon as the first character is encountered that cannot be
+    part of a number. If no characters are parsed, <code>VAL</code> returns zero.
+    See the section on <a href="#literals">numeric literals</a> for the
+    recognised number formats.
+</p>
+<h4>Notes</h4>
+<ul>
+    <li>
+        Spaces before or even inside a number are ignored:
+        <code>VAL(" 1 0")</code> returns <code>10</code>.
+    </li>
+    <li>
+        If <code><var>string</var></code> contains one of the ASCII separator
+        characters <code>CHR$(28)</code> (file separator),
+        <code>CHR$(29)</code> (group separator) or
+        <code>CHR$(31)</code> (unit separator),
+        <code>VAL</code> returns zero.
+        This is not the case with <code>CHR$(30)</code> (record separator).
+        This behaviour conforms to GW-BASIC.
+    </li>
+</ul>
 <h4>Errors</h4>
 <ul><li>
 <code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
