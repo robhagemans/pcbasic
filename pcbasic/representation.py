@@ -159,6 +159,8 @@ def float_to_str(n_in, screen=False, write=False):
     if n_in.is_zero():
         if screen and not write:
             valstr = ' 0'
+        elif write:
+            valstr = '0'
         else:
             valstr = '0' + n_in.type_sign
         return valstr
