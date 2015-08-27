@@ -430,6 +430,69 @@ def tokenise_oct(ins, outs):
     val = int(word, 8) if word else 0
     outs.write(tk.T_OCT + str(vartypes.value_to_uint(val)))
 
+def tokenise_dec(ins, outs):
+    """ Convert decimal expression in Python string to number token. """
+    have_exp = False
+    have_point = False
+    word = ''
+    while True:
+        c = ins.read(1).upper()
+        if not c:
+            break
+        elif c == '.' and not have_point and not have_exp:
+            have_point = True
+            word += c
+        elif c in 'ED' and not have_exp:
+            have_exp = True
+            word += c
+        elif c in '-+' and (not word or word[-1] in 'ED'):
+            # must be first token or in exponent
+            word += c
+        elif c in ascii_digits:
+            word += c
+        elif c in ascii_whitespace:
+            # we'll remove this later but need to keep it for now
+            # so we can reposition the stream on removing trailing whitespace
+            word += c
+        elif c in '!#' and not have_exp:
+            word += c
+            break
+        elif c == '%':
+            # swallow a %, but break parsing
+            break
+        else:
+            ins.seek(-1, 1)
+            break
+    # don't claim trailing whitespace, don't end in D or E
+    while len(word)>0 and (word[-1] in ascii_whitespace + 'DE'):
+        if word[-1] in 'DE':
+            have_exp = False
+        word = word[:-1]
+        ins.seek(-1,1) # even if c==''
+    # remove all internal whitespace
+    trimword = ''
+    for c in word:
+        if c not in ascii_whitespace:
+            trimword += c
+    word = trimword
+    # write out the numbers
+    if len(word) == 1 and word in ascii_digits:
+        # digit
+        outs.write(chr(0x11+int(word)))
+    elif not (have_exp or have_point or word[-1] in '!#') and int(word) <= 0x7fff and int(word) >= -0x8000:
+        if int(word) <= 0xff and int(word)>=0:
+            # one-byte constant
+            outs.write(tk.T_BYTE + chr(int(word)))
+        else:
+            # two-byte constant
+            outs.write(tk.T_INT + str(vartypes.value_to_sint(int(word))))
+    else:
+        mbf = str(from_str(word).to_bytes())
+        if len(mbf) == 4:
+            outs.write(tk.T_SINGLE + mbf)
+        else:
+            outs.write(tk.T_DOUBLE + mbf)
+
 def tokenise_number(ins, outs):
     """ Convert Python-string number representation to number token. """
     c = util.peek(ins)
@@ -446,69 +509,13 @@ def tokenise_number(ins, outs):
             # octal constant
             tokenise_oct(ins, out)
     # handle other numbers
-    # note GW passes signs separately as a token and only stores positive numbers in the program
+    # note GW passes signs separately as a token
+    # and only stores positive numbers in the program
     elif c in ascii_digits + '.+-':
-        have_exp = False
-        have_point = False
-        word = ''
-        while True:
-            c = ins.read(1).upper()
-            if not c:
-                break
-            elif c == '.' and not have_point and not have_exp:
-                have_point = True
-                word += c
-            elif c in 'ED' and not have_exp:
-                have_exp = True
-                word += c
-            elif c in '-+' and (not word or word[-1] in 'ED'):
-                # must be first token or in exponent
-                word += c
-            elif c in ascii_digits:
-                word += c
-            elif c in ascii_whitespace:
-                # we'll remove this later but need to keep it for now
-                # so we can reposition the stream on removing trailing whitespace
-                word += c
-            elif c in '!#' and not have_exp:
-                word += c
-                break
-            elif c == '%':
-                # swallow a %, but break parsing
-                break
-            else:
-                ins.seek(-1, 1)
-                break
-        # don't claim trailing whitespace, don't end in D or E
-        while len(word)>0 and (word[-1] in ascii_whitespace + 'DE'):
-            if word[-1] in 'DE':
-                have_exp = False
-            word = word[:-1]
-            ins.seek(-1,1) # even if c==''
-        # remove all internal whitespace
-        trimword = ''
-        for c in word:
-            if c not in ascii_whitespace:
-                trimword += c
-        word = trimword
-        # write out the numbers
-        if len(word) == 1 and word in ascii_digits:
-            # digit
-            outs.write(chr(0x11+int(word)))
-        elif not (have_exp or have_point or word[-1] in '!#') and int(word) <= 0x7fff and int(word) >= -0x8000:
-            if int(word) <= 0xff and int(word)>=0:
-                # one-byte constant
-                outs.write(tk.T_BYTE + chr(int(word)))
-            else:
-                # two-byte constant
-                outs.write(tk.T_INT + str(vartypes.value_to_sint(int(word))))
-        else:
-            mbf = str(from_str(word).to_bytes())
-            if len(mbf) == 4:
-                outs.write(tk.T_SINGLE + mbf)
-            else:
-                outs.write(tk.T_DOUBLE + mbf)
+        tokenise_dec(ins, outs)
     else:
+        # why is this here?
+        # this looks wrong but hasn't hurt so far
         ins.seek(-1, 1)
 
 
