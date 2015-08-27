@@ -79,8 +79,6 @@ def oct_to_str(s):
 # for to_str
 # for numbers, tab and LF are whitespace
 ascii_whitespace = ' \t\n'
-# these seem to lead to a zero outcome all the time
-kill_char = '\x1c\x1d\x1f'
 
 # string representations
 
@@ -438,7 +436,7 @@ def tokenise_dec(ins, outs):
         c = ins.read(1).upper()
         if not c:
             break
-        elif c in kill_char:
+        elif c in '\x1c\x1d\x1f':
             # ASCII separator chars invariably lead to zero result
             kill = True
         elif c == '.' and not have_point and not have_exp:
@@ -502,10 +500,10 @@ def tokenise_dec(ins, outs):
 def tokenise_number(ins, outs):
     """ Convert Python-string number representation to number token. """
     c = util.peek(ins)
-    # handle hex or oct constants
     if not c:
         return
     elif c == '&':
+        # handle hex or oct constants
         ins.read(1)
         nxt = util.peek(ins).upper()
         if nxt == 'H':
@@ -514,10 +512,10 @@ def tokenise_number(ins, outs):
         else:
             # octal constant
             tokenise_oct(ins, out)
-    # handle other numbers
-    # note GW passes signs separately as a token
-    # and only stores positive numbers in the program
     elif c in ascii_digits + '.+-':
+        # handle other numbers
+        # note GW passes signs separately as a token
+        # and only stores positive numbers in the program
         tokenise_dec(ins, outs)
     else:
         # why is this here?
