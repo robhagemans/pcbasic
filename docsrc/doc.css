@@ -8,7 +8,23 @@ http://creativecommons.org/licenses/by/4.0/
 
 html {
     background-color: white;
+    overflow-x: hidden;
 }
+
+code,
+kbd,
+pre,
+samp {
+  font-family: monospace, monospace;
+  font-size: 1em;
+}
+
+figure, .scrollable {
+    max-width: 45em;
+    width: 100%;
+    overflow-x: auto;
+}
+
 
 article, header, nav.toc, footer {
     margin-left: 0;
@@ -99,6 +115,24 @@ h5 {
 ul {
     margin-top: 0em;
     padding-left: 1em;
+}
+
+/* compact def lists */
+dl .compact {
+    display: inline-block;
+    width: 100%;
+}
+.compact dt {
+    float: left;
+    clear: left;
+    width: 6em;
+    margin: 0;
+    margin-right: 1em;
+}
+.compact dd {
+    float: left;
+    clear: right;
+    margin: 0;
 }
 
 /* compact list */
