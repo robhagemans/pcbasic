@@ -470,15 +470,16 @@ def backspace(start_row, start_col):
     delete_char(crow, ccol)
 
 def tab():
-    """ Insert 8 spaces (TAB). """
+    """ Jump to next 8-position tab stop (TAB). """
     row, col = state.console_state.row, state.console_state.col
+    newcol = 9 + 8 * int((col-1) / 8)
     if state.console_state.overwrite_mode:
-        set_pos(row, col + 8, scroll_ok=False)
+        set_pos(row, newcol, scroll_ok=False)
     else:
         for _ in range(8):
             insert(row, col, ' ', state.console_state.screen.attr)
         state.console_state.screen.redraw_row(col - 1, row)
-        set_pos(row, col + 8)
+        set_pos(row, newcol)
 
 def end():
     """ Jump to end of logical line; follow wraps (END). """
