@@ -25,6 +25,11 @@ figure, .scrollable {
     overflow-x: auto;
 }
 
+figure {
+    margin: 0;
+    padding: 0;
+
+}
 
 article, header, nav.toc, footer {
     margin-left: 0;
@@ -235,6 +240,34 @@ pre {
 /* tablets and desktops */
 
 @media (min-width: 55em) {
+    /* header on offline docs */
+
+    .standalone header {
+        backgound: yellow;
+        position:fixed;
+        z-index:4;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-width: 100%;
+        height: 3.2rem;
+        background: #0000aa;
+        border-bottom: 1em solid grey;
+        font-family: sans;
+        margin: 0;
+        padding: 0;
+    }
+    .standalone header h1, .standalone header small {
+        background: none;
+        color: white;
+        margin: 0.5rem 0 0 1rem;
+        display: inline-block;
+    }
+    .standalone header small {
+        color: grey;
+        float: right;
+        margin: 0.7rem 1rem 0 0;
+    }
 
     /* push link target below fixed menu */
     :target::before {
@@ -300,7 +333,7 @@ pre {
         color: lightsteelblue;
     }
     nav.toc>ul>li>ul>li>ul  {
-        color: grey;
+        color: steelblue;
     }
 
 
