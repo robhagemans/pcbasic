@@ -1,6 +1,6 @@
-PC-BASIC, a BASIC interpreter  
------------------------------
-Copyright (c) 2013--2015 Rob Hagemans.  
+PC-BASIC interpreter  
+--------------------
+Copyright © 2013—2015 Rob Hagemans.  
 
 Source code available at [https://github.com/robhagemans/pcbasic](https://github.com/robhagemans/pcbasic).
 
