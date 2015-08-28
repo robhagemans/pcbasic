@@ -1,3 +1,4 @@
 #!/bin/bash
-name=$1
-cp -R TEST-tnd/ $1
+name="$1"
+cp -R TEST-tnd/ "$name"
+rm -r "$name/model"

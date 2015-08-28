@@ -6,3 +6,4 @@ doc/
 build/
 dist/
 pcbasic.egg-info/
+test/gwbasicdir
