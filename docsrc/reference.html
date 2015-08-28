@@ -32,12 +32,14 @@
     where <code><var>characters</var></code> is a string of characters. Any
     character from the current code page can be used, with the following
     exceptions, all of which terminate the string literal (aside from other effects they may have):
-    <ul>
-        <li><code>NUL</code> (<code>CHR$(0)</code>)</li>
-        <li><code>CR</code> (<code>CHR$(13)</code>)</li>
-        <li><code>EOF</code> (<code>CHR$(26)</code>)</li>
-        <li><code>"</code> (<code>CHR$(34)</code>)</li>
-    </ul>
+</p>
+<ul>
+    <li><code>NUL</code> (<code>CHR$(0)</code>)</li>
+    <li><code>CR</code> (<code>CHR$(13)</code>)</li>
+    <li><code>EOF</code> (<code>CHR$(26)</code>)</li>
+    <li><code>"</code> (<code>CHR$(34)</code>)</li>
+</ul>
+<p>
     Apart from these, string literals should not contain any of the characters
     in the ASCII range <code>13&mdash;31</code>, whcih lead to unpredictable results.
     There is no escaping mechanism. To include one of the above
@@ -139,17 +141,31 @@ brackets; even mixing brackets is allowed. The following all work: <code>A[0]</c
 <h3 id="typechars">Type characters</h3>
 <p>PC-BASIC recognises four variable types, distinguished by their type character
 which is the last character of the variable's full name:</p>
-<table><tr>
-<th>char</th>    <th>type</th>                    <th>size</th>
-</tr><tr>
-<td><code>$</code></td>      <td>string</td>                  <td>3 bytes plus allocated string space</td>
-</tr><tr>
- <td><code>%</code></td>      <td>integer</td>                 <td>2 bytes </td>
-</tr><tr>
- <td><code>!</code></td>      <td>single-precision float</td>  <td>4 bytes</td>
-</tr><tr>
- <td><code>#</code></td>      <td>double-precision float</td>  <td>8 bytes</td>
-</tr></table>
+<div class="scrollable">
+<table>
+    <tr>
+        <th>char</th>
+        <th>type</th>
+        <th>size</th>
+    </tr><tr>
+        <td><code>$</code></td>
+        <td>string</td>
+        <td>3 bytes plus allocated string space</td>
+    </tr><tr>
+        <td><code>%</code></td>
+        <td>integer</td>
+        <td>2 bytes </td>
+    </tr><tr>
+        <td><code>!</code></td>
+        <td>single-precision float</td>
+        <td>4 bytes</td>
+    </tr><tr>
+        <td><code>#</code></td>
+        <td>double-precision float</td>
+        <td>8 bytes</td>
+    </tr>
+</table>
+</div>
 <p>
     If no type character is specified, the first letter of the name determines
     the type according to the settings of
@@ -227,6 +243,7 @@ which is the last character of the variable's full name:</p>
     Note however that <code>+</code> can take the role of the
     <a href="#string-operators">string concatenation operator</a>.
 </p>
+<div class="scrollable">
 <table>
     <tr>
         <th>Code</th>
@@ -295,6 +312,7 @@ which is the last character of the variable's full name:</p>
         </td>
     </tr>
 </table>
+</div>
 
 <h3 id="relational-operators">Relational operators</h3>
 <p>
@@ -306,6 +324,7 @@ which is the last character of the variable's full name:</p>
     Relational operators return either <code>0</code> (for <em>false</em>) or
     <code>-1</code> for <em>true</em>.
 </p>
+<div class="scrollable">
 <table>
     <tr>
         <th>Code</th>
@@ -359,7 +378,9 @@ which is the last character of the variable's full name:</p>
             False if <code><var>a</var></code> is less than <code><var>b</var></code>,
             true otherwise.
         </td>
-</tr></table>
+    </tr>
+</table>
+</div>
 <p>
     When operating on numeric operands, both operands are compared as floating-point
     numbers according to the usual ordering of numbers. The equals operator tests
@@ -398,6 +419,7 @@ which is the last character of the variable's full name:</p>
     Bitwise operators operate on numeric expressions only. If either
     operand is a string, <samp>Type mismatch</samp> will be raised.
 </p>
+<div class="scrollable">
 <table>
     <tr>
         <th>Code</th>
@@ -434,7 +456,7 @@ which is the last character of the variable's full name:</p>
         <td id="EQV"><code><var>x</var> EQV <var>y</var></code></td>
         <td>Bitwise equivalence</td>
         <td>
-            <code>NOT(<var>x</var> XOR <var>y</var>)
+            <code>NOT(<var>x</var> XOR <var>y</var>)</code>
         </td>
     </tr>
     <tr>
@@ -445,11 +467,13 @@ which is the last character of the variable's full name:</p>
         </td>
     </tr>
 </table>
+</div>
 <p>
     These operators can be used
     as Boolean operators only if <code>-1</code> is used to represent <em>true</em> while <code>0</code>
     represents <em>false</em>. This interpretation is given in the table below.
 </p>
+<div class="scrollable">
 <table>
     <tr>
         <th>Code</th>
@@ -502,6 +526,7 @@ which is the last character of the variable's full name:</p>
         </td>
     </tr>
 </table>
+</div>
 <p>
     Be aware that when used on integers other than <code>0</code> and <code>-1</code>,
     bitwise operators can <em>not</em>
@@ -512,6 +537,7 @@ which is the last character of the variable's full name:</p>
 
 <h3 id="string-operators">String operators</h3>
 <p>There is one string operator, <code>+</code> for concatenation.</p>
+<div class="scrollable">
 <table>
     <tr>
         <th>Code</th>
@@ -524,6 +550,7 @@ which is the last character of the variable's full name:</p>
         <td>The string formed by <code><var>x</var></code> followed by <code><var>y</var></code></td>
     </tr>
 </table>
+</div>
 
 <section>
 <h2 id="statements-functions">Statements and functions</h2>
@@ -1499,111 +1526,133 @@ The array exceeds the size of available variable
 
 <h3 id="DRAW"><code>DRAW</code> statement</h3>
 <pre>DRAW <var>gml_string</var></pre>
-<p>Draws the shape specified by <code><var>gml_string</var></code>, a string expression in Graphics Macro Language (GML). </p>
-<h4>Graphics Macrol Language reference</h4>
+<p>
+    Draws the shape specified by <code><var>gml_string</var></code>,
+    a string expression in Graphics Macro Language (GML).
+</p>
+<h4>Graphics Macro Language reference</h4>
 <dl>
-<dt>Movement commands</dt>
-<dd>
-    <pre>[B][N] <var>movement</var> </pre>
-    where the default is to move and draw; the optional prefixes mean:
-    <table>
-    <tr>
-    <td><code>B</code></td>
-    <td>move but do not plot</td>
-    </tr><tr>
-    <td><code>N</code></td>
-    <td>return to original point after move</td>
-    </tr>
-    </table>
-    and <code><var>movement</var></code> is one of:
-    <table>
-    <tr>
-    <td><code>U[<var>n</var>]</code></td>
-    <td>up <code><var>n</var></code> steps</td>
-    </tr><tr>
-    <td><code>L[<var>n</var>]</code></td>
-    <td>left <code><var>n</var></code> steps</td>
-    </tr><tr>
-    <td><code>D[<var>n</var>]</code></td>
-    <td>down <code><var>n</var></code> steps</td>
-    </tr><tr>
-    <td><code>R[<var>n</var>]</code></td>
-    <td>right <code><var>n</var></code> steps</td>
-    </tr><tr>
-    <td><code>E[<var>n</var>]</code></td>
-    <td>up and right <code><var>n</var></code> steps</td>
-    </tr><tr>
-    <td><code>F[<var>n</var>]</code></td>
-    <td>down and right <code><var>n</var></code> steps</td>
-    </tr><tr>
-    <td><code>G[<var>n</var>]</code></td>
-    <td>down and left <code><var>n</var></code> steps</td>
-    </tr><tr>
-    <td><code>H[<var>n</var>]</code></td>
-    <td>up and left <code><var>n</var></code> steps</td>
-    </tr><tr>
-    <td><code>M{+|-}<var>x</var>,[+|-]<var>y</var></code></td>
-    <td>move (<code><var>x</var></code>,<code><var>y</var></code>) steps</td>
-    </tr><tr>
-    <td><code>M<var>x</var>,<var>y</var></code></td>
-    <td>move to view region coordinate (<code><var>x</var></code>,<code><var>y</var></code>) </td>
-    </tr></table>
-    <p>where <code><var>n</var></code>, <code><var>x</var></code>, <code><var>y</var></code> are integers in <code>[0&#8212;9999]</code>.
-    Where optional, <code><var>n</var></code> defaults to <code>1</code>.
-</p></dd>
-<dt>Scale commands</dt>
-<dd>
-    <table><tr>
-    <td><code>S<var>n</var></code></td>
-    <td>set the step size to <code><var>n</var>/4</code>. The default step size is 1 pixel.
-                <code><var>n</var></code> is an integer in <code>[1&#8212;255]</code>
-    </td>
-    </tr><tr>
-    <td><code>TA<var>n</var></code></td>
-    <td>
-        set the angle to <code><var>n</var></code> degrees. The default angle is 0 degrees.
-                <code><var>n</var></code> is an integer in <code>[-360&#8212;360]</code>
-    </td>
-    </tr><tr>
-    <td><code>A<var>n</var></code></td>
-    <td>
-        set the angle to 0 for <code><var>n</var>=0</code>,
-                90 for <code><var>n</var>=1</code>,
-                180 for <code><var>n</var>=2</code>,
-                270 for <code><var>n</var>=3</code>.
-                <code><var>n</var></code> is an integer in <code>[0&#8212;3]</code>
-    </td>
-    </tr></table>
-</dd>
-<dt>Colour commands</dt>
-<dd>
-    <table><tr>
-    <td><code>C<var>n</var></code></td>
-    <td>
-        set the foreground attribute to <code><var>n</var></code>.
-        See <code><a href="#COLOR">COLOR</a></code>.
-    </td>
-    </tr><tr>
-    <td><code>P<var>n</var>,<var>b</var></code></td>
-    <td>
-        flood fill with attribute <code><var>n</var></code> and boundary
-        attribute <code><var>b</var></code>.
-        See <code><a href="#PAINT">PAINT</a></code>.
-    </td></tr></table>
-</dd>
-<dt>Subroutine command</dt>
-<dd>
-    <table><tr>
-    <td><code>X<var>s</var></code></td>
-    <td>      execute a substring</td>
-    </tr></table>
-    <p><code><var>s</var></code> is one of the following:</p>
-    <ul><li>
-       a string variable name followed by semicolon (<code>;</code>)
-    </li><li>
-       the result of <code><a href="#VARPTR$">VARPTR$()</a></code> on a string variable
-    </li></ul>
-</dd>
+    <dt>Movement commands</dt>
+    <dd>
+        <pre>[B][N] <var>movement</var> </pre>
+        where the default is to move and draw; the optional prefixes mean:
+        <div class="scrollable">
+        <table>
+            <tr>
+                <td><code>B</code></td>
+                <td>move but do not plot</td>
+            </tr><tr>
+                <td><code>N</code></td>
+                <td>return to original point after move</td>
+            </tr>
+        </table>
+        </div>
+        and <code><var>movement</var></code> is one of:
+        <div class="scrollable">
+        <table>
+            <tr>
+                <td><code>U[<var>n</var>]</code></td>
+                <td>up <code><var>n</var></code> steps</td>
+            </tr><tr>
+                <td><code>L[<var>n</var>]</code></td>
+                <td>left <code><var>n</var></code> steps</td>
+            </tr><tr>
+                <td><code>D[<var>n</var>]</code></td>
+                <td>down <code><var>n</var></code> steps</td>
+            </tr><tr>
+                <td><code>R[<var>n</var>]</code></td>
+                <td>right <code><var>n</var></code> steps</td>
+            </tr><tr>
+                <td><code>E[<var>n</var>]</code></td>
+                <td>up and right <code><var>n</var></code> steps</td>
+            </tr><tr>
+                <td><code>F[<var>n</var>]</code></td>
+                <td>down and right <code><var>n</var></code> steps</td>
+            </tr><tr>
+                <td><code>G[<var>n</var>]</code></td>
+                <td>down and left <code><var>n</var></code> steps</td>
+            </tr><tr>
+                <td><code>H[<var>n</var>]</code></td>
+                <td>up and left <code><var>n</var></code> steps</td>
+            </tr><tr>
+                <td><code>M{+|-}<var>x</var>,[+|-]<var>y</var></code></td>
+                <td>move (<code><var>x</var></code>,<code><var>y</var></code>) steps</td>
+            </tr><tr>
+                <td><code>M<var>x</var>,<var>y</var></code></td>
+                <td>move to view region coordinate (<code><var>x</var></code>,<code><var>y</var></code>)</td>
+            </tr>
+        </table>
+        </div>
+        <p>where <code><var>n</var></code>, <code><var>x</var></code>, <code><var>y</var></code> are integers in <code>[0&#8212;9999]</code>.
+        Where optional, <code><var>n</var></code> defaults to <code>1</code>.</p>
+    </dd>
+    <dt>Scale commands</dt>
+    <dd>
+        <div class="scrollable">
+        <table>
+            <tr>
+                <td><code>S<var>n</var></code></td>
+                <td>
+                    set the step size to <code><var>n</var>/4</code>. The default step size is 1 pixel.
+                    <code><var>n</var></code> is an integer in <code>[1&#8212;255]</code>
+                </td>
+            </tr><tr>
+                <td><code>TA<var>n</var></code></td>
+                <td>
+                    set the angle to <code><var>n</var></code> degrees. The default angle is 0 degrees.
+                    <code><var>n</var></code> is an integer in <code>[-360&#8212;360]</code>
+                </td>
+            </tr><tr>
+                <td><code>A<var>n</var></code></td>
+                <td>
+                    set the angle to
+                    0 for <code><var>n</var>=0</code>,
+                    90 for <code><var>n</var>=1</code>,
+                    180 for <code><var>n</var>=2</code>,
+                    270 for <code><var>n</var>=3</code>.
+                    <code><var>n</var></code> is an integer in <code>[0&#8212;3]</code>
+                </td>
+            </tr>
+        </table>
+        </div>
+    </dd>
+    <dt>Colour commands</dt>
+    <dd>
+        <div class="scrollable">
+        <table>
+            <tr>
+                <td><code>C<var>n</var></code></td>
+                <td>
+                    set the foreground attribute to <code><var>n</var></code>.
+                    See <code><a href="#COLOR">COLOR</a></code>.
+                </td>
+            </tr><tr>
+                <td><code>P<var>n</var>,<var>b</var></code></td>
+                <td>
+                    flood fill with attribute <code><var>n</var></code> and boundary
+                    attribute <code><var>b</var></code>.
+                    See <code><a href="#PAINT">PAINT</a></code>.
+                </td>
+            </tr>
+        </table>
+        </div>
+    </dd>
+    <dt>Subroutine command</dt>
+    <dd>
+        <div class="scrollable">
+        <table>
+            <tr>
+                <td><code>X<var>s</var></code></td>
+                <td>      execute a substring</td>
+            </tr>
+        </table>
+        </div>
+        <p><code><var>s</var></code> is one of the following:</p>
+        <ul>
+            <li>a string variable name followed by semicolon (<code>;</code>)</li>
+            <li>the result of <code><a href="#VARPTR$">VARPTR$()</a></code> on a string variable</li>
+        </ul>
+    </dd>
 </dl>
 
 <p>Numeric variables <code><var>n</var></code>, <code><var>x</var></code>, <code><var>y</var></code>, <code><var>b</var></code> in the commands above can be:</p>
@@ -1947,6 +1996,7 @@ the second part is the filename filter.
 <ul><li>
 The filename filter consists of file name
 parts and the following wildcards:
+<div class="scrollable">
 <table><tr>
 <td><code>?</code></td>
 <td>matches any character but not the <code>\</code> or <code>.</code>
@@ -1954,7 +2004,7 @@ parts and the following wildcards:
 </tr><tr>
 <td><code>*</code></td>
 <td>matches any series of characters excluding <code>\</code> or <code>.</code></td>
-</tr></table>
+</tr></table></div>
 </li><li>
 A filter
 will only match MS-DOS style 8.3 all-uppercase filenames.
@@ -2156,28 +2206,30 @@ case an array with maximum index 10 has 11 elements. This works through in
 multidimensional arrays.</p>
 
 <p>The array format is as follows:</p>
+<div class="scrollable">
 <table>
-
-<tr>
-<th>Byte</th>
-<th>Contains</th>
-</tr><tr>
-<td>0, 1</td>
-<td>Number of x pixels, unsigned int. In <code>SCREEN 1</code>, this value is doubled.</td>
-</tr><tr>
-<td>2, 3</td>
-<td>Number of y pixels, unsigned int.
-</td></tr><tr>
-<td>4&#8212;</td>
-<td>Pixel data. Data is arranged in 2-byte words. The first 16-bit word holds the bit 0 of
-    the first 16 pixels on the top row. The second word holds the second bit,
-    etc. Data is word-aligned at the end of each row. Thus, in a screen mode
-    with 4 bits per pixel, the first row takes at least 8 bytes (4 words), even
-    if it consists of only one pixel. The number of bits per pixel depends on
-    the <code><a href="#SCREEN-statement">SCREEN</a></code> mode.
-</td>
-</tr>
+    <tr>
+        <th>Byte</th>
+        <th>Contains</th>
+    </tr><tr>
+        <td>0, 1</td>
+        <td>Number of x pixels, unsigned int. In <code>SCREEN 1</code>, this value is doubled.</td>
+    </tr><tr>
+        <td>2, 3</td>
+        <td>Number of y pixels, unsigned int.</td>
+    </tr><tr>
+        <td>4&#8212;</td>
+        <td>
+            Pixel data. Data is arranged in 2-byte words. The first 16-bit word holds the bit 0 of
+            the first 16 pixels on the top row. The second word holds the second bit,
+            etc. Data is word-aligned at the end of each row. Thus, in a screen mode
+            with 4 bits per pixel, the first row takes at least 8 bytes (4 words), even
+            if it consists of only one pixel. The number of bits per pixel depends on
+            the <code><a href="#SCREEN-statement">SCREEN</a></code> mode.
+        </td>
+    </tr>
 </table>
+</div>
 <h4>Parameters</h4>
 <ul><li>
 <code><var>array_name</var></code> is the name of a numeric array dimensioned with enough space to store the area.
@@ -2316,6 +2368,7 @@ This function has no brackets.
 </li></ul>
 
 <h4>Keyboard scancodes returned by <code>INKEY$</code></h4>
+<div class="scrollable">
 <table><tr>
 <th>Key</th><th>Scancode</th>
 </tr><tr>
@@ -2380,7 +2433,7 @@ This function has no brackets.
 <td><kbd>CTRL</kbd>+<kbd>F2</kbd></td><td>       5F</td>
 </tr><tr>
 <td><kbd>CTRL</kbd>+<kbd>F3</kbd></td><td>       60</td>
-</tr></table>
+</tr></table></div>
 
 <h3 id="INP"><code>INP</code> function</h3>
 <pre><var>code</var> = INP(<var>port</var>)</pre>
@@ -2388,6 +2441,7 @@ This function has no brackets.
 Returns the value of an emulated machine port.</p>
 <h4>Parameters</h4>
 <p><code><var>port</var></code> is a numeric expression in <code>[0&#8212;65535]</code>.</p>
+<div class="scrollable">
 <table>
 <tr>
 <th><code>port</code></th><th>Effect</th>
@@ -2432,6 +2486,7 @@ Returns the value of an emulated machine port.</p>
 <td>Returns zero.</td>
 </tr>
 </table>
+</div>
 <h4>Notes</h4>
 <ul><li>
    Only a limited number of machine ports are emulated in PC-BASIC.
@@ -2445,6 +2500,7 @@ Returns the value of an emulated machine port.</p>
 
 
 <h4>Scancodes returned by <code>INP(&amp;H60)</code></h4>
+<div class="scrollable">
 <table>
 <tr>
 <th>Key</th><th>Scancode</th>
@@ -2617,6 +2673,7 @@ Returns the value of an emulated machine port.</p>
 <td><kbd>Del</kbd></td><td>53
 </td></tr>
 </table>
+</div>
 
 <h3 id="INPUT"><code>INPUT</code> statement (console)</h3>
 <pre>INPUT [;] [<var>prompt</var> {;|,} ]<var>var_0</var> [, <var>var_1</var> [, ... ] ]</pre>
@@ -2911,6 +2968,7 @@ statement.</p>
 <h4>Parameters</h4>
 <p><code><var>key_id</var></code> is a numeric expression in <code>[1&#8212;20]</code>.
 Keys are:</p>
+<div class="scrollable">
 <table><tr>
 <td>1</td>
 <td><kbd>F1</kbd></td>
@@ -2954,6 +3012,7 @@ Keys are:</p>
 <td>14</td>
 <td><kbd>&#8595;<!--down--></kbd></td>
 </tr></table>
+</div>
 <p>
     Keys 15 to 20 are defined using the event trapping
     <code><a href="#KEY-event-def">KEY</a></code> definition statement.
@@ -2983,6 +3042,7 @@ expression in <code>[15&#8212;20]</code>.
 <code><var>string_value</var></code> is a string expression of length 2. The first character is interpreted as a modifier
 while the second character is interpreted as a scancode. See <code><a href="#INP">INP</a></code> for scancodes.
 Modifiers are:
+<div class="scrollable">
 <table><tr>
     <td><code>CHR$(&amp;h80)</code></td>
     <td>Extended</td>
@@ -3005,6 +3065,7 @@ Modifiers are:
     <td><code>CHR$(&amp;h01)</code></td>
     <td><kbd>Shift</kbd> (either side)</td>
 </tr></table>
+</div>
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
@@ -3765,6 +3826,7 @@ No <code>FOR</code> statement is found to match the <code>NEXT</code> statement 
 <ul><li>
     <code><var>source</var></code> is a numeric expression in  <code>[0&#8212;7]</code>.
     It indicates the type of noise:
+    <div class="scrollable">
     <table><tr>
     <th>source</th>  <th>type</th>            <th>top of frequency band (Hz)</th>
     </tr><tr>
@@ -3784,6 +3846,7 @@ No <code>FOR</code> statement is found to match the <code>NEXT</code> statement 
     </tr><tr>
     <td>3</td><td>       white noise     </td><td>last tone played on voice 2</td>
     </tr></table>
+    </div>
 </li><li>
     <code><var>volume</var></code> is a numeric expression in <code>[0&#8212;15]</code>.
 </li><li>
@@ -3854,36 +3917,54 @@ The line number jumped to does not exist: <samp>Undefined line number</samp>.
 <pre>ON { COM(<var>n</var>) | KEY(<var>n</var>) | STRIG(<var>n</var>) | PEN | PLAY(<var>n</var>) | TIMER(<var>x</var>) } GOSUB <var>line_number</var></pre>
 <p>Defines an event trapping subroutine.
 The type of event is given by one of the following keywords:</p>
-<table><tr>
-<td><code>COM(<var>n</var>)</code></td>
-<td>The event is triggered
-            if data is present in the input buffer of the <code>COM<var>n</var>:</code>. <code><var>n</var></code> is the port number in <code>[1,2]</code>.
-</td></tr><tr>
-<td><code>KEY(<var>n</var>)</code></td>
-    <td>
-        The event is triggered if key <code><var>n</var></code> is pressed.
-        <code><var>n</var></code> is the key number <code>[1&#8212;10]</code>
-        defined in the <code><a href="#KEY-event-def">KEY</a></code> statement.
-    </td>
-</tr><tr>
-<td><code>STRIG(<var>n</var>)</code></td>
-<td>They event is triggered if fire button <code><var>n</var></code> is pressed.
-<code><var>n</var></code> in <code>[0,2,4,6]</code> refer to the two fire triggers on two joysticks.
-            </td>
-</tr><tr>
-<td><code>PEN</code></td>
-<td>The event is triggered if the light pen is on the
-            screen. (In PC-BASIC, the light pen is emulated by default by the right mouse button).</td>
-</tr><tr>
-<td><code>PLAY(<var>n</var>)</code></td>
-<td>The event is triggered if there are exactly <code><var>n</var></code> notes left on the
-            music background queue. <code><var>n</var></code> is a numeric expression in <code>[1&#8212;32]</code>.</td>
-</tr><tr>
-<td><code>TIMER(<var>x</var>)</code></td>
-<td>The event is triggered every <code><var>x</var></code> seconds after the <code><a href="#TIMER">TIMER ON</a></code>
-            statement. <code><var>x</var></code> is a numeric expression in <code>[1&#8212;86400]</code>.</td>
-</tr></table>
-            <h4>Notes</h4>
+<div class="scrollable">
+<table>
+    <tr>
+        <td><code>COM(<var>n</var>)</code></td>
+        <td>
+            The event is triggered
+            if data is present in the input buffer of the
+            <code>COM<var>n</var>:</code>. <code><var>n</var></code>
+            is the port number in <code>[1,2]</code>.
+        </td>
+    </tr><tr>
+        <td><code>KEY(<var>n</var>)</code></td>
+        <td>
+            The event is triggered if key <code><var>n</var></code> is pressed.
+            <code><var>n</var></code> is the key number <code>[1&#8212;10]</code>
+            defined in the <code><a href="#KEY-event-def">KEY</a></code> statement.
+        </td>
+    </tr><tr>
+        <td><code>STRIG(<var>n</var>)</code></td>
+        <td>
+            They event is triggered if fire button <code><var>n</var></code> is pressed.
+            <code><var>n</var></code> in <code>[0,2,4,6]</code> refer to the
+            two fire triggers on two joysticks.
+        </td>
+    </tr><tr>
+        <td><code>PEN</code></td>
+        <td>
+            The event is triggered if the light pen is on the
+            screen. (In PC-BASIC, the light pen is emulated by default by the
+            right mouse button).
+        </td>
+    </tr><tr>
+        <td><code>PLAY(<var>n</var>)</code></td>
+        <td>
+            The event is triggered if there are exactly <code><var>n</var></code> notes left on the
+            music background queue. <code><var>n</var></code> is a numeric expression in <code>[1&#8212;32]</code>.
+        </td>
+    </tr><tr>
+        <td><code>TIMER(<var>x</var>)</code></td>
+        <td>
+            The event is triggered every <code><var>x</var></code> seconds after the <code><a href="#TIMER">TIMER ON</a></code>
+            statement. <code><var>x</var></code> is a numeric expression in <code>[1&#8212;86400]</code>.
+        </td>
+    </tr>
+</table>
+</div>
+
+<h4>Notes</h4>
 <ul><li>
 Event trapping for your chosen event first needs to be enabled using one of the
 statements: <code><a href="#COM">COM(<var>n</var>) ON</a></code>,
@@ -3950,8 +4031,11 @@ It is not possible to start the error handler at line number <code>0</code>.
 </li></ul>
 
 <h4>Access modes</h4>
-<p>The <code>FOR</code> modes or <code><var>mode_char</var></code> are as follows:
-</p><table><tr>
+<p>
+    The <code>FOR</code> modes or <code><var>mode_char</var></code> are as follows:
+</p>
+<div class="scrollable">
+<table><tr>
 <th><code><var>mode_char</var></code></th>
 <th><code>FOR</code></th>
 <th>Effect</th>
@@ -3979,46 +4063,42 @@ It is not possible to start the error handler at line number <code>0</code>.
     buffer; the <code>FIELD</code> buffer can be accessed through <code>FIELD</code> variables or through
     <code><a href="#PRINT">PRINT#</a></code> and <code><a href="#INPUT-file">INPUT#</a></code> statements.
 </td></tr></table>
+</div>
 <p>
 If no <code>FOR</code> mode or <code><var>mode_char</var></code> is specified, the file is opened for <code>RANDOM</code>.</p>
 <p>
 If both <code>FOR</code> and <code>ACCESS</code> are specified, any <code>ACCESS</code> mode is allowed for
     <code>RANDOM</code> but for the other modes the access must match as follows:
 </p>
+<div class="scrollable">
 <table>
-
-<tr>
-<th><code>FOR</code></th>
-<th>default <code>ACCESS</code></th>
-<th>allowed <code>ACCESS</code></th>
-</tr>
-
-<tr>
-<td><code>INPUT</code></td>
-<td><code>READ</code></td>
-<td><code>READ</code></td>
-</tr>
-
-<tr>
-<td><code>OUTPUT</code></td>
-<td><code>WRITE</code></td>
-<td><code>WRITE</code></td>
-</tr>
-
-<tr>
-<td><code>APPEND</code></td>
-<td><code>READ WRITE</code></td>
-<td><code>READ WRITE</code></td>
-</tr>
-
-<tr>
-<td><code>RANDOM</code></td>
-<td><code>READ WRITE</code></td>
-<td>all</td>
-</tr>
-
+    <tr>
+        <th><code>FOR</code></th>
+        <th>default <code>ACCESS</code></th>
+        <th>allowed <code>ACCESS</code></th>
+    </tr>
+    <tr>
+        <td><code>INPUT</code></td>
+        <td><code>READ</code></td>
+        <td><code>READ</code></td>
+    </tr>
+    <tr>
+        <td><code>OUTPUT</code></td>
+        <td><code>WRITE</code></td>
+        <td><code>WRITE</code></td>
+    </tr>
+    <tr>
+        <td><code>APPEND</code></td>
+        <td><code>READ WRITE</code></td>
+        <td><code>READ WRITE</code></td>
+    </tr>
+    <tr>
+        <td><code>RANDOM</code></td>
+        <td><code>READ WRITE</code></td>
+        <td>all</td>
+    </tr>
 </table>
-
+</div>
 
 <h4>Sharing and locks</h4>
 <p>
@@ -4035,8 +4115,11 @@ If <code>SHARED</code>, <code>LOCK READ</code>, <code>LOCK WRITE</code> or <code
 </p>
 <pre>OPEN "file" ACCESS <var>acc_1</var> <var>lock_1</var> AS 1
 OPEN "file" ACCESS <var>acc_2</var> <var>lock_2</var> AS 2</pre>
-<p>The following combinations are allowed:
-</p><table>
+<p>
+    The following combinations are allowed:
+</p>
+<div class="scrollable">
+<table>
 <tr>
 <th rowspan="2" colspan="2">Access allowed</th>
 <th colspan="3"><code>acc_2</code>
@@ -4054,6 +4137,7 @@ OPEN "file" ACCESS <var>acc_2</var> <var>lock_2</var> AS 2</pre>
     </tr><tr>
 <th><code>LOCK READ WRITE</code></th><td>no</td><td>no</td><td>no</td>
 </tr></table>
+</div>
 <p>
     and vice versa for <code><var>acc_1</var></code> and <code><var>lock_2</var></code>.
 </p>
@@ -4062,97 +4146,125 @@ across a network as well as inside a single BASIC process. Without <code>SHARED<
 GW-BASIC process. By contrast, in PC-BASIC,
 the locks are only implemented internally. Whether other processes may access
 the file will depend on the host OS.</p>
-<h4>
-Serial port (<code>COM1:</code>) access</h4>
-<p>If a <code>COM</code> port is opened for <code>RANDOM</code>, access is
-byte-for-byte rather than through <code>FIELD</code> records; <code>PRINT#</code> and <code>INPUT#</code> access
-the port directly. <code><var>rec_len</var></code> sets the number of bytes read by the <code>GET</code> and
-<code>PUT</code> statements.</p>
-<p>When opening a <code>COM</code> port, additional expressions may be included following the
+
+<h4>Serial port (<code>COM1:</code>) access</h4>
+<p>
+    If a <code>COM</code> port is opened for <code>RANDOM</code>, access is
+    byte-for-byte rather than through <code>FIELD</code> records; <code>PRINT#</code> and <code>INPUT#</code> access
+    the port directly. <code><var>rec_len</var></code> sets the number of bytes read by the <code>GET</code> and
+    <code>PUT</code> statements.
+</p>
+<p>
+    When opening a <code>COM</code> port, additional expressions may be included following the
     colon of the device name. These specify parameters for the serial
-    connection. This string has the form</p>
-    <pre>"COMn:[speed[,parity[,data[,stop[,RS][,CS[n]][,DS[n]][,CD[n]][,LF][,PE]]]]]"</pre>
+    connection. This string has the form
+</p>
+<pre>"COMn:[speed[,parity[,data[,stop[,RS][,CS[n]][,DS[n]][,CD[n]][,LF][,PE]]]]]"</pre>
+<p>
     The first four parameters must be given in that order but the named parameters
     can be given in any order.
     The meaning of the parameters is:
-<table><tr>
-<th>Parameter</th>
-<th>Default</th>
-<th>Meaning</th>
-</tr><tr>
-<td><code><var>speed</var></code></td>
-<td><code>300</code></td>
-<td>Baud (bps) rate for the connection. <code><var>speed</var></code> is one of
-            <code>[75, 110, 150, 300, 600, 1200, 1800, 2400, 4800, 9600]</code>.
-</td>
-</tr><tr>
-<td><code><var>parity</var></code></td>
-<td><code>E</code></td>
-<td>Parity bit convention. <code><var>parity</var></code> is one of <code>[S, M, O, E, N]</code>.
-    <table><tr>
-    <th><code><var>parity</var></code></th>
-    <th>Meaning</th>
-    <th>Effect</th>
+</p>
+<div class="scrollable">
+<table>
+    <tr>
+        <th>Parameter</th>
+        <th>Default</th>
+        <th>Meaning</th>
     </tr><tr>
-            <td><code>S</code></td>   <td>SPACE</td>   <td>Parity bit always set to 0.</td>
+        <td><code><var>speed</var></code></td>
+        <td><code>300</code></td>
+        <td>Baud (bps) rate for the connection. <code><var>speed</var></code> is one of
+                    <code>[75, 110, 150, 300, 600, 1200, 1800, 2400, 4800, 9600]</code>.
+        </td>
     </tr><tr>
-            <td><code>M</code></td>   <td>MARK</td>    <td>Parity bit always set to 1.</td>
+        <td><code><var>parity</var></code></td>
+        <td><code>E</code></td>
+        <td>
+            Parity bit convention. <code><var>parity</var></code> is one of <code>[S, M, O, E, N]</code>.
+            <table>
+                <tr>
+                    <th><code><var>parity</var></code></th>
+                    <th>Meaning</th>
+                    <th>Effect</th>
+                </tr><tr>
+                    <td><code>S</code></td>
+                    <td>SPACE</td>
+                    <td>Parity bit always set to 0.</td>
+                </tr><tr>
+                    <td><code>M</code></td>
+                    <td>MARK</td>
+                    <td>Parity bit always set to 1.</td>
+                </tr><tr>
+                    <td><code>O</code></td>
+                    <td>ODD</td>
+                    <td>Parity bit set so that character parity is odd.</td>
+                </tr><tr>
+                    <td><code>E</code></td>
+                    <td>EVEN</td>
+                    <td>Parity bit set so that character parity is even.</td>
+                </tr><tr>
+                    <td><code>N</code></td>
+                    <td>NONE</td>
+                    <td>No parity bit transmitted or received.</td>
+                </tr>
+            </table>
+        </td>
     </tr><tr>
-            <td><code>O</code></td>   <td>ODD</td>     <td>Parity bit set so that character parity is odd.</td>
-    </tr><tr>
-            <td><code>E</code></td>   <td>EVEN</td>    <td>Parity bit set so that character parity is even.</td>
-    </tr><tr>
-            <td><code>N</code></td>   <td>NONE</td>    <td>No parity bit transmitted or received.</td>
-    </tr></table>
-</td>
-</tr><tr>
-<td><code><var>data</var></code></td>
-<td><code>7</code></td>
-<td>Data bits per byte. <code><var>data</var></code> must be one of <code>[4, 5, 6, 7, 8]</code>.
+        <td><code><var>data</var></code></td>
+        <td><code>7</code></td>
+        <td>
+            Data bits per byte. <code><var>data</var></code> must be one of <code>[4, 5, 6, 7, 8]</code>.
             A byte consists of the data bits plus parity bit, if
-            any. Byte size must be in the range <code>[5&#8212;8]</code>: if <code><var>data</var></code> is <code>4</code>,
-            <code><var>parity</var></code> must not be <code>N</code>; if <code><var>data</var></code> is <code>8</code>, <code><var>parity</var></code> must be <code>N</code>.
-</td>
-</tr><tr>
-<td><code><var>stop</var></code></td>
-<td><code>1</code></td>
-<td>The number of stop bits. <code><var>stop</var></code> must be <code>1</code> or <code>2</code>.
-            Default is <code>2</code> if <code><var>speed</var></code> is <code>75</code> or <code>110</code>; <code>1</code> otherwise.
-</td></tr><tr>
-<td><code>RS</code></td>
-<td>no</td>
-<td>Suppress <em>Request To Send</em>.</td>
-</tr><tr>
-<td><code>CS[<var>n</var>]</code></td>
-<td><code>CS1000</code></td>
-<td>Set <em>Clear To Send</em> timeout to <code><var>n</var></code> milliseconds.
+            any. Byte size must be in the range <code>[5&#8212;8]</code>:
+            if <code><var>data</var></code> is <code>4</code>,
+            <code><var>parity</var></code> must not be <code>N</code>;
+            if <code><var>data</var></code> is <code>8</code>,
+            <code><var>parity</var></code> must be <code>N</code>.
+        </td>
+    </tr><tr>
+        <td><code><var>stop</var></code></td>
+        <td><code>1</code></td>
+        <td>The number of stop bits. <code><var>stop</var></code> must be <code>1</code> or <code>2</code>.
+                    Default is <code>2</code> if <code><var>speed</var></code> is <code>75</code> or <code>110</code>; <code>1</code> otherwise.
+        </td>
+    </tr><tr>
+        <td><code>RS</code></td>
+        <td>no</td>
+        <td>Suppress <em>Request To Send</em>.</td>
+    </tr><tr>
+        <td><code>CS[<var>n</var>]</code></td>
+        <td><code>CS1000</code></td>
+        <td>
+            Set <em>Clear To Send</em> timeout to <code><var>n</var></code> milliseconds.
             If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
             Default is <code>CS0</code> if <code>RS</code> is set; <code>CS1000</code> otherwise.
-</td>
-</tr><tr>
-<td><code>DS[<var>n</var>]</code></td>
-<td><code>DS1000</code></td>
-<td>
-Set <em>Data Set Ready</em> timeout to <code><var>n</var></code> milliseconds.
+        </td>
+    </tr><tr>
+        <td><code>DS[<var>n</var>]</code></td>
+        <td><code>DS1000</code></td>
+        <td>
+            Set <em>Data Set Ready</em> timeout to <code><var>n</var></code> milliseconds.
             If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
-</td>
-</tr><tr>
-<td><code>CD[<var>n</var>]</code></td>
-<td><code>CD0</code></td>
-<td>
-Set <em>Carrier Detect</em> timeout to <code><var>n</var></code> milliseconds.
+        </td>
+    </tr><tr>
+        <td><code>CD[<var>n</var>]</code></td>
+        <td><code>CD0</code></td>
+        <td>
+            Set <em>Carrier Detect</em> timeout to <code><var>n</var></code> milliseconds.
             If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
-</td>
-</tr><tr>
-<td><code>LF</code></td>
-<td>no</td>
-<td>Send a line feed after each carriage return.</td>
-</tr><tr>
-    <td><code>PE</code></td>
-<td>no</td>
-    <td>Enable parity checking (This setting is ignored by PC-BASIC).</td>
-</tr></table>
-
+        </td>
+    </tr><tr>
+        <td><code>LF</code></td>
+        <td>no</td>
+        <td>Send a line feed after each carriage return.</td>
+    </tr><tr>
+        <td><code>PE</code></td>
+    <td>no</td>
+        <td>Enable parity checking (This setting is ignored by PC-BASIC).</td>
+    </tr>
+</table>
+</div>
 
 <h4>Notes</h4>
 <ul><li>
@@ -4228,6 +4340,7 @@ The <code>COM:</code> <code><var>file_name</var></code> parameters do not follow
 <p>
 Sends a byte to an emulated machine port.</p>
 <p>The following machine ports are emulated in PC-BASIC:</p>
+<div class="scrollable">
 <table><tr>
 <th><code><var>port</var></code></th>
 <th>Effect</th>
@@ -4248,6 +4361,7 @@ Sends a byte to an emulated machine port.</p>
     if <code><var>value</var> = &amp;h1E</code>, disable composite colorburst.<br/>
     Requires <code><a href="#--video">--video</a>={cga, tandy, pcjr}</code>.
 </td></tr></table>
+</div>
 <h4>Notes</h4>
 <ul><li>
    Only a limited number of machine ports are emulated.
@@ -4507,51 +4621,47 @@ suspension is handled immediately after the next <code>PEN ON</code> statement.<
 
 <h3 id="PEN"><code>PEN</code> function</h3>
 <pre><var>x</var> = PEN(<var>mode</var>)</pre>
-<p>Reads the light pen. What this function returns depends on <code><var>mode</var></code>:
-</p><table><tr>
-<th><code><var>mode</var></code></th>
-<th>Return value</th>
-</tr><tr>
-<td>
-  0</td><td>Boolean; whether the light pen has been down since last poll.
-</td>
-</tr><tr>
-<td>
-  1</td><td>x coordinate of last pen down position
-</td>
-</tr><tr>
-<td>
-  2</td><td>y coordinate of last pen down position
-</td>
-</tr><tr>
-<td>
-  3</td><td>Boolean; whether the pen is currently down
-</td>
-</tr><tr>
-<td>
-  4</td><td>x coordinate of current pen position
-</td>
-</tr><tr>
-<td>
-  5</td><td>y coordinate of current pen position
-</td>
-</tr><tr>
-<td>
-  6</td><td>character row coordinate of last pen down position
-</td>
-</tr><tr>
-<td>
-  7</td><td>character column coordinate of last pen down position
-</td>
-</tr><tr>
-<td>
-  8</td><td>character row coordinate of current pen position
-</td>
-</tr><tr>
-<td>
-  9</td><td>character column coordinate of current pen position
-</td>
-</tr></table>
+<p>
+    Reads the light pen. What this function returns depends on <code><var>mode</var></code>:
+</p>
+<div class="scrollable">
+<table>
+    <tr>
+        <th><code><var>mode</var></code></th>
+        <th>Return value</th>
+    </tr><tr>
+        <td>0</td>
+        <td>Boolean; whether the light pen has been down since last poll.</td>
+    </tr><tr>
+        <td>1</td>
+        <td>x coordinate of last pen down position</td>
+    </tr><tr>
+        <td>2</td>
+        <td>y coordinate of last pen down position</td>
+    </tr><tr>
+        <td>3</td>
+        <td>Boolean; whether the pen is currently down</td>
+    </tr><tr>
+        <td>4</td>
+        <td>x coordinate of current pen position</td>
+    </tr><tr>
+        <td>5</td>
+        <td>y coordinate of current pen position</td>
+    </tr><tr>
+        <td>6</td>
+        <td>character row coordinate of last pen down position</td>
+    </tr><tr>
+        <td>7</td>
+        <td>character column coordinate of last pen down position</td>
+    </tr><tr>
+        <td>8</td>
+        <td>character row coordinate of current pen position</td>
+    </tr><tr>
+        <td>9</td>
+        <td>character column coordinate of current pen position</td>
+    </tr>
+</table>
+</div>
 <h4>Parameters</h4>
 <ul><li>
 <code><var>mode</var></code> is a numeric expression in <code>[0&#8212;9]</code>.
@@ -4607,6 +4717,7 @@ suspension is handled immediately after the next <code>PEN ON</code> statement.<
 <dl>
 <dt>Notes and Pauses</dt>
 <dd>
+<div class="scrollable">
 <table><tr>
 <td><code><var>note</var></code></td>
 <td>
@@ -4633,9 +4744,11 @@ Play a note. <code><var>note</var></code> can be
 <td><code>P<var>n</var></code></td>
 <td>Pause for the duration of an <code><var>n</var></code>th note.</td>
 </tr></table>
+</div>
 </dd>
 <dt>Timing commands</dt>
 <dd>
+<div class="scrollable">
 <table><tr>
 <td><code>.</code></td>
 <td>Increase the duration of the preceding note by 1/2 times its normal
@@ -4658,12 +4771,14 @@ Play a note. <code><var>note</var></code> can be
 <td><code>T<var>n</var></code></td>
 <td>Sets the tempo to <code><var>n</var></code> <code>L4</code>s per minute. Default is 120.</td>
 </tr></table>
+</div>
 </dd>
     <dt>
         Background-mode commands (affect <code><a href="#SOUND">SOUND</a></code>,
         <code><a href="#PLAY">PLAY</a></code> and <code><a href="#BEEP">BEEP</a></code>)
     </dt>
 <dd>
+    <div class="scrollable">
 <table><tr>
 <td><code>MB</code></td>
 <td>Turns on background mode; sound commands exit without waiting for the
@@ -4675,9 +4790,11 @@ Play a note. <code><var>note</var></code> can be
 <td><code>MF</code></td>
 <td>  Turns off background mode; sound commands block. Default mode.</td>
 </tr></table>
+</div>
 </dd>
 <dt>Subroutine command</dt>
 <dd>
+    <div class="scrollable">
 <table><tr>
 <td><code>X<var>s</var></code></td>
 <td>      Execute substring. <code><var>s</var></code> is one of the following:
@@ -4687,21 +4804,26 @@ Play a note. <code><var>note</var></code> can be
                the result of <code><a href="#VARPTR$">VARPTR$()</a></code> on a string variable
             </li></ul>
 </td></tr></table>
+</div>
 </dd>
 <dt>
     Volume control (<code><a href="#--syntax">--syntax</a>={tandy | pcjr}</code> only):
 </dt>
 <dd>
-    <table><tr>
-        <td>
-            <code>V<var>n</var></code>
-        </td>
-        <td>
-            Set the volume to <code><var>n</var></code>, in the range <code>[0&#8212;15]</code>.
-            On PCjr, if <code><a href="#SOUND-switch">SOUND ON</a></code>
-            has not been executed, this has no effect. On Tandy it does have.
-        </td>
-    </tr></table>
+    <div class="scrollable">
+    <table>
+        <tr>
+            <td>
+                <code>V<var>n</var></code>
+            </td>
+            <td>
+                Set the volume to <code><var>n</var></code>, in the range <code>[0&#8212;15]</code>.
+                On PCjr, if <code><a href="#SOUND-switch">SOUND ON</a></code>
+                has not been executed, this has no effect. On Tandy it does have.
+            </td>
+        </tr>
+    </table>
+    </div>
 </dd>
 </dl>
 <p>Numeric variables <code><var>n</var></code> in the commands above can be:</p>
@@ -4769,6 +4891,7 @@ PCjr and Tandy
 If no <code><a href="#VIEW">VIEW</a></code> has been set, the viewport coordinates
 are physical coordinates.</p>
 <p>The return value depends on <code><var>fn</var></code>:</p>
+<div class="scrollable">
 <table><tr>
 <th><code><var>fn</var></code></th><th>Return value</th>
 </tr><tr>
@@ -4780,6 +4903,7 @@ are physical coordinates.</p>
 </tr><tr>
 <td>3</td>     <td>return logical y given viewport y</td>
 </tr></table>
+</div>
 <h4>Parameters</h4>
 <ul><li>
 <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
@@ -4813,6 +4937,7 @@ in a <code>LINE</code> command, or the centre of the viewport if nothing has bee
 </p><p>
 The coordinate returned depends on the value of <code><var>fn</var></code>:
 </p>
+<div class="scrollable">
 <table><tr>
 <th><code><var>fn</var></code></th><th>Return value</th>
 </tr><tr>
@@ -4824,6 +4949,7 @@ The coordinate returned depends on the value of <code><var>fn</var></code>:
 </tr><tr>
 <td>3</td>     <td>logical y</td>
 </tr></table>
+</div>
 
 <h4>Parameters</h4>
 <ul><li>
@@ -4941,6 +5067,7 @@ output goes to <code>LPT1:</code>. If <code><var>file_num</var></code> is specif
 device open under that number. <code>?</code> is a shorthand for <code>PRINT</code> and has the same
 effect.</p>
 <p>Expressions can be separated by one of the following tokens:</p>
+<div class="scrollable">
 <table><tr>
 <td><code>;</code></td>
 <td>   Attaches two expressions tight together; strings will be
@@ -4968,6 +5095,7 @@ effect.</p>
     current column is greater than <code><var>n</var></code>, TAB moves to column <code><var>n</var></code> on the next
     line.
 </td></tr></table>
+</div>
 <p>If the print statement does not end in one of these four separation tokens, a newline is
 printed after the last expression.
 String expressions can be separated by one or more spaces, which has the same
@@ -4976,12 +5104,15 @@ effect as separating by semicolons.</p>
 <h4>Format string syntax</h4>
 <p>A <code>USING</code> declaration occurs at the end of an <code>[L]PRINT[#]</code> statement and writes a
 formatted string to the screen, printer, file or device. The following tables list the format tokens that can be used inside the <code><var>format</var></code> string.</p>
+<div class="scrollable">
 <table><tr>
 <td><code>_</code></td>
 <td>   Escape character; causes the next character in the format string to be
     printed as is rather than interpreted as a format token.</td>
 </tr></table>
+</div>
 <p>For string expressions:</p>
+<div class="scrollable">
 <table><tr>
 <td><code>!</code></td>
 <td>   Prints the first character of a string.</td>
@@ -4994,7 +5125,9 @@ formatted string to the screen, printer, file or device. The following tables li
 <td><code>&amp;</code></td>
 <td>   Prints the whole string.</td>
 </tr></table>
+</div>
 <p>For numeric expressions, the format string specifies a width and alignment.</p>
+<div class="scrollable">
 <table><tr>
 <td><code>#</code></td>
 <td>
@@ -5013,8 +5146,10 @@ Before the decimal point: cause digits to be grouped in threes separated by
     Provides one digit position.
 </td>
 </tr></table>
+</div>
 <p>The number of characters in the field must not exceed 24.     </p>
 <p>Tokens preceding the number field:</p>
+<div class="scrollable">
 <table><tr>
 <td><code>+</code></td>
 <td>
@@ -5033,7 +5168,9 @@ Before the decimal point: cause digits to be grouped in threes separated by
     Provides one digit position.
 </td>
 </tr></table>
+</div>
 <p>Tokens trailing the number field:</p>
+<div class="scrollable">
 <table><tr>
 <td><code>+</code></td>
 <td>   Cause the sign to be printed for positive as well as negative numbers.
@@ -5049,11 +5186,11 @@ Before the decimal point: cause digits to be grouped in threes separated by
 <td><code>^^^^</code></td>
 <td>Specify that scientific notation <code>E+00</code> is to be used.</td>
 </tr></table>
+</div>
 <p>Numeric expressions are always fully printed, even if they do not fit in the
 positions specified. If the number does not fit in the allowed space, a <code>%</code> is
 printed preceding it.</p>
 <ul><li>
-
    If there are more expressions than format fields, the format string is
     wrapped around.
 </li><li>
@@ -5162,7 +5299,9 @@ Usually, <code>PUT</code> is used with arrays that have been stored using <code>
 format of the array.</p>
 <p>
 The keywords have the following effect:
-</p><table><tr>
+</p>
+<div class="scrollable">
+<table><tr>
 <td><code>PSET</code></td><td>    Overwrite the screen location with the new image</td>
 </tr><tr>
 <td><code>PRESET</code></td><td>  Overwrite the screen location with the inverse image</td>
@@ -5173,6 +5312,7 @@ The keywords have the following effect:
 </tr><tr>
 <td><code>XOR</code></td><td>     Combines the old and new attributes with bitwise XOR</td>
 </tr></table>
+</div>
 <h4>Parameters</h4>
 <ul><li>
 <code><var>array_name</var></code> is a numeric array.
@@ -5508,6 +5648,7 @@ Any parameter has a string value: <samp>Type mismatch</samp>.
 <h4>NTSC Composite Colorburst</h4>
 On CGA, Tandy and PCjr, <code><var>colorburst</var></code> has the following effects, depending on the
 type of monitor - RGB (default) or composite:
+<div class="scrollable">
 <table><tr>
 <th><code><var>mode</var></code></th>
 <th><code><var>colorburst</var></code></th>
@@ -5523,6 +5664,7 @@ type of monitor - RGB (default) or composite:
 </tr><tr>
     <td>1</td><td>       1</td><td>   5</td><td>           greyscale</td><td>               alternate palette</td>
 </tr></table>
+</div>
 <p>
 On <code>SCREEN 2</code>, <code><var>colorburst</var></code> has no effect; on a composite monitor, colour artifacts
 can be enabled on this screen through <code>OUT</code> (see there). On <code>SCREEN 3</code> and up, <code><var>colorburst</var></code> has no effect.
@@ -5536,6 +5678,7 @@ can be enabled on this screen through <code>OUT</code> (see there). On <code>SCR
     the <code><var>erase</var></code> parameter can be used to change this behaviour.
     Its values are as follows:
 </p>
+<div class="scrollable">
 <table>
     <tr>
         <th><code><var>erase</var></code></th>
@@ -5557,6 +5700,7 @@ can be enabled on this screen through <code>OUT</code> (see there). On <code>SCR
         changes between zero and non-zero, all pages of the screen are cleared.</td>
     </tr>
 </table>
+</div>
 
 <h4>Notes</h4>
 <ul><li>
@@ -5766,9 +5910,12 @@ value.
 
 <h3 id="STICK"><code>STICK</code> function</h3>
 <pre><var>pos</var> = STICK(<var>axis</var>)</pre>
-<p>Returns a coordinate of a joystick axis. All coordinates returned are in the
-range <code>[1&#8212;254]</code> with <code>128</code> indicating the neutral position.
-</p><table><tr>
+<p>
+    Returns a coordinate of a joystick axis. All coordinates returned are in the
+    range <code>[1&#8212;254]</code> with <code>128</code> indicating the neutral position.
+</p>
+<div class="scrollable">
+<table><tr>
 <th><code><var>axis</var></code></th><th>  return value</th>
 </tr><tr>
 <td>    0</td><td>   1st joystick x coordinate</td>
@@ -5779,6 +5926,7 @@ range <code>[1&#8212;254]</code> with <code>128</code> indicating the neutral po
 </tr><tr>
 <td>    3</td><td>   2nd joystick y coordinate</td>
 </tr></table>
+</div>
 <h4>Parameters</h4>
 <ul><li>
 <code><var>axis</var></code> is a numeric expression in <code>[0&#8212;3]</code> and indicates which axis to read.
@@ -5828,6 +5976,7 @@ range <code>[1&#8212;254]</code> with <code>128</code> indicating the neutral po
 suspension, provided that event handling was switched on prior to suspension.
 The event triggered during suspension is handled immediately after the next <code>STRIG (<var>button</var>) ON</code>
 statement.</p>
+<div class="scrollable">
 <table><tr>
 <th><code><var>button</var></code></th><th>  return value</th>
 </tr><tr>
@@ -5839,6 +5988,7 @@ statement.</p>
 </tr><tr>
 <td>    6</td><td>   2nd joystick 2nd trigger</td>
 </tr></table>
+</div>
 <h4>Parameters</h4>
 <ul><li>
 <code><var>button</var></code> is a numeric expression in <code>[0, 2, 4, 6]</code>.
@@ -5858,6 +6008,7 @@ statement.</p>
 <p>Returns the status of the joystick trigger buttons.
  <code>STRIG</code> returns the following
 results, all Boolean values:</p>
+<div class="scrollable">
 <table><tr>
 <th><code><var>mode</var></code></th><th>Return value</th>
 </tr><tr>
@@ -5877,6 +6028,7 @@ results, all Boolean values:</p>
 </tr><tr>
   <td>7</td><td>     2nd joystick, 2nd trigger is currently pressed.</td>
 </tr></table>
+</div>
 <h4>Parameters</h4>
 <ul><li>
 <code><var>mode</var></code> is a numeric expression in <code>[0&#8212;7]</code>.
@@ -6183,6 +6335,7 @@ previously defined variable or fully indexed array element.
 <pre><var>pointer</var> = VARPTR$(<var>name</var>)</pre>
 <p>Returns the memory address of variable <code><var>name</var></code> in the form of a 3-byte string.
 The first byte is the length of the record the pointer points to:</p>
+<div class="scrollable">
 <table><tr>
     <td>2</td>   <td>for integers</td>
 </tr><tr>
@@ -6192,6 +6345,7 @@ The first byte is the length of the record the pointer points to:</p>
 </tr><tr>
     <td>8</td>   <td>for double-precision floats</td>
 </tr></table>
+</div>
 <p>
     The last two bytes are the pointer address (as returned by
     <code><a href="#VARPTR">VAPTR</a></code>) in little-endian order.
@@ -6493,6 +6647,7 @@ delimited by double quotes <code>"</code>. No padding spaces are inserted.</p>
 from and output to. Some devices allow specification of further parameters, such
 as handshake specifications for serial devices, a filename for cassette devices and a path for disk devices.
 When operating on disk devices, specifying a path is mandatory.</p>
+<div class="scrollable">
 <table><tr>
 <th>device</th><th>      allowed modes</th><th>   description</th>
 </tr><tr>
@@ -6541,7 +6696,9 @@ When operating on disk devices, specifying a path is mandatory.</p>
     unless the <code><a href="#--map-drives">--map-drives</a></code> option is set.
 </td>
 </tr></table>
+</div>
 <p>GW-BASIC additionally recognises the following little-used device, which is not implemented in PC-BASIC.</p>
+<div class="scrollable">
 <table><tr>
 <th>device</th><th>      allowed modes</th><th>   description</th>
 </tr><tr>
@@ -6558,6 +6715,7 @@ When operating on disk devices, specifying a path is mandatory.</p>
                             it for <code>OUTPUT</code>.
 </td>
 </tr></table>
+</div>
 </section>
 
 <section>
@@ -6592,6 +6750,7 @@ Schematically, MBF floating point numbers are represented as follows.</p>
        use <var>        m7   m6   m5   m4   m3   m2   m1   exp</var>
 </pre>
 <p>where:</p>
+<div class="scrollable">
 <table><tr>
 <td><code><var>exp</var></code></td>
 <td>the exponent byte</td>
@@ -6608,6 +6767,7 @@ Schematically, MBF floating point numbers are represented as follows.</p>
 <td><code><var>f</var></code></td>
 <td>fraction bit</td>
 </tr></table>
+</div>
 <dl>
 <dt>sign</dt>
 <dd>If the sign bit is set, the number is negative.</dd>
@@ -6676,6 +6836,7 @@ represent them in a BASIC file.</p>
 
 <section>
 <h2 id="errors">Error codes</h2>
+<div class="scrollable">
 <table><tr>
     <td><code>1</code></td><td><samp>NEXT without FOR</samp></td></tr><tr>
     <td><code>2</code></td><td><samp>Syntax error</samp></td></tr><tr>
@@ -6736,6 +6897,7 @@ represent them in a BASIC file.</p>
     <td><code>76</code></td><td><samp>Path not found</samp></td></tr><tr>
     <td><code>77</code></td><td><samp>Deadlock</samp></td>
 </tr></table>
+</div>
 <p>Any error code that does not have a message associated to it will generate
 the message <samp>Unprintable error</samp>.</p>
 </section>
@@ -6855,6 +7017,7 @@ in a <em>palette</em>.</p>
 
 
 <h4>CGA palettes</h4>
+<div class="scrollable">
 <table><tr>
 <th rowspan="2">Attribute</th>
 <th colspan="3">Palette 0</th>
@@ -6881,8 +7044,10 @@ in a <em>palette</em>.</p>
 <td>White</td><td style="background-color: #aaaaaa;"></td><td style="background-color: #ffffff;"></td>
 <td>White</td><td style="background-color: #aaaaaa;"></td><td style="background-color: #ffffff;"></td>
 </tr></table>
+</div>
 
 <h4>EGA default palette</h4>
+<div class="scrollable">
 <table><tr>
 <th>Attribute</th><th>Colour</th><th></th>
 </tr><tr>
@@ -6919,9 +7084,10 @@ in a <em>palette</em>.</p>
 <td>15</td><td>High-intensity white</td><td style="background-color: #ffffff;"></td>
 </tr>
 </table>
+</div>
 
 <h4>EGA colour list</h4>
-
+<div class="scrollable">
 <table>
 <tr> <td>0</td><td style="background-color:#000000;"></td> <td>8</td><td style="background-color:#000055;"></td> <td>16</td><td style="background-color:#005500;"></td> <td>24</td><td style="background-color:#005555;"></td> <td>32</td><td style="background-color:#550000;"></td> <td>40</td><td style="background-color:#550055;"></td> <td>48</td><td style="background-color:#555500;"></td> <td>56</td><td style="background-color:#555555;"></td> </tr>
 <tr> <td>1</td><td style="background-color:#0000aa;"></td> <td>9</td><td style="background-color:#0000ff;"></td> <td>17</td><td style="background-color:#0055aa;"></td> <td>25</td><td style="background-color:#0055ff;"></td> <td>33</td><td style="background-color:#5500aa;"></td> <td>41</td><td style="background-color:#5500ff;"></td> <td>49</td><td style="background-color:#5555aa;"></td> <td>57</td><td style="background-color:#5555ff;"></td> </tr>
@@ -6932,13 +7098,13 @@ in a <em>palette</em>.</p>
 <tr> <td>6</td><td style="background-color:#aaaa00;"></td> <td>14</td><td style="background-color:#aaaa55;"></td> <td>22</td><td style="background-color:#aaff00;"></td> <td>30</td><td style="background-color:#aaff55;"></td> <td>38</td><td style="background-color:#ffaa00;"></td> <td>46</td><td style="background-color:#ffaa55;"></td> <td>54</td><td style="background-color:#ffff00;"></td> <td>62</td><td style="background-color:#ffff55;"></td> </tr>
 <tr> <td>7</td><td style="background-color:#aaaaaa;"></td> <td>15</td><td style="background-color:#aaaaff;"></td> <td>23</td><td style="background-color:#aaffaa;"></td> <td>31</td><td style="background-color:#aaffff;"></td> <td>39</td><td style="background-color:#ffaaaa;"></td> <td>47</td><td style="background-color:#ffaaff;"></td> <td>55</td><td style="background-color:#ffffaa;"></td> <td>63</td><td style="background-color:#ffffff;"></td> </tr>
 </table>
+</div>
 
 <h4>Textmode attributes (colour)</h4>
+<div class="scrollable">
 <table>
 <tr><th rowspan="2" colspan="2"></th><th colspan="8">Background attribute</th></tr> <tr> <th>0</th> <th>1</th> <th>2</th> <th>3</th> <th>4</th> <th>5</th> <th>6</th> <th>7</th> </tr>
-
 <tr><th rowspan="32">FG</th>
-
 <th>0</th> <td><code>00</code> <b><span style="color: #000000; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>10</code> <b><span style="color: #000000; background-color:#0000aa;">X</span><span style="color: #000000; background-color:#0000aa;">X</span></b> </td> <td><code>20</code> <b><span style="color: #000000; background-color:#00aa00;">X</span><span style="color: #000000; background-color:#00aa00;">X</span></b> </td> <td><code>30</code> <b><span style="color: #000000; background-color:#00aaaa;">X</span><span style="color: #000000; background-color:#00aaaa;">X</span></b> </td> <td><code>40</code> <b><span style="color: #000000; background-color:#aa0000;">X</span><span style="color: #000000; background-color:#aa0000;">X</span></b> </td> <td><code>50</code> <b><span style="color: #000000; background-color:#aa00aa;">X</span><span style="color: #000000; background-color:#aa00aa;">X</span></b> </td> <td><code>60</code> <b><span style="color: #000000; background-color:#aa5500;">X</span><span style="color: #000000; background-color:#aa5500;">X</span></b> </td> <td><code>70</code> <b><span style="color: #000000; background-color:#aaaaaa;">X</span><span style="color: #000000; background-color:#aaaaaa;">X</span></b> </td> </tr>
 <tr> <th>1</th> <td><code>01</code> <b><span style="color: #0000aa; background-color:#000000;">X</span><span style="color: #0000aa; background-color:#000000;">X</span></b> </td> <td><code>11</code> <b><span style="color: #0000aa; background-color:#0000aa;">X</span><span style="color: #0000aa; background-color:#0000aa;">X</span></b> </td> <td><code>21</code> <b><span style="color: #0000aa; background-color:#00aa00;">X</span><span style="color: #0000aa; background-color:#00aa00;">X</span></b> </td> <td><code>31</code> <b><span style="color: #0000aa; background-color:#00aaaa;">X</span><span style="color: #0000aa; background-color:#00aaaa;">X</span></b> </td> <td><code>41</code> <b><span style="color: #0000aa; background-color:#aa0000;">X</span><span style="color: #0000aa; background-color:#aa0000;">X</span></b> </td> <td><code>51</code> <b><span style="color: #0000aa; background-color:#aa00aa;">X</span><span style="color: #0000aa; background-color:#aa00aa;">X</span></b> </td> <td><code>61</code> <b><span style="color: #0000aa; background-color:#aa5500;">X</span><span style="color: #0000aa; background-color:#aa5500;">X</span></b> </td> <td><code>71</code> <b><span style="color: #0000aa; background-color:#aaaaaa;">X</span><span style="color: #0000aa; background-color:#aaaaaa;">X</span></b> </td> </tr>
 <tr> <th>2</th> <td><code>02</code> <b><span style="color: #00aa00; background-color:#000000;">X</span><span style="color: #00aa00; background-color:#000000;">X</span></b> </td> <td><code>12</code> <b><span style="color: #00aa00; background-color:#0000aa;">X</span><span style="color: #00aa00; background-color:#0000aa;">X</span></b> </td> <td><code>22</code> <b><span style="color: #00aa00; background-color:#00aa00;">X</span><span style="color: #00aa00; background-color:#00aa00;">X</span></b> </td> <td><code>32</code> <b><span style="color: #00aa00; background-color:#00aaaa;">X</span><span style="color: #00aa00; background-color:#00aaaa;">X</span></b> </td> <td><code>42</code> <b><span style="color: #00aa00; background-color:#aa0000;">X</span><span style="color: #00aa00; background-color:#aa0000;">X</span></b> </td> <td><code>52</code> <b><span style="color: #00aa00; background-color:#aa00aa;">X</span><span style="color: #00aa00; background-color:#aa00aa;">X</span></b> </td> <td><code>62</code> <b><span style="color: #00aa00; background-color:#aa5500;">X</span><span style="color: #00aa00; background-color:#aa5500;">X</span></b> </td> <td><code>72</code> <b><span style="color: #00aa00; background-color:#aaaaaa;">X</span><span style="color: #00aa00; background-color:#aaaaaa;">X</span></b> </td> </tr>
@@ -6971,11 +7137,11 @@ in a <em>palette</em>.</p>
 <tr> <th>29</th> <td><code>8d</code> <b><span style="color: #ff55ff; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>9d</code> <b><span style="color: #ff55ff; background-color:#0000aa;">X</span><span style="color: #0000aa; background-color:#0000aa;">X</span></b> </td> <td><code>ad</code> <b><span style="color: #ff55ff; background-color:#00aa00;">X</span><span style="color: #00aa00; background-color:#00aa00;">X</span></b> </td> <td><code>bd</code> <b><span style="color: #ff55ff; background-color:#00aaaa;">X</span><span style="color: #00aaaa; background-color:#00aaaa;">X</span></b> </td> <td><code>cd</code> <b><span style="color: #ff55ff; background-color:#aa0000;">X</span><span style="color: #aa0000; background-color:#aa0000;">X</span></b> </td> <td><code>dd</code> <b><span style="color: #ff55ff; background-color:#aa00aa;">X</span><span style="color: #aa00aa; background-color:#aa00aa;">X</span></b> </td> <td><code>ed</code> <b><span style="color: #ff55ff; background-color:#aa5500;">X</span><span style="color: #aa5500; background-color:#aa5500;">X</span></b> </td> <td><code>fd</code> <b><span style="color: #ff55ff; background-color:#aaaaaa;">X</span><span style="color: #aaaaaa; background-color:#aaaaaa;">X</span></b> </td> </tr>
 <tr> <th>30</th> <td><code>8e</code> <b><span style="color: #ffff55; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>9e</code> <b><span style="color: #ffff55; background-color:#0000aa;">X</span><span style="color: #0000aa; background-color:#0000aa;">X</span></b> </td> <td><code>ae</code> <b><span style="color: #ffff55; background-color:#00aa00;">X</span><span style="color: #00aa00; background-color:#00aa00;">X</span></b> </td> <td><code>be</code> <b><span style="color: #ffff55; background-color:#00aaaa;">X</span><span style="color: #00aaaa; background-color:#00aaaa;">X</span></b> </td> <td><code>ce</code> <b><span style="color: #ffff55; background-color:#aa0000;">X</span><span style="color: #aa0000; background-color:#aa0000;">X</span></b> </td> <td><code>de</code> <b><span style="color: #ffff55; background-color:#aa00aa;">X</span><span style="color: #aa00aa; background-color:#aa00aa;">X</span></b> </td> <td><code>ee</code> <b><span style="color: #ffff55; background-color:#aa5500;">X</span><span style="color: #aa5500; background-color:#aa5500;">X</span></b> </td> <td><code>fe</code> <b><span style="color: #ffff55; background-color:#aaaaaa;">X</span><span style="color: #aaaaaa; background-color:#aaaaaa;">X</span></b> </td> </tr>
 <tr> <th>31</th> <td><code>8f</code> <b><span style="color: #ffffff; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>9f</code> <b><span style="color: #ffffff; background-color:#0000aa;">X</span><span style="color: #0000aa; background-color:#0000aa;">X</span></b> </td> <td><code>af</code> <b><span style="color: #ffffff; background-color:#00aa00;">X</span><span style="color: #00aa00; background-color:#00aa00;">X</span></b> </td> <td><code>bf</code> <b><span style="color: #ffffff; background-color:#00aaaa;">X</span><span style="color: #00aaaa; background-color:#00aaaa;">X</span></b> </td> <td><code>cf</code> <b><span style="color: #ffffff; background-color:#aa0000;">X</span><span style="color: #aa0000; background-color:#aa0000;">X</span></b> </td> <td><code>df</code> <b><span style="color: #ffffff; background-color:#aa00aa;">X</span><span style="color: #aa00aa; background-color:#aa00aa;">X</span></b> </td> <td><code>ef</code> <b><span style="color: #ffffff; background-color:#aa5500;">X</span><span style="color: #aa5500; background-color:#aa5500;">X</span></b> </td> <td><code>ff</code> <b><span style="color: #ffffff; background-color:#aaaaaa;">X</span><span style="color: #aaaaaa; background-color:#aaaaaa;">X</span></b> </td> </tr>
-
 </table>
-
+</div>
 
 <h4>Textmode attributes (monochrome)</h4>
+<div class="scrollable">
 <table>
 <tr><th rowspan="2" colspan="2"></th><th colspan="8">Background attribute</th></tr> <tr> <th>0</th> <th>1</th> <th>2</th> <th>3</th> <th>4</th> <th>5</th> <th>6</th> <th>7</th> </tr>
 <tr><th rowspan="32">FG</th>
@@ -7012,5 +7178,6 @@ in a <em>palette</em>.</p>
 <tr> <th>30</th> <td><code>8e</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>9e</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ae</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>be</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ce</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>de</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ee</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>fe</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> </tr>
 <tr> <th>31</th> <td><code>8f</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>9f</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>af</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>bf</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>cf</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>df</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ef</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> <td><code>ff</code> <b><span style="color: #00ff00; background-color:#000000;">X</span><span style="color: #000000; background-color:#000000;">X</span></b> </td> </tr>
 </table>
+</div>
 </section>
 </article>

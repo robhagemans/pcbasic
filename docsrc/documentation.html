@@ -34,6 +34,7 @@ display an error message followed by <samp>Ok</samp>.
 If the line starts with a number, it will be stored as a program line. No prompt is displayed.</p>
 
 <p>The following keys have a special effect in the working environment:</p>
+<div class="scrollable">
 <table>
 <tr>
 <td><kbd>&#8593;<!--up--></kbd> or <kbd>Ctrl</kbd>+<kbd>6</kbd></td>
@@ -141,10 +142,12 @@ line extends onto the next line. Arrow keys exit
 insert mode.</td>
 </tr>
 </table>
+</div>
 
 <p>When a program is started, the commands in the program are followed until the
 program quits and returns to interactive mode or until user input is required.
 When a program is running, a few keys have immediate effect:</p>
+<div class="scrollable">
 <table>
 <tr>
 <td>
@@ -161,9 +164,11 @@ Stop execution and return to interactive mode. A <samp>Break</samp> message is p
 </td>
 </tr>
 </table>
+</div>
 
 <p>If user input is required by the statements <code>INPUT</code>, <code>LINE INPUT</code>, or <code>RANDOMIZE</code>,
 most keys have the same effect as in interactive mode. The following keys have a different effect:</p>
+<div class="scrollable">
 <table>
 <tr>
 <td>
@@ -179,6 +184,8 @@ Finish input and return to the previous mode.
 </td>
 </tr>
 </table>
+</div>
+
 <p>Unlike in GW-BASIC, you can copy and paste text to the clipboard. Two ways:
 </p><dl>
 <dt>Using the mouse:</dt><dd>Left button is select and copy; middle button
@@ -186,6 +193,7 @@ is paste.</dd>
 <dt>Using the keyboard:</dt><dd>
 If your operating system does not catch the
 <kbd>Logo</kbd> key (Windows key), you can also copy and paste using the keyboard.
+<div class="scrollable">
 <table>
 <tr>
 <td><kbd>Logo</kbd>+<kbd>&#8593;<!--up--></kbd><kbd>&#8595;<!--down--></kbd><kbd>&#8592;<!--left--></kbd><kbd>&#8594;<!--right--></kbd>
@@ -205,6 +213,7 @@ If your operating system does not catch the
 <td>Paste from clipboard.</td>
 </tr>
 </table>
+</div>
 </dd></dl>
 </section>
 
@@ -213,6 +222,7 @@ If your operating system does not catch the
 <p>The function keys and the alt key can be used as keyboard shortcuts for some
 keywords.
 The default values for the function keys are:</p>
+<div class="scrollable">
 <table>
 <tr>
 <td><kbd>F1</kbd></td><td><code><a href="#LIST">LIST</a></code></td>
@@ -243,7 +253,9 @@ The default values for the function keys are:</p>
 </tr>
 <tr>
 <td><kbd>F10</kbd></td><td><code><a href="SCREEN-statement">SCREEN</a> 0,0,0</code><kbd>Enter</kbd></td>
-</tr></table>
+</tr>
+</table>
+</div>
 <p>The function key shortcuts can be redefined (see the <code>KEY</code> statement). The key
 values are displayed at the bottom of the screen.</p>
 <p>
@@ -299,13 +311,12 @@ Some options have an alternative, short name consisting of a single letter prece
 <dd>You can change options by adding or removing lines in your private configuration file.
 This configuration file is a file named <code>PCBASIC.INI</code> stored in your
 Application Data folder. The location of this folder is as follows:
-<table>
-<tr><th>OS</th><th>Configuration file location</th></tr>
-<tr><td>Windows</td><td><code>%AppData%\pcbasic</code></td></tr>
-<tr><td>OS X</td><td><code>~/Library/Application Support/pcbasic</code></td></tr>
-<tr><td>Linux</td><td><code>~/.config/pcbasic</code></td></tr>
-</table>
-Change an option in the configuration file by adding a line in the section named <code>[pcbasic]</code>, like so:<br/>
+<dl class="compact">
+<dt>Windows</dt><dd><code>%AppData%\pcbasic</code></dd>
+<dt>OS X</dt><dd><code>~/Library/Application Support/pcbasic</code></dd>
+<dt>Linux</dt><dd><code>~/.config/pcbasic</code></dd>
+</dl>
+Change an option in the configuration file by adding a line in the section named <code>[pcbasic]</code>, like so:
 <pre>preset=tandy
 ctrl-c-break=True
 </pre>
@@ -497,6 +508,7 @@ The easiest way to set the emulation target is by using a <code>preset</code> op
 For example, run <code>pcbasic --preset=pcjr</code>.
 Other available emulation target presets are:</p>
 
+<div class="scrollable">
 <table>
 <tr>
 <th>Preset</th><th>Emulation target</th>
@@ -536,6 +548,8 @@ green-tinted monochrome monitor.</td>
 monochrome monitor.</td>
 </tr>
 </table>
+</div>
+
 <p>
 <em>Presets</em> are groups of options that are defined in the default configuration
 file. You can create your own presets by creating a header in your private configuration
@@ -631,6 +645,7 @@ CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
 
 <p>The <code><a href="SHELL">SHELL</a></code> statement is, by default, disabled; this is to avoid unpleasant surprises. In GW-BASIC under MS-DOS, <code>SHELL</code> opens a DOS prompt or executes commands in it. The command shells of modern operating systems work differently than those of DOS; in particular, it is impossible to retrieve changes in the environment variables, so that many use cases of <code>SHELL</code> simply would not work; for example, changing the current drive on Windows. Moreover, Unix shells have a syntax that is completely different from that of DOS. You can, however, enable <code>SHELL</code> by setting the <code>shell=native</code> option. Use with care.</p>
 
+<div class="scrollable">
 <table>
 <tr>
 <th>Statement</th>
@@ -697,6 +712,7 @@ CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
 <td>Selected ports supported.</td>
 </tr>
 </table>
+</div>
 
 <p>The highest level of compatibility with GW-BASIC can be attained by setting <code>preset=strict</code>,
 which switches off all convenience and security features that cause differences with
@@ -707,7 +723,9 @@ GWBASIC.</p>
 <h2 id="gwbasic-options">GW-BASIC command-line options</h2>
 <p>GW-BASIC recognised a number of options on the command-line.
 These are matched by PC-BASIC with only minor modifications:
-</p><table>
+</p>
+<div class="scrollable">
+<table>
 <tr>
 <th>
 GW-BASIC option
@@ -777,5 +795,6 @@ Effect
 <td>Read keyboard input from <code><var>filename</var></code>.</td>
 </tr>
 </table>
+</div>
 </section>
 </article>
