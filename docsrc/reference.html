@@ -6785,53 +6785,216 @@ Schematically, MBF floating point numbers are represented as follows.</p>
 
 <section>
 <h2 id="keywords">Keyword tokens</h2>
-<p>Not all keywords are statements or functions. Conversely, some parts of statement or
-function syntax are not keywords. Keywords are
-not legal variable names. Therefore, you cannot name a variable <code>TO!</code> but you can
-name it <code>AS!</code>. The keywords are here listed with the bytecode token used to
-represent them in a BASIC file.</p>
-<pre>
- 81 END     82 FOR     83 NEXT    84 DATA    85 INPUT   86 DIM     87 READ
- 88 LET     89 GOTO    8A RUN     8B IF      8C RESTORE 8D <code>GOSUB</code>   8E <code>RETURN</code>
- 8F REM     90 STOP    91 PRINT   92 CLEAR   93 LIST    94 NEW     95 ON
- 96 WAIT    97 DEF     98 POKE    99 CONT    9C OUT     9D LPRINT  9E LLIST
- A0 WIDTH   A1 ELSE    A2 TRON    A3 TROFF   A4 SWAP    A5 ERASE   A6 EDIT
- A7 ERROR   A8 RESUME  A9 DELETE  AA AUTO    AB RENUM   AC DEFSTR  AD DEFINT
- AE DEFSNG  AF DEFDBL  B0 LINE    B1 WHILE   B2 WEND    B3 CALL    B7 WRITE
- B8 OPTION B9 RANDOMIZE BA OPEN   BB CLOSE   BC LOAD    BD <code>MERGE</code>   BE SAVE
- BF COLOR   C0 CLS     C1 MOTOR   C2 BSAVE   C3 BLOAD   C4 SOUND   C5 BEEP
- C6 PSET    C7 PRESET  C8 SCREEN  C9 KEY     CA LOCATE  CC TO      CD THEN
- CE TAB(    CF STEP    D0 USR     D1 FN      D2 SPC(    D3 NOT     D4 ERL
- D5 ERR     D6 STRING$ D7 USING   D8 INSTR   D9 '       DA VARPTR  DB CSRLIN
- DC POINT   DD OFF     DE INKEY$  E6 &gt;       E7 =       E8 &lt;       E9 +
- EA -       EB *       EC /       ED ^       EE AND     EF OR      F0 XOR
- F1 EQV     F2 IMP     F3 MOD     F4 \
- FD81 CVI     FD82 CVS     FD83 CVD     FD84 MKI$    FD85 MKS$    FD86 MKD$
- FD8B EXTERR  FE81 FILES   FE82 FIELD   FE83 SYSTEM  FE84 NAME    FE85 LSET
- FE86 RSET    FE87 KILL    FE88 PUT     FE89 GET     FE8A RESET   FE8B <code>COMMON</code>
- FE8C CHAIN   FE8D DATE$   FE8E TIME$   FE8F PAINT   FE90 COM     FE91 CIRCLE
- FE92 DRAW    FE93 PLAY    FE94 TIMER   FE95 ERDEV   FE96 IOCTL   FE97 CHDIR
- FE98 MKDIR   FE99 RMDIR   FE9A SHELL   FE9B ENVIRON FE9C VIEW    FE9D WINDOW
- FE9E PMAP    FE9F PALETTE FEA0 LCOPY   FEA1 CALLS   FEA5 PCOPY
- FEA7 <code>LOCK</code>    FEA8 <code>UNLOCK</code>  FF81 LEFT$   FF82 RIGHT$  FF83 MID$    FF84 SGN
- FF85 INT     FF86 ABS     FF87 SQR     FF88 RND     FF89 SIN     FF8A LOG
- FF8B EXP     FF8C COS     FF8D TAN     FF8E ATN     FF8F FRE     FF90 INP
- FF91 POS     FF92 LEN     FF93 STR$    FF94 VAL     FF95 ASC     FF96 CHR$
- FF97 PEEK    FF98 SPACE$  FF99 OCT$    FF9A HEX$    FF9B LPOS    FF9C CINT
- FF9D CSNG    FF9E CDBL    FF9F FIX     FFA0 PEN     FFA1 STICK   FFA2 STRIG
- FFA3 EOF     FFA4 LOC     FFA5 LOF
-</pre>
-<h4>Notes</h4>
-<ul><li>
-   On the IBM PCjr's Cartridge BASIC and Tandy 1000 GW-BASIC, additional
-    keywords were present, which can be activated using the <code>--syntax=pcjr</code> or
-    <code>--syntax=tandy</code> command-line option:
-<code> FEA4 NOISE   FEA6 TERM</code>
-</li><li>
-   If PC-BASIC is run with the <code>--debug</code> flag, the following additional
-    keyword is reserved, which is not present in GW-BASIC:
-<code> FFFF DEBUG</code>
-</li></ul>
+<p>
+    Not all keywords are statements or functions. Conversely, some parts of statement or
+    function syntax are not keywords. Keywords are not legal variable names.
+    Therefore, you cannot name a variable <code>TO!</code> but you can
+    name it <code>AS!</code>: <code>TO</code> is a keyword but <code>AS</code> is not,
+    even though both appear as part of BASIC statements.
+</p>
+<p>
+    The keywords are listed below with the bytecode token used to
+    represent them in a BASIC file.
+</p>
+<ul class="compact10">
+    <li><code>81</code> <code>END</code></li>
+    <li><code>82</code> <code>FOR</code></li>
+    <li><code>83</code> <code>NEXT</code></li>
+    <li><code>84</code> <code>DATA</code></li>
+    <li><code>85</code> <code>INPUT</code></li>
+    <li><code>86</code> <code>DIM</code></li>
+    <li><code>87</code> <code>READ</code></li>
+    <li><code>88</code> <code>LET</code></li>
+    <li><code>89</code> <code>GOTO</code></li>
+    <li><code>8A</code> <code>RUN</code></li>
+    <li><code>8B</code> <code>IF</code></li>
+    <li><code>8C</code> <code>RESTORE</code></li>
+    <li><code>8D</code> <code>GOSUB</code></li>
+    <li><code>8E</code> <code>RETURN</code></li>
+    <li><code>8F</code> <code>REM</code></li>
+    <li><code>90</code> <code>STOP</code></li>
+    <li><code>91</code> <code>PRINT</code></li>
+    <li><code>92</code> <code>CLEAR</code></li>
+    <li><code>93</code> <code>LIST</code></li>
+    <li><code>94</code> <code>NEW</code></li>
+    <li><code>95</code> <code>ON</code></li>
+    <li><code>96</code> <code>WAIT</code></li>
+    <li><code>97</code> <code>DEF</code></li>
+    <li><code>98</code> <code>POKE</code></li>
+    <li><code>99</code> <code>CONT</code></li>
+    <li><code>9C</code> <code>OUT</code></li>
+    <li><code>9D</code> <code>LPRINT</code></li>
+    <li><code>9E</code> <code>LLIST</code></li>
+    <li><code>A0</code> <code>WIDTH</code></li>
+    <li><code>A1</code> <code>ELSE</code></li>
+    <li><code>A2</code> <code>TRON</code></li>
+    <li><code>A3</code> <code>TROFF</code></li>
+    <li><code>A4</code> <code>SWAP</code></li>
+    <li><code>A5</code> <code>ERASE</code></li>
+    <li><code>A6</code> <code>EDIT</code></li>
+    <li><code>A7</code> <code>ERROR</code></li>
+    <li><code>A8</code> <code>RESUME</code></li>
+    <li><code>A9</code> <code>DELETE</code></li>
+    <li><code>AA</code> <code>AUTO</code></li>
+    <li><code>AB</code> <code>RENUM</code></li>
+    <li><code>AC</code> <code>DEFSTR</code></li>
+    <li><code>AD</code> <code>DEFINT</code></li>
+    <li><code>AE</code> <code>DEFSNG</code></li>
+    <li><code>AF</code> <code>DEFDBL</code></li>
+    <li><code>B0</code> <code>LINE</code></li>
+    <li><code>B1</code> <code>WHILE</code></li>
+    <li><code>B2</code> <code>WEND</code></li>
+    <li><code>B3</code> <code>CALL</code></li>
+    <li><code>B7</code> <code>WRITE</code></li>
+    <li><code>B8</code> <code>OPTION</code></li>
+    <li><code>B9</code> <code>RANDOMIZE</code></li>
+    <li><code>BA</code> <code>OPEN</code></li>
+    <li><code>BB</code> <code>CLOSE</code></li>
+    <li><code>BC</code> <code>LOAD</code></li>
+    <li><code>BD</code> <code>MERGE</code></li>
+    <li><code>BE</code> <code>SAVE</code></li>
+    <li><code>BF</code> <code>COLOR</code></li>
+    <li><code>C0</code> <code>CLS</code></li>
+    <li><code>C1</code> <code>MOTOR</code></li>
+    <li><code>C2</code> <code>BSAVE</code></li>
+    <li><code>C3</code> <code>BLOAD</code></li>
+    <li><code>C4</code> <code>SOUND</code></li>
+    <li><code>C5</code> <code>BEEP</code></li>
+    <li><code>C6</code> <code>PSET</code></li>
+    <li><code>C7</code> <code>PRESET</code></li>
+    <li><code>C8</code> <code>SCREEN</code></li>
+    <li><code>C9</code> <code>KEY</code></li>
+    <li><code>CA</code> <code>LOCATE</code></li>
+    <li><code>CC</code> <code>TO</code></li>
+    <li><code>CD</code> <code>THEN</code></li>
+    <li><code>CE</code> <code>TAB(</code></li>
+    <li><code>CF</code> <code>STEP</code></li>
+    <li><code>D0</code> <code>USR</code></li>
+    <li><code>D1</code> <code>FN</code></li>
+    <li><code>D2</code> <code>SPC(</code></li>
+    <li><code>D3</code> <code>NOT</code></li>
+    <li><code>D4</code> <code>ERL</code></li>
+    <li><code>D5</code> <code>ERR</code></li>
+    <li><code>D6</code> <code>STRING$</code></li>
+    <li><code>D7</code> <code>USING</code></li>
+    <li><code>D8</code> <code>INSTR</code></li>
+    <li><code>D9</code> <code>'</code></li>
+    <li><code>DA</code> <code>VARPTR</code></li>
+    <li><code>DB</code> <code>CSRLIN</code></li>
+    <li><code>DC</code> <code>POINT</code></li>
+    <li><code>DD</code> <code>OFF</code></li>
+    <li><code>DE</code> <code>INKEY$</code></li>
+    <li><code>E6</code> <code>&gt;</code></li>
+    <li><code>E7</code> <code>=</code></li>
+    <li><code>E8</code> <code>&lt;</code></li>
+    <li><code>E9</code> <code>+</code></li>
+    <li><code>EA</code> <code>-</code></li>
+    <li><code>EB</code> <code>*</code></li>
+    <li><code>EC</code> <code>/</code></li>
+    <li><code>ED</code> <code>^</code></li>
+    <li><code>EE</code> <code>AND</code></li>
+    <li><code>EF</code> <code>OR</code></li>
+    <li><code>F0</code> <code>XOR</code></li>
+    <li><code>F1</code> <code>EQV</code></li>
+    <li><code>F2</code> <code>IMP</code></li>
+    <li><code>F3</code> <code>MOD</code></li>
+    <li><code>F4</code> <code>\</code></li>
+    <li><code>FD81</code> <code>CVI</code></li>
+    <li><code>FD82</code> <code>CVS</code></li>
+    <li><code>FD83</code> <code>CVD</code></li>
+    <li><code>FD84</code> <code>MKI$</code></li>
+    <li><code>FD85</code> <code>MKS$</code></li>
+    <li><code>FD86</code> <code>MKD$</code></li>
+    <li><code>FD8B</code> <code>EXTERR</code></li>
+    <li><code>FE81</code> <code>FILES</code></li>
+    <li><code>FE82</code> <code>FIELD</code></li>
+    <li><code>FE83</code> <code>SYSTEM</code></li>
+    <li><code>FE84</code> <code>NAME</code></li>
+    <li><code>FE85</code> <code>LSET</code></li>
+    <li><code>FE86</code> <code>RSET</code></li>
+    <li><code>FE87</code> <code>KILL</code></li>
+    <li><code>FE88</code> <code>PUT</code></li>
+    <li><code>FE89</code> <code>GET</code></li>
+    <li><code>FE8A</code> <code>RESET</code></li>
+    <li><code>FE8B</code> <code>COMMON</code></li>
+    <li><code>FE8C</code> <code>CHAIN</code></li>
+    <li><code>FE8D</code> <code>DATE$</code></li>
+    <li><code>FE8E</code> <code>TIME$</code></li>
+    <li><code>FE8F</code> <code>PAINT</code></li>
+    <li><code>FE90</code> <code>COM</code></li>
+    <li><code>FE91</code> <code>CIRCLE</code></li>
+    <li><code>FE92</code> <code>DRAW</code></li>
+    <li><code>FE93</code> <code>PLAY</code></li>
+    <li><code>FE94</code> <code>TIMER</code></li>
+    <li><code>FE95</code> <code>ERDEV</code></li>
+    <li><code>FE96</code> <code>IOCTL</code></li>
+    <li><code>FE97</code> <code>CHDIR</code></li>
+    <li><code>FE98</code> <code>MKDIR</code></li>
+    <li><code>FE99</code> <code>RMDIR</code></li>
+    <li><code>FE9A</code> <code>SHELL</code></li>
+    <li><code>FE9B</code> <code>ENVIRON</code></li>
+    <li><code>FE9C</code> <code>VIEW</code></li>
+    <li><code>FE9D</code> <code>WINDOW</code></li>
+    <li><code>FE9E</code> <code>PMAP</code></li>
+    <li><code>FE9F</code> <code>PALETTE</code></li>
+    <li><code>FEA0</code> <code>LCOPY</code></li>
+    <li><code>FEA1</code> <code>CALLS</code></li>
+    <li><code>FEA5</code> <code>PCOPY</code></li>
+    <li><code>FEA7</code> <code>LOCK</code></li>
+    <li><code>FEA8</code> <code>UNLOCK</code></li>
+    <li><code>FF81</code> <code>LEFT$</code></li>
+    <li><code>FF82</code> <code>RIGHT$</code></li>
+    <li><code>FF83</code> <code>MID$</code></li>
+    <li><code>FF84</code> <code>SGN</code></li>
+    <li><code>FF85</code> <code>INT</code></li>
+    <li><code>FF86</code> <code>ABS</code></li>
+    <li><code>FF87</code> <code>SQR</code></li>
+    <li><code>FF88</code> <code>RND</code></li>
+    <li><code>FF89</code> <code>SIN</code></li>
+    <li><code>FF8A</code> <code>LOG</code></li>
+    <li><code>FF8B</code> <code>EXP</code></li>
+    <li><code>FF8C</code> <code>COS</code></li>
+    <li><code>FF8D</code> <code>TAN</code></li>
+    <li><code>FF8E</code> <code>ATN</code></li>
+    <li><code>FF8F</code> <code>FRE</code></li>
+    <li><code>FF90</code> <code>INP</code></li>
+    <li><code>FF91</code> <code>POS</code></li>
+    <li><code>FF92</code> <code>LEN</code></li>
+    <li><code>FF93</code> <code>STR$</code></li>
+    <li><code>FF94</code> <code>VAL</code></li>
+    <li><code>FF95</code> <code>ASC</code></li>
+    <li><code>FF96</code> <code>CHR$</code></li>
+    <li><code>FF97</code> <code>PEEK</code></li>
+    <li><code>FF98</code> <code>SPACE$</code></li>
+    <li><code>FF99</code> <code>OCT$</code></li>
+    <li><code>FF9A</code> <code>HEX$</code></li>
+    <li><code>FF9B</code> <code>LPOS</code></li>
+    <li><code>FF9C</code> <code>CINT</code></li>
+    <li><code>FF9D</code> <code>CSNG</code></li>
+    <li><code>FF9E</code> <code>CDBL</code></li>
+    <li><code>FF9F</code> <code>FIX</code></li>
+    <li><code>FFA0</code> <code>PEN</code></li>
+    <li><code>FFA1</code> <code>STICK</code></li>
+    <li><code>FFA2</code> <code>STRIG</code></li>
+    <li><code>FFA3</code> <code>EOF</code></li>
+    <li><code>FFA4</code> <code>LOC</code></li>
+    <li><code>FFA5</code> <code>LOF</code></li>
+</ul>
+<p>
+    The following additional keywords are activated by
+    <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code>.
+</p>
+<ul class="compact10">
+    <li><code>FEA4</code> <code>NOISE</code></li>
+    <li><code>FEA6</code> <code>TERM</code></li>
+</ul>
+<p>
+    The following additional keyword is activated by <code><a href="#--debug">--debug</a></code>.
+    It is specific to PC-BASIC and not present in GW-BASIC.
+</p>
+<ul class="compact10">
+    <li><code>FFFF</code> <code>DEBUG</code></li>
+</ul>
 </section>
 
 <section>

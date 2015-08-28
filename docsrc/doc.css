@@ -141,6 +141,11 @@ dl .compact {
     width: 5em;
 }
 
+.compact10 li {
+    display: inline-block;
+    width: 10em;
+}
+
 /* horizontal list */
 .horizontal {
     padding-left: 0;
