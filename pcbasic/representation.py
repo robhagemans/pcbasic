@@ -423,9 +423,9 @@ def tokenise_dec(ins, outs):
             word += c
         elif c in 'ED' and not have_exp:
             have_exp = True
-            # there's a special exception for number followed by EL
-            # presumbaly meant to protect ELSE
-            if c == 'E' and util.peek(ins).upper() == 'L':
+            # there's a special exception for number followed by EL or EQ
+            # presumably meant to protect ELSE and maybe EQV ?
+            if c == 'E' and util.peek(ins).upper() in 'LQ':
                 ins.seek(-1, 1)
                 break
             else:
