@@ -24,8 +24,15 @@ article, header, nav.toc, footer {
 
 h1, h2 {
     font-size: 1.3em;
-    border-bottom: 2px solid #333333;
+    background: #000044;
+    padding: 0.2em;
+    color: white;
 }
+h2 {
+    background: #444444;
+    margin-top: 3rem;
+}
+
 h3 {
     margin-top: 2rem;
     margin-bottom: 0;
@@ -33,21 +40,11 @@ h3 {
     border-bottom: 2px solid #333333;
 }
 
-h4:before {
-    display: block;
-    content: " ";
-    border-bottom: 1px solid black;
-}
-
 h4 {
-    /*
-    border-top: 1px solid #333333;
-    border-top: 1em dashed red;
-    */
-    margin-top: 2.5em;
     margin-bottom: 0em;
     font-size: 1.1em;
 }
+
 h5 {
     margin-top: 0em;
     margin-bottom: 0em;
@@ -155,13 +152,27 @@ pre {
 @media (min-width: 55em) {
 
     /* push link target below fixed menu */
-    :target:before {
+    :target::before {
         display: block;
-        content: " ";
-        height: 6em;
+        content: "";
+        height: 5rem;
+        background: white;
+        /* we need to cut off the padding to :target
+           so we don't get a box. this compensates a bot */
+        margin-bottom: 0.2em;
+    }
+    :target {
+        margin-top: -3rem;
+        padding-left: 0;
+        padding-right: 0;
+        padding-top: 0;
     }
 
-    header {
+    /*
+        we need the space in between or the ::before block will
+        go over the last bit of the previous article. Somehow, fortunately,
+        doesn't happen with sections... */
+    article, header, footer {
         margin-top: 4rem;
     }
 
@@ -179,7 +190,7 @@ pre {
         top: 0;
         padding: 5rem 1em 0 1em;
         width: 18rem;
-        background: black;
+        background: #000044;
         height: 90vh;
     }
     nav.toc h2 {
