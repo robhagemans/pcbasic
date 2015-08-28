@@ -291,7 +291,7 @@ def format_float_fixed(expr, decimals, force_dot):
 
 ##################################
 
-def from_str(s, allow_nonnum = True):
+def str_to_float(s, allow_nonnum = True):
     """ Return Float value for Python string. """
     found_sign, found_point, found_exp = False, False, False
     found_exp_sign, exp_neg, neg = False, False, False
@@ -423,7 +423,13 @@ def tokenise_dec(ins, outs):
             word += c
         elif c in 'ED' and not have_exp:
             have_exp = True
-            word += c
+            # there's a special exception for number followed by EL
+            # presumbaly meant to protect ELSE
+            if c == 'E' and util.peek(ins).upper() == 'L':
+                ins.seek(-1, 1)
+                break
+            else:
+                word += c
         elif c in '-+' and (not word or word[-1] in 'ED'):
             # must be first token or in exponent
             word += c
@@ -468,7 +474,7 @@ def tokenise_dec(ins, outs):
             # two-byte constant
             outs.write(tk.T_INT + str(vartypes.value_to_sint(int(word))))
     else:
-        mbf = str(from_str(word).to_bytes())
+        mbf = str(str_to_float(word).to_bytes())
         if len(mbf) == 4:
             outs.write(tk.T_SINGLE + mbf)
         else:
