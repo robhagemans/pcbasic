@@ -41,7 +41,7 @@
 </ul>
 <p>
     Apart from these, string literals should not contain any of the characters
-    in the ASCII range <code>13&mdash;31</code>, whcih lead to unpredictable results.
+    in the ASCII range <code>13&mdash;31</code>, which lead to unpredictable results.
     There is no escaping mechanism. To include one of the above
     characters in a string, use <a href="#string-operators">string concatenation</a> and
     the <code><a href="#CHR$">CHR$</a></code> function.
@@ -3314,8 +3314,8 @@ The last character of the field buffer is read: <samp>Field overflow</samp>.
 <pre>LIST [ <var>line_number_0</var> | . ] [ - [ <var>line_number_1</var> | . ] ] [, <var>file_name</var>]</pre>
 <p>Prints the program to the screen, starting with <code><var>line_number_0</var></code> up to and
 including <code><var>line_number_1</var></code>.
-Also stops program execution and returns cotrol to the user. Any further
-statements on a line after <code>LIST</code> will be ignored, both in a program andon a direct line.
+Also stops program execution and returns control to the user. Any further
+statements on a line after <code>LIST</code> will be ignored, both in a program and on a direct line.
 </p><h4>Parameters</h4>
 <ul><li>
 <code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are  line numbers in the range <code>[0&#8212;65529]</code>.
@@ -3340,7 +3340,7 @@ A line number is greater than <code>65529</code>: <samp>Syntax error</samp>.
 <p>Prints the program to the screen, starting with <code><var>line_number_0</var></code> up to and
 including <code><var>line_number_1</var></code>.
 Also stops program execution and returns control to the user. Any further
-statements on a line after <code>LLIST</code> will be ignored, both in a program andon a direct line.
+statements on a line after <code>LLIST</code> will be ignored, both in a program and on a direct line.
 </p><h4>Parameters</h4>
 <ul><li>
 <code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are  line numbers in the range <code>[0&#8212;65529]</code>.
@@ -5002,7 +5002,7 @@ Function is called in text mode: <samp>Illegal function call</samp>.
 </p>
 <h4>Parameters</h4>
 <ul><li>
-<code><var>address</var></code> is anumeric expression in <code>[-32768&#8212;65535]</code>. Negative values are
+<code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>. Negative values are
 interpreted as their two's complement.
 </li><li>
 <code><var>value</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
@@ -5079,7 +5079,7 @@ effect.</p>
 <td>   The expression after will be positioned at the next available
     zone. The output file is divided in 14-character zones; if the width of the
     file is not a multiple of 14, the remaining spaces are unused and the first
-    zone ofn the next line is used instead. If the file has a width of less
+    zone of the next line is used instead. If the file has a width of less
     than 14 characters, the zones are determined as if the file were wrapping
     continuously.
 </td></tr><tr>
@@ -5402,7 +5402,7 @@ less than 'old remain unchanged.
 </p><h4>Notes</h4>
 <ul><li>
     The following keywords can reference line numbers, which will be renumbered
-    by renum: <code><a href="#AUTO">AUTO</a></code>, <code><a href="#EDIT">EDIT</a></code>,
+    by <code>RENUM</code>: <code><a href="#AUTO">AUTO</a></code>, <code><a href="#EDIT">EDIT</a></code>,
     <code><a href="#ELSE">ELSE</a></code>, <code><a href="#ERL">ERL</a></code>,
     <code><a href="#DELETE">DELETE</a></code>, <code><a href="#GOSUB">GOSUB</a></code>,
     <code><a href="#GOTO">GOTO</a></code>, <code><a href="#LIST">LIST</a></code>,
