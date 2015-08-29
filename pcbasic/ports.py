@@ -10,9 +10,21 @@ PySerial (c) 2001-2013 Chris Liechtl <cliechti(at)gmx.net>; All Rights Reserved.
 """
 
 import logging
+import sys
 import os
 import socket
 import datetime
+
+# kbhit() also appears in video_none.py
+import plat
+if plat.system == 'Windows':
+    from msvcrt import kbhit
+else:
+    import select
+
+    def kbhit():
+        """ Return whether a character is ready to be read from the keyboard. """
+        return select.select([sys.stdin], [], [], 0)[0] != []
 
 try:
     from cStringIO import StringIO
@@ -68,7 +80,6 @@ def prepare():
 class COMDevice(devices.Device):
     """ Serial port device (COMn:). """
 
-    allowed_protocols = ('PORT', 'SOCKET')
     allowed_modes = 'IOAR'
 
     def __init__(self, arg, max_reclen, serial_in_size):
@@ -76,24 +87,25 @@ class COMDevice(devices.Device):
         devices.Device.__init__(self)
         addr, val = devices.parse_protocol_string(arg)
         self.stream = None
-        if (not val):
-            pass
-        elif not serial:
-            logging.warning('Serial module not found. Serial port and socket communication not available.')
+        try:
+            if not addr and not val:
+                pass
+            elif addr == 'SOCKET':
+                self.stream = SocketSerialStream(val)
+            elif addr == 'STDIO' or (not addr and val.upper() == 'STDIO'):
+                crlf = (val.upper() == 'CRLF')
+                self.stream = StdIOStream(crlf)
+            elif addr == 'PORT':
+                # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows.
+                self.stream = SerialStream(val)
+            else:
+                logging.warning('Could not attach %s to COM device', arg)
+        except (ValueError, EnvironmentError) as e:
+            logging.warning('Could not attach %s to COM device: %s', arg, e)
             self.stream = None
-        elif (addr and addr not in self.allowed_protocols):
-            logging.warning('Could not attach %s to COM device', arg)
-        else:
-            try:
-                if addr == 'SOCKET':
-                    self.stream = SocketSerialStream(val)
-                else:
-                    # 'PORT' is default
-                    # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows.
-                    self.stream = SerialStream(val)
-            except (ValueError, EnvironmentError) as e:
-                logging.warning('Could not attach %s to COM device: %s', arg, e)
-                self.stream = None
+        except AttributeError:
+            logging.warning('Serial module not available. Could not attach %s to COM device: %s.', arg, e)
+            self.stream = None
         if self.stream:
             # NOTE: opening a text file automatically tries to read a byte
             self.device_file = COMFile(self.stream, linefeed=False)
@@ -161,7 +173,7 @@ class COMDevice(devices.Device):
             stop = 2 if (speed in (75, 110)) else 1
         else:
             stop = int(stop)
-        lf, rs, cs, ds, cd = False, False, None, 1000, 0
+        lf, rs, cs, ds, cd, pe = False, False, None, 1000, 0, False
         for named_param in param_list[4:]:
             if not named_param:
                 continue
@@ -302,6 +314,45 @@ class COMFile(devices.CRLFTextFileBase):
     def lof(self):
         """ Returns number of bytes free in buffer. """
         return serial_in_size - self.loc()
+
+
+class StdIOStream(object):
+    """ Wrapper object to route port to stdio."""
+
+    def __init__(self, crlf=False):
+        """ Initialise the stream. """
+        self.is_open = False
+        self._crlf = crlf
+
+    def open(self, rs=False, cs=1000, ds=1000, cd=0):
+        """ Open a connection. """
+        self.is_open = True
+
+    def close(self):
+        """ Close the connection. """
+        self.is_open = False
+
+    def read(self, num=1):
+        """ Non-blocking read of up to `num` chars from stdin. """
+        s = ''
+        while kbhit() and len(s) < num:
+            c = sys.stdin.read(1)
+            if self._crlf and c == '\n':
+                c = '\r'
+            s += c
+        return s
+
+    def write(self, s):
+        """ Write to stdout. """
+        for c in s:
+            if self._crlf and c == '\r':
+                c = '\n'
+            sys.stdout.write(c)
+        self.flush()
+
+    def flush(self):
+        """ Flush stdout. """
+        sys.stdout.flush()
 
 
 class SerialStream(object):

@@ -367,12 +367,12 @@
     <dt><code id="--com1">--com1=<var>type</var>:<var>value</var></code></dt>
     <dd>
         Attach a resource to the <code>COM1:</code> serial device.
-        <code><var>type:value</var></code> can be
+        <code><var>type:value</var></code> can be one of the following.
         <div class="scrollable"><table>
             <tr>
                 <td><code>PORT:<var>device_name</var></code></td>
                 <td>
-                    connect to a serial device. <code><var>device_name</var></code>
+                    Connect to a serial device. <code><var>device_name</var></code>
                     can be a device name such as <code>COM1</code> or
                     <code>/dev/ttyS0</code> or a number,
                     where the first serial port is number 0.
@@ -381,10 +381,20 @@
             <tr>
                 <td><code>SOCKET:<var>host</var>:<var>socket</var></code></td>
                 <td>
-                    connect to a TCP socket on a remote or
+                    Connect to a TCP socket on a remote or
                     local host.
                 </td>
             </tr>
+            <tr>
+                <td><code>STDIO[:[CRLF]]</code></td>
+                <td>
+                    Connect to standard I/O of the calling shell.
+                    If <code>CRLF</code> is specified, PC-BASIC replaces <code>CR</code>
+                    characters with <code>LF</code> on its output and <code>LF</code>
+                    with <code>CR</code> on its input. This is more intuitive on Unix shells.
+                    When using a Unix console, you should also set <code>stty -icanon</code>
+                    to enable PC-BASIC to read input correctly.
+                </td>
         </table></div>
         If this option is not specified, the <code>COM1</code> device is
         unavailable.
