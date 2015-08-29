@@ -120,9 +120,9 @@
 24030   WHILE -1
 24040     C$ = INKEY$
 24050     IF C$ = CHR$(13) THEN RETURN
-24060     'IF C$ = CHR$(8) THEN CHOICE$ = LEFT$(CHOICE$, LEN(CHOICE$)-1)
+24060     IF C$ = CHR$(27) THEN LOCATE 18,21: PRINT SPACE$(LEN(CHOICE$));: CHOICE$=""
 24070     IF C$ >= " " THEN CHOICE$ = CHOICE$ + C$
-24080     LOCATE 18,1,1: PRINT "Change <line,data>? "; CHOICE$;
+24080     LOCATE 18,1: PRINT "Change <line,data>? "; CHOICE$;
 24100   WEND
 30000 ' Settings
 30010   DATA "Line bit rate", "300", "(300..4800)"
