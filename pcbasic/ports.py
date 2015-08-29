@@ -496,7 +496,7 @@ class LPTDevice(devices.Device):
         elif addr == 'STDIO' or (not addr and val == 'STDIO'):
             crlf = (val.upper() == 'CRLF')
             self.stream = StdIOStream(crlf)
-        elif not addr:
+        elif addr == 'PRINTER' or not addr:
             # 'PRINTER' is default
             self.stream = printer.PrinterStream(val)
         else:
