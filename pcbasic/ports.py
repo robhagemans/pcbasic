@@ -473,7 +473,6 @@ class SocketSerialStream(SerialStream):
 class LPTDevice(devices.Device):
     """ Parallel port or printer device (LPTn:) """
 
-    allowed_protocols = ('PRINTER', 'PARPORT', 'FILE')
     # LPT1 can be opened as RANDOM
     # but behaves just like OUTPUT
     # in GW-BASIC, FIELD gives a FIELD OVERFLOW; we get BAD FILE MODE.
@@ -484,9 +483,7 @@ class LPTDevice(devices.Device):
         devices.Device.__init__(self)
         addr, val = devices.parse_protocol_string(arg)
         self.stream = default_stream
-        if (addr and addr not in self.allowed_protocols):
-            logging.warning('Could not attach %s to LPT device', arg)
-        elif addr == 'FILE':
+        if addr == 'FILE':
             try:
                 if not os.path.exists(val):
                     open(val, 'wb').close()
@@ -495,10 +492,15 @@ class LPTDevice(devices.Device):
                 logging.warning('Could not attach file %s to LPT device: %s', val, str(e))
         elif addr == 'PARPORT':
             # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
-           self.stream = parallel_port(val)
-        else:
+            self.stream = parallel_port(val)
+        elif addr == 'STDIO' or (not addr and val == 'STDIO'):
+            crlf = (val.upper() == 'CRLF')
+            self.stream = StdIOStream(crlf)
+        elif not addr:
             # 'PRINTER' is default
             self.stream = printer.PrinterStream(val)
+        else:
+            logging.warning('Could not attach %s to LPT device', arg)
         if self.stream:
             self.device_file = LPTFile(self.stream, flush_trigger)
             self.device_file.flush_trigger = flush_trigger

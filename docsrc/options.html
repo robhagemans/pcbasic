@@ -395,6 +395,7 @@
                     When using a Unix console, you should also set <code>stty -icanon</code>
                     to enable PC-BASIC to read input correctly.
                 </td>
+            </tr>
         </table></div>
         If this option is not specified, the <code>COM1</code> device is
         unavailable.
@@ -668,6 +669,14 @@
                 <td>Connect to any file or to a Unix character device such as
                 <code>/dev/stdout</code>. If not specified, <code>LPT1:</code> is
                 connected to the default printer.</td>
+            </tr>
+            <tr>
+                <td><code>STDIO[:[CRLF]]</code></td>
+                <td>
+                    Connect to standard output of the calling shell.
+                    If <code>CRLF</code> is specified, PC-BASIC replaces <code>CR</code>
+                    characters with <code>LF</code> on its output. This is more intuitive on Unix shells.
+                </td>
             </tr>
         </table></div>
     </dd>
