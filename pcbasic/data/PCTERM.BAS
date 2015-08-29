@@ -30,7 +30,6 @@
 2110     I% = VAL(CHOICE$)
 2120     IF (I%<1) OR (I%>NSETTINGS%) THEN 2900
 2130     VL$[I%] = RIGHT$(CHOICE$, LEN(CHOICE$)-X%)
-2140     ECHO% = LEFT$(VL$[4],1) = "Y" OR LEFT$(VL$[4],1) = "y"
 2900   WEND
 3000   ' Terminal loop
 3010   ON ERROR GOTO 13000
@@ -41,12 +40,12 @@
 3060   ON KEY(4) GOSUB 16000: KEY(4) ON ' Break
 3070   LOCATE 1,1,,6,7
 3080   WHILE -1
-3090      IF EOF(1) THEN A$=INKEY$: GOTO 3090 ' EOF, wait for user interrupt
+3090      IF EOF(1) THEN 3130
 3100      GOSUB 12000 ' check flow
 3110      C$ = INPUT$(1, #1)
 3120      IF C$ <> CHR$(10) THEN PRINT C$;
-3130      A$ = INKEY$: IF A$ = "" THEN 3130 ELSE IF LEFT$(A$,1) = CHR$(0) THEN 3130
-3140      IF ECHO% THEN PRINT A$;
+3130      A$ = INKEY$: IF A$ = "" THEN 3080 ELSE IF LEFT$(A$,1) = CHR$(0) THEN 3130
+3140      IF LEFT$(VL$[4],1) = "Y" OR LEFT$(VL$[4],1) = "y" THEN PRINT A$;
 3150      PRINT#1, A$;
 3160   WEND
 4000 WEND
