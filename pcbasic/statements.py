@@ -287,8 +287,9 @@ def exec_debug(ins):
 def exec_term(ins):
     """ TERM: load and run PCjr buitin terminal emulator program. """
     try:
-        with open(pcjr_term, 'rb') as f:
-            util.require(ins, tk.end_statement)
+        util.require(ins, tk.end_statement)
+        print pcjr_term
+        with disk.open_diskfile(open(pcjr_term, 'rb'), 'A', 'I', 'TERM') as f:
             program.load(f)
     except EnvironmentError:
         # on Tandy, raises Internal Error
