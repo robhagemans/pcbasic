@@ -12,16 +12,17 @@
 1000 ' Event loops
 1020 WHILE -1
 1030   CLS
-1040   GOSUB 21000 ' Draw key line
+1040   GOSUB 21000 ' draw key line
 1050   IF STATE% THEN 3000
 2000   ' Menu loop
-2010   GOSUB 19000 ' Close connection
+2010   GOSUB 19000 ' close connection
 2020   ON ERROR GOTO 0
 2030   ON KEY(1) GOSUB 10000: KEY(1) ON ' toggle menu/comm state
 2040   ON KEY(2) GOSUB 7000: KEY(2) ON ' exit
 2050   KEY(3) OFF: KEY(4) OFF
 2060   LOCATE 1,1,,0,7
 2070   WHILE -1
+2072     GOSUB 22000 ' Set width
 2075     GOSUB 20000 ' draw menu screen
 2080     GOSUB 24000 ' input
 2090     X% = INSTR(1, CHOICE$, ",")
@@ -30,7 +31,6 @@
 2120     IF (I%<1) OR (I%>NSETTINGS%) THEN 2900
 2130     VL$[I%] = RIGHT$(CHOICE$, LEN(CHOICE$)-X%)
 2140     ECHO% = LEFT$(VL$[4],1) = "Y" OR LEFT$(VL$[4],1) = "y"
-2150     WID% = VAL(VL$[5]): GOSUB 22000 ' Set width
 2900   WEND
 3000   ' Terminal loop
 3010   ON ERROR GOTO 13000
@@ -103,11 +103,11 @@
 21030   RETURN
 22000 ' Set width
 22010   ON ERROR GOTO 22100
-22020   WIDTH WID%
+22020   WIDTH VAL(VL$[5])
 22030   ON ERROR GOTO 0
 22040   RETURN
 22100 ' Set width - error handler
-22110   WID% = 40
+22110   VL$[5] = "40"
 22120   RESUME
 23000 ' Reset
 23010   KEY(1) OFF: KEY(2) OFF: KEY(3) OFF: KEY(4) OFF: COM(1) OFF
