@@ -839,7 +839,7 @@ def init_video(video_module):
     # clipboard handler may need an initialised pygame screen
     # incidentally, we only need a clipboard handler when we use pygame
     # avoid error messages by not calling
-    if video_module.__name__ == 'video_pygame':
+    if video_module.__name__ == 'pcbasic.video_pygame':
         clipboard_handler = clipboard.get_handler()
     else:
         clipboard_handler = clipboard.Clipboard()
