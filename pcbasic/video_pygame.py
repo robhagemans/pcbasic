@@ -945,7 +945,7 @@ def handle_key_down(e):
         # Android: toggle keyboard on menu key
         pygame_android.toggle_keyboard()
         screen_changed = True
-    elif e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
+    elif e.key == pygame.K_F11: # clipboard key
         clipboard.start()
     elif clipboard.active():
         clipboard.handle_key(e)
@@ -995,7 +995,7 @@ def handle_key_down(e):
 
 def handle_key_up(e):
     """ Handle key-up event. """
-    if e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
+    if e.key == pygame.K_F11: # clipboard key
         clipboard.stop()
     # last key released gets remembered
     try:
@@ -1022,7 +1022,7 @@ class ClipboardInterface(object):
 
     def __init__(self, width, height):
         """ Initialise clipboard feedback handler. """
-        self.logo_pressed = False
+        self._active = False
         self.select_start = None
         self.select_stop = None
         self.selection_rect = None
@@ -1031,11 +1031,11 @@ class ClipboardInterface(object):
 
     def active(self):
         """ True if clipboard mode is active. """
-        return self.logo_pressed
+        return self._active
 
     def start(self, r=None, c=None):
-        """ Enter clipboard mode (Logo key pressed). """
-        self.logo_pressed = True
+        """ Enter clipboard mode (clipboard key pressed). """
+        self._active = True
         if r is None or c is None:
             self.select_start = [cursor_row, cursor_col]
             self.select_stop = [cursor_row, cursor_col]
@@ -1045,9 +1045,9 @@ class ClipboardInterface(object):
         self.selection_rect = []
 
     def stop(self):
-        """ Leave clipboard mode (Logo key released). """
+        """ Leave clipboard mode (clipboard key released). """
         global screen_changed
-        self.logo_pressed = False
+        self._active = False
         self.select_start = None
         self.select_stop = None
         self.selection_rect = None
@@ -1105,7 +1105,7 @@ class ClipboardInterface(object):
 
 
     def handle_key(self, e):
-        """ Handle logo+key clipboard commands. """
+        """ Handle keyboard clipboard commands. """
         global screen_changed
         if not self.logo_pressed:
             return
