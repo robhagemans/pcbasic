@@ -578,16 +578,15 @@ class Keyboard(object):
         try:
             # switch off ephemeral modifiers
             self.mod &= ~modifier[scan]
-            # ALT+keycode
-            if scan == scancode.ALT and self.keypad_ascii:
-                char = chr(int(self.keypad_ascii)%256)
-                if char == '\0':
-                    char = '\0\0'
-                self.insert_chars(char, check_full=True)
-                self.keypad_ascii = ''
         except KeyError:
            pass
-
+        # ALT+keycode
+        if scan == scancode.ALT and self.keypad_ascii:
+            char = chr(int(self.keypad_ascii)%256)
+            if char == '\0':
+                char = '\0\0'
+            self.insert_chars(char, check_full=True)
+            self.keypad_ascii = ''
 
 #D
 def insert_chars(s, check_full=False):
