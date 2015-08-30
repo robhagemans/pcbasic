@@ -33,6 +33,7 @@ PC-BASIC will display the prompt <samp>Ok</samp>. If there is an error, it will
 display an error message followed by <samp>Ok</samp>.
 If the line starts with a number, it will be stored as a program line. No prompt is displayed.</p>
 
+<h3>Special keys</h3>
 <p>The following keys have a special effect in the working environment:</p>
 <div class="scrollable">
 <table>
@@ -186,12 +187,51 @@ Finish input and return to the previous mode.
 </table>
 </div>
 
-<p>Unlike in GW-BASIC, you can copy and paste text to the clipboard. Two ways:
-</p><dl>
-<dt>Using the mouse:</dt><dd>Left button is select and copy; middle button
-is paste.</dd>
-<dt>Using the keyboard:</dt><dd>
-You can also copy and paste using the keyboard.
+<h3>Alternative key combinations</h3>
+<p>
+    The <kbd>F12</kbd> key can be used to enter special keys that are not
+    present on some keyboards.
+</p>
+<table>
+    <tr>
+        <td><kbd>F12</kbd>+<kbd>B</bkd></td>
+        <td><kbd>Break</kbd></td>
+    </tr>
+    <tr>
+        <td><kbd>F12</kbd>+<kbd>P</bkd></td>
+        <td><kbd>Pause</kbd></td>
+    </tr>
+    <tr>
+        <td><kbd>F12</kbd>+<kbd>C</bkd></td>
+        <td><kbd>Caps Lock</kbd></td>
+    </tr>
+    <tr>
+        <td><kbd>F12</kbd>+<kbd>N</bkd></td>
+        <td><kbd>Num Lock</kbd></td>
+    </tr>
+    <tr>
+        <td><kbd>F12</kbd>+<kbd>S</bkd></td>
+        <td><kbd>Scroll Lock</kbd></td>
+    </tr>
+</table>
+<p>
+    The <kbd>F12</kbd> key can also be used in combination with the regular number
+    keys and arrow keys to enter numbers from the numeric keypad.
+</p>
+
+<h3>Clipboard operations</h3>
+<p>
+    Unlike in GW-BASIC, you can copy and paste text to the clipboard.
+    This can be done with the mouse or with the <kbd>F11</kbd> key.
+</p>
+<p>
+    Operating the clipboard with the mouse works in the style of X11:
+    Left button is select and copy; middle button
+    is paste.
+</p>
+<p>
+    The following keyboard combinations also operate the clipboard:
+</p>
 <div class="scrollable">
 <table>
 <tr>
@@ -213,7 +253,6 @@ You can also copy and paste using the keyboard.
 </tr>
 </table>
 </div>
-</dd></dl>
 </section>
 
 <section>
