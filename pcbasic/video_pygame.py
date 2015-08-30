@@ -466,16 +466,13 @@ def resize_display(width, height, initial=False):
     global fullscreen, smooth
     display_info = pygame.display.Info()
     flags = pygame.RESIZABLE
-    if fullscreen or (width, height) == physical_size:
-        fullscreen = True
+    if fullscreen:
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
         if (not initial and not text_mode):
             width, height = display_size
         # scale suggested dimensions to largest integer times pixel size that fits
         scale = min( physical_size[0]//width, physical_size[1]//height )
         width, height = width * scale, height * scale
-    if (width, height) == (display_info.current_w, display_info.current_h) and not initial:
-        return
     display = pygame.display.set_mode((width, height), flags)
     if initial and smooth and display.get_bitsize() < 24:
         logging.warning("Smooth scaling not available on this display (depth %d < 24)", display.get_bitsize())
@@ -961,10 +958,11 @@ def check_events(pause=False):
     return False
 
 f12_active = False
+f11_active = False
 
 def handle_key_down(e):
     """ Handle key-down event. """
-    global screen_changed, f12_active
+    global screen_changed, f12_active, f11_active, fullscreen
     c = ''
     mods = pygame.key.get_mods()
     if ((e.key == pygame.K_NUMLOCK and mods & pygame.KMOD_CTRL) or
@@ -976,11 +974,16 @@ def handle_key_down(e):
         # Android: toggle keyboard on menu key
         pygame_android.toggle_keyboard()
         screen_changed = True
-    elif e.key == pygame.K_F11: # clipboard key
+    elif e.key == pygame.K_F11:
+        f11_active = True
         clipboard.start()
     elif e.key == pygame.K_F12:
         f12_active = True
-    elif clipboard.active():
+    elif f11_active:
+        # F11+f to toggle fullscreen mode
+        if e.key == pygame.K_f:
+            fullscreen = not fullscreen
+            resize_display(*find_display_size(size[0], size[1], border_width))
         clipboard.handle_key(e)
     else:
         if not android:
@@ -1039,9 +1042,10 @@ def handle_key_down(e):
 
 def handle_key_up(e):
     """ Handle key-up event. """
-    global f12_active
-    if e.key == pygame.K_F11: # clipboard key
+    global f12_active, f11_active
+    if e.key == pygame.K_F11:
         clipboard.stop()
+        f11_active = False
     elif e.key == pygame.K_F12:
         f12_active = False
     if not (f12_active and e.key in key_to_scan_f12):
@@ -1155,7 +1159,7 @@ class ClipboardInterface(object):
     def handle_key(self, e):
         """ Handle keyboard clipboard commands. """
         global screen_changed
-        if not self.logo_pressed:
+        if not self._active:
             return
         if e.unicode.upper() ==  u'C':
             self.copy()
