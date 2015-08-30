@@ -440,7 +440,7 @@
         chosen from <code>left</code>,<code>middle</code>,<code>right</code>,<code>none</code>.
     </dd>
 
-    <dt><code id="ctrl-c-break">--ctrl-c-break[=True|=False]</code></dt>
+    <dt><code id="--ctrl-c-break">--ctrl-c-break[=True|=False]</code></dt>
     <dd>
         If <code>False</code>, follow GW-BASIC behaviour
         where <kbd>Ctrl</kbd>+<kbd>C</kbd> breaks <code><a href="#AUTO">AUTO</a></code>
@@ -450,14 +450,11 @@
         <kbd>Ctrl</kbd>+<kbd>C</kbd> exactly like
         <kbd>Ctrl</kbd>+<kbd>Break</kbd> and
         <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> in graphical
-        interface mode.  Use if your keyboard does
-        not have a <kbd>Break</kbd> or
-        <kbd>Scroll Lock</kbd> key.<br/>
-        Default is <code>False</code> on
-        Windows and Linux and <code>True</code> on OSX. In <code>text</code> and
+        interface mode. In <code>text</code> and
         <code>cli</code> interface mode,
         <kbd>Ctrl</kbd>+<kbd>C</kbd> is always treated like
-        <kbd>Ctrl</kbd>+<kbd>Break</kbd>.
+        <kbd>Ctrl</kbd>+<kbd>Break</kbd>.<br/>
+        Default is <code>True</code>.
     </dd>
 
     <dt><code id="--current-device">--current-device=<var>{A|B...|Z}</var></code></dt>

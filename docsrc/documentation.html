@@ -164,6 +164,15 @@ or <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd>
 Stop execution and return to interactive mode. A <samp>Break</samp> message is printed.
 </td>
 </tr>
+    <tr>
+        <td>
+            <kbd>Ctrl</kbd>+<kbd>C</kbd>
+        </td>
+        <td>
+            If <code><a href="#--ctrl-c-break">ctrl-c-break</a>=True</code>: stop execution and return to interactive mode.
+            A <samp>Break</samp> message is printed.
+        </td>
+    </tr>
 </table>
 </div>
 
@@ -186,6 +195,84 @@ Finish input and return to the previous mode.
 </tr>
 </table>
 </div>
+
+
+<h3 id="shortcuts">Keyboard shortcuts</h2>
+<p>The function keys and the alt key can be used as keyboard shortcuts for some
+keywords.
+The default values for the function keys are:</p>
+<div class="scrollable">
+<table>
+<tr>
+<td><kbd>F1</kbd></td><td><code><a href="#LIST">LIST</a></code></td>
+</tr>
+<tr>
+<td><kbd>F2</kbd></td><td><code><a href="#RUN">RUN</a></code><kbd>Enter</kbd></td>
+</tr>
+<tr>
+<td><kbd>F3</kbd></td><td><code><a href="#LOAD">LOAD</a>"</code></td>
+</tr>
+<tr>
+<td><kbd>F4</kbd></td><td><code><a href="#SAVE">SAVE</a>"</code></td>
+</tr>
+<tr>
+<td><kbd>F5</kbd></td><td><code><a href="#CONT">CONT</a></code><kbd>Enter</kbd></td>
+</tr>
+<tr>
+<td><kbd>F6</kbd></td><td><code>,"LPT1:"</code><kbd>Enter</kbd></td>
+</tr>
+<tr>
+<td><kbd>F7</kbd></td><td><code><a href="#TRON">TRON</a></code><kbd>Enter</kbd></td>
+</tr>
+<tr>
+<td><kbd>F8</kbd></td><td><code><a href="#TRON">TROFF</a></code><kbd>Enter</kbd></td>
+</tr>
+<tr>
+<td><kbd>F9</kbd></td><td><code><a href="#KEY-list">KEY</a></code><kbd>Space</kbd></td>
+</tr>
+<tr>
+<td><kbd>F10</kbd></td><td><code><a href="SCREEN-statement">SCREEN</a> 0,0,0</code><kbd>Enter</kbd></td>
+</tr>
+</table>
+</div>
+<p>
+    The function key shortcuts can be redefined with the <code>KEY</code> statement.
+    The shortcuts are displayed at the bottom of the screen.
+</p>
+<p>
+    The following keywords can be entered
+    with <kbd>Alt</kbd>+first letter. The <kbd>Alt</kbd> shortcuts cannot be redefined.
+</p>
+<ul class="compact">
+    <li><code><a href="#AUTO">AUTO</a></code></li>
+    <li><code><a href="#BSAVE">BSAVE</a></code></li>
+    <li><code><a href="#COLOR">COLOR</a></code></li>
+    <li><code><a href="#DELETE">DELETE</a></code></li>
+
+    <li><code><a href="#ELSE">ELSE</a></code></li>
+    <li><code><a href="#FOR">FOR</a></code></li>
+    <li><code><a href="#GOTO">GOTO</a></code></li>
+    <li><code><a href="#HEX$">HEX$</a></code></li>
+
+    <li><code><a href="#INPUT">INPUT</a></code></li>
+    <li><code><a href="#KEY-list">KEY</a></code></li>
+    <li><code><a href="#LOCATE">LOCATE</a></code></li>
+    <li><code><a href="#MOTOR">MOTOR</a></code></li>
+
+    <li><code><a href="#NEXT">NEXT</a></code></li>
+    <li><code><a href="#OPEN">OPEN</a></code></li>
+    <li><code><a href="#PRINT">PRINT</a></code></li>
+    <li><code><a href="#RUN">RUN</a></code></li>
+
+    <li><code><a href="#SCREEN">SCREEN</a></code></li>
+    <li><code><a href="#THEN">THEN</a></code></li>
+    <li><code><a href="#PRINT">USING</a></code></li>
+    <li><code><a href="#VAL">VAL</a></code></li>
+
+    <li><code><a href="#WIDTH">WIDTH</a></code></li>
+    <li><code><a href="#XOR">XOR</a></code></li>
+</ul>
+</section>
 
 <h3 id="alternative-keys">Alternative keys</h3>
 <p>
@@ -266,83 +353,6 @@ Finish input and return to the previous mode.
     In PC-BASIC, <kbd>F11</kbd>+<kbd>F</kbd> toggles fullscreen mode.
 </p>
 
-<h3 id="shortcuts">Keyboard shortcuts</h2>
-<p>The function keys and the alt key can be used as keyboard shortcuts for some
-keywords.
-The default values for the function keys are:</p>
-<div class="scrollable">
-<table>
-<tr>
-<td><kbd>F1</kbd></td><td><code><a href="#LIST">LIST</a></code></td>
-</tr>
-<tr>
-<td><kbd>F2</kbd></td><td><code><a href="#RUN">RUN</a></code><kbd>Enter</kbd></td>
-</tr>
-<tr>
-<td><kbd>F3</kbd></td><td><code><a href="#LOAD">LOAD</a>"</code></td>
-</tr>
-<tr>
-<td><kbd>F4</kbd></td><td><code><a href="#SAVE">SAVE</a>"</code></td>
-</tr>
-<tr>
-<td><kbd>F5</kbd></td><td><code><a href="#CONT">CONT</a></code><kbd>Enter</kbd></td>
-</tr>
-<tr>
-<td><kbd>F6</kbd></td><td><code>,"LPT1:"</code><kbd>Enter</kbd></td>
-</tr>
-<tr>
-<td><kbd>F7</kbd></td><td><code><a href="#TRON">TRON</a></code><kbd>Enter</kbd></td>
-</tr>
-<tr>
-<td><kbd>F8</kbd></td><td><code><a href="#TRON">TROFF</a></code><kbd>Enter</kbd></td>
-</tr>
-<tr>
-<td><kbd>F9</kbd></td><td><code><a href="#KEY-list">KEY</a></code><kbd>Space</kbd></td>
-</tr>
-<tr>
-<td><kbd>F10</kbd></td><td><code><a href="SCREEN-statement">SCREEN</a> 0,0,0</code><kbd>Enter</kbd></td>
-</tr>
-</table>
-</div>
-<p>
-    The function key shortcuts can be redefined with the <code>KEY</code> statement.
-    The shortcuts are displayed at the bottom of the screen.
-</p>
-<p>
-    The following keywords can be entered
-    with <kbd>Alt</kbd>+first letter. The <kbd>Alt</kbd> shortcuts cannot be redefined.
-</p>
-<ul class="compact">
-    <li><code><a href="#AUTO">AUTO</a></code></li>
-    <li><code><a href="#BSAVE">BSAVE</a></code></li>
-    <li><code><a href="#COLOR">COLOR</a></code></li>
-    <li><code><a href="#DELETE">DELETE</a></code></li>
-
-    <li><code><a href="#ELSE">ELSE</a></code></li>
-    <li><code><a href="#FOR">FOR</a></code></li>
-    <li><code><a href="#GOTO">GOTO</a></code></li>
-    <li><code><a href="#HEX$">HEX$</a></code></li>
-
-    <li><code><a href="#INPUT">INPUT</a></code></li>
-    <li><code><a href="#KEY-list">KEY</a></code></li>
-    <li><code><a href="#LOCATE">LOCATE</a></code></li>
-    <li><code><a href="#MOTOR">MOTOR</a></code></li>
-
-    <li><code><a href="#NEXT">NEXT</a></code></li>
-    <li><code><a href="#OPEN">OPEN</a></code></li>
-    <li><code><a href="#PRINT">PRINT</a></code></li>
-    <li><code><a href="#RUN">RUN</a></code></li>
-
-    <li><code><a href="#SCREEN">SCREEN</a></code></li>
-    <li><code><a href="#THEN">THEN</a></code></li>
-    <li><code><a href="#PRINT">USING</a></code></li>
-    <li><code><a href="#VAL">VAL</a></code></li>
-
-    <li><code><a href="#WIDTH">WIDTH</a></code></li>
-    <li><code><a href="#XOR">XOR</a></code></li>
-</ul>
-</section>
-
 <section>
 <h2 id="settings">Changing settings</h2>
 <p>PC-BASIC has a number of settings that change the way it operates. There are
@@ -387,8 +397,14 @@ Within one program line, statements are separated by colons <code>:</code>.</p>
 
 <p>To run the program, type the command <code>RUN</code>. PC-BASIC will now execute all program lines in order inside the working environment. You cannot move the cursor around or enter commands while the program is running. If and when the program finishes, it will return control of the working environment to you. You can interrupt a program at any time by using one of the key combinations <kbd>Ctrl</kbd>+<kbd>Break</kbd> or <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd>. The program will stop immediately, print a <samp>Break</samp> message and return control to you.</p>
 
-
-<p>Normally, you can <em>not</em> use  <kbd>Ctrl</kbd>+<kbd>C</kbd> to interrupt a running program. However, some keyboards do not have a <kbd>Ctrl</kbd>+<kbd>Break</kbd> or <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> key, which would make it impossible to interrupt a program that does not exit. If you have such a system, you can enable the <code>ctrl-c-break</code> option. This is enabled by default on OS X systems as well as when using the text-based or command-line interface.
+<p>
+    In GW-BASIC, you can <em>not</em> use  <kbd>Ctrl</kbd>+<kbd>C</kbd> to interrupt a running program.
+    However, many modern keyboards do not have a <kbd>Break</kbd> or
+    <kbd>Scroll Lock</kbd> key, which would make it impossible to interrupt
+    a program that does not exit. Therefore, by default, PC-BASIC treats <kbd>Ctrl</kbd>+<kbd>C</kbd>
+    as if it were <kbd>Ctrl</kbd>+<kbd>Break</kbd>. Set <code><a href="#--ctrl-c-break">ctrl-c-break</a>=False</code>
+    if you prefer the GW-BASIC style behaviour. When using the text-based or command-line interface,
+    this option is ignored.
 </p>
 
 <p>A program can be stored on a drive by using the <code><a href="#SAVE">SAVE</a></code> command, in one of three ways:</p>

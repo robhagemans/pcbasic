@@ -141,7 +141,7 @@ arguments = {
     'shell': {'type': 'string', 'default': 'none',},
     'print-trigger': {'type': 'string', 'choices':('close', 'page', 'line'), 'default':'close',},
     'altgr': {'type': 'bool', 'default': True,},
-    'ctrl-c-break': {'type': 'bool', 'default': False,},
+    'ctrl-c-break': {'type': 'bool', 'default': True,},
     'wait': {'type': 'bool', 'default': False,},
     'current-device': {'type': 'string', 'default': 'Z'},
 }
