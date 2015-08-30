@@ -321,7 +321,7 @@ def parse_config(remaining):
             config_file = config_name
     if config_file:
         conf_dict.update(read_config_file(config_file))
-    return conf_dict, config_file
+    return conf_dict
 
 def read_config_file(config_file):
     """ Read config file. """
