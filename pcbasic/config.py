@@ -174,18 +174,18 @@ def retrieve_options():
     remaining = get_arguments(sys.argv[1:])
     # unpack any packages and parse program arguments
     args_program = parse_package(remaining)
-    # get arguments and presets from specified config file
-    conf_dict = parse_config(remaining)
+    # get preset groups from specified config file
+    preset_dict = parse_config(remaining)
     # set defaults based on presets.
-    args = parse_presets(remaining, conf_dict)
+    args = parse_presets(remaining, preset_dict)
+    # local config file settings overrides preset settings
+    merge_arguments(args, preset_dict['pcbasic'])
     # parse rest of command line
     merge_arguments(args, parse_args(remaining))
     # apply program argument
     merge_arguments(args, args_program)
     # clean up arguments
     clean_arguments(args)
-    # apply builtin defaults for unspecified options
-    apply_defaults(args)
     return args
 
 def get(name, get_default=True):
@@ -255,19 +255,6 @@ def get_arguments(argv):
             logger.warning('Ignored unrecognised option "=%s"', value)
     return args
 
-def apply_defaults(args):
-    """ Apply default argument where no option specified. """
-    # for arg in arguments:
-    #     if arg not in args or args[arg] in ('', None):
-    #         try:
-    #             args[arg] = arguments[arg]['default']
-    #         except KeyError:
-    #             pass
-    # for pos in range(positional):
-    #     if pos not in args:
-    #         args[pos] = ''
-    return args
-
 def parse_presets(remaining, conf_dict):
     """ Parse presets. """
     presets = default_presets
@@ -334,7 +321,7 @@ def parse_config(remaining):
             config_file = config_name
     if config_file:
         conf_dict.update(read_config_file(config_file))
-    return conf_dict
+    return conf_dict, config_file
 
 def read_config_file(config_file):
     """ Read config file. """
