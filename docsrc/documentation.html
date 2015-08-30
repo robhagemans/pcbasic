@@ -33,7 +33,7 @@ PC-BASIC will display the prompt <samp>Ok</samp>. If there is an error, it will
 display an error message followed by <samp>Ok</samp>.
 If the line starts with a number, it will be stored as a program line. No prompt is displayed.</p>
 
-<h3>Special keys</h3>
+<h3 id="special-keys">Special keys</h3>
 <p>The following keys have a special effect in the working environment:</p>
 <div class="scrollable">
 <table>
@@ -187,9 +187,9 @@ Finish input and return to the previous mode.
 </table>
 </div>
 
-<h3>Alternative key combinations</h3>
+<h3 id="alternative-keys">Alternative keys</h3>
 <p>
-    The <kbd>F12</kbd> key can be used to enter special keys that are not
+    In PC-BASIC, he <kbd>F12</kbd> key can be used to enter special keys that are not
     present on some keyboards.
 </p>
 <table>
@@ -217,7 +217,14 @@ Finish input and return to the previous mode.
 <p>
     The <kbd>F12</kbd> key can also be used in combination with the regular number
     keys and arrow keys to enter numbers from the numeric keypad.
+    The <kbd>F12</kbd> combinations are not present in GW-BASIC.
 </p>
+<p>
+    Furthermore, as in GW-BASIC, the <kbd>Alt</kbd> key can be used to enter characters by their ASCII code.
+    This is done by pressing the <kbd>Alt</kbd> key and typing the decimal value of the
+    ASCII code on the numeric keypad, then releasing the <kbd>Alt</kbd> key.
+</p>
+
 
 <h3>Clipboard operations</h3>
 <p>
@@ -253,10 +260,8 @@ Finish input and return to the previous mode.
 </tr>
 </table>
 </div>
-</section>
 
-<section>
-<h2 id="shortcuts">Keyboard shortcuts</h2>
+<h3 id="shortcuts">Keyboard shortcuts</h2>
 <p>The function keys and the alt key can be used as keyboard shortcuts for some
 keywords.
 The default values for the function keys are:</p>
@@ -294,11 +299,14 @@ The default values for the function keys are:</p>
 </tr>
 </table>
 </div>
-<p>The function key shortcuts can be redefined (see the <code>KEY</code> statement). The key
-values are displayed at the bottom of the screen.</p>
 <p>
-The <kbd>Alt</kbd> shortcuts cannot be redefined. The following keywords can be entered
-with <kbd>Alt</kbd>+the first letter:</p>
+    The function key shortcuts can be redefined with the <code>KEY</code> statement.
+    The shortcuts are displayed at the bottom of the screen.
+</p>
+<p>
+    The following keywords can be entered
+    with <kbd>Alt</kbd>+first letter. The <kbd>Alt</kbd> shortcuts cannot be redefined.
+</p>
 <ul class="compact">
     <li><code><a href="#AUTO">AUTO</a></code></li>
     <li><code><a href="#BSAVE">BSAVE</a></code></li>
@@ -328,10 +336,6 @@ with <kbd>Alt</kbd>+the first letter:</p>
     <li><code><a href="#WIDTH">WIDTH</a></code></li>
     <li><code><a href="#XOR">XOR</a></code></li>
 </ul>
-<p>Furthermore, the <kbd>Alt</kbd> key can be used to enter characters by their ASCII code.
-This is done by pressing the <kbd>Alt</kbd> key and typing the decimal value of the
- ASCII code on the numeric keypad, then releasing the <kbd>Alt</kbd> key.
-</p>
 </section>
 
 <section>
