@@ -8,6 +8,7 @@ data/*.SAV
 *.pyo
 *~
 .git*
+.android.json
 setup.py
 prepare.py
 MANIFEST.in

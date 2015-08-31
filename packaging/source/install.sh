@@ -189,43 +189,37 @@ do_install () {
     echo
     echo "Compiling Python modules ... "
 
+    DIRS="$(find pcbasic/ -type d -print) $(find doc/ -type d -print)"
+    FILES="$(find pcbasic/ -type f -print) $(find doc/ -type f -print) $(find .  -maxdepth 1 -type f)"
+
     # create build environment
-    # suppress 'cannot copy build/ into itself' message
     mkdir build
-    cp -R * build/ 2>/dev/null
-
-    /usr/bin/env python2 -m compileall build/
-    # don't copy source
-    rm build/*.py
-    # this seems to have been created and filled with the first files anyway
-    rm -rf build/build
-
-    echo
-    echo "Copying program files ... "
-    # make list of directories and files for uninstall log
-    mkdir -p "$INSTALL_DIR"
-
-    cd build
-    DIRS=$(find ./* -type d -print)
-    FILES=$(find ./* -type f -print)
-    cd ..
-
     for dir in $DIRS; do
         if [ "$DIR" != "build" ]; then
-            mkdir -p "$INSTALL_DIR/$dir"
+            mkdir -p "build/$dir"
         fi
     done
 
     for file in $FILES; do
-        mv "build/$file" "$INSTALL_DIR/$file"
+        cp "$file" "build/$file"
     done
 
-    # cleanup build environment
-    for dir in $DIRS; do
-        echo build/$dir
-        rmdir "build/$dir"
-    done
-    rmdir build
+    # compile sources
+    /usr/bin/env python2 -m compileall build/
+    # remove source files from build
+    rm build/pcbasic/*.py
+
+    cd build/
+    # make list of directories and files for uninstall log
+    DIRS="$(find pcbasic/ -type d -print) $(find doc/ -type d -print)"
+    FILES="$(find pcbasic/ -type f -print) $(find doc/ -type f -print) $(find .  -maxdepth 1 -type f)"
+    # invert dirs to delete them recursively
+    INVERTED_DIRS=$(echo "$DIRS" | sed '1!G;h;$!d')
+    cd ..
+
+    echo
+    echo "Copying program files ... "
+    mv build/ "$INSTALL_DIR"
 
     if [ "$(id -u)" = "0" ]; then
         echo "Creating symlink ... "
@@ -238,7 +232,7 @@ do_install () {
     echo "[Desktop Entry]" > $DESKTOP_FILE
     echo "Name=PC-BASIC" >> $DESKTOP_FILE
     echo "GenericName=GW-BASIC compatible interpreter" >> $DESKTOP_FILE
-    echo "Exec=$INSTALL_DIR/pcbasic" >> $DESKTOP_FILE
+    echo "Exec=$INSTALL_DIR/pcbasic.py" >> $DESKTOP_FILE
     echo "Terminal=false" >> $DESKTOP_FILE
     echo "Type=Application" >> $DESKTOP_FILE
     echo "Icon=pcbasic.png" >> $DESKTOP_FILE
@@ -257,8 +251,6 @@ do_install () {
     echo "DEBDEPS='$DEBDEPS'">> $UNINSTALLER
     echo "MANUAL='$MANUAL'">> $UNINSTALLER
 
-    # invert dirs to delete them recursively
-    INVERTED_DIRS=$(echo "$DIRS" | sed '1!G;h;$!d')
     echo "DIRS='$INVERTED_DIRS'" >> $UNINSTALLER
     echo "FILES='$FILES'" >> $UNINSTALLER
     cat $SCRIPT >> $UNINSTALLER
