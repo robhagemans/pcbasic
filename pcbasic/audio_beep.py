@@ -49,6 +49,8 @@ next_tone = [ None, None, None, None ]
 ##############################################################################
 # implementation
 
+thread = None
+
 tick_s = 0.024
 now_playing = [None, None, None, None]
 now_looping = [None, None, None, None]

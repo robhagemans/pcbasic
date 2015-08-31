@@ -13,12 +13,12 @@ import Queue
 
 import sound
 
-
 ##############################################################################
 # interface
 
 def init():
     """ Initialise sound system. """
+
     launch_thread()
     return True
 
@@ -40,6 +40,8 @@ next_tone = [ None, None, None, None ]
 
 ##############################################################################
 # implementation
+
+thread = None
 
 tick_s = 0.024
 

@@ -265,7 +265,8 @@ def prepare_console():
         sound.audio = __import__(audio_name, globals={"__name__": __name__})
     if not sound.init():
         sound.audio = __import__('audio_none', globals={"__name__": __name__})
-        logging.warning('Failed to initialise sound. Sound will be disabled.')
+        sound.init()
+        logging.warning('Failed to initialise sound. Sound will be disabled.\r')
     if not state.loaded:
         console.init_mode()
     # set the output for maths error messages
