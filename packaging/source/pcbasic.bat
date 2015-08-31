@@ -1,1 +1,1 @@
-ansipipe python pcbasic %*
+launcher.exe python pcbasic %*
