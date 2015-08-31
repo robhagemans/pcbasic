@@ -425,7 +425,7 @@ def tokenise_dec(ins, outs):
             have_exp = True
             # there's a special exception for number followed by EL or EQ
             # presumably meant to protect ELSE and maybe EQV ?
-            if c == 'E' and util.peek(ins).upper() in 'LQ':
+            if c == 'E' and util.peek(ins).upper() in ('L', 'Q'):
                 ins.seek(-1, 1)
                 break
             else:
