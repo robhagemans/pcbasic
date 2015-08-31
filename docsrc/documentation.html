@@ -504,17 +504,22 @@ If <code>strict-newline</code> is enabled, ASCII files in standard Unix format (
 
 <section>
 <h2 id="packages">Packages</h2>
-<p>PC-BASIC can run packaged programs. A package is simply a zip archive
-that contains (at least) a configuration file named <code>PCBASIC.INI</code>. Settings
-from the config file are loaded; usually, one of those settings will be a
-run= argument linking to a BASIC program enclosed in the zip archive.
-PC-BASIC will recognise packages regardless of their extension.
-A suggested extension for PC-BASIC packages is <code>.BAZ</code>.
-Packages are a convenient choice if a program needs to change many PC-BASIC options
-to function as desired, or if it needs a particular working directory setup.
-Packages are unpacked to a temporary directory each time they are loaded.
-The temporary directory is removed when PC-BASIC closes and it is therefore
-not possible to save files and re-open them on the next run of the package.</p>
+<p>
+    PC-BASIC can run packaged programs. A package is simply a directory or zip archive.
+    The directory or zipfile contents will be loaded as the current working
+    directory. If a configuration file named <code>PCBASIC.INI</code> is present
+    inside this directory, its settings are loaded; usually, one of those settings will be a
+    <code><a href="#--run">run</a></code> argument linking to a BASIC program enclosed in the archive or directory.
+    PC-BASIC will recognise zipfiles regardless of their extension.
+    A suggested extension for PC-BASIC packages is <code>.BAZ</code>.
+    Packages are a convenient choice if a program needs to change many PC-BASIC options
+    to function as desired, or if it needs a particular working directory setup.
+</p>
+<p>
+    Zipfile packages are unpacked to a temporary directory each time they are loaded.
+    The temporary directory is removed when PC-BASIC closes. With zipfile packages, it is therefore
+    not possible to save files and re-open them on the next run of the package.
+</p>
 </section>
 
 <section>

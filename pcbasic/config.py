@@ -172,18 +172,16 @@ def retrieve_options():
     """ Retrieve command line and option file options. """
     # convert command line arguments to string dictionary form
     remaining = get_arguments(sys.argv[1:])
-    # unpack any packages and parse program arguments
-    args_program = parse_package(remaining)
+    # unpack any packages
+    parse_package(remaining)
     # get preset groups from specified config file
     preset_dict = parse_config(remaining)
-    # set defaults based on presets.
+    # set defaults based on presets
     args = parse_presets(remaining, preset_dict)
-    # local config file settings overrides preset settings
+    # local config file settings override preset settings
     merge_arguments(args, preset_dict['pcbasic'])
     # parse rest of command line
     merge_arguments(args, parse_args(remaining))
-    # apply program argument
-    merge_arguments(args, args_program)
     # clean up arguments
     clean_arguments(args)
     return args
@@ -282,12 +280,15 @@ def parse_package(remaining):
     """ Unpack BAZ package, if specified, and make its temp dir current. """
     global package
     # first positional arg: program or package name
-    args = {}
     try:
         arg_package = remaining[0]
     except KeyError:
-        return args
-    if zipfile.is_zipfile(arg_package):
+        return
+    if os.path.isdir(arg_package):
+        os.chdir(arg_package)
+        remaining.pop(0)
+        package = arg_package
+    elif zipfile.is_zipfile(arg_package):
         remaining.pop(0)
         # extract the package to a temp directory
         # and make that the current dir for our run
@@ -310,7 +311,6 @@ def parse_package(remaining):
                     # if we can't rename, ignore
                     pass
         package = arg_package
-    return args
 
 def parse_config(remaining):
     """ Find the correct config file and read it. """

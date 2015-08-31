@@ -6,19 +6,19 @@
 
 <section>
     <h2 id="synopsis">Synopsis</h2>
-    <pre>pcbasic <var>[program|package] [convert_output] [options]</var></pre>
+    <pre>pcbasic [<var>program</var>|<var>package</var>|<var>dir</var>] [<var>convert_output</var>] [<var>options</var>]</pre>
 </section>
 
 <section>
 <h2 id="parameters">Parameters</h2>
 <dl>
-    <dt><code><var>program|package</var></code></dt>
+    <dt><code><var>program</var>|<var>package</var>|<var>dir</var></code></dt>
     <dd>
-        A <code>.bas</code> program or <code>.zip</code> package can be
+        A <code>.bas</code> program, zipfile package or local directory can be
         specified as the first argument. If a program is specified, it will
-        be run. If a package is specified, its
+        be run. If a package or directory is specified, any contained
         <a href="#settings">configuration file <code>PCBASIC.INI</code></a>
-        will be loaded; usually, it will run a packaged program file.
+        will be loaded; usually, it will run a program file in the package.
         This behaviour is affected by the
         <code><a href="#--run">--run</a></code>,
         <code><a href="#--load">--load</a></code> and
