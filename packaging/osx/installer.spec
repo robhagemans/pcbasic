@@ -1,6 +1,6 @@
 basedir='../..'
 # -*- mode: python -*-
-a = Analysis([basedir+'/pcbasic'],
+a = Analysis([basedir+'/pcbasic.py'],
          pathex=[basedir],
          hiddenimports=[],
          hookspath=None,
@@ -21,9 +21,9 @@ coll = COLLECT(exe,
                 ],
            a.zipfiles,
            a.datas,
-           Tree(basedir+'/font', prefix='font'),
-           Tree(basedir+'/encoding', prefix='encoding'),
-           Tree(basedir+'/data', prefix='data'),
+           Tree(basedir+'/pcbasic/font', prefix='font'),
+           Tree(basedir+'/pcbasic/encoding', prefix='encoding'),
+           Tree(basedir+'/pcbasic/data', prefix='data'),
            Tree(basedir+'/doc', prefix='doc'),
            strip=None,
            upx=True,
@@ -31,4 +31,3 @@ coll = COLLECT(exe,
 app = BUNDLE(coll,
          name='PC-BASIC.app',
          icon='/Users/rob/pc-basic/packaging/osx/pcbasic.icns')
-
