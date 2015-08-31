@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=$(cat ../../data/VERSION)
+VERSION=$(cat ../../pcbasic/data/version.txt)
 NAME="pcbasic-$VERSION-osx"
 pyinstaller installer.spec
 # replace executable started by Finder with workaround script to set cwd

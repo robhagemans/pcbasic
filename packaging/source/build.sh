@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=$(cat ../../data/VERSION)
+VERSION=$(cat ../../pcbasic/data/version.txt)
 NAME="pcbasic-$VERSION"
 echo "running prepare script"
 pushd ../..
