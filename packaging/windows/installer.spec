@@ -1,6 +1,6 @@
 basedir='..\\..'
 # -*- mode: python -*-
-a = Analysis([basedir+'\\pcbasic'],
+a = Analysis([basedir+'\\pcbasic.py'],
              pathex=[basedir],
              hiddenimports=[],
              hookspath=None,
@@ -13,17 +13,16 @@ exe = EXE(pyz,
           debug=False,
           strip=None,
           upx=True,
-          console=False, 
+          console=False,
 	  icon='pcbasic.ico')
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
                a.datas,
-               Tree(basedir+'\\font', prefix='font'),
-               Tree(basedir+'\\encoding', prefix='encoding'),
-               Tree(basedir+'\\data', prefix='data'),
+               Tree(basedir+'\\pcbasic\\font', prefix='font'),
+               Tree(basedir+'\\pcbasic\\encoding', prefix='encoding'),
+               Tree(basedir+'\\pcbasic\\data', prefix='data'),
                Tree(basedir+'\\doc', prefix='doc'),
                strip=None,
                upx=True,
                name='pcbasic')
-
