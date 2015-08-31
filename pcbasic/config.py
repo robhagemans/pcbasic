@@ -131,7 +131,7 @@ arguments = {
     'version': {'type': 'bool', 'default': False,},
     'config': {'type': 'string', 'default': '',},
     'logfile': {'type': 'string', 'default': '',},
-    # negatove length means optional up to (ok, ugly convention)
+    # negative list length means 'optionally up to'
     'max-memory': {'type': 'int', 'list': -2, 'default': [65534, 4096]},
     'allow-code-poke': {'type': 'bool', 'default': False,},
     'reserved-memory': {'type': 'int', 'default': 3429,},
@@ -293,6 +293,12 @@ def parse_package(remaining):
         # and make that the current dir for our run
         zipfile.ZipFile(arg_package).extractall(path=plat.temp_dir)
         os.chdir(plat.temp_dir)
+        # if the zip-file contains only a directory at the top level,
+        # then move into that directory. E.g. all files in package.zip
+        # could be under the directory package/
+        contents = os.listdir('.')
+        if len(contents) == 1:
+            os.chdir(contents[0])
         # recursively rename all files to all-caps to avoid case issues on Unix
         # collisions: the last file renamed overwrites earlier ones
         for root, dirs, files in os.walk('.', topdown=False):
