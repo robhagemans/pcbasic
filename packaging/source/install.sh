@@ -235,8 +235,9 @@ do_install () {
     echo "Exec=$INSTALL_DIR/pcbasic.py" >> $DESKTOP_FILE
     echo "Terminal=false" >> $DESKTOP_FILE
     echo "Type=Application" >> $DESKTOP_FILE
-    echo "Icon=pcbasic.png" >> $DESKTOP_FILE
+    echo "Icon=pcbasic" >> $DESKTOP_FILE
     echo "Categories=Development;IDE;" >> $DESKTOP_FILE
+    chmod ugo+x $DESKTOP_FILE
 
     echo "Creating icon ... "
     mkdir -p "$ICON_DIR"
