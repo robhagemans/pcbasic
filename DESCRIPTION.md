@@ -7,7 +7,3 @@ PC-BASIC emulates the most common video and audio hardware on which these BASICs
 PC-BASIC runs ASCII, bytecode and protected .BAS files.
 It implements floating-point arithmetic in the Microsoft Binary Format (MBF) and can therefore
 read and write binary data files created by GW-BASIC.
-
-PC-BASIC is free and open source software released under the GPL version 3.
-
-See also the [PC-BASIC home page](http://robhagemans.github.io/pcbasic/).
