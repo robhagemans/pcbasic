@@ -109,7 +109,7 @@
         </dt>
         <dd>
             Set the title bar caption of the PC-BASIC window.
-            Default <code><var><var>title</var></code> is <em>PC-BASIC</em>.
+            Default <code><var>title</var></code> is <em>PC-BASIC</em>.
         </dd>
 
         <dt id="--capture-caps">
@@ -763,7 +763,7 @@
                 <dt><code>C:</code></dt>
                 <dd>the filesystem root</dd>
                 <dt><code>H:</code></dt>
-                <dd>the user's home directory.</dt>
+                <dd>the user's home directory.</dd>
             </dl>
         </dd>
 
@@ -775,7 +775,7 @@
             Set maximum number of open files to
             <code><var>number_of_files</var></code>. This is
             equivalent to the <code><b><a href="#gwbasic-options">/f</a></b></code> option in GW-BASIC.
-            Default is <code><b>3</b></code></code>.
+            Default is <code><b>3</b></code>.
         </dd>
 
         <dt id="--max-memory">
@@ -809,20 +809,16 @@
         <dd>
             Sets the monitor type to emulate. Available types are:
             <dl class="compact">
-                <tr>
-                    <dt><code><b>rgb</b></code></dt>
-                    <dd>RGB colour monitor (default).</dd>
-                </tr>
-                <tr>
-                    <dt><code><b>composite</b></code></dt>
-                    <dd>
-                        Composite colour monitor.
-                    </dd>
-                </tr>
-                <tr>
-                    <dt><code><b>mono</b></code></dt>
-                    <dd>Monochrome monitor.</dd>
-                </tr>
+                <dt><code><b>rgb</b></code></dt>
+                <dd>RGB colour monitor (default).</dd>
+
+                <dt><code><b>composite</b></code></dt>
+                <dd>
+                    Composite colour monitor.
+                </dd>
+
+                <dt><code><b>mono</b></code></dt>
+                <dd>Monochrome monitor.</dd>
             </dl>
             On
             <code><a href="#SCREEN-statement">SCREEN</a> 2</code> with
@@ -1225,7 +1221,7 @@
         <dd>
             If <code><b>True</b></code>, PC-BASIC waits for a keystroke before
             closing the window on exit. Only works for
-            <code><a href="#--interface"><b>--interface</a>=graphical</b></code> or
+            <code><b><a href="#--interface">--interface</a>=graphical</b></code> or
             <code><b>--interface=text</b></code>. Default is <code><b>False</b></code>.
         </dd>
     </dl>
