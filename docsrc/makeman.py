@@ -41,16 +41,19 @@ def html_to_text(e, indent='', inside=False):
     else:
         return inner + children + tail
 
+def html_to_man(html):
+    parser = etree.HTMLParser(encoding='utf-8')
+    doc = etree.parse(StringIO(html), parser)
+    docroot = doc.getroot()
+    manpage = '\'\\" t\n.pc\n.TH PCBASIC 1\n' + html_to_text(docroot)
+    # replace two starting spaces (not sure where from)
+    return re.sub('\t +', '\t', re.sub('\n +', '\n', manpage))
+
+
 title_html = '<h1>pcbasic</h1><p>%s</p>\n' % open('tagline.txt', mode='r').read()
 desc_html = '<h2>Description</h2><p>%s</p>\n' % open('description.txt', mode='r').read()
 options_html = open('options.html', mode='r').read()
 examples_html = open('examples.html', mode='r').read()
 html = title_html + desc_html + options_html + examples_html
 
-parser = etree.HTMLParser(encoding='utf-8')
-doc = etree.parse(StringIO(html), parser)
-docroot = doc.getroot()
-
-manpage = '\'\\" t\n.pc\n.TH PCBASIC 1\n' + html_to_text(docroot)
-# replace two starting spaces (not sure where from)
-print re.sub('\t +', '\t', re.sub('\n +', '\n', manpage))
+print html_to_man(html)
