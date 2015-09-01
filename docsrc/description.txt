@@ -1,6 +1,3 @@
-# PC-BASIC #
-*A free, cross-platform emulator for the GW-BASIC family of interpreters.*
-
 PC-BASIC is a free, cross-platform interpreter for GW-BASIC, Advanced BASIC (BASICA), PCjr Cartridge Basic and Tandy 1000 GWBASIC.
 It interprets these BASIC dialects with a high degree of accuracy, aiming for bug-for-bug compatibility.
 PC-BASIC emulates the most common video and audio hardware on which these BASICs used to run.
