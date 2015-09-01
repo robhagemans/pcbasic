@@ -1,7 +1,4 @@
 #!/bin/bash
-# create usage file
-pandoc ../DESCRIPTION.md  -o description.html
-cat header.html description.html options.html footer.html | pandoc -f html -t plain > ../pcbasic/data/usage.txt
 # create documentation
 if [ -e $1 ]
 then
