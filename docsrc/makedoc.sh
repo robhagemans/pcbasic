@@ -26,4 +26,4 @@ pandoc LICENSE.md -t html5 -o doclicense.html
 ./maketoc.py predoc.html > toc.html
 echo -e "<header>\n<h1>PC-BASIC $(cat ../pcbasic/data/version.txt) documentation</h1>\n<small>Documentation compiled on $(date --utc).</small>\n</header>" > subheader.html
 (cat ../../$HEADER subheader.html toc.html predoc.html) > ../../$OUTPUT
-rm predoc.html toc.html description.html readme.html readme2.html subheader.html pcbasiclicense.html doclicense.html licences.html
+rm predoc.html toc.html readme.html readme2.html subheader.html pcbasiclicense.html doclicense.html licences.html
