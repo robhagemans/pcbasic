@@ -16,7 +16,11 @@ kbd,
 pre,
 samp {
   font-family: monospace, monospace;
-  font-size: 1em;
+  font-size: 1rem;
+}
+
+.block {
+    display: block;
 }
 
 figure, .scrollable {
@@ -182,7 +186,7 @@ dd {
 code, samp {
     font-size: 0.8em;
     word-break: keep-all;
-    white-space: nowrap;
+    /*white-space: nowrap;*/
 }
 
 dd>code, p>code, dt>code, li>code,
@@ -227,7 +231,7 @@ kbd {
     padding: 0.1em 0.5em 0.1em 0.5em;
     margin: 0px 1px 0px 1px;
 }
-pre {
+pre, pre>code, pre>samp, code.block {
     font-size: 0.8em;
     background-color: #eeeeff;
     margin-top: 0.5em;
@@ -235,7 +239,9 @@ pre {
     border-bottom: 1px dotted;
     padding: 0.1em 0.5em 0.1em 0.5em;
 }
-
+dt code {
+    font-weight: normal;
+}
 
 /* tablets and desktops */
 
