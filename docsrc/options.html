@@ -5,1228 +5,1228 @@
 -->
 
 <section>
-<h2 id="synopsis">Synopsis</h2>
-<code class="block">
-    <b>pcbasic</b>
-    [<var><a href="#p-program">program</a></var>|<var><a href="#p-package">package</a></var>
-    [<var><a href="#p-output">output</a></var>]]
-    <span id="placeholder-options">[<var><a href="#options">option</a></var> ... ]</span>
-</code>
+    <h2 id="synopsis">Synopsis</h2>
+    <code class="block">
+        <b>pcbasic</b>
+        [<var><a href="#p-program">program</a></var>|<var><a href="#p-package">package</a></var>
+        [<var><a href="#p-output">output</a></var>]]
+        <span id="placeholder-options">[<var><a href="#options">option</a></var> ... ]</span>
+    </code>
 </section>
 
 <section>
-<h2 id="parameters">Positional arguments</h2>
-<dl>
-    <dt id="p-program"><code><var>program</var></code></dt>
-    <dd>
-        If a <code>.BAS</code> program is specified as the first positional argument,
-        it will be run.
-        The
-        <code><b><a href="#--run">--run</a></b></code>,
-        <code><b><a href="#--load">--load</a></b></code> and
-        <code><b><a href="#--convert">--convert</a></b></code> options
-        override this behaviour.
-    </dd>
+    <h2 id="parameters">Positional arguments</h2>
+    <dl>
+        <dt id="p-program"><code><var>program</var></code></dt>
+        <dd>
+            If a <code>.BAS</code> program is specified as the first positional argument,
+            it will be run.
+            The
+            <code><b><a href="#--run">--run</a></b></code>,
+            <code><b><a href="#--load">--load</a></b></code> and
+            <code><b><a href="#--convert">--convert</a></b></code> options
+            override this behaviour.
+        </dd>
 
-    <dt id="p-package"><code><var>package</var></code></dt>
-    <dd>
-        If a zipfile <a href="#packages">package</a> or directory is specified as the first positional argument,
-        any contained <a href="#settings">configuration file <code>PCBASIC.INI</code></a>
-        will be loaded; usually, it will run a program file in the package.
-        All other command-line options will override the package configuration file,
-        note in particular the potential of the
-        <code><b><a href="#--run">--run</a></b></code>,
-        <code><b><a href="#--load">--load</a></b></code> and
-        <code><b><a href="#--convert">--convert</a></b></code> options
-        to alter the behaviour of the package.
-    </dd>
+        <dt id="p-package"><code><var>package</var></code></dt>
+        <dd>
+            If a zipfile <a href="#packages">package</a> or directory is specified as the first positional argument,
+            any contained <a href="#settings">configuration file <code>PCBASIC.INI</code></a>
+            will be loaded; usually, it will run a program file in the package.
+            All other command-line options will override the package configuration file,
+            note in particular the potential of the
+            <code><b><a href="#--run">--run</a></b></code>,
+            <code><b><a href="#--load">--load</a></b></code> and
+            <code><b><a href="#--convert">--convert</a></b></code> options
+            to alter the behaviour of the package.
+        </dd>
 
-    <dt id="p-output"><code><var>output</var></code></dt>
-    <dd>
-        If a second positional argument is specified, it sets the output file for file format conversion.
-        This argument is ignored unless the <code><a href="#--convert">--convert</a></code> option is given.
-    </dd>
-</dl>
-</section>
+        <dt id="p-output"><code><var>output</var></code></dt>
+        <dd>
+            If a second positional argument is specified, it sets the output file for file format conversion.
+            This argument is ignored unless the <code><a href="#--convert">--convert</a></code> option is given.
+        </dd>
+    </dl>
+    </section>
 
-<section>
-<h2 id="options">Options</h2>
-<dl>
-    <dt id="--allow-code-poke">
-        <code><b>--allow-code-poke</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Allow programs to <code><a href="#POKE">POKE</a></code> into code memory.
-    </dd>
+    <section>
+    <h2 id="options">Options</h2>
+    <dl>
+        <dt id="--allow-code-poke">
+            <code><b>--allow-code-poke</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Allow programs to <code><a href="#POKE">POKE</a></code> into code memory.
+        </dd>
 
-    <dt id="--altgr">
-        <code><b>--altgr</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        If <code><b>True</b></code> (default), interpret the right
-        <kbd>Alt</kbd> key as <kbd>Alt Gr</kbd> instead of <kbd>Alt</kbd>.
-        The left <kbd>Alt</kbd> key is always seen as <kbd>Alt</kbd>.
-    </dd>
+        <dt id="--altgr">
+            <code><b>--altgr</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            If <code><b>True</b></code> (default), interpret the right
+            <kbd>Alt</kbd> key as <kbd>Alt Gr</kbd> instead of <kbd>Alt</kbd>.
+            The left <kbd>Alt</kbd> key is always seen as <kbd>Alt</kbd>.
+        </dd>
 
-    <dt id="--append">
-        <code><b>--append</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        If used with
-        <code><b><a href="#--output">--output</a>=</b><var>output_file</var></code>,
-        the <code><var>output_file</var></code> is appended to rather than overwritten.
-    </dd>
+        <dt id="--append">
+            <code><b>--append</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            If used with
+            <code><b><a href="#--output">--output</a>=</b><var>output_file</var></code>,
+            the <code><var>output_file</var></code> is appended to rather than overwritten.
+        </dd>
 
-    <dt id="--aspect">
-        <code><b>--aspect=</b><var>x</var>,<var>y</var></code>
-    </dt>
-    <dd>
-        Set the display aspect ratio to <code><var>x</var></code>:<code><var>y</var></code>.
-        Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
-    </dd>
+        <dt id="--aspect">
+            <code><b>--aspect=</b><var>x</var>,<var>y</var></code>
+        </dt>
+        <dd>
+            Set the display aspect ratio to <code><var>x</var></code>:<code><var>y</var></code>.
+            Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
+        </dd>
 
-    <dt id="-b">
-        <code><b>-b</b></code>
-    </dt>
-    <dd>
-        Use the command-line interface. This is identical to
-        <code><b><a href="#--interface">--interface</a>=cli</b></code>.
-    </dd>
+        <dt id="-b">
+            <code><b>-b</b></code>
+        </dt>
+        <dd>
+            Use the command-line interface. This is identical to
+            <code><b><a href="#--interface">--interface</a>=cli</b></code>.
+        </dd>
 
-    <dt id="--border">
-        <code><b>--border=</b><var>width</var></code>
-    </dt>
-    <dd>
-        Set the width of the screen border as a
-        percentage from 0&#8212;100. The percentage refers to the total
-        width of the borders on both sides as a fraction of the usable
-        screen width.
-        Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
-    </dd>
+        <dt id="--border">
+            <code><b>--border=</b><var>width</var></code>
+        </dt>
+        <dd>
+            Set the width of the screen border as a
+            percentage from 0&#8212;100. The percentage refers to the total
+            width of the borders on both sides as a fraction of the usable
+            screen width.
+            Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
+        </dd>
 
-    <dt id="--caption">
-        <code><b>--caption=</b><var>title</var></code>
-    </dt>
-    <dd>
-        Set the title bar caption of the PC-BASIC window.
-        Default <code><var><var>title</var></code> is <em>PC-BASIC</em>.
-    </dd>
+        <dt id="--caption">
+            <code><b>--caption=</b><var>title</var></code>
+        </dt>
+        <dd>
+            Set the title bar caption of the PC-BASIC window.
+            Default <code><var><var>title</var></code> is <em>PC-BASIC</em>.
+        </dd>
 
-    <dt id="--capture-caps">
-        <code><b>--capture-caps</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Let PC-BASIC handle the <kbd>Caps Lock</kbd> key. This
-        may or may not interfere with the operating system's own handling of that key.
-        Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
-    </dd>
+        <dt id="--capture-caps">
+            <code><b>--capture-caps</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Let PC-BASIC handle the <kbd>Caps Lock</kbd> key. This
+            may or may not interfere with the operating system's own handling of that key.
+            Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
+        </dd>
 
-    <dt id="--cas1">
-        <code><b>--cas1=</b><var>type</var><b>:</b><var>value</var>[<b>:</b><var>loc</var>]</code>
-    </dt>
-    <dd>
-        Attach a resource to the <code>CAS1:</code> cassette device
-        and wind the virtual tape to <code><var>loc</var></code> seconds.
-        <code><var>type</var><b>:</b><var>value</var></code> can be
-        <dl>
-            <dt><code><b>WAV:</b><var>wav_file</var></code></dt>
-            <dd>
-                Connect to the RIFF Wave file <code><var>wav_file</var></code>
-                with data modulated in IBM PC cassette format.
-            </dd>
-
-            <dt><code><b>CAS:</b><var>cas_file</var></code></dt>
-            <dd>
-                Connect to the PCE/PC-BASIC CAS tape image
-                <code><var>cas_file</var></code>.
-            </dd>
-
-            <dt><code><b>BC:</b><var>wav_file</var></code></dt>
-            <dd>
-                Connect to the RIFF Wave file <code><var>wav_file</var></code>
-                with data modulated in BASICODE format.
-            </dd>
-        </dl>
-    </dd>
-
-    <dt id="--cga-low">
-        <code><b>--cga-low</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Use low-intensity palettes in CGA modes.
-        Only has an effect if combined with <code><b><a href="#--video">--video</a>=</b>{<b>cga</b>|<b>cga_old</b>|<b>ega</b>|<b>vga</b>}</code>.
-    </dd>
-
-    <dt id="--codepage">
-        <code><b>--codepage=</b><var>codepage_id</var></code>
-    </dt>
-    <dd>
-        Load the specified codepage. The codepage determines which
-        characters are associated to a given character byte or, in the case
-        of double-byte codepages, two character bytes.
-        The following codepages are available:
-        <div class="scrollable"><table>
-            <tr>
-                <th><code><var>codepage_id</var></code></th>
-                <th>Codepage</th>
-                <th>Languages</th>
-            </tr>
-            <tr>
-                <td><code>437</code></td>
-                <td>DOS USA / PC-ASCII</td>
-                <td>English</td>
-            </tr>
-            <tr>
-                <td><code>720</code></td>
-                <td>Transparent ASMO</td>
-                <td>Arabic</td>
-            </tr>
-            <tr>
-                <td><code>737</code></td>
-                <td>DOS Greek</td>
-                <td>Greek</td>
-            </tr>
-            <tr>
-                <td><code>775</code></td>
-                <td>DOS Baltic Rim</td>
-                <td>Estonian, Latvian and Lithuanian</td>
-            </tr>
-            <tr>
-                <td><code>850</code></td>
-                <td>DOS Latin 1</td>
-                <td>Western European languages</td>
-            </tr>
-            <tr>
-                <td><code>851</code></td>
-                <td>DOS Greek 1</td><td>Greek</td>
-            </tr>
-            <tr>
-                <td><code>852</code></td>
-                <td>DOS Latin 2</td><td>Central European languages</td>
-            </tr>
-            <tr>
-                <td><code>853</code></td>
-                <td>DOS Latin 3</td><td>Southern European languages</td>
-            </tr>
-            <tr>
-                <td><code>855</code></td>
-                <td>DOS Cyrillic 1</td>
-                <td>Serbian, Macedonian and Bulgarian</td>
-            </tr>
-            <tr>
-                <td><code>856</code></td>
-                <td>DOS Hebrew</td>
-                <td>Hebrew</td>
-            </tr>
-            <tr>
-                <td><code>857</code></td>
-                <td>DOS Latin 5</td><td>Turkish</td>
-            </tr>
-            <tr>
-                <td><code>858</code></td>
-                <td>DOS Latin 1 with Euro</td>
-                <td>Western European languages</td>
-            </tr>
-            <tr>
-                <td><code>860</code></td>
-                <td>DOS Portuguese</td>
-                <td>Portuguese</td>
-            </tr>
-            <tr>
-                <td><code>861</code></td>
-                <td>DOS Icelandic</td>
-                <td>Icelandic</td>
-            </tr>
-            <tr>
-                <td><code>862</code></td>
-                <td>DOS Hebrew</td>
-                <td>Hebrew</td>
-            </tr>
-            <tr>
-                <td><code>863</code></td>
-                <td>DOS Canadian French</td>
-                <td>French</td>
-            </tr>
-            <tr>
-                <td><code>864</code></td>
-                <td>DOS Arabic</td>
-                <td>Arabic</td>
-            </tr>
-            <tr>
-                <td><code>865</code></td>
-                <td>DOS Nordic</td><td>Danish and Norwegian</td>
-            </tr>
-            <tr>
-                <td><code>866</code></td>
-                <td>DOS Cyrillic 2</td><td>Russian</td>
-            </tr>
-            <tr>
-                <td><code>868</code></td>
-                <td>DOS Urdu</td>
-                <td>Urdu</td>
-            </tr>
-            <tr>
-                <td><code>869</code></td>
-                <td>DOS Greek 2</td>
-                <td>Greek</td>
-            </tr>
-            <tr>
-                <td><code>874</code></td>
-                <td>TIS-620</td>
-                <td>Thai</td>
-            </tr>
-            <tr>
-                <td><code>932</code></td>
-                <td>Shift-JIS</td>
-                <td>Japanese</td>
-            </tr>
-            <tr>
-                <td><code>934</code></td>
-                <td>DOS/V Korea</td><td>Korean</td>
-            </tr>
-            <tr>
-                <td><code>936</code></td>
-                <td>GBK</td><td>Simplified Chinese</td>
-            </tr>
-            <tr>
-                <td><code>938</code></td>
-                <td>DOS/V Taiwan</td><td>Traditional Chinese</td>
-            </tr>
-            <tr>
-                <td><code>949</code></td>
-                <td>IBM-PC Korea KS</td>
-                <td>Korean</td>
-            </tr>
-            <tr>
-                <td><code>950</code></td>
-                <td>Big-5</td><td>Traditional Chinese</td>
-            </tr>
-            <tr>
-                <td><code>1258</code></td>
-                <td>Vietnamese</td>
-                <td>Vietnamese</td>
-            </tr>
-            <tr>
-                <td><code>Georgian-academy</code></td>
-                <td>Academy Standard</td>
-                <td>Georgian</td>
-            </tr>
-            <tr>
-                <td><code>Georgian-ps</code></td>
-                <td>Parliament Standard</td>
-                <td>Georgian</td>
-            </tr>
-            <tr>
-                <td><code>Iransystem</code></td>
-                <td>Iran System</td><td>Persian</td>
-            </tr>
-            <tr>
-                <td><code>Kamenicky</code></td>
-                <td>Kamenick&#253;</td><td>Czech</td>
-            </tr>
-            <tr>
-                <td><code>Mazovia</code></td>
-                <td>Mazovia</td><td>Polish</td>
-            </tr>
-            <tr>
-                <td><code>armscii8a</code></td>
-                <td>ArmSCII-8a</td><td>Armenian</td>
-            </tr>
-            <tr>
-                <td><code>big5-2003</code></td>
-                <td>Big-5 (Taiwan)</td><td>Traditional Chinese</td>
-            </tr>
-            <tr>
-                <td><code>big5-hkscs</code></td>
-                <td>Big-5 (Hong Kong)</td><td>Traditional Chinese</td>
-            </tr>
-            <tr>
-                <td><code>iscii-as</code></td>
-                <td>ISCII Assamese</td><td>Assamese</td>
-            </tr>
-            <tr>
-                <td><code>iscii-be</code></td>
-                <td>ISCII Bengali</td><td>Bengali</td>
-            </tr>
-            <tr>
-                <td><code>iscii-de</code></td>
-                <td>ISCII Devanagari</td><td>Hindi, Marathi, Sanskrit, Konkani, Nepali</td>
-            </tr>
-            <tr>
-                <td><code>iscii-gu</code></td>
-                <td>ISCII Gujarati</td><td>Gujarati</td>
-            </tr>
-            <tr>
-                <td><code>iscii-ka</code></td>
-                <td>ISCII Kannada</td><td>Kannada</td>
-            </tr>
-            <tr>
-                <td><code>iscii-ma</code></td>
-                <td>ISCII Malayalam</td><td>Malayalam</td>
-            </tr>
-            <tr>
-                <td><code>iscii-or</code></td>
-                <td>ISCII Oriya</td><td>Oriya</td>
-            </tr>
-            <tr>
-                <td><code>iscii-pa</code></td>
-                <td>ISCII Punjabi</td><td>Punjabi</td>
-            </tr>
-            <tr>
-                <td><code>iscii-ta</code></td>
-                <td>ISCII Tamil</td><td>Tamil</td>
-            </tr>
-            <tr>
-                <td><code>iscii-te</code></td>
-                <td>ISCII Telugu</td><td>Telugu</td>
-            </tr>
-            <tr>
-                <td><code>pascii</code></td>
-                <td>PASCII</td><td>Kashmiri, Persian, Sindhi, Urdu</td>
-            </tr>
-            <tr>
-                <td><code>mik</code></td>
-                <td>MIK</td><td>Bulgarian</td>
-            </tr>
-            <tr>
-                <td><code>viscii</code></td>
-                <td>VISCII</td><td>Vietnamese</td>
-            </tr>
-        </table></div>
-        You can add custom codepages to PC-BASIC, by adding a file with
-        its mapping to Unicode to the <code>encodings/</code> directory.
-    </dd>
-
-    <dt id="--config">
-        <code><b>--config=</b><var>config_file</var></code>
-    </dt>
-    <dd>
-        Read a configuration file. The system default configuration is always
-        read first, but any <a href="#--preset">preset</a> group of options
-        in a configuration file replaces the whole equivalent default preset group.
-    </dd>
-
-    <dt id="--com1">
-        <code><b>--com1=</b><var>type</var><b>:</b><var>value</var></code>
-    </dt>
-    <dd>
-        Attach a resource to the <code>COM1:</code> serial device.
-        <code><var>type</var><b>:</b><var>value</var></code> can be one of the following.
-        <dl>
-            <dt>
-                <code><b>PORT:</b><var>device_name</var></code>
-            </dt>
-            <dd>
-                Connect to a serial device. <code><var>device_name</var></code>
-                can be a device name such as <code>COM1</code> or
-                <code>/dev/ttyS0</code> or a number,
-                where the first serial port is number 0.
-            </dd>
-            <dt>
-                <code><b>SOCKET:</b><var>host</var><b>:</b><var>socket</var></code>
-            </dt>
-            <dd>
-                Connect to a TCP socket on a remote or
-                local host.
-            </dd>
-            <dt>
-                <code><b>STDIO</b>[<b>:</b>[<b>CRLF</b>]]</code>
-            </dt>
-            <dd>
-                Connect to standard I/O of the calling shell.
-                If <code><b>CRLF</b></code> is specified, PC-BASIC replaces <code>CR</code>
-                characters with <code>LF</code> on its output and <code>LF</code>
-                with <code>CR</code> on its input. This is more intuitive on Unix shells.
-                When using a Unix console, you should use <code>stty -icanon</code>
-                to enable PC-BASIC to read input correctly.
-            </dd>
-        </dl>
-        If this option is not specified, the <code>COM1:</code> device is
-        unavailable.
-    </dd>
-
-    <dt id="--com2">
-        <code><b>--com2=</b><var>type</var><b>:</b><var>value</var></code>
-    </dt>
-    <dd>
-        Attach a resource to the <code>COM2:</code> serial device. See
-        <code><a href="#--com1">--com1</a></code>.
-    </dd>
-
-    <dt id="--convert">
-        <code><b>--convert=</b>{<b>A</b>|<b>B</b>|<b>P</b>}</code></dt>
-    <dd>
-        Convert program to one of the following formats:
-        <dl class="compact">
-            <dt><code><b>A</b></code></dt>
-            <dd>ASCII</dd>
-            <dt><code><b>B</b></code></dt>
-            <dd>Bytecode (tokenised)</dd>
-            <dt><code><b>P</b></code></dt>
-            <dd>Protected (encrypted)</dd>
-        </dl>
-        If <code><var><a href="#p-output">output</a></var></code> is not specified, write to
-        standard output. If program is not specified, use the argument of
-        <code><b><a href="#--run">--run</a></b></code> or
-        <code><b><a href="#--load">--load</a></b></code>. If none of those are
-        given, read from standard input. Overrides
-        <code><b><a href="#--resume">--resume</a></b></code>,
-        <code><b>--run</b></code> and <code><b>--load</b></code>.
-    </dd>
-
-    <dt id="--copy-paste">
-        <code><b>--copy-paste=</b><var>copy_button</var><b>,</b><var>paste_button</var></code>
-    </dt>
-    <dd>
-        Choose the mouse buttons for clipboard operations.
-        <code><var>copy_button</var></code> and <code><var>paste_button</var></code> are
-        chosen from <code><b>left</b></code>,<code><b>middle</b></code>,<code><b>right</b></code>,<code><b>none</b></code>.
-    </dd>
-
-    <dt id="--ctrl-c-break">
-        <code><b>--ctrl-c-break</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        If <code><b>False</b></code>, follow GW-BASIC behaviour
-        where <kbd>Ctrl</kbd>+<kbd>C</kbd> breaks <code><a href="#AUTO">AUTO</a></code>
-        and <code><a href="#INPUT">INPUT</a></code> but not program execution or
-        <code><a href="#LIST">LIST</a></code>.<br/>
-        If <code><b>True</b></code>, treat
-        <kbd>Ctrl</kbd>+<kbd>C</kbd> exactly like
-        <kbd>Ctrl</kbd>+<kbd>Break</kbd> and
-        <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> when <code><b><a href="#--interface">--interface</a>=graphical</b></code>.<br/>
-        With <code><b><a href="#--interface">--interface</a>=</b>{<b>text</b>|<b>cli</b>}</code>,
-        <kbd>Ctrl</kbd>+<kbd>C</kbd> is always treated like
-        <kbd>Ctrl</kbd>+<kbd>Break</kbd>.<br/>
-        Default is <code><b>True</b></code>.
-    </dd>
-
-    <dt id="--current-device">
-        <code><b>--current-device=</b>{<b>A</b>|<b>B</b> ... |<b>Z</b>}</code></dt>
-    <dd>
-        Set the current disk device to the indicated PC-BASIC drive letter. The device chosen
-        should be mounted to an actual location using
-        <code><a href="#--mount">--mount</a></code>. Default is <code><b>Z</b></code>,
-        with the <code>Z:</code> device mounted to your current drive.
-    </dd>
-
-    <dt id="--dimensions">
-        <code><b>--dimensions=</b><var>x</var>,<var>y</var></code>
-    </dt>
-    <dd>
-        Set window dimensions to <code><var>x</var></code> by
-        <code><var>y</var></code> pixels. This overrides
-        <code><a href="#--scaling">--scaling</a>=native</code>
-        and <code><a href="#--aspect">--aspect</a></code>.
-        Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
-    </dd>
-
-    <dt id="--double">
-        <code id="-d"><b>-d</b></code>
-        <code><b>--double</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Enable double-precision transcendental math functions. This is
-        equivalent to the <code><b><a href="#gwbasic-options">/d</a></b></code> option in GW-BASIC.
-    </dd>
-
-    <dt id="--exec">
-        <code id="-e"><b>-e=</b><var>command_line</var></code>
-        <code><b>--exec=</b><var>command_line</var></code>
-    </dt>
-    <dd>
-        Execute BASIC <code><var>command_line</var></code>. The specified
-        commands are executed before entering into interactive mode or
-        running a program.
-    </dd>
-
-    <dt id="--font">
-        <code><b>--font=</b><var>font_name</var>[<b>,</b><var>font_name</var> ... ]</code></dt>
-    <dd>
-        Load <a href="#--codepage">current codepage</a>
-        from specified <code>font_name.hex</code>
-        fonts. The last fonts specified take precedence, previous ones are
-        fallback. Default is <code><b>unifont,univga,freedos</b></code> (i.e. the
-        <code>freedos.hex</code> font has preference). The available fonts
-        depend on what is stored in <code>font/</code>. By default, the following fonts
-        are available:
-        <div class="scrollable"><table>
-            <tr>
-                <th><code><var>font_name</var></code></th>
-                <th>Name</th>
-                <th>Sizes</th>
-                <th>Codepages</th>
-            </tr>
-            <tr>
-                <td><code>unifont</code></td>
-                <td>GNU UniFont</td>
-                <td>16</td>
-                <td>all</td>
-            </tr>
-            <tr>
-                <td><code>univga</code></td>
-                <td>Uni-VGA font</td>
-                <td>16</td>
-                <td>many</td>
-            </tr>
-            <tr>
-                <td><code>freedos</code></td>
-                <td>FreeDOS CPIDOS font</td>
-                <td>8, 14, 16</td>
-                <td>many</td>
-            </tr>
-            <tr>
-                <td><code>cga</code></td>
-                <td>IBM Colour/Graphics Adapter font</td>
-                <td>8</td>
-                <td>437 only</td>
-            </tr>
-            <tr>
-                <td><code>mda</code></td>
-                <td>IBM Monochrome Display Adapter font</td>
-                <td>14</td>
-                <td>437 only</td>
-            </tr>
-            <tr>
-                <td><code>vga</code></td>
-                <td>IBM Video Graphics Array font</td>
-                <td>8, 14, 16</td>
-                <td>437 only</td>
-            </tr>
-            <tr>
-                <td><code>olivetti</code></td>
-                <td>Olivetti/AT&amp;T font</td>
-                <td>16</td>
-                <td>437 only</td>
-            </tr>
-            <tr>
-                <td><code>tandy1</code></td>
-                <td>Tandy-1000 font old version</td>
-                <td>8</td>
-                <td>437 only</td>
-            </tr>
-            <tr>
-                <td><code>tandy2</code></td>
-                <td>Tandy-1000 font new version</td>
-                <td>8</td>
-                <td>437 only</td>
-            </tr>
-        </table></div>
-        GNU UniFont contains glyphs for all the defined code points of the
-        Basic Multilingual Plane of Unicode 7.0, which makes it an
-        excellent fallback font. Its glyphs are not, however, very similar
-        to those that were used on DOS machines; both Uni-VGA and the
-        FreeDOS CPIDOS fonts are therefore more suitable, when they have
-        the required glyphs.
-    </dd>
-
-    <dt>
-        <code id="--fullscreen"><b>--fullscreen</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Fullscreen mode.
-        Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
-    </dd>
-
-    <dt id="--help">
-        <code id="-h"><b>-h</b></code>
-        <code><b>--help</b></code>
-    </dt>
-    <dd>
-        Show a usage message and exit.
-    </dd>
-
-    <dt id="-i">
-        <code><b>-i</b></code>
-    </dt>
-    <dd>
-        This option is ignored. It is included only for compatibility with
-        GW-BASIC <code><b><a href="#gwbasic-options">/i</a></b></code>.
-    </dd>
-
-    <dt id="--input">
-        <code><b>--input=</b><var>input_file</var></code>
-    </dt>
-    <dd>
-        Retrieve keyboard input from <code><var>input_file</var></code>,
-        except if <code>KYBD:</code> is read explicitly. Input from
-        <code>KYBD:</code> files is always read from the keyboard,
-        following GW-BASIC behaviour.
-    </dd>
-
-    <dt id="--interface">
-        <code><b>--interface=</b>{<b>none</b>|<b>cli</b>|<b>text</b>|<b>graphical</b>}</code>
-    </dt>
-    <dd>
-        Choose the type of interface. The following interface types are
-        available:
-        <dl class="compact">
-            <dt><code><b>none</b></code></dt>
-            <dd>Filter for use with pipes. Also <code><b><a href="#-n">-n</a></b></code>.</dd>
-            <dt><code><b>cli</b></code></dt>
-            <dd>Command-line interface. Also <code><b><a href="#-b">-b</a></b></code>.</dd>
-            <dt><code><b>text</b></code></dt>
-            <dd>Text-based interface. Also <code><b><a href="#-t">-t</a></b></code>.</dd>
-            <dt><code><b>graphical</b></code></dt>
-            <dd>Graphical interface.</dd>
-        </dl>
-        The default is <code><b>graphical</b></code>.
-    </dd>
-
-    <dt id="--keys">
-        <code id="-k"><b>-k=</b><var>keystring</var></code>
-        <code><b>--keys=</b><var>keystring</var></code>
-    </dt>
-    <dd>
-        Insert the <code><var>keystring</var></code> into the keyboard buffer.
-    </dd>
-
-    <dt id="--load">
-        <code id="-l"><b>-l=</b><var>program</var></code>
-        <code><b>--load=</b><var>program</var></code>
-    </dt>
-    <dd>
-        Start in interactive mode with the BASIC <code><var>program</var></code> loaded.
-    </dd>
-
-    <dt id="--logfile">
-        <code><b>--logfile=</b><var>log_file</var></code>
-    </dt>
-    <dd>
-        Write error and warning messages to
-        <code><var>log_file</var></code> instead of <code>stderr</code>.
-    </dd>
-
-    <dt id="--lpt1">
-        <code><b>--lpt1=</b><var>type</var><b>:</b><var>value</var></code>
-    </dt>
-    <dd>
-        Attach a resource to the <code>LPT1:</code> parallel device.
-        <code><var>type</var><b>:</b><var>value</var></code> can be
-        <dl>
-            <dt><code><b>PARPORT:</b><var>device_name</var></code></dt>
-            <dd>
-                Connect to the parallel device <code><var>device_name</var></code>
-                such as <code><b>LPT1</b></code> or <code><b>/dev/parport0</b></code>.
-            </dd>
-
-            <dt><code><b>PRINTER:</b><var>printer_name</var></code></dt>
-            <dd>
-                Connect to a Windows, LPR or CUPS printer. If
-                <code><var>printer_name</var></code> is not specified, the default
-                printer is used.
-            </dd>
-
-            <dt><code><b>FILE:</b><var>file_name</var></code></dt>
-            <dd>
-                Connect to any file or to a Unix character device such as
-                <code><b>/dev/stdout</b></code>.
-            </dd>
-
-            <dt><code><b>STDIO</b>[<b>:</b>[<b>CRLF</b>]]</code></dt>
-            <dd>
-                Connect to standard output of the calling shell.
-                If <code><b>CRLF</b></code> is specified, PC-BASIC replaces <code>CR</code>
-                characters with <code>LF</code> on its output. This is more intuitive on Unix shells.
-            </dd>
-        </dl>
-        If this option is not specified, <code>LPT1:</code> is connected to the default printer.
-    </dd>
-
-    <dt id="--lpt2">
-        <code><b>--lpt2=</b><var>type</var>:<var>value</var></code>
-    </dt>
-    <dd>
-        Attach a resource to the <code>LPT2:</code> parallel device.
-        See <code><b><a href="#--lpt1">--lpt1</a></b></code>.
-        If this option is not specified, <code>LPT2:</code> is unavailable.
-    </dd>
-
-    <dt id="--lpt3">
-        <code><b>--lpt3=</b><var>type</var>:<var>value</var></code>
-    </dt>
-    <dd>
-        Attach a resource to the <code>LPT3:</code> parallel device.
-        See <code><b><a href="#--lpt1">--lpt1</a></b></code>.
-        If this option is not specified, <code>LPT3:</code> is unavailable.
-    </dd>
-
-    <dt id="--map-drives">
-        <code><b>--map-drives</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        On Windows, assign all Windows drive letters to PC-BASIC drive
-        letters. On other systems, assign to:
-        <dl class="compact">
-            <dt><code>Z:</code></dt>
-            <dd>the current working directory</dd>
-            <dt><code>C:</code></dt>
-            <dd>the filesystem root</dd>
-            <dt><code>H:</code></dt>
-            <dd>the user's home directory.</dt>
-        </dl>
-    </dd>
-
-    <dt id="--max-files">
-        <code id="-f"><b>-f=</b><var>number_of_files</var></code>
-        <code><b>--max-files=</b><var>number_of_files</var></code>
-    </dt>
-    <dd>
-        Set maximum number of open files to
-        <code><var>number_of_files</var></code>. This is
-        equivalent to the <code><b><a href="#gwbasic-options">/f</a></b></code> option in GW-BASIC.
-        Default is <code><b>3</b></code></code>.
-    </dd>
-
-    <dt id="--max-memory">
-        <code id="-m"><b>-m=</b><var>max_memory</var>[<b>,</b><var>basic_memory_blocks</var>]</code>
-        <code><b>--max-memory=</b><var>max_memory</var>[<b>,</b><var>basic_memory_blocks</var>]</code>
-    </dt>
-    <dd>
-        Set the maximum size of the data memory segment to
-        <code><var>max_memory</var></code> and the maximum size of the data
-        memory available to BASIC to
-        <code><var>basic_memory_blocks</var>*16</code>. In PC-BASIC, the
-        minimum of these values is simply the data memory size; the two
-        values are allowed for compatibility with the
-        <code><b><a href="#gwbasic-options">/m</a></b></code> option in GW-BASIC.
-    </dd>
-
-    <dt id="--max-reclen">
-        <code id="-s"><b>-s=</b><var>record_length</var></code>
-        <code><b>--max-reclen=</b><var>record_length</var></code>
-    </dt>
-    <dd>
-        Set maximum record length for <code>RANDOM</code> files to
-        <code><var>record_length</var></code>. Default is <code><b>128</b></code>, maximum is
-        <code><b>32767</b></code>. This is equivalent to the
-        <code><b><a href="#gwbasic-options">/s</a></b></code> option in GW-BASIC.
-    </dd>
-
-    <dt id="--monitor">
-        <code><b>--monitor=</b>{<b>rgb</b>|<b>composite</b>|<b>mono</b>}</code>
-    </dt>
-    <dd>
-        Sets the monitor type to emulate. Available types are:
-        <dl class="compact">
-            <tr>
-                <dt><code><b>rgb</b></code></dt>
-                <dd>RGB colour monitor (default).</dd>
-            </tr>
-            <tr>
-                <dt><code><b>composite</b></code></dt>
+        <dt id="--cas1">
+            <code><b>--cas1=</b><var>type</var><b>:</b><var>value</var>[<b>:</b><var>loc</var>]</code>
+        </dt>
+        <dd>
+            Attach a resource to the <code>CAS1:</code> cassette device
+            and wind the virtual tape to <code><var>loc</var></code> seconds.
+            <code><var>type</var><b>:</b><var>value</var></code> can be
+            <dl>
+                <dt><code><b>WAV:</b><var>wav_file</var></code></dt>
                 <dd>
-                    Composite colour monitor.
+                    Connect to the RIFF Wave file <code><var>wav_file</var></code>
+                    with data modulated in IBM PC cassette format.
                 </dd>
-            </tr>
-            <tr>
-                <dt><code><b>mono</b></code></dt>
-                <dd>Monochrome monitor.</dd>
-            </tr>
-        </dl>
-        On
-        <code><a href="#SCREEN-statement">SCREEN</a> 2</code> with
-        <code><b><a href="#--video">--video</a>=</b>{<b>pcjr</b>|<b>tandy</b>|<b>cga</b>|<b>cga_old</b>}</code>,
-        <code><b>--monitor=composite</b></code> enables (crude) colour artifacts.
-    </dd>
 
-    <dt id="--mono-tint">
-        <code><b>--mono-tint=</b><var>r</var><b>,</b><var>g</var><b>,</b><var>b</var></code>
-    </dt>
-    <dd>
-        Specify the monochrome tint as the red-green-blue values <code><var>r</var>,<var>g</var>,<var>b</var></code>, each in the range 0&#8212;255.
-        Only has an effect if combined with <code><b><a href="#--monitor">--monitor</a>=mono</b></code>.
-    </dd>
+                <dt><code><b>CAS:</b><var>cas_file</var></code></dt>
+                <dd>
+                    Connect to the PCE/PC-BASIC CAS tape image
+                    <code><var>cas_file</var></code>.
+                </dd>
 
-    <dt id="--mount">
-        <code><b>--mount=</b><var>drive</var><b>:</b><var>path</var><b>,</b>[<var>drive</var><b>:</b><var>path</var> ... ]</code>
-    </dt>
-    <dd>
-        Assign the path
-        <code><var>path</var></code> to drive letter <code><var>drive</var>:</code>.
-        The path can be absolute or relative. By
-        default, <code>Z:</code> is assigned to the current working
-        directory and no other drive letters are assigned.
-    </dd>
+                <dt><code><b>BC:</b><var>wav_file</var></code></dt>
+                <dd>
+                    Connect to the RIFF Wave file <code><var>wav_file</var></code>
+                    with data modulated in BASICODE format.
+                </dd>
+            </dl>
+        </dd>
 
-    <dt id="-n">
-        <code><b>-n</b></code>
-    </dt>
-    <dd>
-        Run PC-BASIC as a command-line filter. Same as
-        <code><b><a href="#--interface">--interface</a>=none</b></code>.
-    </dd>
+        <dt id="--cga-low">
+            <code><b>--cga-low</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Use low-intensity palettes in CGA modes.
+            Only has an effect if combined with <code><b><a href="#--video">--video</a>=</b>{<b>cga</b>|<b>cga_old</b>|<b>ega</b>|<b>vga</b>}</code>.
+        </dd>
 
-    <dt id="--nobox">
-        <code><b>--nobox</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Disable box-drawing recognition for double-byte character set code pages. By
-        default, sequences of box-drawing characters are recognised by an
-        algorithm that isn't as smart as it thinks it is, and displayed as
-        box drawing rather than as DBCS characters. If <code><b>--nobox</b></code>
-        is set, they will be displayed as DBCS.
-    </dd>
+        <dt id="--codepage">
+            <code><b>--codepage=</b><var>codepage_id</var></code>
+        </dt>
+        <dd>
+            Load the specified codepage. The codepage determines which
+            characters are associated to a given character byte or, in the case
+            of double-byte codepages, two character bytes.
+            The following codepages are available:
+            <div class="scrollable"><table>
+                <tr>
+                    <th><code><var>codepage_id</var></code></th>
+                    <th>Codepage</th>
+                    <th>Languages</th>
+                </tr>
+                <tr>
+                    <td><code>437</code></td>
+                    <td>DOS USA / PC-ASCII</td>
+                    <td>English</td>
+                </tr>
+                <tr>
+                    <td><code>720</code></td>
+                    <td>Transparent ASMO</td>
+                    <td>Arabic</td>
+                </tr>
+                <tr>
+                    <td><code>737</code></td>
+                    <td>DOS Greek</td>
+                    <td>Greek</td>
+                </tr>
+                <tr>
+                    <td><code>775</code></td>
+                    <td>DOS Baltic Rim</td>
+                    <td>Estonian, Latvian and Lithuanian</td>
+                </tr>
+                <tr>
+                    <td><code>850</code></td>
+                    <td>DOS Latin 1</td>
+                    <td>Western European languages</td>
+                </tr>
+                <tr>
+                    <td><code>851</code></td>
+                    <td>DOS Greek 1</td><td>Greek</td>
+                </tr>
+                <tr>
+                    <td><code>852</code></td>
+                    <td>DOS Latin 2</td><td>Central European languages</td>
+                </tr>
+                <tr>
+                    <td><code>853</code></td>
+                    <td>DOS Latin 3</td><td>Southern European languages</td>
+                </tr>
+                <tr>
+                    <td><code>855</code></td>
+                    <td>DOS Cyrillic 1</td>
+                    <td>Serbian, Macedonian and Bulgarian</td>
+                </tr>
+                <tr>
+                    <td><code>856</code></td>
+                    <td>DOS Hebrew</td>
+                    <td>Hebrew</td>
+                </tr>
+                <tr>
+                    <td><code>857</code></td>
+                    <td>DOS Latin 5</td><td>Turkish</td>
+                </tr>
+                <tr>
+                    <td><code>858</code></td>
+                    <td>DOS Latin 1 with Euro</td>
+                    <td>Western European languages</td>
+                </tr>
+                <tr>
+                    <td><code>860</code></td>
+                    <td>DOS Portuguese</td>
+                    <td>Portuguese</td>
+                </tr>
+                <tr>
+                    <td><code>861</code></td>
+                    <td>DOS Icelandic</td>
+                    <td>Icelandic</td>
+                </tr>
+                <tr>
+                    <td><code>862</code></td>
+                    <td>DOS Hebrew</td>
+                    <td>Hebrew</td>
+                </tr>
+                <tr>
+                    <td><code>863</code></td>
+                    <td>DOS Canadian French</td>
+                    <td>French</td>
+                </tr>
+                <tr>
+                    <td><code>864</code></td>
+                    <td>DOS Arabic</td>
+                    <td>Arabic</td>
+                </tr>
+                <tr>
+                    <td><code>865</code></td>
+                    <td>DOS Nordic</td><td>Danish and Norwegian</td>
+                </tr>
+                <tr>
+                    <td><code>866</code></td>
+                    <td>DOS Cyrillic 2</td><td>Russian</td>
+                </tr>
+                <tr>
+                    <td><code>868</code></td>
+                    <td>DOS Urdu</td>
+                    <td>Urdu</td>
+                </tr>
+                <tr>
+                    <td><code>869</code></td>
+                    <td>DOS Greek 2</td>
+                    <td>Greek</td>
+                </tr>
+                <tr>
+                    <td><code>874</code></td>
+                    <td>TIS-620</td>
+                    <td>Thai</td>
+                </tr>
+                <tr>
+                    <td><code>932</code></td>
+                    <td>Shift-JIS</td>
+                    <td>Japanese</td>
+                </tr>
+                <tr>
+                    <td><code>934</code></td>
+                    <td>DOS/V Korea</td><td>Korean</td>
+                </tr>
+                <tr>
+                    <td><code>936</code></td>
+                    <td>GBK</td><td>Simplified Chinese</td>
+                </tr>
+                <tr>
+                    <td><code>938</code></td>
+                    <td>DOS/V Taiwan</td><td>Traditional Chinese</td>
+                </tr>
+                <tr>
+                    <td><code>949</code></td>
+                    <td>IBM-PC Korea KS</td>
+                    <td>Korean</td>
+                </tr>
+                <tr>
+                    <td><code>950</code></td>
+                    <td>Big-5</td><td>Traditional Chinese</td>
+                </tr>
+                <tr>
+                    <td><code>1258</code></td>
+                    <td>Vietnamese</td>
+                    <td>Vietnamese</td>
+                </tr>
+                <tr>
+                    <td><code>Georgian-academy</code></td>
+                    <td>Academy Standard</td>
+                    <td>Georgian</td>
+                </tr>
+                <tr>
+                    <td><code>Georgian-ps</code></td>
+                    <td>Parliament Standard</td>
+                    <td>Georgian</td>
+                </tr>
+                <tr>
+                    <td><code>Iransystem</code></td>
+                    <td>Iran System</td><td>Persian</td>
+                </tr>
+                <tr>
+                    <td><code>Kamenicky</code></td>
+                    <td>Kamenick&#253;</td><td>Czech</td>
+                </tr>
+                <tr>
+                    <td><code>Mazovia</code></td>
+                    <td>Mazovia</td><td>Polish</td>
+                </tr>
+                <tr>
+                    <td><code>armscii8a</code></td>
+                    <td>ArmSCII-8a</td><td>Armenian</td>
+                </tr>
+                <tr>
+                    <td><code>big5-2003</code></td>
+                    <td>Big-5 (Taiwan)</td><td>Traditional Chinese</td>
+                </tr>
+                <tr>
+                    <td><code>big5-hkscs</code></td>
+                    <td>Big-5 (Hong Kong)</td><td>Traditional Chinese</td>
+                </tr>
+                <tr>
+                    <td><code>iscii-as</code></td>
+                    <td>ISCII Assamese</td><td>Assamese</td>
+                </tr>
+                <tr>
+                    <td><code>iscii-be</code></td>
+                    <td>ISCII Bengali</td><td>Bengali</td>
+                </tr>
+                <tr>
+                    <td><code>iscii-de</code></td>
+                    <td>ISCII Devanagari</td><td>Hindi, Marathi, Sanskrit, Konkani, Nepali</td>
+                </tr>
+                <tr>
+                    <td><code>iscii-gu</code></td>
+                    <td>ISCII Gujarati</td><td>Gujarati</td>
+                </tr>
+                <tr>
+                    <td><code>iscii-ka</code></td>
+                    <td>ISCII Kannada</td><td>Kannada</td>
+                </tr>
+                <tr>
+                    <td><code>iscii-ma</code></td>
+                    <td>ISCII Malayalam</td><td>Malayalam</td>
+                </tr>
+                <tr>
+                    <td><code>iscii-or</code></td>
+                    <td>ISCII Oriya</td><td>Oriya</td>
+                </tr>
+                <tr>
+                    <td><code>iscii-pa</code></td>
+                    <td>ISCII Punjabi</td><td>Punjabi</td>
+                </tr>
+                <tr>
+                    <td><code>iscii-ta</code></td>
+                    <td>ISCII Tamil</td><td>Tamil</td>
+                </tr>
+                <tr>
+                    <td><code>iscii-te</code></td>
+                    <td>ISCII Telugu</td><td>Telugu</td>
+                </tr>
+                <tr>
+                    <td><code>pascii</code></td>
+                    <td>PASCII</td><td>Kashmiri, Persian, Sindhi, Urdu</td>
+                </tr>
+                <tr>
+                    <td><code>mik</code></td>
+                    <td>MIK</td><td>Bulgarian</td>
+                </tr>
+                <tr>
+                    <td><code>viscii</code></td>
+                    <td>VISCII</td><td>Vietnamese</td>
+                </tr>
+            </table></div>
+            You can add custom codepages to PC-BASIC, by adding a file with
+            its mapping to Unicode to the <code>encodings/</code> directory.
+        </dd>
 
-    <dt id="--nokill">
-        <code><b>--nokill</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Allow BASIC to capture <kbd>Alt+F4</kbd>.
-        Graphical interface only. By default,
-        <kbd>Alt</kbd>+<kbd>F4</kbd> is captured by most operating
-        systems as a quit signal, and will terminate PC-BASIC. Set
-        <code><b>--nokill</b></code> to allow BASIC to capture
-        <kbd>Alt</kbd>+<kbd>F4</kbd> instead. This is useful if
-        your program uses this key combination.
-    </dd>
+        <dt id="--config">
+            <code><b>--config=</b><var>config_file</var></code>
+        </dt>
+        <dd>
+            Read a configuration file. The system default configuration is always
+            read first, but any <a href="#--preset">preset</a> group of options
+            in a configuration file replaces the whole equivalent default preset group.
+        </dd>
 
-    <dt id="--nosound">
-        <code><b>--nosound</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Disable sound output.
-    </dd>
+        <dt id="--com1">
+            <code><b>--com1=</b><var>type</var><b>:</b><var>value</var></code>
+        </dt>
+        <dd>
+            Attach a resource to the <code>COM1:</code> serial device.
+            <code><var>type</var><b>:</b><var>value</var></code> can be one of the following.
+            <dl>
+                <dt>
+                    <code><b>PORT:</b><var>device_name</var></code>
+                </dt>
+                <dd>
+                    Connect to a serial device. <code><var>device_name</var></code>
+                    can be a device name such as <code>COM1</code> or
+                    <code>/dev/ttyS0</code> or a number,
+                    where the first serial port is number 0.
+                </dd>
+                <dt>
+                    <code><b>SOCKET:</b><var>host</var><b>:</b><var>socket</var></code>
+                </dt>
+                <dd>
+                    Connect to a TCP socket on a remote or
+                    local host.
+                </dd>
+                <dt>
+                    <code><b>STDIO</b>[<b>:</b>[<b>CRLF</b>]]</code>
+                </dt>
+                <dd>
+                    Connect to standard I/O of the calling shell.
+                    If <code><b>CRLF</b></code> is specified, PC-BASIC replaces <code>CR</code>
+                    characters with <code>LF</code> on its output and <code>LF</code>
+                    with <code>CR</code> on its input. This is more intuitive on Unix shells.
+                    When using a Unix console, you should use <code>stty -icanon</code>
+                    to enable PC-BASIC to read input correctly.
+                </dd>
+            </dl>
+            If this option is not specified, the <code>COM1:</code> device is
+            unavailable.
+        </dd>
 
-    <dt id="--output">
-        <code><b>--output=</b><var>output_file</var></code>
-    </dt>
-    <dd>
-        Send screen output to <code><var>output_file</var></code>, except
-        if <code>SCRN:</code> is written to explicitly. Output to
-        <code>SCRN:</code> files will always be shown on the screen, as in
-        GW-BASIC.
-    </dd>
+        <dt id="--com2">
+            <code><b>--com2=</b><var>type</var><b>:</b><var>value</var></code>
+        </dt>
+        <dd>
+            Attach a resource to the <code>COM2:</code> serial device. See
+            <code><a href="#--com1">--com1</a></code>.
+        </dd>
 
-    <dt id="--pcjr-term">
-        <code><b>--pcjr-term=</b><var>terminal_program</var></code>
-    </dt>
-    <dd>
-        Set the terminal program run by the PCjr <code><a href="#TERM">TERM</a></code>
-        command to <code><var>terminal_program</var></code>. This only has an
-        effect with <code><b><a href="#--syntax">--syntax</a>=</b>{<b>pcjr</b>|<b>tandy</b>}</code>.
-    </dd>
+        <dt id="--convert">
+            <code><b>--convert=</b>{<b>A</b>|<b>B</b>|<b>P</b>}</code></dt>
+        <dd>
+            Convert program to one of the following formats:
+            <dl class="compact">
+                <dt><code><b>A</b></code></dt>
+                <dd>ASCII</dd>
+                <dt><code><b>B</b></code></dt>
+                <dd>Bytecode (tokenised)</dd>
+                <dt><code><b>P</b></code></dt>
+                <dd>Protected (encrypted)</dd>
+            </dl>
+            If <code><var><a href="#p-output">output</a></var></code> is not specified, write to
+            standard output. If program is not specified, use the argument of
+            <code><b><a href="#--run">--run</a></b></code> or
+            <code><b><a href="#--load">--load</a></b></code>. If none of those are
+            given, read from standard input. Overrides
+            <code><b><a href="#--resume">--resume</a></b></code>,
+            <code><b>--run</b></code> and <code><b>--load</b></code>.
+        </dd>
 
-    <dt id="--peek">
-        <code><b>--peek=</b>[<var>seg</var><b>:</b><var>addr</var><b>:</b><var>val</var>[<b>,</b><var>seg</var><b>:</b><var>addr</var><b>:</b><var>val</var> ... ]]</code>
-    </dt>
-    <dd>
-        Define <code><a href="#PEEK">PEEK</a></code> preset values. If defined,
-        <code>DEF SEG:? PEEK(<var>addr</var>)</code> will return
-        <samp><var>val</var></samp>.
-    </dd>
+        <dt id="--copy-paste">
+            <code><b>--copy-paste=</b><var>copy_button</var><b>,</b><var>paste_button</var></code>
+        </dt>
+        <dd>
+            Choose the mouse buttons for clipboard operations.
+            <code><var>copy_button</var></code> and <code><var>paste_button</var></code> are
+            chosen from <code><b>left</b></code>,<code><b>middle</b></code>,<code><b>right</b></code>,<code><b>none</b></code>.
+        </dd>
 
-    <dt id="--pen">
-        <code><b>--pen=</b>{<b>left</b>|<b>middle</b>|<b>right</b>|<b>none</b>}</code>
-    </dt>
-    <dd>
-        Set the mouse button for light pen emulation. Default is <code><b>left</b></code>.
-        If set to <code><b>none</b></code>, light pen emulation is switched off.
-        On Android, <code><b>left</b></code> means touch input.
-    </dd>
+        <dt id="--ctrl-c-break">
+            <code><b>--ctrl-c-break</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            If <code><b>False</b></code>, follow GW-BASIC behaviour
+            where <kbd>Ctrl</kbd>+<kbd>C</kbd> breaks <code><a href="#AUTO">AUTO</a></code>
+            and <code><a href="#INPUT">INPUT</a></code> but not program execution or
+            <code><a href="#LIST">LIST</a></code>.<br/>
+            If <code><b>True</b></code>, treat
+            <kbd>Ctrl</kbd>+<kbd>C</kbd> exactly like
+            <kbd>Ctrl</kbd>+<kbd>Break</kbd> and
+            <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> when <code><b><a href="#--interface">--interface</a>=graphical</b></code>.<br/>
+            With <code><b><a href="#--interface">--interface</a>=</b>{<b>text</b>|<b>cli</b>}</code>,
+            <kbd>Ctrl</kbd>+<kbd>C</kbd> is always treated like
+            <kbd>Ctrl</kbd>+<kbd>Break</kbd>.<br/>
+            Default is <code><b>True</b></code>.
+        </dd>
 
-    <dt id="--preset">
-        <code><b>--preset=</b><var>option_block</var></code>
-    </dt>
-    <dd>
-        Load machine preset options. A preset option corresponds to a
-        section defined in a config file by a name between square brackets,
-        like <code class="block">[this]</code> <code><b>--preset=this</b></code> will load all
-        settings defined in that section. Available presets depend on your
-        configuration file. By default, the following presets are
-        available, which specify different emulation targets:
-        <div class="scrollable"><table>
-            <tr>
-                <td><code>pcjr</code></td>
-                <td>IBM PCjr with Cartridge BASIC.</td>
-            </tr>
-            <tr>
-                <td><code>tandy</code></td>
-                <td>Tandy 1000.</td>
-            </tr>
-            <tr>
-                <td><code>olivetti</code></td>
-                <td>Olivetti M24 or AT&amp;T PC 6300.</td>
-            </tr>
-            <tr>
-                <td><code>cga</code></td>
-                <td>IBM or compatible with Color/Graphics Adapter.</td>
-            </tr>
-            <tr>
-                <td><code>ega</code></td>
-                <td>IBM or compatible with Extended Graphics Adapter.</td>
-            </tr>
-            <tr>
-                <td><code>vga</code></td>
-                <td>IBM or compatible with Video Graphics Array.</td>
-            </tr>
-            <tr>
-                <td><code>mda</code></td>
-                <td>IBM or compatible with Monochrome Display Adapter and
-                green-tinted monochrome monitor.</td>
-            </tr>
-            <tr>
-                <td><code>hercules</code></td>
-                <td>IBM compatible with Hercules Graphics Adapter and green-tinted
-                monochrome monitor.</td>
-            </tr>
-            <tr>
-                <td><code>strict</code></td>
-                <td>Choose strict compatibility with GW-BASIC over convenience,
-                security, rhyme or reason.</td>
-            </tr>
-        </table></div>
-    </dd>
+        <dt id="--current-device">
+            <code><b>--current-device=</b>{<b>A</b>|<b>B</b> ... |<b>Z</b>}</code></dt>
+        <dd>
+            Set the current disk device to the indicated PC-BASIC drive letter. The device chosen
+            should be mounted to an actual location using
+            <code><a href="#--mount">--mount</a></code>. Default is <code><b>Z</b></code>,
+            with the <code>Z:</code> device mounted to your current drive.
+        </dd>
 
-    <dt id="--print-trigger">
-        <code><b>--print-trigger=</b>{<b>line</b>|<b>page</b>|<b>close</b>}</code>
-    </dt>
-    <dd>
-        Set the trigger to flush the print buffer to the printer.
-        <dl class="compact">
-            <dt><code><b>line</b></code>
-            <dd>The printer is activated after every line break.</dd>
-            <dt><code><b>page</b></code>
-            <dd>The printer is activated after every page break.</dd>
-            <dt><code><b>close</b></code>
-            <dd>The printer is activated only when PC-BASIC exits.</dd>
-        </dl>
-        Default is <code><b>close</b></code>.
-    </dd>
+        <dt id="--dimensions">
+            <code><b>--dimensions=</b><var>x</var>,<var>y</var></code>
+        </dt>
+        <dd>
+            Set window dimensions to <code><var>x</var></code> by
+            <code><var>y</var></code> pixels. This overrides
+            <code><a href="#--scaling">--scaling</a>=native</code>
+            and <code><a href="#--aspect">--aspect</a></code>.
+            Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
+        </dd>
 
-    <dt  id="--quit">
-        <code id="-q"><b>-q</b></code>
-        <code><b>--quit</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Quit interpreter when execution stops. If combined with
-        <code><a href="#--run">--run</a></code>, PC-BASIC quits when the program
-        ends. If set in interactive mode, PC-BASIC quits after the first
-        command is executed.
-    </dd>
+        <dt id="--double">
+            <code id="-d"><b>-d</b></code>
+            <code><b>--double</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Enable double-precision transcendental math functions. This is
+            equivalent to the <code><b><a href="#gwbasic-options">/d</a></b></code> option in GW-BASIC.
+        </dd>
 
-    <dt id="--reserved-memory">
-        <code><b>--reserved-memory=</b><var>number_of_bytes</var></code>
-    </dt>
-    <dd>
-        Reserve <code><var>number_of_bytes</var></code> of memory at the
-        bottom of the data segment. For compatibility with GW-BASIC.
-        Default is <code>3429</code> bytes. Lowering this value makes more string and
-        variable space available for use by programs.
-    </dd>
+        <dt id="--exec">
+            <code id="-e"><b>-e=</b><var>command_line</var></code>
+            <code><b>--exec=</b><var>command_line</var></code>
+        </dt>
+        <dd>
+            Execute BASIC <code><var>command_line</var></code>. The specified
+            commands are executed before entering into interactive mode or
+            running a program.
+        </dd>
 
-    <dt id="--resume">
-        <code><b>--resume</b>[<b>=True</b>|<b>=False</b></code>
-    </dt>
-    <dd>
-        Resume from saved state. Overrides <code><a href="#--run">--run</a></code> and
-        <code><a href="#--load">--load</a></code>.
-    </dd>
+        <dt id="--font">
+            <code><b>--font=</b><var>font_name</var>[<b>,</b><var>font_name</var> ... ]</code></dt>
+        <dd>
+            Load <a href="#--codepage">current codepage</a>
+            from specified <code>font_name.hex</code>
+            fonts. The last fonts specified take precedence, previous ones are
+            fallback. Default is <code><b>unifont,univga,freedos</b></code> (i.e. the
+            <code>freedos.hex</code> font has preference). The available fonts
+            depend on what is stored in <code>font/</code>. By default, the following fonts
+            are available:
+            <div class="scrollable"><table>
+                <tr>
+                    <th><code><var>font_name</var></code></th>
+                    <th>Name</th>
+                    <th>Sizes</th>
+                    <th>Codepages</th>
+                </tr>
+                <tr>
+                    <td><code>unifont</code></td>
+                    <td>GNU UniFont</td>
+                    <td>16</td>
+                    <td>all</td>
+                </tr>
+                <tr>
+                    <td><code>univga</code></td>
+                    <td>Uni-VGA font</td>
+                    <td>16</td>
+                    <td>many</td>
+                </tr>
+                <tr>
+                    <td><code>freedos</code></td>
+                    <td>FreeDOS CPIDOS font</td>
+                    <td>8, 14, 16</td>
+                    <td>many</td>
+                </tr>
+                <tr>
+                    <td><code>cga</code></td>
+                    <td>IBM Colour/Graphics Adapter font</td>
+                    <td>8</td>
+                    <td>437 only</td>
+                </tr>
+                <tr>
+                    <td><code>mda</code></td>
+                    <td>IBM Monochrome Display Adapter font</td>
+                    <td>14</td>
+                    <td>437 only</td>
+                </tr>
+                <tr>
+                    <td><code>vga</code></td>
+                    <td>IBM Video Graphics Array font</td>
+                    <td>8, 14, 16</td>
+                    <td>437 only</td>
+                </tr>
+                <tr>
+                    <td><code>olivetti</code></td>
+                    <td>Olivetti/AT&amp;T font</td>
+                    <td>16</td>
+                    <td>437 only</td>
+                </tr>
+                <tr>
+                    <td><code>tandy1</code></td>
+                    <td>Tandy-1000 font old version</td>
+                    <td>8</td>
+                    <td>437 only</td>
+                </tr>
+                <tr>
+                    <td><code>tandy2</code></td>
+                    <td>Tandy-1000 font new version</td>
+                    <td>8</td>
+                    <td>437 only</td>
+                </tr>
+            </table></div>
+            GNU UniFont contains glyphs for all the defined code points of the
+            Basic Multilingual Plane of Unicode 7.0, which makes it an
+            excellent fallback font. Its glyphs are not, however, very similar
+            to those that were used on DOS machines; both Uni-VGA and the
+            FreeDOS CPIDOS fonts are therefore more suitable, when they have
+            the required glyphs.
+        </dd>
 
-    <dt id="--run">
-        <code id="-r"><b>-r=</b><var>program</var></code>
-        <code><b>--run=</b><var>program</var></code>
-    </dt>
-    <dd>
-        Run the specified <code><var>program</var></code>. Overrides
-        <code><a href="#--load">--load</a></code>.
-    </dd>
+        <dt>
+            <code id="--fullscreen"><b>--fullscreen</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Fullscreen mode.
+            Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
+        </dd>
 
-    <dt id="--scaling">
-        <code><b>--scaling=</b>{<b>smooth</b>|<b>crisp</b>|<b>native</b>}</code>
-    </dt>
-    <dd>
-        Choose scaling method.
-        <dl>
-            <dt><code><b>smooth</b></code></dt>
-            <dd>
-                The display is smoothly scaled to the largest size that allows for
-                the correct aspect ratio.
-            </dd>
+        <dt id="--help">
+            <code id="-h"><b>-h</b></code>
+            <code><b>--help</b></code>
+        </dt>
+        <dd>
+            Show a usage message and exit.
+        </dd>
 
-            <dt><code><b>crisp</b></code></dt>
-            <dd>
-                The display is scaled to the same size as with <code><b>smooth</b></code>,
-                but without smoothing.
-            </dd>
+        <dt id="-i">
+            <code><b>-i</b></code>
+        </dt>
+        <dd>
+            This option is ignored. It is included only for compatibility with
+            GW-BASIC <code><b><a href="#gwbasic-options">/i</a></b></code>.
+        </dd>
 
-            <dt><code><b>native</b></code></dt>
-            <dd>
-                Scaling and aspect ratio are optimised for the display's native
-                pixel size, without smoothing. <code><b>--scaling=native</b></code>
-                overrides <code><a href="#--aspect">--aspect.</a></code>
-            </dd>
-        </dl>
-        Default is <code><b>smooth</b></code>.
-        Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
-    </dd>
+        <dt id="--input">
+            <code><b>--input=</b><var>input_file</var></code>
+        </dt>
+        <dd>
+            Retrieve keyboard input from <code><var>input_file</var></code>,
+            except if <code>KYBD:</code> is read explicitly. Input from
+            <code>KYBD:</code> files is always read from the keyboard,
+            following GW-BASIC behaviour.
+        </dd>
 
-    <dt id="--serial-buffer-size">
-        <code id="-c"><b>-c=</b><var>size</var></code>
-        <code><b>--serial-buffer-size=</b><var>size</var></code>
-    </dt>
-    <dd>
-        Set serial input buffer <code><var>size</var></code>. Default is
-        <code>256</code>. If set to <code>0</code>, serial communications are disabled.
-    </dd>
+        <dt id="--interface">
+            <code><b>--interface=</b>{<b>none</b>|<b>cli</b>|<b>text</b>|<b>graphical</b>}</code>
+        </dt>
+        <dd>
+            Choose the type of interface. The following interface types are
+            available:
+            <dl class="compact">
+                <dt><code><b>none</b></code></dt>
+                <dd>Filter for use with pipes. Also <code><b><a href="#-n">-n</a></b></code>.</dd>
+                <dt><code><b>cli</b></code></dt>
+                <dd>Command-line interface. Also <code><b><a href="#-b">-b</a></b></code>.</dd>
+                <dt><code><b>text</b></code></dt>
+                <dd>Text-based interface. Also <code><b><a href="#-t">-t</a></b></code>.</dd>
+                <dt><code><b>graphical</b></code></dt>
+                <dd>Graphical interface.</dd>
+            </dl>
+            The default is <code><b>graphical</b></code>.
+        </dd>
 
-    <dt  id="--shell">
-        <code><b>--shell=</b>{<b>none</b>|<b>native</b>|<var>command</var>]</code>
-    </dt>
-    <dd>
-        Set the command interpreter run on the <code><a href="#SHELL">SHELL</a></code>
-        command to the operating system's native shell or a custom shell
-        run by <code><var>command</var></code>. Default is <code><b>none</b></code>,
-        which disables the <code><a href="#SHELL">SHELL</a></code> command.
-    </dd>
+        <dt id="--keys">
+            <code id="-k"><b>-k=</b><var>keystring</var></code>
+            <code><b>--keys=</b><var>keystring</var></code>
+        </dt>
+        <dd>
+            Insert the <code><var>keystring</var></code> into the keyboard buffer.
+        </dd>
 
-    <dt id="--state">
-        <code><b>--state=</b><var>state_file</var></code>
-    </dt>
-    <dd>
-        Set the save-state file to <code><var>state_file</var></code>.
-        Default is <code>PCBASIC.SAV</code> in the Application Data
-        directory.
-    </dd>
+        <dt id="--load">
+            <code id="-l"><b>-l=</b><var>program</var></code>
+            <code><b>--load=</b><var>program</var></code>
+        </dt>
+        <dd>
+            Start in interactive mode with the BASIC <code><var>program</var></code> loaded.
+        </dd>
 
-    <dt id="--strict-hidden-lines">
-        <code><b>--strict-hidden-lines</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Disable listing and ASCII saving of lines beyond <code>65530</code>, as in
-        GW-BASIC. Use with care as this allows execution of hidden
-        lines of code.
-    </dd>
+        <dt id="--logfile">
+            <code><b>--logfile=</b><var>log_file</var></code>
+        </dt>
+        <dd>
+            Write error and warning messages to
+            <code><var>log_file</var></code> instead of <code>stderr</code>.
+        </dd>
 
-    <dt id="--strict-newline">
-        <code><b>--strict-newline</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Parse <code>CR</code> and <code>LF</code> in files strictly
-        like GW-BASIC. On Unix, you will need to convert your files to DOS
-        text first if using this option.
-    </dd>
+        <dt id="--lpt1">
+            <code><b>--lpt1=</b><var>type</var><b>:</b><var>value</var></code>
+        </dt>
+        <dd>
+            Attach a resource to the <code>LPT1:</code> parallel device.
+            <code><var>type</var><b>:</b><var>value</var></code> can be
+            <dl>
+                <dt><code><b>PARPORT:</b><var>device_name</var></code></dt>
+                <dd>
+                    Connect to the parallel device <code><var>device_name</var></code>
+                    such as <code><b>LPT1</b></code> or <code><b>/dev/parport0</b></code>.
+                </dd>
 
-    <dt id="--strict-protect">
-        <code><b>--strict-protect</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Disable listing and ASCII saving of protected files, as in
-        GW-BASIC. Use with care as this allows execution of hidden
-        lines of code.
-    </dd>
+                <dt><code><b>PRINTER:</b><var>printer_name</var></code></dt>
+                <dd>
+                    Connect to a Windows, LPR or CUPS printer. If
+                    <code><var>printer_name</var></code> is not specified, the default
+                    printer is used.
+                </dd>
 
-    <dt id="--syntax">
-        <code><b>--syntax=</b>{<b>advanced</b>|<b>pcjr</b>|<b>tandy</b>}</code>
-    </dt>
-    <dd>
-        Choose BASIC dialect. Available dialects are:
-        <dl class="compact">
-            <dt><code><b>advanced</b></code></dt>
-            <dd>Microsoft GW-BASIC and IBM BASICA</dd>
+                <dt><code><b>FILE:</b><var>file_name</var></code></dt>
+                <dd>
+                    Connect to any file or to a Unix character device such as
+                    <code><b>/dev/stdout</b></code>.
+                </dd>
 
-            <dt><code><b>pcjr</b></code></dt>
-            <dd>IBM PCjr Cartridge BASIC</dd>
+                <dt><code><b>STDIO</b>[<b>:</b>[<b>CRLF</b>]]</code></dt>
+                <dd>
+                    Connect to standard output of the calling shell.
+                    If <code><b>CRLF</b></code> is specified, PC-BASIC replaces <code>CR</code>
+                    characters with <code>LF</code> on its output. This is more intuitive on Unix shells.
+                </dd>
+            </dl>
+            If this option is not specified, <code>LPT1:</code> is connected to the default printer.
+        </dd>
 
-            <dt><code><b>tandy</b></code></dt>
-            <dd>Tandy 1000 GW-BASIC.</dd>
-        </dl>
-        Default is <code><b>advanced</b></code>.
-    </dd>
+        <dt id="--lpt2">
+            <code><b>--lpt2=</b><var>type</var>:<var>value</var></code>
+        </dt>
+        <dd>
+            Attach a resource to the <code>LPT2:</code> parallel device.
+            See <code><b><a href="#--lpt1">--lpt1</a></b></code>.
+            If this option is not specified, <code>LPT2:</code> is unavailable.
+        </dd>
 
-    <dt id="-t">
-        <code><b>-t</b></code>
-    </dt>
-    <dd>
-        Use text-based interface. Same as
-        <code><b><a href="#--interface">--interface</a>=text</b></code>.
-    </dd>
+        <dt id="--lpt3">
+            <code><b>--lpt3=</b><var>type</var>:<var>value</var></code>
+        </dt>
+        <dd>
+            Attach a resource to the <code>LPT3:</code> parallel device.
+            See <code><b><a href="#--lpt1">--lpt1</a></b></code>.
+            If this option is not specified, <code>LPT3:</code> is unavailable.
+        </dd>
 
-    <dt id="--text-width">
-        <code><b>--text-width=</b>{<b>40</b>|<b>80</b>}</code>
-    </dt>
-    <dd>
-        Set the number of columns in text mode at startup.
-        Default is <code><b>80</b></code>.
-    </dd>
+        <dt id="--map-drives">
+            <code><b>--map-drives</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            On Windows, assign all Windows drive letters to PC-BASIC drive
+            letters. On other systems, assign to:
+            <dl class="compact">
+                <dt><code>Z:</code></dt>
+                <dd>the current working directory</dd>
+                <dt><code>C:</code></dt>
+                <dd>the filesystem root</dd>
+                <dt><code>H:</code></dt>
+                <dd>the user's home directory.</dt>
+            </dl>
+        </dd>
 
-    <dt id="--utf-8">
-        <code><b>--utf8</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        Use UTF-8 for ASCII-mode programs. If <code><b>True</b></code>,
-        programs stored as ASCII will be converted
-        from UTF-8 on <code><a href="#LOAD">LOAD</a></code> and to UTF-8 on
-        <code><a href="#SAVE">SAVE</a></code>.
-    </dd>
+        <dt id="--max-files">
+            <code id="-f"><b>-f=</b><var>number_of_files</var></code>
+            <code><b>--max-files=</b><var>number_of_files</var></code>
+        </dt>
+        <dd>
+            Set maximum number of open files to
+            <code><var>number_of_files</var></code>. This is
+            equivalent to the <code><b><a href="#gwbasic-options">/f</a></b></code> option in GW-BASIC.
+            Default is <code><b>3</b></code></code>.
+        </dd>
 
-    <dt id="--version">
-        <code id="-v"><b>-v</b></code>
-        <code><b>--version</b></code>
-    </dt>
-    <dd>
-        Print PC-BASIC version string and exit.
-    </dd>
+        <dt id="--max-memory">
+            <code id="-m"><b>-m=</b><var>max_memory</var>[<b>,</b><var>basic_memory_blocks</var>]</code>
+            <code><b>--max-memory=</b><var>max_memory</var>[<b>,</b><var>basic_memory_blocks</var>]</code>
+        </dt>
+        <dd>
+            Set the maximum size of the data memory segment to
+            <code><var>max_memory</var></code> and the maximum size of the data
+            memory available to BASIC to
+            <code><var>basic_memory_blocks</var>*16</code>. In PC-BASIC, the
+            minimum of these values is simply the data memory size; the two
+            values are allowed for compatibility with the
+            <code><b><a href="#gwbasic-options">/m</a></b></code> option in GW-BASIC.
+        </dd>
 
-    <dt id="--video">
-        <code><b>--video=</b><var>card</var></code>
-    </dt>
-    <dd>
-        Set the video card to emulate. Available video cards:
-        <dl class="compact">
-            <dt><code><b>vga</b></code></dt>
-            <dd>Video Graphics Array</dd>
+        <dt id="--max-reclen">
+            <code id="-s"><b>-s=</b><var>record_length</var></code>
+            <code><b>--max-reclen=</b><var>record_length</var></code>
+        </dt>
+        <dd>
+            Set maximum record length for <code>RANDOM</code> files to
+            <code><var>record_length</var></code>. Default is <code><b>128</b></code>, maximum is
+            <code><b>32767</b></code>. This is equivalent to the
+            <code><b><a href="#gwbasic-options">/s</a></b></code> option in GW-BASIC.
+        </dd>
 
-            <dt><code><b>ega</b></code></dt>
-            <dd>Enhanced Graphics Adapter</dd>
+        <dt id="--monitor">
+            <code><b>--monitor=</b>{<b>rgb</b>|<b>composite</b>|<b>mono</b>}</code>
+        </dt>
+        <dd>
+            Sets the monitor type to emulate. Available types are:
+            <dl class="compact">
+                <tr>
+                    <dt><code><b>rgb</b></code></dt>
+                    <dd>RGB colour monitor (default).</dd>
+                </tr>
+                <tr>
+                    <dt><code><b>composite</b></code></dt>
+                    <dd>
+                        Composite colour monitor.
+                    </dd>
+                </tr>
+                <tr>
+                    <dt><code><b>mono</b></code></dt>
+                    <dd>Monochrome monitor.</dd>
+                </tr>
+            </dl>
+            On
+            <code><a href="#SCREEN-statement">SCREEN</a> 2</code> with
+            <code><b><a href="#--video">--video</a>=</b>{<b>pcjr</b>|<b>tandy</b>|<b>cga</b>|<b>cga_old</b>}</code>,
+            <code><b>--monitor=composite</b></code> enables (crude) colour artifacts.
+        </dd>
 
-            <dt><code><b>cga</b></code></dt>
-            <dd>Color/Graphics Adapter</dd>
+        <dt id="--mono-tint">
+            <code><b>--mono-tint=</b><var>r</var><b>,</b><var>g</var><b>,</b><var>b</var></code>
+        </dt>
+        <dd>
+            Specify the monochrome tint as the red-green-blue values <code><var>r</var>,<var>g</var>,<var>b</var></code>, each in the range 0&#8212;255.
+            Only has an effect if combined with <code><b><a href="#--monitor">--monitor</a>=mono</b></code>.
+        </dd>
 
-            <dt><code><b>cga_old</b></code></dt>
-            <dd>Color/Graphics Adapter (old version; affects composite)</dd>
+        <dt id="--mount">
+            <code><b>--mount=</b><var>drive</var><b>:</b><var>path</var><b>,</b>[<var>drive</var><b>:</b><var>path</var> ... ]</code>
+        </dt>
+        <dd>
+            Assign the path
+            <code><var>path</var></code> to drive letter <code><var>drive</var>:</code>.
+            The path can be absolute or relative. By
+            default, <code>Z:</code> is assigned to the current working
+            directory and no other drive letters are assigned.
+        </dd>
 
-            <dt><code><b>mda</b></code></dt>
-            <dd>Monochrome Display Adapter</dd>
+        <dt id="-n">
+            <code><b>-n</b></code>
+        </dt>
+        <dd>
+            Run PC-BASIC as a command-line filter. Same as
+            <code><b><a href="#--interface">--interface</a>=none</b></code>.
+        </dd>
 
-            <dt><code><b>hercules</b></code></dt>
-            <dd>Hercules Graphics Adapter</dd>
+        <dt id="--nobox">
+            <code><b>--nobox</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Disable box-drawing recognition for double-byte character set code pages. By
+            default, sequences of box-drawing characters are recognised by an
+            algorithm that isn't as smart as it thinks it is, and displayed as
+            box drawing rather than as DBCS characters. If <code><b>--nobox</b></code>
+            is set, they will be displayed as DBCS.
+        </dd>
 
-            <dt><code><b>pcjr</b></code></dt>
-            <dd>IBM PCjr graphics</dd>
+        <dt id="--nokill">
+            <code><b>--nokill</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Allow BASIC to capture <kbd>Alt+F4</kbd>.
+            Graphical interface only. By default,
+            <kbd>Alt</kbd>+<kbd>F4</kbd> is captured by most operating
+            systems as a quit signal, and will terminate PC-BASIC. Set
+            <code><b>--nokill</b></code> to allow BASIC to capture
+            <kbd>Alt</kbd>+<kbd>F4</kbd> instead. This is useful if
+            your program uses this key combination.
+        </dd>
 
-            <dt><code><b>tandy</b></code></dt>
-            <dd>Tandy 1000 graphics</dd>
+        <dt id="--nosound">
+            <code><b>--nosound</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Disable sound output.
+        </dd>
 
-            <dt><code><b>olivetti</b></code></dt>
-            <dd>Olivetti M24 graphics</dd>
-        </dl>
-        Default is <code><b>vga</b></code>.
-    </dd>
+        <dt id="--output">
+            <code><b>--output=</b><var>output_file</var></code>
+        </dt>
+        <dd>
+            Send screen output to <code><var>output_file</var></code>, except
+            if <code>SCRN:</code> is written to explicitly. Output to
+            <code>SCRN:</code> files will always be shown on the screen, as in
+            GW-BASIC.
+        </dd>
 
-    <dt id="--video-memory">
-        <code><b>--video-memory=</b><var>size</var></code>
-    </dt>
-    <dd>
-        Set the amount of emulated video memory available. This affects
-        the number of video pages that can be used. On PCjr and Tandy, this
-        can be changed at runtime through the
-        <code><a href="#CLEAR">CLEAR</a></code> statement;
-        at least 32768 needs to be available to enter
-        <code><a href="#SCREEN-statement">SCREEN</a> 5</code> and <code>SCREEN 6</code>.
-        Default is <code><b>16384</b></code> or PCjr and Tandy and <code><b>262144</b></code> on other
-        <a href="#--preset">machine presets</a>.
-    </dd>
+        <dt id="--pcjr-term">
+            <code><b>--pcjr-term=</b><var>terminal_program</var></code>
+        </dt>
+        <dd>
+            Set the terminal program run by the PCjr <code><a href="#TERM">TERM</a></code>
+            command to <code><var>terminal_program</var></code>. This only has an
+            effect with <code><b><a href="#--syntax">--syntax</a>=</b>{<b>pcjr</b>|<b>tandy</b>}</code>.
+        </dd>
 
-    <dt id="--wait">
-        <code id="-w"><b>-w</b></code>
-        <code><b>--wait</b>[<b>=True</b>|<b>=False</b>]</code>
-    </dt>
-    <dd>
-        If <code><b>True</b></code>, PC-BASIC waits for a keystroke before
-        closing the window on exit. Only works for
-        <code><a href="#--interface"><b>--interface</a>=graphical</b></code> or
-        <code><b>--interface=text</b></code>. Default is <code><b>False</b></code>.
-    </dd>
-</dl>
+        <dt id="--peek">
+            <code><b>--peek=</b>[<var>seg</var><b>:</b><var>addr</var><b>:</b><var>val</var>[<b>,</b><var>seg</var><b>:</b><var>addr</var><b>:</b><var>val</var> ... ]]</code>
+        </dt>
+        <dd>
+            Define <code><a href="#PEEK">PEEK</a></code> preset values. If defined,
+            <code>DEF SEG:? PEEK(<var>addr</var>)</code> will return
+            <samp><var>val</var></samp>.
+        </dd>
+
+        <dt id="--pen">
+            <code><b>--pen=</b>{<b>left</b>|<b>middle</b>|<b>right</b>|<b>none</b>}</code>
+        </dt>
+        <dd>
+            Set the mouse button for light pen emulation. Default is <code><b>left</b></code>.
+            If set to <code><b>none</b></code>, light pen emulation is switched off.
+            On Android, <code><b>left</b></code> means touch input.
+        </dd>
+
+        <dt id="--preset">
+            <code><b>--preset=</b><var>option_block</var></code>
+        </dt>
+        <dd>
+            Load machine preset options. A preset option corresponds to a
+            section defined in a config file by a name between square brackets,
+            like <code class="block">[this]</code> <code><b>--preset=this</b></code> will load all
+            settings defined in that section. Available presets depend on your
+            configuration file. By default, the following presets are
+            available, which specify different emulation targets:
+            <div class="scrollable"><table>
+                <tr>
+                    <td><code>pcjr</code></td>
+                    <td>IBM PCjr with Cartridge BASIC.</td>
+                </tr>
+                <tr>
+                    <td><code>tandy</code></td>
+                    <td>Tandy 1000.</td>
+                </tr>
+                <tr>
+                    <td><code>olivetti</code></td>
+                    <td>Olivetti M24 or AT&amp;T PC 6300.</td>
+                </tr>
+                <tr>
+                    <td><code>cga</code></td>
+                    <td>IBM or compatible with Color/Graphics Adapter.</td>
+                </tr>
+                <tr>
+                    <td><code>ega</code></td>
+                    <td>IBM or compatible with Extended Graphics Adapter.</td>
+                </tr>
+                <tr>
+                    <td><code>vga</code></td>
+                    <td>IBM or compatible with Video Graphics Array.</td>
+                </tr>
+                <tr>
+                    <td><code>mda</code></td>
+                    <td>IBM or compatible with Monochrome Display Adapter and
+                    green-tinted monochrome monitor.</td>
+                </tr>
+                <tr>
+                    <td><code>hercules</code></td>
+                    <td>IBM compatible with Hercules Graphics Adapter and green-tinted
+                    monochrome monitor.</td>
+                </tr>
+                <tr>
+                    <td><code>strict</code></td>
+                    <td>Choose strict compatibility with GW-BASIC over convenience,
+                    security, rhyme or reason.</td>
+                </tr>
+            </table></div>
+        </dd>
+
+        <dt id="--print-trigger">
+            <code><b>--print-trigger=</b>{<b>line</b>|<b>page</b>|<b>close</b>}</code>
+        </dt>
+        <dd>
+            Set the trigger to flush the print buffer to the printer.
+            <dl class="compact">
+                <dt><code><b>line</b></code>
+                <dd>The printer is activated after every line break.</dd>
+                <dt><code><b>page</b></code>
+                <dd>The printer is activated after every page break.</dd>
+                <dt><code><b>close</b></code>
+                <dd>The printer is activated only when PC-BASIC exits.</dd>
+            </dl>
+            Default is <code><b>close</b></code>.
+        </dd>
+
+        <dt  id="--quit">
+            <code id="-q"><b>-q</b></code>
+            <code><b>--quit</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Quit interpreter when execution stops. If combined with
+            <code><a href="#--run">--run</a></code>, PC-BASIC quits when the program
+            ends. If set in interactive mode, PC-BASIC quits after the first
+            command is executed.
+        </dd>
+
+        <dt id="--reserved-memory">
+            <code><b>--reserved-memory=</b><var>number_of_bytes</var></code>
+        </dt>
+        <dd>
+            Reserve <code><var>number_of_bytes</var></code> of memory at the
+            bottom of the data segment. For compatibility with GW-BASIC.
+            Default is <code>3429</code> bytes. Lowering this value makes more string and
+            variable space available for use by programs.
+        </dd>
+
+        <dt id="--resume">
+            <code><b>--resume</b>[<b>=True</b>|<b>=False</b></code>
+        </dt>
+        <dd>
+            Resume from saved state. Overrides <code><a href="#--run">--run</a></code> and
+            <code><a href="#--load">--load</a></code>.
+        </dd>
+
+        <dt id="--run">
+            <code id="-r"><b>-r=</b><var>program</var></code>
+            <code><b>--run=</b><var>program</var></code>
+        </dt>
+        <dd>
+            Run the specified <code><var>program</var></code>. Overrides
+            <code><a href="#--load">--load</a></code>.
+        </dd>
+
+        <dt id="--scaling">
+            <code><b>--scaling=</b>{<b>smooth</b>|<b>crisp</b>|<b>native</b>}</code>
+        </dt>
+        <dd>
+            Choose scaling method.
+            <dl>
+                <dt><code><b>smooth</b></code></dt>
+                <dd>
+                    The display is smoothly scaled to the largest size that allows for
+                    the correct aspect ratio.
+                </dd>
+
+                <dt><code><b>crisp</b></code></dt>
+                <dd>
+                    The display is scaled to the same size as with <code><b>smooth</b></code>,
+                    but without smoothing.
+                </dd>
+
+                <dt><code><b>native</b></code></dt>
+                <dd>
+                    Scaling and aspect ratio are optimised for the display's native
+                    pixel size, without smoothing. <code><b>--scaling=native</b></code>
+                    overrides <code><a href="#--aspect">--aspect.</a></code>
+                </dd>
+            </dl>
+            Default is <code><b>smooth</b></code>.
+            Only has an effect if combined with <code><b><a href="#--interface">--interface</a>=graphical</b></code>.
+        </dd>
+
+        <dt id="--serial-buffer-size">
+            <code id="-c"><b>-c=</b><var>size</var></code>
+            <code><b>--serial-buffer-size=</b><var>size</var></code>
+        </dt>
+        <dd>
+            Set serial input buffer <code><var>size</var></code>. Default is
+            <code>256</code>. If set to <code>0</code>, serial communications are disabled.
+        </dd>
+
+        <dt  id="--shell">
+            <code><b>--shell=</b>{<b>none</b>|<b>native</b>|<var>command</var>]</code>
+        </dt>
+        <dd>
+            Set the command interpreter run on the <code><a href="#SHELL">SHELL</a></code>
+            command to the operating system's native shell or a custom shell
+            run by <code><var>command</var></code>. Default is <code><b>none</b></code>,
+            which disables the <code><a href="#SHELL">SHELL</a></code> command.
+        </dd>
+
+        <dt id="--state">
+            <code><b>--state=</b><var>state_file</var></code>
+        </dt>
+        <dd>
+            Set the save-state file to <code><var>state_file</var></code>.
+            Default is <code>PCBASIC.SAV</code> in the Application Data
+            directory.
+        </dd>
+
+        <dt id="--strict-hidden-lines">
+            <code><b>--strict-hidden-lines</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Disable listing and ASCII saving of lines beyond <code>65530</code>, as in
+            GW-BASIC. Use with care as this allows execution of hidden
+            lines of code.
+        </dd>
+
+        <dt id="--strict-newline">
+            <code><b>--strict-newline</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Parse <code>CR</code> and <code>LF</code> in files strictly
+            like GW-BASIC. On Unix, you will need to convert your files to DOS
+            text first if using this option.
+        </dd>
+
+        <dt id="--strict-protect">
+            <code><b>--strict-protect</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Disable listing and ASCII saving of protected files, as in
+            GW-BASIC. Use with care as this allows execution of hidden
+            lines of code.
+        </dd>
+
+        <dt id="--syntax">
+            <code><b>--syntax=</b>{<b>advanced</b>|<b>pcjr</b>|<b>tandy</b>}</code>
+        </dt>
+        <dd>
+            Choose BASIC dialect. Available dialects are:
+            <dl class="compact">
+                <dt><code><b>advanced</b></code></dt>
+                <dd>Microsoft GW-BASIC and IBM BASICA</dd>
+
+                <dt><code><b>pcjr</b></code></dt>
+                <dd>IBM PCjr Cartridge BASIC</dd>
+
+                <dt><code><b>tandy</b></code></dt>
+                <dd>Tandy 1000 GW-BASIC.</dd>
+            </dl>
+            Default is <code><b>advanced</b></code>.
+        </dd>
+
+        <dt id="-t">
+            <code><b>-t</b></code>
+        </dt>
+        <dd>
+            Use text-based interface. Same as
+            <code><b><a href="#--interface">--interface</a>=text</b></code>.
+        </dd>
+
+        <dt id="--text-width">
+            <code><b>--text-width=</b>{<b>40</b>|<b>80</b>}</code>
+        </dt>
+        <dd>
+            Set the number of columns in text mode at startup.
+            Default is <code><b>80</b></code>.
+        </dd>
+
+        <dt id="--utf-8">
+            <code><b>--utf8</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            Use UTF-8 for ASCII-mode programs. If <code><b>True</b></code>,
+            programs stored as ASCII will be converted
+            from UTF-8 on <code><a href="#LOAD">LOAD</a></code> and to UTF-8 on
+            <code><a href="#SAVE">SAVE</a></code>.
+        </dd>
+
+        <dt id="--version">
+            <code id="-v"><b>-v</b></code>
+            <code><b>--version</b></code>
+        </dt>
+        <dd>
+            Print PC-BASIC version string and exit.
+        </dd>
+
+        <dt id="--video">
+            <code><b>--video=</b><var>card</var></code>
+        </dt>
+        <dd>
+            Set the video card to emulate. Available video cards:
+            <dl class="compact">
+                <dt><code><b>vga</b></code></dt>
+                <dd>Video Graphics Array</dd>
+
+                <dt><code><b>ega</b></code></dt>
+                <dd>Enhanced Graphics Adapter</dd>
+
+                <dt><code><b>cga</b></code></dt>
+                <dd>Color/Graphics Adapter</dd>
+
+                <dt><code><b>cga_old</b></code></dt>
+                <dd>Color/Graphics Adapter (old version; affects composite)</dd>
+
+                <dt><code><b>mda</b></code></dt>
+                <dd>Monochrome Display Adapter</dd>
+
+                <dt><code><b>hercules</b></code></dt>
+                <dd>Hercules Graphics Adapter</dd>
+
+                <dt><code><b>pcjr</b></code></dt>
+                <dd>IBM PCjr graphics</dd>
+
+                <dt><code><b>tandy</b></code></dt>
+                <dd>Tandy 1000 graphics</dd>
+
+                <dt><code><b>olivetti</b></code></dt>
+                <dd>Olivetti M24 graphics</dd>
+            </dl>
+            Default is <code><b>vga</b></code>.
+        </dd>
+
+        <dt id="--video-memory">
+            <code><b>--video-memory=</b><var>size</var></code>
+        </dt>
+        <dd>
+            Set the amount of emulated video memory available. This affects
+            the number of video pages that can be used. On PCjr and Tandy, this
+            can be changed at runtime through the
+            <code><a href="#CLEAR">CLEAR</a></code> statement;
+            at least 32768 needs to be available to enter
+            <code><a href="#SCREEN-statement">SCREEN</a> 5</code> and <code>SCREEN 6</code>.
+            Default is <code><b>16384</b></code> or PCjr and Tandy and <code><b>262144</b></code> on other
+            <a href="#--preset">machine presets</a>.
+        </dd>
+
+        <dt id="--wait">
+            <code id="-w"><b>-w</b></code>
+            <code><b>--wait</b>[<b>=True</b>|<b>=False</b>]</code>
+        </dt>
+        <dd>
+            If <code><b>True</b></code>, PC-BASIC waits for a keystroke before
+            closing the window on exit. Only works for
+            <code><a href="#--interface"><b>--interface</a>=graphical</b></code> or
+            <code><b>--interface=text</b></code>. Default is <code><b>False</b></code>.
+        </dd>
+    </dl>
 </section>
