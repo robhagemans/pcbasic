@@ -6336,189 +6336,273 @@ a tag <samp>[100]</samp> to the console when program line <code>100</code> is ex
    <code><a href="#LOAD">LOAD</a></code> statements.
 </li></ul>
 
+    <section>
+        <h3 id="UNLOCK"><code>UNLOCK</code> statement</h3>
+        <code class="block">
+            <b>UNLOCK</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_0</var> ]
+            <br/>
+            <b>UNLOCK</b> [<b>#</b>] <var>file_number</var><b>,</b> [ <var>record_0</var> ] <b>TO</b> <var>record_1</var>
+        </code>
+        <p>
+            Unlocks a file or part of it that has previously been locked with <code>LOCK</code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>file_number</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+            <li>
+                <code><var>record_0</var></code> and <code><var>record_1</var></code> are numeric expressions in <code>[1&#8212;2^25-2]</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                Any parameter has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_number</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_number</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                If <code><var>file_number</var></code> is open for <code>RANDOM</code>,
+                <code><a href="#LOCK">LOCK</a></code> and <code><a href="#UNLOCK">UNLOCK</a></code>
+                statements must match in terms of <code><var>record_0</var></code> and
+                <code><var>record_1</var></code>. An non-matching <code>UNLOCK</code> will raise
+                <samp>Permission denied</samp>.
+            </li>
+            <li>
+                <code><var>record_0</var></code> or <code><var>record_1</var></code> is not in <code>[1&#8212;2^25-2]</code>: <samp>Bad record number</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="UNLOCK"><code>UNLOCK</code> statement</h3>
-<pre>UNLOCK [#] <var>file_number</var> [, <var>record_0</var> ]</pre>
-<pre>UNLOCK [#] <var>file_number</var>, [ <var>record_0</var> ] TO <var>record_1</var></pre>
-<p>
-Unlocks a file or part of it that has previously been locked with <code>LOCK</code>. </p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>file_number</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-</li><li><code><var>record_0</var></code> and <code><var>record_1</var></code> are numeric expressions in <code>[1&#8212;2^25-2]</code>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-Any parameter has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>file_number</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_number</var></code> is not an open file: <samp>Bad file number</samp>.
-</li><li>
-    If <code><var>file_number</var></code> is open for <code>RANDOM</code>,
-    <code><a href="#LOCK">LOCK</a></code> and <code><a href="#UNLOCK">UNLOCK</a></code>
-    statements must match in terms of <code><var>record_0</var></code> and
-    <code><var>record_1</var></code>. An non-matching <code>UNLOCK</code> will raise
-    <samp>Permission denied</samp>.
-</li><li>
-<code><var>record_0</var></code> or <code><var>record_1</var></code> is not in <code>[1&#8212;2^25-2]</code>: <samp>Bad record number</samp>.
-</li></ul>
+    <section>
+        <h3 id="USR"><code>USR</code> function</h3>
+        <code class="block">
+            <var>value</var> <b>= USR</b>[<var>n</var>]<b>(</b><var>expr</var><b>)</b>
+        </code>
+        <p>
+            Returns zero.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>n</var></code> is a digit <code>[<b>0</b>&#8212;<b>9</b>]</code>.
+            </li>
+            <li>
+                <code><var>expr</var></code> is an expression.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In GW-BASIC, calls a machine-code function and returns its return value.
+            </li>
+            <li>
+                This function is not implemented in PC-BASIC.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>n</var></code> is not a digit <code>[<b>0</b>&#8212;<b>9</b>]</code>: <samp>Syntax error</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="VAL"><code>VAL</code> function</h3>
+        <code class="block">
+            <var>value</var> <b>= VAL(</b><var>string</var><b>)</b>
+        </code>
+        <p>
+            Returns the numeric value of the string expression <code><var>string</var></code>.
+            Parsing stops as soon as the first character is encountered that cannot be
+            part of a number. If no characters are parsed, <code>VAL</code> returns zero.
+            See the section on <a href="#literals">numeric literals</a> for the
+            recognised number formats.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Spaces before or even inside a number are ignored:
+                <code>VAL(" 1 0")</code> returns <code>10</code>.
+            </li>
+            <li>
+                If <code><var>string</var></code> contains one of the ASCII separator
+                characters <code>CHR$(28)</code> (file separator),
+                <code>CHR$(29)</code> (group separator) or
+                <code>CHR$(31)</code> (unit separator),
+                <code>VAL</code> returns zero.
+                This is not the case with <code>CHR$(30)</code> (record separator).
+                This behaviour conforms to GW-BASIC.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="USR"><code>USR</code> function</h3>
-<pre><var>value</var> = USR[<var>n</var>](<var>expr</var>)</pre>
-<p>Returns zero.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>n</var></code> is a digit <code>[0&#8212;9]</code>.
-</li><li>
-<code><var>expr</var></code> is an expression.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   In GW-BASIC, calls a machine-code function and returns its return value.
-</li><li>
-    This function is not implemented in PC-BASIC.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>n</var></code> is not a digit <code>[0&#8212;9]</code>: <samp>Syntax error</samp>.
-</li></ul>
+    <section>
+        <h3 id="VARPTR"><code>VARPTR</code> function</h3>
+        <code class="block">
+            <var>pointer</var> <b>= VARPTR(</b>{<var>name</var>|<b>#</b><var>file_num</var>}<b>)</b>
+        </code>
+        <p>
+            Returns the memory address of variable <code><var>name</var></code>
+            or of the File Control Block of
+            file number <code><var>file_num</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>name</var></code> is a
+                previously defined variable or fully indexed array element.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is a legal file number.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                <code>VARPTR</code> can be used with <code><a href="#PEEK">PEEK</a></code>
+                to read a variable's internal representation.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>name</var></code> has not been previously defined: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[1, <var>max_files</var>]</code>,
+                where <code><var>max_files</var></code> is the maximum number of files
+                as set by the <code><a href="#--max-files">max-files</a></code> option:
+                <samp>Bad file number</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="VARPTR$"><code>VARPTR$</code> function</h3>
+        <code class="block">
+            <var>pointer</var> <b>= VARPTR$(</b><var>name</var><b>)</b>
+        </code>
+        <p>
+            Returns the memory address of variable <code><var>name</var></code> in the form of a 3-byte string.
+            The first byte is the length of the record the pointer points to:
+        </p>
+        <dl class="compact">
+            <dt>2</dt>
+            <dd>for integers</dd>
 
-<h3 id="VAL"><code>VAL</code> function</h3>
-<pre><var>value</var> = VAL(<var>string</var>)</pre>
-<p>
-    Returns the numeric value of the string expression <code><var>string</var></code>.
-    Parsing stops as soon as the first character is encountered that cannot be
-    part of a number. If no characters are parsed, <code>VAL</code> returns zero.
-    See the section on <a href="#literals">numeric literals</a> for the
-    recognised number formats.
-</p>
-<h4>Notes</h4>
-<ul>
-    <li>
-        Spaces before or even inside a number are ignored:
-        <code>VAL(" 1 0")</code> returns <code>10</code>.
-    </li>
-    <li>
-        If <code><var>string</var></code> contains one of the ASCII separator
-        characters <code>CHR$(28)</code> (file separator),
-        <code>CHR$(29)</code> (group separator) or
-        <code>CHR$(31)</code> (unit separator),
-        <code>VAL</code> returns zero.
-        This is not the case with <code>CHR$(30)</code> (record separator).
-        This behaviour conforms to GW-BASIC.
-    </li>
-</ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
-</li></ul>
+            <dt>3</dt>
+            <dd>for strings (length + pointer to string space)</dd>
 
+            <dt>4</dt>
+            <dd>for single-precision floats</dd>
 
-<h3 id="VARPTR"><code>VARPTR</code> function</h3>
-<pre><var>pointer</var> = VARPTR(<var>name</var>)</pre>
-<p>Returns the memory address of variable <code><var>name</var></code>.
-</p><pre><var>pointer</var> = VARPTR(#<var>file_num</var>)</pre>
-<p>Returns the memory address of the File Control Block of
-file number <code><var>file_num</var></code>.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>name</var></code> is a
-previously defined variable or fully indexed array element.
-</li><li>
-<code><var>file_num</var></code> is a legal file number.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-    <code>VAPTR</code> can be used with <code><a href="#PEEK">PEEK</a></code>
-    to read a variable's internal representation.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>name</var></code> has not been previously defined: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[1, max number of files]</code>: <samp>Bad file number</samp>.
-</li></ul>
+            <dt>8</dt>
+            <dd>for double-precision floats</dd>
+        </dl>
+        <p>
+            The last two bytes are the pointer address (as returned by
+            <code><a href="#VARPTR">VARPTR</a></code>) in little-endian order.
+        </p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>name</var></code> has not been previously defined: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="VIEW"><code>VIEW</code> statement</h3>
+        <code class="block">
+            <b>VIEW</b> [ [ <b>SCREEN</b> ] <b>(</b><var>x0</var><b>,</b> <var>y0</var><b>)-(</b><var>x1</var><b>,</b> <var>y1</var><b>)</b> [<b>,</b> [ <var>fill</var> ] [<b>,</b> <var>border</var> ] ] ]
+        </code>
+        <p>
+            Defines a graphics viewport. Graphics drawn outside the viewport will
+            not be shown. <code>(<var>x0</var>, <var>y0</var>)</code>, <code>(<var>x1</var>, <var>y1</var>)</code> are absolute screen coordinates of two
+            opposing corners of the area.
+        </p>
+        <p>
+            Unless <code>SCREEN</code> is specified, after a <code>VIEW</code> statement the coordinate
+            system is shifted such that <code>(0, 0)</code> becomes the top left coordinate of the viewport.
+            If <code>VIEW</code> is called without arguments, the viewport is reset to the whole
+            screen.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>fill</var></code> is an attribute. The viewport will be
+                filled with this attribute.
+            </li>
+            <li>
+                <code><var>border</var></code> is an attribute. A border will be drawn
+                just outside the viewport with this attribute.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                Any of the parameters has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                Any of the coordinates is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                Any of the coordinate pairs is outside the physical screen: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="VARPTR$"><code>VARPTR$</code> function</h3>
-<pre><var>pointer</var> = VARPTR$(<var>name</var>)</pre>
-<p>Returns the memory address of variable <code><var>name</var></code> in the form of a 3-byte string.
-The first byte is the length of the record the pointer points to:</p>
-<div class="scrollable">
-<table><tr>
-    <td>2</td>   <td>for integers</td>
-</tr><tr>
-    <td>3</td>   <td>for strings (length + pointer to string space)</td>
-</tr><tr>
-    <td>4</td>   <td>for single-precision floats</td>
-</tr><tr>
-    <td>8</td>   <td>for double-precision floats</td>
-</tr></table>
-</div>
-<p>
-    The last two bytes are the pointer address (as returned by
-    <code><a href="#VARPTR">VAPTR</a></code>) in little-endian order.
-</p>
-<h4>Errors</h4>
-<ul><li>
-<code><var>name</var></code> has not been previously defined: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="VIEW"><code>VIEW</code> statement</h3>
-<pre>VIEW [ [ SCREEN ] (<var>x0</var>, <var>y0</var>)-(<var>x1</var>, <var>y1</var>) [, [ <var>fill</var> ] [, <var>border</var> ] ] ]</pre>
-<p>Defines a graphics viewport. Graphics drawn outside the viewport will
-not be shown. <code>(<var>x0</var>, <var>y0</var>)</code>, <code>(<var>x1</var>, <var>y1</var>)</code> are absolute screen coordinates of two
-opposing corners of the area.</p>
-<p>Unless <code>SCREEN</code> is specified, after a VIEW statement the coordinate
-system is shifted such that <code>(0, 0)</code> becomes the top left coordinate of the viewport.
-If <code>VIEW</code> is called without arguments, the viewport is reset to the whole
-screen.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>fill</var></code> is an attribute. The viewport will be
-filled with this attribute.
-</li><li>
-<code><var>border</var></code> is an attribute. A border will be drawn
- just outside the viewport with this attribute.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-Any of the parameters has a string value: <samp>Type mismatch</samp>.
-</li><li>
-Any of the coordinates is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-Any of the coordinate pairs is outside the physical screen: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="VIEW-PRINT"><code>VIEW PRINT</code> statement</h3>
-<pre>VIEW PRINT [<var>top_row</var>] TO [<var>bottom_row</var>]</pre>
-<p>Defines the text scrolling area of the screen. <code>LOCATE</code> statements,
-cursor movement and scrolling will be limited to the scrolling area.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>top_row</var></code> and <code><var>bottom_row</var></code> are
-numeric expressions in  <code>[1&#8212;24]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   If <code>--syntax={pcjr | tandy}</code> and <code>KEY OFF</code> is set, <code><var>bottom_row</var></code> may be 25.
-Otherwise, screen row 25 cannot be part of the
-    scrolling area.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>top_row</var></code> or <code><var>bottom_row</var></code> is not in <code>[1&#8212;24]</code>: <samp>Illegal function call</samp>.
-</li></ul>
-
+    <section>
+        <h3 id="VIEW-PRINT"><code>VIEW PRINT</code> statement</h3>
+        <code class="block">
+            <b>VIEW PRINT</b> <var>top_row</var> <b>TO</b> <var>bottom_row</var>
+        </code>
+        <p>
+            Defines the text scrolling area of the screen. <code><a href="#LOCATE">LOCATE</a></code> statements,
+            cursor movement and scrolling will be limited to the scrolling area.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>top_row</var></code> and <code><var>bottom_row</var></code> are
+                numeric expressions in  <code>[1&#8212;24]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code><a href="#--syntax">--syntax</a>={pcjr | tandy}</code> and
+                <code><a href="#KEY-list">KEY OFF</a></code> is set, <code><var>bottom_row</var></code> may be 25.
+                Otherwise, screen row 25 cannot be part of the
+                scrolling area.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>top_row</var></code> or <code><var>bottom_row</var></code> is not in <code>[1&#8212;24]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
     <section>
         <h3 id="WAIT"><code>WAIT</code> statement</h3>
