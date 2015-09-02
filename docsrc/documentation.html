@@ -732,16 +732,18 @@ directory.</p>
 <p>PC-BASIC supports redirecting input and output the GW-BASIC way: output redirected with the <code>output=</code> option will be sent to the screen as well as the specified file, while input redirected with <code>input=</code> is taken only from the specified file. Note that screen output through the <code>SCRN:</code> device and keyboard input through the <code>KYBD:</code> device are not redirected. Files are read and written in the codepage set with PC-BASIC.</p>
 
 <p>Note that it is also possible to use your operating system's facility to redirect console output using the <code>&lt;</code> and <code>&gt;</code> operators. It's best to set <code>interface=none</code> so that I/O is redirected through the console. This will produce files in UTF-8 encoding.</p>
+</section>
 
-<h2 id="cli">Command-line interface</h2>
+<section>
+<h3 id="cli">Command-line interface</h3>
 <p>You can run PC-BASIC as a command-line interface by setting the <code>interface=cli</code> (or <code>-b</code>) option. No window will be opened: you can type BASIC commands straight into your Command Prompt/Terminal. Use the horizontal arrow keys to move on the current line you're editing; use the vertical arrow keys to show screen rows above and below. Copy and
 paste are available only if the calling shell provides them. On Windows, <kbd>Ctrl</kbd>+<kbd>Break</kbd> will terminate PC-BASIC immediately. You can use <kbd>Ctrl</kbd>+<kbd>C</kbd> to interrupt the program. The end-of-file key combination (<kbd>Ctrl</kbd>+<kbd>D</kbd> on Unix, <kbd>Ctrl</kbd>+<kbd>Z</kbd> on Windows) will exit PC-BASIC.
 
 </p><p>You can use the command-line interface to run one or a few BASIC commands directly, like so:</p>
-<pre>&gt; pcbasic -bqe="?1+1"
- 2
-&gt;
-</pre>
+<pre><samp>me@mybox$ <b>pcbasic -bqe="?1+1"</b>
+ <b>2</b>
+me@mybox$
+</samp></pre>
 
 
 <p>For scripting purposes, it is also possible to run PC-BASIC without any interface by setting <code>interface=none</code> or <code>-n</code>. If this is set, PC-BASIC will take input from and send output to the console as UTF-8 without further modification. This is useful in combination with redirection and pipes.</p>
