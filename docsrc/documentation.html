@@ -469,10 +469,9 @@ In particular, QBASIC files (which have no line numbers) and QuickBASIC files (m
 If <code>strict-newline</code> is enabled, ASCII files in standard Unix format (<code>LF</code> line endings, no end-of-file character) will fail to load. On Linux or Mac, use a utility such as <a href="http://waterlan.home.xs4all.nl/dos2unix.html"><code>unix2dos</code></a> to convert programs saved as text files before loading them. When saving as ASCII, PC-BASIC always uses the DOS conventions.
 </p>
 </section>
-</section>
 
 <section>
-<h2 id="packages">Packages</h2>
+<h3 id="packages">Packages</h3>
 <p>
     PC-BASIC can run packaged programs. A package is simply a directory or zip archive.
     The directory or zipfile contents will be loaded as the current working
@@ -492,7 +491,21 @@ If <code>strict-newline</code> is enabled, ASCII files in standard Unix format (
 </section>
 
 <section>
-<h2 id="printing">Printing</h2>
+<h3 id="security">Security</h3>
+<p>PC-BASIC makes some default choices with basic security in mind, but does not
+    sandbox its programs in any meaningful way. BASIC programs have more or less
+    full access to your computer. You should treat them with the same caution as
+    you would shell scripts or binaries. Therefore, do not run a program from the
+    internet that you have not inspected first using <code>LIST</code> or
+    <code>--convert=A</code> on the command line. You wouldn't just download
+    an executable from the internet and run it either, right?</p>
+</section>
+
+</section>
+
+<section>
+<h2 id="peripherals">Peripheral devices</h2>
+<h3 id="printing">Printing</h3>
 <p>You can print from PC-BASIC programs
 by accessing the <code>LPT1:</code> device. PC-BASIC will send the output to
 your operating system's default printer, unless you change the <code>lpt1=</code>
@@ -521,7 +534,7 @@ printer font that includes the characters you need to print. On Unix systems,
 PC-BASIC will use the <code>paps</code> utility if it is available; this will
 automatically select fonts that support the characters you need.</p>
 
-<h2 id="ports">Accessing serial and parallel ports</h2>
+<h3 id="ports">Serial and parallel ports</h3>
 <p>PC-BASIC provides the serial devices <code>COM1:</code> and <code>COM2:</code>.
 To make use of these, you need to attach them to a communications port on your
 computer with the <code>com1=</code> or <code>com2=</code> option. To attach to
@@ -535,9 +548,12 @@ and all <code>COM1:</code> traffic will be sent through socket <code>7000</code>
 For example, set <code>lpt2=PARPORT:0</code> to attach your computer's first
 parallel port to <code>LPT2:</code>.</p>
 </section>
+</section>
 
 <section>
-<h2 id="presets">Emulation targets</h2>
+<h2 id="interface">Changing the interface</h2>
+<section>
+<h3 id="presets">Emulation targets</h3>
 <p>By default, PC-BASIC emulates GW-BASIC on a system with VGA video capabilities.
 However, it can emulate several other setups, which differ from each other in
 terms of video and audio capacity, fonts, memory size, as well as available BASIC syntax.
@@ -603,7 +619,7 @@ a hypothetical machine with a VGA video card running PCjr Cartridge BASIC.
 </section>
 
 <section>
-<h2 id="codepages">International encoding standards</h2>
+<h3 id="codepages">Codepages</h3>
 <p>PC-BASIC supports a large number of legacy codepages that were common at the time GW-BASIC was popular, including double-byte character set codepages used for Chinese, Japanese and Korean. You can select your codepage by using the <code>codepage=</code> option. For example, <code>codepage=936</code> selects the GBK codepage commonly used on the Chinese mainland.
 PC-BASIC will load and save all program files as if encoded in the codepage you select.</p>
 
@@ -611,7 +627,7 @@ PC-BASIC will load and save all program files as if encoded in the codepage you 
 </section>
 
 <section>
-<h2 id="fonts">Fonts</h2>
+<h3 id="fonts">Fonts</h3>
 <p>PC-BASIC emulates the distinctive raster fonts of IBM-compatible machines. The ROM
 fonts of the original IBM and Tandy adapters (which are in the public
 domain in a number of countries) have been included in PC-BASIC. These provide the most
@@ -637,7 +653,7 @@ directory.</p>
 </section>
 
 <section>
-<h2 id="redirecting">Redirecting input and output</h2>
+<h3 id="redirecting">Redirecting input and output</h3>
 <p>PC-BASIC supports redirecting input and output the GW-BASIC way: output redirected with the <code>output=</code> option will be sent to the screen as well as the specified file, while input redirected with <code>input=</code> is taken only from the specified file. Note that screen output through the <code>SCRN:</code> device and keyboard input through the <code>KYBD:</code> device are not redirected. Files are read and written in the codepage set with PC-BASIC.</p>
 
 <p>Note that it is also possible to use your operating system's facility to redirect console output using the <code>&lt;</code> and <code>&gt;</code> operators. It's best to set <code>interface=none</code> so that I/O is redirected through the console. This will produce files in UTF-8 encoding.</p>
@@ -657,7 +673,7 @@ paste are available only if the calling shell provides them. On Windows, <kbd>Ct
 </section>
 
 <section>
-<h2 id="curses">Text-based interface</h2>
+<h3 id="curses">Text-based interface</h3>
 <p>There is also a full-screen text interface available: enable it by setting <code>interface=text</code> (or <code>-t</code>).
 the text-based interface is very similar to the default graphical interface, but runs in your Command Prompt or Terminal window. </p>
 
@@ -665,10 +681,6 @@ the text-based interface is very similar to the default graphical interface, but
 
 <p>On Unix systems only, you can get sound in the text and command-line interfaces over the PC speaker if you install the <code>beep</code> utility. If you use Ubuntu, be aware that the PC speaker is switched off by default. You'll need to edit <code>/etc/modprobe.d/blacklist.conf</code> and comment out the line <code>blacklist pcspkr</code>. Then, <code>apt-get install beep</code> and be sure to wear appropriate ear protection: the default sound volume is <strong>loud</strong>.</p>
 </section>
-
-<section>
-<h2 id="security">Security</h2>
-<p>PC-BASIC makes some default choices with basic security in mind, but does not sandbox its programs in any meaningful way. BASIC programs have more or less full access to your computer. You should treat them with the same caution as you would shell scripts or binaries. Therefore, do not run a program from the internet that you have not inspected first using <code>LIST</code> or <code>--convert=A</code> on the command line. You wouldn't just download an executable from the internet and run it either, right?</p>
 </section>
 
 <section>
@@ -678,6 +690,8 @@ the text-based interface is very similar to the default graphical interface, but
 memory or devices. Therefore, it is not possible to run machine code on PC-BASIC. If you need machine code, you'll need to use full
 CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
 
+
+<h3 id="gwbasic-language">Language differences</h3>
 <p>PC-BASIC <em>does</em> provide limited support for the <code><a href="#POKE">POKE</a></code> and <code><a href="#PEEK">PEEK</a></code> statements: some of the most commonly accessed regions of memory are emulated and can be read and (sometimes) written. There is read and write support for video memory, font RAM and selected locations of the low memory segment, including the keyboard buffer. Additionally, there is read support for font ROM, variable, array and string memory, <code>FIELD</code> buffers as well as the program code itself. Writing into the program code is disabled by default, but can be enabled with the <code>allow-code-poke</code> option. Use with care. A number of machine ports related to keyboard input and video modes are supported as well.</p>
 
 <p>The <code><a href="SHELL">SHELL</a></code> statement is, by default, disabled; this is to avoid unpleasant surprises. In GW-BASIC under MS-DOS, <code>SHELL</code> opens a DOS prompt or executes commands in it. The command shells of modern operating systems work differently than those of DOS; in particular, it is impossible to retrieve changes in the environment variables, so that many use cases of <code>SHELL</code> simply would not work; for example, changing the current drive on Windows. Moreover, Unix shells have a syntax that is completely different from that of DOS. You can, however, enable <code>SHELL</code> by setting the <code>shell=native</code> option. Use with care.</p>
@@ -754,10 +768,9 @@ CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
 <p>The highest level of compatibility with GW-BASIC can be attained by setting <code>preset=strict</code>,
 which switches off all convenience and security features that cause differences with
 GWBASIC.</p>
-</section>
 
 <section>
-<h2 id="gwbasic-options">GW-BASIC command-line options</h2>
+<h3 id="gwbasic-options">Command-line options</h3>
 <p>GW-BASIC recognised a number of options on the command-line.
 These are matched by PC-BASIC with only minor modifications:
 </p>
@@ -833,5 +846,6 @@ Effect
 </tr>
 </table>
 </div>
+</section>
 </section>
 </article>
