@@ -72,7 +72,7 @@ For example, you could include the following line in `PCBASIC.INI` to emulate IB
 
 
 For a full list of options, run `pcbasic -h` or consult the
-[PC-BASIC usage documentation](http://pc-basic.org/doc#invocation)
+[PC-BASIC usage documentation](http://pc-basic.org/doc#settings)
 included with PC-BASIC and available online.
 
 

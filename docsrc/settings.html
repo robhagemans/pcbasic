@@ -1,44 +1,49 @@
 <h1 id="settings">Settings and options</h1>
 <p>
-    PC-BASIC has a number of settings that change the way it operates. There are
-    two ways to change these settings:
+    PC-BASIC has a number of settings that change the way it operates.
+    These settings can be changed by setting options on the command line
+    or through editing the configuration file.
 </p>
-<dl>
-    <dt>Command-line options</dt>
-    <dd>
-        You can enter command-line options if you start PC-BASIC from the console
-        (also known as the <em>Command Prompt</em> or <em>Terminal</em>;
-        this is normally <code>CMD</code> or <code>PowerShell</code> on Windows),
-        by preceding the name of the option
-        with two dashes, like so:
-        <code class="block"><b>pcbasic <a href="#--preset">--preset</a>=tandy <a href="#--ctrl-c-break">--ctrl-c-break</a>=True</b></code>
-        On the command line, you can leave out the expression <code><b>=True</b></code>
-        that is common in switching options.
-        Some options have an alternative, short name consisting of a single
-        letter preceded by a single dash, which you can use on the command line.
-        You can combine multiple short options with a single dash.
-    </dd>
-    <dt>Configuration files</dt>
-    <dd>
-        You can change options by adding or removing lines in your private configuration file.
-        This configuration file is a file named <code>PCBASIC.INI</code> stored in your
-        Application Data folder. The location of this folder is as follows:
-        <dl class="compact">
-            <dt>Windows</dt><dd><code>%AppData%\pcbasic</code></dd>
-            <dt>OS X</dt><dd><code>~/Library/Application Support/pcbasic</code></dd>
-            <dt>Linux</dt><dd><code>~/.config/pcbasic</code></dd>
-        </dl>
-        Change an option in the configuration file by adding a line in the section named <code>[pcbasic]</code>, like so:
-        <code class="block">
-            [pcbasic]<br/>
-            <a href="#--preset">preset</a>=tandy<br/>
-            <a href="#--ctrl-c-break">ctrl-c-break</a>=True
-        </code>
-        You cannot use the sort name of options in the configuration file.
-        You also cannot leave out the expression <code><b>=True</b></code>.
-    </dd>
-</dl>
 <p>
     In either method, the options have the same name and syntax. In what follows, we will often refer to
-    a particular option setting; remember that you can always set this from the command line as well as from the configuration file.
+    a particular option setting; remember that you can set this from the command line as well as from the configuration file.
+</p>
+<h4>Command-line options</h4>
+<p>
+    You can enter command-line options if you start PC-BASIC from the console
+    (also known as the <em>Command Prompt</em> or <em>Terminal</em>;
+    this is normally <code>CMD</code> or <code>PowerShell</code> on Windows),
+    by preceding the name of the option
+    with two dashes, like so:
+</p>
+<code class="block"><b>pcbasic <a href="#--preset">--preset</a>=tandy <a href="#--ctrl-c-break">--ctrl-c-break</a>=True</b></code>
+<p>
+    On the command line, you can leave out the expression <code><b>=True</b></code>
+    that is common in switching options.
+    Some options have an alternative, short name consisting of a single
+    letter preceded by a single dash, which you can use on the command line.
+    You can combine multiple short options with a single dash.
+</p>
+<h4>Configuration files</h4>
+<p>
+    You can change options by adding or removing lines in your local configuration file,
+    which can be found in the following location:
+</p>
+<dl>
+    <dt>Windows</dt><dd><code>%AppData%\pcbasic\PCBASIC.INI</code></dd>
+    <dt>OS X</dt><dd><code>~/Library/Application Support/pcbasic/PCBASIC.INI</code></dd>
+    <dt>Linux</dt><dd><code>~/.config/pcbasic/PCBASIC.INI</code></dd>
+</dl>
+<p>
+    Change an option in the configuration file by adding a line in the section named <code>[pcbasic]</code>, like so:
+</p>
+<code class="block">
+    [pcbasic]<br/>
+    <a href="#--preset">preset</a>=tandy<br/>
+    <a href="#--ctrl-c-break">ctrl-c-break</a>=True
+</code>
+<p>
+    You cannot use  <a href="#parameters">positional arguments</a> or
+    the short name of options in the configuration file.
+    You also cannot leave out the expression <code><b>=True</b></code>.
 </p>
