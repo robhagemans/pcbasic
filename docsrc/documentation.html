@@ -504,7 +504,82 @@ If <code>strict-newline</code> is enabled, ASCII files in standard Unix format (
 </section>
 
 <section>
-<h2 id="peripherals">Peripheral devices</h2>
+<h2 id="devices">Devices</h2>
+
+<p>
+    PC-BASIC recognises the following DOS-style devices, which can be
+    <a href="#OPEN">opened</a>, <a href="#INPUT-file">input from</a>
+    and <a href="#PRINT">output to</a>. Some devices allow specification of further parameters, such
+    as handshake specifications for serial devices, a filename for cassette devices and a path for disk devices.
+    When operating on disk devices, specifying a path is mandatory.
+</p>
+<div class="scrollable">
+<table>
+    <tr>
+        <th>Device</th>
+        <th>Allowed modes</th>
+        <th>Description</th>
+    </tr>
+<tr>
+<td><code>SCRN:</code></td>
+<td><code>OUTPUT</code></td>
+<td>
+    The screen. Output to <code>SCRN:</code> has largely the same
+    effect as straight output using <code><a href="#PRINT">PRINT</a></code>.
+    A difference is the <code><a href="#WIDTH">WIDTH</a></code> setting which is
+    independent of the real screen width.
+</td>
+</tr><tr>
+<td><code>KYBD:</code></td>
+       <td><code>INPUT</code></td>
+<td>
+    The keyboard. Input read from <code>KYBD:</code> is not echoed
+    to the screen. Special keys like arrow keys are
+    registered differently than when using <code><a href="#INPUT">INPUT</a></code>
+    or <code><a href="#INPUT$">INPUT$</a></code> straight.
+</td>
+</tr><tr>
+<td><code>LPT1:</code> <code>LPT2:</code> <code>LPT3:</code></td>
+<td><code>OUTPUT</code> <code>RANDOM</code></td>
+<td>
+    Parallel ports 1&#8212;3.
+    <code>LPT</code> devices can be
+    attached to the physical parallel port, to a printer or to a text file
+    with the
+    <code><a href="#--lpt1">--lpt<var>n</var></a></code> options.
+    Opening a printer for <code>RANDOM</code> has the same effect as opening it
+    for <code>OUTPUT</code>; attempting random-file operations will raise
+    <samp>Bad file mode</samp>.
+</td>
+</tr><tr>
+<td><code>COM1:</code> <code>COM2:</code></td>
+<td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
+<td>
+    Serial ports 1&#8212;2.
+    <code>COM</code> devices can be attached to a
+    physical serial port or to a network socket with the
+    <code><a href="#--com1">--com<var>n</var></a></code> options.
+</td>
+</tr><tr>
+<td><code>CAS1:</code></td>
+<td><code>INPUT</code> <code>OUTPUT</code></td>
+<td>
+    Cassette tape driver. <code>CAS</code> devices can be
+    attached to a WAV (RIFF Wave) or a CAS (bitmap tape image) file with the <code><a href="#--cas1">--cas1</a></code> option.
+</td>
+</tr><tr>
+<td><code>A:</code> &#8212; <code>Z:</code> and <code>@:</code></td>
+<td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
+<td>
+    Disk devices. These devices can be mounted to a directory on
+    the host file system with the <code><a href="#--mount">--mount</a></code> option.
+     They do not automatically match drive letters on Windows,
+    unless the <code><a href="#--map-drives">--map-drives</a></code> option
+     is set.
+</td>
+</tr></table>
+</div>
+
 <h3 id="printing">Printing</h3>
 <p>You can print from PC-BASIC programs
 by accessing the <code>LPT1:</code> device. PC-BASIC will send the output to
@@ -690,7 +765,7 @@ the text-based interface is very similar to the default graphical interface, but
 memory or devices. Therefore, it is not possible to run machine code on PC-BASIC. If you need machine code, you'll need to use full
 CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
 
-
+<section>
 <h3 id="gwbasic-language">Language differences</h3>
 <p>PC-BASIC <em>does</em> provide limited support for the <code><a href="#POKE">POKE</a></code> and <code><a href="#PEEK">PEEK</a></code> statements: some of the most commonly accessed regions of memory are emulated and can be read and (sometimes) written. There is read and write support for video memory, font RAM and selected locations of the low memory segment, including the keyboard buffer. Additionally, there is read support for font ROM, variable, array and string memory, <code>FIELD</code> buffers as well as the program code itself. Writing into the program code is disabled by default, but can be enabled with the <code>allow-code-poke</code> option. Use with care. A number of machine ports related to keyboard input and video modes are supported as well.</p>
 
@@ -768,6 +843,30 @@ CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
 <p>The highest level of compatibility with GW-BASIC can be attained by setting <code>preset=strict</code>,
 which switches off all convenience and security features that cause differences with
 GWBASIC.</p>
+</section>
+
+<section>
+<h3 id="gwbasic-devices">Devices</h3>
+<p>GW-BASIC additionally recognises the following little-used device, which is not implemented in PC-BASIC.</p>
+<div class="scrollable">
+<table><tr>
+<th>Device</th><th>      Allowed modes</th><th>   Description</th>
+</tr><tr>
+<td><code>CONS:</code></td>
+<td><code>OUTPUT</code></td>
+<td>The screen (console). Output to <code>CONS:</code> is displayed
+                            directly at the cursor position when <kbd>Enter</kbd> is
+                            pressed. It does not update the end-of-line value
+                            for the interpreter, which means that it does not
+                            move with <kbd>Backspace</kbd> or <kbd>Del</kbd> and is not
+                            stored in program lines if it appears beyond the
+                            end of the existing line. <code>CONS:</code> can be opened with
+                            any access mode, but the effect is always to open
+                            it for <code>OUTPUT</code>.
+</td>
+</tr></table>
+</div>
+</h3>
 
 <section>
 <h3 id="gwbasic-options">Command-line options</h3>
@@ -848,4 +947,5 @@ Effect
 </div>
 </section>
 </section>
+
 </article>
