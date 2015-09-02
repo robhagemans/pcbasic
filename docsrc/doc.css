@@ -231,7 +231,7 @@ kbd {
     padding: 0.1em 0.5em 0.1em 0.5em;
     margin: 0px 1px 0px 1px;
 }
-pre, pre>code, pre>samp, code.block {
+pre, code.block, samp.block {
     font-size: 0.8em;
     background-color: #eeeeff;
     margin-top: 0.5em;
