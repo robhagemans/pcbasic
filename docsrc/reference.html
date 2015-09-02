@@ -6609,7 +6609,7 @@ Otherwise, screen row 25 cannot be part of the
     </section>
 
     <section>
-        <h3 id="WIDTH"><code>WIDTH</code> statement</h3>
+        <h3 id="WIDTH"><code>WIDTH</code> statement (screen)</h3>
         <code class="block">
             <b>WIDTH</b> { <b>20</b> | <b>40</b> | <b>80</b> | <b>(</b><var>num_columns</var><b>)</b> } [<b>,</b> [ <var>num_rows</var>] [ <b>,</b> ] ]
         </code>
@@ -6619,27 +6619,6 @@ Otherwise, screen row 25 cannot be part of the
         <p>
             <code><var>num_columns</var></code> can only be an expression
             if it is bracketed. Otherwise it must be a literal 20, 40 or 80. The trailing comma is optional and has no effect.
-        </p>
-        <code class="block">
-            <b>WIDTH</b> { <b>#</b><var>file_num</var><b>,</b> | <var>device_name</var><b>,</b> | <b>LPRINT</b> } <var>num_columns</var>
-        </code>
-        <p>
-            Sets the line width for a file or a device.
-            When a write operation passes beyond the column width, a <code>CR LF</code> sequence is
-            inserted.
-        </p>
-        <p>
-            If a device is specified, it does not need to have a file open to it; the width setting will
-            be the default width next time a file is opened to that device.
-        </p>
-        <p>
-            If <code><var>device_name</var></code> is <code>"LPT1:"</code> or <code>LPRINT</code>
-            is specified, the device width setting affects <code><a href="#LPRINT">LPRINT</a></code>
-            and <code><a href="#LLIST">LLIST</a></code>.
-        </p>
-        <p>
-            If <code><var>device_name</var></code> is <code>"SCRN:"</code>, <code>"KYBD:"</code>, or omitted, the screen width is changed.
-            In this case, <code><var>num_columns</var></code> must be one of 20, 40 or 80.
         </p>
         <h4>Notes</h4>
         <ul>
@@ -6662,14 +6641,6 @@ Otherwise, screen row 25 cannot be part of the
         <h4>Parameters</h4>
         <ul>
             <li>
-                <code><var>file_num</var></code> is a numeric expression which is the number of an open file.
-            </li>
-            <li>
-                <code><var>device_name</var></code> is a string expression that is one of
-                <code>"KYBD:"</code>, <code>"SCRN:"</code>, <code>"LPT1:"</code>, <code>"LPT2:"</code>,
-                <code>"LPT3:"</code>, <code>"COM1:"</code>, <code>"COM2:"</code>, <code>"CAS1:"</code>
-            </li>
-            <li>
                 <code><var>num_columns</var></code> is a numeric expression.
             </li>
             <li>
@@ -6682,10 +6653,69 @@ Otherwise, screen row 25 cannot be part of the
         <h4>Errors</h4>
         <ul>
             <li>
+                <code><var>num_columns</var></code> is a string expression: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>num_columns</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>num_columns</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>num_columns</var></code> is not a literal and not bracketed: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>num_rows</var></code> is not in its accepted range: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h3 id="WIDTH-files"><code>WIDTH</code> statement (devices and files)</h3>
+        <code class="block">
+            <b>WIDTH</b> { <b>#</b><var>file_num</var><b>,</b> | <var>device_name</var><b>,</b> | <b>LPRINT</b> } <var>num_columns</var>
+        </code>
+        <p>
+            Sets the line width for a file or a device.
+            When a write operation passes beyond the column width, a <code>CR LF</code> sequence is
+            inserted.
+        </p>
+        <p>
+            If a device is specified, it does not need to have a file open to it; the width setting will
+            be the default width next time a file is opened to that device.
+        </p>
+        <p>
+            If <code><var>device_name</var></code> is <code>"LPT1:"</code> or <code>LPRINT</code>
+            is specified, the device width setting affects <code><a href="#LPRINT">LPRINT</a></code>
+            and <code><a href="#LLIST">LLIST</a></code>.
+        </p>
+        <p>
+            If <code><var>device_name</var></code> is <code>"SCRN:"</code>, <code>"KYBD:"</code>, or omitted, the screen width is changed.
+            In this case, <code><var>num_columns</var></code> must be one of 20, 40 or 80.
+            See the notes at <code><a href="#WIDTH">WIDTH</a></code> (screen) for side effects.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> is a numeric expression which is the number of an open file.
+            </li>
+            <li>
+                <code><var>device_name</var></code> is a string expression that is one of
+                <code>"KYBD:"</code>, <code>"SCRN:"</code>, <code>"LPT1:"</code>, <code>"LPT2:"</code>,
+                <code>"LPT3:"</code>, <code>"COM1:"</code>, <code>"COM2:"</code>, <code>"CAS1:"</code>
+            </li>
+            <li>
+                <code><var>num_columns</var></code> is a numeric expression.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
                 <code><var>device_name</var></code> is not one of the allowed devices: <samp>Bad file name</samp>.
             </li>
             <li>
-                <code><var>device_name</var></code> is <code>"SCRN:"</code>, <code>"KYBD:"</code> or omitted, and <code><var>num_columns</var></code> is not 40 or
+                <code><var>device_name</var></code> is <code>"SCRN:"</code>, <code>"KYBD:"</code>
+                and <code><var>num_columns</var></code> is not 20, 40 or
                 80: <samp>Illegal function call</samp>.
             </li>
             <li>
@@ -6700,14 +6730,9 @@ Otherwise, screen row 25 cannot be part of the
             <li>
                 <code><var>file_num</var></code> is not an open file: <samp>Bad file mode</samp>.
             </li>
-            <li>
-                An unbracketed expression is used in the first syntax: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>num_rows</var></code> is not in its accepted range: <samp>Illegal function call</samp>.
-            </li>
         </ul>
     </section>
+
 
     <section>
         <h3 id="WINDOW"><code>WINDOW</code> statement</h3>
