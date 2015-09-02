@@ -21,45 +21,45 @@
 </p>
 
 <section>
-<h2 id="literals">Literals</h2>
+    <h2 id="literals">Literals</h2>
 
-<h4>String literals</h4>
-<p>
-    String literals are of the following form:
-</p>
-<pre>"[<var>characters</var>][<code>NUL</code>|<code>CR</code>|<code>EOF</code>|"]</pre>
-<p>
-    where <code><var>characters</var></code> is a string of characters. Any
-    character from the current code page can be used, with the following
-    exceptions, all of which terminate the string literal (aside from other effects they may have):
-</p>
-<ul>
-    <li><code>NUL</code> (<code>CHR$(0)</code>)</li>
-    <li><code>CR</code> (<code>CHR$(13)</code>)</li>
-    <li><code>EOF</code> (<code>CHR$(26)</code>)</li>
-    <li><code>"</code> (<code>CHR$(34)</code>)</li>
-</ul>
-<p>
-    Apart from these, string literals should not contain any of the characters
-    in the ASCII range <code>13&mdash;31</code>, which lead to unpredictable results.
-    There is no escaping mechanism. To include one of the above
-    characters in a string, use <a href="#string-operators">string concatenation</a> and
-    the <code><a href="#CHR$">CHR$</a></code> function.
-</p>
+    <h4>String literals</h4>
+    <p>
+        String literals are of the following form:
+        <code class="block">[<var>characters</var>][<code>NUL</code>|<code>CR</code>|<code>EOF</code>|"]</code>
+        where <code><var>characters</var></code> is a string of characters. Any
+        character from the current code page can be used, with the following
+        exceptions, all of which terminate the string literal (aside from other effects they may have):
+    </p>
+    <ul>
+        <li><code>NUL</code> (<code>CHR$(0)</code>)</li>
+        <li><code>CR</code> (<code>CHR$(13)</code>)</li>
+        <li><code>EOF</code> (<code>CHR$(26)</code>)</li>
+        <li><code>"</code> (<code>CHR$(34)</code>)</li>
+    </ul>
+    <p>
+        Apart from these, string literals should not contain any of the characters
+        in the ASCII range <code>13&mdash;31</code>, which lead to unpredictable results.
+        There is no escaping mechanism. To include one of the above
+        characters in a string, use <a href="#string-operators">string concatenation</a> and
+        the <code><a href="#CHR$">CHR$</a></code> function.
+    </p>
 
-<h4>Numeric literals</h4>
-<p>Numeric literals have one of the following forms:</p>
-<pre>[{+|-}] [<var>digits</var>] [.] [<var>digits</var>] [ { {E|D} [{+|-}] [<var>digits</var>] | # | ! | % } ]</pre>
-<pre>&amp;{H|h}<var>hexadecimal_digits</var></pre>
-<pre>&amp;[O|o]<var>octal_digits</var></pre>
-<p>
-    where <code><var>octal_digits</var></code> is a string of characters from <code>01234567</code>,
-    <code><var>digits</var></code> is a string of characters from <code>0123456789</code>, and
-    <code><var>hexadecimal_digits</var></code> is a case-insensitive string of characters from <code>0123456789ABCDEF</code>.
-</p>
-<p>Trailing <code>%</code> is ignored; trailing <code>!</code> or <code>#</code> <a href="#typechars">specify the type</a>.
-Examples of valid numeric literals:</p>
-<pre>
+    <h4>Numeric literals</h4>
+    <p>
+        Numeric literals have one of the following forms:
+        <code class="block">[{+|-}] [<var>digits</var>] [.] [<var>digits</var>] [ { {E|D} [{+|-}] [<var>digits</var>] | # | ! | % } ]</code>
+        <code class="block">&amp;{H|h}<var>hexadecimal_digits</var></code>
+        <code class="block">&amp;[O|o]<var>octal_digits</var></code>
+        where <code><var>octal_digits</var></code> is a string of characters from <code>01234567</code>,
+        <code><var>digits</var></code> is a string of characters from <code>0123456789</code>, and
+        <code><var>hexadecimal_digits</var></code> is a case-insensitive string of characters from <code>0123456789ABCDEF</code>.
+    </p>
+    <p>
+        Trailing <code>%</code> is ignored; trailing <code>!</code> or <code>#</code> <a href="#typechars">specify the type</a>.
+        Examples of valid numeric literals:
+    </p>
+<pre><code>
   -1
   42
   42!
@@ -68,9 +68,9 @@ Examples of valid numeric literals:</p>
   .235435
   -.3
   3.
-  .         (this equals 0!)
-  .e        (0!)
-  .D        (0#)
+  .         </code>(this equals <code>0!</code>)<code>
+  .e        </code>(<code>0!</code>)<code>
+  .D        </code>(<code>0#</code>)<code>
   1.1e+7
   1.1d+7
   1e2
@@ -78,7 +78,7 @@ Examples of valid numeric literals:</p>
   &amp;7
   &amp;hffff
   &amp;O20
-</pre>
+</code></pre>
 
     <h4>Notes</h4>
     <ul>
@@ -94,763 +94,879 @@ Examples of valid numeric literals:</p>
 </section>
 
 <section>
-<h2 id="variables">Variables</h2>
-<p>Variable names must start with a letter; all characters of the variable name
-(except the <a href="#typechars">type character</a>) must be letters <code>A&#8212;Z</code>, figures <code>0&#8212;9</code>, or a dot <code>.</code>
-Only the first 40 characters in the name are significant. Variable names must
-not be identical to <a href="#keywords">keywords</a>. Variable
-names may start with a keyword, with the exception of <code><a href="#USR">USR</a></code> and
-<code><a href="#FN">FN</a></code>. Thus, <code><a href="#FN">FN</a>ORD$</code>
-is not a legal variable name while <code><a href="#FRE">FRE</a>CKLE%</code> is.</p>
-<p>
-    For each name, four different
-    variables may exist corresponding to the four types. That is, you can have <code>A$</code>,
-    <code>A%</code>, <code>A!</code> and <code>A#</code> as different variables.
-    Which one of those is also known as <code>A</code> depends on the settings in
-    <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
-    The default is <code> A = A!</code>. In addition, you can have
-    <a href="#arrays">arrays</a> <code>A$()</code>, <code>A%()</code>,
-    <code>A!()</code>, <code>A#()</code> which are separate from the scalar
-    variables of the same name.
-</p>
+    <h2 id="variables">Variables</h2>
+    <p>
+        Variable names must start with a letter; all characters of the variable name
+        (except the <a href="#typechars">type character</a>) must be letters <code>A&#8212;Z</code>, figures <code>0&#8212;9</code>, or a dot <code>.</code>
+        Only the first 40 characters in the name are significant. Variable names must
+        not be identical to <a href="#keywords">keywords</a>. Variable
+        names may start with a keyword, with the exception of <code><a href="#USR">USR</a></code> and
+        <code><a href="#FN">FN</a></code>. Thus, <code><a href="#FN">FN</a>ORD$</code>
+        is not a legal variable name while <code><a href="#FRE">FRE</a>CKLE%</code> is.
+    </p>
+    <p>
+        For each name, four different
+        variables may exist corresponding to the four types. That is, you can have <code>A$</code>,
+        <code>A%</code>, <code>A!</code> and <code>A#</code> as different variables.
+        Which one of those is also known as <code>A</code> depends on the settings in
+        <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
+        The default is <code> A = A!</code>. In addition, you can have
+        <a href="#arrays">arrays</a> <code>A$()</code>, <code>A%()</code>,
+        <code>A!()</code>, <code>A#()</code> which are separate from the scalar
+        variables of the same name.
+    </p>
 </section>
 
 <section>
-<h2 id="arrays">Arrays</h2>
-<p>Arrays are groups of variables and can have the same <a href="#types">types</a> as <a href="#variables">variables</a>. Arrays are indexed with round or square
-brackets; even mixing brackets is allowed. The following all work: <code>A[0]</code>, <code>A(0)</code>,
-<code>A(0]</code>, <code>A[0)</code>. Multidimensional arrays are specified with commas: <code>A(0, 0)</code>, <code>A[0, 0, 0]</code>, etc.</p>
-<p>
-    By default, arrays are indexed from <code>0</code>. This can be changed to
-    <code>1</code> using <code><a href="#OPTION-BASE">OPTION BASE</a> 1</code>.
-</p>
-<p>
-    Arrays can be allocated using <code><a href="#DIM">DIM</a></code>. If all indices of the array
-    are <code>10</code> or less, they need not be explicitly allocated. The first
-    access of the array (read or write) will automatically allocate it with
-    a maximum index of <code>10</code> and the same number of indices as in the first
-    access. To re-allocate an array, the old array must first be deleted
-    with <code><a href="#CLEAR">CLEAR</a></code> or
-    <code><a href="#ERASE">ERASE</a></code>.
-</p>
+    <h2 id="arrays">Arrays</h2>
+    <p>
+        Arrays are groups of variables and can have the same <a href="#types">types</a> as <a href="#variables">variables</a>. Arrays are indexed with round or square
+        brackets; even mixing brackets is allowed. The following all work: <code>A[0]</code>, <code>A(0)</code>,
+        <code>A(0]</code>, <code>A[0)</code>. Multidimensional arrays are specified with commas: <code>A(0, 0)</code>, <code>A[0, 0, 0]</code>, etc.
+    </p>
+    <p>
+        By default, arrays are indexed from <code>0</code>. This can be changed to
+        <code>1</code> using <code><a href="#OPTION-BASE">OPTION BASE</a> 1</code>.
+    </p>
+    <p>
+        Arrays can be allocated using <code><a href="#DIM">DIM</a></code>. If all indices of the array
+        are <code>10</code> or less, they need not be explicitly allocated. The first
+        access of the array (read or write) will automatically allocate it with
+        a maximum index of <code>10</code> and the same number of indices as in the first
+        access. To re-allocate an array, the old array must first be deleted
+        with <code><a href="#CLEAR">CLEAR</a></code> or
+        <code><a href="#ERASE">ERASE</a></code>.
+    </p>
 </section>
 
 
 <section>
-<h2 id="types">Types</h2>
-<h3 id="typechars">Type characters</h3>
-<p>PC-BASIC recognises four variable types, distinguished by their type character
-which is the last character of the variable's full name:</p>
-<div class="scrollable">
-<table>
-    <tr>
-        <th>char</th>
-        <th>type</th>
-        <th>size</th>
-    </tr><tr>
-        <td><code>$</code></td>
-        <td>string</td>
-        <td>3 bytes plus allocated string space</td>
-    </tr><tr>
-        <td><code>%</code></td>
-        <td>integer</td>
-        <td>2 bytes </td>
-    </tr><tr>
-        <td><code>!</code></td>
-        <td>single-precision float</td>
-        <td>4 bytes</td>
-    </tr><tr>
-        <td><code>#</code></td>
-        <td>double-precision float</td>
-        <td>8 bytes</td>
-    </tr>
-</table>
-</div>
-<p>
-    If no type character is specified, the first letter of the name determines
-    the type according to the settings of
-    <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
-    If no such setting has been made, the default type is single-precision float.
-</p>
+    <h2 id="types">Types</h2>
+    <h3 id="typechars">Type characters</h3>
+    <p>
+        PC-BASIC recognises four variable types, distinguished by their type character
+        which is the last character of the variable's full name:
+    </p>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>char</th>
+                <th>type</th>
+                <th>size</th>
+            </tr><tr>
+                <td><code>$</code></td>
+                <td>string</td>
+                <td>3 bytes plus allocated string space</td>
+            </tr><tr>
+                <td><code>%</code></td>
+                <td>integer</td>
+                <td>2 bytes </td>
+            </tr><tr>
+                <td><code>!</code></td>
+                <td>single-precision float</td>
+                <td>4 bytes</td>
+            </tr><tr>
+                <td><code>#</code></td>
+                <td>double-precision float</td>
+                <td>8 bytes</td>
+            </tr>
+        </table>
+    </div>
+    <p>
+        If no type character is specified, the first letter of the name determines
+        the type according to the settings of
+        <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
+        If no such setting has been made, the default type is single-precision float.
+    </p>
 
-<h3 id="limits">Machine limits</h3>
-<ul><li>
-    Line numbers are in <code>[0&#8212;65535]</code>, although line numbers <code>65530&#8212;65535</code> cannot be entered from the console.
-</li><li>
-    Integers are in <code>[-32768&#8212;32767]</code>. Negative integers are represented by the two's complement.
-    Depending on context they may be interpreted as unsigned integers in the range <code>[0&#8212;65535]</code>.
-</li><li>
-    Floats: largest <code>1.701412E+38</code>; smallest <code>2.938726E-39</code>
-</li><li>
-    Double-precision floats can hold more decimals, but not larger or smaller numbers, than single-precision floats.
-</li></ul>
+    <h3 id="limits">Machine limits</h3>
+    <ul>
+        <li>
+            Line numbers are in <code>[0&#8212;65535]</code>, although line numbers <code>65530&#8212;65535</code> cannot be entered from the console.
+        </li>
+        <li>
+            Integers are in <code>[-32768&#8212;32767]</code>. Negative integers are represented by the two's complement.
+            Depending on context they may be interpreted as unsigned integers in the range <code>[0&#8212;65535]</code>.
+        </li>
+        <li>
+            Floats: largest <code>1.701412E+38</code>; smallest <code>2.938726E-39</code>
+        </li>
+        <li>
+            Double-precision floats can hold more decimals, but not larger or smaller numbers, than single-precision floats.
+        </li>
+    </ul>
 </section>
 
 <section>
-<h2 id="operators">Operators</h2>
+    <h2 id="operators">Operators</h2>
 
-<h3 id="order-of-preference">Order of precedence</h3>
-<p>
-    The order of precedence of operators is as follows, from tightly bound
-    (high priority) to loosely bound (low priority):
-</p>
-<ol>
-    <li><code>^</code></li>
-    <li><code>-</code> (unary)</li>
-    <li><code>*</code></li>
-    <li>
-        <ul class="horizontal">
-            <li><code>/</code></li>
-            <li><code>\</code></li>
-            <li><code>MOD</code></li>
+    <h3 id="order-of-preference">Order of precedence</h3>
+    <p>
+        The order of precedence of operators is as follows, from tightly bound
+        (high priority) to loosely bound (low priority):
+    </p>
+    <ol>
+        <li><code>^</code></li>
+        <li><code>-</code> (unary)</li>
+        <li><code>*</code></li>
+        <li>
+            <ul class="horizontal">
+                <li><code>/</code></li>
+                <li><code>\</code></li>
+                <li><code>MOD</code></li>
+            </ul>
+        </li>
+        <li>
+            <ul class="horizontal">
+                <li><code>+</code></li>
+                <li><code>-</code> (binary)</li>
+            </ul>
+        </li>
+        <li><code>=</code></li>
+        <li>
+            <ul class="horizontal">
+                <li><code>&lt;&gt;</code></li>
+                <li><code>&gt;&lt;</code></li>
+                <li><code>&lt;</code></li>
+                <li><code>&gt;</code></li>
+                <li><code>&lt;=</code></li>
+                <li><code>=&lt;</code></li>
+                <li><code>&gt;=</code></li>
+                <li><code>=&gt;</code></li>
+            </ul>
+        </li>
+        <li><code>NOT</code></li>
+        <li><code>AND></code></li>
+        <li><code>OR</code></li>
+        <li><code>XOR</code></li>
+        <li><code>EQV</code></li>
+        <li><code>IMP</code></li>
+    </ol>
+    <p>
+        Note in particular that exponentiation is more tightly bound than negation:
+        <code>-1^2 = -1</code> but <code>(-1)^2 = 1</code>.
+    </p>
+
+    <h3 id="math-operators">Mathematical operators</h3>
+    <p>
+        Mathematical operators operate on numeric expressions only. If either
+        operand is a string, <samp>Type mismatch</samp> will be raised.
+        Note however that <code>+</code> can take the role of the
+        <a href="#string-operators">string concatenation operator</a>.
+    </p>
+    <div class="scrollable">
+    <table>
+        <tr>
+            <th>Code</th>
+            <th>Operation</th>
+            <th>Result</th>
+        </tr>
+        <tr>
+            <td id="^"><code><var>x</var> ^ <var>y</var></code></td>
+            <td>Exponentiation</td>
+            <td>
+                <code><var>x</var></code> raised to the power of
+                <code><var>y</var></code>
+            </td>
+        </tr>
+        <tr>
+            <td id="unary-"><code>- <var>y</var></code></td>
+            <td>Negation</td>
+            <td>
+                Negative value of <code><var>y</var></code>
+            </td>
+        </tr>
+        <tr>
+            <td id="*"><code><var>x</var> * <var>y</var></code></td>
+            <td>Multiplication</td>
+            <td>
+                Product of <code><var>x</var></code> and
+                <code><var>y</var></code>
+            </td>
+        </tr>
+        <tr>
+            <td id="/"><code><var>x</var> / <var>y</var></code></td>
+            <td>Floating-point division</td>
+            <td>
+                Quotient of <code><var>x</var></code> and
+                <code><var>y</var></code>
+            </td>
+        </tr>
+        <tr>
+            <td id="\"><code><var>x</var> \ <var>y</var></code></td>
+            <td>Integer division</td>
+            <td>
+                Integer part of quotient of <code><var>x</var></code> and
+                <code><var>y</var></code>
+            </td>
+        </tr>
+        <tr>
+            <td id="MOD"><code><var>x</var> MOD <var>y</var></code></td>
+            <td>Integer modulo</td>
+            <td>
+                Remainder of the integer division of <code><var>x</var></code> by
+                <code><var>y</var></code>
+            </td>
+        </tr>
+        <tr>
+            <td id="+"><code><var>x</var> + <var>y</var></code></td>
+            <td>Addition</td>
+            <td>
+                Sum of <code><var>x</var></code> and <code><var>y</var></code>
+            </td>
+        </tr>
+        <tr>
+            <td id="-"><code><var>x</var> - <var>y</var></code></td>
+            <td>Subtraction</td>
+            <td>
+                Difference of <code><var>x</var></code> and <code><var>y</var></code>
+            </td>
+        </tr>
+    </table>
+    </div>
+
+    <h3 id="relational-operators">Relational operators</h3>
+    <p>
+        Relational operators can operate on numeric as well as string operands;
+        however, if one operand is string and the other numeric, <samp>Type mismatch</samp>
+        is raised.
+    </p>
+    <p>
+        Relational operators return either <code>0</code> (for <em>false</em>) or
+        <code>-1</code> for <em>true</em>.
+    </p>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Code</th>
+                <th>Operation</th>
+                <th>Result</th>
+            </tr>
+            <tr>
+                <td id="="><code>=</code></td>
+                <td>Equal</td>
+                <td>
+                    True if <code><var>a</var></code> equals <code><var>b</var></code>,
+                    false otherwise.
+                </td>
+            </tr>
+            <tr>
+                <td id="&lt;&gt;"><code>&lt;&gt;</code> <code>&gt;&lt;</code></td>
+                <td>Not equal</td>
+            <td>
+                False if <code><var>a</var></code> equals <code><var>b</var></code>,
+                true otherwise.
+            </td>
+            </tr>
+            <tr>
+                <td id="&lt;"><code>&lt;</code></td>
+                <td>Less than</td>
+                <td>
+                    True if <code><var>a</var></code> is less than <code><var>b</var></code>,
+                    false otherwise.
+                </td>
+            </tr>
+            <tr>
+                <td id="&gt;"><code>&gt;</code></td>
+                <td>Greater than</td>
+                <td>
+                    True if <code><var>a</var></code> is greater than <code><var>b</var></code>,
+                    false otherwise.
+                </td>
+            </tr>
+            <tr>
+                <td id="&lt;="><code>&lt;=</code> <code>=&lt;</code></td>
+                <td>Less than or equal</td>
+                <td>
+                    False if <code><var>a</var></code> is greater than <code><var>b</var></code>,
+                    true otherwise.
+                </td>
+            </tr>
+            <tr>
+                <td id="&gt;="><code>&gt;=</code> <code>=&gt;</code></td>
+                <td>Greater than or equal</td>
+                <td>
+                    False if <code><var>a</var></code> is less than <code><var>b</var></code>,
+                    true otherwise.
+                </td>
+            </tr>
+        </table>
+    </div>
+    <p>
+        When operating on numeric operands, both operands are compared as floating-point
+        numbers according to the usual ordering of numbers. The equals operator tests
+        for equality to within machine precision for the highest-precision of the two
+        operator types.
+    </p>
+    <p>
+        When comparing strings, the ordering is as follows.
+    </p>
+    <ul>
+        <li>
+            Two strings are equal only if they are of the same length and every character
+            code of the first string agrees with the corresponding character code of the
+            second. This includes any whitespace or unprintable characters.
+        </li>
+        <li>
+            Each character position of the strings is compared starting with the leftmost character.
+            When a pair of different characters is encountered, the string
+            with the character of lesser ASCII value is less than the string
+            with the character of greater ASCII value.
+        </li>
+        <li>
+            If the strings are of different length, but equal up to the length of the
+            shorter string, then the shorter string is less than the longer string.
+        </li>
+    </ul>
+
+    <h3 id="boolean-operators">Bitwise operators</h3>
+    <p>
+        PC-BASIC has no Boolean type and does not implement Boolean operators.
+        It does, however, implement bitwise operators. Note that PC-BASIC represents
+        negative integers using the two's complement.
+    </p>
+    <p>
+        Bitwise operators operate on numeric expressions only. If either
+        operand is a string, <samp>Type mismatch</samp> will be raised.
+    </p>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Code</th>
+                <th>Operation</th>
+                <th>Result</th>
+            </tr>
+            <tr>
+                <td><code>NOT <var>y</var></code></td>
+                <td>Complement</td>
+                <td><code>-<var>y</var>-1</code></td>
+            </tr>
+            <tr>
+                <td><code><var>x</var> AND y</code></td>
+                <td>Bitwise conjunction</td>
+                <td>
+                    The bitwise AND of <code><var>x</var></code> and <code><var>y</var></code>
+                </td>
+            </tr>
+            <tr>
+                <td><code><var>x</var> OR <var>y</var></code></td>
+                <td>Bitwise disjunction</td>
+                <td>
+                    The bitwise OR of <code><var>x</var></code> and <code><var>y</var></code>
+                </td>
+            </tr>
+            <tr>
+                <td><code><var>x</var> XOR <var>y</var></code></td>
+                <td>Bitwise exclusive or</td>
+                <td>
+                    The bitwise XOR of <code><var>x</var></code> and <code><var>y</var></code>
+                </td>
+            </tr>
+            <tr>
+                <td><code><var>x</var> EQV <var>y</var></code></td>
+                <td>Bitwise equivalence</td>
+                <td>
+                    <code>NOT(<var>x</var> XOR <var>y</var>)</code>
+                </td>
+            </tr>
+            <tr>
+                <td><code><var>x</var> IMP <var>y</var></code></td>
+                <td>Bitwise implication</td>
+                <td>
+                    <code>NOT(<var>x</var>) OR <var>y</var></code>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <p>
+        These operators can be used
+        as Boolean operators only if <code>-1</code> is used to represent <em>true</em> while <code>0</code>
+        represents <em>false</em>. This interpretation is given in the table below.
+    </p>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Code</th>
+                <th>Operation</th>
+                <th>Result</th>
+            </tr>
+            <tr>
+                <td><code>NOT <var>y</var></code></td>
+                <td>Logical negation</td>
+                <td>True if <code><var>y</var></code> is false and vice versa</td>
+            </tr>
+            <tr>
+                <td><code><var>x</var> AND y</code></td>
+                <td>Conjunction</td>
+                <td>
+                    Only true if both  <code><var>x</var></code> and
+                    <code><var>y</var></code> are true
+                </td>
+            </tr>
+            <tr>
+                <td><code><var>x</var> OR <var>y</var></code></td>
+                <td>Disjunction</td>
+                <td>
+                    Only false if both <code><var>x</var></code> and
+                    <code><var>y</var></code> are false
+                </td>
+            </tr>
+            <tr>
+                <td><code><var>x</var> XOR <var>y</var></code></td>
+                <td>Exclusive or</td>
+                <td>
+                    True if the truth values of <code><var>x</var></code> and
+                    <code><var>y</var></code> differ
+                </td>
+            </tr>
+            <tr>
+                <td><code><var>x</var> EQV <var>y</var></code></td>
+                <td>Equivalence</td>
+                <td>
+                    True if the truth values of <code><var>x</var></code> and
+                    <code><var>y</var></code> are the same
+                </td>
+            </tr>
+            <tr>
+                <td><code><var>x</var> IMP <var>y</var></code></td>
+                <td>Implication</td>
+                <td>
+                    True if <code><var>x</var></code> is false or
+                    <code><var>y</var></code> is true
+                </td>
+            </tr>
+        </table>
+    </div>
+    <p>
+        Be aware that when used on integers other than <code>0</code> and <code>-1</code>,
+        bitwise operators can <em>not</em>
+        be interpreted as Boolean operators. For example,
+        <code>2 AND 1</code> returns <code>0</code>.
+    </p>
+
+    <h3 id="string-operators">String operators</h3>
+    <p>There is one string operator, <code>+</code> for concatenation.</p>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Code</th>
+                <th>Operation</th>
+                <th>Result</th>
+            </tr>
+            <tr>
+                <td><code><var>x</var> + <var>y</var></code></td>
+                <td>Concatenation</td>
+                <td>The string formed by <code><var>x</var></code> followed by <code><var>y</var></code></td>
+            </tr>
+        </table>
+    </div>
+</section>
+
+<section>
+    <h2 id="statements-functions">Statements and functions</h2>
+
+    <section>
+        <h3 id="ABS"><code>ABS</code> function</h3>
+        <code class="block">
+            <var>y</var><b> = ABS(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns the absolute value of <code><var>x</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> is an expression with a numeric value.
+            </li>
         </ul>
-    </li>
-    <li>
-        <ul class="horizontal">
-            <li><code>+</code></li>
-            <li><code>-</code> (binary)</li>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
         </ul>
-    </li>
-    <li><code>=</code></li>
-    <li>
-        <ul class="horizontal">
-            <li><code>&lt;&gt;</code></li>
-            <li><code>&gt;&lt;</code></li>
-            <li><code>&lt;</code></li>
-            <li><code>&gt;</code></li>
-            <li><code>&lt;=</code></li>
-            <li><code>=&lt;</code></li>
-            <li><code>&gt;=</code></li>
-            <li><code>=&gt;</code></li>
+    </section>
+
+    <section>
+        <h3 id="ASC"><code>ASC</code> function</h3>
+        <code class="block">
+            <var>val</var><b> = ASC(</b><var>char</var><b>)</b>
+        </code>
+        <p>
+            Returns the ASCII code for the first character of <code><var>char</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>char</var></code> is an expression with
+                a string value.
+            </li>
         </ul>
-    </li>
-    <li><code>NOT</code></li>
-    <li><code>AND></code></li>
-    <li><code>OR</code></li>
-    <li><code>XOR</code></li>
-    <li><code>EQV</code></li>
-    <li><code>IMP</code></li>
-</ol>
-<p>
-    Note in particular that exponentiation is more tightly bound than negation:
-    <code>-1^2 = -1</code> but <code>(-1)^2 = 1</code>.
-</p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>char</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li><li>
+                <code><var>char</var></code> equals <code>""</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="math-operators">Mathematical operators</h3>
-<p>
-    Mathematical operators operate on numeric expressions only. If either
-    operand is a string, <samp>Type mismatch</samp> will be raised.
-    Note however that <code>+</code> can take the role of the
-    <a href="#string-operators">string concatenation operator</a>.
-</p>
-<div class="scrollable">
-<table>
-    <tr>
-        <th>Code</th>
-        <th>Operation</th>
-        <th>Result</th>
-    </tr>
-    <tr>
-        <td id="^"><code><var>x</var> ^ <var>y</var></code></td>
-        <td>Exponentiation</td>
-        <td>
-            <code><var>x</var></code> raised to the power of
-            <code><var>y</var></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="unary-"><code>- <var>y</var></code></td>
-        <td>Negation</td>
-        <td>
-            Negative value of <code><var>y</var></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="*"><code><var>x</var> * <var>y</var></code></td>
-        <td>Multiplication</td>
-        <td>
-            Product of <code><var>x</var></code> and
-            <code><var>y</var></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="/"><code><var>x</var> / <var>y</var></code></td>
-        <td>Floating-point division</td>
-        <td>
-            Quotient of <code><var>x</var></code> and
-            <code><var>y</var></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="\"><code><var>x</var> \ <var>y</var></code></td>
-        <td>Integer division</td>
-        <td>
-            Integer part of quotient of <code><var>x</var></code> and
-            <code><var>y</var></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="MOD"><code><var>x</var> MOD <var>y</var></code></td>
-        <td>Integer modulo</td>
-        <td>
-            Remainder of the integer division of <code><var>x</var></code> by
-            <code><var>y</var></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="+"><code><var>x</var> + <var>y</var></code></td>
-        <td>Addition</td>
-        <td>
-            Sum of <code><var>x</var></code> and <code><var>y</var></code>
-        </td>
-    </tr>
-    <tr>
-        <td id="-"><code><var>x</var> - <var>y</var></code></td>
-        <td>Subtraction</td>
-        <td>
-            Difference of <code><var>x</var></code> and <code><var>y</var></code>
-        </td>
-    </tr>
-</table>
-</div>
+    <section>
+        <h3 id="ATN"><code>ATN</code> function</h3>
+        <code class="block">
+            <var>y</var><b> = ATN(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns the inverse tangent of <code><var>x</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a numeric expression that gives
+                the angle in radians.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Unless PC-BASIC is run with the <code><a href="#--double">double</a></code> option, this function
+                returns a single-precision value.
+            </li>
+            <li>
+                <code>ATN(x)</code> differs in the least significant digit from GW-BASIC.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="relational-operators">Relational operators</h3>
-<p>
-    Relational operators can operate on numeric as well as string operands;
-    however, if one operand is string and the other numeric, <samp>Type mismatch</samp>
-    is raised.
-</p>
-<p>
-    Relational operators return either <code>0</code> (for <em>false</em>) or
-    <code>-1</code> for <em>true</em>.
-</p>
-<div class="scrollable">
-<table>
-    <tr>
-        <th>Code</th>
-        <th>Operation</th>
-        <th>Result</th>
-    </tr>
-    <tr>
-        <td id="="><code>=</code></td>
-        <td>Equal</td>
-        <td>
-            True if <code><var>a</var></code> equals <code><var>b</var></code>,
-            false otherwise.
-        </td>
-    </tr>
-    <tr>
-        <td id="&lt;&gt;"><code>&lt;&gt;</code> <code>&gt;&lt;</code></td>
-        <td>Not equal</td>
-    <td>
-        False if <code><var>a</var></code> equals <code><var>b</var></code>,
-        true otherwise.
-    </td>
-    </tr>
-    <tr>
-        <td id="&lt;"><code>&lt;</code></td>
-        <td>Less than</td>
-        <td>
-            True if <code><var>a</var></code> is less than <code><var>b</var></code>,
-            false otherwise.
-        </td>
-    </tr>
-    <tr>
-        <td id="&gt;"><code>&gt;</code></td>
-        <td>Greater than</td>
-        <td>
-            True if <code><var>a</var></code> is greater than <code><var>b</var></code>,
-            false otherwise.
-        </td>
-    </tr>
-    <tr>
-        <td id="&lt;="><code>&lt;=</code> <code>=&lt;</code></td>
-        <td>Less than or equal</td>
-        <td>
-            False if <code><var>a</var></code> is greater than <code><var>b</var></code>,
-            true otherwise.
-        </td>
-    </tr>
-    <tr>
-        <td id="&gt;="><code>&gt;=</code> <code>=&gt;</code></td>
-        <td>Greater than or equal</td>
-        <td>
-            False if <code><var>a</var></code> is less than <code><var>b</var></code>,
-            true otherwise.
-        </td>
-    </tr>
-</table>
-</div>
-<p>
-    When operating on numeric operands, both operands are compared as floating-point
-    numbers according to the usual ordering of numbers. The equals operator tests
-    for equality to within machine precision for the highest-precision of the two
-    operator types.
-</p>
-<p>
-    When comparing strings, the ordering is as follows.
-</p>
-<ul>
-    <li>
-        Two strings are equal only if they are of the same length and every character
-        code of the first string agrees with the corresponding character code of the
-        second. This includes any whitespace or unprintable characters.
-    </li>
-    <li>
-        Each character position of the strings is compared starting with the leftmost character.
-        When a pair of different characters is encountered, the string
-        with the character of lesser ASCII value is less than the string
-        with the character of greater ASCII value.
-    </li>
-    <li>
-        If the strings are of different length, but equal up to the length of the
-        shorter string, then the shorter string is less than the longer string.
-    </li>
-</ul>
+    <section>
+        <h3 id="AUTO"><code>AUTO</code> statement</h3>
+        <code class="block">
+            <b>AUTO</b> [ { <var>line_number</var> | <b>.</b> } ] [<b>,</b> [<var>increment</var>]]
+        </code>
+        <p>
+            Start automatic line numbering. Line numbers
+            are automatically generated when <kbd>Enter</kbd> is pressed.
+            If a program line exists at a generated line number, a <code>*</code> is shown after the
+            line number. To avoid overwriting this line, leave it empty and press <kbd>Enter</kbd>.
+            To stop automatic line numbering, press <kbd>Ctrl</kbd>+<kbd>Break</kbd> or <kbd>Ctrl</kbd>+<kbd>C</kbd>. The line being edited at
+            that point is not saved. BASIC will return to command mode, even if <code>AUTO</code> was
+            run from a program line.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                Line numbering starts at <code><var>line_number</var></code>, if specified. If <code>.</code> is specified, line
+                numbering starts at the last program line that was stored. Otherwise, line
+                numbering starts at <code>10</code>.
+            </li>
+            <li>
+                Each next line number is incremented by <code><var>increment</var></code>, if specified. If a comma
+                is used without specifying an increment, the last increment specified in an
+                <code>AUTO</code> command is used. If not, <code><var>increment</var></code> defaults to <code>10</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>line_number</var></code> is not an unsigned-integer value in <code>[0&#8212;65529]</code>:
+               <samp>Syntax error</samp>.
+            </li>
+            <li>
+                When automatic line numbering is enabled and <kbd>Enter</kbd> is pressed on an empty line with number larger than
+               <code>65519</code>: <samp>Undefined line number</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="BEEP"><code>BEEP</code> statement</h3>
+        <code class="block">
+            <b>BEEP</b>
+        </code>
+        <p>
+            Beep the speaker at 800Hz for 0.25s.
+        </p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                If a <samp>Syntax error</samp> is raised, the beep is still produced.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="boolean-operators">Bitwise operators</h3>
-<p>
-    PC-BASIC has no Boolean type and does not implement Boolean operators.
-    It does, however, implement bitwise operators. Note that PC-BASIC represents
-    negative integers using the two's complement.
-</p>
-<p>
-    Bitwise operators operate on numeric expressions only. If either
-    operand is a string, <samp>Type mismatch</samp> will be raised.
-</p>
-<div class="scrollable">
-<table>
-    <tr>
-        <th>Code</th>
-        <th>Operation</th>
-        <th>Result</th>
-    </tr>
-    <tr>
-        <td><code>NOT <var>y</var></code></td>
-        <td>Complement</td>
-        <td><code>-<var>y</var>-1</code></td>
-    </tr>
-    <tr>
-        <td><code><var>x</var> AND y</code></td>
-        <td>Bitwise conjunction</td>
-        <td>
-            The bitwise AND of <code><var>x</var></code> and <code><var>y</var></code>
-        </td>
-    </tr>
-    <tr>
-        <td><code><var>x</var> OR <var>y</var></code></td>
-        <td>Bitwise disjunction</td>
-        <td>
-            The bitwise OR of <code><var>x</var></code> and <code><var>y</var></code>
-        </td>
-    </tr>
-    <tr>
-        <td><code><var>x</var> XOR <var>y</var></code></td>
-        <td>Bitwise exclusive or</td>
-        <td>
-            The bitwise XOR of <code><var>x</var></code> and <code><var>y</var></code>
-        </td>
-    </tr>
-    <tr>
-        <td><code><var>x</var> EQV <var>y</var></code></td>
-        <td>Bitwise equivalence</td>
-        <td>
-            <code>NOT(<var>x</var> XOR <var>y</var>)</code>
-        </td>
-    </tr>
-    <tr>
-        <td><code><var>x</var> IMP <var>y</var></code></td>
-        <td>Bitwise implication</td>
-        <td>
-            <code>NOT(<var>x</var>) OR <var>y</var></code>
-        </td>
-    </tr>
-</table>
-</div>
-<p>
-    These operators can be used
-    as Boolean operators only if <code>-1</code> is used to represent <em>true</em> while <code>0</code>
-    represents <em>false</em>. This interpretation is given in the table below.
-</p>
-<div class="scrollable">
-<table>
-    <tr>
-        <th>Code</th>
-        <th>Operation</th>
-        <th>Result</th>
-    </tr>
-    <tr>
-        <td><code>NOT <var>y</var></code></td>
-        <td>Logical negation</td>
-        <td>True if <code><var>y</var></code> is false and vice versa</td>
-    </tr>
-    <tr>
-        <td><code><var>x</var> AND y</code></td>
-        <td>Conjunction</td>
-        <td>
-            Only true if both  <code><var>x</var></code> and
-            <code><var>y</var></code> are true
-        </td>
-    </tr>
-    <tr>
-        <td><code><var>x</var> OR <var>y</var></code></td>
-        <td>Disjunction</td>
-        <td>
-            Only false if both <code><var>x</var></code> and
-            <code><var>y</var></code> are false
-        </td>
-    </tr>
-    <tr>
-        <td><code><var>x</var> XOR <var>y</var></code></td>
-        <td>Exclusive or</td>
-        <td>
-            True if the truth values of <code><var>x</var></code> and
-            <code><var>y</var></code> differ
-        </td>
-    </tr>
-    <tr>
-        <td><code><var>x</var> EQV <var>y</var></code></td>
-        <td>Equivalence</td>
-        <td>
-            True if the truth values of <code><var>x</var></code> and
-            <code><var>y</var></code> are the same
-        </td>
-    </tr>
-    <tr>
-        <td><code><var>x</var> IMP <var>y</var></code></td>
-        <td>Implication</td>
-        <td>
-            True if <code><var>x</var></code> is false or
-            <code><var>y</var></code> is true
-        </td>
-    </tr>
-</table>
-</div>
-<p>
-    Be aware that when used on integers other than <code>0</code> and <code>-1</code>,
-    bitwise operators can <em>not</em>
-    be interpreted as Boolean operators. For example,
-    <code>2 AND 1</code> returns <code>0</code>.
-</p>
-</section>
+    <section>
+        <h3 id="BEEP-switch"><code>BEEP</code> statement (switch)</h3>
+        <code class="block">
+            <b>BEEP</b> { <b>ON</b> | <b>OFF</b> }
+        </code>
+        <p>
+            This statement has no effect.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Only legal with the <code><a href="syntax">syntax</a>={pcjr|tandy}</code> option.
+            </li>
+            <li>
+                On PCjr and Tandy computers, <code>BEEP OFF</code> would turn off the internal speaker.
+                On PC-BASIC, both the internal and the external speaker are emulated through
+                the same sound system.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="string-operators">String operators</h3>
-<p>There is one string operator, <code>+</code> for concatenation.</p>
-<div class="scrollable">
-<table>
-    <tr>
-        <th>Code</th>
-        <th>Operation</th>
-        <th>Result</th>
-    </tr>
-    <tr>
-        <td><code><var>x</var> + <var>y</var></code></td>
-        <td>Concatenation</td>
-        <td>The string formed by <code><var>x</var></code> followed by <code><var>y</var></code></td>
-    </tr>
-</table>
-</div>
+    <section>
+        <h3 id="BLOAD"><code>BLOAD</code> statement</h3>
+        <code class="block">
+            <b>BLOAD</b> <var>filename</var> [<b>,</b> <var>offset</var> ]
+        </code>
+        <p>
+            Loads a memory image file into memory.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>filename</var></code> is a string expression indicating the
+                file to read from.
+            </li>
+            <li>
+                <code><var>offset</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code>.
+                It indicates an offset in the current <code><a href="#DEF-SEG">DEF SEG</a></code> segment where the file is to be
+                stored. If not specified, the offset stored in the <code><a href="BSAVE">BSAVE</a></code> file will be used. If
+                negative, its two's complement will be used.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>filename</var></code> is not in <code>BSAVE</code> format: <samp>Bad file mode</samp>.
+            </li>
+            <li>
+                <code><var>filename</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>offset</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
-<section>
-<h2 id="statements-functions">Statements and functions</h2>
+    <section>
+        <h3 id="BSAVE"><code>BSAVE</code> statement</h3>
+        <code class="block">
+            <b>BSAVE</b> <var>filename</var><b>,</b> <var>offset</var><b>,</b> <var>length</var>
+        </code>
+        <p>
+            Saves a region of memory to an image file.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>filename</var></code> is a string expression indicating the
+                file to read from.
+            </li>
+            <li>
+                <code><var>offset</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code> indicating
+                the offset into the current <code><a href="#DEF-SEG">DEF SEG</a></code> segment from where to start reading.
+            </li>
+            <li>
+                <code><var>length</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code> indicating
+                the number of bytes to read.
+            </li>
+            <li>
+                If <code><var>offset</var></code> or <code><var>length</var></code> are negative, their two's
+                complement will be used.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>filename</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>offset</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>length</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="ABS"><code>ABS</code> function</h3>
-<pre>
-<var>y</var> = ABS(<var>x</var>)
-</pre>
-<p>Returns the absolute value of <code><var>x</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>x</var></code> is an expression with a numeric value.
-</li></ul>
-<h4>Errors</h4>
-<ul>
-<li>
-<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-</li>
-</ul>
+    <section>
+    <h3 id="CALL"><code>CALL</code> statement</h3>
+    <code class="block">
+        <b>CALL</b> <var>address_var</var> [ <b>(</b> <var>p0</var> [<b>,</b> <var>p1</var> [<b>,</b> ... ] <b>)</b> ]
+    </code>
+    <p>
+        Does nothing.
+    </p>
+    <h4>Notes</h4>
+    <ul>
+        <li>
+            In GW-BASIC, <code>CALL</code> executes a machine language subroutine.
+        </li>
+        <li>
+            This statement is not implemented in PC-BASIC.
+        </li>
+    </ul>
+    <h4>Parameters</h4>
+    <ul>
+        <li>
+            <code><var>address_var</var></code> is a numeric variable.
+        </li>
+        <li>
+            <code><var>p0</var>, <var>p1</var>, ...</code> are variables.
+        </li>
+    </ul>
+    <h4>Errors</h4>
+    <ul>
+        <li>
+            <code><var>address_var</var></code> is a string variable: <samp>Type mismatch</samp>.
+        </li>
+        <li>
+            <code><var>address_var</var></code> is a literal: <samp>Syntax error</samp>.
+        </li>
+    </ul>
+    </section>
 
-<h3 id="ASC"><code>ASC</code> function</h3>
-<pre><code>
-<var>val</var> = ASC(<var>char</var>)
-</code></pre>
-<p>Returns the ASCII code for the first character of <code><var>char</var></code>. </p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>char</var></code> is an expression with
-a string value.
-</li></ul>
-<h4>Errors</h4>
-<ul>
-<li>
-<code><var>char</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>char</var></code> equals <code>""</code>: <samp>Illegal function call</samp>.
-</li>
-</ul>
+    <section>
+        <h3 id="CALLS"><code>CALLS</code> statement</h3>
+        <code class="block">
+            <b>CALLS</b> <var>address_var</var> [ <b>(</b> <var>p0</var> [<b>,</b> <var>p1</var> [<b>,</b> ... ] <b>)</b> ]
+        </code>
+        <p>Does nothing.</p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In GW-BASIC, <code>CALLS</code> executes a FORTRAN subroutine.
+            </li>
+            <li>
+                This statement is not implemented in PC-BASIC.
+            </li>
+        </ul>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>address_var</var></code> is a numeric variable.
+            </li>
+            <li>
+                <code><var>p0</var>, <var>p1</var>, ...</code> are variables.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>address_var</var></code> is a string variable: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>address_var</var></code> is a literal: <samp>Syntax error</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="CDBL"><code>CDBL</code> function</h3>
+        <code class="block">
+            <var>y</var><b> = CDBL(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Converts the numeric expression <code><var>x</var></code> to a double-precision value.
+        </p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="ATN"><code>ATN</code> function</h3>
-<pre><var>y</var> = ATN(<var>x</var>)</pre>
-<p>Returns the inverse tangent of <code><var>x</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>x</var></code> is a numeric expression that gives
-the angle in radians.
-</li></ul>
-<h4>Notes</h4>
-<ul>
-<li>
-Unless PC-BASIC is run with the <code><a href="#--double">double</a></code> option, this function
-returns a single-precision value.</li>
-<li>
-<code>ATN(x)</code> differs in the least significant digit from GW-BASIC.
-</li>
-</ul>
-<h4>Errors</h4>
-<ul>
-<li>
-<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-</li>
-</ul>
-
-<h3 id="AUTO"><code>AUTO</code> statement</h3>
-<pre>
-AUTO [ { <var>line_number</var> | . } ] [, [<var>increment</var>]]
-</pre>
-<p>Start automatic line numbering. Line numbers
-are automatically generated when <kbd>Enter</kbd> is pressed.
-If a program line exists at a generated line number, a <code>*</code> is shown after the
-line number. To avoid overwriting this line, leave it empty and press <kbd>Enter</kbd>.
-To stop automatic line numbering, press <kbd>Ctrl</kbd>+<kbd>Break</kbd> or <kbd>Ctrl</kbd>+<kbd>C</kbd>. The line being edited at
-that point is not saved. BASIC will return to command mode, even if <code>AUTO</code> was
-run from a program line.
-</p><h4>Parameters</h4>
-<ul><li>
-Line numbering starts at <code><var>line_number</var></code>, if specified. If <code>.</code> is specified, line
-numbering starts at the last program line that was stored. Otherwise, line
-numbering starts at <code>10</code>.
-</li><li>
-Each next line number is incremented by <code><var>increment</var></code>, if specified. If a comma
-is used without specifying an increment, the last increment specified in an
-<code>AUTO</code> command is used. If not, <code><var>increment</var></code> defaults to <code>10</code>.
-</li></ul>
-<h4>Errors</h4>
-<ul>
-<li>
-<code><var>line_number</var></code> is not an unsigned-integer value in <code>[0&#8212;65529]</code>:
-   <samp>Syntax error</samp>.
-</li><li>
-When automatic line numbering is enabled and <kbd>Enter</kbd> is pressed on an empty line with number larger than
-   <code>65519</code>: <samp>Undefined line number</samp>.
-</li></ul>
-
-<h3 id="BEEP"><code>BEEP</code> statement</h3>
-<pre>
-BEEP
-</pre>
-<p>Beep the speaker at 800Hz for 0.25s.</p>
-<h4>Errors</h4>
-<ul>
-<li>
-If a <samp>Syntax error</samp> is raised, the beep is still produced.
-</li></ul>
-
-<h3 id="BEEP-switch"><code>BEEP</code> statement (switch)</h3>
-<pre>
-BEEP { ON | OFF }
-</pre>
-<p>This statement has no effect.</p>
-<h4>Notes</h4>
-<ul><li>
-Only legal with the <code>syntax={pcjr|tandy}</code> option.
-</li><li>
-On PCjr and Tandy computers, <code>BEEP OFF</code> would turn off the internal speaker.
-    On PC-BASIC, both the internal and the external speaker are emulated through
-    the same sound system.
-</li></ul>
-
-<h3 id="BLOAD"><code>BLOAD</code> statement</h3>
-<pre>
-BLOAD <var>filename</var> [, <var>offset</var> ]
-</pre>
-<p>Loads an image file into memory. </p>
-<h4>Parameters</h4>
-<ul>
-<li>
-<code><var>filename</var></code> is a string expression indicating the
-file to read from.
-</li><li>
-<code><var>offset</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code>.
-It indicates an offset in the current <code><a href="#DEF-SEG">DEF SEG</a></code> segment where the file is to be
-stored. If not specified, the offset stored in the <code><a href="BSAVE">BSAVE</a></code> file will be used. If
-negative, its two's complement will be used.
-</li>
-</ul>
-<h4>Errors</h4>
-<ul><li><code><var>filename</var></code> is not in <code>BSAVE</code> format: <samp>Bad file mode</samp>.</li>
-<li>
-<code><var>filename</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>offset</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li></ul>
-
-
-<h3 id="BSAVE"><code>BSAVE</code> statement</h3>
-<pre>
-BSAVE <var>filename</var>, <var>offset</var>, <var>length</var>
-</pre>
-<p>Saves a region of memory to an image file.</p>
-<h4>Parameters</h4>
-<ul>
-<li>
-<code><var>filename</var></code> is a string expression indicating the
-file to read from.
-</li><li>
-<code><var>offset</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code> indicating
-the offset into the current <code><a href="#DEF-SEG">DEF SEG</a></code> segment from where to start reading.
-</li><li>
-<code><var>length</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code> indicating
-the number of bytes to read.
-</li><li>
-If <code><var>offset</var></code> or <code><var>length</var></code> are negative, their two's
-complement will be used.</li>
-</ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>filename</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>offset</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>length</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li></ul>
-
-<h3 id="CALL"><code>CALL</code> statement</h3>
-<pre>
-CALL <var>address_var</var> [ ( <var>p0</var> [, <var>p1</var> [, ... ] ) ]
-</pre>
-<p>Does nothing.</p>
-<h4>Notes</h4>
-<ul><li>
-In GW-BASIC, <code>CALL</code> executes a machine language subroutine.
-</li><li>
-This statement is not implemented in PC-BASIC.
-</li></ul>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>address_var</var></code> is a numeric variable.
-</li><li>
-<code><var>p0</var>, <var>p1</var>, ...</code> are variables.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>address_var</var></code> is a string variable: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>address_var</var></code> is a literal: <samp>Syntax error</samp>.
-</li></ul>
-
-
-<h3 id="CALLS"><code>CALLS</code> statement</h3>
-<pre>
-CALLS <var>address_var</var> [ ( <var>p0</var> [, <var>p1</var> [, ... ] ) ]
-</pre>
-<p>Does nothing.</p>
-<h4>Notes</h4>
-<ul><li>
-In GW-BASIC, <code>CALLS</code> executes a FORTRAN subroutine.
-</li><li>
-This statement is not implemented in PC-BASIC.
-</li></ul>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>address_var</var></code> is a numeric variable.
-</li><li>
-<code><var>p0</var>, <var>p1</var>, ...</code> are variables.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>address_var</var></code> is a string variable: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>address_var</var></code> is a literal: <samp>Syntax error</samp>.
-</li></ul>
-
-
-<h3 id="CDBL"><code>CDBL</code> function</h3>
-<pre>
-<var>y</var> = CDBL(<var>x</var>)
-</pre>
-<p>
-Converts the numeric expression <code><var>x</var></code> to a double-precision value.
-</p>
-<h4>Errors</h4>
-<ul>
-<li>
-<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-</li>
-</ul>
-
-<h3 id="CHAIN"><code>CHAIN</code> statement</h3>
-<pre>
-CHAIN [MERGE] <var>program</var> [, [<var>line_number_expr</var>] [, ALL ] [, DELETE <var>range</var> [, <var>ign</var> ] ] ]
-</pre>
-<p>Loads <code><var>program</var></code> into memory and runs it, optionally transferring variables.</p>
-<ul>
-<li>If <code>ALL</code> is specified, all variables are transferred. If not, the variables
-specified in a <code><a href="#COMMON">COMMON</a></code> statement are transferred. </li>
-<li>If <code>MERGE</code> is specified, <code><var>program</var></code> is merged into the existing program. To be
-able to use this, <code><var>program</var></code> must be saved as ASCII.
-</li><li>
-If <code>DELETE</code> is specified, the <code><var>range</var></code> of line numbers is deleted from the
-existing code before the merge. This is pointless without <code>MERGE</code>.
-</li>
-</ul>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>line_number_expr</var></code> is a numeric expression. It
-will be interpreted as a line number in the new program and execution will
-start from this line number. If <code><var>line_number_expr</var></code> is negative, it will be
-interpreted as its two's-complement.
-</li><li>
-<code><var>range</var></code> is a line number range of which the closing line number is
-specified and exists before the merge.
-</li><li>
-<code><var>ign</var></code> is optional and ignored.
-</li></ul>
-
-<h4>Notes</h4>
-<ul><li>
-<code>CHAIN</code> preserves the <code><a href="#OPTION-BASE">OPTION BASE</a></code> setting.
-</li><li>
-<code>COMMON</code> variables remain <code>COMMON</code> for the next CHAIN.
-</li><li>
-Only if <code>ALL</code> is specified, <code><a href="DEF-FN">DEF FN</a></code> definitions are preserved.
-</li><li>
-Only if <code>MERGE</code> is specified, <code><a href="#DEFINT">DEFINT</a></code>, <code><a href="#DEFSTR">DEFSTR</a></code>, <code><a href="#DEFSNG">DEFSNG</a></code>, <code><a href="#DEFDBL">DEFDBL</a></code> definitions
-    are preserved.
-</li><li>
-If specified, <code>ALL</code> must precede <code>DELETE</code>; if unspecified, no comma must
-    be put in its place and only two commas should precede <code>DELETE</code>.
-</li></ul>
-<h4>Errors</h4>
-<ul>
-<li>
-<code>MERGE</code> is specified and <code><var>program</var></code> was not saved in ASCII mode:
-<samp>Bad file mode</samp>.
-</li><li>
-A line number in <code><var>range</var></code> is greater than 65529: <samp>Syntax error</samp>.
-</li>
-<li>
-If a <samp>Syntax error</samp> is raised by <code>CHAIN</code>, no lines are deleted and the new
-program is not loaded.
-</li>
-<li>The closing line number in <code><var>range</var></code> does not exist: <samp>Illegal function call</samp></li>
-<li>
-If <code><var>line_number_expr</var></code> does not evaluate to an existing line number in the
-new program, <samp>Illegal function call</samp> is raised but the load or merge is
-being performed.
-</li></ul>
-
+    <section>
+    <h3 id="CHAIN"><code>CHAIN</code> statement</h3>
+        <code class="block">
+            <b>CHAIN</b> [<b>MERGE</b>] <var>program</var> [<b>,</b> [<var>line_number_expr</var>] [<b>, ALL</b>] [<b>, DELETE</b> <var>range</var> [<b>,</b> <var>ign</var> ] ] ]
+        </code>
+        <p>
+            Loads <code><var>program</var></code> into memory and runs it, optionally transferring variables.
+        </p>
+        <ul>
+            <li>
+                If <code>ALL</code> is specified, all variables are transferred. If not, the variables
+                specified in a <code><a href="#COMMON">COMMON</a></code> statement are transferred.
+            </li>
+            <li>
+                If <code>MERGE</code> is specified, <code><var>program</var></code> is merged into the existing program. To be
+                able to use this, <code><var>program</var></code> must be saved as ASCII.
+            </li>
+            <li>
+                If <code>DELETE</code> is specified, the <code><var>range</var></code> of line numbers is deleted from the
+                existing code before the merge. This is pointless without <code>MERGE</code>.
+            </li>
+        </ul>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>line_number_expr</var></code> is a numeric expression. It
+                will be interpreted as a line number in the new program and execution will
+                start from this line number. If <code><var>line_number_expr</var></code> is negative, it will be
+                interpreted as its two's-complement.
+            </li>
+            <li>
+                <code><var>range</var></code> is a line number range of which the closing line number is
+                specified and exists before the merge.
+            </li>
+            <li>
+                <code><var>ign</var></code> is optional and ignored.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                <code>CHAIN</code> preserves the <code><a href="#OPTION-BASE">OPTION BASE</a></code> setting.
+            </li>
+            <li>
+                <code>COMMON</code> variables remain <code>COMMON</code> for the next CHAIN.
+            </li>
+            <li>
+                Only if <code>ALL</code> is specified, <code><a href="DEF-FN">DEF FN</a></code> definitions are preserved.
+            </li>
+            <li>
+                Only if <code>MERGE</code> is specified, <code><a href="#DEFINT">DEFINT</a></code>, <code><a href="#DEFSTR">DEFSTR</a></code>, <code><a href="#DEFSNG">DEFSNG</a></code>, <code><a href="#DEFDBL">DEFDBL</a></code> definitions
+                are preserved.
+            </li>
+            <li>
+            If specified, <code>ALL</code> must precede <code>DELETE</code>; if unspecified, no comma must
+                be put in its place and only two commas should precede <code>DELETE</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code>MERGE</code> is specified and <code><var>program</var></code> was not saved in ASCII mode:
+                <samp>Bad file mode</samp>.
+            </li>
+            <li>
+                A line number in <code><var>range</var></code> is greater than 65529: <samp>Syntax error</samp>.
+            </li>
+            <li>
+                If a <samp>Syntax error</samp> is raised by <code>CHAIN</code>, no lines are deleted and the new
+                program is not loaded.
+            </li>
+            <li>
+                The closing line number in <code><var>range</var></code> does not exist: <samp>Illegal function call</samp>
+            </li>
+            <li>
+                If <code><var>line_number_expr</var></code> does not evaluate to an existing line number in the
+                new program, <samp>Illegal function call</samp> is raised but the load or merge is
+                being performed.
+            </li>
+        </ul>
+    </section>
 
 <h3 id="CHDIR"><code>CHDIR</code> statement</h3>
 <pre>
