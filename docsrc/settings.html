@@ -1,31 +1,44 @@
-
-<section>
-<h2 id="settings">Changing settings</h2>
-<p>PC-BASIC has a number of settings that change the way it operates. There are
-two ways to change these settings:</p>
+<h1 id="settings">Settings and options</h1>
+<p>
+    PC-BASIC has a number of settings that change the way it operates. There are
+    two ways to change these settings:
+</p>
 <dl>
-<dt>Command-line options</dt>
-<dd>You can enter command-line options if you start PC-BASIC from the console (the <em>Command Prompt</em> or <em>PowerShell</em> in Windows, or a <em>Terminal</em> in Unix), by preceding the name of the option with two dashes, like so:<br/>
-<pre>pcbasic --preset=tandy --ctrl-c-break=True
-</pre>
-On the command line, you can leave out the expression <code>=True</code> that is common in switching options.
-Some options have an alternative, short name consisting of a single letter preceded by a single dash, which you can use on the command line. You can combine multiple short options with a single dash.</dd>
-<dt>Configuration files</dt>
-<dd>You can change options by adding or removing lines in your private configuration file.
-This configuration file is a file named <code>PCBASIC.INI</code> stored in your
-Application Data folder. The location of this folder is as follows:
-<dl class="compact">
-<dt>Windows</dt><dd><code>%AppData%\pcbasic</code></dd>
-<dt>OS X</dt><dd><code>~/Library/Application Support/pcbasic</code></dd>
-<dt>Linux</dt><dd><code>~/.config/pcbasic</code></dd>
+    <dt>Command-line options</dt>
+    <dd>
+        You can enter command-line options if you start PC-BASIC from the console
+        (also known as the <em>Command Prompt</em> or <em>Terminal</em>;
+        this is normally <code>CMD</code> or <code>PowerShell</code> on Windows),
+        by preceding the name of the option
+        with two dashes, like so:
+        <code class="block"><b>pcbasic <a href="#--preset">--preset</a>=tandy <a href="#--ctrl-c-break">--ctrl-c-break</a>=True</b></code>
+        On the command line, you can leave out the expression <code><b>=True</b></code>
+        that is common in switching options.
+        Some options have an alternative, short name consisting of a single
+        letter preceded by a single dash, which you can use on the command line.
+        You can combine multiple short options with a single dash.
+    </dd>
+    <dt>Configuration files</dt>
+    <dd>
+        You can change options by adding or removing lines in your private configuration file.
+        This configuration file is a file named <code>PCBASIC.INI</code> stored in your
+        Application Data folder. The location of this folder is as follows:
+        <dl class="compact">
+            <dt>Windows</dt><dd><code>%AppData%\pcbasic</code></dd>
+            <dt>OS X</dt><dd><code>~/Library/Application Support/pcbasic</code></dd>
+            <dt>Linux</dt><dd><code>~/.config/pcbasic</code></dd>
+        </dl>
+        Change an option in the configuration file by adding a line in the section named <code>[pcbasic]</code>, like so:
+        <code class="block">
+            [pcbasic]<br/>
+            <a href="#--preset">preset</a>=tandy<br/>
+            <a href="#--ctrl-c-break">ctrl-c-break</a>=True
+        </code>
+        You cannot use the sort name of options in the configuration file.
+        You also cannot leave out the expression <code><b>=True</b></code>.
+    </dd>
 </dl>
-Change an option in the configuration file by adding a line in the section named <code>[pcbasic]</code>, like so:
-<pre>preset=tandy
-ctrl-c-break=True
-</pre>
-You cannot use the sort name of options in the configuration file. You also cannot leave out the expression <code>=True</code>.
-</dd>
-</dl>
-<p>In either method, the options have the same name and syntax. In what follows, we will often refer to
-a particular option setting; remember that you can always set this from the command line as well as from the configuration file.</p>
-</section>
+<p>
+    In either method, the options have the same name and syntax. In what follows, we will often refer to
+    a particular option setting; remember that you can always set this from the command line as well as from the configuration file.
+</p>
