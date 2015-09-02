@@ -2222,7 +2222,7 @@ before returning available memory.
 </li></ul>
 
 
-<h3 id="GET-files"><code>GET</code> statement (random-access files)</h3>
+<h3 id="GET-files"><code>GET</code> statement (files)</h3>
 <pre>GET [#] <var>file_number</var> [, <var>record_number</var>]</pre>
 <p>Read a record from the random-access file <code><var>file_number</var></code> at position
 <code><var>record_number</var></code>.
@@ -2258,7 +2258,7 @@ If the record number is beyond the end of the file, the file buffer is
 <code><var>file_number</var></code> is not specified: <samp>Missing operand</samp>.
 </li></ul>
 
-<h3 id="GET-serial"><code>GET</code> statement (serial communications)</h3>
+<h3 id="GET-serial"><code>GET</code> statement (communications)</h3>
 <pre>GET [#] <var>com_file_number</var> [, <var>number_bytes</var>]</pre>
 <p>Read <code><var>number_bytes</var></code> bytes from the communications buffer opened under file
 number <code><var>com_file_number</var></code>.
@@ -2843,7 +2843,7 @@ the prompt is followed by a comma, no question mark is added. </p>
 </li></ul>
 
 
-<h3 id="INPUT-file"><code>INPUT#</code> statement (text files, devices, or random-access files)</h3>
+<h3 id="INPUT-file"><code>INPUT</code> statement (devices and files)</h3>
 <pre>INPUT[ ]# <var>file_num</var>, <var>var_0</var> [, <var>var_1</var> [, ...] ]</pre>
 <p>Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
 of a random access file.</p>
@@ -3358,7 +3358,7 @@ Any of the parameters has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
-<h3 id="LINE-INPUT"><code>LINE INPUT</code> statement</h3>
+<h3 id="LINE-INPUT"><code>LINE INPUT</code> statement (console)</h3>
 <pre>LINE INPUT [ ; ] [ <var>prompt_literal</var> { ; | , } ] <var>string_name</var></pre>
 <p>Displays the prompt given in <code><var>prompt_literal</var></code> and reads user input from the
 keyboard, storing it into the variable <code><var>string_name</var></code>. All input is read until
@@ -3382,7 +3382,7 @@ followed by a comma or a semicolon.
 </li></ul>
 
 
-<h3 id="LINE-INPUT-file"><code>LINE INPUT#</code> statement</h3>
+<h3 id="LINE-INPUT-file"><code>LINE INPUT</code> statement (files)</h3>
 <pre>LINE INPUT[ ]# <var>file_num</var>, <var>string_name</var></pre>
 <p>Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
 of a random access file. All input is read until <kbd>Enter</kbd> is pressed; the first
@@ -5175,7 +5175,7 @@ foreground attribute while <code>PRESET</code> changes it to zero.</p>
 </li></ul>
 
 
-<h3 id="PRINT"><code>PRINT</code>, <code>PRINT#</code> and <code>LPRINT</code> statements</h3>
+<h3 id="PRINT"><code>PRINT</code> and <code>LPRINT</code> statements</h3>
 <pre>{ LPRINT | {PRINT|?} [# <var>file_num</var>,] } [<var>expr_0</var>] [;|,|SPC(<var>n</var>)|TAB(<var>n</var>)] [<var>expr_1</var>] [...]
          [ USING <var>format</var>; [ <var>uexpr_0</var> [ {;|,} <var>uexpr_1</var> [ {;|,} ...] ] ] [;|,] ]</pre>
 <p>Writes expressions to the screen, printer, file or device. If <code>LPRINT</code> is used,
@@ -5350,7 +5350,7 @@ A number field in the format string contains no <code>#</code> characters: <samp
 </li></ul>
 
 
-<h3 id="PUT-files"><code>PUT</code> statement   (random-access files)</h3>
+<h3 id="PUT-files"><code>PUT</code> statement (files)</h3>
 <pre>PUT [#] <var>file_number</var> [, <var>record_number</var>]</pre>
 <p>Writes a record to the random-access file <code><var>file_number</var></code> at position
 <code><var>record_number</var></code>.
@@ -5970,7 +5970,7 @@ Any argument has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
 
-<h3 id="SOUND-switch"><code>SOUND</code> statement (advanced-sound switch)</h3>
+<h3 id="SOUND-switch"><code>SOUND</code> statement (switch)</h3>
 <pre>SOUND { ON | OFF }</pre>
 <p> Toggles the availability of advanced sound capabilities on PCjr and Tandy. This includes 3-voice
     sound, noise generation and volume control.</p>
@@ -6609,7 +6609,7 @@ Otherwise, screen row 25 cannot be part of the
     </section>
 
     <section>
-        <h3 id="WIDTH"><code>WIDTH</code> statement (screen)</h3>
+        <h3 id="WIDTH"><code>WIDTH</code> statement (console)</h3>
         <code class="block">
             <b>WIDTH</b> { <b>20</b> | <b>40</b> | <b>80</b> | <b>(</b><var>num_columns</var><b>)</b> } [<b>,</b> [ <var>num_rows</var>] [ <b>,</b> ] ]
         </code>
@@ -6692,7 +6692,7 @@ Otherwise, screen row 25 cannot be part of the
         <p>
             If <code><var>device_name</var></code> is <code>"SCRN:"</code>, <code>"KYBD:"</code>, or omitted, the screen width is changed.
             In this case, <code><var>num_columns</var></code> must be one of 20, 40 or 80.
-            See the notes at <code><a href="#WIDTH">WIDTH</a></code> (screen) for side effects.
+            See the notes at <code><a href="#WIDTH">WIDTH</a></code> (console) for side effects.
         </p>
         <h4>Parameters</h4>
         <ul>
@@ -6770,7 +6770,7 @@ Otherwise, screen row 25 cannot be part of the
     </section>
 
     <section>
-        <h3 id="WRITE"><code>WRITE</code> and <code>WRITE#</code> statements</h3>
+        <h3 id="WRITE"><code>WRITE</code> statement</h3>
         <code class="block">
             <b>WRITE</b> [ <b>#</b><var>file_num</var><b>,</b> ] <var>expr_0</var> [ { <b>,</b> | <b>;</b> } <var>expr_1</var> ... ]
         </code>
