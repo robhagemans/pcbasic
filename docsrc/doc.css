@@ -127,7 +127,7 @@ ul {
 }
 
 /* compact def lists */
-dl .compact {
+dl.compact {
     display: inline-block;
     width: 100%;
 }
