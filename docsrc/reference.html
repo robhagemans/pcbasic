@@ -6213,128 +6213,186 @@ The types of <code><var>var_0</var></code> and <code><var>var_1</var></code> are
     Any unsaved program or data will be lost.
 </li></ul>
 
+    <section>
+        <h3 id="TAN"><code>TAN</code> function</h3>
+        <code class="block">
+            <var>tangent</var> <b>= TAN(</b><var>angle</var><b>)</b>
+        </code>
+        <p>
+            Returns the tangent of <code><var>angle</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>angle</var></code> is a numeric expression giving
+                the angle in radians.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+                option, this function returns a single-precision value.
+            </li>
+            <li>
+                The tangent returned usually differs from the value returned by GW-BASIC in the least significant figure.
+            </li>
+            <li>
+                For <code><var>angle</var></code> close to multiples of <code>&#960;/2</code>, the tangent is divergent or close
+                to zero. The values returned will have very low precision in these cases.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="TAN"><code>TAN</code> function</h3>
-<pre><var>tangent</var> = TAN(<var>angle</var>)</pre>
-<p>Returns the tangent of <code><var>angle</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>angle</var></code> is a numeric expression giving
-the angle in radians.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-    Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
-    option, this function returns a single-precision value.
-</li><li>
-  The tangent returned usually differs from the value returned by GW-BASIC in the least significant figure.
-</li><li>
-   For <code><var>angle</var></code> close to multiples of <code>&#960;/2</code>, the tangent is divergent or close
-    to zero. The values returned will have very low precision in these cases.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
-</li></ul>
+    <section>
+        <h3 id="TERM"><code>TERM</code> statement</h3>
+        <code class="block">
+            <b>TERM</b>
+        </code>
+        <p>
+            Load and run the program defined by <code><a href="#--pcjr-term">--pcjr-term</a></code>.
+            By default, as on the IBM PCjr, this is a
+            built-in serial terminal emulator application.
+            This statement is only available with
+            <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code>.
+        </p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                If <code><a href="#--pcjr-term">--pcjr-term</a></code> is not set,
+                this statement raises <code>Internal error</code>.
+            </li>
+            <li>
+                If <code><a href="#--syntax">--syntax</a></code> is not set to
+                <code>pcjr</code> or <code>tandy</code>, this keyword is not present.
+                Calling <code>TERM</code> will raise <samp>Syntax error</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="TIME$-function"><code>TIME$</code> function</h3>
+        <code class="block">
+            <var>time</var> <b>= TIME$</b>
+        </code>
+        <p>
+            Returns the current BASIC time in the form <code>"HH:mm:ss"</code>.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="TIME$-statement"><code>TIME$</code> statement</h3>
+        <code class="block">
+            <b>TIME$ = </b><var>time</var>
+        </code>
+        <p>
+            Sets the current BASIC time to <code><var>time</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                Time is a string expression
+                of the form <code>"HH:mm:ss"</code> where
+                <code>00&lt;=HH&lt;24</code>, <code>00&lt;=mm&lt;60</code> and <code>00&lt;=ss&lt;60</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                PC-BASIC stores an offset to the system time and uses this for future
+                calls to <code><a href="TIME$-function">TIME$</a></code> and
+                <code><a href="DATE$-function">DATE$</a></code> functions in the same interpreter session.
+                The system time is not changed, unlike GW-BASIC under MS-DOS.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>time</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>time</var></code> is not of the correct form: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="TERM"><code>TERM</code> statement</h3>
-<pre>TERM</pre>
-<p>
-    If <code><a href="#--pcjr-term">--pcjr-term</a></code> is set, starts a
-    built-in serial terminal emulator application. This is a BASIC program that
-    is loaded and run instead of the current program.
-</p>
-<p>
-    If <code><a href="#--pcjr-term">--pcjr-term</a></code> is not set,
-    this statement raises <code>Internal error</code>.
-</p>
-<p>
-    If <code><a href="#--syntax">--syntax</a></code> is not set to
-    <code>pcjr</code> or <code>tandy</code>, this keyword is not present.
-    Calling <code>TERM</code> will raise <samp>Syntax error</samp>.
-</p>
+    <section>
+        <h3 id="TIMER-event"><code>TIMER</code> statement</h3>
+        <code class="block">
+            <b>TIMER</b> { <b>ON</b> | <b>OFF</b> | <b>STOP</b> }
+        </code>
+        <ul>
+            <li>
+                <code>ON</code>: enables <code><a href="#ON-event">ON TIMER</a></code> event
+                trapping of the timer clock.
+            </li>
+            <li>
+                <code>OFF</code>: disables trapping.
+            </li>
+            <li>
+                <code>STOP</code>: halts trapping until <code>TIMER ON</code> is used.
+                Events that occur while trapping is halted will trigger immediately when
+                trapping is re-enabled.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="TIMER"><code>TIMER</code> function</h3>
+        <code class="block">
+            <var>seconds</var> <b>= TIMER</b>
+        </code>
+        <p>
+            Returns the number of seconds since midnight on the internal BASIC
+            clock.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                <code>TIMER</code> updates in ticks of 1/20 second.
+            </li>
+            <li>
+                The least-significant two bytes of <code>TIMER</code> are often used as a seed for the
+                pseudorandom number generator through <code><a href="#RANDOMIZE">RANDOMIZE</a> TIMER</code>. Since these bytes
+                only take values from a limited set, that's not in fact a particularly good
+                random seed. However, the pseudorandom number generator included with GW-BASIC and PC-BASIC
+                is so weak that it should not be used for anything serious anyway.
+            </li>
+            <li>
+            This function has no brackets.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="TIME$-function"><code>TIME$</code> function</h3>
-<pre><var>time</var> = TIME$</pre>
-<p>Returns the current BASIC time in the form <code>"HH:mm:ss"</code>.</p>
-<h4>Notes</h4>
-<ul><li>
-This function has no brackets.
-</li></ul>
-
-
-<h3 id="TIME$-statement"><code>TIME$</code> statement</h3>
-<pre>TIME$ = <var>time</var></pre>
-<p>Sets the current BASIC time to <code><var>time</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-Time is a string expression
-of the form <code>"HH:mm:ss"</code> where <code>00&lt;=HH&lt;24</code>, <code>00&lt;=mm&lt;60</code> and <code>00&lt;=ss&lt;60</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   PC-BASIC stores an offset to the system time and uses this for future
-    calls to <code><a href="TIME$-function">TIME$</a></code> and
-    <code><a href="DATE$-function">DATE$</a></code> functions in the same interpreter session.
-    The system time is not changed, unlike GW-BASIC under MS-DOS.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>time</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>time</var></code> is not of the correct form: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="TIMER-event"><code>TIMER</code> statement</h3>
-<pre>TIMER { ON | OFF | STOP }</pre>
-<ul>
-    <li>
-        <code>ON</code>: enables <code><a href="#ON-event">ON TIMER</a></code> event
-        trapping of the timer clock.
-    </li>
-    <li>
-        <code>OFF</code>: disables trapping.
-    </li>
-    <li>
-        <code>STOP</code>: halts trapping until <code>TIMER ON</code> is used.
-        Events that occur while trapping is halted will trigger immediately when
-        trapping is re-enabled.
-    </li>
-</ul>
-
-
-
-<h3 id="TIMER"><code>TIMER</code> function</h3>
-<pre><var>seconds</var> = TIMER</pre>
-<p>Returns the number of seconds since midnight on the internal BASIC
-clock.</p>
-<h4>Notes</h4>
-<ul><li>
-   <code>TIMER</code> updates in ticks of 1/20 second.
-</li><li>
-    The least-significant two bytes of <code>TIMER</code> are often used as a seed for the
-    pseudorandom number generator through <code><a href="#RANDOMIZE">RANDOMIZE</a> TIMER</code>. Since these bytes
-    only take values from a limited set, that's not in fact a particularly good
-    random seed. However, the pseudorandom number generator included with GW-BASIC and PC-BASIC
-    is so weak that it should not be used for anything serious anyway.
-</li><li>
-This function has no brackets.
-</li></ul>
-
-
-<h3 id="TRON"><code>TRON</code> and <code>TROFF</code> statements</h3>
-<pre>{ TRON | TROFF }</pre>
-<p>Turns line number tracing on or off. If line number tracing is on, BASIC prints
-a tag <samp>[100]</samp> to the console when program line <code>100</code> is executed, and so forth.
-</p><h4>Notes</h4>
-<ul><li>
-   Tracing is turned off by the <code><a href="#NEW">NEW</a></code> and
-   <code><a href="#LOAD">LOAD</a></code> statements.
-</li></ul>
+    <section>
+        <h3 id="TRON"><code>TRON</code> and <code>TROFF</code> statements</h3>
+        <code class="block">
+            { <b>TRON</b> | <b>TROFF</b> }
+        </code>
+        <p>
+            Turns line number tracing on or off. If line number tracing is on, BASIC prints
+            a tag <samp>[100]</samp> to the console when program line <code>100</code> is executed, and so forth.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+               Tracing is turned off by the <code><a href="#NEW">NEW</a></code> and
+               <code><a href="#LOAD">LOAD</a></code> statements.
+            </li>
+        </ul>
+    </section>
 
     <section>
         <h3 id="UNLOCK"><code>UNLOCK</code> statement</h3>
