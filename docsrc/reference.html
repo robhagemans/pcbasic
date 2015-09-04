@@ -236,7 +236,7 @@
             </ul>
         </li>
         <li><code>NOT</code></li>
-        <li><code>AND></code></li>
+        <li><code>AND</code></li>
         <li><code>OR</code></li>
         <li><code>XOR</code></li>
         <li><code>EQV</code></li>
@@ -4509,39 +4509,54 @@ The initial <code>OUT</code> statements currently have no effect in PC-BASIC.
 <code><var>value</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
-
-<h3 id="PAINT"><code>PAINT</code> statement</h3>
-<pre>PAINT [STEP] (x, y) [, attrib [, border [, background ] ] ]</pre>
-<p>Flood-fills the screen with a colour or pattern, starting from the given seed point.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>x</var></code>, <code><var>y</var></code> are numeric expressions in the range <code>[-32768&#8212;32767]</code>
- If STEP is specified, <code><var>x</var></code> <code><var>y</var></code> are offsets
-from the current position. If the seed point is outside the visible screen
-area, no flood fill is performed.
-</li><li>
-<code><var>attrib</var></code> is an expression that specifies the fill attribute or pattern. If not
-specified, the current foreground attribute is used.
-</li><li>
-If <code><var>attrib</var></code> has a number value, it must be in <code>[0&#8212;255]</code>; it specifies the colour
-attribute used to fill.
-</li><li>
-If <code><var>attrib</var></code> has a string value, it specifies a tile pattern (see below).
-</li><li>
-<code><var>border</var></code> is a numeric expression in <code>[0&#8212;255]</code>. It specifies the attribute
-of the fill boundary (see below).
-</li><li>
-<code><var>background</var></code> is a string expression that represents a background tile
-pattern to ignore when determining boundaries (see below).
-</li></ul>
-<h4>Tile patterns</h4>
-<p> A tile pattern can be specified by a string of up to 255 characters. The
-    interpretation of the string depends on the number of bits per pixel in
-    the current screen mode.</p>
-<dl><dt>
-    1 bit per pixel (e.g. <code>SCREEN 2</code>)</dt>
-<dd>Here is an example:
-        <pre>
+    <section>
+        <h3 id="PAINT"><code>PAINT</code> statement</h3>
+        <code class="block">
+            <b>PAINT</b> [<b>STEP</b>] <b>(</b><var>x</var><b>,</b> <var>y</var><b>)</b> [<b>,</b> <var>attrib</var> [<b>,</b> <var>border</var> [<b>,</b> <var>background</var> ] ] ]
+        </code>
+        <p>
+            Flood-fills the screen with a colour or pattern, starting from the given seed point.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code>, <code><var>y</var></code> are numeric expressions in the range <code>[-32768&#8212;32767]</code>
+                If STEP is specified, <code><var>x</var></code> <code><var>y</var></code> are offsets
+                from the current position. If the seed point is outside the visible screen
+                area, no flood fill is performed.
+            </li>
+            <li>
+                <code><var>attrib</var></code> is an expression that specifies the fill attribute or pattern. If not
+                specified, the current foreground attribute is used.
+            </li>
+            <li>
+                If <code><var>attrib</var></code> has a number value, it must be in <code>[0&#8212;255]</code>; it specifies the colour
+                attribute used to fill.
+            </li>
+            <li>
+                If <code><var>attrib</var></code> has a string value, it specifies a tile pattern (see below).
+            </li>
+            <li>
+                <code><var>border</var></code> is a numeric expression in <code>[0&#8212;255]</code>. It specifies the attribute
+                of the fill boundary (see below).
+            </li>
+            <li>
+                <code><var>background</var></code> is a string expression that represents a background tile
+                pattern to ignore when determining boundaries (see below).
+            </li>
+        </ul>
+        <h4>Tile patterns</h4>
+        <p>
+            A tile pattern can be specified by a string of up to 255 characters. The
+            interpretation of the string depends on the number of bits per pixel in
+            the current screen mode.
+        </p>
+        <dl>
+            <dt>
+                1 bit per pixel (e.g. <code>SCREEN 2</code>)
+            </dt>
+            <dd>Here is an example:
+                <pre>
                   76543210    value
                   *.......    CHR$(&amp;h80)
                   .*......    CHR$(&amp;h40)
@@ -4550,15 +4565,17 @@ pattern to ignore when determining boundaries (see below).
                   ....*...    CHR$(&amp;h08)
                   .....*..    CHR$(&amp;h04)
                   ......*.    CHR$(&amp;h02) </pre>
-</dd>
-<dt>
-    <code>SCREEN 7</code>, <code>8</code>, <code>9</code></dt>
-<dd>The tile pattern is always 8 pixels wide. The first character in the
-        pattern string contains the first bit of each of these 8 pixels, the
-        second character contains the second bits, etc.
-        For example, in a 2-bits-per-pixel mode, the pattern can have many
-        colours. However, the same size pattern as above in attribute &amp;h03 is:
-        <pre>
+            </dd>
+            <dt>
+                <code>SCREEN 7</code>, <code>8</code>, <code>9</code>
+            </dt>
+            <dd>
+                The tile pattern is always 8 pixels wide. The first character in the
+                pattern string contains the first bit of each of these 8 pixels, the
+                second character contains the second bits, etc.
+                For example, in a 2-bits-per-pixel mode, the pattern can have many
+                colours. However, the same size pattern as above in attribute &amp;h03 is:
+                <pre>
             bit   76543210    value
             0     *.......    CHR$(&amp;h80)
             1     *.......    CHR$(&amp;h80)
@@ -4574,16 +4591,19 @@ pattern to ignore when determining boundaries (see below).
             1     .....*..    CHR$(&amp;h04)
             0     ......*.    CHR$(&amp;h02)
             1     ......*.    CHR$(&amp;h02)</pre>
-        If the pattern string is truncated before all bits of the last line
-        have been defined, the remaining bits will be zero.
-</dd>
-<dt><code>SCREEN 1</code>, <code>3</code>, <code>4</code>, <code>5</code> , <code>6</code></dt>
-<dd>Each row of the tile pattern represents a screen row. Colours are
-        encoded in consecutive bits &#8212; the more bits per pixel, the narrower the
-        pattern is. For 2 bits per pixel, the pattern is 4 pixels wide; for 4
-        bits per pixel it is 2 pixels wide. The pattern string above now encodes
-        a multicoloured tile:
-       <pre>
+            If the pattern string is truncated before all bits of the last line
+            have been defined, the remaining bits will be zero.
+            </dd>
+            <dt>
+                <code>SCREEN 1</code>, <code>3</code>, <code>4</code>, <code>5</code> , <code>6</code>
+            </dt>
+            <dd>
+                Each row of the tile pattern represents a screen row. Colours are
+                encoded in consecutive bits &#8212; the more bits per pixel, the narrower the
+                pattern is. For 2 bits per pixel, the pattern is 4 pixels wide; for 4
+                bits per pixel it is 2 pixels wide. The pattern string above now encodes
+                a multicoloured tile:
+                <pre>
           3210    76543210    value
           2000    *.......    CHR$(&amp;h80)
           1000    .*......    CHR$(&amp;h40)
@@ -4592,862 +4612,1237 @@ pattern to ignore when determining boundaries (see below).
           0020    ....*...    CHR$(&amp;h08)
           0010    .....*..    CHR$(&amp;h04)
           0002    ......*.    CHR$(&amp;h02) </pre>
-</dd></dl>
-<p>The tile pattern is locked to the screen; imagine a grid starting at
-    <code>(0,0)</code> and covering the screen. Whenever an area is tile-filled,
-    the tiles are put into this grid. In this way, adjacent areas will have
-    continuous tiling even if they were filled from different seed points.</p>
+            </dd>
+        </dl>
+        <p>
+            The tile pattern is locked to the screen; imagine a grid starting at
+            <code>(0,0)</code> and covering the screen. Whenever an area is tile-filled,
+            the tiles are put into this grid. In this way, adjacent areas will have
+            continuous tiling even if they were filled from different seed points.
+        </p>
+        <h4>Boundaries</h4>
+        <p>
+            A solid flood fill stops at pixels that have the same attribute as the fill
+            or that have the specified border attribute, if specified.
+            A tiling flood fill stops at the specified border attribute; if no border
+            attribute is specified, it stops at the current foreground attribute.
+            A tiling flood fill also stops at scan line intervals that are the same as
+            the tiling pattern for that line, unless a background pattern is specified
+            and the interval also equals the background pattern for that line.</p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                In <code>SCREEN 7</code>, <code>8</code>, <code>9</code>, if <code><var>background</var></code> equals <code><var>attrib</var></code> up to the length of
+                <code><var>attrib</var></code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>background</var></code> has a number value: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>border</var></code>,<code><var>x</var></code>, or <code><var>y</var></code> have a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>border</var></code>,<code><var>x</var></code>, or <code><var>y</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>border</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>attrib</var></code> is numeric and not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>attrib</var></code> is numeric and not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h4>Boundaries</h4>
-<p>
-    A solid flood fill stops at pixels that have the same attribute as the fill
-    or that have the specified border attribute, if specified.
-    A tiling flood fill stops at the specified border attribute; if no border
-    attribute is specified, it stops at the current foreground attribute.
-    A tiling flood fill also stops at scan line intervals that are the same as
-    the tiling pattern for that line, unless a background pattern is specified
-    and the interval also equals the background pattern for that line.</p>
-<h4>Errors</h4>
-<ul><li>
-   In <code>SCREEN 7</code>, <code>8</code>, <code>9</code>, if <code><var>background</var></code> equals <code><var>attrib</var></code> up to the length of
-    <code><var>attrib</var></code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>background</var></code> has a number value: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>border</var></code>,<code><var>x</var></code>, or <code><var>y</var></code> have a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>border</var></code>,<code><var>x</var></code>, or <code><var>y</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>border</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>attrib</var></code> is numeric and not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>attrib</var></code> is numeric and not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="PALETTE"><code>PALETTE</code> statement</h3>
+        <code class="block">
+            <b>PALETTE</b> [ <var>attrib</var><b>,</b> <var>colour</var> ]
+        </code>
+        <p>
+            Assigns a colour to an attribute. All pixels with that attribute will change
+            colour immediately.
+            If no parameters are specified, <code>PALETTE</code> resets to the initial setting.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>attrib</var></code> is a numeric expression between 0 and the current palette
+                size, less one.
+            </li>
+            <li>
+                <code><var>colour</var></code> is a numeric expression between -1 and the maximum number of
+                colours for the current screen mode, less one. If <code><var>colour</var></code> equals -1,
+                the palette remains unchanged.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>attrib</var></code> or <code><var>colour</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>attrib</var></code> or <code><var>colour</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>
+            </li>
+            <li>
+                <code><var>attrib</var></code> or <code><var>colour</var></code> is not in range: <samp>Illegal function call</samp>
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="PALETTE-USING"><code>PALETTE USING</code> statement</h3>
+        <code class="block">
+            <b>PALETTE USING</b> <var>int_array_name</var> { <b>(</b> | <b>[</b> } <var>start_index</var> { <b>)</b> | <b>]</b> }
+        </code>
+        <p>
+            Assigns new colours to all attributes.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>int_array_name</var></code> is an array of integers (<code>%</code>) that will supply the
+                new values for the palette.
+            </li>
+            <li>
+                <code><var>start_index</var></code> is a numeric expression that
+                indicates at which index in the array to start mapping to the palette.
+            </li>
+        </ul>
+        <p>
+            If an array entry has value <code>-1</code>, the matching attribute is left unchanged.
+        </p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>int_array_name</var></code> has not been allocated: <samp>Illegal function call</samp>.
+                The array will not be automatically allocated.
+            </li>
+            <li>
+            <code><var>int_array_name</var></code> is not an integer array: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+            <code><var>int_array_name</var></code> is too short: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+            <code><var>start_index</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+            <code><var>start_index</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>
+            </li>
+            <li>
+            <code><var>start_index</var></code> is outside array dimensions: <samp>Subscript out of range</samp>
+            </li>
+        </ul>
+    </section>
 
-<h3 id="PALETTE"><code>PALETTE</code> statement</h3>
-<pre>PALETTE [ <var>attrib</var>, <var>colour</var> ]</pre>
-<p>Assigns a colour to an attribute. All pixels with that attribute will change
-colour immediately.
-If no parameters are specified, <code>PALETTE</code> resets to the initial setting.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>attrib</var></code> is a numeric expression between 0 and the current palette
-size, less one.
-</li><li>
-<code><var>colour</var></code> is a numeric expression between -1 and the maximum number of
-colours for the current screen mode, less one. If <code><var>colour</var></code> equals -1,
-the palette remains unchanged.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>attrib</var></code> or <code><var>colour</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>attrib</var></code> or <code><var>colour</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>
-</li><li>
-<code><var>attrib</var></code> or <code><var>colour</var></code> is not in range: <samp>Illegal function call</samp>
-</li></ul>
+    <section>
+        <h3 id="PCOPY"><code>PCOPY</code> statement</h3>
+        <code class="block">
+            <b>PCOPY</b> <var>src</var><b>,</b> <var>dst</var>
+        </code>
+        <p>
+            Copies the screen page <code><var>src</var></code> to <code><var>dst</var></code>. All text and graphics on <code><var>dst</var></code> is
+            replaced by those of <code><var>src</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>src</var></code> and <code><var>dst</var></code> are numeric expressions between 0 and the current video
+                mode's number of pages, less one.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>src</var></code> or <code><var>dst</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>src</var></code> or <code><var>dst</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>src</var></code> or <code><var>dst</var></code> is out of range: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="PEEK"><code>PEEK</code> function</h3>
+        <code class="block">
+            <var>value</var> <b>= PEEK(</b><var>address</var><b>)</b>
+        </code>
+        <p>
+            Returns the value of the memory at  <code><var>segment</var> * 16 + <var>address</var></code> where <code><var>segment</var></code>
+            is the current segment set with <code>DEF SEG</code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>. Negative values are interpreted as their
+                two's complement.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+               The memory is only partly emulated in PC-BASIC. See <a href="#memory">Memory model</a> for supported addresses.
+               Outside emulated areas, <code>PEEK</code> returns 0.
+            </li>
+            <li>
+               Values for particular memory address can be preset on the command line
+                using the <code><a href="#--peek">--peek</a></code> option. This can be used for compatibility with old
+                programs. These values will override video or data segment values, if they
+                are in those locations.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="PALETTE-USING"><code>PALETTE USING</code> statement</h3>
-<pre>PALETTE USING <var>int_array_name</var> { ( | [ } <var>start_index</var> { ) | ] }</pre>
-<p>Assigns new colours to all attributes.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>int_array_name</var></code> is an array of integers (<code>%</code>) that will supply the
-new values for the palette.
-</li><li>
-<code><var>start_index</var></code> is a numeric expression that
-indicates at which index in the array to start mapping to the palette.
-</li></ul>
-<p>If an array entry has value <code>-1</code>, the matching attribute is left unchanged.</p>
-<h4>Errors</h4>
-<ul><li>
-<code><var>int_array_name</var></code> has not been allocated: <samp>Illegal function call</samp>.
-    The array will not be automatically allocated.
-</li><li>
-<code><var>int_array_name</var></code> is not an integer array: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>int_array_name</var></code> is too short: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>start_index</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>start_index</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>
-</li><li>
-<code><var>start_index</var></code> is outside array dimensions: <samp>Subscript out of range</samp>
-</li></ul>
+    <section>
+        <h3 id="PEN-statement"><code>PEN</code> statement</h3>
+        <code class="block"><b>PEN</b> { <b>ON</b> | <b>OFF</b> | <b>STOP</b> }</code>
+        <p>
+            Controls event trapping and read access of the light pen (emulated through the mouse in PC-BASIC).
+            <code>PEN ON</code> switches pen reading and trapping on.  <code>PEN OFF</code> switches it off.
+            <code>PEN STOP</code> suspends <code>PEN</code> event trapping until <code>PEN ON</code> is
+            executed. Up to one event can be triggered during suspension, provided that
+            event handling was switched on prior to suspension. The event triggered during
+            suspension is handled immediately after the next <code>PEN ON</code> statement.
+        </p>
+    </section>
 
+    <section>
+        <h3 id="PEN"><code>PEN</code> function</h3>
+        <code class="block"><var>x</var> <b>= PEN(</b><var>mode</var><b>)</b></code>
+        <p>
+            Reads the light pen. What this function returns depends on <code><var>mode</var></code>:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th><code><var>mode</var></code></th>
+                    <th>Return value</th>
+                </tr>
+                <tr>
+                    <td>0</td>
+                    <td>Boolean; whether the light pen has been down since last poll.</td>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>x coordinate of last pen down position</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>y coordinate of last pen down position</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Boolean; whether the pen is currently down</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>x coordinate of current pen position</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>y coordinate of current pen position</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>character row coordinate of last pen down position</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>character column coordinate of last pen down position</td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td>character row coordinate of current pen position</td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td>character column coordinate of current pen position</td>
+                </tr>
+            </table>
+        </div>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>mode</var></code> is a numeric expression in <code>[0&#8212;9]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In PC-BASIC, for <em>pen down</em> read <em>mouse button pressed</em>. For <em>pen
+                position</em> read <em>mouse pointer position</em>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>mode</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>mode</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>mode</var></code> is not in <code>[0&#8212;9]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="PCOPY"><code>PCOPY</code> statement</h3>
-<pre>PCOPY <var>src</var>, <var>dst</var></pre>
-<p>Copies the screen page <code><var>src</var></code> to <code><var>dst</var></code>. All text and graphics on <code><var>dst</var></code> is
-replaced by those of <code><var>src</var></code>.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>src</var></code> and <code><var>dst</var></code> are numeric expressions between 0 and the current video
-mode's number of pages, less one.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>src</var></code> or <code><var>dst</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>src</var></code> or <code><var>dst</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>src</var></code> or <code><var>dst</var></code> is out of range: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="PLAY-event"><code>PLAY</code> statement (event-trapping control)</h3>
+        <code class="block">
+            <b>PLAY</b> { <b>ON</b> | <b>OFF</b> | <b>STOP</b> }
+        </code>
+        <ul>
+            <li>
+                <code>ON</code>: enables <code><a href="#ON-event">ON PLAY</a></code> event
+                trapping of the music queue.
+            </li>
+            <li>
+                <code>OFF</code>: disables trapping.
+            </li>
+            <li>
+                <code>STOP</code>: halts trapping until <code>PLAY ON</code> is used.
+                Events that occur while trapping is halted will trigger immediately when
+                trapping is re-enabled.
+            </li>
+        </ul>
+    </section>
 
-
-<h3 id="PEEK"><code>PEEK</code> function</h3>
-<pre><var>value</var> = PEEK(<var>address</var>)</pre>
-<p>Returns the value of the memory at  <code><var>segment</var> * 16 + <var>address</var></code> where <code><var>segment</var></code>
-is the current segment set with <code>DEF SEG</code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>. Negative values are interpreted as their
-two's complement.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   The memory is only partly emulated in PC-BASIC. See <a href="#memory">Memory model</a> for supported addresses.
-   Outside emulated areas, <code>PEEK</code> returns 0.
-</li><li>
-   Values for particular memory address can be preset on the command line
-    using the <code><a href="#--peek">--peek</a></code> option. This can be used for compatibility with old
-    programs. These values will override video or data segment values, if they
-    are in those locations.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li></ul>
-
-
-<h3 id="PEN-statement"><code>PEN</code> statement</h3>
-<pre>PEN { ON | OFF | STOP }</pre>
-<p>Controls event trapping and read access of the light pen (emulated through the mouse in PC-BASIC).
-<code>PEN ON</code> switches pen reading and trapping on.  <code>PEN OFF</code> switches it off.
-<code>PEN STOP</code> suspends <code>PEN</code> event trapping until <code>PEN ON</code> is
-executed. Up to one event can be triggered during suspension, provided that
-event handling was switched on prior to suspension. The event triggered during
-suspension is handled immediately after the next <code>PEN ON</code> statement.</p>
-
-
-<h3 id="PEN"><code>PEN</code> function</h3>
-<pre><var>x</var> = PEN(<var>mode</var>)</pre>
-<p>
-    Reads the light pen. What this function returns depends on <code><var>mode</var></code>:
-</p>
-<div class="scrollable">
-<table>
-    <tr>
-        <th><code><var>mode</var></code></th>
-        <th>Return value</th>
-    </tr><tr>
-        <td>0</td>
-        <td>Boolean; whether the light pen has been down since last poll.</td>
-    </tr><tr>
-        <td>1</td>
-        <td>x coordinate of last pen down position</td>
-    </tr><tr>
-        <td>2</td>
-        <td>y coordinate of last pen down position</td>
-    </tr><tr>
-        <td>3</td>
-        <td>Boolean; whether the pen is currently down</td>
-    </tr><tr>
-        <td>4</td>
-        <td>x coordinate of current pen position</td>
-    </tr><tr>
-        <td>5</td>
-        <td>y coordinate of current pen position</td>
-    </tr><tr>
-        <td>6</td>
-        <td>character row coordinate of last pen down position</td>
-    </tr><tr>
-        <td>7</td>
-        <td>character column coordinate of last pen down position</td>
-    </tr><tr>
-        <td>8</td>
-        <td>character row coordinate of current pen position</td>
-    </tr><tr>
-        <td>9</td>
-        <td>character column coordinate of current pen position</td>
-    </tr>
-</table>
-</div>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>mode</var></code> is a numeric expression in <code>[0&#8212;9]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   In PC-BASIC, for <em>pen down</em> read <em>mouse button pressed</em>. For <em>pen
-    position</em> read <em>mouse pointer position</em>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>mode</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>mode</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>mode</var></code> is not in <code>[0&#8212;9]</code>: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="PLAY-event"><code>PLAY</code> statement (event-trapping control)</h3>
-<pre>PLAY { ON | OFF | STOP }</pre>
-<ul>
-    <li>
-        <code>ON</code>: enables <code><a href="#ON-event">ON PLAY</a></code> event
-        trapping of the music queue.
-    </li>
-    <li>
-        <code>OFF</code>: disables trapping.
-    </li>
-    <li>
-        <code>STOP</code>: halts trapping until <code>PLAY ON</code> is used.
-        Events that occur while trapping is halted will trigger immediately when
-        trapping is re-enabled.
-    </li>
-</ul>
-
-
-<h3 id="PLAY"><code>PLAY</code> statement (music)</h3>
-<pre>PLAY <var>mml_string</var></pre>
-<p>Plays the tune defined by <code><var>mml_string</var></code>.</p>
-<pre>PLAY [ <var>mml_string_0</var> ] [, [ <var>mml_string_1</var> ] [, <var>mml_string_2</var> ] ]</pre>
-<p>The three-voice syntax is only available if <code><a href="#--syntax">--syntax</a>={tandy | pcjr}</code> is set.
-    The three separate MML strings correspond to the three voices of the PCjr/Tandy sound adapter.
-    The notes in these strings are played synchronously.
-</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>mml_string</var></code> is a string expression in Music Macro Language (MML).
-</li><li>
-<code><var>mml_string_0</var></code>, <code><var>mml_string_1</var></code>, <code><var>mml_string_2</var></code> are string expressions in MML.
-</li></ul>
-<h4>Music Macro Language reference</h4>
-<dl>
-<dt>Notes and Pauses</dt>
-<dd>
-<div class="scrollable">
-<table><tr>
-<td><code><var>note</var></code></td>
-<td>
-Play a note. <code><var>note</var></code> can be
-<pre>{ A|B|C|D|E|F|G }[ #|+|- ][ n ]</pre>
-<code>+</code> indicates sharp. <br/>
- <code>-</code> indicates flat. <br/>
-<code><var>n</var></code>
-                                    indicates duration of an <code><var>n</var></code>th note.
-</td>
-</tr><tr>
-<td><code>N<var>n</var></code></td>
-<td>Play note <code><var>n</var></code>, in the range <code>[0&#8212;84]</code> (7 octaves). <code><var>n</var> = 0</code> means rest.</td>
-</tr><tr>
-<td><code>O<var>n</var></code></td>
-<td>Set the current octave to <code><var>n</var></code>, in the range <code>[0&#8212;6]</code>. Default is 4.</td>
-</tr><tr>
-<td><code>&gt;</code></td>
-<td>Increase the current octave by 1, with a maximum of 6.</td>
-</tr><tr>
-<td><code>&lt;</code></td>
-<td>Decrease the current octave by 1, with a minimum of 0.</td>
-</tr><tr>
-<td><code>P<var>n</var></code></td>
-<td>Pause for the duration of an <code><var>n</var></code>th note.</td>
-</tr></table>
-</div>
-</dd>
-<dt>Timing commands</dt>
-<dd>
-<div class="scrollable">
-<table><tr>
-<td><code>.</code></td>
-<td>Increase the duration of the preceding note by 1/2 times its normal
-        duration. Periods can be repeated to increase duration further.</td>
-</tr><tr>
-<td><code>L<var>n</var></code></td>
-<td>Set the duration of following note to an <code><var>n</var></code>th note.
-(<code><var>n</var>=4</code> is a quarter note, etc.)
-        <code><var>n</var></code> is in the range <code>[1&#8212;64]</code>.</td>
-</tr><tr>
-<td><code>MN</code></td>
-<td>Normal: 7/8 of the duration is sound, with 1/8 silence. Default mode.</td>
-</tr><tr>
-<td><code>ML</code></td>
-<td>Legato: full duration is sound.</td>
-</tr><tr>
-<td><code>MS</code></td>
-<td>Staccato: 3/4 of the duration is sound, with 1/4 silence.</td>
-</tr><tr>
-<td><code>T<var>n</var></code></td>
-<td>Sets the tempo to <code><var>n</var></code> <code>L4</code>s per minute. Default is 120.</td>
-</tr></table>
-</div>
-</dd>
-    <dt>
-        Background-mode commands (affect <code><a href="#SOUND">SOUND</a></code>,
-        <code><a href="#PLAY">PLAY</a></code> and <code><a href="#BEEP">BEEP</a></code>)
-    </dt>
-<dd>
-    <div class="scrollable">
-<table><tr>
-<td><code>MB</code></td>
-<td>Turns on background mode; sound commands exit without waiting for the
-        music to finish. The music keeps playing while other commands are
-        executed. There can be up to 16 notes in the background music queue;
-        if more notes are played, <code>PLAY</code> will block until there are only 16 left.
-</td>
-</tr><tr>
-<td><code>MF</code></td>
-<td>  Turns off background mode; sound commands block. Default mode.</td>
-</tr></table>
-</div>
-</dd>
-<dt>Subroutine command</dt>
-<dd>
-    <div class="scrollable">
-<table><tr>
-<td><code>X<var>s</var></code></td>
-<td>      Execute substring. <code><var>s</var></code> is one of the following:
-            <ul><li>
-               a string variable name followed by a<code>;</code>
-            </li><li>
-               the result of <code><a href="#VARPTR$">VARPTR$()</a></code> on a string variable
-            </li></ul>
-</td></tr></table>
-</div>
-</dd>
-<dt>
-    Volume control (<code><a href="#--syntax">--syntax</a>={tandy | pcjr}</code> only):
-</dt>
-<dd>
-    <div class="scrollable">
-    <table>
-        <tr>
-            <td>
-                <code>V<var>n</var></code>
+    <section>
+        <h3 id="PLAY"><code>PLAY</code> statement (music)</h3>
+        <code class="block">
+            <b>PLAY</b> <var>mml_string_0</var><br />
+            <b>PLAY</b> [<var>mml_string_0</var>] <b>,</b>  <var>mml_string_1</var><br />
+            <b>PLAY</b> [<var>mml_string_0</var>] <b>,</b> [<var>mml_string_1</var>] <b>,</b> <var>mml_string_2</var>
+        </code>
+        <p>
+            Plays the tune defined by the Music Macro Language strings <code><var>mml_string_0</var>, ...</code>.
+        </p>
+        <p>
+            Unless <code><a href="#--syntax">--syntax</a>={tandy | pcjr}</code> is set, only the single-voice syntax is available.
+            The three separate MML strings correspond to the three voices of the PCjr/Tandy sound adapter.
+            The notes in these strings are played synchronously.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>mml_string_0</var></code>, <code><var>mml_string_1</var></code>, <code><var>mml_string_2</var></code> are string expressions in MML.
+            </li>
+            <li>
+                At least one MML string must be provided.
+            </li>
+        </ul>
+        <h4>Music Macro Language reference</h4>
+        <h5>Notes and Pauses</h5>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th>Command</th>
+                    <th>Effect</th>
+                </td>
+                <tr>
+                    <td><code>{<b>A</b>|<b>B</b>|<b>C</b>|<b>D</b>|<b>E</b>|<b>F</b>|<b>G</b>}[<b>#</b>|<b>+</b>|<b>-</b>][<var>n</var>]</code></td>
+                    <td>
+                        Play a note. <br/>
+                        <code>+</code> or <code>#</code> indicates sharp. <br/>
+                        <code>-</code> indicates flat. <br/>
+                        <code><var>n</var></code>
+                        indicates duration of an <code><var>n</var></code>th note.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code><b>N</b><var>n</var></code></td>
+                    <td>Play note <code><var>n</var></code>, in the range <code>[0&#8212;84]</code> (7 octaves).<br/>
+                        <code><var>n</var> = 0</code> means rest.</td>
+                </tr>
+                <tr>
+                    <td><code><b>O</b><var>n</var></code></td>
+                    <td>Set the current octave to <code><var>n</var></code>, in the range <code>[0&#8212;6]</code>. Default is 4.</td>
+                </tr>
+                <tr>
+                    <td><code><b>&gt;</b></code></td>
+                    <td>Increase the current octave by 1, with a maximum of 6.</td>
+                </tr>
+                <tr>
+                    <td><code><b>&lt;</b></code></td>
+                    <td>Decrease the current octave by 1, with a minimum of 0.</td>
+                </tr>
+                <tr>
+                    <td><code><b>P</b><var>n</var></code></td>
+                    <td>Pause for the duration of an <code><var>n</var></code>th note.</td>
+                </tr>
+            </table>
+        </div>
+        <h5>Timing commands</h5>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th>Command</th>
+                    <th>Effect</th>
+                </td>
+                <tr>
+                    <td><code><b>.</b></code></td>
+                    <td>
+                        Increase the duration of the preceding note by 1/2 times its normal
+                        duration. Periods can be repeated to increase duration further.</td>
+                </tr>
+                <tr>
+                    <td><code><b>L</b><var>n</var></code></td>
+                    <td>Set the duration of following note to an <code><var>n</var></code>th note.
+                    (<code><var>n</var>=4</code> is a quarter note, etc.)
+                            <code><var>n</var></code> is in the range <code>[1&#8212;64]</code>.</td>
+                </tr>
+                <tr>
+                    <td><code><b>MN</b></code></td>
+                    <td>Normal: 7/8 of the duration is sound, with 1/8 silence. Default mode.</td>
+                </tr>
+                <tr>
+                    <td><code><b>ML</b></code></td>
+                    <td>Legato: full duration is sound.</td>
+                </tr>
+                <tr>
+                    <td><code><b>MS</b></code></td>
+                    <td>Staccato: 3/4 of the duration is sound, with 1/4 silence.</td>
+                </tr>
+                <tr>
+                    <td><code><b>T</b><var>n</var></code></td>
+                    <td>Sets the tempo to <code><var>n</var></code> <code>L4</code>s per minute. Default is 120.</td>
+                </tr>
+            </table>
+        </div>
+        <h5>Background-mode commands</h5>
+        <p>
+            These commands affect <code><a href="#SOUND">SOUND</a></code>,
+            <code><a href="#PLAY">PLAY</a></code> and <code><a href="#BEEP">BEEP</a></code>
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th>Command</th>
+                    <th>Effect</th>
+                </td>
+                <tr>
+                    <td><code><b>MB</b></code></td>
+                    <td>
+                        Turns on background mode; sound commands exit without waiting for the
+                        music to finish. The music keeps playing while other commands are
+                        executed. There can be up to 16 notes in the background music queue;
+                        if more notes are played, <code>PLAY</code> will block until there are only 16 left.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code><b>MF</b></code></td>
+                    <td>Turns off background mode; sound commands block. Default mode.</td>
+                </tr>
+            </table>
+        </div>
+        <h5>Subroutine command</h5>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th>Command</th>
+                    <th>Effect</th>
+                </td>
+                <tr>
+                    <td><code><b>X</b><var>s</var></code></td>
+                    <td>Execute substring. <code><var>s</var></code> is one of the following:
+                        <ul>
+                            <li>
+                                a string variable name followed by a<code>;</code>
+                            </li>
+                            <li>
+                                the result of <code><a href="#VARPTR$">VARPTR$()</a></code> on a string variable
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <h5>Volume control</h5>
+        <p>
+            Volume control is availabe on <code><a href="#--syntax">--syntax</a>={tandy | pcjr}</code> only:
+        </p>
+        <div class="scrollable">
+        <table>
+            <tr>
+                <th>Command</th>
+                <th>Effect</th>
             </td>
-            <td>
-                Set the volume to <code><var>n</var></code>, in the range <code>[0&#8212;15]</code>.
-                On PCjr, if <code><a href="#SOUND-switch">SOUND ON</a></code>
-                has not been executed, this has no effect. On Tandy it does have.
-            </td>
-        </tr>
-    </table>
-    </div>
-</dd>
-</dl>
-<p>Numeric variables <code><var>n</var></code> in the commands above can be:</p>
-<ul><li>
-an integer literal, e.g. <code>PLAY "G4"</code>
-</li><li>
-a numeric variable name <code><var>var</var></code> preceded by <code>=</code> and followed by <code>;</code> e.g. <code>PLAY "G=VAR;"</code>
-</li><li>
-    the result of <code>VARPTR$(<var>var</var>)</code> preceded by <code>=</code>.  For example, <code>PLAY "G=" + VARPTR$(VAR)</code>
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>mml_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>mml_string</var></code> has errors in the MML: <samp>Illegal function call</samp>.
-</li><li>
-A variable in an MML string is of incorrect type: <samp>Type mismatch</samp>.
-</li><li>
-No MML string is specified: <samp>Missing operand</samp>.
-</li><li>
-On PCjr, if <code>SOUND ON</code> has not been executed, using the three-voice syntax
-    will raise <samp>Syntax error</samp>. This is not the case on Tandy.
-</li></ul>
+            <tr>
+                <td>
+                    <code><b>V</b><var>n</var></code>
+                </td>
+                <td>
+                    Set the volume to <code><var>n</var></code>, in the range <code>[0&#8212;15]</code>.
+                    On <code><a href="#--syntax">--suntax</a>=pcjr</code>, if <code><a href="#SOUND-switch">SOUND ON</a></code>
+                    has not been executed, this has no effect. On <code><a href="#--syntax">--suntax</a>=tandy</code> it does have.
+                </td>
+            </tr>
+        </table>
+        </div>
+        <h5>MML Parameters</h5>
+        <p>
+            Numeric variables <code><var>n</var></code> in the commands above can be:
+        </p>
+        <ul>
+            <li>
+                an integer literal, e.g. <code>PLAY "G4"</code>
+            </li>
+            <li>
+                a numeric variable name <code><var>var</var></code> preceded by <code>=</code> and followed by <code>;</code> e.g. <code>PLAY "G=VAR;"</code>
+            </li>
+            <li>
+                the result of <code>VARPTR$(<var>var</var>)</code> preceded by <code>=</code>.  For example, <code>PLAY "G=" + VARPTR$(VAR)</code>
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>mml_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>mml_string</var></code> has errors in the MML: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                A variable in an MML string is of incorrect type: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                No MML string is specified: <samp>Missing operand</samp>.
+            </li>
+            <li>
+                On PCjr, if <code>SOUND ON</code> has not been executed, using the three-voice syntax
+                will raise <samp>Syntax error</samp>. This is not the case on Tandy.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="PLAY-function"><code>PLAY</code> function</h3>
+        <code class="block">
+            <var>length</var> <b>= PLAY(</b><var>voice</var><b>)</b>
+        </code>
+        <p>
+            Returns the number of notes in the background music queue. The return value is in <code>[0&#8212;16]</code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>voice</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+                If <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code>, indicates for which tone voice channel
+                the number of notes is to be returned. If <code><var>voice</var></code> is not in <code>[0&#8212;2]</code>, the
+                queue for voice 0 is returned.
+                For other choices of <code>--syntax</code>, the <code><var>voice</var></code> value has no effect.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                There are at most 16 notes in the music queue. Some GW-BASIC manuals
+                claim there can be up to 32, but in reality <code>PLAY</code> only returns at the
+                last 16 notes.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>voice</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>voice</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>voice</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="PLAY-function"><code>PLAY</code> function</h3>
-<pre><var>length</var> = PLAY(<var>voice</var>)</pre>
-<p>Returns the number of notes in the background music queue. The return value is in <code>[0&#8212;16]</code>.
-</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>voice</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-<dl><dt>
-PCjr and Tandy
-</dt><dd>
-    Indicates for which tone voice channel
-    the number of notes is to be returned. If <code><var>voice</var></code> is not in <code>[0&#8212;2]</code>, the
-    queue for voice 0 is returned.
-</dd><dt>Others</dt><dd>
-    The <code><var>voice</var></code> value has no effect.
-</dd></dl>
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   There are at most 16 notes in the music queue. Some GW-BASIC manuals
-    claim there can be up to 32, but in reality <code>PLAY</code> only returns at the
-    last 16 notes.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>voice</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>voice</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>voice</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li></ul>
+    <section>
+        <h3 id="PMAP"><code>PMAP</code> function</h3>
+        <code class="block">
+            <var>physical</var> <b>= PMAP(</b><var>logical</var><b>,</b> <var>fn</var><b>)</b>
+        </code>
+        <p>
+            Maps between viewport and logical (<code><a href="#WINDOW">WINDOW</a></code>) coordinates.
+            If no <code><a href="#VIEW">VIEW</a></code> has been set, the viewport coordinates
+            are physical coordinates.
+        </p>
+        <p>
+            The return value depends on <code><var>fn</var></code>:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th><code><var>fn</var></code></th>
+                    <th>Return value</th>
+                </tr>
+                <tr>
+                    <td>0</td>
+                    <td>return viewport x given logical x</td>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>return viewport y given logical y</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>return logical x given viewport x</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>return logical y given viewport y</td>
+                </tr>
+            </table>
+        </div>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Initially, in text mode, <code>PMAP</code> returns 0.
+            </li>
+            <li>
+                In GW-BASIC, <code>PMAP</code> behaves anomalously on <code><a href="#SCREEN-statement">SCREEN</a></code> changes, where it sometimes
+                returns results as if the last <code>WINDOW</code> setting had persisted. This behaviour is not
+                implemented in PC-BASIC.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                Any of the parameters has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                A physical coordinate is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>fn</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="POINT-coord"><code>POINT</code> function (current coordinate)</h3>
+        <code class="block">
+            <var>coord</var> <b>= POINT(</b><var>fn</var><b>)</b>
+        </code>
+        <p>
+            Returns a currently active coordinate of the graphics screen. This is usually
+            the last position at which a pixel has been plotted, the second corner given
+            in a <code>LINE</code> command, or the centre of the viewport if nothing has been plotted.
+            <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
+        </p>
+        <p>
+            The coordinate returned depends on the value of <code><var>fn</var></code>:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th><code><var>fn</var></code></th>
+                    <th>Return value</th>
+                </tr>
+                <tr>
+                    <td>0</td>
+                    <td>viewport x</td>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>viewport y</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>logical x</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>logical y</td>
+                </tr>
+            </table>
+        </div>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In text mode, returns the active coordinate of any previous graphics mode;
+                if no graphics mode has been active, returns 0.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>fn</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>fn</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<!-- here -->
+    <section>
+        <h3 id="POINT-attr"><code>POINT</code> function (pixel attribute)</h3>
+        <code class="block">
+            <var>attrib</var> <b>= POINT(</b><var>x</var><b>,</b> <var>y</var><b>)</b>
+        </code>
+        <p>
+            Returns the attribute of the pixel at logical coordinate <code><var>x</var></code>,<code><var>y</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code>, <code><var>y</var></code> are numeric expressions in <code>[-32768&#8212;32767]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code><var>x</var></code>,<code><var>y</var></code> is outside the screen, returns -1.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                Function is called in text mode: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> or <code><var>y</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> or <code><var>y</var></code> or the physical coordinates they translate into are not in
+                <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="POKE"><code>POKE</code> statement</h3>
+        <code class="block">
+            <b>POKE</b> <var>address</var><b>,</b> <var>value</var>
+        </code>
+        <p>
+            Sets the value of the memory byte at
+            <code><var>segment</var> * 16 + <var>address</var></code> to <code><var>value</var></code>,
+            where <code><var>segment</var></code> is the current segment set with
+            <code><a href="#DEF-SEG">DEF SEG</a></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>. Negative values are
+                interpreted as their two's complement.
+            </li>
+            <li>
+                <code><var>value</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                The memory is only partly emulated in PC-BASIC. See <a href="#memory">Memory model</a> for supported addresses.
+                Outside emulated areas of memory, this statement has no effect.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>address</var></code> or <code><var>value</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>value</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>value</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="PMAP"><code>PMAP</code> function</h3>
-<pre><var>physical</var> = PMAP(<var>logical</var>, <var>fn</var>)</pre>
-<p>Maps between viewport and logical (<code><a href="#WINDOW">WINDOW</a></code>) coordinates.
-If no <code><a href="#VIEW">VIEW</a></code> has been set, the viewport coordinates
-are physical coordinates.</p>
-<p>The return value depends on <code><var>fn</var></code>:</p>
-<div class="scrollable">
-<table><tr>
-<th><code><var>fn</var></code></th><th>Return value</th>
-</tr><tr>
-<td>0</td>     <td>return viewport x given logical x</td>
-</tr><tr>
-<td>1</td>     <td>return viewport y given logical y</td>
-</tr><tr>
-<td>2</td>     <td>return logical x given viewport x</td>
-</tr><tr>
-<td>3</td>     <td>return logical y given viewport y</td>
-</tr></table>
-</div>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   Initially, in text mode, <code>PMAP</code> returns 0.
-</li><li>
-   In GW-BASIC, <code>PMAP</code> behaves anomalously on <code><a href="#SCREEN-statement">SCREEN</a></code> changes, where it sometimes
-    returns results as if the last <code>WINDOW</code> setting had persisted. This behaviour is not
-    implemented in PC-BASIC.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-Any of the parameters has a string value: <samp>Type mismatch</samp>.
-</li><li>
-A physical coordinate is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>fn</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="POS"><code>POS</code> function</h3>
+        <code class="block">
+            <var>pos</var> <b>= POS(</b><var>dummy</var><b>)</b>
+        </code>
+        <p>
+            Returns the current cursor column position, in the range <code>[1&#8212;80]</code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>dummy</var></code> is a valid expression of any type; its value has no effect.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="PSET"><code>PSET</code> and <code>PRESET</code> statements</h3>
+        <code class="block">
+            { <b>PSET</b> | <b>PRESET</b> } [<b>STEP</b>] <b>(</b><var>x</var><b>,</b> <var>y</var><b>)</b> [<b>,</b> <var>attrib</var>]
+        </code>
+        <p>
+            Change the attribute of a pixel on the screen at position <code>(<var>x</var>, <var>y</var>)</code>.
+            If <code>STEP</code> is specified, <code>(<var>x</var>, <var>y</var>)</code> is an offset from the current position.
+        </p>
+        <p>
+            If <code><var>attrib</var></code> is between 0 and the screen mode's palette size, the pixel is changed to
+            attribute <code><var>attrib</var></code>. If <code><var>attrib</var></code> is larger than the palette size, the pixel's
+            attribute is changed to the highest legal attribute value.
+            If <code><var>attrib</var></code> is not specified, <code>PSET</code> changes the attribute to the current
+            foreground attribute while <code>PRESET</code> changes it to zero.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code>, <code><var>y</var></code> are numeric expressions in <code>[-32768&#8212;32767]</code>.
+            </li>
+            <li>
+                <code><var>attrib</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> or <code><var>y</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>attrib</var></code>, <code><var>x</var></code> or <code><var>y</var></code> or the physical coordinates they translate into are not in
+                <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>attrib</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="POINT-coord"><code>POINT</code> function (current coordinate)</h3>
-<pre><var>coord</var> = POINT(<var>fn</var>)</pre>
-<p>Returns a currently active coordinate of the graphics screen. This is usually
-the last position at which a pixel has been plotted, the second corner given
-in a <code>LINE</code> command, or the centre of the viewport if nothing has been plotted.
-<code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
-</p><p>
-The coordinate returned depends on the value of <code><var>fn</var></code>:
-</p>
-<div class="scrollable">
-<table><tr>
-<th><code><var>fn</var></code></th><th>Return value</th>
-</tr><tr>
-<td>0</td>     <td>viewport x</td>
-</tr><tr>
-<td>1</td>     <td>viewport y</td>
-</tr><tr>
-<td>2</td>     <td>logical x</td>
-</tr><tr>
-<td>3</td>     <td>logical y</td>
-</tr></table>
-</div>
+    <section>
+        <h3 id="PRINT"><code>PRINT</code> and <code>LPRINT</code> statements</h3>
+        <code class="block">
+            { <b>LPRINT</b> | {<b>PRINT</b>|<b>?</b>} [<b>#</b> <var>file_num</var><b>,</b>] } [<var>expr_0</var> | <b>;</b> | <b>,</b> | <b>SPC(</b><var>n</var><b>)</b> | <b>TAB(</b><var>n</var><b>)</b> ] ...
+            [ <b>USING</b> <var>format</var><b>;</b> <var>uexpr_0</var> [ {<b>;</b>|<b>,</b>} <var>uexpr_1</var> ] ... [<b>;</b>|<b>,</b>] ]
+        </code>
+        <p>
+            Writes expressions to the screen, printer, file or device. If <code>LPRINT</code> is used,
+            output goes to <code>LPT1:</code>. If <code><var>file_num</var></code> is specified, output goes to the file or
+            device open under that number. <code>?</code> is a shorthand for <code>PRINT</code> and has the same
+            effect.
+        </p>
+        <p>
+            Expressions can optionally be separated by one or more of the following tokens:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <td><code>;</code></td>
+                    <td>
+                        Attaches two expressions tight together; strings will be
+                        printed without any space in between, numbers will have one space
+                        separating them, in addition to the space or minus sign that indicate
+                        the sign of the number.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>,</code></td>
+                    <td>
+                        The expression after will be positioned at the next available
+                        zone. The output file is divided in 14-character zones; if the width of the
+                        file is not a multiple of 14, the remaining spaces are unused and the first
+                        zone of the next line is used instead. If the file has a width of less
+                        than 14 characters, the zones are determined as if the file were wrapping
+                        continuously.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>SPC(<var>n</var>)</code></td>
+                    <td>
+                        Produces <code><var>n</var></code> spaces, where <code><var>n</var></code> is a numeric
+                        expression. if <code><var>n</var></code> is less than zero, it defaults to zero. If <code><var>n</var></code> is
+                        greater than the file width, it is taken modulo the file width.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>TAB(<var>n</var>)</code></td>
+                    <td>
+                        Moves to column <code><var>n</var></code>, where <code><var>n</var></code> is a numeric
+                        expression. if <code><var>n</var></code> is less than zero, it defaults to zero. If <code><var>n</var></code> is
+                        greater than the file width, it is taken modulo the file width. If the
+                        current column is greater than <code><var>n</var></code>, TAB moves to column <code><var>n</var></code> on the next
+                        line.
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>
+            If the print statement does not end in one of these four separation tokens, a newline is
+            printed after the last expression.
+            String expressions can be separated by one or more spaces, which has the same
+            effect as separating by semicolons.
+        </p>
+        <h4>Format string syntax</h4>
+        <p>
+            A <code>USING</code> declaration occurs at the end of an <code>[L]PRINT[#]</code> statement and writes a
+            formatted string to the screen, printer, file or device. The following tables list the format tokens
+            that can be used inside the <code><var>format</var></code> string.
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <td><code>_</code></td>
+                    <td>
+                        Escape character; causes the next character in the format string to be
+                        printed as is rather than interpreted as a format token.
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>For string expressions:</p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <td><code>!</code></td>
+                    <td>Prints the first character of a string.</td>
+                </tr>
+                <tr>
+                    <td><code>\\</code></td>
+                    <td>
+                        Prints 2 or more characters of a string. A greater number of characters is
+                        selected by separating the <code>\</code>s by spaces.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>&amp;</code></td>
+                    <td>   Prints the whole string.</td>
+                </tr>
+            </table>
+        </div>
+        <p>
+            For numeric expressions, the format string specifies a width and alignment.
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <td><code>#</code></td>
+                    <td>
+                    Indicate a position for a digit.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>.</code></td>
+                    <td>
+                    Indicate the decimal point.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>,</code></td>
+                    <td>
+                    Before the decimal point: cause digits to be grouped in threes separated by
+                        commas. After the decimal point it is not a token.
+                        Provides one digit position.
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>
+            The number of characters in the field must not exceed 24.
+        </p>
+        <p>
+            Tokens preceding the number field:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <td><code>+</code></td>
+                    <td>
+                        Cause the sign to be printed for positive as well as negative numbers. The sign is to be printed to the left of the
+                        number.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>**</code></td>
+                    <td>
+                        Cause any leading spaces to be replaced with <code>*</code>s.
+                        Provides two digit positions.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>$$</code></td>
+                    <td>
+                        Cause a <code>$</code> to be printed to the left of the number.
+                        Provides one digit position.
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>
+            Tokens trailing the number field:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <td><code>+</code></td>
+                    <td>
+                        Cause the sign to be printed for positive as well as negative numbers.
+                        The sign will be printed to the right of the number.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>-</code></td>
+                    <td>
+                        Cause the sign for negative numbers to be printed
+                        to the right of the number. Note that <code>-</code> preceding the field is not a token
+                        but printed literally.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>^^^^</code></td>
+                    <td>Specify that scientific notation <code>E+00</code> is to be used.</td>
+                </tr>
+            </table>
+        </div>
+        <p>
+            Numeric expressions are always fully printed, even if they do not fit in the
+            positions specified. If the number does not fit in the allowed space, a <code>%</code> is
+            printed preceding it.
+        </p>
+        <ul>
+            <li>
+                If there are more expressions than format fields, the format string is
+                wrapped around.
+            </li>
+            <li>
+                Expressions may be separated with semicolons or commas; the effect is the
+                same.
+            </li>
+            <li>
+               If the <code>USING</code> declaration ends in a comma or semicolon, no newline is printed at
+                the end.
+            </li>
+            <li>
+               After a <code>USING</code> declaration, other elements of the <code>PRINT</code> syntax such as <code>SPC(</code> and <code>TAB(</code> can not
+                be used.
+            </li>
+        </ul>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>expr_0</var>, <var>expr_1</var>, ...</code> are expressions of any type.
+            </li>
+            <li>
+                <code><var>format</var></code> is a string expression that specifies the output format.
+            </li>
+            <li>
+                <code><var>uexpr_0</var>, <var>uexpr_1</var>, ...</code> are expressions matching a token in the format string.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If an error is raised, the output before the error was encountered is
+                printed as normal.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>n</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>n</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                The format string contains no tokens: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                An expression doesn't match the corresponding format token type: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                A number field in the format string exceeds 24 characters: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                A number field in the format string contains no <code>#</code> characters: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h4>Parameters</h4>
-<ul><li>
-<code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   In text mode, returns the active coordinate of any previous graphics mode;
-    if no graphics mode has been active, returns 0.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>fn</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>fn</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="PUT-files"><code>PUT</code> statement (files)</h3>
+        <code class="block">
+            <b>PUT</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_number</var>]
+        </code>
+        <p>
+            Writes a record to the random-access file <code><var>file_number</var></code> at position
+            <code><var>record_number</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>file_number</var></code> is a numeric expression that yields the number
+                of an open random-access file. The <code>#</code> is optional and has no effect.
+            </li>
+            <li>
+                <code><var>record_number</var></code> is a numeric expression in <code>[1&#8212;33554432]</code> (<code>2^25</code>) and is interpreted as the record number.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>record_number</var></code> is not in <code>[1&#8212;33554432]</code>: <samp>Bad record number</samp>.
+            </li>
+            <li>
+                <code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_number</var></code> is not the number of an open file:
+                <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code><var>file_number</var></code> is open under a mode other than <code>RANDOM</code>:
+                <samp>Bad file mode</samp>.
+            </li>
+            <li>
+                <code><var>file_number</var></code> is not specified: <samp>Missing operand</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="PUT-serial"><code>PUT</code> statement (communications)</h3>
+        <code class="block">
+            <b>PUT</b> [<b>#</b>] <var>com_file_number</var> [<b>,</b> <var>number_bytes</var>]
+        </code>
+        <p>
+            Writes <code><var>number_bytes</var></code> bytes to the communications buffer opened under file
+            number <code><var>com_file_number</var></code>. <code><var>number_bytes</var></code> is a numeric expression between 1
+            and the <code>COM</code> buffer length, inclusive.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In GW-BASIC, <samp>Device I/O error</samp> is raised for overrun error, framing error,
+                and break interrupt. <samp>Device fault</samp> is raised if DSR is lost during I/O. A
+                <samp>Parity error</samp> is raised if parity is enabled and incorrect parity is
+                encountered. This is according to the manual; it is untested.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>bytes</var></code> is less than 1: <samp>Bad record number</samp>.
+            </li>
+            <li>
+                <code><var>bytes</var></code> is less than <code>32768</code> and greater than the <code>COM</code> buffer length: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>com_file_number</var></code> is not specified: <samp>Missing operand</samp>.
+            </li>
+            <li>
+                <code><var>com_file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>com_file_number</var></code> is not the number of an open file:
+                <samp>Bad file number</samp>.
+            </li>
+            <li>
+                The serial input buffer is full, i.e. <code><a href="#LOF">LOF</a>(<var>com_file_number</var>) = 0</code> and
+                <code><a href="#LOC">LOC</a>(<var>com_file_number</var>)=255</code>: <samp>Communication buffer overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="POINT-attr"><code>POINT</code> function (pixel attribute)</h3>
-<pre><var>attrib</var> = POINT (<var>x</var>, <var>y</var>)</pre>
-<p>Returns the attribute of the pixel at logical coordinate <code><var>x</var></code>,<code><var>y</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>x</var></code>, <code><var>y</var></code> are numeric expressions in <code>[-32768&#8212;32767]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   If <code><var>x</var></code>,<code><var>y</var></code> is outside the screen, returns -1.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-Function is called in text mode: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>x</var></code> or <code><var>y</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>x</var></code> or <code><var>y</var></code> or the physical coordinates they translate into are not in
-    <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li></ul>
-
-
-<h3 id="POKE"><code>POKE</code> statement</h3>
-<pre>POKE <var>address</var>, <var>value</var></pre>
-<p>
-    Sets the value of the memory byte at
-    <code><var>segment</var> * 16 + <var>address</var></code> to <code><var>value</var></code>,
-    where <code><var>segment</var></code> is the current segment set with
-    <code><a href="#DEF-SEG">DEF SEG</a></code>.
-</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>. Negative values are
-interpreted as their two's complement.
-</li><li>
-<code><var>value</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   The memory is only partly emulated in PC-BASIC. See <a href="#memory">Memory model</a> for supported addresses.
-    Outside emulated areas of memory, this statement has no effect.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>address</var></code> or <code><var>value</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>value</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>value</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="POS"><code>POS</code> function</h3>
-<pre><var>pos</var> = POS(<var>dummy</var>)</pre>
-<p>Returns the current cursor column position, in the range <code>[1&#8212;80]</code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>dummy</var></code> is a valid expression of any type; its value has no effect.
-</li></ul>
-
-
-<h3 id="PSET"><code>PSET</code> and <code>PRESET</code> statements</h3>
-<pre>{ PSET | PRESET } [STEP] (<var>x</var>, <var>y</var>) [, <var>attrib</var>]</pre>
-<p>Change the attribute of a pixel on the screen at position <code>(<var>x</var>, <var>y</var>)</code>.
-If <code>STEP</code> is specified, <code>(<var>x</var>, <var>y</var>)</code> is an offset from the current position.</p>
-<p>If <code><var>attrib</var></code> is between 0 and the screen mode's palette size, the pixel is changed to
-attribute <code><var>attrib</var></code>. If <code><var>attrib</var></code> is larger than the palette size, the pixel's
-attribute is changed to the highest legal attribute value.
-If <code><var>attrib</var></code> is not specified, <code>PSET</code> changes the attribute to the current
-foreground attribute while <code>PRESET</code> changes it to zero.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>x</var></code>, <code><var>y</var></code> are numeric expressions in <code>[-32768&#8212;32767]</code>.
-</li><li>
-<code><var>attrib</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>x</var></code> or <code><var>y</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>attrib</var></code>, <code><var>x</var></code> or <code><var>y</var></code> or the physical coordinates they translate into are not in
-    <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>attrib</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="PRINT"><code>PRINT</code> and <code>LPRINT</code> statements</h3>
-<pre>{ LPRINT | {PRINT|?} [# <var>file_num</var>,] } [<var>expr_0</var>] [;|,|SPC(<var>n</var>)|TAB(<var>n</var>)] [<var>expr_1</var>] [...]
-         [ USING <var>format</var>; [ <var>uexpr_0</var> [ {;|,} <var>uexpr_1</var> [ {;|,} ...] ] ] [;|,] ]</pre>
-<p>Writes expressions to the screen, printer, file or device. If <code>LPRINT</code> is used,
-output goes to <code>LPT1:</code>. If <code><var>file_num</var></code> is specified, output goes to the file or
-device open under that number. <code>?</code> is a shorthand for <code>PRINT</code> and has the same
-effect.</p>
-<p>Expressions can be separated by one of the following tokens:</p>
-<div class="scrollable">
-<table><tr>
-<td><code>;</code></td>
-<td>   Attaches two expressions tight together; strings will be
-    printed without any space in between, numbers will have one space
-    separating them, in addition to the space or minus sign that indicate
-    the sign of the number.
-</td></tr><tr>
-<td><code>,</code></td>
-<td>   The expression after will be positioned at the next available
-    zone. The output file is divided in 14-character zones; if the width of the
-    file is not a multiple of 14, the remaining spaces are unused and the first
-    zone of the next line is used instead. If the file has a width of less
-    than 14 characters, the zones are determined as if the file were wrapping
-    continuously.
-</td></tr><tr>
-<td><code>SPC(<var>n</var>)</code></td>
-<td>    Produces <code><var>n</var></code> spaces, where <code><var>n</var></code> is a numeric
-    expression. if <code><var>n</var></code> is less than zero, it defaults to zero. If <code><var>n</var></code> is
-    greater than the file width, it is taken modulo the file width.
-</td></tr><tr>
-<td><code>TAB(<var>n</var>)</code></td>
-<td>    Moves to column <code><var>n</var></code>, where <code><var>n</var></code> is a numeric
-    expression. if <code><var>n</var></code> is less than zero, it defaults to zero. If <code><var>n</var></code> is
-    greater than the file width, it is taken modulo the file width. If the
-    current column is greater than <code><var>n</var></code>, TAB moves to column <code><var>n</var></code> on the next
-    line.
-</td></tr></table>
-</div>
-<p>If the print statement does not end in one of these four separation tokens, a newline is
-printed after the last expression.
-String expressions can be separated by one or more spaces, which has the same
-effect as separating by semicolons.</p>
-
-<h4>Format string syntax</h4>
-<p>A <code>USING</code> declaration occurs at the end of an <code>[L]PRINT[#]</code> statement and writes a
-formatted string to the screen, printer, file or device. The following tables list the format tokens that can be used inside the <code><var>format</var></code> string.</p>
-<div class="scrollable">
-<table><tr>
-<td><code>_</code></td>
-<td>   Escape character; causes the next character in the format string to be
-    printed as is rather than interpreted as a format token.</td>
-</tr></table>
-</div>
-<p>For string expressions:</p>
-<div class="scrollable">
-<table><tr>
-<td><code>!</code></td>
-<td>   Prints the first character of a string.</td>
-</tr><tr>
-<td><code>\\</code></td>
-<td>Prints 2 or more characters of a string. A greater number of characters is
-    selected by separating the <code>\</code>s by spaces.
-</td>
-</tr><tr>
-<td><code>&amp;</code></td>
-<td>   Prints the whole string.</td>
-</tr></table>
-</div>
-<p>For numeric expressions, the format string specifies a width and alignment.</p>
-<div class="scrollable">
-<table><tr>
-<td><code>#</code></td>
-<td>
-Indicate a position for a digit.
-</td>
-</tr><tr>
-<td><code>.</code></td>
-<td>
-Indicate the decimal point.
-</td>
-</tr><tr>
-<td><code>,</code></td>
-<td>
-Before the decimal point: cause digits to be grouped in threes separated by
-    commas. After the decimal point it is not a token.
-    Provides one digit position.
-</td>
-</tr></table>
-</div>
-<p>The number of characters in the field must not exceed 24.     </p>
-<p>Tokens preceding the number field:</p>
-<div class="scrollable">
-<table><tr>
-<td><code>+</code></td>
-<td>
-   Cause the sign to be printed for positive as well as negative numbers. The sign is to be printed to the left of the
-    number.
-</td>
-</tr><tr>
-<td><code>**</code></td>
-<td>
-  Cause any leading spaces to be replaced with <code>*</code>s.
-    Provides two digit positions.
-</td>
-</tr><tr>
-<td><code>$$</code></td>
-<td>Cause a <code>$</code> to be printed to the left of the number.
-    Provides one digit position.
-</td>
-</tr></table>
-</div>
-<p>Tokens trailing the number field:</p>
-<div class="scrollable">
-<table><tr>
-<td><code>+</code></td>
-<td>   Cause the sign to be printed for positive as well as negative numbers.
-    The sign will be printed to the right of the number.
-</td>
-</tr><tr>
-<td><code>-</code></td>
-<td>Cause the sign for negative numbers to be printed
-    to the right of the number. Note that <code>-</code> preceding the field is not a token
-    but printed literally.
-</td>
-</tr><tr>
-<td><code>^^^^</code></td>
-<td>Specify that scientific notation <code>E+00</code> is to be used.</td>
-</tr></table>
-</div>
-<p>Numeric expressions are always fully printed, even if they do not fit in the
-positions specified. If the number does not fit in the allowed space, a <code>%</code> is
-printed preceding it.</p>
-<ul><li>
-   If there are more expressions than format fields, the format string is
-    wrapped around.
-</li><li>
-   Expressions may be separated with semicolons or commas; the effect is the
-    same.
-</li><li>
-   If the <code>USING</code> declaration ends in a comma or semicolon, no newline is printed at
-    the end.
-</li><li>
-   After a <code>USING</code> declaration, other elements of the <code>PRINT</code> syntax such as <code>SPC(</code> and <code>TAB(</code> can not
-    be used.
-</li></ul>
-
-<h4>Parameters</h4>
-<ul><li>
-<code><var>expr_0</var>, <var>expr_1</var>, ...</code> are expressions of any type.
-</li><li>
-<code><var>format</var></code> is a string expression that specifies the output format.
-</li><li>
-<code><var>uexpr_0</var>, <var>uexpr_1</var>, ...</code> are expressions matching a token in the format string.
-</li></ul>
-
-<h4>Notes</h4>
-<ul><li>
-   If an error is raised, the output before the error was encountered is
-    printed as normal.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>n</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>n</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li><li>
-The format string contains no tokens: <samp>Illegal function call</samp>.
-</li><li>
-An expression doesn't match the corresponding format token type: <samp>Type mismatch</samp>.
-</li><li>
-A number field in the format string exceeds 24 characters: <samp>Illegal function call</samp>.
-</li><li>
-A number field in the format string contains no <code>#</code> characters: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="PUT-files"><code>PUT</code> statement (files)</h3>
-<pre>PUT [#] <var>file_number</var> [, <var>record_number</var>]</pre>
-<p>Writes a record to the random-access file <code><var>file_number</var></code> at position
-<code><var>record_number</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-
-<code><var>file_number</var></code> is a numeric expression that yields the number
-of an open random-access file. The <code>#</code> is optional and has no effect.
-</li><li>
-<code><var>record_number</var></code> is a numeric expression in <code>[1&#8212;33554432]</code> (<code>2^25</code>) and is interpreted as the record number.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>record_number</var></code> is not in <code>[1&#8212;33554432]</code>: <samp>Bad record number</samp>.
-</li><li>
-<code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_number</var></code> is not the number of an open file:
-    <samp>Bad file number</samp>.
-</li><li>
-<code><var>file_number</var></code> is open under a mode other than <code>RANDOM</code>:
-    <samp>Bad file mode</samp>.
-</li><li>
-<code><var>file_number</var></code> is not specified: <samp>Missing operand</samp>.
-</li></ul>
-
-
-<h3 id="PUT-serial"><code>PUT</code> statement   (communications)</h3>
-<pre>PUT [#] <var>com_file_number</var>, [, <var>number_bytes</var>]</pre>
-<p>Writes <code><var>number_bytes</var></code> bytes to the communications buffer opened under file
-number <code><var>com_file_number</var></code>. <code><var>number_bytes</var></code> is a numeric expression between 1
-and the <code>COM</code> buffer length, inclusive.
-</p><h4>Notes</h4>
-<ul><li>
-   In GW-BASIC, <samp>Device I/O error</samp> is raised for overrun error, framing error,
-    and break interrupt. <samp>Device fault</samp> is raised if DSR is lost during I/O. A
-    <samp>Parity error</samp> is raised if parity is enabled and incorrect parity is
-    encountered. This is according to the manual; it is untested.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>bytes</var></code> is less than 1: <samp>Bad record number</samp>.
-</li><li>
-<code><var>bytes</var></code> is less than <code>32768</code> and greater than the <code>COM</code> buffer length: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>com_file_number</var></code> is not specified: <samp>Missing operand</samp>.
-</li><li>
-<code><var>com_file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>com_file_number</var></code> is not the number of an open file:
-    <samp>Bad file number</samp>.
-</li><li>
-The serial input buffer is full, i.e. <code><a href="#LOF">LOF</a>(<var>com_file_number</var>) = 0</code> and
-    <code><a href="#LOC">LOC</a>(<var>com_file_number</var>)=255</code>: <samp>Communication buffer overflow</samp>.
-</li></ul>
-
-
-<h3 id="PUT-graphics"><code>PUT</code> statement (graphics)</h3>
-<pre>PUT (<var>x0</var>, <var>y0</var>), <var>array_name</var> [, { PSET | PRESET | AND | OR | XOR } ]</pre>
-<p>Displays an array to a rectangular area of the graphics screen.
-Usually, <code>PUT</code> is used with arrays that have been stored using <code>GET</code>. See <code><a href="#GET-graphics">GET</a></code> for the
-format of the array.</p>
-<p>
-The keywords have the following effect:
-</p>
-<div class="scrollable">
-<table><tr>
-<td><code>PSET</code></td><td>    Overwrite the screen location with the new image</td>
-</tr><tr>
-<td><code>PRESET</code></td><td>  Overwrite the screen location with the inverse image</td>
-</tr><tr>
-<td><code>AND</code></td><td>     Combines the old and new attributes with bitwise AND</td>
-</tr><tr>
-<td><code>OR</code></td><td>      Combines the old and new attributes with bitwise OR</td>
-</tr><tr>
-<td><code>XOR</code></td><td>     Combines the old and new attributes with bitwise XOR</td>
-</tr></table>
-</div>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>array_name</var></code> is a numeric array.
-</li><li>
-<code><var>x0</var></code>, <code><var>y0</var></code> are numeric expressions.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-The array does not exist: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>array_name</var></code> refers to a string array: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>x0</var></code>, <code><var>y0</var></code> are string expressions: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>x0</var></code>, <code><var>y0</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>x0</var></code>, <code><var>y0</var></code> is outside the current <code>VIEW</code> or <code>WINDOW</code>:
-    <samp>Illegal function call</samp>
-</li></ul>
+    <section>
+        <h3 id="PUT-graphics"><code>PUT</code> statement (graphics)</h3>
+        <code class="block">
+            <b>PUT (</b><var>x0</var><b>,</b> <var>y0</var><b>),</b> <var>array_name</var> [<b>,</b> { <b>PSET</b> | <b>PRESET</b> | <b>AND</b> | <b>OR</b> | <b>XOR</b> } ]
+        </code>
+        <p>
+            Displays an array to a rectangular area of the graphics screen.
+            Usually, <code>PUT</code> is used with arrays that have been stored using <code>GET</code>. See <code><a href="#GET-graphics">GET</a></code> for the
+            format of the array.
+        </p>
+        <p>
+            The keywords have the following effect:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <td><code>PSET</code></td>
+                    <td>Overwrite the screen location with the new image</td>
+                </tr>
+                <tr>
+                    <td><code>PRESET</code></td>
+                    <td>Overwrite the screen location with the inverse image</td>
+                </tr>
+                <tr>
+                    <td><code>AND</code></td>
+                    <td>Combines the old and new attributes with bitwise AND</td>
+                </tr>
+                <tr>
+                    <td><code>OR</code></td>
+                    <td>Combines the old and new attributes with bitwise OR</td>
+                </tr>
+                <tr>
+                    <td><code>XOR</code></td>
+                    <td>Combines the old and new attributes with bitwise XOR</td>
+                </tr>
+            </table>
+        </div>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>array_name</var></code> is a numeric array.
+            </li>
+            <li>
+                <code><var>x0</var></code>, <code><var>y0</var></code> are numeric expressions.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                The array does not exist: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>array_name</var></code> refers to a string array: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x0</var></code>, <code><var>y0</var></code> are string expressions: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x0</var></code>, <code><var>y0</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>x0</var></code>, <code><var>y0</var></code> is outside the current <code>VIEW</code> or <code>WINDOW</code>:
+                <samp>Illegal function call</samp>
+            </li>
+        </ul>
+    </section>
 
     <section>
         <h3 id="RANDOMIZE"><code>RANDOMIZE</code> statement</h3>
