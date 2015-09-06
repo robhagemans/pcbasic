@@ -2805,251 +2805,342 @@
         </ul>
     </section>
 
-<section>
-    <h3 id="FRE"><code>FRE</code> function</h3>
-    <code class="block">
-        <var>free_mem</var> <b>= FRE(</b><var>x</var><b>)</b>
-    </code>
-    <p>
-        Returns the available BASIC memory.
-    </p>
-    <h4>Parameters</h4>
-    <p>
-        <code><var>x</var></code> is an expression.
-    </p>
-    <ul>
-        <li>
-            If <code><var>x</var></code> has a numeric value, it is ignored.
-        </li>
-        <li>
-            If <code><var>x</var></code> has a string value, garbage collection is performed
-            before returning available memory.
-    </li></ul>
-</section>
+    <section>
+        <h3 id="FRE"><code>FRE</code> function</h3>
+        <code class="block">
+            <var>free_mem</var> <b>= FRE(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns the available BASIC memory.
+        </p>
+        <h4>Parameters</h4>
+        <p>
+            <code><var>x</var></code> is an expression.
+        </p>
+        <ul>
+            <li>
+                If <code><var>x</var></code> has a numeric value, it is ignored.
+            </li>
+            <li>
+                If <code><var>x</var></code> has a string value, garbage collection is performed
+                before returning available memory.
+        </li></ul>
+    </section>
 
-<h3 id="GET-files"><code>GET</code> statement (files)</h3>
-<pre>GET [#] <var>file_number</var> [, <var>record_number</var>]</pre>
-<p>Read a record from the random-access file <code><var>file_number</var></code> at position
-<code><var>record_number</var></code>.
-    The record can be accessed through the <code><a href="#FIELD">FIELD</a></code>
-    variables or through <code><a href="#INPUT$">INPUT$</a></code>,
-    <code><a href="#INPUT">INPUT</a></code> or
-    <code><a href="#LINE-INPUT">LINE INPUT</a></code>.
-</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>file_number</var></code> is a numeric expression that yields the number
-of an open random-access file. The <code>#</code> is optional and has no effect.
-</li><li>
-<code><var>record_number</var></code> is a numeric expression in <code>[1&#8212;33554432]</code> (<code>2^25</code>), and is interpreted as the record number.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-If the record number is beyond the end of the file, the file buffer is
-    filled with null bytes.
-</li></ul>
-    <h4>Errors</h4>
-<ul><li>
-<code><var>record_number</var></code> is not in <code>[1&#8212;33554432]</code>: <samp>Bad record number</samp>.
-</li><li>
-<code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_number</var></code> is not the number of an open file:
-    <samp>Bad file number</samp>.
-</li><li>
-<code><var>file_number</var></code> is open under a mode other than <code>RANDOM</code>:
-    <samp>Bad file mode</samp>.
-</li><li>
-<code><var>file_number</var></code> is not specified: <samp>Missing operand</samp>.
-</li></ul>
+    <section>
+        <h3 id="GET-files"><code>GET</code> statement (files)</h3>
+        <code class="block">
+            <b>GET</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_number</var>]
+        </code>
+        <p>
+            Read a record from the random-access file <code><var>file_number</var></code> at position
+            <code><var>record_number</var></code>.
+            The record can be accessed through the <code><a href="#FIELD">FIELD</a></code>
+            variables or through <code><a href="#INPUT$">INPUT$</a></code>,
+            <code><a href="#INPUT">INPUT</a></code> or
+            <code><a href="#LINE-INPUT">LINE INPUT</a></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>file_number</var></code> is a numeric expression that yields the number
+                of an open random-access file. The <code>#</code> is optional and has no effect.
+            </li>
+            <li>
+                <code><var>record_number</var></code> is a numeric expression in <code>[1&#8212;33554432]</code> (<code>2^25</code>), and is interpreted as the record number.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If the record number is beyond the end of the file, the file buffer is
+                filled with null bytes.
+            </li>
+        </ul>
+            <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>record_number</var></code> is not in <code>[1&#8212;33554432]</code>: <samp>Bad record number</samp>.
+            </li>
+            <li>
+                <code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_number</var></code> is not the number of an open file:
+                <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code><var>file_number</var></code> is open under a mode other than <code>RANDOM</code>:
+                <samp>Bad file mode</samp>.
+            </li>
+            <li>
+                <code><var>file_number</var></code> is not specified: <samp>Missing operand</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="GET-serial"><code>GET</code> statement (communications)</h3>
-<pre>GET [#] <var>com_file_number</var> [, <var>number_bytes</var>]</pre>
-<p>Read <code><var>number_bytes</var></code> bytes from the communications buffer opened under file
-number <code><var>com_file_number</var></code>.
-    The record can be accessed through the <code><a href="#FIELD">FIELD</a></code>
-    variables or through <code><a href="#INPUT$">INPUT$</a></code>,
-    <code><a href="#INPUT">INPUT</a></code> or
-    <code><a href="#LINE-INPUT">LINE INPUT</a></code>.
-</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>file_number</var></code> is a numeric expression that yields the number
-of a file open to a <code>COM</code> device. The <code>#</code> is optional and has no effect.
-</li><li>
- <code><var>number_bytes</var></code> is a numeric expression between <code>1</code>
-and the <code>COM</code> buffer length, inclusive.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   If <code><var>bytes</var></code> is <code>32768</code> or greater, GW-BASIC hangs. This functionality is not implemented in PC-BASIC.
-</li><li>
-    In GW-BASIC, <samp>Device I/O error</samp> is raised for overrun error, framing error,
-    and break interrupt. <samp>Device fault</samp> is raised if DSR is lost during I/O.
-    <samp>Parity error</samp> is raised if parity is enabled and incorrect parity is
-    encountered. This is according to the manual; it is untested.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>bytes</var></code> is less than 1: <samp>Bad record number</samp>
-</li><li>
-<code><var>bytes</var></code> is less than <code>32768</code> and greater than the <code>COM</code> buffer length: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>com_file_number</var></code> is not specified: <samp>Missing operand</samp>.
-</li><li>
-<code><var>com_file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>com_file_number</var></code> is not the number of an open file:
-    <samp>Bad file number</samp>.
-</li><li>
-    If the serial input buffer is full, i.e. <code><a href="#LOF">LOF</a>(<var>com_file_number</var>) = 0</code>, and
-    <code><a href="#LOC">LOC</a>(<var>com_file_number</var>) = 255</code>: <samp>Communication buffer overflow</samp>
-</li><li>
-   If the carrier drops during <code>GET</code>, hangs until the <kbd>Ctrl</kbd>+<kbd>Break</kbd> key is pressed.
-</li></ul>
+    <section>
+        <h3 id="GET-serial"><code>GET</code> statement (communications)</h3>
+        <code class="block">
+            <b>GET</b> [<b>#</b>] <var>com_file_number</var> [<b>,</b> <var>number_bytes</var>]
+        </code>
+        <p>
+            Read <code><var>number_bytes</var></code> bytes from the communications buffer opened under file
+            number <code><var>com_file_number</var></code>.
+            The record can be accessed through the <code><a href="#FIELD">FIELD</a></code>
+            variables or through <code><a href="#INPUT$">INPUT$</a></code>,
+            <code><a href="#INPUT">INPUT</a></code> or
+            <code><a href="#LINE-INPUT">LINE INPUT</a></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>file_number</var></code> is a numeric expression that yields the number
+                of a file open to a <code>COM</code> device. The <code>#</code> is optional and has no effect.
+            </li>
+            <li>
+                <code><var>number_bytes</var></code> is a numeric expression between <code>1</code>
+                and the <code>COM</code> buffer length, inclusive.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code><var>bytes</var></code> is <code>32768</code> or greater, GW-BASIC hangs. This functionality is not implemented in PC-BASIC.
+            </li>
+            <li>
+                In GW-BASIC, <samp>Device I/O error</samp> is raised for overrun error, framing error,
+                and break interrupt. <samp>Device fault</samp> is raised if DSR is lost during I/O.
+                <samp>Parity error</samp> is raised if parity is enabled and incorrect parity is
+                encountered. This is according to the manual; it is untested.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>bytes</var></code> is less than 1: <samp>Bad record number</samp>
+            </li>
+            <li>
+                <code><var>bytes</var></code> is less than <code>32768</code> and greater than the <code>COM</code> buffer length: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>com_file_number</var></code> is not specified: <samp>Missing operand</samp>.
+            </li>
+            <li>
+                <code><var>com_file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>com_file_number</var></code> is not the number of an open file:
+                <samp>Bad file number</samp>.
+            </li>
+            <li>
+                If the serial input buffer is full, i.e. <code><a href="#LOF">LOF</a>(<var>com_file_number</var>) = 0</code>, and
+                <code><a href="#LOC">LOC</a>(<var>com_file_number</var>) = 255</code>: <samp>Communication buffer overflow</samp>
+            </li>
+            <li>
+                If the carrier drops during <code>GET</code>, hangs until the <kbd>Ctrl</kbd>+<kbd>Break</kbd> key is pressed.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="GET-graphics"><code>GET</code> statement (graphics)</h3>
+        <code class="block">
+            <b>GET (</b><var>x0</var><b>,</b> <var>y0</var><b>) -</b> [<b>STEP</b>] <b>(</b><var>x1</var><b>,</b> <var>y1</var><b>),</b> <var>array_name</var>
+        </code>
+        <p>
+            Stores a rectangular area of the graphics screen in an array.
+            The area stored is a rectangle parallel to the screen edges, bounded by the
+            top-left and bottom-right coordinates <code><var>x0</var></code>,<code><var>y0</var></code> and <code><var>x1</var></code>,<code><var>y1</var></code>. If <code>STEP</code> is
+            specified, <code><var>x1</var></code>,<code><var>y1</var></code> is an offset from <code><var>x0</var></code>,<code><var>y0</var></code>. The area is such that these
+            corner points are inside it.
+        </p>
+        <p>
+            The image stored in the array can then be put on the screen using PUT. For the
+            purposes of <code>GET</code>, any array is considered a string of bytes. The byte size of an
+            array can be calculated as <code><var>number_elements</var> * <var>byte_size</var></code> with <code><var>byte_size</var></code> equal to
+            <code>2</code> for integers (<code>%</code>), 4 for single (<code>!</code>) and 8 for double (<code>#</code>).
+            Array byte size for
+            string is 3, but string arrays are not allowed in <code>GET</code>. For calculating the
+            number of elements, keep in mind that <code><a href="#OPTION-BASE">OPTION BASE</a> 0</code> is the default; in which
+            case an array with maximum index 10 has 11 elements. This works through in
+            multidimensional arrays.
+        </p>
+        <p>
+            The array format is as follows:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th>Byte</th>
+                    <th>Contains</th>
+                </tr><tr>
+                    <td>0, 1</td>
+                    <td>Number of x pixels, unsigned int. In <code>SCREEN 1</code>, this value is doubled.</td>
+                </tr><tr>
+                    <td>2, 3</td>
+                    <td>Number of y pixels, unsigned int.</td>
+                </tr><tr>
+                    <td>4&#8212;</td>
+                    <td>
+                        Pixel data. Data is arranged in 2-byte words. The first 16-bit word holds the bit 0 of
+                        the first 16 pixels on the top row. The second word holds the second bit,
+                        etc. Data is word-aligned at the end of each row. Thus, in a screen mode
+                        with 4 bits per pixel, the first row takes at least 8 bytes (4 words), even
+                        if it consists of only one pixel. The number of bits per pixel depends on
+                        the <code><a href="#SCREEN-statement">SCREEN</a></code> mode.
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>array_name</var></code> is the name of a numeric array dimensioned with enough space to store the area.
+            </li>
+            <li>
+                <code><var>x0</var></code>, <code><var>y0</var></code>, <code><var>x1</var></code>, <code><var>y1</var></code> are numeric expressions.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In PCjr/Tandy mode, in <code>SCREEN 6</code>, <code>GET</code> stores an area of <em>twice the width</em>
+                of the specified rectangle.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                The array does not exist: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>array_name</var></code> refers to a string array: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                The area is too large for the array: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>x0</var></code>, ... <code><var>y1</var></code> are string expressions: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x0</var></code>, ... <code><var>y1</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>x0</var></code>, ... <code><var>y1</var></code> are outside the current <code>VIEW</code> or <code>WINDOW</code>:
+                <samp>Illegal function call</samp>
+            </li>
+        </ul>
+    </section>
 
-<h3 id="GET-graphics"><code>GET</code> statement (graphics)</h3>
-<pre>GET (<var>x0</var>, <var>y0</var>) - [STEP] (<var>x1</var>, <var>y1</var>), <var>array_name</var></pre>
-<p>Stores a rectangular area of the graphics screen in an array.
-The area stored is a rectangle parallel to the screen edges, bounded by the
-top-left and bottom-right coordinates <code><var>x0</var></code>,<code><var>y0</var></code> and <code><var>x1</var></code>,<code><var>y1</var></code>. If <code>STEP</code> is
-specified, <code><var>x1</var></code>,<code><var>y1</var></code> is an offset from <code><var>x0</var></code>,<code><var>y0</var></code>. The area is such that these
-corner points are inside it.</p>
-<p>The image stored in the array can then be put on the screen using PUT. For the
-purposes of <code>GET</code>, any array is considered a string of bytes. The byte size of an
-array can be calculated as <code><var>number_elements</var> * <var>byte_size</var></code> with <code><var>byte_size</var></code> equal to
-<code>2</code> for integers (<code>%</code>), 4 for single (<code>!</code>) and 8 for double (<code>#</code>).
-Array byte size for
-string is 3, but string arrays are not allowed in <code>GET</code>. For calculating the
-number of elements, keep in mind that <code><a href="#OPTION-BASE">OPTION BASE</a> 0</code> is the default; in which
-case an array with maximum index 10 has 11 elements. This works through in
-multidimensional arrays.</p>
+    <section>
+        <h3 id="GOSUB"><code>GOSUB</code> statement</h3>
+        <code class="block">
+            <b>GO</b>[ ]<b>SUB</b> <var>line_number</var> [<var>anything</var>]
+        </code>
+        <p>
+            Jumps to a subroutine at <code><var>line_number</var></code>. The next
+            <code><a href="#RETURN">RETURN</a></code> statement jumps back to
+            the statement after <code>GOSUB</code>. Anything after <code><var>line_number</var></code> until the end of the
+            statement is ignored. If executed from a direct line, <code>GOSUB</code> runs the subroutine and
+            the following <code>RETURN</code> returns execution to the direct line.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>line_number</var></code> is an existing line number literal.
+            </li>
+            <li>
+                Further characters on
+                the line are ignored until end of statement.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If no <code>RETURN</code> is encountered, no problem.
+            </li>
+            <li>
+                One optional space is allowed between <code>GO</code> and <code>SUB</code>; it will not be retained in
+                the program.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                If <code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
+            </li>
+            <li>
+                If <code><var>line_number</var></code> is greater than <code>65529</code>, only the first 4 characters are
+                read (e.g. <code>6553</code>)
+            </li>
+        </ul>
+    </section>
 
-<p>The array format is as follows:</p>
-<div class="scrollable">
-<table>
-    <tr>
-        <th>Byte</th>
-        <th>Contains</th>
-    </tr><tr>
-        <td>0, 1</td>
-        <td>Number of x pixels, unsigned int. In <code>SCREEN 1</code>, this value is doubled.</td>
-    </tr><tr>
-        <td>2, 3</td>
-        <td>Number of y pixels, unsigned int.</td>
-    </tr><tr>
-        <td>4&#8212;</td>
-        <td>
-            Pixel data. Data is arranged in 2-byte words. The first 16-bit word holds the bit 0 of
-            the first 16 pixels on the top row. The second word holds the second bit,
-            etc. Data is word-aligned at the end of each row. Thus, in a screen mode
-            with 4 bits per pixel, the first row takes at least 8 bytes (4 words), even
-            if it consists of only one pixel. The number of bits per pixel depends on
-            the <code><a href="#SCREEN-statement">SCREEN</a></code> mode.
-        </td>
-    </tr>
-</table>
-</div>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>array_name</var></code> is the name of a numeric array dimensioned with enough space to store the area.
-</li><li>
- <code><var>x0</var></code>, <code><var>y0</var></code>, <code><var>x1</var></code>, <code><var>y1</var></code> are numeric expressions.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   In PCjr/Tandy mode, in <code>SCREEN 6</code>, <code>GET</code> stores an area of <em>twice the width</em>
-    of the specified rectangle.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-The array does not exist: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>array_name</var></code> refers to a string array: <samp>Type mismatch</samp>.
-</li><li>
-The area is too large for the array: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>x0</var></code>, ... <code><var>y1</var></code> are string expressions: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>x0</var></code>, ... <code><var>y1</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>x0</var></code>, ... <code><var>y1</var></code> are outside the current <code>VIEW</code> or <code>WINDOW</code>:
-    <samp>Illegal function call</samp>
-</li></ul>
+    <section>
+        <h3 id="GOTO"><code>GOTO</code> statement</h3>
+        <code class="block">
+            <b>GO</b>[ ]<b>TO</b> <var>line_number</var> [<var>anything</var>]
+        </code>
+        <p>
+            Jumps to <code><var>line_number</var></code>.  Anything after <code><var>line_number</var></code> until the end of the
+            statement is ignored. If executed from a direct line, <code>GOTO</code> starts execution of the program at the specified line.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>line_number</var></code> is an existing line number literal.
+            </li>
+            <li>
+                Further characters on
+                the line are ignored until end of statement.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Any number of optional spaces is allowed between <code>GO</code> and <code>TO</code>, but they will
+                not be retained in the program.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
+            </li>
+            <li>
+                If <code><var>line_number</var></code> is greater than <code>65529</code>, only the first 4 characters are
+                read (e.g. <code>6553</code>)
+            </li>
+        </ul>
+    </section>
 
-
-<h3 id="GOSUB"><code>GOSUB</code> statement</h3>
-<pre>GO[ ]SUB <var>line_number</var> [<var>anything</var>]</pre>
-<p>
-    Jumps to a subroutine at <code><var>line_number</var></code>. The next
-    <code><a href="#RETURN">RETURN</a></code> statement jumps back to
-the statement after <code>GOSUB</code>. Anything after <code><var>line_number</var></code> until the end of the
-statement is ignored. If executed from a direct line, <code>GOSUB</code> runs the subroutine and
-the following <code>RETURN</code> returns execution to the direct line.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>line_number</var></code> is an existing line number literal.
-</li><li>
-Further characters on
-the line are ignored until end of statement.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   If no <code>RETURN</code> is encountered, no problem.
-</li><li>
-One optional space is allowed between <code>GO</code> and <code>SUB</code>; it will not be retained in
-    the program.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-   If <code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
-</li><li>
-   If <code><var>line_number</var></code> is greater than <code>65529</code>, only the first 4 characters are
-    read (e.g. <code>6553</code>)
-</li></ul>
-
-
-
-<h3 id="GOTO"><code>GOTO</code> statement</h3>
-<pre>GO[ ]TO <var>line_number</var> [<var>anything</var>]</pre>
-<p>Jumps to <code><var>line_number</var></code>.  Anything after <code><var>line_number</var></code> until the end of the
-statement is ignored. If executed from a direct line, <code>GOTO</code> starts execution of the program at the specified line.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>line_number</var></code> is an existing line number literal.
-</li><li>
-Further characters on
-the line are ignored until end of statement.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   Any number of optional spaces is allowed between <code>GO</code> and <code>TO</code>, but they will
-    not be retained in the program.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
-</li><li>
-   If <code><var>line_number</var></code> is greater than <code>65529</code>, only the first 4 characters are
-    read (e.g. <code>6553</code>)
-</li></ul>
-
-<h3 id="HEX$"><code>HEX$</code> function</h3>
-<pre><var>hex_repr</var> = HEX(<var>x</var>)</pre>
-<p>Returns a string with the hexadecimal representation of <code><var>x</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>x</var></code> is a
-numeric expression in <code>[-32768&#8212;65535]</code>. Values for
-negative <code><var>x</var></code> are shown as two's-complement.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
- <code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li><li>
- <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-</li></ul>
+    <section>
+        <h3 id="HEX$"><code>HEX$</code> function</h3>
+        <code class="block">
+            <var>hex_repr</var> <b>= HEX(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns a string with the hexadecimal representation of <code><var>x</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a
+                numeric expression in <code>[-32768&#8212;65535]</code>. Values for
+                negative <code><var>x</var></code> are shown as two's-complement.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
     <section>
         <h3 id="IF"><code>IF</code> statement</h3>
