@@ -1,10 +1,13 @@
 #!/usr/bin/env python2
 from lxml import etree, html
-import markdown
 import codecs
 import sys
 import re
 from cStringIO import StringIO
+import subprocess
+import time
+import os
+
 
 def massage(text):
     return re.sub(' +', ' ', text.encode('utf-8').replace('\\', '\\\\').replace('-', '\\-').replace('|', '\\||').replace('.', '\\|.').replace('\n', ' '))
@@ -54,6 +57,19 @@ title_html = '<h1>pcbasic</h1><p>%s</p>\n' % open('tagline.txt', mode='r').read(
 desc_html = '<h2>Description</h2><p>%s</p>\n' % open('description.txt', mode='r').read()
 options_html = open('options.html', mode='r').read()
 examples_html = open('examples.html', mode='r').read()
-html = title_html + desc_html + options_html + examples_html
+man_html = title_html + desc_html + options_html + examples_html
+usage_html = options_html
 
-print html_to_man(html)
+# output manfile
+with open('../doc/pcbasic.man', 'w') as manfile:
+    manfile.write(html_to_man(man_html))
+subprocess.Popen('gzip -f ../doc/pcbasic.man'.split())
+
+#print html_to_man(usage_html)
+# output usage
+with open('usage.man', 'w') as manfile:
+    manfile.write(html_to_man(usage_html))
+
+# constructing the pipes through popen seems to cut short the file some way or another
+subprocess.call('cat usage.man | groff -t -e -mandoc -Tascii  | col -bx | tail -n +5 | head -n -5 > ../pcbasic/data/usage.txt', shell=True)
+os.remove('usage.man')
