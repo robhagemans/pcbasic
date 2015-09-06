@@ -3724,269 +3724,426 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
 <code><var>expression</var></code> does not have a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
+    <section>
+        <h3 id="MERGE"><code>MERGE</code> statement</h3>
+        <code class="block">
+            <b>MERGE</b> <var>file_name</var>
+        </code>
+        <p>
+            Overlays the lines of program <code><var>file_name</var></code> into the existing program. The loaded
+            lines overwrite existing lines if they have the same line number. <code><var>file_name</var></code>
+            must be the name of an existing program file stored in ASCII format only.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>file_name</var></code> cannot be found: <samp>File not found</samp>.
+            </li>
+            <li>
+                <code><var>file_name</var></code> was not saved as ASCII: <samp>Bad file mode</samp>.
+            </li>
+            <li>
+                A loaded ASCII file contains lines without line numbers:
+                <samp>Direct statement in file</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="MERGE"><code>MERGE</code> statement</h3>
-<pre>MERGE <var>file_name</var></pre>
-<p>Overlays the lines of program <code><var>file_name</var></code> into the existing program. The loaded
-lines overwrite existing lines if they have the same line number. <code><var>file_name</var></code>
-must be the name of an existing program file stored in ASCII format only.
-</p><h4>Notes</h4>
-<ul><li>
-Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>file_name</var></code> cannot be found: <samp>File not found</samp>.
-</li><li>
-<code><var>file_name</var></code> was not saved as ASCII: <samp>Bad file mode</samp>.
-</li><li>
-A loaded ASCII file contains lines without line numbers:
-    <samp>Direct statement in file</samp>.
-</li></ul>
+    <section>
+        <h3 id="MID$"><code>MID$</code> function</h3>
+        <code class="block">
+            <var>substring</var> <b>= MID$(</b><var>string</var><b>,</b> <var>position</var> [<b>,</b> <var>length</var>]<b>)</b>
+        </code>
+        <p>
+            Returns a substring of <code><var>string</var></code> starting at <code><var>position</var></code>, counting from 1. The
+            substring has length <code><var>length</var></code> if specified, defaulting to 1.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>string</var></code> is a string expression.
+            </li>
+            <li>
+                <code><var>position</var></code> is a numeric expression between 1 and the string length, inclusive.
+            </li>
+            <li>
+                <code><var>length</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>string</var></code> has a number value or <code><var>position</var></code> or <code><var>length</var></code> have string values: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>position</var></code> or <code><var>length</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>position</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="MID$"><code>MID$</code> function</h3>
-<pre><var>substring</var> = MID$(<var>string</var>, <var>position</var> [, <var>length</var>])</pre>
-<p>Returns a substring of <code><var>string</var></code> starting at <code><var>position</var></code>, counting from 1. The
-substring has length <code><var>length</var></code> if specified, defaulting to 1.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>string</var></code> is a string expression.
-</li><li>
-<code><var>position</var></code> is a numeric expression between 1 and the string length, inclusive.
-</li><li>
-<code><var>length</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>string</var></code> has a number value or <code><var>position</var></code> or <code><var>length</var></code> have string values: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>position</var></code> or <code><var>length</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>position</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="MID$-statement"><code>MID$</code> statement</h3>
+        <code class="block">
+            <b>MID$(</b><var>string_name</var><b>,</b> <var>position</var> [<b>,</b> <var>length</var>]<b>) =</b> <var>substring</var>
+        </code>
+        <p>
+            Replaces part of <code><var>string_name</var></code> with <code><var>substring</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>string_name</var></code> is a valid string variable name.
+            </li>
+            <li>
+                <code><var>position</var></code> is a numeric expression between 1 and the string length, inclusive.
+            </li>
+            <li>
+                <code><var>length</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code><var>substring</var></code> is longer than <code><var>length</var></code>, only the first <code><var>length</var></code> characters
+                are used.
+            </li>
+            <li>
+                If <code><var>substring</var></code> is shorter than <code><var>length</var></code>, only <code>LEN(<var>substring</var>)</code> characters
+                are replaced.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>position</var></code> is greater than the length of <code><var>string_name</var></code>:
+                <samp>Illegal function call</samp>, except if <code><var>length</var></code> is specified as 0.
+            </li>
+            <li>
+                <code><var>position</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>position</var></code> or <code><var>length</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="MKDIR"><code>MKDIR</code> statement</h3>
+        <code class="block">
+            <b>MKDIR</b> <var>path</var>
+        </code>
+        <p>
+            Creates a directory on a disk device.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>path</var></code> is a string expression that specifies the
+                path of the new directory.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+               <code><var>path</var></code> will be truncated into all-uppercase 8.3 format.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>path</var></code> is not a string: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                The parent directory of <code><var>path</var></code> does not exist: <samp>Path not found</samp>.
+            </li>
+            <li>
+                The pathname already exists: <samp>Path/File access error</samp>.
+            </li>
+            <li>
+                The user has no write permission: <samp>Permission denied</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="MID$-statement"><code>MID$</code> statement</h3>
-<pre>MID$(<var>string_name</var>, <var>position</var> [, <var>length</var>]) = <var>substring</var></pre>
-<p>Replaces part of <code><var>string_name</var></code> with <code><var>substring</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>string_name</var></code> is a valid string variable name.
-</li><li>
-<code><var>position</var></code> is a numeric expression between 1 and the string length, inclusive.
-</li><li>
-<code><var>length</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   If <code><var>substring</var></code> is longer than <code><var>length</var></code>, only the first <code><var>length</var></code> characters
-    are used.
-</li><li>
-   If <code><var>substring</var></code> is shorter than <code><var>length</var></code>, only <code>LEN(<var>substring</var>)</code> characters
-    are replaced.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-    <code><var>position</var></code> is greater than the length of <code><var>string_name</var></code>:
-    <samp>Illegal function call</samp>, except if <code><var>length</var></code> is specified as 0.
-</li><li>
-<code><var>position</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>position</var></code> or <code><var>length</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li></ul>
+    <section>
+        <h3 id="MKD$"><code>MKD$</code> function</h3>
+        <code class="block">
+            <var>bytes</var> <b>= MKD$(</b><var>double</var><b>)</b>
+        </code>
+        <p>
+            Returns the internal 8-byte Microsoft Binary Format representation of a double-
+            precision number.
+        </p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>double</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="MKI$"><code>MKI$</code> function</h3>
+        <code class="block">
+            <var>bytes</var> <b>= MKI$(</b><var>int</var><b>)</b>
+        </code>
+        <p>
+            Returns the internal 2-byte little-endian representation of an integer.
+        </p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>int</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>int</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="MKDIR"><code>MKDIR</code> statement</h3>
-<pre>MKDIR <var>path</var></pre>
-<p>Creates a directory.  </p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>path</var></code> is a string expression that specifies the
-path of the new directory.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   <code><var>path</var></code> will be truncated into all-uppercase 8.3 format.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>path</var></code> is not a string: <samp>Type mismatch</samp>.
-</li><li>
-The parent directory of <code><var>path</var></code> does not exist: <samp>Path not found</samp>.
-</li><li>
-The pathname already exists: <samp>Path/File access error</samp>.
-</li><li>
-The user has no write permission: <samp>Permission denied</samp>.
-</li></ul>
+    <section>
+        <h3 id="MKS$"><code>MKS$</code> function</h3>
+        <code class="block">
+            <var>bytes</var> <b>= MKS$(</b><var>single</var><b>)</b>
+        </code>
+        <p>
+            Returns the internal 8-byte Microsoft Binary Format representation of a single-
+            precision number.
+        </p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>single</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="MOTOR"><code>MOTOR</code> statement</h3>
+        <code class="block">
+            <b>MOTOR</b> [<var>num</var>]
+        </code>
+        <p>
+            Does nothing.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>num</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                This statement does nothing in GW-BASIC. Presumably, it is left over from a
+                statement in older versions of MS Basic that would drive the cassette tape
+                player.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="MKD$"><code>MKD$</code> function</h3>
-<pre><var>bytes</var> = MKD$(<var>double</var>)</pre>
-<p>Returns the internal 8-byte Microsoft Binary Format representation of a double-
-precision number.</p>
-<h4>Errors</h4>
-<ul><li>
-<code><var>double</var></code> has a string value: <samp>Type mismatch</samp>.
-</li></ul>
+    <section>
+        <h3 id="NAME"><code>NAME</code> statement</h3>
+        <code class="block">
+            <b>NAME</b> <var>old_name</var> <b>AS</b> <var>new_name</var>
+        </code>
+        <p>
+            Renames the disk file <code><var>old_name</var></code> into <code><var>new_name</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>old_name</var></code> and <code><var>new_name</var></code> are string expressions.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+               <code><var>new_name</var></code> will be modified into all-uppercase 8.3 format.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>old_name</var></code> or <code><var>new_name</var></code> have number values: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>old_name</var></code> does not exist: <samp>File not found</samp>.
+            </li>
+            <li>
+                <code><var>old_name</var></code> is open: <samp>File already open</samp>.
+            </li>
+            <li>
+                <code><var>new_name</var></code> exists: <samp>File already exists</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="NEW"><code>NEW</code> statement</h3>
+        <code class="block">
+            <b>NEW</b>
+        </code>
+        <p>
+            Stops execution of a program, deletes the program in memory, executes
+            <code><a href="#CLEAR">CLEAR</a></code> and <code><a href="#RESTORE">RESTORE</a></code>
+            and returns control to the user.
+        </p>
+    </section>
 
-<h3 id="MKI$"><code>MKI$</code> function</h3>
-<pre><var>bytes</var> = MKI$(<var>int</var>)</pre>
-<p>Returns the internal 2-byte little-endian representation of an integer.
-</p><h4>Errors</h4>
-<ul><li>
-<code><var>int</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>int</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li></ul>
+    <section>
+        <h3 id="NEXT"><code>NEXT</code> statement</h3>
+        <code class="block">
+            <b>NEXT</b> [<var>var_0</var> [<b>,</b> <var>var_1</var>] ... ]
+        </code>
+        <p>
+            Iterates a <code>FOR&#8212;NEXT</code> loop: increments the loop variable and
+            jumps to the <code><a href="#FOR">FOR</a></code>
+            statement. If no variables are specified, next matches the most recent <code>FOR</code>
+            statement. Several nested <code>NEXT</code> statements can be consolidated into one by
+            using the variable list. If one or more variables are specified, their order
+            must match the order of earlier <code>FOR</code> statements.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>var_0</var>, <var>var_1</var>, ...</code> are numeric variables which are loop counters in a <code>FOR</code> statement.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                No <code>FOR</code> statement is found to match the <code>NEXT</code> statement and variables:
+                <samp>NEXT without FOR</samp>.
+            </li>
+            <li>
+                <code><var>var_0</var>, <var>var_1</var>, ...</code> are string variables: <samp>NEXT without FOR</samp>.
+            </li>
+        </ul>
+    </section>
 
-
-<h3 id="MKS$"><code>MKS$</code> function</h3>
-<pre><var>bytes</var> = MKS$(<var>single</var>)</pre>
-<p>Returns the internal 8-byte Microsoft Binary Format representation of a single-
-precision number.</p>
-<h4>Errors</h4>
-<ul><li>
-<code><var>single</var></code> has a string value: <samp>Type mismatch</samp>.
-</li></ul>
-
-
-<h3 id="MOTOR"><code>MOTOR</code> statement</h3>
-<pre>MOTOR [<var>num</var>]</pre>
-<p>Does nothing.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>num</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   This statement does nothing in GW-BASIC. Presumably, it is left over from a
-    statement in older versions of MS Basic that would drive the cassette tape
-    player.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>num</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="NAME"><code>NAME</code> statement</h3>
-<pre>NAME <var>old_name</var> AS <var>new_name</var></pre>
-<p>
-Renames the file <code><var>old_name</var></code> into <code><var>new_name</var></code>.
-</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>old_name</var></code> and <code><var>new_name</var></code> are string expressions.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   <code><var>new_name</var></code> will be modified into all-uppercase 8.3 format.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>old_name</var></code> or <code><var>new_name</var></code> have number values: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>old_name</var></code> does not exist: <samp>File not found</samp>.
-</li><li>
-<code><var>old_name</var></code> is open: <samp>File already open</samp>.
-</li><li>
-<code><var>new_name</var></code> exists: <samp>File already exists</samp>.
-</li></ul>
-
-
-<h3 id="NEW"><code>NEW</code> statement</h3>
-<pre>NEW</pre>
-<p>
-    Stops execution of a program, deletes the program in memory, executes
-    <code><a href="#CLEAR">CLEAR</a></code> and <code><a href="#RESTORE">RESTORE</a></code>
-    and returns control to the user.
-</p>
-
-
-<h3 id="NEXT"><code>NEXT</code> statement</h3>
-<pre>NEXT [<var>var_0</var> [, <var>var_1</var> [, ...] ] ]</pre>
-<p>
-    Iterates a <code>FOR&#8212;NEXT</code> loop: increments the loop variable and
-    jumps to the <code><a href="#FOR">FOR</a></code>
-statement. If no variables are specified, next matches the most recent <code>FOR</code>
-statement. Several nested <code>NEXT</code> statements can be consolidated into one by
-using the variable list. If one or more variables are specified, their order
-must match the order of earlier <code>FOR</code> statements.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>var_0</var>, <var>var_1</var>, ...</code> are numeric variables which are loop counters in a <code>FOR</code> statement.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-No <code>FOR</code> statement is found to match the <code>NEXT</code> statement and variables:
-    <samp>NEXT without FOR</samp>.
-</li><li>
-<code><var>var_0</var>, <var>var_1</var>, ...</code> are string variables: <samp>NEXT without FOR</samp>.
-</li></ul>
-
-
-<h3 id="NOISE"><code>NOISE</code> statement</h3>
-<pre>NOISE <var>source</var>, <var>volume</var>, <var>duration</var></pre>
-<p>
-    Generates various kinds of noise.</p>
-<h4>Parameters</h4>
-<ul><li>
-    <code><var>source</var></code> is a numeric expression in  <code>[0&#8212;7]</code>.
-    It indicates the type of noise:
-    <div class="scrollable">
-    <table><tr>
-    <th>source</th>  <th>type</th>            <th>top of frequency band (Hz)</th>
-    </tr><tr>
-    <td>0</td><td>       periodic        </td><td>6991</td>
-    </tr><tr>
-    <td>1</td><td>       periodic        </td><td>3495</td>
-    </tr><tr>
-    <td>2</td><td>       periodic        </td><td>1747</td>
-    </tr><tr>
-    <td>3</td><td>       periodic        </td><td>last tone played on voice 2</td>
-    </tr><tr>
-    <td>0</td><td>       white noise     </td><td>6991</td>
-    </tr><tr>
-    <td>1</td><td>       white noise     </td><td>3495</td>
-    </tr><tr>
-    <td>2</td><td>       white noise     </td><td>1747</td>
-    </tr><tr>
-    <td>3</td><td>       white noise     </td><td>last tone played on voice 2</td>
-    </tr></table>
-    </div>
-</li><li>
-    <code><var>volume</var></code> is a numeric expression in <code>[0&#8212;15]</code>.
-</li><li>
-    <code><var>duration</var></code> is a numeric expression.
-</li></ul>
-<p>
-    Volume and duration are determined in the same way as for the
-    <code><a href="#SOUND">SOUND</a></code> statement; see there.
-</p>
-<h4>Notes</h4>
-<ul><li>
-    This statement is only available if
-    <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code> is set.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code>SOUND ON</code> has not been executed: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>duration</var></code> is not in <code>[-65535&#8212;65535]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>volume</var></code> is not in <code>[0&#8212;15]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>source</var></code> is not in <code>[0&#8212;7]</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="NOISE"><code>NOISE</code> statement</h3>
+        <code class="block">
+            <b>NOISE</b> <var>source</var><b>,</b> <var>volume</var><b>,</b> <var>duration</var>
+        </code>
+        <p>
+            Generates various kinds of noise.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>source</var></code> is a numeric expression in  <code>[0&#8212;7]</code>.
+                It indicates the type of noise:
+                <div class="scrollable">
+                    <table>
+                        <tr>
+                            <th>source</th>
+                            <th>type</th>
+                            <th>top of frequency band (Hz)</th>
+                        </tr>
+                        <tr>
+                            <td>0</td>
+                            <td>periodic</td>
+                            <td>6991</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>periodic</td>
+                            <td>3495</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>periodic</td>
+                            <td>1747</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>periodic</td>
+                            <td>last tone played on voice 2</td>
+                        </tr>
+                        <tr>
+                            <td>0</td>
+                            <td>white noise</td>
+                            <td>6991</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>white noise</td>
+                            <td>3495</td>
+                        </tr><tr>
+                            <td>2</td>
+                            <td>white noise</td>
+                            <td>1747</td>
+                        </tr><tr>
+                            <td>3</td>
+                            <td>white noise</td>
+                            <td>last tone played on voice 2</td>
+                        </tr>
+                    </table>
+                </div>
+            </li>
+            <li>
+                <code><var>volume</var></code> is a numeric expression in <code>[0&#8212;15]</code>.
+            </li>
+            <li>
+                <code><var>duration</var></code> is a numeric expression.
+            </li>
+        </ul>
+        <p>
+            Volume and duration are determined in the same way as for the
+            <code><a href="#SOUND">SOUND</a></code> statement; see there.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                This statement is only available if
+                <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code> is set.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code>SOUND ON</code> has not been executed: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>duration</var></code> is not in <code>[-65535&#8212;65535]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>volume</var></code> is not in <code>[0&#8212;15]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>source</var></code> is not in <code>[0&#8212;7]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
     <section>
         <h3 id="OCT$"><code>OCT$</code> function</h3>
