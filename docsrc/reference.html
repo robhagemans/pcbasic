@@ -2962,596 +2962,998 @@ negative <code><var>x</var></code> are shown as two's-complement.
  <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
 </li></ul>
 
+    <section>
+        <h3 id="IF"><code>IF</code> statement</h3>
+        <code class="block">
+            <b>IF</b> <var>truth_value</var> [<b>,</b>] {<b>THEN</b>|<b>GOTO</b>} [<var>statements_1</var>|<var>line_number_1</var> [<var>anything</var>]]
+            [<b>ELSE</b> [<var>statements_0</var>|<var>line_number_0</var> [<var>anything</var>]]]
+       </code>
+        <p>
+            If <code><var>truth_value</var></code> is non-zero, executes <code><var>statements_1</var></code> or jumps to <code><var>line_number_1</var></code> .
+            If it is zero, executes <code><var>statements_0</var></code> or jumps to <code><var>line_number_0</var></code> . <code><var>truth_value</var></code>
+            is a numeric expression. The comma is optional and ignored.
+            <code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are existing line numbers.
+            Statements <code><var>statements_0</var></code> and <code><var>statements_1</var></code> can be compound statements with
+            one or more colons (<code>:</code>) separating single statements. The compound statements
+            can contain nested <code>IF&#8212;THEN&#8212;ELSE</code> statements.
+            <code><a href="#ELSE">ELSE</a></code> clauses are optional; they
+            are bound to the innermost free <code>IF</code> statement if nested. Additional <code>ELSE</code>
+            clauses that have no matching <code>IF</code> are ignored. All clauses must be on the same
+            program line.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+               <code>THEN</code> and <code>GOTO</code> are interchangeable; which one is chosen is independent
+                of whether a statement or a line number is given. <code>GOTO PRINT 1</code> is fine.
+            </li>
+            <li>
+                As in <code><a href="#GOTO">GOTO</a></code>, anything after the line number is ignored.
+            </li>
+            <li>
+               If <code><var>truth_value</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="IF"><code>IF</code> statement</h3>
-<pre>IF <var>truth_value</var> [,] { THEN | GOTO } [ <var>statements_1</var> | <var>line_number_1</var> [<var>anything</var>] ]
-                   [ ELSE [ <var>statements_0</var> | <var>line_number_0</var> [<var>anything</var>] ] ]</pre>
-<p>
-If <code><var>truth_value</var></code> is non-zero, executes <code><var>statements_1</var></code> or jumps to <code><var>line_number_1</var></code> .
-If it is zero, executes <code><var>statements_0</var></code> or jumps to <code><var>line_number_0</var></code> . <code><var>truth_value</var></code>
-is a numeric expression. The comma is optional and ignored.
-<code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are existing line numbers.
-Statements <code><var>statements_0</var></code> and <code><var>statements_1</var></code> can be compound statements with
-one or more colons (<code>:</code>) separating single statements. The compound statements
-can contain nested <code>IF&#8212;THEN&#8212;ELSE</code> statements.
-<code><a href="#ELSE">ELSE</a></code> clauses are optional; they
-are bound to the innermost free <code>IF</code> statement if nested. Additional <code>ELSE</code>
-clauses that have no matching <code>IF</code> are ignored. All clauses must be on the same
-program line.
-</p><h4>Notes</h4>
-<ul><li>
-   <code>THEN</code> and <code>GOTO</code> are interchangeable; which one is chosen is independent
-    of whether a statement or a line number is given. <code>GOTO PRINT 1</code> is fine.
-</li><li>
-    As in <code><a href="#GOTO">GOTO</a></code>, anything after the line number is ignored.
-</li><li>
-   If <code><var>truth_value</var></code> has a string value: <samp>Type mismatch</samp>.
-</li></ul>
+    <section>
+        <h3 id="INKEY$"><code>INKEY$</code> function</h3>
+        <code class="block">
+            <var>key</var> <b>= INKEY$</b>
+        </code>
+        <p>
+            Returns one key-press from the keyboard buffer. If the keyboard buffer is
+            empty, returns the empty string. Otherwise, the return value is either a one
+            character string or a two-character string of which the first is <code>CHR$(0)</code> and
+            the second a keyboard scancode.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+        <h4>Keyboard scancodes returned by <code>INKEY$</code></h4>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th>Key</th>
+                    <th>Scancode</th>
+                </tr>
+                <tr>
+                    <td><kbd>&#8593;<!--up--></kbd></td>
+                    <td>48</td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8595;<!--down--></kbd></td>
+                    <td>50</td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8594;<!--right--></kbd></td>
+                    <td>4D</td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8592;<!--left--></kbd></td>
+                    <td>4B</td>
+                </tr>
+                <tr>
+                    <td><kbd>Ins</kbd></td>
+                    <td>52</td>
+                </tr>
+                <tr>
+                    <td><kbd>Del</kbd></td>
+                    <td>53</td>
+                </tr>
+                <tr>
+                    <td><kbd>Home</kbd></td>
+                    <td>47</td>
+                </tr>
+                <tr>
+                    <td><kbd>End</kbd></td>
+                    <td>4F</td>
+                </tr>
+                <tr>
+                    <td><kbd>Pg Up</kbd></td>
+                    <td>49</td>
+                </tr>
+                <tr>
+                    <td><kbd>Pg Dn</kbd></td>
+                    <td>51</td>
+                </tr>
+                <tr>
+                    <td><kbd>F1</kbd></td>
+                    <td>3B</td>
+                </tr>
+                <tr>
+                    <td><kbd>F2</kbd></td>
+                    <td>3C</td>
+                </tr><tr>
+                    <td><kbd>F3</kbd></td>
+                    <td>3D</td>
+                </tr>
+                <tr>
+                    <td><kbd>F4</kbd></td>
+                    <td>3E</td>
+                </tr>
+                <tr>
+                    <td><kbd>F5</kbd></td>
+                    <td>3F</td>
+                </tr>
+                <tr>
+                    <td><kbd>F6</kbd></td>
+                    <td>40</td>
+                </tr>
+                <tr>
+                    <td><kbd>F7</kbd></td>
+                    <td>41</td>
+                </tr>
+                <tr>
+                    <td><kbd>F8</kbd></td>
+                    <td>42</td>
+                </tr>
+                <tr>
+                    <td><kbd>F9</kbd></td>
+                    <td>43</td>
+                </tr>
+                <tr>
+                    <td><kbd>F10</kbd></td>
+                    <td>44</td>
+                </tr>
+                <tr>
+                    <td><kbd>PrtSc</kbd></td>
+                    <td>37</td>
+                </tr>
+                <tr>
+                    <td><kbd>CTRL</kbd>+<kbd>&#8594;<!--right--></kbd></td>
+                    <td>74</td>
+                </tr>
+                <tr>
+                    <td><kbd>CTRL</kbd>+<kbd>&#8592;<!--left--></kbd></td>
+                    <td>73</td>
+                </tr>
+                <tr>
+                    <td><kbd>CTRL</kbd>+<kbd>Home</kbd></td>
+                    <td>77</td>
+                </tr>
+                <tr>
+                    <td><kbd>CTRL</kbd>+<kbd>End</kbd></td>
+                    <td>75</td>
+                </tr>
+                <tr>
+                    <td><kbd>CTRL</kbd>+<kbd>Pg Up</kbd></td>
+                    <td>84</td>
+                </tr>
+                <tr>
+                    <td><kbd>CTRL</kbd>+<kbd>Pg Dn</kbd></td>
+                    <td>76</td>
+                </tr>
+                <tr>
+                    <td><kbd>CTRL</kbd>+<kbd>2</kbd></td>
+                    <td>03</td>
+                </tr>
+                <tr>
+                    <td><kbd>CTRL</kbd>+<kbd>9</kbd></td>
+                    <td>84</td>
+                </tr>
+                <tr>
+                    <td><kbd>CTRL</kbd>+<kbd>F2</kbd></td>
+                    <td>5F</td>
+                </tr>
+                <tr>
+                    <td><kbd>CTRL</kbd>+<kbd>F3</kbd></td>
+                    <td>60</td>
+                </tr>
+            </table>
+        </div>
+    </section>
 
+    <section>
+        <h3 id="INP"><code>INP</code> function</h3>
+        <code class="block">
+            <var>code</var> <b>= INP(</b><var>port</var><b>)</b>
+        </code>
+        <p>
+            Returns the value of an emulated machine port.
+        </p>
+        <h4>Parameters</h4>
+        <p>
+            <code><var>port</var></code> is a numeric expression in <code>[0&#8212;65535]</code>.
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th><code>port</code></th>
+                    <th>Effect</th>
+                </tr>
+                <tr>
+                    <td><code>&amp;H60</code></td>
+                    <td>
+                        Returns the keyboard scancode for the last key pressed.
+                        The scancodes returned by <code>INP(&amp;H60)</code> are listed below. If the key is
+                        currently down, the scancode is returned; if it has been released,
+                        the scancode is incremented by 128.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>&amp;H201</code></td>
+                    <td>
+                        Returns the value of the game port (joystick port). This value is
+                        constructed as follows:
+                        <table>
+                            <tr>
+                                <th>Bit</th>
+                                <th>Meaning</th>
+                            </tr>
+                            <tr>
+                                <td>0</td>
+                                <td>joystick 2 x-axis</td>
+                            </tr>
+                            <tr>
+                                <td>1</td>
+                                <td>joystick 1 y-axis</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>joystick 1 x-axis</td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>joystick 2 y-axis</td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>joystick 2 button 1</td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>joystick 1 button 2</td>
+                            </tr>
+                            <tr>
+                                <td>6</td>
+                                <td>joystick 1 button 1</td>
+                            </tr>
+                            <tr>
+                                <td>7</td>
+                                <td>joystick 2 button 2</td>
+                            </tr>
+                        </table>
+                        The button bits are 0 when the button is fired, 1 otherwise. The axis values
+                        are normally 0 but are set to 1 by <code><a href="#OUT">OUT</a> &amp;H201, <var>x</var></code> and then fall back to 0
+                        after a delay. The longer the delay, the higher the axis value.
+                    </td>
+                </tr>
+                <tr>
+                    <td>other values</td>
+                    <td>Returns zero.</td>
+                </tr>
+            </table>
+        </div>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Only a limited number of machine ports are emulated in PC-BASIC.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>port</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+        <h4>Scancodes returned by <code>INP(&amp;H60)</code></h4>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th>Key</th>
+                    <th>Scancode</th>
+                </tr>
+                <tr>
+                    <td><kbd>Esc</kbd></td>
+                    <td>01</td>
+                </tr>
+                <tr>
+                    <td><kbd>1</kbd></td>
+                    <td>02</td>
+                </tr>
+                <tr>
+                    <td><kbd>2</kbd></td>
+                    <td>03</td>
+                </tr>
+                <tr>
+                    <td><kbd>3</kbd></td>
+                    <td>04</td>
+                </tr>
+                <tr>
+                    <td><kbd>4</kbd></td>
+                    <td>05</td>
+                </tr>
+                <tr>
+                    <td><kbd>5</kbd></td>
+                    <td>06</td>
+                </tr>
+                <tr>
+                    <td><kbd>6</kbd></td>
+                    <td>07</td>
+                </tr>
+                <tr>
+                    <td><kbd>7</kbd></td>
+                    <td>08</td>
+                </tr>
+                <tr>
+                    <td><kbd>8</kbd></td>
+                    <td>09</td>
+                </tr>
+                <tr>
+                    <td><kbd>9</kbd></td>
+                    <td>0A</td>
+                </tr>
+                <tr>
+                    <td><kbd>0</kbd></td>
+                    <td>0B</td>
+                </tr>
+                <tr>
+                    <td><kbd>-</kbd></td>
+                    <td>0C</td>
+                </tr>
+                <tr>
+                    <td><kbd>=</kbd></td>
+                    <td>0D</td>
+                </tr>
+                <tr>
+                    <td><kbd>Backspace</kbd></td>
+                    <td>0E</td>
+                </tr>
+                <tr>
+                    <td><kbd>Tab</kbd></td>
+                    <td>0F</td>
+                </tr>
+                <tr>
+                    <td><kbd>q</kbd></td>
+                    <td>10</td>
+                </tr>
+                <tr>
+                    <td><kbd>w</kbd></td>
+                    <td>11</td>
+                </tr>
+                <tr>
+                    <td><kbd>e</kbd></td>
+                    <td>12</td>
+                </tr>
+                <tr>
+                    <td><kbd>r</kbd></td>
+                    <td>13</td>
+                </tr>
+                <tr>
+                    <td><kbd>t</kbd></td>
+                    <td>14</td>
+                </tr>
+                <tr>
+                    <td><kbd>y</kbd></td>
+                    <td>15</td>
+                </tr>
+                <tr>
+                    <td><kbd>u</kbd></td>
+                    <td>16</td>
+                </tr>
+                <tr>
+                    <td><kbd>i</kbd></td>
+                    <td>17</td>
+                </tr>
+                <tr>
+                    <td><kbd>o</kbd></td>
+                    <td>18</td>
+                </tr>
+                <tr>
+                    <td><kbd>p</kbd></td>
+                    <td>19</td>
+                </tr>
+                <tr>
+                    <td><kbd>[</kbd></td>
+                    <td>1A</td>
+                </tr>
+                <tr>
+                    <td><kbd>]</kbd></td>
+                    <td>1B</td>
+                </tr>
+                <tr>
+                    <td><kbd>Enter</kbd></td>
+                    <td>1C</td>
+                </tr>
+                <tr>
+                    <td><kbd>Ctrl</kbd></td>
+                    <td>1D</td>
+                </tr>
+                <tr>
+                    <td><kbd>a</kbd></td>
+                    <td>1E</td>
+                </tr>
+                <tr>
+                    <td><kbd>s</kbd></td>
+                    <td>1F</td>
+                </tr>
+                <tr>
+                    <td><kbd>d</kbd></td>
+                    <td>20</td>
+                </tr>
+                <tr>
+                    <td><kbd>f</kbd></td>
+                    <td>21</td>
+                </tr>
+                <tr>
+                    <td><kbd>g</kbd></td>
+                    <td>22</td>
+                </tr>
+                <tr>
+                    <td><kbd>h</kbd></td>
+                    <td>23</td>
+                </tr>
+                <tr>
+                    <td><kbd>j</kbd></td>
+                    <td>24</td>
+                </tr>
+                <tr>
+                    <td><kbd>k</kbd></td>
+                    <td>25</td>
+                </tr>
+                <tr>
+                    <td><kbd>l</kbd></td>
+                    <td>26</td>
+                </tr>
+                <tr>
+                    <td><kbd>;</kbd></td>
+                    <td>27</td>
+                </tr>
+                <tr>
+                    <td><kbd>'</kbd></td>
+                    <td>28</td>
+                </tr>
+                <tr>
+                    <td><kbd>`</kbd></td>
+                    <td>29</td>
+                </tr>
+                <tr>
+                    <td><kbd>Left Shift</kbd></td>
+                    <td>2A</td>
+                </tr>
+                <tr>
+                    <td><kbd>#</kbd></td>
+                    <td>2B</td>
+                </tr>
+                <tr>
+                    <td><kbd>z</kbd></td>
+                    <td>2C</td>
+                </tr>
+                <tr>
+                    <td><kbd>x</kbd></td>
+                    <td>2D</td>
+                </tr>
+                <tr>
+                    <td><kbd>c</kbd></td>
+                    <td>2E</td>
+                </tr>
+                <tr>
+                    <td><kbd>v</kbd></td>
+                    <td>2F</td>
+                </tr>
+                <tr>
+                    <td><kbd>b</kbd></td>
+                    <td>  30</td>
+                </tr>
+                <tr>
+                    <td><kbd>n</kbd></td>
+                    <td>31</td>
+                </tr>
+                <tr>
+                    <td><kbd>m</kbd></td>
+                    <td>32</td>
+                </tr>
+                <tr>
+                    <td><kbd>,</kbd></td>
+                    <td>33</td>
+                </tr>
+                <tr>
+                    <td><kbd>.</kbd></td>
+                    <td>34</td>
+                </tr>
+                <tr>
+                    <td><kbd>/</kbd></td>
+                    <td>35</td>
+                </tr>
+                <tr>
+                    <td><kbd>Right Shift</kbd></td>
+                    <td>36</td>
+                </tr>
+                <tr>
+                    <td><kbd>PrtSc</kbd></td>
+                    <td>37</td>
+                </tr>
+                <tr>
+                    <td><kbd>SysRq</kbd></td>
+                    <td>37</td>
+                </tr>
+                <tr>
+                    <td><kbd>Alt</kbd></td>
+                    <td>38</td>
+                </tr>
+                <tr>
+                    <td><kbd>Space</kbd></td>
+                    <td>39</td>
+                </tr>
+                <tr>
+                    <td><kbd>Caps Lock</kbd></td>
+                    <td>3A</td>
+                </tr>
+                <tr>
+                    <td><kbd>F1</kbd></td>
+                    <td>3B</td>
+                </tr>
+                <tr>
+                    <td><kbd>F2</kbd></td>
+                    <td>3C</td>
+                </tr>
+                <tr>
+                    <td><kbd>F3</kbd></td>
+                    <td>3D</td>
+                </tr>
+                <tr>
+                    <td><kbd>F4</kbd></td>
+                    <td>3E</td>
+                </tr>
+                <tr>
+                    <td><kbd>F5</kbd></td>
+                    <td>3F</td>
+                </tr>
+                <tr>
+                    <td><kbd>F6</kbd></td>
+                    <td>40</td>
+                </tr>
+                <tr>
+                    <td><kbd>F7</kbd></td>
+                    <td>41</td>
+                </tr>
+                <tr>
+                    <td><kbd>F8</kbd></td>
+                    <td>42</td>
+                </tr>
+                <tr>
+                    <td><kbd>F9</kbd></td>
+                    <td>43</td>
+                </tr>
+                <tr>
+                    <td><kbd>F10</kbd></td>
+                    <td>44</td>
+                </tr>
+                <tr>
+                    <td><kbd>Num Lock</kbd></td>
+                    <td>45</td>
+                </tr>
+                <tr>
+                    <td><kbd>Scroll Lock</kbd></td>
+                    <td>46</td>
+                </tr>
+                <tr>
+                    <td><kbd>Home</kbd></td>
+                    <td>47</td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8593;<!--up--></kbd></td>
+                    <td>48</td>
+                </tr>
+                <tr>
+                    <td><kbd>Pg Up</kbd></td>
+                    <td>49</td>
+                </tr>
+                <tr>
+                    <td><kbd>keypad -</kbd></td>
+                    <td>4A</td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8592;<!--left--></kbd></td>
+                    <td>4B</td>
+                </tr>
+                <tr>
+                    <td><kbd>keypad 5</kbd></td>
+                    <td>4C</td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8594;<!--right--></kbd></td>
+                    <td>4D</td>
+                </tr>
+                <tr>
+                    <td><kbd>keypad +</kbd></td>
+                    <td>4E</td>
+                </tr>
+                <tr>
+                    <td><kbd>End</kbd></td>
+                    <td>4F</td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8595;<!--down--></kbd></td>
+                    <td>50</td>
+                </tr>
+                <tr>
+                    <td><kbd>Pg Dn</kbd></td>
+                    <td>51</td>
+                </tr>
+                <tr>
+                    <td><kbd>Ins</kbd></td>
+                    <td>52</td>
+                </tr>
+                <tr>
+                    <td><kbd>Del</kbd></td>
+                    <td>53</td>
+                </tr>
+            </table>
+        </div>
+    </section>
 
-<h3 id="INKEY$"><code>INKEY$</code> function</h3>
-<pre><var>key</var> = INKEY$</pre>
-<p>Returns one key-press from the keyboard buffer. If the keyboard buffer is
-empty, returns the empty string. Otherwise, the return value is either a one
-character string or a two-character string of which the first is <code>CHR$(0)</code> and
-the second a keyboard scancode.</p><h4>Notes</h4>
-<ul><li>
-This function has no brackets.
-</li></ul>
+    <section>
+        <h3 id="INPUT"><code>INPUT</code> statement (console)</h3>
+        <code class="block">
+            <b>INPUT</b> [<b>;</b>] [<var>prompt</var> {<b>;</b>|<b>,</b>}] <var>var_0</var> [<b>,</b> <var>var_1</var>] ...
+        </code>
+        <p>
+            Prints <code><var>prompt</var></code> to the screen and waits for the user to input values for the specified variables.
+            The semicolon before the prompt, if present,
+            stops a newline from being printed after the values have been entered.
+            If the prompt is followed by a semicolon, it is printed with a trailing <code>?</code>. If
+            the prompt is followed by a comma, no question mark is added.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>prompt</var></code> is a string literal.
+            </li>
+            <li>
+                <code><var>var_0</var>, <var>var_1</var>, ...</code> are variable names or fully indexed array elements.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Values entered must be separated by commas. Leading and trailing whitespace
+                is discarded.
+            </li>
+            <li>
+                String values can be entered with or without double quotes (<code>"</code>).
+            </li>
+            <li>
+                If a string with a comma, leading or trailing whitespace is needed,
+                quotes are the only way to enter it.
+            </li>
+            <li>
+                Between a closing quote and the comma at the end of the entry, only white-
+                space is allowed.
+            </li>
+            <li>
+                If quotes are needed in the string itself, the first character must be
+                neither a quote nor whitespace. It is not possible to enter a string that
+                starts with a quote through <code>INPUT</code>.
+            </li>
+            <li>
+                If a given <code><var>var_n</var></code> is a numeric variable, the value entered must be
+                number literal.
+            </li>
+            <li>
+                Characters beyond the 255th character of the screen line are discarded.
+            </li>
+            <li>
+                If user input is interrupted by <kbd>Ctrl</kbd>+<kbd>Break</kbd>,
+                <code><a href="#CONT">CONT</a></code> will re-execute the
+                <code>INPUT</code> statement.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                If the value entered for a numeric variable is not a valid numeric literal,
+                or the number of values entered does not match the number of variables in
+                the statement,
+                <samp>?Redo from start</samp> is printed and all values must be entered again.
+            </li>
+            <li>
+                A <samp>Syntax error</samp> that is caused after the prompt is printed is only raised
+                after the value shave been entered. No values are stored.
+            </li>
+        </ul>
+    </section>
 
-<h4>Keyboard scancodes returned by <code>INKEY$</code></h4>
-<div class="scrollable">
-<table><tr>
-<th>Key</th><th>Scancode</th>
-</tr><tr>
-<td><kbd>&#8593;<!--up--></kbd></td><td>            48</td>
-</tr><tr>
-<td><kbd>&#8595;<!--down--></kbd></td><td>          50</td>
-</tr><tr>
-<td><kbd>&#8594;<!--right--></kbd></td><td>         4D</td>
-</tr><tr>
-<td><kbd>&#8592;<!--left--></kbd></td><td>          4B</td>
-</tr><tr>
-<td><kbd>Ins</kbd></td><td>        52</td>
-</tr><tr>
-<td><kbd>Del</kbd></td><td>        53</td>
-</tr><tr>
-<td><kbd>Home</kbd></td><td>          47</td>
-</tr><tr>
-<td><kbd>End</kbd></td><td>           4F</td>
-</tr><tr>
-<td><kbd>Pg Up</kbd></td><td>        49</td>
-</tr><tr>
-<td><kbd>Pg Dn</kbd></td><td>      51</td>
-</tr><tr>
-<td><kbd>F1</kbd></td><td>            3B</td>
-</tr><tr>
-<td><kbd>F2</kbd></td><td>            3C</td>
-</tr><tr>
-<td><kbd>F3</kbd></td><td>            3D</td>
-</tr><tr>
-<td><kbd>F4</kbd></td><td>            3E</td>
-</tr><tr>
-<td><kbd>F5</kbd></td><td>            3F</td>
-</tr><tr>
-<td><kbd>F6</kbd></td><td>            40</td>
-</tr><tr>
-<td><kbd>F7</kbd></td><td>            41</td>
-</tr><tr>
-<td><kbd>F8</kbd></td><td>            42</td>
-</tr><tr>
-<td><kbd>F9</kbd></td><td>            43</td>
-</tr><tr>
-<td><kbd>F10</kbd></td><td>           44</td>
-</tr><tr>
-<td><kbd>PrtSc</kbd></td><td>         37</td>
-</tr><tr>
-<td><kbd>CTRL</kbd>+<kbd>&#8594;<!--right--></kbd></td><td>    74</td>
-</tr><tr>
-<td><kbd>CTRL</kbd>+<kbd>&#8592;<!--left--></kbd></td><td>     73</td>
-</tr><tr>
-<td><kbd>CTRL</kbd>+<kbd>Home</kbd></td><td>     77</td>
-</tr><tr>
-<td><kbd>CTRL</kbd>+<kbd>End</kbd></td><td>      75</td>
-</tr><tr>
-<td><kbd>CTRL</kbd>+<kbd>Pg Up</kbd></td><td>   84</td>
-</tr><tr>
-<td><kbd>CTRL</kbd>+<kbd>Pg Dn</kbd></td><td> 76</td>
-</tr><tr>
-<td><kbd>CTRL</kbd>+<kbd>2</kbd></td><td>        03</td>
-</tr><tr>
-<td><kbd>CTRL</kbd>+<kbd>9</kbd></td><td>        84</td>
-</tr><tr>
-<td><kbd>CTRL</kbd>+<kbd>F2</kbd></td><td>       5F</td>
-</tr><tr>
-<td><kbd>CTRL</kbd>+<kbd>F3</kbd></td><td>       60</td>
-</tr></table></div>
+    <section>
+        <h3 id="INPUT-file"><code>INPUT</code> statement (devices and files)</h3>
+        <code class="block">
+            <b>INPUT #</b> <var>file_num</var><b>,</b> <var>var_0</var> [<b>,</b> <var>var_1</var>] ...
+        </code>
+        <p>
+            Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
+            of a random access file.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> is the number of a file open in
+                <code>INPUT</code> mode or a device or random-access file open in <code>RANDOM</code> mode.
+            </li>
+            <li>
+                <code><var>var_0</var>, <var>var_1</var>, ...</code> are variable names or fully indexed array elements.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                The <code>#</code> is mandatory. There may or may not be whitespace between <code>INPUT</code> and <code>#</code>.
+            </li>
+            <li>
+                String values can be entered with or without double quotes (<code>"</code>).
+            </li>
+            <li>
+                Numeric values are terminated by <code>&#160;</code>, <code>LF</code>, <code>CR</code>, <code>,</code>.
+            </li>
+            <li>
+                Unquoted strings are terminated by <code>LF</code>, <code>CR</code>, <code>,</code>.
+            </li>
+            <li>
+                Quoted strings are terminated by the closing quote.
+            </li>
+            <li>
+                Any entry is terminated by <code>EOF</code> character or its 255th character.
+            </li>
+            <li>
+                Leading and trailing whitespace is discarded.
+            </li>
+            <li>
+                If the entry cannot be converted to the requested type, a zero value is
+                returned.
+            </li>
+            <li>
+                If <code><var>file_num</var></code> is open to <code>KYBD:</code>, <code>INPUT#</code> reads from the keyboard until a
+                return or comma is encountered (as in a file). Arrow keys and delete are
+                passed as their control characters (<em>not</em> scancodes!) preceded by <code><a href="#CHR$">CHR$</a>(&amp;HFF)</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                Input is requested after the end of a text file has been reached or an
+                <code>EOF</code> character has been encountered: <samp>Input past end</samp>.
+            </li>
+            <li>
+                The last character of the field buffer is read: <samp>Field overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is greater than <code>32767</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is less than zero: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not open for <code>INPUT</code> or <code>RANDOM</code>: <samp>Bad file mode</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is open to a <code>COM</code> port and this is the
+                first <code><a href="#INPUT-file">INPUT</a></code>, <code><a href="#LINE-INPUT-file">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
+                since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<var>file_num</var>)</code> has become zero):
+                <samp>Communication buffer overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="INP"><code>INP</code> function</h3>
-<pre><var>code</var> = INP(<var>port</var>)</pre>
-<p>
-Returns the value of an emulated machine port.</p>
-<h4>Parameters</h4>
-<p><code><var>port</var></code> is a numeric expression in <code>[0&#8212;65535]</code>.</p>
-<div class="scrollable">
-<table>
-<tr>
-<th><code>port</code></th><th>Effect</th>
-</tr><tr>
-<td><code>&amp;H60</code></td>
-<td>
-    Returns the keyboard scancode for the last key pressed.
-    The scancodes returned by <code>INP(&amp;H60)</code> are listed below. If the key is
-    currently down, the scancode is returned; if it has been released,
-    the scancode is incremented by 128.
-</td>
-</tr><tr>
-<td><code>&amp;H201</code></td>
-<td>
-    Returns the value of the game port (joystick port). This value is
-    constructed as follows:
-    <table><tr>
-    <th>Bit</th><th>Meaning</th>
-    </tr><tr>
-    <td>0</td><td>       joystick 2 x-axis</td>
-    </tr><tr>
-    <td>    1</td><td>       joystick 1 y-axis</td>
-    </tr><tr>
-        <td>2       </td><td>joystick 1 x-axis</td>
-    </tr><tr>
-    <td>    3       </td><td>joystick 2 y-axis</td>
-    </tr><tr>
-    <td>    4</td><td>       joystick 2 button 1</td>
-    </tr><tr>
-    <td>    5       </td><td>joystick 1 button 2</td>
-    </tr><tr>
-    <td>    6</td><td>       joystick 1 button 1</td>
-    </tr><tr>
-    <td>    7       </td><td>joystick 2 button 2</td>
-    </tr></table>
-    The button bits are 0 when the button is fired, 1 otherwise. The axis values
-    are normally 0 but are set to 1 by <code><a href="#OUT">OUT</a> &amp;H201, <var>x</var></code> and then fall back to 0
-    after a delay. The longer the delay, the higher the axis value.
-</td>
-</tr><tr>
-<td>other values</td>
-<td>Returns zero.</td>
-</tr>
-</table>
-</div>
-<h4>Notes</h4>
-<ul><li>
-   Only a limited number of machine ports are emulated in PC-BASIC.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
- <code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>port</var></code> has a string value: <samp>Type mismatch</samp>.
-</li></ul>
+    <section>
+        <h3 id="INPUT$"><code>INPUT$</code> function</h3>
+        <code class="block">
+            <var>chars</var> <b>= INPUT</b>[ ]<b>$</b> <b>(</b><var>num_chars</var> [<b>,</b> [<b>#</b>] <var>file_num</var>]<b>)</b>
+        </code>
+        <p>
+            Returns a string of <code><var>num_chars</var></code> characters from the keyboard or,
+            if <code><var>file_num</var></code> is provided, from a text file.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>num_chars</var></code> is a numeric expression in <code>[1&#8212;255]</code>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is a numeric expression that returns the number of a text file opened in
+                <code>INPUT</code> mode. The <code>#</code> is optional and has no effect.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                This is a blocking read. It will wait for characters if there are none
+                in the buffer.
+            </li>
+            <li>
+                All control characters except <kbd>Ctrl</kbd>+<kbd>Break</kbd>, <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> and <kbd>Pause</kbd>
+                are passed to the string by <code>INPUT$</code>. <kbd>Ctrl</kbd>+<kbd>Break</kbd> and <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> break
+                execution whereas <kbd>Pause</kbd> halts until another key is pressed (and not read).
+            </li>
+            <li>
+                When reading from the keyboard directly or through <code>KYBD:</code>, arrow keys, <kbd>Del</kbd>,
+                <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Pg Up</kbd>, <kbd>Pg Dn</kbd> are passed as <code>NUL</code> characters. Function keys
+                are ignored if they are event-trapped, otherwise keyword replacement is
+                active as normal.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is less than zero: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is greater than <code>32767</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not open for <code>INPUT</code>: <samp>Bad file mode</samp>.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> or <code><var>file_num</var></code> are strings: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is open to a <code>COM</code> port and this is the
+                first <code><a href="#INPUT-file">INPUT</a></code>, <code><a href="#LINE-INPUT-file">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
+                since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<var>file_num</var>)</code> has become zero):
+                <samp>Communication buffer overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="INSTR"><code>INSTR</code> function</h3>
+        <code class="block">
+            <var>position</var> <b>= INSTR(</b>[<var>start</var><b>,</b>] <var>parent</var><b>,</b> <var>child</var><b>)</b>
+        </code>
+        <p>
+            Returns the location of the first occurrence of the substring <code><var>child</var></code> in
+            <code><var>parent</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>parent</var></code> and <code><var>child</var></code> are string expressions.
+            </li>
+            <li>
+                <code><var>start</var></code> is a numeric expression in <code>[1&#8212;255]</code>, specifying
+                the starting position from where to look; if not specified, the search starts
+                at character 1.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code><var>child</var></code> is not a substring of <code><var>parent</var></code> occurring at or before <code><var>start</var></code>,
+                <code>INSTR</code> returns 0.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>start</var></code> has a string value or <code><var>parent</var></code> or <code><var>child</var></code> have numeric values: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>start</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>start</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h4>Scancodes returned by <code>INP(&amp;H60)</code></h4>
-<div class="scrollable">
-<table>
-<tr>
-<th>Key</th><th>Scancode</th>
-</tr><tr>
-<td><kbd>Esc</kbd></td><td>01</td></tr><tr>
-<td><kbd>1</kbd></td><td>02
-</td></tr><tr>
-<td><kbd>2</kbd></td><td>03
-</td></tr><tr>
-<td><kbd>3</kbd></td><td>04
-</td></tr><tr>
-<td><kbd>4</kbd></td><td>05
-</td></tr><tr>
-<td><kbd>5</kbd></td><td>06
-</td></tr><tr>
-<td><kbd>6</kbd></td><td>07
-</td></tr><tr>
-<td><kbd>7</kbd></td><td>08
-</td></tr><tr>
-<td><kbd>8</kbd></td><td>09
-</td></tr><tr>
-<td><kbd>9</kbd></td><td>0A
-</td></tr><tr>
-<td><kbd>0</kbd></td><td>0B
-</td></tr><tr>
-<td><kbd>-</kbd></td><td>0C
-</td></tr><tr>
-<td><kbd>=</kbd></td><td>0D
-</td></tr><tr>
-<td><kbd>Backspace</kbd></td><td>0E
-</td></tr><tr>
-<td><kbd>Tab</kbd></td><td>0F
-</td></tr><tr>
-<td><kbd>q</kbd></td><td>10
-</td></tr><tr>
-<td><kbd>w</kbd></td><td>11
-</td></tr><tr>
-<td><kbd>e</kbd></td><td>12
-</td></tr><tr>
-<td><kbd>r</kbd></td><td>13
-</td></tr><tr>
-<td><kbd>t</kbd></td><td>14
-</td></tr><tr>
-<td><kbd>y</kbd></td><td>15
-</td></tr><tr>
-<td><kbd>u</kbd></td><td>  16
-</td></tr><tr>
-<td><kbd>i</kbd></td><td>  17
-</td></tr><tr>
-<td><kbd>o</kbd></td><td>  18
-</td></tr><tr>
-<td><kbd>p</kbd></td><td>  19
-</td></tr><tr>
-<td><kbd>[</kbd></td><td>1A
-</td></tr><tr>
-<td><kbd>]</kbd></td><td>1B
-</td></tr><tr>
-<td><kbd>Enter</kbd></td><td>1C
-</td></tr><tr>
-<td><kbd>Ctrl</kbd></td><td>1D
-</td></tr><tr>
-<td><kbd>a</kbd></td><td>1E
-</td></tr><tr>
-<td><kbd>s</kbd></td><td>  1F
-</td></tr><tr>
-<td><kbd>d</kbd></td><td>  20
-</td></tr><tr>
-<td><kbd>f</kbd></td><td>21
-</td></tr><tr>
-<td><kbd>g</kbd></td><td>22
-</td></tr><tr>
-<td><kbd>h</kbd></td><td>23
-</td></tr><tr>
-<td><kbd>j</kbd></td><td>24
-</td></tr><tr>
-<td><kbd>k</kbd></td><td>25
-</td></tr><tr>
-<td><kbd>l</kbd></td><td>26
-</td></tr><tr>
-<td><kbd>;</kbd></td><td>27
-</td></tr><tr>
-<td><kbd>'</kbd></td><td>28
-</td></tr><tr>
-<td><kbd>`</kbd></td><td>29
-</td></tr><tr>
-<td><kbd>Left Shift</kbd></td><td>2A
-</td></tr><tr>
-<td><kbd>#</kbd></td><td>2B
-</td></tr><tr>
-<td><kbd>z</kbd></td><td>2C
-</td></tr><tr>
-<td><kbd>x</kbd></td><td>2D
-</td></tr><tr>
-<td><kbd>c</kbd></td><td>2E
-</td></tr><tr>
-<td><kbd>v</kbd></td><td>2F
-</td></tr><tr>
-<td><kbd>b</kbd></td><td>  30
-</td></tr><tr>
-<td><kbd>n</kbd></td><td>31
-</td></tr><tr>
-<td><kbd>m</kbd></td><td>32
-</td></tr><tr>
-<td><kbd>,</kbd></td><td>33
-</td></tr><tr>
-<td><kbd>.</kbd></td><td>34
-</td></tr><tr>
-<td><kbd>/</kbd></td><td>35
-</td></tr><tr>
-<td><kbd>Right Shift</kbd></td><td>36
-</td></tr><tr>
-<td><kbd>PrtSc</kbd></td><td>37
-</td></tr><tr>
-<td><kbd>SysRq</kbd></td><td>37
-</td></tr><tr>
-<td><kbd>Alt</kbd></td><td>38
-</td></tr><tr>
-<td><kbd>Space</kbd></td><td>39
-</td></tr><tr>
-<td><kbd>Caps Lock</kbd></td><td>3A
-</td></tr><tr>
-<td><kbd>F1</kbd></td><td>3B
-</td></tr><tr>
-<td><kbd>F2</kbd></td><td>3C
-</td></tr><tr>
-<td><kbd>F3</kbd></td><td>3D
-</td></tr><tr>
-<td><kbd>F4</kbd></td><td>3E
-</td></tr><tr>
-<td><kbd>F5</kbd></td><td>3F
-</td></tr><tr>
-<td><kbd>F6</kbd></td><td>40
-</td></tr><tr>
-<td><kbd>F7</kbd></td><td>41
-</td></tr><tr>
-<td><kbd>F8</kbd></td><td>42
-</td></tr><tr>
-<td><kbd>F9</kbd></td><td>43
-</td></tr><tr>
-<td><kbd>F10</kbd></td><td>44
-</td></tr><tr>
-<td><kbd>Num Lock</kbd></td><td>   45
-</td></tr><tr>
-<td><kbd>Scroll Lock</kbd></td><td>46
-</td></tr><tr>
-<td><kbd>Home</kbd></td><td>      47
-</td></tr><tr>
-<td><kbd>&#8593;<!--up--></kbd></td><td>48
-</td></tr><tr>
-<td><kbd>Pg Up</kbd></td><td>49
-</td></tr><tr>
-<td><kbd>keypad -</kbd></td><td>4A
-</td></tr><tr>
-<td><kbd>&#8592;<!--left--></kbd></td><td>4B
-</td></tr><tr>
-<td><kbd>keypad 5</kbd></td><td>4C
-</td></tr><tr>
-<td><kbd>&#8594;<!--right--></kbd></td><td>4D
-</td></tr><tr>
-<td><kbd>keypad +</kbd></td><td>4E
-</td></tr><tr>
-<td><kbd>End</kbd></td><td>4F
-</td></tr><tr>
-<td><kbd>&#8595;<!--down--></kbd></td><td>50
-</td></tr><tr>
-<td><kbd>Pg Dn</kbd></td><td>51
-</td></tr><tr>
-<td><kbd>Ins</kbd></td><td>52
-</td></tr><tr>
-<td><kbd>Del</kbd></td><td>53
-</td></tr>
-</table>
-</div>
+    <section>
+        <h3 id="INT"><code>INT</code> function</h3>
+        <code class="block">
+            <var>whole</var> <b>= INT(</b><var>number</var><b>)</b>
+        </code>
+        <p>
+            Returns <code><var>number</var></code> truncated towards negative infinity.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>number</var></code> is a numeric expression.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                <code><a href="#FIX">FIX</a></code> truncates towards zero: it removes the
+                fractional part. By contrast, <code>INT</code> truncates towards negative infinity.
+                For negative <code><var>x</var></code>, <code>FIX(<var>x</var>)-INT(<var>x</var>)=1</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>number</var></code> is a string expression, <samp>Type mismatch</samp> .
+            </li>
+        </ul>
+    </section>
 
-<h3 id="INPUT"><code>INPUT</code> statement (console)</h3>
-<pre>INPUT [;] [<var>prompt</var> {;|,} ]<var>var_0</var> [, <var>var_1</var> [, ... ] ]</pre>
-<p>
-Prints <code><var>prompt</var></code> to the screen and waits for the user to input values for the specified variables.
-The semicolon before the prompt, if present,
-stops a newline from being printed after the values have been entered.
-If the prompt is followed by a semicolon, it is printed with a trailing <code>?</code>. If
-the prompt is followed by a comma, no question mark is added. </p>
-<h4>Parameters</h4>
-<ul><li>
- <code><var>prompt</var></code> is a string literal.
-</li><li>
- <code><var>var_0</var>, <var>var_1</var>, ...</code> are variable names or fully indexed array elements.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   Values entered must be separated by commas. Leading and trailing whitespace
-    is discarded.
-</li><li>
-   String values can be entered with or without double quotes (<code>"</code>).
-</li><li>
-   If a string with a comma, leading or trailing whitespace is needed,
-    quotes are the only way to enter it.
-</li><li>
-   Between a closing quote and the comma at the end of the entry, only white-
-    space is allowed.
-</li><li>
-   If quotes are needed in the string itself, the first character must be
-    neither a quote nor whitespace. It is not possible to enter a string that
-    starts with a quote through <code>INPUT</code>.
-</li><li>
-   If a given <code><var>var_n</var></code> is a numeric variable, the value entered must be
-    number literal.
-</li><li>
-   Characters beyond the 255th character of the screen line are discarded.
-</li><li>
-    If user input is interrupted by <kbd>Ctrl</kbd>+<kbd>Break</kbd>,
-    <code><a href="#CONT">CONT</a></code> will re-execute the
-    <code>INPUT</code> statement.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-   If the value entered for a numeric variable is not a valid numeric literal,
-    or the number of values entered does not match the number of variables in
-    the statement,
-    <samp>?Redo from start</samp> is printed and all values must be entered again.
-</li><li>
-   A <samp>Syntax error</samp> that is caused after the prompt is printed is only raised
-    after the value shave been entered. No values are stored.
-</li></ul>
+    <section>
+        <h3 id="IOCTL"><code>IOCTL</code> statement</h3>
+        <code class="block">
+            <b>IOCTL</b> [<b>#</b>] <var>file_num</var><b>,</b> <var>control_string</var>
+        </code>
+        <p>
+            Raises <samp>Illegal function call</samp>.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In GW-BASIC, <code>IOCTL</code> sends a control string to a device.
+            </li>
+            <li>
+                This statement is not implemented in PC-BASIC.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+               Otherwise: <samp>Illegal function call</samp>
+            </li>
+        </ul>
+    </section>
 
-
-<h3 id="INPUT-file"><code>INPUT</code> statement (devices and files)</h3>
-<pre>INPUT[ ]# <var>file_num</var>, <var>var_0</var> [, <var>var_1</var> [, ...] ]</pre>
-<p>Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
-of a random access file.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>file_num</var></code> is the number of a file open in
-<code>INPUT</code> mode or a device or random-access file open in <code>RANDOM</code> mode.
-</li><li>
- <code><var>var_0</var>, <var>var_1</var>, ...</code> are variable names or fully indexed array elements.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   The <code>#</code> is mandatory. There may or may not be whitespace between <code>INPUT</code> and <code>#</code>.
-</li><li>
-   String values can be entered with or without double quotes (<code>"</code>).
-</li><li>
-   Numeric values are terminated by <code>&#160;</code>, <code>LF</code>, <code>CR</code>, <code>,</code>.
-</li><li>
-   Unquoted strings are terminated by <code>LF</code>, <code>CR</code>, <code>,</code>.
-</li><li>
-   Quoted strings are terminated by the closing quote.
-</li><li>
-   Any entry is terminated by <code>EOF</code> character or its 255th character.
-</li><li>
-   Leading and trailing whitespace is discarded.
-</li><li>
-   If the entry cannot be converted to the requested type, a zero value is
-    returned.
-</li><li>
-   If <code><var>file_num</var></code> is open to <code>KYBD:</code>, <code>INPUT#</code> reads from the keyboard until a
-    return or comma is encountered (as in a file). Arrow keys and delete are
-    passed as their control characters (<em>not</em> scancodes!) preceded by <code><a href="#CHR$">CHR$</a>(&amp;HFF)</code>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-Input is requested after the end of a text file has been reached or an
-    <code>EOF</code> character has been encountered: <samp>Input past end</samp>.
-</li><li>
-The last character of the field buffer is read: <samp>Field overflow</samp>.
-</li><li>
-<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>file_num</var></code> is greater than <code>32767</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>file_num</var></code> is less than zero: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
-</li><li>
-<code><var>file_num</var></code> is not open for <code>INPUT</code> or <code>RANDOM</code>: <samp>Bad file mode</samp>.
-</li><li>
-    <code><var>file_num</var></code> is open to a <code>COM</code> port and this is the
-    first <code><a href="#INPUT-file">INPUT</a></code>, <code><a href="#LINE-INPUT-file">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
-    since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<var>file_num</var>)</code> has become zero):
-    <samp>Communication buffer overflow</samp>.
-</li></ul>
-
-<h3 id="INPUT$"><code>INPUT$</code> function</h3>
-<pre><var>chars</var> = INPUT[ ]$(<var>num_chars</var> [, [#] <var>file_num</var>])</pre>
-<p>Returns a string of <code><var>num_chars</var></code> characters from the keyboard or,
-if <code><var>file_num</var></code> is provided, from a text file.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>num_chars</var></code> is a numeric expression in <code>[1&#8212;255]</code>.
-</li><li>
-<code><var>file_num</var></code> is a numeric expression that returns the number of a text file opened in
- <code>INPUT</code> mode. The <code>#</code> is optional and has no effect.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   This is a blocking read. It will wait for characters if there are none
-    in the buffer.
-</li><li>
-   All control characters except <kbd>Ctrl</kbd>+<kbd>Break</kbd>, <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> and <kbd>Pause</kbd>
-    are passed to the string by <code>INPUT$</code>. <kbd>Ctrl</kbd>+<kbd>Break</kbd> and <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> break
-    execution whereas <kbd>Pause</kbd> halts until another key is pressed (and not read).
-</li><li>
-   When reading from the keyboard directly or through <code>KYBD:</code>, arrow keys, <kbd>Del</kbd>,
-    <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Pg Up</kbd>, <kbd>Pg Dn</kbd> are passed as <code>NUL</code> characters. Function keys
-    are ignored if they are event-trapped, otherwise keyword replacement is
-    active as normal.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>num_chars</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
-</li><li>
-<code><var>file_num</var></code> is less than zero: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_num</var></code> is greater than <code>32767</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>file_num</var></code> is not open for <code>INPUT</code>: <samp>Bad file mode</samp>.
-</li><li>
-<code><var>num_chars</var></code> or <code><var>file_num</var></code> are strings: <samp>Type mismatch</samp>.
-</li><li>
-    <code><var>file_num</var></code> is open to a <code>COM</code> port and this is the
-    first <code><a href="#INPUT-file">INPUT</a></code>, <code><a href="#LINE-INPUT-file">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
-    since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<var>file_num</var>)</code> has become zero):
-    <samp>Communication buffer overflow</samp>.
-</li></ul>
-
-<h3 id="INSTR"><code>INSTR</code> function</h3>
-<pre><var>position</var> = INSTR([<var>start</var>,] <var>parent</var>, <var>child</var>)</pre>
-<p>
-Returns the location of the first occurrence of the substring <code><var>child</var></code> in
-<code><var>parent</var></code>.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>parent</var></code> and <code><var>child</var></code> are string expressions.
-</li><li>
-<code><var>start</var></code> is a numeric expression in <code>[1&#8212;255]</code>, specifying
-the starting position from where to look; if not specified, the search starts
-at character 1.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   If <code><var>child</var></code> is not a substring of <code><var>parent</var></code> occurring at or before <code><var>start</var></code>,
-    <code>INSTR</code> returns 0.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>start</var></code> has a string value or <code><var>parent</var></code> or <code><var>child</var></code> have numeric values: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>start</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>start</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="INT"><code>INT</code> function</h3>
-<pre><var>whole</var> = INT(<var>number</var>)</pre>
-<p>Returns <code><var>number</var></code> truncated towards negative infinity.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>number</var></code> is a numeric expression.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-    <code><a href="#FIX">FIX</a></code> truncates towards zero: it removes the
-    fractional part. By contrast, <code>INT</code> truncates towards negative infinity.
-    For negative <code><var>x</var></code>, <code>FIX(<var>x</var>)-INT(<var>x</var>)=1</code>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>number</var></code> is a string expression, <samp>Type mismatch</samp> .
-</li></ul>
-
-
-<h3 id="IOCTL"><code>IOCTL</code> statement</h3>
-<pre>IOCTL [#] <var>file_num</var>, <var>control_string</var></pre>
-<p>Raises <samp>Illegal function call</samp>.</p>
-<h4>Notes</h4>
-<ul><li>
-   In GW-BASIC, <code>IOCTL</code> sends a control string to a device.
-</li><li>
-   This statement is not implemented in PC-BASIC.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
-</li><li>
-   Otherwise: <samp>Illegal function call</samp>
-</li></ul>
-
-
-<h3 id="IOCTL$"><code>IOCTL$</code> function</h3>
-<pre><var>result</var> = IOCTL[ ]$([#] <var>file_num</var>)</pre>
-<p>Raises <samp>Illegal function call</samp>.</p>
-<h4>Notes</h4>
-<ul><li>
-    In GW-BASIC, <code>IOCTL$</code> reads the reply to
-    <code><a href="#IOCTL">IOCTL</a></code> from a device.
-</li><li>
-   This function is not implemented in PC-BASIC.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
-</li><li>
-   Otherwise: <samp>Illegal function call</samp>
-</li></ul>
-
+    <section>
+        <h3 id="IOCTL$"><code>IOCTL$</code> function</h3>
+        <code class="block">
+            <var>result</var> <b>= IOCTL</b>[ ]<b>$ (</b>[<b>#</b>] <var>file_num</var><b>)</b>
+        </code>
+        <p>
+            Raises <samp>Illegal function call</samp>.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In GW-BASIC, <code>IOCTL$</code> reads the reply to
+                <code><a href="#IOCTL">IOCTL</a></code> from a device.
+            </li>
+            <li>
+                This function is not implemented in PC-BASIC.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                Otherwise: <samp>Illegal function call</samp>
+            </li>
+        </ul>
+    </section>
 
     <section>
         <h3 id="KEY-list"><code>KEY</code> statement (function-key macro list)</h3>
@@ -4026,7 +4428,7 @@ at character 1.
     <section>
         <h3 id="LINE-INPUT"><code>LINE INPUT</code> statement (console)</h3>
         <code class="block">
-            <b>LINE INPUT</b> [<b>;</b>] [<var>prompt_literal</var> {<b>;</b>|<b>,</b>} ] <var>string_name</var>
+            <b>LINE INPUT</b> [<b>;</b>] [<var>prompt_literal</var> {<b>;</b>|<b>,</b>}] <var>string_name</var>
         </code>
         <p>
             Displays the prompt given in <code><var>prompt_literal</var></code> and reads user input from the
