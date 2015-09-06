@@ -2167,251 +2167,396 @@
         </ul>
     </section>
 
+    <section>
+        <h3 id="EDIT"><code>EDIT</code> statement</h3>
+        <code class="block">
+            <b>EDIT</b> {<var>line_number</var>|<b>.</b>}
+        </code>
+        <p>
+            Displays the specified program line with the cursor positioned for editing.
+            <code><var>line_number</var></code> must be a line that exists in the program, or a period (.) to
+            indicate the last line stored.
+        </p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                No line_number is specified: <samp>Undefined line number</samp>.
+            </li>
+            <li>
+                More characters are written after the line number: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>line_number</var></code> is not in <code>[0&#8212;65529]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                The specified line number does not exist: <samp>Undefined line number</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="EDIT"><code>EDIT</code> statement</h3>
-<pre>EDIT {<var>line_number</var> | .}</pre>
-<p>
-Displays the specified program line with the cursor positioned for editing.
-<code><var>line_number</var></code> must be a line that exists in the program, or a period (.) to
-indicate the last line stored.</p>
-<h4>Errors</h4>
-<ul><li>
-No line_number is specified: <samp>Undefined line number</samp>.
-</li><li>
-More characters are written after the line number: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>line_number</var></code> is not in <code>[0&#8212;65529]</code>: <samp>Illegal function call</samp>.
-</li><li>
-The specified line number does not exist: <samp>Undefined line number</samp>.
-</li></ul>
+    <section>
+        <h3 id="ELSE"><code>ELSE</code> statement</h3>
+        <code class="block">
+            <b>ELSE</b> [<var>anything</var>]
+        </code>
+        <p>
+            Unless part of an <code><a href="#IF">IF</a></code> statement on the same line, anything after <code>ELSE</code> is ignored
+            in the same way as after <code>'</code> or <code>:<a href="#REM">REM</a></code>. No colon <code>:</code> preceding
+            the <code>ELSE</code> statement is necessary. See <code><a href="#IF">IF</a></code> for normal usage.
+        </p>
+    </section>
 
-<h3 id="ELSE"><code>ELSE</code> statement</h3>
-<pre>ELSE [<var>anything</var>]</pre>
-<p>
-Unless part of an <code><a href="#IF">IF</a></code> statement on the same line, anything after <code>ELSE</code> is ignored
-in the same way as after <code>'</code> or <code>:<a href="#REM">REM</a></code>. No colon <code>:</code> preceding
-the <code>ELSE</code> statement is necessary. See <code><a href="#IF">IF</a></code> for normal usage.</p>
+    <section>
+        <h3 id="END"><code>END</code> statement</h3>
+        <code class="block">
+            <b>END</b>
+        </code>
+        <p>
+            Closes all files, stops program execution and returns control to the user.
+            No message is printed. It is possible to resume execution at the next statement
+            using <code><a href="#CONT">CONT</a></code>.
+        </p>
+    </section>
 
+    <section>
+        <h3 id="ENVIRON"><code>ENVIRON</code> statement</h3>
+        <code class="block">
+            <b>ENVIRON</b> <var>command_string</var>
+        </code>
+        <p>
+            Sets a shell environment variable.
+        </p>
+        <h4>Parameters</h4>
+        <p>
+            <code><var>command_string</var></code> is a string expression of one of the following forms:
+        </p>
+        <dl>
+            <dt>
+                <code class="block">
+                    <b>"</b><var>VARIABLE</var><b>=</b><var>VALUE</var><b>"</b>
+                </code>
+            </dt>
+            <dd>
+                to set <code><var>VARIABLE</var></code> to <code><var>VALUE</var></code>;
+            </dd>
+            <dt>
+                <code class="block">
+                    <b>"</b><var>VARIABLE</var><b>="</b>
+                </code>
+            </dt>
+            <dd>
+                to unset <code><var>VARIABLE</var></code>.
+            </dd>
+        </dl>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>command_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>command_string</var></code> is not of the required form: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="END"><code>END</code> statement</h3>
-<pre>END</pre>
-<p>
-Closes all files, stops program execution and returns control to the user.
-No message is printed. It is possible to resume execution at the next statement
-using <code><a href="#CONT">CONT</a></code>.
-</p>
+    <section>
+        <h3 id="ENVIRON$"><code>ENVIRON$</code> function</h3>
+        <code class="block">
+            <var>value</var> <b>= ENVIRON</b>[ ]<b>$</b>(<var>x</var>)
+        </code>
+        <p>
+            Returns an environment variable.
+        </p>
+        <h4>Parameters</h4>
+        <p>
+            <code><var>x</var></code> is an expression.
+        </p>
+        <ul>
+            <li>
+                If <code><var>x</var></code> has a string value, returns the value for the environment variable <code><var>x</var></code> or the empty
+                string if no variable with the name <code><var>x</var></code> is set in the environment table.
+            </li>
+            <li>
+                If <code><var>x</var></code> has a numeric value, it must be in <code>[1&#8212;255]</code>. Returns the <code><var>x</var></code>th entry in
+                the environment table.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> is the empty string: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is a number not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="ENVIRON"><code>ENVIRON</code> statement</h3>
-<pre>ENVIRON <var>command_string</var></pre>
-<p>Sets a shell environment variable.</p>
-<h4>Parameters</h4>
-<p>
-<code><var>command_string</var></code> is a string expression of one of the following forms:
-</p>
-<table><tr>
-<td><code>"<var>VARIABLE</var>=<var>VALUE</var>"</code></td>
-<td>to set <code><var>VARIABLE</var></code> to <code><var>VALUE</var></code></td>
-</tr><tr>
-<td><code>"<var>VARIABLE</var>="</code></td>
-<td>to unset <code><var>VARIABLE</var></code></td>
-</tr></table>
-<h4>Errors</h4>
-<ul><li>
-<code><var>command_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>command_string</var></code> is not of the required form: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="EOF"><code>EOF</code> function</h3>
+        <code class="block">
+            <var>is_at_end</var> <b>= EOF(</b><var>file_num</var><b>)</b>
+        </code>
+        <p>
+            Returns -1 if file with number <code><var>file_num</var></code> has reached end-of-file; 0 otherwise.
+            The file must be open in <code>INPUT</code> or <code>RANDOM</code> mode. <code>EOF(0)</code> returns 0.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code><var>file_num</var></code> is open to <code>KYBD:</code>, performs a blocking read and returns -1 if
+                <kbd>CTRL</kbd>+<kbd>Z</kbd> is entered, 0 otherwise. The character entered is then echoed to
+                the console.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is a number not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not 0 or the number of an open file:
+                <samp>Bad file number</samp>.
+            </li>
+            <li>
+                The file with number <code><var>file_num</var></code> is in OUTPUT or APPEND mode:
+                <samp>Bad file mode</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="ERASE"><code>ERASE</code> statement</h3>
+        <code class="block">
+            <b>ERASE</b> <var>array_0</var> [<b>,</b> <var>array_1</var>] ...
+        </code>
+        <p>
+            De-allocates arrays. The data stored in the
+            arrays is lost.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>array_0</var>, <var>array_1</var> ...</code> are names of existing arrays. The names must be
+                specified without brackets.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                No array names are given: <samp>Syntax error</samp>.
+            </li>
+            <li>
+                <code><var>array_0</var>, <var>array_1</var> ...</code> do not exist: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                If an error occurs, the arrays named before the error occurred are erased.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="ENVIRON$"><code>ENVIRON$</code> function</h3>
-<pre><var>value</var> = ENVIRON[ ]$(<var>x</var>)</pre>
-<p>Returns an environment variable.</p>
-<h4>Parameters</h4>
-<p><code><var>x</var></code> is an expression.</p>
-<ul><li>
-If <code><var>x</var></code> has a string value, returns the value for the environment variable <code><var>x</var></code> or the empty
-string if no variable with the name <code><var>x</var></code> is set in the environment table.
-</li><li>
-If <code><var>x</var></code> has a numeric value, it must be in <code>[1&#8212;255]</code>. Returns the <code><var>x</var></code>th entry in
-the environment table.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>x</var></code> is the empty string: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>x</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>x</var></code> is a number not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="ERDEV"><code>ERDEV</code> function</h3>
+        <code class="block">
+            <var>zero</var> <b>= ERDEV</b>
+        </code>
+        <p>
+            Returns 0.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In GW-BASIC, returns the value of a device error.
+            </li>
+            <li>
+                This function is not implemented in PC-BASIC.
+            </li>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="ERDEV$"><code>ERDEV$</code> function</h3>
+        <code class="block">
+            <var>empty</var> <b>= ERDEV</b>[ ]<b>$</b>
+        </code>
+        <p>
+            Returns the empty string.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In GW-BASIC, returns the device name of a device error.
+            </li>
+            <li>
+                This function is not implemented in PC-BASIC.
+            </li>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="EOF"><code>EOF</code> function</h3>
-<pre><var>is_at_end</var> = EOF(<var>file_num</var>)</pre>
-<p>Returns -1 if file with number <code><var>file_num</var></code> has reached end-of-file; 0 otherwise.
-The file must be open in <code>INPUT</code> or <code>RANDOM</code> mode. <code>EOF(0)</code> returns 0.
-</p>
-<h4>Notes</h4>
-<ul><li>
-If <code><var>file_num</var></code> is open to <code>KYBD:</code>, performs a blocking read and returns -1 if
-<kbd>CTRL</kbd>+<kbd>Z</kbd> is entered, 0 otherwise. The character entered is then echoed to
-the console.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>file_num</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>file_num</var></code> is a number not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_num</var></code> is not 0 or the number of an open file:
-    <samp>Bad file number</samp>.
-</li><li>
-The file with number <code><var>file_num</var></code> is in OUTPUT or APPEND mode:
-    <samp>Bad file mode</samp>.
-</li></ul>
+    <section>
+        <h3 id="ERL"><code>ERL</code> function</h3>
+        <code class="block">
+            <var>error_line</var> <b>= ERL</b>
+        </code>
+        <p>
+            Returns the line number where the last error was raised.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If the error was
+                raised by a direct statement, returns 65535.
+            </li>
+            <li>
+                If no error has been raised,
+                returns 0.
+            </li>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="ERR"><code>ERR</code> function</h3>
+        <code class="block">
+            <var>error_code</var> <b>= ERR</b>
+        </code>
+        <p>
+            Returns the number of the last error.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If no error has been raised, returns 0.
+            </li>
+            <li>
+               If the last error was a <samp>Syntax error</samp> raised by a direct statement, returns 0.
+            </li>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="ERASE"><code>ERASE</code> statement</h3>
-<pre>ERASE <var>array_0</var> [, <var>array_1</var> [, ...] ]</pre>
-<p>De-allocates arrays. The data stored in the
-arrays is lost.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>array_0</var>, <var>array_1</var> ...</code> are names of existing arrays. The names must be
-specified without brackets.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-No array names are given: <samp>Syntax error</samp>.
-</li><li>
-<code><var>array_0</var>, <var>array_1</var> ...</code> do not exist: <samp>Illegal function call</samp>.
-</li><li>
-If an error occurs, the arrays named before the error occurred are erased.
-</li></ul>
+    <section>
+        <h3 id="ERROR"><code>ERROR</code> statement</h3>
+        <code class="block">
+            <b>ERROR</b> <var>error_number</var>
+        </code>
+        <p>
+            Raises the error with number <code><var>error_number</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>error_number</var></code> is an expression
+                with a numeric value.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>error_number</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>error_number</var></code> is not in  <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>error_number</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="EXP"><code>EXP</code> function</h3>
+        <code class="block">
+            <var>y</var> <b>= EXP(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns the exponential of <code><var>x</var></code>, i.e. <code>e</code> to the power <code><var>x</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a number-
+                valued expression.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option, this function returns a single-precision
+                value.
+            </li>
+            <li>
+                The return value sometimes differs in the least significant digit from GW-BASIC. For
+                large values of <code><var>x</var></code>, the difference may be 3 digits.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is larger than the natural logarithm of the maximum single-precision
+                value: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="ERDEV"><code>ERDEV</code> function</h3>
-<pre><var>zero</var> = ERDEV</pre>
-<p>Returns 0.</p>
-<h4>Notes</h4>
-<ul><li>
-   In GW-BASIC, returns the value of a device error.
-</li><li>
-This function is not implemented in PC-BASIC.
-</li><li>
-This function has no brackets.
-</li></ul>
-
-
-<h3 id="ERDEV$"><code>ERDEV$</code> function</h3>
-<pre><var>empty</var> = ERDEV[ ]$</pre>
-<p>Returns the empty string.</p>
-<h4>Notes</h4>
-<ul><li>
-   In GW-BASIC, returns the device name of a device error.
-</li><li>
-This function is not implemented in PC-BASIC.
-</li><li>
-This function has no brackets.
-</li></ul>
-
-
-<h3 id="ERL"><code>ERL</code> function</h3>
-<pre><var>error_line</var> = ERL</pre>
-<p>
-Returns the line number where the last error was raised. </p>
-<h4>Notes</h4>
-<ul><li>
- If the error was
-raised by a direct statement, returns 65535.
-</li><li>
-If no error has been raised,
-returns 0.
-</li><li>
-This function has no brackets.
-</li></ul>
-
-
-<h3 id="ERR"><code>ERR</code> function</h3>
-<pre><var>error_code</var> = ERR</pre>
-<p>
-Returns the number of the last error.
-</p><h4>Notes</h4>
-<ul><li>
-If no error has been raised, returns 0.
-</li><li>
-   If the last error was a <samp>Syntax error</samp> raised by a direct statement, returns 0.
-</li><li>
-This function has no brackets.
-</li></ul>
-
-
-<h3 id="ERROR"><code>ERROR</code> statement</h3>
-<pre>ERROR <var>error_number</var></pre>
-<p>Raises the error with number <code><var>error_number</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>error_number</var></code> is an expression
-with a numeric value.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
- <code><var>error_number</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
- <code><var>error_number</var></code> is not in  <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
- <code><var>error_number</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="EXP"><code>EXP</code> function</h3>
-<pre><var>y</var> = EXP(<var>x</var>)</pre>
-<p>Returns the exponential of <code><var>x</var></code>, i.e. <code>e</code> to the power <code><var>x</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>x</var></code> is a number-
-valued expression.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option, this function returns a single-precision
-value.
-</li><li>
-   The return value sometimes differs in the least significant digit from GW-BASIC. For
-    large values of <code><var>x</var></code>, the difference may be 3 digits.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
- <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
- <code><var>x</var></code> is larger than the natural logarithm of the maximum single-precision
-    value: <samp>Overflow</samp>.
-</li></ul>
-
-
-<h3 id="EXTERR"><code>EXTERR</code> function</h3>
-<pre><var>zero</var> = EXTERR(<var>x</var>)</pre>
-<p>Returns 0.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>x</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   In GW-BASIC, this function returns extended error information from MS-DOS.
-</li><li>
-    This function is not implemented in PC-BASIC.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
- <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
- <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
- <code><var>x</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
-</li></ul>
-
+    <section>
+        <h3 id="EXTERR"><code>EXTERR</code> function</h3>
+        <code class="block">
+            <var>zero</var> <b>= EXTERR(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns 0.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In GW-BASIC, this function returns extended error information from MS-DOS.
+            </li>
+            <li>
+                This function is not implemented in PC-BASIC.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
 <h3 id="FIELD"><code>FIELD</code> statement</h3>
 <pre>FIELD [#] <var>file_number</var> [, <var>width_0</var> AS <var>name_0</var> [, <var>width_1</var> AS <var>name_1</var> [, ...] ] ]</pre>
