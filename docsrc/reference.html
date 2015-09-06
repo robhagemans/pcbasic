@@ -3458,500 +3458,738 @@ The user has no write permission: <samp>Permission denied</samp>
 If a syntax error occurs after the closing quote, the file is removed    anyway.
 </li></ul>
 
+    <section>
+        <h3 id="LCOPY"><code>LCOPY</code> statement</h3>
+        <code class="block">
+            <b>LCOPY</b> [<var>num</var>]
+        </code>
+        <p>
+            Does nothing.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>num</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                This statement does nothing in GW-BASIC. Presumably, it is left over from a
+                statement in older versions of MS Basic that would copy the screen to the
+                printer.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="LCOPY"><code>LCOPY</code> statement</h3>
-<pre>LCOPY [<var>num</var>]</pre>
-<p>Does nothing.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>num</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   This statement does nothing in GW-BASIC. Presumably, it is left over from a
-    statement in older versions of MS Basic that would copy the screen to the
-    printer.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>num</var></code> has a string value: <samp>Type mismatch</samp>.
-</li></ul>
+    <section>
+        <h3 id="LEFT$"><code>LEFT$</code> function</h3>
+        <code class="block">
+            <var>child</var> <b>= LEFT$(</b><var>parent</var><b>,</b> <var>num_chars</var><b>)</b>
+        </code>
+        <p>
+            Returns the leftmost <code><var>num_chars</var></code> characters of <code><var>parent</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>parent</var></code> is a string expression.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code><var>num_chars</var></code> is zero or <code><var>parent</var></code> is empty, <code>LEFT$</code> returns
+                an empty string.
+            </li>
+            <li>
+                If <code><var>num_chars</var></code> is greater than the length of <code><var>parent</var></code>,
+                returns <code><var>parent</var></code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>parent</var></code> has a numeric value or <code><var>num_chars</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="LEN"><code>LEN</code> function</h3>
+        <code class="block">
+            <var>length</var> <b>= LEN(</b><var>string</var><b>)</b>
+        </code>
+        <p>
+            Returns the number of characters in <code><var>string</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>string</var></code> is a string
+                expression.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="LEFT$"><code>LEFT$</code> function</h3>
-<pre><var>child</var> = LEFT$(<var>parent</var>, <var>num_chars</var>)</pre>
-<p>Returns the leftmost <code><var>num_chars</var></code> characters of <code><var>parent</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>parent</var></code> is a string expression.
-</li><li>
-<code><var>num_chars</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-If <code><var>num_chars</var></code> is zero or <code><var>parent</var></code> is empty, <code>LEFT$</code> returns
-an empty string.
-</li><li>
-If <code><var>num_chars</var></code> is greater than the length of <code><var>parent</var></code>,
-returns <code><var>parent</var></code>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>parent</var></code> has a numeric value or <code><var>num_chars</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>num_chars</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="LET"><code>LET</code> statement</h3>
+        <code class="block">
+            [<b>LET</b>] <var>name</var> <b>=</b> <var>expression</var>
+        </code>
+        <p>
+            Assigns the value of <code><var>expression</var></code> to the variable or array element <code><var>name</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>name</var></code> is a variable that may or may not already exist.
+            </li>
+            <li>
+                The
+                type of <code><var>expression</var></code> matches that of <code><var>name</var></code>: that is, all numeric types can
+                be assigned to each other but strings can only be assigned to strings.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>name</var></code> and <code><var>expression</var></code> are not of matching types: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="LINE"><code>LINE</code> statement</h3>
+        <code class="block">
+            <b>LINE</b> [[<b>STEP</b>] <b>(</b><var>x0</var><b>,</b> <var>y0</var><b>)</b>] <b>-</b> [<b>STEP</b>]
+            <b>(</b><var>x1</var><b>,</b> <var>y1</var><b>)</b> [<b>,</b> [<var>attr</var>] [<b>,</b> [<b>B</b> [<b>F</b>]] [<b>,</b> <var>pattern</var>]]]
+        </code>
+        <p>
+            Draws a line or a box in graphics mode. If <code>B</code> is not specified, a line is drawn
+            from <code>(<var>x0</var>, <var>y0</var>)</code> to <code>(<var>x1</var>, <var>y1</var>)</code>, endpoints inclusive.
+            If <code>B</code> is specified, a
+            rectangle is drawn with sides parallel to the screen and two opposing corners
+            specified by <code>(<var>x0</var>, <var>y0</var>)</code> and <code>(<var>x1</var>, <var>y1</var>)</code>. If the starting point is not given,
+            the current graphics position is used as a staring point.  If <code>STEP</code> is
+            specified, <code>(<var>x0</var>, <var>y0</var>)</code> is an offset from the current position and <code>(<var>x1</var>, <var>y1</var>)</code> is an
+            offset from <code>(<var>x0</var>, <var>y0</var>)</code>.
+            <code>LINE</code> moves the current graphics position to the last given endpoint.
+            If <code>F</code> is specified with <code>B</code>, the rectangle is filled with the specified attribute.
+            <code>F</code> and <code>B</code> may be separated by zero or more spaces.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>attr</var></code> is a numeric expression in <code>[0&#8212;255]</code>, which
+                specifies the colour attribute of the line. If it is not given, the current
+                attribute is used.
+            </li>
+            <li>
+                <code><var>pattern</var></code> is a numeric expression in <code>[-32768&#8212;32767]</code>.
+                This is interpreted as a 16-bit binary pattern mask
+                applied to consecutive pixels in the line: a 1 bit indicates a pixel
+                plotted; a 0 bit indicates a pixel left untouched. The pattern starts at
+                the most significant bit, which is applied to the topmost endpoint. If a
+                box is drawn, the pattern is applied in the following counter-intuitive
+                sequence: <code>(<var>x1</var>, <var>y1</var>)&#8212;(<var>x0</var>, <var>y1</var>)</code>,
+                <code>(<var>x1</var>, <var>y0</var>)&#8212;(<var>x0</var>, <var>y0</var>)</code>,
+                then <code>(<var>x1</var>, <var>y0</var>)&#8212;(<var>x1</var>, <var>y1</var>)</code>,
+                <code>(<var>x0</var>, <var>y0</var>)&#8212;(<var>x0</var>, <var>y1</var>)</code> if <code><var>y0</var>&lt;<var>y1</var></code> and <code><var>y0</var></code>,
+                <code><var>y1</var></code> reversed if <code><var>y1</var>&lt;<var>y0</var></code>. When drawing a
+                filled box, <code>LINE</code> ignores the pattern.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If a coordinate is outside the screen boundary, it is replaced with -1 (if
+                less than 0) or the screen dimension (if larger than the screen dimension).
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                The statement ends in a comma and it is the first or third: <samp>Missing operand</samp>. If it is the second: <samp>Syntax error</samp>.
+            </li>
+            <li>
+                Any of the coordinates is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                Any of the parameters has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="LEN"><code>LEN</code> function</h3>
-<pre><var>length</var> = LEN(<var>string</var>)</pre>
-<p>Returns the number of characters in <code><var>string</var></code>.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>string</var></code> is a string
-expression.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
-</li></ul>
+    <section>
+        <h3 id="LINE-INPUT"><code>LINE INPUT</code> statement (console)</h3>
+        <code class="block">
+            <b>LINE INPUT</b> [<b>;</b>] [<var>prompt_literal</var> {<b>;</b>|<b>,</b>} ] <var>string_name</var>
+        </code>
+        <p>
+            Displays the prompt given in <code><var>prompt_literal</var></code> and reads user input from the
+            keyboard, storing it into the variable <code><var>string_name</var></code>. All input is read until
+            <kbd>Enter</kbd> is pressed; the first 255 characters are stored. If the <code>;</code> is given
+            right after <code>LINE INPUT</code>, the <kbd>Enter</kbd> ending user input is not echoed to the
+            screen.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>prompt_literal</var></code> is a string literal. It makes no difference whether it is
+                followed by a comma or a semicolon.
+            </li>
+            <li>
+                <code><var>string_name</var></code> is a string variable or array element.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If user input is interrupted by <kbd>Ctrl</kbd>+<kbd>Break</kbd>, <code>CONT</code> will re-execute the <code>LINE
+                INPUT</code> statement.
+            </li>
+            <li>
+                Unlike <code><a href="#INPUT">INPUT</a></code>, <code>LINE INPUT</code>
+                does not end the prompt with <code>?</code>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="LINE-INPUT-file"><code>LINE INPUT</code> statement (files)</h3>
+        <code class="block">
+            <b>LINE INPUT</b> <b>#</b> <var>file_num</var><b>,</b> <var>string_name</var>
+        </code>
+        <p>
+            Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
+            of a random access file. All input is read until <kbd>Enter</kbd> is pressed; the first
+            255 characters are stored. <code><var>file_num</var></code> must be the number of a file open in
+            <code>INPUT</code> mode or a device or random-access file open in <code>RANDOM</code> mode.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>string_name</var></code> is a string variable or array element.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                The <code>#</code> is mandatory. There may or may not be whitespace between <code>INPUT</code> and <code>#</code>.
+            </li>
+            <li>
+                Input is only terminated by a <code>CR</code>.
+            </li>
+            <li>
+                If <code><var>file_num</var></code> is open to <code>KYBD:</code>, <code>LINE INPUT#</code> reads from the keyboard until a
+                return or comma is encountered (as in a file). Arrow keys and delete are
+                passed as their control characters (<em>not</em> scancodes!) preceded by <code>CHR$(&amp;HFF)</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                Input is requested after the end of a text file has been reached or an
+                <code>EOF</code> char has been encountered: <samp>Input past end</samp>.
+            </li>
+            <li>
+                The last character of the field buffer is read: <samp>Field overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is less than zero: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not open for <code>INPUT</code> or <code>RANDOM</code>: <samp>Bad file mode</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is open to a <code>COM</code> port and this is the
+                first <code><a href="#INPUT-file">INPUT</a></code>, <code><a href="#LINE-INPUT-file">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
+                since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<var>file_num</var>)</code> has become zero):
+                <samp>Communication buffer overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="LET"><code>LET</code> statement</h3>
-<pre>[LET] <var>name</var> = <var>expression</var></pre>
-<p>Assigns the value of <code><var>expression</var></code> to the variable or array element <code><var>name</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>name</var></code> is a variable that may or may not already exist.
-</li><li>
-The
-type of <code><var>expression</var></code> matches that of <code><var>name</var></code>: that is, all numeric types can
-be assigned to each other but strings can only be assigned to strings.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>name</var></code> and <code><var>expression</var></code> are not of matching types: <samp>Type mismatch</samp>.
-</li></ul>
+    <section>
+        <h3 id="LIST"><code>LIST</code> statement</h3>
+        <code class="block">
+            <b>LIST</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>]] [<b>,</b> <var>file_name</var>]
+        </code>
+        <p>
+            Prints the program to the screen, starting with <code><var>line_number_0</var></code> up to and
+            including <code><var>line_number_1</var></code>.
+            Also stops program execution and returns control to the user. Any further
+            statements on a line after <code>LIST</code> will be ignored, both in a program and on a direct line.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are  line numbers in the range <code>[0&#8212;65529]</code>.
+                or a <code>.</code> to indicate the last line edited. The line numbers do not need to exist;
+                they specify a range. If the range is empty, nothing is printed.
+            </li>
+            <li>
+                <code><var>file_name</var></code> is a file or device name. This file will be created; if it already
+                exists, it will be overwritten.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                A line number is greater than <code>65529</code>: <samp>Syntax error</samp>.
+            </li>
+            <li>
+                <code><var>file_name</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_name</var></code> ends in a colon but is not a device name or drive letter:
+                <samp>Bad file number</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="LLIST"><code>LLIST</code> statement</h3>
+        <code class="block">
+            <b>LLIST</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>]]
+        </code>
+        <p>
+            Prints the program to the screen, starting with <code><var>line_number_0</var></code> up to and
+            including <code><var>line_number_1</var></code>.
+            Also stops program execution and returns control to the user. Any further
+            statements on a line after <code>LLIST</code> will be ignored, both in a program and on a direct line.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are  line numbers in the range <code>[0&#8212;65529]</code>.
+                or a <code>.</code> to indicate the last line edited. The line numbers do not need to exist;
+                they specify a range. If the range is empty, nothing is printed.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                A line number is greater than <code>65529</code>: <samp>Syntax error</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="LINE"><code>LINE</code> statement</h3>
-<pre>LINE [ [STEP] (<var>x0</var>, <var>y0</var>)] - [STEP] (<var>x1</var>, <var>y1</var>) [, [<var>attr</var>] [, [B [F]] [, <var>pattern</var>]]]</pre>
-<p>Draws a line or a box in graphics mode. If <code>B</code> is not specified, a line is drawn
-from <code>(<var>x0</var>, <var>y0</var>)</code> to <code>(<var>x1</var>, <var>y1</var>)</code>, endpoints inclusive.
-If <code>B</code> is specified, a
-rectangle is drawn with sides parallel to the screen and two opposing corners
-specified by <code>(<var>x0</var>, <var>y0</var>)</code> and <code>(<var>x1</var>, <var>y1</var>)</code>. If the starting point is not given,
-the current graphics position is used as a staring point.  If <code>STEP</code> is
-specified, <code>(<var>x0</var>, <var>y0</var>)</code> is an offset from the current position and <code>(<var>x1</var>, <var>y1</var>)</code> is an
-offset from <code>(<var>x0</var>, <var>y0</var>)</code>.
-<code>LINE</code> moves the current graphics position to the last given endpoint.
-If <code>F</code> is specified with <code>B</code>, the rectangle is filled with the specified attribute.
-<code>F</code> and <code>B</code> may be separated by zero or more spaces.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>attr</var></code> is a numeric expression in <code>[0&#8212;255]</code>, which
-    specifies the colour attribute of the line. If it is not given, the current
-    attribute is used.
-</li><li>
-    <code><var>pattern</var></code> is a numeric expression in <code>[-32768&#8212;32767]</code>.
-    This is interpreted as a 16-bit binary pattern mask
-    applied to consecutive pixels in the line: a 1 bit indicates a pixel
-    plotted; a 0 bit indicates a pixel left untouched. The pattern starts at
-    the most significant bit, which is applied to the topmost endpoint. If a
-    box is drawn, the pattern is applied in the following counter-intuitive
-    sequence: <code>(<var>x1</var>, <var>y1</var>)&#8212;(<var>x0</var>, <var>y1</var>)</code>,
-    <code>(<var>x1</var>, <var>y0</var>)&#8212;(<var>x0</var>, <var>y0</var>)</code>,
-    then <code>(<var>x1</var>, <var>y0</var>)&#8212;(<var>x1</var>, <var>y1</var>)</code>,
-    <code>(<var>x0</var>, <var>y0</var>)&#8212;(<var>x0</var>, <var>y1</var>)</code> if <code><var>y0</var>&lt;<var>y1</var></code> and <code><var>y0</var></code>,
-    <code><var>y1</var></code> reversed if <code><var>y1</var>&lt;<var>y0</var></code>. When drawing a
-    filled box, <code>LINE</code> ignores the pattern.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   If a coordinate is outside the screen boundary, it is replaced with -1 (if
-    less than 0) or the screen dimension (if larger than the screen dimension).
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-The statement ends in a comma and it is the first or third: <samp>Missing operand</samp>. If it is the second: <samp>Syntax error</samp>.
-</li><li>
-Any of the coordinates is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-Any of the parameters has a string value: <samp>Type mismatch</samp>.
-</li></ul>
+    <section>
+        <h3 id="LOAD"><code>LOAD</code> statement</h3>
+        <code class="block">
+            <b>LOAD</b> <var>file_name</var> [<b>, R</b>]
+        </code>
+        <p>
+            Loads the program stored in file <code><var>file_name</var></code> into memory.
+            If <code>,R</code> is specified, runs the file after loading.
+            <code>LOAD ,R</code> keeps all data files open. Existing variables will be
+            cleared and any program in memory will be erased. <code>LOAD</code> implies a
+            <code><a href="#CLEAR">CLEAR</a></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>file_name</var></code> is a string expression yielding the name of an existing program file.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>file_name</var></code> cannot be found: <samp>File not found</samp>.
+            </li>
+            <li>
+                A loaded ASCII file contains lines without line numbers:
+                <samp>Direct statement in file</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="LOC"><code>LOC</code> function</h3>
+        <code class="block">
+            <var>location</var> <b>= LOC(</b><var>file_num</var><b>)</b>
+        </code>
+        <p>
+            Returns the current location in the file opened under number <code><var>file_num</var></code>.
+        </p>
+        <ul>
+            <li>
+                If the file is opened for <code>INPUT</code>, <code>OUTPUT</code> or <code>APPEND</code>, <code>LOC</code> returns the number
+                of 128-byte blocks read or written since opening the file.
+            </li>
+            <li>
+                If the file is opened for <code>RANDOM</code>, <code>LOC</code> returns the record number last read or
+                written.
+            </li>
+            <li>
+                If the file is opened to a <code>COM</code> device, <code>LOC</code> returns the number of characters
+                in the input buffer, with a maximum of 255.
+            </li>
+            <li>
+                If the file is opened to <code>KYBD:</code>, <code>LOC</code> returns 0.
+            </li>
+        </ul>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+               <code><var>file_num</var></code> must not be preceded by a <code>#</code>.
+            </li>
+            <li>
+                In <code>OUTPUT</code> or <code>APPEND</code> mode, before any writes  <code>LOC</code> returns 0. After the 128th
+                character is written,  <code>LOC</code> returns 1.
+            </li>
+            <li>
+                In <code>INPUT</code> mode, before any reads  <code>LOC</code> returns 1. After the <strong>129th</strong> character
+                is read, <code>LOC</code> returns 2.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is open for output to a device: <samp>Bad file mode</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="LINE-INPUT"><code>LINE INPUT</code> statement (console)</h3>
-<pre>LINE INPUT [ ; ] [ <var>prompt_literal</var> { ; | , } ] <var>string_name</var></pre>
-<p>Displays the prompt given in <code><var>prompt_literal</var></code> and reads user input from the
-keyboard, storing it into the variable <code><var>string_name</var></code>. All input is read until
-<kbd>Enter</kbd> is pressed; the first 255 characters are stored. If the <code>;</code> is given
-right after <code>LINE INPUT</code>, the <kbd>Enter</kbd> ending user input is not echoed to the
-screen.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>prompt_literal</var></code> is a string literal. It makes no difference whether it is
-followed by a comma or a semicolon.
-</li><li>
-<code><var>string_name</var></code> is a string variable or array element.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   If user input is interrupted by <kbd>Ctrl</kbd>+<kbd>Break</kbd>, <code>CONT</code> will re-execute the <code>LINE
-    INPUT</code> statement.
-</li><li>
-    Unlike <code><a href="#INPUT">INPUT</a></code>, <code>LINE INPUT</code>
-    does not end the prompt with <code>?</code>.
-</li></ul>
+    <section>
+        <h3 id="LOCATE"><code>LOCATE</code> statement</h3>
+        <code class="block">
+            <b>LOCATE</b> [<var>row</var>] [<b>,</b> [<var>col</var>] [<b>,</b> [<var>cursor_visible</var>] [<b>,</b> [<var>start_line</var>] [<b>,</b> [<var>stop_line</var>] [<b>,</b>]]]]]
+        </code>
+        <p>
+            Positions the cursor at <code><var>row</var></code>, <code><var>col</var></code> on the screen and changes the cursor shape and visibility.
+            <code><var>cursor_visible</var></code> may be 0 or 1. If <code><var>cursor_visible</var></code> is 0, it makes
+            the cursor invisible; if it is 1, makes the cursor visible. This works only while a program is running.
+             The cursor shape is adjusted
+             within a character cell to start from <code><var>start_line</var></code> and end on <code><var>end_line</var></code> where
+            <code><var>start_line</var></code> and <code><var>end_line</var></code> are in <code>[0&#8212;31]</code>. If <code><var>start_line</var></code> or <code><var>end_line</var></code> is
+            greater than the character cell height (15), substitute 15.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                On emulated VGA cards, the cursor shape parameters are interpreted
+                in a complicated way that is intended to maintain functional compatibility with CGA.
+            </li>
+            <li>
+                In GW-BASIC, cursor shape is preserved after pressing <kbd>Ins</kbd> twice. The insert-mode cursor is different from the usual half-block.
+                In PC-BASIC, insert mode resets the cursor shape to default.
+            </li>
+            <li>
+                Cursor shape and visibility options have no effect in graphics mode.
+            </li>
+            <li>
+                Locate accepts a 5th comma at the end, which is ignored.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                Any parameter has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                Any parameter is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>row</var></code> is outside the current view area: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>col</var></code> is greater than the current width: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>cursor_visible</var></code> is not in <code>[0, 1]</code> (<code>[0&#8212;255]</code> on Tandy/PCjr): <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="LOCK"><code>LOCK</code> statement</h3>
+        <code class="block">
+            <b>LOCK</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_0</var>]
+            <br/>
+            <b>LOCK</b> [<b>#</b>] <var>file_number</var><b>,</b> [<var>record_0</var>] <b>TO</b> <var>record_1</var>
+        </code>
+        <p>
+            Locks a file or part of a file against access by other users. On a <code>RANDOM</code> file,
+            <code><var>record_0</var></code> is the first record locked and <code><var>record_1</var></code> is the last
+            record locked. On any other kind of file <code><var>record_0</var></code> and <code><var>record_1</var></code> have no
+            effect. If <code><var>record_0</var></code> is not specified, it is assumed to be 1. If no records
+            are specified, the whole file is locked.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>file_number</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+            <li>
+                <code><var>record_0</var></code> and <code><var>record_1</var></code> are numeric expressions in <code>[1&#8212;2^25-2]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In GW-BASIC under MS-DOS, the <code>LOCK</code> command requires <code>SHARE.EXE</code> to be loaded.
+                The maximum number of locks is specified in the MS-DOS <code>SHARE</code> command. If <code>SHARE</code> has
+                not been activated or all locks are used, <code>LOCK</code> raises <samp>Permission denied</samp>.
+                PC-BASIC behaves as if <code>SHARE</code> has been activated with unlimited locks.
+            </li>
+            <li>
+                If <code><var>file_number</var></code> is open for <code>RANDOM</code>,
+                <code><a href="#LOCK">LOCK</a></code> and <code><a href="#UNLOCK">UNLOCK</a></code>
+                statements must match in terms of <code><var>record_0</var></code> and
+                <code><var>record_1</var></code>. An non-matching <code>UNLOCK</code> will raise
+                <samp>Permission denied</samp>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                Any parameter has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code>LOCK</code> (part of) a file already locked: <samp>Permission denied</samp>.
+            </li>
+            <li>
+                <code><var>record_0</var></code> or <code><var>record_1</var></code> is not in <code>[1&#8212;2^25-2]</code>: <samp>Bad record number</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="LINE-INPUT-file"><code>LINE INPUT</code> statement (files)</h3>
-<pre>LINE INPUT[ ]# <var>file_num</var>, <var>string_name</var></pre>
-<p>Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
-of a random access file. All input is read until <kbd>Enter</kbd> is pressed; the first
-255 characters are stored. <code><var>file_num</var></code> must be the number of a file open in
-<code>INPUT</code> mode or a device or random-access file open in <code>RANDOM</code> mode.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>string_name</var></code> is a string variable or array element.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   The <code>#</code> is mandatory. There may or may not be whitespace between <code>INPUT</code> and <code>#</code>.
-</li><li>
-   Input is only terminated by a <code>CR</code>.
-</li><li>
-   If <code><var>file_num</var></code> is open to <code>KYBD:</code>, <code>LINE INPUT#</code> reads from the keyboard until a
-    return or comma is encountered (as in a file). Arrow keys and delete are
-    passed as their control characters (<em>not</em> scancodes!) preceded by <code>CHR$(&amp;HFF)</code>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-Input is requested after the end of a text file has been reached or an
-    <code>EOF</code> char has been encountered: <samp>Input past end</samp>.
-</li><li>
-The last character of the field buffer is read: <samp>Field overflow</samp>.
-</li><li>
-<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
-</li><li>
-<code><var>file_num</var></code> is less than zero: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>file_num</var></code> is not open for <code>INPUT</code> or <code>RANDOM</code>: <samp>Bad file mode</samp>.
-</li><li>
-<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-    <code><var>file_num</var></code> is open to a <code>COM</code> port and this is the
-    first <code><a href="#INPUT-file">INPUT</a></code>, <code><a href="#LINE-INPUT-file">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
-    since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<var>file_num</var>)</code> has become zero):
-    <samp>Communication buffer overflow</samp>.
-</li></ul>
+    <section>
+        <h3 id="LOF"><code>LOF</code> function</h3>
+        <code class="block">
+            <var>length</var> <b>= LOF(</b><var>file_num</var><b>)</b>
+        </code>
+        <p>
+            Returns the number of bytes in the file open under <code><var>file_num</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code><var>file_num</var></code> is open to a <code>COM:</code> device, <code>LOF</code> returns the number of bytes
+                free in the input buffer.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is open for output to a device: <samp>Bad file mode</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="LOG"><code>LOG</code> function</h3>
+        <code class="block">
+            <var>y</var> <b>= LOG(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns the natural logarithm of <code><var>x</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a numeric expression greater than zero.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+                option, this function returns a single-precision value.
+            </li>
+            <li>
+               <code>LOG(<var>x</var>)</code> can differ from GW-BASIC by 1 in the least significant digit.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is zero or negative: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="LIST"><code>LIST</code> statement</h3>
-<pre>LIST [ <var>line_number_0</var> | . ] [ - [ <var>line_number_1</var> | . ] ] [, <var>file_name</var>]</pre>
-<p>Prints the program to the screen, starting with <code><var>line_number_0</var></code> up to and
-including <code><var>line_number_1</var></code>.
-Also stops program execution and returns control to the user. Any further
-statements on a line after <code>LIST</code> will be ignored, both in a program and on a direct line.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are  line numbers in the range <code>[0&#8212;65529]</code>.
-or a <code>.</code> to indicate the last line edited. The line numbers do not need to exist;
-they specify a range. If the range is empty, nothing is printed.
-</li><li>
-<code><var>file_name</var></code> is a file or device name. This file will be created; if it already
-exists, it will be overwritten.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-A line number is greater than <code>65529</code>: <samp>Syntax error</samp>.
-</li><li>
-<code><var>file_name</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>file_name</var></code> ends in a colon but is not a device name or drive letter:
-    <samp>Bad file number</samp>.
-</li></ul>
+    <section>
+        <h3 id="LPOS"><code>LPOS</code> function</h3>
+        <code class="block">
+            <var>position</var> <b>= LPOS(</b><var>printer_number</var><b>)</b>
+        </code>
+        <p>
+            Returns the column position for a printer.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>printer_number</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
+                If it is 0
+                or 1, the position for <code>LPT1:</code> is returned. If it is 2, <code>LPT2:</code>; 3, <code>LPT3:</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In GW-BASIC, when entering direct mode, <code>LPT1:</code> (but not other printers)
+                is flushed and its position is reset to 1. This is not implemented in
+                PC-BASIC.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>printer_number</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>printer_number</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>printer_number</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="LLIST"><code>LLIST</code> statement</h3>
-<pre>LLIST [ <var>line_number_0</var> | . ] [ - [ <var>line_number_1</var> | . ] ]</pre>
-<p>Prints the program to the screen, starting with <code><var>line_number_0</var></code> up to and
-including <code><var>line_number_1</var></code>.
-Also stops program execution and returns control to the user. Any further
-statements on a line after <code>LLIST</code> will be ignored, both in a program and on a direct line.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are  line numbers in the range <code>[0&#8212;65529]</code>.
-or a <code>.</code> to indicate the last line edited. The line numbers do not need to exist;
-they specify a range. If the range is empty, nothing is printed.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-A line number is greater than <code>65529</code>: <samp>Syntax error</samp>.
-</li></ul>
+    <section>
+        <h3 id="LPRINT"><code>LPRINT</code> statement</h3>
+        <p>
+            See <code><a href="#PRINT">PRINT</a></code>.
+        </p>
+    </section>
 
-
-<h3 id="LOAD"><code>LOAD</code> statement</h3>
-<pre>LOAD <var>file_name</var> [, R]</pre>
-<p>Loads the program stored in file <code><var>file_name</var></code> into memory.
-If <code>,R</code> is specified, runs the file after loading.
-<code>LOAD ,R</code> keeps all data files open. Existing variables will be
-    cleared and any program in memory will be erased. <code>LOAD</code> implies a
-    <code><a href="#CLEAR">CLEAR</a></code>.
-</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>file_name</var></code> is a string expression yielding the name of an existing program file.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>file_name</var></code> cannot be found: <samp>File not found</samp>.
-</li><li>
-    A loaded ASCII file contains lines without line numbers:
-    <samp>Direct statement in file</samp>.
-</li></ul>
-
-
-<h3 id="LOC"><code>LOC</code> function</h3>
-<pre><var>location</var> = LOC(<var>file_num</var>)</pre>
-<p>Returns the current location in the file opened under number <code><var>file_num</var></code>.
-</p><ul><li>
-If the file is opened for <code>INPUT</code>, <code>OUTPUT</code> or <code>APPEND</code>, <code>LOC</code> returns the number
-of 128-byte blocks read or written since opening the file.
-</li><li>
-If the file is opened for <code>RANDOM</code>, <code>LOC</code> returns the record number last read or
-written.
-</li><li>
-If the file is opened to a <code>COM</code> device, <code>LOC</code> returns the number of characters
-in the input buffer, with a maximum of 255.
-</li><li>
-If the file is opened to <code>KYBD:</code>, <code>LOC</code> returns 0.
-</li></ul>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>file_num</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   <code><var>file_num</var></code> must not be preceded by a <code>#</code>.
-</li><li>
-   In <code>OUTPUT</code> or <code>APPEND</code> mode, before any writes  <code>LOC</code> returns 0. After the 128th
-    character is written,  <code>LOC</code> returns 1.
-</li><li>
-   In <code>INPUT</code> mode, before any reads  <code>LOC</code> returns 1. After the <strong>129th</strong> character
-    is read, <code>LOC</code> returns 2.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
-</li><li>
-<code><var>file_num</var></code> is open for output to a device: <samp>Bad file mode</samp>.
-</li></ul>
-
-
-<h3 id="LOCATE"><code>LOCATE</code> statement</h3>
-<pre>LOCATE [<var>row</var>] [, [<var>col</var>] [, [<var>cursor_visible</var>] [, [<var>start_line</var>] [, [<var>stop_line</var>] [ , ] ] ] ] ]</pre>
-<p>Positions the cursor at <code><var>row</var></code>, <code><var>col</var></code> on the screen and changes the cursor shape and visibility.
-<code><var>cursor_visible</var></code> may be 0 or 1. If <code><var>cursor_visible</var></code> is 0, it makes
-    the cursor invisible; if it is 1, makes the cursor visible. This works only while a program is running.
-     The cursor shape is adjusted
-within a character cell to start from <code><var>start_line</var></code> and end on <code><var>end_line</var></code> where
-<code><var>start_line</var></code> and <code><var>end_line</var></code> are in <code>[0&#8212;31]</code>. If <code><var>start_line</var></code> or <code><var>end_line</var></code> is
-greater than the character cell height (15), substitute 15.
-</p><h4>Notes</h4>
-<ul><li>
-On emulated VGA cards, the cursor shape parameters are interpreted
-    in a complicated way that is intended to maintain functional compatibility with CGA.
-</li><li>
-   In GW-BASIC, cursor shape is preserved after pressing <kbd>Ins</kbd> twice. The insert-mode cursor is different from the usual half-block.
-    In PC-BASIC, insert mode resets the cursor shape to default.
-</li><li>
-   Cursor shape and visibility options have no effect in graphics mode.
-</li><li>
-   Locate accepts a 5th comma at the end, which is ignored.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-Any parameter has a string value: <samp>Type mismatch</samp>.
-</li><li>
-Any parameter is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>row</var></code> is outside the current view area: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>col</var></code> is greater than the current width: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>cursor_visible</var></code> is not in <code>[0, 1]</code> (<code>[0&#8212;255]</code> on Tandy/PCjr): <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="LOCK"><code>LOCK</code> statement</h3>
-<pre>LOCK [#] <var>file_number</var> [, <var>record_0</var> ]</pre>
-<pre>LOCK [#] <var>file_number</var>, [<var>record_0</var>] TO <var>record_1</var></pre>
-<p>Locks a file or part of a file against access by other users. On a <code>RANDOM</code> file,
- <code><var>record_0</var></code> is the first record locked and <code><var>record_1</var></code> is the last
-record locked. On any other kind of file <code><var>record_0</var></code> and <code><var>record_1</var></code> have no
-effect. If <code><var>record_0</var></code> is not specified, it is assumed to be 1. If no records
-are specified, the whole file is locked.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>file_number</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-</li><li><code><var>record_0</var></code> and <code><var>record_1</var></code> are numeric expressions in <code>[1&#8212;2^25-2]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   In GW-BASIC under MS-DOS, the <code>LOCK</code> command requires <code>SHARE.EXE</code> to be loaded.
-    The maximum number of locks is specified in the MS-DOS <code>SHARE</code> command. If <code>SHARE</code> has
-    not been activated or all locks are used, <code>LOCK</code> raises <samp>Permission denied</samp>.
-    PC-BASIC behaves as if <code>SHARE</code> has been activated with unlimited locks.
-</li><li>
-    If <code><var>file_number</var></code> is open for <code>RANDOM</code>,
-    <code><a href="#LOCK">LOCK</a></code> and <code><a href="#UNLOCK">UNLOCK</a></code>
-    statements must match in terms of <code><var>record_0</var></code> and
-    <code><var>record_1</var></code>. An non-matching <code>UNLOCK</code> will raise
-    <samp>Permission denied</samp>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-Any parameter has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
-</li><li>
-<code>LOCK</code> (part of) a file already locked: <samp>Permission denied</samp>.
-</li><li>
-<code><var>record_0</var></code> or <code><var>record_1</var></code> is not in <code>[1&#8212;2^25-2]</code>: <samp>Bad record number</samp>.
-</li></ul>
-
-
-<h3 id="LOF"><code>LOF</code> function</h3>
-<pre><var>length</var> = LOF(<var>file_num</var>)</pre>
-<p>Returns the number of bytes in the file open under <code><var>file_num</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>file_num</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   If <code><var>file_num</var></code> is open to a <code>COM:</code> device, <code>LOF</code> returns the number of bytes
-    free in the input buffer.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
-</li><li>
-<code><var>file_num</var></code> is open for output to a device: <samp>Bad file mode</samp>.
-</li></ul>
-
-
-<h3 id="LOG"><code>LOG</code> function</h3>
-<pre><var>y</var> = LOG(<var>x</var>)</pre>
-<p>Returns the natural logarithm of <code><var>x</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>x</var></code> is a numeric expression greater than zero.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-    Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
-    option, this function returns a single-precision value.
-</li><li>
-   <code>LOG(<var>x</var>)</code> can differ from GW-BASIC by 1 in the least significant digit.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>x</var></code> is zero or negative: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="LPOS"><code>LPOS</code> function</h3>
-<pre><var>position</var> = LPOS(<var>printer_number</var>)</pre>
-<p>Returns the column position for a printer.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>printer_number</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
-If it is 0
-or 1, the position for <code>LPT1:</code> is returned. If it is 2, <code>LPT2:</code>; 3, <code>LPT3:</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   In GW-BASIC, when entering direct mode, <code>LPT1:</code> (but not other printers)
-    is flushed and its position is reset to 1. This is not implemented in
-    PC-BASIC.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>printer_number</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>printer_number</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>printer_number</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="LPRINT"><code>LPRINT</code> statement</h3>
-<p>
-    See <code><a href="#PRINT">PRINT</a></code>.
-</p>
-
-
-<h3 id="LSET"><code>LSET</code> and <code>RSET</code> statements</h3>
-<pre>{ LSET | RSET } <var>string_name</var> = <var>expression</var></pre>
-<p>
-    Assigns a value to a <code><a href="#FIELD">FIELD</a></code> variable such that
-    it overwrites the <code>FIELD</code> record.
-With <code>LSET</code>, the value will be left-justified if it is shorter than the length of
-the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justified.
-</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>string_name</var></code> is a string variable.
-</li><li><code><var>expression</var></code> is a string expression.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   If <code><var>string_name</var></code> is not a <code>FIELD</code> variable, the value is justified into the
-    existing string, which retains its length.
-</li><li>
-   If <code><var>expression</var></code> has a value that is longer than the length of the variable,
-    it is truncated at the back at the length of the variable.
-</li><li>
-    If <code><a href="#LET">LET</a></code> is used on a <code>FIELD</code> variable
-    instead of <code>L|RSET</code>, the variable is
-    detached from the field and becomes a normal string variable.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>string_name</var></code> is not a string variable: <samp>Type mismatch</samp>.
-<code><var>expression</var></code> does not have a string value: <samp>Type mismatch</samp>.
-</li></ul>
+    <section>
+        <h3 id="LSET"><code>LSET</code> and <code>RSET</code> statements</h3>
+        <code class="block">
+            {<b>LSET</b>|<b>RSET</b>} <var>string_name</var> <b>=</b> <var>expression</var>
+        </code>
+        <p>
+            Assigns a value to a <code><a href="#FIELD">FIELD</a></code> variable such that
+            it overwrites the <code>FIELD</code> record.
+            With <code>LSET</code>, the value will be left-justified if it is shorter than the length of
+            the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justified.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>string_name</var></code> is a string variable.
+            </li>
+                <li><code><var>expression</var></code> is a string expression.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code><var>string_name</var></code> is not a <code>FIELD</code> variable, the value is justified into the
+                existing string, which retains its length.
+            </li>
+            <li>
+                If <code><var>expression</var></code> has a value that is longer than the length of the variable,
+                it is truncated at the back at the length of the variable.
+            </li>
+            <li>
+                If <code><a href="#LET">LET</a></code> is used on a <code>FIELD</code> variable
+                instead of <code>L|RSET</code>, the variable is
+                detached from the field and becomes a normal string variable.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>string_name</var></code> is not a string variable: <samp>Type mismatch</samp>.
+                <code><var>expression</var></code> does not have a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
     <section>
         <h3 id="MERGE"><code>MERGE</code> statement</h3>
