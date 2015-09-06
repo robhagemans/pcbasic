@@ -62,6 +62,16 @@ def main():
                 shutil.rmtree(plat.temp_dir)
         except NameError:
             pass
+        # avoid sys.excepthook errors when piping output
+        # http://stackoverflow.com/questions/7955138/addressing-sys-excepthook-error-in-bash-script
+        try:
+            sys.stdout.close()
+        except:
+            pass
+        try:
+            sys.stderr.close()
+        except:
+            pass
 
 def prepare_logging():
     """ Set up the logging system. """
