@@ -61,9 +61,9 @@ man_html = title_html + desc_html + options_html + examples_html
 usage_html = options_html
 
 # output manfile
-with open('../doc/pcbasic.man', 'w') as manfile:
+with open('../doc/pcbasic.1', 'w') as manfile:
     manfile.write(html_to_man(man_html))
-subprocess.Popen('gzip -f ../doc/pcbasic.man'.split())
+subprocess.Popen('gzip -f ../doc/pcbasic.1'.split())
 
 #print html_to_man(usage_html)
 # output usage
