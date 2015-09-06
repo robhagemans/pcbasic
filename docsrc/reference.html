@@ -3988,526 +3988,687 @@ No <code>FOR</code> statement is found to match the <code>NEXT</code> statement 
 <code><var>source</var></code> is not in <code>[0&#8212;7]</code>: <samp>Illegal function call</samp>.
 </li></ul>
 
+    <section>
+        <h3 id="OCT$"><code>OCT$</code> function</h3>
+        <code class="block">
+            <var>octal</var> <b>= OCT$(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns a string with the octal representation of <code><var>x</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a
+                numeric expression in <code>[-32768&#8212;65535]</code>. Values for
+                negative <code><var>x</var></code> are shown as two's-complement.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="OCT$"><code>OCT$</code> function</h3>
-<pre><var>octal</var> = OCT$(<var>x</var>)</pre>
-<p>Returns a string with the octal representation of <code><var>x</var></code>.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>x</var></code> is a
-numeric expression in <code>[-32768&#8212;65535]</code>. Values for
-negative <code><var>x</var></code> are shown as two's-complement.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li></ul>
+    <section>
+        <h3 id="ON-jump"><code>ON</code> statement (calculated jump)</h3>
+        <code class="block">
+            <b>ON</b> <var>n</var> {<b>GOTO</b>|<b>GOSUB</b>} <var>line_number_0</var> [<b>,</b> <var>line_number_1</var>] ...
+        </code>
+        <p>
+            Jumps to the <code><var>n</var></code>th line number specified in the list. If <code><var>n</var></code> is 0 or greater
+            than the number of line numbers in the list, no jump is performed. If <code>GOTO</code> is specified,
+            the jump is unconditional; if <code>GOSUB</code> is specified, jumps to a subroutine.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>n</var></code> is a numeric expression in <code>[0&#8212;255]</code>. The expression must not start with the <code>STRIG</code>, <code>PEN</code>, <code>PLAY</code> or <code>TIMER</code> function keywords; if you need these functions, the expression must be bracketed.
+            </li>
+            <li>
+                <code><var>line_number_0</var>, <var>line_number_1</var>, ...</code> are existing line numbers in the program.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>n</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>n</var></code> is not in <code>[-32768&#8212;32767]</code>, <samp>Overflow</samp> .
+            </li>
+            <li>
+                <code><var>n</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                The line number jumped to does not exist: <samp>Undefined line number</samp>.
+            </li>
+        </ul>
+    </section>
 
-
-<h3 id="ON-jump"><code>ON</code> statement (calculated jump)</h3>
-<pre>ON <var>n</var> {GOTO | GOSUB} <var>line_number_0</var> [, <var>line_number_1</var> [, ...] ]</pre>
-<p>Jumps to the <code><var>n</var></code>th line number specified in the list. If <code><var>n</var></code> is 0 or greater
-than the number of line numbers in the list, no jump is performed. If <code>GOTO</code> is specified,
-the jump is unconditional; if <code>GOSUB</code> is specified, jumps to a subroutine.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>n</var></code> is a numeric expression in <code>[0&#8212;255]</code>. The expression must not start with the <code>STRIG</code>, <code>PEN</code>, <code>PLAY</code> or <code>TIMER</code> function keywords; if you need these functions, the expression must be bracketed.
-</li><li>
-<code><var>line_number_0</var>, <var>line_number_1</var>, ...</code> are existing line numbers in the program.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>n</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>n</var></code> is not in <code>[-32768&#8212;32767]</code>, <samp>Overflow</samp> .
-</li><li>
-<code><var>n</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-The line number jumped to does not exist: <samp>Undefined line number</samp>.
-</li></ul>
-
-
-<h3 id="ON-event"><code>ON</code> statement (event trapping)</h3>
-<pre>ON { COM(<var>n</var>) | KEY(<var>n</var>) | STRIG(<var>n</var>) | PEN | PLAY(<var>n</var>) | TIMER(<var>x</var>) } GOSUB <var>line_number</var></pre>
-<p>Defines an event trapping subroutine.
-The type of event is given by one of the following keywords:</p>
-<div class="scrollable">
-<table>
-    <tr>
-        <td><code>COM(<var>n</var>)</code></td>
-        <td>
-            The event is triggered
-            if data is present in the input buffer of the
-            <code>COM<var>n</var>:</code>. <code><var>n</var></code>
-            is the port number in <code>[1,2]</code>.
-        </td>
-    </tr><tr>
-        <td><code>KEY(<var>n</var>)</code></td>
-        <td>
-            The event is triggered if key <code><var>n</var></code> is pressed.
-            <code><var>n</var></code> is the key number <code>[1&#8212;10]</code>
-            defined in the <code><a href="#KEY-event-def">KEY</a></code> statement.
-        </td>
-    </tr><tr>
-        <td><code>STRIG(<var>n</var>)</code></td>
-        <td>
-            They event is triggered if fire button <code><var>n</var></code> is pressed.
-            <code><var>n</var></code> in <code>[0,2,4,6]</code> refer to the
-            two fire triggers on two joysticks.
-        </td>
-    </tr><tr>
-        <td><code>PEN</code></td>
-        <td>
-            The event is triggered if the light pen is on the
-            screen. (In PC-BASIC, the light pen is emulated by default by the
-            right mouse button).
-        </td>
-    </tr><tr>
-        <td><code>PLAY(<var>n</var>)</code></td>
-        <td>
-            The event is triggered if there are exactly <code><var>n</var></code> notes left on the
-            music background queue. <code><var>n</var></code> is a numeric expression in <code>[1&#8212;32]</code>.
-        </td>
-    </tr><tr>
-        <td><code>TIMER(<var>x</var>)</code></td>
-        <td>
-            The event is triggered every <code><var>x</var></code> seconds after the <code><a href="#TIMER">TIMER ON</a></code>
-            statement. <code><var>x</var></code> is a numeric expression in <code>[1&#8212;86400]</code>.
-        </td>
-    </tr>
-</table>
-</div>
-
-<h4>Notes</h4>
-<ul><li>
-Event trapping for your chosen event first needs to be enabled using one of the
-statements: <code><a href="#COM">COM(<var>n</var>) ON</a></code>,
-    <code><a href="#KEY-event">KEY(<var>n</var>) ON</a></code>,
-    <code><a href="#STRIG-events">STRIG(<var>n</var>) ON</a></code>,
-    <code><a href="#PEN-statement">PEN ON</a></code>,
-    <code><a href="#PLAY-event">PLAY ON</a></code>,
-    <code><a href="#TIMER-event">TIMER ON</a></code>
-</li><li>
-Events are only trapped when a program is running.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>n</var></code> or <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>n</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>n</var></code> or <code><var>x</var></code> is outside the specified range: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="ON-ERROR"><code>ON ERROR</code> statement</h3>
-<pre>ON ERROR GOTO { <var>line_number</var> | 0 }</pre>
-<p>Turns error trapping on or off. When <code><var>line_number</var></code> is set, any error causes the error handling
-routine starting at that line number to be called; no message is printed and program execution is not stopped. The
-error handling routine is ended by a <code><a href="#RESUME">RESUME</a></code> statement.
-While in an error handling routine, events are paused and error trapping is
-disabled. After the <code>RESUME</code> statement, any triggered events are picked up in the following
-order: <code>KEY</code>, <code>TIMER</code>, <code>PLAY</code> - the order of the others is unknown.
-Unlike event trapping, error trapping remains active when no program is running.
-<code>ON ERROR GOTO 0</code> turns off error trapping.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>line_number</var></code> is an existing line number in the program.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-It is not possible to start the error handler at line number <code>0</code>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
-</li></ul>
-
-
-<h3 id="OPEN"><code>OPEN</code> statement</h3>
-<pre>OPEN <var>mode_char</var>, [#] <var>file_num</var>, <var>file_name</var> [, <var>rec_len</var>]</pre>
-<pre>OPEN <var>file_name</var> [ FOR { INPUT | OUTPUT | APPEND | RANDOM } ]
-               [ ACCESS { READ | WRITE | READ WRITE } ]
-               [ SHARED | LOCK { READ | WRITE | READ WRITE } ]
-               AS [#] <var>file_num</var> [ LEN = <var>rec_len</var> ]</pre>
-<p>Opens a data file or device.</p>
-
-<h4>Parameters</h4>
-<ul><li>
-<code><var>file_name</var></code> is a string expression: the name of the file or device.
-</li><li>
-<code><var>file_num</var></code> is a numeric expression in <code>[1&#8212;3]</code>.
-</li><li>
-<code><var>rec_len</var></code> is a numeric expression in <code>[1&#8212;128]</code>: the record length.
-</li><li>
-<code><var>mode_char</var></code> is a string expression of which the first character is
-    one of <code>["I", "O", "A", "R"]</code>.
-</li></ul>
-
-<h4>Access modes</h4>
-<p>
-    The <code>FOR</code> modes or <code><var>mode_char</var></code> are as follows:
-</p>
-<div class="scrollable">
-<table><tr>
-<th><code><var>mode_char</var></code></th>
-<th><code>FOR</code></th>
-<th>Effect</th>
-</tr><tr>
-<td><code>"I"</code></td>
-<td><code>INPUT</code></td>
-<td>Opens a text file for reading and positions the file pointer at the
-    start.</td>
-</tr><tr>
-<td><code>"O"</code></td>
-<td><code>OUTPUT</code></td>
-<td>Truncates a text file at the start and opens it for writing. Any
-    data previously present in the file will be deleted.</td>
-</tr><tr>
-<td><code>"A"</code></td>
-<td><code>APPEND</code></td>
-<td>Opens a text file for writing at the end of any existing data.</td>
-</tr><tr>
-<td><code>"R"</code></td>
-<td><code>RANDOM</code></td>
-<td>Opens a file for random access; the file is divided in records of
-    length <code><var>rec_len</var></code>. If <code>LEN</code> is not specified, the record length defaults to
-    128. The file contents can be accessed using <code><a href="#GET-files">GET</a></code>
-    and <code><a href="#PUT-files">PUT</a></code> of the <code><a href="#FIELD">FIELD</a></code>
-    buffer; the <code>FIELD</code> buffer can be accessed through <code>FIELD</code> variables or through
-    <code><a href="#PRINT">PRINT#</a></code> and <code><a href="#INPUT-file">INPUT#</a></code> statements.
-</td></tr></table>
-</div>
-<p>
-If no <code>FOR</code> mode or <code><var>mode_char</var></code> is specified, the file is opened for <code>RANDOM</code>.</p>
-<p>
-If both <code>FOR</code> and <code>ACCESS</code> are specified, any <code>ACCESS</code> mode is allowed for
-    <code>RANDOM</code> but for the other modes the access must match as follows:
-</p>
-<div class="scrollable">
-<table>
-    <tr>
-        <th><code>FOR</code></th>
-        <th>default <code>ACCESS</code></th>
-        <th>allowed <code>ACCESS</code></th>
-    </tr>
-    <tr>
-        <td><code>INPUT</code></td>
-        <td><code>READ</code></td>
-        <td><code>READ</code></td>
-    </tr>
-    <tr>
-        <td><code>OUTPUT</code></td>
-        <td><code>WRITE</code></td>
-        <td><code>WRITE</code></td>
-    </tr>
-    <tr>
-        <td><code>APPEND</code></td>
-        <td><code>READ WRITE</code></td>
-        <td><code>READ WRITE</code></td>
-    </tr>
-    <tr>
-        <td><code>RANDOM</code></td>
-        <td><code>READ WRITE</code></td>
-        <td>all</td>
-    </tr>
-</table>
-</div>
-
-<h4>Sharing and locks</h4>
-<p>
-If neither <code>SHARED</code> nor <code>LOCK</code> are specified. Inside this process, a file may be opened multiple
-    times for <code>INPUT</code> or <code>RANDOM</code> but only once for <code>OUTPUT</code> or <code>APPEND</code>, as long as it
-    is again opened in default mode. It may not be opened in <code>SHARED</code> or any <code>LOCK</code>
-    modes.
-</p>
-<p>
-If <code>SHARED</code>, <code>LOCK READ</code>, <code>LOCK WRITE</code> or <code>LOCK READ WRITE</code> is specified, whether
-    two <code>OPEN</code> statements may access the same file depends on one's <code>LOCK</code> status
-    and the other's <code>ACCESS</code> status and vice versa.
-    Assuming the following:
-</p>
-<pre>OPEN "file" ACCESS <var>acc_1</var> <var>lock_1</var> AS 1
-OPEN "file" ACCESS <var>acc_2</var> <var>lock_2</var> AS 2</pre>
-<p>
-    The following combinations are allowed:
-</p>
-<div class="scrollable">
-<table>
-<tr>
-<th rowspan="2" colspan="2">Access allowed</th>
-<th colspan="3"><code>acc_2</code>
-    </th></tr><tr>
-<th><code>READ</code></th>
-<th><code>WRITE</code></th>
-<th><code>READ WRITE</code></th>
-    </tr><tr>
-<th rowspan="4"><code>lock_1</code></th>
-<th><code>SHARED</code></th><td>yes</td><td>yes</td><td>yes</td>
-    </tr><tr>
-<th><code>LOCK READ</code></th><td>no</td><td>yes</td><td>no</td>
-    </tr><tr>
-<th><code>LOCK WRITE</code></th><td>yes</td><td>no</td><td>no</td>
-    </tr><tr>
-<th><code>LOCK READ WRITE</code></th><td>no</td><td>no</td><td>no</td>
-</tr></table>
-</div>
-<p>
-    and vice versa for <code><var>acc_1</var></code> and <code><var>lock_2</var></code>.
-</p>
-<p>In GW-BASIC under MS-DOS with <code>SHARE.EXE</code> active, these locks should be functioning
-across a network as well as inside a single BASIC process. Without <code>SHARED</code> and <code>LOCK</code>, the file is locked exclusively for use by the
-GW-BASIC process. By contrast, in PC-BASIC,
-the locks are only implemented internally. Whether other processes may access
-the file will depend on the host OS.</p>
-
-<h4>Serial port (<code>COM1:</code>) access</h4>
-<p>
-    If a <code>COM</code> port is opened for <code>RANDOM</code>, access is
-    byte-for-byte rather than through <code>FIELD</code> records; <code>PRINT#</code> and <code>INPUT#</code> access
-    the port directly. <code><var>rec_len</var></code> sets the number of bytes read by the <code>GET</code> and
-    <code>PUT</code> statements.
-</p>
-<p>
-    When opening a <code>COM</code> port, additional expressions may be included following the
-    colon of the device name. These specify parameters for the serial
-    connection. This string has the form
-</p>
-<pre>"COMn:[speed[,parity[,data[,stop[,RS][,CS[n]][,DS[n]][,CD[n]][,LF][,PE]]]]]"</pre>
-<p>
-    The first four parameters must be given in that order but the named parameters
-    can be given in any order.
-    The meaning of the parameters is:
-</p>
-<div class="scrollable">
-<table>
-    <tr>
-        <th>Parameter</th>
-        <th>Default</th>
-        <th>Meaning</th>
-    </tr><tr>
-        <td><code><var>speed</var></code></td>
-        <td><code>300</code></td>
-        <td>Baud (bps) rate for the connection. <code><var>speed</var></code> is one of
-                    <code>[75, 110, 150, 300, 600, 1200, 1800, 2400, 4800, 9600]</code>.
-        </td>
-    </tr><tr>
-        <td><code><var>parity</var></code></td>
-        <td><code>E</code></td>
-        <td>
-            Parity bit convention. <code><var>parity</var></code> is one of <code>[S, M, O, E, N]</code>.
+    <section>
+        <h3 id="ON-event"><code>ON</code> statement (event trapping)</h3>
+        <code class="block">
+            <b>ON</b> {<b>COM(</b><var>n</var><b>)</b>|<b>KEY(</b><var>n</var><b>)</b>|<b>STRIG(</b><var>n</var><b>)</b>|<b>PEN</b>|<b>PLAY(</b><var>n</var><b>)</b>|<b>TIMER(</b><var>x</var><b>)</b>}
+            <b>GOSUB</b> <var>line_number</var>
+        </code>
+        <p>
+            Defines an event trapping subroutine.
+            The type of event is given by one of the following keywords:
+        </p>
+        <div class="scrollable">
             <table>
                 <tr>
-                    <th><code><var>parity</var></code></th>
-                    <th>Meaning</th>
-                    <th>Effect</th>
-                </tr><tr>
-                    <td><code>S</code></td>
-                    <td>SPACE</td>
-                    <td>Parity bit always set to 0.</td>
-                </tr><tr>
-                    <td><code>M</code></td>
-                    <td>MARK</td>
-                    <td>Parity bit always set to 1.</td>
-                </tr><tr>
-                    <td><code>O</code></td>
-                    <td>ODD</td>
-                    <td>Parity bit set so that character parity is odd.</td>
-                </tr><tr>
-                    <td><code>E</code></td>
-                    <td>EVEN</td>
-                    <td>Parity bit set so that character parity is even.</td>
-                </tr><tr>
-                    <td><code>N</code></td>
-                    <td>NONE</td>
-                    <td>No parity bit transmitted or received.</td>
+                    <td><code>COM(<var>n</var>)</code></td>
+                    <td>
+                        The event is triggered
+                        if data is present in the input buffer of the
+                        <code>COM<var>n</var>:</code>. <code><var>n</var></code>
+                        is the port number in <code>[1,2]</code>.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>KEY(<var>n</var>)</code></td>
+                    <td>
+                        The event is triggered if key <code><var>n</var></code> is pressed.
+                        <code><var>n</var></code> is the key number <code>[1&#8212;10]</code>
+                        defined in the <code><a href="#KEY-event-def">KEY</a></code> statement.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>STRIG(<var>n</var>)</code></td>
+                    <td>
+                        They event is triggered if fire button <code><var>n</var></code> is pressed.
+                        <code><var>n</var></code> in <code>[0,2,4,6]</code> refer to the
+                        two fire triggers on two joysticks.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>PEN</code></td>
+                    <td>
+                        The event is triggered if the light pen is on the
+                        screen. (In PC-BASIC, the light pen is emulated by default by the
+                        right mouse button).
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>PLAY(<var>n</var>)</code></td>
+                    <td>
+                        The event is triggered if there are exactly <code><var>n</var></code> notes left on the
+                        music background queue. <code><var>n</var></code> is a numeric expression in <code>[1&#8212;32]</code>.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>TIMER(<var>x</var>)</code></td>
+                    <td>
+                        The event is triggered every <code><var>x</var></code> seconds after the <code><a href="#TIMER">TIMER ON</a></code>
+                        statement. <code><var>x</var></code> is a numeric expression in <code>[1&#8212;86400]</code>.
+                    </td>
                 </tr>
             </table>
-        </td>
-    </tr><tr>
-        <td><code><var>data</var></code></td>
-        <td><code>7</code></td>
-        <td>
-            Data bits per byte. <code><var>data</var></code> must be one of <code>[4, 5, 6, 7, 8]</code>.
-            A byte consists of the data bits plus parity bit, if
-            any. Byte size must be in the range <code>[5&#8212;8]</code>:
-            if <code><var>data</var></code> is <code>4</code>,
-            <code><var>parity</var></code> must not be <code>N</code>;
-            if <code><var>data</var></code> is <code>8</code>,
-            <code><var>parity</var></code> must be <code>N</code>.
-        </td>
-    </tr><tr>
-        <td><code><var>stop</var></code></td>
-        <td><code>1</code></td>
-        <td>The number of stop bits. <code><var>stop</var></code> must be <code>1</code> or <code>2</code>.
-                    Default is <code>2</code> if <code><var>speed</var></code> is <code>75</code> or <code>110</code>; <code>1</code> otherwise.
-        </td>
-    </tr><tr>
-        <td><code>RS</code></td>
-        <td>no</td>
-        <td>Suppress <em>Request To Send</em>.</td>
-    </tr><tr>
-        <td><code>CS[<var>n</var>]</code></td>
-        <td><code>CS1000</code></td>
-        <td>
-            Set <em>Clear To Send</em> timeout to <code><var>n</var></code> milliseconds.
-            If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
-            Default is <code>CS0</code> if <code>RS</code> is set; <code>CS1000</code> otherwise.
-        </td>
-    </tr><tr>
-        <td><code>DS[<var>n</var>]</code></td>
-        <td><code>DS1000</code></td>
-        <td>
-            Set <em>Data Set Ready</em> timeout to <code><var>n</var></code> milliseconds.
-            If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
-        </td>
-    </tr><tr>
-        <td><code>CD[<var>n</var>]</code></td>
-        <td><code>CD0</code></td>
-        <td>
-            Set <em>Carrier Detect</em> timeout to <code><var>n</var></code> milliseconds.
-            If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
-        </td>
-    </tr><tr>
-        <td><code>LF</code></td>
-        <td>no</td>
-        <td>Send a line feed after each carriage return.</td>
-    </tr><tr>
-        <td><code>PE</code></td>
-    <td>no</td>
-        <td>Enable parity checking (This setting is ignored by PC-BASIC).</td>
-    </tr>
-</table>
-</div>
+        </div>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Event trapping for your chosen event first needs to be enabled using one of the
+                statements: <code><a href="#COM">COM(<var>n</var>) ON</a></code>,
+                <code><a href="#KEY-event">KEY(<var>n</var>) ON</a></code>,
+                <code><a href="#STRIG-events">STRIG(<var>n</var>) ON</a></code>,
+                <code><a href="#PEN-statement">PEN ON</a></code>,
+                <code><a href="#PLAY-event">PLAY ON</a></code>,
+                <code><a href="#TIMER-event">TIMER ON</a></code>
+            </li>
+            <li>
+                Events are only trapped when a program is running.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>n</var></code> or <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>n</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>n</var></code> or <code><var>x</var></code> is outside the specified range: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h4>Notes</h4>
-<ul><li>
-   For <code>INPUT</code>, <code>OUTPUT</code> and <code>APPEND</code> modes, <code>LEN</code> may be specified but is ignored.
-</li><li>
-   If I/O is attempted contravening the <code>FOR</code> mode specified, the <code>PRINT</code> or <code>INPUT</code>
-    statement will raise <samp>Bad file mode</samp>.
-</li><li>
-   If <code>RANDOM</code> I/O is attempted contravening the <code>ACCESS</code> mode specified, the
-    <code>PUT</code> or <code>GET</code> statement will raise <samp>Path/File access error</samp>.
-</li><li>
-   The <code>#</code> is optional and has no effect.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>file_name</var></code> is empty or a non-existent device: <samp>Bad file number</samp>.
-</li><li>
-<code>FOR APPEND ACCESS WRITE</code> is specified: <samp>Path/File access error</samp>.
-</li><li>
-<code>FOR</code> and <code>ACCESS</code> mismatch in other ways: <samp>Syntax error</samp>.
-</li><li>
-The <code>COM:</code> <code><var>file_name</var></code> parameters do not follow the specification:
-    <samp>Bad file name</samp>.
-</li><li>
-    A file is already open for <code>OUTPUT</code> or <code>APPEND</code>: <samp>File already open</samp>.
-    This is only raised for <code>COMn:</code>, <code>CASn:</code> and disk devices.
-</li><li>
- <code><var>rec_len</var></code> or <code><var>file_num</var></code> have string values: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>file_name</var></code> or <code><var>mode_char</var></code> have number values: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_num</var></code> is not in <code>[1&#8212;3]</code>: <samp>Bad file number</samp>.
-</li><li>
-<code><var>rec_len</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>rec_len</var></code> is not in <code>[1&#8212;128]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>mode_char</var></code> is empty or the first character is not in
-    <code>["I", "O", "A", "R"]</code>: <samp>Bad file mode</samp>.
-</li></ul>
+    <section>
+        <h3 id="ON-ERROR"><code>ON ERROR</code> statement</h3>
+        <code class="block">
+            <b>ON ERROR GOTO</b> {<var>line_number</var>|<b>0</b>}
+        </code>
+        <p>
+            Turns error trapping on or off. When <code><var>line_number</var></code> is set, any error causes the error handling
+            routine starting at that line number to be called; no message is printed and program execution is not stopped. The
+            error handling routine is ended by a <code><a href="#RESUME">RESUME</a></code> statement.
+            While in an error handling routine, events are paused and error trapping is
+            disabled. After the <code>RESUME</code> statement, any triggered events are picked up in the following
+            order: <code>KEY</code>, <code>TIMER</code>, <code>PLAY</code> - the order of the others is unknown.
+            Unlike event trapping, error trapping remains active when no program is running.
+            <code>ON ERROR GOTO 0</code> turns off error trapping.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>line_number</var></code> is an existing line number in the program.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                It is not possible to start the error handler at line number <code>0</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="OPTION-BASE"><code>OPTION BASE</code> statement</h3>
-<pre>OPTION BASE <var>n</var></pre>
-<p>Sets the starting index of all arrays to <code><var>n</var></code>.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>n</var></code> is a literal digit  <code>0</code> or <code>1</code>. Expressions are not allowed.
-</li></ul>
-<h4>Notes</h4>
-<ul>
-    <li>
-        If <code>OPTION BASE</code> has not been called,
-        the first array allocation defaults to starting index 0.
-    </li>
-</ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>n</var></code> is not a digit <code>0</code> or <code>1</code>: <samp>Syntax error</samp>.
-</li><li>
-<code>OPTION BASE 1</code> is called but an array has already been allocated before: <samp>Duplicate definition</samp>.
-</li><li>
-<code>OPTION BASE</code> is called more than once with different starting index:
-    <samp>Duplicate definition</samp>.
-</li></ul>
+    <section>
+        <h3 id="OPEN"><code>OPEN</code> statement</h3>
+        <code class="block">
+            <b>OPEN</b> <var>mode_char</var><b>,</b> [<b>#</b>] <var>file_num</var><b>,</b> <var>file_name</var> [<b>,</b> <var>rec_len</var>]
+            <br />
+            <b>OPEN</b> <var>file_name</var> [<b>FOR</b> {<b>INPUT</b>|<b>OUTPUT</b>|<b>APPEND</b>|<b>RANDOM</b>}]
+                       [<b>ACCESS</b> {<b>READ</b>|<b>WRITE</b>|<b>READ WRITE</b>}]
+                       [<b>SHARED</b>|<b>LOCK</b> {<b>READ</b>|<b>WRITE</b>|<b>READ WRITE</b>}]
+                       <b>AS</b> [<b>#</b>] <var>file_num</var> [<b>LEN =</b> <var>rec_len</var>]
+        </code>
+        <p>
+            Opens a data file on a device.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>file_name</var></code> is a string expression: the name of the file or device.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is a numeric expression in <code>[1&#8212;3]</code>.
+            </li>
+            <li>
+                <code><var>rec_len</var></code> is a numeric expression in <code>[1&#8212;128]</code>: the record length.
+            </li>
+            <li>
+                <code><var>mode_char</var></code> is a string expression of which the first character is
+                one of <code>["I", "O", "A", "R"]</code>.
+            </li>
+        </ul>
+        <h4>Access modes</h4>
+        <p>
+            The <code>FOR</code> modes or <code><var>mode_char</var></code> are as follows:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th><code><var>mode_char</var></code></th>
+                    <th><code>FOR</code></th>
+                    <th>Effect</th>
+                </tr>
+                <tr>
+                    <td><code>"I"</code></td>
+                    <td><code>INPUT</code></td>
+                    <td>
+                        Opens a text file for reading and positions the file pointer at the
+                        start.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>"O"</code></td>
+                    <td><code>OUTPUT</code></td>
+                <td>
+                    Truncates a text file at the start and opens it for writing. Any
+                    data previously present in the file will be deleted.
+                </td>
+                </tr>
+                <tr>
+                    <td><code>"A"</code></td>
+                    <td><code>APPEND</code></td>
+                    <td>Opens a text file for writing at the end of any existing data.</td>
+                </tr>
+                <tr>
+                    <td><code>"R"</code></td>
+                    <td><code>RANDOM</code></td>
+                    <td>
+                        Opens a file for random access; the file is divided in records of
+                        length <code><var>rec_len</var></code>. If <code>LEN</code> is not specified, the record length defaults to
+                        128. The file contents can be accessed using <code><a href="#GET-files">GET</a></code>
+                        and <code><a href="#PUT-files">PUT</a></code> of the <code><a href="#FIELD">FIELD</a></code>
+                        buffer; the <code>FIELD</code> buffer can be accessed through <code>FIELD</code> variables or through
+                        <code><a href="#PRINT">PRINT#</a></code> and <code><a href="#INPUT-file">INPUT#</a></code> statements.
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>
+            If no <code>FOR</code> mode or <code><var>mode_char</var></code> is specified, the file is opened for <code>RANDOM</code>.
+        </p>
+        <p>
+            If both <code>FOR</code> and <code>ACCESS</code> are specified, any <code>ACCESS</code> mode is allowed for
+            <code>RANDOM</code> but for the other modes the access must match as follows:
+        </p>
+        <div class="scrollable">
+        <table>
+            <tr>
+                <th><code>FOR</code></th>
+                <th>default <code>ACCESS</code></th>
+                <th>allowed <code>ACCESS</code></th>
+            </tr>
+            <tr>
+                <td><code>INPUT</code></td>
+                <td><code>READ</code></td>
+                <td><code>READ</code></td>
+            </tr>
+            <tr>
+                <td><code>OUTPUT</code></td>
+                <td><code>WRITE</code></td>
+                <td><code>WRITE</code></td>
+            </tr>
+            <tr>
+                <td><code>APPEND</code></td>
+                <td><code>READ WRITE</code></td>
+                <td><code>READ WRITE</code></td>
+            </tr>
+            <tr>
+                <td><code>RANDOM</code></td>
+                <td><code>READ WRITE</code></td>
+                <td>all</td>
+            </tr>
+        </table>
+        </div>
+        <h4>Sharing and locks</h4>
+        <p>
+            If neither <code>SHARED</code> nor <code>LOCK</code> are specified. Inside this process, a file may be opened multiple
+            times for <code>INPUT</code> or <code>RANDOM</code> but only once for <code>OUTPUT</code> or <code>APPEND</code>, as long as it
+            is again opened in default mode. It may not be opened in <code>SHARED</code> or any <code>LOCK</code>
+            modes.
+        </p>
+        <p>
+            If <code>SHARED</code>, <code>LOCK READ</code>, <code>LOCK WRITE</code> or <code>LOCK READ WRITE</code> is specified, whether
+            two <code>OPEN</code> statements may access the same file depends on one's <code>LOCK</code> status
+            and the other's <code>ACCESS</code> status and vice versa.
+            Assuming the following:
+            <code class="block">
+                OPEN "file" ACCESS <var>acc_1</var> <var>lock_1</var> AS 1
+                <br />
+                OPEN "file" ACCESS <var>acc_2</var> <var>lock_2</var> AS 2
+            </code>
+            the following combinations are allowed:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th rowspan="2" colspan="2">Access allowed</th>
+                    <th colspan="3"><code>acc_2</code></th>
+                </tr><tr>
+                    <th><code>READ</code></th>
+                    <th><code>WRITE</code></th>
+                    <th><code>READ WRITE</code></th>
+                </tr><tr>
+                    <th rowspan="4"><code>lock_1</code></th>
+                    <th><code>SHARED</code></th>
+                    <td>yes</td>
+                    <td>yes</td>
+                    <td>yes</td>
+                </tr><tr>
+                    <th><code>LOCK READ</code></th>
+                    <td>no</td>
+                    <td>yes</td>
+                    <td>no</td>
+                </tr><tr>
+                    <th><code>LOCK WRITE</code></th>
+                    <td>yes</td>
+                    <td>no</td>
+                    <td>no</td>
+                </tr><tr>
+                    <th><code>LOCK READ WRITE</code></th>
+                    <td>no</td>
+                    <td>no</td>
+                    <td>no</td>
+                </tr>
+            </table>
+        </div>
+        <p>
+            and vice versa for <code><var>acc_1</var></code> and <code><var>lock_2</var></code>.
+        </p>
+        <p>
+            In GW-BASIC under MS-DOS with <code>SHARE.EXE</code> active, these locks should be functioning
+            across a network as well as inside a single BASIC process. Without <code>SHARED</code> and <code>LOCK</code>, the file is locked exclusively for use by the
+            GW-BASIC process. By contrast, in PC-BASIC,
+            the locks are only implemented internally. Whether other processes may access
+            the file will depend on the host OS.
+        </p>
+        <h4>Serial port (<code>COM1:</code>) access</h4>
+        <p>
+            If a <code>COM</code> port is opened for <code>RANDOM</code>, access is
+            byte-for-byte rather than through <code>FIELD</code> records; <code>PRINT#</code> and <code>INPUT#</code> access
+            the port directly. <code><var>rec_len</var></code> sets the number of bytes read by the <code>GET</code> and
+            <code>PUT</code> statements.
+        </p>
+        <p>
+            When opening a <code>COM</code> port, additional expressions may be included following the
+            colon of the device name. These specify parameters for the serial
+            connection. This string has the form
+            <code class="block"><b>"COMn:</b>[<var>speed</var>[<b>,</b><var>parity</var>[<b>,</b><var>data</var>[<b>,</b><var>stop</var>[<b>,RS</b>][<b>,CS</b>[<var>n</var>]][<b>,DS</b>[<var>n</var>]][<b>,CD</b>[<var>n</var>]][<b>,LF</b>][<b>,PE</b>]]]]]<b>"</b></code>
+            The first four parameters must be given in that order but the named parameters
+            can be given in any order.
+            The meaning of the parameters is:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Default</th>
+                    <th>Meaning</th>
+                </tr>
+                <tr>
+                    <td><code><var>speed</var></code></td>
+                    <td><code>300</code></td>
+                    <td>
+                        Baud (bps) rate for the connection. <code><var>speed</var></code> is one of
+                        <code>[75, 110, 150, 300, 600, 1200, 1800, 2400, 4800, 9600]</code>.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code><var>parity</var></code></td>
+                    <td><code>E</code></td>
+                    <td>
+                        Parity bit convention. <code><var>parity</var></code> is one of <code>[S, M, O, E, N]</code>.
+                        <table>
+                            <tr>
+                                <th><code><var>parity</var></code></th>
+                                <th>Meaning</th>
+                                <th>Effect</th>
+                            </tr>
+                            <tr>
+                                <td><code>S</code></td>
+                                <td>SPACE</td>
+                                <td>Parity bit always set to 0.</td>
+                            </tr>
+                            <tr>
+                                <td><code>M</code></td>
+                                <td>MARK</td>
+                                <td>Parity bit always set to 1.</td>
+                            </tr>
+                            <tr>
+                                <td><code>O</code></td>
+                                <td>ODD</td>
+                                <td>Parity bit set so that character parity is odd.</td>
+                            </tr>
+                            <tr>
+                                <td><code>E</code></td>
+                                <td>EVEN</td>
+                                <td>Parity bit set so that character parity is even.</td>
+                            </tr>
+                            <tr>
+                                <td><code>N</code></td>
+                                <td>NONE</td>
+                                <td>No parity bit transmitted or received.</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code><var>data</var></code></td>
+                    <td><code>7</code></td>
+                    <td>
+                        Data bits per byte. <code><var>data</var></code> must be one of <code>[4, 5, 6, 7, 8]</code>.
+                        A byte consists of the data bits plus parity bit, if
+                        any. Byte size must be in the range <code>[5&#8212;8]</code>:
+                        if <code><var>data</var></code> is <code>4</code>,
+                        <code><var>parity</var></code> must not be <code>N</code>;
+                        if <code><var>data</var></code> is <code>8</code>,
+                        <code><var>parity</var></code> must be <code>N</code>.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code><var>stop</var></code></td>
+                    <td><code>1</code></td>
+                    <td>
+                        The number of stop bits. <code><var>stop</var></code> must be <code>1</code> or <code>2</code>.
+                        Default is <code>2</code> if <code><var>speed</var></code> is <code>75</code> or <code>110</code>; <code>1</code> otherwise.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>RS</code></td>
+                    <td>no</td>
+                    <td>Suppress <em>Request To Send</em>.</td>
+                </tr>
+                <tr>
+                    <td><code>CS[<var>n</var>]</code></td>
+                    <td><code>CS1000</code></td>
+                    <td>
+                        Set <em>Clear To Send</em> timeout to <code><var>n</var></code> milliseconds.
+                        If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
+                        Default is <code>CS0</code> if <code>RS</code> is set; <code>CS1000</code> otherwise.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>DS[<var>n</var>]</code></td>
+                    <td><code>DS1000</code></td>
+                    <td>
+                        Set <em>Data Set Ready</em> timeout to <code><var>n</var></code> milliseconds.
+                        If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>CD[<var>n</var>]</code></td>
+                    <td><code>CD0</code></td>
+                    <td>
+                        Set <em>Carrier Detect</em> timeout to <code><var>n</var></code> milliseconds.
+                        If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>LF</code></td>
+                    <td>no</td>
+                    <td>Send a line feed after each carriage return.</td>
+                </tr>
+                <tr>
+                    <td><code>PE</code></td>
+                    <td>no</td>
+                    <td>Enable parity checking (This setting is ignored by PC-BASIC).</td>
+                </tr>
+            </table>
+        </div>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                For <code>INPUT</code>, <code>OUTPUT</code> and <code>APPEND</code> modes, <code>LEN</code> may be specified but is ignored.
+            </li>
+            <li>
+                If I/O is attempted contravening the <code>FOR</code> mode specified,
+                the <code><a href="#PRINT">PRINT</a></code> or
+                <code><a href="#INPUT-file">INPUT</a></code>
+                statement will raise <samp>Bad file mode</samp>.
+            </li>
+            <li>
+                If <code>RANDOM</code> I/O is attempted contravening the <code>ACCESS</code> mode specified, the
+                <code>PUT</code> or <code>GET</code> statement will raise <samp>Path/File access error</samp>.
+            </li>
+            <li>
+                The <code>#</code> is optional and has no effect.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>file_name</var></code> is empty or a non-existent device: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code>FOR APPEND ACCESS WRITE</code> is specified: <samp>Path/File access error</samp>.
+            </li>
+            <li>
+                <code>FOR</code> and <code>ACCESS</code> mismatch in other ways: <samp>Syntax error</samp>.
+            </li>
+            <li>
+                The <code>COM:</code> <code><var>file_name</var></code> parameters do not follow the specification:
+                <samp>Bad file name</samp>.
+            </li>
+            <li>
+                A file is already open for <code>OUTPUT</code> or <code>APPEND</code>: <samp>File already open</samp>.
+                This is only raised for <code>COMn:</code>, <code>CASn:</code> and disk devices.
+            </li>
+            <li>
+                <code><var>rec_len</var></code> or <code><var>file_num</var></code> have string values: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_name</var></code> or <code><var>mode_char</var></code> have number values: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[1&#8212;3]</code>: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code><var>rec_len</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+            <code>
+                <var>rec_len</var></code> is not in <code>[1&#8212;128]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>mode_char</var></code> is empty or the first character is not in
+                <code>["I", "O", "A", "R"]</code>: <samp>Bad file mode</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="OPTION-BASE"><code>OPTION BASE</code> statement</h3>
+        <code class="block">
+            <b>OPTION BASE</b> <var>n</var>
+        </code>
+        <p>
+            Sets the starting index of all arrays to <code><var>n</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>n</var></code> is a literal digit  <code>0</code> or <code>1</code>. Expressions are not allowed.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code>OPTION BASE</code> has not been called,
+                the first array allocation defaults to starting index 0.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>n</var></code> is not a digit <code>0</code> or <code>1</code>: <samp>Syntax error</samp>.
+            </li>
+            <li>
+                <code>OPTION BASE 1</code> is called but an array has already been allocated before: <samp>Duplicate definition</samp>.
+            </li>
+            <li>
+                <code>OPTION BASE</code> is called more than once with different starting index:
+                <samp>Duplicate definition</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="OUT"><code>OUT</code> statement</h3>
-<pre>OUT <var>port</var>, <var>value</var></pre>
-<p>
-Sends a byte to an emulated machine port.</p>
-<p>The following machine ports are emulated in PC-BASIC:</p>
-<div class="scrollable">
-<table><tr>
-<th><code><var>port</var></code></th>
-<th>Effect</th>
-</tr><tr>
-<td><code>&amp;h201</code></td>
-<td>resets the game port (joystick port)</td>
-</tr><tr>
-<td><code>&amp;h3C5</code></td>
-<td>sets the write bitmask for <code>SCREEN 7</code>, <code>8</code>, <code>9</code> colour planes.
-            <code><var>bitmask</var> = 2 ^ <var>value</var></code>.</td>
-</tr><tr>
-<td><code>&amp;h3CF</code></td>
-<td>sets the read colour plane to <code><var>value</var></code>.</td>
-</tr><tr>
-<td><code>&amp;h3D8</code></td>
-<td>
-    if <code><var>value</var> = &amp;h1A</code>, enable composite colorburst.<br/>
-    if <code><var>value</var> = &amp;h1E</code>, disable composite colorburst.<br/>
-    Requires <code><a href="#--video">--video</a>={cga, tandy, pcjr}</code>.
-</td></tr></table>
-</div>
-<h4>Notes</h4>
-<ul><li>
-   Only a limited number of machine ports are emulated.
-</li><li>
-   In GW-BASIC under MS-DOS, the sequence needed to set the colour plane mask is:
-<pre>OUT &amp;h3C4, 2
-OUT &amp;h3C5, 2 ^ <var>plane</var></pre>
-    The sequence needed to set the colour plane is:
-<pre>OUT &amp;h3CE, 4
-OUT &amp;h3CF, <var>plane</var></pre>
-The initial <code>OUT</code> statements currently have no effect in PC-BASIC.
-</li></ul>
-
-<h4>Parameters</h4>
-<ul><li>
-<code><var>port</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>.
-</li><li>
-<code><var>value</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-</li></ul>
-
-<h4>Errors</h4>
-<ul><li>
-<code><var>port</var></code> or <code><var>value</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>value</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>value</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="OUT"><code>OUT</code> statement</h3>
+        <code class="block">
+            <b>OUT</b> <var>port</var><b>,</b> <var>value</var>
+        </code>
+        <p>
+            Sends a byte to an emulated machine port.
+        </p>
+        <p>
+            The following machine ports are emulated in PC-BASIC:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th><code><var>port</var></code></th>
+                    <th>Effect</th>
+                </tr>
+                <tr>
+                    <td><code>&amp;h201</code></td>
+                    <td>resets the game port (joystick port)</td>
+                </tr>
+                <tr>
+                    <td><code>&amp;h3C5</code></td>
+                    <td>sets the write bitmask for <code>SCREEN 7</code>, <code>8</code>, <code>9</code> colour planes.
+                                <code><var>bitmask</var> = 2 ^ <var>value</var></code>.</td>
+                </tr>
+                <tr>
+                    <td><code>&amp;h3CF</code></td>
+                    <td>sets the read colour plane to <code><var>value</var></code>.</td>
+                </tr>
+                <tr>
+                    <td><code>&amp;h3D8</code></td>
+                    <td>
+                        if <code><var>value</var> = &amp;h1A</code>, enable composite colorburst.<br/>
+                        if <code><var>value</var> = &amp;h1E</code>, disable composite colorburst.<br/>
+                        Requires <code><a href="#--video">--video</a>={cga, tandy, pcjr}</code>.
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Only a limited number of machine ports are emulated.
+            </li>
+            <li>
+                In GW-BASIC under MS-DOS, the sequence needed to set the colour plane mask is:
+                <code class="block">
+                    OUT &amp;h3C4, 2<br />
+                    OUT &amp;h3C5, 2 ^ <var>plane</var>
+                </code>
+                The sequence needed to set the colour plane is:
+                <code class="block">
+                    OUT &amp;h3CE, 4<br />
+                    OUT &amp;h3CF, <var>plane</var>
+                </code>
+                The initial <code>OUT</code> statements currently have no effect in PC-BASIC.
+            </li>
+        </ul>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>port</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>.
+            </li>
+            <li>
+                <code><var>value</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>port</var></code> or <code><var>value</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>value</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>value</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
     <section>
         <h3 id="PAINT"><code>PAINT</code> statement</h3>
