@@ -648,7 +648,7 @@
     <section>
         <h3 id="AUTO"><code>AUTO</code> statement</h3>
         <code class="block">
-            <b>AUTO</b> [ { <var>line_number</var> | <b>.</b> } ] [<b>,</b> [<var>increment</var>]]
+            <b>AUTO</b> [<var>line_number</var>|<b>.</b>] [<b>,</b> [<var>increment</var>]]
         </code>
         <p>
             Start automatic line numbering. Line numbers
@@ -682,6 +682,9 @@
                 When automatic line numbering is enabled and <kbd>Enter</kbd> is pressed on an empty line with number larger than
                <code>65519</code>: <samp>Undefined line number</samp>.
             </li>
+            <li>
+                <code><var>increment</var></code> is <code>0</code>:
+                <samp>Illegal function call</samp>.
         </ul>
     </section>
 
@@ -704,7 +707,7 @@
     <section>
         <h3 id="BEEP-switch"><code>BEEP</code> statement (switch)</h3>
         <code class="block">
-            <b>BEEP</b> { <b>ON</b> | <b>OFF</b> }
+            <b>BEEP</b> {<b>ON</b>|<b>OFF</b>}
         </code>
         <p>
             This statement has no effect.
@@ -725,7 +728,7 @@
     <section>
         <h3 id="BLOAD"><code>BLOAD</code> statement</h3>
         <code class="block">
-            <b>BLOAD</b> <var>filename</var> [<b>,</b> <var>offset</var> ]
+            <b>BLOAD</b> <var>filename</var> [<b>,</b> <var>offset</var>]
         </code>
         <p>
             Loads a memory image file into memory.
@@ -801,7 +804,7 @@
     <section>
     <h3 id="CALL"><code>CALL</code> statement</h3>
     <code class="block">
-        <b>CALL</b> <var>address_var</var> [ <b>(</b> <var>p0</var> [<b>,</b> <var>p1</var> [<b>,</b> ... ] <b>)</b> ]
+        <b>CALL</b> <var>address_var</var> [<b>(</b> <var>p0</var> [<b>,</b> <var>p1</var>] ... <b>)</b>]
     </code>
     <p>
         Does nothing.
@@ -838,7 +841,7 @@
     <section>
         <h3 id="CALLS"><code>CALLS</code> statement</h3>
         <code class="block">
-            <b>CALLS</b> <var>address_var</var> [ <b>(</b> <var>p0</var> [<b>,</b> <var>p1</var> [<b>,</b> ... ] <b>)</b> ]
+            <b>CALLS</b> <var>address_var</var> [<b>(</b> <var>p0</var> [<b>,</b> <var>p1</var>] ... <b>)</b>]
         </code>
         <p>Does nothing.</p>
         <h4>Notes</h4>
@@ -889,7 +892,7 @@
     <section>
     <h3 id="CHAIN"><code>CHAIN</code> statement</h3>
         <code class="block">
-            <b>CHAIN</b> [<b>MERGE</b>] <var>program</var> [<b>,</b> [<var>line_number_expr</var>] [<b>, ALL</b>] [<b>, DELETE</b> <var>range</var> [<b>,</b> <var>ign</var> ] ] ]
+            <b>CHAIN</b> [<b>MERGE</b>] <var>program</var> [<b>,</b> [<var>line_number_expr</var>] [<b>, ALL</b>] [<b>, DELETE</b> <var>range</var> [<b>,</b> <var>ign</var>]]]
         </code>
         <p>
             Loads <code><var>program</var></code> into memory and runs it, optionally transferring variables.
@@ -1110,7 +1113,7 @@
     <section>
         <h3 id="CLEAR"><code>CLEAR</code> statement</h3>
         <code class="block">
-            <b>CLEAR</b> [<var>expr</var>] [<b>,</b> [<var>mem_limit</var>] [<b>,</b> [<var>stack_size</var>] [<b>,</b> <var>video_memory</var> ]]]
+            <b>CLEAR</b> [<var>expr</var>] [<b>,</b> [<var>mem_limit</var>] [<b>,</b> [<var>stack_size</var>] [<b>,</b> <var>video_memory</var>]]]
         </code>
         <p>
             Clears all variables, arrays,<code><a href="#DEF-FN">DEF FN</a></code> user functions, <code><a href="#DEFINT">DEF<var>type</var></a></code> type definitions,
@@ -4247,7 +4250,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="NEXT"><code>NEXT</code> statement</h3>
         <code class="block">
-            <b>NEXT</b> [<var>var_0</var> [<b>,</b> <var>var_1</var>] ... ]
+            <b>NEXT</b> [<var>var_0</var> [<b>,</b> <var>var_1</var>] ...]
         </code>
         <p>
             Iterates a <code>FOR&#8212;NEXT</code> loop: increments the loop variable and
@@ -5056,7 +5059,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="PAINT"><code>PAINT</code> statement</h3>
         <code class="block">
-            <b>PAINT</b> [<b>STEP</b>] <b>(</b><var>x</var><b>,</b> <var>y</var><b>)</b> [<b>,</b> <var>attrib</var> [<b>,</b> <var>border</var> [<b>,</b> <var>background</var> ] ] ]
+            <b>PAINT</b> [<b>STEP</b>] <b>(</b><var>x</var><b>,</b> <var>y</var><b>)</b> [<b>,</b> <var>attrib</var> [<b>,</b> <var>border</var> [<b>,</b> <var>background</var>]]]
         </code>
         <p>
             Flood-fills the screen with a colour or pattern, starting from the given seed point.
@@ -5203,7 +5206,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="PALETTE"><code>PALETTE</code> statement</h3>
         <code class="block">
-            <b>PALETTE</b> [ <var>attrib</var><b>,</b> <var>colour</var> ]
+            <b>PALETTE</b> [<var>attrib</var><b>,</b> <var>colour</var>]
         </code>
         <p>
             Assigns a colour to an attribute. All pixels with that attribute will change
@@ -5239,7 +5242,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="PALETTE-USING"><code>PALETTE USING</code> statement</h3>
         <code class="block">
-            <b>PALETTE USING</b> <var>int_array_name</var> { <b>(</b> | <b>[</b> } <var>start_index</var> { <b>)</b> | <b>]</b> }
+            <b>PALETTE USING</b> <var>int_array_name</var> {<b>(</b>|<b>[</b>} <var>start_index</var> {<b>)</b>|<b>]</b>}
         </code>
         <p>
             Assigns new colours to all attributes.
@@ -5354,7 +5357,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
 
     <section>
         <h3 id="PEN-statement"><code>PEN</code> statement</h3>
-        <code class="block"><b>PEN</b> { <b>ON</b> | <b>OFF</b> | <b>STOP</b> }</code>
+        <code class="block"><b>PEN</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}</code>
         <p>
             Controls event trapping and read access of the light pen (emulated through the mouse in PC-BASIC).
             <code>PEN ON</code> switches pen reading and trapping on.  <code>PEN OFF</code> switches it off.
@@ -5449,7 +5452,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="PLAY-event"><code>PLAY</code> statement (event-trapping control)</h3>
         <code class="block">
-            <b>PLAY</b> { <b>ON</b> | <b>OFF</b> | <b>STOP</b> }
+            <b>PLAY</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
         <ul>
             <li>
@@ -5990,8 +5993,8 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="PRINT"><code>PRINT</code> and <code>LPRINT</code> statements</h3>
         <code class="block">
-            { <b>LPRINT</b> | {<b>PRINT</b>|<b>?</b>} [<b>#</b> <var>file_num</var><b>,</b>] } [<var>expr_0</var> | <b>;</b> | <b>,</b> | <b>SPC(</b><var>n</var><b>)</b> | <b>TAB(</b><var>n</var><b>)</b> ] ...
-            [ <b>USING</b> <var>format</var><b>;</b> <var>uexpr_0</var> [ {<b>;</b>|<b>,</b>} <var>uexpr_1</var> ] ... [<b>;</b>|<b>,</b>] ]
+            {<b>LPRINT</b>|{<b>PRINT</b>|<b>?</b>} [<b>#</b> <var>file_num</var><b>,</b>]} [<var>expr_0</var>|<b>;</b>|<b>,</b>|<b>SPC(</b><var>n</var><b>)</b>|<b>TAB(</b><var>n</var><b>)</b>] ...
+            [<b>USING</b> <var>format</var><b>;</b> <var>uexpr_0</var> [{<b>;</b>|<b>,</b>} <var>uexpr_1</var>] ... [<b>;</b>|<b>,</b>]]
         </code>
         <p>
             Writes expressions to the screen, printer, file or device. If <code>LPRINT</code> is used,
@@ -6324,7 +6327,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="PUT-graphics"><code>PUT</code> statement (graphics)</h3>
         <code class="block">
-            <b>PUT (</b><var>x0</var><b>,</b> <var>y0</var><b>),</b> <var>array_name</var> [<b>,</b> { <b>PSET</b> | <b>PRESET</b> | <b>AND</b> | <b>OR</b> | <b>XOR</b> } ]
+            <b>PUT (</b><var>x0</var><b>,</b> <var>y0</var><b>),</b> <var>array_name</var> [<b>,</b> {<b>PSET</b>|<b>PRESET</b>|<b>AND</b>|<b>OR</b>|<b>XOR</b>}]
         </code>
         <p>
             Displays an array to a rectangular area of the graphics screen.
@@ -6431,7 +6434,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="READ"><code>READ</code> statement</h3>
         <code class="block">
-            <b>READ</b> <var>var_0</var> [<b>,</b> <var>var_1</var> [<b>,</b> ... ] ]
+            <b>READ</b> <var>var_0</var> [<b>,</b> <var>var_1</var>] ...
         </code>
         <p>
             Assigns data from a <code><a href="#DATA">DATA</a></code> statement to variables. Reading starts at the current
@@ -6461,7 +6464,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="REM"><code>REM</code> statement</h3>
         <code class="block">
-            { <b>REM</b> | <b>'</b> } [<var>anything</var>]
+            {<b>REM</b>|<b>'</b>} [<var>anything</var>]
         </code>
         <p>
             Ignores everything until the end of the line. The <code>REM</code> statement is intended for
@@ -6474,7 +6477,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="RENUM"><code>RENUM</code> statement</h3>
         <code class="block">
-            <b>RENUM</b> [ <var>new</var> | <b>.</b> ] [<b>,</b> [ <var>old</var> | <b>.</b> ] [<b>,</b> <var>increment</var> ] ]
+            <b>RENUM</b> [<var>new</var>|<b>.</b>] [<b>,</b> [<var>old</var>|<b>.</b>] [<b>,</b> <var>increment</var>]]
         </code>
         <p>
             Replaces the line numbers in the program by a systematic enumeration starting
@@ -6564,7 +6567,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="RESUME"><code>RESUME</code> statement</h3>
         <code class="block">
-            <b>RESUME</b> [ <b>0</b> | <b>NEXT</b> | <var>line</var> ]
+            <b>RESUME</b> [<b>0</b>|<b>NEXT</b>|<var>line</var>]
         </code>
         <p>
             Continues normal execution after an error handling routine.
@@ -6704,7 +6707,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="RUN"><code>RUN</code> statement</h3>
         <code class="block">
-            <b>RUN</b> [ <var>line</var> | <var>filename</var> ] [<b>,R</b>]
+            <b>RUN</b> [<var>line</var>|<var>filename</var>] [<b>,R</b>]
         </code>
         <p>
             Executes a program.
@@ -6743,7 +6746,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="SAVE"><code>SAVE</code> statement</h3>
         <code class="block">
-            <b>SAVE</b> <var>filename</var> [<b>,</b> { <b>A</b> | <b>P</b> }]
+            <b>SAVE</b> <var>filename</var> [<b>,</b> {<b>A</b>|<b>P</b>}]
         </code>
         <p>
             Stores the program in file <code><var>filename</var></code>. If <code><var>filename</var></code> is not in 8.3 uppercase
@@ -6822,7 +6825,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="SCREEN-statement"><code>SCREEN</code> statement</h3>
         <code class="block">
-            <b>SCREEN</b> [<var>mode</var>] [<b>,</b> [<var>colorburst</var>] [<b>,</b> [<var>apage</var>] [<b>,</b> [<var>vpage</var>] [<b>,</b> <var>erase</var> ]]]]
+            <b>SCREEN</b> [<var>mode</var>] [<b>,</b> [<var>colorburst</var>] [<b>,</b> [<var>apage</var>] [<b>,</b> [<var>vpage</var>] [<b>,</b> <var>erase</var>]]]]
         </code>
         <p>
             Change the video mode, composite colorburst, active page and visible page. Video modes are described in the <a href="#videomodes">Video Modes</a> section.
@@ -6927,7 +6930,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
         </div>
         <h4>Notes</h4>
         <ul><li>
-           At least one parameter must be specified.
+            At least one parameter must be specified.
         </li><li>
             Composite colour artifacts are emulated only crudely in PC-BASIC, and not at
             all in <code>SCREEN 1</code>.
@@ -7058,7 +7061,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="SOUND"><code>SOUND</code> statement</h3>
         <code class="block">
-            <b>SOUND</b> <var>frequency</var><b>,</b> <var>duration</var> [<b>,</b> <var>volume</var> [<b>,</b> <var>voice</var> ] ]
+            <b>SOUND</b> <var>frequency</var><b>,</b> <var>duration</var> [<b>,</b> <var>volume</var> [<b>,</b> <var>voice</var>]]
         </code>
         <p>
             Produces a sound at <code><var>frequency</var></code> Hz for <code><var>duration</var>/18.2</code> seconds.
@@ -7150,7 +7153,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="SOUND-switch"><code>SOUND</code> statement (switch)</h3>
         <code class="block">
-            <b>SOUND</b> { <b>ON</b> | <b>OFF</b> }
+            <b>SOUND</b> {<b>ON</b>|<b>OFF</b>}
         </code>
         <p>
             Toggles the availability of advanced sound capabilities on PCjr and Tandy. This includes 3-voice
@@ -7325,7 +7328,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="STRIG-switch"><code>STRIG</code> statement</h3>
         <code class="block">
-            <b>STRIG</b> { <b>ON</b> | <b>OFF</b> }
+            <b>STRIG</b> {<b>ON</b>|<b>OFF</b>}
         </code>
         <p>
             Has no effect.
@@ -7335,7 +7338,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="STRIG-events"><code>STRIG</code> statement (events)</h3>
         <code class="block">
-            <b>STRIG(</b><var>button</var><b>)</b> { <b>ON</b> | <b>OFF</b> | <b>STOP</b> }
+            <b>STRIG(</b><var>button</var><b>)</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
         <p>
             Switches event trapping of the joystick trigger <code><var>button</var></code>
@@ -7674,7 +7677,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="TIMER-event"><code>TIMER</code> statement</h3>
         <code class="block">
-            <b>TIMER</b> { <b>ON</b> | <b>OFF</b> | <b>STOP</b> }
+            <b>TIMER</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
         <ul>
             <li>
@@ -7722,7 +7725,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="TRON"><code>TRON</code> and <code>TROFF</code> statements</h3>
         <code class="block">
-            { <b>TRON</b> | <b>TROFF</b> }
+            {<b>TRON</b>|<b>TROFF</b>}
         </code>
         <p>
             Turns line number tracing on or off. If line number tracing is on, BASIC prints
@@ -7740,9 +7743,9 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="UNLOCK"><code>UNLOCK</code> statement</h3>
         <code class="block">
-            <b>UNLOCK</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_0</var> ]
+            <b>UNLOCK</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_0</var>]
             <br/>
-            <b>UNLOCK</b> [<b>#</b>] <var>file_number</var><b>,</b> [ <var>record_0</var> ] <b>TO</b> <var>record_1</var>
+            <b>UNLOCK</b> [<b>#</b>] <var>file_number</var><b>,</b> [<var>record_0</var>] <b>TO</b> <var>record_1</var>
         </code>
         <p>
             Unlocks a file or part of it that has previously been locked with <code>LOCK</code>.
@@ -7934,7 +7937,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="VIEW"><code>VIEW</code> statement</h3>
         <code class="block">
-            <b>VIEW</b> [ [ <b>SCREEN</b> ] <b>(</b><var>x0</var><b>,</b> <var>y0</var><b>)-(</b><var>x1</var><b>,</b> <var>y1</var><b>)</b> [<b>,</b> [ <var>fill</var> ] [<b>,</b> <var>border</var> ] ] ]
+            <b>VIEW</b> [[<b>SCREEN</b>] <b>(</b><var>x0</var><b>,</b> <var>y0</var><b>)-(</b><var>x1</var><b>,</b> <var>y1</var><b>)</b> [<b>,</b> [<var>fill</var>] [<b>,</b> <var>border</var>]]]
         </code>
         <p>
             Defines a graphics viewport. Graphics drawn outside the viewport will
@@ -8096,14 +8099,10 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="WIDTH"><code>WIDTH</code> statement (console)</h3>
         <code class="block">
-            <b>WIDTH</b> { <b>20</b> | <b>40</b> | <b>80</b> | <b>(</b><var>num_columns</var><b>)</b> } [<b>,</b> [ <var>num_rows</var>] [ <b>,</b> ] ]
+            <b>WIDTH</b> <var>num_columns</var> [<b>,</b> [<var>num_rows</var>] [<b>,</b>]]
         </code>
         <p>
             Sets the screen width to 20, 40 or 80 columns.
-        </p>
-        <p>
-            <code><var>num_columns</var></code> can only be an expression
-            if it is bracketed. Otherwise it must be a literal 20, 40 or 80. The trailing comma is optional and has no effect.
         </p>
         <h4>Notes</h4>
         <ul>
@@ -8126,7 +8125,8 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
         <h4>Parameters</h4>
         <ul>
             <li>
-                <code><var>num_columns</var></code> is a numeric expression.
+                <code><var>num_columns</var></code> is either a literal <code>20</code>, <code>40</code> or <code>80</code> or a numeric expression in brackets.
+                The trailing comma is optional and has no effect.
             </li>
             <li>
                 <code><var>num_rows</var></code> is optional and must equal 25. If
@@ -8158,7 +8158,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="WIDTH-files"><code>WIDTH</code> statement (devices and files)</h3>
         <code class="block">
-            <b>WIDTH</b> { <b>#</b><var>file_num</var><b>,</b> | <var>device_name</var><b>,</b> | <b>LPRINT</b> } <var>num_columns</var>
+            <b>WIDTH</b> {<b>#</b><var>file_num</var><b>,</b>|<var>device_name</var><b>,</b>|<b>LPRINT</b>} <var>num_columns</var>
         </code>
         <p>
             Sets the line width for a file or a device.
@@ -8222,7 +8222,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="WINDOW"><code>WINDOW</code> statement</h3>
         <code class="block">
-            <b>WINDOW</b> [ [ <b>SCREEN</b> ] <b>(</b><var>x0</var><b>,</b> <var>y0</var><b>)-(</b><var>x1</var><b>,</b> <var>y1</var><b>)</b> ]
+            <b>WINDOW</b> [[<b>SCREEN</b>] <b>(</b><var>x0</var><b>,</b> <var>y0</var><b>)-(</b><var>x1</var><b>,</b> <var>y1</var><b>)</b>]
         </code>
         <p>
             Define logical coordinates for the viewport.
@@ -8257,7 +8257,7 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
     <section>
         <h3 id="WRITE"><code>WRITE</code> statement</h3>
         <code class="block">
-            <b>WRITE</b> [ <b>#</b><var>file_num</var><b>,</b> ] <var>expr_0</var> [ { <b>,</b> | <b>;</b> } <var>expr_1</var> ... ]
+            <b>WRITE</b> [<b>#</b> <var>file_num</var><b>,</b>] <var>expr_0</var> [{<b>,</b>|<b>;</b>} <var>expr_1</var>] ...
         </code>
         <p>
             Writes values to a file or the screen in machine-readable form. Values are
