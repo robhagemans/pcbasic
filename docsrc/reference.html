@@ -3408,197 +3408,285 @@ at character 1.
 </li></ul>
 
 
-<h3 id="KEY-list"><code>KEY</code> statement (function-key macro list)</h3>
-<pre>KEY { ON | OFF | LIST }</pre>
-<p>Turns the list of function-key macros on the bottom of the screen <code>ON</code> or <code>OFF</code>.
-If <code>LIST</code> is specified, prints a list of
-the 10 function keys with the function-key macros defined for those keys to the console. Special
-characters are represented by their symbol equivalent in the loaded codepage.
-Some characters get a special representation: e.g. <code><a href="#CHR$">CHR$</a>(13)</code> is represented
-as a back arrow. </p>
+    <section>
+        <h3 id="KEY-list"><code>KEY</code> statement (function-key macro list)</h3>
+        <code class="block">
+            <b>KEY</b> {<b>ON</b>|<b>OFF</b>|<b>LIST</b>}
+        </code>
+        <p>
+            Turns the list of function-key macros on the bottom of the screen <code>ON</code> or <code>OFF</code>.
+            If <code>LIST</code> is specified, prints a list of
+            the 10 function keys with the function-key macros defined for those keys to the console. Special
+            characters are represented by their symbol equivalent in the loaded codepage.
+            Some characters get a special representation: e.g. <code><a href="#CHR$">CHR$</a>(13)</code> is represented
+            as a back arrow.
+        </p>
+    </section>
 
+    <section>
+        <h3 id="KEY-def"><code>KEY</code> statement (function-key macro definition)</h3>
+        <code class="block">
+            <b>KEY</b> <var>key_id</var><b>,</b> <var>string_value</var>
+        </code>
+        <p>
+            Defines the string macro for function key <code><var>key_id</var></code>.
+            Only the first 15 characters of <code><var>string_value</var></code> are stored.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>key_id</var></code> is a numeric expression in the range <code>[1&#8212;10]</code>.
+            </li>
+            <li>
+                <code><var>string_value</var></code> is a string expression.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code><var>key_id</var></code> is not in the range <code>[1&#8212;10]</code>,
+                the statement is interpreted as an
+                event-trapping <code><a href="#KEY-event">KEY</a></code> statement.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>key_id</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>key_id</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="KEY-def"><code>KEY</code> statement (function-key macro definition)</h3>
-<pre>KEY <var>key_id</var>, <var>string_value</var></pre>
-<p>Defines the string macro for function key <code><var>key_id</var></code>.
-Only the first 15 characters of <code><var>string_value</var></code> are stored.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>key_id</var></code> is a numeric expression in the range <code>[1&#8212;10]</code>.
-</li><li>
-<code><var>string_value</var></code> is a string expression.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-    If <code><var>key_id</var></code> is not in the range <code>[1&#8212;10]</code>,
-    the statement is interpreted as an
-    event-trapping <code><a href="#KEY-event">KEY</a></code> statement.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>key_id</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>key_id</var></code> has a string value: <samp>Type mismatch</samp>.
-</li></ul>
+    <section>
+        <h3 id="KEY-event"><code>KEY</code> statement (event-trapping switch)</h3>
+        <code class="block">
+            <b>KEY</b> <b>(</b><var>key_id</var><b>)</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
+        </code>
+        <p>
+            Controls event trapping of the key with identifier <code><var>key_id</var></code>.
+            Event trapping is switched <code>ON</code> or <code>OFF</code>. <code>STOP</code> suspends event trapping until
+            a <code>KEY() ON</code> is executed. Up to one event can be triggered during
+            suspension, provided that event handling was switched on prior to suspension.
+            The event triggered during suspension is handled immediately after the next <code>KEY() ON</code>
+            statement.
+        </p>
+        <h4>Parameters</h4>
+        <p>
+            <code><var>key_id</var></code> is a numeric expression in <code>[1&#8212;20]</code>.
+            Keys are:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <td>1</td>
+                    <td><kbd>F1</kbd></td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td><kbd>F2</kbd></td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td><kbd>F3</kbd></td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td><kbd>F4</kbd></td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td><kbd>F5</kbd></td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td><kbd>F6</kbd></td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td><kbd>F7</kbd></td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td><kbd>F8</kbd></td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td><kbd>F9</kbd></td>
+                </tr>
+                <tr>
+                    <td>10</td>
+                    <td><kbd>F10</kbd></td>
+                </tr>
+                <tr>
+                    <td>11</td>
+                    <td><kbd>&#8593;<!--up--></kbd></td>
+                </tr>
+                <tr>
+                    <td>12</td>
+                    <td><kbd>&#8592;<!--left--></kbd></td>
+                </tr>
+                <tr>
+                    <td>13</td>
+                    <td><kbd>&#8594;<!--right--></kbd></td>
+                </tr>
+                <tr>
+                    <td>14</td>
+                    <td><kbd>&#8595;<!--down--></kbd></td>
+                </tr>
+            </table>
+        </div>
+        <p>
+            Keys 15 to 20 are defined using the event trapping
+            <code><a href="#KEY-event-def">KEY</a></code> definition statement.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                With <code><a href="#--syntax">--syntax</a>=tandy</code>, key 11
+                is <kbd>F11</kbd> and key 12 is <kbd>F12</kbd>.
+                Pre-defined keys 11&#8212;14 shift to 13&#8212;16.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>key_id</var></code> is not in <code>[0&#8212;20]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>key_id</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="KEY-event-def"><code>KEY</code> statement (event-trapping key definition)</h3>
+        <code class="block">
+            <b>KEY</b> <var>key_id</var><b>,</b> <var>two_char_string</var>
+        </code>
+        <p>
+            Defines the key to trap for <code><var>key_id</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>key_id</var></code> is a numeric
+                expression in <code>[15&#8212;20]</code>.
+            </li>
+            <li>
+                <code><var>string_value</var></code> is a string expression of length 2. The first character is interpreted as a modifier
+                while the second character is interpreted as a scancode. See <code><a href="#INP">INP</a></code> for scancodes.
+                Modifiers are:
+                <div class="scrollable">
+                    <table>
+                        <tr>
+                            <td><code>CHR$(&amp;h80)</code></td>
+                            <td>Extended</td>
+                        </tr>
+                        <tr>
+                            <td><code>CHR$(&amp;h40)</code></td>
+                            <td><kbd>Caps Lock</kbd></td>
+                        </tr>
+                        <tr>
+                            <td><code>CHR$(&amp;h20)</code></td>
+                            <td><kbd>Num Lock</kbd></td>
+                        </tr>
+                        <tr>
+                            <td><code>CHR$(&amp;h08)</code></td>
+                            <td><kbd>Alt</kbd></td>
+                        </tr>
+                        <tr>
+                            <td><code>CHR$(&amp;h04)</code></td>
+                            <td><kbd>Ctrl</kbd></td>
+                        </tr>
+                        <tr>
+                            <td><code>CHR$(&amp;h02)</code></td>
+                            <td><kbd>Shift</kbd> (either side)</td>
+                        </tr>
+                        <tr>
+                            <td><code>CHR$(&amp;h01)</code></td>
+                            <td><kbd>Shift</kbd> (either side)</td>
+                        </tr>
+                    </table>
+                </div>
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code><var>key_id</var></code> is not in <code>[15&#8212;20]</code>, no error is raised, but strange things can
+                happen in GW-BASIC: screen anomalies and crashes suggestive of unintended
+                memory access. This is not implemented in PC-BASIC: such values are
+                ignored.
+            </li>
+            <li>
+                If <code><var>key_id</var></code> is in <code>[1&#8212;10]</code>, the statement is interpreted as a string macro
+                definition; see above.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>key_id</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>key_id</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>two_char_string</var></code> is longer than two: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>two_char_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="KEY-event"><code>KEY</code> statement (event-trapping control)</h3>
-<pre>KEY ( <var>key_id</var> ) { ON | OFF | STOP } </pre>
-<p>Controls event trapping of the key with identifier <code><var>key_id</var></code>.
-Event trapping is switched <code>ON</code> or <code>OFF</code>. <code>STOP</code> suspends event trapping until
-a <code>KEY() ON</code> is executed. Up to one event can be triggered during
-suspension, provided that event handling was switched on prior to suspension.
-The event triggered during suspension is handled immediately after the next <code>KEY() ON</code>
-statement.</p>
-<h4>Parameters</h4>
-<p><code><var>key_id</var></code> is a numeric expression in <code>[1&#8212;20]</code>.
-Keys are:</p>
-<div class="scrollable">
-<table><tr>
-<td>1</td>
-<td><kbd>F1</kbd></td>
-</tr><tr>
-<td>2</td>
-<td><kbd>F2</kbd></td>
-</tr><tr>
-<td>3</td>
-<td><kbd>F3</kbd></td>
-</tr><tr>
-<td>4</td>
-<td><kbd>F4</kbd></td>
-</tr><tr>
-<td>5</td>
-<td><kbd>F5</kbd></td>
-</tr><tr>
-<td>6</td>
-<td><kbd>F6</kbd></td>
-</tr><tr>
-<td>7</td>
-<td><kbd>F7</kbd></td>
-</tr><tr>
-<td>8</td>
-<td><kbd>F8</kbd></td>
-</tr><tr>
-<td>9</td>
-<td><kbd>F9</kbd></td>
-</tr><tr>
-<td>10</td>
-<td><kbd>F10</kbd></td>
-</tr><tr>
-<td>11</td>
-<td><kbd>&#8593;<!--up--></kbd></td>
-</tr><tr>
-<td>12</td>
-<td><kbd>&#8592;<!--left--></kbd></td>
-</tr><tr>
-<td>13</td>
-<td><kbd>&#8594;<!--right--></kbd></td>
-</tr><tr>
-<td>14</td>
-<td><kbd>&#8595;<!--down--></kbd></td>
-</tr></table>
-</div>
-<p>
-    Keys 15 to 20 are defined using the event trapping
-    <code><a href="#KEY-event-def">KEY</a></code> definition statement.
-</p>
-<h4>Notes</h4>
-<ul><li>
-With <code>--syntax=tandy</code>, key 11 id <kbd>F11</kbd> and key 12 is <kbd>F12</kbd>. Pre-defined keys 11&#8212;14 shift to 13&#8212;16.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>key_id</var></code> is not in <code>[0&#8212;20]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>key_id</var></code> has a string value: <samp>Type mismatch</samp>.
-</li></ul>
-
-
-<h3 id="KEY-event-def"><code>KEY</code> statement (event-trapping key definition)</h3>
-<pre>KEY <var>key_id</var>, <var>two_char_string</var></pre>
-<p>Defines the key to trap for <code><var>key_id</var></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>key_id</var></code> is a numeric
-expression in <code>[15&#8212;20]</code>.
-</li><li>
-<code><var>string_value</var></code> is a string expression of length 2. The first character is interpreted as a modifier
-while the second character is interpreted as a scancode. See <code><a href="#INP">INP</a></code> for scancodes.
-Modifiers are:
-<div class="scrollable">
-<table><tr>
-    <td><code>CHR$(&amp;h80)</code></td>
-    <td>Extended</td>
-</tr><tr>
-    <td><code>CHR$(&amp;h40)</code></td>
-    <td><kbd>Caps Lock</kbd></td>
-</tr><tr>
-    <td><code>CHR$(&amp;h20)</code></td>
-    <td><kbd>Num Lock</kbd></td>
-</tr><tr>
-    <td><code>CHR$(&amp;h08)</code></td>
-    <td><kbd>Alt</kbd></td>
-</tr><tr>
-    <td><code>CHR$(&amp;h04)</code></td>
-    <td><kbd>Ctrl</kbd></td>
-</tr><tr>
-    <td><code>CHR$(&amp;h02)</code></td>
-    <td><kbd>Shift</kbd> (either side)</td>
-</tr><tr>
-    <td><code>CHR$(&amp;h01)</code></td>
-    <td><kbd>Shift</kbd> (either side)</td>
-</tr></table>
-</div>
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   If <code><var>key_id</var></code> is not in <code>[15&#8212;20]</code>, no error is raised, but strange things can
-    happen in GW-BASIC: screen anomalies and crashes suggestive of unintended
-    memory access. This is not implemented in PC-BASIC: such values are
-    ignored.
-</li><li>
-   If <code><var>key_id</var></code> is in <code>[1&#8212;10]</code>, the statement is interpreted as a string macro
-    definition; see above.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>key_id</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>key_id</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>two_char_string</var></code> is longer than two: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>two_char_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li></ul>
-
-
-<h3 id="KILL"><code>KILL</code> statement</h3>
-<pre>KILL <var>file_path</var></pre>
-<p>Deletes a file. <code><var>file_path</var></code> must be a string expression that specifies a
-valid path to an existing file with MS-DOS path separators <code>\</code>. The extension
-must be specified: no default extensions are assumed.
-</p><h4>Notes</h4>
-<ul><li>
-Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>file_path</var></code> has a number value: <samp>Type mismatch</samp>.
-</li><li>
-The file <code><var>file_path</var></code> is open: <samp>File already open</samp>
-</li><li>
-The file or path <code><var>file_path</var></code> does not exist: <samp>File not found</samp>
-</li><li>
-The user has no write permission: <samp>Permission denied</samp>
-</li><li>
-If a syntax error occurs after the closing quote, the file is removed    anyway.
-</li></ul>
+    <section>
+        <h3 id="KILL"><code>KILL</code> statement</h3>
+        <code class="block">
+            <b>KILL</b> <var>file_path</var>
+        </code>
+        <p>
+            Deletes a file. <code><var>file_path</var></code> must be a string expression that specifies a
+            valid path to an existing file with MS-DOS path separators <code>\</code>. The extension
+            must be specified: no default extensions are assumed.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>file_path</var></code> has a number value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                The file <code><var>file_path</var></code> is open: <samp>File already open</samp>
+            </li>
+            <li>
+                The file or path <code><var>file_path</var></code> does not exist: <samp>File not found</samp>
+            </li>
+            <li>
+                The user has no write permission: <samp>Permission denied</samp>
+            </li>
+            <li>
+                If a syntax error occurs after the closing quote, the file is removed    anyway.
+            </li>
+        </ul>
+    </section>
 
     <section>
         <h3 id="LCOPY"><code>LCOPY</code> statement</h3>
