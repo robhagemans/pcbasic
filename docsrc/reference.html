@@ -968,438 +968,664 @@
         </ul>
     </section>
 
-<h3 id="CHDIR"><code>CHDIR</code> statement</h3>
-<pre>
-CHDIR <var>pathname</var>
-</pre>
-<p>Change the working directory to <code><var>pathname</var></code>.</p>
-<h4>Parameters</h4>
-<ul><li>
- <code><var>pathname</var></code> is a string expression which can be absolute or relative to the current path.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-<code><var>pathname</var></code>
-must be specified with MS-DOS path separators <code>\</code>.
-</li><li>
-Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
-</li>
-</ul>
-<h4>Errors</h4>
-<ul><li>
-No matching path is found: <samp>Path not found</samp>.
-</li><li>
-<code><var>pathname</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>pathname</var></code> is empty: <samp>Bad file name</samp>.
-</li></ul>
+    <section>
+        <h3 id="CHDIR"><code>CHDIR</code> statement</h3>
+        <code class="block">
+            <b>CHDIR</b> <var>pathname</var>
+        </code>
+        <p>
+            Change the working directory to <code><var>pathname</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>pathname</var></code> is a string expression which can be absolute or relative to the current path.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                <code><var>pathname</var></code>
+                must be specified with MS-DOS path separators <code>\</code>.
+            </li>
+            <li>
+                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                No matching path is found: <samp>Path not found</samp>.
+            </li>
+            <li>
+                <code><var>pathname</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>pathname</var></code> is empty: <samp>Bad file name</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="CHR$"><code>CHR$</code> function</h3>
-<pre><var>char</var> = CHR$(<var>x</var>)
-</pre>
-<p>Returns the character with ASCII code <code><var>x</var></code>.
-</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>x</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>x</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="CHR$"><code>CHR$</code> function</h3>
+        <code class="block">
+            <var>char</var> <b>= CHR$(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns the character with ASCII code <code><var>x</var></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="CINT"><code>CINT</code> function</h3>
+        <code class="block">
+            <var>y</var> <b>= CINT(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Converts the numeric expression <code><var>x</var></code> to a signed integer.
+        </p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="CINT"><code>CINT</code> function</h3>
-<pre><var>y</var> = CINT(<var>x</var>)
-</pre>
-<p>Converts the numeric expression <code><var>x</var></code> to a signed integer.</p>
-<h4>Errors</h4>
-<ul><li>
-<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li></ul>
+    <section>
+        <h3 id="CIRCLE"><code>CIRCLE</code> statement</h3>
+        <code class="block">
+            <b>CIRCLE</b> [<b>STEP</b>] <b>(</b><var>x</var><b>,</b> <var>y</var>)<b>,</b> <var>radius</var>
+            [<b>,</b> [<var>colour</var>] [<b>,</b> [<var>start</var>] [<b>,</b> [<var>end</var>] [<b>,</b> <var>aspect</var>]]]
+        </code>
+        <p>
+            Draw an ellipse or ellipse sector.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                The midpoint of the ellipse is at <code>(<var>x</var></code>,<code><var>y</var>)</code>.
+                If <code>STEP</code> is specified, the midpoint is <code>(<var>x</var></code>,<code><var>y</var>)</code> away from the current position.
+            </li>
+            <li>
+                <code><var>radius</var></code> is the radius, in pixels, along the long axis.
+            </li>
+            <li>
+                <code><var>colour</var></code> is the colour attribute.
+            </li>
+            <li>
+                If <code><var>start</var></code> and <code><var>end</var></code> are specified, a sector of the ellipse is drawn from
+                <code><var>start</var></code> radians to <code><var>end</var></code> radians, with zero radians the intersection with the
+                right-hand x axis. If a negative value is specified, the arc sector is
+                connected by a line to the midpoint.
+            </li>
+            <li>
+                <code><var>aspect</var></code> specifies the ratio between the y radius and the x radius. If it is
+                not specified, the standard value for the <code><a href="#SCREEN-statement">SCREEN</a></code> mode is used (see there), so
+                as to make the ellipse appear like a circle on the original hardware.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                For <code><var>aspect</var> &lt;&gt; 1</code>, the midpoint algorithm used does not pixel-perfectly
+                reproduce GW-BASIC's ellipses.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                The statement is executed in text mode: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>start</var></code> or <code><var>end</var></code> is not in <code>[0&#8212;2&#960;]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                The statement ends with a comma: <samp>Missing operand</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="CLEAR"><code>CLEAR</code> statement</h3>
+        <code class="block">
+            <b>CLEAR</b> [<var>expr</var>] [<b>,</b> [<var>mem_limit</var>] [<b>,</b> [<var>stack_size</var>] [<b>,</b> <var>video_memory</var> ]]]
+        </code>
+        <p>
+            Clears all variables, arrays,<code><a href="#DEF-FN">DEF FN</a></code> user functions, <code><a href="#DEFINT">DEF<var>type</var></a></code> type definitions,
+            and <code><a href="#COMMON">COMMON</a></code> declarations. Closes all files.
+            Turns off all sound. Resets <code><a href="#PLAY">PLAY</a></code> state and sets music to foreground.
+            Clears all <code><a href="#ON-ERROR">ON ERROR</a></code> traps. Resets <code><a href="#ERR">ERR</a></code> and <code><a href="#ERL">ERL</a></code> to zero. Disables all events.
+            Turns <code><a href="#PEN-statement">PEN</a></code> and <code><a href="#STRIG-switch">STRIG</a></code> off. Resets the random number generator.
+            Clears the loop stack. Resets the <code><a href="#DRAW">DRAW</a></code> state and the current graphics position.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>mem_limit</var></code> specifies the upper limit of usable memory. Default is previous
+                memory size. Default memory size is 65534.
+            </li>
+        <li>
+        <code><var>stack_size</var></code> specifies the amount of memory available to the BASIC stack.
+        Default is previous stack size. Default stack size is 512.
+        </li>
+            <li>
+                <code><var>video_memory</var></code> specifies the amount of memory available
+                to the video adapter. This parameter is only legal with one of the options
+                <code><a href="#--syntax">--syntax</a>={pcjr, tandy}</code>. Instead of using
+                <code>CLEAR</code>, the option <code><a href="#--video-memory">--video-memory</a></code>
+                can also be used to set video memory size.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                The purpose of <em>expr</em> is unknown.
+            </li>
+            <li>
+                If called inside a <code><a href="#FOR">FOR</a></code>&#8212;<code><a href="#NEXT">NEXT</a></code> or <code><a href="#WHILE">WHILE</a></code>&#8212;<code><a href="#WEND">WEND</a></code> loop, an error will be raised at
+                the iteration keyword as the loop stacks are cleared.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                Any of the arguments has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>mem_limit</var></code>, <code><var>stack_size</var></code> are not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>mem_limit</var></code> or <code><var>stack_size</var></code> equal <code>0</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>mem_limit</var></code> equals <code>-1</code> or <code>65535</code>: <samp>Out of memory</samp>.
+            </li>
+            <li>
+                <code><var>mem_limit</var></code> or <code><var>expr</var></code> are too low: <samp>Out of memory</samp>.
+            </li>
+            <li>
+                <code><var>expr</var></code> is not  in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>expr</var></code> is negative: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="CIRCLE"><code>CIRCLE</code> statement</h3>
-<pre>
-CIRCLE [STEP] (<var>x</var>, <var>y</var>), <var>radius</var> [, [<var>colour</var>] [, [<var>start</var>] [, [<var>end</var>] [, <var>aspect</var>] ] ]
-</pre>
-<p>Draw an ellipse or ellipse sector. </p>
-<h4>Parameters</h4>
-<ul><li>
-The midpoint of the ellipse is at <code><var>x</var></code>,<code><var>y</var></code>.
-If <code>STEP</code> is specified, the midpoint is <code><var>x</var></code>,<code><var>y</var></code> away from the current position.
-</li><li>
-<code><var>radius</var></code> is the radius, in pixels, along the long axis.
-</li><li>
-<code><var>colour</var></code> is the colour attribute.
-</li><li>
-If <code><var>start</var></code> and <code><var>end</var></code> are specified, a sector of the ellipse is drawn from
-<code><var>start</var></code> radians to <code><var>end</var></code> radians, with zero radians the intersection with the
-right-hand x axis. If a negative value is specified, the arc sector is
-connected by a line to the midpoint.
-</li><li>
-<code><var>aspect</var></code> specifies the ratio between the y radius and the x radius. If it is
-not specified, the standard value for the <code><a href="#SCREEN-statement">SCREEN</a></code> mode is used (see there), so
-as to make the ellipse appear like a circle on the original hardware.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-For <code><var>aspect</var> &lt;&gt; 1</code>, the midpoint algorithm used does not pixel-perfectly
-   reproduce GW-BASIC's ellipses.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-  The statement is executed in text mode: <samp>Illegal function call</samp>.
-</li><li>
-  <code><var>start</var></code> or <code><var>end</var></code> is not in <code>[0&#8212;2&#960;]</code>: <samp>Illegal function call</samp>.
-</li><li>
-  The statement ends with a comma: <samp>Missing operand</samp>.
-</li></ul>
+    <section>
+        <h3 id="CLOSE"><code>CLOSE</code> statement</h3>
+        <code class="block">
+            <b>CLOSE</b> [[<b>#</b>] <var>file_0</var> [<b>,</b> [<b>#</b>] <var>file_1</var>] ...]
+        </code>
+        <p>
+            Closes files. If no file numbers are specified, all open files are closed.
+            The hash (<code>#</code>) is optional and has no effect.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>file_1</var>, <var>file_2</var>, ...</code> are numeric expressions yielding
+                file numbers.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                No error is raised if the specified file numbers were not open.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>file_1</var>, <var>file_2</var>, ...</code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_1</var>, <var>file_2</var>, ...</code> are not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_1</var>, <var>file_2</var>, ...</code> have a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                The statement ends in a comma, <samp>Missing operand</samp>.
+            </li>
+            <li>
+                If an error occurs, only the files before the erratic value are closed.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="CLS"><code>CLS</code> statement</h3>
+        <code class="block">
+            <b>CLS</b> [<var>x</var>][<b>,</b>]
+        </code>
+        <p>
+            Clears the screen or part of it.
+            If <code><var>x</var></code> is not specified, in SCREEN 0 the text view region is cleared;
+            in other screens, the graphics view region is cleared.
+            The comma is optional and has no effect.
+        </p>
+        <h4>Parameters</h4>
+        <p>
+            <code><var>x</var></code> is a numeric valued expression that determines what is cleared:
+        </p>
+        <ul>
+            <li>
+                If <code><var>x</var> = 0</code>, the whole screen is cleared.
+            </li>
+            <li>
+                If <code><var>x</var> = 1</code>, the graphics view region is cleared.
+            </li>
+            <li>
+                If <code><var>x</var> = 2</code>, the text view region is cleared.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> is has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp> .
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[0, 1, 2]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                No comma is specified but more text follows: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                A comma is specified followed by more: <samp>Syntax error</samp>.
+            </li>
+            <li>
+                If an error occurs, the screen is not cleared.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="CLEAR"><code>CLEAR</code> statement</h3>
-<pre>CLEAR [<var>expr</var>] [, [<var>mem_limit</var>] [, [<var>stack_size</var>] [, <var>video_memory</var> ]]]
-</pre>
-<p>Clears all variables, arrays,<code><a href="#DEF-FN">DEF FN</a></code> user functions, <code><a href="#DEFINT">DEF<var>type</var></a></code> type definitions,
-and <code><a href="#COMMON">COMMON</a></code> declarations. Closes all files.
-Turns off all sound. Resets <code><a href="#PLAY">PLAY</a></code> state and sets music to foreground.
-Clears all <code><a href="#ON-ERROR">ON ERROR</a></code> traps. Resets <code><a href="#ERR">ERR</a></code> and <code><a href="#ERL">ERL</a></code> to zero. Disables all events.
-Turns <code><a href="#PEN-statement">PEN</a></code> and <code><a href="#STRIG-switch">STRIG</a></code> off. Resets the random number generator.
-Clears the loop stack. Resets the <code><a href="#DRAW">DRAW</a></code> state and the current graphics position.
-</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>mem_limit</var></code> specifies the upper limit of usable memory. Default is previous
-memory size. Default memory size is 65534.
-</li><li>
-<code><var>stack_size</var></code> specifies the amount of memory available to the BASIC stack.
-Default is previous stack size. Default stack size is 512.
-</li>
-    <li>
-        <code><var>video_memory</var></code> specifies the amount of memory available
-        to the video adapter. This parameter is only legal with one of the options
-        <code><a href="#--syntax">--syntax</a>={pcjr, tandy}</code>. Instead of using
-        <code>CLEAR</code>, the option <code><a href="#--video-memory">--video-memory</a></code>
-        can also be used to set video memory size.
-    </li>
-</ul>
-<h4>Notes</h4>
-<ul><li>
-  The purpose of <em>expr</em> is unknown.
-</li><li>
-  If called inside a <code><a href="#FOR">FOR</a></code>&#8212;<code><a href="#NEXT">NEXT</a></code> or <code><a href="#WHILE">WHILE</a></code>&#8212;<code><a href="#WEND">WEND</a></code> loop, an error will be raised at
-   the iteration keyword as the loop stacks are cleared.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-Any of the arguments has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>mem_limit</var></code>, <code><var>stack_size</var></code> are not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>mem_limit</var></code> or <code><var>stack_size</var></code> equal <code>0</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>mem_limit</var></code> equals <code>-1</code> or <code>65535</code>: <samp>Out of memory</samp>.
-</li><li>
-<code><var>mem_limit</var></code> or <code><var>expr</var></code> are too low: <samp>Out of memory</samp>.
-</li><li>
-<code><var>expr</var></code> is not  in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>expr</var></code> is negative: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="COLOR"><code>COLOR</code> statement (text mode)</h3>
+        <code class="block">
+            <b>COLOR</b> [<var>foreground</var>] [<b>,</b> [<var>background</var>] [<b>,</b> <var>border</var>]]
+        </code>
+        <p>
+            Changes the current foreground and background attributes.
+            All new characters printed will take the newly set attributes. Existing
+            characters on the screen are not affected.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>foreground</var></code> is a numeric expression in <code>[0&#8212;31]</code>.
+                This specifies the new foreground attribute. Attributes <code>16&#8212;31</code> are
+                blinking versions of attributes <code>0&#8212;15</code>.
+            </li>
+            <li>
+                <code><var>background</var></code> is a numeric expression in <code>[0&#8212;15]</code>.
+                This specifies the new background attribute. It is taken <code>MOD 8</code>: Values
+                <code>8&#8212;15</code> produce the same colour as <code>0&#8212;7</code>.
+            </li>
+            <li>
+                <code><var>border</var></code> is a numeric expression in <code>[0&#8212;15]</code> specifying the border attribute.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                The syntax and effect of this command is different in different <code>SCREEN</code>
+                modes. See below for other <code>SCREEN</code>s.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                Any of the parameters has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>foreground</var></code> is not in <code>[0&#8212;31]</code>, <code><var>background</var></code> is not in
+                <code>[0&#8212;15]</code> or <code><var>border</var></code> is not in <code>[0&#8212;15]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                Statement is used in <code>SCREEN 2</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="CLOSE"><code>CLOSE</code> statement</h3>
-<pre>CLOSE [[#] <var>file_1</var> [, [#] <var>file_2</var> [, ...] ]</pre>
-<p>Closes files. If no file numbers are specified, all open files are closed.
-The hash (<code>#</code>) is optional and has no effect.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>file_1</var>, <var>file_2</var>, ...</code> are numeric expressions yielding
-file numbers.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-No error is raised if the specified file numbers were not open.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>file_1</var>, <var>file_2</var>, ...</code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>file_1</var>, <var>file_2</var>, ...</code> are not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li><li>
-<code><var>file_1</var>, <var>file_2</var>, ...</code> have a string value: <samp>Type mismatch</samp>.
-</li><li>
-The statement ends in a comma, <samp>Missing operand</samp> .
-</li><li>
- If an error occurs, only the files before the erratic value are closed.
-</li></ul>
+    <section>
+        <h3 id="COLOR-1"><code>COLOR</code> statement (<code>SCREEN 1</code>)</h3>
+        <code class="block">
+            <b>COLOR</b> [<var>palette_0</var>] [<b>,</b> <var>palette</var> [<b>,</b> <var>override</var>]]
+        </code>
+        <p>
+            Assigns new colours to the palette of attributes.
+        </p>
+        <ul>
+            <li>
+                <code><var>palette_0</var></code> is a numeric expression  in <code>[0&#8212;255]</code>.
+                This sets the palette colour associated with attribute 0; by default, the
+                background has this attribute. All pixels with this attribute will
+                change colour. The palette colour value is taken from the VGA 64-colour
+                set. <code><var>palette_0</var></code> is taken <code>MOD 64</code>.
+            </li>
+            <li>
+                <code><var>palette</var></code> is a numeric expression in <code>[0&#8212;255]</code> that specifies the palette:
+                <ul>
+                    <li>
+                        <code><var>palette</var></code> odd sets the standard CGA palette (cyan, magenta, grey).
+                    </li>
+                    <li>
+                        <code><var>palette</var></code> even sets the alternative palette (green, red, brown).
+                    </li>
+                </ul>
+                All pixels with attributes 1,2,3 will change colour to the new palette.
+            </li>
+            <li>
+                <code><var>override</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+                If <code><var>override</var></code> is specified, palette is set as above but using <code><var>override</var></code>
+                instead of <code><var>palette</var></code>. <code><var>palette</var></code> is then ignored.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                Any of the parameters has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                Any of the parameters is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="COLOR-3-9"><code>COLOR</code> statement (<code>SCREEN 3&#8212;9</code>)</h3>
+        <code class="block">
+            <b>COLOR</b> [<var>foreground</var>] [<b>,</b> <var>palette_0</var> [<b>,</b> <var>dummy</var>]]
+        </code>
+        <p>
+            Changes the current foreground attribute and the colour for attribute 0.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>foreground</var></code> is a numeric expression in <code>[0&#8212;15]</code>
+                This sets the new foreground attribute. This applies only to new characters
+                printed or pixels plotted.
+            </li>
+            <li>
+                <code><var>palette_0</var></code> is a numeric expression in <code>[0&#8212;15]</code>
+                This sets the colour associated with attribute 0; by default, the
+                background has this attribute. All pixels with this attribute will
+                change colour.
+                In <code>SCREEN 7</code> and <code>8</code>, the <code><var>palette_0</var></code> colour is taken from the first 8 of
+                the 16-colour EGA set. <code><var>palette_0</var></code> is taken <code>MOD 8</code>.
+                IN <code>SCREEN 9</code>, the colour value is taken from the 64-colour VGA set.
+            </li>
+            <li>
+                <code><var>dummy</var></code> is a numeric expression with a value in <code>[0&#8212;255]</code>
+                The value of <code><var>dummy</var></code> is ignored.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                Any of the parameters has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>foreground</var></code> is not in <code>[1&#8212;15]</code>; <code><var>background</var></code> is not in <code>[0&#8212;15]</code>; or
+                <code><var>dummy</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="CLS"><code>CLS</code> statement</h3>
-<pre>CLS [<var>x</var>][,]</pre>
-<p>Clears the screen or part of it.
-If <code><var>x</var></code> is not specified, in SCREEN 0 the text view region is cleared;
-in other screens, the graphics view region is cleared.
-The comma is optional and has no effect.</p>
-<h4>Parameters</h4>
-<p><code><var>x</var></code> is a numeric valued expression that determines what is cleared:</p>
-<ul><li>
-  If <code><var>x</var> = 0</code>, the whole screen is cleared.
-</li><li>
-  If <code><var>x</var> = 1</code>, the graphics view region is cleared.
-</li><li>
-  If <code><var>x</var> = 2</code>, the text view region is cleared.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>x</var></code> is has a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp> .
-</li><li>
-<code><var>x</var></code> is not in <code>[0, 1, 2]</code>: <samp>Illegal function call</samp>.
-</li><li>
-No comma is specified but more text follows: <samp>Illegal function call</samp>.
-</li><li>
-A comma is specified followed by more: <samp>Syntax error</samp>.
-</li><li>
-If an error occurs, the screen is not cleared.
-</li></ul>
+    <section>
+        <h3 id="COM"><code>COM</code> statement</h3>
+        <code class="block">
+            <b>COM(</b><var>port</var><b>)</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
+        </code>
+        <ul>
+            <li>
+                <code>ON</code>: enables <code><a href="#ON-event">ON COM(<var>port</var>)</a></code> event trapping of the emulated serial port.
+            </li>
+            <li>
+                <code>OFF</code>: disables trapping.
+            </li>
+            <li>
+                <code>STOP</code>: halts trapping until <code>COM(<var>port</var>) ON</code> is used. Events that occur
+                while trapping is halted will trigger immediately when trapping is re-enabled.
+            </li>
+        </ul>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>port</var></code> is a numeric expression with a value of <code>1</code> or <code>2</code>. This specifies which
+                serial port (<code>COM1:</code> or <code>COM2:</code>) is trapped.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="COLOR"><code>COLOR</code> statement (text mode)</h3>
-<pre>COLOR [<var>foreground</var>] [, [<var>background</var>] [, <var>border</var>] ] </pre>
-<p>Changes the current foreground and background attributes.
-All new characters printed will take the newly set attributes. Existing
-characters on the screen are not affected.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>foreground</var></code> is a numeric expression in <code>[0&#8212;31]</code>.
-    This specifies the new foreground attribute. Attributes <code>16&#8212;31</code> are
-    blinking versions of attributes <code>0&#8212;15</code>.
-</li><li>
-<code><var>background</var></code> is a numeric expression in <code>[0&#8212;15]</code>.
-    This specifies the new background attribute. It is taken <code>MOD 8</code>: Values
-    <code>8&#8212;15</code> produce the same colour as <code>0&#8212;7</code>.
-</li><li>
-<code><var>border</var></code> is a numeric expression in <code>[0&#8212;15]</code> specifying the border attribute.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   The syntax and effect of this command is different in different <code>SCREEN</code>
-    modes. See below for other <code>SCREEN</code>s.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-Any of the parameters has a string value: <samp>Type mismatch</samp>.
-</li><li>
-Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>foreground</var></code> is not in <code>[0&#8212;31]</code>, <code><var>background</var></code> is not in
-    <code>[0&#8212;15]</code> or <code><var>border</var></code> is not in <code>[0&#8212;15]</code>: <samp>Illegal function call</samp>.
-</li><li>
-Statement is used in <code>SCREEN 2</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="COMMON"><code>COMMON</code> statement</h3>
+        <code class="block">
+            <b>COMMON</b> [<var>var_0</var> [<b>,</b> [<var>var_1</var>]] ...]
+        </code>
+        <p>
+            Specifies variables to be passed as common variables to the program called
+            with <code><a href="#CHAIN">CHAIN</a></code>.
+            The statement may end with one or more commas.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>var_0</var>, <var>var_1</var>, ...</code> are names of variables or arrays. Array names
+                must be followed by round or square brackets. Brackets may also be mixed <code>a(]</code> <code>b[)</code>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="CONT"><code>CONT</code> statement</h3>
+        <code class="block">
+            <b>CONT</b> [<var>anything</var>]
+        </code>
+        <p>
+            Resumes execution of a program that has been halted by
+            <code><a href="#STOP">STOP</a></code>, <code><a href="#END">END</a></code>,
+            <kbd>Ctrl</kbd>+<kbd>C</kbd>, or  <kbd>Ctrl</kbd>+<kbd>Break</kbd>.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+            Anything after the <code>CONT</code> keyword is ignored.
+            </li>
+            <li>
+                If a break is encountered in <code><a href="#GOSUB">GOSUB</a></code> routine called from a continuing
+                direct line (e.g. <code>GOSUB 100:PRINT A$</code>), <code>CONT</code> will overwrite the running
+                direct line. As the subroutine <code><a href="#RETURN">RETURN</a></code>s to the position after the <code>GOSUB</code> in
+                the old direct line, strange things may happen if commands are given after
+                <code>CONT</code>. In GW-BASIC, this can lead to strange errors in non-existing
+                program lines as the parser executes bytes that are not part of a program
+                line. In PC-BASIC, if the new direct line is shorter, execution stops
+                after <code>RETURN</code>; but if the direct line is extended beyond the old return
+                position, the parser tries to resume at that return position, with strange
+                effects.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                No program is loaded, a program has not been run, after a program line
+                has been modified or after <code><a href="#CLEAR">CLEAR</a></code>: <samp>Can't continue</samp>.
+            </li>
+            <li>
+                The break occurred in a direct line: <samp>Can't continue</samp>
+            </li>
+        </ul>
+    </section>
 
-<h3 id="COLOR-1"><code>COLOR</code> statement (<code>SCREEN 1</code>)</h3>
-<pre>COLOR [<var>palette_0</var>] [, <var>palette</var> [, <var>override</var>] ]</pre>
-<p>Assigns new colours to the palette of attributes. </p>
-<ul><li>
-<code><var>palette_0</var></code> is a numeric expression  in <code>[0&#8212;255]</code>.
-    This sets the palette colour associated with attribute 0; by default, the
-    background has this attribute. All pixels with this attribute will
-    change colour. The palette colour value is taken from the VGA 64-colour
-    set. <code><var>palette_0</var></code> is taken <code>MOD 64</code>.
-</li><li>
-<code><var>palette</var></code> is a numeric expression in <code>[0&#8212;255]</code> that specifies the palette:
-    <ul><li>
-    <code><var>palette</var></code> odd sets the standard CGA palette (cyan, magenta, grey).
-    </li><li>
-    <code><var>palette</var></code> even sets the alternative palette (green, red, brown).
-    </li></ul>
-    All pixels with attributes 1,2,3 will change colour to the new palette.
-</li><li>
-<code><var>override</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-    If <code><var>override</var></code> is specified, palette is set as above but using <code><var>override</var></code>
-    instead of <code><var>palette</var></code>. <code><var>palette</var></code> is then ignored.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-Any of the parameters has a string value: <samp>Type mismatch</samp>.
-</li><li>
-Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-Any of the parameters is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="COS"><code>COS</code> function</h3>
+        <code class="block">
+            <var>cosine</var> <b>= COS(</b><var>angle</var><b>)</b>
+        </code>
+        <p>
+            Returns the cosine of <code><var>angle</var></code>.
+            Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option,
+            this function returns a single-precision
+            value.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>angle</var></code> is a numeric expression that
+                gives the angle in radians.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                The return value usually differs from the value returned by GW-BASIC in the least significant figure.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="CSNG"><code>CSNG</code> function</h3>
+        <code class="block">
+            <var>y</var> <b>= CSNG(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Converts the numeric expression <code><var>x</var></code> to a single-precision value.
+        </p>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="COLOR-3-9"><code>COLOR</code> statement (<code>SCREEN 3&#8212;9</code>)</h3>
-<pre>COLOR [<var>foreground</var>] [, <var>palette_0</var> [, <var>dummy</var>] ]</pre>
-<p>Changes the current foreground attribute and the colour for attribute 0.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>foreground</var></code> is a numeric expression in <code>[0&#8212;15]</code>
-    This sets the new foreground attribute. This applies only to new characters
-    printed or pixels plotted.
-</li><li>
-<code><var>palette_0</var></code> is a numeric expression in <code>[0&#8212;15]</code>
-    This sets the colour associated with attribute 0; by default, the
-    background has this attribute. All pixels with this attribute will
-    change colour.
-In <code>SCREEN 7</code> and <code>8</code>, the <code><var>palette_0</var></code> colour is taken from the first 8 of
-the 16-colour EGA set. <code><var>palette_0</var></code> is taken <code>MOD 8</code>.
-IN <code>SCREEN 9</code>, the colour value is taken from the 64-colour VGA set.
-</li><li>
-<code><var>dummy</var></code> is a numeric expression with a value in <code>[0&#8212;255]</code>
-    The value of <code><var>dummy</var></code> is ignored.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-Any of the parameters has a string value: <samp>Type mismatch</samp>.
-</li><li>
-Any of the parameters is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>foreground</var></code> is not in <code>[1&#8212;15]</code>; <code><var>background</var></code> is not in <code>[0&#8212;15]</code>; or
-    <code><var>dummy</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-</li></ul>
+    <section>
+        <h3 id="CSRLIN"><code>CSRLIN</code> function</h3>
+        <code class="block">
+            <var>y</var> <b>= CSRLIN</b>
+        </code>
+        <p>
+            Returns the screen row of the cursor on the active page.
+            The return value is in the range <code>[1&#8212;25]</code>.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
 
+    <section>
+        <h3 id="CVI"><code>CVI</code> function</h3>
+        <code class="block">
+            <var>y</var> <b>= CVI(</b><var>s</var><b>)</b>
+        </code>
+        <p>
+            Converts a two-byte string to a signed integer.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>s</var></code> is a string expression that represents an integer using
+                little-endian two's complement encoding. Only the first two bytes are used.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-<h3 id="COM"><code>COM</code> statement</h3>
-<pre>COM(<var>port</var>) { ON | OFF | STOP }</pre>
-<ul>
-<li><code>ON</code>: enables <code><a href="#ON-event">ON COM(<var>port</var>)</a></code> event trapping of the emulated serial port.
-</li><li>
-<code>OFF</code>: disables trapping.
-</li><li>
-<code>STOP</code>: halts trapping until <code>COM(<var>port</var>) ON</code> is used. Events that occur
-while trapping is halted will trigger immediately when trapping is re-enabled.
-</li></ul>
-<h4>Parameters</h4>
-<ul><li><code><var>port</var></code> is a numeric expression with a value of <code>1</code> or <code>2</code>. This specifies which
-serial port (<code>COM1:</code> or <code>COM2:</code>) is trapped.
-</li></ul>
+    <section>
+        <h3 id="CVS"><code>CVS</code> function</h3>
+        <code class="block">
+            <var>y</var> <b>= CVS(</b><var>s</var><b>)</b>
+        </code>
+        <p>
+            Converts a four-byte string to a single-precision floating-point number.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>s</var></code> is a string expression that represents a single-precision
+                number in Microsoft Binary Format. Only the first four bytes are used.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
-
-<h3 id="COMMON"><code>COMMON</code> statement</h3>
-<pre>COMMON [ [<var>var_0</var>] [, [<var>var_1</var>] [, [...] ] ] ]</pre>
-<p>Specifies variables to be passed as common variables to the program called
-with <code><a href="#CHAIN">CHAIN</a></code>.
-The statement may end with one or more commas. </p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>var_0</var>, <var>var_1</var>, ...</code> are names of variables or arrays. Array names
-must be followed by round or square brackets. Brackets may also be mixed <code>a(]</code> <code>b[)</code>.
-</li></ul>
-
-
-<h3 id="CONT"><code>CONT</code> statement</h3>
-<pre>CONT [ <var>anything</var> ]</pre>
-<p>Resumes execution of a program that has been halted by <code><a href="#STOP">STOP</a></code>, <code><a href="#END">END</a></code>, <kbd>Ctrl</kbd>+<kbd>C</kbd>, or  <kbd>Ctrl</kbd>+<kbd>Break</kbd>. </p>
-<h4>Notes</h4>
-<ul><li>
-Anything after the <code>CONT</code> keyword is ignored.
-</li><li>
-   If a break is encountered in <code><a href="#GOSUB">GOSUB</a></code> routine called from a continuing
-    direct line (e.g. <code>GOSUB 100:PRINT A$</code>), <code>CONT</code> will overwrite the running
-    direct line. As the subroutine <code><a href="#RETURN">RETURN</a></code>s to the position after the <code>GOSUB</code> in
-    the old direct line, strange things may happen if commands are given after
-    <code>CONT</code>. In GW-BASIC, this can lead to strange errors in non-existing
-    program lines as the parser executes bytes that are not part of a program
-    line. In PC-BASIC, if the new direct line is shorter, execution stops
-    after <code>RETURN</code>; but if the direct line is extended beyond the old return
-    position, the parser tries to resume at that return position, with strange
-    effects.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-No program is loaded, a program has not been run, after a program line
-    has been modified or after <code><a href="#CLEAR">CLEAR</a></code>: <samp>Can't continue</samp>.
-</li><li>
-The break occurred in a direct line: <samp>Can't continue</samp>
-</li></ul>
-
-
-<h3 id="COS"><code>COS</code> function</h3>
-<pre><var>cosine</var> = COS(<var>angle</var>)</pre>
-<p>Returns the cosine of <code><var>angle</var></code>.
-Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option, this function returns a single-precision
-value.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>angle</var></code> is a numeric expression that
-gives the angle in radians.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   The return value usually differs from the value returned by GW-BASIC in the least significant figure.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
-</li></ul>
-
-
-<h3 id="CSNG"><code>CSNG</code> function</h3>
-<pre><var>y</var> = CSNG(<var>x</var>)</pre>
-<p>
-Converts the numeric expression <code><var>x</var></code> to a single-precision value.</p>
-<h4>Errors</h4>
-<ul><li>
-<code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-</li></ul>
-
-<h3 id="CSRLIN"><code>CSRLIN</code> function</h3>
-<pre><var>y</var> = CSRLIN </pre>
-<p>Returns the screen row of the cursor on the active page.
-The return value is in the range <code>[1&#8212;25]</code>.</p>
-<h4>Notes</h4>
-<ul><li>
-This function has no brackets.
-</li></ul>
-
-<h3 id="CVI"><code>CVI</code> function</h3>
-<pre><var>y</var> = CVI(<var>s</var>)</pre>
-<p>Converts a two-byte string to a signed integer.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>s</var></code> is a string expression that represents an integer using
-little-endian two's complement encoding. Only the first two bytes are used.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li></ul>
-
-<h3 id="CVS"><code>CVS</code> function</h3>
-<pre><var>y</var> = CVS(<var>s</var>)</pre>
-<p>Converts a four-byte string to a single-precision floating-point number.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>s</var></code> is a string expression that represents a single-precision
-number in Microsoft Binary Format. Only the first four bytes are used.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li></ul>
-
-<h3 id="CVD"><code>CVD</code> function</h3>
-<pre><var>y</var> = CVD(<var>s</var>)</pre>
-<p>Converts an eight-byte string to a double-precision floating-point number.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>s</var></code> is a string expression  that represents a double-precision
-number in Microsoft Binary Format. Only the first eight bytes are used.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li></ul>
-
+    <section>
+        <h3 id="CVD"><code>CVD</code> function</h3>
+        <code class="block">
+            <var>y</var> <b>= CVD(</b><var>s</var><b>)</b>
+        </code>
+        <p>
+            Converts an eight-byte string to a double-precision floating-point number.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>s</var></code> is a string expression  that represents a double-precision
+                number in Microsoft Binary Format. Only the first eight bytes are used.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
 <h3 id="DATA"><code>DATA</code> statement</h3>
 <pre>DATA [<var>const_0</var>] [, [<var>const_1</var>] [, ... ] ]</pre>
