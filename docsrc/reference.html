@@ -109,7 +109,7 @@
         variables may exist corresponding to the four types. That is, you can have <code>A$</code>,
         <code>A%</code>, <code>A!</code> and <code>A#</code> as different variables.
         Which one of those is also known as <code>A</code> depends on the settings in
-        <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
+        <code><a href="#DEFINT">DEFINT</a></code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>.
         The default is <code> A = A!</code>. In addition, you can have
         <a href="#arrays">arrays</a> <code>A$()</code>, <code>A%()</code>,
         <code>A!()</code>, <code>A#()</code> which are separate from the scalar
@@ -175,7 +175,7 @@
     <p>
         If no type character is specified, the first letter of the name determines
         the type according to the settings of
-        <code><a href="#DEFINT">DEFINT</a></code>/<code><a href="#DEFDBL">DEFDBL</a></code>/<code><a href="#DEFSNG">DEFSNG</a></code>/<code><a href="#DEFSTR">DEFSTR</a></code>.
+        <code><a href="#DEFINT">DEFINT</a></code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>.
         If no such setting has been made, the default type is single-precision float.
     </p>
 
@@ -939,7 +939,7 @@
                 Only if <code>ALL</code> is specified, <code><a href="DEF-FN">DEF FN</a></code> definitions are preserved.
             </li>
             <li>
-                Only if <code>MERGE</code> is specified, <code><a href="#DEFINT">DEFINT</a></code>, <code><a href="#DEFSTR">DEFSTR</a></code>, <code><a href="#DEFSNG">DEFSNG</a></code>, <code><a href="#DEFDBL">DEFDBL</a></code> definitions
+                Only if <code>MERGE</code> is specified, <code><a href="#DEFINT">DEFINT</a></code>, <code>DEFSTR</code>, <code>DEFSNG</code>, <code>DEFDBL</code> definitions
                 are preserved.
             </li>
             <li>
@@ -1630,400 +1630,542 @@
         </ul>
     </section>
 
-<h3 id="DATA"><code>DATA</code> statement</h3>
-<pre>DATA [<var>const_0</var>] [, [<var>const_1</var>] [, ... ] ]</pre>
-<p>Specifies data that can be read by a READ statement.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>const_0</var>, <var>const_1</var>, ...</code>
-are string and number literals or may be empty. String literals can be given
-with or without quotation marks. If quotation marks are omitted, leading and
-trailing whitespace is ignored and commas or colons will terminate the data
-statement.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-If the type of the literal does not match that of the corresponding <code><a href="#READ">READ</a></code>
-statement, a <samp>Syntax error</samp> occurs on the <code>DATA</code> statement.
-</li></ul>
-
-<h3 id="DATE$"><code>DATE$</code> function</h3>
-<pre><var>s</var> = DATE$</pre>
-<p>Returns the system date as a string in the format <code>"mm-dd-yyyy"</code>.</p>
-<h4>Notes</h4>
-<ul><li>
-This function has no brackets.
-</li></ul>
-
-<h3 id="DATE$-statement"><code>DATE$</code> statement</h3>
-<pre>DATE$ = <var>date</var></pre>
-<p>Sets the system date. <code><var>date</var></code> is a string expression that represents a
-date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>, <code>"mm-dd-yy"</code>, <code>"mm/dd/yy"</code>.</p>
-<p>Of these, </p>
-<ul><li>
-<code>mm</code> must be in <code>[01&#8212;12]</code>.
-</li><li>
-<code>dd</code> must be in <code>[01&#8212;31]</code>.
-</li><li>
-<code>yyyy</code> must be in <code>[1980&#8212;2099]</code>.
-</li><li>
-<code>yy</code> must be in one of the ranges:
-    <ul><li>
-    <code>[00&#8212;77]</code>, interpreted as <code>2000&#8212;2077</code>; or
-    </li><li>
-    <code>[80&#8212;99]</code>, interpreted as <code>1980&#8212;1999</code>.
-    </li></ul>
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   The system date is not actually changed; rather, PC-BASIC remembers the
-    offset from the true system date. This avoids requiring user permission
-    to change the system time.
-</li><li>
-   GW-BASIC appears to accept invalid dates such as <code>"02-31-2000"</code>. PC-BASIC
-    raises <samp>Illegal function call</samp> for these.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>date</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>date</var></code> is not in the format specified above:
-    <samp>Illegal function call</samp>.
-</li></ul>
-
-<h3 id="DEF-FN"><code>DEF FN</code> statement</h3>
-<pre>DEF FN[ ]<var>name</var>[( <var>arg_0</var> [, <var>arg_1</var> [, ...] ] )] = <var>expression</var></pre>
-<p>Defines a function called <code><a href="#FN">FN</a><var>name</var></code> (or <code>FN<var> name</var></code>: spaces between <code>FN</code> and <code><var>name</var></code> are optional).
-On calling <code>FN<var>name</var>( ... )</code>, <code><var>expression</var></code> is
-evaluated with the supplied parameters substituted. The result of the
-evaluation is the return value of <code>FN<var>name</var></code>.
-</p>
-<h4>Notes</h4>
-<ul><li>
-This statement may only be used on a program line.
-</li></ul>
-
-<h4>Parameters</h4>
-<ul><li>
-<code><var>name</var></code> must be a legal variable name.
-</li><li>
-<code><var>arg_0</var>, <var>arg_1</var>, ...</code> must be legal variable names. These are the parameters of the
-function. Variables of the same name may or may not exist in the program; their value is not affected or used by the defined function.
-</li><li>
-<code><var>expression</var></code> must be a legal PC-BASIC expression that may use the
-parameters <code><var>arg_0</var>, <var>arg_1</var>, ...</code>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-The statement is executed directly instead of in a program line: <samp>Illegal direct</samp>.
-</li></ul>
-
-
-<h3 id="DEFINT"><code>DEFINT</code> statement</h3>
-<pre>DEFINT <var>letters</var></pre>
-<p>Sets the default type for variables starting with <code><var>letters</var></code> to integer (<code>%</code>).
-This is the type that is assumed if no type character is specified. <code><var>letters</var></code>
-are letters of the alphabet separated by commas or ranges specified with a
-dash: for example, <code>DEFINT A,B,C-Z</code>.</p>
-
-
-<h3 id="DEFDBL"><code>DEFDBL</code> statement</h3>
-<pre>DEFDBL <var>letters</var></pre>
-<p>Sets the default type for variables starting with <code><var>letters</var></code> to double (<code>#</code>).
-This is the type that is assumed if no type character is specified. <code><var>letters</var></code>
-are letters of the alphabet separated by commas or ranges specified with a
-dash: for example, <code>DEFDBL A,B,C-Z</code>.</p>
-
-
-<h3 id="DEFSNG"><code>DEFSNG</code> statement</h3>
-<pre>DEFSNG <var>letters</var></pre>
-<p>Sets the default type for variables starting with <code><var>letters</var></code> to single (<code>!</code>).
-This is the type that is assumed if no type character is specified. <code><var>letters</var></code>
-are letters of the alphabet separated by commas or ranges specified with a
-dash: for example, <code>DEFSNG A,B,C-Z</code>. <code>DEFSNG A-Z</code> is the default setting.</p>
-
-
-<h3 id="DEFSTR"><code>DEFSTR</code> statement</h3>
-<pre>DEFSTR <var>letters</var></pre>
-<p>Sets the default type for variables starting with <code><var>letters</var></code> to string (<code>$</code>).
-This is the type that is assumed if no type character is specified. <code><var>letters</var></code>
-are letters of the alphabet separated by commas or ranges specified with a
-dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
-
-
-<h3 id="DEF-SEG"><code>DEF SEG</code> statement</h3>
-<pre>DEF SEG [=<var>address</var>]</pre>
-<p>Sets the memory segment to be used by <code><a href="#BLOAD">BLOAD</a></code>, <code><a href="#BSAVE">BSAVE</a></code>, <code><a href="#CALL">CALL</a></code>,
-    <code><a href="#PEEK">PEEK</a></code>, <code><a href="#POKE">POKE</a></code>, or <code><a href="#USR">USR</a></code>.
-<code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>.
-</p><h4>Notes</h4>
-<ul><li>
-   If <code><var>address</var></code> is negative, it is interpreted as its two's complement.
-</li><li>
-   If <code><var>address</var></code> is not specified, the segment is set to the GW-BASIC data
-    segment.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
- <code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
- <code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li></ul>
-
-
-<h3 id="DEF-USR"><code>DEF USR</code> statement</h3>
-<pre>DEF USR[<var>n</var>] = <var>address</var></pre>
-<p>Does nothing. </p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>n</var></code> is a digit between 0 and 9 inclusive.
-</li><li>
-<code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   In GW-BASIC, this statement sets the starting address of an assembly-language function.
-</li><li>
-    This statement is not implemented in PC-BASIC.
-</li><li>
-   If <code><var>address</var></code> is negative, it is interpreted as its two's complement.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
- <code><var>n</var></code> is not a digit in <code>[0&#8212;9]</code>: <samp>Syntax error</samp>.
-</li><li>
- <code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
-</li><li>
- <code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-</li></ul>
-
-<h3 id="DELETE"><code>DELETE</code> statement</h3>
-<pre>DELETE [ <var>line_number_0</var> | . ] [ - [ <var>line_number_1</var> | . ] ]</pre>
-<p>Deletes a range of lines from the program.
-Also stops program execution and returns control to the user.</p>
-<h4>Parameters</h4>
-<ul><li>
-<code><var>line_number_0</var></code> and
-<code><var>line_number_1</var></code> are line numbers in the range <code>[0&#8212;65529]</code>, specifying the inclusive range of line numbers to delete.
-</li><li>
-A <code>.</code> indicates the last line edited.
-</li><li>
-If the start point is omitted, the range will start at the start of the program.
-</li><li>
-If the end point is omitted, the range will end at the end of the program.
-</li><li>
-If no range is specified, the whole program will be deleted.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>line_number_0</var></code> or
-<code><var>line_number_1</var></code> is greater than <code>65529</code>: <samp>Syntax error</samp>.
-</li><li>
-The range specified does not include any program lines stored: <samp>Illegal function call</samp>.
-</li></ul>
-
-
-<h3 id="DIM"><code>DIM</code> statement</h3>
-<pre>DIM <var>name</var> { ( | [ } <var>limit_0</var> [, <var>limit_1</var> [, ...] ] { ) | } ]</pre>
-<p>Allocates memory for arrays.
-The <code>DIM</code> statement also fixes the number of indices of the array.
-An array can only be allocated once; to re-allocate an array, <code><a href="#ERASE">ERASE</a></code> or
- <code><a href="#CLEAR">CLEAR</a></code> must be executed first.
-If an array is first used without a <code>DIM</code> statement, it is automatically allocated with its maximum indices set at <code>10</code>
-for each index position used. If an array's <code>DIM</code> statement specifies no indices,
- it is allocated with a single index with maximum <code>10</code>.
-The least index allowed is determined by <code><a href="#OPTION-BASE">OPTION BASE</a></code>.
-</p><h4>Parameters</h4>
-<ul><li>
-<code><var>name</var></code> is a legal variable name
-specifying the array to be allocated.
-</li><li>
-<code><var>limit_0</var>, <var>limit_1</var>, ...</code> are numeric
-expressions that specify the greatest index allowed at that position.
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-Mixed brackets are allowed.
-</li><li>
-   The size of arrays is limited by the available BASIC memory.
-</li><li>
-   The maximum number of indices is, theoretically, <code>255</code>. In practice,
-    it is limited by the 255-byte limit on the length of program lines.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
-<code><var>name</var></code> has already been dimensioned: <samp>Duplicate definition</samp>.
-</li><li>
-An index is empty: <samp>Syntax error</samp>.
-</li><li>
-An index is missing at the end: <samp>Missing operand</samp>.
-</li><li>
-<code><var>limit_0</var>, <var>limit_1</var>, ...</code> have a string value: <samp>Type mismatch</samp>.
-</li><li>
-<code><var>limit_0</var>, <var>limit_1</var>, ...</code> are not within <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-</li><li>
-<code><var>limit_0</var>, <var>limit_1</var>, ...</code> are negative: <samp>Illegal function call</samp>.
-</li><li>
-The array exceeds the size of available variable
-    space:    <samp>Out of memory</samp>.
-    </li></ul>
-
-
-<h3 id="DRAW"><code>DRAW</code> statement</h3>
-<pre>DRAW <var>gml_string</var></pre>
-<p>
-    Draws the shape specified by <code><var>gml_string</var></code>,
-    a string expression in Graphics Macro Language (GML).
-</p>
-<h4>Graphics Macro Language reference</h4>
-<dl>
-    <dt>Movement commands</dt>
-    <dd>
-        <pre>[B][N] <var>movement</var> </pre>
-        where the default is to move and draw; the optional prefixes mean:
-        <div class="scrollable">
-        <table>
-            <tr>
-                <td><code>B</code></td>
-                <td>move but do not plot</td>
-            </tr><tr>
-                <td><code>N</code></td>
-                <td>return to original point after move</td>
-            </tr>
-        </table>
-        </div>
-        and <code><var>movement</var></code> is one of:
-        <div class="scrollable">
-        <table>
-            <tr>
-                <td><code>U[<var>n</var>]</code></td>
-                <td>up <code><var>n</var></code> steps</td>
-            </tr><tr>
-                <td><code>L[<var>n</var>]</code></td>
-                <td>left <code><var>n</var></code> steps</td>
-            </tr><tr>
-                <td><code>D[<var>n</var>]</code></td>
-                <td>down <code><var>n</var></code> steps</td>
-            </tr><tr>
-                <td><code>R[<var>n</var>]</code></td>
-                <td>right <code><var>n</var></code> steps</td>
-            </tr><tr>
-                <td><code>E[<var>n</var>]</code></td>
-                <td>up and right <code><var>n</var></code> steps</td>
-            </tr><tr>
-                <td><code>F[<var>n</var>]</code></td>
-                <td>down and right <code><var>n</var></code> steps</td>
-            </tr><tr>
-                <td><code>G[<var>n</var>]</code></td>
-                <td>down and left <code><var>n</var></code> steps</td>
-            </tr><tr>
-                <td><code>H[<var>n</var>]</code></td>
-                <td>up and left <code><var>n</var></code> steps</td>
-            </tr><tr>
-                <td><code>M{+|-}<var>x</var>,[+|-]<var>y</var></code></td>
-                <td>move (<code><var>x</var></code>,<code><var>y</var></code>) steps</td>
-            </tr><tr>
-                <td><code>M<var>x</var>,<var>y</var></code></td>
-                <td>move to view region coordinate (<code><var>x</var></code>,<code><var>y</var></code>)</td>
-            </tr>
-        </table>
-        </div>
-        <p>where <code><var>n</var></code>, <code><var>x</var></code>, <code><var>y</var></code> are integers in <code>[0&#8212;9999]</code>.
-        Where optional, <code><var>n</var></code> defaults to <code>1</code>.</p>
-    </dd>
-    <dt>Scale commands</dt>
-    <dd>
-        <div class="scrollable">
-        <table>
-            <tr>
-                <td><code>S<var>n</var></code></td>
-                <td>
-                    set the step size to <code><var>n</var>/4</code>. The default step size is 1 pixel.
-                    <code><var>n</var></code> is an integer in <code>[1&#8212;255]</code>
-                </td>
-            </tr><tr>
-                <td><code>TA<var>n</var></code></td>
-                <td>
-                    set the angle to <code><var>n</var></code> degrees. The default angle is 0 degrees.
-                    <code><var>n</var></code> is an integer in <code>[-360&#8212;360]</code>
-                </td>
-            </tr><tr>
-                <td><code>A<var>n</var></code></td>
-                <td>
-                    set the angle to
-                    0 for <code><var>n</var>=0</code>,
-                    90 for <code><var>n</var>=1</code>,
-                    180 for <code><var>n</var>=2</code>,
-                    270 for <code><var>n</var>=3</code>.
-                    <code><var>n</var></code> is an integer in <code>[0&#8212;3]</code>
-                </td>
-            </tr>
-        </table>
-        </div>
-    </dd>
-    <dt>Colour commands</dt>
-    <dd>
-        <div class="scrollable">
-        <table>
-            <tr>
-                <td><code>C<var>n</var></code></td>
-                <td>
-                    set the foreground attribute to <code><var>n</var></code>.
-                    See <code><a href="#COLOR">COLOR</a></code>.
-                </td>
-            </tr><tr>
-                <td><code>P<var>n</var>,<var>b</var></code></td>
-                <td>
-                    flood fill with attribute <code><var>n</var></code> and boundary
-                    attribute <code><var>b</var></code>.
-                    See <code><a href="#PAINT">PAINT</a></code>.
-                </td>
-            </tr>
-        </table>
-        </div>
-    </dd>
-    <dt>Subroutine command</dt>
-    <dd>
-        <div class="scrollable">
-        <table>
-            <tr>
-                <td><code>X<var>s</var></code></td>
-                <td>      execute a substring</td>
-            </tr>
-        </table>
-        </div>
-        <p><code><var>s</var></code> is one of the following:</p>
+    <section>
+        <h3 id="DATA"><code>DATA</code> statement</h3>
+        <code class="block">
+            <b>DATA</b> [<var>const_0</var>] [<b>,</b> [<var>const_1</var>]] ...
+        </code>
+        <p>
+            Specifies data that can be read by a READ statement.
+        </p>
+        <h4>Parameters</h4>
         <ul>
-            <li>a string variable name followed by semicolon (<code>;</code>)</li>
-            <li>the result of <code><a href="#VARPTR$">VARPTR$()</a></code> on a string variable</li>
+            <li>
+                <code><var>const_0</var>, <var>const_1</var>, ...</code>
+                are string and number literals or may be empty. String literals can be given
+                with or without quotation marks. If quotation marks are omitted, leading and
+                trailing whitespace is ignored and commas or colons will terminate the data
+                statement.
+            </li>
         </ul>
-    </dd>
-</dl>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                If the type of the literal does not match that of the corresponding <code><a href="#READ">READ</a></code>
+                statement, a <samp>Syntax error</samp> occurs on the <code>DATA</code> statement.
+            </li>
+        </ul>
+    </section>
 
-<p>Numeric variables <code><var>n</var></code>, <code><var>x</var></code>, <code><var>y</var></code>, <code><var>b</var></code> in the commands above can be:</p>
-<ul><li>
-an integer literal, e.g. <code>DRAW "U100"</code>
-</li><li>
-a numeric variable name <code><var>var</var></code> preceded by <code>=</code> and followed by <code>;</code> e.g. <code>DRAW "U=VAR;"</code>
-</li><li>
-    the result of <code>VARPTR$(<var>var</var>)</code> preceded by <code>=</code>.  For example, <code>DRAW "U=" + VARPTR$(VAR)</code>
-</li></ul>
-<h4>Notes</h4>
-<ul><li>
-   The <code>CLS</code> statement resets the step size to 1 pixel, angle to 0 degrees and position to the
-    centre of the view region.
-</li><li>
-   The value <code><var>n</var></code> in the <code>TA</code>, <code>A</code> and <code>C</code> command can be left out but <em>only</em> if the
-    command is terminated by a semicolon. <code><var>n</var></code> defaults to <code>0</code>.
-</li></ul>
-<h4>Errors</h4>
-<ul><li>
- <code><var>gml_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
-</li><li>
- <code><var>gml_string</var></code> has errors in the GML: <samp>Illegal function call</samp>.
-</li><li>
-A variable referenced in the GML string is of incorrect type: <samp>Type mismatch</samp>.
-</li></ul>
+    <section>
+        <h3 id="DATE$"><code>DATE$</code> function</h3>
+        <code class="block">
+            <var>s</var> <b>= DATE$</b>
+        </code>
+        <p>
+            Returns the system date as a string in the format <code>"mm-dd-yyyy"</code>.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h3 id="DATE$-statement"><code>DATE$</code> statement</h3>
+        <code class="block">
+            <b>DATE$ = </b><var>date</var>
+        </code>
+        <p>
+            Sets the system date. <code><var>date</var></code> is a string expression that represents a
+            date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>, <code>"mm-dd-yy"</code>, <code>"mm/dd/yy"</code>.
+        </p>
+        <p>
+            Of these,
+        </p>
+        <ul>
+            <li>
+                <code>mm</code> must be in <code>[01&#8212;12]</code>.
+            </li>
+            <li>
+                <code>dd</code> must be in <code>[01&#8212;31]</code>.
+            </li>
+            <li>
+                <code>yyyy</code> must be in <code>[1980&#8212;2099]</code>.
+            </li>
+            <li>
+                <code>yy</code> must be in one of the ranges:
+                <ul>
+                    <li>
+                        <code>[00&#8212;77]</code>, interpreted as <code>2000&#8212;2077</code>; or
+                    </li>
+                    <li>
+                        <code>[80&#8212;99]</code>, interpreted as <code>1980&#8212;1999</code>.
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                The system date is not actually changed; rather, PC-BASIC remembers the
+                offset from the true system date. This avoids requiring user permission
+                to change the system time.
+            </li>
+            <li>
+                GW-BASIC appears to accept invalid dates such as <code>"02-31-2000"</code>. PC-BASIC
+                raises <samp>Illegal function call</samp> for these.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>date</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>date</var></code> is not in the format specified above:
+                <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h3 id="DEF-FN"><code>DEF FN</code> statement</h3>
+        <code class="block">
+            <b>DEF FN</b>[ ]<var>name</var> [<b>(</b><var>arg_0</var> [<b>,</b> <var>arg_1</var>] ...<b>)</b>] <b>=</b> <var>expression</var>
+        </code>
+        <p>
+            Defines a function called <code><a href="#FN">FN</a><var>name</var></code>
+            (or <code>FN<var> name</var></code>: spaces between <code>FN</code> and <code><var>name</var></code> are optional).
+            On calling <code>FN<var>name</var>( ... )</code>, <code><var>expression</var></code> is
+            evaluated with the supplied parameters substituted. The result of the
+            evaluation is the return value of <code>FN<var>name</var></code>.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                This statement may only be used on a program line.
+            </li>
+        </ul>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>name</var></code> must be a legal variable name.
+            </li>
+            <li>
+                <code><var>arg_0</var>, <var>arg_1</var>, ...</code> must be legal variable names. These are the parameters of the
+                function. Variables of the same name may or may not exist in the program; their value is not affected or used by the defined function.
+            </li>
+            <li>
+                <code><var>expression</var></code> must be a legal PC-BASIC expression that may use the
+                parameters <code><var>arg_0</var>, <var>arg_1</var>, ...</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                The statement is executed directly instead of in a program line: <samp>Illegal direct</samp>.
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h3 id="DEFINT"><code>DEFINT</code>, <code>DEFDBL</code>, <code>DEFSNG</code>, <code>DEFSTR</code> statements</h3>
+        <code class="block">
+            <b>{DEFINT|DEFDBL|DEFSNG|DEFSTR}</b> <var>first_0</var>[<b>-</b> <var>last_0</var>] [<b>,</b> <var>first_1</var>[<b>-</b> <var>last_1</var>]] ...
+        </code>
+        <p>
+            Sets the type that is assumed if no type character is specified when a variable name is used.
+            The statement sets the default type for varables starting with a letter from the ranges specified.
+        </p>
+        <p>
+            The default type is set to:
+        </p>
+        <dl class="compact">
+            <dt><code>DEFINT</code></dt>
+            <dd>integer (<code>%</code>)</dd>
+            <dt><code>DEFDBL</code></dt>
+            <dd>double (<code>#</code>)</dd>
+            <dt><code>DEFSNG</code></dt>
+            <dd>single (<code>!</code>)</dd>
+            <dt><code>DEFSTR</code></dt>
+            <dd>string (<code>$</code>)</dd>
+        </dl>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>first_0</var>, <var>last_0</var>, ...</code> are letters of the alphabet.
+                Pairs of letters connected by a dash <code>-</code> indicate includive ranges.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                <code>DEFSNG A-Z</code> is the default setting.
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h3 id="DEF-SEG"><code>DEF SEG</code> statement</h3>
+        <code class="block">
+            <b>DEF SEG</b> [<b>=</b> <var>address</var>]
+        </code>
+        <p>
+            Sets the memory segment to be used by <code><a href="#BLOAD">BLOAD</a></code>, <code><a href="#BSAVE">BSAVE</a></code>, <code><a href="#CALL">CALL</a></code>,
+            <code><a href="#PEEK">PEEK</a></code>, <code><a href="#POKE">POKE</a></code>, or <code><a href="#USR">USR</a></code>.
+            <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>.
+        </p>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                If <code><var>address</var></code> is negative, it is interpreted as its two's complement.
+            </li>
+            <li>
+                If <code><var>address</var></code> is not specified, the segment is set to the GW-BASIC data
+                segment.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h3 id="DEF-USR"><code>DEF USR</code> statement</h3>
+        <code class="block">
+            <b>DEF USR</b>[<var>n</var>] <b>=</b> <var>address</var>
+        </code>
+        <p>
+            Does nothing.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>n</var></code> is a digit between 0 and 9 inclusive.
+            </li>
+            <li>
+                <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                In GW-BASIC, this statement sets the starting address of an assembly-language function.
+            </li>
+            <li>
+                This statement is not implemented in PC-BASIC.
+            </li>
+            <li>
+               If <code><var>address</var></code> is negative, it is interpreted as its two's complement.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+            <code><var>n</var></code> is not a digit in <code>[0&#8212;9]</code>: <samp>Syntax error</samp>.
+        </li>
+        <li>
+            <code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
+        </li>
+        <li>
+            <code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+        </li>
+        </ul>
+    </section>
+
+    <section>
+        <h3 id="DELETE"><code>DELETE</code> statement</h3>
+        <code class="block">
+            <b>DELETE</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>] ]
+        </code>
+        <p>
+            Deletes a range of lines from the program.
+            Also stops program execution and returns control to the user.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>line_number_0</var></code> and
+                <code><var>line_number_1</var></code> are line numbers in the range <code>[0&#8212;65529]</code>, specifying the inclusive range of line numbers to delete.
+            </li>
+            <li>
+                A <code>.</code> indicates the last line edited.
+            </li>
+            <li>
+                If the start point is omitted, the range will start at the start of the program.
+            </li>
+            <li>
+                If the end point is omitted, the range will end at the end of the program.
+            </li>
+            <li>
+                If no range is specified, the whole program will be deleted.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>line_number_0</var></code> or
+                <code><var>line_number_1</var></code> is greater than <code>65529</code>: <samp>Syntax error</samp>.
+            </li>
+            <li>
+                The range specified does not include any program lines stored: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h3 id="DIM"><code>DIM</code> statement</h3>
+        <code class="block">
+            <b>DIM</b> <var>name</var> {<b>(</b>|<b>[</b>} <var>limit_0</var> [<b>,</b> <var>limit_1</var>] ... {<b>)</b>|<b>]</b>}
+        </code>
+        <p>
+            Allocates memory for arrays.
+            The <code>DIM</code> statement also fixes the number of indices of the array.
+            An array can only be allocated once; to re-allocate an array, <code><a href="#ERASE">ERASE</a></code> or
+            <code><a href="#CLEAR">CLEAR</a></code> must be executed first.
+            If an array is first used without a <code>DIM</code> statement, it is automatically allocated with its maximum indices set at <code>10</code>
+            for each index position used. If an array's <code>DIM</code> statement specifies no indices,
+            it is allocated with a single index with maximum <code>10</code>.
+            The least index allowed is determined by <code><a href="#OPTION-BASE">OPTION BASE</a></code>.
+        </p>
+        <h4>Parameters</h4>
+        <ul>
+            <li>
+                <code><var>name</var></code> is a legal variable name
+                specifying the array to be allocated.
+            </li>
+            <li>
+                <code><var>limit_0</var>, <var>limit_1</var>, ...</code> are numeric
+                expressions that specify the greatest index allowed at that position.
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                Mixed brackets are allowed.
+            </li>
+            <li>
+                The size of arrays is limited by the available BASIC memory.
+            </li>
+            <li>
+                The maximum number of indices is, theoretically, <code>255</code>. In practice,
+                it is limited by the 255-byte limit on the length of program lines.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>name</var></code> has already been dimensioned: <samp>Duplicate definition</samp>.
+            </li>
+            <li>
+                An index is empty: <samp>Syntax error</samp>.
+            </li>
+            <li>
+                An index is missing at the end: <samp>Missing operand</samp>.
+            </li>
+            <li>
+                <code><var>limit_0</var>, <var>limit_1</var>, ...</code> have a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>limit_0</var>, <var>limit_1</var>, ...</code> are not within <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>limit_0</var>, <var>limit_1</var>, ...</code> are negative: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                The array exceeds the size of available variable
+                space: <samp>Out of memory</samp>.
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h3 id="DRAW"><code>DRAW</code> statement</h3>
+        <code class="block">
+            <b>DRAW</b> <var>gml_string</var>
+        </code>
+        <p>
+            Draws the shape specified by <code><var>gml_string</var></code>,
+            a string expression in Graphics Macro Language (GML).
+        </p>
+        <h4>Graphics Macro Language reference</h4>
+        <dl>
+            <dt>Movement commands</dt>
+            <dd>
+                <code class="block">
+                    [<b>B</b>][<b>N</b>] <var>movement</var>
+                </code>
+                where the default is to move and draw; the optional prefixes mean:
+                <div class="scrollable">
+                <table>
+                    <tr>
+                        <td><code><b>B</b></code></td>
+                        <td>move but do not plot</td>
+                    </tr><tr>
+                        <td><code><b>N</b></code></td>
+                        <td>return to original point after move</td>
+                    </tr>
+                </table>
+                </div>
+                and <code><var>movement</var></code> is one of:
+                <div class="scrollable">
+                    <table>
+                        <tr>
+                            <td><code><b>U</b>[<var>n</var>]</code></td>
+                            <td>up <code><var>n</var></code> steps</td>
+                        </tr><tr>
+                            <td><code><b>L</b>[<var>n</var>]</code></td>
+                            <td>left <code><var>n</var></code> steps</td>
+                        </tr><tr>
+                            <td><code><b>D</b>[<var>n</var>]</code></td>
+                            <td>down <code><var>n</var></code> steps</td>
+                        </tr><tr>
+                            <td><code><b>R</b>[<var>n</var>]</code></td>
+                            <td>right <code><var>n</var></code> steps</td>
+                        </tr><tr>
+                            <td><code><b>E</b>[<var>n</var>]</code></td>
+                            <td>up and right <code><var>n</var></code> steps</td>
+                        </tr><tr>
+                            <td><code><b>F</b>[<var>n</var>]</code></td>
+                            <td>down and right <code><var>n</var></code> steps</td>
+                        </tr><tr>
+                            <td><code><b>G</b>[<var>n</var>]</code></td>
+                            <td>down and left <code><var>n</var></code> steps</td>
+                        </tr><tr>
+                            <td><code><b>H</b>[<var>n</var>]</code></td>
+                            <td>up and left <code><var>n</var></code> steps</td>
+                        </tr><tr>
+                            <td><code><b>M</b>{<b>+</b>|<b>-</b>}<var>x</var><b>,</b>[<b>+</b>|<b>-</b>]<var>y</var></code></td>
+                            <td>move (<code><var>x</var></code>,<code><var>y</var></code>) steps</td>
+                        </tr><tr>
+                            <td><code><b>M</b><var>x</var><b>,</b><var>y</var></code></td>
+                            <td>move to view region coordinate (<code><var>x</var></code>,<code><var>y</var></code>)</td>
+                        </tr>
+                    </table>
+                </div>
+                <p>
+                    where <code><var>n</var></code>, <code><var>x</var></code>, <code><var>y</var></code> are integers in <code>[0&#8212;9999]</code>.
+                    Where optional, <code><var>n</var></code> defaults to <code>1</code>.
+                </p>
+            </dd>
+            <dt>Scale commands</dt>
+            <dd>
+                <div class="scrollable">
+                    <table>
+                        <tr>
+                            <td><code><b>S</b><var>n</var></code></td>
+                            <td>
+                                set the step size to <code><var>n</var>/4</code>. The default step size is 1 pixel.
+                                <code><var>n</var></code> is an integer in <code>[1&#8212;255]</code>
+                            </td>
+                        </tr><tr>
+                            <td><code><b>TA</b><var>n</var></code></td>
+                            <td>
+                                set the angle to <code><var>n</var></code> degrees. The default angle is 0 degrees.
+                                <code><var>n</var></code> is an integer in <code>[-360&#8212;360]</code>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code><b>A</b><var>n</var></code></td>
+                            <td>
+                                set the angle to
+                                0 for <code><var>n</var>=0</code>,
+                                90 for <code><var>n</var>=1</code>,
+                                180 for <code><var>n</var>=2</code>,
+                                270 for <code><var>n</var>=3</code>.
+                                <code><var>n</var></code> is an integer in <code>[0&#8212;3]</code>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </dd>
+            <dt>Colour commands</dt>
+            <dd>
+                <div class="scrollable">
+                    <table>
+                        <tr>
+                            <td><code><b>C</b><var>n</var></code></td>
+                            <td>
+                                set the foreground attribute to <code><var>n</var></code>.
+                                See <code><a href="#COLOR">COLOR</a></code>.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code><b>P</b><var>n</var>,<var>b</var></code></td>
+                            <td>
+                                flood fill with attribute <code><var>n</var></code> and boundary
+                                attribute <code><var>b</var></code>.
+                                See <code><a href="#PAINT">PAINT</a></code>.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </dd>
+            <dt>Subroutine command</dt>
+            <dd>
+                <div class="scrollable">
+                    <table>
+                        <tr>
+                            <td><code><b>X</b><var>s</var></code></td>
+                            <td>execute a substring</td>
+                        </tr>
+                    </table>
+                </div>
+                <p><code><var>s</var></code> is one of the following:</p>
+                <ul>
+                    <li>a string variable name followed by semicolon (<code>;</code>)</li>
+                    <li>the result of <code><a href="#VARPTR$">VARPTR$()</a></code> on a string variable</li>
+                </ul>
+            </dd>
+        </dl>
+        <p>
+            Numeric variables <code><var>n</var></code>, <code><var>x</var></code>,
+            <code><var>y</var></code>, <code><var>b</var></code> in the commands above can be:
+        </p>
+        <ul>
+            <li>
+                an integer literal, e.g. <code>DRAW "U100"</code>
+            </li>
+            <li>
+                a numeric variable name <code><var>var</var></code> preceded by <code>=</code> and followed by <code>;</code> e.g. <code>DRAW "U=VAR;"</code>
+            </li>
+            <li>
+                the result of <code>VARPTR$(<var>var</var>)</code> preceded by <code>=</code>.  For example, <code>DRAW "U=" + VARPTR$(VAR)</code>
+            </li>
+        </ul>
+        <h4>Notes</h4>
+        <ul>
+            <li>
+                The <code>CLS</code> statement resets the step size to 1 pixel, angle to 0 degrees and position to the
+                centre of the view region.
+            </li>
+            <li>
+                The value <code><var>n</var></code> in the <code>TA</code>, <code>A</code> and <code>C</code> command can be left out but <em>only</em> if the
+                command is terminated by a semicolon. <code><var>n</var></code> defaults to <code>0</code>.
+            </li>
+        </ul>
+        <h4>Errors</h4>
+        <ul>
+            <li>
+                <code><var>gml_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>gml_string</var></code> has errors in the GML: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                A variable referenced in the GML string is of incorrect type: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
 
 
 <h3 id="EDIT"><code>EDIT</code> statement</h3>
