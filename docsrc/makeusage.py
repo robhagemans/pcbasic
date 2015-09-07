@@ -1,11 +1,7 @@
 #!/usr/bin/env python2
 from lxml import etree, html
-import codecs
-import sys
 import re
 from cStringIO import StringIO
-import time
-import os
 import textwrap
 
 
@@ -25,22 +21,25 @@ class TextBlock(object):
 def html_to_text(html):
     indent_tags = 'DD',
     block_tags = 'P', 'H1', 'H2', 'DT'
+    break_after_tags = 'DD', 'P', 'H1', 'H2'
 
     def massage(text):
         return text.encode('utf-8')
 
     def parse_element(e, blocklist):
         last_indent = blocklist[-1].indent
-        inner =  massage(e.text) if e.text else ''
+        tag = e.tag.upper()
+        inner = massage(e.text) if e.text else ''
         tail = massage(e.tail) if e.tail and e.tail.strip() else ''
-        if e.tag.upper() in block_tags or e.get('class') == 'block':
-            blocklist.append(TextBlock(last_indent, ''))
-        elif e.tag.upper() in indent_tags:
-            blocklist.append(TextBlock(last_indent+1, '', 1))
+        break_after = (tag in break_after_tags or e.get('class') == 'block')
+        if tag in block_tags or e.get('class') == 'block':
+            blocklist.append(TextBlock(last_indent, '', break_after))
+        elif tag in indent_tags:
+            blocklist.append(TextBlock(last_indent+1, '', break_after))
         blocklist[-1].content += inner
         for c in e.iterchildren(tag=etree.Element):
             parse_element(c, blocklist)
-        if (e.tag.upper() in indent_tags + block_tags or blocklist[-1].indent != last_indent):
+        if (tag in indent_tags + block_tags or blocklist[-1].indent != last_indent):
             break_after = blocklist[-1].break_after
             blocklist.append(TextBlock(last_indent, tail, break_after))
         else:
@@ -51,7 +50,7 @@ def html_to_text(html):
     docroot = doc.getroot()
     blocklist = [TextBlock(0, '')]
     parse_element(docroot, blocklist)
-    return '\n'.join(str(block) for block in blocklist[1:] if block.content)
+    return '\n'.join(str(block) for block in blocklist[1:] if str(block).strip())
 
 usage_html = open('options.html', mode='r').read()
 
