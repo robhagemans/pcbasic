@@ -58,5 +58,5 @@ def html_to_text(html):
 usage_html = open('options.html', mode='r').read()
 
 # output usage
-with open('usage.txt', 'w') as textfile:
+with open('../pcbasic/data/usage.txt', 'w') as textfile:
     textfile.write(html_to_text(usage_html))
