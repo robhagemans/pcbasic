@@ -15,12 +15,6 @@ def massage(text):
 def html_to_text(e, indent='', inside=False):
     inner = massage(e.text) if e.text else ''
     tail = massage(e.tail) if e.tail else ''
-    #sys.stderr.write(indent + e.tag.upper())
-    #if inner:
-    #    sys.stderr.write( ' inner "%s"' % inner )
-    #if tail:
-    #    sys.stderr.write( ' tail "%s"' % tail )
-    #sys.stderr.write( '\n')
     children = ''.join(html_to_text(child, '  '+indent, inside or e.tag.upper()=='DD') for child in e.iterchildren(tag=etree.Element))
     if e.tag.upper() == 'H1':
         return '\n.SH NAME\n' + inner.lower().replace('\-', '') + ' \- '
@@ -65,7 +59,6 @@ with open('../doc/pcbasic.1', 'w') as manfile:
     manfile.write(html_to_man(man_html))
 subprocess.Popen('gzip -f ../doc/pcbasic.1'.split())
 
-#print html_to_man(usage_html)
 # output usage
 with open('usage.man', 'w') as manfile:
     manfile.write(html_to_man(usage_html))
