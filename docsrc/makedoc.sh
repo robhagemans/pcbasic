@@ -16,10 +16,10 @@ echo $HEADER $OUTPUT
 mkdir ../doc
 cp doc.css ../doc
 cp LICENSE.md ../doc
-pandoc ../LICENSE.md -t html5 -o pcbasiclicense.html
-pandoc LICENSE.md -t html5 -o doclicense.html
+./mdtohtml.py ../LICENSE.md pcbasiclicense.html
+./mdtohtml.py LICENSE.md doclicense.html
 
-(echo "<article>"; pandoc ../README.md -t html5; echo "</article>") | sed -e "s/h3/h1/g" -e "s/h4/h2/g" -e "s_PC-BASIC</h1>_Overview</h1>_"> quickstart.html
+(echo "<article>"; ./mdtohtml.py ../README.md /dev/stdout; echo "</article>") | sed -e "s/h3/h1/g" -e "s/h4/h2/g" -e "s_PC-BASIC</h1>_Overview</h1>_"> quickstart.html
 (echo -e "<footer>\n<h1 id=\"licence\">Licences</h1>"; cat pcbasiclicense.html doclicense.html; echo "</footer>") > licences.html
 (echo -e "<article>"; cat settings.html options.html examples.html; echo "</article>") > settings-options.html
 (cat quickstart.html documentation.html settings-options.html reference.html techref.html acknowledgements.html licences.html footer.html) > predoc.html
