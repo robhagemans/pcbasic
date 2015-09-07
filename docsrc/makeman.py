@@ -7,8 +7,7 @@ from cStringIO import StringIO
 import subprocess
 import time
 import os
-
-
+import gzip
 
 
 def html_to_man(html):
@@ -57,9 +56,8 @@ man_html = title_html + desc_html + options_html + examples_html
 usage_html = options_html
 
 # output manfile
-with open('../doc/pcbasic.1', 'w') as manfile:
+with gzip.open('../doc/pcbasic.1.gz', 'wb') as manfile:
     manfile.write(html_to_man(man_html))
-subprocess.Popen('gzip -f ../doc/pcbasic.1'.split())
 
 # output usage
 with open('usage.man', 'w') as manfile:
