@@ -31,7 +31,7 @@ def html_to_text(html):
         last_indent = blocklist[-1].indent
         tag = e.tag.upper()
         inner = massage(e.text) if e.text else ''
-        tail = massage(e.tail) if e.tail and e.tail.strip() else ''
+        tail = massage(e.tail) if e.tail else ''
         if tag in upper_tags:
             inner = inner.upper()
         break_after = (tag in break_after_tags or e.get('class') == 'block')
