@@ -22,6 +22,7 @@ def html_to_text(html):
     indent_tags = 'DD',
     block_tags = 'P', 'H1', 'H2', 'DT'
     break_after_tags = 'DD', 'P', 'H1', 'H2'
+    upper_tags = 'H1', 'H2'
 
     def massage(text):
         return text.encode('utf-8')
@@ -31,6 +32,8 @@ def html_to_text(html):
         tag = e.tag.upper()
         inner = massage(e.text) if e.text else ''
         tail = massage(e.tail) if e.tail and e.tail.strip() else ''
+        if tag in upper_tags:
+            inner = inner.upper()
         break_after = (tag in break_after_tags or e.get('class') == 'block')
         if tag in block_tags or e.get('class') == 'block':
             blocklist.append(TextBlock(last_indent, '', break_after))
