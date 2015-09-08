@@ -1,8 +1,8 @@
-PC-BASIC interpreter  
---------------------
-Copyright © 2013—2015 Rob Hagemans.  
+### PC-BASIC interpreter ###
 
-Source code available at [https://github.com/robhagemans/pcbasic](https://github.com/robhagemans/pcbasic).
+**Copyright © 2013—2015 Rob Hagemans.**
+
+_Source code available at [https://github.com/robhagemans/pcbasic](https://github.com/robhagemans/pcbasic)._
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the [GNU General Public License, Version 3](http://www.gnu.org/licenses/gpl-3.0.en.html),
