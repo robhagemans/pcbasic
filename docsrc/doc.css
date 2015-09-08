@@ -27,7 +27,7 @@ hr {
     display: block;
 }
 
-figure, .scrollable {
+figure, .scrollable, pre, code.block, samp.block {
     max-width: 45em;
     width: 100%;
     overflow-x: auto;
@@ -36,7 +36,6 @@ figure, .scrollable {
 figure {
     margin: 0;
     padding: 0;
-
 }
 
 article, header, nav.toc, footer {
