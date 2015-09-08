@@ -93,30 +93,30 @@ nav.toc a:hover {
     color: black;
     text-decoration: underline;
 }
-h1, h2 {
+h1, h2, h3 {
     font-size: 1.3em;
     background: #000044;
     padding: 0.2em;
     color: white;
 }
-h2 {
+h3 {
     background: #444444;
     margin-top: 3rem;
 }
 
-h3 {
+h4 {
     margin-top: 2rem;
     margin-bottom: 0;
     font-size: 1.2em;
     border-bottom: 2px solid #333333;
 }
 
-h4 {
+h5 {
     margin-bottom: 0em;
     font-size: 1.1em;
 }
 
-h5 {
+h6 {
     margin-top: 0em;
     margin-bottom: 0em;
     font-weight: 600;
@@ -265,7 +265,7 @@ dt code {
         margin: 0;
         padding: 0;
     }
-    .standalone header h1, .standalone header small {
+    .standalone header h1, .standalone header h2, .standalone header small {
         background: none;
         color: white;
         margin: 0.5rem 0 0 1rem;

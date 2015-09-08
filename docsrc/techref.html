@@ -6,10 +6,10 @@
 -->
 
 <article>
-    <h1 id="technical">Technical reference</h1>
+    <h2 id="technical">Technical reference</h2>
 
     <section>
-        <h2 id="internal">Internal representation of variables</h2>
+        <h3 id="internal">Internal representation of variables</h3>
         <p>Internal representation:</p>
         <ul>
             <li>
@@ -37,12 +37,12 @@
             but their precision higher, than for an IEEE double.
             Schematically, MBF floating point numbers are represented as follows.
         </p>
-        <h4>Single precision</h4>
+        <h5>Single precision</h5>
 <pre>
     offset                             00   01   02   03
        use <var>                            m3   m2   m1   exp</var>
 </pre>
-        <h4>Double precision</h4>
+        <h5>Double precision</h5>
 <pre>
     offset         00   01   02   03   04   05   06   07
        use <var>        m7   m6   m5   m4   m3   m2   m1   exp</var>
@@ -107,7 +107,7 @@
     <hr />
 
     <section>
-        <h2 id="keywords">Keyword tokens</h2>
+        <h3 id="keywords">Keyword tokens</h3>
         <p>
             Not all keywords are statements or functions. Conversely, some parts of statement or
             function syntax are not keywords. Keywords are not legal variable names.
@@ -322,7 +322,7 @@
     <hr />
 
     <section>
-        <h2 id="errors">Error codes</h2>
+        <h3 id="errors">Error codes</h3>
         <div class="scrollable">
             <table>
                 <tr><td><code>1</code></td><td><samp>NEXT without FOR</samp></td></tr>
@@ -393,7 +393,7 @@
     <hr />
 
     <section>
-        <h2 id="videomodes">Video modes</h2>
+        <h3 id="videomodes">Video modes</h3>
         <p>The video modes are as follows:</p>
         <dl>
             <dt><code>SCREEN 0</code> Text mode</dt>
@@ -501,13 +501,13 @@
     <hr />
 
     <section>
-        <h2 id="colours">Colours</h2>
+        <h3 id="colours">Colours</h3>
         <p>
             The emulated video adapter can produce more colours than can be shown on the
             screen at one time. These <em>colours</em> can be used by assigning them to <em>attributes</em>
             in a <em>palette</em>.
         </p>
-        <h4>CGA palettes</h4>
+        <h5>CGA palettes</h5>
         <div class="scrollable">
             <table>
                 <tr>
@@ -548,7 +548,7 @@
             </table>
         </div>
 
-        <h4>EGA default palette</h4>
+        <h5>EGA default palette</h5>
         <div class="scrollable">
             <table>
                 <tr>
@@ -605,7 +605,7 @@
             </table>
         </div>
 
-        <h4>EGA colour list</h4>
+        <h5>EGA colour list</h5>
         <div class="scrollable">
             <table>
                 <tr> <td>0</td><td style="background-color:#000000;"></td> <td>8</td><td style="background-color:#000055;"></td> <td>16</td><td style="background-color:#005500;"></td> <td>24</td><td style="background-color:#005555;"></td> <td>32</td><td style="background-color:#550000;"></td> <td>40</td><td style="background-color:#550055;"></td> <td>48</td><td style="background-color:#555500;"></td> <td>56</td><td style="background-color:#555555;"></td> </tr>
@@ -619,7 +619,7 @@
             </table>
         </div>
 
-        <h4>Textmode attributes (colour)</h4>
+        <h5>Textmode attributes (colour)</h5>
         <div class="scrollable">
             <table>
                 <tr><th rowspan="2" colspan="2"></th><th colspan="8">Background attribute</th></tr> <tr> <th>0</th> <th>1</th> <th>2</th> <th>3</th> <th>4</th> <th>5</th> <th>6</th> <th>7</th> </tr>
@@ -659,7 +659,7 @@
             </table>
         </div>
 
-        <h4>Textmode attributes (monochrome)</h4>
+        <h5>Textmode attributes (monochrome)</h5>
         <div class="scrollable">
             <table>
                 <tr><th rowspan="2" colspan="2"></th><th colspan="8">Background attribute</th></tr> <tr> <th>0</th> <th>1</th> <th>2</th> <th>3</th> <th>4</th> <th>5</th> <th>6</th> <th>7</th> </tr>

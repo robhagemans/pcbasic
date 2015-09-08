@@ -6,7 +6,7 @@ doc = etree.parse(sys.argv[1], parser)
 last = -1
 print '<nav class="toc">'
 sys.stdout.write('    <h2 id="toc">Table of Contents</h2>')
-for node in doc.xpath('//h1|//h2|//h3'):
+for node in doc.xpath('//h2|//h3|//h4'):
     level = int(node.tag[1])
     node_id = node.get('id')
     if last == -1:

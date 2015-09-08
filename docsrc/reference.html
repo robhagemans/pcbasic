@@ -6,7 +6,7 @@
 -->
 
 <article>
-<h1 id="reference">Language reference</h1>
+<h2 id="reference">Language reference</h2>
 
 <p>
     This documentation describes the PC-BASIC language. Since PC-BASIC emulates
@@ -22,9 +22,9 @@
 </p>
 
 <section>
-    <h2 id="literals">Literals</h2>
+    <h3 id="literals">Literals</h3>
 
-    <h4>String literals</h4>
+    <h5>String literals</h5>
     <p>
         String literals are of the following form:
         <code class="block">"[<var>characters</var>][<code>NUL</code>|<code>CR</code>|<code>EOF</code>|"]</code>
@@ -46,7 +46,7 @@
         the <code><a href="#CHR$">CHR$</a></code> function.
     </p>
 
-    <h4>Numeric literals</h4>
+    <h5>Numeric literals</h5>
     <p>
         Numeric literals have one of the following forms:
         <code class="block">[{+|-}] [<var>digits</var>] [.] [<var>digits</var>] [ { {E|D} [{+|-}] [<var>digits</var>] | # | ! | % } ]</code>
@@ -81,7 +81,7 @@
   &amp;O20
 </code></pre>
 
-    <h4>Notes</h4>
+    <h5>Notes</h5>
     <ul>
         <li>
             Hexadecimal and octal literals are treated as unsigned integers. They must range between
@@ -96,7 +96,7 @@
 <hr />
 
 <section>
-    <h2 id="variables">Variables</h2>
+    <h3 id="variables">Variables</h3>
     <p>
         Variable names must start with a letter; all characters of the variable name
         (except the <a href="#typechars">type character</a>) must be letters <code>A&#8212;Z</code>, figures <code>0&#8212;9</code>, or a dot <code>.</code>
@@ -121,7 +121,7 @@
 <hr />
 
 <section>
-    <h2 id="arrays">Arrays</h2>
+    <h3 id="arrays">Arrays</h3>
     <p>
         Arrays are groups of variables and can have the same <a href="#types">types</a> as <a href="#variables">variables</a>. Arrays are indexed with round or square
         brackets; even mixing brackets is allowed. The following all work: <code>A[0]</code>, <code>A(0)</code>,
@@ -145,8 +145,8 @@
 
 
 <section>
-    <h2 id="types">Types</h2>
-    <h3 id="typechars">Type characters</h3>
+    <h3 id="types">Types</h3>
+    <h4 id="typechars">Type characters</h4>
     <p>
         PC-BASIC recognises four variable types, distinguished by their type character
         which is the last character of the variable's full name:
@@ -183,7 +183,7 @@
         If no such setting has been made, the default type is single-precision float.
     </p>
 
-    <h3 id="limits">Machine limits</h3>
+    <h4 id="limits">Machine limits</h4>
     <ul>
         <li>
             Line numbers are in <code>[0&#8212;65535]</code>, although line numbers <code>65530&#8212;65535</code> cannot be entered from the console.
@@ -203,9 +203,9 @@
 <hr />
 
 <section>
-    <h2 id="operators">Operators</h2>
+    <h3 id="operators">Operators</h3>
 
-    <h3 id="order-of-preference">Order of precedence</h3>
+    <h4 id="order-of-preference">Order of precedence</h4>
     <p>
         The order of precedence of operators is as follows, from tightly bound
         (high priority) to loosely bound (low priority):
@@ -252,7 +252,7 @@
         <code>-1^2 = -1</code> but <code>(-1)^2 = 1</code>.
     </p>
 
-    <h3 id="math-operators">Mathematical operators</h3>
+    <h4 id="math-operators">Mathematical operators</h4>
     <p>
         Mathematical operators operate on numeric expressions only. If either
         operand is a string, <samp>Type mismatch</samp> will be raised.
@@ -330,7 +330,7 @@
     </table>
     </div>
 
-    <h3 id="relational-operators">Relational operators</h3>
+    <h4 id="relational-operators">Relational operators</h4>
     <p>
         Relational operators can operate on numeric as well as string operands;
         however, if one operand is string and the other numeric, <samp>Type mismatch</samp>
@@ -424,7 +424,7 @@
         </li>
     </ul>
 
-    <h3 id="boolean-operators">Bitwise operators</h3>
+    <h4 id="boolean-operators">Bitwise operators</h4>
     <p>
         PC-BASIC has no Boolean type and does not implement Boolean operators.
         It does, however, implement bitwise operators. Note that PC-BASIC represents
@@ -549,7 +549,7 @@
         <code>2 AND 1</code> returns <code>0</code>.
     </p>
 
-    <h3 id="string-operators">String operators</h3>
+    <h4 id="string-operators">String operators</h4>
     <p>There is one string operator, <code>+</code> for concatenation.</p>
     <div class="scrollable">
         <table>
@@ -569,23 +569,23 @@
 <hr />
 
 <section>
-    <h2 id="statements-functions">Statements and functions</h2>
+    <h3 id="statements-functions">Statements and functions</h3>
 
     <section>
-        <h3 id="ABS"><code>ABS</code> function</h3>
+        <h4 id="ABS"><code>ABS</code> function</h4>
         <code class="block">
             <var>y</var><b> = ABS(</b><var>x</var><b>)</b>
         </code>
         <p>
             Returns the absolute value of <code><var>x</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>x</var></code> is an expression with a numeric value.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -595,21 +595,21 @@
 <hr />
 
     <section>
-        <h3 id="ASC"><code>ASC</code> function</h3>
+        <h4 id="ASC"><code>ASC</code> function</h4>
         <code class="block">
             <var>val</var><b> = ASC(</b><var>char</var><b>)</b>
         </code>
         <p>
             Returns the ASCII code for the first character of <code><var>char</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>char</var></code> is an expression with
                 a string value.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>char</var></code> has a numeric value: <samp>Type mismatch</samp>.
@@ -621,21 +621,21 @@
 <hr />
 
     <section>
-        <h3 id="ATN"><code>ATN</code> function</h3>
+        <h4 id="ATN"><code>ATN</code> function</h4>
         <code class="block">
             <var>y</var><b> = ATN(</b><var>x</var><b>)</b>
         </code>
         <p>
             Returns the inverse tangent of <code><var>x</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>x</var></code> is a numeric expression that gives
                 the angle in radians.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Unless PC-BASIC is run with the <code><a href="#--double">double</a></code> option, this function
@@ -645,7 +645,7 @@
                 <code>ATN(x)</code> differs in the least significant digit from GW-BASIC.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -655,7 +655,7 @@
 <hr />
 
     <section>
-        <h3 id="AUTO"><code>AUTO</code> statement</h3>
+        <h4 id="AUTO"><code>AUTO</code> statement</h4>
         <code class="block">
             <b>AUTO</b> [<var>line_number</var>|<b>.</b>] [<b>,</b> [<var>increment</var>]]
         </code>
@@ -668,7 +668,7 @@
             that point is not saved. BASIC will return to command mode, even if <code>AUTO</code> was
             run from a program line.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 Line numbering starts at <code><var>line_number</var></code>, if specified. If <code>.</code> is specified, line
@@ -681,7 +681,7 @@
                 <code>AUTO</code> command is used. If not, <code><var>increment</var></code> defaults to <code>10</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>line_number</var></code> is not an unsigned-integer value in <code>[0&#8212;65529]</code>:
@@ -699,14 +699,14 @@
 <hr />
 
     <section>
-        <h3 id="BEEP"><code>BEEP</code> statement</h3>
+        <h4 id="BEEP"><code>BEEP</code> statement</h4>
         <code class="block">
             <b>BEEP</b>
         </code>
         <p>
             Beep the speaker at 800Hz for 0.25s.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 If a <samp>Syntax error</samp> is raised, the beep is still produced.
@@ -716,14 +716,14 @@
 <hr />
 
     <section>
-        <h3 id="BEEP-switch"><code>BEEP</code> statement (switch)</h3>
+        <h4 id="BEEP-switch"><code>BEEP</code> statement (switch)</h4>
         <code class="block">
             <b>BEEP</b> {<b>ON</b>|<b>OFF</b>}
         </code>
         <p>
             This statement has no effect.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Only legal with the <code><a href="syntax">syntax</a>={pcjr|tandy}</code> option.
@@ -738,14 +738,14 @@
 <hr />
 
     <section>
-        <h3 id="BLOAD"><code>BLOAD</code> statement</h3>
+        <h4 id="BLOAD"><code>BLOAD</code> statement</h4>
         <code class="block">
             <b>BLOAD</b> <var>filename</var> [<b>,</b> <var>offset</var>]
         </code>
         <p>
             Loads a memory image file into memory.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>filename</var></code> is a string expression indicating the
@@ -758,7 +758,7 @@
                 negative, its two's complement will be used.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>filename</var></code> is not in <code>BSAVE</code> format: <samp>Bad file mode</samp>.
@@ -774,14 +774,14 @@
 <hr />
 
     <section>
-        <h3 id="BSAVE"><code>BSAVE</code> statement</h3>
+        <h4 id="BSAVE"><code>BSAVE</code> statement</h4>
         <code class="block">
             <b>BSAVE</b> <var>filename</var><b>,</b> <var>offset</var><b>,</b> <var>length</var>
         </code>
         <p>
             Saves a region of memory to an image file.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>filename</var></code> is a string expression indicating the
@@ -800,7 +800,7 @@
                 complement will be used.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>filename</var></code> has a numeric value: <samp>Type mismatch</samp>.
@@ -816,14 +816,14 @@
 <hr />
 
     <section>
-    <h3 id="CALL"><code>CALL</code> statement</h3>
+    <h4 id="CALL"><code>CALL</code> statement</h4>
     <code class="block">
         <b>CALL</b> <var>address_var</var> [<b>(</b> <var>p0</var> [<b>,</b> <var>p1</var>] ... <b>)</b>]
     </code>
     <p>
         Does nothing.
     </p>
-    <h4>Notes</h4>
+    <h5>Notes</h5>
     <ul>
         <li>
             In GW-BASIC, <code>CALL</code> executes a machine language subroutine.
@@ -832,7 +832,7 @@
             This statement is not implemented in PC-BASIC.
         </li>
     </ul>
-    <h4>Parameters</h4>
+    <h5>Parameters</h5>
     <ul>
         <li>
             <code><var>address_var</var></code> is a numeric variable.
@@ -841,7 +841,7 @@
             <code><var>p0</var>, <var>p1</var>, ...</code> are variables.
         </li>
     </ul>
-    <h4>Errors</h4>
+    <h5>Errors</h5>
     <ul>
         <li>
             <code><var>address_var</var></code> is a string variable: <samp>Type mismatch</samp>.
@@ -854,12 +854,12 @@
 <hr />
 
     <section>
-        <h3 id="CALLS"><code>CALLS</code> statement</h3>
+        <h4 id="CALLS"><code>CALLS</code> statement</h4>
         <code class="block">
             <b>CALLS</b> <var>address_var</var> [<b>(</b> <var>p0</var> [<b>,</b> <var>p1</var>] ... <b>)</b>]
         </code>
         <p>Does nothing.</p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In GW-BASIC, <code>CALLS</code> executes a FORTRAN subroutine.
@@ -868,7 +868,7 @@
                 This statement is not implemented in PC-BASIC.
             </li>
         </ul>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>address_var</var></code> is a numeric variable.
@@ -877,7 +877,7 @@
                 <code><var>p0</var>, <var>p1</var>, ...</code> are variables.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>address_var</var></code> is a string variable: <samp>Type mismatch</samp>.
@@ -890,14 +890,14 @@
 <hr />
 
     <section>
-        <h3 id="CDBL"><code>CDBL</code> function</h3>
+        <h4 id="CDBL"><code>CDBL</code> function</h4>
         <code class="block">
             <var>y</var><b> = CDBL(</b><var>x</var><b>)</b>
         </code>
         <p>
             Converts the numeric expression <code><var>x</var></code> to a double-precision value.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -907,7 +907,7 @@
 <hr />
 
     <section>
-    <h3 id="CHAIN"><code>CHAIN</code> statement</h3>
+    <h4 id="CHAIN"><code>CHAIN</code> statement</h4>
         <code class="block">
             <b>CHAIN</b> [<b>MERGE</b>] <var>program</var> [<b>,</b> [<var>line_number_expr</var>] [<b>, ALL</b>] [<b>, DELETE</b> <var>range</var> [<b>,</b> <var>ign</var>]]]
         </code>
@@ -928,7 +928,7 @@
                 existing code before the merge. This is pointless without <code>MERGE</code>.
             </li>
         </ul>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>line_number_expr</var></code> is a numeric expression. It
@@ -944,7 +944,7 @@
                 <code><var>ign</var></code> is optional and ignored.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 <code>CHAIN</code> preserves the <code><a href="#OPTION-BASE">OPTION BASE</a></code> setting.
@@ -964,7 +964,7 @@
                 be put in its place and only two commas should precede <code>DELETE</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code>MERGE</code> is specified and <code><var>program</var></code> was not saved in ASCII mode:
@@ -990,20 +990,20 @@
 <hr />
 
     <section>
-        <h3 id="CHDIR"><code>CHDIR</code> statement</h3>
+        <h4 id="CHDIR"><code>CHDIR</code> statement</h4>
         <code class="block">
             <b>CHDIR</b> <var>pathname</var>
         </code>
         <p>
             Change the working directory to <code><var>pathname</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>pathname</var></code> is a string expression which can be absolute or relative to the current path.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 <code><var>pathname</var></code>
@@ -1013,7 +1013,7 @@
                 Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 No matching path is found: <samp>Path not found</samp>.
@@ -1029,20 +1029,20 @@
 <hr />
 
     <section>
-        <h3 id="CHR$"><code>CHR$</code> function</h3>
+        <h4 id="CHR$"><code>CHR$</code> function</h4>
         <code class="block">
             <var>char</var> <b>= CHR$(</b><var>x</var><b>)</b>
         </code>
         <p>
             Returns the character with ASCII code <code><var>x</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>x</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -1058,14 +1058,14 @@
 <hr />
 
     <section>
-        <h3 id="CINT"><code>CINT</code> function</h3>
+        <h4 id="CINT"><code>CINT</code> function</h4>
         <code class="block">
             <var>y</var> <b>= CINT(</b><var>x</var><b>)</b>
         </code>
         <p>
             Converts the numeric expression <code><var>x</var></code> to a signed integer.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -1078,7 +1078,7 @@
 <hr />
 
     <section>
-        <h3 id="CIRCLE"><code>CIRCLE</code> statement</h3>
+        <h4 id="CIRCLE"><code>CIRCLE</code> statement</h4>
         <code class="block">
             <b>CIRCLE</b> [<b>STEP</b>] <b>(</b><var>x</var><b>,</b> <var>y</var>)<b>,</b> <var>radius</var>
             [<b>,</b> [<var>colour</var>] [<b>,</b> [<var>start</var>] [<b>,</b> [<var>end</var>] [<b>,</b> <var>aspect</var>]]]
@@ -1086,7 +1086,7 @@
         <p>
             Draw an ellipse or ellipse sector.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 The midpoint of the ellipse is at <code>(<var>x</var></code>,<code><var>y</var>)</code>.
@@ -1110,14 +1110,14 @@
                 as to make the ellipse appear like a circle on the original hardware.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 For <code><var>aspect</var> &lt;&gt; 1</code>, the midpoint algorithm used does not pixel-perfectly
                 reproduce GW-BASIC's ellipses.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 The statement is executed in text mode: <samp>Illegal function call</samp>.
@@ -1133,7 +1133,7 @@
 <hr />
 
     <section>
-        <h3 id="CLEAR"><code>CLEAR</code> statement</h3>
+        <h4 id="CLEAR"><code>CLEAR</code> statement</h4>
         <code class="block">
             <b>CLEAR</b> [<var>expr</var>] [<b>,</b> [<var>mem_limit</var>] [<b>,</b> [<var>stack_size</var>] [<b>,</b> <var>video_memory</var>]]]
         </code>
@@ -1145,7 +1145,7 @@
             Turns <code><a href="#PEN-statement">PEN</a></code> and <code><a href="#STRIG-switch">STRIG</a></code> off. Resets the random number generator.
             Clears the loop stack. Resets the <code><a href="#DRAW">DRAW</a></code> state and the current graphics position.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>mem_limit</var></code> specifies the upper limit of usable memory. Default is previous
@@ -1163,7 +1163,7 @@
                 can also be used to set video memory size.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 The purpose of <em>expr</em> is unknown.
@@ -1173,7 +1173,7 @@
                 the iteration keyword as the loop stacks are cleared.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any of the arguments has a string value: <samp>Type mismatch</samp>.
@@ -1201,7 +1201,7 @@
 <hr />
 
     <section>
-        <h3 id="CLOSE"><code>CLOSE</code> statement</h3>
+        <h4 id="CLOSE"><code>CLOSE</code> statement</h4>
         <code class="block">
             <b>CLOSE</b> [[<b>#</b>] <var>file_0</var> [<b>,</b> [<b>#</b>] <var>file_1</var>] ...]
         </code>
@@ -1209,20 +1209,20 @@
             Closes files. If no file numbers are specified, all open files are closed.
             The hash (<code>#</code>) is optional and has no effect.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_1</var>, <var>file_2</var>, ...</code> are numeric expressions yielding
                 file numbers.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 No error is raised if the specified file numbers were not open.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>file_1</var>, <var>file_2</var>, ...</code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
@@ -1244,7 +1244,7 @@
 <hr />
 
     <section>
-        <h3 id="CLS"><code>CLS</code> statement</h3>
+        <h4 id="CLS"><code>CLS</code> statement</h4>
         <code class="block">
             <b>CLS</b> [<var>x</var>][<b>,</b>]
         </code>
@@ -1254,7 +1254,7 @@
             in other screens, the graphics view region is cleared.
             The comma is optional and has no effect.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <p>
             <code><var>x</var></code> is a numeric valued expression that determines what is cleared:
         </p>
@@ -1269,7 +1269,7 @@
                 If <code><var>x</var> = 2</code>, the text view region is cleared.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> is has a string value: <samp>Type mismatch</samp>.
@@ -1294,7 +1294,7 @@
 <hr />
 
     <section>
-        <h3 id="COLOR"><code>COLOR</code> statement (text mode)</h3>
+        <h4 id="COLOR"><code>COLOR</code> statement (text mode)</h4>
         <code class="block">
             <b>COLOR</b> [<var>foreground</var>] [<b>,</b> [<var>background</var>] [<b>,</b> <var>border</var>]]
         </code>
@@ -1303,7 +1303,7 @@
             All new characters printed will take the newly set attributes. Existing
             characters on the screen are not affected.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>foreground</var></code> is a numeric expression in <code>[0&#8212;31]</code>.
@@ -1319,14 +1319,14 @@
                 <code><var>border</var></code> is a numeric expression in <code>[0&#8212;15]</code> specifying the border attribute.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 The syntax and effect of this command is different in different <code>SCREEN</code>
                 modes. See below for other <code>SCREEN</code>s.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any of the parameters has a string value: <samp>Type mismatch</samp>.
@@ -1346,7 +1346,7 @@
 <hr />
 
     <section>
-        <h3 id="COLOR-1"><code>COLOR</code> statement (<code>SCREEN 1</code>)</h3>
+        <h4 id="COLOR-1"><code>COLOR</code> statement (<code>SCREEN 1</code>)</h4>
         <code class="block">
             <b>COLOR</b> [<var>palette_0</var>] [<b>,</b> <var>palette</var> [<b>,</b> <var>override</var>]]
         </code>
@@ -1379,7 +1379,7 @@
                 instead of <code><var>palette</var></code>. <code><var>palette</var></code> is then ignored.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any of the parameters has a string value: <samp>Type mismatch</samp>.
@@ -1395,14 +1395,14 @@
 <hr />
 
     <section>
-        <h3 id="COLOR-3-9"><code>COLOR</code> statement (<code>SCREEN 3&#8212;9</code>)</h3>
+        <h4 id="COLOR-3-9"><code>COLOR</code> statement (<code>SCREEN 3&#8212;9</code>)</h4>
         <code class="block">
             <b>COLOR</b> [<var>foreground</var>] [<b>,</b> <var>palette_0</var> [<b>,</b> <var>dummy</var>]]
         </code>
         <p>
             Changes the current foreground attribute and the colour for attribute 0.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>foreground</var></code> is a numeric expression in <code>[0&#8212;15]</code>
@@ -1423,7 +1423,7 @@
                 The value of <code><var>dummy</var></code> is ignored.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any of the parameters has a string value: <samp>Type mismatch</samp>.
@@ -1440,7 +1440,7 @@
 <hr />
 
     <section>
-        <h3 id="COM"><code>COM</code> statement</h3>
+        <h4 id="COM"><code>COM</code> statement</h4>
         <code class="block">
             <b>COM(</b><var>port</var><b>)</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
@@ -1456,7 +1456,7 @@
                 while trapping is halted will trigger immediately when trapping is re-enabled.
             </li>
         </ul>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>port</var></code> is a numeric expression with a value of <code>1</code> or <code>2</code>. This specifies which
@@ -1467,7 +1467,7 @@
 <hr />
 
     <section>
-        <h3 id="COMMON"><code>COMMON</code> statement</h3>
+        <h4 id="COMMON"><code>COMMON</code> statement</h4>
         <code class="block">
             <b>COMMON</b> [<var>var_0</var> [<b>,</b> [<var>var_1</var>]] ...]
         </code>
@@ -1476,7 +1476,7 @@
             with <code><a href="#CHAIN">CHAIN</a></code>.
             The statement may end with one or more commas.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>var_0</var>, <var>var_1</var>, ...</code> are names of variables or arrays. Array names
@@ -1487,7 +1487,7 @@
 <hr />
 
     <section>
-        <h3 id="CONT"><code>CONT</code> statement</h3>
+        <h4 id="CONT"><code>CONT</code> statement</h4>
         <code class="block">
             <b>CONT</b> [<var>anything</var>]
         </code>
@@ -1496,7 +1496,7 @@
             <code><a href="#STOP">STOP</a></code>, <code><a href="#END">END</a></code>,
             <kbd>Ctrl</kbd>+<kbd>C</kbd>, or  <kbd>Ctrl</kbd>+<kbd>Break</kbd>.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
             Anything after the <code>CONT</code> keyword is ignored.
@@ -1514,7 +1514,7 @@
                 effects.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 No program is loaded, a program has not been run, after a program line
@@ -1528,7 +1528,7 @@
 <hr />
 
     <section>
-        <h3 id="COS"><code>COS</code> function</h3>
+        <h4 id="COS"><code>COS</code> function</h4>
         <code class="block">
             <var>cosine</var> <b>= COS(</b><var>angle</var><b>)</b>
         </code>
@@ -1538,20 +1538,20 @@
             this function returns a single-precision
             value.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>angle</var></code> is a numeric expression that
                 gives the angle in radians.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 The return value usually differs from the value returned by GW-BASIC in the least significant figure.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -1561,14 +1561,14 @@
 <hr />
 
     <section>
-        <h3 id="CSNG"><code>CSNG</code> function</h3>
+        <h4 id="CSNG"><code>CSNG</code> function</h4>
         <code class="block">
             <var>y</var> <b>= CSNG(</b><var>x</var><b>)</b>
         </code>
         <p>
             Converts the numeric expression <code><var>x</var></code> to a single-precision value.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -1578,7 +1578,7 @@
 <hr />
 
     <section>
-        <h3 id="CSRLIN"><code>CSRLIN</code> function</h3>
+        <h4 id="CSRLIN"><code>CSRLIN</code> function</h4>
         <code class="block">
             <var>y</var> <b>= CSRLIN</b>
         </code>
@@ -1586,7 +1586,7 @@
             Returns the screen row of the cursor on the active page.
             The return value is in the range <code>[1&#8212;25]</code>.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 This function has no brackets.
@@ -1596,21 +1596,21 @@
 <hr />
 
     <section>
-        <h3 id="CVI"><code>CVI</code> function</h3>
+        <h4 id="CVI"><code>CVI</code> function</h4>
         <code class="block">
             <var>y</var> <b>= CVI(</b><var>s</var><b>)</b>
         </code>
         <p>
             Converts a two-byte string to a signed integer.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>s</var></code> is a string expression that represents an integer using
                 little-endian two's complement encoding. Only the first two bytes are used.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
@@ -1620,21 +1620,21 @@
 <hr />
 
     <section>
-        <h3 id="CVS"><code>CVS</code> function</h3>
+        <h4 id="CVS"><code>CVS</code> function</h4>
         <code class="block">
             <var>y</var> <b>= CVS(</b><var>s</var><b>)</b>
         </code>
         <p>
             Converts a four-byte string to a single-precision floating-point number.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>s</var></code> is a string expression that represents a single-precision
                 number in Microsoft Binary Format. Only the first four bytes are used.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
@@ -1644,21 +1644,21 @@
 <hr />
 
     <section>
-        <h3 id="CVD"><code>CVD</code> function</h3>
+        <h4 id="CVD"><code>CVD</code> function</h4>
         <code class="block">
             <var>y</var> <b>= CVD(</b><var>s</var><b>)</b>
         </code>
         <p>
             Converts an eight-byte string to a double-precision floating-point number.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>s</var></code> is a string expression  that represents a double-precision
                 number in Microsoft Binary Format. Only the first eight bytes are used.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
@@ -1668,14 +1668,14 @@
 <hr />
 
     <section>
-        <h3 id="DATA"><code>DATA</code> statement</h3>
+        <h4 id="DATA"><code>DATA</code> statement</h4>
         <code class="block">
             <b>DATA</b> [<var>const_0</var>] [<b>,</b> [<var>const_1</var>]] ...
         </code>
         <p>
             Specifies data that can be read by a READ statement.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>const_0</var>, <var>const_1</var>, ...</code>
@@ -1685,7 +1685,7 @@
                 statement.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 If the type of the literal does not match that of the corresponding <code><a href="#READ">READ</a></code>
@@ -1696,14 +1696,14 @@
 <hr />
 
     <section>
-        <h3 id="DATE$"><code>DATE$</code> function</h3>
+        <h4 id="DATE$"><code>DATE$</code> function</h4>
         <code class="block">
             <var>s</var> <b>= DATE$</b>
         </code>
         <p>
             Returns the system date as a string in the format <code>"mm-dd-yyyy"</code>.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 This function has no brackets.
@@ -1713,7 +1713,7 @@
 <hr />
 
     <section>
-        <h3 id="DATE$-statement"><code>DATE$</code> statement</h3>
+        <h4 id="DATE$-statement"><code>DATE$</code> statement</h4>
         <code class="block">
             <b>DATE$ = </b><var>date</var>
         </code>
@@ -1746,7 +1746,7 @@
                 </ul>
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 The system date is not actually changed; rather, PC-BASIC remembers the
@@ -1758,7 +1758,7 @@
                 raises <samp>Illegal function call</samp> for these.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>date</var></code> has a numeric value: <samp>Type mismatch</samp>.
@@ -1772,7 +1772,7 @@
 <hr />
 
     <section>
-        <h3 id="DEF-FN"><code>DEF FN</code> statement</h3>
+        <h4 id="DEF-FN"><code>DEF FN</code> statement</h4>
         <code class="block">
             <b>DEF FN</b>[ ]<var>name</var> [<b>(</b><var>arg_0</var> [<b>,</b> <var>arg_1</var>] ...<b>)</b>] <b>=</b> <var>expression</var>
         </code>
@@ -1783,13 +1783,13 @@
             evaluated with the supplied parameters substituted. The result of the
             evaluation is the return value of <code>FN<var>name</var></code>.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 This statement may only be used on a program line.
             </li>
         </ul>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>name</var></code> must be a legal variable name.
@@ -1803,7 +1803,7 @@
                 parameters <code><var>arg_0</var>, <var>arg_1</var>, ...</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 The statement is executed directly instead of in a program line: <samp>Illegal direct</samp>.
@@ -1813,7 +1813,7 @@
 <hr />
 
     <section>
-        <h3 id="DEFINT"><code>DEFINT</code>, <code>DEFDBL</code>, <code>DEFSNG</code>, <code>DEFSTR</code> statements</h3>
+        <h4 id="DEFINT"><code>DEFINT</code>, <code>DEFDBL</code>, <code>DEFSNG</code>, <code>DEFSTR</code> statements</h4>
         <code class="block">
             <b>{DEFINT|DEFDBL|DEFSNG|DEFSTR}</b> <var>first_0</var>[<b>-</b> <var>last_0</var>] [<b>,</b> <var>first_1</var>[<b>-</b> <var>last_1</var>]] ...
         </code>
@@ -1834,14 +1834,14 @@
             <dt><code>DEFSTR</code></dt>
             <dd>string (<code>$</code>)</dd>
         </dl>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>first_0</var>, <var>last_0</var>, ...</code> are letters of the alphabet.
                 Pairs of letters connected by a dash <code>-</code> indicate includive ranges.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 <code>DEFSNG A-Z</code> is the default setting.
@@ -1851,7 +1851,7 @@
 <hr />
 
     <section>
-        <h3 id="DEF-SEG"><code>DEF SEG</code> statement</h3>
+        <h4 id="DEF-SEG"><code>DEF SEG</code> statement</h4>
         <code class="block">
             <b>DEF SEG</b> [<b>=</b> <var>address</var>]
         </code>
@@ -1860,7 +1860,7 @@
             <code><a href="#PEEK">PEEK</a></code>, <code><a href="#POKE">POKE</a></code>, or <code><a href="#USR">USR</a></code>.
             <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code><var>address</var></code> is negative, it is interpreted as its two's complement.
@@ -1870,7 +1870,7 @@
                 segment.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -1883,14 +1883,14 @@
 <hr />
 
     <section>
-        <h3 id="DEF-USR"><code>DEF USR</code> statement</h3>
+        <h4 id="DEF-USR"><code>DEF USR</code> statement</h4>
         <code class="block">
             <b>DEF USR</b>[<var>n</var>] <b>=</b> <var>address</var>
         </code>
         <p>
             Does nothing.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>n</var></code> is a digit between 0 and 9 inclusive.
@@ -1899,7 +1899,7 @@
                 <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In GW-BASIC, this statement sets the starting address of an assembly-language function.
@@ -1911,7 +1911,7 @@
                If <code><var>address</var></code> is negative, it is interpreted as its two's complement.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
             <code><var>n</var></code> is not a digit in <code>[0&#8212;9]</code>: <samp>Syntax error</samp>.
@@ -1927,7 +1927,7 @@
 <hr />
 
     <section>
-        <h3 id="DELETE"><code>DELETE</code> statement</h3>
+        <h4 id="DELETE"><code>DELETE</code> statement</h4>
         <code class="block">
             <b>DELETE</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>] ]
         </code>
@@ -1935,7 +1935,7 @@
             Deletes a range of lines from the program.
             Also stops program execution and returns control to the user.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>line_number_0</var></code> and
@@ -1954,7 +1954,7 @@
                 If no range is specified, the whole program will be deleted.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>line_number_0</var></code> or
@@ -1968,7 +1968,7 @@
 <hr />
 
     <section>
-        <h3 id="DIM"><code>DIM</code> statement</h3>
+        <h4 id="DIM"><code>DIM</code> statement</h4>
         <code class="block">
             <b>DIM</b> <var>name</var> {<b>(</b>|<b>[</b>} <var>limit_0</var> [<b>,</b> <var>limit_1</var>] ... {<b>)</b>|<b>]</b>}
         </code>
@@ -1982,7 +1982,7 @@
             it is allocated with a single index with maximum <code>10</code>.
             The least index allowed is determined by <code><a href="#OPTION-BASE">OPTION BASE</a></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>name</var></code> is a legal variable name
@@ -1993,7 +1993,7 @@
                 expressions that specify the greatest index allowed at that position.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Mixed brackets are allowed.
@@ -2006,7 +2006,7 @@
                 it is limited by the 255-byte limit on the length of program lines.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>name</var></code> has already been dimensioned: <samp>Duplicate definition</samp>.
@@ -2035,7 +2035,7 @@
 <hr />
 
     <section>
-        <h3 id="DRAW"><code>DRAW</code> statement</h3>
+        <h4 id="DRAW"><code>DRAW</code> statement</h4>
         <code class="block">
             <b>DRAW</b> <var>gml_string</var>
         </code>
@@ -2043,7 +2043,7 @@
             Draws the shape specified by <code><var>gml_string</var></code>,
             a string expression in Graphics Macro Language (GML).
         </p>
-        <h4>Graphics Macro Language reference</h4>
+        <h5>Graphics Macro Language reference</h5>
         <dl>
             <dt>Movement commands</dt>
             <dd>
@@ -2188,7 +2188,7 @@
                 the result of <code>VARPTR$(<var>var</var>)</code> preceded by <code>=</code>.  For example, <code>DRAW "U=" + VARPTR$(VAR)</code>
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 The <code>CLS</code> statement resets the step size to 1 pixel, angle to 0 degrees and position to the
@@ -2199,7 +2199,7 @@
                 command is terminated by a semicolon. <code><var>n</var></code> defaults to <code>0</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>gml_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
@@ -2215,7 +2215,7 @@
 <hr />
 
     <section>
-        <h3 id="EDIT"><code>EDIT</code> statement</h3>
+        <h4 id="EDIT"><code>EDIT</code> statement</h4>
         <code class="block">
             <b>EDIT</b> {<var>line_number</var>|<b>.</b>}
         </code>
@@ -2224,7 +2224,7 @@
             <code><var>line_number</var></code> must be a line that exists in the program, or a period (.) to
             indicate the last line stored.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 No line_number is specified: <samp>Undefined line number</samp>.
@@ -2243,7 +2243,7 @@
 <hr />
 
     <section>
-        <h3 id="ELSE"><code>ELSE</code> statement</h3>
+        <h4 id="ELSE"><code>ELSE</code> statement</h4>
         <code class="block">
             <b>ELSE</b> [<var>anything</var>]
         </code>
@@ -2256,7 +2256,7 @@
 <hr />
 
     <section>
-        <h3 id="END"><code>END</code> statement</h3>
+        <h4 id="END"><code>END</code> statement</h4>
         <code class="block">
             <b>END</b>
         </code>
@@ -2269,14 +2269,14 @@
 <hr />
 
     <section>
-        <h3 id="ENVIRON"><code>ENVIRON</code> statement</h3>
+        <h4 id="ENVIRON"><code>ENVIRON</code> statement</h4>
         <code class="block">
             <b>ENVIRON</b> <var>command_string</var>
         </code>
         <p>
             Sets a shell environment variable.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <p>
             <code><var>command_string</var></code> is a string expression of one of the following forms:
         </p>
@@ -2298,7 +2298,7 @@
                 to unset <code><var>VARIABLE</var></code>.
             </dd>
         </dl>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>command_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
@@ -2311,14 +2311,14 @@
 <hr />
 
     <section>
-        <h3 id="ENVIRON$"><code>ENVIRON$</code> function</h3>
+        <h4 id="ENVIRON$"><code>ENVIRON$</code> function</h4>
         <code class="block">
             <var>value</var> <b>= ENVIRON</b>[ ]<b>$</b>(<var>x</var>)
         </code>
         <p>
             Returns an environment variable.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <p>
             <code><var>x</var></code> is an expression.
         </p>
@@ -2332,7 +2332,7 @@
                 the environment table.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> is the empty string: <samp>Illegal function call</samp>.
@@ -2348,7 +2348,7 @@
 <hr />
 
     <section>
-        <h3 id="EOF"><code>EOF</code> function</h3>
+        <h4 id="EOF"><code>EOF</code> function</h4>
         <code class="block">
             <var>is_at_end</var> <b>= EOF(</b><var>file_num</var><b>)</b>
         </code>
@@ -2356,7 +2356,7 @@
             Returns -1 if file with number <code><var>file_num</var></code> has reached end-of-file; 0 otherwise.
             The file must be open in <code>INPUT</code> or <code>RANDOM</code> mode. <code>EOF(0)</code> returns 0.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code><var>file_num</var></code> is open to <code>KYBD:</code>, performs a blocking read and returns -1 if
@@ -2364,7 +2364,7 @@
                 the console.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -2388,7 +2388,7 @@
 <hr />
 
     <section>
-        <h3 id="ERASE"><code>ERASE</code> statement</h3>
+        <h4 id="ERASE"><code>ERASE</code> statement</h4>
         <code class="block">
             <b>ERASE</b> <var>array_0</var> [<b>,</b> <var>array_1</var>] ...
         </code>
@@ -2396,14 +2396,14 @@
             De-allocates arrays. The data stored in the
             arrays is lost.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>array_0</var>, <var>array_1</var> ...</code> are names of existing arrays. The names must be
                 specified without brackets.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 No array names are given: <samp>Syntax error</samp>.
@@ -2419,14 +2419,14 @@
 <hr />
 
     <section>
-        <h3 id="ERDEV"><code>ERDEV</code> function</h3>
+        <h4 id="ERDEV"><code>ERDEV</code> function</h4>
         <code class="block">
             <var>zero</var> <b>= ERDEV</b>
         </code>
         <p>
             Returns 0.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In GW-BASIC, returns the value of a device error.
@@ -2442,14 +2442,14 @@
 <hr />
 
     <section>
-        <h3 id="ERDEV$"><code>ERDEV$</code> function</h3>
+        <h4 id="ERDEV$"><code>ERDEV$</code> function</h4>
         <code class="block">
             <var>empty</var> <b>= ERDEV</b>[ ]<b>$</b>
         </code>
         <p>
             Returns the empty string.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In GW-BASIC, returns the device name of a device error.
@@ -2465,14 +2465,14 @@
 <hr />
 
     <section>
-        <h3 id="ERL"><code>ERL</code> function</h3>
+        <h4 id="ERL"><code>ERL</code> function</h4>
         <code class="block">
             <var>error_line</var> <b>= ERL</b>
         </code>
         <p>
             Returns the line number where the last error was raised.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If the error was
@@ -2490,14 +2490,14 @@
 <hr />
 
     <section>
-        <h3 id="ERR"><code>ERR</code> function</h3>
+        <h4 id="ERR"><code>ERR</code> function</h4>
         <code class="block">
             <var>error_code</var> <b>= ERR</b>
         </code>
         <p>
             Returns the number of the last error.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If no error has been raised, returns 0.
@@ -2513,21 +2513,21 @@
 <hr />
 
     <section>
-        <h3 id="ERROR"><code>ERROR</code> statement</h3>
+        <h4 id="ERROR"><code>ERROR</code> statement</h4>
         <code class="block">
             <b>ERROR</b> <var>error_number</var>
         </code>
         <p>
             Raises the error with number <code><var>error_number</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>error_number</var></code> is an expression
                 with a numeric value.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>error_number</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -2543,21 +2543,21 @@
 <hr />
 
     <section>
-        <h3 id="EXP"><code>EXP</code> function</h3>
+        <h4 id="EXP"><code>EXP</code> function</h4>
         <code class="block">
             <var>y</var> <b>= EXP(</b><var>x</var><b>)</b>
         </code>
         <p>
             Returns the exponential of <code><var>x</var></code>, i.e. <code>e</code> to the power <code><var>x</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>x</var></code> is a number-
                 valued expression.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option, this function returns a single-precision
@@ -2568,7 +2568,7 @@
                 large values of <code><var>x</var></code>, the difference may be 3 digits.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -2582,20 +2582,20 @@
 <hr />
 
     <section>
-        <h3 id="EXTERR"><code>EXTERR</code> function</h3>
+        <h4 id="EXTERR"><code>EXTERR</code> function</h4>
         <code class="block">
             <var>zero</var> <b>= EXTERR(</b><var>x</var><b>)</b>
         </code>
         <p>
             Returns 0.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>x</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In GW-BASIC, this function returns extended error information from MS-DOS.
@@ -2604,7 +2604,7 @@
                 This function is not implemented in PC-BASIC.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -2620,7 +2620,7 @@
 <hr />
 
     <section>
-        <h3 id="FIELD"><code>FIELD</code> statement</h3>
+        <h4 id="FIELD"><code>FIELD</code> statement</h4>
         <code class="block">
             <b>FIELD</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>width_0</var> <b>AS</b> <var>name_0</var> [<b>,</b> <var>width_1</var> <b>AS</b> <var>name_1</var>] ...]
         </code>
@@ -2631,7 +2631,7 @@
             one or more fixed-length string variables, so that the value of these strings
             is whatever happens to be in the record buffer at that location.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 A <code>FIELD</code> statement
@@ -2657,7 +2657,7 @@
                 Use <code><a href="#PUT-files">PUT</a></code> to write the field buffer to the file.
             </li>
         </ul>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_number</var></code> is a numeric expression that yields the number of an open random-access file. The <code>#</code> is optional and has no effect.
@@ -2670,7 +2670,7 @@
                 <code><var>name_0</var> , <var>name_1</var> ...</code> are string variables.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>file_number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
@@ -2701,7 +2701,7 @@
 <hr />
 
     <section>
-        <h3 id="FILES"><code>FILES</code> statement</h3>
+        <h4 id="FILES"><code>FILES</code> statement</h4>
         <code class="block">
             <b>FILES</b> [<var>path_and_filter</var>]
         </code>
@@ -2710,7 +2710,7 @@
             <code><var>path_and_filter</var></code> is not specified, displays all files in the current working
             directory.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>path_and_filter</var></code> is a string expression that
@@ -2718,7 +2718,7 @@
                 the second part is the filename filter.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 The filename filter consists of file name
@@ -2747,7 +2747,7 @@
                 specified directory are required, end the directory name with a backslash <code>\</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>path_and_filter</var></code> has a numeric value: <samp>Type mismatch</samp>.
@@ -2763,27 +2763,27 @@
 <hr />
 
     <section>
-        <h3 id="FIX"><code>FIX</code> function</h3>
+        <h4 id="FIX"><code>FIX</code> function</h4>
         <code class="block">
             <var>whole</var> <b>= FIX(</b><var>number</var><b>)</b>
         </code>
         <p>
             Returns <code><var>number</var></code> truncated towards zero.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>number</var></code> is a numeric expression.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 <code>FIX</code> truncates towards zero: it removes the fractional part. By contrast, <code><a href="#INT">INT</a></code>
                 truncates towards negative infinity. For negative <code><var>x</var></code>, <code>FIX(<var>x</var>)-INT(<var>x</var>)=1</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>number</var></code> is a string expression: <samp>Type mismatch</samp>.
@@ -2793,7 +2793,7 @@
 <hr />
 
     <section>
-        <h3 id="FN"><code>FN</code> function</h3>
+        <h4 id="FN"><code>FN</code> function</h4>
         <code class="block">
             <var>result</var> <b>= FN</b>[ ]<var>name</var> <b>(</b><var>arg_0</var> [<b>,</b> <var>arg_1</var>] ...<b>)</b>
         </code>
@@ -2801,7 +2801,7 @@
             Evaluates the user-defined function previously defined with <code><a href="#DEF-FN">DEF FN</a> <var>name</var></code>.
             Spaces between <code>FN</code> and <code><var>name</var></code> are optional.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>name</var></code> is the name of a previously defined function.
@@ -2810,7 +2810,7 @@
                 <code><var>arg_0</var>, <var>arg_1</var>, ...</code> are expressions, given as parameters to the function.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 No function named <code><var>name</var></code> is defined:
@@ -2829,7 +2829,7 @@
 <hr />
 
     <section>
-        <h3 id="FOR"><code>FOR</code> statement</h3>
+        <h4 id="FOR"><code>FOR</code> statement</h4>
         <code class="block">
             <b>FOR</b> <var>loop_var</var> <b>=</b> <var>start</var> <b>TO</b> <var>stop</var> [<b>STEP</b> <var>step</var>]
         </code>
@@ -2843,7 +2843,7 @@
             has become greater than <code><var>stop</var></code>. Execution then continues at the statement
             following <code>NEXT</code>. The value of <code><var>loop_var</var></code> equals <code><var>stop</var>+<var>step</var></code> after the loop.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>loop_var</var></code> is a numeric variable.
@@ -2852,7 +2852,7 @@
                 <code><var>start</var></code>, <code><var>stop</var></code> and <code><var>step</var></code> are numeric expressions.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 No <code>NEXT</code> statement is found to match the <code>FOR</code>
@@ -2872,14 +2872,14 @@
 <hr />
 
     <section>
-        <h3 id="FRE"><code>FRE</code> function</h3>
+        <h4 id="FRE"><code>FRE</code> function</h4>
         <code class="block">
             <var>free_mem</var> <b>= FRE(</b><var>x</var><b>)</b>
         </code>
         <p>
             Returns the available BASIC memory.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <p>
             <code><var>x</var></code> is an expression.
         </p>
@@ -2895,7 +2895,7 @@
 <hr />
 
     <section>
-        <h3 id="GET-files"><code>GET</code> statement (files)</h3>
+        <h4 id="GET-files"><code>GET</code> statement (files)</h4>
         <code class="block">
             <b>GET</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_number</var>]
         </code>
@@ -2907,7 +2907,7 @@
             <code><a href="#INPUT">INPUT</a></code> or
             <code><a href="#LINE-INPUT">LINE INPUT</a></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_number</var></code> is a numeric expression that yields the number
@@ -2917,14 +2917,14 @@
                 <code><var>record_number</var></code> is a numeric expression in <code>[1&#8212;33554432]</code> (<code>2^25</code>), and is interpreted as the record number.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If the record number is beyond the end of the file, the file buffer is
                 filled with null bytes.
             </li>
         </ul>
-            <h4>Errors</h4>
+            <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>record_number</var></code> is not in <code>[1&#8212;33554432]</code>: <samp>Bad record number</samp>.
@@ -2948,7 +2948,7 @@
 <hr />
 
     <section>
-        <h3 id="GET-serial"><code>GET</code> statement (communications)</h3>
+        <h4 id="GET-serial"><code>GET</code> statement (communications)</h4>
         <code class="block">
             <b>GET</b> [<b>#</b>] <var>com_file_number</var> [<b>,</b> <var>number_bytes</var>]
         </code>
@@ -2960,7 +2960,7 @@
             <code><a href="#INPUT">INPUT</a></code> or
             <code><a href="#LINE-INPUT">LINE INPUT</a></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_number</var></code> is a numeric expression that yields the number
@@ -2971,7 +2971,7 @@
                 and the <code>COM</code> buffer length, inclusive.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code><var>bytes</var></code> is <code>32768</code> or greater, GW-BASIC hangs. This functionality is not implemented in PC-BASIC.
@@ -2983,7 +2983,7 @@
                 encountered. This is according to the manual; it is untested.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>bytes</var></code> is less than 1: <samp>Bad record number</samp>
@@ -3013,7 +3013,7 @@
 <hr />
 
     <section>
-        <h3 id="GET-graphics"><code>GET</code> statement (graphics)</h3>
+        <h4 id="GET-graphics"><code>GET</code> statement (graphics)</h4>
         <code class="block">
             <b>GET (</b><var>x0</var><b>,</b> <var>y0</var><b>) -</b> [<b>STEP</b>] <b>(</b><var>x1</var><b>,</b> <var>y1</var><b>),</b> <var>array_name</var>
         </code>
@@ -3062,7 +3062,7 @@
                 </tr>
             </table>
         </div>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>array_name</var></code> is the name of a numeric array dimensioned with enough space to store the area.
@@ -3071,14 +3071,14 @@
                 <code><var>x0</var></code>, <code><var>y0</var></code>, <code><var>x1</var></code>, <code><var>y1</var></code> are numeric expressions.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In PCjr/Tandy mode, in <code>SCREEN 6</code>, <code>GET</code> stores an area of <em>twice the width</em>
                 of the specified rectangle.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 The array does not exist: <samp>Illegal function call</samp>.
@@ -3104,7 +3104,7 @@
 <hr />
 
     <section>
-        <h3 id="GOSUB"><code>GOSUB</code> statement</h3>
+        <h4 id="GOSUB"><code>GOSUB</code> statement</h4>
         <code class="block">
             <b>GO</b>[ ]<b>SUB</b> <var>line_number</var> [<var>anything</var>]
         </code>
@@ -3115,7 +3115,7 @@
             statement is ignored. If executed from a direct line, <code>GOSUB</code> runs the subroutine and
             the following <code>RETURN</code> returns execution to the direct line.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>line_number</var></code> is an existing line number literal.
@@ -3125,7 +3125,7 @@
                 the line are ignored until end of statement.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If no <code>RETURN</code> is encountered, no problem.
@@ -3135,7 +3135,7 @@
                 the program.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 If <code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
@@ -3149,7 +3149,7 @@
 <hr />
 
     <section>
-        <h3 id="GOTO"><code>GOTO</code> statement</h3>
+        <h4 id="GOTO"><code>GOTO</code> statement</h4>
         <code class="block">
             <b>GO</b>[ ]<b>TO</b> <var>line_number</var> [<var>anything</var>]
         </code>
@@ -3157,7 +3157,7 @@
             Jumps to <code><var>line_number</var></code>.  Anything after <code><var>line_number</var></code> until the end of the
             statement is ignored. If executed from a direct line, <code>GOTO</code> starts execution of the program at the specified line.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>line_number</var></code> is an existing line number literal.
@@ -3167,14 +3167,14 @@
                 the line are ignored until end of statement.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Any number of optional spaces is allowed between <code>GO</code> and <code>TO</code>, but they will
                 not be retained in the program.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
@@ -3188,14 +3188,14 @@
 <hr />
 
     <section>
-        <h3 id="HEX$"><code>HEX$</code> function</h3>
+        <h4 id="HEX$"><code>HEX$</code> function</h4>
         <code class="block">
             <var>hex_repr</var> <b>= HEX$(</b><var>x</var><b>)</b>
         </code>
         <p>
             Returns a string with the hexadecimal representation of <code><var>x</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>x</var></code> is a
@@ -3203,7 +3203,7 @@
                 negative <code><var>x</var></code> are shown as two's-complement.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
@@ -3216,7 +3216,7 @@
 <hr />
 
     <section>
-        <h3 id="IF"><code>IF</code> statement</h3>
+        <h4 id="IF"><code>IF</code> statement</h4>
         <code class="block">
             <b>IF</b> <var>truth_value</var> [<b>,</b>] {<b>THEN</b>|<b>GOTO</b>} [<var>statements_1</var>|<var>line_number_1</var> [<var>anything</var>]]
             [<b>ELSE</b> [<var>statements_0</var>|<var>line_number_0</var> [<var>anything</var>]]]
@@ -3234,7 +3234,7 @@
             clauses that have no matching <code>IF</code> are ignored. All clauses must be on the same
             program line.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                <code>THEN</code> and <code>GOTO</code> are interchangeable; which one is chosen is independent
@@ -3251,7 +3251,7 @@
 <hr />
 
     <section>
-        <h3 id="INKEY$"><code>INKEY$</code> function</h3>
+        <h4 id="INKEY$"><code>INKEY$</code> function</h4>
         <code class="block">
             <var>key</var> <b>= INKEY$</b>
         </code>
@@ -3261,13 +3261,13 @@
             character string or a two-character string of which the first is <code>CHR$(0)</code> and
             the second a keyboard scancode.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 This function has no brackets.
             </li>
         </ul>
-        <h4>Keyboard scancodes returned by <code>INKEY$</code></h4>
+        <h5>Keyboard scancodes returned by <code>INKEY$</code></h5>
         <div class="scrollable">
             <table>
                 <tr>
@@ -3403,14 +3403,14 @@
 <hr />
 
     <section>
-        <h3 id="INP"><code>INP</code> function</h3>
+        <h4 id="INP"><code>INP</code> function</h4>
         <code class="block">
             <var>code</var> <b>= INP(</b><var>port</var><b>)</b>
         </code>
         <p>
             Returns the value of an emulated machine port.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <p>
             <code><var>port</var></code> is a numeric expression in <code>[0&#8212;65535]</code>.
         </p>
@@ -3483,13 +3483,13 @@
                 </tr>
             </table>
         </div>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Only a limited number of machine ports are emulated in PC-BASIC.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
@@ -3498,7 +3498,7 @@
                 <code><var>port</var></code> has a string value: <samp>Type mismatch</samp>.
             </li>
         </ul>
-        <h4>Scancodes returned by <code>INP(&amp;H60)</code></h4>
+        <h5>Scancodes returned by <code>INP(&amp;H60)</code></h5>
         <div class="scrollable">
             <table>
                 <tr>
@@ -3847,7 +3847,7 @@
 <hr />
 
     <section>
-        <h3 id="INPUT"><code>INPUT</code> statement (console)</h3>
+        <h4 id="INPUT"><code>INPUT</code> statement (console)</h4>
         <code class="block">
             <b>INPUT</b> [<b>;</b>] [<var>prompt</var> {<b>;</b>|<b>,</b>}] <var>var_0</var> [<b>,</b> <var>var_1</var>] ...
         </code>
@@ -3858,7 +3858,7 @@
             If the prompt is followed by a semicolon, it is printed with a trailing <code>?</code>. If
             the prompt is followed by a comma, no question mark is added.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>prompt</var></code> is a string literal.
@@ -3867,7 +3867,7 @@
                 <code><var>var_0</var>, <var>var_1</var>, ...</code> are variable names or fully indexed array elements.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Values entered must be separated by commas. Leading and trailing whitespace
@@ -3902,7 +3902,7 @@
                 <code>INPUT</code> statement.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 If the value entered for a numeric variable is not a valid numeric literal,
@@ -3919,7 +3919,7 @@
 <hr />
 
     <section>
-        <h3 id="INPUT-file"><code>INPUT</code> statement (devices and files)</h3>
+        <h4 id="INPUT-file"><code>INPUT</code> statement (devices and files)</h4>
         <code class="block">
             <b>INPUT #</b> <var>file_num</var><b>,</b> <var>var_0</var> [<b>,</b> <var>var_1</var>] ...
         </code>
@@ -3927,7 +3927,7 @@
             Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
             of a random access file.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_num</var></code> is the number of a file open in
@@ -3937,7 +3937,7 @@
                 <code><var>var_0</var>, <var>var_1</var>, ...</code> are variable names or fully indexed array elements.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 The <code>#</code> is mandatory. There may or may not be whitespace between <code>INPUT</code> and <code>#</code>.
@@ -3970,7 +3970,7 @@
                 passed as their control characters (<em>not</em> scancodes!) preceded by <code><a href="#CHR$">CHR$</a>(&amp;HFF)</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Input is requested after the end of a text file has been reached or an
@@ -4005,7 +4005,7 @@
 <hr />
 
     <section>
-        <h3 id="INPUT$"><code>INPUT$</code> function</h3>
+        <h4 id="INPUT$"><code>INPUT$</code> function</h4>
         <code class="block">
             <var>chars</var> <b>= INPUT</b>[ ]<b>$</b> <b>(</b><var>num_chars</var> [<b>,</b> [<b>#</b>] <var>file_num</var>]<b>)</b>
         </code>
@@ -4013,7 +4013,7 @@
             Returns a string of <code><var>num_chars</var></code> characters from the keyboard or,
             if <code><var>file_num</var></code> is provided, from a text file.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>num_chars</var></code> is a numeric expression in <code>[1&#8212;255]</code>.
@@ -4023,7 +4023,7 @@
                 <code>INPUT</code> mode. The <code>#</code> is optional and has no effect.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 This is a blocking read. It will wait for characters if there are none
@@ -4041,7 +4041,7 @@
                 active as normal.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
@@ -4075,7 +4075,7 @@
 <hr />
 
     <section>
-        <h3 id="INSTR"><code>INSTR</code> function</h3>
+        <h4 id="INSTR"><code>INSTR</code> function</h4>
         <code class="block">
             <var>position</var> <b>= INSTR(</b>[<var>start</var><b>,</b>] <var>parent</var><b>,</b> <var>child</var><b>)</b>
         </code>
@@ -4083,7 +4083,7 @@
             Returns the location of the first occurrence of the substring <code><var>child</var></code> in
             <code><var>parent</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>parent</var></code> and <code><var>child</var></code> are string expressions.
@@ -4094,14 +4094,14 @@
                 at character 1.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code><var>child</var></code> is not a substring of <code><var>parent</var></code> occurring at or before <code><var>start</var></code>,
                 <code>INSTR</code> returns 0.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>start</var></code> has a string value or <code><var>parent</var></code> or <code><var>child</var></code> have numeric values: <samp>Type mismatch</samp>.
@@ -4117,20 +4117,20 @@
 <hr />
 
     <section>
-        <h3 id="INT"><code>INT</code> function</h3>
+        <h4 id="INT"><code>INT</code> function</h4>
         <code class="block">
             <var>whole</var> <b>= INT(</b><var>number</var><b>)</b>
         </code>
         <p>
             Returns <code><var>number</var></code> truncated towards negative infinity.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>number</var></code> is a numeric expression.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 <code><a href="#FIX">FIX</a></code> truncates towards zero: it removes the
@@ -4138,7 +4138,7 @@
                 For negative <code><var>x</var></code>, <code>FIX(<var>x</var>)-INT(<var>x</var>)=1</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>number</var></code> is a string expression, <samp>Type mismatch</samp> .
@@ -4148,14 +4148,14 @@
 <hr />
 
     <section>
-        <h3 id="IOCTL"><code>IOCTL</code> statement</h3>
+        <h4 id="IOCTL"><code>IOCTL</code> statement</h4>
         <code class="block">
             <b>IOCTL</b> [<b>#</b>] <var>file_num</var><b>,</b> <var>control_string</var>
         </code>
         <p>
             Raises <samp>Illegal function call</samp>.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In GW-BASIC, <code>IOCTL</code> sends a control string to a device.
@@ -4164,7 +4164,7 @@
                 This statement is not implemented in PC-BASIC.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -4183,14 +4183,14 @@
 <hr />
 
     <section>
-        <h3 id="IOCTL$"><code>IOCTL$</code> function</h3>
+        <h4 id="IOCTL$"><code>IOCTL$</code> function</h4>
         <code class="block">
             <var>result</var> <b>= IOCTL</b>[ ]<b>$ (</b>[<b>#</b>] <var>file_num</var><b>)</b>
         </code>
         <p>
             Raises <samp>Illegal function call</samp>.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In GW-BASIC, <code>IOCTL$</code> reads the reply to
@@ -4200,7 +4200,7 @@
                 This function is not implemented in PC-BASIC.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -4219,7 +4219,7 @@
 <hr />
 
     <section>
-        <h3 id="KEY-list"><code>KEY</code> statement (function-key macro list)</h3>
+        <h4 id="KEY-list"><code>KEY</code> statement (function-key macro list)</h4>
         <code class="block">
             <b>KEY</b> {<b>ON</b>|<b>OFF</b>|<b>LIST</b>}
         </code>
@@ -4235,7 +4235,7 @@
 <hr />
 
     <section>
-        <h3 id="KEY-def"><code>KEY</code> statement (function-key macro definition)</h3>
+        <h4 id="KEY-def"><code>KEY</code> statement (function-key macro definition)</h4>
         <code class="block">
             <b>KEY</b> <var>key_id</var><b>,</b> <var>string_value</var>
         </code>
@@ -4243,7 +4243,7 @@
             Defines the string macro for function key <code><var>key_id</var></code>.
             Only the first 15 characters of <code><var>string_value</var></code> are stored.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>key_id</var></code> is a numeric expression in the range <code>[1&#8212;10]</code>.
@@ -4252,7 +4252,7 @@
                 <code><var>string_value</var></code> is a string expression.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code><var>key_id</var></code> is not in the range <code>[1&#8212;10]</code>,
@@ -4260,7 +4260,7 @@
                 event-trapping <code><a href="#KEY-event">KEY</a></code> statement.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
@@ -4276,7 +4276,7 @@
 <hr />
 
     <section>
-        <h3 id="KEY-event"><code>KEY</code> statement (event-trapping switch)</h3>
+        <h4 id="KEY-event"><code>KEY</code> statement (event-trapping switch)</h4>
         <code class="block">
             <b>KEY</b> <b>(</b><var>key_id</var><b>)</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
@@ -4288,7 +4288,7 @@
             The event triggered during suspension is handled immediately after the next <code>KEY() ON</code>
             statement.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <p>
             <code><var>key_id</var></code> is a numeric expression in <code>[1&#8212;20]</code>.
             Keys are:
@@ -4357,7 +4357,7 @@
             Keys 15 to 20 are defined using the event trapping
             <code><a href="#KEY-event-def">KEY</a></code> definition statement.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 With <code><a href="#--syntax">--syntax</a>=tandy</code>, key 11
@@ -4365,7 +4365,7 @@
                 Pre-defined keys 11&#8212;14 shift to 13&#8212;16.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
@@ -4381,14 +4381,14 @@
 <hr />
 
     <section>
-        <h3 id="KEY-event-def"><code>KEY</code> statement (event-trapping key definition)</h3>
+        <h4 id="KEY-event-def"><code>KEY</code> statement (event-trapping key definition)</h4>
         <code class="block">
             <b>KEY</b> <var>key_id</var><b>,</b> <var>two_char_string</var>
         </code>
         <p>
             Defines the key to trap for <code><var>key_id</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>key_id</var></code> is a numeric
@@ -4432,7 +4432,7 @@
                 </div>
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code><var>key_id</var></code> is not in <code>[15&#8212;20]</code>, no error is raised, but strange things can
@@ -4445,7 +4445,7 @@
                 definition; see above.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>key_id</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
@@ -4467,7 +4467,7 @@
 <hr />
 
     <section>
-        <h3 id="KILL"><code>KILL</code> statement</h3>
+        <h4 id="KILL"><code>KILL</code> statement</h4>
         <code class="block">
             <b>KILL</b> <var>file_path</var>
         </code>
@@ -4476,13 +4476,13 @@
             valid path to an existing file with MS-DOS path separators <code>\</code>. The extension
             must be specified: no default extensions are assumed.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>file_path</var></code> has a number value: <samp>Type mismatch</samp>.
@@ -4504,20 +4504,20 @@
 <hr />
 
     <section>
-        <h3 id="LCOPY"><code>LCOPY</code> statement</h3>
+        <h4 id="LCOPY"><code>LCOPY</code> statement</h4>
         <code class="block">
             <b>LCOPY</b> [<var>num</var>]
         </code>
         <p>
             Does nothing.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>num</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 This statement does nothing in GW-BASIC. Presumably, it is left over from a
@@ -4525,7 +4525,7 @@
                 printer.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
@@ -4541,14 +4541,14 @@
 <hr />
 
     <section>
-        <h3 id="LEFT$"><code>LEFT$</code> function</h3>
+        <h4 id="LEFT$"><code>LEFT$</code> function</h4>
         <code class="block">
             <var>child</var> <b>= LEFT$(</b><var>parent</var><b>,</b> <var>num_chars</var><b>)</b>
         </code>
         <p>
             Returns the leftmost <code><var>num_chars</var></code> characters of <code><var>parent</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>parent</var></code> is a string expression.
@@ -4557,7 +4557,7 @@
                 <code><var>num_chars</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code><var>num_chars</var></code> is zero or <code><var>parent</var></code> is empty, <code>LEFT$</code> returns
@@ -4568,7 +4568,7 @@
                 returns <code><var>parent</var></code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>parent</var></code> has a numeric value or <code><var>num_chars</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -4584,21 +4584,21 @@
 <hr />
 
     <section>
-        <h3 id="LEN"><code>LEN</code> function</h3>
+        <h4 id="LEN"><code>LEN</code> function</h4>
         <code class="block">
             <var>length</var> <b>= LEN(</b><var>string</var><b>)</b>
         </code>
         <p>
             Returns the number of characters in <code><var>string</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>string</var></code> is a string
                 expression.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
@@ -4608,14 +4608,14 @@
 <hr />
 
     <section>
-        <h3 id="LET"><code>LET</code> statement</h3>
+        <h4 id="LET"><code>LET</code> statement</h4>
         <code class="block">
             [<b>LET</b>] <var>name</var> <b>=</b> <var>expression</var>
         </code>
         <p>
             Assigns the value of <code><var>expression</var></code> to the variable or array element <code><var>name</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>name</var></code> is a variable that may or may not already exist.
@@ -4626,7 +4626,7 @@
                 be assigned to each other but strings can only be assigned to strings.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>name</var></code> and <code><var>expression</var></code> are not of matching types: <samp>Type mismatch</samp>.
@@ -4636,7 +4636,7 @@
 <hr />
 
     <section>
-        <h3 id="LINE"><code>LINE</code> statement</h3>
+        <h4 id="LINE"><code>LINE</code> statement</h4>
         <code class="block">
             <b>LINE</b> [[<b>STEP</b>] <b>(</b><var>x0</var><b>,</b> <var>y0</var><b>)</b>] <b>-</b> [<b>STEP</b>]
             <b>(</b><var>x1</var><b>,</b> <var>y1</var><b>)</b> [<b>,</b> [<var>attr</var>] [<b>,</b> [<b>B</b> [<b>F</b>]] [<b>,</b> <var>pattern</var>]]]
@@ -4654,7 +4654,7 @@
             If <code>F</code> is specified with <code>B</code>, the rectangle is filled with the specified attribute.
             <code>F</code> and <code>B</code> may be separated by zero or more spaces.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>attr</var></code> is a numeric expression in <code>[0&#8212;255]</code>, which
@@ -4676,14 +4676,14 @@
                 filled box, <code>LINE</code> ignores the pattern.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If a coordinate is outside the screen boundary, it is replaced with -1 (if
                 less than 0) or the screen dimension (if larger than the screen dimension).
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 The statement ends in a comma and it is the first or third: <samp>Missing operand</samp>. If it is the second: <samp>Syntax error</samp>.
@@ -4699,7 +4699,7 @@
 <hr />
 
     <section>
-        <h3 id="LINE-INPUT"><code>LINE INPUT</code> statement (console)</h3>
+        <h4 id="LINE-INPUT"><code>LINE INPUT</code> statement (console)</h4>
         <code class="block">
             <b>LINE INPUT</b> [<b>;</b>] [<var>prompt_literal</var> {<b>;</b>|<b>,</b>}] <var>string_name</var>
         </code>
@@ -4710,7 +4710,7 @@
             right after <code>LINE INPUT</code>, the <kbd>Enter</kbd> ending user input is not echoed to the
             screen.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>prompt_literal</var></code> is a string literal. It makes no difference whether it is
@@ -4720,7 +4720,7 @@
                 <code><var>string_name</var></code> is a string variable or array element.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If user input is interrupted by <kbd>Ctrl</kbd>+<kbd>Break</kbd>, <code>CONT</code> will re-execute the <code>LINE
@@ -4735,7 +4735,7 @@
 <hr />
 
     <section>
-        <h3 id="LINE-INPUT-file"><code>LINE INPUT</code> statement (files)</h3>
+        <h4 id="LINE-INPUT-file"><code>LINE INPUT</code> statement (files)</h4>
         <code class="block">
             <b>LINE INPUT</b> <b>#</b> <var>file_num</var><b>,</b> <var>string_name</var>
         </code>
@@ -4745,13 +4745,13 @@
             255 characters are stored. <code><var>file_num</var></code> must be the number of a file open in
             <code>INPUT</code> mode or a device or random-access file open in <code>RANDOM</code> mode.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>string_name</var></code> is a string variable or array element.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 The <code>#</code> is mandatory. There may or may not be whitespace between <code>INPUT</code> and <code>#</code>.
@@ -4765,7 +4765,7 @@
                 passed as their control characters (<em>not</em> scancodes!) preceded by <code>CHR$(&amp;HFF)</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Input is requested after the end of a text file has been reached or an
@@ -4800,7 +4800,7 @@
 <hr />
 
     <section>
-        <h3 id="LIST"><code>LIST</code> statement</h3>
+        <h4 id="LIST"><code>LIST</code> statement</h4>
         <code class="block">
             <b>LIST</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>]] [<b>,</b> <var>file_name</var>]
         </code>
@@ -4810,7 +4810,7 @@
             Also stops program execution and returns control to the user. Any further
             statements on a line after <code>LIST</code> will be ignored, both in a program and on a direct line.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are  line numbers in the range <code>[0&#8212;65529]</code>.
@@ -4822,7 +4822,7 @@
                 exists, it will be overwritten.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 A line number is greater than <code>65529</code>: <samp>Syntax error</samp>.
@@ -4839,7 +4839,7 @@
 <hr />
 
     <section>
-        <h3 id="LLIST"><code>LLIST</code> statement</h3>
+        <h4 id="LLIST"><code>LLIST</code> statement</h4>
         <code class="block">
             <b>LLIST</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>]]
         </code>
@@ -4849,7 +4849,7 @@
             Also stops program execution and returns control to the user. Any further
             statements on a line after <code>LLIST</code> will be ignored, both in a program and on a direct line.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are  line numbers in the range <code>[0&#8212;65529]</code>.
@@ -4857,7 +4857,7 @@
                 they specify a range. If the range is empty, nothing is printed.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 A line number is greater than <code>65529</code>: <samp>Syntax error</samp>.
@@ -4867,7 +4867,7 @@
 <hr />
 
     <section>
-        <h3 id="LOAD"><code>LOAD</code> statement</h3>
+        <h4 id="LOAD"><code>LOAD</code> statement</h4>
         <code class="block">
             <b>LOAD</b> <var>file_name</var> [<b>, R</b>]
         </code>
@@ -4878,19 +4878,19 @@
             cleared and any program in memory will be erased. <code>LOAD</code> implies a
             <code><a href="#CLEAR">CLEAR</a></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_name</var></code> is a string expression yielding the name of an existing program file.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>file_name</var></code> cannot be found: <samp>File not found</samp>.
@@ -4904,7 +4904,7 @@
 <hr />
 
     <section>
-        <h3 id="LOC"><code>LOC</code> function</h3>
+        <h4 id="LOC"><code>LOC</code> function</h4>
         <code class="block">
             <var>location</var> <b>= LOC(</b><var>file_num</var><b>)</b>
         </code>
@@ -4928,13 +4928,13 @@
                 If the file is opened to <code>KYBD:</code>, <code>LOC</code> returns 0.
             </li>
         </ul>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_num</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                <code><var>file_num</var></code> must not be preceded by a <code>#</code>.
@@ -4948,7 +4948,7 @@
                 is read, <code>LOC</code> returns 2.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -4970,7 +4970,7 @@
 <hr />
 
     <section>
-        <h3 id="LOCATE"><code>LOCATE</code> statement</h3>
+        <h4 id="LOCATE"><code>LOCATE</code> statement</h4>
         <code class="block">
             <b>LOCATE</b> [<var>row</var>] [<b>,</b> [<var>col</var>] [<b>,</b> [<var>cursor_visible</var>] [<b>,</b> [<var>start_line</var>] [<b>,</b> [<var>stop_line</var>] [<b>,</b>]]]]]
         </code>
@@ -4983,7 +4983,7 @@
             <code><var>start_line</var></code> and <code><var>end_line</var></code> are in <code>[0&#8212;31]</code>. If <code><var>start_line</var></code> or <code><var>end_line</var></code> is
             greater than the character cell height (15), substitute 15.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 On emulated VGA cards, the cursor shape parameters are interpreted
@@ -5000,7 +5000,7 @@
                 Locate accepts a 5th comma at the end, which is ignored.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any parameter has a string value: <samp>Type mismatch</samp>.
@@ -5022,7 +5022,7 @@
 <hr />
 
     <section>
-        <h3 id="LOCK"><code>LOCK</code> statement</h3>
+        <h4 id="LOCK"><code>LOCK</code> statement</h4>
         <code class="block">
             <b>LOCK</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_0</var>]
             <br/>
@@ -5035,7 +5035,7 @@
             effect. If <code><var>record_0</var></code> is not specified, it is assumed to be 1. If no records
             are specified, the whole file is locked.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_number</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
@@ -5044,7 +5044,7 @@
                 <code><var>record_0</var></code> and <code><var>record_1</var></code> are numeric expressions in <code>[1&#8212;2^25-2]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In GW-BASIC under MS-DOS, the <code>LOCK</code> command requires <code>SHARE.EXE</code> to be loaded.
@@ -5060,7 +5060,7 @@
                 <samp>Permission denied</samp>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any parameter has a string value: <samp>Type mismatch</samp>.
@@ -5085,27 +5085,27 @@
 <hr />
 
     <section>
-        <h3 id="LOF"><code>LOF</code> function</h3>
+        <h4 id="LOF"><code>LOF</code> function</h4>
         <code class="block">
             <var>length</var> <b>= LOF(</b><var>file_num</var><b>)</b>
         </code>
         <p>
             Returns the number of bytes in the file open under <code><var>file_num</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_num</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code><var>file_num</var></code> is open to a <code>COM:</code> device, <code>LOF</code> returns the number of bytes
                 free in the input buffer.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -5127,20 +5127,20 @@
 <hr />
 
     <section>
-        <h3 id="LOG"><code>LOG</code> function</h3>
+        <h4 id="LOG"><code>LOG</code> function</h4>
         <code class="block">
             <var>y</var> <b>= LOG(</b><var>x</var><b>)</b>
         </code>
         <p>
             Returns the natural logarithm of <code><var>x</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>x</var></code> is a numeric expression greater than zero.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
@@ -5150,7 +5150,7 @@
                <code>LOG(<var>x</var>)</code> can differ from GW-BASIC by 1 in the least significant digit.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -5163,14 +5163,14 @@
 <hr />
 
     <section>
-        <h3 id="LPOS"><code>LPOS</code> function</h3>
+        <h4 id="LPOS"><code>LPOS</code> function</h4>
         <code class="block">
             <var>position</var> <b>= LPOS(</b><var>printer_number</var><b>)</b>
         </code>
         <p>
             Returns the column position for a printer.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>printer_number</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
@@ -5178,7 +5178,7 @@
                 or 1, the position for <code>LPT1:</code> is returned. If it is 2, <code>LPT2:</code>; 3, <code>LPT3:</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In GW-BASIC, when entering direct mode, <code>LPT1:</code> (but not other printers)
@@ -5186,7 +5186,7 @@
                 PC-BASIC.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>printer_number</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -5202,7 +5202,7 @@
 <hr />
 
     <section>
-        <h3 id="LPRINT"><code>LPRINT</code> statement</h3>
+        <h4 id="LPRINT"><code>LPRINT</code> statement</h4>
         <p>
             See <code><a href="#PRINT">PRINT</a></code>.
         </p>
@@ -5210,7 +5210,7 @@
 <hr />
 
     <section>
-        <h3 id="LSET"><code>LSET</code> and <code>RSET</code> statements</h3>
+        <h4 id="LSET"><code>LSET</code> and <code>RSET</code> statements</h4>
         <code class="block">
             {<b>LSET</b>|<b>RSET</b>} <var>string_name</var> <b>=</b> <var>expression</var>
         </code>
@@ -5220,7 +5220,7 @@
             With <code>LSET</code>, the value will be left-justified if it is shorter than the length of
             the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justified.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>string_name</var></code> is a string variable.
@@ -5228,7 +5228,7 @@
                 <li><code><var>expression</var></code> is a string expression.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code><var>string_name</var></code> is not a <code>FIELD</code> variable, the value is justified into the
@@ -5244,7 +5244,7 @@
                 detached from the field and becomes a normal string variable.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>string_name</var></code> is not a string variable: <samp>Type mismatch</samp>.
@@ -5255,7 +5255,7 @@
 <hr />
 
     <section>
-        <h3 id="MERGE"><code>MERGE</code> statement</h3>
+        <h4 id="MERGE"><code>MERGE</code> statement</h4>
         <code class="block">
             <b>MERGE</b> <var>file_name</var>
         </code>
@@ -5264,13 +5264,13 @@
             lines overwrite existing lines if they have the same line number. <code><var>file_name</var></code>
             must be the name of an existing program file stored in ASCII format only.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>file_name</var></code> cannot be found: <samp>File not found</samp>.
@@ -5287,7 +5287,7 @@
 <hr />
 
     <section>
-        <h3 id="MID$"><code>MID$</code> function</h3>
+        <h4 id="MID$"><code>MID$</code> function</h4>
         <code class="block">
             <var>substring</var> <b>= MID$(</b><var>string</var><b>,</b> <var>position</var> [<b>,</b> <var>length</var>]<b>)</b>
         </code>
@@ -5295,7 +5295,7 @@
             Returns a substring of <code><var>string</var></code> starting at <code><var>position</var></code>, counting from 1. The
             substring has length <code><var>length</var></code> if specified, defaulting to 1.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>string</var></code> is a string expression.
@@ -5307,7 +5307,7 @@
                 <code><var>length</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>string</var></code> has a number value or <code><var>position</var></code> or <code><var>length</var></code> have string values: <samp>Type mismatch</samp>.
@@ -5326,14 +5326,14 @@
 <hr />
 
     <section>
-        <h3 id="MID$-statement"><code>MID$</code> statement</h3>
+        <h4 id="MID$-statement"><code>MID$</code> statement</h4>
         <code class="block">
             <b>MID$(</b><var>string_name</var><b>,</b> <var>position</var> [<b>,</b> <var>length</var>]<b>) =</b> <var>substring</var>
         </code>
         <p>
             Replaces part of <code><var>string_name</var></code> with <code><var>substring</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>string_name</var></code> is a valid string variable name.
@@ -5345,7 +5345,7 @@
                 <code><var>length</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code><var>substring</var></code> is longer than <code><var>length</var></code>, only the first <code><var>length</var></code> characters
@@ -5356,7 +5356,7 @@
                 are replaced.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>position</var></code> is greater than the length of <code><var>string_name</var></code>:
@@ -5376,27 +5376,27 @@
 <hr />
 
     <section>
-        <h3 id="MKDIR"><code>MKDIR</code> statement</h3>
+        <h4 id="MKDIR"><code>MKDIR</code> statement</h4>
         <code class="block">
             <b>MKDIR</b> <var>path</var>
         </code>
         <p>
             Creates a directory on a disk device.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>path</var></code> is a string expression that specifies the
                 path of the new directory.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                <code><var>path</var></code> will be truncated into all-uppercase 8.3 format.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>path</var></code> is not a string: <samp>Type mismatch</samp>.
@@ -5415,7 +5415,7 @@
 <hr />
 
     <section>
-        <h3 id="MKD$"><code>MKD$</code> function</h3>
+        <h4 id="MKD$"><code>MKD$</code> function</h4>
         <code class="block">
             <var>bytes</var> <b>= MKD$(</b><var>double</var><b>)</b>
         </code>
@@ -5423,7 +5423,7 @@
             Returns the internal 8-byte Microsoft Binary Format representation of a double-
             precision number.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>double</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -5433,14 +5433,14 @@
 <hr />
 
     <section>
-        <h3 id="MKI$"><code>MKI$</code> function</h3>
+        <h4 id="MKI$"><code>MKI$</code> function</h4>
         <code class="block">
             <var>bytes</var> <b>= MKI$(</b><var>int</var><b>)</b>
         </code>
         <p>
             Returns the internal 2-byte little-endian representation of an integer.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>int</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -5453,7 +5453,7 @@
 <hr />
 
     <section>
-        <h3 id="MKS$"><code>MKS$</code> function</h3>
+        <h4 id="MKS$"><code>MKS$</code> function</h4>
         <code class="block">
             <var>bytes</var> <b>= MKS$(</b><var>single</var><b>)</b>
         </code>
@@ -5461,7 +5461,7 @@
             Returns the internal 8-byte Microsoft Binary Format representation of a single-
             precision number.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>single</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -5471,20 +5471,20 @@
 <hr />
 
     <section>
-        <h3 id="MOTOR"><code>MOTOR</code> statement</h3>
+        <h4 id="MOTOR"><code>MOTOR</code> statement</h4>
         <code class="block">
             <b>MOTOR</b> [<var>num</var>]
         </code>
         <p>
             Does nothing.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>num</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 This statement does nothing in GW-BASIC. Presumably, it is left over from a
@@ -5492,7 +5492,7 @@
                 player.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>num</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -5508,26 +5508,26 @@
 <hr />
 
     <section>
-        <h3 id="NAME"><code>NAME</code> statement</h3>
+        <h4 id="NAME"><code>NAME</code> statement</h4>
         <code class="block">
             <b>NAME</b> <var>old_name</var> <b>AS</b> <var>new_name</var>
         </code>
         <p>
             Renames the disk file <code><var>old_name</var></code> into <code><var>new_name</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>old_name</var></code> and <code><var>new_name</var></code> are string expressions.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                <code><var>new_name</var></code> will be modified into all-uppercase 8.3 format.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>old_name</var></code> or <code><var>new_name</var></code> have number values: <samp>Type mismatch</samp>.
@@ -5546,7 +5546,7 @@
 <hr />
 
     <section>
-        <h3 id="NEW"><code>NEW</code> statement</h3>
+        <h4 id="NEW"><code>NEW</code> statement</h4>
         <code class="block">
             <b>NEW</b>
         </code>
@@ -5559,7 +5559,7 @@
 <hr />
 
     <section>
-        <h3 id="NEXT"><code>NEXT</code> statement</h3>
+        <h4 id="NEXT"><code>NEXT</code> statement</h4>
         <code class="block">
             <b>NEXT</b> [<var>var_0</var> [<b>,</b> <var>var_1</var>] ...]
         </code>
@@ -5571,13 +5571,13 @@
             using the variable list. If one or more variables are specified, their order
             must match the order of earlier <code>FOR</code> statements.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>var_0</var>, <var>var_1</var>, ...</code> are numeric variables which are loop counters in a <code>FOR</code> statement.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 No <code>FOR</code> statement is found to match the <code>NEXT</code> statement and variables:
@@ -5591,14 +5591,14 @@
 <hr />
 
     <section>
-        <h3 id="NOISE"><code>NOISE</code> statement</h3>
+        <h4 id="NOISE"><code>NOISE</code> statement</h4>
         <code class="block">
             <b>NOISE</b> <var>source</var><b>,</b> <var>volume</var><b>,</b> <var>duration</var>
         </code>
         <p>
             Generates various kinds of noise.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>source</var></code> is a numeric expression in  <code>[0&#8212;7]</code>.
@@ -5662,14 +5662,14 @@
             Volume and duration are determined in the same way as for the
             <code><a href="#SOUND">SOUND</a></code> statement; see there.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 This statement is only available if
                 <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code> is set.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code>SOUND ON</code> has not been executed: <samp>Illegal function call</samp>.
@@ -5688,14 +5688,14 @@
 <hr />
 
     <section>
-        <h3 id="OCT$"><code>OCT$</code> function</h3>
+        <h4 id="OCT$"><code>OCT$</code> function</h4>
         <code class="block">
             <var>octal</var> <b>= OCT$(</b><var>x</var><b>)</b>
         </code>
         <p>
             Returns a string with the octal representation of <code><var>x</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>x</var></code> is a
@@ -5703,7 +5703,7 @@
                 negative <code><var>x</var></code> are shown as two's-complement.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -5716,7 +5716,7 @@
 <hr />
 
     <section>
-        <h3 id="ON-jump"><code>ON</code> statement (calculated jump)</h3>
+        <h4 id="ON-jump"><code>ON</code> statement (calculated jump)</h4>
         <code class="block">
             <b>ON</b> <var>n</var> {<b>GOTO</b>|<b>GOSUB</b>} <var>line_number_0</var> [<b>,</b> <var>line_number_1</var>] ...
         </code>
@@ -5725,7 +5725,7 @@
             than the number of line numbers in the list, no jump is performed. If <code>GOTO</code> is specified,
             the jump is unconditional; if <code>GOSUB</code> is specified, jumps to a subroutine.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>n</var></code> is a numeric expression in <code>[0&#8212;255]</code>. The expression must not start with the <code>STRIG</code>, <code>PEN</code>, <code>PLAY</code> or <code>TIMER</code> function keywords; if you need these functions, the expression must be bracketed.
@@ -5734,7 +5734,7 @@
                 <code><var>line_number_0</var>, <var>line_number_1</var>, ...</code> are existing line numbers in the program.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>n</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -5753,7 +5753,7 @@
 <hr />
 
     <section>
-        <h3 id="ON-event"><code>ON</code> statement (event trapping)</h3>
+        <h4 id="ON-event"><code>ON</code> statement (event trapping)</h4>
         <code class="block">
             <b>ON</b> {<b>COM(</b><var>n</var><b>)</b>|<b>KEY(</b><var>n</var><b>)</b>|<b>STRIG(</b><var>n</var><b>)</b>|<b>PEN</b>|<b>PLAY(</b><var>n</var><b>)</b>|<b>TIMER(</b><var>x</var><b>)</b>}
             <b>GOSUB</b> <var>line_number</var>
@@ -5813,7 +5813,7 @@
                 </tr>
             </table>
         </div>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Event trapping for your chosen event first needs to be enabled using one of the
@@ -5828,7 +5828,7 @@
                 Events are only trapped when a program is running.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>n</var></code> or <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -5844,7 +5844,7 @@
 <hr />
 
     <section>
-        <h3 id="ON-ERROR"><code>ON ERROR</code> statement</h3>
+        <h4 id="ON-ERROR"><code>ON ERROR</code> statement</h4>
         <code class="block">
             <b>ON ERROR GOTO</b> {<var>line_number</var>|<b>0</b>}
         </code>
@@ -5858,19 +5858,19 @@
             Unlike event trapping, error trapping remains active when no program is running.
             <code>ON ERROR GOTO 0</code> turns off error trapping.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>line_number</var></code> is an existing line number in the program.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 It is not possible to start the error handler at line number <code>0</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
@@ -5880,7 +5880,7 @@
 <hr />
 
     <section>
-        <h3 id="OPEN"><code>OPEN</code> statement</h3>
+        <h4 id="OPEN"><code>OPEN</code> statement</h4>
         <code class="block">
             <b>OPEN</b> <var>mode_char</var><b>,</b> [<b>#</b>] <var>file_num</var><b>,</b> <var>file_name</var> [<b>,</b> <var>rec_len</var>]
             <br />
@@ -5892,7 +5892,7 @@
         <p>
             Opens a data file on a device.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_name</var></code> is a string expression: the name of the file or device.
@@ -5908,7 +5908,7 @@
                 one of <code>["I", "O", "A", "R"]</code>.
             </li>
         </ul>
-        <h4>Access modes</h4>
+        <h5>Access modes</h5>
         <p>
             The <code>FOR</code> modes or <code><var>mode_char</var></code> are as follows:
         </p>
@@ -5990,7 +5990,7 @@
             </tr>
         </table>
         </div>
-        <h4>Sharing and locks</h4>
+        <h5>Sharing and locks</h5>
         <p>
             If neither <code>SHARED</code> nor <code>LOCK</code> are specified. Inside this process, a file may be opened multiple
             times for <code>INPUT</code> or <code>RANDOM</code> but only once for <code>OUTPUT</code> or <code>APPEND</code>, as long as it
@@ -6052,7 +6052,7 @@
             the locks are only implemented internally. Whether other processes may access
             the file will depend on the host OS.
         </p>
-        <h4>Serial port (<code>COM1:</code>) access</h4>
+        <h5>Serial port (<code>COM1:</code>) access</h5>
         <p>
             If a <code>COM</code> port is opened for <code>RANDOM</code>, access is
             byte-for-byte rather than through <code>FIELD</code> records; <code>PRINT#</code> and <code>INPUT#</code> access
@@ -6185,7 +6185,7 @@
                 </tr>
             </table>
         </div>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 For <code>INPUT</code>, <code>OUTPUT</code> and <code>APPEND</code> modes, <code>LEN</code> may be specified but is ignored.
@@ -6204,7 +6204,7 @@
                 The <code>#</code> is optional and has no effect.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>file_name</var></code> is empty or a non-existent device: <samp>Bad file number</samp>.
@@ -6254,27 +6254,27 @@
 <hr />
 
     <section>
-        <h3 id="OPTION-BASE"><code>OPTION BASE</code> statement</h3>
+        <h4 id="OPTION-BASE"><code>OPTION BASE</code> statement</h4>
         <code class="block">
             <b>OPTION BASE</b> <var>n</var>
         </code>
         <p>
             Sets the starting index of all arrays to <code><var>n</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>n</var></code> is a literal digit  <code>0</code> or <code>1</code>. Expressions are not allowed.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code>OPTION BASE</code> has not been called,
                 the first array allocation defaults to starting index 0.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>n</var></code> is not a digit <code>0</code> or <code>1</code>: <samp>Syntax error</samp>.
@@ -6291,7 +6291,7 @@
 <hr />
 
     <section>
-        <h3 id="OUT"><code>OUT</code> statement</h3>
+        <h4 id="OUT"><code>OUT</code> statement</h4>
         <code class="block">
             <b>OUT</b> <var>port</var><b>,</b> <var>value</var>
         </code>
@@ -6330,7 +6330,7 @@
                 </tr>
             </table>
         </div>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Only a limited number of machine ports are emulated.
@@ -6349,7 +6349,7 @@
                 The initial <code>OUT</code> statements currently have no effect in PC-BASIC.
             </li>
         </ul>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>port</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>.
@@ -6358,7 +6358,7 @@
                 <code><var>value</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>port</var></code> or <code><var>value</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -6377,14 +6377,14 @@
 <hr />
 
     <section>
-        <h3 id="PAINT"><code>PAINT</code> statement</h3>
+        <h4 id="PAINT"><code>PAINT</code> statement</h4>
         <code class="block">
             <b>PAINT</b> [<b>STEP</b>] <b>(</b><var>x</var><b>,</b> <var>y</var><b>)</b> [<b>,</b> <var>attrib</var> [<b>,</b> <var>border</var> [<b>,</b> <var>background</var>]]]
         </code>
         <p>
             Flood-fills the screen with a colour or pattern, starting from the given seed point.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>x</var></code>, <code><var>y</var></code> are numeric expressions in the range <code>[-32768&#8212;32767]</code>
@@ -6412,7 +6412,7 @@
                 pattern to ignore when determining boundaries (see below).
             </li>
         </ul>
-        <h4>Tile patterns</h4>
+        <h5>Tile patterns</h5>
         <p>
             A tile pattern can be specified by a string of up to 255 characters. The
             interpretation of the string depends on the number of bits per pixel in
@@ -6487,7 +6487,7 @@
             the tiles are put into this grid. In this way, adjacent areas will have
             continuous tiling even if they were filled from different seed points.
         </p>
-        <h4>Boundaries</h4>
+        <h5>Boundaries</h5>
         <p>
             A solid flood fill stops at pixels that have the same attribute as the fill
             or that have the specified border attribute, if specified.
@@ -6496,7 +6496,7 @@
             A tiling flood fill also stops at scan line intervals that are the same as
             the tiling pattern for that line, unless a background pattern is specified
             and the interval also equals the background pattern for that line.</p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 In <code>SCREEN 7</code>, <code>8</code>, <code>9</code>, if <code><var>background</var></code> equals <code><var>attrib</var></code> up to the length of
@@ -6525,7 +6525,7 @@
 <hr />
 
     <section>
-        <h3 id="PALETTE"><code>PALETTE</code> statement</h3>
+        <h4 id="PALETTE"><code>PALETTE</code> statement</h4>
         <code class="block">
             <b>PALETTE</b> [<var>attrib</var><b>,</b> <var>colour</var>]
         </code>
@@ -6534,7 +6534,7 @@
             colour immediately.
             If no parameters are specified, <code>PALETTE</code> resets to the initial setting.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>attrib</var></code> is a numeric expression between 0 and the current palette
@@ -6546,7 +6546,7 @@
                 the palette remains unchanged.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>attrib</var></code> or <code><var>colour</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -6562,14 +6562,14 @@
 <hr />
 
     <section>
-        <h3 id="PALETTE-USING"><code>PALETTE USING</code> statement</h3>
+        <h4 id="PALETTE-USING"><code>PALETTE USING</code> statement</h4>
         <code class="block">
             <b>PALETTE USING</b> <var>int_array_name</var> {<b>(</b>|<b>[</b>} <var>start_index</var> {<b>)</b>|<b>]</b>}
         </code>
         <p>
             Assigns new colours to all attributes.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>int_array_name</var></code> is an array of integers (<code>%</code>) that will supply the
@@ -6583,7 +6583,7 @@
         <p>
             If an array entry has value <code>-1</code>, the matching attribute is left unchanged.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>int_array_name</var></code> has not been allocated: <samp>Illegal function call</samp>.
@@ -6609,7 +6609,7 @@
 <hr />
 
     <section>
-        <h3 id="PCOPY"><code>PCOPY</code> statement</h3>
+        <h4 id="PCOPY"><code>PCOPY</code> statement</h4>
         <code class="block">
             <b>PCOPY</b> <var>src</var><b>,</b> <var>dst</var>
         </code>
@@ -6617,14 +6617,14 @@
             Copies the screen page <code><var>src</var></code> to <code><var>dst</var></code>. All text and graphics on <code><var>dst</var></code> is
             replaced by those of <code><var>src</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>src</var></code> and <code><var>dst</var></code> are numeric expressions between 0 and the current video
                 mode's number of pages, less one.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>src</var></code> or <code><var>dst</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -6640,7 +6640,7 @@
 <hr />
 
     <section>
-        <h3 id="PEEK"><code>PEEK</code> function</h3>
+        <h4 id="PEEK"><code>PEEK</code> function</h4>
         <code class="block">
             <var>value</var> <b>= PEEK(</b><var>address</var><b>)</b>
         </code>
@@ -6648,14 +6648,14 @@
             Returns the value of the memory at  <code><var>segment</var> * 16 + <var>address</var></code> where <code><var>segment</var></code>
             is the current segment set with <code>DEF SEG</code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>. Negative values are interpreted as their
                 two's complement.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                The memory is only partly emulated in PC-BASIC. See <a href="#memory">Memory model</a> for supported addresses.
@@ -6668,7 +6668,7 @@
                 are in those locations.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -6681,7 +6681,7 @@
 <hr />
 
     <section>
-        <h3 id="PEN-statement"><code>PEN</code> statement</h3>
+        <h4 id="PEN-statement"><code>PEN</code> statement</h4>
         <code class="block"><b>PEN</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}</code>
         <p>
             Controls event trapping and read access of the light pen (emulated through the mouse in PC-BASIC).
@@ -6695,7 +6695,7 @@
 <hr />
 
     <section>
-        <h3 id="PEN"><code>PEN</code> function</h3>
+        <h4 id="PEN"><code>PEN</code> function</h4>
         <code class="block"><var>x</var> <b>= PEN(</b><var>mode</var><b>)</b></code>
         <p>
             Reads the light pen. What this function returns depends on <code><var>mode</var></code>:
@@ -6748,20 +6748,20 @@
                 </tr>
             </table>
         </div>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>mode</var></code> is a numeric expression in <code>[0&#8212;9]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In PC-BASIC, for <em>pen down</em> read <em>mouse button pressed</em>. For <em>pen
                 position</em> read <em>mouse pointer position</em>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>mode</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -6777,7 +6777,7 @@
 <hr />
 
     <section>
-        <h3 id="PLAY-event"><code>PLAY</code> statement (event-trapping control)</h3>
+        <h4 id="PLAY-event"><code>PLAY</code> statement (event-trapping control)</h4>
         <code class="block">
             <b>PLAY</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
@@ -6799,7 +6799,7 @@
 <hr />
 
     <section>
-        <h3 id="PLAY"><code>PLAY</code> statement (music)</h3>
+        <h4 id="PLAY"><code>PLAY</code> statement (music)</h4>
         <code class="block">
             <b>PLAY</b> <var>mml_string_0</var><br />
             <b>PLAY</b> [<var>mml_string_0</var>] <b>,</b>  <var>mml_string_1</var><br />
@@ -6813,7 +6813,7 @@
             The three separate MML strings correspond to the three voices of the PCjr/Tandy sound adapter.
             The notes in these strings are played synchronously.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>mml_string_0</var></code>, <code><var>mml_string_1</var></code>, <code><var>mml_string_2</var></code> are string expressions in MML.
@@ -6822,8 +6822,8 @@
                 At least one MML string must be provided.
             </li>
         </ul>
-        <h4>Music Macro Language reference</h4>
-        <h5>Notes and Pauses</h5>
+        <h5>Music Macro Language reference</h5>
+        <h6>Notes and Pauses</h6>
         <div class="scrollable">
             <table>
                 <tr>
@@ -6863,7 +6863,7 @@
                 </tr>
             </table>
         </div>
-        <h5>Timing commands</h5>
+        <h6>Timing commands</h6>
         <div class="scrollable">
             <table>
                 <tr>
@@ -6900,7 +6900,7 @@
                 </tr>
             </table>
         </div>
-        <h5>Background-mode commands</h5>
+        <h6>Background-mode commands</h6>
         <p>
             These commands affect <code><a href="#SOUND">SOUND</a></code>,
             <code><a href="#PLAY">PLAY</a></code> and <code><a href="#BEEP">BEEP</a></code>
@@ -6926,7 +6926,7 @@
                 </tr>
             </table>
         </div>
-        <h5>Subroutine command</h5>
+        <h6>Subroutine command</h6>
         <div class="scrollable">
             <table>
                 <tr>
@@ -6948,7 +6948,7 @@
                 </tr>
             </table>
         </div>
-        <h5>Volume control</h5>
+        <h6>Volume control</h6>
         <p>
             Volume control is availabe on <code><a href="#--syntax">--syntax</a>={tandy | pcjr}</code> only:
         </p>
@@ -6970,7 +6970,7 @@
             </tr>
         </table>
         </div>
-        <h5>MML Parameters</h5>
+        <h6>MML Parameters</h6>
         <p>
             Numeric variables <code><var>n</var></code> in the commands above can be:
         </p>
@@ -6985,7 +6985,7 @@
                 the result of <code>VARPTR$(<var>var</var>)</code> preceded by <code>=</code>.  For example, <code>PLAY "G=" + VARPTR$(VAR)</code>
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>mml_string</var></code> has a numeric value: <samp>Type mismatch</samp>.
@@ -7008,14 +7008,14 @@
 <hr />
 
     <section>
-        <h3 id="PLAY-function"><code>PLAY</code> function</h3>
+        <h4 id="PLAY-function"><code>PLAY</code> function</h4>
         <code class="block">
             <var>length</var> <b>= PLAY(</b><var>voice</var><b>)</b>
         </code>
         <p>
             Returns the number of notes in the background music queue. The return value is in <code>[0&#8212;16]</code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>voice</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
@@ -7025,7 +7025,7 @@
                 For other choices of <code>--syntax</code>, the <code><var>voice</var></code> value has no effect.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 There are at most 16 notes in the music queue. Some GW-BASIC manuals
@@ -7033,7 +7033,7 @@
                 last 16 notes.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>voice</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -7049,7 +7049,7 @@
 <hr />
 
     <section>
-        <h3 id="PMAP"><code>PMAP</code> function</h3>
+        <h4 id="PMAP"><code>PMAP</code> function</h4>
         <code class="block">
             <var>physical</var> <b>= PMAP(</b><var>logical</var><b>,</b> <var>fn</var><b>)</b>
         </code>
@@ -7085,13 +7085,13 @@
                 </tr>
             </table>
         </div>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Initially, in text mode, <code>PMAP</code> returns 0.
@@ -7102,7 +7102,7 @@
                 implemented in PC-BASIC.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any of the parameters has a string value: <samp>Type mismatch</samp>.
@@ -7121,7 +7121,7 @@
 <hr />
 
     <section>
-        <h3 id="POINT-coord"><code>POINT</code> function (current coordinate)</h3>
+        <h4 id="POINT-coord"><code>POINT</code> function (current coordinate)</h4>
         <code class="block">
             <var>coord</var> <b>= POINT(</b><var>fn</var><b>)</b>
         </code>
@@ -7158,20 +7158,20 @@
                 </tr>
             </table>
         </div>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In text mode, returns the active coordinate of any previous graphics mode;
                 if no graphics mode has been active, returns 0.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>fn</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -7187,26 +7187,26 @@
 <hr />
 
     <section>
-        <h3 id="POINT-attr"><code>POINT</code> function (pixel attribute)</h3>
+        <h4 id="POINT-attr"><code>POINT</code> function (pixel attribute)</h4>
         <code class="block">
             <var>attrib</var> <b>= POINT(</b><var>x</var><b>,</b> <var>y</var><b>)</b>
         </code>
         <p>
             Returns the attribute of the pixel at logical coordinate <code><var>x</var></code>,<code><var>y</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>x</var></code>, <code><var>y</var></code> are numeric expressions in <code>[-32768&#8212;32767]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code><var>x</var></code>,<code><var>y</var></code> is outside the screen, returns -1.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Function is called in text mode: <samp>Illegal function call</samp>.
@@ -7223,7 +7223,7 @@
 <hr />
 
     <section>
-        <h3 id="POKE"><code>POKE</code> statement</h3>
+        <h4 id="POKE"><code>POKE</code> statement</h4>
         <code class="block">
             <b>POKE</b> <var>address</var><b>,</b> <var>value</var>
         </code>
@@ -7233,7 +7233,7 @@
             where <code><var>segment</var></code> is the current segment set with
             <code><a href="#DEF-SEG">DEF SEG</a></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>. Negative values are
@@ -7243,14 +7243,14 @@
                 <code><var>value</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 The memory is only partly emulated in PC-BASIC. See <a href="#memory">Memory model</a> for supported addresses.
                 Outside emulated areas of memory, this statement has no effect.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>address</var></code> or <code><var>value</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -7269,14 +7269,14 @@
 <hr />
 
     <section>
-        <h3 id="POS"><code>POS</code> function</h3>
+        <h4 id="POS"><code>POS</code> function</h4>
         <code class="block">
             <var>pos</var> <b>= POS(</b><var>dummy</var><b>)</b>
         </code>
         <p>
             Returns the current cursor column position, in the range <code>[1&#8212;80]</code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>dummy</var></code> is a valid expression of any type; its value has no effect.
@@ -7286,7 +7286,7 @@
 <hr />
 
     <section>
-        <h3 id="PSET"><code>PSET</code> and <code>PRESET</code> statements</h3>
+        <h4 id="PSET"><code>PSET</code> and <code>PRESET</code> statements</h4>
         <code class="block">
             { <b>PSET</b> | <b>PRESET</b> } [<b>STEP</b>] <b>(</b><var>x</var><b>,</b> <var>y</var><b>)</b> [<b>,</b> <var>attrib</var>]
         </code>
@@ -7301,7 +7301,7 @@
             If <code><var>attrib</var></code> is not specified, <code>PSET</code> changes the attribute to the current
             foreground attribute while <code>PRESET</code> changes it to zero.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>x</var></code>, <code><var>y</var></code> are numeric expressions in <code>[-32768&#8212;32767]</code>.
@@ -7310,7 +7310,7 @@
                 <code><var>attrib</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> or <code><var>y</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -7327,7 +7327,7 @@
 <hr />
 
     <section>
-        <h3 id="PRINT"><code>PRINT</code> and <code>LPRINT</code> statements</h3>
+        <h4 id="PRINT"><code>PRINT</code> and <code>LPRINT</code> statements</h4>
         <code class="block">
             {<b>LPRINT</b>|{<b>PRINT</b>|<b>?</b>} [<b>#</b> <var>file_num</var><b>,</b>]} [<var>expr_0</var>|<b>;</b>|<b>,</b>|<b>SPC(</b><var>n</var><b>)</b>|<b>TAB(</b><var>n</var><b>)</b>] ...
             [<b>USING</b> <var>format</var><b>;</b> <var>uexpr_0</var> [{<b>;</b>|<b>,</b>} <var>uexpr_1</var>] ... [<b>;</b>|<b>,</b>]]
@@ -7389,7 +7389,7 @@
             String expressions can be separated by one or more spaces, which has the same
             effect as separating by semicolons.
         </p>
-        <h4>Format string syntax</h4>
+        <h5>Format string syntax</h5>
         <p>
             A <code>USING</code> declaration occurs at the end of an <code>[L]PRINT[#]</code> statement and writes a
             formatted string to the screen, printer, file or device. The following tables list the format tokens
@@ -7533,7 +7533,7 @@
                 be used.
             </li>
         </ul>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>expr_0</var>, <var>expr_1</var>, ...</code> are expressions of any type.
@@ -7545,14 +7545,14 @@
                 <code><var>uexpr_0</var>, <var>uexpr_1</var>, ...</code> are expressions matching a token in the format string.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If an error is raised, the output before the error was encountered is
                 printed as normal.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>n</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -7577,7 +7577,7 @@
 <hr />
 
     <section>
-        <h3 id="PUT-files"><code>PUT</code> statement (files)</h3>
+        <h4 id="PUT-files"><code>PUT</code> statement (files)</h4>
         <code class="block">
             <b>PUT</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_number</var>]
         </code>
@@ -7585,7 +7585,7 @@
             Writes a record to the random-access file <code><var>file_number</var></code> at position
             <code><var>record_number</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_number</var></code> is a numeric expression that yields the number
@@ -7595,7 +7595,7 @@
                 <code><var>record_number</var></code> is a numeric expression in <code>[1&#8212;33554432]</code> (<code>2^25</code>) and is interpreted as the record number.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>record_number</var></code> is not in <code>[1&#8212;33554432]</code>: <samp>Bad record number</samp>.
@@ -7619,7 +7619,7 @@
 <hr />
 
     <section>
-        <h3 id="PUT-serial"><code>PUT</code> statement (communications)</h3>
+        <h4 id="PUT-serial"><code>PUT</code> statement (communications)</h4>
         <code class="block">
             <b>PUT</b> [<b>#</b>] <var>com_file_number</var> [<b>,</b> <var>number_bytes</var>]
         </code>
@@ -7628,7 +7628,7 @@
             number <code><var>com_file_number</var></code>. <code><var>number_bytes</var></code> is a numeric expression between 1
             and the <code>COM</code> buffer length, inclusive.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In GW-BASIC, <samp>Device I/O error</samp> is raised for overrun error, framing error,
@@ -7637,7 +7637,7 @@
                 encountered. This is according to the manual; it is untested.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>bytes</var></code> is less than 1: <samp>Bad record number</samp>.
@@ -7664,7 +7664,7 @@
 <hr />
 
     <section>
-        <h3 id="PUT-graphics"><code>PUT</code> statement (graphics)</h3>
+        <h4 id="PUT-graphics"><code>PUT</code> statement (graphics)</h4>
         <code class="block">
             <b>PUT (</b><var>x0</var><b>,</b> <var>y0</var><b>),</b> <var>array_name</var> [<b>,</b> {<b>PSET</b>|<b>PRESET</b>|<b>AND</b>|<b>OR</b>|<b>XOR</b>}]
         </code>
@@ -7700,7 +7700,7 @@
                 </tr>
             </table>
         </div>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>array_name</var></code> is a numeric array.
@@ -7709,7 +7709,7 @@
                 <code><var>x0</var></code>, <code><var>y0</var></code> are numeric expressions.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 The array does not exist: <samp>Illegal function call</samp>.
@@ -7732,7 +7732,7 @@
 <hr />
 
     <section>
-        <h3 id="RANDOMIZE"><code>RANDOMIZE</code> statement</h3>
+        <h4 id="RANDOMIZE"><code>RANDOMIZE</code> statement</h4>
         <code class="block">
             <b>RANDOMIZE</b> [<var>expr</var>]
         </code>
@@ -7747,20 +7747,20 @@
             The same random seed will lead to the same sequence of pseudorandom numbers
             being generated by the <code><a href="#RND">RND</a></code> function.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>expr</var></code> is a numeric expression.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 For the same seed, PC-BASIC produces the same pseudorandom numbers as
                 GW-BASIC 3.23.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>expr</var></code> has a string value: <samp>Illegal function call</samp>.
@@ -7773,7 +7773,7 @@
 <hr />
 
     <section>
-        <h3 id="READ"><code>READ</code> statement</h3>
+        <h4 id="READ"><code>READ</code> statement</h4>
         <code class="block">
             <b>READ</b> <var>var_0</var> [<b>,</b> <var>var_1</var>] ...
         </code>
@@ -7784,13 +7784,13 @@
             to the start by the <code><a href="#RUN">RUN</a></code>
             and <code><a href="#RESTORE">RESTORE</a></code> statements.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>var_0</var></code>, <code><var>var_1</var></code> are variables or array elements.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Not enough data is present in <code>DATA</code> statements: <samp>Out of DATA</samp>.
@@ -7804,7 +7804,7 @@
 <hr />
 
     <section>
-        <h3 id="REM"><code>REM</code> statement</h3>
+        <h4 id="REM"><code>REM</code> statement</h4>
         <code class="block">
             {<b>REM</b>|<b>'</b>} [<var>anything</var>]
         </code>
@@ -7818,7 +7818,7 @@
 <hr />
 
     <section>
-        <h3 id="RENUM"><code>RENUM</code> statement</h3>
+        <h4 id="RENUM"><code>RENUM</code> statement</h4>
         <code class="block">
             <b>RENUM</b> [<var>new</var>|<b>.</b>] [<b>,</b> [<var>old</var>|<b>.</b>] [<b>,</b> <var>increment</var>]]
         </code>
@@ -7829,7 +7829,7 @@
             <code><var>new</var></code>, <code><var>old</var></code> are line numbers; the dot . signifies the last line edited.
             <code><var>increment</var></code> is a line number but must not be a dot or zero.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 The following keywords can reference line numbers, which will be renumbered
@@ -7857,7 +7857,7 @@
                 left unchanged, but the line's old line number will be renumbered.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any of the parameters is not in <code>[0&#8212;65529]</code>: <samp>Syntax error</samp>.
@@ -7879,7 +7879,7 @@
 <hr />
 
     <section>
-        <h3 id="RESET"><code>RESET</code> statement</h3>
+        <h4 id="RESET"><code>RESET</code> statement</h4>
         <code class="block">
             <b>RESET</b>
         </code>
@@ -7890,7 +7890,7 @@
 <hr />
 
     <section>
-        <h3 id="RESTORE"><code>RESTORE</code> statement</h3>
+        <h4 id="RESTORE"><code>RESTORE</code> statement</h4>
         <code class="block">
             <b>RESTORE</b> [<var>line</var>]
         </code>
@@ -7901,7 +7901,7 @@
             <code>DATA</code> entry in the program. If it is specified, the <code>DATA</code> pointer is
             reset to the first <code>DATA</code> entry in or after <code><var>line</var></code>.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>line</var></code> is not an existing line number: <samp>Undefined line number</samp>.
@@ -7911,7 +7911,7 @@
 <hr />
 
     <section>
-        <h3 id="RESUME"><code>RESUME</code> statement</h3>
+        <h4 id="RESUME"><code>RESUME</code> statement</h4>
         <code class="block">
             <b>RESUME</b> [<b>0</b>|<b>NEXT</b>|<var>line</var>]
         </code>
@@ -7921,7 +7921,7 @@
             error. If <code>NEXT</code> is specified, executes the statement following the one that
             caused the error. If <code><var>line</var></code> is specified, it must be a valid line number.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code>RESUME</code> is encountered outside of an error trapping routine:
@@ -7939,7 +7939,7 @@
 <hr />
 
     <section>
-        <h3 id="RETURN"><code>RETURN</code> statement</h3>
+        <h4 id="RETURN"><code>RETURN</code> statement</h4>
         <code class="block">
             <b>RETURN</b> [<var>line</var>]
         </code>
@@ -7952,7 +7952,7 @@
             When returning from an error trapping routine, <code>RETURN</code> re-enables the event
             trapping which was stopped on entering the trap routine.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>line</var></code> is not an existing line number: <samp>Undefined line number</samp>.
@@ -7962,7 +7962,7 @@
 <hr />
 
     <section>
-        <h3 id="RIGHT$"><code>RIGHT$</code> function</h3>
+        <h4 id="RIGHT$"><code>RIGHT$</code> function</h4>
         <code class="block">
             <var>child</var> <b>= RIGHT$(</b><var>parent</var><b>,</b> <var>num_chars</var><b>)</b>
         </code>
@@ -7972,7 +7972,7 @@
             an empty string. If <code><var>num_chars</var></code> is greater than the length of <code><var>parent</var></code>,
             returns <code><var>parent</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>parent</var></code> is a string expression.
@@ -7981,7 +7981,7 @@
                 <code><var>num_chars</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>num_chars</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -7997,7 +7997,7 @@
 <hr />
 
     <section>
-        <h3 id="RMDIR"><code>RMDIR</code> statement</h3>
+        <h4 id="RMDIR"><code>RMDIR</code> statement</h4>
         <code class="block">
             <b>RMDIR</b> <var>path</var>
         </code>
@@ -8005,13 +8005,13 @@
             Removes an empty directory. <code><var>path</var></code> is a string expression that specifies
             the path of the directory.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>pathname</var></code> has a numeric value: <samp>Type mismatch</samp>.
@@ -8027,7 +8027,7 @@
 <hr />
 
     <section>
-        <h3 id="RND"><code>RND</code> function</h3>
+        <h4 id="RND"><code>RND</code> function</h4>
         <code class="block">
             <var>random</var> <b>= RND</b>[<b>(</b><var>x</var><b>)</b>]
         </code>
@@ -8039,7 +8039,7 @@
             random number seed; after that, a new pseudorandom number is returned.
             The seed is generated in a different way than by <code><a href="#RANDOMIZE">RANDOMIZE</a></code>.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -8049,7 +8049,7 @@
 <hr />
 
     <section>
-        <h3 id="RSET"><code>RSET</code> statement</h3>
+        <h4 id="RSET"><code>RSET</code> statement</h4>
         <p>
             See <code><a href="#LSET">LSET</a></code>.
         </p>
@@ -8057,7 +8057,7 @@
 <hr />
 
     <section>
-        <h3 id="RUN"><code>RUN</code> statement</h3>
+        <h4 id="RUN"><code>RUN</code> statement</h4>
         <code class="block">
             <b>RUN</b> [<var>line</var>|<var>filename</var>] [<b>,R</b>]
         </code>
@@ -8067,7 +8067,7 @@
             cleared and any program in memory will be erased. <code>RUN</code> implies a <code><a href="#CLEAR">CLEAR</a></code>
             If <code>,R</code> is specified, files are kept open; if not, all files are closed.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>line</var></code> is a valid line number in the current program.
@@ -8077,7 +8077,7 @@
                 If <code><var>filename</var></code> is specified, the file with that name is loaded and executed.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>line</var></code> does not exist: <samp>Undefined line number</samp>.
@@ -8097,7 +8097,7 @@
 <hr />
 
     <section>
-        <h3 id="SAVE"><code>SAVE</code> statement</h3>
+        <h4 id="SAVE"><code>SAVE</code> statement</h4>
         <code class="block">
             <b>SAVE</b> <var>filename</var> [<b>,</b> {<b>A</b>|<b>P</b>}]
         </code>
@@ -8113,7 +8113,7 @@
             When a protected program is loaded in GW-BASIC, it cannot be <code>LIST</code>ed or <code>SAVE</code>d in non-protected
             form.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>filename</var></code> has a number value: <samp>Type mismatch</samp>.
@@ -8130,7 +8130,7 @@
 <hr />
 
     <section>
-        <h3 id="SCREEN-function"><code>SCREEN</code> function</h3>
+        <h4 id="SCREEN-function"><code>SCREEN</code> function</h4>
         <code class="block">
             <var>value</var> <b>= SCREEN(</b><var>row</var><b>,</b> <var>column</var> [<b>,</b> <var>fn</var>]<b>)</b>
         </code>
@@ -8138,7 +8138,7 @@
             Returns the ASCII code or colour attribute for the character at position
             <code><var>row</var></code>, <code><var>col</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>row</var></code> is a numeric expression in the range <code>[1&#8212;25]</code>.
@@ -8152,7 +8152,7 @@
                 attribute is returned; in other screens, 0 is returned.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any parameter has a string value: <samp>Type mismatch</samp>.
@@ -8178,14 +8178,14 @@
 <hr />
 
     <section>
-        <h3 id="SCREEN-statement"><code>SCREEN</code> statement</h3>
+        <h4 id="SCREEN-statement"><code>SCREEN</code> statement</h4>
         <code class="block">
             <b>SCREEN</b> [<var>mode</var>] [<b>,</b> [<var>colorburst</var>] [<b>,</b> [<var>apage</var>] [<b>,</b> [<var>vpage</var>] [<b>,</b> <var>erase</var>]]]]
         </code>
         <p>
             Change the video mode, composite colorburst, active page and visible page. Video modes are described in the <a href="#videomodes">Video Modes</a> section.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>mode</var></code> is a numeric expression that sets the screen mode.
@@ -8204,7 +8204,7 @@
                 It is only legal with <code><a href="#--syntax">--syntax</a>={pcjr, tandy}</code>. See notes below.
             </li>
         </ul>
-        <h4>NTSC Composite Colorburst</h4>
+        <h5>NTSC Composite Colorburst</h5>
         <p>
             On CGA, Tandy and PCjr, <code><var>colorburst</var></code> has the following effects, depending on the
             type of monitor - RGB (default) or composite:
@@ -8252,7 +8252,7 @@
             On <code>SCREEN 2</code>, <code><var>colorburst</var></code> has no effect; on a composite monitor, colour artifacts
             can be enabled on this screen through <code>OUT</code> (see there). On <code>SCREEN 3</code> and up, <code><var>colorburst</var></code> has no effect.
         </p>
-        <h4>Erase</h4>
+        <h5>Erase</h5>
         <p>
             By default, if the <code><var>mode</var></code> changes or the <code><var>colorburst</var></code>
             changes between zero and non-zero, the old page and the new page of the screen
@@ -8283,14 +8283,14 @@
                 </tr>
             </table>
         </div>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul><li>
             At least one parameter must be specified.
         </li><li>
             Composite colour artifacts are emulated only crudely in PC-BASIC, and not at
             all in <code>SCREEN 1</code>.
         </li></ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 No parameters are specified: <samp>Missing operand</samp>.
@@ -8320,20 +8320,20 @@
 <hr />
 
     <section>
-        <h3 id="SGN"><code>SGN</code> function</h3>
+        <h4 id="SGN"><code>SGN</code> function</h4>
         <code class="block">
             <var>sign</var> <b>= SGN(</b><var>number</var><b>)</b>
         </code>
         <p>
             Returns the sign of <code><var>number</var></code>: <code>1</code> for positive, <code>0</code> for zero and <code>-1</code> for negative.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>number</var></code> is a numeric expression.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>number</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -8343,7 +8343,7 @@
 <hr />
 
     <section>
-        <h3 id="SHELL"><code>SHELL</code> statement</h3>
+        <h4 id="SHELL"><code>SHELL</code> statement</h4>
         <code class="block">
             <b>SHELL</b> [<var>command</var>]
         </code>
@@ -8354,13 +8354,13 @@
             If <code><var>command</var></code> is specified, the command is executed on the shell and execution
             returns to the program.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>command</var></code> is a string expression.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If the <code><a href="#--shell">--shell</a>=native</code> option is not specified, this statement does nothing.
@@ -8369,7 +8369,7 @@
             Be careful when enabling this command, as it allows the running BASIC program full access to your files and operating system.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>command</var></code> has a number value: <samp>Type mismatch</samp>.
@@ -8383,21 +8383,21 @@
 <hr />
 
     <section>
-        <h3 id="SIN"><code>SIN</code> function</h3>
+        <h4 id="SIN"><code>SIN</code> function</h4>
         <code class="block">
             <var>sine</var> <b>= SIN(</b><var>angle</var><b>)</b>
         </code>
         <p>
             Returns the sine of <code><var>angle</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
             <code><var>angle</var></code> is a numeric expression giving
             the angle in radians.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
@@ -8407,7 +8407,7 @@
                 The sine returned usually differs from the value returned by GW-BASIC in the least significant figure.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>angle</var></code> has a string value:
@@ -8418,7 +8418,7 @@
 <hr />
 
     <section>
-        <h3 id="SOUND"><code>SOUND</code> statement</h3>
+        <h4 id="SOUND"><code>SOUND</code> statement</h4>
         <code class="block">
             <b>SOUND</b> <var>frequency</var><b>,</b> <var>duration</var> [<b>,</b> <var>volume</var> [<b>,</b> <var>voice</var>]]
         </code>
@@ -8434,7 +8434,7 @@
             even if <code>PLAY "MF"</code> has been entered. In background mode, each <code>SOUND</code> statement
             counts as 1 toward the length of the queue reported by the <code><a href="#PLAY-function">PLAY</a></code> function.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>frequency</var></code> is a numeric expression in <code>[37&#8212;32767]</code> or <code>0</code> (for <code>--syntax={advanced | pcjr}</code>)
@@ -8452,7 +8452,7 @@
                 three tone voice channels is used for this sound. (For <code><a href="#--syntax">--syntax</a>={pcjr | tandy}</code>)
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 On PCjr and Tandy, Frequencies below 110 Hz are played as 110 Hz.
@@ -8473,7 +8473,7 @@
                 If <code><var>frequency</var></code> equals <code>32767</code> or <code>0</code>, a silence of length <code><var>duration</var></code> is queued.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any argument has a string value: <samp>Type mismatch</samp>.
@@ -8511,7 +8511,7 @@
 <hr />
 
     <section>
-        <h3 id="SOUND-switch"><code>SOUND</code> statement (switch)</h3>
+        <h4 id="SOUND-switch"><code>SOUND</code> statement (switch)</h4>
         <code class="block">
             <b>SOUND</b> {<b>ON</b>|<b>OFF</b>}
         </code>
@@ -8519,7 +8519,7 @@
             Toggles the availability of advanced sound capabilities on PCjr and Tandy. This includes 3-voice
             sound, noise generation and volume control.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Only available with <code>--syntax={pcjr | tandy}</code>.
@@ -8531,7 +8531,7 @@
                 system.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 This statement is used and <code><a href="#--syntax">--syntax</a>={ pcjr | tandy }</code> is not set:
@@ -8542,20 +8542,20 @@
 <hr />
 
     <section>
-        <h3 id="SPACE$"><code>SPACE$</code> function</h3>
+        <h4 id="SPACE$"><code>SPACE$</code> function</h4>
         <code class="block">
             <var>spaces</var> <b>= SPACE$(</b><var>number</var><b>)</b>
         </code>
         <p>
             Returns a string of <code><var>number</var></code> spaces.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>number</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>number</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -8571,27 +8571,27 @@
 <hr />
 
     <section>
-        <h3 id="SQR"><code>SQR</code> function</h3>
+        <h4 id="SQR"><code>SQR</code> function</h4>
         <code class="block">
             <var>root</var> <b>= SQR(</b><var>number</var><b>)</b>
         </code>
         <p>
             Returns the square root of <code><var>number</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>number</var></code> is a numeric expression.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
                 option, this function returns a single-precision value.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>number</var></code> has a string value: <samp>Type mismatch</samp>
@@ -8601,7 +8601,7 @@
 <hr />
 
     <section>
-        <h3 id="STICK"><code>STICK</code> function</h3>
+        <h4 id="STICK"><code>STICK</code> function</h4>
         <code class="block">
             <var>pos</var> <b>= STICK(</b><var>axis</var><b>)</b>
         </code>
@@ -8633,13 +8633,13 @@
                 </tr>
             </table>
         </div>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>axis</var></code> is a numeric expression in <code>[0&#8212;3]</code> and indicates which axis to read.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>axis</var></code> has a string value: <samp>Type mismatch</samp>
@@ -8655,7 +8655,7 @@
 <hr />
 
     <section>
-        <h3 id="STOP"><code>STOP</code> statement</h3>
+        <h4 id="STOP"><code>STOP</code> statement</h4>
         <code class="block">
             <b>STOP</b>
         </code>
@@ -8669,20 +8669,20 @@
 <hr />
 
     <section>
-        <h3 id="STR$"><code>STR$</code> function</h3>
+        <h4 id="STR$"><code>STR$</code> function</h4>
         <code class="block">
             <var>repr</var> <b>= STR$(</b><var>number</var><b>)</b>
         </code>
         <p>
             Returns the string representation of <code><var>number</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>number</var></code> is a numeric expression.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>number</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -8692,7 +8692,7 @@
 <hr />
 
     <section>
-        <h3 id="STRIG-switch"><code>STRIG</code> statement</h3>
+        <h4 id="STRIG-switch"><code>STRIG</code> statement</h4>
         <code class="block">
             <b>STRIG</b> {<b>ON</b>|<b>OFF</b>}
         </code>
@@ -8703,7 +8703,7 @@
 <hr />
 
     <section>
-        <h3 id="STRIG-events"><code>STRIG</code> statement (events)</h3>
+        <h4 id="STRIG-events"><code>STRIG</code> statement (events)</h4>
         <code class="block">
             <b>STRIG(</b><var>button</var><b>)</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
@@ -8740,13 +8740,13 @@
                 </tr>
             </table>
         </div>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>button</var></code> is a numeric expression in <code>[0, 2, 4, 6]</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>button</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -8762,7 +8762,7 @@
 <hr />
 
     <section>
-    <h3 id="STRIG-function"><code>STRIG</code> function</h3>
+    <h4 id="STRIG-function"><code>STRIG</code> function</h4>
     <code class="block">
         <var>result</var> <b>= STRIG(</b><var>mode</var><b>)</b>
     </code>
@@ -8811,13 +8811,13 @@
             </tr>
         </table>
     </div>
-    <h4>Parameters</h4>
+    <h5>Parameters</h5>
     <ul>
         <li>
             <code><var>mode</var></code> is a numeric expression in <code>[0&#8212;7]</code>.
         </li>
     </ul>
-    <h4>Notes</h4>
+    <h5>Notes</h5>
     <ul>
         <li>
             The <code>STRIG</code> function returns correct results regardless of the
@@ -8826,7 +8826,7 @@
             has been called first.
         </li>
     </ul>
-    <h4>Errors</h4>
+    <h5>Errors</h5>
     <ul>
         <li>
             <code><var>mode</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -8842,14 +8842,14 @@
 <hr />
 
     <section>
-        <h3 id="STRING$"><code>STRING$</code> function</h3>
+        <h4 id="STRING$"><code>STRING$</code> function</h4>
         <code class="block">
             <var>string</var> <b>= STRING$(</b><var>length</var><b>,</b> <var>char</var><b>)</b>
         </code>
         <p>
             Returns a string of <code><var>length</var></code> times character <code><var>char</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 If <code><var>char</var></code> is a numeric expression, it must be in <code>[0&#8212;255]</code> and is
@@ -8859,7 +8859,7 @@
                 If <code><var>char</var></code> is a string expression, its first character is used.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>length</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -8878,14 +8878,14 @@
 <hr />
 
     <section>
-        <h3 id="SWAP"><code>SWAP</code> statement</h3>
+        <h4 id="SWAP"><code>SWAP</code> statement</h4>
         <code class="block">
             <b>SWAP</b> <var>var_0</var><b>,</b> <var>var_1</var>
         </code>
         <p>
             Exchanges variables <code><var>var_0</var></code> and <code><var>var_1</var></code>.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 The variables are exchanged by reference. If, for example,
@@ -8894,14 +8894,14 @@
                 <code>SWAP</code> will reverse those roles.
             </li>
         </ul>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>var_0</var></code> and <code><var>var_1</var></code> are previously defined variables of
                 the same type.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>var_0</var></code> or <code><var>var_1</var></code> is undefined: <samp>Illegal function call</samp>.
@@ -8914,14 +8914,14 @@
 <hr />
 
     <section>
-        <h3 id="SYSTEM"><code>SYSTEM</code> statement</h3>
+        <h4 id="SYSTEM"><code>SYSTEM</code> statement</h4>
         <code class="block">
             <b>SYSTEM</b>
         </code>
         <p>
             Exits the interpreter.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 <code>SYSTEM</code> quits the PC-BASIC interpreter immediately without further interaction.
@@ -8932,21 +8932,21 @@
 <hr />
 
     <section>
-        <h3 id="TAN"><code>TAN</code> function</h3>
+        <h4 id="TAN"><code>TAN</code> function</h4>
         <code class="block">
             <var>tangent</var> <b>= TAN(</b><var>angle</var><b>)</b>
         </code>
         <p>
             Returns the tangent of <code><var>angle</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>angle</var></code> is a numeric expression giving
                 the angle in radians.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
@@ -8960,7 +8960,7 @@
                 to zero. The values returned will have very low precision in these cases.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -8970,7 +8970,7 @@
 <hr />
 
     <section>
-        <h3 id="TERM"><code>TERM</code> statement</h3>
+        <h4 id="TERM"><code>TERM</code> statement</h4>
         <code class="block">
             <b>TERM</b>
         </code>
@@ -8981,7 +8981,7 @@
             This statement is only available with
             <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code>.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 If <code><a href="#--pcjr-term">--pcjr-term</a></code> is not set,
@@ -8997,14 +8997,14 @@
 <hr />
 
     <section>
-        <h3 id="TIME$-function"><code>TIME$</code> function</h3>
+        <h4 id="TIME$-function"><code>TIME$</code> function</h4>
         <code class="block">
             <var>time</var> <b>= TIME$</b>
         </code>
         <p>
             Returns the current BASIC time in the form <code>"HH:mm:ss"</code>.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 This function has no brackets.
@@ -9014,14 +9014,14 @@
 <hr />
 
     <section>
-        <h3 id="TIME$-statement"><code>TIME$</code> statement</h3>
+        <h4 id="TIME$-statement"><code>TIME$</code> statement</h4>
         <code class="block">
             <b>TIME$ = </b><var>time</var>
         </code>
         <p>
             Sets the current BASIC time to <code><var>time</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 Time is a string expression
@@ -9029,7 +9029,7 @@
                 <code>00&lt;=HH&lt;24</code>, <code>00&lt;=mm&lt;60</code> and <code>00&lt;=ss&lt;60</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 PC-BASIC stores an offset to the system time and uses this for future
@@ -9038,7 +9038,7 @@
                 The system time is not changed, unlike GW-BASIC under MS-DOS.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>time</var></code> has a numeric value: <samp>Type mismatch</samp>.
@@ -9051,7 +9051,7 @@
 <hr />
 
     <section>
-        <h3 id="TIMER-event"><code>TIMER</code> statement</h3>
+        <h4 id="TIMER-event"><code>TIMER</code> statement</h4>
         <code class="block">
             <b>TIMER</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
@@ -9073,7 +9073,7 @@
 <hr />
 
     <section>
-        <h3 id="TIMER"><code>TIMER</code> function</h3>
+        <h4 id="TIMER"><code>TIMER</code> function</h4>
         <code class="block">
             <var>seconds</var> <b>= TIMER</b>
         </code>
@@ -9081,7 +9081,7 @@
             Returns the number of seconds since midnight on the internal BASIC
             clock.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 <code>TIMER</code> updates in ticks of 1/20 second.
@@ -9101,7 +9101,7 @@
 <hr />
 
     <section>
-        <h3 id="TRON"><code>TRON</code> and <code>TROFF</code> statements</h3>
+        <h4 id="TRON"><code>TRON</code> and <code>TROFF</code> statements</h4>
         <code class="block">
             {<b>TRON</b>|<b>TROFF</b>}
         </code>
@@ -9109,7 +9109,7 @@
             Turns line number tracing on or off. If line number tracing is on, BASIC prints
             a tag <samp>[100]</samp> to the console when program line <code>100</code> is executed, and so forth.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                Tracing is turned off by the <code><a href="#NEW">NEW</a></code> and
@@ -9120,7 +9120,7 @@
 <hr />
 
     <section>
-        <h3 id="UNLOCK"><code>UNLOCK</code> statement</h3>
+        <h4 id="UNLOCK"><code>UNLOCK</code> statement</h4>
         <code class="block">
             <b>UNLOCK</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_0</var>]
             <br/>
@@ -9129,7 +9129,7 @@
         <p>
             Unlocks a file or part of it that has previously been locked with <code>LOCK</code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_number</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
@@ -9138,7 +9138,7 @@
                 <code><var>record_0</var></code> and <code><var>record_1</var></code> are numeric expressions in <code>[1&#8212;2^25-2]</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any parameter has a string value: <samp>Type mismatch</samp>.
@@ -9167,14 +9167,14 @@
 <hr />
 
     <section>
-        <h3 id="USR"><code>USR</code> function</h3>
+        <h4 id="USR"><code>USR</code> function</h4>
         <code class="block">
             <var>value</var> <b>= USR</b>[<var>n</var>]<b>(</b><var>expr</var><b>)</b>
         </code>
         <p>
             Returns zero.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>n</var></code> is a digit <code>[<b>0</b>&#8212;<b>9</b>]</code>.
@@ -9183,7 +9183,7 @@
                 <code><var>expr</var></code> is an expression.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 In GW-BASIC, calls a machine-code function and returns its return value.
@@ -9192,7 +9192,7 @@
                 This function is not implemented in PC-BASIC.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>n</var></code> is not a digit <code>[<b>0</b>&#8212;<b>9</b>]</code>: <samp>Syntax error</samp>.
@@ -9202,7 +9202,7 @@
 <hr />
 
     <section>
-        <h3 id="VAL"><code>VAL</code> function</h3>
+        <h4 id="VAL"><code>VAL</code> function</h4>
         <code class="block">
             <var>value</var> <b>= VAL(</b><var>string</var><b>)</b>
         </code>
@@ -9213,7 +9213,7 @@
             See the section on <a href="#literals">numeric literals</a> for the
             recognised number formats.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 Spaces before or even inside a number are ignored:
@@ -9229,7 +9229,7 @@
                 This behaviour conforms to GW-BASIC.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
@@ -9239,7 +9239,7 @@
 <hr />
 
     <section>
-        <h3 id="VARPTR"><code>VARPTR</code> function</h3>
+        <h4 id="VARPTR"><code>VARPTR</code> function</h4>
         <code class="block">
             <var>pointer</var> <b>= VARPTR(</b>{<var>name</var>|<b>#</b><var>file_num</var>}<b>)</b>
         </code>
@@ -9248,7 +9248,7 @@
             or of the File Control Block of
             file number <code><var>file_num</var></code>.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>name</var></code> is a
@@ -9258,14 +9258,14 @@
                 <code><var>file_num</var></code> is a legal file number.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 <code>VARPTR</code> can be used with <code><a href="#PEEK">PEEK</a></code>
                 to read a variable's internal representation.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>name</var></code> has not been previously defined: <samp>Illegal function call</samp>.
@@ -9284,7 +9284,7 @@
 <hr />
 
     <section>
-        <h3 id="VARPTR$"><code>VARPTR$</code> function</h3>
+        <h4 id="VARPTR$"><code>VARPTR$</code> function</h4>
         <code class="block">
             <var>pointer</var> <b>= VARPTR$(</b><var>name</var><b>)</b>
         </code>
@@ -9309,7 +9309,7 @@
             The last two bytes are the pointer address (as returned by
             <code><a href="#VARPTR">VARPTR</a></code>) in little-endian order.
         </p>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>name</var></code> has not been previously defined: <samp>Illegal function call</samp>.
@@ -9319,7 +9319,7 @@
 <hr />
 
     <section>
-        <h3 id="VIEW"><code>VIEW</code> statement</h3>
+        <h4 id="VIEW"><code>VIEW</code> statement</h4>
         <code class="block">
             <b>VIEW</b> [[<b>SCREEN</b>] <b>(</b><var>x0</var><b>,</b> <var>y0</var><b>)-(</b><var>x1</var><b>,</b> <var>y1</var><b>)</b> [<b>,</b> [<var>fill</var>] [<b>,</b> <var>border</var>]]]
         </code>
@@ -9334,7 +9334,7 @@
             If <code>VIEW</code> is called without arguments, the viewport is reset to the whole
             screen.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>fill</var></code> is an attribute. The viewport will be
@@ -9345,7 +9345,7 @@
                 just outside the viewport with this attribute.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any of the parameters has a string value: <samp>Type mismatch</samp>.
@@ -9361,7 +9361,7 @@
 <hr />
 
     <section>
-        <h3 id="VIEW-PRINT"><code>VIEW PRINT</code> statement</h3>
+        <h4 id="VIEW-PRINT"><code>VIEW PRINT</code> statement</h4>
         <code class="block">
             <b>VIEW PRINT</b> <var>top_row</var> <b>TO</b> <var>bottom_row</var>
         </code>
@@ -9369,14 +9369,14 @@
             Defines the text scrolling area of the screen. <code><a href="#LOCATE">LOCATE</a></code> statements,
             cursor movement and scrolling will be limited to the scrolling area.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>top_row</var></code> and <code><var>bottom_row</var></code> are
                 numeric expressions in  <code>[1&#8212;24]</code>.
             </li>
         </ul>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 If <code><a href="#--syntax">--syntax</a>={pcjr | tandy}</code> and
@@ -9385,7 +9385,7 @@
                 scrolling area.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>top_row</var></code> or <code><var>bottom_row</var></code> is not in <code>[1&#8212;24]</code>: <samp>Illegal function call</samp>.
@@ -9395,7 +9395,7 @@
 <hr />
 
     <section>
-        <h3 id="WAIT"><code>WAIT</code> statement</h3>
+        <h4 id="WAIT"><code>WAIT</code> statement</h4>
         <code class="block">
             <b>WAIT</b> <var>port</var><b>,</b> <var>and_mask</var> [<b>,</b> <var>xor_mask</var>]
         </code>
@@ -9406,14 +9406,14 @@
             Event handling is suspended until <code>WAIT</code> returns.
             If <code><var>xor_mask</var></code> is not specified, it defaults to <code>0</code>.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 A limited number of machine ports are emulated in PC-BASIC.
                 See <code><a href="#INP">INP</a></code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any parameter has a string value: <samp>Type mismatch</samp>.
@@ -9429,7 +9429,7 @@
 <hr />
 
     <section>
-        <h3 id="WEND"><code>WEND</code> statement</h3>
+        <h4 id="WEND"><code>WEND</code> statement</h4>
         <code class="block">
             <b>WEND</b>
         </code>
@@ -9438,14 +9438,14 @@
             <code><a href="#WHILE">WHILE</a></code> statement, where its
             condition can be checked.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                <code>WHILE&#8212;WEND</code> loops can be nested. <code>WEND</code> jumps to the most recent <code>WHILE</code>
                 statement that has not been closed by another <code>WEND</code>.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 All previous <code>WHILE</code> statements have been closed by another
@@ -9457,7 +9457,7 @@
 <hr />
 
     <section>
-        <h3 id="WHILE"><code>WHILE</code> statement</h3>
+        <h4 id="WHILE"><code>WHILE</code> statement</h4>
         <code class="block">
             <b>WHILE</b> <var>expr</var>
         </code>
@@ -9467,13 +9467,13 @@
             to the statement immediately after the matching
             <code><a href="#WEND">WEND</a></code>. If not, execution continues.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
             <code><var>expr</var></code> is a numeric expression.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 No matching <code>WEND</code> is found: <samp>WHILE without WEND</samp>.
@@ -9486,14 +9486,14 @@
 <hr />
 
     <section>
-        <h3 id="WIDTH"><code>WIDTH</code> statement (console)</h3>
+        <h4 id="WIDTH"><code>WIDTH</code> statement (console)</h4>
         <code class="block">
             <b>WIDTH</b> <var>num_columns</var> [<b>,</b> [<var>num_rows</var>] [<b>,</b>]]
         </code>
         <p>
             Sets the screen width to 20, 40 or 80 columns.
         </p>
-        <h4>Notes</h4>
+        <h5>Notes</h5>
         <ul>
             <li>
                 When changing screen width in graphics mode, the video mode is changed.
@@ -9511,7 +9511,7 @@
                 <code>SCREEN 5</code> (40)  &#8596;  <code>SCREEN 6</code> (80)<br/>
             </li>
         </ul>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>num_columns</var></code> is either a literal <code>20</code>, <code>40</code> or <code>80</code> or a numeric expression in brackets.
@@ -9524,7 +9524,7 @@
                 may be in <code>[0&#8212;25]</code> but its value is ignored.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>num_columns</var></code> is a string expression: <samp>Type mismatch</samp>.
@@ -9546,7 +9546,7 @@
 <hr />
 
     <section>
-        <h3 id="WIDTH-files"><code>WIDTH</code> statement (devices and files)</h3>
+        <h4 id="WIDTH-files"><code>WIDTH</code> statement (devices and files)</h4>
         <code class="block">
             <b>WIDTH</b> {<b>#</b><var>file_num</var><b>,</b>|<var>device_name</var><b>,</b>|<b>LPRINT</b>} <var>num_columns</var>
         </code>
@@ -9569,7 +9569,7 @@
             In this case, <code><var>num_columns</var></code> must be one of 20, 40 or 80.
             See the notes at <code><a href="#WIDTH">WIDTH</a></code> (console) for side effects.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_num</var></code> is a numeric expression which is the number of an open file.
@@ -9583,7 +9583,7 @@
                 <code><var>num_columns</var></code> is a numeric expression.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>device_name</var></code> is not one of the allowed devices: <samp>Bad file name</samp>.
@@ -9611,7 +9611,7 @@
 
 
     <section>
-        <h3 id="WINDOW"><code>WINDOW</code> statement</h3>
+        <h4 id="WINDOW"><code>WINDOW</code> statement</h4>
         <code class="block">
             <b>WINDOW</b> [[<b>SCREEN</b>] <b>(</b><var>x0</var><b>,</b> <var>y0</var><b>)-(</b><var>x1</var><b>,</b> <var>y1</var><b>)</b>]
         </code>
@@ -9628,13 +9628,13 @@
             If <code>WINDOW</code> is called without arguments, the logical coordinates are
             reset to the viewport coordinates.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>x0</var></code>, <code><var>y0</var></code>, <code><var>x1</var></code>, <code><var>y1</var></code> are numeric expressions.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 Any of the coordinates have a string value: <samp>Type mismatch</samp>.
@@ -9647,7 +9647,7 @@
 <hr />
 
     <section>
-        <h3 id="WRITE"><code>WRITE</code> statement</h3>
+        <h4 id="WRITE"><code>WRITE</code> statement</h4>
         <code class="block">
             <b>WRITE</b> [<b>#</b> <var>file_num</var><b>,</b>] <var>expr_0</var> [{<b>,</b>|<b>;</b>} <var>expr_1</var>] ...
         </code>
@@ -9656,13 +9656,13 @@
             separated by commas and the line is ended with a <code>CR LF</code> sequence. Strings are
             delimited by double quotes <code>"</code>. No padding spaces are inserted.
         </p>
-        <h4>Parameters</h4>
+        <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>expr_0</var>, <var>expr_1</var>, ...</code> are expressions whose value is to be printed.
             </li>
         </ul>
-        <h4>Errors</h4>
+        <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
@@ -9678,7 +9678,7 @@
 <hr />
 
 <section>
-    <h2 id="error-trapping">Error trapping</h2>
+    <h3 id="error-trapping">Error trapping</h3>
     <p>
         Normally, any error will interrupt program execution and print a message on
         the console (exceptions are <samp>Overflow</samp> and
@@ -9699,7 +9699,7 @@
 <hr />
 
 <section>
-    <h2 id="event-trapping">Event trapping</h2>
+    <h3 id="event-trapping">Event trapping</h3>
     <p>
         Event trapping allows to define subroutines which are executed outside of the normal course of operation. Events that can be trapped are:
     </p>

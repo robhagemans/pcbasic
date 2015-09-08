@@ -6,10 +6,10 @@
 -->
 
 <article>
-    <h1 id="using">User's guide</h1>
+    <h2 id="using">User's guide</h2>
 
     <section>
-        <h2 id="workenv">The working environment</h2>
+        <h3 id="workenv">The working environment</h3>
         <p>
             The first thing you'll see when starting PC-BASIC is the working environment.
             Like GW-BASIC, but unlike practically all modern compilers and interpreters,
@@ -41,7 +41,7 @@
         </p>
 
         <section>
-            <h3 id="special-keys">Special keys</h3>
+            <h4 id="special-keys">Special keys</h4>
             <p>The following keys have a special effect in the working environment:</p>
             <div class="scrollable">
                 <table>
@@ -238,7 +238,7 @@
         <hr />
 
         <section>
-            <h3 id="shortcuts">Keyboard shortcuts</h3>
+            <h4 id="shortcuts">Keyboard shortcuts</h4>
             <p>
                 The function keys and the alt key can be used as keyboard shortcuts for some
                 keywords.
@@ -329,7 +329,7 @@
         <hr />
 
         <section>
-            <h3 id="alternative-keys">Alternative keys</h3>
+            <h4 id="alternative-keys">Alternative keys</h4>
             <p>
                 In PC-BASIC, he <kbd>F12</kbd> key can be used to enter special keys that are not
                 present on some keyboards.
@@ -370,7 +370,7 @@
         <hr />
 
         <section>
-            <h3 id="clipboard-operations">Clipboard operations</h3>
+            <h4 id="clipboard-operations">Clipboard operations</h4>
             <p>
                 Unlike in GW-BASIC, you can copy and paste text to the clipboard.
                 This can be done with the mouse or with the <kbd>F11</kbd> key.
@@ -409,7 +409,7 @@
         <hr />
 
         <section>
-            <h3 id="emulator-keys">Emulator control keys</h3>
+            <h4 id="emulator-keys">Emulator control keys</h4>
             <p>
                 In PC-BASIC, <kbd>F11</kbd>+<kbd>F</kbd> toggles fullscreen mode.
             </p>
@@ -418,7 +418,7 @@
     </section>
 
     <section>
-        <h2 id="programs">BASIC programs</h2>
+        <h3 id="programs">BASIC programs</h3>
         <p>
             PC-BASIC can hold one BASIC program at a time in memory. To enter a program
             line, start with a <em>line number</em> and enter BASIC commands after that.
@@ -501,7 +501,7 @@
         </code>
 
         <section>
-            <h3 id="eightpointthree">MS-DOS-style 8.3 file names</h3>
+            <h4 id="eightpointthree">MS-DOS-style 8.3 file names</h4>
             <p>
                 PC-BASIC follows DOS file system conventions, where file and directory names consist of a
                 8-character name and 3-character extension. Names are case insensitive.
@@ -536,7 +536,7 @@
         <hr />
 
         <section>
-            <h3 id="mounting">Accessing your drives</h3>
+            <h4 id="mounting">Accessing your drives</h4>
             <p>
                 By default, drive letter <code>Z:</code> is mapped to the current working directory and
                 is the current drive. In particular, it is not mapped to the Windows <code>Z:</code>
@@ -561,7 +561,7 @@
         <hr />
 
         <section>
-            <h3 id="program-files">Compatible BASIC files</h3>
+            <h4 id="program-files">Compatible BASIC files</h4>
             <p>
                 Many BASIC dialects use the same extension <code>.BAS</code>, but their files are not compatible.
                 PC-BASIC runs GW-BASIC program files only. Some tips to recognise GW-BASIC programs:
@@ -592,7 +592,7 @@
         <hr />
 
         <section>
-            <h3 id="packages">Packages</h3>
+            <h4 id="packages">Packages</h4>
             <p>
                 PC-BASIC can run packaged programs. A package is simply a directory or zip archive.
                 The directory or zipfile contents will be loaded as the current working
@@ -613,7 +613,7 @@
         <hr />
 
         <section>
-            <h3 id="security">Security</h3>
+            <h4 id="security">Security</h4>
             <p>PC-BASIC makes some default choices with basic security in mind, but does not
                 sandbox its programs in any meaningful way. BASIC programs have more or less
                 full access to your computer. You should treat them with the same caution as
@@ -626,7 +626,7 @@
     </section>
 
     <section>
-        <h2 id="devices">Devices</h2>
+        <h3 id="devices">Devices</h3>
         <p>
             PC-BASIC recognises the following DOS-style devices, which can be
             <a href="#OPEN">opened</a>, <a href="#INPUT-file">input from</a>
@@ -705,7 +705,7 @@
         </div>
 
         <section>
-        <h3 id="printing">Printing</h3>
+        <h4 id="printing">Printing</h4>
             <p>
                 You can print from PC-BASIC programs
                 by accessing the <code>LPT1:</code> device. PC-BASIC will send the output to
@@ -747,7 +747,7 @@
         <hr />
 
         <section>
-            <h3 id="ports">Serial and parallel ports</h3>
+            <h4 id="ports">Serial and parallel ports</h4>
             <p>
                 PC-BASIC provides the serial devices <code>COM1:</code> and <code>COM2:</code>.
                 To make use of these, you need to attach them to a communications port on your
@@ -770,9 +770,9 @@
     </section>
 
     <section>
-        <h2 id="interface">Changing the interface</h2>
+        <h3 id="interface">Changing the interface</h3>
         <section>
-            <h3 id="presets">Emulation targets</h3>
+            <h4 id="presets">Emulation targets</h4>
             <p>
                 By default, PC-BASIC emulates GW-BASIC on a system with VGA video capabilities.
                 However, it can emulate several other setups, which differ from each other in
@@ -843,7 +843,7 @@
         <hr />
 
         <section>
-            <h3 id="codepages">Codepages</h3>
+            <h4 id="codepages">Codepages</h4>
             <p>
                 PC-BASIC supports a large number of legacy codepages that were common at the
                 time GW-BASIC was popular, including double-byte character set codepages used
@@ -863,7 +863,7 @@
         <hr />
 
         <section>
-            <h3 id="fonts">Fonts</h3>
+            <h4 id="fonts">Fonts</h4>
             <p>
                 PC-BASIC emulates the distinctive raster fonts of IBM-compatible machines. The ROM
                 fonts of the original IBM and Tandy adapters (which are in the public
@@ -898,7 +898,7 @@
         <hr />
 
         <section>
-        <h3 id="redirecting">Redirecting input and output</h3>
+        <h4 id="redirecting">Redirecting input and output</h4>
             <p>
                 PC-BASIC supports redirecting input and output the GW-BASIC way: output redirected
                 with the <code><a href="#--output">output</a>=</code> option will be sent to the screen as well as
@@ -919,7 +919,7 @@
         <hr />
 
         <section>
-            <h3 id="cli">Command-line interface</h3>
+            <h4 id="cli">Command-line interface</h4>
             <p>
                 You can run PC-BASIC as a
                 command-line interface by setting the <code><a href="#--interface">interface</a>=cli</code> (or
@@ -952,7 +952,7 @@ me@mybox$
         <hr />
 
         <section>
-            <h3 id="curses">Text-based interface</h3>
+            <h4 id="curses">Text-based interface</h4>
             <p>
                 There is also a full-screen text interface available: enable it
                 by setting <code><a href="#--interface">interface</a>=text</code> (or <code><a href="#-t">-t</a></code>). The text-based
@@ -977,7 +977,7 @@ me@mybox$
     </section>
 
     <section>
-        <h2 id="gwbasic">Differences with GW-BASIC</h2>
+        <h3 id="gwbasic">Differences with GW-BASIC</h3>
         <p>
             GW-BASIC was a real-mode DOS program, which means that it had full control
             over an IBM-compatible 8086 computer. It had direct access to all areas of
@@ -993,7 +993,7 @@ me@mybox$
         </p>
 
         <section>
-            <h3 id="gwbasic-language">Language differences</h3>
+            <h4 id="gwbasic-language">Language differences</h4>
             <p>
                 PC-BASIC <em>does</em> provide limited support for the <code><a href="#POKE">POKE</a></code> and <code><a
                 href="#PEEK">PEEK</a></code> statements: some of the most commonly accessed
@@ -1096,7 +1096,7 @@ me@mybox$
         <hr />
 
         <section>
-            <h3 id="gwbasic-devices">Devices</h3>
+            <h4 id="gwbasic-devices">Devices</h4>
             <p>
                 GW-BASIC additionally recognises the following little-used device, which is not implemented in PC-BASIC.
             </p>
@@ -1128,7 +1128,7 @@ me@mybox$
         <hr />
 
         <section>
-            <h3 id="gwbasic-options">Command-line options</h3>
+            <h4 id="gwbasic-options">Command-line options</h4>
             <p>
                 GW-BASIC recognised a number of options on the command-line.
                 These are matched by PC-BASIC with only minor modifications:
