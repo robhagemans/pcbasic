@@ -9,6 +9,8 @@ import codecs
 from lxml import etree
 import markdown
 
+basepath = os.path.dirname(os.path.realpath(__file__))
+
 def mdtohtml(md_file, outf):
     with codecs.open(md_file, 'r', 'utf-8') as inf:
         md = inf.read()
@@ -51,38 +53,40 @@ def maketoc(html_doc, toc):
 
 
 def makedoc(header=None, output=None):
-    header = header or 'header.html'
-    output = output or '../doc/PC-BASIC_documentation.html'
+    header = header or basepath + '/header.html'
+    output = output or basepath + '/../doc/PC-BASIC_documentation.html'
     try:
-        os.mkdir('../doc')
+        os.mkdir(basepath + '/../doc')
     except OSError:
         # already there, ignore
         pass
-    shutil.copy('doc.css', '../doc/')
-    shutil.copy('LICENSE.md', '../doc/')
+    shutil.copy(basepath + '/doc.css', basepath + '/../doc/')
+    shutil.copy(basepath + '/LICENSE.md', basepath + '/../doc/')
     basic_license_stream = StringIO()
     doc_license_stream = StringIO()
     readme_stream = StringIO()
-    mdtohtml('../LICENSE.md', basic_license_stream)
-    mdtohtml('LICENSE.md', doc_license_stream)
-    mdtohtml('../README.md', readme_stream)
+    mdtohtml(basepath + '/../LICENSE.md', basic_license_stream)
+    mdtohtml(basepath + '/LICENSE.md', doc_license_stream)
+    mdtohtml(basepath + '/../README.md', readme_stream)
     quickstart_html = ('<article>\n' + readme_stream.getvalue() + '</article>\n').replace('h3', 'h2').replace('h4', 'h3').replace('PC-BASIC</h2>', 'Overview</h2>')
     licenses_html = '<footer>\n<h2 id="licence">Licences</h2>\n' + basic_license_stream.getvalue() + '<hr />\n' + doc_license_stream.getvalue() + '\n</footer>\n'
-    settings_html = '<article>\n' + open('settings.html', 'r').read() + '<hr />\n' + open('options.html', 'r').read() + open('examples.html', 'r').read() + '</article>\n'
+    settings_html = ('<article>\n' + open(basepath + '/settings.html', 'r').read()
+            + '<hr />\n' + open(basepath + '/options.html', 'r').read()
+            + open(basepath + '/examples.html', 'r').read() + '</article>\n')
     predoc = StringIO()
     predoc.write(quickstart_html)
-    predoc.write(open('documentation.html', 'r').read())
+    predoc.write(open(basepath + '/documentation.html', 'r').read())
     predoc.write(settings_html)
-    predoc.write(open('reference.html', 'r').read())
-    predoc.write(open('techref.html', 'r').read())
-    predoc.write(open('acknowledgements.html', 'r').read())
+    predoc.write(open(basepath + '/reference.html', 'r').read())
+    predoc.write(open(basepath + '/techref.html', 'r').read())
+    predoc.write(open(basepath + '/acknowledgements.html', 'r').read())
     predoc.write(licenses_html)
-    predoc.write(open('footer.html', 'r').read())
+    predoc.write(open(basepath + '/footer.html', 'r').read())
     predoc.seek(0)
     toc = StringIO()
     maketoc(predoc, toc)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    version = open('../pcbasic/data/version.txt', 'r').read().strip()
+    version = open(basepath + '/../pcbasic/data/version.txt', 'r').read().strip()
     subheader_html = '<header>\n<h1>PC-BASIC {0} documentation</h1>\n<small>Documentation compiled on {1}.</small>\n</header>\n'.format(version, now)
     with open(output, 'w') as outf:
         outf.write(open(header, 'r').read())

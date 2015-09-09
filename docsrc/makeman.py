@@ -3,6 +3,9 @@ from lxml import etree, html
 import re
 from cStringIO import StringIO
 import gzip
+import os
+
+basepath = os.path.dirname(os.path.realpath(__file__))
 
 def html_to_man(html):
     def massage(text):
@@ -43,14 +46,14 @@ def html_to_man(html):
 
 
 def makeman():
-    title_html = '<h1>pcbasic</h1><p>%s</p>\n' % open('tagline.txt', mode='r').read()
-    desc_html = '<h2>Description</h2><p>%s</p>\n' % open('description.txt', mode='r').read()
-    options_html = open('options.html', mode='r').read()
-    examples_html = open('examples.html', mode='r').read()
+    title_html = '<h1>pcbasic</h1><p>%s</p>\n' % open(basepath + '/tagline.txt', mode='r').read()
+    desc_html = '<h2>Description</h2><p>%s</p>\n' % open(basepath + '/description.txt', mode='r').read()
+    options_html = open(basepath + '/options.html', mode='r').read()
+    examples_html = open(basepath + '/examples.html', mode='r').read()
     man_html = title_html + desc_html + options_html + examples_html
     usage_html = options_html
     # output manfile
-    with gzip.open('../doc/pcbasic.1.gz', 'wb') as manfile:
+    with gzip.open(basepath + '/../doc/pcbasic.1.gz', 'wb') as manfile:
         manfile.write(html_to_man(man_html))
 
 if __name__ == '__main__':

@@ -3,7 +3,9 @@ from lxml import etree, html
 import re
 from cStringIO import StringIO
 import textwrap
+import os
 
+basepath = os.path.dirname(os.path.realpath(__file__))
 
 class TextBlock(object):
 
@@ -57,9 +59,9 @@ def html_to_text(html):
 
 
 def makeusage():
-    usage_html = open('options.html', mode='r').read()
+    usage_html = open(basepath + '/options.html', mode='r').read()
     # output usage
-    with open('../pcbasic/data/usage.txt', 'w') as textfile:
+    with open(basepath + '/../pcbasic/data/usage.txt', 'w') as textfile:
         textfile.write(html_to_text(usage_html))
 
 if __name__ == '__main__':
