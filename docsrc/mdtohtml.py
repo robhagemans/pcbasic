@@ -3,11 +3,11 @@ import markdown
 import sys
 import codecs
 
-def md_to_html(md_file, html_file):
+def mdtohtml(md_file, html_file):
     with codecs.open(md_file, 'r', 'utf-8') as inf:
         md = inf.read()
         with codecs.open(html_file, 'w', 'utf-8') as outf:
             outf.write(markdown.markdown(md, extensions=['markdown.extensions.tables', 'markdown.extensions.toc'], output_format='html5', lazy_ol=False))
 
 if __name__ == '__main__':
-    md_to_html(sys.argv[1], sys.argv[2])
+    mdtohtml(sys.argv[1], sys.argv[2])

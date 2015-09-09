@@ -41,13 +41,17 @@ def html_to_man(html):
     # replace two starting spaces (not sure where from)
     return re.sub('\t +', '\t', re.sub('\n +', '\n', manpage))
 
-title_html = '<h1>pcbasic</h1><p>%s</p>\n' % open('tagline.txt', mode='r').read()
-desc_html = '<h2>Description</h2><p>%s</p>\n' % open('description.txt', mode='r').read()
-options_html = open('options.html', mode='r').read()
-examples_html = open('examples.html', mode='r').read()
-man_html = title_html + desc_html + options_html + examples_html
-usage_html = options_html
 
-# output manfile
-with gzip.open('../doc/pcbasic.1.gz', 'wb') as manfile:
-    manfile.write(html_to_man(man_html))
+def makeman():
+    title_html = '<h1>pcbasic</h1><p>%s</p>\n' % open('tagline.txt', mode='r').read()
+    desc_html = '<h2>Description</h2><p>%s</p>\n' % open('description.txt', mode='r').read()
+    options_html = open('options.html', mode='r').read()
+    examples_html = open('examples.html', mode='r').read()
+    man_html = title_html + desc_html + options_html + examples_html
+    usage_html = options_html
+    # output manfile
+    with gzip.open('../doc/pcbasic.1.gz', 'wb') as manfile:
+        manfile.write(html_to_man(man_html))
+
+if __name__ == '__main__':
+    makeman()

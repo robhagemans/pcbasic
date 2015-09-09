@@ -23,7 +23,7 @@ cp LICENSE.md ../doc
 (echo -e "<footer>\n<h2 id=\"licence\">Licences</h2>"; cat pcbasiclicense.html; echo -e "<hr />\n"; cat doclicense.html; echo -e "\n</footer>") > licences.html
 (echo -e "<article>"; cat settings.html; echo -e "<hr />\n"; cat options.html examples.html; echo "</article>") > settings-options.html
 (cat quickstart.html documentation.html settings-options.html reference.html techref.html acknowledgements.html licences.html footer.html) > predoc.html
-./maketoc.py predoc.html > toc.html
+./maketoc.py predoc.html toc.html
 echo -e "<header>\n<h1>PC-BASIC $(cat ../pcbasic/data/version.txt) documentation</h1>\n<small>Documentation compiled on $(date --utc).</small>\n</header>" > subheader.html
 (cat ../../$HEADER subheader.html toc.html predoc.html) > ../../$OUTPUT
 rm predoc.html toc.html quickstart.html subheader.html pcbasiclicense.html doclicense.html licences.html settings-options.html

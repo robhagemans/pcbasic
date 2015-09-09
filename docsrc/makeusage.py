@@ -55,8 +55,12 @@ def html_to_text(html):
     parse_element(docroot, blocklist)
     return '\n'.join(str(block) for block in blocklist[1:] if str(block).strip())
 
-usage_html = open('options.html', mode='r').read()
 
-# output usage
-with open('../pcbasic/data/usage.txt', 'w') as textfile:
-    textfile.write(html_to_text(usage_html))
+def makeusage():
+    usage_html = open('options.html', mode='r').read()
+    # output usage
+    with open('../pcbasic/data/usage.txt', 'w') as textfile:
+        textfile.write(html_to_text(usage_html))
+
+if __name__ == '__main__':
+    makeusage()
