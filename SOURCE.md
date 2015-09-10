@@ -86,9 +86,9 @@ The instructions above refer to the source *distribution*, which has pre-built
 documentation files and other niceties.
 If you wish to use the source code as-is in the GitHub repo,
 you'll need to build the docs yourself. Note that `pcbasic -h` will fail if you omit
-this. Compiling the documentation requires [`pandoc`](http://pandoc.org) and is
-currently only possible on Linux. Of course, you'll also need
-[`git`](https://git-scm.com/) and all the dependencies listed above.  
+this. Compiling the documentation requires the Python modules
+[`lxml`](https://pypi.python.org/pypi/lxml/3.4.3) and [`markdown`](https://pypi.python.org/pypi/Markdown).
+Of course, you'll also need [`git`](https://git-scm.com/) and all the PC-BASIC dependencies listed above.  
 
 1. Clone the github repo
 
