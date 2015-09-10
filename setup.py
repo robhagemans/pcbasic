@@ -1,12 +1,13 @@
 """
 PC-BASIC setup module.
-based on https://github.com/pypa/sampleproject
 
 (c) 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
-from setuptools import setup, find_packages
+###############################################################################
+# get descriptions and version number
+
 from codecs import open
 from os import path
 
@@ -21,6 +22,49 @@ with open(path.join(here, 'docsrc', 'tagline.txt'), encoding='utf-8') as f:
 with open(path.join(here, 'pcbasic', 'data', 'version.txt'), encoding='utf-8') as f:
     version_string = f.read()
 
+
+###############################################################################
+# implement build_docs command
+# see http://seasonofcode.com/posts/how-to-add-custom-build-steps-and-commands-to-setup-py.html
+
+import distutils.cmd
+import setuptools.command.build_py
+
+import prepare
+
+class BuildDocCommand(distutils.cmd.Command):
+    """ Command to build the documentation."""
+
+    description = 'build documentation files'
+    user_options = []
+
+    def run(self):
+        """ Run build_docs command. """
+        prepare.build_docs()
+
+    def initialize_options(self):
+        """ Set default values for options. """
+        pass
+
+    def finalize_options(self):
+        """ Post-process options. """
+        pass
+
+
+class BuildPyCommand(setuptools.command.build_py.build_py):
+    """ Custom build command. """
+
+    def run(self):
+        """ Run build_py command. """
+        self.run_command('build_docs')
+        setuptools.command.build_py.build_py.run(self)
+
+
+###############################################################################
+# metadata
+# see https://github.com/pypa/sampleproject
+
+from setuptools import setup, find_packages
 
 setup(
     name='pcbasic',
@@ -71,5 +115,9 @@ setup(
             'pcbasic=pcbasic.__main__:main',
         ],
 
+    },
+    cmdclass={
+        'build_docs': BuildDocCommand,
+        'build_py': BuildPyCommand,
     },
 )
