@@ -132,12 +132,12 @@ def auto_step():
     console.write(numstr)
     if state.basic_state.auto_linenum in state.basic_state.line_numbers:
         console.write('*')
-        line = console.wait_screenline(from_start=True)
+        line = bytearray(console.wait_screenline(from_start=True))
         if line[:len(numstr)+1] == numstr+'*':
             line[len(numstr)] = ' '
     else:
         console.write(' ')
-        line = console.wait_screenline(from_start=True)
+        line = bytearray(console.wait_screenline(from_start=True))
     # run or store it; don't clear lines or raise undefined line number
     state.basic_state.direct_line = tokenise.tokenise_line(line)
     c = util.peek(state.basic_state.direct_line)
