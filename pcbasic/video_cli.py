@@ -37,6 +37,9 @@ cursor_col = 1
 last_row = None
 last_col = None
 
+# initialised correctly
+ok = False
+
 def prepare():
     """ Initialise the video_cli module. """
     pass
@@ -69,9 +72,10 @@ def putwc_at(pagenum, row, col, c, d, for_keys=False):
 
 def init():
     """ Initialise command-line interface. """
-    global stdin_q
+    global stdin_q, ok
     if not check_tty():
-        return False
+        ok = False
+        return ok
     term_echo(False)
     sys.stdout.flush()
     # start the stdin thread for non-blocking reads
@@ -79,12 +83,14 @@ def init():
     t = threading.Thread(target=read_stdin, args=(stdin_q,))
     t.daemon = True
     t.start()
-    return True
+    ok = True
+    return ok
 
 def close():
     """ Close command-line interface. """
-    update_position()
-    term_echo()
+    if ok:
+        update_position()
+        term_echo()
     sys.stdout.flush()
 
 def check_events():
