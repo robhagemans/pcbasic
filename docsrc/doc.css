@@ -27,7 +27,7 @@ hr {
 }
 
 figure, .scrollable, pre, code.block, samp.block {
-    max-width: 45em;
+    max-width: 45rem;
     width: 100%;
     overflow-x: auto;
 }
