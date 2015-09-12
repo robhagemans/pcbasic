@@ -2795,7 +2795,7 @@
     <section>
         <h4 id="FN"><code>FN</code> function</h4>
         <code class="block">
-            <var>result</var> <b>= FN</b>[ ]<var>name</var> [<b>(</b><var>arg_0</var> [<b>,</b> <var>arg_1</var>] ...<b>)</b>]
+            <var>result</var> <b>= FN</b>[ ]<var>name</var> [<b>(</b><var>arg_0</var> [<b>,</b> <var>arg_1</var>] ...<b>)</b>]F
         </code>
         <p>
             Evaluates the user-defined function previously defined with <code><a href="#DEF-FN">DEF FN</a> <var>name</var></code>.
@@ -3223,19 +3223,38 @@
        </code>
         <p>
             If <code><var>truth_value</var></code> is non-zero, executes <code><var>statements_1</var></code> or jumps to <code><var>line_number_1</var></code> .
-            If it is zero, executes <code><var>statements_0</var></code> or jumps to <code><var>line_number_0</var></code> . <code><var>truth_value</var></code>
-            is a numeric expression. The comma is optional and ignored.
-            <code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are existing line numbers.
-            Statements <code><var>statements_0</var></code> and <code><var>statements_1</var></code> can be compound statements with
-            one or more colons (<code>:</code>) separating single statements. The compound statements
-            can contain nested <code>IF&#8212;THEN&#8212;ELSE</code> statements.
-            <code><a href="#ELSE">ELSE</a></code> clauses are optional; they
-            are bound to the innermost free <code>IF</code> statement if nested. Additional <code>ELSE</code>
-            clauses that have no matching <code>IF</code> are ignored. All clauses must be on the same
-            program line.
+            If it is zero, executes <code><var>statements_0</var></code> or jumps to <code><var>line_number_0</var></code> .
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>truth_value</var></code>
+                is a numeric expression.
+            </li>
+            <li>
+                <code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are existing line numbers.
+            </li>
+            <li>
+                Statements <code><var>statements_0</var></code> and <code><var>statements_1</var></code> can be compound statements with
+                one or more colons (<code>:</code>) separating single statements. The compound statements
+                can contain nested <code>IF&#8212;THEN&#8212;ELSE</code> statements.
+            </li>
+        </ul>
         </p>
         <h5>Notes</h5>
         <ul>
+            <li>
+                The comma is optional and ignored.
+            </li>
+            <li>
+                <code><a href="#ELSE">ELSE</a></code> clauses are optional; they
+                are bound to the innermost free <code>IF</code> statement if nested. Additional <code>ELSE</code>
+                clauses that have no matching <code>IF</code> are ignored.
+            </li>
+            <li>
+                All clauses must be on the same
+                program line.
+            </li>
             <li>
                <code>THEN</code> and <code>GOTO</code> are interchangeable; which one is chosen is independent
                 of whether a statement or a line number is given. <code>GOTO PRINT 1</code> is fine.
@@ -3243,6 +3262,9 @@
             <li>
                 As in <code><a href="#GOTO">GOTO</a></code>, anything after the line number is ignored.
             </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
             <li>
                If <code><var>truth_value</var></code> has a string value: <samp>Type mismatch</samp>.
             </li>
