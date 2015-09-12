@@ -3173,15 +3173,15 @@
                 Any number of optional spaces is allowed between <code>GO</code> and <code>TO</code>, but they will
                 not be retained in the program.
             </li>
+            <li>
+                If <code><var>line_number</var></code> is greater than <code>65529</code>, only the first 4 characters are
+                read (e.g. <code>GOTO 65530</code> is executed as <code>GOTO 6553</code>)
+            </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>line_number</var></code> does not exist: <samp>Undefined line number</samp>.
-            </li>
-            <li>
-                If <code><var>line_number</var></code> is greater than <code>65529</code>, only the first 4 characters are
-                read (e.g. <code>6553</code>)
             </li>
         </ul>
     </section>
@@ -3271,7 +3271,7 @@
             <li>
                 <code><var>truth_value</var></code> equals <code>0</code> and <code><var>line_number_0</var></code> is a non-existing line number,
                 or
-                <code><var>truth_value</var></code> equals <code>1</code> and <code><var>line_number_1</var></code> is a non-existing line number: 
+                <code><var>truth_value</var></code> equals <code>1</code> and <code><var>line_number_1</var></code> is a non-existing line number:
                 <samp>Undefined line number</samp>.
             </li>
         </ul>
