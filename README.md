@@ -18,9 +18,9 @@ See also the [PC-BASIC home page](http://robhagemans.github.io/pcbasic/).
 
 ### Quick Start Guide ###
 
-This quick start guide covers installation and elementary use of PC-BASIC. For more information, please refer to the [full PC-BASIC documentation](http://robhagemans.github.io/pcbasic/doc/) which covers usage, command-line options and a full GW-BASIC language reference. This documentation is also included with the current PC-BASIC release.
+This quick start guide covers installation and elementary use of PC-BASIC. For more information, please refer to the [full PC-BASIC documentation](http://pc-basic.org/doc/) which covers usage, command-line options and a full GW-BASIC language reference. This documentation is also included with the current PC-BASIC release.
 
-If you find bugs, please report them on the SourceForge discussion page at [https://sourceforge.net/p/pcbasic/discussion/bugs/](https://sourceforge.net/p/pcbasic/discussion/bugs/). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
+If you find bugs, please report them on the [SourceForge discussion page](https://sourceforge.net/p/pcbasic/discussion/bugs/). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
 
 
 #### Installation ####
@@ -28,8 +28,8 @@ Packaged distributions are currently available for Windows XP and above and Mac 
 
 They can be downloaded from one of the following locations:  
 
-- GitHub at [https://github.com/robhagemans/pcbasic/releases](https://github.com/robhagemans/pcbasic/releases).  
-- SourceForge at [https://sourceforge.net/projects/pcbasic/files/](https://sourceforge.net/projects/pcbasic/files/).  
+- [PC-BASIC releases on GitHub](https://github.com/robhagemans/pcbasic/releases)  
+- [PC-BASIC releases on SourceForge](https://sourceforge.net/projects/pcbasic/files/)  
 
 On **Windows**:  
 
