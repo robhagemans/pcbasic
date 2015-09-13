@@ -73,7 +73,7 @@ def makedoc(header=None, output=None):
     mdtohtml(basepath + '/LICENSE.md', doc_license_stream)
     mdtohtml(basepath + '/../README.md', readme_stream, baselevel=0)
     mdtohtml(basepath + '/../ACKNOWLEDGEMENTS.md', ack_stream, 'acks_')
-    quickstart_html = ('<article>\n' + readme_stream.getvalue() + '</article>\n').replace('PC-BASIC</h2>', 'Overview</h2>')
+    quickstart_html = ('<article>\n' + readme_stream.getvalue() + '</article>\n').replace('PC-BASIC</h2>', 'Overview</h2>').replace('http://pc-basic.org/doc#', '#')
     licenses_html = '<footer>\n<h2 id="licence">Licences</h2>\n' + basic_license_stream.getvalue() + '<hr />\n' + doc_license_stream.getvalue() + '\n</footer>\n'
     settings_html = ('<article>\n' + open(basepath + '/settings.html', 'r').read()
             + '<hr />\n' + open(basepath + '/options.html', 'r').read()
