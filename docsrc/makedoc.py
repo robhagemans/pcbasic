@@ -8,13 +8,16 @@ import codecs
 
 from lxml import etree
 import markdown
+from markdown.extensions.toc import TocExtension
+import markdown.extensions.headerid
 
 basepath = os.path.dirname(os.path.realpath(__file__))
 
-def mdtohtml(md_file, outf):
+def mdtohtml(md_file, outf, prefix=''):
     with codecs.open(md_file, 'r', 'utf-8') as inf:
         md = inf.read()
-        outf.write(markdown.markdown(md, extensions=['markdown.extensions.tables', 'markdown.extensions.toc'], output_format='html5', lazy_ol=False).encode('utf-8'))
+        toc = TocExtension(slugify=lambda value, separator: prefix + markdown.extensions.headerid.slugify(value, separator))
+        outf.write(markdown.markdown(md, extensions=['markdown.extensions.tables', toc], output_format='html5', lazy_ol=False).encode('utf-8'))
 
 def maketoc(html_doc, toc):
     parser = etree.HTMLParser()
@@ -69,7 +72,7 @@ def makedoc(header=None, output=None):
     mdtohtml(basepath + '/../LICENSE.md', basic_license_stream)
     mdtohtml(basepath + '/LICENSE.md', doc_license_stream)
     mdtohtml(basepath + '/../README.md', readme_stream)
-    mdtohtml(basepath + '/../ACKNOWLEDGEMENTS.md', ack_stream)
+    mdtohtml(basepath + '/../ACKNOWLEDGEMENTS.md', ack_stream, 'acks_')
     quickstart_html = ('<article>\n' + readme_stream.getvalue() + '</article>\n').replace('h3', 'h2').replace('h4', 'h3').replace('PC-BASIC</h2>', 'Overview</h2>')
     licenses_html = '<footer>\n<h2 id="licence">Licences</h2>\n' + basic_license_stream.getvalue() + '<hr />\n' + doc_license_stream.getvalue() + '\n</footer>\n'
     settings_html = ('<article>\n' + open(basepath + '/settings.html', 'r').read()
