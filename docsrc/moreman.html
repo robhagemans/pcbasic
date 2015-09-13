@@ -1,0 +1,43 @@
+<!--
+    PC-BASIC documentation
+    Copyright (c) 2014-2015 Rob Hagemans
+    This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+    http://creativecommons.org/licenses/by-sa/4.0/legalcode
+-->
+
+<section>
+    <h3 id="man_files">Files</h3>
+    <dl>
+        <dt><code><i>~/.config/pcbasic/PCBASIC.INI</i></code></dt>
+        <dd>
+            User configuration file. Options in this file take the form of command-line options
+            without the preceding <code><b>--</b></code>. One option per line. Options added under the <code>[pcbasic]</code>
+            header are loaded by default. Options added under another header will be loaded if the
+            <code><b><a href="#--preset">--preset</a></b></code> option group
+            of that name is loaded.
+        </dd>
+
+        <dt><code><i>~/.local/share/pcbasic/PCBASIC.SAV</i></code></dt>
+        <dd>
+            Saved state of the last PC-BASIC session.
+            Continue the last session with <code><b><a href="#--resume">--resume</a></b></code>.
+            This file is saved in a binary storage format and not meant to be edited or exchanged.
+        </dd>
+    </dl>
+</section>
+
+<section>
+    <h3 id="man_environment">Environment</h3>
+    <p>
+        There are no environment settings specific to PC-BASIC. However, BASIC
+        programs may access the environment through the <code>ENVIRON$</code>
+        function and could therefore have their own environment settings.
+    </p>
+</section>
+
+<section>
+    <h3 id="man_author">Author</h3>
+    <p>
+        PC-BASIC is written and maintained by Rob Hagemans &lt;robhagemans@yahoo.co.uk&gt;.
+    </p>
+</section>

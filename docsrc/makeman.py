@@ -17,9 +17,9 @@ def html_to_man(html):
         children = ''.join(convert_html(child, 1+indent, inside or e.tag.upper()=='DD') for child in e.iterchildren(tag=etree.Element))
         if e.tag.upper() == 'H1':
             return '\n.SH NAME\n' + inner.lower().replace('\-', '') + ' \- '
-        elif e.tag.upper() == 'H2':
+        elif e.tag.upper() in ('H2', 'H3'):
             return '\n.SH ' + inner.upper() + children.upper() + '\n' + tail
-        elif e.tag.upper() == 'VAR':
+        elif e.tag.upper() in ('VAR', 'I'):
             return '\\fI' + inner + children + '\\fR' + tail
         elif e.tag.upper() == 'B':
             return '\\fB' + inner + children + '\\fR' + tail
@@ -47,11 +47,11 @@ def html_to_man(html):
 
 def makeman():
     title_html = '<h1>pcbasic</h1><p>%s</p>\n' % open(basepath + '/tagline.txt', mode='r').read()
-    desc_html = '<h2>Description</h2><p>%s</p>\n' % open(basepath + '/description.txt', mode='r').read()
+    desc_html = '<h3>Description</h2><p>%s</p>\n' % open(basepath + '/description.txt', mode='r').read()
     options_html = open(basepath + '/options.html', mode='r').read()
     examples_html = open(basepath + '/examples.html', mode='r').read()
-    man_html = title_html + desc_html + options_html + examples_html
-    usage_html = options_html
+    more_html = open(basepath + '/moreman.html', mode='r').read()
+    man_html = title_html + desc_html + options_html + examples_html + more_html
     # output manfile
     with gzip.open(basepath + '/../doc/pcbasic.1.gz', 'wb') as manfile:
         manfile.write(html_to_man(man_html))
