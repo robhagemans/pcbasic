@@ -84,7 +84,7 @@ apologies to those whose contribution I have failed to acknowledge here.
 
   * [The Unicode Consortium and contributors](http://www.unicode.org/Public/MAPPINGS/VENDORS)
   * [GNU libiconv Project](https://www.gnu.org/software/libiconv/)
-  * **[Aivosto Oy](http://www.aivosto.com/vbtips/charsets-codepages.html)**
+  * [Aivosto](http://www.aivosto.com/vbtips/charsets-codepages.html)
   * **[Kosta Kostis](http://www.kostis.net/charsets/)**
   * [IBM CDRA](http://www-01.ibm.com/software/globalization/cdra/)
   * [Camellia](https://github.com/mtojo/camellia)
