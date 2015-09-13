@@ -9,7 +9,7 @@ basepath = os.path.dirname(os.path.realpath(__file__))
 
 def html_to_man(html):
     def massage(text):
-        return re.sub(' +', ' ', text.encode('utf-8').replace('\\', '\\\\').replace('-', '\\-').replace('|', '\\||').replace('.', '\\|.').replace('\n', ' '))
+        return re.sub(' +', ' ', text.encode('utf-8').replace('\\', '\\[rs]').replace('-', '\\-').replace('|', '\\||').replace('.', '\\|.').replace('\n', ' ').replace('"', '\\[dq]').replace("'", "\\|'"))
 
     def convert_html(e, indent=0, inside=False):
         inner = massage(e.text) if e.text else ''
