@@ -45,7 +45,7 @@ article, header, nav.toc, footer {
     background-color: white;
     padding: 1em;
     line-height: 1.4em;
-    font-family: sans;
+    font-family: sans-serif;
 }
 
 /* screenshot image */
@@ -261,7 +261,7 @@ dt code {
         height: 3.2rem;
         background: #0000aa;
         border-bottom: 1em solid grey;
-        font-family: sans;
+        font-family: sans-serif;
         margin: 0;
         padding: 0;
     }
