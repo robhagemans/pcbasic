@@ -66,6 +66,36 @@ def embed_style(html_file):
     with open(html_file, 'w') as f:
         f.write(etree.tostring(doc, method="html"))
 
+def get_options(html_file):
+    parser = etree.HTMLParser(encoding='utf-8')
+    doc = etree.parse(html_file, parser)
+    output = []
+    for node in doc.xpath('//h3[@id="options"]/following-sibling::dl/dt/code'):
+        node.tag = 'a'
+        node.attrib.clear()
+        link_id = node.getparent().get('id')
+        if link_id:
+            node.set('href', '#' + link_id)
+            node.text = '[' + (node.text or '')
+            try:
+                last = node.getchildren()[-1]
+                last.tail = (last.tail or '') + ']'
+            except IndexError:
+                node.text += ']'
+            node.tail = '\n'
+            output.append(node)
+    return output
+
+def embed_options(html_file):
+    parser = etree.HTMLParser(encoding='utf-8')
+    doc = etree.parse(html_file, parser)
+    for node in doc.xpath('//span[@id="placeholder-options"]'):
+        node.clear()
+        for c in get_options(html_file):
+            node.append(c)
+    with open(html_file, 'w') as f:
+        f.write(etree.tostring(doc, method="html"))
+
 def makedoc(header=None, output=None, embedded_style=True):
     header = header or basepath + '/header.html'
     output = output or basepath + '/../doc/PC-BASIC_documentation.html'
@@ -108,9 +138,9 @@ def makedoc(header=None, output=None, embedded_style=True):
         outf.write(subheader_html)
         outf.write(toc.getvalue())
         outf.write(predoc.getvalue())
+    embed_options(output)
     if embedded_style:
         embed_style(output)
-
 
 if __name__ == '__main__':
     header, output = None, None
