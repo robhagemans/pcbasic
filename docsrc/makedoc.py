@@ -54,8 +54,19 @@ def maketoc(html_doc, toc):
         level -= 1
     toc.write('</nav>\n')
 
+def embed_style(html_file):
+    parser = etree.HTMLParser(encoding='utf-8')
+    doc = etree.parse(html_file, parser)
+    for node in doc.xpath('//link[@rel="stylesheet"]'):
+        css = node.get('href')
+        node.tag = 'style'
+        node.text = '\n' + open(css, 'r').read() + '\n    '
+        node.attrib.clear()
+        node.set('id', css)
+    with open(html_file, 'w') as f:
+        f.write(etree.tostring(doc, method="html"))
 
-def makedoc(header=None, output=None):
+def makedoc(header=None, output=None, embedded_style=True):
     header = header or basepath + '/header.html'
     output = output or basepath + '/../doc/PC-BASIC_documentation.html'
     try:
@@ -63,8 +74,6 @@ def makedoc(header=None, output=None):
     except OSError:
         # already there, ignore
         pass
-    shutil.copy(basepath + '/doc.css', basepath + '/../doc/')
-    shutil.copy(basepath + '/LICENSE.md', basepath + '/../doc/')
     basic_license_stream = StringIO()
     doc_license_stream = StringIO()
     readme_stream = StringIO()
@@ -93,11 +102,15 @@ def makedoc(header=None, output=None):
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     version = open(basepath + '/../pcbasic/data/version.txt', 'r').read().strip()
     subheader_html = '<header>\n<h1>PC-BASIC {0} documentation</h1>\n<small>Documentation compiled on {1}.</small>\n</header>\n'.format(version, now)
+    header_html = open(header, 'r').read()
     with open(output, 'w') as outf:
-        outf.write(open(header, 'r').read())
+        outf.write(header_html)
         outf.write(subheader_html)
         outf.write(toc.getvalue())
         outf.write(predoc.getvalue())
+    if embedded_style:
+        embed_style(output)
+
 
 if __name__ == '__main__':
     header, output = None, None
