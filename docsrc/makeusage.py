@@ -22,9 +22,9 @@ class TextBlock(object):
 
 def html_to_text(html):
     indent_tags = 'DD',
-    block_tags = 'P', 'H1', 'H2', 'DT'
-    break_after_tags = 'DD', 'P', 'H1', 'H2'
-    upper_tags = 'H1', 'H2'
+    block_tags = 'P', 'H1', 'H2', 'H3', 'DT'
+    break_after_tags = 'DD', 'P', 'H1', 'H2', 'H3'
+    upper_tags = 'H1', 'H2', 'H3'
 
     def massage(text):
         return text.encode('utf-8')
