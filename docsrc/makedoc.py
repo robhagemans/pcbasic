@@ -58,7 +58,7 @@ def embed_style(html_file):
     parser = etree.HTMLParser(encoding='utf-8')
     doc = etree.parse(html_file, parser)
     for node in doc.xpath('//link[@rel="stylesheet"]'):
-        css = node.get('href')
+        css = os.path.join(basepath, node.get('href'))
         node.tag = 'style'
         node.text = '\n' + open(css, 'r').read() + '\n    '
         node.attrib.clear()
