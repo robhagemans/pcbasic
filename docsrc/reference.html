@@ -5909,7 +5909,7 @@
     <section>
         <h4 id="OPEN"><code>OPEN</code> statement</h4>
         <code class="block">
-            <b>OPEN</b> <var>mode_char</var><b>,</b> [<b>#</b>] <var>file_num</var><b>,</b> <var>file_name</var> [<b>,</b> <var>rec_len</var>]
+            <b>OPEN</b> <var>mode_char</var><b>,</b> [<b>#</b>] <var>file_num</var><b>,</b> <var>file_spec</var> [<b>,</b> <var>rec_len</var>]
             <br />
             <b>OPEN</b> <var>file_name</var> [<b>FOR</b> {<b>INPUT</b>|<b>OUTPUT</b>|<b>APPEND</b>|<b>RANDOM</b>}]
                        [<b>ACCESS</b> {<b>READ</b>|<b>WRITE</b>|<b>READ WRITE</b>}]
@@ -5922,7 +5922,11 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>file_name</var></code> is a string expression: the name of the file or device.
+                <code><var>file_spec</var></code> is a string expression of the form
+                <code><b>"</b><var>device</var><b>:</b><var>parameters</var><b>"</b></code>
+                where <code><var>device</var></code> is
+                a PC-BASIC device and device-specific <code><var>parameters</var></code>
+                can be given on some devices (e.g. a file path on a disk device).
             </li>
             <li>
                 <code><var>file_num</var></code> is a numeric expression in <code>[1&#8212;3]</code>.
@@ -6079,141 +6083,173 @@
             the locks are only implemented internally. Whether other processes may access
             the file will depend on the host OS.
         </p>
-        <h5>Serial port (<code>COM1:</code>) access</h5>
+        <h5>Device-specific parameters</h5>
         <p>
-            If a <code>COM</code> port is opened for <code>RANDOM</code>, access is
-            byte-for-byte rather than through <code>FIELD</code> records; <code>PRINT#</code> and <code>INPUT#</code> access
-            the port directly. <code><var>rec_len</var></code> sets the number of bytes read by the <code>GET</code> and
-            <code>PUT</code> statements.
+            On some devices, the <code><var>file_spec</var></code> is just the device name; on others,
+            in particular disk, cassette and serial devices, further parameters may be given.
         </p>
-        <p>
-            When opening a <code>COM</code> port, additional expressions may be included following the
-            colon of the device name. These specify parameters for the serial
-            connection. This string has the form
-            <code class="block"><b>"COMn:</b>[<var>speed</var>[<b>,</b><var>parity</var>[<b>,</b><var>data</var>[<b>,</b><var>stop</var>[<b>,RS</b>][<b>,CS</b>[<var>n</var>]][<b>,DS</b>[<var>n</var>]][<b>,CD</b>[<var>n</var>]][<b>,LF</b>][<b>,PE</b>]]]]]<b>"</b></code>
-            The first four parameters must be given in that order but the named parameters
-            can be given in any order.
-            The meaning of the parameters is:
-        </p>
-        <div class="scrollable">
-            <table>
-                <tr>
-                    <th>Parameter</th>
-                    <th>Default</th>
-                    <th>Meaning</th>
-                </tr>
-                <tr>
-                    <td><code><var>speed</var></code></td>
-                    <td><code>300</code></td>
-                    <td>
-                        Baud (bps) rate for the connection. <code><var>speed</var></code> is one of
-                        <code>[75, 110, 150, 300, 600, 1200, 1800, 2400, 4800, 9600]</code>.
-                    </td>
-                </tr>
-                <tr>
-                    <td><code><var>parity</var></code></td>
-                    <td><code>E</code></td>
-                    <td>
-                        Parity bit convention. <code><var>parity</var></code> is one of <code>[S, M, O, E, N]</code>.
-                        <table>
-                            <tr>
-                                <th><code><var>parity</var></code></th>
-                                <th>Meaning</th>
-                                <th>Effect</th>
-                            </tr>
-                            <tr>
-                                <td><code>S</code></td>
-                                <td>SPACE</td>
-                                <td>Parity bit always set to 0.</td>
-                            </tr>
-                            <tr>
-                                <td><code>M</code></td>
-                                <td>MARK</td>
-                                <td>Parity bit always set to 1.</td>
-                            </tr>
-                            <tr>
-                                <td><code>O</code></td>
-                                <td>ODD</td>
-                                <td>Parity bit set so that character parity is odd.</td>
-                            </tr>
-                            <tr>
-                                <td><code>E</code></td>
-                                <td>EVEN</td>
-                                <td>Parity bit set so that character parity is even.</td>
-                            </tr>
-                            <tr>
-                                <td><code>N</code></td>
-                                <td>NONE</td>
-                                <td>No parity bit transmitted or received.</td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-                <tr>
-                    <td><code><var>data</var></code></td>
-                    <td><code>7</code></td>
-                    <td>
-                        Data bits per byte. <code><var>data</var></code> must be one of <code>[4, 5, 6, 7, 8]</code>.
-                        A byte consists of the data bits plus parity bit, if
-                        any. Byte size must be in the range <code>[5&#8212;8]</code>:
-                        if <code><var>data</var></code> is <code>4</code>,
-                        <code><var>parity</var></code> must not be <code>N</code>;
-                        if <code><var>data</var></code> is <code>8</code>,
-                        <code><var>parity</var></code> must be <code>N</code>.
-                    </td>
-                </tr>
-                <tr>
-                    <td><code><var>stop</var></code></td>
-                    <td><code>1</code></td>
-                    <td>
-                        The number of stop bits. <code><var>stop</var></code> must be <code>1</code> or <code>2</code>.
-                        Default is <code>2</code> if <code><var>speed</var></code> is <code>75</code> or <code>110</code>; <code>1</code> otherwise.
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>RS</code></td>
-                    <td>no</td>
-                    <td>Suppress <em>Request To Send</em>.</td>
-                </tr>
-                <tr>
-                    <td><code>CS[<var>n</var>]</code></td>
-                    <td><code>CS1000</code></td>
-                    <td>
-                        Set <em>Clear To Send</em> timeout to <code><var>n</var></code> milliseconds.
-                        If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
-                        Default is <code>CS0</code> if <code>RS</code> is set; <code>CS1000</code> otherwise.
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>DS[<var>n</var>]</code></td>
-                    <td><code>DS1000</code></td>
-                    <td>
-                        Set <em>Data Set Ready</em> timeout to <code><var>n</var></code> milliseconds.
-                        If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>CD[<var>n</var>]</code></td>
-                    <td><code>CD0</code></td>
-                    <td>
-                        Set <em>Carrier Detect</em> timeout to <code><var>n</var></code> milliseconds.
-                        If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>LF</code></td>
-                    <td>no</td>
-                    <td>Send a line feed after each carriage return.</td>
-                </tr>
-                <tr>
-                    <td><code>PE</code></td>
-                    <td>no</td>
-                    <td>Enable parity checking (This setting is ignored by PC-BASIC).</td>
-                </tr>
-            </table>
-        </div>
+        <dl>
+            <dt>
+                Disk devices <code>A:</code>&mdash;<code>Z:</code> and <code>@:</code>
+            </dt>
+            <dd>
+                <code><var>parameters</var></code> must specify a valid file path on the disk.
+                See <a href="#eightpointthree">MS-DOS 8.3 filenames</a> for interpretation of path specifications.
+            </dd>
+            <dt>
+                Cassette device <code>CAS1:<code>
+            </dt>
+            <dd>
+                <code><var>parameters</var></code> can be a file name of up to eight characters.
+                Cassette file names have no path or extension, may be empty and do not need to be unique.
+            </dd>
+            <dt>
+                Console and parallel devices <code>SCRN:</code>, <code>KYBD:</code>, and <code>LPT<var>n</var>:</code>
+            </dt>
+            <dd>
+                These devices do not allow futher device parameters.
+            </dd>
+            <dt>
+                Serial devices <code>COM<var>n</var>:<code>
+            </dt>
+            <dd>
+                <p>
+                    When opening a <code>COM</code> port, the <code><var>file_spec</var></code> has the form
+                    <code class="block"><b>"COM</b><var>n</var><b>:</b>[<var>speed</var>[<b>,</b><var>parity</var>[<b>,</b><var>data</var>[<b>,</b><var>stop</var>[<b>,RS</b>][<b>,CS</b>[<var>n</var>]][<b>,DS</b>[<var>n</var>]][<b>,CD</b>[<var>n</var>]][<b>,LF</b>][<b>,PE</b>]]]]]<b>"</b></code>
+                    The first four parameters after the device colon must be given
+                    in the order specified but the named parameters
+                    can be given in any order.
+                    The meaning of the parameters is:
+                </p>
+                <div class="scrollable">
+                    <table>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Default</th>
+                            <th>Meaning</th>
+                        </tr>
+                        <tr>
+                            <td><code><var>speed</var></code></td>
+                            <td><code>300</code></td>
+                            <td>
+                                Baud (bps) rate for the connection. <code><var>speed</var></code> is one of
+                                <code>[75, 110, 150, 300, 600, 1200, 1800, 2400, 4800, 9600]</code>.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code><var>parity</var></code></td>
+                            <td><code>E</code></td>
+                            <td>
+                                Parity bit convention. <code><var>parity</var></code> is one of <code>[S, M, O, E, N]</code>.
+                                <table>
+                                    <tr>
+                                        <th><code><var>parity</var></code></th>
+                                        <th>Meaning</th>
+                                        <th>Effect</th>
+                                    </tr>
+                                    <tr>
+                                        <td><code>S</code></td>
+                                        <td>SPACE</td>
+                                        <td>Parity bit always set to 0.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>M</code></td>
+                                        <td>MARK</td>
+                                        <td>Parity bit always set to 1.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>O</code></td>
+                                        <td>ODD</td>
+                                        <td>Parity bit set so that character parity is odd.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>E</code></td>
+                                        <td>EVEN</td>
+                                        <td>Parity bit set so that character parity is even.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>N</code></td>
+                                        <td>NONE</td>
+                                        <td>No parity bit transmitted or received.</td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code><var>data</var></code></td>
+                            <td><code>7</code></td>
+                            <td>
+                                Data bits per byte. <code><var>data</var></code> must be one of <code>[4, 5, 6, 7, 8]</code>.
+                                A byte consists of the data bits plus parity bit, if
+                                any. Byte size must be in the range <code>[5&#8212;8]</code>:
+                                if <code><var>data</var></code> is <code>4</code>,
+                                <code><var>parity</var></code> must not be <code>N</code>;
+                                if <code><var>data</var></code> is <code>8</code>,
+                                <code><var>parity</var></code> must be <code>N</code>.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code><var>stop</var></code></td>
+                            <td><code>1</code></td>
+                            <td>
+                                The number of stop bits. <code><var>stop</var></code> must be <code>1</code> or <code>2</code>.
+                                Default is <code>2</code> if <code><var>speed</var></code> is <code>75</code> or <code>110</code>; <code>1</code> otherwise.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>RS</code></td>
+                            <td>no</td>
+                            <td>Suppress <em>Request To Send</em>.</td>
+                        </tr>
+                        <tr>
+                            <td><code>CS[<var>n</var>]</code></td>
+                            <td><code>CS1000</code></td>
+                            <td>
+                                Set <em>Clear To Send</em> timeout to <code><var>n</var></code> milliseconds.
+                                If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
+                                Default is <code>CS0</code> if <code>RS</code> is set; <code>CS1000</code> otherwise.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>DS[<var>n</var>]</code></td>
+                            <td><code>DS1000</code></td>
+                            <td>
+                                Set <em>Data Set Ready</em> timeout to <code><var>n</var></code> milliseconds.
+                                If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>CD[<var>n</var>]</code></td>
+                            <td><code>CD0</code></td>
+                            <td>
+                                Set <em>Carrier Detect</em> timeout to <code><var>n</var></code> milliseconds.
+                                If <code><var>n</var></code> is not given, set timeout to <code>0</code>.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>LF</code></td>
+                            <td>no</td>
+                            <td>Send a line feed after each carriage return.</td>
+                        </tr>
+                        <tr>
+                            <td><code>PE</code></td>
+                            <td>no</td>
+                            <td>Enable parity checking (This setting is ignored by PC-BASIC).</td>
+                        </tr>
+                    </table>
+                </div>
+            </dd>
+
+        </dl>
+
         <h5>Notes</h5>
         <ul>
+            <li>
+                If a <code>COM</code> port is opened for <code>RANDOM</code>, access is
+                byte-for-byte rather than through <code>FIELD</code> records; <code>PRINT#</code> and <code>INPUT#</code> access
+                the port directly. <code><var>rec_len</var></code> sets the number of bytes read by the <code>GET</code> and
+                <code>PUT</code> statements.
+            </li>
             <li>
                 For <code>INPUT</code>, <code>OUTPUT</code> and <code>APPEND</code> modes, <code>LEN</code> may be specified but is ignored.
             </li>
@@ -6234,7 +6270,7 @@
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>file_name</var></code> is empty or a non-existent device: <samp>Bad file number</samp>.
+                <code><var>file_spec</var></code> is empty or a non-existent device: <samp>Bad file number</samp>.
             </li>
             <li>
                 <code>FOR APPEND ACCESS WRITE</code> is specified: <samp>Path/File access error</samp>.
@@ -6243,7 +6279,7 @@
                 <code>FOR</code> and <code>ACCESS</code> mismatch in other ways: <samp>Syntax error</samp>.
             </li>
             <li>
-                The <code>COM:</code> <code><var>file_name</var></code> parameters do not follow the specification:
+                The <code>COM:</code> <code><var>file_spec</var></code> parameters do not follow the specification:
                 <samp>Bad file name</samp>.
             </li>
             <li>
@@ -6254,7 +6290,7 @@
                 <code><var>rec_len</var></code> or <code><var>file_num</var></code> have string values: <samp>Type mismatch</samp>.
             </li>
             <li>
-                <code><var>file_name</var></code> or <code><var>mode_char</var></code> have number values: <samp>Type mismatch</samp>.
+                <code><var>file_spec</var></code> or <code><var>mode_char</var></code> have number values: <samp>Type mismatch</samp>.
             </li>
             <li>
                 <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
