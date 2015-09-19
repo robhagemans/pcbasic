@@ -20,55 +20,17 @@ import scancode
 # ANSI escape codes for output, need arrow movements and clear line and esc_to_scan under Unix.
 import ansi
 
-#D!!
-import state
-
 # fallback to filter interface if not working
 fallback = 'video_none'
 
-# cursor is visible
-cursor_visible = True
-
-# current row and column for cursor
-cursor_row = 1
-cursor_col = 1
-
-# last row and column printed on
-last_row = None
-last_col = None
-
-# initialised correctly
-ok = False
+###############################################################################
 
 def prepare():
     """ Initialise the video_cli module. """
     pass
 
-def putc_at(pagenum, row, col, c, for_keys=False):
-    """ Put a single-byte character at a given position. """
-    global last_col
-    if for_keys:
-        return
-    update_position(row, col)
-    # this doesn't recognise DBCS
-    sys.stdout.write(unicodepage.UTF8Converter().to_utf8(c))
-    sys.stdout.flush()
-    last_col += 1
 
-def putwc_at(pagenum, row, col, c, d, for_keys=False):
-    """ Put a double-byte character at a given position. """
-    global last_col
-    if for_keys:
-        return
-    update_position(row, col)
-    # this does recognise DBCS
-    try:
-        sys.stdout.write(unicodepage.UTF8Converter().to_utf8(c+d))
-    except KeyError:
-        sys.stdout.write('  ')
-    sys.stdout.flush()
-    last_col += 2
-
+###############################################################################
 
 def init():
     """ Initialise command-line interface. """
@@ -84,28 +46,103 @@ def init():
     t.daemon = True
     t.start()
     ok = True
+    # start video thread
+    launch_thread()
     return ok
 
 def close():
     """ Close command-line interface. """
+    # drain signal queue (to allow for persistence) and request exit
+    if backend.video_queue:
+        backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
+        backend.video_queue.join()
+    if thread and thread.is_alive():
+        # signal quit and wait for thread to finish
+        thread.join()
     if ok:
         update_position()
         term_echo()
     sys.stdout.flush()
 
-def check_events():
-    """ Handle screen and interface events. """
-    check_keyboard()
-    update_position()
 
-def idle():
-    """ Video idle process. """
-    time.sleep(0.024)
+###############################################################################
+# IMPLEMENTATION
 
-def init_screen_mode(mode_info):
-    """ Change screen mode. """
-    # we don't support graphics
-    return mode_info.is_text_mode
+thread = None
+tick_s = 0.024
+
+def launch_thread():
+    """ Launch consumer thread. """
+    global thread
+    thread = threading.Thread(target=consumer_thread)
+    thread.start()
+
+def consumer_thread():
+    """ Audio signal queue consumer thread. """
+    while drain_video_queue():
+        check_keyboard()
+        update_position()
+        # do not hog cpu
+        time.sleep(tick_s)
+
+def drain_video_queue():
+    """ Drain signal queue. """
+    alive = True
+    while alive:
+        try:
+            signal = backend.video_queue.get(False)
+        except Queue.Empty:
+            return True
+        if signal.event_type == backend.VIDEO_QUIT:
+            # close thread after task_done
+            alive = False
+        elif signal.event_type == backend.VIDEO_MODE:
+            set_mode(signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_CHAR:
+            putc_at(*signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_WCHAR:
+            putwc_at(*signal.params)
+        elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
+            move_cursor(*signal.params)
+        elif signal.event_type == backend.VIDEO_CLEAR_ROWS:
+            clear_rows(*signal.params)
+        elif signal.event_type == backend.VIDEO_SCROLL_UP:
+            scroll(*signal.params)
+        # drop other messages
+        backend.video_queue.task_done()
+
+
+###############################################################################
+
+def putc_at(pagenum, row, col, c, for_keys=False):
+    """ Put a single-byte character at a given position. """
+    global last_col
+    if for_keys:
+        return
+    update_position(row, col)
+    # this doesn't recognise DBCS
+    char = unicodepage.UTF8Converter().to_utf8(c)
+    sys.stdout.write(char)
+    sys.stdout.flush()
+    last_col += 1
+    text[row-1][col-1] = char
+
+def putwc_at(pagenum, row, col, c, d, for_keys=False):
+    """ Put a double-byte character at a given position. """
+    global last_col
+    if for_keys:
+        return
+    update_position(row, col)
+    # this does recognise DBCS
+    try:
+        wchar = unicodepage.UTF8Converter().to_utf8(c+d)
+    except KeyError:
+        wchar = '  '
+    sys.stdout.write(wchar)
+    sys.stdout.flush()
+    last_col += 2
+    text[row-1][col-1] = wchar
+    text[row-1][col] = ''
 
 def move_cursor(crow, ccol):
     """ Move the cursor to a new position. """
@@ -114,6 +151,7 @@ def move_cursor(crow, ccol):
 
 def clear_rows(cattr, start, stop):
     """ Clear screen rows. """
+    text[start-1:stop] = [ [' ']*len(text[0]) for _ in range(start-1, stop)]
     if start <= cursor_row and stop >= cursor_row:
         # clear_line before update_position to avoid redrawing old lines on CLS
         clear_line()
@@ -125,63 +163,12 @@ def scroll(from_line, scroll_height, attr):
     sys.stdout.write('\r\n')
     sys.stdout.flush()
 
-###############################################################################
-# The following are no-op responses to requests from backend
-
-def set_page(vpage, apage):
-    """ Set the visible and active page (not implemented). """
-    pass
-
-def copy_page(src, dst):
-    """ Copy source to destination page (not implemented). """
-    pass
-
-def set_border(attr):
-    """ Change the border attribute (no-op). """
-    pass
-
-def scroll_down(from_line, scroll_height, attr):
-    """ Scroll the screen down between from_line and scroll_height (no-op). """
-    pass
-
-def set_colorburst(on, palette, palette1):
-    """ Change the NTSC colorburst setting (no-op). """
-    pass
-
-def update_palette(new_palette, new_palette1):
-    """ Build the game palette (no-op). """
-    pass
-
-def update_cursor_attr(attr):
-    """ Change attribute of cursor (no-op). """
-    pass
-
-def show_cursor(cursor_on):
-    """ Change visibility of cursor (no-op). """
-    pass
-
-def set_attr(cattr):
-    """ Set the current attribute (no-op). """
-    pass
-
-def build_cursor(width, height, from_line, to_line):
-    """ Set the cursor shape (no-op). """
-    pass
-
-def load_state(display_str):
-    """ Restore display state from file (no-op). """
-    pass
-
-def save_state():
-    """ Save display state to file (no-op). """
-    return None
-
-def rebuild_glyph(ordval):
-    """ Rebuild a glyph after POKE. """
-    pass
+def set_mode(mode_info):
+    """ Initialise video mode """
+    global text
+    text = [ [' ']*mode_info.width for _ in range(mode_info.height)]
 
 ###############################################################################
-# IMPLEMENTATION
 
 if plat.system == 'Windows':
     import ansipipe
@@ -196,6 +183,22 @@ elif plat.system != 'Android':
 
 term_echo_on = True
 term_attr = None
+
+# cursor is visible
+cursor_visible = True
+
+# current row and column for cursor
+cursor_row = 1
+cursor_col = 1
+
+# last row and column printed on
+last_row = None
+last_col = None
+
+# initialised correctly
+ok = False
+
+text = [ [' ']*80 for _ in range(25)]
 
 def term_echo(on=True):
     """ Set/unset raw terminal attributes. """
@@ -301,19 +304,33 @@ def check_keyboard():
     u8, sc = get_key()
     if sc:
         # if it's an ansi sequence/scan code, insert immediately
-        backend.key_down(sc, '', check_full=False)
+        # check_full=False?
+        backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (sc, '')))
     elif u8:
-        if u8 == '\x03':         # ctrl-C
-            backend.insert_special_key('break')
-        if u8 == eof:            # ctrl-D (unix) / ctrl-Z (windows)
-            backend.insert_special_key('quit')
-        elif u8 == '\x7f':       # backspace
-            backend.insert_chars('\b', check_full=True)
+        if u8 == '\x03':
+            # ctrl-C
+            backend.input_queue.put(backend.Event(backend.KEYB_BREAK))
+        if u8 == eof:
+            # ctrl-D (unix) / ctrl-Z (windows)
+            backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
+        elif u8 == '\x7f':
+            # backspace
+            backend.input_queue.put(backend.Event(backend.KEYB_CHAR, '\b'))
         else:
             try:
-                backend.insert_chars(unicodepage.from_utf8(u8))
+                # check_full=False?
+                backend.input_queue.put(backend.Event(backend.KEYB_CHAR,
+                                                    unicodepage.from_utf8(u8)))
             except KeyError:
-                backend.insert_chars(u8)
+                # check_full=False?
+                backend.input_queue.put(backend.Event(backend.KEYB_CHAR, u8))
+
+def redraw_row(row):
+    """ Draw the stored text in a row. """
+    rowtext = ''.join(text[row-1])
+    sys.stdout.write(rowtext)
+    move_left(len(rowtext))
+    sys.stdout.flush()
 
 def update_position(row=None, col=None):
     """ Update screen for new cursor position. """
@@ -321,7 +338,7 @@ def update_position(row=None, col=None):
     # this happens on resume
     if last_row is None:
         last_row = cursor_row
-        state.console_state.screen.redraw_row(0, cursor_row, wrap=False)
+        redraw_row(cursor_row)
     if last_col is None:
         last_col = cursor_col
     # allow updating without moving the cursor
@@ -336,9 +353,7 @@ def update_position(row=None, col=None):
         last_col = 1
         last_row = row
         # show what's on the line where we are.
-        # note: recursive by one level, last_row now equals row
-        # this reconstructs DBCS buffer, no need to do that
-        state.console_state.screen.redraw_row(0, cursor_row, wrap=False)
+        redraw_row(cursor_row)
     if col != last_col:
         move_left(last_col-col)
         move_right(col-last_col)

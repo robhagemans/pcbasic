@@ -66,7 +66,6 @@ def close():
 # implementation
 
 thread = None
-
 tick_s = 0.024
 
 def launch_thread():
@@ -117,6 +116,7 @@ def check_keys():
             c = unicodepage.from_utf8(c)
         except KeyError:
             pass
+        # check_full=False?
         backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
 
 prepare()
