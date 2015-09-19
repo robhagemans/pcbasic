@@ -6032,11 +6032,11 @@
             If <code>SHARED</code>, <code>LOCK READ</code>, <code>LOCK WRITE</code> or <code>LOCK READ WRITE</code> is specified, whether
             two <code>OPEN</code> statements may access the same file depends on one's <code>LOCK</code> status
             and the other's <code>ACCESS</code> status and vice versa.
-            Assuming the following:
+            For two <code>OPEN</code> statements as follows:
             <code class="block">
-                OPEN "file" ACCESS <var>acc_1</var> <var>lock_1</var> AS 1
+                <b>OPEN "file"</b> <var>lock_1</var> <b>AS 1</b>
                 <br />
-                OPEN "file" ACCESS <var>acc_2</var> <var>lock_2</var> AS 2
+                <b>OPEN "file" ACCESS</b> <var>acc_2</var> <b>AS 2</b>
             </code>
             the following combinations are allowed:
         </p>
@@ -6044,13 +6044,13 @@
             <table>
                 <tr>
                     <th rowspan="2" colspan="2">Access allowed</th>
-                    <th colspan="3"><code>acc_2</code></th>
+                    <th colspan="3"><code><var>acc_2</var></code></th>
                 </tr><tr>
                     <th><code>READ</code></th>
                     <th><code>WRITE</code></th>
                     <th><code>READ WRITE</code></th>
                 </tr><tr>
-                    <th rowspan="4"><code>lock_1</code></th>
+                    <th rowspan="4"><code><var>lock_1</var></code></th>
                     <th><code>SHARED</code></th>
                     <td>yes</td>
                     <td>yes</td>
@@ -6074,12 +6074,10 @@
             </table>
         </div>
         <p>
-            and vice versa for <code><var>acc_1</var></code> and <code><var>lock_2</var></code>.
-        </p>
-        <p>
-            In GW-BASIC under MS-DOS with <code>SHARE.EXE</code> active, these locks should be functioning
-            across a network as well as inside a single BASIC process. Without <code>SHARED</code> and <code>LOCK</code>, the file is locked exclusively for use by the
-            GW-BASIC process. By contrast, in PC-BASIC,
+            In GW-BASIC under MS-DOS with <code>SHARE.EXE</code> active, these locks should be enforced
+            across a network as well as inside a single BASIC process. Without
+            <code>SHARED</code> and <code>LOCK</code>, the file is locked exclusively
+            for use by the GW-BASIC process. By contrast, in PC-BASIC,
             the locks are only implemented internally. Whether other processes may access
             the file will depend on the host OS.
         </p>
