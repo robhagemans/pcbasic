@@ -39,7 +39,7 @@ import Queue
 video = None
 
 video_queue = Queue.Queue()
-keyboard_queue = Queue.Queue()
+input_queue = Queue.Queue()
 
 class Event(object):
     """ Signal object for video queue. """
@@ -113,6 +113,8 @@ KEYB_CHAR = 3
 KEYB_DOWN = 4
 # insert keyup
 KEYB_UP = 5
+# paste characters
+KEYB_PASTE = 6
 
 
 
@@ -156,7 +158,80 @@ def check_events():
         state.basic_state.events.play.check()
         for c in state.basic_state.events.com:
             c.check()
-        # KEY, PEN and STRIG are triggered on handling the queue
+    # KEY, PEN and STRIG are triggered on handling the input queue
+    while True:
+        try:
+            signal = input_queue.get(False)
+        except Queue.Empty:
+            break
+        # we're on it
+        input_queue.task_done()
+        if signal.event_type == KEYB_QUIT:
+            raise error.Exit()
+        elif signal.event_type == KEYB_RESET:
+            raise error.Reset()
+        elif signal.event_type == KEYB_BREAK:
+            raise error.Break()
+        elif signal.event_type == KEYB_CHAR:
+            state.console_state.keyb.insert_chars(signal.params, check_full=True)
+        elif signal.event_type == KEYB_PASTE:
+            state.console_state.keyb.insert_chars(signal.params, check_full=False)
+        elif signal.event_type == KEYB_DOWN:
+            scan, eascii = signal.params
+            state.console_state.keyb.key_down(scan, eascii, check_full=True)
+        elif signal.event_type == KEYB_UP:
+            state.console_state.keyb.key_up(signal.params)
+
+#def key_up(scan):
+#def insert_special_key(name):
+#def insert_chars(s, check_full=False):
+#def key_down(scan, eascii='', check_full=True):
+
+def TEMP_video_save_state():
+    return None
+
+def TEMP_video_load_state(storage):
+    return False
+
+def TEMP_video_get_pixel(x, y, pagenum):
+    return 0
+
+def TEMP_video_get_interval(pagenum, x, y, length):
+    return [0]*length
+
+def TEMP_video_get_until(x0, x1, y, c):
+    return []
+
+def TEMP_video_get_rect(x0, y0, x1, y1):
+    return [ [0]*(x1-x0+1) for _ in range(y0, y1+1) ]
+
+
+
+###############################################################################
+# clipboard
+
+#D
+def copy_clipboard(start_row, start_col, stop_row, stop_col, mouse):
+    clipboard_handler.copy(state.console_state.screen.get_text(
+                            start_row, start_col, stop_row, stop_col), mouse)
+
+# #D
+# def paste_clipboard(mouse):
+#     # ignore any bad UTF8 characters from outside
+#     text_utf8 = clipboard_handler.paste(mouse)
+#     for u in text_utf8.decode('utf-8', 'ignore'):
+#         c = u.encode('utf-8')
+#         last = ''
+#         if c == '\n':
+#             if last != '\r':
+#                 insert_chars('\r')
+#         else:
+#             try:
+#                 insert_chars(unicodepage.from_utf8(c))
+#             except KeyError:
+#                 insert_chars(c)
+#         last = c
+
 
 
 ###############################################################################
@@ -672,33 +747,6 @@ class Keyboard(object):
             self.insert_chars(char, check_full=True)
             self.keypad_ascii = ''
 
-#D
-def insert_chars(s, check_full=False):
-    """ Insert characters into keyboard buffer. """
-    state.console_state.keyb.insert_chars(s, check_full)
-
-#D
-def key_down(scan, eascii='', check_full=True):
-    """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
-    state.console_state.keyb.key_down(scan, eascii, check_full)
-
-#D
-def key_up(scan):
-    """ Insert a key-up event. """
-    state.console_state.keyb.key_up(scan)
-
-#D?
-def insert_special_key(name):
-    """ Insert break, reset or quit events. """
-    if name == 'quit':
-        raise error.Exit()
-    elif name == 'reset':
-        raise error.Reset()
-    elif name == 'break':
-        raise error.Break()
-    else:
-        logging.debug('Unknown special key: %s', name)
-
 
 ################
 
@@ -713,32 +761,6 @@ def scan_to_eascii(scan, mod):
         return scancode.eascii_table[scan][1]
     else:
         return scancode.eascii_table[scan][0]
-
-
-###############################################################################
-# clipboard
-
-#D
-def copy_clipboard(start_row, start_col, stop_row, stop_col, mouse):
-    clipboard_handler.copy(state.console_state.screen.get_text(
-                            start_row, start_col, stop_row, stop_col), mouse)
-
-#D
-def paste_clipboard(mouse):
-    # ignore any bad UTF8 characters from outside
-    text_utf8 = clipboard_handler.paste(mouse)
-    for u in text_utf8.decode('utf-8', 'ignore'):
-        c = u.encode('utf-8')
-        last = ''
-        if c == '\n':
-            if last != '\r':
-                insert_chars('\r')
-        else:
-            try:
-                insert_chars(unicodepage.from_utf8(c))
-            except KeyError:
-                insert_chars(c)
-        last = c
 
 ###############################################################################
 # screen buffer
@@ -970,7 +992,7 @@ class Screen(object):
 
     def save_state(self):
         """ Save display for possible resume. """
-        self.display_storage = video.save_state()
+        self.display_storage = TEMP_video_save_state()
 
     def clear_saved_state(self):
         """ Clear storage space for saved display state. """
@@ -1023,7 +1045,7 @@ class Screen(object):
             self.redraw_text_screen()
         else:
             # load the screen contents from storage
-            if not video.load_state(self.display_storage):
+            if not TEMP_video_load_state(self.display_storage):
                 # couldn't restore graphics - redraw the text screen
                 self.redraw_text_screen()
         # throw away the display strings after use
@@ -1423,11 +1445,11 @@ class Screen(object):
         """ Return the attribute a pixel on the screen. """
         if pagenum is None:
             pagenum = self.apagenum
-        return video.get_pixel(x, y, pagenum)
+        return TEMP_video_get_pixel(x, y, pagenum)
 
     def get_interval(self, pagenum, x, y, length):
         """ Read a scanline interval into a list of attributes. """
-        return video.get_interval(pagenum, x, y, length)
+        return TEMP_video_get_interval(pagenum, x, y, length)
 
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """ Write a list of attributes to a scanline interval. """
@@ -1441,11 +1463,11 @@ class Screen(object):
 
     def get_until(self, x0, x1, y, c):
         """ Get the attribute values of a scanline interval. """
-        return video.get_until(x0, x1, y, c)
+        return TEMP_video_get_until(x0, x1, y, c)
 
     def get_rect(self, x0, y0, x1, y1):
         """ Read a screen rect into an [y][x] array of attributes. """
-        return video.get_rect(x0, y0, x1, y1)
+        return TEMP_video_get_rect(x0, y0, x1, y1)
 
     def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
         """ Apply an [y][x] array of attributes onto a screen rect. """

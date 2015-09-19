@@ -117,6 +117,6 @@ def check_keys():
             c = unicodepage.from_utf8(c)
         except KeyError:
             pass
-        backend.keyboard_queue.put(backend.Event(backend.KEYB_CHAR, c))
+        backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
 
 prepare()
