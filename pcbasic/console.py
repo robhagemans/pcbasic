@@ -450,7 +450,8 @@ def clear_rest_of_line(srow, scol):
     if scol > 1:
         state.console_state.screen.redraw_row(scol-1, srow)
     else:
-        backend.video.clear_rows(state.console_state.screen.attr, srow, srow)
+        backend.video_queue.put(backend.Event(backend.VIDEO_CLEAR_ROWS,
+                            (state.console_state.screen.attr, srow, srow)))
     therow.end = save_end
 
 def backspace(start_row, start_col):
@@ -684,7 +685,8 @@ def list_keys():
 def clear_key_row():
     """ Clear row 25 on the active page. """
     state.console_state.screen.apage.row[24].clear(state.console_state.screen.attr)
-    backend.video.clear_rows(state.console_state.screen.attr, 25, 25)
+    backend.video_queue.put(backend.Event(backend.VIDEO_CLEAR_ROWS,
+                                    (state.console_state.screen.attr, 25, 25)))
 
 def show_keys(do_show):
     """ Show/hide the function keys line on the active page. """
@@ -722,7 +724,8 @@ def write_for_keys(s, col, cattr):
                 pass
             state.console_state.screen.put_char_attr(state.console_state.screen.apagenum, 25, col, c, cattr, for_keys=True)
         col += 1
-    backend.video.set_attr(state.console_state.screen.attr)
+    backend.video_queue.put(backend.Event(backend.VIDEO_SET_ATTR,
+                                            (state.console_state.screen.attr)))
 
 #####################
 # screen read/write
@@ -765,16 +768,18 @@ def check_wrap(do_scroll_down):
                 scroll_down(state.console_state.row+1)
         state.console_state.row += 1
         state.console_state.col = 1
-        backend.video.move_cursor(state.console_state.row,
-                                  state.console_state.col)
+        backend.video_queue.put(backend.Event(backend.VIDEO_MOVE_CURSOR,
+                            (state.console_state.row, state.console_state.col)))
 
 def set_pos(to_row, to_col, scroll_ok=True):
     """ Set the current position. """
     state.console_state.overflow = False
     state.console_state.row, state.console_state.col = to_row, to_col
     check_pos(scroll_ok)
-    backend.video.update_cursor_attr(state.console_state.screen.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
-    backend.video.move_cursor(state.console_state.row,state. console_state.col)
+    backend.video_queue.put(backend.Event(backend.VIDEO_SET_CURSOR_ATTR,
+        (state.console_state.screen.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)))
+    backend.video_queue.put(backend.Event(backend.VIDEO_MOVE_CURSOR,
+                            (state.console_state.row,state. console_state.col)))
 
 def check_pos(scroll_ok=True):
     """ Check if we have crossed the screen boundaries and move as needed. """
@@ -784,7 +789,8 @@ def check_pos(scroll_ok=True):
             state.console_state.col = min(state.console_state.screen.mode.width, state.console_state.col)
             if state.console_state.col < 1:
                 state.console_state.col += 1
-            backend.video.move_cursor(state.console_state.row, state.console_state.col)
+            backend.video_queue.put(backend.Event(backend.VIDEO_MOVE_CURSOR,
+                            (state.console_state.row, state.console_state.col)))
             return state.console_state.col == oldcol
         else:
             # if row > height, we also end up here
@@ -814,7 +820,8 @@ def check_pos(scroll_ok=True):
         state.console_state.row = state.console_state.scroll_height
     elif state.console_state.row < state.console_state.view_start:
         state.console_state.row = state.console_state.view_start
-    backend.video.move_cursor(state.console_state.row,state. console_state.col)
+    backend.video_queue.put(backend.Event(backend.VIDEO_MOVE_CURSOR,
+                            (state.console_state.row,state. console_state.col)))
     # signal position change
     return (state.console_state.row == oldrow and
              state.console_state.col == oldcol)
@@ -869,9 +876,11 @@ def clear_view():
         last_row = state.console_state.screen.mode.height
     else:
         last_row = state.console_state.scroll_height
-    backend.video.clear_rows(state.console_state.screen.attr,
-                             state.console_state.view_start, last_row)
-    backend.video.move_cursor(state.console_state.row, state.console_state.col)
+    backend.video_queue.put(backend.Event(backend.VIDEO_CLEAR_ROWS,
+                            (state.console_state.screen.attr,
+                            state.console_state.view_start, last_row)))
+    backend.video_queue.put(backend.Event(backend.VIDEO_MOVE_CURSOR,
+                            (state.console_state.row, state.console_state.col)))
     if backend.video_capabilities in ('vga', 'ega', 'cga', 'cga_old'):
         # restore attr
         state.console_state.screen.set_attr(attr_save)
@@ -880,8 +889,9 @@ def scroll(from_line=None):
     """ Scroll the scroll region up by one line, starting at from_line. """
     if from_line is None:
         from_line = state.console_state.view_start
-    backend.video.scroll(from_line, state.console_state.scroll_height,
-                         state.console_state.screen.attr)
+    backend.video_queue.put(backend.Event(backend.VIDEO_SCROLL_UP,
+                            (from_line, state.console_state.scroll_height,
+                            state.console_state.screen.attr)))
     # sync buffers with the new screen reality:
     if state.console_state.row > from_line:
         state.console_state.row -= 1
@@ -892,8 +902,9 @@ def scroll(from_line=None):
 
 def scroll_down(from_line):
     """ Scroll the scroll region down by one line, starting at from_line. """
-    backend.video.scroll_down(from_line, state.console_state.scroll_height,
-                              state.console_state.screen.attr)
+    backend.video_queue.put(backend.Event(backend.VIDEO_SCROLL_DOWN,
+                            (from_line, state.console_state.scroll_height,
+                            state.console_state.screen.attr)))
     if state.console_state.row >= from_line:
         state.console_state.row += 1
     # sync buffers with the new screen reality:
