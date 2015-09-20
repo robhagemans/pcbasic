@@ -35,9 +35,8 @@ fallback = 'video_ansi'
 
 def prepare():
     """ Initialise the video_curses module. """
-    global caption, wait_on_close
+    global caption
     caption = config.get('caption')
-    wait_on_close = config.get('wait')
 
 ###############################################################################
 
@@ -101,14 +100,6 @@ def close():
     if thread and thread.is_alive():
         # signal quit and wait for thread to finish
         thread.join()
-    if wait_on_close:
-        sys.stdout.write(ansi.esc_set_title % (caption +
-                                              ' - press a key to close window'))
-        sys.stdout.flush()
-        # redraw in case terminal didn't recognise ansi sequence
-        redraw()
-        while window.getch() == -1:
-            pass
     if curses:
         curses.noraw()
         curses.nl()
@@ -180,6 +171,8 @@ def drain_video_queue():
             show_cursor(signal.params)
         elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
             move_cursor(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_CAPTION:
+            set_caption_message(signal.params)
         # drop other messages
         backend.video_queue.task_done()
 
@@ -348,6 +341,16 @@ def scroll_down(from_line, scroll_height, attr):
     clear_rows(attr, from_line, from_line)
     if cursor_row < height:
         window.move(cursor_row, cursor_col-1)
+
+def set_caption_message(msg):
+    """ Add a message to the window caption. """
+    if msg:
+        sys.stdout.write(ansi.esc_set_title % (caption + ' - ' + msg))
+    else:
+        sys.stdout.write(ansi.esc_set_title % caption)
+    sys.stdout.flush()
+    # redraw in case terminal didn't recognise ansi sequence
+    redraw()
 
 ###############################################################################
 
