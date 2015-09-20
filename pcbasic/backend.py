@@ -209,27 +209,19 @@ def check_events():
         elif signal.event_type == PEN_MOVED:
             state.console_state.pen.moved(*signal.params)
         elif signal.event_type == STICK_DOWN:
-            try:
-                state.console_state.stick.down(*signal.params)
-            except IndexError:
-                # ignore any joysticks/axes beyond the 2x2 supported by BASIC
-                pass
+            state.console_state.stick.down(*signal.params)
         elif signal.event_type == STICK_UP:
-            try:
-                state.console_state.stick.up(*signal.params)
-            except IndexError:
-                pass
+            state.console_state.stick.up(*signal.params)
         elif signal.event_type == STICK_MOVED:
-            try:
-                state.console_state.stick.moved(*signal.params)
-            except IndexError:
-                pass
+            state.console_state.stick.moved(*signal.params)
         elif signal.event_type == CLIP_COPY:
             start_row, start_col, stop_row, stop_col, mouse = signal.params
             clipboard_handler.copy(state.console_state.screen.get_text(
                                 start_row, start_col, stop_row, stop_col), mouse)
         elif signal.event_type == CLIP_PASTE:
-            paste_clipboard(signal.params)
+            text = clipboard_handler.paste(signal.params)
+            state.console_state.keyb.insert_chars(text, check_full=False)
+
 
 #def insert_special_key(name):
 #def insert_chars(s, check_full=False):
@@ -243,24 +235,6 @@ def wait_response():
         except Queue.Empty:
             pass
         time.sleep(tick_s)
-
-#D
-def paste_clipboard(mouse):
-    # ignore any bad UTF8 characters from outside
-    text_utf8 = clipboard_handler.paste(mouse)
-    for u in text_utf8.decode('utf-8', 'ignore'):
-        c = u.encode('utf-8')
-        last = ''
-        if c == '\n':
-            if last != '\r':
-                state.console_state.keyb.insert_chars('\r', check_full=False)
-        else:
-            try:
-                char = unicodepage.from_utf8(c)
-            except KeyError:
-                char = c
-            state.console_state.keyb.insert_chars(char, check_full=False)
-        last = c
 
 
 ###############################################################################
@@ -1756,35 +1730,55 @@ class Stick(object):
 
     def down(self, joy, button):
         """ Report a joystick button down event. """
-        self.was_fired[joy][button] = True
-        stick_is_firing[joy][button] = True
-        # trigger STRIG event
-        state.basic_state.events.strig[joy*2 + button].trigger()
+        try:
+            self.was_fired[joy][button] = True
+            stick_is_firing[joy][button] = True
+            # trigger STRIG event
+            state.basic_state.events.strig[joy*2 + button].trigger()
+        except IndexError:
+            # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+            pass
 
     def up(self, joy, button):
         """ Report a joystick button up event. """
-        stick_is_firing[joy][button] = False
+        try:
+            stick_is_firing[joy][button] = False
+        except IndexError:
+            # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+            pass
 
     def moved(self, joy, axis, value):
         """ Report a joystick axis move. """
-        stick_axis[joy][axis] = value
+        try:
+            stick_axis[joy][axis] = value
+        except IndexError:
+            # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+            pass
 
     def poll(self, fn):
         """ Poll the joystick axes. """
         joy, axis = fn // 2, fn % 2
-        return stick_axis[joy][axis]
+        try:
+            return stick_axis[joy][axis]
+        except IndexError:
+            # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+            pass
 
     def poll_trigger(self, fn):
         """ Poll the joystick buttons. """
         joy, trig = fn // 4, (fn//2) % 2
-        if fn % 2 == 0:
-            # has been fired
-            stick_was_trig = self.was_fired[joy][trig]
-            self.was_fired[joy][trig] = False
-            return stick_was_trig
-        else:
-            # is currently firing
-            return stick_is_firing[joy][trig]
+        try:
+            if fn % 2 == 0:
+                # has been fired
+                stick_was_trig = self.was_fired[joy][trig]
+                self.was_fired[joy][trig] = False
+                return stick_was_trig
+            else:
+                # is currently firing
+                return stick_is_firing[joy][trig]
+        except IndexError:
+            # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+            pass
 
 
 state.console_state.stick = Stick()

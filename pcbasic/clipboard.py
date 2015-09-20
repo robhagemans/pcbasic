@@ -2,7 +2,7 @@
 PC-BASIC - clipboard.py
 Clipboard handling
 
-(c) 2013, 2014, 2015 Rob Hagemans 
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -12,9 +12,10 @@ try:
 except ImportError:
     pygame = None
 import os
+import logging
 
 import plat
-import logging
+import unicodepage
 
 # set any UTF-8 environment for subprocess
 # we're assuming en_US locale always exists
@@ -98,7 +99,7 @@ class PygameClipboard(Clipboard):
             us = us.encode('utf-8')
         if not us:
             return ''
-        return us
+        return utf8_to_cp(us)
 
 
 class MacClipboard(Clipboard):
@@ -106,7 +107,7 @@ class MacClipboard(Clipboard):
 
     def paste(self, mouse=False):
         """ Get text from clipboard. """
-        return subprocess.check_output('pbpaste', env=env)
+        return utf8_to_cp(subprocess.check_output('pbpaste', env=env))
 
     def copy(self, thing, mouse=False):
         """ Put text on clipboard. """
@@ -137,10 +138,11 @@ class XClipboard(Clipboard):
     def paste(self, mouse=False):
         """ Get text from clipboard. """
         if mouse:
-            return subprocess.check_output((self._command, '-o'), env=env)
+            output = subprocess.check_output((self._command, '-o'), env=env)
         else:
-            return subprocess.check_output(
+            output = subprocess.check_output(
                                 [self._command, '-o'] + self._notmouse, env=env)
+        return utf8_to_cp(output)
 
     def copy(self, thing, mouse=False):
         """ Put text on clipboard. """
@@ -156,6 +158,27 @@ class XClipboard(Clipboard):
             pass
 
 
+def utf8_to_cp(text_utf8):
+    """ Convert clipboard utf8 string to codepage. """
+    # ignore any bad UTF8 characters from outside
+    text = ''
+    for u in text_utf8.decode('utf-8', 'ignore'):
+        c = u.encode('utf-8')
+        last = ''
+        if c == '\n':
+            if last != '\r':
+                char = '\r'
+            else:
+                char = ''
+        else:
+            try:
+                char = unicodepage.from_utf8(c)
+            except KeyError:
+                char = c
+        text += char
+        last = c
+    return text
+
 def get_handler():
     """ Get a working Clipboard handler object. """
     # Pygame.Scrap doesn't work on OSX and is buggy on Linux; avoid if we can
@@ -169,6 +192,5 @@ def get_handler():
         logging.warning('Clipboard copy and paste not available.')
         clipboard = Clipboard()
     return clipboard
-
 
 prepare()
