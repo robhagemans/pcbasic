@@ -327,6 +327,7 @@ def scroll(from_line, scroll_height, attr):
     clear_rows(attr, scroll_height, scroll_height)
     if cursor_row > 1:
         window.move(cursor_row-2, cursor_col-1)
+    text[from_line-1:scroll_height] = text[from_line:scroll_height] + [[(' ', 0)]*len(text[0])]
 
 def scroll_down(from_line, scroll_height, attr):
     """ Scroll the screen down between from_line and scroll_height. """
@@ -341,6 +342,7 @@ def scroll_down(from_line, scroll_height, attr):
     clear_rows(attr, from_line, from_line)
     if cursor_row < height:
         window.move(cursor_row, cursor_col-1)
+    text[from_line-1:scroll_height] = [[(' ', 0)]*len(text[0])] + text[from_line-1:scroll_height-1]
 
 def set_caption_message(msg):
     """ Add a message to the window caption. """

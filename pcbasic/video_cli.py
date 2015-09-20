@@ -162,6 +162,7 @@ def scroll(from_line, scroll_height, attr):
     """ Scroll the screen up between from_line and scroll_height. """
     sys.stdout.write('\r\n')
     sys.stdout.flush()
+    text[from_line-1:scroll_height] = text[from_line:scroll_height] + [[' ']*len(text[0])]
 
 def set_mode(mode_info):
     """ Initialise video mode """
