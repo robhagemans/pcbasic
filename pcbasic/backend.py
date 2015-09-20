@@ -222,11 +222,6 @@ def check_events():
             text = clipboard_handler.paste(signal.params)
             state.console_state.keyb.insert_chars(text, check_full=False)
 
-
-#def insert_special_key(name):
-#def insert_chars(s, check_full=False):
-#def key_down(scan, eascii='', check_full=True):
-
 def wait_response():
     """ Wait for response to video request. """
     while True:

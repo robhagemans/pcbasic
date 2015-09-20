@@ -19,9 +19,6 @@ import unicodepage
 import scancode
 import backend
 
-#D!!
-import state
-
 # for a few ansi sequences not supported by curses
 # only use these if you clear the screen afterwards,
 # so you don't see gibberish if the terminal doesn't support the sequence.
@@ -30,22 +27,16 @@ import ansi
 # fallback to filter interface if not working
 fallback = 'video_none'
 
-# cursor is visible
-cursor_visible = True
+###############################################################################
 
-# 1 is line ('visible'), 2 is block ('highly visible'), 3 is invisible
-cursor_shape = 1
-
-# current cursor position
-cursor_row = 1
-cursor_col = 1
 
 def prepare():
     """ Initialise the video_curses module. """
-    global caption, wait_on_close
+    global caption
     caption = config.get('caption')
-    wait_on_close = config.get('wait')
 
+
+###############################################################################
 
 #### shared with video_cli
 
@@ -62,40 +53,28 @@ def init():
     t = threading.Thread(target=read_stdin, args=(stdin_q,))
     t.daemon = True
     t.start()
-    sys.stdout.write(ansi.esc_set_title % caption)
-    sys.stdout.flush()
 
 # not shared by video_cli
+    set_caption_message('')
     # prevent logger from defacing the screen
     if logging.getLogger().handlers[0].stream.name == sys.stderr.name:
         logger = logging.getLogger()
         logger.disabled = True
+
+    launch_thread()
     return True
 
 #######
 
-def init_screen_mode(mode_info=None):
-    """ Change screen mode. """
-    global window, height, width
-    # we don't support graphics
-    if not mode_info.is_text_mode:
-        return False
-    height = 25
-    width = mode_info.width
-    sys.stdout.write(ansi.esc_resize_term % (height, width))
-    sys.stdout.write(ansi.esc_clear_screen)
-    sys.stdout.flush()
-    return True
-
 def close():
     """ Close the text interface. """
-    if wait_on_close:
-        sys.stdout.write(ansi.esc_set_title % (caption +
-                                              ' - press a key to close window'))
-        # redraw in case terminal didn't recognise ansi sequence
-        redraw()
-        while getc() == '':
-            time.sleep(0.01)
+    # drain signal queue (to allow for persistence) and request exit
+    if backend.video_queue:
+        backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
+        backend.video_queue.join()
+    if thread and thread.is_alive():
+        # signal quit and wait for thread to finish
+        thread.join()
     term_echo()
     sys.stdout.write(ansi.esc_set_colour % 0)
     sys.stdout.write(ansi.esc_clear_screen)
@@ -104,6 +83,90 @@ def close():
     sys.stdout.flush()
     # re-enable logger
     logger.disabled = False
+
+
+###############################################################################
+# implementation
+
+thread = None
+tick_s = 0.024
+
+def launch_thread():
+    """ Launch consumer thread. """
+    global thread
+    thread = threading.Thread(target=consumer_thread)
+    thread.start()
+
+def consumer_thread():
+    """ Video signal queue consumer thread. """
+    while drain_video_queue():
+        check_events()
+        # do not hog cpu
+        time.sleep(tick_s)
+
+def drain_video_queue():
+    """ Drain signal queue. """
+    alive = True
+    while alive:
+        try:
+            signal = backend.video_queue.get(False)
+        except Queue.Empty:
+            return True
+        if signal.event_type == backend.VIDEO_QUIT:
+            # close thread after task_done
+            alive = False
+        elif signal.event_type == backend.VIDEO_MODE:
+            init_screen_mode(signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_CHAR:
+            putc_at(*signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_WCHAR:
+            putwc_at(*signal.params)
+        elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
+            move_cursor(*signal.params)
+        elif signal.event_type == backend.VIDEO_CLEAR_ROWS:
+            clear_rows(*signal.params)
+        elif signal.event_type == backend.VIDEO_SCROLL_UP:
+            scroll(*signal.params)
+        elif signal.event_type == backend.VIDEO_SCROLL_DOWN:
+            scroll_down(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_ATTR:
+            set_attr(signal.params)
+        elif signal.event_type == backend.VIDEO_SET_CURSOR_SHAPE:
+            build_cursor(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_CURSOR_ATTR:
+            update_cursor_attr(signal.params)
+        elif signal.event_type == backend.VIDEO_SHOW_CURSOR:
+            show_cursor(signal.params)
+        elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
+            move_cursor(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_CAPTION:
+            set_caption_message(signal.params)
+        # drop other messages
+        backend.video_queue.task_done()
+
+
+###############################################################################
+
+# cursor is visible
+cursor_visible = True
+
+# 1 is line ('visible'), 2 is block ('highly visible'), 3 is invisible
+cursor_shape = 1
+
+# current cursor position
+cursor_row = 1
+cursor_col = 1
+
+
+def init_screen_mode(mode_info=None):
+    """ Change screen mode. """
+    global window, height, width
+    height = mode_info.height
+    width = mode_info.width
+    sys.stdout.write(ansi.esc_resize_term % (height, width))
+    sys.stdout.write(ansi.esc_clear_screen)
+    sys.stdout.flush()
+    return True
 
 last_pos = None
 
@@ -116,19 +179,6 @@ def check_events():
         last_pos = (cursor_row, cursor_col)
     check_keyboard()
 
-def idle():
-    """ Video idle process. """
-    time.sleep(0.024)
-
-def load_state(display_str):
-    """ Restore display state from file. """
-    # console has already been loaded; just redraw
-    redraw()
-
-def save_state():
-    """ Save display state to file (no-op). """
-    return None
-
 def clear_rows(cattr, start, stop):
     """ Clear screen rows. """
     set_colours(cattr)
@@ -136,7 +186,6 @@ def clear_rows(cattr, start, stop):
         sys.stdout.write(ansi.esc_move_cursor % (r, 1))
         sys.stdout.write(ansi.esc_clear_line)
     sys.stdout.flush()
-
 
 def move_cursor(crow, ccol):
     """ Move the cursor to a new position. """
@@ -187,7 +236,8 @@ def putc_at(pagenum, row, col, c, for_keys=False):
     """ Put a single-byte character at a given position. """
     global last_pos
     sys.stdout.write(ansi.esc_move_cursor % (row, col))
-    sys.stdout.write(unicodepage.UTF8Converter().to_utf8(c))
+    char = unicodepage.UTF8Converter().to_utf8(c)
+    sys.stdout.write(char)
     sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
     last_pos = (cursor_row, cursor_col)
     sys.stdout.flush()
@@ -197,9 +247,10 @@ def putwc_at(pagenum, row, col, c, d, for_keys=False):
     global last_pos
     sys.stdout.write(ansi.esc_move_cursor % (row, col))
     try:
-        sys.stdout.write(unicodepage.UTF8Converter().to_utf8(c+d))
+        wchar = unicodepage.UTF8Converter().to_utf8(c+d)
     except KeyError:
-        sys.stdout.write('  ')
+        wchar = '  '
+    sys.stdout.write(wchar)
     sys.stdout.write(unicodepage.UTF8Converter().to_utf8(c))
     sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
     last_pos = (cursor_row, cursor_col)
@@ -226,37 +277,16 @@ def scroll_down(from_line, scroll_height, attr):
         last_pos = (cursor_row, cursor_col)
     clear_rows(attr, from_line, from_line)
 
+def set_caption_message(msg):
+    """ Add a message to the window caption. """
+    if msg:
+        sys.stdout.write(ansi.esc_set_title % (caption + ' - ' + msg))
+    else:
+        sys.stdout.write(ansi.esc_set_title % caption)
+    sys.stdout.flush()
+
 
 ###############################################################################
-# The following are no-op responses to requests from backend
-
-def set_page(vpage, apage):
-    """ Set the visible and active page (not implemented). """
-    pass
-
-def copy_page(src, dst):
-    """ Copy source to destination page (not implemented). """
-    pass
-
-def set_border(attr):
-    """ Change the border attribute (not implemented). """
-    pass
-
-def set_colorburst(on, palette, palette1):
-    """ Change the NTSC colorburst setting (no-op). """
-    pass
-
-def rebuild_glyph(ordval):
-    """ Rebuild a glyph after POKE. """
-    pass
-
-def update_palette(new_palette, new_palette1):
-    """ Build the game palette. """
-    pass
-
-###############################################################################
-# IMPLEMENTATION
-
 
 ###### shared with video_cli:
 
@@ -366,26 +396,27 @@ def check_keyboard():
     u8, sc = get_key()
     if sc:
         # if it's an ansi sequence/scan code, insert immediately
-        backend.key_down(sc, '', check_full=False)
+        #check_full=False?
+        backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (sc, '')))
     elif u8:
-        if u8 == '\x03':         # ctrl-C
-            backend.insert_special_key('break')
-        if u8 == eof:            # ctrl-D (unix) / ctrl-Z (windows)
-            backend.insert_special_key('quit')
-        elif u8 == '\x7f':       # backspace
-            backend.insert_chars('\b', check_full=True)
+        if u8 == '\x03':
+            # ctrl-C
+            backend.input_queue.put(backend.Event(backend.KEYB_BREAK))
+        if u8 == eof:
+            # ctrl-D (unix) / ctrl-Z (windows)
+            backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
+        elif u8 == '\x7f':
+            # backspace
+            backend.input_queue.put(backend.Event(backend.KEYB_CHAR, '\b'))
         else:
             try:
-                backend.insert_chars(unicodepage.from_utf8(u8))
+                u8 = unicodepage.from_utf8(u8)
             except KeyError:
-                backend.insert_chars(u8)
+                pass
+            backend.input_queue.put(backend.Event(backend.KEYB_CHAR, u8))
 
 
 #######
-
-def redraw():
-    """ Force redrawing of the screen (callback). """
-    state.console_state.screen.redraw_text_screen()
 
 def set_colours(at):
     """ Convert BASIC attribute byte to ansi colours. """
