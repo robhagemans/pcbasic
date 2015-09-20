@@ -149,17 +149,13 @@ def prepare():
 # main event checker
 
 tick_s = 0.0006
+longtick_s = 0.024 - tick_s
 
-#D
-def wait():
+def wait(suppress_events=False):
     """ Wait and check events. """
-    check_events()
-
-#D
-def idle():
-    """ Wait a tick. """
-    # do not hog cpu
-    time.sleep(tick_s)
+    time.sleep(longtick_s)
+    if not suppress_events:
+        check_events()
 
 def check_events():
     """ Main event cycle. """

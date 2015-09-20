@@ -402,8 +402,8 @@ class SerialStream(object):
             have_cts = have_cts and self._serial.getCTS()
             have_dsr = have_dsr and self._serial.getDSR()
             have_cts = have_cd and self._serial.getCD()
-            # update screen, give CPU some time off
-            backend.idle()
+            # give CPU some time off
+            backend.wait(suppress_events=True)
         # only check for status if timeouts are set > 0
         # http://www.electro-tech-online.com/threads/qbasic-serial-port-control.19286/
         # https://measurementsensors.honeywell.com/ProductDocuments/Instruments/008-0385-00.pdf
