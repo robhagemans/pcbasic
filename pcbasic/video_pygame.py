@@ -259,10 +259,14 @@ def drain_video_queue():
         elif signal.event_type == backend.VIDEO_LOAD_STATE:
             load_state()
         # request information
-        #VIDEO_GET_PIXEL
-        #VIDEO_GET_INTERVAL
-        #VIDEO_GET_RECT
-        #VIDEO_GET_UNTIL
+        elif signal.event_type == backend.VIDEO_GET_PIXEL:
+            backend.response_queue.put(get_pixel(*signal.params))
+        elif signal.event_type == backend.VIDEO_GET_INTERVAL:
+            backend.response_queue.put(get_interval(*signal.params))
+        elif signal.event_type == backend.VIDEO_GET_RECT:
+            backend.response_queue.put(get_rect(*signal.params))
+        elif signal.event_type == backend.VIDEO_GET_UNTIL:
+            backend.response_queue.put(get_until(*signal.params))
         backend.video_queue.task_done()
 
 

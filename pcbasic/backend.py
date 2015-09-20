@@ -40,6 +40,7 @@ video = None
 
 video_queue = Queue.Queue()
 input_queue = Queue.Queue()
+response_queue = Queue.Queue()
 
 class Event(object):
     """ Signal object for video queue. """
@@ -92,10 +93,10 @@ VIDEO_FILL_INTERVAL = 19
 VIDEO_PUT_RECT = 20
 VIDEO_FILL_RECT = 21
 # request information
-#VIDEO_GET_PIXEL = 22
-#VIDEO_GET_INTERVAL = 23
-#VIDEO_GET_RECT = 24
-#VIDEO_GET_UNTIL = 25
+VIDEO_GET_PIXEL = 22
+VIDEO_GET_INTERVAL = 23
+VIDEO_GET_RECT = 24
+VIDEO_GET_UNTIL = 25
 # graphics viewport operations
 VIDEO_APPLY_CLIP = 26
 VIDEO_REMOVE_CLIP = 27
@@ -234,17 +235,14 @@ def check_events():
 #def insert_chars(s, check_full=False):
 #def key_down(scan, eascii='', check_full=True):
 
-def TEMP_video_get_pixel(x, y, pagenum):
-    return 0
-
-def TEMP_video_get_interval(pagenum, x, y, length):
-    return [0]*length
-
-def TEMP_video_get_until(x0, x1, y, c):
-    return []
-
-def TEMP_video_get_rect(x0, y0, x1, y1):
-    return [ [0]*(x1-x0+1) for _ in range(y0, y1+1) ]
+def wait_response():
+    """ Wait for response to video request. """
+    while True:
+        try:
+            return response_queue.get(False)
+        except Queue.Empty:
+            pass
+        time.sleep(tick_s)
 
 #D
 def paste_clipboard(mouse):
@@ -1467,11 +1465,13 @@ class Screen(object):
         """ Return the attribute a pixel on the screen. """
         if pagenum is None:
             pagenum = self.apagenum
-        return TEMP_video_get_pixel(x, y, pagenum)
+        video_queue.put(Event(VIDEO_GET_PIXEL, (x, y, pagenum)))
+        return wait_response()
 
     def get_interval(self, pagenum, x, y, length):
         """ Read a scanline interval into a list of attributes. """
-        return TEMP_video_get_interval(pagenum, x, y, length)
+        video_queue.put(Event(VIDEO_GET_INTERVAL, (pagenum, x, y, length)))
+        return wait_response()
 
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """ Write a list of attributes to a scanline interval. """
@@ -1485,11 +1485,13 @@ class Screen(object):
 
     def get_until(self, x0, x1, y, c):
         """ Get the attribute values of a scanline interval. """
-        return TEMP_video_get_until(x0, x1, y, c)
+        video_queue.put(Event(VIDEO_GET_UNTIL, (x0, x1, y, c)))
+        return wait_response()
 
     def get_rect(self, x0, y0, x1, y1):
         """ Read a screen rect into an [y][x] array of attributes. """
-        return TEMP_video_get_rect(x0, y0, x1, y1)
+        video_queue.put(Event(VIDEO_GET_RECT, (x0, y0, x1, y1)))
+        return wait_response()
 
     def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
         """ Apply an [y][x] array of attributes onto a screen rect. """
