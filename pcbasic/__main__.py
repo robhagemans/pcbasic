@@ -167,17 +167,16 @@ def start_basic():
             print_greeting(console)
             # start the interpreter (and get out if we ran with -q)
             run.start(config.get('exec'), config.get('run'), config.get('quit'))
-            # pause before exit if requested
-            if config.get('wait'):
-                backend.video_queue.put(backend.Event(backend.VIDEO_SET_CAPTION, 'Press a key to close window'))
-                backend.video_queue.put(backend.Event(backend.VIDEO_SHOW_CURSOR, False))
-                backend.input_queue.put(backend.Event(backend.KEYB_PAUSE, True))
-                # this performs a blocking keystroke read on a PAUSE event
-                backend.check_events()
     except error.RunError as e:
         exit_error = error.get_message(e.err)
     except error.Exit:
-        pass
+        # pause before exit if requested
+        if config.get('wait'):
+            backend.video_queue.put(backend.Event(backend.VIDEO_SET_CAPTION, 'Press a key to close window'))
+            backend.video_queue.put(backend.Event(backend.VIDEO_SHOW_CURSOR, False))
+            backend.input_queue.put(backend.Event(backend.KEYB_PAUSE, True))
+            # this performs a blocking keystroke read on a PAUSE event
+            backend.check_events()
     except error.Reset:
         do_reset = True
     except KeyboardInterrupt:
