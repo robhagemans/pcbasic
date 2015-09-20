@@ -152,6 +152,12 @@ def init():
 
 def close():
     """ Close the pygame interface. """
+    if backend.video_queue:
+        backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
+        backend.video_queue.join()
+    if thread and thread.is_alive():
+        # signal quit and wait for thread to finish
+        thread.join()
     if android:
         pygame_android.close()
     # if pygame import failed, close() is called while pygame is None
