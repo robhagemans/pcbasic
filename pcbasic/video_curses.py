@@ -450,6 +450,7 @@ def colours(at):
     return cursattr
 
 def redraw():
+    """ Redraw the screen. """
     window.clear()
     set_attr(7)
     for row, textrow in enumerate(text):
