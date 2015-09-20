@@ -148,11 +148,11 @@ def prepare():
 ###############################################################################
 # main event checker
 
-tick_s = 0.024
+tick_s = 0.0006
 
+#D
 def wait():
     """ Wait and check events. """
-    time.sleep(tick_s)
     check_events()
 
 #D
@@ -164,6 +164,7 @@ def idle():
 def check_events():
     """ Main event cycle. """
     # trigger & handle BASIC events
+    time.sleep(tick_s)
     if state.basic_state.run_mode:
         # trigger TIMER, PLAY and COM events
         state.basic_state.events.timer.check()
