@@ -7,6 +7,8 @@ This file is released under the GNU GPL version 3.
 """
 
 import logging
+import threading
+import Queue
 
 try:
     import pygame
@@ -47,6 +49,388 @@ if android:
     if pygame:
         import pygame_android
 
+
+###############################################################################
+
+def prepare():
+    """ Initialise video_pygame module. """
+    global fullscreen, smooth, noquit, force_display_size
+    global composite_monitor, heights_needed
+    global composite_640_palette, border_width
+    global mousebutton_copy, mousebutton_paste, mousebutton_pen
+    global mono_monitor, font_families, aspect, force_square_pixel
+    global caption
+    # display dimensions
+    force_display_size = config.get('dimensions')
+    aspect = config.get('aspect') or aspect
+    border_width = config.get('border')
+    force_square_pixel = (config.get('scaling') == 'native')
+    fullscreen = config.get('fullscreen')
+    smooth = (config.get('scaling') == 'smooth')
+    # don't catch Alt+F4
+    noquit = config.get('nokill')
+    # monitor choice
+    mono_monitor =  config.get('monitor') == 'mono'
+    # if no composite palette available for this card, ignore.
+    composite_monitor = (config.get('monitor') == 'composite' and
+                         config.get('video') in composite_640)
+    if composite_monitor:
+            composite_640_palette = composite_640[config.get('video')]
+    # keyboard setting based on video card...
+    if config.get('video') == 'tandy':
+        # enable tandy F11, F12
+        key_to_scan[pygame.K_F11] = scancode.F11
+        key_to_scan[pygame.K_F12] = scancode.F12
+    # fonts
+    font_families = config.get('font')
+    # mouse setups
+    buttons = { 'left': 1, 'middle': 2, 'right': 3, 'none': -1 }
+    mousebutton_copy = buttons[config.get('copy-paste')[0]]
+    mousebutton_paste = buttons[config.get('copy-paste')[1]]
+    mousebutton_pen = buttons[config.get('pen')]
+    if not config.get('altgr'):
+        # on Windows, AltGr key is reported as right-alt
+        key_to_scan[pygame.K_RALT] = scancode.ALT
+        # on Linux, AltGr is reported as mode key
+        key_to_scan[pygame.K_MODE] = scancode.ALT
+    # window caption/title
+    caption = config.get('caption')
+
+
+###############################################################################
+
+def init():
+    """ Initialise pygame interface. """
+    global joysticks, physical_size, display_size
+    global text_mode, fonts
+    # set state objects to whatever is now in state (may have been unpickled)
+    if not pygame:
+        logging.warning('PyGame module not found. Failed to initialise graphical interface.')
+        return False
+    pygame.init()
+    # exclude some backend drivers as they give unusable results
+    if pygame.display.get_driver() == 'caca':
+        pygame.display.quit()
+        logging.warning('Refusing to use libcaca. Failed to initialise graphical interface.')
+        return False
+    # get physical screen dimensions (needs to be called before set_mode)
+    display_info = pygame.display.Info()
+    physical_size = display_info.current_w, display_info.current_h
+    # draw the icon
+    pygame.display.set_icon(build_icon())
+    # determine initial display size
+    display_size = find_display_size(640, 480, border_width)
+    # first set the screen non-resizeable, to trick things like maximus into not full-screening
+    # I hate it when applications do this ;)
+    if not fullscreen:
+        pygame.display.set_mode(display_size, 0)
+    resize_display(*display_size, initial=True)
+    pygame.display.set_caption(caption)
+    pygame.key.set_repeat(500, 24)
+    # load an all-black 16-colour game palette to get started
+    update_palette([(0,0,0)]*16, None)
+    if android:
+        pygame_android.init()
+    pygame.joystick.init()
+    joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
+    for j in joysticks:
+        j.init()
+    # if a joystick is present, its axes report 128 for mid, not 0
+    for joy in range(len(joysticks)):
+        for axis in (0, 1):
+            backend.input_queue.put(backend.Event(backend.STICK_MOVED,
+                                                  (joy, axis, 128)))
+    # retrieve 8-pixel font from backend
+    # also link as 9-pixel font for tandy
+    fonts = { 8: backend.font_8, 9: backend.font_8 }
+    if not load_fonts(backend.heights_needed):
+        return False
+    text_mode = True
+    set_page(0, 0)
+    launch_thread()
+    return True
+
+def close():
+    """ Close the pygame interface. """
+    if android:
+        pygame_android.close()
+    # if pygame import failed, close() is called while pygame is None
+    if pygame:
+        pygame.joystick.quit()
+        pygame.display.quit()
+
+
+###############################################################################
+# implementation
+
+thread = None
+tick_s = 0.024
+
+def launch_thread():
+    """ Launch consumer thread. """
+    global thread
+    thread = threading.Thread(target=consumer_thread)
+    thread.start()
+
+def consumer_thread():
+    """ Video signal queue consumer thread. """
+    while drain_video_queue():
+        check_events()
+        pygame.time.wait(cycle_time/blink_cycles/8)
+
+def drain_video_queue():
+    """ Drain signal queue. """
+    alive = True
+    while alive:
+        try:
+            signal = backend.video_queue.get(False)
+        except Queue.Empty:
+            return True
+        if signal.event_type == backend.VIDEO_QUIT:
+            # close thread after task_done
+            alive = False
+        elif signal.event_type == backend.VIDEO_MODE:
+            init_screen_mode(signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_CHAR:
+            putc_at(*signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_WCHAR:
+            putwc_at(*signal.params)
+        elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
+            move_cursor(*signal.params)
+        elif signal.event_type == backend.VIDEO_CLEAR_ROWS:
+            clear_rows(*signal.params)
+        elif signal.event_type == backend.VIDEO_SCROLL_UP:
+            scroll(*signal.params)
+        elif signal.event_type == backend.VIDEO_SCROLL_DOWN:
+            scroll_down(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_ATTR:
+            set_attr(signal.params)
+        elif signal.event_type == backend.VIDEO_SET_PALETTE:
+            update_palette(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_CURSOR_SHAPE:
+            build_cursor(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_CURSOR_ATTR:
+            update_cursor_attr(signal.params)
+        elif signal.event_type == backend.VIDEO_SHOW_CURSOR:
+            show_cursor(signal.params)
+        elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
+            move_cursor(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_PAGE:
+            set_page(*signal.params)
+        elif signal.event_type == backend.VIDEO_COPY_PAGE:
+            copy_page(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_BORDER_ATTR:
+            set_border(signal.params)
+        elif signal.event_type == backend.VIDEO_SET_COLORBURST:
+            set_colorburst(*signal.params)
+        elif signal.event_type == backend.VIDEO_BUILD_GLYPH:
+            rebuild_glyph(signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_PIXEL:
+            put_pixel(*signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_INTERVAL:
+            put_interval(*signal.params)
+        elif signal.event_type == backend.VIDEO_FILL_INTERVAL:
+            fill_interval(*signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_RECT:
+            put_rect(*signal.params)
+        elif signal.event_type == backend.VIDEO_FILL_RECT:
+            fill_rect(*signal.params)
+        elif signal.event_type == backend.VIDEO_APPLY_CLIP:
+            apply_graph_clip(*signal.params)
+        elif signal.event_type == backend.VIDEO_REMOVE_CLIP:
+            remove_graph_clip()
+        elif signal.event_type == backend.VIDEO_SET_CAPTION:
+            set_caption_message(signal.params)
+        # request information
+        #VIDEO_GET_PIXEL
+        #VIDEO_GET_INTERVAL
+        #VIDEO_GET_RECT
+        #VIDEO_GET_UNTIL
+        backend.video_queue.task_done()
+
+
+###############################################################################
+# event queue
+
+pause = False
+
+def check_events():
+    """ Handle screen and interface events. """
+    global screen_changed, fullscreen, pause
+    # wait for initialisation
+    if not init_complete:
+        return
+    # handle Android pause/resume
+    if android and pygame_android.check_events():
+        # force immediate redraw of screen
+        do_flip(0)
+        # force redraw on next tick
+        # we seem to have to redraw twice to see anything
+        screen_changed = True
+    # check and handle pygame events
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if not pause:
+                handle_key_down(event)
+            else:
+                pause = False
+                backend.input_queue.put(backend.Event(backend.KEYB_PAUSE, False))
+        if event.type == pygame.KEYUP:
+            if not pause:
+                handle_key_up(event)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            # copy, paste and pen may be on the same button, so no elifs
+            if event.button == mousebutton_copy:
+                # LEFT button: copy
+                pos = normalise_pos(*event.pos)
+                clipboard.start(1 + pos[1] // font_height,
+                            1 + (pos[0]+font_width//2) // font_width)
+            if event.button == mousebutton_paste:
+                # MIDDLE button: paste
+                clipboard.paste(mouse=True)
+            if event.button == mousebutton_pen:
+                # right mouse button is a pen press
+                backend.input_queue.put(backend.Event(backend.PEN_DOWN,
+                                                normalise_pos(*event.pos)))
+        elif event.type == pygame.MOUSEBUTTONUP:
+            backend.input_queue.put(backend.Event(backend.PEN_UP))
+            if event.button == mousebutton_copy:
+                clipboard.copy(mouse=True)
+                clipboard.stop()
+        elif event.type == pygame.MOUSEMOTION:
+            pos = normalise_pos(*event.pos)
+            backend.input_queue.put(backend.Event(backend.PEN_MOVED, pos))
+            if clipboard.active():
+                clipboard.move(1 + pos[1] // font_height,
+                           1 + (pos[0]+font_width//2) // font_width)
+        elif event.type == pygame.JOYBUTTONDOWN:
+            backend.input_queue.put(backend.Event(backend.STICK_DOWN,
+                                                  (event.joy, event.button)))
+        elif event.type == pygame.JOYBUTTONUP:
+            backend.input_queue.put(backend.Event(backend.STICK_UP,
+                                                  (event.joy, event.button)))
+        elif event.type == pygame.JOYAXISMOTION:
+            backend.input_queue.put(backend.Event(backend.STICK_MOVED,
+                                                  (event.joy, event.axis,
+                                                  int(event.value*127 + 128))))
+        elif event.type == pygame.VIDEORESIZE:
+            fullscreen = False
+            resize_display(event.w, event.h)
+        elif event.type == pygame.QUIT:
+            if noquit:
+                set_caption_message('to exit type <CTRL+BREAK> <ESC> SYSTEM')
+            else:
+                backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
+    check_screen()
+
+f12_active = False
+f11_active = False
+
+def handle_key_down(e):
+    """ Handle key-down event. """
+    global screen_changed, f12_active, f11_active, fullscreen, pause
+    c = ''
+    mods = pygame.key.get_mods()
+    if ((e.key == pygame.K_NUMLOCK and mods & pygame.KMOD_CTRL) or
+            (e.key in (pygame.K_PAUSE, pygame.K_BREAK) and
+             not mods & pygame.KMOD_CTRL)):
+        # pause until keypress
+        backend.input_queue.put(backend.Event(backend.KEYB_PAUSE, True))
+    elif e.key == pygame.K_MENU and android:
+        # Android: toggle keyboard on menu key
+        pygame_android.toggle_keyboard()
+        screen_changed = True
+    elif e.key == pygame.K_F11:
+        f11_active = True
+        clipboard.start()
+    elif e.key == pygame.K_F12:
+        f12_active = True
+    elif f11_active:
+        # F11+f to toggle fullscreen mode
+        if e.key == pygame.K_f:
+            fullscreen = not fullscreen
+            resize_display(*find_display_size(size[0], size[1], border_width))
+        clipboard.handle_key(e)
+    else:
+        if not android:
+            # android unicode values are wrong, use the scancode only
+            utf8 = e.unicode.encode('utf-8')
+            try:
+                c = unicodepage.from_utf8(utf8)
+            except KeyError:
+                # no codepage encoding found, ignore unless ascii
+                # this happens for control codes like '\r' since
+                # unicodepage defines the special graphic characters for those.
+                #if len(utf8) == 1 and ord(utf8) < 128:
+                #    c = utf8
+                # don't do this, let control codes be handled by scancode
+                # e.g. ctrl+enter should be '\n' but has e.unicode=='\r'
+                pass
+        # double NUL characters, as single NUL signals scan code
+        if len(c) == 1 and ord(c) == 0:
+            c = '\0\0'
+        # current key pressed; modifiers handled by backend interface
+        if f12_active:
+            # F12+P should just send Pause, but pause is still implemented directly
+            if e.key == pygame.K_p:
+                backend.input_queue.put(backend.Event(backend.KEYB_PAUSE, True))
+            else:
+                try:
+                    scan, c = key_to_scan_f12[e.key]
+                except KeyError:
+                    scan = None
+                backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, c)))
+        else:
+            try:
+                scan = key_to_scan[e.key]
+            except KeyError:
+                scan = None
+                if android:
+                    # android hacks - send keystroke sequences
+                    if e.key == pygame.K_ASTERISK:
+                        backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
+                                (scancode.RSHIFT, '')))
+                        backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
+                                (scancode.N8, '*')))
+                        backend.input_queue.put(backend.Event(backend.KEYB_UP,
+                                scancode.RSHIFT))
+                    elif e.key == pygame.K_AT:
+                        backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
+                                (scancode.RSHIFT, '')))
+                        backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
+                                (scancode.N2, '@')))
+                        backend.input_queue.put(backend.Event(backend.KEYB_UP,
+                                scancode.RSHIFT))
+                if plat.system == 'Windows':
+                    # Windows 7 and above send AltGr as Ctrl+RAlt
+                    # if 'altgr' option is off, Ctrl+RAlt is sent.
+                    # if 'altgr' is on, the RAlt key is being ignored
+                    # but a Ctrl keydown event has already been sent
+                    # so send keyup event to tell backend to release Ctrl modifier
+                    if e.key == pygame.K_RALT:
+                        backend.input_queue.put(backend.Event(backend.KEYB_UP,
+                                                              scancode.CTRL))
+            # insert into keyboard queue
+            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, c)))
+
+def handle_key_up(e):
+    """ Handle key-up event. """
+    global f12_active, f11_active
+    if e.key == pygame.K_F11:
+        clipboard.stop()
+        f11_active = False
+    elif e.key == pygame.K_F12:
+        f12_active = False
+    if not (f12_active and e.key in key_to_scan_f12):
+        # last key released gets remembered
+        try:
+            backend.input_queue.put(backend.Event(backend.KEYB_UP,
+                                                  key_to_scan[e.key]))
+        except KeyError:
+            pass
+
+
+###############################################################################
 
 # screen aspect ratio x, y
 aspect = (4, 3)
@@ -232,128 +616,12 @@ mousebutton_copy = 1
 mousebutton_paste = 2
 mousebutton_pen = 3
 
-###############################################################################
-
-def prepare():
-    """ Initialise video_pygame module. """
-    global fullscreen, smooth, noquit, force_display_size
-    global composite_monitor, heights_needed
-    global composite_640_palette, border_width
-    global mousebutton_copy, mousebutton_paste, mousebutton_pen
-    global mono_monitor, font_families, aspect, force_square_pixel
-    global caption
-    global wait_on_close
-    # display dimensions
-    force_display_size = config.get('dimensions')
-    aspect = config.get('aspect') or aspect
-    border_width = config.get('border')
-    force_square_pixel = (config.get('scaling') == 'native')
-    fullscreen = config.get('fullscreen')
-    smooth = (config.get('scaling') == 'smooth')
-    # don't catch Alt+F4
-    noquit = config.get('nokill')
-    # monitor choice
-    mono_monitor =  config.get('monitor') == 'mono'
-    # if no composite palette available for this card, ignore.
-    composite_monitor = (config.get('monitor') == 'composite' and
-                         config.get('video') in composite_640)
-    if composite_monitor:
-            composite_640_palette = composite_640[config.get('video')]
-    # keyboard setting based on video card...
-    if config.get('video') == 'tandy':
-        # enable tandy F11, F12
-        key_to_scan[pygame.K_F11] = scancode.F11
-        key_to_scan[pygame.K_F12] = scancode.F12
-    # fonts
-    font_families = config.get('font')
-    # mouse setups
-    buttons = { 'left': 1, 'middle': 2, 'right': 3, 'none': -1 }
-    mousebutton_copy = buttons[config.get('copy-paste')[0]]
-    mousebutton_paste = buttons[config.get('copy-paste')[1]]
-    mousebutton_pen = buttons[config.get('pen')]
-    if not config.get('altgr'):
-        # on Windows, AltGr key is reported as right-alt
-        key_to_scan[pygame.K_RALT] = scancode.ALT
-        # on Linux, AltGr is reported as mode key
-        key_to_scan[pygame.K_MODE] = scancode.ALT
-    # window caption/title
-    caption = config.get('caption')
-    # wait before closing window
-    wait_on_close = config.get('wait')
-
-###############################################################################
-# state saving and loading
-
-def save_state():
-    """ Save display state as list of strings. """
-    return [pygame.image.tostring(s, 'P') for s in canvas]
-
-def load_state(display_str):
-    """ Restore display state. """
-    global screen_changed
-    try:
-        for i in range(len(canvas)):
-            canvas[i] = pygame.image.fromstring(display_str[i], size, 'P')
-            canvas[i].set_palette(workpalette)
-        screen_changed = True
-        return True
-    except (IndexError, ValueError, TypeError):
-        # couldn't load the state correctly
-        # e.g. saved from different interface. just redraw what's unpickled.
-        # this also happens if the screen resolution has changed
-        return False
+# initialisation complete
+init_complete = False
 
 ####################################
 # initialisation
 
-def init():
-    """ Initialise pygame interface. """
-    global joysticks, physical_size, display_size
-    global text_mode, fonts
-    # set state objects to whatever is now in state (may have been unpickled)
-    if not pygame:
-        logging.warning('PyGame module not found. Failed to initialise graphical interface.')
-        return False
-    pygame.init()
-    # exclude some backend drivers as they give unusable results
-    if pygame.display.get_driver() == 'caca':
-        pygame.display.quit()
-        logging.warning('Refusing to use libcaca. Failed to initialise graphical interface.')
-        return False
-    # get physical screen dimensions (needs to be called before set_mode)
-    display_info = pygame.display.Info()
-    physical_size = display_info.current_w, display_info.current_h
-    # draw the icon
-    pygame.display.set_icon(build_icon())
-    # determine initial display size
-    display_size = find_display_size(640, 480, border_width)
-    # first set the screen non-resizeable, to trick things like maximus into not full-screening
-    # I hate it when applications do this ;)
-    if not fullscreen:
-        pygame.display.set_mode(display_size, 0)
-    resize_display(*display_size, initial=True)
-    pygame.display.set_caption(caption)
-    pygame.key.set_repeat(500, 24)
-    # load an all-black 16-colour game palette to get started
-    update_palette([(0,0,0)]*16, None)
-    if android:
-        pygame_android.init()
-    pygame.joystick.init()
-    joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
-    for j in joysticks:
-        j.init()
-    # if a joystick is present, its axes report 128 for mid, not 0
-    for joy in range(len(joysticks)):
-        for axis in (0, 1):
-            backend.stick_moved(joy, axis, 128)
-    # retrieve 8-pixel font from backend
-    # also link as 9-pixel font for tandy
-    fonts = { 8: backend.font_8, 9: backend.font_8 }
-    if not load_fonts(backend.heights_needed):
-        return False
-    text_mode = True
-    set_page(0, 0)
-    return True
 
 def load_fonts(heights_needed):
     """ Load font typefaces. """
@@ -385,6 +653,7 @@ def init_screen_mode(mode_info):
     global clipboard, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     global mode_has_underline
+    global init_complete
     if mode_info.font_height not in fonts or not fonts[mode_info.font_height]:
         logging.warning(
             'No %d-pixel font available. Could not enter video mode %s.',
@@ -418,6 +687,8 @@ def init_screen_mode(mode_info):
     # initialise clipboard
     clipboard = ClipboardInterface(mode_info.width, mode_info.height)
     screen_changed = True
+    # signal that initialisation is complete
+    init_complete = True
     return True
 
 def find_display_size(canvas_x, canvas_y, border_width):
@@ -496,21 +767,6 @@ def build_icon():
     pygame.transform.scale2x(icon)
     pygame.transform.scale2x(icon)
     return icon
-
-def close():
-    """ Close the pygame interface. """
-    if wait_on_close:
-        pygame.display.set_caption('%s - press a key to close window' % caption)
-        show_cursor(False)
-        # wait for a keystroke
-        while not check_events(pause=True):
-            idle()
-    if android:
-        pygame_android.close()
-    # if pygame import failed, close() is called while pygame is None
-    if pygame:
-        pygame.joystick.quit()
-        pygame.display.quit()
 
 def get_palette_index(cattr):
     """ Find the index in the game palette for this attribute. """
@@ -769,6 +1025,25 @@ def build_cursor(width, height, from_line, to_line):
                 cursor.set_at((xx, yy), color)
     screen_changed = True
 
+def normalise_pos(x, y):
+    """ Convert physical to logical coordinates within screen bounds. """
+    border_x = int(size[0] * border_width / 200.)
+    border_y = int(size[1] * border_width / 200.)
+    display_info = pygame.display.Info()
+    xscale = display_info.current_w / (1.*(size[0]+2*border_x))
+    yscale = display_info.current_h / (1.*(size[1]+2*border_y))
+    xpos = min(size[0]-1, max(0, int(x//xscale - border_x)))
+    ypos = min(size[1]-1, max(0, int(y//yscale - border_y)))
+    return xpos, ypos
+
+def set_caption_message(msg):
+    """ Add a message to the window caption. """
+    if msg:
+        pygame.display.set_caption(caption + ' - ' + msg)
+    else:
+        pygame.display.set_caption(caption)
+
+
 ###############################################################################
 # event loop
 
@@ -878,193 +1153,6 @@ def do_flip(blink_state):
         pygame.transform.scale(screen.convert(display), display.get_size(), display)
     pygame.display.flip()
 
-###############################################################################
-# event queue
-
-def pause_key():
-    """ Wait for key in pause state. """
-    # pause key press waits for any key down.
-    # continues to process screen events (blink) but not user events.
-    while not check_events(pause=True):
-        idle()
-
-def idle():
-    """ Video idle process. """
-    pygame.time.wait(cycle_time/blink_cycles/8)
-
-def check_events(pause=False):
-    """ Handle screen and interface events. """
-    global screen_changed, fullscreen
-    # handle Android pause/resume
-    if android and pygame_android.check_events():
-        # force immediate redraw of screen
-        do_flip(0)
-        # force redraw on next tick
-        # we seem to have to redraw twice to see anything
-        screen_changed = True
-    # check and handle pygame events
-    for event in pygame.event.get():
-        if event.type == pygame.KEYDOWN:
-            if not pause:
-                handle_key_down(event)
-            else:
-                return True
-        if event.type == pygame.KEYUP:
-            if not pause:
-                handle_key_up(event)
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            # copy, paste and pen may be on the same button, so no elifs
-            if event.button == mousebutton_copy:
-                # LEFT button: copy
-                pos = normalise_pos(*event.pos)
-                clipboard.start(1 + pos[1] // font_height,
-                            1 + (pos[0]+font_width//2) // font_width)
-            if event.button == mousebutton_paste:
-                # MIDDLE button: paste
-                clipboard.paste(mouse=True)
-            if event.button == mousebutton_pen:
-                # right mouse button is a pen press
-                backend.pen_down(*normalise_pos(*event.pos))
-        elif event.type == pygame.MOUSEBUTTONUP:
-            backend.pen_up()
-            if event.button == mousebutton_copy:
-                clipboard.copy(mouse=True)
-                clipboard.stop()
-        elif event.type == pygame.MOUSEMOTION:
-            pos = normalise_pos(*event.pos)
-            backend.pen_moved(*pos)
-            if clipboard.active():
-                clipboard.move(1 + pos[1] // font_height,
-                           1 + (pos[0]+font_width//2) // font_width)
-        elif event.type == pygame.JOYBUTTONDOWN:
-            if event.joy < 2 and event.button < 2:
-                backend.stick_down(event.joy, event.button)
-        elif event.type == pygame.JOYBUTTONUP:
-            if event.joy < 2 and event.button < 2:
-                backend.stick_up(event.joy, event.button)
-        elif event.type == pygame.JOYAXISMOTION:
-            if event.joy < 2 and event.axis < 2:
-                backend.stick_moved(event.joy, event.axis,
-                                    int(event.value*127 + 128))
-        elif event.type == pygame.VIDEORESIZE:
-            fullscreen = False
-            resize_display(event.w, event.h)
-        elif event.type == pygame.QUIT:
-            if noquit:
-                pygame.display.set_caption('%s - to exit type <CTRL+BREAK> <ESC> SYSTEM' % caption)
-            else:
-                backend.insert_special_key('quit')
-    check_screen()
-    return False
-
-f12_active = False
-f11_active = False
-
-def handle_key_down(e):
-    """ Handle key-down event. """
-    global screen_changed, f12_active, f11_active, fullscreen
-    c = ''
-    mods = pygame.key.get_mods()
-    if ((e.key == pygame.K_NUMLOCK and mods & pygame.KMOD_CTRL) or
-            (e.key in (pygame.K_PAUSE, pygame.K_BREAK) and
-             not mods & pygame.KMOD_CTRL)):
-        # pause until keypress
-        pause_key()
-    elif e.key == pygame.K_MENU and android:
-        # Android: toggle keyboard on menu key
-        pygame_android.toggle_keyboard()
-        screen_changed = True
-    elif e.key == pygame.K_F11:
-        f11_active = True
-        clipboard.start()
-    elif e.key == pygame.K_F12:
-        f12_active = True
-    elif f11_active:
-        # F11+f to toggle fullscreen mode
-        if e.key == pygame.K_f:
-            fullscreen = not fullscreen
-            resize_display(*find_display_size(size[0], size[1], border_width))
-        clipboard.handle_key(e)
-    else:
-        if not android:
-            # android unicode values are wrong, use the scancode only
-            utf8 = e.unicode.encode('utf-8')
-            try:
-                c = unicodepage.from_utf8(utf8)
-            except KeyError:
-                # no codepage encoding found, ignore unless ascii
-                # this happens for control codes like '\r' since
-                # unicodepage defines the special graphic characters for those.
-                #if len(utf8) == 1 and ord(utf8) < 128:
-                #    c = utf8
-                # don't do this, let control codes be handled by scancode
-                # e.g. ctrl+enter should be '\n' but has e.unicode=='\r'
-                pass
-        # double NUL characters, as single NUL signals scan code
-        if len(c) == 1 and ord(c) == 0:
-            c = '\0\0'
-        # current key pressed; modifiers handled by backend interface
-        if f12_active:
-            # F12+P should just send Pause, but pause is still implemented directly in video_pygame
-            if e.key == pygame.K_p:
-                pause_key()
-            else:
-                try:
-                    scan, c = key_to_scan_f12[e.key]
-                except KeyError:
-                    scan = None
-                backend.key_down(scan, c)
-        else:
-            try:
-                scan = key_to_scan[e.key]
-            except KeyError:
-                scan = None
-                if android:
-                    # android hacks - send keystroke sequences
-                    if e.key == pygame.K_ASTERISK:
-                        backend.key_down(scancode.RSHIFT, '')
-                        backend.key_down(scancode.N8, '*')
-                        backend.key_up(scancode.RSHIFT)
-                    elif e.key == pygame.K_AT:
-                        backend.key_down(scancode.RSHIFT, '')
-                        backend.key_down(scancode.N2, '@')
-                        backend.key_up(scancode.RSHIFT)
-                if plat.system == 'Windows':
-                    # Windows 7 and above send AltGr as Ctrl+RAlt
-                    # if 'altgr' option is off, Ctrl+RAlt is sent.
-                    # if 'altgr' is on, the RAlt key is being ignored
-                    # but a Ctrl keydown event has already been sent
-                    # so send keyup event to tell backend to release Ctrl modifier
-                    if e.key == pygame.K_RALT:
-                        backend.key_up(scancode.CTRL)
-            # insert into keyboard queue
-            backend.key_down(scan, c)
-
-def handle_key_up(e):
-    """ Handle key-up event. """
-    global f12_active, f11_active
-    if e.key == pygame.K_F11:
-        clipboard.stop()
-        f11_active = False
-    elif e.key == pygame.K_F12:
-        f12_active = False
-    if not (f12_active and e.key in key_to_scan_f12):
-        # last key released gets remembered
-        try:
-            backend.key_up(key_to_scan[e.key])
-        except KeyError:
-            pass
-
-def normalise_pos(x, y):
-    """ Convert physical to logical coordinates within screen bounds. """
-    border_x = int(size[0] * border_width / 200.)
-    border_y = int(size[1] * border_width / 200.)
-    display_info = pygame.display.Info()
-    xscale = display_info.current_w / (1.*(size[0]+2*border_x))
-    yscale = display_info.current_h / (1.*(size[1]+2*border_y))
-    xpos = min(size[0]-1, max(0, int(x//xscale - border_x)))
-    ypos = min(size[1]-1, max(0, int(y//yscale - border_y)))
-    return xpos, ypos
 
 ###############################################################################
 # clipboard handling
@@ -1114,11 +1202,12 @@ class ClipboardInterface(object):
             return
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        backend.copy_clipboard(start[0], start[1], stop[0], stop[1]-1, mouse)
+        backend.input_queue.put(backend.Event(backend.CLIP_COPY,
+                            (start[0], start[1], stop[0], stop[1]-1, mouse)))
 
     def paste(self, mouse=False):
         """ Paste from clipboard into keyboard buffer. """
-        backend.paste_clipboard(mouse)
+        backend.input_queue.put(backend.Event(backend.CLIP_PASTE, mouse))
 
     def move(self, r, c):
         """ Move the head of the selection and update feedback. """

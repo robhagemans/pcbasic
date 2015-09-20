@@ -140,6 +140,7 @@ def start_basic():
     import sound
     do_reset = False
     backend, console = None, None
+    exit_error = ''
     try:
         # resume from saved emulator state if requested and available
         resume = config.get('resume') and state.load()
@@ -166,15 +167,15 @@ def start_basic():
             print_greeting(console)
             # start the interpreter (and get out if we ran with -q)
             run.start(config.get('exec'), config.get('run'), config.get('quit'))
+            # pause before exit if requested
+            if config.get('wait'):
+                backend.video_queue.put(backend.Event(backend.VIDEO_SET_CAPTION, 'Press a key to close window'))
+                backend.video_queue.put(backend.Event(backend.VIDEO_SHOW_CURSOR, False))
+                backend.input_queue.put(backend.Event(backend.KEYB_PAUSE, True))
+                # this performs a blocking keystroke read on a PAUSE event
+                backend.check_events()
     except error.RunError as e:
-        msg = error.get_message(e.err)
-        if console and config.get('wait'):
-            console.write_error_message(msg, None)
-        if backend and backend.video:
-            # close terminal to avoid garbled error message
-            backend.video.close()
-            backend.video = None
-        logging.error(msg)
+        exit_error = error.get_message(e.err)
     except error.Exit:
         pass
     except error.Reset:
@@ -183,7 +184,7 @@ def start_basic():
         if config.get('debug'):
             raise
     except Exception as e:
-        logging.error("Unhandled exception\n%s", traceback.format_exc())
+        exit_error = "Unhandled exception\n%s" % traceback.format_exc()
     finally:
         try:
             # fix the terminal on exit (important for ANSI terminals)
@@ -211,6 +212,8 @@ def start_basic():
             sound.audio.close()
         except (NameError, AttributeError) as e:
             logging.debug('Error on closing audio: %s', e)
+        if exit_error:
+            logging.error(exit_error)
 
 def prepare_console():
     """ Initialise backend and console. """

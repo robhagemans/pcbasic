@@ -101,21 +101,32 @@ VIDEO_APPLY_CLIP = 26
 VIDEO_REMOVE_CLIP = 27
 # copy page
 VIDEO_COPY_PAGE = 28
+# set caption message
+VIDEO_SET_CAPTION = 29
 
-# keyboard queue signals
+# input queue signals
 # special keys
 KEYB_QUIT = 0
 KEYB_BREAK = 1
 KEYB_RESET = 2
+KEYB_PAUSE = 3
 # insert character
-KEYB_CHAR = 3
+KEYB_CHAR = 4
 # insert keydown
-KEYB_DOWN = 4
+KEYB_DOWN = 5
 # insert keyup
-KEYB_UP = 5
-# paste characters
-KEYB_PASTE = 6
-
+KEYB_UP = 6
+# light pen events
+PEN_DOWN = 101
+PEN_UP = 102
+PEN_MOVED = 103
+# joystick events
+STICK_DOWN = 201
+STICK_UP = 202
+STICK_MOVED = 203
+# clipboard events
+CLIP_COPY = 254
+CLIP_PASTE = 255
 
 
 ###############################################################################
@@ -141,9 +152,10 @@ tick_s = 0.024
 
 def wait():
     """ Wait and check events. """
-    idle()
+    time.sleep(tick_s)
     check_events()
 
+#D
 def idle():
     """ Wait a tick. """
     # do not hog cpu
@@ -159,11 +171,16 @@ def check_events():
         for c in state.basic_state.events.com:
             c.check()
     # KEY, PEN and STRIG are triggered on handling the input queue
+    pause = False
     while True:
         try:
             signal = input_queue.get(False)
         except Queue.Empty:
-            break
+            if not pause:
+                break
+            else:
+                time.sleep(tick_s)
+                continue
         # we're on it
         input_queue.task_done()
         if signal.event_type == KEYB_QUIT:
@@ -172,17 +189,46 @@ def check_events():
             raise error.Reset()
         elif signal.event_type == KEYB_BREAK:
             raise error.Break()
-        elif signal.event_type == KEYB_CHAR:
+        elif signal.event_type == KEYB_PAUSE:
+            pause = signal.params
+        if signal.event_type == KEYB_CHAR:
+            pause = False
             state.console_state.keyb.insert_chars(signal.params, check_full=True)
-        elif signal.event_type == KEYB_PASTE:
-            state.console_state.keyb.insert_chars(signal.params, check_full=False)
         elif signal.event_type == KEYB_DOWN:
+            pause = False
             scan, eascii = signal.params
             state.console_state.keyb.key_down(scan, eascii, check_full=True)
         elif signal.event_type == KEYB_UP:
             state.console_state.keyb.key_up(signal.params)
+        elif signal.event_type == PEN_DOWN:
+            state.console_state.pen.down(*signal.params)
+        elif signal.event_type == PEN_UP:
+            state.console_state.pen.up()
+        elif signal.event_type == PEN_MOVED:
+            state.console_state.pen.moved(*signal.params)
+        elif signal.event_type == STICK_DOWN:
+            try:
+                state.console_state.stick.down(*signal.params)
+            except IndexError:
+                # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+                pass
+        elif signal.event_type == STICK_UP:
+            try:
+                state.console_state.stick.up(*signal.params)
+            except IndexError:
+                pass
+        elif signal.event_type == STICK_MOVED:
+            try:
+                state.console_state.stick.moved(*signal.params)
+            except IndexError:
+                pass
+        elif signal.event_type == CLIP_COPY:
+            start_row, start_col, stop_row, stop_col, mouse = signal.params
+            clipboard_handler.copy(state.console_state.screen.get_text(
+                                start_row, start_col, stop_row, stop_col), mouse)
+        elif signal.event_type == CLIP_PASTE:
+            paste_clipboard(signal.params)
 
-#def key_up(scan):
 #def insert_special_key(name):
 #def insert_chars(s, check_full=False):
 #def key_down(scan, eascii='', check_full=True):
@@ -205,33 +251,23 @@ def TEMP_video_get_until(x0, x1, y, c):
 def TEMP_video_get_rect(x0, y0, x1, y1):
     return [ [0]*(x1-x0+1) for _ in range(y0, y1+1) ]
 
-
-
-###############################################################################
-# clipboard
-
 #D
-def copy_clipboard(start_row, start_col, stop_row, stop_col, mouse):
-    clipboard_handler.copy(state.console_state.screen.get_text(
-                            start_row, start_col, stop_row, stop_col), mouse)
-
-# #D
-# def paste_clipboard(mouse):
-#     # ignore any bad UTF8 characters from outside
-#     text_utf8 = clipboard_handler.paste(mouse)
-#     for u in text_utf8.decode('utf-8', 'ignore'):
-#         c = u.encode('utf-8')
-#         last = ''
-#         if c == '\n':
-#             if last != '\r':
-#                 insert_chars('\r')
-#         else:
-#             try:
-#                 insert_chars(unicodepage.from_utf8(c))
-#             except KeyError:
-#                 insert_chars(c)
-#         last = c
-
+def paste_clipboard(mouse):
+    # ignore any bad UTF8 characters from outside
+    text_utf8 = clipboard_handler.paste(mouse)
+    for u in text_utf8.decode('utf-8', 'ignore'):
+        c = u.encode('utf-8')
+        last = ''
+        if c == '\n':
+            if last != '\r':
+                state.console_state.keyb.insert_chars('\r', check_full=False)
+        else:
+            try:
+                char = unicodepage.from_utf8(c)
+            except KeyError:
+                char = c
+            state.console_state.keyb.insert_chars(char, check_full=False)
+        last = c
 
 
 ###############################################################################
@@ -1710,19 +1746,6 @@ class Pen(object):
 
 state.console_state.pen = Pen()
 
-#D
-def pen_down(x, y):
-    """ Report a pen-down event at graphical x,y """
-    state.console_state.pen.down(x, y)
-#D
-def pen_up():
-    """ Report a pen-up event at graphical x,y """
-    state.console_state.pen.up()
-#D
-def pen_moved(x, y):
-    """ Report a pen-move event at graphical x,y """
-    state.console_state.pen.moved(x, y)
-
 
 ###############################################################################
 # joysticks
@@ -1777,32 +1800,6 @@ class Stick(object):
 
 
 state.console_state.stick = Stick()
-
-
-#D
-def stick_down(joy, button):
-    """ Report a joystick button down event. """
-    try:
-        state.console_state.stick.down(joy, button)
-    except IndexError:
-        # ignore any joysticks/axes beyond the 2x2 supported by BASIC
-        pass
-
-#D
-def stick_up(joy, button):
-    """ Report a joystick button up event. """
-    try:
-        state.console_state.stick.up(joy, button)
-    except IndexError:
-        pass
-
-#D
-def stick_moved(joy, axis, value):
-    """ Report a joystick axis move. """
-    try:
-        state.console_state.stick.moved(joy, axis, value)
-    except IndexError:
-        pass
 
 
 ###############################################################################
