@@ -75,7 +75,7 @@ def launch_thread():
     thread.start()
 
 def consumer_thread():
-    """ Audio signal queue consumer thread. """
+    """ Video signal queue consumer thread. """
     while drain_video_queue():
         check_keys()
         # do not hog cpu

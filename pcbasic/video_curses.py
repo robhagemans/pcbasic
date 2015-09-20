@@ -131,7 +131,7 @@ def launch_thread():
     thread.start()
 
 def consumer_thread():
-    """ Audio signal queue consumer thread. """
+    """ Video signal queue consumer thread. """
     # if I don't write something here, I get a blank unresponsive screen for some reason.
     sys.stdout.write(' ')
     sys.stdout.flush()
@@ -230,7 +230,7 @@ def init_screen_mode(mode_info):
     global window, height, width, text
     height = mode_info.height
     width = mode_info.width
-    text = [ [' ']*width for _ in range(height)]
+    text = [ [(' ', 0)]*width for _ in range(height)]
     if window:
         window.clear()
         window.refresh()
