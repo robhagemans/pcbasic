@@ -103,6 +103,10 @@ VIDEO_REMOVE_CLIP = 27
 VIDEO_COPY_PAGE = 28
 # set caption message
 VIDEO_SET_CAPTION = 29
+# save/load state
+VIDEO_SAVE_STATE = 30
+VIDEO_LOAD_STATE = 31
+
 
 # input queue signals
 # special keys
@@ -229,12 +233,6 @@ def check_events():
 #def insert_special_key(name):
 #def insert_chars(s, check_full=False):
 #def key_down(scan, eascii='', check_full=True):
-
-def TEMP_video_save_state():
-    return None
-
-def TEMP_video_load_state(storage):
-    return False
 
 def TEMP_video_get_pixel(x, y, pagenum):
     return 0
@@ -1010,8 +1008,6 @@ class Screen(object):
         self.mode = self.text_data[initial_width]
         # cursor
         self.cursor = Cursor(self)
-        # storage space for backend display strings
-        self.display_storage = None
 
     def prepare_modes(self):
         """ Build lists of allowed graphics modes. """
@@ -1020,16 +1016,11 @@ class Screen(object):
 
     def close(self):
         """ Close the display. """
-        self.save_state()
         video.close()
 
     def save_state(self):
         """ Save display for possible resume. """
-        self.display_storage = TEMP_video_save_state()
-
-    def clear_saved_state(self):
-        """ Clear storage space for saved display state. """
-        self.display_storage = None
+        video_queue.put(Event(VIDEO_SAVE_STATE))
 
     def resume(self):
         """ Load a video mode from storage and initialise. """
@@ -1077,12 +1068,10 @@ class Screen(object):
             self.mode = mode_info
             self.redraw_text_screen()
         else:
+            # redraw the text in case we can't restore the full graphics screen
+            self.redraw_text_screen()
             # load the screen contents from storage
-            if not TEMP_video_load_state(self.display_storage):
-                # couldn't restore graphics - redraw the text screen
-                self.redraw_text_screen()
-        # throw away the display strings after use
-        self.display_storage = None
+            video_queue.put(Event(VIDEO_LOAD_STATE))
         return True
 
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum,

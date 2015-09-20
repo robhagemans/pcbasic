@@ -2,7 +2,7 @@
 PC-BASIC - pygame_android.py
 Android-specific helpers and workarounds for video_pygame interface
 
-(c) 2014, 2015 Rob Hagemans 
+(c) 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -116,7 +116,6 @@ def check_events():
         # save emulator state
         state.console_state.screen.save_state()
         state.save()
-        state.console_state.screen.clear_saved_state()
         # hibernate; we may not wake up
         android.wait_for_resume()
         return True

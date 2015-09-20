@@ -99,10 +99,11 @@ def prepare():
 
 ###############################################################################
 
+
 def init():
     """ Initialise pygame interface. """
     global joysticks, physical_size, display_size
-    global text_mode, fonts
+    global text_mode, fonts, state_loaded
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
         logging.warning('PyGame module not found. Failed to initialise graphical interface.')
@@ -131,6 +132,7 @@ def init():
     update_palette([(0,0,0)]*16, None)
     if android:
         pygame_android.init()
+        state_loaded = False
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
     for j in joysticks:
@@ -158,12 +160,17 @@ def close():
     if thread and thread.is_alive():
         # signal quit and wait for thread to finish
         thread.join()
+    # all messages are processed; record final state and shut down
+    display_state = None
+    if pygame:
+        save_state()
     if android:
         pygame_android.close()
     # if pygame import failed, close() is called while pygame is None
     if pygame:
         pygame.joystick.quit()
         pygame.display.quit()
+    return display_state
 
 
 ###############################################################################
@@ -247,6 +254,10 @@ def drain_video_queue():
             remove_graph_clip()
         elif signal.event_type == backend.VIDEO_SET_CAPTION:
             set_caption_message(signal.params)
+        elif signal.event_type == backend.VIDEO_SAVE_STATE:
+            save_state()
+        elif signal.event_type == backend.VIDEO_LOAD_STATE:
+            load_state()
         # request information
         #VIDEO_GET_PIXEL
         #VIDEO_GET_INTERVAL
@@ -435,6 +446,42 @@ def handle_key_up(e):
         except KeyError:
             pass
 
+
+###############################################################################
+# persistence
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+import zlib
+import os
+import plat
+
+state_file = os.path.join(plat.state_path, 'DISPLAY.SAV')
+
+def save_state():
+    """ Save display state as list of strings. """
+    display_str = [pygame.image.tostring(s, 'P') for s in canvas]
+    with open(state_file, 'wb') as fstate:
+        fstate.write(zlib.compress(pickle.dumps(display_str, 2)))
+
+def load_state():
+    """ Restore display state. """
+    global screen_changed
+    with open(state_file, 'rb') as fstate:
+        display_str = pickle.loads(zlib.decompress(fstate.read()))
+    try:
+        for i in range(len(canvas)):
+            canvas[i] = pygame.image.fromstring(display_str[i], size, 'P')
+            canvas[i].set_palette(workpalette)
+        screen_changed = True
+        return True
+    except (IndexError, ValueError, TypeError):
+        # couldn't load the state correctly
+        # e.g. saved from different interface. just redraw what's unpickled.
+        # this also happens if the screen resolution has changed
+        return False
 
 ###############################################################################
 
