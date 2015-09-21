@@ -1000,7 +1000,6 @@ class PixelPage(object):
 
     def get_until(self, x0, x1, y, c):
         """ Get the attribute values of a scanline interval [x0, x1-1]. """
-        print "get until", x0, x1, y, c
         if x0 == x1:
             return []
         toright = x1 > x0
@@ -1273,7 +1272,7 @@ class Screen(object):
         self.text = TextBuffer(self.attr, self.mode.width,
                                self.mode.height, self.mode.num_pages)
         if not self.mode.is_text_mode:
-            self.pixels = PixelBuffer(self.mode.pixel_height, self.mode.pixel_width,
+            self.pixels = PixelBuffer(self.mode.pixel_width, self.mode.pixel_height,
                                     self.mode.num_pages, self.mode.bitsperpixel)
         # ensure current position is not outside new boundaries
         state.console_state.row, state.console_state.col = 1, 1
