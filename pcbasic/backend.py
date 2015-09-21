@@ -986,7 +986,7 @@ class PixelPage(object):
         if (x1 < x0) or (y1 < y0):
             return
         try:
-            self.operations[operation_token](self.buffer[y0:y1+1, x0:x1+1], array)
+            self.operations[operation_token](self.buffer[y0:y1+1, x0:x1+1], numpy.asarray(array))
             return self.buffer[y0:y1+1, x0:x1+1]
         except IndexError:
             return numpy.zeros((y1-y0+1, x1-x0+1), dtype=numpy.int8)
