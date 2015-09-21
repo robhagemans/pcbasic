@@ -562,7 +562,7 @@ class Drawing(object):
             else:
                 interval = tile_to_interval(x_left, x_right, y, tile)
                 self.screen.put_interval(self.screen.apagenum, x_left, y, interval)
-            # show progress
+            # allow interrupting the paint
             if y%4 == 0:
                 backend.check_events()
         self.last_attr = c
