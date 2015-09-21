@@ -15,6 +15,11 @@ except ImportError:
 import logging
 from copy import copy
 
+import time
+import Queue
+
+import numpy
+
 import plat
 import config
 import state
@@ -32,8 +37,7 @@ import modes
 import graphics
 import memory
 import clipboard
-import time
-import Queue
+import basictoken as tk
 
 # backend implementations
 video = None
@@ -92,11 +96,6 @@ VIDEO_FILL_INTERVAL = 19
 # put rect
 VIDEO_PUT_RECT = 20
 VIDEO_FILL_RECT = 21
-# request information
-VIDEO_GET_PIXEL = 22
-VIDEO_GET_INTERVAL = 23
-VIDEO_GET_RECT = 24
-VIDEO_GET_UNTIL = 25
 # graphics viewport operations
 VIDEO_APPLY_CLIP = 26
 VIDEO_REMOVE_CLIP = 27
@@ -898,6 +897,128 @@ class TextBuffer(object):
             dstrow.wrap = srcrow.wrap
 
 
+class PixelBuffer(object):
+    """ Buffer for graphics on all screen pages. """
+
+    def __init__(self, bwidth, bheight, bpages, bitsperpixel):
+        """ Initialise the graphics buffer to given pages and dimensions. """
+        self.pages = [ PixelPage(bwidth, bheight, num, bitsperpixel) for num in range(bpages)]
+        self.width = bwidth
+        self.height = bheight
+
+    def copy_page(self, src, dst):
+        """ Copy source to destination page. """
+        for x in range(self.height):
+            dstrow = self.pages[dst].row[x]
+            srcrow = self.pages[src].row[x]
+            dstrow.buf[:] = srcrow.buf[:]
+
+#if numpy:
+class PixelPage(object):
+    """ Buffer for a screen page. """
+
+    def __init__(self, bwidth, bheight, pagenum, bitsperpixel):
+        """ Initialise the screen buffer to given dimensions. """
+        self.buffer = numpy.zeros((bheight, bwidth), dtype=numpy.int8)
+        self.width = bwidth
+        self.height = bheight
+        self.pagenum = pagenum
+        self.bitsperpixel = bitsperpixel
+        self.operations = {
+            tk.PSET: lambda x, y: x.__setitem__(slice(len(x)), y),
+            tk.PRESET: lambda x, y: x.__setitem__(slice(len(x)), y.__xor__((1<<self.bitsperpixel) - 1)),
+            tk.AND: lambda x, y: x.__iand__(y),
+            tk.OR: lambda x, y: x.__ior__(y),
+            tk.XOR: lambda x, y: x.__ixor__(y),
+        }
+
+    def put_pixel(self, x, y, attr):
+        """ Put a pixel in the buffer. """
+        try:
+            self.buffer[y, x] = attr
+        except IndexError:
+            pass
+
+    def get_pixel(self, x, y):
+        """ Get attribute of a pixel in the buffer. """
+        try:
+            return self.buffer[y, x]
+        except IndexError:
+            return 0
+
+    def fill_interval(self, x0, x1, y, attr):
+        """ Write a list of attributes to a scanline interval. """
+        try:
+            self.buffer[y, x0:x1+1].fill(attr)
+        except IndexError:
+            pass
+
+    def put_interval(self, x, y, colours, mask=0xff):
+        """ Write a list of attributes to a scanline interval. """
+        colours = numpy.array(colours).astype(int)
+        inv_mask = 0xff ^ mask
+        colours &= mask
+        try:
+            self.buffer[y, x:x+len(colours)] &= inv_mask
+            self.buffer[y, x:x+len(colours)] |= colours
+            return self.buffer[y, x:x+len(colours)]
+        except IndexError:
+            return numpy.zeros(len(colours), dtype=numpy.int8)
+
+    def get_interval(self, x, y, length):
+        """ Return *view of* attributes of a scanline interval. """
+        try:
+            return self.buffer[y, x:x+length]
+        except IndexError:
+            return numpy.zeros(length, dtype=numpy.int8)
+
+    def fill_rect(self, x0, y0, x1, y1, attr):
+        """ Apply numpy array [y][x] of attribytes to an area. """
+        if (x1 < x0) or (y1 < y0):
+            return
+        try:
+            self.buffer[y0:y1+1, x0:x1+1].fill(attr)
+        except IndexError:
+            pass
+
+    def put_rect(self, x0, y0, x1, y1, array, operation_token):
+        """ Apply numpy array [y][x] of attribytes to an area. """
+        if (x1 < x0) or (y1 < y0):
+            return
+        try:
+            self.operations[operation_token](self.buffer[y0:y1+1, x0:x1+1], array)
+            return self.buffer[y0:y1+1, x0:x1+1]
+        except IndexError:
+            return numpy.zeros((y1-y0+1, x1-x0+1), dtype=numpy.int8)
+
+    def get_rect(self, x0, y0, x1, y1):
+        """ Get *view of* numpy array [y][x] of target area. """
+        try:
+            return self.buffer[y0:y1+1, x0:x1+1]
+        except IndexError:
+            return numpy.zeros((y1-y0+1, x1-x0+1), dtype=numpy.int8)
+
+    def get_until(self, x0, x1, y, c):
+        """ Get the attribute values of a scanline interval [x0, x1-1]. """
+        print "get until", x0, x1, y, c
+        if x0 == x1:
+            return []
+        toright = x1 > x0
+        if not toright:
+            x0, x1 = x1+1, x0+1
+        try:
+            arr = self.buffer[y, x0:x1]
+        except IndexError:
+            return []
+        found = numpy.where(arr == c)
+        if len(found[0]) > 0:
+            if toright:
+                arr = arr[:found[0][0]]
+            else:
+                arr = arr[found[0][-1]+1:]
+        return list(arr.flatten())
+
+
 ###############################################################################
 # screen operations
 
@@ -1151,6 +1272,9 @@ class Screen(object):
         # build the screen buffer
         self.text = TextBuffer(self.attr, self.mode.width,
                                self.mode.height, self.mode.num_pages)
+        if not self.mode.is_text_mode:
+            self.pixels = PixelBuffer(self.mode.pixel_height, self.mode.pixel_width,
+                                    self.mode.num_pages, self.mode.bitsperpixel)
         # ensure current position is not outside new boundaries
         state.console_state.row, state.console_state.col = 1, 1
         # set active page & visible page, counting from 0.
@@ -1427,6 +1551,7 @@ class Screen(object):
         """ Put a pixel on the screen; empty character buffer. """
         if pagenum is None:
             pagenum = self.apagenum
+        self.pixels.pages[pagenum].put_pixel(x, y, index)
         video_queue.put(Event(VIDEO_PUT_PIXEL, (x, y, index, pagenum)))
         self.clear_text_at(x, y)
 
@@ -1434,41 +1559,42 @@ class Screen(object):
         """ Return the attribute a pixel on the screen. """
         if pagenum is None:
             pagenum = self.apagenum
-        video_queue.put(Event(VIDEO_GET_PIXEL, (x, y, pagenum)))
-        return wait_response()
+        return self.pixels.pages[pagenum].get_pixel(x, y)
 
     def get_interval(self, pagenum, x, y, length):
         """ Read a scanline interval into a list of attributes. """
-        video_queue.put(Event(VIDEO_GET_INTERVAL, (pagenum, x, y, length)))
-        return wait_response()
+        return self.pixels.pages[pagenum].get_interval(x, y, length)
 
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """ Write a list of attributes to a scanline interval. """
-        video_queue.put(Event(VIDEO_PUT_INTERVAL, (pagenum, x, y, colours, mask)))
+        newcolours = self.pixels.pages[pagenum].put_interval(x, y, colours, mask)
+        video_queue.put(Event(VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours)))
         self.clear_text_area(x, y, x+len(colours), y)
 
     def fill_interval(self, x0, x1, y, index):
         """ Fill a scanline interval in a solid attribute. """
+        self.pixels.pages[self.apagenum].fill_interval(x0, x1, y, index)
         video_queue.put(Event(VIDEO_FILL_INTERVAL, (x0, x1, y, index)))
         self.clear_text_area(x0, y, x1, y)
 
     def get_until(self, x0, x1, y, c):
         """ Get the attribute values of a scanline interval. """
-        video_queue.put(Event(VIDEO_GET_UNTIL, (x0, x1, y, c)))
-        return wait_response()
+        return self.pixels.pages[self.apagenum].get_until(x0, x1, y, c)
 
     def get_rect(self, x0, y0, x1, y1):
         """ Read a screen rect into an [y][x] array of attributes. """
-        video_queue.put(Event(VIDEO_GET_RECT, (x0, y0, x1, y1)))
-        return wait_response()
+        return self.pixels.pages[self.apagenum].get_rect(x0, y0, x1, y1)
 
     def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
         """ Apply an [y][x] array of attributes onto a screen rect. """
-        video_queue.put(Event(VIDEO_PUT_RECT, (x0, y0, x1, y1, sprite, operation_token)))
+        rect = self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1,
+                                                        sprite, operation_token)
+        video_queue.put(Event(VIDEO_PUT_RECT, (x0, y0, x1, y1, rect)))
         self.clear_text_area(x0, y0, x1, y1)
 
     def fill_rect(self, x0, y0, x1, y1, index):
         """ Fill a rectangle in a solid attribute. """
+        self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, index)
         video_queue.put(Event(VIDEO_FILL_RECT, (x0, y0, x1, y1, index)))
         self.clear_text_area(x0, y0, x1, y1)
 

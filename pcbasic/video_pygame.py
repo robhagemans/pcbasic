@@ -258,15 +258,6 @@ def drain_video_queue():
             save_state()
         elif signal.event_type == backend.VIDEO_LOAD_STATE:
             load_state()
-        # request information
-        elif signal.event_type == backend.VIDEO_GET_PIXEL:
-            backend.response_queue.put(get_pixel(*signal.params))
-        elif signal.event_type == backend.VIDEO_GET_INTERVAL:
-            backend.response_queue.put(get_interval(*signal.params))
-        elif signal.event_type == backend.VIDEO_GET_RECT:
-            backend.response_queue.put(get_rect(*signal.params))
-        elif signal.event_type == backend.VIDEO_GET_UNTIL:
-            backend.response_queue.put(get_until(*signal.params))
         backend.video_queue.task_done()
 
 
@@ -1163,7 +1154,7 @@ def draw_cursor(screen):
                                   (cursor_col-1) * font_width + cursor_width):
                 for y in range((cursor_row-1) * font_height + cursor_from,
                                 (cursor_row-1) * font_height + cursor_to + 1):
-                    pixel = get_pixel(x, y, apagenum)
+                    pixel = canvas[vpagenum].get_at((x,y)).b
                     screen.set_at((x,y), pixel^index)
     last_row = cursor_row
     last_col = cursor_col
@@ -1339,8 +1330,6 @@ class ClipboardInterface(object):
 
 
 
-
-
 ###############################################################################
 # graphics backend interface
 # low-level methods (pygame implementation)
@@ -1350,10 +1339,6 @@ def put_pixel(x, y, index, pagenum):
     global screen_changed
     canvas[pagenum].set_at((x,y), index)
     screen_changed = True
-
-def get_pixel(x, y, pagenum):
-    """ Return the attribute a pixel on the screen. """
-    return canvas[pagenum].get_at((x,y)).b
 
 # graphics view area (pygame clip)
 
@@ -1383,116 +1368,42 @@ def fill_interval(x0, x1, y, index):
 
 
 if numpy:
-    def put_interval(pagenum, x, y, colours, mask=0xff):
+    def put_interval(pagenum, x, y, colours):
         """ Write a list of attributes to a scanline interval. """
         global screen_changed
         # reference the interval on the canvas
-        ref = pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y]
-        colours = numpy.array(colours).astype(int)
-        inv_mask = 0xff ^ mask
-        colours &= mask
-        ref &= inv_mask
-        ref |= colours
+        pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y] = numpy.array(colours).astype(int)
         screen_changed = True
-
-    def get_interval(pagenum, x, y, length):
-        """ Get *reference to* scanline interval into a list of colours. """
-        # NOTE that this references (much faster), we need to copy afterwards!
-        return pygame.surfarray.pixels2d(canvas[pagenum])[x:x+length, y]
 
 else:
     def put_interval(pagenum, x, y, colours, mask=0xff):
         """ Write a list of attributes to a scanline interval. """
         global screen_changed
-        if mask != 0xff:
-            inv_mask = 0xff ^ mask
-            colours &= mask
-            colours |= get_interval(pagenum, x, y, len(colours)) & inv_mask
         # list comprehension and ignoring result seems faster than loop
         [canvas[pagenum].set_at((x+i, y), index)
                          for i, index in enumerate(colours)]
         screen_changed = True
 
-    def get_interval(pagenum, x, y, length):
-        """ Read a scanline interval into a list of colours. """
-        return [canvas[pagenum].get_at((x+i, y)).b for i in xrange(length)]
-
-def get_until(x0, x1, y, c):
-    """ Get the attribute values of a scanline interval. """
-    if x0 == x1:
-        return []
-    if numpy:
-        toright = x1 > x0
-        if not toright:
-            x0, x1 = x1+1, x0+1
-        arr = pygame.surfarray.array2d(canvas[apagenum].subsurface((x0, y, x1-x0, 1)))
-        found = numpy.where(arr == c)
-        if len(found[0]) > 0:
-            if toright:
-                arr = arr[:found[0][0]]
-            else:
-                arr = arr[found[0][-1]+1:]
-        return list(arr.flatten())
-    else:
-        interval = []
-        for x in range(x0, x1):
-            index = canvas[apagenum].get_at((x,y)).b
-            if index == c:
-                break
-            interval.append(index)
-        return interval
-
-# sprite operations (PUT and GET)
 
 if numpy:
-    operations = {
-        tk.PSET: lambda x, y: x.__setitem__(slice(len(x)), y),
-        tk.PRESET: lambda x, y: x.__setitem__(slice(len(x)), y.__xor__((1<<bitsperpixel) - 1)),
-        tk.AND: lambda x, y: x.__iand__(y),
-        tk.OR: lambda x, y: x.__ior__(y),
-        tk.XOR: lambda x, y: x.__ixor__(y),
-        }
-
-    def get_rect(x0, y0, x1, y1):
-        """ Get *copy of* numpy array [y][x] of target area. """
-        return pygame.surfarray.array2d(canvas[apagenum].subsurface(
-                                    pygame.Rect(x0, y0, x1-x0+1, y1-y0+1))).T
-
-    def put_rect(x0, y0, x1, y1, array, operation_token):
+    def put_rect(x0, y0, x1, y1, array):
         """ Apply numpy array [y][x] of attribytes to an area. """
         global screen_changed
         if (x1 < x0) or (y1 < y0):
             return
         # reference the destination area
-        dest_array = pygame.surfarray.pixels2d(
-            canvas[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))
-        # apply the operation
-        operations[operation_token](dest_array, numpy.array(array).T)
+        pygame.surfarray.pixels2d(
+            canvas[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))[:] = numpy.array(array).T
         screen_changed = True
 
 else:
-    operations = {
-        tk.PSET: lambda x, y: y,
-        tk.PRESET: lambda x, y: y ^ ((1<<bitsperpixel)-1),
-        tk.AND: lambda x, y: x & y,
-        tk.OR: lambda x, y: x | y,
-        tk.XOR: lambda x, y: x ^ y,
-        }
-
-    def get_rect(x0, y0, x1, y1):
-        """ Read 2D list [y][x] of attributes from target area. """
-        return [[ canvas[apagenum].get_at((x0+i, y0+j)).b
-                            for i in xrange(x1-x0+1) ]
-                                for j in xrange(y1-y0+1) ]
-
-    def put_rect(x0, y0, x1, y1, array, operation_token):
+    def put_rect(x0, y0, x1, y1, array):
         """ Apply a 2D list [y][x] of attributes to an area. """
         global screen_changed
-        operation = operations[operation_token]
-        [[ canvas[apagenum].set_at((x0+i, y0+j),
-                operation(canvas[apagenum].get_at((x0+i, y0+j)).b, index))
+        [[ canvas[apagenum].set_at((x0+i, y0+j), index)
                             for i, index in enumerate(array[j]) ]
-                                for j in xrange(y1-y0+1) ]
+                            for j in xrange(y1-y0+1) ]
         screen_changed = True
+
 
 prepare()
