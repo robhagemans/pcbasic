@@ -992,9 +992,10 @@ class PixelPage(object):
             return numpy.zeros((y1-y0+1, x1-x0+1), dtype=numpy.int8)
 
     def get_rect(self, x0, y0, x1, y1):
-        """ Get *view of* numpy array [y][x] of target area. """
+        """ Get *copy of* numpy array [y][x] of target area. """
         try:
-            return self.buffer[y0:y1+1, x0:x1+1]
+            # our only user in module graphics needs a copy, so copy.
+            return numpy.array(self.buffer[y0:y1+1, x0:x1+1])
         except IndexError:
             return numpy.zeros((y1-y0+1, x1-x0+1), dtype=numpy.int8)
 
