@@ -1580,7 +1580,7 @@ class Screen(object):
             last_row = self.mode.height
         else:
             last_row = state.console_state.scroll_height
-        for r in self.apage.row[state.console_state.view_start-1,
+        for r in self.apage.row[state.console_state.view_start-1:
                         state.console_state.scroll_height]:
             # we're clearing the rows below, but don't set the wrap there
             r.wrap = False
