@@ -72,9 +72,9 @@ def init_mode():
     # there is only one VIEW PRINT setting across all pages.
     if state.console_state.scroll_height == 25:
         # tandy/pcjr special case: VIEW PRINT to 25 is preserved
-        set_view(1, 25)
+        state.console_state.screen.set_view(1, 25)
     else:
-        unset_view()
+        state.console_state.screen.unset_view()
 
 def set_width(to_width):
     """ Change the width of the screen. """
@@ -331,11 +331,11 @@ def insert(crow, ccol, c, cattr):
             break
         else:
             if crow == state.console_state.scroll_height:
-                scroll()
+                state.console_state.screen.scroll()
                 # this is not the global row which is changed by scroll()
                 crow -= 1
             if not therow.wrap and crow < state.console_state.screen.mode.height:
-                scroll_down(crow+1)
+                state.console_state.screen.scroll_down(crow+1)
                 therow.wrap = True
             c, cattr = therow.buf.pop()
             crow += 1
@@ -389,7 +389,7 @@ def delete_sbcs_char(crow, ccol):
             nextrow.end = 0
             ccol += 1
             therow.wrap = False
-            scroll(crow+1)
+            state.console_state.screen.scroll(crow+1)
     elif ccol <= therow.end:
         # row not ending with LF
         while True:
@@ -419,7 +419,7 @@ def delete_sbcs_char(crow, ccol):
             therow.end -= 1
         else:
             # if there was nothing on the line, scroll the next line up.
-            scroll(crow)
+            state.console_state.screen.scroll(crow)
             if crow > 1:
                 thepage.row[crow-2].wrap = False
 
@@ -441,7 +441,7 @@ def clear_rest_of_line(srow, scol):
         state.console_state.screen.apage.row[crow-1].clear(state.console_state.screen.attr)
     for r in range(crow, srow, -1):
         state.console_state.screen.apage.row[r-1].wrap = False
-        scroll(r)
+        state.console_state.screen.scroll(r)
     therow = state.console_state.screen.apage.row[srow-1]
     therow.wrap = False
     set_pos(srow, scol)
@@ -507,10 +507,10 @@ def line_feed():
                 crow < state.console_state.scroll_height):
             crow += 1
         if crow >= state.console_state.scroll_height:
-            scroll()
+            state.console_state.screen.scroll()
         # state.console_state.row has changed, don't use crow
         if state.console_state.row < state.console_state.screen.mode.height:
-            scroll_down(state.console_state.row+1)
+            state.console_state.screen.scroll_down(state.console_state.row+1)
     # LF connects lines like word wrap
     state.console_state.screen.apage.row[state.console_state.row-1].wrap = True
     set_pos(state.console_state.row+1, 1)
@@ -578,12 +578,12 @@ def clear():
     save_view_set = state.console_state.view_set
     save_view_start = state.console_state.view_start
     save_scroll_height = state.console_state.scroll_height
-    set_view(1, 25)
-    clear_view()
+    state.console_state.screen.set_view(1, 25)
+    state.console_state.screen.clear_view()
     if save_view_set:
-        set_view(save_view_start, save_scroll_height)
+        state.console_state.screen.set_view(save_view_start, save_scroll_height)
     else:
-        unset_view()
+        state.console_state.screen.unset_view()
     if state.console_state.keys_visible:
         show_keys(True)
 
@@ -764,9 +764,9 @@ def check_wrap(do_scroll_down):
         if do_scroll_down:
             # scroll down (make space by shifting the next rows down)
             if state.console_state.row < state.console_state.scroll_height:
-                scroll_down(state.console_state.row+1)
+                state.console_state.screen.scroll_down(state.console_state.row+1)
         # move cursor and reset cursor attribute
-        state.console_state.move_cursor(state.console_state.row + 1, 1)
+        state.console_state.screen.move_cursor(state.console_state.row + 1, 1)
 
 def set_pos(to_row, to_col, scroll_ok=True):
     """ Set the current position. """
@@ -811,7 +811,7 @@ def check_pos(scroll_ok=True):
     # see if we need to scroll
     if state.console_state.row > state.console_state.scroll_height:
         if scroll_ok:
-            scroll()                # Scroll Here
+            state.console_state.screen.scroll()
         state.console_state.row = state.console_state.scroll_height
     elif state.console_state.row < state.console_state.view_start:
         state.console_state.row = state.console_state.view_start
@@ -838,72 +838,6 @@ def write_error_message(msg, linenum):
         write(' in %i' % linenum)
     write_line(' ')
 
-
-#####################
-# viewport / scroll area
-
-def set_view(start=1, stop=24):
-    """ Set the scroll area. """
-    state.console_state.view_set = True
-    state.console_state.view_start = start
-    state.console_state.scroll_height = stop
-    set_pos(start, 1)
-
-def unset_view():
-    """ Unset scroll area. """
-    set_view()
-    state.console_state.view_set = False
-
-def clear_view():
-    """ Clear the scroll area. """
-    if backend.video_capabilities in ('vga', 'ega', 'cga', 'cga_old'):
-        # keep background, set foreground to 7
-        attr_save = state.console_state.screen.attr
-        state.console_state.screen.set_attr(attr_save & 0x70 | 0x7)
-    for r in range(state.console_state.view_start,
-                    state.console_state.scroll_height+1):
-        state.console_state.screen.apage.row[r-1].clear(state.console_state.screen.attr)
-        state.console_state.screen.apage.row[r-1].wrap = False
-    state.console_state.row = state.console_state.view_start
-    state.console_state.col = 1
-    if state.console_state.bottom_row_allowed:
-        last_row = state.console_state.screen.mode.height
-    else:
-        last_row = state.console_state.scroll_height
-    state.console_state.screen.clear_rows(state.console_state.view_start, last_row)
-    # ensure the cursor is show in the right position
-    state.console_state.screen.move_cursor(state.console_state.row, state.console_state.col)
-    if backend.video_capabilities in ('vga', 'ega', 'cga', 'cga_old'):
-        # restore attr
-        state.console_state.screen.set_attr(attr_save)
-
-def scroll(from_line=None):
-    """ Scroll the scroll region up by one line, starting at from_line. """
-    if from_line is None:
-        from_line = state.console_state.view_start
-    backend.video_queue.put(backend.Event(backend.VIDEO_SCROLL_UP,
-                            (from_line, state.console_state.scroll_height,
-                            state.console_state.screen.attr)))
-    # sync buffers with the new screen reality:
-    if state.console_state.row > from_line:
-        state.console_state.row -= 1
-    state.console_state.screen.apage.row.insert(state.console_state.scroll_height,
-            backend.TextRow(state.console_state.screen.attr,
-                              state.console_state.screen.mode.width))
-    del state.console_state.screen.apage.row[from_line-1]
-
-def scroll_down(from_line):
-    """ Scroll the scroll region down by one line, starting at from_line. """
-    backend.video_queue.put(backend.Event(backend.VIDEO_SCROLL_DOWN,
-                            (from_line, state.console_state.scroll_height,
-                            state.console_state.screen.attr)))
-    if state.console_state.row >= from_line:
-        state.console_state.row += 1
-    # sync buffers with the new screen reality:
-    state.console_state.screen.apage.row.insert(from_line - 1,
-            backend.TextRow(state.console_state.screen.attr,
-                              state.console_state.screen.mode.width))
-    del state.console_state.screen.apage.row[state.console_state.scroll_height-1]
 
 ################################################
 

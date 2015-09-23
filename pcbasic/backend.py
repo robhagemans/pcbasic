@@ -1552,6 +1552,69 @@ class Screen(object):
         """ Signal the backend to rebuild a character after POKE. """
         video_queue.put(Event(VIDEO_BUILD_GLYPH, ordval))
 
+    ## text viewport / scroll area
+
+    def set_view(self, start, stop):
+        """ Set the scroll area. """
+        state.console_state.view_set = True
+        state.console_state.view_start = start
+        state.console_state.scroll_height = stop
+        #set_pos(start, 1)
+        state.console_state.overflow = False
+        self.move_cursor(start, 1)
+
+    def unset_view(self):
+        """ Unset scroll area. """
+        self.set_view(1, 24)
+        state.console_state.view_set = False
+
+    def clear_view(self):
+        """ Clear the scroll area. """
+        if video_capabilities in ('vga', 'ega', 'cga', 'cga_old'):
+            # keep background, set foreground to 7
+            attr_save = self.attr
+            self.set_attr(attr_save & 0x70 | 0x7)
+        for r in range(state.console_state.view_start,
+                        state.console_state.scroll_height+1):
+            self.apage.row[r-1].clear(self.attr)
+            self.apage.row[r-1].wrap = False
+        state.console_state.row = state.console_state.view_start
+        state.console_state.col = 1
+        if state.console_state.bottom_row_allowed:
+            last_row = self.mode.height
+        else:
+            last_row = state.console_state.scroll_height
+        self.clear_rows(state.console_state.view_start, last_row)
+        # ensure the cursor is show in the right position
+        self.move_cursor(state.console_state.row, state.console_state.col)
+        if video_capabilities in ('vga', 'ega', 'cga', 'cga_old'):
+            # restore attr
+            self.set_attr(attr_save)
+
+    def scroll(self, from_line=None):
+        """ Scroll the scroll region up by one line, starting at from_line. """
+        if from_line is None:
+            from_line = state.console_state.view_start
+        video_queue.put(Event(VIDEO_SCROLL_UP,
+                    (from_line, state.console_state.scroll_height, self.attr)))
+        # sync buffers with the new screen reality:
+        if state.console_state.row > from_line:
+            state.console_state.row -= 1
+        self.apage.row.insert(state.console_state.scroll_height,
+                              TextRow(self.attr, self.mode.width))
+        del self.apage.row[from_line-1]
+
+    def scroll_down(self,from_line):
+        """ Scroll the scroll region down by one line, starting at from_line. """
+        video_queue.put(Event(VIDEO_SCROLL_DOWN,
+                                (from_line, state.console_state.scroll_height,
+                                self.attr)))
+        if state.console_state.row >= from_line:
+            state.console_state.row += 1
+        # sync buffers with the new screen reality:
+        self.apage.row.insert(from_line - 1, TextRow(self.attr, self.mode.width))
+        del self.apage.row[state.console_state.scroll_height-1]
+
     ## graphics primitives
 
     def start_graph(self):
