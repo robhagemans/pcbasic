@@ -1375,17 +1375,6 @@ if numpy:
         pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y] = numpy.array(colours).astype(int)
         screen_changed = True
 
-else:
-    def put_interval(pagenum, x, y, colours, mask=0xff):
-        """ Write a list of attributes to a scanline interval. """
-        global screen_changed
-        # list comprehension and ignoring result seems faster than loop
-        [canvas[pagenum].set_at((x+i, y), index)
-                         for i, index in enumerate(colours)]
-        screen_changed = True
-
-
-if numpy:
     def put_rect(x0, y0, x1, y1, array):
         """ Apply numpy array [y][x] of attribytes to an area. """
         global screen_changed
@@ -1397,6 +1386,14 @@ if numpy:
         screen_changed = True
 
 else:
+    def put_interval(pagenum, x, y, colours, mask=0xff):
+        """ Write a list of attributes to a scanline interval. """
+        global screen_changed
+        # list comprehension and ignoring result seems faster than loop
+        [canvas[pagenum].set_at((x+i, y), index)
+                         for i, index in enumerate(colours)]
+        screen_changed = True
+
     def put_rect(x0, y0, x1, y1, array):
         """ Apply a 2D list [y][x] of attributes to an area. """
         global screen_changed
