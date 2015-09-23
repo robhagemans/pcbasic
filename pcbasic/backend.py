@@ -1535,10 +1535,20 @@ class Screen(object):
             self.apage.row[r].buf[cx0:cx1+1] = [
                 (' ', self.attr)] * (cx1 - cx0 + 1)
 
+    def text_to_pixel_area(self, row0, col0, row1, col1):
+        """ Convert area from text buffer to area for pixel buffer. """
+        return ((col0-1)*self.mode.font_width, (row0-1)*self.mode.font_height,
+                (col1-col0+1)*self.mode.font_width, (row1-row0+1)*self.mode.font_height)
+
     def clear_rows(self, start, stop):
         """ Clear text and graphics on given (inclusive) text row range. """
         for r in self.apage.row[start-1:stop]:
             r.clear(self.attr)
+        if not self.mode.is_text_mode:
+            x0, y0, x1, y1 = self.text_to_pixel_area(
+                            start, 1, stop, self.mode.width)
+            # background attribute must be 0 in graphics mode
+            self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, 0)
         video_queue.put(Event(VIDEO_CLEAR_ROWS, (self.attr, start, stop)))
 
     #MOVE to Cursor.move ?
