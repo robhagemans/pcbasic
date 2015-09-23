@@ -15,7 +15,6 @@ import config
 import state
 import error
 import console
-import backend
 
 if plat.system == 'Windows':
     import threading
