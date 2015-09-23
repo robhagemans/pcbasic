@@ -999,6 +999,13 @@ class PixelPage(object):
         except IndexError:
             return numpy.zeros((y1-y0+1, x1-x0+1), dtype=numpy.int8)
 
+    def move_rect(self, sx0, sy0, sx1, sy1, tx0, ty0):
+        """ Move pixels from an area to another, replacing with attribute 0. """
+        w, h = sx1-sx0+1, sy1-sy0+1
+        area = numpy.array(self.buffer[sy0:sy1+1, sx0:sx1+1])
+        self.buffer[sy0:sy1+1, sx0:sx1+1] = numpy.zeros((h, w), dtype=numpy.int8)
+        self.buffer[ty0:ty0+h, tx0:tx0+w] = area
+
     def get_until(self, x0, x1, y, c):
         """ Get the attribute values of a scanline interval [x0, x1-1]. """
         if x0 == x1:
@@ -1537,8 +1544,9 @@ class Screen(object):
 
     def text_to_pixel_area(self, row0, col0, row1, col1):
         """ Convert area from text buffer to area for pixel buffer. """
+        # area bounds are all inclusive
         return ((col0-1)*self.mode.font_width, (row0-1)*self.mode.font_height,
-                (col1-col0+1)*self.mode.font_width, (row1-row0+1)*self.mode.font_height)
+                (col1-col0+1)*self.mode.font_width-1, (row1-row0+1)*self.mode.font_height-1)
 
     def clear_rows(self, start, stop):
         """ Clear text and graphics on given (inclusive) text row range. """
@@ -1612,6 +1620,12 @@ class Screen(object):
             state.console_state.row -= 1
         self.apage.row.insert(state.console_state.scroll_height,
                               TextRow(self.attr, self.mode.width))
+        if not self.mode.is_text_mode:
+            sx0, sy0, sx1, sy1 = self.text_to_pixel_area(from_line+1, 1,
+                state.console_state.scroll_height, self.mode.width)
+            tx0, ty0, _, _ = self.text_to_pixel_area(from_line, 1,
+                state.console_state.scroll_height-1, self.mode.width)
+            self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
         del self.apage.row[from_line-1]
 
     def scroll_down(self,from_line):
@@ -1623,6 +1637,12 @@ class Screen(object):
             state.console_state.row += 1
         # sync buffers with the new screen reality:
         self.apage.row.insert(from_line - 1, TextRow(self.attr, self.mode.width))
+        if not self.mode.is_text_mode:
+            sx0, sy0, sx1, sy1 = self.text_to_pixel_area(from_line, 1,
+                state.console_state.scroll_height-1, self.mode.width)
+            tx0, ty0, _, _ = self.text_to_pixel_area(from_line+1, 1,
+                state.console_state.scroll_height, self.mode.width)
+            self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
         del self.apage.row[state.console_state.scroll_height-1]
 
     ## graphics primitives
