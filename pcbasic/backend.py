@@ -1513,6 +1513,7 @@ class Screen(object):
                 line += c
             state.io_state.lpt1_file.write_line(line)
 
+    #MOVE to TextBuffer?
     def clear_text_at(self, x, y):
         """ Remove the character covering a single pixel. """
         fx, fy = self.mode.font_width, self.mode.font_height
@@ -1521,8 +1522,9 @@ class Screen(object):
         if cx >= 0 and cy >= 0 and cx <= cxmax and cy <= cymax:
             self.apage.row[cy].buf[cx] = (' ', self.attr)
 
+    #MOVE to TextBuffer? replace with graphics_to_text_loc v.v.?
     def clear_text_area(self, x0, y0, x1, y1):
-        """ Remove all characters from a rectangle of the graphics screen. """
+        """ Remove all characters from the textbuffer on a rectangle of the graphics screen. """
         fx, fy = self.mode.font_width, self.mode.font_height
         cymax, cxmax = self.mode.height-1, self.mode.width-1
         cx0 = min(cxmax, max(0, x0 // fx))
@@ -1532,6 +1534,19 @@ class Screen(object):
         for r in range(cy0, cy1+1):
             self.apage.row[r].buf[cx0:cx1+1] = [
                 (' ', self.attr)] * (cx1 - cx0 + 1)
+
+    def clear_rows(self, start, stop):
+        """ Clear text and graphics on given (inclusive) text row range. """
+        for r in self.apage.row[start-1:stop]:
+            r.clear(self.attr)
+        video_queue.put(Event(VIDEO_CLEAR_ROWS, (self.attr, start, stop)))
+
+    #MOVE to Cursor.move ?
+    def move_cursor(self, row, col):
+        """ Move the cursor to a new position. """
+        state.console_state.row, state.console_state.col = row, col
+        video_queue.put(Event(VIDEO_MOVE_CURSOR, (row, col)))
+        self.cursor.reset_attr()
 
     def rebuild_glyph(self, ordval):
         """ Signal the backend to rebuild a character after POKE. """
