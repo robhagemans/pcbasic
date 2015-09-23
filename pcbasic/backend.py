@@ -1574,16 +1574,16 @@ class Screen(object):
             # keep background, set foreground to 7
             attr_save = self.attr
             self.set_attr(attr_save & 0x70 | 0x7)
-        for r in range(state.console_state.view_start,
-                        state.console_state.scroll_height+1):
-            self.apage.row[r-1].clear(self.attr)
-            self.apage.row[r-1].wrap = False
         state.console_state.row = state.console_state.view_start
         state.console_state.col = 1
         if state.console_state.bottom_row_allowed:
             last_row = self.mode.height
         else:
             last_row = state.console_state.scroll_height
+        for r in self.apage.row[state.console_state.view_start-1,
+                        state.console_state.scroll_height]:
+            # we're clearing the rows below, but don't set the wrap there
+            r.wrap = False
         self.clear_rows(state.console_state.view_start, last_row)
         # ensure the cursor is show in the right position
         self.move_cursor(state.console_state.row, state.console_state.col)
