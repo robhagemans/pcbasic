@@ -227,9 +227,7 @@ class Drawing(object):
         """ Draw a pixel in the given attribute (PSET, PRESET). """
         x, y = self.view_coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
-        self.screen.start_graph()
         self.screen.put_pixel(x, y, c)
-        self.screen.finish_graph()
         self.last_attr = c
         self.last_point = x, y
 
@@ -280,7 +278,6 @@ class Drawing(object):
         mask = 0x8000
         line_error = dx / 2
         x, y = x0, y0
-        self.screen.start_graph()
         for x in xrange(x0, x1+sx, sx):
             if pattern & mask != 0:
                 if steep:
@@ -294,7 +291,6 @@ class Drawing(object):
             if line_error < 0:
                 y += sy
                 line_error += dx
-        self.screen.finish_graph()
 
     def draw_box_filled(self, x0, y0, x1, y1, c):
         """ Draw a filled box between the given corner points. """
@@ -304,16 +300,13 @@ class Drawing(object):
             y0, y1 = y1, y0
         if x1 < x0:
             x0, x1 = x1, x0
-        self.screen.start_graph()
         self.screen.fill_rect(x0, y0, x1, y1, c)
-        self.screen.finish_graph()
 
     def draw_box(self, x0, y0, x1, y1, c, pattern=0xffff):
         """ Draw an empty box between the given corner points. """
         x0, y0 = self.screen.mode.cutoff_coord(x0, y0)
         x1, y1 = self.screen.mode.cutoff_coord(x1, y1)
         mask = 0x8000
-        self.screen.start_graph()
         mask = self.draw_straight(x1, y1, x0, y1, c, pattern, mask)
         mask = self.draw_straight(x1, y0, x0, y0, c, pattern, mask)
         # verticals always drawn top to bottom
@@ -321,7 +314,6 @@ class Drawing(object):
             y0, y1 = y1, y0
         mask = self.draw_straight(x1, y1, x1, y0, c, pattern, mask)
         mask = self.draw_straight(x0, y1, x0, y0, c, pattern, mask)
-        self.screen.finish_graph()
 
     def draw_straight(self, x0, y0, x1, y1, c, pattern, mask):
         """ Draw a horizontal or vertical line. """
@@ -438,7 +430,6 @@ class Drawing(object):
         # if oct1==oct0:
         # ----|.....|--- : coo1 lt coo0 : print if y in [0,coo1] or in [coo0, r]
         # ....|-----|... ; coo1 gte coo0: print if y in [coo0,coo1]
-        self.screen.start_graph()
         x, y = r, 0
         bres_error = 1-r
         while x >= y:
@@ -479,7 +470,6 @@ class Drawing(object):
             self.draw_line(x0, y0, *octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
         if line1:
             self.draw_line(x0, y0, *octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
-        self.screen.finish_graph()
 
     def draw_ellipse(self, cx, cy, rx, ry, c,
                      qua0=-1, x0=-1, y0=-1, line0=False,
@@ -500,7 +490,6 @@ class Drawing(object):
         ddx = 32 * ry * ry
         # error for first step
         err = dx + dy
-        self.screen.start_graph()
         x, y = rx, 0
         while True:
             for quadrant in range(0,4):
@@ -543,7 +532,6 @@ class Drawing(object):
             self.draw_line(cx, cy, *quadrant_coord(qua0, cx, cy, x0, y0), c=c)
         if line1:
             self.draw_line(cx, cy, *quadrant_coord(qua1, cx, cy, x1, y1), c=c)
-        self.screen.finish_graph()
 
     ### PAINT: Flood fill
 
@@ -665,9 +653,7 @@ class Drawing(object):
         util.range_check(vx0, vx1, x0, x1)
         util.range_check(vy0, vy1, y0, y1)
         # apply the sprite to the screen
-        self.screen.start_graph()
         self.screen.put_rect(x0, y0, x1, y1, sprite, operation_token)
-        self.screen.finish_graph()
 
     def get(self, lcoord0, lcoord1, array_name):
         """ Read a sprite from the screen (GET). """

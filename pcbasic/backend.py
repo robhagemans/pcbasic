@@ -96,9 +96,6 @@ VIDEO_FILL_INTERVAL = 19
 # put rect
 VIDEO_PUT_RECT = 20
 VIDEO_FILL_RECT = 21
-# graphics viewport operations
-VIDEO_APPLY_CLIP = 26
-VIDEO_REMOVE_CLIP = 27
 # copy page
 VIDEO_COPY_PAGE = 28
 # set caption message
@@ -1646,14 +1643,6 @@ class Screen(object):
         del self.apage.row[state.console_state.scroll_height-1]
 
     ## graphics primitives
-
-    def start_graph(self):
-        """ Apply the graphics clip area before performing graphics ops. """
-        video_queue.put(Event(VIDEO_APPLY_CLIP, self.drawing.get_view()))
-
-    def finish_graph(self):
-        """ Remove the graphics clip area after performing graphics ops. """
-        video_queue.put(Event(VIDEO_REMOVE_CLIP))
 
     def put_pixel(self, x, y, index, pagenum=None):
         """ Put a pixel on the screen; empty character buffer. """

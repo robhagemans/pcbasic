@@ -248,10 +248,6 @@ def drain_video_queue():
             put_rect(*signal.params)
         elif signal.event_type == backend.VIDEO_FILL_RECT:
             fill_rect(*signal.params)
-        elif signal.event_type == backend.VIDEO_APPLY_CLIP:
-            apply_graph_clip(*signal.params)
-        elif signal.event_type == backend.VIDEO_REMOVE_CLIP:
-            remove_graph_clip()
         elif signal.event_type == backend.VIDEO_SET_CAPTION:
             set_caption_message(signal.params)
         elif signal.event_type == backend.VIDEO_SAVE_STATE:
@@ -1340,18 +1336,6 @@ def put_pixel(x, y, index, pagenum):
     canvas[pagenum].set_at((x,y), index)
     screen_changed = True
 
-# graphics view area (pygame clip)
-
-def remove_graph_clip():
-    """ Un-apply the graphics clip. """
-    canvas[apagenum].set_clip(None)
-
-def apply_graph_clip(x0, y0, x1, y1):
-    """ Apply the graphics clip. """
-    canvas[apagenum].set_clip(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1))
-
-# fill functions
-
 def fill_rect(x0, y0, x1, y1, index):
     """ Fill a rectangle in a solid attribute. """
     global screen_changed
@@ -1365,7 +1349,6 @@ def fill_interval(x0, x1, y, index):
     dx = x1 - x0 + 1
     canvas[apagenum].fill(index, (x0, y, dx, 1))
     screen_changed = True
-
 
 if numpy:
     def put_interval(pagenum, x, y, colours):
