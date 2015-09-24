@@ -102,6 +102,41 @@ class Drawing(object):
         else:
             return 0, 0, self.screen.mode.pixel_width-1, self.screen.mode.pixel_height-1
 
+    def view_contains(self, x, y):
+        """ Return whether the specified point is within the graphics view (boundaries inclusive). """
+        vx0, vy0, vx1, vy1 = self.get_view()
+        return vx0 <= x <= vx1 and vy0 <= y <= vy1
+
+    def view_clip_rect(self, x0, y0, x1, y1):
+        """ Return rect clipped to view. """
+        vx0, vy0, vx1, vy1 = self.get_view()
+        return max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
+
+    def view_clip_area(self, x0, y0, x1, y1, area_buffer):
+        """ Return area buffer in [y][x] format clipped to view. """
+        vx0, vy0, vx1, vy1 = self.get_view()
+        nx0, ny0, nx1, ny1 =  max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
+        if numpy and type(area_buffer) == numpy.ndarray:
+            nbuf = area_buffer[ny0-y0:ny1-y0+1, nx0-x0:nx1-x0+1]
+        else:
+            nbuf = [row[nx0-x0:nx1-x0+1] for row in area_buffer[ny0-y0:ny1-y0+1]]
+        return nx0, ny0, nx1, ny1, nbuf
+
+    def view_clip_interval(self, x0, x1, y):
+        """ Return rect clipped to view. """
+        vx0, vy0, vx1, vy1 = self.get_view()
+        if not (vy0 <= y <= vy1):
+            return x0, x0-1, y
+        return max(x0, vx0), min(x1, vx1), y
+
+    def view_clip_list(self, x0, y0, attr_list):
+        """ Return rect clipped to view. """
+        vx0, vy0, vx1, vy1 = self.get_view()
+        if not (vy0 <= y0 < vy1):
+            return x0, y0, []
+        nx0, nx1 = max(x0, vx0), min(x0+len(attr_list), vx1)
+        return nx0, y0, attr_list[nx0-x0:nx1-x0+1]
+
     def get_view_mid(self):
         """ Get the midpoint of the current graphics view. """
         x0, y0, x1, y1 = self.get_view()

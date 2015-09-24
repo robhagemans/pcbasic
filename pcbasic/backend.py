@@ -1659,9 +1659,10 @@ class Screen(object):
         """ Put a pixel on the screen; empty character buffer. """
         if pagenum is None:
             pagenum = self.apagenum
-        self.pixels.pages[pagenum].put_pixel(x, y, index)
-        video_queue.put(Event(VIDEO_PUT_PIXEL, (x, y, index, pagenum)))
-        self.clear_text_at(x, y)
+        if self.drawing.view_contains(x, y):
+            self.pixels.pages[pagenum].put_pixel(x, y, index)
+            video_queue.put(Event(VIDEO_PUT_PIXEL, (x, y, index, pagenum)))
+            self.clear_text_at(x, y)
 
     def get_pixel(self, x, y, pagenum=None):
         """ Return the attribute a pixel on the screen. """
@@ -1675,12 +1676,14 @@ class Screen(object):
 
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """ Write a list of attributes to a scanline interval. """
+        x, y, colours = self.drawing.view_clip_list(x, y, colours)
         newcolours = self.pixels.pages[pagenum].put_interval(x, y, colours, mask)
         video_queue.put(Event(VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours)))
         self.clear_text_area(x, y, x+len(colours), y)
 
     def fill_interval(self, x0, x1, y, index):
         """ Fill a scanline interval in a solid attribute. """
+        x0, x1, y = self.drawing.view_clip_interval(x0, x1, y)
         self.pixels.pages[self.apagenum].fill_interval(x0, x1, y, index)
         video_queue.put(Event(VIDEO_FILL_INTERVAL, (x0, x1, y, index)))
         self.clear_text_area(x0, y, x1, y)
@@ -1695,6 +1698,7 @@ class Screen(object):
 
     def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
         """ Apply an [y][x] array of attributes onto a screen rect. """
+        x0, y0, x1, y1, sprite = self.drawing.view_clip_area(x0, y0, x1, y1, sprite)
         rect = self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1,
                                                         sprite, operation_token)
         video_queue.put(Event(VIDEO_PUT_RECT, (x0, y0, x1, y1, rect)))
@@ -1702,6 +1706,7 @@ class Screen(object):
 
     def fill_rect(self, x0, y0, x1, y1, index):
         """ Fill a rectangle in a solid attribute. """
+        x0, y0, x1, y1 = self.drawing.view_clip_rect(x0, y0, x1, y1)
         self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, index)
         video_queue.put(Event(VIDEO_FILL_RECT, (x0, y0, x1, y1, index)))
         self.clear_text_area(x0, y0, x1, y1)
