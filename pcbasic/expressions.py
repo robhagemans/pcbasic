@@ -519,11 +519,11 @@ def value_input(ins):
     if util.skip_white_read_if(ins, (',',)):
         infile = devices.get_file(parse_file_number_opthash(ins))
     util.require_read(ins, (')',))
-    word = vartypes.pack_string(bytearray(infile.read_raw(num)))
+    word = bytearray(infile.read_raw(num))
     if len(word) < num:
         # input past end
         raise error.RunError(error.INPUT_PAST_END)
-    return word
+    return vartypes.pack_string(word)
 
 def value_inkey(ins):
     """ INKEY$: get a character from the keyboard. """
