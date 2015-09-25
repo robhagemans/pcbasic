@@ -1700,6 +1700,63 @@ class Screen(object):
         video_queue.put(Event(VIDEO_FILL_RECT, (x0, y0, x1, y1, index)))
         self.clear_text_area(x0, y0, x1, y1)
 
+    # text
+
+    #if numpy:
+    def char_to_area(self, row, col, c, fore, back):
+        """ Return a sprite for a given character """
+        mask = self.glyphs[ord(c)]
+        # set background
+        glyph = numpy.full(mask.shape, back)
+        # stamp foreground mask
+        # NUL is guaranteed to be blank
+        if c != '\0':
+            glyph[mask] = fore
+        x0, y0 = (col-1) * self.mode.font_width, (row-1) * self.mode.font_height
+        x1, y1 = x0 + self.mode.font_width - 1, y0 + self.mode.font_height - 1
+        return x0, y0, x1, y1, glyph
+
+    def split_attr(self, attr):
+        """ Split attribute byte into constituent parts. """
+        if self.mode.has_underline:
+            # MDA palette, see http://www.seasip.info/VintagePC/mda.html
+            # don't try to change this with PALETTE, it won't work correctly
+            if attr in (0x00, 0x08, 0x80, 0x88, 0x70):
+                fore = 0
+            elif attr == 0x78:
+                # dim foreground on bright background
+                fore = 1
+            elif attr == 0xf8:
+                # dim foreground on bright background, blinking
+                fore = 0xa2
+            elif attr == 0xf0:
+                # black on bright background, blinking
+                fore = 0xa0
+            else:
+                # most % 8 == 0 points aren't actually black
+                if attr % 8 == 0:
+                    attr += 1
+                if attr < 0x80:
+                    fore = attr
+                else:
+                    # blink goes to black back
+                    fore = 0x80 + attr % 16
+            if attr in (0x70, 0x78, 0xF0, 0xF8):
+                # bright green background for these points
+                back = 15
+            else:
+                # background is almost always black
+                back = 0
+            underline = (attr % 8) == 1
+        else:
+            # 7  6 5 4  3 2 1 0
+            # Bl b b b  f f f f
+            back = (attr >> 4) & 7
+            blink = (attr >> 7) == 1
+            fore = attr & 0xf
+            underline = False
+        return fore, back, blink, underline
+
 
 ###############################################################################
 # palette
