@@ -71,7 +71,9 @@ def init():
     curses.start_color()
     screen.clear()
     window = curses.newwin(25, 80, 0, 0)
-    # init_screen_mode()
+    window.nodelay(True)
+    window.keypad(True)
+    window.scrollok(False)
     can_change_palette = (curses.can_change_color() and curses.COLORS >= 16
                           and curses.COLOR_PAIRS > 128)
     sys.stdout.write(ansi.esc_set_title % caption)
@@ -123,9 +125,6 @@ def launch_thread():
 
 def consumer_thread():
     """ Video signal queue consumer thread. """
-    # if I don't write something here, I get a blank unresponsive screen for some reason.
-    sys.stdout.write(' ')
-    sys.stdout.flush()
     while drain_video_queue():
         if cursor_visible:
             window.move(cursor_row-1, cursor_col-1)
@@ -220,19 +219,13 @@ def init_screen_mode(mode_info):
     height = mode_info.height
     width = mode_info.width
     text = [ [(' ', 0)]*width for _ in range(height)]
-    if window:
-        window.clear()
-        window.refresh()
-    else:
-        window = curses.newwin(height, width, 0, 0)
+    window.clear()
+    window.refresh()
     window.move(0, 0)
     sys.stdout.write(ansi.esc_resize_term % (height, width))
     sys.stdout.flush()
     #curses.resizeterm(height, width)
     window.resize(height, width)
-    window.nodelay(True)
-    window.keypad(True)
-    window.scrollok(False)
     set_curses_palette()
 
 def clear_rows(cattr, start, stop):
