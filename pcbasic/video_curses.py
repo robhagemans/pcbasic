@@ -450,6 +450,8 @@ def redraw():
                 window.addstr(row, col, charattr[0], charattr[1])
             except curses.error:
                 pass
+    if cursor_visible:
+        window.move(cursor_row-1, cursor_col-1)
     window.refresh()
 
 prepare()
