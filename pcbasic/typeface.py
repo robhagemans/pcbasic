@@ -9,7 +9,10 @@ This file is released under the GNU GPL version 3.
 import os
 import logging
 
-import numpy
+try:
+    import numpy
+except ImportError:
+    numpy = None
 
 import plat
 import unicodepage
@@ -146,44 +149,74 @@ carry_col_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 # ascii codepoints for which to repeat row 8 in row 9 (box drawing)
 carry_row_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 
-#if numpy:
 def build_glyph(c, font_face, req_width, req_height):
     """ Build a sprite for the given character glyph. """
     # req_width can be 8, 9 (SBCS), 16, 18 (DBCS) only
+    req_width_base = req_width if req_width <= 9 else req_width // 2
     try:
-        face = font_face[c]
+        face = bytearray(font_face[c])
     except KeyError:
-        logging.debug('Byte sequence %s not represented in codepage, replace with blank glyph.', repr(c))
+        logging.debug('Byte sequence %s not represented in codepage, replacing with blank glyph.', repr(c))
         # codepoint 0 must be blank by our definitions
-        face = font_face['\0']
+        face = bytearray(font_face['\0'])
         c = '\0'
+    # shape of encoded mask (8 or 16 wide; usually 8, 14 or 16 tall)
     code_height = 8 if req_height == 9 else req_height
-    glyph_width, glyph_height = 8*len(face)//code_height, req_height
+    code_width = 8 if len(face) < 32 else 16
+    face = face[:code_width*code_height//8]
+    #D
+    glyph_width, glyph_height = code_width, req_height
     if req_width <= glyph_width + 2:
         # allow for 9-pixel widths (18-pixel dwidths) without scaling
         glyph_width = req_width
-    elif glyph_width < req_width:
+
+    force_double = req_width >= code_width*2
+    if force_double:
+        # i.e. we need a double-width char but got single
         u = unicodepage.cp_to_utf8[c]
         logging.debug('Incorrect glyph width for %s [%s, code point %x].', repr(c), u, ord(u.decode('utf-8')))
-    glyph = numpy.zeros((glyph_height, glyph_width), dtype=bool)
-    for yy in range(code_height):
-        for half in range(glyph_width//8):
-            line = ord(face[yy*(glyph_width//8)+half])
+    if numpy:
+        glyph = numpy.unpackbits(face, axis=0).reshape((code_height, code_width)).astype(bool)
+        # repeat last rows (e.g. for 9-bit high chars)
+        if req_height > glyph.shape[0]:
+            if c in carry_row_9:
+                repeat_row = glyph[-1]
+            else:
+                repeat_row = numpy.zeros((1, code_width), dtype = numpy.uint8)
+            while req_height > glyph.shape[0]:
+                glyph = numpy.vstack((glyph, repeat_row))
+        if force_double:
+            glyph = glyph.repeat(2, axis=1)
+        # repeat last cols (e.g. for 9-bit wide chars)
+        if req_width > glyph.shape[1]:
+            if c in carry_col_9:
+                repeat_col = numpy.atleast_2d(glyph[:,-1]).T
+            else:
+                repeat_col = numpy.zeros((code_height, 1), dtype = numpy.uint8)
+            while req_width > glyph.shape[1]:
+                glyph = numpy.hstack((glyph, repeat_col))
+    else:
+        glyph = [ [False]*req_width for _ in range(req_height) ]
+        for yy in range(code_height):
+            for half in range(glyph_width//8):
+                line = face[yy*(glyph_width//8)+half]
+                for xx in range(8):
+                    if (line >> (7-xx)) & 1 == 1:
+                        glyph[yy][half*8 + xx] = True
+            # MDA/VGA 9-bit characters
+            if c in carry_col_9 and glyph_width == 9:
+                if line & 1 == 1:
+                    glyph[yy][8] = True
+        # tandy 9-bit high characters
+        if c in carry_row_9 and glyph_height == 9:
+            line = face[7*(glyph_width//8)]
             for xx in range(8):
                 if (line >> (7-xx)) & 1 == 1:
-                    glyph[yy][half*8 + xx] = 1
-        # MDA/VGA 9-bit characters
-        if c in carry_col_9 and glyph_width == 9:
-            if line & 1 == 1:
-                glyph[yy][8] = 1
-    # tandy 9-bit high characters
-    if c in carry_row_9 and glyph_height == 9:
-        line = ord(face[7*(glyph_width//8)])
-        for xx in range(8):
-            if (line >> (7-xx)) & 1 == 1:
-                glyph[8][xx] = 1
-    if req_width > glyph_width:
-        # i.e. we need a double-width char
-        # in this case, req_width == 2*glyph_width
-        glyph = glyph.repeat(2, axis=1)
+                    glyph[8][xx] = True
+        if force_double:
+            # in this case, req_width == 2*glyph_width
+            for yy in range(code_height):
+                for xx in range(glyph_width, -1, -1):
+                    glyph[yy][2*xx+1] = glyph[yy][xx]
+                    glyph[yy][2*xx] = glyph[yy][xx]
     return glyph
