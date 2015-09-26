@@ -72,9 +72,8 @@ VIDEO_MOVE_CURSOR = 5
 VIDEO_SET_CURSOR_ATTR = 6
 # set border attribute
 VIDEO_SET_BORDER_ATTR = 7
-# put character
-VIDEO_PUT_CHAR = 8
-VIDEO_PUT_WCHAR = 9
+# put character glyph
+VIDEO_PUT_GLYPH = 8
 # clear rows
 VIDEO_CLEAR_ROWS = 10
 # scroll
@@ -1490,11 +1489,7 @@ class Screen(object):
                 ccol += 1
             fore, back, blink, underline = self.split_attr(attr)
             video_queue.put(Event(VIDEO_SET_ATTR, attr))
-            if len(char) > 1:
-                video_queue.put(Event(VIDEO_PUT_WCHAR, (pagenum, r, c, char,
-                                 fore, back, blink, underline, for_keys)))
-            else:
-                video_queue.put(Event(VIDEO_PUT_CHAR, (pagenum, r, c, char,
+            video_queue.put(Event(VIDEO_PUT_GLYPH, (pagenum, r, c, char,
                                  fore, back, blink, underline, for_keys)))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer

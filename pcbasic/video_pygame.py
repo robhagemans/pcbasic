@@ -200,10 +200,8 @@ def drain_video_queue():
             alive = False
         elif signal.event_type == backend.VIDEO_MODE:
             init_screen_mode(signal.params)
-        elif signal.event_type == backend.VIDEO_PUT_CHAR:
-            put_char_attr(*signal.params)
-        elif signal.event_type == backend.VIDEO_PUT_WCHAR:
-            put_wchar_attr(*signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_GLYPH:
+            put_glyph(*signal.params)
         elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
             move_cursor(*signal.params)
         elif signal.event_type == backend.VIDEO_CLEAR_ROWS:
@@ -917,38 +915,27 @@ def set_attr(cattr):
     global current_attr
     current_attr = cattr
 
-def put_char_attr(pagenum, row, col, c, fore, back, blink, underline, for_keys):
+def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     """ Put a single-byte character at a given position. """
     global screen_changed
-    glyph = glyphs[ord(c)]
     color, bg = (0, 0, fore + 16*back + 128*blink), (0, 0, back)
+    x0, y0 = (col-1)*font_width, (row-1)*font_height
     if c == '\0':
         # guaranteed to be blank, saves time on some BLOADs
-        canvas[pagenum].fill(bg,
-                             ((col-1)*font_width, (row-1)*font_height,
-                             font_width, font_height))
+        canvas[pagenum].fill(bg, (x0, y0, font_width, font_height))
     else:
+        if len(c) == 1:
+            glyph = glyphs[ord(c)]
+        else:
+            glyph = build_glyph(c, font, 2*font_width, font_height)
         if glyph.get_palette_at(255) != bg:
             glyph.set_palette_at(255, bg)
         if glyph.get_palette_at(254) != color:
             glyph.set_palette_at(254, color)
-        canvas[pagenum].blit(glyph,
-                             ((col-1) * font_width, (row-1) * font_height))
+        canvas[pagenum].blit(glyph, (x0, y0))
     if mode_has_underline and underline:
         for xx in range(font_width):
-            canvas[pagenum].set_at(((col-1) * font_width + xx,
-                                       row*font_height - 1), color)
-    screen_changed = True
-
-def put_wchar_attr(pagenum, row, col, c, fore, back, blink, underline, for_keys):
-    """ Put a double-byte character at a given position. """
-    global screen_changed
-    glyph = build_glyph(c, font, 2*font_width, font_height)
-    color, bg = (0, 0, fore + 128*blink), (0, 0, back)
-    glyph.set_palette_at(255, bg)
-    glyph.set_palette_at(254, color)
-    top_left = ((col-1) * font_width, (row-1) * font_height)
-    canvas[pagenum].blit(glyph, top_left)
+            canvas[pagenum].set_at((x0 + xx, y0 + font_height - 1), color)
     screen_changed = True
 
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)
