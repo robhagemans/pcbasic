@@ -760,46 +760,6 @@ def build_icon():
     pygame.transform.scale2x(icon)
     return icon
 
-#D
-def get_palette_index(cattr):
-    """ Find the index in the game palette for this attribute. """
-    # NOTE: we're using mode_has_underline as a proxy to "it's an MDA" here
-    # we're also counting on graphics modes not using colours beyond point 16
-    # where blink is for text mode.
-    if not mode_has_underline:
-        color = (0, 0, cattr)
-        bg = (0, 0, (cattr>>4) & 7)
-    else:
-        # MDA palette, see http://www.seasip.info/VintagePC/mda.html
-        # don't try to change this with PALETTE, it won't work correctly
-        if cattr in (0x00, 0x08, 0x80, 0x88, 0x70):
-            color = (0, 0, 0)
-        elif cattr == 0x78:
-            # dim foreground on bright background
-            color = (0, 0, 1)
-        elif cattr == 0xf8:
-            # dim foreground on bright background, blinking
-            color = (0, 0, 0xa2)
-        elif cattr == 0xf0:
-            # black on bright background, blinking
-            color = (0, 0, 0xa0)
-        else:
-            # most % 8 == 0 points aren't actually black
-            if cattr % 8 == 0:
-                cattr += 1
-            if cattr < 0x80:
-                color = (0, 0, cattr)
-            else:
-                # blink goes to black bg
-                color = (0, 0, 0x80 + cattr % 16)
-        if cattr in (0x70, 0x78, 0xF0, 0xF8):
-            # bright green background for these points
-            bg = (0, 0, 15)
-        else:
-            # background is almost always black
-            bg = (0, 0, 0)
-    return color, bg
-
 def update_palette(rgb_palette, rgb_palette1):
     """ Build the game palette. """
     global screen_changed, gamepalette
