@@ -1046,6 +1046,8 @@ def prepare_video():
     """ Prepare the video subsystem. """
     global egacursor
     global video_capabilities, composite_monitor, mono_monitor
+    global fonts
+    #D
     global font_8, heights_needed
     video_capabilities = config.get('video')
     # do all text modes with >8 pixels have an ega-cursor?
@@ -1068,9 +1070,14 @@ def prepare_video():
     for mode in state.console_state.screen.mode_data.values():
         heights_needed.add(mode.font_height)
     # load the 8-pixel font that's available in RAM.
-    font_8 = typeface.load(config.get('font'), 8,
-                           unicodepage.cp_to_unicodepoint)
-
+    family = config.get('font')
+    fonts = {}
+    for height in heights_needed:
+        fonts[height] = typeface.load(family, height,
+                                      unicodepage.cp_to_unicodepoint)
+    fonts[9] = fonts[8]
+    #D
+    font_8 = fonts[8]
 
 def init_video(video_module):
     """ Initialise the video backend. """
@@ -1274,6 +1281,10 @@ class Screen(object):
             # reset palette happens even if the SCREEN call fails
             self.palette = Palette(self.mode)
             raise error.RunError(error.IFC)
+        # preload SBCS glyphs
+        self.glyphs = [typeface.build_glyph(chr(c), fonts[mode_info.font_width],
+                                mode_info.font_width, mode_info.font_height)
+                      for c in range(256)]
         video_queue.put(Event(VIDEO_MODE, mode_info))
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
@@ -1477,17 +1488,28 @@ class Screen(object):
                 video_queue.put(Event(VIDEO_SET_ATTR, da[1]))
                 video_queue.put(Event(VIDEO_PUT_WCHAR,
                                 (pagenum, crow, ccol, ca[0], da[0], for_keys)))
+                r, c, char, attr = crow, ccol, ca[0]+da[0], da[1]
                 therow.double[ccol-1] = 1
                 therow.double[ccol] = 2
                 ccol += 2
             else:
                 if double != 0:
-                    logging.debug('DBCS buffer corrupted at %d, %d (%d)', crow, ccol, double)
+                    logging.debug('DBCS buffer corrupted at %d, %d (%d)',
+                                  crow, ccol, double)
                 ca = therow.buf[ccol-1]
                 video_queue.put(Event(VIDEO_SET_ATTR, ca[1]))
                 video_queue.put(Event(VIDEO_PUT_CHAR,
                                 (pagenum, crow, ccol, ca[0], for_keys)))
+                r, c, char, attr = crow, ccol, ca[0], ca[1]
                 ccol += 1
+            if not self.mode.is_text_mode:
+                # update pixel buffer
+                fore, back, _, _ = self.split_attr(attr)
+                x0, y0, x1, y1, glyph = self.char_to_rect(
+                                                r, c, char, fore, back)
+                self.pixels.pages[self.apagenum].put_rect(
+                                                x0, y0, x1, y1, glyph, tk.PSET)
+
 
     # should be in console? uses wrap
     def redraw_row(self, start, crow, wrap=True):
@@ -1719,9 +1741,13 @@ class Screen(object):
     # text
 
     #if numpy:
-    def char_to_area(self, row, col, c, fore, back):
+    def char_to_rect(self, row, col, c, fore, back):
         """ Return a sprite for a given character """
-        mask = self.glyphs[ord(c)]
+        if len(c) == 1:
+            mask = self.glyphs[ord(c)]
+        else:
+            mask = typeface.build_glyph(c, fonts[self.mode.font_height],
+                                self.mode.font_width, self.mode.font_height)
         # set background
         glyph = numpy.full(mask.shape, back)
         # stamp foreground mask
@@ -1729,7 +1755,7 @@ class Screen(object):
         if c != '\0':
             glyph[mask] = fore
         x0, y0 = (col-1) * self.mode.font_width, (row-1) * self.mode.font_height
-        x1, y1 = x0 + self.mode.font_width - 1, y0 + self.mode.font_height - 1
+        x1, y1 = x0 + mask.shape[1] - 1, y0 + mask.shape[0] - 1
         return x0, y0, x1, y1, glyph
 
     def split_attr(self, attr):
