@@ -64,8 +64,6 @@ VIDEO_MODE = 1
 VIDEO_SET_PAGE = 2
 # set cursor shape
 VIDEO_SET_CURSOR_SHAPE = 3
-# set current attribute
-VIDEO_SET_ATTR = 4
 # move cursor
 VIDEO_MOVE_CURSOR = 5
 # set cursor attribute
@@ -1154,15 +1152,17 @@ class Screen(object):
         video_queue.put(Event(VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
         # rebuild palette
         self.palette.set_all(self.palette.palette, check_mode=False)
-        video_queue.put(Event(VIDEO_SET_ATTR, self.attr))
         # fix the cursor
         video_queue.put(Event(VIDEO_SET_CURSOR_SHAPE,
                 (self.cursor.width, mode_info.font_height,
                  self.cursor.from_line, self.cursor.to_line)))
         video_queue.put(Event(VIDEO_MOVE_CURSOR,
                 (state.console_state.row, state.console_state.col)))
-        video_queue.put(Event(VIDEO_SET_CURSOR_ATTR,
-                (self.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)))
+        if self.mode.is_text_mode:
+            video_queue.put(Event(VIDEO_SET_CURSOR_ATTR,
+                    (self.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)))
+        else:
+            video_queue.put(Event(VIDEO_SET_CURSOR_ATTR, self.attr))
         self.cursor.reset_visibility()
         video_queue.put(Event(VIDEO_SET_BORDER_ATTR, self.border_attr))
         # redraw the text screen and rebuild text buffers in video plugin
@@ -1307,7 +1307,8 @@ class Screen(object):
         self.cursor.init_mode(self.mode)
         self.palette = Palette(self.mode)
         # set the attribute
-        video_queue.put(Event(VIDEO_SET_ATTR, self.attr))
+        if not self.mode.is_text_mode:
+            video_queue.put(Event(VIDEO_SET_CURSOR_ATTR, self.attr))
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
         if self.mode.is_text_mode:
             self.set_colorburst(new_colorswitch)
@@ -1417,6 +1418,8 @@ class Screen(object):
     def set_attr(self, attr):
         """ Set the default attribute. """
         self.attr = attr
+        if not self.mode.is_text_mode:
+            video_queue.put(Event(VIDEO_SET_CURSOR_ATTR, attr))
 
     def set_border(self, attr):
         """ Set the border attribute. """
@@ -1488,7 +1491,6 @@ class Screen(object):
                 r, c, char, attr = crow, ccol, ca[0], ca[1]
                 ccol += 1
             fore, back, blink, underline = self.split_attr(attr)
-            video_queue.put(Event(VIDEO_SET_ATTR, attr))
             video_queue.put(Event(VIDEO_PUT_GLYPH, (pagenum, r, c, char,
                                  fore, back, blink, underline, for_keys)))
             if not self.mode.is_text_mode and not text_only:
@@ -1847,9 +1849,10 @@ class Cursor(object):
 
     def reset_attr(self):
         """ Set the text cursor attribute to that of the current location. """
-        video_queue.put(Event(VIDEO_SET_CURSOR_ATTR, (self.screen.apage.row[
-                state.console_state.row-1].buf[
-                state.console_state.col-1][1] & 0xf)))
+        if self.screen.mode.is_text_mode:
+            video_queue.put(Event(VIDEO_SET_CURSOR_ATTR, (self.screen.apage.row[
+                    state.console_state.row-1].buf[
+                    state.console_state.col-1][1] & 0xf)))
 
     def show(self, do_show):
         """ Force cursor to be visible/invisible. """

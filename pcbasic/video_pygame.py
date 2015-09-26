@@ -210,8 +210,6 @@ def drain_video_queue():
             scroll(*signal.params)
         elif signal.event_type == backend.VIDEO_SCROLL_DOWN:
             scroll_down(*signal.params)
-        elif signal.event_type == backend.VIDEO_SET_ATTR:
-            set_attr(signal.params)
         elif signal.event_type == backend.VIDEO_SET_PALETTE:
             update_palette(*signal.params)
         elif signal.event_type == backend.VIDEO_SET_CURSOR_SHAPE:
@@ -486,8 +484,6 @@ noquit = False
 
 # letter shapes
 glyphs = []
-# the current attribute of the stored sbcs glyphs
-current_attr = None
 
 # cursor shape
 cursor = None
@@ -673,8 +669,6 @@ def init_screen_mode(mode_info):
     font = fonts[font_height]
     glyphs = [build_glyph(chr(c), font, font_width, font_height)
               for c in range(256)]
-    # initialise glyph colour
-    set_attr(mode_info.attr)
     resize_display(*find_display_size(size[0], size[1], border_width))
     # set standard cursor
     build_cursor(font_width, font_height, 0, font_height)
@@ -875,9 +869,10 @@ def move_cursor(crow, ccol):
     cursor_row, cursor_col = crow, ccol
 
 def update_cursor_attr(attr):
+    global cursor_attr
     """ Change attribute of cursor. """
-    color = canvas[vpagenum].get_palette_at(attr).b
-    cursor.set_palette_at(254, pygame.Color(0, color, color))
+    cursor_attr = canvas[vpagenum].get_palette_at(attr).b
+    cursor.set_palette_at(254, pygame.Color(0, cursor_attr, cursor_attr))
 
 def scroll(from_line, scroll_height, attr):
     """ Scroll the screen up between from_line and scroll_height. """
@@ -909,11 +904,6 @@ def scroll_down(from_line, scroll_height, attr):
                                   size[0], font_height))
     canvas[apagenum].set_clip(None)
     screen_changed = True
-
-def set_attr(cattr):
-    """ Set the current attribute. """
-    global current_attr
-    current_attr = cattr
 
 def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     """ Put a single-byte character at a given position. """
@@ -1077,7 +1067,7 @@ def draw_cursor(screen):
         if cursor_fixed_attr is not None:
             index = cursor_fixed_attr
         else:
-            index = current_attr & 0xf
+            index = cursor_attr & 0xf
         if numpy:
             # reference the destination area
             dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
