@@ -921,6 +921,10 @@ class PixelPage(object):
         self.height = bheight
         self.pagenum = pagenum
         self.bitsperpixel = bitsperpixel
+        self.init_operations()
+
+    def init_operations(self):
+        """ Initialise operations closures. """
         self.operations = {
             tk.PSET: lambda x, y: x.__setitem__(slice(len(x)), y),
             tk.PRESET: lambda x, y: x.__setitem__(slice(len(x)), y.__xor__((1<<self.bitsperpixel) - 1)),
@@ -928,6 +932,18 @@ class PixelPage(object):
             tk.OR: lambda x, y: x.__ior__(y),
             tk.XOR: lambda x, y: x.__ixor__(y),
         }
+
+    def __getstate__(self):
+        """ Pickle the page. """
+        pagedict = self.__dict__.copy()
+        # lambdas can't be pickled
+        pagedict['operations'] = None
+        return pagedict
+
+    def __setstate__(self, pagedict):
+        """ Initialise from pickled page. """
+        self.__dict__.update(pagedict)
+        self.init_operations()
 
     def put_pixel(self, x, y, attr):
         """ Put a pixel in the buffer. """
