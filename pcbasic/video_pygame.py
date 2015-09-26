@@ -921,7 +921,7 @@ def put_char_attr(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     """ Put a single-byte character at a given position. """
     global screen_changed
     glyph = glyphs[ord(c)]
-    color, bg = (0, 0, fore + 16*blink), (0, 0, back)
+    color, bg = (0, 0, fore + 16*back + 128*blink), (0, 0, back)
     if c == '\0':
         # guaranteed to be blank, saves time on some BLOADs
         canvas[pagenum].fill(bg,
@@ -944,7 +944,7 @@ def put_wchar_attr(pagenum, row, col, c, fore, back, blink, underline, for_keys)
     """ Put a double-byte character at a given position. """
     global screen_changed
     glyph = build_glyph(c, font, 2*font_width, font_height)
-    color, bg = (0, 0, fore + 16*blink), (0, 0, back)
+    color, bg = (0, 0, fore + 128*blink), (0, 0, back)
     glyph.set_palette_at(255, bg)
     glyph.set_palette_at(254, color)
     top_left = ((col-1) * font_width, (row-1) * font_height)
