@@ -166,13 +166,6 @@ def build_glyph(c, font_face, req_width, req_height):
     # shape of encoded mask (8 or 16 wide; usually 8, 14 or 16 tall)
     code_height = 8 if req_height == 9 else req_height
     code_width = (8*len(face))//code_height
-
-    #D
-    glyph_width, glyph_height = code_width, req_height
-    if req_width <= glyph_width + 2:
-        # allow for 9-pixel widths (18-pixel dwidths) without scaling
-        glyph_width = req_width
-
     force_double = req_width >= code_width*2
     if force_double:
         # i.e. we need a double-width char but got single
@@ -201,25 +194,21 @@ def build_glyph(c, font_face, req_width, req_height):
     else:
         glyph = [ [False]*req_width for _ in range(req_height) ]
         for yy in range(code_height):
-            for half in range(glyph_width//8):
-                line = face[yy*(glyph_width//8)+half]
+            for half in range(code_width//8):
+                line = face[yy*(code_width//8)+half]
                 for xx in range(8):
                     if (line >> (7-xx)) & 1 == 1:
                         glyph[yy][half*8 + xx] = True
             # MDA/VGA 9-bit characters
-            if c in carry_col_9 and glyph_width == 9:
-                if line & 1 == 1:
-                    glyph[yy][8] = True
+            if c in carry_col_9 and req_width == 9:
+                glyph[yy][8] = glyph[yy][7]
         # tandy 9-bit high characters
-        if c in carry_row_9 and glyph_height == 9:
-            line = face[7*(glyph_width//8)]
+        if c in carry_row_9 and req_height == 9:
             for xx in range(8):
-                if (line >> (7-xx)) & 1 == 1:
-                    glyph[8][xx] = True
+                glyph[8][xx] = glyph[7][xx]
         if force_double:
-            # in this case, req_width == 2*glyph_width
             for yy in range(code_height):
-                for xx in range(glyph_width, -1, -1):
+                for xx in range(req_width_base, -1, -1):
                     glyph[yy][2*xx+1] = glyph[yy][xx]
                     glyph[yy][2*xx] = glyph[yy][xx]
     return glyph
