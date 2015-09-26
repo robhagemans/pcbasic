@@ -147,10 +147,8 @@ def drain_video_queue():
             alive = False
         elif signal.event_type == backend.VIDEO_MODE:
             init_screen_mode(signal.params)
-        elif signal.event_type == backend.VIDEO_PUT_CHAR:
-            putc_at(*signal.params)
-        elif signal.event_type == backend.VIDEO_PUT_WCHAR:
-            putwc_at(*signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_GLYPH:
+            put_glyph(*signal.params)
         elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
             move_cursor(*signal.params)
         elif signal.event_type == backend.VIDEO_CLEAR_ROWS:
@@ -159,8 +157,6 @@ def drain_video_queue():
             scroll(*signal.params)
         elif signal.event_type == backend.VIDEO_SCROLL_DOWN:
             scroll_down(*signal.params)
-        elif signal.event_type == backend.VIDEO_SET_ATTR:
-            set_attr(signal.params)
         elif signal.event_type == backend.VIDEO_SET_PALETTE:
             update_palette(*signal.params)
         elif signal.event_type == backend.VIDEO_SET_CURSOR_SHAPE:
@@ -211,10 +207,10 @@ if curses:
         curses.KEY_PRINT: scancode.PRINT, curses.KEY_CANCEL: scancode.ESCAPE,
     }
 
-    last_attr = None
-    attr = curses.A_NORMAL
+# last colour used
+last_colour = None
 
-
+# text and colour buffer
 text = [ [(' ', 0)]*80 for _ in range(25)]
 
 
@@ -281,38 +277,26 @@ def build_cursor(width, height, from_line, to_line):
         cursor_shape = 1
     curses.curs_set(cursor_shape if cursor_visible else 0)
 
-def set_attr(cattr):
-    """ Set the current attribute. """
-    global attr, last_attr
-    attr = cattr
-    if attr == last_attr:
-        return
-    last_attr = attr
-    window.bkgdset(' ', colours(attr))
-
-def putc_at(pagenum, row, col, c, for_keys=False):
-    """ Put a single-byte character at a given position. """
+def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
+    """ Put a character at a given position. """
+    global last_colour
     if c == '\0':
         c = ' '
-    char = unicodepage.UTF8Converter().to_utf8(c)
     try:
-        window.addstr(row-1, col-1, char, colours(attr))
-    except curses.error:
-        pass
-    text[row-1][col-1] = char, colours(attr)
-
-def putwc_at(pagenum, row, col, c, d, for_keys=False):
-    """ Put a double-byte character at a given position. """
-    try:
-        wchar = unicodepage.UTF8Converter().to_utf8(c+d)
+        char = unicodepage.UTF8Converter().to_utf8(c)
     except KeyError:
-        wchar = '  '
+        char = ' '*len(c)
+    colour = curses_colour(fore, back, blink)
+    if colour != last_colour:
+        last_colour = colour
+        window.bkgdset(' ', colour)
     try:
-        window.addstr(row-1, col-1, wchar, colours(attr))
+        window.addstr(row-1, col-1, char, colour)
     except curses.error:
         pass
-    text[row-1][col-1] = wchar, colours(attr)
-    text[row-1][col] = '', colours(attr)
+    text[row-1][col-1] = char, colour
+    if len(c) > 1:
+        text[row-1][col] = '', colour
 
 def scroll(from_line, scroll_height, attr):
     """ Scroll the screen up between from_line and scroll_height. """
@@ -436,6 +420,10 @@ def colours(at):
     back = (at>>4)&0x7
     blink = (at>>7)
     fore = (blink*0x10) + (at&0xf)
+    return curses_colour(fore, back, blink)
+
+def curses_colour(fore, back, blink):
+    """ Convert split attribute to curses colour. """
     if can_change_palette:
         cursattr = curses.color_pair(1 + (back&7)*16 + (fore&15))
     else:
@@ -454,7 +442,8 @@ def colours(at):
 def redraw():
     """ Redraw the screen. """
     window.clear()
-    set_attr(7)
+    if last_colour != 0:
+        window.bkgdset(' ', 0)
     for row, textrow in enumerate(text):
         for col, charattr in enumerate(textrow):
             try:
