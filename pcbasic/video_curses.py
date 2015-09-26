@@ -237,7 +237,7 @@ def init_screen_mode(mode_info):
 
 def clear_rows(cattr, start, stop):
     """ Clear screen rows. """
-    text[start-1:stop] = [ [(' ', colours(7))]*len(text[0]) for _ in range(start-1, stop)]
+    text[start-1:stop] = [ [(' ', 0)]*len(text[0]) for _ in range(start-1, stop)]
     window.bkgdset(' ', colours(cattr))
     for r in range(start, stop+1):
         try:
