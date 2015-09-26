@@ -1565,7 +1565,8 @@ class Screen(object):
                             start, 1, stop, self.mode.width)
             # background attribute must be 0 in graphics mode
             self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, 0)
-        video_queue.put(Event(VIDEO_CLEAR_ROWS, (self.attr, start, stop)))
+        _, back, _, _ = self.split_attr(self.attr)
+        video_queue.put(Event(VIDEO_CLEAR_ROWS, (back, start, stop)))
 
     #MOVE to Cursor.move ?
     def move_cursor(self, row, col):
@@ -1621,8 +1622,9 @@ class Screen(object):
         """ Scroll the scroll region up by one line, starting at from_line. """
         if from_line is None:
             from_line = state.console_state.view_start
+        _, back, _, _ = self.split_attr(self.attr)
         video_queue.put(Event(VIDEO_SCROLL_UP,
-                    (from_line, state.console_state.scroll_height, self.attr)))
+                    (from_line, state.console_state.scroll_height, back)))
         # sync buffers with the new screen reality:
         if state.console_state.row > from_line:
             state.console_state.row -= 1
@@ -1638,9 +1640,9 @@ class Screen(object):
 
     def scroll_down(self,from_line):
         """ Scroll the scroll region down by one line, starting at from_line. """
+        _, back, _, _ = self.split_attr(self.attr)
         video_queue.put(Event(VIDEO_SCROLL_DOWN,
-                                (from_line, state.console_state.scroll_height,
-                                self.attr)))
+                    (from_line, state.console_state.scroll_height, back)))
         if state.console_state.row >= from_line:
             state.console_state.row += 1
         # sync buffers with the new screen reality:

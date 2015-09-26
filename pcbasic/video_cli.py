@@ -134,7 +134,7 @@ def move_cursor(crow, ccol):
     global cursor_row, cursor_col
     cursor_row, cursor_col = crow, ccol
 
-def clear_rows(cattr, start, stop):
+def clear_rows(back_attr, start, stop):
     """ Clear screen rows. """
     text[start-1:stop] = [ [' ']*len(text[0]) for _ in range(start-1, stop)]
     if start <= cursor_row and stop >= cursor_row:
@@ -143,7 +143,7 @@ def clear_rows(cattr, start, stop):
         update_position(cursor_row, 1)
         sys.stdout.flush()
 
-def scroll(from_line, scroll_height, attr):
+def scroll(from_line, scroll_height, back_attr):
     """ Scroll the screen up between from_line and scroll_height. """
     sys.stdout.write('\r\n')
     sys.stdout.flush()

@@ -178,9 +178,9 @@ def check_events():
         last_pos = (cursor_row, cursor_col)
     check_keyboard()
 
-def clear_rows(cattr, start, stop):
+def clear_rows(back_attr, start, stop):
     """ Clear screen rows. """
-    set_colours(cattr)
+    set_attributes(7, back_attr, False, False)
     for r in range(start, stop+1):
         sys.stdout.write(ansi.esc_move_cursor % (r, 1))
         sys.stdout.write(ansi.esc_clear_line)
@@ -238,7 +238,7 @@ def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     last_pos = (cursor_row, cursor_col)
     sys.stdout.flush()
 
-def scroll(from_line, scroll_height, attr):
+def scroll(from_line, scroll_height, back_attr):
     """ Scroll the screen up between from_line and scroll_height. """
     global last_pos
     sys.stdout.write(ansi.esc_set_scroll_region % (from_line, scroll_height))
@@ -247,9 +247,9 @@ def scroll(from_line, scroll_height, attr):
     if cursor_row > 1:
         sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
         last_pos = (cursor_row, cursor_col)
-    clear_rows(attr, scroll_height, scroll_height)
+    clear_rows(back_attr, scroll_height, scroll_height)
 
-def scroll_down(from_line, scroll_height, attr):
+def scroll_down(from_line, scroll_height, back_attr):
     """ Scroll the screen down between from_line and scroll_height. """
     sys.stdout.write(ansi.esc_set_scroll_region % (from_line, scroll_height))
     sys.stdout.write(ansi.esc_scroll_down % 1)
@@ -257,7 +257,7 @@ def scroll_down(from_line, scroll_height, attr):
     if cursor_row > 1:
         sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
         last_pos = (cursor_row, cursor_col)
-    clear_rows(attr, from_line, from_line)
+    clear_rows(back_attr, from_line, from_line)
 
 def set_caption_message(msg):
     """ Add a message to the window caption. """
@@ -399,13 +399,6 @@ def check_keyboard():
 
 
 #######
-
-def set_colours(at):
-    """ Convert BASIC attribute byte to ansi colours. """
-    back = (at>>4)&0x7
-    blink = (at>>7)
-    fore = (at & 15)
-    set_attributes(fore, back, blink, False)
 
 def set_attributes(fore, back, blink, underline):
     """ Set ANSI colours based on split attribute. """

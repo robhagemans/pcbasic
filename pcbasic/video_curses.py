@@ -228,10 +228,10 @@ def init_screen_mode(mode_info):
     window.resize(height, width)
     set_curses_palette()
 
-def clear_rows(cattr, start, stop):
+def clear_rows(back_attr, start, stop):
     """ Clear screen rows. """
     text[start-1:stop] = [ [(' ', 0)]*len(text[0]) for _ in range(start-1, stop)]
-    window.bkgdset(' ', colours(cattr))
+    window.bkgdset(' ', curses_colour(7, back_attr, False))
     for r in range(start, stop+1):
         try:
             window.move(r-1, 0)
@@ -291,7 +291,7 @@ def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     if len(c) > 1:
         text[row-1][col] = '', colour
 
-def scroll(from_line, scroll_height, attr):
+def scroll(from_line, scroll_height, back_attr):
     """ Scroll the screen up between from_line and scroll_height. """
     window.scrollok(True)
     window.setscrreg(from_line-1, scroll_height-1)
@@ -301,12 +301,12 @@ def scroll(from_line, scroll_height, attr):
         pass
     window.scrollok(False)
     window.setscrreg(1, height-1)
-    clear_rows(attr, scroll_height, scroll_height)
+    clear_rows(back_attr, scroll_height, scroll_height)
     if cursor_row > 1:
         window.move(cursor_row-2, cursor_col-1)
     text[from_line-1:scroll_height] = text[from_line:scroll_height] + [[(' ', 0)]*len(text[0])]
 
-def scroll_down(from_line, scroll_height, attr):
+def scroll_down(from_line, scroll_height, back_attr):
     """ Scroll the screen down between from_line and scroll_height. """
     window.scrollok(True)
     window.setscrreg(from_line-1, scroll_height-1)
@@ -316,7 +316,7 @@ def scroll_down(from_line, scroll_height, attr):
         pass
     window.scrollok(False)
     window.setscrreg(1, height-1)
-    clear_rows(attr, from_line, from_line)
+    clear_rows(back_attr, from_line, from_line)
     if cursor_row < height:
         window.move(cursor_row, cursor_col-1)
     text[from_line-1:scroll_height] = [[(' ', 0)]*len(text[0])] + text[from_line-1:scroll_height-1]
@@ -407,13 +407,6 @@ def set_curses_palette():
                     curses.init_pair(back*8+fore+1, default_colors[fore], default_colors[back])
                 else:
                     curses.init_pair(back*8+fore, default_colors[fore], default_colors[back])
-
-def colours(at):
-    """ Convert BASIC attribute byte to curses colour. """
-    back = (at>>4)&0x7
-    blink = (at>>7)
-    fore = (blink*0x10) + (at&0xf)
-    return curses_colour(fore, back, blink)
 
 def curses_colour(fore, back, blink):
     """ Convert split attribute to curses colour. """

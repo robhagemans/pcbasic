@@ -760,6 +760,7 @@ def build_icon():
     pygame.transform.scale2x(icon)
     return icon
 
+#D
 def get_palette_index(cattr):
     """ Find the index in the game palette for this attribute. """
     # NOTE: we're using mode_has_underline as a proxy to "it's an MDA" here
@@ -836,10 +837,10 @@ def set_colorburst(on, rgb_palette, rgb_palette1):
     update_palette(rgb_palette, rgb_palette1)
     composite_artifacts = on and mode_has_artifacts and composite_monitor
 
-def clear_rows(cattr, start, stop):
+def clear_rows(back_attr, start, stop):
     """ Clear a range of screen rows. """
     global screen_changed
-    _, bg = get_palette_index(cattr)
+    bg = (0, 0, back_attr)
     scroll_area = pygame.Rect(0, (start-1)*font_height,
                               size[0], (stop-start+1)*font_height)
     canvas[apagenum].fill(bg, scroll_area)
@@ -874,7 +875,7 @@ def update_cursor_attr(attr):
     cursor_attr = canvas[vpagenum].get_palette_at(attr).b
     cursor.set_palette_at(254, pygame.Color(0, cursor_attr, cursor_attr))
 
-def scroll(from_line, scroll_height, attr):
+def scroll(from_line, scroll_height, back_attr):
     """ Scroll the screen up between from_line and scroll_height. """
     global screen_changed
     temp_scroll_area = pygame.Rect(
@@ -885,13 +886,13 @@ def scroll(from_line, scroll_height, attr):
     canvas[apagenum].set_clip(temp_scroll_area)
     canvas[apagenum].scroll(0, -font_height)
     # empty new line
-    _, bg = get_palette_index(attr)
+    bg = (0, 0, back_attr)
     canvas[apagenum].fill(bg, (0, (scroll_height-1) * font_height,
                                size[0], font_height))
     canvas[apagenum].set_clip(None)
     screen_changed = True
 
-def scroll_down(from_line, scroll_height, attr):
+def scroll_down(from_line, scroll_height, back_attr):
     """ Scroll the screen down between from_line and scroll_height. """
     global screen_changed
     temp_scroll_area = pygame.Rect(0, (from_line-1) * font_height, size[0],
@@ -899,7 +900,7 @@ def scroll_down(from_line, scroll_height, attr):
     canvas[apagenum].set_clip(temp_scroll_area)
     canvas[apagenum].scroll(0, font_height)
     # empty new line
-    _, bg = get_palette_index(attr)
+    bg = (0, 0, back_attr)
     canvas[apagenum].fill(bg, (0, (from_line-1) * font_height,
                                   size[0], font_height))
     canvas[apagenum].set_clip(None)
