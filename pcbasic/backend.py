@@ -1069,7 +1069,7 @@ def prepare_video():
         heights_needed.add(mode.font_height)
     for mode in state.console_state.screen.mode_data.values():
         heights_needed.add(mode.font_height)
-    # load the graphics fonts, including the 8-ixel RAM font
+    # load the graphics fonts, including the 8-pixel RAM font
     fonts = typeface.load_fonts(config.get('font'), heights_needed)
     fonts[9] = fonts[8]
     #D
@@ -1278,7 +1278,7 @@ class Screen(object):
             self.palette = Palette(self.mode)
             raise error.RunError(error.IFC)
         # preload SBCS glyphs
-        self.glyphs = [typeface.build_glyph(chr(c), fonts[mode_info.font_width],
+        self.glyphs = [typeface.build_glyph(chr(c), fonts[mode_info.font_height],
                                 mode_info.font_width, mode_info.font_height)
                       for c in range(256)]
         video_queue.put(Event(VIDEO_MODE, mode_info))
