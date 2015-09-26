@@ -6,7 +6,6 @@ Event loop; video, keyboard, pen and joystick handling
 This file is released under the GNU GPL version 3.
 """
 
-
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -1057,7 +1056,7 @@ def prepare_video():
     state.console_state.screen = Screen(config.get('text-width'),
                                         config.get('video-memory'))
 
-    heights_needed = set()
+    heights_needed = set([8])
     for mode in state.console_state.screen.text_data.values():
         heights_needed.add(mode.font_height)
     for mode in state.console_state.screen.mode_data.values():
@@ -1738,6 +1737,7 @@ class Screen(object):
         if self.mode.has_underline:
             # MDA palette, see http://www.seasip.info/VintagePC/mda.html
             # don't try to change this with PALETTE, it won't work correctly
+            blink = False
             if attr in (0x00, 0x08, 0x80, 0x88, 0x70):
                 fore = 0
             elif attr == 0x78:
@@ -1745,19 +1745,20 @@ class Screen(object):
                 fore = 1
             elif attr == 0xf8:
                 # dim foreground on bright background, blinking
-                fore = 0xa2
+                fore = 1 #0xa2
+                blink = True
             elif attr == 0xf0:
                 # black on bright background, blinking
-                fore = 0xa0
+                fore = 0 #0xa0
+                blink = True
             else:
                 # most % 8 == 0 points aren't actually black
                 if attr % 8 == 0:
                     attr += 1
-                if attr < 0x80:
-                    fore = attr
-                else:
+                fore = attr % 16
+                if attr >= 0x80:
                     # blink goes to black back
-                    fore = 0x80 + attr % 16
+                    blink = True
             if attr in (0x70, 0x78, 0xF0, 0xF8):
                 # bright green background for these points
                 back = 15
