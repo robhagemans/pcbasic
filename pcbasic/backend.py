@@ -1505,6 +1505,7 @@ class Screen(object):
                                                 r, c, char, fore, back)
                 self.pixels.pages[self.apagenum].put_rect(
                                                 x0, y0, x1, y1, glyph, tk.PSET)
+                video_queue.put(Event(VIDEO_PUT_RECT, (x0, y0, x1, y1, glyph)))
 
 
     # should be in console? uses wrap
