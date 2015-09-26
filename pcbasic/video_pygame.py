@@ -201,9 +201,9 @@ def drain_video_queue():
         elif signal.event_type == backend.VIDEO_MODE:
             init_screen_mode(signal.params)
         elif signal.event_type == backend.VIDEO_PUT_CHAR:
-            putc_at(*signal.params)
+            put_char_attr(*signal.params)
         elif signal.event_type == backend.VIDEO_PUT_WCHAR:
-            putwc_at(*signal.params)
+            put_wchar_attr(*signal.params)
         elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
             move_cursor(*signal.params)
         elif signal.event_type == backend.VIDEO_CLEAR_ROWS:
@@ -917,11 +917,11 @@ def set_attr(cattr):
     global current_attr
     current_attr = cattr
 
-def putc_at(pagenum, row, col, c, for_keys=False):
+def put_char_attr(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     """ Put a single-byte character at a given position. """
     global screen_changed
     glyph = glyphs[ord(c)]
-    color, bg = get_palette_index(current_attr)
+    color, bg = (0, 0, fore + 16*blink), (0, 0, back)
     if c == '\0':
         # guaranteed to be blank, saves time on some BLOADs
         canvas[pagenum].fill(bg,
@@ -934,18 +934,17 @@ def putc_at(pagenum, row, col, c, for_keys=False):
             glyph.set_palette_at(254, color)
         canvas[pagenum].blit(glyph,
                              ((col-1) * font_width, (row-1) * font_height))
-    if mode_has_underline and (current_attr % 8 == 1):
-        color, _ = get_palette_index(current_attr)
+    if mode_has_underline and underline:
         for xx in range(font_width):
             canvas[pagenum].set_at(((col-1) * font_width + xx,
                                        row*font_height - 1), color)
     screen_changed = True
 
-def putwc_at(pagenum, row, col, c, d, for_keys=False):
+def put_wchar_attr(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     """ Put a double-byte character at a given position. """
     global screen_changed
-    glyph = build_glyph(c+d, font, 2*font_width, font_height)
-    color, bg = get_palette_index(current_attr)
+    glyph = build_glyph(c, font, 2*font_width, font_height)
+    color, bg = (0, 0, fore + 16*blink), (0, 0, back)
     glyph.set_palette_at(255, bg)
     glyph.set_palette_at(254, color)
     top_left = ((col-1) * font_width, (row-1) * font_height)

@@ -1477,9 +1477,6 @@ class Screen(object):
             if double == 1:
                 ca = therow.buf[ccol-1]
                 da = therow.buf[ccol]
-                video_queue.put(Event(VIDEO_SET_ATTR, da[1]))
-                video_queue.put(Event(VIDEO_PUT_WCHAR,
-                                (pagenum, crow, ccol, ca[0], da[0], for_keys)))
                 r, c, char, attr = crow, ccol, ca[0]+da[0], da[1]
                 therow.double[ccol-1] = 1
                 therow.double[ccol] = 2
@@ -1489,20 +1486,24 @@ class Screen(object):
                     logging.debug('DBCS buffer corrupted at %d, %d (%d)',
                                   crow, ccol, double)
                 ca = therow.buf[ccol-1]
-                video_queue.put(Event(VIDEO_SET_ATTR, ca[1]))
-                video_queue.put(Event(VIDEO_PUT_CHAR,
-                                (pagenum, crow, ccol, ca[0], for_keys)))
                 r, c, char, attr = crow, ccol, ca[0], ca[1]
                 ccol += 1
+            fore, back, blink, underline = self.split_attr(attr)
+            video_queue.put(Event(VIDEO_SET_ATTR, attr))
+            if len(char) > 1:
+                video_queue.put(Event(VIDEO_PUT_WCHAR, (pagenum, r, c, char,
+                                 fore, back, blink, underline, for_keys)))
+            else:
+                video_queue.put(Event(VIDEO_PUT_CHAR, (pagenum, r, c, char,
+                                 fore, back, blink, underline, for_keys)))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer
-                fore, back, _, _ = self.split_attr(attr)
+                fore, back, blink, underline = self.split_attr(attr)
                 x0, y0, x1, y1, glyph = self.char_to_rect(
                                                 r, c, char, fore, back)
                 self.pixels.pages[self.apagenum].put_rect(
                                                 x0, y0, x1, y1, glyph, tk.PSET)
                 video_queue.put(Event(VIDEO_PUT_RECT, (x0, y0, x1, y1, glyph)))
-
 
     # should be in console? uses wrap
     def redraw_row(self, start, crow, wrap=True):
