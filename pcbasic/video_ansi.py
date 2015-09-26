@@ -117,10 +117,8 @@ def drain_video_queue():
             alive = False
         elif signal.event_type == backend.VIDEO_MODE:
             init_screen_mode(signal.params)
-        elif signal.event_type == backend.VIDEO_PUT_CHAR:
-            putc_at(*signal.params)
-        elif signal.event_type == backend.VIDEO_PUT_WCHAR:
-            putwc_at(*signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_GLYPH:
+            put_glyph(*signal.params)
         elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
             move_cursor(*signal.params)
         elif signal.event_type == backend.VIDEO_CLEAR_ROWS:
@@ -129,8 +127,6 @@ def drain_video_queue():
             scroll(*signal.params)
         elif signal.event_type == backend.VIDEO_SCROLL_DOWN:
             scroll_down(*signal.params)
-        elif signal.event_type == backend.VIDEO_SET_ATTR:
-            set_attr(signal.params)
         elif signal.event_type == backend.VIDEO_SET_CURSOR_SHAPE:
             build_cursor(*signal.params)
         elif signal.event_type == backend.VIDEO_SET_CURSOR_ATTR:
@@ -156,6 +152,9 @@ cursor_shape = 1
 # current cursor position
 cursor_row = 1
 cursor_col = 1
+
+# last used colour attributes
+last_attributes = None
 
 
 def init_screen_mode(mode_info=None):
@@ -221,37 +220,20 @@ def build_cursor(width, height, from_line, to_line):
 #        sys.stdout.write(ansi.esc_set_cursor_shape % cursor_shape)
         sys.stdout.flush()
 
-last_attr = None
-def set_attr(cattr):
-    """ Set the current attribute. """
-    global attr, last_attr
-    attr = cattr
-    if attr == last_attr:
-        return
-    last_attr = attr
-    set_colours(attr)
-    sys.stdout.flush()
-
-def putc_at(pagenum, row, col, c, for_keys=False):
+def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     """ Put a single-byte character at a given position. """
-    global last_pos
+    global last_pos, last_attributes
     sys.stdout.write(ansi.esc_move_cursor % (row, col))
-    char = unicodepage.UTF8Converter().to_utf8(c)
-    sys.stdout.write(char)
-    sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
-    last_pos = (cursor_row, cursor_col)
-    sys.stdout.flush()
-
-def putwc_at(pagenum, row, col, c, d, for_keys=False):
-    """ Put a double-byte character at a given position. """
-    global last_pos
-    sys.stdout.write(ansi.esc_move_cursor % (row, col))
+    if last_attributes != (fore, back, blink, underline):
+        last_attributes = fore, back, blink, underline
+        set_attributes(fore, back, blink, underline)
     try:
-        wchar = unicodepage.UTF8Converter().to_utf8(c+d)
+        char = unicodepage.UTF8Converter().to_utf8(c)
     except KeyError:
-        wchar = '  '
-    sys.stdout.write(wchar)
-    sys.stdout.write(unicodepage.UTF8Converter().to_utf8(c))
+        char = ' ' * len(c)
+    sys.stdout.write(char)
+    if len(c) > 1:
+        sys.stdout.write(' ')
     sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
     last_pos = (cursor_row, cursor_col)
     sys.stdout.flush()
@@ -423,8 +405,12 @@ def set_colours(at):
     back = (at>>4)&0x7
     blink = (at>>7)
     fore = (at & 15)
-    bright = (at & 8)
-    if (fore & 8) == 0:
+    set_attributes(fore, back, blink, False)
+
+def set_attributes(fore, back, blink, underline):
+    """ Set ANSI colours based on split attribute. """
+    bright = (fore & 8)
+    if bright == 0:
         fore = 30 + ansi.colours[fore%8]
     else:
         fore = 90 + ansi.colours[fore%8]
@@ -435,5 +421,6 @@ def set_colours(at):
     if blink:
         sys.stdout.write(ansi.esc_set_colour % 5)
     sys.stdout.flush()
+
 
 prepare()
