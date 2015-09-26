@@ -160,17 +160,13 @@ def close():
     if thread and thread.is_alive():
         # signal quit and wait for thread to finish
         thread.join()
-    # all messages are processed; record final state and shut down
-    display_state = None
-    if pygame:
-        save_state()
+    # all messages are processed; shut down
     if android:
         pygame_android.close()
     # if pygame import failed, close() is called while pygame is None
     if pygame:
         pygame.joystick.quit()
         pygame.display.quit()
-    return display_state
 
 
 ###############################################################################
@@ -250,10 +246,6 @@ def drain_video_queue():
             fill_rect(*signal.params)
         elif signal.event_type == backend.VIDEO_SET_CAPTION:
             set_caption_message(signal.params)
-        elif signal.event_type == backend.VIDEO_SAVE_STATE:
-            save_state()
-        elif signal.event_type == backend.VIDEO_LOAD_STATE:
-            load_state()
         backend.video_queue.task_done()
 
 
@@ -437,42 +429,6 @@ def handle_key_up(e):
         except KeyError:
             pass
 
-
-###############################################################################
-# persistence
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-import zlib
-import os
-import plat
-
-state_file = os.path.join(plat.state_path, 'DISPLAY.SAV')
-
-def save_state():
-    """ Save display state as list of strings. """
-    display_str = [pygame.image.tostring(s, 'P') for s in canvas]
-    with open(state_file, 'wb') as fstate:
-        fstate.write(zlib.compress(pickle.dumps(display_str, 2)))
-
-def load_state():
-    """ Restore display state. """
-    global screen_changed
-    with open(state_file, 'rb') as fstate:
-        display_str = pickle.loads(zlib.decompress(fstate.read()))
-    try:
-        for i in range(len(canvas)):
-            canvas[i] = pygame.image.fromstring(display_str[i], size, 'P')
-            canvas[i].set_palette(workpalette)
-        screen_changed = True
-        return True
-    except (IndexError, ValueError, TypeError):
-        # couldn't load the state correctly
-        # e.g. saved from different interface. just redraw what's unpickled.
-        # this also happens if the screen resolution has changed
-        return False
 
 ###############################################################################
 

@@ -100,10 +100,6 @@ VIDEO_FILL_RECT = 21
 VIDEO_COPY_PAGE = 28
 # set caption message
 VIDEO_SET_CAPTION = 29
-# save/load state
-VIDEO_SAVE_STATE = 30
-VIDEO_LOAD_STATE = 31
-
 
 # input queue signals
 # special keys
@@ -1129,10 +1125,6 @@ class Screen(object):
         """ Close the display. """
         video.close()
 
-    def save_state(self):
-        """ Save display for possible resume. """
-        video_queue.put(Event(VIDEO_SAVE_STATE))
-
     def resume(self):
         """ Load a video mode from storage and initialise. """
         # recalculate modes in case we've changed hardware emulations
@@ -1174,15 +1166,19 @@ class Screen(object):
                 (self.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)))
         self.cursor.reset_visibility()
         video_queue.put(Event(VIDEO_SET_BORDER_ATTR, self.border_attr))
-        if (cmode.is_text_mode and cmode.name != mode_info.name):
-            # text mode in different resolution; redraw.
-            self.mode = mode_info
-            self.redraw_text_screen()
-        else:
-            # redraw the text in case we can't restore the full graphics screen
-            self.redraw_text_screen()
-            # load the screen contents from storage
-            video_queue.put(Event(VIDEO_LOAD_STATE))
+        # redraw the text screen and rebuild text buffers in video plugin
+        self.mode = mode_info
+        for pagenum in range(self.mode.num_pages):
+            for crow in range(self.mode.height):
+                # for_keys=True means 'suppress echo on cli'
+                self.refresh_range(pagenum, crow, 1, self.mode.width,
+                                   for_keys=True, text_only=True)
+        # redraw graphics
+        #FIXME: what about non-visible pages?
+        if not self.mode.is_text_mode:
+            video_queue.put(Event(VIDEO_PUT_RECT, (0, 0,
+                              self.mode.pixel_width-1, self.mode.pixel_height-1,
+                              self.pixels.pages[self.apagenum].buffer)))
         return True
 
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum,
@@ -1472,7 +1468,7 @@ class Screen(object):
         full += unicodepage.UTF8Converter().to_utf8(clip)
         return full
 
-    def refresh_range(self, pagenum, crow, start, stop, for_keys=False):
+    def refresh_range(self, pagenum, crow, start, stop, for_keys=False, text_only=False):
         """ Redraw a section of a screen row, assuming DBCS buffer has been set. """
         therow = self.text.pages[pagenum].row[crow-1]
         ccol = start
@@ -1498,7 +1494,7 @@ class Screen(object):
                                 (pagenum, crow, ccol, ca[0], for_keys)))
                 r, c, char, attr = crow, ccol, ca[0], ca[1]
                 ccol += 1
-            if not self.mode.is_text_mode:
+            if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer
                 fore, back, _, _ = self.split_attr(attr)
                 x0, y0, x1, y1, glyph = self.char_to_rect(
@@ -1524,24 +1520,6 @@ class Screen(object):
                 start = 0
             else:
                 break
-
-    def redraw_text_screen(self):
-        """ Redraw the active screen page, reconstructing DBCS buffers. """
-        # force cursor invisible during redraw
-        self.cursor.show(False)
-        # this makes it feel faster
-        video_queue.put(Event(VIDEO_CLEAR_ROWS, (self.attr, 1, self.mode.height)))
-        # redraw every character
-        for crow in range(self.mode.height):
-            therow = self.apage.row[crow]
-            for i in range(self.mode.width):
-                # set for_keys to avoid echoing to CLI
-                # set force to force actual redrawing of non-updated chars
-                self.put_char_attr(self.apagenum, crow+1, i+1,
-                             therow.buf[i][0], therow.buf[i][1],
-                             for_keys=True, force=True)
-        # set cursor back to previous state
-        self.cursor.reset_visibility()
 
     #D -> state.io_state.lpt1_file.write(get_text(...))
     def print_screen(self):

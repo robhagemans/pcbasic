@@ -114,7 +114,6 @@ def check_events():
     if android.check_pause():
         android.hide_keyboard()
         # save emulator state
-        state.console_state.screen.save_state()
         state.save()
         # hibernate; we may not wake up
         android.wait_for_resume()
