@@ -98,10 +98,8 @@ def drain_video_queue():
             alive = False
         elif signal.event_type == backend.VIDEO_MODE:
             set_mode(signal.params)
-        elif signal.event_type == backend.VIDEO_PUT_CHAR:
-            putc_at(*signal.params)
-        elif signal.event_type == backend.VIDEO_PUT_WCHAR:
-            putwc_at(*signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_GLYPH:
+            put_glyph(*signal.params)
         elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
             move_cursor(*signal.params)
         elif signal.event_type == backend.VIDEO_CLEAR_ROWS:
@@ -114,35 +112,22 @@ def drain_video_queue():
 
 ###############################################################################
 
-def putc_at(pagenum, row, col, c, for_keys=False):
+def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     """ Put a single-byte character at a given position. """
     global last_col
     if for_keys:
         return
     update_position(row, col)
-    # this doesn't recognise DBCS
-    char = unicodepage.UTF8Converter().to_utf8(c)
+    try:
+        char = unicodepage.UTF8Converter().to_utf8(c)
+    except KeyError:
+        char = ' ' * len(c)
     sys.stdout.write(char)
     sys.stdout.flush()
-    last_col += 1
+    last_col += len(c)
     text[row-1][col-1] = char
-
-def putwc_at(pagenum, row, col, c, d, for_keys=False):
-    """ Put a double-byte character at a given position. """
-    global last_col
-    if for_keys:
-        return
-    update_position(row, col)
-    # this does recognise DBCS
-    try:
-        wchar = unicodepage.UTF8Converter().to_utf8(c+d)
-    except KeyError:
-        wchar = '  '
-    sys.stdout.write(wchar)
-    sys.stdout.flush()
-    last_col += 2
-    text[row-1][col-1] = wchar
-    text[row-1][col] = ''
+    if len(c) > 1:
+        text[row-1][col] = ''
 
 def move_cursor(crow, ccol):
     """ Move the cursor to a new position. """
