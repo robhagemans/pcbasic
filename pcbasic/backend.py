@@ -1069,12 +1069,8 @@ def prepare_video():
         heights_needed.add(mode.font_height)
     for mode in state.console_state.screen.mode_data.values():
         heights_needed.add(mode.font_height)
-    # load the 8-pixel font that's available in RAM.
-    family = config.get('font')
-    fonts = {}
-    for height in heights_needed:
-        fonts[height] = typeface.load(family, height,
-                                      unicodepage.cp_to_unicodepoint)
+    # load the graphics fonts, including the 8-ixel RAM font
+    fonts = typeface.load_fonts(config.get('font'), heights_needed)
     fonts[9] = fonts[8]
     #D
     font_8 = fonts[8]
@@ -1747,7 +1743,7 @@ class Screen(object):
             mask = self.glyphs[ord(c)]
         else:
             mask = typeface.build_glyph(c, fonts[self.mode.font_height],
-                                self.mode.font_width, self.mode.font_height)
+                                self.mode.font_width*2, self.mode.font_height)
         # set background
         glyph = numpy.full(mask.shape, back)
         # stamp foreground mask
