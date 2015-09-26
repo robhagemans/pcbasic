@@ -37,7 +37,7 @@ def load(families, height, codepage_dict, nowarn=False):
     fontdict = load_hex(fontfiles, height, codepage_dict)
     for f in fontfiles:
         f.close()
-    return build_codepage_font(fontdict, codepage_dict)
+    return build_codepage_font(fontdict, codepage_dict, height)
 
 def load_hex(fontfiles, height, codepage_dict):
     """ Load a set of overlaying unifont .hex files. """
@@ -63,16 +63,18 @@ def load_hex(fontfiles, height, codepage_dict):
                 if (codepoint in fontdict):
                     continue
                 # string must be 32-byte or 16-byte; cut to required font size
-                if len(fonthex) < 64:
-                    fonthex = fonthex[:32]
                 if len(fonthex) < 32:
                     raise ValueError
+                if len(fonthex) < 64:
+                    fonthex = fonthex[:2*height]
+                else:
+                    fonthex = fonthex[:4*height]
                 fontdict[codepoint] = fonthex.decode('hex')
             except Exception as e:
                 logging.warning('Could not parse line in font file: %s', repr(line))
     return fontdict
 
-def build_codepage_font(fontdict, codepage_dict):
+def build_codepage_font(fontdict, codepage_dict, height):
     """ Extract the glyphs for a given codepage from a unicode font. """
     font = {}
     warnings = 0
@@ -88,7 +90,7 @@ def build_codepage_font(fontdict, codepage_dict):
             if warnings == 3:
                 logging.debug('Further codepoint warnings suppressed.')
     # char 0 should always be empty
-    font['\0'] = '\0'*16
+    font['\0'] = '\0'*height
     return font
 
 def fixfont(height, font, codepage_dict, font16):
@@ -122,6 +124,7 @@ def load_fonts(font_families, heights_needed):
     """ Load font typefaces. """
     fonts = {}
     for height in reversed(sorted(heights_needed)):
+
         if height in fonts:
             # already force loaded
             continue
@@ -162,8 +165,8 @@ def build_glyph(c, font_face, req_width, req_height):
         c = '\0'
     # shape of encoded mask (8 or 16 wide; usually 8, 14 or 16 tall)
     code_height = 8 if req_height == 9 else req_height
-    code_width = 8 if len(face) < 32 else 16
-    face = face[:code_width*code_height//8]
+    code_width = (8*len(face))//code_height
+
     #D
     glyph_width, glyph_height = code_width, req_height
     if req_width <= glyph_width + 2:
