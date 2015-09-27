@@ -494,10 +494,7 @@ def draw_cursor(screen):
             screen.blit(cursor, (  (cursor_col-1) * font_width,
                                     (cursor_row-1) * font_height) )
     else:
-        if cursor_fixed_attr is not None:
-            index = cursor_fixed_attr
-        else:
-            index = cursor_attr & 0xf
+        index = cursor_attr & 0xf
         if numpy:
             # reference the destination area
             dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
@@ -856,7 +853,7 @@ def init_screen_mode(mode_info):
     global under_cursor, size, text_mode
     global font_height
     global clipboard, num_pages, bitsperpixel, font_width
-    global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
+    global mode_has_artifacts, mode_has_blink
     global mode_has_underline
     global init_complete
     text_mode = mode_info.is_text_mode
@@ -869,7 +866,6 @@ def init_screen_mode(mode_info):
     if not text_mode:
         bitsperpixel = mode_info.bitsperpixel
         mode_has_artifacts = mode_info.supports_artifacts
-        cursor_fixed_attr = mode_info.cursor_index
     # logical size
     size = (mode_info.pixel_width, mode_info.pixel_height)
     resize_display(*find_display_size(size[0], size[1], border_width))

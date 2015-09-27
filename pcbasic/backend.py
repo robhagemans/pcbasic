@@ -1157,7 +1157,8 @@ class Screen(object):
             video_queue.put(Event(VIDEO_SET_CURSOR_ATTR,
                     (self.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)))
         else:
-            video_queue.put(Event(VIDEO_SET_CURSOR_ATTR, self.attr))
+            video_queue.put(Event(VIDEO_SET_CURSOR_ATTR,
+                                        self.mode.cursor_index or self.attr))
         self.cursor.reset_visibility()
         video_queue.put(Event(VIDEO_SET_BORDER_ATTR, self.border_attr))
         # redraw the text screen and rebuild text buffers in video plugin
@@ -1314,7 +1315,8 @@ class Screen(object):
         self.palette = Palette(self.mode)
         # set the attribute
         if not self.mode.is_text_mode:
-            video_queue.put(Event(VIDEO_SET_CURSOR_ATTR, self.attr))
+            video_queue.put(Event(VIDEO_SET_CURSOR_ATTR,
+                                        self.mode.cursor_index or self.attr))
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
         if self.mode.is_text_mode:
             self.set_colorburst(new_colorswitch)
@@ -1424,7 +1426,7 @@ class Screen(object):
     def set_attr(self, attr):
         """ Set the default attribute. """
         self.attr = attr
-        if not self.mode.is_text_mode:
+        if not self.mode.is_text_mode and self.mode.cursor_index is None:
             video_queue.put(Event(VIDEO_SET_CURSOR_ATTR, attr))
 
     def set_border(self, attr):
