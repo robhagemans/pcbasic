@@ -55,10 +55,10 @@ if android:
 def prepare():
     """ Initialise video_pygame module. """
     global fullscreen, smooth, noquit, force_display_size
-    global composite_monitor, heights_needed
+    global composite_monitor
     global composite_640_palette, border_width
     global mousebutton_copy, mousebutton_paste, mousebutton_pen
-    global mono_monitor, font_families, aspect, force_square_pixel
+    global mono_monitor, aspect, force_square_pixel
     global caption
     # display dimensions
     force_display_size = config.get('dimensions')
@@ -81,8 +81,6 @@ def prepare():
         # enable tandy F11, F12
         key_to_scan[pygame.K_F11] = scancode.F11
         key_to_scan[pygame.K_F12] = scancode.F12
-    # fonts
-    font_families = config.get('font')
     # mouse setups
     buttons = { 'left': 1, 'middle': 2, 'right': 3, 'none': -1 }
     mousebutton_copy = buttons[config.get('copy-paste')[0]]
@@ -142,11 +140,6 @@ def init():
         for axis in (0, 1):
             backend.input_queue.put(backend.Event(backend.STICK_MOVED,
                                                   (joy, axis, 128)))
-    # retrieve 8-pixel font from backend
-    # also link as 9-pixel font for tandy
-    fonts = { 8: backend.font_8, 9: backend.font_8 }
-    if not load_fonts(backend.heights_needed):
-        return False
     text_mode = True
     set_page(0, 0)
     launch_thread()
@@ -860,17 +853,12 @@ def init_screen_mode(mode_info):
     """ Initialise a given text or graphics mode. """
     global cursor
     global screen_changed, canvas
-    global font, under_cursor, size, text_mode
+    global under_cursor, size, text_mode
     global font_height
     global clipboard, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     global mode_has_underline
     global init_complete
-    if mode_info.font_height not in fonts or not fonts[mode_info.font_height]:
-        logging.warning(
-            'No %d-pixel font available. Could not enter video mode %s.',
-            mode_info.font_height, mode_info.name)
-        return False
     text_mode = mode_info.is_text_mode
     # unpack mode info struct
     font_height = mode_info.font_height
@@ -884,7 +872,6 @@ def init_screen_mode(mode_info):
         cursor_fixed_attr = mode_info.cursor_index
     # logical size
     size = (mode_info.pixel_width, mode_info.pixel_height)
-    font = fonts[font_height]
     resize_display(*find_display_size(size[0], size[1], border_width))
     # set standard cursor
     set_cursor_shape(font_width, font_height, 0, font_height)
@@ -898,75 +885,6 @@ def init_screen_mode(mode_info):
     # signal that initialisation is complete
     init_complete = True
     return True
-
-def load_fonts(heights_needed):
-    """ Load font typefaces. """
-    for height in reversed(sorted(heights_needed)):
-        if height in fonts:
-            # already force loaded
-            continue
-        # load a Unifont .hex font and take the codepage subset
-        fonts[height] = typeface.load(font_families, height,
-                                      unicodepage.cp_to_unicodepoint)
-        # fix missing code points font based on 16-line font
-        if 16 not in fonts:
-            # if available, load the 16-pixel font unrequested
-            font_16 = typeface.load(font_families, 16,
-                                    unicodepage.cp_to_unicodepoint, nowarn=True)
-            if font_16:
-                fonts[16] = font_16
-        if 16 in fonts and fonts[16]:
-            typeface.fixfont(height, fonts[height],
-                             unicodepage.cp_to_unicodepoint, fonts[16])
-    return True
-
-# ascii codepoints for which to repeat column 8 in column 9 (box drawing)
-# Many internet sources say this should be 0xC0--0xDF. However, that would
-# exclude the shading characters. It appears to be traced back to a mistake in
-# IBM's VGA docs. See https://01.org/linuxgraphics/sites/default/files/documentation/ilk_ihd_os_vol3_part1r2.pdf
-carry_col_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
-# ascii codepoints for which to repeat row 8 in row 9 (box drawing)
-carry_row_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
-
-def build_glyph_surface(c, font_face, req_width, req_height):
-    """ Build a sprite for the given character glyph. """
-    color, bg = 254, 255
-    try:
-        face = font_face[c]
-    except KeyError:
-        logging.debug('Byte sequence %s not represented in codepage, replace with blank glyph.', repr(c))
-        # codepoint 0 must be blank by our definitions
-        face = font_face['\0']
-        c = '\0'
-    code_height = 8 if req_height == 9 else req_height
-    glyph_width, glyph_height = 8*len(face)//code_height, req_height
-    if req_width <= glyph_width + 2:
-        # allow for 9-pixel widths (18-pixel dwidths) without scaling
-        glyph_width = req_width
-    elif glyph_width < req_width:
-        u = unicodepage.cp_to_utf8[c]
-        logging.debug('Incorrect glyph width for %s [%s, code point %x].', repr(c), u, ord(u.decode('utf-8')))
-    glyph = pygame.Surface((glyph_width, glyph_height), depth=8)
-    glyph.fill(bg)
-    for yy in range(code_height):
-        for half in range(glyph_width//8):
-            line = ord(face[yy*(glyph_width//8)+half])
-            for xx in range(8):
-                if (line >> (7-xx)) & 1 == 1:
-                    glyph.set_at((half*8 + xx, yy), color)
-        # MDA/VGA 9-bit characters
-        if c in carry_col_9 and glyph_width == 9:
-            if line & 1 == 1:
-                glyph.set_at((8, yy), color)
-    # tandy 9-bit high characters
-    if c in carry_row_9 and glyph_height == 9:
-        line = ord(face[7*(glyph_width//8)])
-        for xx in range(8):
-            if (line >> (7-xx)) & 1 == 1:
-                glyph.set_at((xx, 8), color)
-    if req_width > glyph_width:
-        glyph = pygame.transform.scale(glyph, (req_width, req_height))
-    return glyph
 
 if numpy:
     def glyph_to_surface(glyph):

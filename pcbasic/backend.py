@@ -1039,8 +1039,6 @@ def prepare_video():
     global egacursor
     global video_capabilities, composite_monitor, mono_monitor
     global fonts
-    #D
-    global font_8, heights_needed
     video_capabilities = config.get('video')
     # do all text modes with >8 pixels have an ega-cursor?
     egacursor = video_capabilities in (
@@ -1064,8 +1062,6 @@ def prepare_video():
     # load the graphics fonts, including the 8-pixel RAM font
     fonts = typeface.load_fonts(config.get('font'), heights_needed)
     fonts[9] = fonts[8]
-    #D
-    font_8 = fonts[8]
 
 def init_video(video_module):
     """ Initialise the video backend. """
@@ -1271,10 +1267,16 @@ class Screen(object):
             self.palette = Palette(self.mode)
             raise error.RunError(error.IFC)
         # preload SBCS glyphs
-        self.glyphs = { chr(c): typeface.build_glyph(chr(c),
-                                    fonts[mode_info.font_height],
-                                    mode_info.font_width, mode_info.font_height)
-                        for c in range(256) }
+        try:
+            self.glyphs = { chr(c): typeface.build_glyph(chr(c),
+                                        fonts[mode_info.font_height],
+                                        mode_info.font_width, mode_info.font_height)
+                            for c in range(256) }
+        except (KeyError, AttributeError):
+            logging.warning(
+                'No %d-pixel font available. Could not enter video mode %s.',
+                mode_info.font_height, mode_info.name)
+            raise error.RunError(error.IFC)
         video_queue.put(Event(VIDEO_MODE, mode_info))
         if self.mode.is_text_mode:
             # send glyphs to backend; copy is necessary
