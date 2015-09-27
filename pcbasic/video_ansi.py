@@ -117,6 +117,10 @@ def drain_video_queue():
             alive = False
         elif signal.event_type == backend.VIDEO_MODE:
             init_screen_mode(signal.params)
+        elif signal.event_type == backend.VIDEO_SET_PAGE:
+            set_page(*signal.params)
+        elif signal.event_type == backend.VIDEO_COPY_PAGE:
+            copy_page(*signal.params)
         elif signal.event_type == backend.VIDEO_PUT_GLYPH:
             put_glyph(*signal.params)
         elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
@@ -140,6 +144,15 @@ def drain_video_queue():
         # drop other messages
         backend.video_queue.task_done()
 
+def check_events():
+    """ Handle screen and interface events. """
+    global last_pos
+    if cursor_visible and last_pos != (cursor_row, cursor_col):
+        sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
+        sys.stdout.flush()
+        last_pos = (cursor_row, cursor_col)
+    check_keyboard()
+
 
 ###############################################################################
 
@@ -156,35 +169,47 @@ cursor_col = 1
 # last used colour attributes
 last_attributes = None
 
+# text and colour buffer
+num_pages = 1
+vpagenum, apagenum = 0, 0
+text = [[[(' ', (0, 0, False, False))]*80 for _ in range(25)]]
+
+last_pos = None
+
 
 def init_screen_mode(mode_info=None):
     """ Change screen mode. """
-    global window, height, width
+    global window, height, width, num_pages, text
     height = mode_info.height
     width = mode_info.width
+    num_pages = mode_info.num_pages
+    text = [[[(' ', (0, 0, False, False))]*width for _ in range(height)] for _ in range(num_pages)]
     sys.stdout.write(ansi.esc_resize_term % (height, width))
     sys.stdout.write(ansi.esc_clear_screen)
     sys.stdout.flush()
     return True
 
-last_pos = None
+def set_page(new_vpagenum, new_apagenum):
+    """ Set visible and active page. """
+    global vpagenum, apagenum
+    vpagenum, apagenum = new_vpagenum, new_apagenum
+    redraw()
 
-def check_events():
-    """ Handle screen and interface events. """
-    global last_pos
-    if cursor_visible and last_pos != (cursor_row, cursor_col):
-        sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
-        sys.stdout.flush()
-        last_pos = (cursor_row, cursor_col)
-    check_keyboard()
+def copy_page(src, dst):
+    """ Copy screen pages. """
+    text[dst] = [row[:] for row in text[src]]
+    if dst == vpagenum:
+        redraw()
 
 def clear_rows(back_attr, start, stop):
     """ Clear screen rows. """
-    set_attributes(7, back_attr, False, False)
-    for r in range(start, stop+1):
-        sys.stdout.write(ansi.esc_move_cursor % (r, 1))
-        sys.stdout.write(ansi.esc_clear_line)
-    sys.stdout.flush()
+    text[apagenum][start-1:stop] = [[(' ', (0, 0, False, False))]*len(text[apagenum][0]) for _ in range(start-1, stop)]
+    if vpagenum == apagenum:
+        set_attributes(7, back_attr, False, False)
+        for r in range(start, stop+1):
+            sys.stdout.write(ansi.esc_move_cursor % (r, 1))
+            sys.stdout.write(ansi.esc_clear_line)
+        sys.stdout.flush()
 
 def move_cursor(crow, ccol):
     """ Move the cursor to a new position. """
@@ -223,14 +248,19 @@ def build_cursor(width, height, from_line, to_line):
 def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     """ Put a single-byte character at a given position. """
     global last_pos, last_attributes
-    sys.stdout.write(ansi.esc_move_cursor % (row, col))
-    if last_attributes != (fore, back, blink, underline):
-        last_attributes = fore, back, blink, underline
-        set_attributes(fore, back, blink, underline)
     try:
         char = unicodepage.UTF8Converter().to_utf8(c)
     except KeyError:
         char = ' ' * len(c)
+    text[pagenum][row-1][col-1] = char, (fore, back, blink, underline)
+    if len(c) > 1:
+        text[pagenum][row-1][col] = '', (fore, back, blink, underline)
+    if vpagenum != pagenum:
+        return
+    sys.stdout.write(ansi.esc_move_cursor % (row, col))
+    if last_attributes != (fore, back, blink, underline):
+        last_attributes = fore, back, blink, underline
+        set_attributes(fore, back, blink, underline)
     sys.stdout.write(char)
     if len(c) > 1:
         sys.stdout.write(' ')
@@ -241,6 +271,9 @@ def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
 def scroll(from_line, scroll_height, back_attr):
     """ Scroll the screen up between from_line and scroll_height. """
     global last_pos
+    text[apagenum][from_line-1:scroll_height] = text[apagenum][from_line:scroll_height] + [[(' ', 0)]*len(text[apagenum][0])]
+    if apagenum != vpagenum:
+        return
     sys.stdout.write(ansi.esc_set_scroll_region % (from_line, scroll_height))
     sys.stdout.write(ansi.esc_scroll_up % 1)
     sys.stdout.write(ansi.esc_set_scroll_screen)
@@ -251,6 +284,9 @@ def scroll(from_line, scroll_height, back_attr):
 
 def scroll_down(from_line, scroll_height, back_attr):
     """ Scroll the screen down between from_line and scroll_height. """
+    text[apagenum][from_line-1:scroll_height] = [[(' ', 0)]*len(text[apagenum][0])] + text[apagenum][from_line-1:scroll_height-1]
+    if apagenum != vpagenum:
+        return
     sys.stdout.write(ansi.esc_set_scroll_region % (from_line, scroll_height))
     sys.stdout.write(ansi.esc_scroll_down % 1)
     sys.stdout.write(ansi.esc_set_scroll_screen)
@@ -415,5 +451,14 @@ def set_attributes(fore, back, blink, underline):
         sys.stdout.write(ansi.esc_set_colour % 5)
     sys.stdout.flush()
 
+def redraw():
+    """ Redraw the screen. """
+    sys.stdout.write(ansi.esc_clear_screen)
+    for row, textrow in enumerate(text[vpagenum]):
+        for col, charattr in enumerate(textrow):
+            sys.stdout.write(ansi.esc_move_cursor % (row+1, col+1))
+            set_attributes(*charattr[1])
+            sys.stdout.write(charattr[0])
+    sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
 
 prepare()
