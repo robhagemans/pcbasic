@@ -115,19 +115,19 @@ def drain_video_queue():
 def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     """ Put a single-byte character at a given position. """
     global last_col
-    if for_keys:
-        return
-    update_position(row, col)
     try:
         char = unicodepage.UTF8Converter().to_utf8(c)
     except KeyError:
         char = ' ' * len(c)
-    sys.stdout.write(char)
-    sys.stdout.flush()
-    last_col += len(c)
     text[row-1][col-1] = char
     if len(c) > 1:
         text[row-1][col] = ''
+    if for_keys:
+        return
+    update_position(row, col)
+    sys.stdout.write(char)
+    sys.stdout.flush()
+    last_col += len(c)
 
 def move_cursor(crow, ccol):
     """ Move the cursor to a new position. """

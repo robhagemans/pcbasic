@@ -1541,7 +1541,6 @@ class Screen(object):
                 line += c
             state.io_state.lpt1_file.write_line(line)
 
-    #MOVE to TextBuffer?
     def clear_text_at(self, x, y):
         """ Remove the character covering a single pixel. """
         fx, fy = self.mode.font_width, self.mode.font_height
@@ -1549,6 +1548,9 @@ class Screen(object):
         cx, cy = x // fx, y // fy
         if cx >= 0 and cy >= 0 and cx <= cxmax and cy <= cymax:
             self.apage.row[cy].buf[cx] = (' ', self.attr)
+        fore, back, blink, underline = self.split_attr(self.attr)
+        video_queue.put(Event(VIDEO_PUT_GLYPH, (self.apagenum, cy+1, cx+1, ' ',
+                             fore, back, blink, underline, True)))
 
     #MOVE to TextBuffer? replace with graphics_to_text_loc v.v.?
     def clear_text_area(self, x0, y0, x1, y1):
