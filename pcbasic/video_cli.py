@@ -125,7 +125,7 @@ def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
         char = ' ' * len(c)
     text[pagenum][row-1][col-1] = char
     if len(c) > 1:
-        text[aagenum][row-1][col] = ''
+        text[pagenum][row-1][col] = ''
     if vpagenum != pagenum:
         return
     if for_keys:
