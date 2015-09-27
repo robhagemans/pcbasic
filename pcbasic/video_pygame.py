@@ -695,7 +695,6 @@ work_palette = [(0, 0, index) for index in range(256)]
 show_palette = [None, None]
 # text attributes supported
 mode_has_blink = True
-mode_has_underline = False
 
 # border attribute
 border_attr = 0
@@ -854,7 +853,6 @@ def init_screen_mode(mode_info):
     global font_height
     global clipboard, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, mode_has_blink
-    global mode_has_underline
     global init_complete
     text_mode = mode_info.is_text_mode
     # unpack mode info struct
@@ -862,7 +860,6 @@ def init_screen_mode(mode_info):
     font_width = mode_info.font_width
     num_pages = mode_info.num_pages
     mode_has_blink = mode_info.has_blink
-    mode_has_underline = mode_info.has_underline
     if not text_mode:
         bitsperpixel = mode_info.bitsperpixel
         mode_has_artifacts = mode_info.supports_artifacts
@@ -1121,7 +1118,7 @@ def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
         if glyph.get_palette_at(1) != color:
             glyph.set_palette_at(1, color)
         canvas[pagenum].blit(glyph, (x0, y0))
-    if mode_has_underline and underline:
+    if underline:
         for xx in range(font_width):
             canvas[pagenum].set_at((x0 + xx, y0 + font_height - 1), color)
     screen_changed = True
