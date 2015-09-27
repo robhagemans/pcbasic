@@ -98,6 +98,10 @@ def drain_video_queue():
             alive = False
         elif signal.event_type == backend.VIDEO_MODE:
             set_mode(signal.params)
+        elif signal.event_type == backend.VIDEO_SET_PAGE:
+            set_page(*signal.params)
+        elif signal.event_type == backend.VIDEO_COPY_PAGE:
+            copy_page(*signal.params)
         elif signal.event_type == backend.VIDEO_PUT_GLYPH:
             put_glyph(*signal.params)
         elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
@@ -119,9 +123,11 @@ def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
         char = unicodepage.UTF8Converter().to_utf8(c)
     except KeyError:
         char = ' ' * len(c)
-    text[row-1][col-1] = char
+    text[pagenum][row-1][col-1] = char
     if len(c) > 1:
-        text[row-1][col] = ''
+        text[aagenum][row-1][col] = ''
+    if vpagenum != pagenum:
+        return
     if for_keys:
         return
     update_position(row, col)
@@ -136,8 +142,8 @@ def move_cursor(crow, ccol):
 
 def clear_rows(back_attr, start, stop):
     """ Clear screen rows. """
-    text[start-1:stop] = [ [' ']*len(text[0]) for _ in range(start-1, stop)]
-    if start <= cursor_row and stop >= cursor_row:
+    text[apagenum][start-1:stop] = [ [' ']*len(text[apagenum][0]) for _ in range(start-1, stop)]
+    if start <= cursor_row and stop >= cursor_row and vpagenum == apagenum:
         # clear_line before update_position to avoid redrawing old lines on CLS
         clear_line()
         update_position(cursor_row, 1)
@@ -145,14 +151,30 @@ def clear_rows(back_attr, start, stop):
 
 def scroll(from_line, scroll_height, back_attr):
     """ Scroll the screen up between from_line and scroll_height. """
+    text[apagenum][from_line-1:scroll_height] = text[apagenum][from_line:scroll_height] + [[' ']*len(text[apagenum][0])]
+    if vpagenum != apagenum:
+        return
     sys.stdout.write('\r\n')
     sys.stdout.flush()
-    text[from_line-1:scroll_height] = text[from_line:scroll_height] + [[' ']*len(text[0])]
 
 def set_mode(mode_info):
     """ Initialise video mode """
-    global text
-    text = [ [' ']*mode_info.width for _ in range(mode_info.height)]
+    global text, num_pages
+    num_pages = mode_info.num_pages
+    text = [[[' ']*mode_info.width for _ in range(mode_info.height)] for _ in range(num_pages)]
+
+def set_page(new_vpagenum, new_apagenum):
+    """ Set visible and active page. """
+    global vpagenum, apagenum
+    vpagenum, apagenum = new_vpagenum, new_apagenum
+    redraw_row(cursor_row)
+
+def copy_page(src, dst):
+    """ Copy screen pages. """
+    text[dst] = [row[:] for row in text[src]]
+    if dst == vpagenum:
+        redraw_row(cursor_row)
+
 
 ###############################################################################
 
@@ -184,7 +206,10 @@ last_col = None
 # initialised correctly
 ok = False
 
-text = [ [' ']*80 for _ in range(25)]
+# text buffer
+num_pages = 1
+vpagenum, apagenum = 0, 0
+text = [[[' ']*80 for _ in range(25)]]
 
 def term_echo(on=True):
     """ Set/unset raw terminal attributes. """
@@ -313,7 +338,7 @@ def check_keyboard():
 
 def redraw_row(row):
     """ Draw the stored text in a row. """
-    rowtext = ''.join(text[row-1])
+    rowtext = ''.join(text[vpagenum][row-1])
     sys.stdout.write(rowtext)
     move_left(len(rowtext))
     sys.stdout.flush()
