@@ -82,8 +82,8 @@ VIDEO_SET_COLORBURST = 13
 VIDEO_SHOW_CURSOR = 14
 # set palette
 VIDEO_SET_PALETTE = 15
-# build glyph
-VIDEO_BUILD_GLYPH = 16
+# build glyphs
+VIDEO_BUILD_GLYPHS = 16
 # put pixel
 VIDEO_PUT_PIXEL = 17
 # put interval
@@ -1271,10 +1271,16 @@ class Screen(object):
             self.palette = Palette(self.mode)
             raise error.RunError(error.IFC)
         # preload SBCS glyphs
-        self.glyphs = [typeface.build_glyph(chr(c), fonts[mode_info.font_height],
-                                mode_info.font_width, mode_info.font_height)
-                      for c in range(256)]
+        self.glyphs = { chr(c): typeface.build_glyph(chr(c),
+                                    fonts[mode_info.font_height],
+                                    mode_info.font_width, mode_info.font_height)
+                        for c in range(256) }
         video_queue.put(Event(VIDEO_MODE, mode_info))
+        if self.mode.is_text_mode:
+            # send glyphs to backend; copy is necessary
+            # as dict may change here while the other thread is working on it
+            video_queue.put(Event(VIDEO_BUILD_GLYPHS,
+                    dict((k,v) for k,v in self.glyphs.iteritems())))
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
                 self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
@@ -1489,17 +1495,18 @@ class Screen(object):
                 r, c, char, attr = crow, ccol, ca[0], ca[1]
                 ccol += 1
             fore, back, blink, underline = self.split_attr(attr)
+            # ensure glyph is stored
+            mask = self.get_glyph(char)
             video_queue.put(Event(VIDEO_PUT_GLYPH, (pagenum, r, c, char,
                                  fore, back, blink, underline, for_keys)))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer
-                fore, back, blink, underline = self.split_attr(attr)
-                x0, y0, x1, y1, glyph = self.char_to_rect(
-                                                r, c, char, fore, back)
+                x0, y0, x1, y1, sprite = self.glyph_to_rect(
+                                                r, c, mask, fore, back)
                 self.pixels.pages[self.apagenum].put_rect(
-                                                x0, y0, x1, y1, glyph, tk.PSET)
+                                                x0, y0, x1, y1, sprite, tk.PSET)
                 video_queue.put(Event(VIDEO_PUT_RECT,
-                                        (self.apagenum, x0, y0, x1, y1, glyph)))
+                                        (self.apagenum, x0, y0, x1, y1, sprite)))
 
     # should be in console? uses wrap
     def redraw_row(self, start, crow, wrap=True):
@@ -1575,8 +1582,11 @@ class Screen(object):
         self.cursor.reset_attr()
 
     def rebuild_glyph(self, ordval):
-        """ Signal the backend to rebuild a character after POKE. """
-        video_queue.put(Event(VIDEO_BUILD_GLYPH, ordval))
+        """ Rebuild a text-mode character after POKE. """
+        if self.mode.is_text_mode:
+            # force rebuilding the character by deleting and requesting
+            del self.glyphs[chr(ordval)]
+            self.get_glyph(chr(ordval))
 
     ## text viewport / scroll area
 
@@ -1717,20 +1727,25 @@ class Screen(object):
 
     # text
 
-    #if numpy:
-    def char_to_rect(self, row, col, c, fore, back):
-        """ Return a sprite for a given character """
-        if len(c) == 1:
-            mask = self.glyphs[ord(c)]
-        else:
+    def get_glyph(self, c):
+        """ Return a glyph mask for a given character """
+        try:
+            mask = self.glyphs[c]
+        except KeyError:
             mask = typeface.build_glyph(c, fonts[self.mode.font_height],
                                 self.mode.font_width*2, self.mode.font_height)
+            self.glyphs[c] = mask
+            if self.mode.is_text_mode:
+                video_queue.put(Event(VIDEO_BUILD_GLYPHS, {c: mask}))
+        return mask
+
+    #if numpy:
+    def glyph_to_rect(self, row, col, mask, fore, back):
+        """ Return a sprite for a given character """
         # set background
         glyph = numpy.full(mask.shape, back)
         # stamp foreground mask
-        # NUL is guaranteed to be blank
-        if c != '\0':
-            glyph[mask] = fore
+        glyph[mask] = fore
         x0, y0 = (col-1) * self.mode.font_width, (row-1) * self.mode.font_height
         x1, y1 = x0 + mask.shape[1] - 1, y0 + mask.shape[0] - 1
         return x0, y0, x1, y1, glyph

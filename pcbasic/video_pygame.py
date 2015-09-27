@@ -228,8 +228,8 @@ def drain_video_queue():
             set_border_attr(signal.params)
         elif signal.event_type == backend.VIDEO_SET_COLORBURST:
             set_colorburst(*signal.params)
-        elif signal.event_type == backend.VIDEO_BUILD_GLYPH:
-            rebuild_glyph(signal.params)
+        elif signal.event_type == backend.VIDEO_BUILD_GLYPHS:
+            build_glyphs(signal.params)
         elif signal.event_type == backend.VIDEO_PUT_PIXEL:
             put_pixel(*signal.params)
         elif signal.event_type == backend.VIDEO_PUT_INTERVAL:
@@ -721,9 +721,6 @@ smooth = False
 # ignore ALT+F4 (and consequently window X button)
 noquit = False
 
-# letter shapes
-glyphs = []
-
 # cursor shape
 cursor = None
 # screen & updating
@@ -852,13 +849,16 @@ mousebutton_pen = 3
 # initialisation complete
 init_complete = False
 
+# prebuilt glyphs
+glyph_dict = {}
+
 ###############################################################################
 # initialisation
 
 
 def init_screen_mode(mode_info):
     """ Initialise a given text or graphics mode. """
-    global glyphs, cursor
+    global cursor
     global screen_changed, canvas
     global font, under_cursor, size, text_mode
     global font_height
@@ -885,8 +885,6 @@ def init_screen_mode(mode_info):
     # logical size
     size = (mode_info.pixel_width, mode_info.pixel_height)
     font = fonts[font_height]
-    glyphs = [build_glyph(chr(c), font, font_width, font_height)
-              for c in range(256)]
     resize_display(*find_display_size(size[0], size[1], border_width))
     # set standard cursor
     set_cursor_shape(font_width, font_height, 0, font_height)
@@ -930,7 +928,7 @@ carry_col_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 # ascii codepoints for which to repeat row 8 in row 9 (box drawing)
 carry_row_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 
-def build_glyph(c, font_face, req_width, req_height):
+def build_glyph_surface(c, font_face, req_width, req_height):
     """ Build a sprite for the given character glyph. """
     color, bg = 254, 255
     try:
@@ -969,6 +967,25 @@ def build_glyph(c, font_face, req_width, req_height):
     if req_width > glyph_width:
         glyph = pygame.transform.scale(glyph, (req_width, req_height))
     return glyph
+
+if numpy:
+    def glyph_to_surface(glyph):
+        """ Build a sprite surface for the given character glyph. """
+        glyph = numpy.asarray(glyph).T
+        surf = pygame.Surface(glyph.shape, depth=8)
+        pygame.surfarray.pixels2d(surf)[:] = glyph
+        return surf
+
+else:
+    def glyph_to_surface(glyph):
+        """ Build a sprite surface for the given character glyph. """
+        color, bg = 1, 0
+        glyph_width, glyph_height = len(glyph[0]), len(glyph)
+        surf = pygame.Surface((glyph_width, glyph_height), depth=8)
+        surf.fill(bg)
+        [[ surf.set_at((i, j), index)   for i, index in enumerate(glyph[j]) ]
+                                        for j in xrange(glyph_height) ]
+        return surf
 
 def find_display_size(canvas_x, canvas_y, border_width):
     """ Determine the optimal size for the display. """
@@ -1033,16 +1050,16 @@ def resize_display(width, height, initial=False):
 def build_icon():
     """ Build the ok icon. """
     icon = pygame.Surface((17, 17), depth=8)
-    icon.fill(255)
-    icon.fill(254, (1, 8, 8, 8))
+    icon.fill(0)
+    icon.fill(1, (1, 8, 8, 8))
     # hardcoded O and k from freedos cga font
     okfont = { 'O': '\x00\x7C\xC6\xC6\xC6\xC6\xC6\x7C', 'k': '\x00\xE0\x60\x66\x6C\x78\x6C\xE6' }
-    O = build_glyph('O', okfont, 8, 8)
-    k = build_glyph('k', okfont, 8, 8)
+    O = glyph_to_surface(typeface.build_glyph('O', okfont, 8, 8))
+    k = glyph_to_surface(typeface.build_glyph('k', okfont, 8, 8))
     icon.blit(O, (1, 0, 8, 8))
     icon.blit(k, (9, 0, 8, 8))
-    icon.set_palette_at(255, (0, 0, 0))
-    icon.set_palette_at(254, (0xff, 0xff, 0xff))
+    icon.set_palette_at(0, (0, 0, 0))
+    icon.set_palette_at(1, (0xff, 0xff, 0xff))
     pygame.transform.scale2x(icon)
     pygame.transform.scale2x(icon)
     return icon
@@ -1187,24 +1204,28 @@ def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
         # guaranteed to be blank, saves time on some BLOADs
         canvas[pagenum].fill(bg, (x0, y0, font_width, font_height))
     else:
-        if len(c) == 1:
-            glyph = glyphs[ord(c)]
-        else:
-            glyph = build_glyph(c, font, 2*font_width, font_height)
-        if glyph.get_palette_at(255) != bg:
-            glyph.set_palette_at(255, bg)
-        if glyph.get_palette_at(254) != color:
-            glyph.set_palette_at(254, color)
+        try:
+            glyph = glyph_dict[c]
+        except KeyError:
+            if '\0' not in glyph_dict:
+                logging.error('No glyph received for code point 0')
+                return
+            logging.warning('No glyph received for code point %s', repr(c))
+            glyph = glyph_dict['\0']
+        if glyph.get_palette_at(0) != bg:
+            glyph.set_palette_at(0, bg)
+        if glyph.get_palette_at(1) != color:
+            glyph.set_palette_at(1, color)
         canvas[pagenum].blit(glyph, (x0, y0))
     if mode_has_underline and underline:
         for xx in range(font_width):
             canvas[pagenum].set_at((x0 + xx, y0 + font_height - 1), color)
     screen_changed = True
 
-def rebuild_glyph(ordval):
-    """ Rebuild a glyph after POKE. """
-    if font_height == 8:
-        glyphs[ordval] = build_glyph(chr(ordval), font, font_width, 8)
+def build_glyphs(new_dict):
+    """ Build a dict of glyphs for use in text mode. """
+    for char, glyph in new_dict.iteritems():
+        glyph_dict[char] = glyph_to_surface(glyph)
 
 def set_cursor_shape(width, height, from_line, to_line):
     """ Build a sprite for the cursor. """
