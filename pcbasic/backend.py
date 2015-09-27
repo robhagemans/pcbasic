@@ -781,12 +781,13 @@ class TextRow(object):
 class TextPage(object):
     """ Buffer for a screen page. """
 
-    def __init__(self, battr, bwidth, bheight, pagenum):
+    def __init__(self, battr, bwidth, bheight, pagenum, do_dbcs):
         """ Initialise the screen buffer to given dimensions. """
         self.row = [TextRow(battr, bwidth) for _ in xrange(bheight)]
         self.width = bwidth
         self.height = bheight
         self.pagenum = pagenum
+        self.do_dbcs = do_dbcs
 
     def get_char_attr(self, crow, ccol, want_attr):
         """ Retrieve a byte from the screen (SBCS or DBCS half-char). """
@@ -804,8 +805,7 @@ class TextPage(object):
         start, stop = ccol, ccol+1
         self.row[crow-1].double[ccol-1] = 0
         # mark out sbcs and dbcs characters
-        # only do dbcs in 80-character modes
-        if unicodepage.dbcs and self.width == 80:
+        if unicodepage.dbcs and self.do_dbcs:
             orig_col = ccol
             # replace chars from here until necessary to update double-width chars
             therow = self.row[crow-1]
@@ -873,9 +873,10 @@ class TextPage(object):
 class TextBuffer(object):
     """ Buffer for text on all screen pages. """
 
-    def __init__(self, battr, bwidth, bheight, bpages):
+    def __init__(self, battr, bwidth, bheight, bpages, do_dbcs):
         """ Initialise the screen buffer to given pages and dimensions. """
-        self.pages = [TextPage(battr, bwidth, bheight, num) for num in range(bpages)]
+        self.pages = [TextPage(battr, bwidth, bheight, num, do_dbcs)
+                      for num in range(bpages)]
         self.width = bwidth
         self.height = bheight
 
@@ -1383,7 +1384,8 @@ class Screen(object):
         self.mode = mode_info
         # build the screen buffer
         self.text = TextBuffer(self.attr, self.mode.width,
-                               self.mode.height, self.mode.num_pages)
+                               self.mode.height, self.mode.num_pages,
+                               do_dbcs=(self.mode.font_height >= 14))
         if not self.mode.is_text_mode:
             self.pixels = PixelBuffer(self.mode.pixel_width, self.mode.pixel_height,
                                     self.mode.num_pages, self.mode.bitsperpixel)
