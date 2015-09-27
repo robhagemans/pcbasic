@@ -70,8 +70,8 @@ intensity16_mono = range(0x00, 0x100, 0x11)
 # SCREEN 10 EGA pseudocolours, blink state 0 and 1
 intensity_ega_mono_0 = (0x00, 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0xff, 0xff, 0xff)
 intensity_ega_mono_1 = (0x00, 0xaa, 0xff, 0x00, 0xaa, 0xff, 0x00, 0xaa, 0xff)
-# MDA/EGA mono text intensity (blink is attr bit 7, like in colour mode)
-intensity_mda_mono = (0x00, 0xaa, 0xff)
+# MDA text intensities: black, dark green, green, bright green
+intensity_mda_mono = (0x00, 0x40, 0xc0, 0xff)
 
 
 def prepare_colours(mono_monitor, mono_tint):
@@ -121,12 +121,9 @@ def prepare_default_palettes(cga_low):
     cga16_palette = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
     ega_palette = (0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63)
     ega_mono_palette = (0, 4, 1, 8)
-    # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
-    # see also http://support.microsoft.com/KB/35148
-    # MDA palette is currently something of a hack;
-    # half-hardcoded in in video_curses.
-    # As a consequence ega_mono_text_palette is unused.
-    mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
+    # adding dark-green (foreground for some exceptional attributes) as #3
+    mda_palette = (0, 2, 3, 1)
+    #mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
     # http://qbhlp.uebergeord.net/screen-statement-details-colors.html
     # underline/intensity/reverse video attributes are slightly different from mda
     # attributes 1, 9 should have underlining.

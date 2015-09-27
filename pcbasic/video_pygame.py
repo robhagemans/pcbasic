@@ -1008,7 +1008,7 @@ def set_palette(rgb_palette_0, rgb_palette_1):
     # bottom 128 are non-blink, top 128 blink to background
     show_palette[0] = rgb_palette_0[:num_fore_attrs] * (256//num_fore_attrs)
     show_palette[1] = rgb_palette_1[:num_fore_attrs] * (128//num_fore_attrs)
-    for b in rgb_palette_1[:num_back_attrs]:
+    for b in rgb_palette_1[:num_back_attrs] * (128//num_fore_attrs//num_back_attrs):
         show_palette[1] += [b]*num_fore_attrs
     screen_changed = True
 
@@ -1099,7 +1099,7 @@ def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     if not text_mode:
         # in graphics mode, a put_rect call does the actual drawing
         return
-    color, bg = (0, 0, fore + 16*back + 128*blink), (0, 0, back)
+    color, bg = (0, 0, fore + num_fore_attrs*back + 128*blink), (0, 0, back)
     x0, y0 = (col-1)*font_width, (row-1)*font_height
     if c == '\0':
         # guaranteed to be blank, saves time on some BLOADs

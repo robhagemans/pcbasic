@@ -1754,40 +1754,26 @@ class Screen(object):
         x1, y1 = x0 + mask.shape[1] - 1, y0 + mask.shape[0] - 1
         return x0, y0, x1, y1, glyph
 
+    #MOVE to modes classes in modes.py
     def split_attr(self, attr):
         """ Split attribute byte into constituent parts. """
         if self.mode.has_underline:
-            # MDA palette, see http://www.seasip.info/VintagePC/mda.html
+            # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
+            # see also http://support.microsoft.com/KB/35148
             # don't try to change this with PALETTE, it won't work correctly
-            blink = False
-            if attr in (0x00, 0x08, 0x80, 0x88, 0x70):
-                fore = 0
-            elif attr == 0x78:
-                # dim foreground on bright background
-                fore = 1
-            elif attr == 0xf8:
-                # dim foreground on bright background, blinking
-                fore = 1 #0xa2
-                blink = True
-            elif attr == 0xf0:
-                # black on bright background, blinking
-                fore = 0 #0xa0
-                blink = True
-            else:
-                # most % 8 == 0 points aren't actually black
-                if attr % 8 == 0:
-                    attr += 1
-                fore = attr % 16
-                if attr >= 0x80:
-                    # blink goes to black back
-                    blink = True
-            if attr in (0x70, 0x78, 0xF0, 0xF8):
-                # bright green background for these points
-                back = 15
-            else:
-                # background is almost always black
-                back = 0
             underline = (attr % 8) == 1
+            blink = (attr & 0x80) != 0
+            # background is almost always black
+            back = 0
+            # intensity set by bit 3
+            fore = 1 if not (attr & 0x8) else 2
+            # exceptions
+            if attr in (0x00, 0x08, 0x80, 0x88):
+                fore, back = 0, 0
+            elif attr in (0x70, 0xf0):
+                fore, back = 0, 1
+            elif attr in (0x78, 0xf8):
+                fore, back = 3, 1
         else:
             # 7  6 5 4  3 2 1 0
             # Bl b b b  f f f f
