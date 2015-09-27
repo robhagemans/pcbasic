@@ -427,6 +427,245 @@ def handle_key_up(e):
 
 
 ###############################################################################
+# screen drawing cycle
+
+def check_screen():
+    """ Check screen and blink events; update screen if necessary. """
+    global cycle, last_cycle
+    global screen_changed
+    blink_state = 0
+    if mode_has_blink:
+        blink_state = 0 if cycle < blink_cycles * 2 else 1
+        if cycle%blink_cycles == 0:
+            screen_changed = True
+    if cursor_visible and ((cursor_row != last_row) or (cursor_col != last_col)):
+        screen_changed = True
+    tock = pygame.time.get_ticks()
+    if (tock - last_cycle) >= (cycle_time/blink_cycles):
+        last_cycle = tock
+        cycle += 1
+        if cycle == blink_cycles*4:
+            cycle = 0
+        if screen_changed:
+            do_flip(blink_state)
+            screen_changed = False
+
+def do_flip(blink_state):
+    """ Draw the canvas to the screen. """
+    # create the screen that will be stretched onto the display
+    border_x = int(size[0] * border_width / 200.)
+    border_y = int(size[1] * border_width / 200.)
+    screen = pygame.Surface((size[0] + 2*border_x, size[1] + 2*border_y),
+                             0, canvas[vpagenum])
+    screen.set_palette(workpalette)
+    # border colour
+    border_colour = pygame.Color(0, border_attr, border_attr)
+    screen.fill(border_colour)
+    screen.blit(canvas[vpagenum], (border_x, border_y))
+    # subsurface referencing the canvas area
+    workscreen = screen.subsurface((border_x, border_y, size[0], size[1]))
+    draw_cursor(workscreen)
+    if clipboard.active():
+        clipboard.create_feedback(workscreen)
+    # android: shift screen if keyboard is on so that cursor remains visible
+    if android:
+        pygame_android.shift_screen(screen, border_x, border_y, size, cursor_row, font_height)
+    if composite_artifacts and numpy:
+        screen = apply_composite_artifacts(screen, 4//bitsperpixel)
+        screen.set_palette(composite_640_palette)
+    else:
+        screen.set_palette(gamepalette[blink_state])
+    if smooth:
+        pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
+    else:
+        pygame.transform.scale(screen.convert(display), display.get_size(), display)
+    pygame.display.flip()
+
+def draw_cursor(screen):
+    """ Draw the cursor on the screen. """
+    global under_top_left, last_row, last_col
+    if not cursor_visible or vpagenum != apagenum:
+        return
+    # copy screen under cursor
+    under_top_left = (  (cursor_col-1) * font_width,
+                        (cursor_row-1) * font_height)
+    under_char_area = pygame.Rect(
+            (cursor_col-1) * font_width,
+            (cursor_row-1) * font_height,
+            (cursor_col-1) * font_width + cursor_width,
+            cursor_row * font_height)
+    under_cursor.blit(screen, (0,0), area=under_char_area)
+    if text_mode:
+        # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
+        if (cycle/blink_cycles==1 or cycle/blink_cycles==3):
+            screen.blit(cursor, (  (cursor_col-1) * font_width,
+                                    (cursor_row-1) * font_height) )
+    else:
+        if cursor_fixed_attr is not None:
+            index = cursor_fixed_attr
+        else:
+            index = cursor_attr & 0xf
+        if numpy:
+            # reference the destination area
+            dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
+                                (cursor_col-1) * font_width,
+                                (cursor_row-1) * font_height + cursor_from,
+                                cursor_width,
+                                cursor_to - cursor_from + 1)))
+            dest_array ^= index
+        else:
+            # no surfarray if no numpy
+            for x in range(     (cursor_col-1) * font_width,
+                                  (cursor_col-1) * font_width + cursor_width):
+                for y in range((cursor_row-1) * font_height + cursor_from,
+                                (cursor_row-1) * font_height + cursor_to + 1):
+                    pixel = canvas[vpagenum].get_at((x,y)).b
+                    screen.set_at((x,y), pixel^index)
+    last_row = cursor_row
+    last_col = cursor_col
+
+def apply_composite_artifacts(screen, pixels=4):
+    """ Process the canvas to apply composite colour artifacts. """
+    src_array = pygame.surfarray.array2d(screen)
+    width, height = src_array.shape
+    s = [None]*pixels
+    for p in range(pixels):
+        s[p] = src_array[p:width:pixels]&(4//pixels)
+    for p in range(1,pixels):
+        s[0] = s[0]*2 + s[p]
+    return pygame.surfarray.make_surface(numpy.repeat(s[0], pixels, axis=0))
+
+
+###############################################################################
+# clipboard handling
+
+class ClipboardInterface(object):
+    """ Clipboard user interface. """
+
+    def __init__(self, width, height):
+        """ Initialise clipboard feedback handler. """
+        self._active = False
+        self.select_start = None
+        self.select_stop = None
+        self.selection_rect = None
+        self.width = width
+        self.height = height
+
+    def active(self):
+        """ True if clipboard mode is active. """
+        return self._active
+
+    def start(self, r=None, c=None):
+        """ Enter clipboard mode (clipboard key pressed). """
+        self._active = True
+        if r is None or c is None:
+            self.select_start = [cursor_row, cursor_col]
+            self.select_stop = [cursor_row, cursor_col]
+        else:
+            self.select_start = [r, c]
+            self.select_stop = [r, c]
+        self.selection_rect = []
+
+    def stop(self):
+        """ Leave clipboard mode (clipboard key released). """
+        global screen_changed
+        self._active = False
+        self.select_start = None
+        self.select_stop = None
+        self.selection_rect = None
+        screen_changed = True
+
+    def copy(self, mouse=False):
+        """ Copy screen characters from selection into clipboard. """
+        start, stop = self.select_start, self.select_stop
+        if not start or not stop:
+            return
+        if start[0] == stop[0] and start[1] == stop[1]:
+            return
+        if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
+            start, stop = stop, start
+        backend.input_queue.put(backend.Event(backend.CLIP_COPY,
+                            (start[0], start[1], stop[0], stop[1]-1, mouse)))
+
+    def paste(self, mouse=False):
+        """ Paste from clipboard into keyboard buffer. """
+        backend.input_queue.put(backend.Event(backend.CLIP_PASTE, mouse))
+
+    def move(self, r, c):
+        """ Move the head of the selection and update feedback. """
+        global screen_changed
+        self.select_stop = [r, c]
+        start, stop = self.select_start, self.select_stop
+        if stop[1] < 1:
+            stop[0] -= 1
+            stop[1] = self.width+1
+        if stop[1] > self.width+1:
+            stop[0] += 1
+            stop[1] = 1
+        if stop[0] > self.height:
+            stop[:] = [self.height, self.width+1]
+        if stop[0] < 1:
+            stop[:] = [1, 1]
+        if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
+            start, stop = stop, start
+        rect_left = (start[1] - 1) * font_width
+        rect_top = (start[0] - 1) * font_height
+        rect_right = (stop[1] - 1) * font_width
+        rect_bot = stop[0] * font_height
+        if start[0] == stop[0]:
+            # single row selection
+            self.selection_rect = [pygame.Rect(rect_left, rect_top,
+                                    rect_right-rect_left, rect_bot-rect_top)]
+        else:
+            # multi-row selection
+            self.selection_rect = [
+              pygame.Rect(rect_left, rect_top, size[0]-rect_left, font_height),
+              pygame.Rect(0, rect_top + font_height,
+                          size[0], rect_bot - rect_top - 2*font_height),
+              pygame.Rect(0, rect_bot - font_height,
+                          rect_right, font_height)]
+        screen_changed = True
+
+
+    def handle_key(self, e):
+        """ Handle keyboard clipboard commands. """
+        global screen_changed
+        if not self._active:
+            return
+        if e.unicode.upper() ==  u'C':
+            self.copy()
+        elif e.unicode.upper() == u'V':
+            self.paste()
+        elif e.unicode.upper() == u'A':
+            # select all
+            self.select_start = [1, 1]
+            self.move(self.height, self.width+1)
+        elif e.key == pygame.K_LEFT:
+            # move selection head left
+            self.move(self.select_stop[0], self.select_stop[1]-1)
+        elif e.key == pygame.K_RIGHT:
+            # move selection head right
+            self.move(self.select_stop[0], self.select_stop[1]+1)
+        elif e.key == pygame.K_UP:
+            # move selection head up
+            self.move(self.select_stop[0]-1, self.select_stop[1])
+        elif e.key == pygame.K_DOWN:
+            # move selection head down
+            self.move(self.select_stop[0]+1, self.select_stop[1])
+
+    def create_feedback(self, surface):
+        """ Create visual feedback for selection onto a surface. """
+        for r in self.selection_rect:
+            work_area = surface.subsurface(r)
+            orig = work_area.copy()
+            # add 1 to the color as a highlight
+            orig.fill(pygame.Color(0, 0, 1))
+            work_area.blit(orig, (0, 0), special_flags=pygame.BLEND_ADD)
+
+
+
+
+###############################################################################
 
 # screen aspect ratio x, y
 aspect = (4, 3)
@@ -613,30 +852,9 @@ mousebutton_pen = 3
 # initialisation complete
 init_complete = False
 
-####################################
+###############################################################################
 # initialisation
 
-
-def load_fonts(heights_needed):
-    """ Load font typefaces. """
-    for height in reversed(sorted(heights_needed)):
-        if height in fonts:
-            # already force loaded
-            continue
-        # load a Unifont .hex font and take the codepage subset
-        fonts[height] = typeface.load(font_families, height,
-                                      unicodepage.cp_to_unicodepoint)
-        # fix missing code points font based on 16-line font
-        if 16 not in fonts:
-            # if available, load the 16-pixel font unrequested
-            font_16 = typeface.load(font_families, 16,
-                                    unicodepage.cp_to_unicodepoint, nowarn=True)
-            if font_16:
-                fonts[16] = font_16
-        if 16 in fonts and fonts[16]:
-            typeface.fixfont(height, fonts[height],
-                             unicodepage.cp_to_unicodepoint, fonts[16])
-    return True
 
 def init_screen_mode(mode_info):
     """ Initialise a given text or graphics mode. """
@@ -682,6 +900,75 @@ def init_screen_mode(mode_info):
     # signal that initialisation is complete
     init_complete = True
     return True
+
+def load_fonts(heights_needed):
+    """ Load font typefaces. """
+    for height in reversed(sorted(heights_needed)):
+        if height in fonts:
+            # already force loaded
+            continue
+        # load a Unifont .hex font and take the codepage subset
+        fonts[height] = typeface.load(font_families, height,
+                                      unicodepage.cp_to_unicodepoint)
+        # fix missing code points font based on 16-line font
+        if 16 not in fonts:
+            # if available, load the 16-pixel font unrequested
+            font_16 = typeface.load(font_families, 16,
+                                    unicodepage.cp_to_unicodepoint, nowarn=True)
+            if font_16:
+                fonts[16] = font_16
+        if 16 in fonts and fonts[16]:
+            typeface.fixfont(height, fonts[height],
+                             unicodepage.cp_to_unicodepoint, fonts[16])
+    return True
+
+# ascii codepoints for which to repeat column 8 in column 9 (box drawing)
+# Many internet sources say this should be 0xC0--0xDF. However, that would
+# exclude the shading characters. It appears to be traced back to a mistake in
+# IBM's VGA docs. See https://01.org/linuxgraphics/sites/default/files/documentation/ilk_ihd_os_vol3_part1r2.pdf
+carry_col_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
+# ascii codepoints for which to repeat row 8 in row 9 (box drawing)
+carry_row_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
+
+def build_glyph(c, font_face, req_width, req_height):
+    """ Build a sprite for the given character glyph. """
+    color, bg = 254, 255
+    try:
+        face = font_face[c]
+    except KeyError:
+        logging.debug('Byte sequence %s not represented in codepage, replace with blank glyph.', repr(c))
+        # codepoint 0 must be blank by our definitions
+        face = font_face['\0']
+        c = '\0'
+    code_height = 8 if req_height == 9 else req_height
+    glyph_width, glyph_height = 8*len(face)//code_height, req_height
+    if req_width <= glyph_width + 2:
+        # allow for 9-pixel widths (18-pixel dwidths) without scaling
+        glyph_width = req_width
+    elif glyph_width < req_width:
+        u = unicodepage.cp_to_utf8[c]
+        logging.debug('Incorrect glyph width for %s [%s, code point %x].', repr(c), u, ord(u.decode('utf-8')))
+    glyph = pygame.Surface((glyph_width, glyph_height), depth=8)
+    glyph.fill(bg)
+    for yy in range(code_height):
+        for half in range(glyph_width//8):
+            line = ord(face[yy*(glyph_width//8)+half])
+            for xx in range(8):
+                if (line >> (7-xx)) & 1 == 1:
+                    glyph.set_at((half*8 + xx, yy), color)
+        # MDA/VGA 9-bit characters
+        if c in carry_col_9 and glyph_width == 9:
+            if line & 1 == 1:
+                glyph.set_at((8, yy), color)
+    # tandy 9-bit high characters
+    if c in carry_row_9 and glyph_height == 9:
+        line = ord(face[7*(glyph_width//8)])
+        for xx in range(8):
+            if (line >> (7-xx)) & 1 == 1:
+                glyph.set_at((xx, 8), color)
+    if req_width > glyph_width:
+        glyph = pygame.transform.scale(glyph, (req_width, req_height))
+    return glyph
 
 def find_display_size(canvas_x, canvas_y, border_width):
     """ Determine the optimal size for the display. """
@@ -759,6 +1046,28 @@ def build_icon():
     pygame.transform.scale2x(icon)
     pygame.transform.scale2x(icon)
     return icon
+
+def normalise_pos(x, y):
+    """ Convert physical to logical coordinates within screen bounds. """
+    border_x = int(size[0] * border_width / 200.)
+    border_y = int(size[1] * border_width / 200.)
+    display_info = pygame.display.Info()
+    xscale = display_info.current_w / (1.*(size[0]+2*border_x))
+    yscale = display_info.current_h / (1.*(size[1]+2*border_y))
+    xpos = min(size[0]-1, max(0, int(x//xscale - border_x)))
+    ypos = min(size[1]-1, max(0, int(y//yscale - border_y)))
+    return xpos, ypos
+
+
+###############################################################################
+# signal handlers
+
+def set_caption_message(msg):
+    """ Add a message to the window caption. """
+    if msg:
+        pygame.display.set_caption(caption + ' - ' + msg)
+    else:
+        pygame.display.set_caption(caption)
 
 def update_palette(rgb_palette, rgb_palette1):
     """ Build the game palette. """
@@ -889,59 +1198,10 @@ def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
             canvas[pagenum].set_at((x0 + xx, y0 + font_height - 1), color)
     screen_changed = True
 
-# ascii codepoints for which to repeat column 8 in column 9 (box drawing)
-# Many internet sources say this should be 0xC0--0xDF. However, that would
-# exclude the shading characters. It appears to be traced back to a mistake in
-# IBM's VGA docs. See https://01.org/linuxgraphics/sites/default/files/documentation/ilk_ihd_os_vol3_part1r2.pdf
-carry_col_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
-# ascii codepoints for which to repeat row 8 in row 9 (box drawing)
-carry_row_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
-
 def rebuild_glyph(ordval):
     """ Rebuild a glyph after POKE. """
     if font_height == 8:
         glyphs[ordval] = build_glyph(chr(ordval), font, font_width, 8)
-
-
-def build_glyph(c, font_face, req_width, req_height):
-    """ Build a sprite for the given character glyph. """
-    color, bg = 254, 255
-    try:
-        face = font_face[c]
-    except KeyError:
-        logging.debug('Byte sequence %s not represented in codepage, replace with blank glyph.', repr(c))
-        # codepoint 0 must be blank by our definitions
-        face = font_face['\0']
-        c = '\0'
-    code_height = 8 if req_height == 9 else req_height
-    glyph_width, glyph_height = 8*len(face)//code_height, req_height
-    if req_width <= glyph_width + 2:
-        # allow for 9-pixel widths (18-pixel dwidths) without scaling
-        glyph_width = req_width
-    elif glyph_width < req_width:
-        u = unicodepage.cp_to_utf8[c]
-        logging.debug('Incorrect glyph width for %s [%s, code point %x].', repr(c), u, ord(u.decode('utf-8')))
-    glyph = pygame.Surface((glyph_width, glyph_height), depth=8)
-    glyph.fill(bg)
-    for yy in range(code_height):
-        for half in range(glyph_width//8):
-            line = ord(face[yy*(glyph_width//8)+half])
-            for xx in range(8):
-                if (line >> (7-xx)) & 1 == 1:
-                    glyph.set_at((half*8 + xx, yy), color)
-        # MDA/VGA 9-bit characters
-        if c in carry_col_9 and glyph_width == 9:
-            if line & 1 == 1:
-                glyph.set_at((8, yy), color)
-    # tandy 9-bit high characters
-    if c in carry_row_9 and glyph_height == 9:
-        line = ord(face[7*(glyph_width//8)])
-        for xx in range(8):
-            if (line >> (7-xx)) & 1 == 1:
-                glyph.set_at((xx, 8), color)
-    if req_width > glyph_width:
-        glyph = pygame.transform.scale(glyph, (req_width, req_height))
-    return glyph
 
 def build_cursor(width, height, from_line, to_line):
     """ Build a sprite for the cursor. """
@@ -962,266 +1222,9 @@ def build_cursor(width, height, from_line, to_line):
                 cursor.set_at((xx, yy), color)
     screen_changed = True
 
-def normalise_pos(x, y):
-    """ Convert physical to logical coordinates within screen bounds. """
-    border_x = int(size[0] * border_width / 200.)
-    border_y = int(size[1] * border_width / 200.)
-    display_info = pygame.display.Info()
-    xscale = display_info.current_w / (1.*(size[0]+2*border_x))
-    yscale = display_info.current_h / (1.*(size[1]+2*border_y))
-    xpos = min(size[0]-1, max(0, int(x//xscale - border_x)))
-    ypos = min(size[1]-1, max(0, int(y//yscale - border_y)))
-    return xpos, ypos
-
-def set_caption_message(msg):
-    """ Add a message to the window caption. """
-    if msg:
-        pygame.display.set_caption(caption + ' - ' + msg)
-    else:
-        pygame.display.set_caption(caption)
-
 
 ###############################################################################
-# event loop
-
-def check_screen():
-    """ Check screen and blink events; update screen if necessary. """
-    global cycle, last_cycle
-    global screen_changed
-    blink_state = 0
-    if mode_has_blink:
-        blink_state = 0 if cycle < blink_cycles * 2 else 1
-        if cycle%blink_cycles == 0:
-            screen_changed = True
-    if cursor_visible and ((cursor_row != last_row) or (cursor_col != last_col)):
-        screen_changed = True
-    tock = pygame.time.get_ticks()
-    if (tock - last_cycle) >= (cycle_time/blink_cycles):
-        last_cycle = tock
-        cycle += 1
-        if cycle == blink_cycles*4:
-            cycle = 0
-        if screen_changed:
-            do_flip(blink_state)
-            screen_changed = False
-
-def draw_cursor(screen):
-    """ Draw the cursor on the screen. """
-    global under_top_left, last_row, last_col
-    if not cursor_visible or vpagenum != apagenum:
-        return
-    # copy screen under cursor
-    under_top_left = (  (cursor_col-1) * font_width,
-                        (cursor_row-1) * font_height)
-    under_char_area = pygame.Rect(
-            (cursor_col-1) * font_width,
-            (cursor_row-1) * font_height,
-            (cursor_col-1) * font_width + cursor_width,
-            cursor_row * font_height)
-    under_cursor.blit(screen, (0,0), area=under_char_area)
-    if text_mode:
-        # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
-        if (cycle/blink_cycles==1 or cycle/blink_cycles==3):
-            screen.blit(cursor, (  (cursor_col-1) * font_width,
-                                    (cursor_row-1) * font_height) )
-    else:
-        if cursor_fixed_attr is not None:
-            index = cursor_fixed_attr
-        else:
-            index = cursor_attr & 0xf
-        if numpy:
-            # reference the destination area
-            dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
-                                (cursor_col-1) * font_width,
-                                (cursor_row-1) * font_height + cursor_from,
-                                cursor_width,
-                                cursor_to - cursor_from + 1)))
-            dest_array ^= index
-        else:
-            # no surfarray if no numpy
-            for x in range(     (cursor_col-1) * font_width,
-                                  (cursor_col-1) * font_width + cursor_width):
-                for y in range((cursor_row-1) * font_height + cursor_from,
-                                (cursor_row-1) * font_height + cursor_to + 1):
-                    pixel = canvas[vpagenum].get_at((x,y)).b
-                    screen.set_at((x,y), pixel^index)
-    last_row = cursor_row
-    last_col = cursor_col
-
-def apply_composite_artifacts(screen, pixels=4):
-    """ Process the canvas to apply composite colour artifacts. """
-    src_array = pygame.surfarray.array2d(screen)
-    width, height = src_array.shape
-    s = [None]*pixels
-    for p in range(pixels):
-        s[p] = src_array[p:width:pixels]&(4//pixels)
-    for p in range(1,pixels):
-        s[0] = s[0]*2 + s[p]
-    return pygame.surfarray.make_surface(numpy.repeat(s[0], pixels, axis=0))
-
-def do_flip(blink_state):
-    """ Draw the canvas to the screen. """
-    # create the screen that will be stretched onto the display
-    border_x = int(size[0] * border_width / 200.)
-    border_y = int(size[1] * border_width / 200.)
-    screen = pygame.Surface((size[0] + 2*border_x, size[1] + 2*border_y),
-                             0, canvas[vpagenum])
-    screen.set_palette(workpalette)
-    # border colour
-    border_colour = pygame.Color(0, border_attr, border_attr)
-    screen.fill(border_colour)
-    screen.blit(canvas[vpagenum], (border_x, border_y))
-    # subsurface referencing the canvas area
-    workscreen = screen.subsurface((border_x, border_y, size[0], size[1]))
-    draw_cursor(workscreen)
-    if clipboard.active():
-        clipboard.create_feedback(workscreen)
-    # android: shift screen if keyboard is on so that cursor remains visible
-    if android:
-        pygame_android.shift_screen(screen, border_x, border_y, size, cursor_row, font_height)
-    if composite_artifacts and numpy:
-        screen = apply_composite_artifacts(screen, 4//bitsperpixel)
-        screen.set_palette(composite_640_palette)
-    else:
-        screen.set_palette(gamepalette[blink_state])
-    if smooth:
-        pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
-    else:
-        pygame.transform.scale(screen.convert(display), display.get_size(), display)
-    pygame.display.flip()
-
-
-###############################################################################
-# clipboard handling
-
-class ClipboardInterface(object):
-    """ Clipboard user interface. """
-
-    def __init__(self, width, height):
-        """ Initialise clipboard feedback handler. """
-        self._active = False
-        self.select_start = None
-        self.select_stop = None
-        self.selection_rect = None
-        self.width = width
-        self.height = height
-
-    def active(self):
-        """ True if clipboard mode is active. """
-        return self._active
-
-    def start(self, r=None, c=None):
-        """ Enter clipboard mode (clipboard key pressed). """
-        self._active = True
-        if r is None or c is None:
-            self.select_start = [cursor_row, cursor_col]
-            self.select_stop = [cursor_row, cursor_col]
-        else:
-            self.select_start = [r, c]
-            self.select_stop = [r, c]
-        self.selection_rect = []
-
-    def stop(self):
-        """ Leave clipboard mode (clipboard key released). """
-        global screen_changed
-        self._active = False
-        self.select_start = None
-        self.select_stop = None
-        self.selection_rect = None
-        screen_changed = True
-
-    def copy(self, mouse=False):
-        """ Copy screen characters from selection into clipboard. """
-        start, stop = self.select_start, self.select_stop
-        if not start or not stop:
-            return
-        if start[0] == stop[0] and start[1] == stop[1]:
-            return
-        if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
-            start, stop = stop, start
-        backend.input_queue.put(backend.Event(backend.CLIP_COPY,
-                            (start[0], start[1], stop[0], stop[1]-1, mouse)))
-
-    def paste(self, mouse=False):
-        """ Paste from clipboard into keyboard buffer. """
-        backend.input_queue.put(backend.Event(backend.CLIP_PASTE, mouse))
-
-    def move(self, r, c):
-        """ Move the head of the selection and update feedback. """
-        global screen_changed
-        self.select_stop = [r, c]
-        start, stop = self.select_start, self.select_stop
-        if stop[1] < 1:
-            stop[0] -= 1
-            stop[1] = self.width+1
-        if stop[1] > self.width+1:
-            stop[0] += 1
-            stop[1] = 1
-        if stop[0] > self.height:
-            stop[:] = [self.height, self.width+1]
-        if stop[0] < 1:
-            stop[:] = [1, 1]
-        if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
-            start, stop = stop, start
-        rect_left = (start[1] - 1) * font_width
-        rect_top = (start[0] - 1) * font_height
-        rect_right = (stop[1] - 1) * font_width
-        rect_bot = stop[0] * font_height
-        if start[0] == stop[0]:
-            # single row selection
-            self.selection_rect = [pygame.Rect(rect_left, rect_top,
-                                    rect_right-rect_left, rect_bot-rect_top)]
-        else:
-            # multi-row selection
-            self.selection_rect = [
-              pygame.Rect(rect_left, rect_top, size[0]-rect_left, font_height),
-              pygame.Rect(0, rect_top + font_height,
-                          size[0], rect_bot - rect_top - 2*font_height),
-              pygame.Rect(0, rect_bot - font_height,
-                          rect_right, font_height)]
-        screen_changed = True
-
-
-    def handle_key(self, e):
-        """ Handle keyboard clipboard commands. """
-        global screen_changed
-        if not self._active:
-            return
-        if e.unicode.upper() ==  u'C':
-            self.copy()
-        elif e.unicode.upper() == u'V':
-            self.paste()
-        elif e.unicode.upper() == u'A':
-            # select all
-            self.select_start = [1, 1]
-            self.move(self.height, self.width+1)
-        elif e.key == pygame.K_LEFT:
-            # move selection head left
-            self.move(self.select_stop[0], self.select_stop[1]-1)
-        elif e.key == pygame.K_RIGHT:
-            # move selection head right
-            self.move(self.select_stop[0], self.select_stop[1]+1)
-        elif e.key == pygame.K_UP:
-            # move selection head up
-            self.move(self.select_stop[0]-1, self.select_stop[1])
-        elif e.key == pygame.K_DOWN:
-            # move selection head down
-            self.move(self.select_stop[0]+1, self.select_stop[1])
-
-    def create_feedback(self, surface):
-        """ Create visual feedback for selection onto a surface. """
-        for r in self.selection_rect:
-            work_area = surface.subsurface(r)
-            orig = work_area.copy()
-            # add 1 to the color as a highlight
-            orig.fill(pygame.Color(0, 0, 1))
-            work_area.blit(orig, (0, 0), special_flags=pygame.BLEND_ADD)
-
-
-
-###############################################################################
-# graphics backend interface
-# low-level methods (pygame implementation)
+# graphics signal handlers
 
 def put_pixel(pagenum, x, y, index):
     """ Put a pixel on the screen; callback to empty character buffer. """
@@ -1278,5 +1281,7 @@ else:
                             for j in xrange(y1-y0+1) ]
         screen_changed = True
 
+
+###############################################################################
 
 prepare()
