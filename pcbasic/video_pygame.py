@@ -450,7 +450,7 @@ def do_flip(blink_state):
     border_y = int(size[1] * border_width / 200.)
     screen = pygame.Surface((size[0] + 2*border_x, size[1] + 2*border_y),
                              0, canvas[vpagenum])
-    screen.set_palette(workpalette)
+    screen.set_palette(work_palette)
     # border colour
     border_colour = pygame.Color(0, border_attr, border_attr)
     screen.fill(border_colour)
@@ -467,7 +467,7 @@ def do_flip(blink_state):
         screen = apply_composite_artifacts(screen, 4//bitsperpixel)
         screen.set_palette(composite_640_palette)
     else:
-        screen.set_palette(gamepalette[blink_state])
+        screen.set_palette(show_palette[blink_state])
     if smooth:
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
     else:
@@ -690,9 +690,9 @@ mode_has_artifacts = False
 mono_monitor = False
 
 # working palette - attribute index in blue channel
-workpalette = [(0, 0, b * 16 + f) for b in range(16) for f in range(16)]
+work_palette = [(0, 0, index) for index in range(256)]
 # display palettes for blink states 0, 1
-gamepalette = [None, None]
+show_palette = [None, None]
 # text attributes supported
 mode_has_blink = True
 mode_has_underline = False
@@ -874,7 +874,7 @@ def init_screen_mode(mode_info):
     # whole screen (blink on & off)
     canvas = [ pygame.Surface(size, depth=8) for _ in range(num_pages)]
     for i in range(num_pages):
-        canvas[i].set_palette(workpalette)
+        canvas[i].set_palette(work_palette)
     # initialise clipboard
     clipboard = ClipboardInterface(mode_info.width, mode_info.height)
     screen_changed = True
@@ -1000,29 +1000,19 @@ def set_caption_message(msg):
     else:
         pygame.display.set_caption(caption)
 
-def set_palette(rgb_palette, rgb_palette1):
-    """ Build the game palette. """
-    global screen_changed, gamepalette
-    basepalette0 = [pygame.Color(*c) for c in rgb_palette]
-    if rgb_palette1:
-        basepalette1 = [pygame.Color(*c) for c in rgb_palette1]
-    else:
-        basepalette1 = basepalette0
-    while len(basepalette0) < 16:
-        basepalette0.append(pygame.Color(0, 0, 0))
-    while len(basepalette1) < 16:
-        basepalette1.append(pygame.Color(0, 0, 0))
-    # combining into all 256 attribute combinations for screen 0:
-    # NOTE: we're using mode_has_underline as a proxy to "it's an MDA" here
-    if not mode_has_underline:
-        gamepalette[0] = [basepalette0[f] for b in range(16) for f in range(16)]
-        gamepalette[1] = ([basepalette1[f] for b in range(8) for f in range(16)] +
-                          [basepalette1[b] for b in range(8) for f in range(16)])
-    else:
-        # MDA has bright backgrounds
-        gamepalette[0] = [basepalette0[f] for b in range(16) for f in range(16)]
-        gamepalette[1] = ([basepalette1[f] for b in range(8) for f in range(16)] +
-                          [basepalette1[b+8] for b in range(8) for f in range(16)])
+def set_palette(rgb_palette_0, rgb_palette_1):
+    """ Build the palette. """
+    global screen_changed, show_palette, num_fore_attrs, num_back_attrs
+    num_fore_attrs = min(16, len(rgb_palette_0))
+    num_back_attrs = min(8, num_fore_attrs)
+    rgb_palette_1 = rgb_palette_1 or rgb_palette_0
+    # fill up the 8-bit palette with all combinations we need
+    # blink states: 0 light up, 1 light down
+    # bottom 128 are non-blink, top 128 blink to background
+    show_palette[0] = rgb_palette_0[:num_fore_attrs] * (256//num_fore_attrs)
+    show_palette[1] = rgb_palette_1[:num_fore_attrs] * (128//num_fore_attrs)
+    for b in rgb_palette_1[:num_back_attrs]:
+        show_palette[1] += [b]*num_fore_attrs
     screen_changed = True
 
 def set_border_attr(attr):
@@ -1147,7 +1137,7 @@ def set_cursor_shape(width, height, from_line, to_line):
     global cursor_width, cursor_from, cursor_to
     cursor_width, cursor_from, cursor_to = width, from_line, to_line
     under_cursor = pygame.Surface((width, height), depth=8)
-    under_cursor.set_palette(workpalette)
+    under_cursor.set_palette(work_palette)
     cursor = pygame.Surface((width, height), depth=8)
     color, bg = 254, 255
     cursor.set_colorkey(bg)
