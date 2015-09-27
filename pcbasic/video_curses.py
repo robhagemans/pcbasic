@@ -146,6 +146,10 @@ def drain_video_queue():
             alive = False
         elif signal.event_type == backend.VIDEO_MODE:
             init_screen_mode(signal.params)
+        elif signal.event_type == backend.VIDEO_SET_PAGE:
+            set_page(*signal.params)
+        elif signal.event_type == backend.VIDEO_COPY_PAGE:
+            copy_page(*signal.params)
         elif signal.event_type == backend.VIDEO_PUT_GLYPH:
             put_glyph(*signal.params)
         elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
@@ -210,15 +214,18 @@ if curses:
 last_colour = None
 
 # text and colour buffer
-text = [ [(' ', 0)]*80 for _ in range(25)]
+num_pages = 1
+vpagenum, apagenum = 0, 0
+text = [[[(' ', 0)]*80 for _ in range(25)]]
 
 
 def init_screen_mode(mode_info):
     """ Change screen mode. """
-    global window, height, width, text
+    global window, height, width, text, num_pages
     height = mode_info.height
     width = mode_info.width
-    text = [ [(' ', 0)]*width for _ in range(height)]
+    num_pages = mode_info.num_pages
+    text = [[[(' ', 0)]*width for _ in range(height)] for _ in range(num_pages)]
     window.clear()
     window.refresh()
     window.move(0, 0)
@@ -228,9 +235,23 @@ def init_screen_mode(mode_info):
     window.resize(height, width)
     set_curses_palette()
 
+def set_page(new_vpagenum, new_apagenum):
+    """ Set visible and active page. """
+    global vpagenum, apagenum
+    vpagenum, apagenum = new_vpagenum, new_apagenum
+    redraw()
+
+def copy_page(src, dst):
+    """ Copy screen pages. """
+    text[dst] = [row[:] for row in txt[src]]
+    if dst == vpagenum:
+        redraw()
+
 def clear_rows(back_attr, start, stop):
     """ Clear screen rows. """
-    text[start-1:stop] = [ [(' ', 0)]*len(text[0]) for _ in range(start-1, stop)]
+    text[apagenum][start-1:stop] = [[(' ', 0)]*len(text[apagenum][0]) for _ in range(start-1, stop)]
+    if apagenum != vpagenum:
+        return
     window.bkgdset(' ', curses_colour(7, back_attr, False))
     for r in range(start, stop+1):
         try:
@@ -280,19 +301,24 @@ def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     except KeyError:
         char = ' '*len(c)
     colour = curses_colour(fore, back, blink)
-    if colour != last_colour:
-        last_colour = colour
-        window.bkgdset(' ', colour)
-    try:
-        window.addstr(row-1, col-1, char, colour)
-    except curses.error:
-        pass
-    text[row-1][col-1] = char, colour
+    text[pagenum][row-1][col-1] = char, colour
     if len(c) > 1:
-        text[row-1][col] = '', colour
+        text[pagenum][row-1][col] = '', colour
+    if pagenum == vpagenum:
+        if colour != last_colour:
+            last_colour = colour
+            window.bkgdset(' ', colour)
+        try:
+            window.addstr(row-1, col-1, char, colour)
+        except curses.error:
+            pass
+
 
 def scroll(from_line, scroll_height, back_attr):
     """ Scroll the screen up between from_line and scroll_height. """
+    text[apagenum][from_line-1:scroll_height] = text[apagenum][from_line:scroll_height] + [[(' ', 0)]*len(text[apagenum][0])]
+    if apagenum != vpagenum:
+        return
     window.scrollok(True)
     window.setscrreg(from_line-1, scroll_height-1)
     try:
@@ -304,10 +330,12 @@ def scroll(from_line, scroll_height, back_attr):
     clear_rows(back_attr, scroll_height, scroll_height)
     if cursor_row > 1:
         window.move(cursor_row-2, cursor_col-1)
-    text[from_line-1:scroll_height] = text[from_line:scroll_height] + [[(' ', 0)]*len(text[0])]
 
 def scroll_down(from_line, scroll_height, back_attr):
     """ Scroll the screen down between from_line and scroll_height. """
+    text[apagenum][from_line-1:scroll_height] = [[(' ', 0)]*len(text[apagenum][0])] + text[apagenum][from_line-1:scroll_height-1]
+    if apagenum != vpagenum:
+        return
     window.scrollok(True)
     window.setscrreg(from_line-1, scroll_height-1)
     try:
@@ -319,7 +347,6 @@ def scroll_down(from_line, scroll_height, back_attr):
     clear_rows(back_attr, from_line, from_line)
     if cursor_row < height:
         window.move(cursor_row, cursor_col-1)
-    text[from_line-1:scroll_height] = [[(' ', 0)]*len(text[0])] + text[from_line-1:scroll_height-1]
 
 def set_caption_message(msg):
     """ Add a message to the window caption. """
@@ -430,7 +457,7 @@ def redraw():
     window.clear()
     if last_colour != 0:
         window.bkgdset(' ', 0)
-    for row, textrow in enumerate(text):
+    for row, textrow in enumerate(text[vpagenum]):
         for col, charattr in enumerate(textrow):
             try:
                 window.addstr(row, col, charattr[0], charattr[1])
