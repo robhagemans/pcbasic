@@ -129,7 +129,7 @@ def init():
     pygame.display.set_caption(caption)
     pygame.key.set_repeat(500, 24)
     # load an all-black 16-colour game palette to get started
-    update_palette([(0,0,0)]*16, None)
+    set_palette([(0,0,0)]*16, None)
     if android:
         pygame_android.init()
         state_loaded = False
@@ -207,15 +207,15 @@ def drain_video_queue():
         elif signal.event_type == backend.VIDEO_CLEAR_ROWS:
             clear_rows(*signal.params)
         elif signal.event_type == backend.VIDEO_SCROLL_UP:
-            scroll(*signal.params)
+            scroll_up(*signal.params)
         elif signal.event_type == backend.VIDEO_SCROLL_DOWN:
             scroll_down(*signal.params)
         elif signal.event_type == backend.VIDEO_SET_PALETTE:
-            update_palette(*signal.params)
+            set_palette(*signal.params)
         elif signal.event_type == backend.VIDEO_SET_CURSOR_SHAPE:
-            build_cursor(*signal.params)
+            set_cursor_shape(*signal.params)
         elif signal.event_type == backend.VIDEO_SET_CURSOR_ATTR:
-            update_cursor_attr(signal.params)
+            set_cursor_attr(signal.params)
         elif signal.event_type == backend.VIDEO_SHOW_CURSOR:
             show_cursor(signal.params)
         elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
@@ -225,7 +225,7 @@ def drain_video_queue():
         elif signal.event_type == backend.VIDEO_COPY_PAGE:
             copy_page(*signal.params)
         elif signal.event_type == backend.VIDEO_SET_BORDER_ATTR:
-            set_border(signal.params)
+            set_border_attr(signal.params)
         elif signal.event_type == backend.VIDEO_SET_COLORBURST:
             set_colorburst(*signal.params)
         elif signal.event_type == backend.VIDEO_BUILD_GLYPH:
@@ -889,7 +889,7 @@ def init_screen_mode(mode_info):
               for c in range(256)]
     resize_display(*find_display_size(size[0], size[1], border_width))
     # set standard cursor
-    build_cursor(font_width, font_height, 0, font_height)
+    set_cursor_shape(font_width, font_height, 0, font_height)
     # whole screen (blink on & off)
     canvas = [ pygame.Surface(size, depth=8) for _ in range(num_pages)]
     for i in range(num_pages):
@@ -1069,7 +1069,7 @@ def set_caption_message(msg):
     else:
         pygame.display.set_caption(caption)
 
-def update_palette(rgb_palette, rgb_palette1):
+def set_palette(rgb_palette, rgb_palette1):
     """ Build the game palette. """
     global screen_changed, gamepalette
     basepalette0 = [pygame.Color(*c) for c in rgb_palette]
@@ -1094,7 +1094,7 @@ def update_palette(rgb_palette, rgb_palette1):
                           [basepalette1[b+8] for b in range(8) for f in range(16)])
     screen_changed = True
 
-def set_border(attr):
+def set_border_attr(attr):
     """ Change the border attribute. """
     global border_attr, screen_changed
     border_attr = attr
@@ -1103,7 +1103,7 @@ def set_border(attr):
 def set_colorburst(on, rgb_palette, rgb_palette1):
     """ Change the NTSC colorburst setting. """
     global composite_artifacts
-    update_palette(rgb_palette, rgb_palette1)
+    set_palette(rgb_palette, rgb_palette1)
     composite_artifacts = on and mode_has_artifacts and composite_monitor
 
 def clear_rows(back_attr, start, stop):
@@ -1138,13 +1138,13 @@ def move_cursor(crow, ccol):
     global cursor_row, cursor_col
     cursor_row, cursor_col = crow, ccol
 
-def update_cursor_attr(attr):
+def set_cursor_attr(attr):
     global cursor_attr
     """ Change attribute of cursor. """
     cursor_attr = canvas[vpagenum].get_palette_at(attr).b
     cursor.set_palette_at(254, pygame.Color(0, cursor_attr, cursor_attr))
 
-def scroll(from_line, scroll_height, back_attr):
+def scroll_up(from_line, scroll_height, back_attr):
     """ Scroll the screen up between from_line and scroll_height. """
     global screen_changed
     temp_scroll_area = pygame.Rect(
@@ -1203,7 +1203,7 @@ def rebuild_glyph(ordval):
     if font_height == 8:
         glyphs[ordval] = build_glyph(chr(ordval), font, font_width, 8)
 
-def build_cursor(width, height, from_line, to_line):
+def set_cursor_shape(width, height, from_line, to_line):
     """ Build a sprite for the cursor. """
     global screen_changed, cursor, under_cursor
     global cursor_width, cursor_from, cursor_to
