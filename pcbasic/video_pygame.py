@@ -1178,6 +1178,9 @@ def scroll_down(from_line, scroll_height, back_attr):
 def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
     """ Put a single-byte character at a given position. """
     global screen_changed
+    if not text_mode:
+        # in graphics mode, a put_rect call does the actual drawing
+        return
     color, bg = (0, 0, fore + 16*back + 128*blink), (0, 0, back)
     x0, y0 = (col-1)*font_width, (row-1)*font_height
     if c == '\0':
