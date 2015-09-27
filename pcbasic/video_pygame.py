@@ -1119,8 +1119,7 @@ def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
             glyph.set_palette_at(1, color)
         canvas[pagenum].blit(glyph, (x0, y0))
     if underline:
-        for xx in range(font_width):
-            canvas[pagenum].set_at((x0 + xx, y0 + font_height - 1), color)
+        canvas[pagenum].fill(color, (x0, y0 + font_height - 1, font_width, 1))
     screen_changed = True
 
 def build_glyphs(new_dict):
@@ -1139,12 +1138,8 @@ def set_cursor_shape(width, height, from_line, to_line):
     color, bg = 254, 255
     cursor.set_colorkey(bg)
     cursor.fill(bg)
-    for yy in range(height):
-        for xx in range(width):
-            if yy < from_line or yy > to_line:
-                pass
-            else:
-                cursor.set_at((xx, yy), color)
+    cursor.fill(color, (0, from_line, width, min(to_line-from_line+1,
+                                                 height-from_line)))
     screen_changed = True
 
 
