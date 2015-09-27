@@ -452,7 +452,7 @@ def do_flip(blink_state):
                              0, canvas[vpagenum])
     screen.set_palette(work_palette)
     # border colour
-    border_colour = pygame.Color(0, border_attr, border_attr)
+    border_colour = pygame.Color(0, 0, border_attr % num_fore_attrs)
     screen.fill(border_colour)
     screen.blit(canvas[vpagenum], (border_x, border_y))
     # subsurface referencing the canvas area
@@ -494,7 +494,7 @@ def draw_cursor(screen):
             screen.blit(cursor, (  (cursor_col-1) * font_width,
                                     (cursor_row-1) * font_height) )
     else:
-        index = cursor_attr & 0xf
+        index = cursor_attr % num_fore_attrs
         if numpy:
             # reference the destination area
             dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
@@ -1059,7 +1059,7 @@ def move_cursor(crow, ccol):
 def set_cursor_attr(attr):
     global cursor_attr
     """ Change attribute of cursor. """
-    cursor_attr = canvas[vpagenum].get_palette_at(attr).b
+    cursor_attr = attr % num_fore_attrs
     cursor.set_palette_at(254, pygame.Color(0, cursor_attr, cursor_attr))
 
 def scroll_up(from_line, scroll_height, back_attr):
