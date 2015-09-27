@@ -1171,12 +1171,11 @@ class Screen(object):
                 # for_keys=True means 'suppress echo on cli'
                 self.refresh_range(pagenum, crow, 1, self.mode.width,
                                    for_keys=True, text_only=True)
-        # redraw graphics
-        #FIXME: what about non-visible pages?
-        if not self.mode.is_text_mode:
-            video_queue.put(Event(VIDEO_PUT_RECT, (0, 0,
-                              self.mode.pixel_width-1, self.mode.pixel_height-1,
-                              self.pixels.pages[self.apagenum].buffer)))
+            # redraw graphics
+            if not self.mode.is_text_mode:
+                video_queue.put(Event(VIDEO_PUT_RECT, (pagenum, 0, 0,
+                                self.mode.pixel_width-1, self.mode.pixel_height-1,
+                                self.pixels.pages[pagenum].buffer)))
         return True
 
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum,
@@ -1499,7 +1498,8 @@ class Screen(object):
                                                 r, c, char, fore, back)
                 self.pixels.pages[self.apagenum].put_rect(
                                                 x0, y0, x1, y1, glyph, tk.PSET)
-                video_queue.put(Event(VIDEO_PUT_RECT, (x0, y0, x1, y1, glyph)))
+                video_queue.put(Event(VIDEO_PUT_RECT,
+                                        (self.apagenum, x0, y0, x1, y1, glyph)))
 
     # should be in console? uses wrap
     def redraw_row(self, start, crow, wrap=True):
@@ -1702,7 +1702,8 @@ class Screen(object):
         x0, y0, x1, y1, sprite = self.drawing.view_clip_area(x0, y0, x1, y1, sprite)
         rect = self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1,
                                                         sprite, operation_token)
-        video_queue.put(Event(VIDEO_PUT_RECT, (x0, y0, x1, y1, rect)))
+        video_queue.put(Event(VIDEO_PUT_RECT,
+                              (self.apagenum, x0, y0, x1, y1, rect)))
         self.clear_text_area(x0, y0, x1, y1)
 
     def fill_rect(self, x0, y0, x1, y1, index):

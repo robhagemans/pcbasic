@@ -1251,14 +1251,14 @@ if numpy:
         pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y] = numpy.array(colours).astype(int)
         screen_changed = True
 
-    def put_rect(x0, y0, x1, y1, array):
+    def put_rect(pagenum, x0, y0, x1, y1, array):
         """ Apply numpy array [y][x] of attribytes to an area. """
         global screen_changed
         if (x1 < x0) or (y1 < y0):
             return
         # reference the destination area
         pygame.surfarray.pixels2d(
-            canvas[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))[:] = numpy.array(array).T
+            canvas[pagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))[:] = numpy.array(array).T
         screen_changed = True
 
 else:
@@ -1270,10 +1270,10 @@ else:
                          for i, index in enumerate(colours)]
         screen_changed = True
 
-    def put_rect(x0, y0, x1, y1, array):
+    def put_rect(pagenum, x0, y0, x1, y1, array):
         """ Apply a 2D list [y][x] of attributes to an area. """
         global screen_changed
-        [[ canvas[apagenum].set_at((x0+i, y0+j), index)
+        [[ canvas[pagenum].set_at((x0+i, y0+j), index)
                             for i, index in enumerate(array[j]) ]
                             for j in xrange(y1-y0+1) ]
         screen_changed = True
