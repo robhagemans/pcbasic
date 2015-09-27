@@ -1662,7 +1662,7 @@ class Screen(object):
             pagenum = self.apagenum
         if self.drawing.view_contains(x, y):
             self.pixels.pages[pagenum].put_pixel(x, y, index)
-            video_queue.put(Event(VIDEO_PUT_PIXEL, (x, y, index, pagenum)))
+            video_queue.put(Event(VIDEO_PUT_PIXEL, (pagenum, x, y, index)))
             self.clear_text_at(x, y)
 
     def get_pixel(self, x, y, pagenum=None):
@@ -1686,7 +1686,8 @@ class Screen(object):
         """ Fill a scanline interval in a solid attribute. """
         x0, x1, y = self.drawing.view_clip_interval(x0, x1, y)
         self.pixels.pages[self.apagenum].fill_interval(x0, x1, y, index)
-        video_queue.put(Event(VIDEO_FILL_INTERVAL, (x0, x1, y, index)))
+        video_queue.put(Event(VIDEO_FILL_INTERVAL,
+                        (self.apagenum, x0, x1, y, index)))
         self.clear_text_area(x0, y, x1, y)
 
     def get_until(self, x0, x1, y, c):
@@ -1710,7 +1711,8 @@ class Screen(object):
         """ Fill a rectangle in a solid attribute. """
         x0, y0, x1, y1 = self.drawing.view_clip_rect(x0, y0, x1, y1)
         self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, index)
-        video_queue.put(Event(VIDEO_FILL_RECT, (x0, y0, x1, y1, index)))
+        video_queue.put(Event(VIDEO_FILL_RECT,
+                                (self.apagenum, x0, y0, x1, y1, index)))
         self.clear_text_area(x0, y0, x1, y1)
 
     # text

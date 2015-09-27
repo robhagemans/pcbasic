@@ -1223,24 +1223,24 @@ class ClipboardInterface(object):
 # graphics backend interface
 # low-level methods (pygame implementation)
 
-def put_pixel(x, y, index, pagenum):
+def put_pixel(pagenum, x, y, index):
     """ Put a pixel on the screen; callback to empty character buffer. """
     global screen_changed
     canvas[pagenum].set_at((x,y), index)
     screen_changed = True
 
-def fill_rect(x0, y0, x1, y1, index):
+def fill_rect(pagenum, x0, y0, x1, y1, index):
     """ Fill a rectangle in a solid attribute. """
     global screen_changed
     rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
-    canvas[apagenum].fill(index, rect)
+    canvas[pagenum].fill(index, rect)
     screen_changed = True
 
-def fill_interval(x0, x1, y, index):
+def fill_interval(pagenum, x0, x1, y, index):
     """ Fill a scanline interval in a solid attribute. """
     global screen_changed
     dx = x1 - x0 + 1
-    canvas[apagenum].fill(index, (x0, y, dx, 1))
+    canvas[pagenum].fill(index, (x0, y, dx, 1))
     screen_changed = True
 
 if numpy:
