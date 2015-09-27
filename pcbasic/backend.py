@@ -1278,7 +1278,7 @@ class Screen(object):
                 mode_info.font_height, mode_info.name)
             raise error.RunError(error.IFC)
         video_queue.put(Event(VIDEO_MODE, mode_info))
-        if self.mode.is_text_mode:
+        if mode_info.is_text_mode:
             # send glyphs to backend; copy is necessary
             # as dict may change here while the other thread is working on it
             video_queue.put(Event(VIDEO_BUILD_GLYPHS,
