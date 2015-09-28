@@ -1126,7 +1126,7 @@ def prepare_video():
     """ Prepare the video subsystem. """
     global egacursor
     global video_capabilities, composite_monitor, mono_monitor
-    global fonts
+    global fonts, initial_mode
     video_capabilities = config.get('video')
     # do all text modes with >8 pixels have an ega-cursor?
     egacursor = video_capabilities in (
@@ -1135,13 +1135,10 @@ def prepare_video():
     mono_monitor = config.get('monitor') == 'mono'
     if video_capabilities == 'ega' and mono_monitor:
         video_capabilities = 'ega_mono'
-    # prepare video mode list
-    # only allow the screen modes that the given machine supports
-    # PCjr starts in 40-column mode
-    # video memory size - default is EGA 256K
+    # set initial video mode
     state.console_state.screen = Screen(config.get('text-width'),
                                         config.get('video-memory'))
-
+    initial_mode = state.console_state.screen.mode
     heights_needed = set([8])
     for mode in state.console_state.screen.text_data.values():
         heights_needed.add(mode.font_height)

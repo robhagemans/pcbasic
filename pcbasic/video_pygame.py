@@ -142,8 +142,9 @@ def init():
         for axis in (0, 1):
             backend.input_queue.put(backend.Event(backend.STICK_MOVED,
                                                   (joy, axis, 128)))
-    text_mode = True
+    move_cursor(0, 0)
     set_page(0, 0)
+    set_mode(backend.initial_mode)
     launch_thread()
     return True
 
@@ -194,7 +195,7 @@ def drain_video_queue():
             # close thread after task_done
             alive = False
         elif signal.event_type == backend.VIDEO_MODE:
-            init_screen_mode(signal.params)
+            set_mode(signal.params)
         elif signal.event_type == backend.VIDEO_PUT_GLYPH:
             put_glyph(*signal.params)
         elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
@@ -246,9 +247,6 @@ def drain_video_queue():
 def check_events():
     """ Handle screen and interface events. """
     global screen_changed, fullscreen
-    # wait for initialisation
-    if not init_complete:
-        return
     # handle Android pause/resume
     if android and pygame_android.check_events():
         # force immediate redraw of screen
@@ -823,9 +821,6 @@ mousebutton_copy = 1
 mousebutton_paste = 2
 mousebutton_pen = 3
 
-# initialisation complete
-init_complete = False
-
 # prebuilt glyphs
 glyph_dict = {}
 
@@ -833,7 +828,7 @@ glyph_dict = {}
 # initialisation
 
 
-def init_screen_mode(mode_info):
+def set_mode(mode_info):
     """ Initialise a given text or graphics mode. """
     global cursor
     global screen_changed, canvas
@@ -841,7 +836,6 @@ def init_screen_mode(mode_info):
     global font_height
     global clipboard, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, mode_has_blink
-    global init_complete
     text_mode = mode_info.is_text_mode
     # unpack mode info struct
     font_height = mode_info.font_height
@@ -863,9 +857,6 @@ def init_screen_mode(mode_info):
     # initialise clipboard
     clipboard = ClipboardInterface(mode_info.width, mode_info.height)
     screen_changed = True
-    # signal that initialisation is complete
-    init_complete = True
-    return True
 
 if numpy:
     def glyph_to_surface(glyph):
