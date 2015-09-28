@@ -101,7 +101,7 @@ def prepare():
 def init():
     """ Initialise pygame interface. """
     global joysticks, physical_size, display_size
-    global text_mode, fonts, state_loaded
+    global text_mode, fonts, state_loaded, smooth
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
         logging.warning('PyGame module not found. Failed to initialise graphical interface.')
@@ -122,7 +122,10 @@ def init():
     # I hate it when applications do this ;)
     if not fullscreen:
         pygame.display.set_mode(display_size, 0)
-    resize_display(*display_size, initial=True)
+    resize_display(*display_size)
+    if smooth and display.get_bitsize() < 24:
+        logging.warning("Smooth scaling not available on this display (depth %d < 24)", display.get_bitsize())
+        smooth = False
     pygame.display.set_caption(caption)
     pygame.key.set_repeat(500, 24)
     # load an all-black 16-colour game palette to get started
@@ -885,7 +888,8 @@ else:
 
 def find_display_size(canvas_x, canvas_y, border_width):
     """ Determine the optimal size for the display. """
-    if force_display_size:
+    # comply with requested size unless we're fullscreening
+    if force_display_size and not fullscreen:
         return force_display_size
     if not force_square_pixel:
         # this assumes actual display aspect ratio is wider than 4:3
@@ -923,23 +927,14 @@ def find_display_size(canvas_x, canvas_y, border_width):
                 apx = mx, my
         return apx[0] * pixel_x, apx[1] * pixel_y
 
-def resize_display(width, height, initial=False):
+def resize_display(width, height):
     """ Change the display size. """
     global display, screen_changed
-    global fullscreen, smooth
     display_info = pygame.display.Info()
     flags = pygame.RESIZABLE
     if fullscreen:
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
-        if (not initial and not text_mode):
-            width, height = display_size
-        # scale suggested dimensions to largest integer times pixel size that fits
-        scale = min( physical_size[0]//width, physical_size[1]//height )
-        width, height = width * scale, height * scale
     display = pygame.display.set_mode((width, height), flags)
-    if initial and smooth and display.get_bitsize() < 24:
-        logging.warning("Smooth scaling not available on this display (depth %d < 24)", display.get_bitsize())
-        smooth = False
     # load display if requested
     screen_changed = True
 
