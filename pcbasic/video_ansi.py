@@ -172,7 +172,7 @@ last_attributes = None
 # text and colour buffer
 num_pages = 1
 vpagenum, apagenum = 0, 0
-text = [[[(' ', (0, 0, False, False))]*80 for _ in range(25)]]
+text = [[[(' ', (7, 0, False, False))]*80 for _ in range(25)]]
 
 last_pos = None
 
@@ -183,7 +183,7 @@ def init_screen_mode(mode_info=None):
     height = mode_info.height
     width = mode_info.width
     num_pages = mode_info.num_pages
-    text = [[[(' ', (0, 0, False, False))]*width for _ in range(height)] for _ in range(num_pages)]
+    text = [[[(' ', (7, 0, False, False))]*width for _ in range(height)] for _ in range(num_pages)]
     sys.stdout.write(ansi.esc_resize_term % (height, width))
     sys.stdout.write(ansi.esc_clear_screen)
     sys.stdout.flush()
@@ -203,7 +203,7 @@ def copy_page(src, dst):
 
 def clear_rows(back_attr, start, stop):
     """ Clear screen rows. """
-    text[apagenum][start-1:stop] = [[(' ', (0, 0, False, False))]*len(text[apagenum][0]) for _ in range(start-1, stop)]
+    text[apagenum][start-1:stop] = [[(' ', (7, 0, False, False))]*len(text[apagenum][0]) for _ in range(start-1, stop)]
     if vpagenum == apagenum:
         set_attributes(7, back_attr, False, False)
         for r in range(start, stop+1):
@@ -460,5 +460,6 @@ def redraw():
             set_attributes(*charattr[1])
             sys.stdout.write(charattr[0])
     sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
+    sys.stdout.flush()
 
 prepare()
