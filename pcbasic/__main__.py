@@ -174,8 +174,8 @@ def start_basic():
         if config.get('wait'):
             backend.video_queue.put(backend.Event(backend.VIDEO_SET_CAPTION, 'Press a key to close window'))
             backend.video_queue.put(backend.Event(backend.VIDEO_SHOW_CURSOR, False))
-            backend.input_queue.put(backend.Event(backend.KEYB_PAUSE, True))
-            # this performs a blocking keystroke read on a PAUSE event
+            state.console_state.keyb.pause = True
+            # this performs a blocking keystroke read if in pause state
             backend.check_events()
     except error.Reset:
         do_reset = True

@@ -241,11 +241,9 @@ def drain_video_queue():
 ###############################################################################
 # event queue
 
-pause = False
-
 def check_events():
     """ Handle screen and interface events. """
-    global screen_changed, fullscreen, pause
+    global screen_changed, fullscreen
     # wait for initialisation
     if not init_complete:
         return
@@ -259,14 +257,9 @@ def check_events():
     # check and handle pygame events
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
-            if not pause:
-                handle_key_down(event)
-            else:
-                pause = False
-                backend.input_queue.put(backend.Event(backend.KEYB_PAUSE, False))
+            handle_key_down(event)
         if event.type == pygame.KEYUP:
-            if not pause:
-                handle_key_up(event)
+            handle_key_up(event)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             # copy, paste and pen may be on the same button, so no elifs
             if event.button == mousebutton_copy:
@@ -317,15 +310,10 @@ f11_active = False
 
 def handle_key_down(e):
     """ Handle key-down event. """
-    global screen_changed, f12_active, f11_active, fullscreen, pause
+    global screen_changed, f12_active, f11_active, fullscreen
     c = ''
     mods = pygame.key.get_mods()
-    if ((e.key == pygame.K_NUMLOCK and mods & pygame.KMOD_CTRL) or
-            (e.key in (pygame.K_PAUSE, pygame.K_BREAK) and
-             not mods & pygame.KMOD_CTRL)):
-        # pause until keypress
-        backend.input_queue.put(backend.Event(backend.KEYB_PAUSE, True))
-    elif e.key == pygame.K_MENU and android:
+    if e.key == pygame.K_MENU and android:
         # Android: toggle keyboard on menu key
         pygame_android.toggle_keyboard()
         screen_changed = True
@@ -360,15 +348,11 @@ def handle_key_down(e):
             c = '\0\0'
         # current key pressed; modifiers handled by backend interface
         if f12_active:
-            # F12+P should just send Pause, but pause is still implemented directly
-            if e.key == pygame.K_p:
-                backend.input_queue.put(backend.Event(backend.KEYB_PAUSE, True))
-            else:
-                try:
-                    scan, c = key_to_scan_f12[e.key]
-                except KeyError:
-                    scan = None
-                backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, c)))
+            try:
+                scan, c = key_to_scan_f12[e.key]
+            except KeyError:
+                scan = None
+            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, c)))
         else:
             try:
                 scan = key_to_scan[e.key]

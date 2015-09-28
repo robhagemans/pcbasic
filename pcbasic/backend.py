@@ -103,9 +103,8 @@ VIDEO_SET_CAPTION = 29
 # input queue signals
 # special keys
 KEYB_QUIT = 0
+# break event (an alternative to Ctrl+Break keydown events)
 KEYB_BREAK = 1
-KEYB_RESET = 2
-KEYB_PAUSE = 3
 # insert character
 KEYB_CHAR = 4
 # insert keydown
@@ -164,12 +163,11 @@ def check_events():
         for c in state.basic_state.events.com:
             c.check()
     # KEY, PEN and STRIG are triggered on handling the input queue
-    pause = False
     while True:
         try:
             signal = input_queue.get(False)
         except Queue.Empty:
-            if not pause:
+            if not state.console_state.keyb.pause:
                 break
             else:
                 time.sleep(tick_s)
@@ -178,17 +176,11 @@ def check_events():
         input_queue.task_done()
         if signal.event_type == KEYB_QUIT:
             raise error.Exit()
-        elif signal.event_type == KEYB_RESET:
-            raise error.Reset()
         elif signal.event_type == KEYB_BREAK:
             raise error.Break()
-        elif signal.event_type == KEYB_PAUSE:
-            pause = signal.params
-        if signal.event_type == KEYB_CHAR:
-            pause = False
+        elif signal.event_type == KEYB_CHAR:
             state.console_state.keyb.insert_chars(signal.params, check_full=True)
         elif signal.event_type == KEYB_DOWN:
-            pause = False
             scan, eascii = signal.params
             state.console_state.keyb.key_down(scan, eascii, check_full=True)
         elif signal.event_type == KEYB_UP:
@@ -604,6 +596,8 @@ class Keyboard(object):
         self.mod = 0
         # store for alt+keypad ascii insertion
         self.keypad_ascii = ''
+        # PAUSE is active
+        self.pause = False
 
     def read_chars(self, num):
         """ Read num keystrokes, blocking. """
@@ -633,6 +627,7 @@ class Keyboard(object):
 
     def insert_chars(self, s, check_full=False):
         """ Insert characters into keyboard buffer. """
+        self.pause = False
         if not self.buf.insert(s, check_full):
             # keyboard buffer is full; short beep and exit
             state.console_state.sound.play_sound(800, 0.01)
@@ -640,6 +635,7 @@ class Keyboard(object):
     def key_down(self, scan, eascii='', check_full=True):
         """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
         # set port and low memory address regardless of event triggers
+        self.pause = False
         if scan is not None:
             self.last_scancode = scan
         # set modifier status
@@ -658,12 +654,16 @@ class Keyboard(object):
                     self.mod & modifier[scancode.ALT]):
                 # ctrl-alt-del: if not captured by the OS, reset the emulator
                 # meaning exit and delete state. This is useful on android.
-                raise error.Reset()
-        if ((scan in (scancode.BREAK, scancode.SCROLLOCK) or
+            raise error.Reset()
+        elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) or
                         ctrl_c_is_break and scan==scancode.c)
                     and self.mod & modifier[scancode.CTRL]):
-                raise error.Break()
-        if scan == scancode.PRINT:
+            raise error.Break()
+        elif (scan == scancode.BREAK or
+                (scan == scancode.NUMLOCK and self.mod & modifier[scancode.CTRL])):
+            self.pause = True
+            return
+        elif scan == scancode.PRINT:
             if (self.mod &
                     (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])):
                 # shift + printscreen
