@@ -1255,7 +1255,7 @@ class Screen(object):
         for pagenum in range(self.mode.num_pages):
             for crow in range(self.mode.height):
                 # for_keys=True means 'suppress echo on cli'
-                self.refresh_range(pagenum, crow, 1, self.mode.width,
+                self.refresh_range(pagenum, crow+1, 1, self.mode.width,
                                    for_keys=True, text_only=True)
             # redraw graphics
             if not self.mode.is_text_mode:
