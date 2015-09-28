@@ -8,9 +8,11 @@ This file is released under the GNU GPL version 3.
 
 import sys
 import time
+import threading
+import Queue
 
-import unicodepage
 import backend
+import unicodepage
 import plat
 import redirect
 
@@ -39,21 +41,62 @@ def prepare():
     if plat.system != 'Windows' and plat.stdin_is_tty:
         lf_to_cr = True
 
-###############################################################################
+
+##############################################################################
+# interface
 
 def init():
     """ Initialise filter interface. """
     # use redirection echos; these are not kept in state
     redirect.set_output(sys.stdout, utf8=True)
+    launch_thread()
     return True
 
-def idle():
-    """ Video idle process. """
-    time.sleep(0.024)
+def close():
+    """ Close the filter interface. """
+    # drain signal queue (to allow for persistence) and request exit
+    if backend.video_queue:
+        backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
+        backend.video_queue.join()
+    if thread and thread.is_alive():
+        # signal quit and wait for thread to finish
+        thread.join()
 
-def check_events():
-    """ Handle screen and interface events. """
-    check_keys()
+##############################################################################
+# implementation
+
+thread = None
+tick_s = 0.024
+
+def launch_thread():
+    """ Launch consumer thread. """
+    global thread
+    thread = threading.Thread(target=consumer_thread)
+    thread.start()
+
+def consumer_thread():
+    """ Video signal queue consumer thread. """
+    while drain_video_queue():
+        check_keys()
+        # do not hog cpu
+        time.sleep(tick_s)
+
+def drain_video_queue():
+    """ Drain signal queue. """
+    alive = True
+    while alive:
+        try:
+            signal = backend.video_queue.get(False)
+        except Queue.Empty:
+            return True
+        if signal.event_type == backend.VIDEO_QUIT:
+            # close thread after task_done
+            alive = False
+        # drop other messages
+        backend.video_queue.task_done()
+
+
+###############################################################################
 
 def check_keys():
     """ Handle keyboard events. """
@@ -62,99 +105,18 @@ def check_keys():
         return
     s = sys.stdin.readline().decode('utf-8')
     if s == '':
-        backend.close_input()
+        redirect.input_closed = True
     for u in s:
         c = u.encode('utf-8')
         # replace LF -> CR if needed
         if c == '\n' and lf_to_cr:
             c = '\r'
+        # convert utf8 to codepage if necessary
         try:
-            backend.insert_chars(unicodepage.from_utf8(c))
+            c = unicodepage.from_utf8(c)
         except KeyError:
-            backend.insert_chars(c)
-
-def close():
-    """ Close the filter interface. """
-    pass
-
-###############################################################################
-# The following are no-op responses to requests from backend
-
-def load_state(display_str):
-    """ Restore display state from file. """
-    pass
-
-def save_state():
-    """ Save display state to file (no-op). """
-    return None
-
-def init_screen_mode(mode_info):
-    """ Change screen mode. """
-    # we don't support graphics
-    return mode_info.is_text_mode
-
-def set_page(vpage, apage):
-    """ Set the visible and active page (no-op). """
-    pass
-
-def copy_page(src, dst):
-    """ Copy source to destination page (no-op). """
-    pass
-
-def putc_at(pagenum, row, col, c, for_keys=False):
-    """ Put a single-byte character at a given position (done through echo). """
-    pass
-
-def putwc_at(pagenum, row, col, c, d, for_keys=False):
-    """ Put a double-byte character at a given position (done through echo). """
-    pass
-
-def clear_rows(attr, start, stop):
-    """ Clear screen rows (no-op). """
-    pass
-
-def scroll(from_line, scroll_height, attr):
-    """ Scroll the screen up between from_line and scroll_height (no-op). """
-    pass
-
-def scroll_down(from_line, scroll_height, attr):
-    """ Scroll the screen down between from_line and scroll_height (no-op). """
-    pass
-
-def update_palette(new_palette, new_palette1):
-    """ Build the game palette (no-op). """
-    pass
-
-def set_colorburst(on, palette, palette1):
-    """ Change the NTSC colorburst setting (no-op). """
-    pass
-
-def build_cursor(width, height, from_line, to_line):
-    """ Set the cursor shape (no-op). """
-    pass
-
-def move_cursor(crow, ccol):
-    """ Move the cursor to a new position (no-op). """
-    pass
-
-def show_cursor(cursor_on):
-    """ Change visibility of cursor (no-op). """
-    pass
-
-def update_cursor_attr(attr):
-    """ Change attribute of cursor (no-op). """
-    pass
-
-def set_attr(cattr):
-    """ Set the current attribute (no-op). """
-    pass
-
-def set_border(attr):
-    """ Change the border attribute (no-op). """
-    pass
-
-def rebuild_glyph(ordval):
-    """ Rebuild a glyph after POKE. """
-    pass
+            pass
+        # check_full=False?
+        backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
 
 prepare()

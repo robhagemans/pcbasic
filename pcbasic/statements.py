@@ -17,7 +17,6 @@ import string
 
 import plat
 import config
-# for num_fn_keys
 import backend
 import console
 import debug
@@ -2110,7 +2109,7 @@ def exec_cls(ins):
         state.console_state.screen.drawing.clear_view()
         state.console_state.screen.drawing.reset()
     elif val == 2:
-        console.clear_view()
+        state.console_state.screen.clear_view()
     if pcjr_syntax == 'pcjr':
         util.require(ins, tk.end_statement)
 
@@ -2419,7 +2418,7 @@ def exec_lprint(ins):
 def exec_view_print(ins):
     """ VIEW PRINT: set scroll region. """
     if util.skip_white(ins) in tk.end_statement:
-        console.unset_view()
+        state.console_state.screen.unset_view()
     else:
         start = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.require_read(ins, (tk.TO,))
@@ -2427,7 +2426,7 @@ def exec_view_print(ins):
         util.require(ins, tk.end_statement)
         max_line = 25 if (pcjr_syntax and not state.console_state.keys_visible) else 24
         util.range_check(1, max_line, start, stop)
-        console.set_view(start, stop)
+        state.console_state.screen.set_view(start, stop)
 
 def exec_width(ins):
     """ WIDTH: set width of screen or device. """

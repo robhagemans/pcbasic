@@ -18,7 +18,6 @@ import sound
 
 def init():
     """ Initialise sound system. """
-
     launch_thread()
     return True
 

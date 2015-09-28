@@ -460,7 +460,7 @@ def get_font_memory(addr):
     char = addr // 8 + 128
     if char < 128 or char > 254:
         return -1
-    return ord(backend.font_8[chr(char)][addr%8])
+    return ord(backend.fonts[8][chr(char)][addr%8])
 
 def set_font_memory(addr, value):
     """ Retrieve RAM font data. """
@@ -468,8 +468,8 @@ def set_font_memory(addr, value):
     char = addr // 8 + 128
     if char < 128 or char > 254:
         return
-    old = backend.font_8[chr(char)]
-    backend.font_8[chr(char)] = old[:addr%8]+chr(value)+old[addr%8+1:]
+    old = backend.fonts[8][chr(char)]
+    backend.fonts[8][chr(char)] = old[:addr%8]+chr(value)+old[addr%8+1:]
     state.console_state.screen.rebuild_glyph(char)
 
 #################################################################################

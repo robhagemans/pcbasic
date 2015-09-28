@@ -15,7 +15,6 @@ import config
 import state
 import error
 import console
-import backend
 
 if plat.system == 'Windows':
     import threading
@@ -128,9 +127,6 @@ if plat.system == 'Windows':
                 lines, shell_output = shell_output.split('\r\n'), ''
                 last = lines.pop()
                 for line in lines:
-                    # progress visible - keep updating the backend
-                    # don't process anything but video events here
-                    backend.video.check_events()
                     console.write_line(line)
                 console.write(last)
             if p.poll() is not None:

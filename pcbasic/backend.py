@@ -6,7 +6,6 @@ Event loop; video, keyboard, pen and joystick handling
 This file is released under the GNU GPL version 3.
 """
 
-
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -14,6 +13,14 @@ except ImportError:
 
 import logging
 from copy import copy
+
+import time
+import Queue
+
+try:
+    import numpy
+except ImportError:
+    numpy = None
 
 import plat
 import config
@@ -32,9 +39,90 @@ import modes
 import graphics
 import memory
 import clipboard
+import basictoken as tk
 
 # backend implementations
 video = None
+
+video_queue = Queue.Queue()
+input_queue = Queue.Queue()
+response_queue = Queue.Queue()
+
+class Event(object):
+    """ Signal object for video queue. """
+
+    def __init__(self, event_type, params=None):
+        """ Create signal. """
+        self.event_type = event_type
+        self.params = params
+
+
+# video queue signals
+# save state and quit
+VIDEO_QUIT = 0
+# change video mode
+VIDEO_SET_MODE = 1
+# switch page
+VIDEO_SET_PAGE = 2
+# set cursor shape
+VIDEO_SET_CURSOR_SHAPE = 3
+# move cursor
+VIDEO_MOVE_CURSOR = 5
+# set cursor attribute
+VIDEO_SET_CURSOR_ATTR = 6
+# set border attribute
+VIDEO_SET_BORDER_ATTR = 7
+# put character glyph
+VIDEO_PUT_GLYPH = 8
+# clear rows
+VIDEO_CLEAR_ROWS = 10
+# scroll
+VIDEO_SCROLL_UP = 11
+VIDEO_SCROLL_DOWN = 12
+# set colorburst
+VIDEO_SET_COLORBURST = 13
+# show/hide cursor
+VIDEO_SHOW_CURSOR = 14
+# set palette
+VIDEO_SET_PALETTE = 15
+# build glyphs
+VIDEO_BUILD_GLYPHS = 16
+# put pixel
+VIDEO_PUT_PIXEL = 17
+# put interval
+VIDEO_PUT_INTERVAL = 18
+VIDEO_FILL_INTERVAL = 19
+# put rect
+VIDEO_PUT_RECT = 20
+VIDEO_FILL_RECT = 21
+# copy page
+VIDEO_COPY_PAGE = 28
+# set caption message
+VIDEO_SET_CAPTION = 29
+
+# input queue signals
+# special keys
+KEYB_QUIT = 0
+# break event (an alternative to Ctrl+Break keydown events)
+KEYB_BREAK = 1
+# insert character
+KEYB_CHAR = 4
+# insert keydown
+KEYB_DOWN = 5
+# insert keyup
+KEYB_UP = 6
+# light pen events
+PEN_DOWN = 101
+PEN_UP = 102
+PEN_MOVED = 103
+# joystick events
+STICK_DOWN = 201
+STICK_UP = 202
+STICK_MOVED = 203
+# clipboard events
+CLIP_COPY = 254
+CLIP_PASTE = 255
+
 
 ###############################################################################
 # initialisation
@@ -55,27 +143,76 @@ def prepare():
 ###############################################################################
 # main event checker
 
-def wait():
-    """ Wait and check events. """
-    video.idle()
-    check_events()
+tick_s = 0.0006
+longtick_s = 0.024 - tick_s
 
-def idle():
-    """ Wait a tick. """
-    video.idle()
+def wait(suppress_events=False):
+    """ Wait and check events. """
+    time.sleep(longtick_s)
+    if not suppress_events:
+        check_events()
 
 def check_events():
     """ Main event cycle. """
-    # check video, keyboard, pen and joystick events
-    video.check_events()
     # trigger & handle BASIC events
+    time.sleep(tick_s)
     if state.basic_state.run_mode:
         # trigger TIMER, PLAY and COM events
         state.basic_state.events.timer.check()
         state.basic_state.events.play.check()
         for c in state.basic_state.events.com:
             c.check()
-        # KEY, PEN and STRIG are triggered on handling the queue
+    # KEY, PEN and STRIG are triggered on handling the input queue
+    while True:
+        try:
+            signal = input_queue.get(False)
+        except Queue.Empty:
+            if not state.console_state.keyb.pause:
+                break
+            else:
+                time.sleep(tick_s)
+                continue
+        # we're on it
+        input_queue.task_done()
+        if signal.event_type == KEYB_QUIT:
+            raise error.Exit()
+        elif signal.event_type == KEYB_BREAK:
+            raise error.Break()
+        elif signal.event_type == KEYB_CHAR:
+            state.console_state.keyb.insert_chars(signal.params, check_full=True)
+        elif signal.event_type == KEYB_DOWN:
+            scan, eascii = signal.params
+            state.console_state.keyb.key_down(scan, eascii, check_full=True)
+        elif signal.event_type == KEYB_UP:
+            state.console_state.keyb.key_up(signal.params)
+        elif signal.event_type == PEN_DOWN:
+            state.console_state.pen.down(*signal.params)
+        elif signal.event_type == PEN_UP:
+            state.console_state.pen.up()
+        elif signal.event_type == PEN_MOVED:
+            state.console_state.pen.moved(*signal.params)
+        elif signal.event_type == STICK_DOWN:
+            state.console_state.stick.down(*signal.params)
+        elif signal.event_type == STICK_UP:
+            state.console_state.stick.up(*signal.params)
+        elif signal.event_type == STICK_MOVED:
+            state.console_state.stick.moved(*signal.params)
+        elif signal.event_type == CLIP_COPY:
+            start_row, start_col, stop_row, stop_col, mouse = signal.params
+            clipboard_handler.copy(state.console_state.screen.get_text(
+                                start_row, start_col, stop_row, stop_col), mouse)
+        elif signal.event_type == CLIP_PASTE:
+            text = clipboard_handler.paste(signal.params)
+            state.console_state.keyb.insert_chars(text, check_full=False)
+
+def wait_response():
+    """ Wait for response to video request. """
+    while True:
+        try:
+            return response_queue.get(False)
+        except Queue.Empty:
+            pass
+        time.sleep(tick_s)
 
 
 ###############################################################################
@@ -459,6 +596,8 @@ class Keyboard(object):
         self.mod = 0
         # store for alt+keypad ascii insertion
         self.keypad_ascii = ''
+        # PAUSE is active
+        self.pause = False
 
     def read_chars(self, num):
         """ Read num keystrokes, blocking. """
@@ -483,8 +622,12 @@ class Keyboard(object):
         self.wait_char()
         return self.buf.getc()
 
+
+##############
+
     def insert_chars(self, s, check_full=False):
         """ Insert characters into keyboard buffer. """
+        self.pause = False
         if not self.buf.insert(s, check_full):
             # keyboard buffer is full; short beep and exit
             state.console_state.sound.play_sound(800, 0.01)
@@ -492,6 +635,7 @@ class Keyboard(object):
     def key_down(self, scan, eascii='', check_full=True):
         """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
         # set port and low memory address regardless of event triggers
+        self.pause = False
         if scan is not None:
             self.last_scancode = scan
         # set modifier status
@@ -510,12 +654,16 @@ class Keyboard(object):
                     self.mod & modifier[scancode.ALT]):
                 # ctrl-alt-del: if not captured by the OS, reset the emulator
                 # meaning exit and delete state. This is useful on android.
-                raise error.Reset()
-        if ((scan in (scancode.BREAK, scancode.SCROLLOCK) or
+            raise error.Reset()
+        elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) or
                         ctrl_c_is_break and scan==scancode.c)
                     and self.mod & modifier[scancode.CTRL]):
-                raise error.Break()
-        if scan == scancode.PRINT:
+            raise error.Break()
+        elif (scan == scancode.BREAK or
+                (scan == scancode.NUMLOCK and self.mod & modifier[scancode.CTRL])):
+            self.pause = True
+            return
+        elif scan == scancode.PRINT:
             if (self.mod &
                     (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])):
                 # shift + printscreen
@@ -588,37 +736,9 @@ class Keyboard(object):
             self.insert_chars(char, check_full=True)
             self.keypad_ascii = ''
 
-#D
-def insert_chars(s, check_full=False):
-    """ Insert characters into keyboard buffer. """
-    state.console_state.keyb.insert_chars(s, check_full)
 
-#D
-def key_down(scan, eascii='', check_full=True):
-    """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
-    state.console_state.keyb.key_down(scan, eascii, check_full)
+################
 
-#D
-def key_up(scan):
-    """ Insert a key-up event. """
-    state.console_state.keyb.key_up(scan)
-
-#D?
-def insert_special_key(name):
-    """ Insert break, reset or quit events. """
-    if name == 'quit':
-        raise error.Exit()
-    elif name == 'reset':
-        raise error.Reset()
-    elif name == 'break':
-        raise error.Break()
-    else:
-        logging.debug('Unknown special key: %s', name)
-
-#D?
-def close_input():
-    """ Signal end of keyboard stream. """
-    redirect.input_closed = True
 
 def scan_to_eascii(scan, mod):
     """ Translate scancode and modifier state to e-ASCII. """
@@ -630,32 +750,6 @@ def scan_to_eascii(scan, mod):
         return scancode.eascii_table[scan][1]
     else:
         return scancode.eascii_table[scan][0]
-
-
-###############################################################################
-# clipboard
-
-#D
-def copy_clipboard(start_row, start_col, stop_row, stop_col, mouse):
-    clipboard_handler.copy(state.console_state.screen.get_text(
-                            start_row, start_col, stop_row, stop_col), mouse)
-
-#D
-def paste_clipboard(mouse):
-    # ignore any bad UTF8 characters from outside
-    text_utf8 = clipboard_handler.paste(mouse)
-    for u in text_utf8.decode('utf-8', 'ignore'):
-        c = u.encode('utf-8')
-        last = ''
-        if c == '\n':
-            if last != '\r':
-                insert_chars('\r')
-        else:
-            try:
-                insert_chars(unicodepage.from_utf8(c))
-            except KeyError:
-                insert_chars(c)
-        last = c
 
 ###############################################################################
 # screen buffer
@@ -687,12 +781,13 @@ class TextRow(object):
 class TextPage(object):
     """ Buffer for a screen page. """
 
-    def __init__(self, battr, bwidth, bheight, pagenum):
+    def __init__(self, battr, bwidth, bheight, pagenum, do_dbcs):
         """ Initialise the screen buffer to given dimensions. """
         self.row = [TextRow(battr, bwidth) for _ in xrange(bheight)]
         self.width = bwidth
         self.height = bheight
         self.pagenum = pagenum
+        self.do_dbcs = do_dbcs
 
     def get_char_attr(self, crow, ccol, want_attr):
         """ Retrieve a byte from the screen (SBCS or DBCS half-char). """
@@ -710,8 +805,7 @@ class TextPage(object):
         start, stop = ccol, ccol+1
         self.row[crow-1].double[ccol-1] = 0
         # mark out sbcs and dbcs characters
-        # only do dbcs in 80-character modes
-        if unicodepage.dbcs and self.width == 80:
+        if unicodepage.dbcs and self.do_dbcs:
             orig_col = ccol
             # replace chars from here until necessary to update double-width chars
             therow = self.row[crow-1]
@@ -779,9 +873,10 @@ class TextPage(object):
 class TextBuffer(object):
     """ Buffer for text on all screen pages. """
 
-    def __init__(self, battr, bwidth, bheight, bpages):
+    def __init__(self, battr, bwidth, bheight, bpages, do_dbcs):
         """ Initialise the screen buffer to given pages and dimensions. """
-        self.pages = [TextPage(battr, bwidth, bheight, num) for num in range(bpages)]
+        self.pages = [TextPage(battr, bwidth, bheight, num, do_dbcs)
+                      for num in range(bpages)]
         self.width = bwidth
         self.height = bheight
 
@@ -795,14 +890,243 @@ class TextBuffer(object):
             dstrow.wrap = srcrow.wrap
 
 
+class PixelBuffer(object):
+    """ Buffer for graphics on all screen pages. """
+
+    def __init__(self, bwidth, bheight, bpages, bitsperpixel):
+        """ Initialise the graphics buffer to given pages and dimensions. """
+        self.pages = [ PixelPage(bwidth, bheight, num, bitsperpixel) for num in range(bpages)]
+        self.width = bwidth
+        self.height = bheight
+
+    def copy_page(self, src, dst):
+        """ Copy source to destination page. """
+        for x in range(self.height):
+            dstrow = self.pages[dst].row[x]
+            srcrow = self.pages[src].row[x]
+            dstrow.buf[:] = srcrow.buf[:]
+
+class PixelPage(object):
+    """ Buffer for a screen page. """
+
+    def __init__(self, bwidth, bheight, pagenum, bitsperpixel):
+        """ Initialise the screen buffer to given dimensions. """
+        if numpy:
+            self.buffer = numpy.zeros((bheight, bwidth), dtype=numpy.int8)
+        else:
+            self.buffer = [[0]*bwidth for _ in range(bheight)]
+        self.width = bwidth
+        self.height = bheight
+        self.pagenum = pagenum
+        self.bitsperpixel = bitsperpixel
+        self.init_operations()
+
+    def __getstate__(self):
+        """ Pickle the page. """
+        pagedict = self.__dict__.copy()
+        # lambdas can't be pickled
+        pagedict['operations'] = None
+        return pagedict
+
+    def __setstate__(self, pagedict):
+        """ Initialise from pickled page. """
+        self.__dict__.update(pagedict)
+        self.init_operations()
+
+    def put_pixel(self, x, y, attr):
+        """ Put a pixel in the buffer. """
+        try:
+            self.buffer[y][x] = attr
+        except IndexError:
+            pass
+
+    def get_pixel(self, x, y):
+        """ Get attribute of a pixel in the buffer. """
+        try:
+            return self.buffer[y][x]
+        except IndexError:
+            return 0
+
+    def fill_interval(self, x0, x1, y, attr):
+        """ Write a list of attributes to a scanline interval. """
+        try:
+            self.buffer[y][x0:x1+1] = [attr]*(x1-x0+1)
+        except IndexError:
+            pass
+
+    if numpy:
+        def init_operations(self):
+            """ Initialise operations closures. """
+            self.operations = {
+                tk.PSET: lambda x, y: x.__setitem__(slice(len(x)), y),
+                tk.PRESET: lambda x, y: x.__setitem__(slice(len(x)), y.__xor__((1<<self.bitsperpixel) - 1)),
+                tk.AND: lambda x, y: x.__iand__(y),
+                tk.OR: lambda x, y: x.__ior__(y),
+                tk.XOR: lambda x, y: x.__ixor__(y),
+            }
+
+        def put_interval(self, x, y, colours, mask=0xff):
+            """ Write a list of attributes to a scanline interval. """
+            colours = numpy.array(colours).astype(int)
+            inv_mask = 0xff ^ mask
+            colours &= mask
+            try:
+                self.buffer[y, x:x+len(colours)] &= inv_mask
+                self.buffer[y, x:x+len(colours)] |= colours
+                return self.buffer[y, x:x+len(colours)]
+            except IndexError:
+                return numpy.zeros(len(colours), dtype=numpy.int8)
+
+        def get_interval(self, x, y, length):
+            """ Return *view of* attributes of a scanline interval. """
+            try:
+                return self.buffer[y, x:x+length]
+            except IndexError:
+                return numpy.zeros(length, dtype=numpy.int8)
+
+        def fill_rect(self, x0, y0, x1, y1, attr):
+            """ Apply solid attribute to an area. """
+            if (x1 < x0) or (y1 < y0):
+                return
+            try:
+                self.buffer[y0:y1+1, x0:x1+1].fill(attr)
+            except IndexError:
+                pass
+
+        def put_rect(self, x0, y0, x1, y1, array, operation_token):
+            """ Apply numpy array [y][x] of attributes to an area. """
+            if (x1 < x0) or (y1 < y0):
+                return
+            try:
+                self.operations[operation_token](self.buffer[y0:y1+1, x0:x1+1], numpy.asarray(array))
+                return self.buffer[y0:y1+1, x0:x1+1]
+            except IndexError:
+                return numpy.zeros((y1-y0+1, x1-x0+1), dtype=numpy.int8)
+
+        def get_rect(self, x0, y0, x1, y1):
+            """ Get *copy of* numpy array [y][x] of target area. """
+            try:
+                # our only user in module graphics needs a copy, so copy.
+                return numpy.array(self.buffer[y0:y1+1, x0:x1+1])
+            except IndexError:
+                return numpy.zeros((y1-y0+1, x1-x0+1), dtype=numpy.int8)
+
+        def move_rect(self, sx0, sy0, sx1, sy1, tx0, ty0):
+            """ Move pixels from an area to another, replacing with attribute 0. """
+            w, h = sx1-sx0+1, sy1-sy0+1
+            area = numpy.array(self.buffer[sy0:sy1+1, sx0:sx1+1])
+            self.buffer[sy0:sy1+1, sx0:sx1+1] = numpy.zeros((h, w), dtype=numpy.int8)
+            self.buffer[ty0:ty0+h, tx0:tx0+w] = area
+
+        def get_until(self, x0, x1, y, c):
+            """ Get the attribute values of a scanline interval [x0, x1-1]. """
+            if x0 == x1:
+                return []
+            toright = x1 > x0
+            if not toright:
+                x0, x1 = x1+1, x0+1
+            try:
+                arr = self.buffer[y, x0:x1]
+            except IndexError:
+                return []
+            found = numpy.where(arr == c)
+            if len(found[0]) > 0:
+                if toright:
+                    arr = arr[:found[0][0]]
+                else:
+                    arr = arr[found[0][-1]+1:]
+            return list(arr.flatten())
+
+    else:
+        def init_operations(self):
+            """ Initialise operations closures. """
+            self.operations = {
+                tk.PSET: lambda x, y: y,
+                tk.PRESET: lambda x, y: y ^ ((1<<self.bitsperpixel)-1),
+                tk.AND: lambda x, y: x & y,
+                tk.OR: lambda x, y: x | y,
+                tk.XOR: lambda x, y: x ^ y,
+            }
+
+        def put_interval(self, x, y, colours, mask=0xff):
+            """ Write a list of attributes to a scanline interval. """
+            if mask != 0xff:
+                inv_mask = 0xff ^ mask
+                self.buffer[y][x:x+len(colours)] = [(c & mask) |
+                                                (self.buffer[y][x+i] & inv_mask)
+                                                for i,c in enumerate(colours)]
+            return self.buffer[y][x:x+len(colours)]
+
+        def get_interval(self, x, y, length):
+            """ Return *view of* attributes of a scanline interval. """
+            try:
+                return self.buffer[y][x:x+length]
+            except IndexError:
+                return [0] * length
+
+        def fill_rect(self, x0, y0, x1, y1, attr):
+            """ Apply solid attribute to an area. """
+            if (x1 < x0) or (y1 < y0):
+                return
+            try:
+                for y in range(y0, y1+1):
+                    self.buffer[y][x0:x1+1] = [attr] * (x1-x0+1)
+            except IndexError:
+                pass
+
+        def put_rect(self, x0, y0, x1, y1, array, operation_token):
+            """ Apply 2d list [y][x] of attributes to an area. """
+            if (x1 < x0) or (y1 < y0):
+                return
+            try:
+                for y in range(y0, y1+1):
+                    self.buffer[y][x0:x1+1] = [
+                        [self.operations[operation_token](a, b)
+                        for a, b in zip(self.buffer[y][x0:x1+1], array)]]
+                return [self.buffer[y][x0:x1+1] for y in range(y0, y1+1)]
+            except IndexError:
+                return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
+
+        def get_rect(self, x0, y0, x1, y1):
+            """ Get *copy of* 2d list [y][x] of target area. """
+            try:
+                return [self.buffer[y][x0:x1+1] for y in range(y0, y1+1)]
+            except IndexError:
+                return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
+
+        def move_rect(self, sx0, sy0, sx1, sy1, tx0, ty0):
+            """ Move pixels from an area to another, replacing with attribute 0. """
+            for y in range(0, sy1-sy0+1):
+                row = self.buffer[sy0+y][sx0:sx1+1]
+                self.buffer[sy0+y][sx0:sx1+1] = [0] * (sx1-sx0+1)
+                self.buffer[ty0+y][tx0:tx0+(sx1-sx0+1)] = row
+
+        def get_until(self, x0, x1, y, c):
+            """ Get the attribute values of a scanline interval [x0, x1-1]. """
+            if x0 == x1:
+                return []
+            toright = x1 > x0
+            if not toright:
+                x0, x1 = x1+1, x0+1
+            try:
+                index = self.buffer[y][x0:x1].index(c)
+            except ValueError:
+                index = x1-x0
+            return self.buffer[y][x0:x0+index]
+
 ###############################################################################
 # screen operations
+
+# create the window icon
+icon = typeface.build_glyph('icon', {'icon':
+    '\x00\x00\x7C\xE0\xC6\x60\xC6\x66\xC6\x6C\xC6\x78\xC6\x6C\x7C\xE6' +
+    '\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00'}, 16, 16)
 
 def prepare_video():
     """ Prepare the video subsystem. """
     global egacursor
     global video_capabilities, composite_monitor, mono_monitor
-    global font_8, heights_needed
+    global fonts, initial_mode
     video_capabilities = config.get('video')
     # do all text modes with >8 pixels have an ega-cursor?
     egacursor = video_capabilities in (
@@ -811,22 +1135,18 @@ def prepare_video():
     mono_monitor = config.get('monitor') == 'mono'
     if video_capabilities == 'ega' and mono_monitor:
         video_capabilities = 'ega_mono'
-    # prepare video mode list
-    # only allow the screen modes that the given machine supports
-    # PCjr starts in 40-column mode
-    # video memory size - default is EGA 256K
+    # set initial video mode
     state.console_state.screen = Screen(config.get('text-width'),
                                         config.get('video-memory'))
-
-    heights_needed = set()
+    initial_mode = state.console_state.screen.mode
+    heights_needed = set([8])
     for mode in state.console_state.screen.text_data.values():
         heights_needed.add(mode.font_height)
     for mode in state.console_state.screen.mode_data.values():
         heights_needed.add(mode.font_height)
-    # load the 8-pixel font that's available in RAM.
-    font_8 = typeface.load(config.get('font'), 8,
-                           unicodepage.cp_to_unicodepoint)
-
+    # load the graphics fonts, including the 8-pixel RAM font
+    fonts = typeface.load_fonts(config.get('font'), heights_needed)
+    fonts[9] = fonts[8]
 
 def init_video(video_module):
     """ Initialise the video backend. """
@@ -843,13 +1163,14 @@ def init_video(video_module):
     else:
         clipboard_handler = clipboard.Clipboard()
     if state.loaded:
-        # reload the screen in resumed state
+        # reload the screen in (d state
         return state.console_state.screen.resume()
     else:
         # initialise a fresh textmode screen
         info = state.console_state.screen.mode
         state.console_state.screen.set_mode(info, 0, 1, 0, 0)
         return True
+
 
 class Screen(object):
     """ Screen manipulation operations. """
@@ -872,8 +1193,6 @@ class Screen(object):
         self.mode = self.text_data[initial_width]
         # cursor
         self.cursor = Cursor(self)
-        # storage space for backend display strings
-        self.display_storage = None
 
     def prepare_modes(self):
         """ Build lists of allowed graphics modes. """
@@ -882,16 +1201,7 @@ class Screen(object):
 
     def close(self):
         """ Close the display. """
-        self.save_state()
         video.close()
-
-    def save_state(self):
-        """ Save display for possible resume. """
-        self.display_storage = video.save_state()
-
-    def clear_saved_state(self):
-        """ Clear storage space for saved display state. """
-        self.display_storage = None
 
     def resume(self):
         """ Load a video mode from storage and initialise. """
@@ -917,39 +1227,44 @@ class Screen(object):
             self.cursor.to_line = (self.cursor.to_line *
                                      mode_info.font_height) // cmode.font_height
             self.palette = Palette(self.mode)
-        # set the screen mde
-        if video.init_screen_mode(mode_info):
-            # set the visible and active pages
-            video.set_page(self.vpagenum, self.apagenum)
-            # rebuild palette
-            self.palette.set_all(self.palette.palette, check_mode=False)
-            video.set_attr(self.attr)
-            # fix the cursor
-            video.build_cursor(self.cursor.width, mode_info.font_height,
-                               self.cursor.from_line, self.cursor.to_line)
-            video.move_cursor(state.console_state.row, state.console_state.col)
-            video.update_cursor_attr(
+        # set the screen mode
+        video_queue.put(Event(VIDEO_SET_MODE, mode_info))
+        if mode_info.is_text_mode:
+            # send glyphs to backend; copy is necessary
+            # as dict may change here while the other thread is working on it
+            video_queue.put(Event(VIDEO_BUILD_GLYPHS,
+                    dict((k,v) for k,v in self.glyphs.iteritems())))
+        # set the visible and active pages
+        video_queue.put(Event(VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
+        # rebuild palette
+        self.palette.set_all(self.palette.palette, check_mode=False)
+        # fix the cursor
+        video_queue.put(Event(VIDEO_SET_CURSOR_SHAPE,
+                (self.cursor.width, mode_info.font_height,
+                 self.cursor.from_line, self.cursor.to_line)))
+        video_queue.put(Event(VIDEO_MOVE_CURSOR,
+                (state.console_state.row, state.console_state.col)))
+        if self.mode.is_text_mode:
+            fore, _, _, _ = self.split_attr(
                 self.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
-            self.cursor.reset_visibility()
-            video.set_border(self.border_attr)
         else:
-            # fix the terminal
-            video.close()
-            # mode not supported by backend
-            logging.warning(
-                "Resumed screen mode %d not supported by this interface.", nmode)
-            return False
-        if (cmode.is_text_mode and cmode.name != mode_info.name):
-            # text mode in different resolution; redraw.
-            self.mode = mode_info
-            self.redraw_text_screen()
-        else:
-            # load the screen contents from storage
-            if not video.load_state(self.display_storage):
-                # couldn't restore graphics - redraw the text screen
-                self.redraw_text_screen()
-        # throw away the display strings after use
-        self.display_storage = None
+            fore, _, _, _ = self.split_attr(self.mode.cursor_index or self.attr)
+        video_queue.put(Event(VIDEO_SET_CURSOR_ATTR, fore))
+        self.cursor.reset_visibility()
+        fore, _, _, _ = self.split_attr(self.border_attr)
+        video_queue.put(Event(VIDEO_SET_BORDER_ATTR, fore))
+        # redraw the text screen and rebuild text buffers in video plugin
+        self.mode = mode_info
+        for pagenum in range(self.mode.num_pages):
+            for crow in range(self.mode.height):
+                # for_keys=True means 'suppress echo on cli'
+                self.refresh_range(pagenum, crow+1, 1, self.mode.width,
+                                   for_keys=True, text_only=True)
+            # redraw graphics
+            if not self.mode.is_text_mode:
+                video_queue.put(Event(VIDEO_PUT_RECT, (pagenum, 0, 0,
+                                self.mode.pixel_width-1, self.mode.pixel_height-1,
+                                self.pixels.pages[pagenum].buffer)))
         return True
 
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum,
@@ -1040,11 +1355,27 @@ class Screen(object):
         # signal the backend to change the screen resolution
         if (not mode_info or
                 new_apagenum >= mode_info.num_pages or
-                new_vpagenum >= mode_info.num_pages or
-                not video.init_screen_mode(mode_info)):
+                new_vpagenum >= mode_info.num_pages):
             # reset palette happens even if the SCREEN call fails
             self.palette = Palette(self.mode)
             raise error.RunError(error.IFC)
+        # preload SBCS glyphs
+        try:
+            self.glyphs = { chr(c): typeface.build_glyph(chr(c),
+                                        fonts[mode_info.font_height],
+                                        mode_info.font_width, mode_info.font_height)
+                            for c in range(256) }
+        except (KeyError, AttributeError):
+            logging.warning(
+                'No %d-pixel font available. Could not enter video mode %s.',
+                mode_info.font_height, mode_info.name)
+            raise error.RunError(error.IFC)
+        video_queue.put(Event(VIDEO_SET_MODE, mode_info))
+        if mode_info.is_text_mode:
+            # send glyphs to backend; copy is necessary
+            # as dict may change here while the other thread is working on it
+            video_queue.put(Event(VIDEO_BUILD_GLYPHS,
+                    dict((k,v) for k,v in self.glyphs.iteritems())))
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
                 self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
@@ -1061,7 +1392,11 @@ class Screen(object):
         self.mode = mode_info
         # build the screen buffer
         self.text = TextBuffer(self.attr, self.mode.width,
-                               self.mode.height, self.mode.num_pages)
+                               self.mode.height, self.mode.num_pages,
+                               do_dbcs=(self.mode.font_height >= 14))
+        if not self.mode.is_text_mode:
+            self.pixels = PixelBuffer(self.mode.pixel_width, self.mode.pixel_height,
+                                    self.mode.num_pages, self.mode.bitsperpixel)
         # ensure current position is not outside new boundaries
         state.console_state.row, state.console_state.col = 1, 1
         # set active page & visible page, counting from 0.
@@ -1072,7 +1407,9 @@ class Screen(object):
         self.cursor.init_mode(self.mode)
         self.palette = Palette(self.mode)
         # set the attribute
-        video.set_attr(self.attr)
+        if not self.mode.is_text_mode:
+            fore, _, _, _ = self.split_attr(self.mode.cursor_index or self.attr)
+            video_queue.put(Event(VIDEO_SET_CURSOR_ATTR, fore))
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
         if self.mode.is_text_mode:
             self.set_colorburst(new_colorswitch)
@@ -1136,8 +1473,8 @@ class Screen(object):
             modes.colours16[:] = modes.colours16_mono
         # reset the palette to reflect the new mono or mode-5 situation
         self.palette = Palette(self.mode)
-        video.set_colorburst(on and colorburst_capable,
-                            self.palette.rgb_palette, self.palette.rgb_palette1)
+        video_queue.put(Event(VIDEO_SET_COLORBURST, (on and colorburst_capable,
+                            self.palette.rgb_palette, self.palette.rgb_palette1)))
 
     def set_cga4_palette(self, num):
         """ set the default 4-colour CGA palette. """
@@ -1177,21 +1514,25 @@ class Screen(object):
         self.apagenum = new_apagenum
         self.vpage = self.text.pages[new_vpagenum]
         self.apage = self.text.pages[new_apagenum]
-        video.set_page(new_vpagenum, new_apagenum)
+        video_queue.put(Event(VIDEO_SET_PAGE, (new_vpagenum, new_apagenum)))
 
     def set_attr(self, attr):
         """ Set the default attribute. """
         self.attr = attr
+        if not self.mode.is_text_mode and self.mode.cursor_index is None:
+            fore, _, _, _ = self.split_attr(attr)
+            video_queue.put(Event(VIDEO_SET_CURSOR_ATTR, fore))
 
     def set_border(self, attr):
         """ Set the border attribute. """
         self.border_attr = attr
-        video.set_border(attr)
+        fore, _, _, _ = self.split_attr(attr)
+        video_queue.put(Event(VIDEO_SET_BORDER_ATTR, fore))
 
     def copy_page(self, src, dst):
         """ Copy source to destination page. """
         self.text.copy_page(src, dst)
-        video.copy_page(src, dst)
+        video_queue.put(Event(VIDEO_COPY_PAGE, (src, dst)))
 
     def get_char_attr(self, pagenum, crow, ccol, want_attr):
         """ Retrieve a byte from the screen. """
@@ -1232,7 +1573,7 @@ class Screen(object):
         full += unicodepage.UTF8Converter().to_utf8(clip)
         return full
 
-    def refresh_range(self, pagenum, crow, start, stop, for_keys=False):
+    def refresh_range(self, pagenum, crow, start, stop, for_keys=False, text_only=False):
         """ Redraw a section of a screen row, assuming DBCS buffer has been set. """
         therow = self.text.pages[pagenum].row[crow-1]
         ccol = start
@@ -1241,18 +1582,30 @@ class Screen(object):
             if double == 1:
                 ca = therow.buf[ccol-1]
                 da = therow.buf[ccol]
-                video.set_attr(da[1])
-                video.putwc_at(pagenum, crow, ccol, ca[0], da[0], for_keys)
+                r, c, char, attr = crow, ccol, ca[0]+da[0], da[1]
                 therow.double[ccol-1] = 1
                 therow.double[ccol] = 2
                 ccol += 2
             else:
                 if double != 0:
-                    logging.debug('DBCS buffer corrupted at %d, %d (%d)', crow, ccol, double)
+                    logging.debug('DBCS buffer corrupted at %d, %d (%d)',
+                                  crow, ccol, double)
                 ca = therow.buf[ccol-1]
-                video.set_attr(ca[1])
-                video.putc_at(pagenum, crow, ccol, ca[0], for_keys)
+                r, c, char, attr = crow, ccol, ca[0], ca[1]
                 ccol += 1
+            fore, back, blink, underline = self.split_attr(attr)
+            # ensure glyph is stored
+            mask = self.get_glyph(char)
+            video_queue.put(Event(VIDEO_PUT_GLYPH, (pagenum, r, c, char,
+                                 fore, back, blink, underline, for_keys)))
+            if not self.mode.is_text_mode and not text_only:
+                # update pixel buffer
+                x0, y0, x1, y1, sprite = self.glyph_to_rect(
+                                                r, c, mask, fore, back)
+                self.pixels.pages[self.apagenum].put_rect(
+                                                x0, y0, x1, y1, sprite, tk.PSET)
+                video_queue.put(Event(VIDEO_PUT_RECT,
+                                        (self.apagenum, x0, y0, x1, y1, sprite)))
 
     # should be in console? uses wrap
     def redraw_row(self, start, crow, wrap=True):
@@ -1271,24 +1624,6 @@ class Screen(object):
             else:
                 break
 
-    def redraw_text_screen(self):
-        """ Redraw the active screen page, reconstructing DBCS buffers. """
-        # force cursor invisible during redraw
-        self.cursor.show(False)
-        # this makes it feel faster
-        video.clear_rows(self.attr, 1, self.mode.height)
-        # redraw every character
-        for crow in range(self.mode.height):
-            therow = self.apage.row[crow]
-            for i in range(self.mode.width):
-                # set for_keys to avoid echoing to CLI
-                # set force to force actual redrawing of non-updated chars
-                self.put_char_attr(self.apagenum, crow+1, i+1,
-                             therow.buf[i][0], therow.buf[i][1],
-                             for_keys=True, force=True)
-        # set cursor back to previous state
-        self.cursor.reset_visibility()
-
     #D -> state.io_state.lpt1_file.write(get_text(...))
     def print_screen(self):
         """ Output the visible page to LPT1. """
@@ -1305,9 +1640,13 @@ class Screen(object):
         cx, cy = x // fx, y // fy
         if cx >= 0 and cy >= 0 and cx <= cxmax and cy <= cymax:
             self.apage.row[cy].buf[cx] = (' ', self.attr)
+        fore, back, blink, underline = self.split_attr(self.attr)
+        video_queue.put(Event(VIDEO_PUT_GLYPH, (self.apagenum, cy+1, cx+1, ' ',
+                             fore, back, blink, underline, True)))
 
+    #MOVE to TextBuffer? replace with graphics_to_text_loc v.v.?
     def clear_text_area(self, x0, y0, x1, y1):
-        """ Remove all characters from a rectangle of the graphics screen. """
+        """ Remove all characters from the textbuffer on a rectangle of the graphics screen. """
         fx, fy = self.mode.font_width, self.mode.font_height
         cymax, cxmax = self.mode.height-1, self.mode.width-1
         cx0 = min(cxmax, max(0, x0 // fx))
@@ -1318,64 +1657,236 @@ class Screen(object):
             self.apage.row[r].buf[cx0:cx1+1] = [
                 (' ', self.attr)] * (cx1 - cx0 + 1)
 
+    def text_to_pixel_area(self, row0, col0, row1, col1):
+        """ Convert area from text buffer to area for pixel buffer. """
+        # area bounds are all inclusive
+        return ((col0-1)*self.mode.font_width, (row0-1)*self.mode.font_height,
+                (col1-col0+1)*self.mode.font_width-1, (row1-row0+1)*self.mode.font_height-1)
+
+    def clear_rows(self, start, stop):
+        """ Clear text and graphics on given (inclusive) text row range. """
+        for r in self.apage.row[start-1:stop]:
+            r.clear(self.attr)
+        if not self.mode.is_text_mode:
+            x0, y0, x1, y1 = self.text_to_pixel_area(
+                            start, 1, stop, self.mode.width)
+            # background attribute must be 0 in graphics mode
+            self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, 0)
+        _, back, _, _ = self.split_attr(self.attr)
+        video_queue.put(Event(VIDEO_CLEAR_ROWS, (back, start, stop)))
+
+    #MOVE to Cursor.move ?
+    def move_cursor(self, row, col):
+        """ Move the cursor to a new position. """
+        state.console_state.row, state.console_state.col = row, col
+        video_queue.put(Event(VIDEO_MOVE_CURSOR, (row, col)))
+        self.cursor.reset_attr()
+
     def rebuild_glyph(self, ordval):
-        """ Signal the backend to rebuild a character after POKE. """
-        video.rebuild_glyph(ordval)
+        """ Rebuild a text-mode character after POKE. """
+        if self.mode.is_text_mode:
+            # force rebuilding the character by deleting and requesting
+            del self.glyphs[chr(ordval)]
+            self.get_glyph(chr(ordval))
+
+    ## text viewport / scroll area
+
+    def set_view(self, start, stop):
+        """ Set the scroll area. """
+        state.console_state.view_set = True
+        state.console_state.view_start = start
+        state.console_state.scroll_height = stop
+        #set_pos(start, 1)
+        state.console_state.overflow = False
+        self.move_cursor(start, 1)
+
+    def unset_view(self):
+        """ Unset scroll area. """
+        self.set_view(1, 24)
+        state.console_state.view_set = False
+
+    def clear_view(self):
+        """ Clear the scroll area. """
+        if video_capabilities in ('vga', 'ega', 'cga', 'cga_old'):
+            # keep background, set foreground to 7
+            attr_save = self.attr
+            self.set_attr(attr_save & 0x70 | 0x7)
+        state.console_state.row = state.console_state.view_start
+        state.console_state.col = 1
+        if state.console_state.bottom_row_allowed:
+            last_row = self.mode.height
+        else:
+            last_row = state.console_state.scroll_height
+        for r in self.apage.row[state.console_state.view_start-1:
+                        state.console_state.scroll_height]:
+            # we're clearing the rows below, but don't set the wrap there
+            r.wrap = False
+        self.clear_rows(state.console_state.view_start, last_row)
+        # ensure the cursor is show in the right position
+        self.move_cursor(state.console_state.row, state.console_state.col)
+        if video_capabilities in ('vga', 'ega', 'cga', 'cga_old'):
+            # restore attr
+            self.set_attr(attr_save)
+
+    def scroll(self, from_line=None):
+        """ Scroll the scroll region up by one line, starting at from_line. """
+        if from_line is None:
+            from_line = state.console_state.view_start
+        _, back, _, _ = self.split_attr(self.attr)
+        video_queue.put(Event(VIDEO_SCROLL_UP,
+                    (from_line, state.console_state.scroll_height, back)))
+        # sync buffers with the new screen reality:
+        if state.console_state.row > from_line:
+            state.console_state.row -= 1
+        self.apage.row.insert(state.console_state.scroll_height,
+                              TextRow(self.attr, self.mode.width))
+        if not self.mode.is_text_mode:
+            sx0, sy0, sx1, sy1 = self.text_to_pixel_area(from_line+1, 1,
+                state.console_state.scroll_height, self.mode.width)
+            tx0, ty0, _, _ = self.text_to_pixel_area(from_line, 1,
+                state.console_state.scroll_height-1, self.mode.width)
+            self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
+        del self.apage.row[from_line-1]
+
+    def scroll_down(self,from_line):
+        """ Scroll the scroll region down by one line, starting at from_line. """
+        _, back, _, _ = self.split_attr(self.attr)
+        video_queue.put(Event(VIDEO_SCROLL_DOWN,
+                    (from_line, state.console_state.scroll_height, back)))
+        if state.console_state.row >= from_line:
+            state.console_state.row += 1
+        # sync buffers with the new screen reality:
+        self.apage.row.insert(from_line - 1, TextRow(self.attr, self.mode.width))
+        if not self.mode.is_text_mode:
+            sx0, sy0, sx1, sy1 = self.text_to_pixel_area(from_line, 1,
+                state.console_state.scroll_height-1, self.mode.width)
+            tx0, ty0, _, _ = self.text_to_pixel_area(from_line+1, 1,
+                state.console_state.scroll_height, self.mode.width)
+            self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
+        del self.apage.row[state.console_state.scroll_height-1]
 
     ## graphics primitives
-
-    def start_graph(self):
-        """ Apply the graphics clip area before performing graphics ops. """
-        video.apply_graph_clip(*self.drawing.get_view())
-
-    def finish_graph(self):
-        """ Remove the graphics clip area after performing graphics ops. """
-        video.remove_graph_clip()
 
     def put_pixel(self, x, y, index, pagenum=None):
         """ Put a pixel on the screen; empty character buffer. """
         if pagenum is None:
             pagenum = self.apagenum
-        video.put_pixel(x, y, index, pagenum)
-        self.clear_text_at(x, y)
+        if self.drawing.view_contains(x, y):
+            self.pixels.pages[pagenum].put_pixel(x, y, index)
+            video_queue.put(Event(VIDEO_PUT_PIXEL, (pagenum, x, y, index)))
+            self.clear_text_at(x, y)
 
     def get_pixel(self, x, y, pagenum=None):
         """ Return the attribute a pixel on the screen. """
         if pagenum is None:
             pagenum = self.apagenum
-        return video.get_pixel(x, y, pagenum)
+        return self.pixels.pages[pagenum].get_pixel(x, y)
 
     def get_interval(self, pagenum, x, y, length):
         """ Read a scanline interval into a list of attributes. """
-        return video.get_interval(pagenum, x, y, length)
+        return self.pixels.pages[pagenum].get_interval(x, y, length)
 
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """ Write a list of attributes to a scanline interval. """
-        video.put_interval(pagenum, x, y, colours, mask)
+        x, y, colours = self.drawing.view_clip_list(x, y, colours)
+        newcolours = self.pixels.pages[pagenum].put_interval(x, y, colours, mask)
+        video_queue.put(Event(VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours)))
         self.clear_text_area(x, y, x+len(colours), y)
 
     def fill_interval(self, x0, x1, y, index):
         """ Fill a scanline interval in a solid attribute. """
-        video.fill_interval(x0, x1, y, index)
+        x0, x1, y = self.drawing.view_clip_interval(x0, x1, y)
+        self.pixels.pages[self.apagenum].fill_interval(x0, x1, y, index)
+        video_queue.put(Event(VIDEO_FILL_INTERVAL,
+                        (self.apagenum, x0, x1, y, index)))
         self.clear_text_area(x0, y, x1, y)
 
     def get_until(self, x0, x1, y, c):
         """ Get the attribute values of a scanline interval. """
-        return video.get_until(x0, x1, y, c)
+        return self.pixels.pages[self.apagenum].get_until(x0, x1, y, c)
 
     def get_rect(self, x0, y0, x1, y1):
         """ Read a screen rect into an [y][x] array of attributes. """
-        return video.get_rect(x0, y0, x1, y1)
+        return self.pixels.pages[self.apagenum].get_rect(x0, y0, x1, y1)
 
     def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
         """ Apply an [y][x] array of attributes onto a screen rect. """
-        video.put_rect(x0, y0, x1, y1, sprite, operation_token)
+        x0, y0, x1, y1, sprite = self.drawing.view_clip_area(x0, y0, x1, y1, sprite)
+        rect = self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1,
+                                                        sprite, operation_token)
+        video_queue.put(Event(VIDEO_PUT_RECT,
+                              (self.apagenum, x0, y0, x1, y1, rect)))
         self.clear_text_area(x0, y0, x1, y1)
 
     def fill_rect(self, x0, y0, x1, y1, index):
         """ Fill a rectangle in a solid attribute. """
-        video.fill_rect(x0, y0, x1, y1, index)
+        x0, y0, x1, y1 = self.drawing.view_clip_rect(x0, y0, x1, y1)
+        self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, index)
+        video_queue.put(Event(VIDEO_FILL_RECT,
+                                (self.apagenum, x0, y0, x1, y1, index)))
         self.clear_text_area(x0, y0, x1, y1)
+
+    # text
+
+    def get_glyph(self, c):
+        """ Return a glyph mask for a given character """
+        try:
+            mask = self.glyphs[c]
+        except KeyError:
+            mask = typeface.build_glyph(c, fonts[self.mode.font_height],
+                                self.mode.font_width*2, self.mode.font_height)
+            self.glyphs[c] = mask
+            if self.mode.is_text_mode:
+                video_queue.put(Event(VIDEO_BUILD_GLYPHS, {c: mask}))
+        return mask
+
+    if numpy:
+        def glyph_to_rect(self, row, col, mask, fore, back):
+            """ Return a sprite for a given character """
+            # set background
+            glyph = numpy.full(mask.shape, back)
+            # stamp foreground mask
+            glyph[mask] = fore
+            x0, y0 = (col-1) * self.mode.font_width, (row-1) * self.mode.font_height
+            x1, y1 = x0 + mask.shape[1] - 1, y0 + mask.shape[0] - 1
+            return x0, y0, x1, y1, glyph
+    else:
+        def glyph_to_rect(self, row, col, mask, fore, back):
+            """ Return a sprite for a given character """
+            glyph = [[(fore if bit else back) for bit in row] for row in mask]
+            x0, y0 = (col-1) * self.mode.font_width, (row-1) * self.mode.font_height
+            x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
+            return x0, y0, x1, y1, glyph
+
+
+    #MOVE to modes classes in modes.py
+    def split_attr(self, attr):
+        """ Split attribute byte into constituent parts. """
+        if self.mode.has_underline:
+            # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
+            # see also http://support.microsoft.com/KB/35148
+            # don't try to change this with PALETTE, it won't work correctly
+            underline = (attr % 8) == 1
+            blink = (attr & 0x80) != 0
+            # background is almost always black
+            back = 0
+            # intensity set by bit 3
+            fore = 1 if not (attr & 0x8) else 2
+            # exceptions
+            if attr in (0x00, 0x08, 0x80, 0x88):
+                fore, back = 0, 0
+            elif attr in (0x70, 0xf0):
+                fore, back = 0, 1
+            elif attr in (0x78, 0xf8):
+                fore, back = 3, 1
+        else:
+            # 7  6 5 4  3 2 1 0
+            # Bl b b b  f f f f
+            back = (attr >> 4) & 7
+            blink = (attr >> 7) == 1
+            fore = attr & 0xf
+            underline = False
+        return fore, back, blink, underline
 
 
 ###############################################################################
@@ -1397,7 +1908,7 @@ class Palette(object):
         self.rgb_palette[index] = mode.colours[colour]
         if mode.colours1:
             self.rgb_palette1[index] = mode.colours1[colour]
-        video.update_palette(self.rgb_palette, self.rgb_palette1)
+        video_queue.put(Event(VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
 
     def get_entry(self, index):
         """ Retrieve the colour for a given attribute. """
@@ -1414,7 +1925,7 @@ class Palette(object):
             self.rgb_palette1 = [mode.colours1[i] for i in self.palette]
         else:
             self.rgb_palette1 = None
-        video.update_palette(self.rgb_palette, self.rgb_palette1)
+        video_queue.put(Event(VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
 
     def mode_allows_palette(self, mode):
         """ Check if the video mode allows palette change. """
@@ -1454,13 +1965,15 @@ class Cursor(object):
 
     def reset_attr(self):
         """ Set the text cursor attribute to that of the current location. """
-        video.update_cursor_attr(self.screen.apage.row[
-                state.console_state.row-1].buf[
-                state.console_state.col-1][1] & 0xf)
+        if self.screen.mode.is_text_mode:
+            fore, _, _, _ = self.screen.split_attr(self.screen.apage.row[
+                    state.console_state.row-1].buf[
+                    state.console_state.col-1][1] & 0xf)
+            video_queue.put(Event(VIDEO_SET_CURSOR_ATTR, fore))
 
     def show(self, do_show):
         """ Force cursor to be visible/invisible. """
-        video.show_cursor(do_show)
+        video_queue.put(Event(VIDEO_SHOW_CURSOR, do_show))
 
     def set_visibility(self, visible_run):
         """ Set default cursor visibility. """
@@ -1474,7 +1987,7 @@ class Cursor(object):
         # in graphics mode, we can't force the cursor to be visible on execute.
         if self.screen.mode.is_text_mode:
             visible = visible or self.visible_run
-        video.show_cursor(visible)
+        video_queue.put(Event(VIDEO_SHOW_CURSOR, visible))
 
     def set_shape(self, from_line, to_line):
         """ Set the cursor shape. """
@@ -1510,7 +2023,8 @@ class Cursor(object):
                                 to_line -= 1
         self.from_line = max(0, min(from_line, fy-1))
         self.to_line = max(0, min(to_line, fy-1))
-        video.build_cursor(self.width, fy, self.from_line, self.to_line)
+        video_queue.put(Event(VIDEO_SET_CURSOR_SHAPE,
+                            (self.width, fy, self.from_line, self.to_line)))
         self.reset_attr()
 
     def set_default_shape(self, overwrite_shape):
@@ -1538,8 +2052,8 @@ class Cursor(object):
         # update cursor shape to new width if necessary
         if new_width != self.width:
             self.width = new_width
-            video.build_cursor(self.width, self.height,
-                               self.from_line, self.to_line)
+            video_queue.put(Event(VIDEO_SET_CURSOR_SHAPE,
+                    (self.width, self.height, self.from_line, self.to_line)))
             self.reset_attr()
 
 
@@ -1607,19 +2121,6 @@ class Pen(object):
 
 state.console_state.pen = Pen()
 
-#D
-def pen_down(x, y):
-    """ Report a pen-down event at graphical x,y """
-    state.console_state.pen.down(x, y)
-#D
-def pen_up():
-    """ Report a pen-up event at graphical x,y """
-    state.console_state.pen.up()
-#D
-def pen_moved(x, y):
-    """ Report a pen-move event at graphical x,y """
-    state.console_state.pen.moved(x, y)
-
 
 ###############################################################################
 # joysticks
@@ -1642,64 +2143,58 @@ class Stick(object):
 
     def down(self, joy, button):
         """ Report a joystick button down event. """
-        self.was_fired[joy][button] = True
-        stick_is_firing[joy][button] = True
-        # trigger STRIG event
-        state.basic_state.events.strig[joy*2 + button].trigger()
+        try:
+            self.was_fired[joy][button] = True
+            stick_is_firing[joy][button] = True
+            # trigger STRIG event
+            state.basic_state.events.strig[joy*2 + button].trigger()
+        except IndexError:
+            # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+            pass
 
     def up(self, joy, button):
         """ Report a joystick button up event. """
-        stick_is_firing[joy][button] = False
+        try:
+            stick_is_firing[joy][button] = False
+        except IndexError:
+            # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+            pass
 
     def moved(self, joy, axis, value):
         """ Report a joystick axis move. """
-        stick_axis[joy][axis] = value
+        try:
+            stick_axis[joy][axis] = value
+        except IndexError:
+            # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+            pass
 
     def poll(self, fn):
         """ Poll the joystick axes. """
         joy, axis = fn // 2, fn % 2
-        return stick_axis[joy][axis]
+        try:
+            return stick_axis[joy][axis]
+        except IndexError:
+            # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+            pass
 
     def poll_trigger(self, fn):
         """ Poll the joystick buttons. """
         joy, trig = fn // 4, (fn//2) % 2
-        if fn % 2 == 0:
-            # has been fired
-            stick_was_trig = self.was_fired[joy][trig]
-            self.was_fired[joy][trig] = False
-            return stick_was_trig
-        else:
-            # is currently firing
-            return stick_is_firing[joy][trig]
+        try:
+            if fn % 2 == 0:
+                # has been fired
+                stick_was_trig = self.was_fired[joy][trig]
+                self.was_fired[joy][trig] = False
+                return stick_was_trig
+            else:
+                # is currently firing
+                return stick_is_firing[joy][trig]
+        except IndexError:
+            # ignore any joysticks/axes beyond the 2x2 supported by BASIC
+            pass
 
 
 state.console_state.stick = Stick()
-
-
-#D
-def stick_down(joy, button):
-    """ Report a joystick button down event. """
-    try:
-        state.console_state.stick.down(joy, button)
-    except IndexError:
-        # ignore any joysticks/axes beyond the 2x2 supported by BASIC
-        pass
-
-#D
-def stick_up(joy, button):
-    """ Report a joystick button up event. """
-    try:
-        state.console_state.stick.up(joy, button)
-    except IndexError:
-        pass
-
-#D
-def stick_moved(joy, axis, value):
-    """ Report a joystick axis move. """
-    try:
-        state.console_state.stick.moved(joy, axis, value)
-    except IndexError:
-        pass
 
 
 ###############################################################################

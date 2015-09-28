@@ -11,6 +11,8 @@ import os
 import time
 import locale
 import logging
+import threading
+import Queue
 try:
     import curses
 except ImportError:
@@ -21,9 +23,6 @@ import unicodepage
 import scancode
 import backend
 
-#D!!
-import state
-
 # for a few ansi sequences not supported by curses
 # only use these if you clear the screen afterwards,
 # so you don't see gibberish if the terminal doesn't support the sequence.
@@ -32,6 +31,152 @@ import ansi
 # fallback to ANSI interface if not working
 fallback = 'video_ansi'
 
+###############################################################################
+
+def prepare():
+    """ Initialise the video_curses module. """
+    global caption
+    caption = config.get('caption')
+
+###############################################################################
+
+def init():
+    """ Initialise the text interface. """
+    global screen, default_colors, can_change_palette, window
+    if not curses:
+        # fail silently, we're going to try ANSI
+        return False
+    # find a supported UTF-8 locale, with a preference for C, en-us, default
+    languages = (['C', 'en-US', locale.getdefaultlocale()[0]] +
+                 [a for a in locale.locale_alias.values()
+                    if '.' in a and a.split('.')[1] == 'UTF-8'])
+    for lang in languages:
+        try:
+            locale.setlocale(locale.LC_ALL,(lang, 'utf-8'))
+            break
+        except locale.Error:
+            pass
+    if locale.getlocale()[1] != 'UTF-8':
+        logging.warning('No supported UTF-8 locale found.')
+        return False
+    # set the ESC-key delay to 25 ms unless otherwise set
+    # set_escdelay seems to be unavailable on python curses.
+    if not os.environ.has_key('ESCDELAY'):
+        os.environ['ESCDELAY'] = '25'
+    screen = curses.initscr()
+    curses.noecho()
+    curses.cbreak()
+    curses.nonl()
+    curses.raw()
+    curses.start_color()
+    screen.clear()
+    window = curses.newwin(25, 80, 0, 0)
+    window.nodelay(True)
+    window.keypad(True)
+    window.scrollok(False)
+    can_change_palette = (curses.can_change_color() and curses.COLORS >= 16
+                          and curses.COLOR_PAIRS > 128)
+    sys.stdout.write(ansi.esc_set_title % caption)
+    sys.stdout.flush()
+    if can_change_palette:
+        default_colors = range(16, 32)
+    else:
+        # curses colours mapped onto EGA
+        default_colors = (
+            curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN,
+            curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA,
+            curses.COLOR_YELLOW, curses.COLOR_WHITE,
+            curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN,
+            curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA,
+            curses.COLOR_YELLOW, curses.COLOR_WHITE)
+    # start video thread
+    launch_thread()
+    return True
+
+def close():
+    """ Close the text interface. """
+    # drain signal queue (to allow for persistence) and request exit
+    if backend.video_queue:
+        backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
+        backend.video_queue.join()
+    if thread and thread.is_alive():
+        # signal quit and wait for thread to finish
+        thread.join()
+    if curses:
+        curses.noraw()
+        curses.nl()
+        curses.nocbreak()
+        screen.keypad(False)
+        curses.echo()
+        curses.endwin()
+
+
+###############################################################################
+# implementation
+
+thread = None
+tick_s = 0.024
+
+def launch_thread():
+    """ Launch consumer thread. """
+    global thread
+    thread = threading.Thread(target=consumer_thread)
+    thread.start()
+
+def consumer_thread():
+    """ Video signal queue consumer thread. """
+    while drain_video_queue():
+        if cursor_visible:
+            window.move(cursor_row-1, cursor_col-1)
+        window.refresh()
+        check_keyboard()
+        # do not hog cpu
+        time.sleep(tick_s)
+
+def drain_video_queue():
+    """ Drain signal queue. """
+    alive = True
+    while alive:
+        try:
+            signal = backend.video_queue.get(False)
+        except Queue.Empty:
+            return True
+        if signal.event_type == backend.VIDEO_QUIT:
+            # close thread after task_done
+            alive = False
+        elif signal.event_type == backend.VIDEO_SET_MODE:
+            set_mode(signal.params)
+        elif signal.event_type == backend.VIDEO_SET_PAGE:
+            set_page(*signal.params)
+        elif signal.event_type == backend.VIDEO_COPY_PAGE:
+            copy_page(*signal.params)
+        elif signal.event_type == backend.VIDEO_PUT_GLYPH:
+            put_glyph(*signal.params)
+        elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
+            move_cursor(*signal.params)
+        elif signal.event_type == backend.VIDEO_CLEAR_ROWS:
+            clear_rows(*signal.params)
+        elif signal.event_type == backend.VIDEO_SCROLL_UP:
+            scroll(*signal.params)
+        elif signal.event_type == backend.VIDEO_SCROLL_DOWN:
+            scroll_down(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_PALETTE:
+            update_palette(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_CURSOR_SHAPE:
+            build_cursor(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_CURSOR_ATTR:
+            update_cursor_attr(signal.params)
+        elif signal.event_type == backend.VIDEO_SHOW_CURSOR:
+            show_cursor(signal.params)
+        elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
+            move_cursor(*signal.params)
+        elif signal.event_type == backend.VIDEO_SET_CAPTION:
+            set_caption_message(signal.params)
+        # drop other messages
+        backend.video_queue.task_done()
+
+
+###############################################################################
 
 # cursor is visible
 cursor_visible = True
@@ -65,128 +210,49 @@ if curses:
         curses.KEY_PRINT: scancode.PRINT, curses.KEY_CANCEL: scancode.ESCAPE,
     }
 
-    last_attr = None
-    attr = curses.A_NORMAL
+# last colour used
+last_colour = None
 
-def prepare():
-    """ Initialise the video_curses module. """
-    global caption, wait_on_close
-    caption = config.get('caption')
-    wait_on_close = config.get('wait')
+# text and colour buffer
+num_pages = 1
+vpagenum, apagenum = 0, 0
+text = [[[(' ', 0)]*80 for _ in range(25)]]
 
-def init():
-    """ Initialise the text interface. """
-    global screen, default_colors, can_change_palette
-    if not curses:
-        # fail silently, we're going to try ANSI
-        return False
-    # find a supported UTF-8 locale, with a preference for C, en-us, default
-    languages = (['C', 'en-US', locale.getdefaultlocale()[0]] +
-                 [a for a in locale.locale_alias.values()
-                    if '.' in a and a.split('.')[1] == 'UTF-8'])
-    for lang in languages:
-        try:
-            locale.setlocale(locale.LC_ALL,(lang, 'utf-8'))
-            break
-        except locale.Error:
-            pass
-    if locale.getlocale()[1] != 'UTF-8':
-        logging.warning('No supported UTF-8 locale found.')
-        return False
-    # set the ESC-key delay to 25 ms unless otherwise set
-    # set_escdelay seems to be unavailable on python curses.
-    if not os.environ.has_key('ESCDELAY'):
-        os.environ['ESCDELAY'] = '25'
-    screen = curses.initscr()
-    curses.noecho()
-    curses.cbreak()
-    curses.nonl()
-    curses.raw()
-    curses.start_color()
-    screen.clear()
-    # init_screen_mode()
-    can_change_palette = (curses.can_change_color() and curses.COLORS >= 16
-                          and curses.COLOR_PAIRS > 128)
-    sys.stdout.write(ansi.esc_set_title % caption)
-    sys.stdout.flush()
-    if can_change_palette:
-        default_colors = range(16, 32)
-    else:
-        # curses colours mapped onto EGA
-        default_colors = (
-            curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN,
-            curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA,
-            curses.COLOR_YELLOW, curses.COLOR_WHITE,
-            curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN,
-            curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA,
-            curses.COLOR_YELLOW, curses.COLOR_WHITE)
-    return True
 
-def init_screen_mode(mode_info=None):
+def set_mode(mode_info):
     """ Change screen mode. """
-    global window, height, width
-    # we don't support graphics
-    if not mode_info.is_text_mode:
-        return False
-    height = 25
+    global window, height, width, text, num_pages
+    height = mode_info.height
     width = mode_info.width
-    if window:
-        window.clear()
-        window.refresh()
-    else:
-        window = curses.newwin(height, width, 0, 0)
+    num_pages = mode_info.num_pages
+    text = [[[(' ', 0)]*width for _ in range(height)] for _ in range(num_pages)]
+    window.clear()
+    window.refresh()
     window.move(0, 0)
     sys.stdout.write(ansi.esc_resize_term % (height, width))
     sys.stdout.flush()
     #curses.resizeterm(height, width)
     window.resize(height, width)
-    window.nodelay(True)
-    window.keypad(True)
-    window.scrollok(False)
     set_curses_palette()
-    return True
 
-def close():
-    """ Close the text interface. """
-    if wait_on_close:
-        sys.stdout.write(ansi.esc_set_title % (caption +
-                                              ' - press a key to close window'))
-        sys.stdout.flush()
-        # redraw in case terminal didn't recognise ansi sequence
-        redraw()
-        while window.getch() == -1:
-            pass
-    if curses:
-        curses.noraw()
-        curses.nl()
-        curses.nocbreak()
-        screen.keypad(False)
-        curses.echo()
-        curses.endwin()
-
-def check_events():
-    """ Handle screen and interface events. """
-    if cursor_visible:
-        window.move(cursor_row-1, cursor_col-1)
-    window.refresh()
-    check_keyboard()
-
-def idle():
-    """ Video idle process. """
-    time.sleep(0.024)
-
-def load_state(display_str):
-    """ Restore display state from file. """
-    # console has already been loaded; just redraw
+def set_page(new_vpagenum, new_apagenum):
+    """ Set visible and active page. """
+    global vpagenum, apagenum
+    vpagenum, apagenum = new_vpagenum, new_apagenum
     redraw()
 
-def save_state():
-    """ Save display state to file (no-op). """
-    return None
+def copy_page(src, dst):
+    """ Copy screen pages. """
+    text[dst] = [row[:] for row in text[src]]
+    if dst == vpagenum:
+        redraw()
 
-def clear_rows(cattr, start, stop):
+def clear_rows(back_attr, start, stop):
     """ Clear screen rows. """
-    window.bkgdset(' ', colours(cattr))
+    text[apagenum][start-1:stop] = [[(' ', 0)]*len(text[apagenum][0]) for _ in range(start-1, stop)]
+    if apagenum != vpagenum:
+        return
+    window.bkgdset(' ', curses_colour(7, back_attr, False))
     for r in range(start, stop+1):
         try:
             window.move(r-1, 0)
@@ -225,36 +291,34 @@ def build_cursor(width, height, from_line, to_line):
         cursor_shape = 1
     curses.curs_set(cursor_shape if cursor_visible else 0)
 
-def set_attr(cattr):
-    """ Set the current attribute. """
-    global attr, last_attr
-    attr = cattr
-    if attr == last_attr:
-        return
-    last_attr = attr
-    window.bkgdset(' ', colours(attr))
-
-def putc_at(pagenum, row, col, c, for_keys=False):
-    """ Put a single-byte character at a given position. """
+def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
+    """ Put a character at a given position. """
+    global last_colour
     if c == '\0':
         c = ' '
     try:
-        window.addstr(row-1, col-1, unicodepage.UTF8Converter().to_utf8(c), colours(attr))
-    except curses.error:
-        pass
-
-def putwc_at(pagenum, row, col, c, d, for_keys=False):
-    """ Put a double-byte character at a given position. """
-    try:
+        char = unicodepage.UTF8Converter().to_utf8(c)
+    except KeyError:
+        char = ' '*len(c)
+    colour = curses_colour(fore, back, blink)
+    text[pagenum][row-1][col-1] = char, colour
+    if len(c) > 1:
+        text[pagenum][row-1][col] = '', colour
+    if pagenum == vpagenum:
+        if colour != last_colour:
+            last_colour = colour
+            window.bkgdset(' ', colour)
         try:
-            window.addstr(row-1, col-1, unicodepage.UTF8Converter().to_utf8(c+d), colours(attr))
-        except KeyError:
-            window.addstr(row-1, col-1, '  ', attr)
-    except curses.error:
-        pass
+            window.addstr(row-1, col-1, char, colour)
+        except curses.error:
+            pass
 
-def scroll(from_line, scroll_height, attr):
+
+def scroll(from_line, scroll_height, back_attr):
     """ Scroll the screen up between from_line and scroll_height. """
+    text[apagenum][from_line-1:scroll_height] = text[apagenum][from_line:scroll_height] + [[(' ', 0)]*len(text[apagenum][0])]
+    if apagenum != vpagenum:
+        return
     window.scrollok(True)
     window.setscrreg(from_line-1, scroll_height-1)
     try:
@@ -263,12 +327,15 @@ def scroll(from_line, scroll_height, attr):
         pass
     window.scrollok(False)
     window.setscrreg(1, height-1)
-    clear_rows(attr, scroll_height, scroll_height)
+    clear_rows(back_attr, scroll_height, scroll_height)
     if cursor_row > 1:
         window.move(cursor_row-2, cursor_col-1)
 
-def scroll_down(from_line, scroll_height, attr):
+def scroll_down(from_line, scroll_height, back_attr):
     """ Scroll the screen down between from_line and scroll_height. """
+    text[apagenum][from_line-1:scroll_height] = [[(' ', 0)]*len(text[apagenum][0])] + text[apagenum][from_line-1:scroll_height-1]
+    if apagenum != vpagenum:
+        return
     window.scrollok(True)
     window.setscrreg(from_line-1, scroll_height-1)
     try:
@@ -277,40 +344,21 @@ def scroll_down(from_line, scroll_height, attr):
         pass
     window.scrollok(False)
     window.setscrreg(1, height-1)
-    clear_rows(attr, from_line, from_line)
+    clear_rows(back_attr, from_line, from_line)
     if cursor_row < height:
         window.move(cursor_row, cursor_col-1)
 
+def set_caption_message(msg):
+    """ Add a message to the window caption. """
+    if msg:
+        sys.stdout.write(ansi.esc_set_title % (caption + ' - ' + msg))
+    else:
+        sys.stdout.write(ansi.esc_set_title % caption)
+    sys.stdout.flush()
+    # redraw in case terminal didn't recognise ansi sequence
+    redraw()
 
 ###############################################################################
-# The following are no-op responses to requests from backend
-
-def set_page(vpage, apage):
-    """ Set the visible and active page (not implemented). """
-    pass
-
-def copy_page(src, dst):
-    """ Copy source to destination page (not implemented). """
-    pass
-
-def set_border(attr):
-    """ Change the border attribute (not implemented). """
-    pass
-
-def set_colorburst(on, palette, palette1):
-    """ Change the NTSC colorburst setting (no-op). """
-    pass
-
-def rebuild_glyph(ordval):
-    """ Rebuild a glyph after POKE. """
-    pass
-
-###############################################################################
-# IMPLEMENTATION
-
-def redraw():
-    """ Force redrawing of the screen (callback). """
-    state.console_state.screen.redraw_text_screen()
 
 def check_keyboard():
     """ Handle keyboard events. """
@@ -327,12 +375,11 @@ def check_keyboard():
         else:
             if i == curses.KEY_BREAK:
                 # this is fickle, on many terminals doesn't work
-                backend.insert_special_key('break')
+                backend.input_queue.put(backend.Event(backend.KEYB_BREAK))
             elif i == curses.KEY_RESIZE:
                 sys.stdout.write(ansi.esc_resize_term % (height, width))
                 sys.stdout.flush()
                 window.resize(height, width)
-                window.clear()
                 redraw()
             try:
                 # scancode, insert here and now
@@ -342,7 +389,9 @@ def check_keyboard():
                 # utf-8 sequence or a pasted utf-8 string, neither of which
                 # can contain special characters.
                 # however, if that does occur, this won't work correctly.
-                backend.key_down(curses_to_scan[i], '', check_full=False)
+                #check_full=False?
+                backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
+                                                    (curses_to_scan[i], '')))
             except KeyError:
                 pass
     # replace utf-8 with codepage
@@ -354,15 +403,18 @@ def check_keyboard():
         c += uc.encode('utf-8')
         if c == '\x03':
             # send BREAK for ctrl-C
-            backend.insert_special_key('break')
+            backend.input_queue.put(backend.Event(backend.KEYB_BREAK))
         elif c == '\0':
             # scancode; go add next char
             continue
         else:
             try:
-                backend.insert_chars(unicodepage.from_utf8(c))
+                #check_full=False?
+                backend.input_queue.put(backend.Event(backend.KEYB_CHAR,
+                                                    unicodepage.from_utf8(c)))
             except KeyError:
-                backend.insert_chars(c)
+                #check_full=False?
+                backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
         c = ''
 
 def set_curses_palette():
@@ -383,11 +435,8 @@ def set_curses_palette():
                 else:
                     curses.init_pair(back*8+fore, default_colors[fore], default_colors[back])
 
-def colours(at):
-    """ Convert BASIC attribute byte to curses colour. """
-    back = (at>>4)&0x7
-    blink = (at>>7)
-    fore = (blink*0x10) + (at&0xf)
+def curses_colour(fore, back, blink):
+    """ Convert split attribute to curses colour. """
     if can_change_palette:
         cursattr = curses.color_pair(1 + (back&7)*16 + (fore&15))
     else:
@@ -403,5 +452,19 @@ def colours(at):
         cursattr |= curses.A_BLINK
     return cursattr
 
+def redraw():
+    """ Redraw the screen. """
+    window.clear()
+    if last_colour != 0:
+        window.bkgdset(' ', 0)
+    for row, textrow in enumerate(text[vpagenum]):
+        for col, charattr in enumerate(textrow):
+            try:
+                window.addstr(row, col, charattr[0], charattr[1])
+            except curses.error:
+                pass
+    if cursor_visible:
+        window.move(cursor_row-1, cursor_col-1)
+    window.refresh()
 
 prepare()
