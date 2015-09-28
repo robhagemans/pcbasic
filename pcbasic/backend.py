@@ -61,7 +61,7 @@ class Event(object):
 # save state and quit
 VIDEO_QUIT = 0
 # change video mode
-VIDEO_MODE = 1
+VIDEO_SET_MODE = 1
 # switch page
 VIDEO_SET_PAGE = 2
 # set cursor shape
@@ -1228,7 +1228,7 @@ class Screen(object):
                                      mode_info.font_height) // cmode.font_height
             self.palette = Palette(self.mode)
         # set the screen mode
-        video_queue.put(Event(VIDEO_MODE, mode_info))
+        video_queue.put(Event(VIDEO_SET_MODE, mode_info))
         if mode_info.is_text_mode:
             # send glyphs to backend; copy is necessary
             # as dict may change here while the other thread is working on it
@@ -1370,7 +1370,7 @@ class Screen(object):
                 'No %d-pixel font available. Could not enter video mode %s.',
                 mode_info.font_height, mode_info.name)
             raise error.RunError(error.IFC)
-        video_queue.put(Event(VIDEO_MODE, mode_info))
+        video_queue.put(Event(VIDEO_SET_MODE, mode_info))
         if mode_info.is_text_mode:
             # send glyphs to backend; copy is necessary
             # as dict may change here while the other thread is working on it

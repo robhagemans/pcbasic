@@ -115,8 +115,8 @@ def drain_video_queue():
         if signal.event_type == backend.VIDEO_QUIT:
             # close thread after task_done
             alive = False
-        elif signal.event_type == backend.VIDEO_MODE:
-            init_screen_mode(signal.params)
+        elif signal.event_type == backend.VIDEO_SET_MODE:
+            set_mode(signal.params)
         elif signal.event_type == backend.VIDEO_SET_PAGE:
             set_page(*signal.params)
         elif signal.event_type == backend.VIDEO_COPY_PAGE:
@@ -177,7 +177,7 @@ text = [[[(' ', (7, 0, False, False))]*80 for _ in range(25)]]
 last_pos = None
 
 
-def init_screen_mode(mode_info=None):
+def set_mode(mode_info=None):
     """ Change screen mode. """
     global window, height, width, num_pages, text
     height = mode_info.height

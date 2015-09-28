@@ -194,7 +194,7 @@ def drain_video_queue():
         if signal.event_type == backend.VIDEO_QUIT:
             # close thread after task_done
             alive = False
-        elif signal.event_type == backend.VIDEO_MODE:
+        elif signal.event_type == backend.VIDEO_SET_MODE:
             set_mode(signal.params)
         elif signal.event_type == backend.VIDEO_PUT_GLYPH:
             put_glyph(*signal.params)
