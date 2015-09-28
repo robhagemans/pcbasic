@@ -348,6 +348,9 @@ def handle_key_down(e):
             c = '\0\0'
         # current key pressed; modifiers handled by backend interface
         if f12_active:
+            if e.key == pygame.K_b:
+                # F12+b sends ctrl+break event
+                backend.input_queue.put(backend.Event(backend.KEYB_BREAK))
             try:
                 scan, c = key_to_scan_f12[e.key]
             except KeyError:
