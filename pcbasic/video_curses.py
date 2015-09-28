@@ -243,7 +243,7 @@ def set_page(new_vpagenum, new_apagenum):
 
 def copy_page(src, dst):
     """ Copy screen pages. """
-    text[dst] = [row[:] for row in txt[src]]
+    text[dst] = [row[:] for row in text[src]]
     if dst == vpagenum:
         redraw()
 
