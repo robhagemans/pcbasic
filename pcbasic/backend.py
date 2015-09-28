@@ -1161,7 +1161,7 @@ def init_video(video_module):
     else:
         clipboard_handler = clipboard.Clipboard()
     if state.loaded:
-        # reload the screen in resumed state
+        # reload the screen in (d state
         return state.console_state.screen.resume()
     else:
         # initialise a fresh textmode screen
@@ -1226,6 +1226,11 @@ class Screen(object):
             self.palette = Palette(self.mode)
         # set the screen mode
         video_queue.put(Event(VIDEO_MODE, mode_info))
+        if mode_info.is_text_mode:
+            # send glyphs to backend; copy is necessary
+            # as dict may change here while the other thread is working on it
+            video_queue.put(Event(VIDEO_BUILD_GLYPHS,
+                    dict((k,v) for k,v in self.glyphs.iteritems())))
         # set the visible and active pages
         video_queue.put(Event(VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
         # rebuild palette
