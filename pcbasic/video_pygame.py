@@ -335,12 +335,11 @@ def handle_key_down(e):
             try:
                 c = unicodepage.from_utf8(utf8)
             except KeyError:
-                # no codepage encoding found, ignore unless ascii
+                # no codepage encoding found, ignore
                 # this happens for control codes like '\r' since
-                # unicodepage defines the special graphic characters for those.
-                #if len(utf8) == 1 and ord(utf8) < 128:
-                #    c = utf8
-                # don't do this, let control codes be handled by scancode
+                # unicodepage defines the special graphic characters for those
+                # let control codes be handled by scancode
+                # as e.unicode isn't always the correct thing for ascii controls
                 # e.g. ctrl+enter should be '\n' but has e.unicode=='\r'
                 pass
         # double NUL characters, as single NUL signals scan code
