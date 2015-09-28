@@ -1117,6 +1117,11 @@ class PixelPage(object):
 ###############################################################################
 # screen operations
 
+# create the window icon
+icon = typeface.build_glyph('icon', {'icon':
+    '\x00\x00\x7C\xE0\xC6\x60\xC6\x66\xC6\x6C\xC6\x78\xC6\x6C\x7C\xE6' +
+    '\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00'}, 16, 16)
+
 def prepare_video():
     """ Prepare the video subsystem. """
     global egacursor
@@ -1168,6 +1173,7 @@ def init_video(video_module):
         info = state.console_state.screen.mode
         state.console_state.screen.set_mode(info, 0, 1, 0, 0)
         return True
+
 
 class Screen(object):
     """ Screen manipulation operations. """

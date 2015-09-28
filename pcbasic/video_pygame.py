@@ -115,10 +115,9 @@ def init():
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
     physical_size = display_info.current_w, display_info.current_h
-    # draw the icon
-    pygame.display.set_icon(build_icon())
     # determine initial display size
     display_size = find_display_size(640, 480, border_width)
+    set_icon(backend.icon)
     # first set the screen non-resizeable, to trick things like maximus into not full-screening
     # I hate it when applications do this ;)
     if not fullscreen:
@@ -944,22 +943,18 @@ def resize_display(width, height, initial=False):
     # load display if requested
     screen_changed = True
 
-def build_icon():
-    """ Build the ok icon. """
-    icon = pygame.Surface((17, 17), depth=8)
+def set_icon(mask):
+    """ Set the window icon. """
+    height, width = len(mask), len(mask[0])
+    icon = pygame.Surface((width+1, height+1), depth=8)
     icon.fill(0)
     icon.fill(1, (1, 8, 8, 8))
-    # hardcoded O and k from freedos cga font
-    okfont = { 'O': '\x00\x7C\xC6\xC6\xC6\xC6\xC6\x7C', 'k': '\x00\xE0\x60\x66\x6C\x78\x6C\xE6' }
-    O = glyph_to_surface(typeface.build_glyph('O', okfont, 8, 8))
-    k = glyph_to_surface(typeface.build_glyph('k', okfont, 8, 8))
-    icon.blit(O, (1, 0, 8, 8))
-    icon.blit(k, (9, 0, 8, 8))
+    icon.blit(glyph_to_surface(mask), (1, 0, width, height))
     icon.set_palette_at(0, (0, 0, 0))
     icon.set_palette_at(1, (0xff, 0xff, 0xff))
     pygame.transform.scale2x(icon)
     pygame.transform.scale2x(icon)
-    return icon
+    pygame.display.set_icon(icon)
 
 def normalise_pos(x, y):
     """ Convert physical to logical coordinates within screen bounds. """
