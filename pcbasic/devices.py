@@ -14,6 +14,7 @@ import error
 import console
 import state
 import memory
+import display
 
 # file numbers
 state.io_state.files = {}
@@ -47,7 +48,6 @@ def prepare():
     state.io_state.devices['KYBD:'] = KYBDDevice()
     state.io_state.scrn_file = state.io_state.devices['SCRN:'].device_file
     state.io_state.kybd_file = state.io_state.devices['KYBD:'].device_file
-
 
 ############################################################################
 # General file manipulation

@@ -218,6 +218,7 @@ def prepare_console():
     """ Initialise backend and console. """
     import state
     import backend
+    import display
     import sound
     # load backend modules
     # this can't be done in backend.py as it would create circular dependency
@@ -263,7 +264,7 @@ def prepare_console():
             logging.error('Could not load module %s.', video_name)
             video_name = 'video_none'
             continue
-        if backend.init_video(video):
+        if display.init(video):
             break
         else:
             video_name = video.fallback

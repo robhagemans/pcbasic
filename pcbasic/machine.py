@@ -11,6 +11,7 @@ import logging
 import config
 import state
 import backend
+import display
 import vartypes
 import var
 import console
@@ -451,8 +452,7 @@ def get_rom_memory(addr):
     char = addr // 8
     if char > 127 or char<0:
         return -1
-    return ord(backend.video.fonts[8][chr(char)][addr%8])
-
+    return ord(display.fonts[8][chr(char)][addr%8])
 
 def get_font_memory(addr):
     """ Retrieve RAM font data. """
@@ -460,7 +460,7 @@ def get_font_memory(addr):
     char = addr // 8 + 128
     if char < 128 or char > 254:
         return -1
-    return ord(backend.fonts[8][chr(char)][addr%8])
+    return ord(display.fonts[8][chr(char)][addr%8])
 
 def set_font_memory(addr, value):
     """ Retrieve RAM font data. """
@@ -468,8 +468,8 @@ def set_font_memory(addr, value):
     char = addr // 8 + 128
     if char < 128 or char > 254:
         return
-    old = backend.fonts[8][chr(char)]
-    backend.fonts[8][chr(char)] = old[:addr%8]+chr(value)+old[addr%8+1:]
+    old = display.fonts[8][chr(char)]
+    display.fonts[8][chr(char)] = old[:addr%8]+chr(value)+old[addr%8+1:]
     state.console_state.screen.rebuild_glyph(char)
 
 #################################################################################
@@ -547,7 +547,7 @@ def get_low_memory(addr):
     elif addr == 127:
         return memory.ram_font_segment // 256
     elif addr == 1040:
-        if backend.mono_monitor:
+        if display.mono_monitor:
             # mono
             return 48 + 6
         else:
@@ -588,7 +588,7 @@ def get_low_memory(addr):
         # these are the low-level mode numbers used by mode switching interrupt
         cval = state.console_state.screen.colorswitch % 2
         if state.console_state.screen.mode.is_text_mode:
-            if (backend.video_capabilities in ('mda', 'ega_mono') and
+            if (display.video_capabilities in ('mda', 'ega_mono') and
                     state.console_state.screen.mode.width == 80):
                 return 7
             return (state.console_state.screen.mode.width == 40)*2 + cval
