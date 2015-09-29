@@ -22,7 +22,6 @@ import state
 import vartypes
 import util
 import draw_and_play
-# FIXME: circular import
 import backend
 
 # degree-to-radian conversion factor
