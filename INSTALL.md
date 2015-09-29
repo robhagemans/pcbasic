@@ -57,14 +57,11 @@ Of course, you'll also need [`git`](https://git-scm.com/) and all the PC-BASIC d
 
 2. Compile the documentation
 
-        python prepare.py
+        python setup.py build_docs
 
 3. Run pcbasic directly from the source directory
 
         python pcbasic
-
-For the avoidance of doubt, you should ignore `setup.py`, which is only needed
-to generate packages with `setuptools`.
 
 
 #### Pygame issues ####

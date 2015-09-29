@@ -3,7 +3,7 @@ VERSION=$(cat ../../pcbasic/data/version.txt)
 NAME="pcbasic-$VERSION"
 echo "running prepare script"
 pushd ../..
-./prepare.py
+python setup.py build_docs
 popd
 echo "building $NAME"
 rsync -rvp ../.. pcbasic/ --delete --exclude-from=excludes --delete-excluded

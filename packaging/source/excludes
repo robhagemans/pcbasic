@@ -10,6 +10,5 @@ data/*.SAV
 .git*
 .android.json
 setup.py
-prepare.py
 MANIFEST.in
 DESCRIPTION.md

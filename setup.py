@@ -30,7 +30,7 @@ with open(path.join(here, 'pcbasic', 'data', 'version.txt'), encoding='utf-8') a
 import distutils.cmd
 import setuptools.command.build_py
 
-import prepare
+import docsrc.prepare
 
 class BuildDocCommand(distutils.cmd.Command):
     """ Command to build the documentation."""
@@ -40,7 +40,7 @@ class BuildDocCommand(distutils.cmd.Command):
 
     def run(self):
         """ Run build_docs command. """
-        prepare.build_docs()
+        docsrc.prepare.build_docs()
 
     def initialize_options(self):
         """ Set default values for options. """
