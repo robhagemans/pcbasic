@@ -49,7 +49,7 @@ On **Linux**:
 - to start, click PC-BASIC in your Applications menu or run `pcbasic` on the command line.  
 
 If the options above are not applicable or you prefer to install from source, please
-consult `SOURCE.md` for instructions.
+consult [`INSTALL.md`](https://github.com/robhagemans/pcbasic/blob/master/INSTALL.md) for instructions.
 
 #### Usage essentials ####
 Double-click on `pcbasic` or run `pcbasic` on the command line to start in interactive mode with no programs.  
