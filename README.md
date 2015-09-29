@@ -57,14 +57,14 @@ A few selected command-line options:
 `pcbasic PROGRAM.BAS` runs PROGRAM.BAS directly.  
 `pcbasic -h` shows all available command line options.  
 
-If you're running PC-BASIC from a GUI, you can set the required options in the configuration file instead. The configuration file is a file named `PCBASIC.INI`, stored in the following location:
+If you're running PC-BASIC from a GUI, you can set the required options in the configuration file instead.
+The configuration file is stored in the following location:
 
-| OS         | Configuration file location  
+| OS         | Configuration file  
 |------------|-------------------------------------------------------------------------  
-| Windows XP | `C:\Documents and Settings\` (your username) `\Application Data\pcbasic`  
-| Windows 7  | `C:\Users\` (your username) `\AppData\Roaming\pcbasic`  
-| OS X       | `~/Library/Application Support/pcbasic`
-| Linux      | `~/.config/pcbasic`  
+| Windows    | `%APPDATA%\pcbasic\PCBASIC.INI`  
+| OS X       | `~/Library/Application Support/pcbasic/PCBASIC.INI`
+| Linux      | `~/.config/pcbasic/PCBASIC.INI`  
 
 For example, you could include the following line in `PCBASIC.INI` to emulate IBM PCjr Cartridge Basic instead of GW-BASIC 3.23:
 
@@ -80,9 +80,11 @@ included with PC-BASIC and available online.
 PC-BASIC starts in interactive mode, where you can execute BASIC statements directly.
 A few essential statements:  
 `SYSTEM` exits PC-BASIC.  
-`LOAD "PROGRAM"` loads `PROGRAM.BAS` but does not start it.  
+`LOAD "PROGRAM"` loads `PROGRAM.BAS` (but does not start it).  
 `RUN` starts the currently loaded program.  
-`RUN "PROGRAM"` loads and starts `PROGRAM.BAS`.  
+
+Use one of the key combinations `Ctrl+Break`, `Ctrl+Scroll Lock`, `Ctrl+C` or `F12+B`
+to terminate the running program and return to interactive mode.  
 
 For more information, please consult the comprehensive
 [PC-BASIC language reference](http://pc-basic.org/doc#reference)
@@ -90,7 +92,7 @@ included with PC-BASIC and available online.
 
 
 #### GW-BASIC links and downloads ####
-BASIC program downloads and further links can be found on the following pages.  
+BASIC program downloads, information and further links can be found on the following pages.  
 
 - [KindlyRat's geocities page](http://www.oocities.org/KindlyRat/GWBASIC.html)  
 - [PeatSoft GW-BASIC documentation](http://archive.is/AUm6G)  
