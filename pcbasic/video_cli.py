@@ -34,10 +34,13 @@ def prepare():
 ###############################################################################
 
 class VideoCLI(video.VideoPlugin):
+    """ Command-line interface. """
 
     def __init__(self):
         """ Initialise command-line interface. """
-        if not check_tty():
+        if not plat.stdin_is_tty:
+            logging.warning('Input device is not a terminal. '
+                            'Could not initialise CLI interface.')
             self.ok = False
             return
         term_echo(False)
@@ -211,15 +214,6 @@ elif plat.system != 'Android':
 term_echo_on = True
 term_attr = None
 
-
-def check_tty():
-    """ Check if input stream is a typewriter. """
-    if not plat.stdin_is_tty:
-        logging.warning('Input device is not a terminal. '
-                        'Could not initialise CLI interface.')
-        return False
-    return True
-
 def term_echo(on=True):
     """ Set/unset raw terminal attributes. """
     global term_attr, term_echo_on
@@ -234,6 +228,8 @@ def term_echo(on=True):
     term_echo_on = on
     return previous
 
+
+###############################################################################
 
 #class InputHandlerCLI(object):
 def launch_input_thread():
