@@ -8,8 +8,8 @@ This file is released under the GNU GPL version 3.
 
 import sys
 import time
-import threading
-import Queue
+
+import video
 
 import backend
 import unicodepage
@@ -40,83 +40,39 @@ def prepare():
     # setting termios won't do the trick as it will not trigger read_line, gets too complicated
     if plat.system != 'Windows' and plat.stdin_is_tty:
         lf_to_cr = True
+    video.plugin = VideoNone()
 
 
 ##############################################################################
-# interface
 
-def init():
-    """ Initialise filter interface. """
-    # use redirection echos; these are not kept in state
-    redirect.set_output(sys.stdout, utf8=True)
-    launch_thread()
-    return True
+class VideoNone(video.VideoPlugin):
+    """ Command-line filter interface. """
 
-def close():
-    """ Close the filter interface. """
-    # drain signal queue (to allow for persistence) and request exit
-    if backend.video_queue:
-        backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
-        backend.video_queue.join()
-    if thread and thread.is_alive():
-        # signal quit and wait for thread to finish
-        thread.join()
+    def __init__(self):
+        """ Initialise filter interface. """
+        # use redirection echos; these are not kept in state
+        redirect.set_output(sys.stdout, utf8=True)
+        video.VideoPlugin.__init__(self)
 
-##############################################################################
-# implementation
-
-thread = None
-tick_s = 0.024
-
-def launch_thread():
-    """ Launch consumer thread. """
-    global thread
-    thread = threading.Thread(target=consumer_thread)
-    thread.start()
-
-def consumer_thread():
-    """ Video signal queue consumer thread. """
-    while drain_video_queue():
-        check_keys()
-        # do not hog cpu
-        time.sleep(tick_s)
-
-def drain_video_queue():
-    """ Drain signal queue. """
-    alive = True
-    while alive:
-        try:
-            signal = backend.video_queue.get(False)
-        except Queue.Empty:
-            return True
-        if signal.event_type == backend.VIDEO_QUIT:
-            # close thread after task_done
-            alive = False
-        # drop other messages
-        backend.video_queue.task_done()
-
-
-###############################################################################
-
-def check_keys():
-    """ Handle keyboard events. """
-    # avoid blocking on ttys if there's no input
-    if plat.stdin_is_tty and not kbhit():
-        return
-    s = sys.stdin.readline().decode('utf-8')
-    if s == '':
-        redirect.input_closed = True
-    for u in s:
-        c = u.encode('utf-8')
-        # replace LF -> CR if needed
-        if c == '\n' and lf_to_cr:
-            c = '\r'
-        # convert utf8 to codepage if necessary
-        try:
-            c = unicodepage.from_utf8(c)
-        except KeyError:
-            pass
-        # check_full=False?
-        backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
+    def _check_input(self):
+        """ Handle keyboard events. """
+        # avoid blocking on ttys if there's no input
+        if plat.stdin_is_tty and not kbhit():
+            return
+        s = sys.stdin.readline().decode('utf-8')
+        if s == '':
+            redirect.input_closed = True
+        for u in s:
+            c = u.encode('utf-8')
+            # replace LF -> CR if needed
+            if c == '\n' and lf_to_cr:
+                c = '\r'
+            # convert utf8 to codepage if necessary
+            try:
+                c = unicodepage.from_utf8(c)
+            except KeyError:
+                pass
+            # check_full=False?
+            backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
 
 prepare()

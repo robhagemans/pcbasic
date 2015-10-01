@@ -13,6 +13,7 @@ import logging
 import threading
 import Queue
 
+import video
 import plat
 import unicodepage
 import backend
@@ -27,153 +28,171 @@ fallback = 'video_none'
 
 def prepare():
     """ Initialise the video_cli module. """
-    pass
+    video.plugin = VideoCLI()
 
 
 ###############################################################################
 
-def init():
-    """ Initialise command-line interface. """
-    global stdin_q, ok
-    if not check_tty():
-        ok = False
-        return ok
-    term_echo(False)
-    sys.stdout.flush()
-    # start the stdin thread for non-blocking reads
-    stdin_q = Queue.Queue()
-    t = threading.Thread(target=read_stdin, args=(stdin_q,))
-    t.daemon = True
-    t.start()
-    ok = True
-    # start video thread
-    launch_thread()
-    return ok
+class VideoCLI(video.VideoPlugin):
 
-def close():
-    """ Close command-line interface. """
-    # drain signal queue (to allow for persistence) and request exit
-    if backend.video_queue:
-        backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
-        backend.video_queue.join()
-    if thread and thread.is_alive():
-        # signal quit and wait for thread to finish
-        thread.join()
-    if ok:
-        update_position()
-        term_echo()
-    sys.stdout.flush()
+    def __init__(self):
+        """ Initialise command-line interface. """
+        if not check_tty():
+            self.ok = False
+            return
+        term_echo(False)
+        sys.stdout.flush()
+        # start the stdin thread for non-blocking reads
+        launch_input_thread()
+        # cursor is visible
+        self.cursor_visible = True
+        # current row and column for cursor
+        self.cursor_row = 1
+        self.cursor_col = 1
+        # last row and column printed on
+        self.last_row = None
+        self.last_col = None
+        # text buffer
+        self.num_pages = 1
+        self.vpagenum, self.apagenum = 0, 0
+        self.text = [[[' ']*80 for _ in range(25)]]
+        video.VideoPlugin.__init__(self)
 
-
-###############################################################################
-# IMPLEMENTATION
-
-thread = None
-tick_s = 0.024
-
-def launch_thread():
-    """ Launch consumer thread. """
-    global thread
-    thread = threading.Thread(target=consumer_thread)
-    thread.start()
-
-def consumer_thread():
-    """ Video signal queue consumer thread. """
-    while drain_video_queue():
-        check_keyboard()
-        update_position()
-        # do not hog cpu
-        time.sleep(tick_s)
-
-def drain_video_queue():
-    """ Drain signal queue. """
-    alive = True
-    while alive:
-        try:
-            signal = backend.video_queue.get(False)
-        except Queue.Empty:
-            return True
-        if signal.event_type == backend.VIDEO_QUIT:
-            # close thread after task_done
-            alive = False
-        elif signal.event_type == backend.VIDEO_SET_MODE:
-            set_mode(signal.params)
-        elif signal.event_type == backend.VIDEO_SET_PAGE:
-            set_page(*signal.params)
-        elif signal.event_type == backend.VIDEO_COPY_PAGE:
-            copy_page(*signal.params)
-        elif signal.event_type == backend.VIDEO_PUT_GLYPH:
-            put_glyph(*signal.params)
-        elif signal.event_type == backend.VIDEO_MOVE_CURSOR:
-            move_cursor(*signal.params)
-        elif signal.event_type == backend.VIDEO_CLEAR_ROWS:
-            clear_rows(*signal.params)
-        elif signal.event_type == backend.VIDEO_SCROLL_UP:
-            scroll(*signal.params)
-        # drop other messages
-        backend.video_queue.task_done()
-
-
-###############################################################################
-
-def put_glyph(pagenum, row, col, c, fore, back, blink, underline, for_keys):
-    """ Put a single-byte character at a given position. """
-    global last_col
-    try:
-        char = unicodepage.UTF8Converter().to_utf8(c)
-    except KeyError:
-        char = ' ' * len(c)
-    text[pagenum][row-1][col-1] = char
-    if len(c) > 1:
-        text[pagenum][row-1][col] = ''
-    if vpagenum != pagenum:
-        return
-    if for_keys:
-        return
-    update_position(row, col)
-    sys.stdout.write(char)
-    sys.stdout.flush()
-    last_col += len(c)
-
-def move_cursor(crow, ccol):
-    """ Move the cursor to a new position. """
-    global cursor_row, cursor_col
-    cursor_row, cursor_col = crow, ccol
-
-def clear_rows(back_attr, start, stop):
-    """ Clear screen rows. """
-    text[apagenum][start-1:stop] = [ [' ']*len(text[apagenum][0]) for _ in range(start-1, stop)]
-    if start <= cursor_row and stop >= cursor_row and vpagenum == apagenum:
-        # clear_line before update_position to avoid redrawing old lines on CLS
-        clear_line()
-        update_position(cursor_row, 1)
+    def _close(self):
+        """ Close command-line interface. """
+        if self.ok:
+            self._update_position()
+            term_echo()
         sys.stdout.flush()
 
-def scroll(from_line, scroll_height, back_attr):
-    """ Scroll the screen up between from_line and scroll_height. """
-    text[apagenum][from_line-1:scroll_height] = text[apagenum][from_line:scroll_height] + [[' ']*len(text[apagenum][0])]
-    if vpagenum != apagenum:
-        return
-    sys.stdout.write('\r\n')
-    sys.stdout.flush()
+    def _check_display(self):
+        """ Display update cycle. """
+        self._update_position()
 
-def set_mode(mode_info):
-    """ Initialise video mode """
-    global text, num_pages
-    num_pages = mode_info.num_pages
-    text = [[[' ']*mode_info.width for _ in range(mode_info.height)] for _ in range(num_pages)]
+    def _check_input(self):
+        """ Handle keyboard events. """
+        # s is one utf-8 sequence or one scancode
+        # or a failed attempt at one of the above
+        u8, sc = get_key()
+        if sc:
+            # if it's an ansi sequence/scan code, insert immediately
+            # check_full=False?
+            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (sc, '')))
+        elif u8:
+            if u8 == '\x03':
+                # ctrl-C
+                backend.input_queue.put(backend.Event(backend.KEYB_BREAK))
+            if u8 == eof:
+                # ctrl-D (unix) / ctrl-Z (windows)
+                backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
+            elif u8 == '\x7f':
+                # backspace
+                backend.input_queue.put(backend.Event(backend.KEYB_CHAR, '\b'))
+            else:
+                try:
+                    # check_full=False?
+                    backend.input_queue.put(backend.Event(backend.KEYB_CHAR,
+                                                        unicodepage.from_utf8(u8)))
+                except KeyError:
+                    # check_full=False?
+                    backend.input_queue.put(backend.Event(backend.KEYB_CHAR, u8))
 
-def set_page(new_vpagenum, new_apagenum):
-    """ Set visible and active page. """
-    global vpagenum, apagenum
-    vpagenum, apagenum = new_vpagenum, new_apagenum
-    redraw_row(cursor_row)
 
-def copy_page(src, dst):
-    """ Copy screen pages. """
-    text[dst] = [row[:] for row in text[src]]
-    if dst == vpagenum:
-        redraw_row(cursor_row)
+    ###############################################################################
+
+    def put_glyph(self, pagenum, row, col, c, fore, back, blink, underline, for_keys):
+        """ Put a single-byte character at a given position. """
+        try:
+            char = unicodepage.UTF8Converter().to_utf8(c)
+        except KeyError:
+            char = ' ' * len(c)
+        self.text[pagenum][row-1][col-1] = char
+        if len(c) > 1:
+            self.text[pagenum][row-1][col] = ''
+        if self.vpagenum != pagenum:
+            return
+        if for_keys:
+            return
+        self._update_position(row, col)
+        sys.stdout.write(char)
+        sys.stdout.flush()
+        self.last_col += len(c)
+
+    def move_cursor(self, crow, ccol):
+        """ Move the cursor to a new position. """
+        self.cursor_row, self.cursor_col = crow, ccol
+
+    def clear_rows(self, back_attr, start, stop):
+        """ Clear screen rows. """
+        self.text[self.apagenum][start-1:stop] = [
+            [' ']*len(self.text[self.apagenum][0]) for _ in range(start-1, stop)]
+        if (start <= self.cursor_row and stop >= self.cursor_row and
+                    self.vpagenum == self.apagenum):
+            # clear_line before update_position to avoid redrawing old lines on CLS
+            clear_line()
+            self._update_position(self.cursor_row, 1)
+            sys.stdout.flush()
+
+    def scroll_up(self, from_line, scroll_height, back_attr):
+        """ Scroll the screen up between from_line and scroll_height. """
+        self.text[self.apagenum][from_line-1:scroll_height] = (
+                self.text[self.apagenum][from_line:scroll_height]
+                + [[' ']*len(self.text[self.apagenum][0])])
+        if self.vpagenum != self.apagenum:
+            return
+        sys.stdout.write('\r\n')
+        sys.stdout.flush()
+
+    def set_mode(self, mode_info):
+        """ Initialise video mode """
+        self.num_pages = mode_info.num_pages
+        self.text = [[[' ']*mode_info.width for _ in range(mode_info.height)]
+                                            for _ in range(self.num_pages)]
+
+    def set_page(self, new_vpagenum, new_apagenum):
+        """ Set visible and active page. """
+        self.vpagenum, self.apagenum = new_vpagenum, new_apagenum
+        self._redraw_row(self.cursor_row)
+
+    def copy_page(self, src, dst):
+        """ Copy screen pages. """
+        self.text[dst] = [row[:] for row in self.text[src]]
+        if dst == self.vpagenum:
+            self._redraw_row(self.cursor_row)
+
+    def _redraw_row(self, row):
+        """ Draw the stored text in a row. """
+        rowtext = ''.join(self.text[self.vpagenum][row-1])
+        sys.stdout.write(rowtext)
+        move_left(len(rowtext))
+        sys.stdout.flush()
+
+    def _update_position(self, row=None, col=None):
+        """ Update screen for new cursor position. """
+        # this happens on resume
+        if self.last_row is None:
+            self.last_row = self.cursor_row
+            self._redraw_row(self.cursor_row)
+        if self.last_col is None:
+            self.last_col = self.cursor_col
+        # allow updating without moving the cursor
+        if row is None:
+            row = self.cursor_row
+        if col is None:
+            col = self.cursor_col
+        # move cursor if necessary
+        if row != self.last_row:
+            sys.stdout.write('\r\n')
+            sys.stdout.flush()
+            self.last_col = 1
+            self.last_row = row
+            # show what's on the line where we are.
+            self._redraw_row(self.cursor_row)
+        if col != self.last_col:
+            move_left(self.last_col-col)
+            move_right(col-self.last_col)
+            sys.stdout.flush()
+            self.last_col = col
 
 
 ###############################################################################
@@ -192,24 +211,14 @@ elif plat.system != 'Android':
 term_echo_on = True
 term_attr = None
 
-# cursor is visible
-cursor_visible = True
 
-# current row and column for cursor
-cursor_row = 1
-cursor_col = 1
-
-# last row and column printed on
-last_row = None
-last_col = None
-
-# initialised correctly
-ok = False
-
-# text buffer
-num_pages = 1
-vpagenum, apagenum = 0, 0
-text = [[[' ']*80 for _ in range(25)]]
+def check_tty():
+    """ Check if input stream is a typewriter. """
+    if not plat.stdin_is_tty:
+        logging.warning('Input device is not a terminal. '
+                        'Could not initialise CLI interface.')
+        return False
+    return True
 
 def term_echo(on=True):
     """ Set/unset raw terminal attributes. """
@@ -224,6 +233,33 @@ def term_echo(on=True):
     previous = term_echo_on
     term_echo_on = on
     return previous
+
+# some ansi escapes
+
+#D
+def clear_line():
+    """ Clear the current line. """
+    sys.stdout.write(ansi.esc_clear_line)
+
+#D
+def move_left(num):
+    """ Move num positions to the left. """
+    sys.stdout.write(ansi.esc_move_left*num)
+
+#D
+def move_right(num):
+    """ Move num positions to the right. """
+    sys.stdout.write(ansi.esc_move_right*num)
+
+
+#class InputHandlerCLI(object):
+def launch_input_thread():
+    """ Start the keyboard reader thread. """
+    global stdin_q
+    stdin_q = Queue.Queue()
+    t = threading.Thread(target=read_stdin, args=(stdin_q,))
+    t.daemon = True
+    t.start()
 
 def read_stdin(queue):
     """ Wait for stdin and put any input on the queue. """
@@ -287,88 +323,5 @@ def get_key():
     else:
         return s, None
 
-def clear_line():
-    """ Clear the current line. """
-    sys.stdout.write(ansi.esc_clear_line)
-
-def move_left(num):
-    """ Move num positions to the left. """
-    sys.stdout.write(ansi.esc_move_left*num)
-
-def move_right(num):
-    """ Move num positions to the right. """
-    sys.stdout.write(ansi.esc_move_right*num)
-
-def check_tty():
-    """ Check if input stream is a typewriter. """
-    if not plat.stdin_is_tty:
-        logging.warning('Input device is not a terminal. '
-                        'Could not initialise CLI interface.')
-        return False
-    return True
-
-def check_keyboard():
-    """ Handle keyboard events. """
-    global pre_buffer
-    # s is one utf-8 sequence or one scancode
-    # or a failed attempt at one of the above
-    u8, sc = get_key()
-    if sc:
-        # if it's an ansi sequence/scan code, insert immediately
-        # check_full=False?
-        backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (sc, '')))
-    elif u8:
-        if u8 == '\x03':
-            # ctrl-C
-            backend.input_queue.put(backend.Event(backend.KEYB_BREAK))
-        if u8 == eof:
-            # ctrl-D (unix) / ctrl-Z (windows)
-            backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
-        elif u8 == '\x7f':
-            # backspace
-            backend.input_queue.put(backend.Event(backend.KEYB_CHAR, '\b'))
-        else:
-            try:
-                # check_full=False?
-                backend.input_queue.put(backend.Event(backend.KEYB_CHAR,
-                                                    unicodepage.from_utf8(u8)))
-            except KeyError:
-                # check_full=False?
-                backend.input_queue.put(backend.Event(backend.KEYB_CHAR, u8))
-
-def redraw_row(row):
-    """ Draw the stored text in a row. """
-    rowtext = ''.join(text[vpagenum][row-1])
-    sys.stdout.write(rowtext)
-    move_left(len(rowtext))
-    sys.stdout.flush()
-
-def update_position(row=None, col=None):
-    """ Update screen for new cursor position. """
-    global last_row, last_col
-    # this happens on resume
-    if last_row is None:
-        last_row = cursor_row
-        redraw_row(cursor_row)
-    if last_col is None:
-        last_col = cursor_col
-    # allow updating without moving the cursor
-    if row is None:
-        row = cursor_row
-    if col is None:
-        col = cursor_col
-    # move cursor if necessary
-    if row != last_row:
-        sys.stdout.write('\r\n')
-        sys.stdout.flush()
-        last_col = 1
-        last_row = row
-        # show what's on the line where we are.
-        redraw_row(cursor_row)
-    if col != last_col:
-        move_left(last_col-col)
-        move_right(col-last_col)
-        sys.stdout.flush()
-        last_col = col
 
 prepare()

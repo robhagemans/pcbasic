@@ -24,6 +24,8 @@ import clipboard
 import unicodepage
 import basictoken as tk
 
+import video
+
 # create the window icon
 backend.icon = typeface.build_glyph('icon', {'icon':
     '\x00\x00\x7C\xE0\xC6\x60\xC6\x66\xC6\x6C\xC6\x78\xC6\x6C\x7C\xE6' +
@@ -57,9 +59,9 @@ def prepare():
 
 def init(video_module):
     """ Initialise the video backend. """
-    backend.video = video_module
-    if not backend.video or not backend.video.init():
+    if not video.plugin or not video.plugin.ok:
         return False
+    video.init()
 
     #MOVE to backend or video_pygame
     # clipboard handler may need an initialised pygame screen
@@ -475,7 +477,7 @@ class Screen(object):
 
     def close(self):
         """ Close the display. """
-        backend.video.close()
+        video.close()
 
     def resume(self):
         """ Load a video mode from storage and initialise. """

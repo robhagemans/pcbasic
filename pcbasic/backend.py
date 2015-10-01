@@ -26,8 +26,6 @@ import error
 import redirect
 import clipboard
 
-# backend implementations
-video = None
 
 video_queue = Queue.Queue()
 input_queue = Queue.Queue()
