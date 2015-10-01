@@ -129,7 +129,7 @@ class VideoCLI(video.VideoPlugin):
         if (start <= self.cursor_row and stop >= self.cursor_row and
                     self.vpagenum == self.apagenum):
             # clear_line before update_position to avoid redrawing old lines on CLS
-            clear_line()
+            sys.stdout.write(ansi.esc_clear_line)
             self._update_position(self.cursor_row, 1)
             sys.stdout.flush()
 
@@ -164,7 +164,7 @@ class VideoCLI(video.VideoPlugin):
         """ Draw the stored text in a row. """
         rowtext = ''.join(self.text[self.vpagenum][row-1])
         sys.stdout.write(rowtext)
-        move_left(len(rowtext))
+        sys.stdout.write(ansi.esc_move_left*len(rowtext))
         sys.stdout.flush()
 
     def _update_position(self, row=None, col=None):
@@ -189,8 +189,8 @@ class VideoCLI(video.VideoPlugin):
             # show what's on the line where we are.
             self._redraw_row(self.cursor_row)
         if col != self.last_col:
-            move_left(self.last_col-col)
-            move_right(col-self.last_col)
+            sys.stdout.write(ansi.esc_move_left*(self.last_col-col))
+            sys.stdout.write(ansi.esc_move_right*(col-self.last_col))
             sys.stdout.flush()
             self.last_col = col
 
@@ -233,23 +233,6 @@ def term_echo(on=True):
     previous = term_echo_on
     term_echo_on = on
     return previous
-
-# some ansi escapes
-
-#D
-def clear_line():
-    """ Clear the current line. """
-    sys.stdout.write(ansi.esc_clear_line)
-
-#D
-def move_left(num):
-    """ Move num positions to the left. """
-    sys.stdout.write(ansi.esc_move_left*num)
-
-#D
-def move_right(num):
-    """ Move num positions to the right. """
-    sys.stdout.write(ansi.esc_move_right*num)
 
 
 #class InputHandlerCLI(object):
