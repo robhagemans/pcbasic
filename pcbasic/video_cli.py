@@ -33,6 +33,37 @@ def prepare():
 
 ###############################################################################
 
+if plat.system == 'Windows':
+    import ansipipe
+    tty = ansipipe
+    termios = ansipipe
+    # Ctrl+Z to exit
+    eof = '\x1A'
+elif plat.system != 'Android':
+    import tty, termios
+    # Ctrl+D to exit
+    eof = '\x04'
+
+term_echo_on = True
+term_attr = None
+
+def term_echo(on=True):
+    """ Set/unset raw terminal attributes. """
+    global term_attr, term_echo_on
+    # sets raw terminal - no echo, by the character rather than by the line
+    fd = sys.stdin.fileno()
+    if (not on) and term_echo_on:
+        term_attr = termios.tcgetattr(fd)
+        tty.setraw(fd)
+    elif not term_echo_on and term_attr is not None:
+        termios.tcsetattr(fd, termios.TCSADRAIN, term_attr)
+    previous = term_echo_on
+    term_echo_on = on
+    return previous
+
+
+###############################################################################
+
 class VideoCLI(video.VideoPlugin):
     """ Command-line interface. """
 
@@ -198,35 +229,6 @@ class VideoCLI(video.VideoPlugin):
             self.last_col = col
 
 
-###############################################################################
-
-if plat.system == 'Windows':
-    import ansipipe
-    tty = ansipipe
-    termios = ansipipe
-    # Ctrl+Z to exit
-    eof = '\x1A'
-elif plat.system != 'Android':
-    import tty, termios
-    # Ctrl+D to exit
-    eof = '\x04'
-
-term_echo_on = True
-term_attr = None
-
-def term_echo(on=True):
-    """ Set/unset raw terminal attributes. """
-    global term_attr, term_echo_on
-    # sets raw terminal - no echo, by the character rather than by the line
-    fd = sys.stdin.fileno()
-    if (not on) and term_echo_on:
-        term_attr = termios.tcgetattr(fd)
-        tty.setraw(fd)
-    elif not term_echo_on and term_attr is not None:
-        termios.tcsetattr(fd, termios.TCSADRAIN, term_attr)
-    previous = term_echo_on
-    term_echo_on = on
-    return previous
 
 ###############################################################################
 
