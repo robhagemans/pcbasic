@@ -46,7 +46,7 @@ class VideoCLI(video.VideoPlugin):
         term_echo(False)
         sys.stdout.flush()
         # start the stdin thread for non-blocking reads
-        launch_input_thread()
+        self.input_handler = InputHandlerCLI()
         # cursor is visible
         self.cursor_visible = True
         # current row and column for cursor
@@ -76,7 +76,7 @@ class VideoCLI(video.VideoPlugin):
         """ Handle keyboard events. """
         # s is one utf-8 sequence or one scancode
         # or a failed attempt at one of the above
-        u8, sc = get_key()
+        u8, sc = self.input_handler.get_key()
         if sc:
             # if it's an ansi sequence/scan code, insert immediately
             # check_full=False?
@@ -228,79 +228,88 @@ def term_echo(on=True):
     term_echo_on = on
     return previous
 
-
-###############################################################################
-
-#class InputHandlerCLI(object):
-def launch_input_thread():
-    """ Start the keyboard reader thread. """
-    global stdin_q
-    stdin_q = Queue.Queue()
-    t = threading.Thread(target=read_stdin, args=(stdin_q,))
-    t.daemon = True
-    t.start()
-
-def read_stdin(queue):
-    """ Wait for stdin and put any input on the queue. """
-    while True:
-        queue.put(sys.stdin.read(1))
-        # don't be a hog
-        time.sleep(0.0001)
-
-def getc():
-    """ Read character from keyboard, non-blocking. """
-    try:
-        return stdin_q.get_nowait()
-    except Queue.Empty:
-        return ''
-
+#D
 def get_scancode(s):
     """ Convert ANSI sequences to BASIC scancodes. """
     # s should be at most one ansi sequence, if it contains ansi sequences.
     try:
         return ansi.esc_to_scan[s]
     except KeyError:
-        return s;
+        return s
 
-def get_key():
-    """ Retrieve one scancode, or one UTF-8 sequence from keyboard. """
-    s = getc()
-    esc = False
-    more = 0
-    if s == '':
-        return None, None
-    if s == '\x1b':
-        # ansi sequence, +4 bytes max
-        esc = True
-        more = 4
-    elif ord(s) >= 0b11110000:
-        # utf-8, +3 bytes
-        more = 3
-    elif ord(s) >= 0b11100000:
-        # utf-8, +2 bytes
-        more = 2
-    elif ord(s) >= 0b11000000:
-        # utf-8, +1 bytes
-        more = 1
-    cutoff = 0
-    while (more > 0) and (cutoff < 100):
-        # give time for the queue to fill up
-        time.sleep(0.0005)
-        c = getc()
-        cutoff += 1
-        if c == '':
-            continue
-        more -= 1
-        s += c
-        if esc:
-            code = get_scancode(s)
-            if code != s:
-                return None, code
-    # convert into utf-8 if necessary
-    if sys.stdin.encoding and sys.stdin.encoding != 'utf-8':
-        return s.decode(sys.stdin.encoding).encode('utf-8'), None
-    else:
-        return s, None
+###############################################################################
+
+class InputHandlerCLI(object):
+    """ Keyboard reader thread. """
+
+    # Note that we use a separate thread implementation because:
+    # * sys.stdin.read(1) is a blocking read
+    # * we need this to work on Windows as well as Unix, so select() won't do.
+
+    def __init__(self):
+        """ Start the keyboard reader. """
+        self._launch_thread()
+
+    def _launch_thread(self):
+        """ Start the keyboard reader thread. """
+        self.stdin_q = Queue.Queue()
+        t = threading.Thread(target=self._read_stdin)
+        t.daemon = True
+        t.start()
+
+    def _read_stdin(self):
+        """ Wait for stdin and put any input on the queue. """
+        while True:
+            self.stdin_q.put(sys.stdin.read(1))
+            # don't be a hog
+            time.sleep(0.0001)
+
+    def _getc(self):
+        """ Read character from keyboard, non-blocking. """
+        try:
+            return self.stdin_q.get_nowait()
+        except Queue.Empty:
+            return ''
+
+    def get_key(self):
+        """ Retrieve one scancode, or one UTF-8 sequence from keyboard. """
+        s = self._getc()
+        esc = False
+        more = 0
+        if s == '':
+            return None, None
+        if s == '\x1b':
+            # ansi sequence, +4 bytes max
+            esc = True
+            more = 4
+        elif ord(s) >= 0b11110000:
+            # utf-8, +3 bytes
+            more = 3
+        elif ord(s) >= 0b11100000:
+            # utf-8, +2 bytes
+            more = 2
+        elif ord(s) >= 0b11000000:
+            # utf-8, +1 bytes
+            more = 1
+        cutoff = 0
+        while (more > 0) and (cutoff < 100):
+            # give time for the queue to fill up
+            time.sleep(0.0005)
+            c = self._getc()
+            cutoff += 1
+            if c == '':
+                continue
+            more -= 1
+            s += c
+            if esc:
+                code = get_scancode(s)
+                if code != s:
+                    return None, code
+        # convert into utf-8 if necessary
+        if sys.stdin.encoding and sys.stdin.encoding != 'utf-8':
+            return s.decode(sys.stdin.encoding).encode('utf-8'), None
+        else:
+            return s, None
 
 
 prepare()
