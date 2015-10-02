@@ -228,15 +228,6 @@ def term_echo(on=True):
     term_echo_on = on
     return previous
 
-#D
-def get_scancode(s):
-    """ Convert ANSI sequences to BASIC scancodes. """
-    # s should be at most one ansi sequence, if it contains ansi sequences.
-    try:
-        return ansi.esc_to_scan[s]
-    except KeyError:
-        return s
-
 ###############################################################################
 
 class InputHandlerCLI(object):
@@ -302,9 +293,10 @@ class InputHandlerCLI(object):
             more -= 1
             s += c
             if esc:
-                code = get_scancode(s)
-                if code != s:
-                    return None, code
+                try:
+                    return None, ansi.esc_to_scan[s]
+                except KeyError:
+                    pass
         # convert into utf-8 if necessary
         if sys.stdin.encoding and sys.stdin.encoding != 'utf-8':
             return s.decode(sys.stdin.encoding).encode('utf-8'), None
