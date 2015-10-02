@@ -13,17 +13,18 @@ import time
 
 import backend
 
-plugin = None
+plugin_dict = {}
 thread = None
 
 def prepare():
     """ Initialise video module. """
-    global plugin
-    plugin = VideoPlugin()
 
-def init():
+def init(plugin_name):
     """ Launch consumer thread. """
-    global thread
+    global thread, plugin
+    # initialise video plugin
+    plugin = plugin_dict[plugin_name]()
+    # start video thread
     thread = threading.Thread(target=plugin._consumer_thread)
     thread.start()
 
@@ -37,6 +38,7 @@ def close():
     if thread and thread.is_alive():
         # signal quit and wait for thread to finish
         thread.join()
+    plugin.close()
 
 
 class VideoPlugin(object):

@@ -228,50 +228,36 @@ def prepare_console():
     # we need this prepared for input to work,
     # even if we don't use any function from it
     import redirect
+    import video_none
+    import video_ansi
+    import video_cli
+#        import video_curses
+#        import video_pygame
     # hack: mark modules for inclusion by pyinstaller
     # see https://groups.google.com/forum/#!topic/pyinstaller/S8QgHXiGJ_A
     if False:
-        import video_none
-        import video_curses
-        import video_ansi
-        import video_cli
-        import video_pygame
         import audio_none
         import audio_beep
         import audio_pygame
     backends = {
-        'none': ('video_none', 'audio_none'),
-        'cli': ('video_cli', 'audio_beep'),
-        'text': ('video_curses', 'audio_beep'),
-        'ansi': ('video_ansi', 'audio_beep'),
-        'graphical': ('video_pygame', 'audio_pygame'),
+        'none': ('none', 'audio_none', None),
+        'cli': ('cli', 'audio_beep', 'none'),
+        'text': ('curses', 'audio_beep', 'ansi'),
+        'ansi': ('ansi', 'audio_beep', 'cli'),
+        'graphical': ('pygame', 'audio_pygame', 'curses'),
         }
     if not config.get('interface'):
         config.options['interface'] = 'graphical'
     # select interface
-    video_name, audio_name = backends[config.get('interface')]
+    video_name, audio_name, video_fallback = backends[config.get('interface')]
     # initialise video backend before console
-    while True:
-        try:
-            # __name__ global is needed when calling from setuptools package
-            video = __import__(video_name, globals={"__name__": __name__})
-        except ImportError as e:
-            video = None
-        if not video:
-            if not video_name or video_name == 'video_none':
-                logging.error('Failed to initialise interface.')
-                raise error.Exit()
-            logging.error('Could not load module %s.', video_name)
-            video_name = 'video_none'
-            continue
-        if display.init(video):
-            break
+    while not display.init(video_name):
+        if video_fallback:
+            logging.info('Could not initialise %s, video plugin. Falling back to %s interface.', video_name, video_fallback)
+            video_name = video_fallback
         else:
-            video_name = video.fallback
-            if video:
-                video.close()
-            if video_name:
-                logging.info('Falling back to %s interface.', video_name)
+            logging.error('Failed to initialise interface.')
+            raise error.Exit()
     if config.get('nosound'):
         sound.audio = __import__('audio_none', globals={"__name__": __name__})
     else:

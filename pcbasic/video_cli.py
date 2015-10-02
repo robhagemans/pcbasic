@@ -21,14 +21,12 @@ import scancode
 # ANSI escape codes for output, need arrow movements and clear line and esc_to_scan under Unix.
 import ansi
 
-# fallback to filter interface if not working
-fallback = 'video_none'
 
 ###############################################################################
 
 def prepare():
     """ Initialise the video_cli module. """
-    video.plugin = VideoCLI()
+    video.plugin_dict['cli'] = VideoCLI
 
 
 ###############################################################################

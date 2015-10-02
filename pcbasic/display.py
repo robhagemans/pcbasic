@@ -57,29 +57,32 @@ def prepare():
     fonts = typeface.load_fonts(config.get('font'), heights_needed)
     fonts[9] = fonts[8]
 
-def init(video_module):
+def init(video_plugin):
     """ Initialise the video backend. """
-    if not video.plugin or not video.plugin.ok:
+    video.init(video_plugin)
+    if not video.plugin.ok:
+        video.close()
         return False
-    video.init()
 
     #MOVE to backend or video_pygame
     # clipboard handler may need an initialised pygame screen
     # incidentally, we only need a clipboard handler when we use pygame
     # avoid error messages by not calling
-    if video_module.__name__ == 'pcbasic.video_pygame':
+    if video_plugin == 'pygame':
         backend.clipboard_handler = clipboard.get_handler()
     else:
         backend.clipboard_handler = clipboard.Clipboard()
 
     if state.loaded:
-        # reload the screen in (d state
-        return state.console_state.screen.resume()
+        # reload the screen in resumed state
+        if not state.console_state.screen.resume():
+            video.close()
+            return False
     else:
         # initialise a fresh textmode screen
         info = state.console_state.screen.mode
         state.console_state.screen.set_mode(info, 0, 1, 0, 0)
-        return True
+    return True
 
 
 ###############################################################################

@@ -16,9 +16,6 @@ import unicodepage
 import plat
 import redirect
 
-# no fallback - if this doesn't work, quit
-fallback = None
-
 # replace lf with cr
 lf_to_cr = False
 
@@ -40,7 +37,7 @@ def prepare():
     # setting termios won't do the trick as it will not trigger read_line, gets too complicated
     if plat.system != 'Windows' and plat.stdin_is_tty:
         lf_to_cr = True
-    video.plugin = VideoNone()
+    video.plugin_dict['none'] = VideoNone
 
 
 ##############################################################################
