@@ -231,7 +231,7 @@ def prepare_console():
     import video_none
     import video_ansi
     import video_cli
-#        import video_curses
+    import video_curses
 #        import video_pygame
     # hack: mark modules for inclusion by pyinstaller
     # see https://groups.google.com/forum/#!topic/pyinstaller/S8QgHXiGJ_A

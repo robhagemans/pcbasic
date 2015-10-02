@@ -38,7 +38,6 @@ def close():
     if thread and thread.is_alive():
         # signal quit and wait for thread to finish
         thread.join()
-    plugin.close()
 
 
 class VideoPlugin(object):
