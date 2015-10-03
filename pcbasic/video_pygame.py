@@ -223,9 +223,9 @@ class VideoPygame(video.VideoPlugin):
         self.ok = True
         video.VideoPlugin.__init__(self)
 
-    def _close(self):
+    def close(self):
         """ Close the pygame interface. """
-        video.VideoPlugin._close(self)
+        video.VideoPlugin.close(self)
         if android:
             pygame_android.close()
         # if pygame import failed, close() is called while pygame is None

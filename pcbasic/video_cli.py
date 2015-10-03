@@ -90,9 +90,9 @@ class VideoCLI(video.VideoPlugin):
         self.text = [[[' ']*80 for _ in range(25)]]
         video.VideoPlugin.__init__(self)
 
-    def _close(self):
+    def close(self):
         """ Close command-line interface. """
-        video.VideoPlugin._close(self)
+        video.VideoPlugin.close(self)
         if self.ok:
             self._update_position()
             term_echo()

@@ -83,9 +83,9 @@ class VideoANSI(video_cli.VideoCLI):
         self.text = [[[(' ', (7, 0, False, False))]*80 for _ in range(25)]]
         video_cli.VideoCLI.__init__(self)
 
-    def _close(self):
+    def close(self):
         """ Close the text interface. """
-        video.VideoPlugin._close(self)
+        video.VideoPlugin.close(self)
         sys.stdout.write(ansi.esc_set_colour % 0)
         sys.stdout.write(ansi.esc_clear_screen)
         sys.stdout.write(ansi.esc_move_cursor % (1, 1))

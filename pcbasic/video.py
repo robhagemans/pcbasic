@@ -27,7 +27,7 @@ def init(plugin_name):
     plugin = plugin_dict[plugin_name]()
 
 def close():
-    plugin._close()
+    plugin.close()
 
 
 class VideoPlugin(object):
@@ -40,7 +40,7 @@ class VideoPlugin(object):
         self.thread = threading.Thread(target=self._consumer_thread)
         self.thread.start()
 
-    def _close(self):
+    def close(self):
         """ Close the interface. """
         # drain signal queue (to allow for persistence) and request exit
         # signal quit and wait for thread to finish
