@@ -226,10 +226,8 @@ class VideoPygame(video.VideoPlugin):
         self.set_mode(backend.initial_mode)
         self.f12_active = False
         self.f11_active = False
-        # clipboard handler may need an initialised pygame screen
-        # incidentally, we only need a clipboard handler when we use pygame
-        # avoid error messages by not calling
-        backend.clipboard_handler = clipboard.get_handler()
+        # keep a text buffer (for clipboard operations)
+        self.text = [[[' ']*80 for _ in range(25)]]
         video.VideoPlugin.__init__(self)
 
     def close(self):
@@ -604,6 +602,9 @@ class VideoPygame(video.VideoPlugin):
         self.font_width = mode_info.font_width
         self.num_pages = mode_info.num_pages
         self.mode_has_blink = mode_info.has_blink
+        self.text = [[[' ']*mode_info.width
+                        for _ in range(mode_info.height)]
+                        for _ in range(self.num_pages)]
         if not self.text_mode:
             self.bitsperpixel = mode_info.bitsperpixel
             self.mode_has_artifacts = mode_info.supports_artifacts
@@ -656,6 +657,8 @@ class VideoPygame(video.VideoPlugin):
 
     def clear_rows(self, back_attr, start, stop):
         """ Clear a range of screen rows. """
+        self.text[self.apagenum][start-1:stop] = [
+            [' ']*len(self.text[self.apagenum][0]) for _ in range(start-1, stop)]
         bg = (0, 0, back_attr)
         scroll_area = pygame.Rect(0, (start-1)*self.font_height,
                                   self.size[0], (stop-start+1)*self.font_height)
@@ -669,6 +672,7 @@ class VideoPygame(video.VideoPlugin):
 
     def copy_page(self, src, dst):
         """ Copy source to destination page. """
+        self.text[dst] = [row[:] for row in self.text[src]]
         self.canvas[dst].blit(self.canvas[src], (0, 0))
         self.screen_changed = True
 
@@ -689,6 +693,9 @@ class VideoPygame(video.VideoPlugin):
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """ Scroll the screen up between from_line and scroll_height. """
+        self.text[self.apagenum][from_line-1:scroll_height] = (
+                self.text[self.apagenum][from_line:scroll_height]
+                + [[' ']*len(self.text[self.apagenum][0])])
         temp_scroll_area = pygame.Rect(
                 0, (from_line-1)*self.font_height,
                 self.size[0], (scroll_height-from_line+1) * self.font_height)
@@ -705,6 +712,9 @@ class VideoPygame(video.VideoPlugin):
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """ Scroll the screen down between from_line and scroll_height. """
+        self.text[self.apagenum][from_line-1:scroll_height] = (
+                [[' ']*len(self.text[self.apagenum][0])] +
+                self.text[self.apagenum][from_line-1:scroll_height-1])
         temp_scroll_area = pygame.Rect(
                 0, (from_line-1) * self.font_height,
                 self.size[0], (scroll_height-from_line+1) * self.font_height)
@@ -720,6 +730,9 @@ class VideoPygame(video.VideoPlugin):
 
     def put_glyph(self, pagenum, row, col, c, fore, back, blink, underline, for_keys):
         """ Put a single-byte character at a given position. """
+        self.text[pagenum][row-1][col-1] = unicodepage.cp_to_utf8[c]
+        if len(c) > 1:
+            self.text[pagenum][row-1][col] = ''
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
@@ -818,7 +831,6 @@ class VideoPygame(video.VideoPlugin):
             self.screen_changed = True
 
 
-
 ###############################################################################
 # clipboard handling
 
@@ -837,6 +849,8 @@ class ClipboardInterface(object):
         self.font_height = videoplugin.font_height
         self.size = videoplugin.size
         self.videoplugin = videoplugin
+        # clipboard handler may need an initialised pygame screen
+        self.clipboard_handler = clipboard.get_handler()
 
     def active(self):
         """ True if clipboard mode is active. """
@@ -866,12 +880,17 @@ class ClipboardInterface(object):
             return
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        backend.input_queue.put(backend.Event(backend.CLIP_COPY,
-                            (start[0], start[1], stop[0], stop[1]-1, mouse)))
+        text_rows = self.videoplugin.text[self.videoplugin.vpagenum][start[0]-1:stop[0]]
+        text_rows[0] = text_rows[0][start[1]-1:]
+        if stop[1] < self.width:
+            text_rows[-1] = text_rows[-1][:stop[1]-self.width-1]
+        text = '\n'.join(''.join(row) for row in text_rows)
+        self.clipboard_handler.copy(text, mouse)
 
     def paste(self, mouse=False):
         """ Paste from clipboard into keyboard buffer. """
-        backend.input_queue.put(backend.Event(backend.CLIP_PASTE, mouse))
+        text = self.clipboard_handler.paste(mouse)
+        backend.input_queue.put(backend.Event(backend.CLIP_PASTE, text))
 
     def move(self, r, c):
         """ Move the head of the selection and update feedback. """

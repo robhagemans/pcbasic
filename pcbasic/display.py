@@ -20,7 +20,6 @@ import error
 import typeface
 import modes
 import graphics
-import clipboard
 import unicodepage
 import basictoken as tk
 
@@ -845,29 +844,6 @@ class Screen(object):
         # update the screen
         self.refresh_range(pagenum, crow, start, stop, for_keys)
 
-    def get_text(self, start_row, start_col, stop_row, stop_col):
-        """ Retrieve a clip of the text between start and stop. """
-        r, c = start_row, start_col
-        full = ''
-        clip = ''
-        if self.vpage.row[r-1].double[c-1] == 2:
-            # include lead byte
-            c -= 1
-        if self.vpage.row[stop_row-1].double[stop_col-1] == 1:
-            # include trail byte
-            stop_col += 1
-        while r < stop_row or (r == stop_row and c <= stop_col):
-            clip += self.vpage.row[r-1].buf[c-1][0]
-            c += 1
-            if c > self.mode.width:
-                if not self.vpage.row[r-1].wrap:
-                    full += unicodepage.UTF8Converter().to_utf8(clip) + '\r\n'
-                    clip = ''
-                r += 1
-                c = 1
-        full += unicodepage.UTF8Converter().to_utf8(clip)
-        return full
-
     def refresh_range(self, pagenum, crow, start, stop, for_keys=False, text_only=False):
         """ Redraw a section of a screen row, assuming DBCS buffer has been set. """
         therow = self.text.pages[pagenum].row[crow-1]
@@ -919,7 +895,6 @@ class Screen(object):
             else:
                 break
 
-    #D -> state.io_state.lpt1_file.write(get_text(...))
     def print_screen(self):
         """ Output the visible page to LPT1. """
         for crow in range(1, self.mode.height+1):

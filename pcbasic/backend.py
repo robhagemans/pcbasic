@@ -24,7 +24,6 @@ import unicodepage
 import scancode
 import error
 import redirect
-import clipboard
 
 
 video_queue = Queue.Queue()
@@ -103,7 +102,6 @@ STICK_DOWN = 201
 STICK_UP = 202
 STICK_MOVED = 203
 # clipboard events
-CLIP_COPY = 254
 CLIP_PASTE = 255
 
 
@@ -129,8 +127,6 @@ def prepare():
 tick_s = 0.0006
 longtick_s = 0.024 - tick_s
 
-# to be set by display.init and read by video plugins
-clipboard_handler = clipboard.Clipboard()
 icon = None
 initial_mode = None
 
@@ -185,13 +181,8 @@ def check_events():
             state.console_state.stick.up(*signal.params)
         elif signal.event_type == STICK_MOVED:
             state.console_state.stick.moved(*signal.params)
-        elif signal.event_type == CLIP_COPY:
-            start_row, start_col, stop_row, stop_col, mouse = signal.params
-            clipboard_handler.copy(state.console_state.screen.get_text(
-                                start_row, start_col, stop_row, stop_col), mouse)
         elif signal.event_type == CLIP_PASTE:
-            text = clipboard_handler.paste(signal.params)
-            state.console_state.keyb.insert_chars(text, check_full=False)
+            state.console_state.keyb.insert_chars(signal.params, check_full=False)
 
 def wait_response():
     """ Wait for response to video request. """

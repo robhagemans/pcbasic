@@ -174,6 +174,12 @@ class VideoCLI(video.VideoPlugin):
         sys.stdout.write('\r\n')
         sys.stdout.flush()
 
+    def scroll_down(self, from_line, scroll_height, back_attr):
+        """ Scroll the screen down between from_line and scroll_height. """
+        self.text[self.apagenum][from_line-1:scroll_height] = (
+                [[(' ', 0)]*len(self.text[self.apagenum][0])] +
+                self.text[self.apagenum][from_line-1:scroll_height-1])
+
     def set_mode(self, mode_info):
         """ Initialise video mode """
         self.num_pages = mode_info.num_pages
