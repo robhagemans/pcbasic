@@ -107,6 +107,7 @@ CLIP_COPY = 254
 CLIP_PASTE = 255
 
 
+
 ###############################################################################
 # initialisation
 
@@ -129,7 +130,7 @@ tick_s = 0.0006
 longtick_s = 0.024 - tick_s
 
 # to be set by display.init and read by video plugins
-clipboard_handler = None
+clipboard_handler = clipboard.Clipboard()
 icon = None
 initial_mode = None
 

@@ -57,6 +57,7 @@ def term_echo(on=True):
         termios.tcsetattr(fd, termios.TCSADRAIN, term_attr)
     previous = term_echo_on
     term_echo_on = on
+    sys.stdout.flush()
     return previous
 
 
@@ -70,10 +71,8 @@ class VideoCLI(video.VideoPlugin):
         if not plat.stdin_is_tty:
             logging.warning('Input device is not a terminal. '
                             'Could not initialise CLI interface.')
-            self.ok = False
-            return
+            raise video.InitFailed()
         term_echo(False)
-        sys.stdout.flush()
         # start the stdin thread for non-blocking reads
         self.input_handler = InputHandlerCLI()
         # cursor is visible
@@ -93,10 +92,9 @@ class VideoCLI(video.VideoPlugin):
     def close(self):
         """ Close command-line interface. """
         video.VideoPlugin.close(self)
-        if self.ok:
-            self._update_position()
-            term_echo()
-        sys.stdout.flush()
+        term_echo()
+        if self.last_col and self.cursor_col != self.last_col:
+            sys.stdout.write('\n')
 
     def _check_display(self):
         """ Display update cycle. """

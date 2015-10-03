@@ -21,13 +21,23 @@ def prepare():
     """ Initialise video module. """
 
 def init(plugin_name):
-    """ Launch consumer thread. """
+    """ Start video plugin. """
     global plugin
     # initialise video plugin
-    plugin = plugin_dict[plugin_name]()
+    try:
+        plugin = plugin_dict[plugin_name]()
+        return True
+    except InitFailed:
+        close()
+        return False
 
 def close():
-    plugin.close()
+    """ Close video plugin. """
+    if plugin:
+        plugin.close()
+
+class InitFailed(Exception):
+    """ Video plugin initialisation failed. """
 
 
 class VideoPlugin(object):
@@ -35,7 +45,6 @@ class VideoPlugin(object):
 
     def __init__(self):
         """ Setup the interface and start the event handling thread. """
-        self.ok = True
         # start video thread
         self.thread = threading.Thread(target=self._consumer_thread)
         self.thread.start()

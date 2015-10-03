@@ -61,8 +61,8 @@ class VideoANSI(video_cli.VideoCLI):
         """ Initialise the text interface. """
         self.set_caption_message('')
         # prevent logger from defacing the screen
+        self.logger = logging.getLogger()
         if logging.getLogger().handlers[0].stream.name == sys.stderr.name:
-            self.logger = logging.getLogger()
             self.logger.disabled = True
         # cursor is visible
         self.cursor_visible = True

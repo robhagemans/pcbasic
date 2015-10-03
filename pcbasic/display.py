@@ -32,11 +32,11 @@ import video_curses
 import video_pygame
 video_backends = {
     # interface_name: video_plugin_name, fallback, warn_on_fallback
-    'none': ('none', None, True),
-    'cli': ('cli', 'none', True),
-    'ansi': ('ansi', 'cli', True),
-    'text': ('curses', 'ansi', False),
-    'graphical': ('pygame', 'curses', True),
+    'none': (('none',), None),
+    'cli': (('cli',), 'none'),
+    'ansi': (('ansi',), 'cli'),
+    'text': (('curses', 'ansi'), 'cli'),
+    'graphical': (('pygame',), 'text'),
     }
 
 # create the window icon
@@ -72,31 +72,7 @@ def prepare():
 
 def init(interface_name):
     """ Initialise the video backend. """
-    # select interface
-    video_name, video_fallback, warn_on_fallback = video_backends[interface_name]
-    # initialise video backend before console
-    while True:
-        video.init(video_name)
-        if video.plugin.ok:
-            break
-        video.close()
-        if video_fallback:
-            if warn_on_fallback:
-                logging.info('Could not initialise %s video plugin. Falling back to %s plugin.', video_name, video_fallback)
-            video_name = video_fallback
-        else:
-            logging.error('Failed to initialise interface.')
-            raise error.Exit()
-
-    #MOVE to backend or video_pygame
-    # clipboard handler may need an initialised pygame screen
-    # incidentally, we only need a clipboard handler when we use pygame
-    # avoid error messages by not calling
-    if video_name == 'pygame':
-        backend.clipboard_handler = clipboard.get_handler()
-    else:
-        backend.clipboard_handler = clipboard.Clipboard()
-
+    interface_name = init_video_plugin(interface_name)
     if state.loaded:
         # reload the screen in resumed state
         if not state.console_state.screen.resume():
@@ -107,6 +83,22 @@ def init(interface_name):
         info = state.console_state.screen.mode
         state.console_state.screen.set_mode(info, 0, 1, 0, 0)
     return True
+
+def init_video_plugin(interface_name):
+    """ Find and initialise video plugin for given interface. """
+    while True:
+        # select interface
+        names, fallback = video_backends[interface_name]
+        for video_name in names:
+            if video.init(video_name):
+                return interface_name
+            logging.debug('Could not initialise %s plugin.', video_name)
+        if fallback:
+            logging.info('Could not initialise %s interface. Falling back to %s interface.', interface_name, fallback)
+            interface_name = fallback
+        else:
+            logging.error('Failed to initialise interface.')
+            raise error.Exit()
 
 
 ###############################################################################

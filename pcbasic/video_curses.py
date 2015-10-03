@@ -60,9 +60,9 @@ class VideoCurses(video.VideoPlugin):
 
     def __init__(self):
         """ Initialise the text interface. """
+        self.curses_init = False
         if not curses:
-            self.ok = False
-            return
+            raise video.InitFailed()
         # find a supported UTF-8 locale, with a preference for C, en-us, default
         languages = (['C', 'en-US', locale.getdefaultlocale()[0]] +
                      [a for a in locale.locale_alias.values()
@@ -75,13 +75,12 @@ class VideoCurses(video.VideoPlugin):
                 pass
         if locale.getlocale()[1] != 'UTF-8':
             logging.warning('No supported UTF-8 locale found.')
-            self.ok = False
-            return
-        self.ok = True
+            raise video.InitFailed()
         # set the ESC-key delay to 25 ms unless otherwise set
         # set_escdelay seems to be unavailable on python curses.
         if not os.environ.has_key('ESCDELAY'):
             os.environ['ESCDELAY'] = '25'
+        self.curses_init = True
         self.screen = curses.initscr()
         curses.noecho()
         curses.cbreak()
@@ -127,7 +126,7 @@ class VideoCurses(video.VideoPlugin):
     def close(self):
         """ Close the text interface. """
         video.VideoPlugin.close(self)
-        if self.ok and curses:
+        if self.curses_init:
             curses.noraw()
             curses.nl()
             curses.nocbreak()
@@ -294,7 +293,6 @@ class VideoCurses(video.VideoPlugin):
 
     def set_palette(self, new_palette, new_palette1):
         """ Build the game palette. """
-        logging.debug("palette %s", repr(self.can_change_palette))
         if self.can_change_palette:
             for i in range(len(new_palette)):
                 r, g, b = new_palette[i]

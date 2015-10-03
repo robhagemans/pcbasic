@@ -28,6 +28,7 @@ import typeface
 import scancode
 # for operation tokens for PUT
 import basictoken as tk
+import clipboard
 import video
 
 if plat.system == 'Windows':
@@ -129,15 +130,13 @@ class VideoPygame(video.VideoPlugin):
         # set state objects to whatever is now in state (may have been unpickled)
         if not pygame:
             logging.warning('PyGame module not found.')
-            self.ok = False
-            return
+            raise video.InitFailed()
         pygame.init()
         # exclude some backend drivers as they give unusable results
         if pygame.display.get_driver() == 'caca':
             pygame.display.quit()
             logging.warning('Refusing to use libcaca.')
-            self.ok = False
-            return
+            raise video.InitFailed()
         # display & border
         # display buffer
         self.canvas = []
@@ -220,7 +219,10 @@ class VideoPygame(video.VideoPlugin):
         self.set_mode(backend.initial_mode)
         self.f12_active = False
         self.f11_active = False
-        self.ok = True
+        # clipboard handler may need an initialised pygame screen
+        # incidentally, we only need a clipboard handler when we use pygame
+        # avoid error messages by not calling
+        backend.clipboard_handler = clipboard.get_handler()
         video.VideoPlugin.__init__(self)
 
     def close(self):
@@ -230,8 +232,10 @@ class VideoPygame(video.VideoPlugin):
             pygame_android.close()
         # if pygame import failed, close() is called while pygame is None
         if pygame:
-            pygame.joystick.quit()
-            pygame.display.quit()
+            if pygame.joystick.get_init():
+                pygame.joystick.quit()
+            if pygame.display.get_init():
+                pygame.display.quit()
 
     def set_icon(self, mask):
         """ Set the window icon. """
