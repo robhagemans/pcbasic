@@ -137,14 +137,21 @@ def wait(suppress_events=False):
 
 def check_events():
     """ Main event cycle. """
-    # trigger & handle BASIC events
     time.sleep(tick_s)
+    check_input()
+    trigger_basic_events()
+
+def trigger_basic_events():
+    """ Trigger & handle BASIC events. """
     if state.basic_state.run_mode:
         # trigger TIMER, PLAY and COM events
         state.basic_state.events.timer.check()
         state.basic_state.events.play.check()
         for c in state.basic_state.events.com:
             c.check()
+
+def check_input():
+    """ Handle input events. """
     # KEY, PEN and STRIG are triggered on handling the input queue
     while True:
         try:
@@ -182,6 +189,21 @@ def check_events():
             state.console_state.stick.moved(*signal.params)
         elif signal.event_type == CLIP_PASTE:
             state.console_state.keyb.insert_chars(signal.params, check_full=False)
+
+
+
+#D
+def check_key_event(scancode, modifiers):
+    """ Trigger KEYboard events. """
+    if not scancode:
+        return False
+    result = False
+    for k in state.basic_state.events.key:
+        k.set_scancode_for_check(scancode, modifiers)
+        # drop from keyboard queu if triggered and enabled
+        result = result or k.check()
+    return result
+
 
 ###############################################################################
 # BASIC event triggers
@@ -347,18 +369,6 @@ class KeyHandler(EventHandler):
             self.modcode = ord(keystr[0])
             self.scancode = ord(keystr[1])
 
-#D
-def check_key_event(scancode, modifiers):
-    """ Trigger KEYboard events. """
-    if not scancode:
-        return False
-    result = False
-    for k in state.basic_state.events.key:
-        k.set_scancode_for_check(scancode, modifiers)
-        # drop from keyboard queu if triggered and enabled
-        result = result or k.check()
-    return result
-
 
 class Events(object):
     """ Event management. """
@@ -401,12 +411,6 @@ class Events(object):
 # let OS handle capslock effects
 ignore_caps = True
 
-# default function key scancodes for KEY autotext. F1-F10
-# F11 and F12 here are TANDY scancodes only!
-function_key = {
-    scancode.F1: 0, scancode.F2: 1, scancode.F3: 2, scancode.F4: 3,
-    scancode.F5: 4, scancode.F6: 5, scancode.F7: 6, scancode.F8: 7,
-    scancode.F9: 8, scancode.F10: 9, scancode.F11: 10, scancode.F12: 11}
 # bit flags for modifier keys
 toggle = {
     scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,
@@ -420,6 +424,12 @@ modifier = {
 state.console_state.key_replace = [
     'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
     'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
+# default function key scancodes for KEY autotext. F1-F10
+# F11 and F12 here are TANDY scancodes only!
+function_key = {
+    scancode.F1: 0, scancode.F2: 1, scancode.F3: 2, scancode.F4: 3,
+    scancode.F5: 4, scancode.F6: 5, scancode.F7: 6, scancode.F8: 7,
+    scancode.F9: 8, scancode.F10: 9, scancode.F11: 10, scancode.F12: 11}
 # switch off macro repacements
 state.basic_state.key_macros_off = False
 
@@ -451,6 +461,7 @@ def prepare_keyboard():
         num_fn_keys = 10
     # if true, treat Ctrl+C *exactly* like ctrl+break (unlike GW-BASIC)
     ctrl_c_is_break = config.get('ctrl-c-break')
+
 
 class KeyboardBuffer(object):
     """ Quirky emulated ring buffer for keystrokes. """
