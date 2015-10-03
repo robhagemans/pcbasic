@@ -28,7 +28,6 @@ import redirect
 
 video_queue = Queue.Queue()
 input_queue = Queue.Queue()
-response_queue = Queue.Queue()
 
 class Event(object):
     """ Signal object for video queue. """
@@ -183,16 +182,6 @@ def check_events():
             state.console_state.stick.moved(*signal.params)
         elif signal.event_type == CLIP_PASTE:
             state.console_state.keyb.insert_chars(signal.params, check_full=False)
-
-def wait_response():
-    """ Wait for response to video request. """
-    while True:
-        try:
-            return response_queue.get(False)
-        except Queue.Empty:
-            pass
-        time.sleep(tick_s)
-
 
 ###############################################################################
 # BASIC event triggers
