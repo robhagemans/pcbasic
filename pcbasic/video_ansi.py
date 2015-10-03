@@ -59,7 +59,6 @@ class VideoANSI(video_cli.VideoCLI):
 
     def __init__(self):
         """ Initialise the text interface. """
-        video_cli.VideoCLI.__init__(self)
         self.set_caption_message('')
         # prevent logger from defacing the screen
         if logging.getLogger().handlers[0].stream.name == sys.stderr.name:
@@ -82,9 +81,11 @@ class VideoANSI(video_cli.VideoCLI):
         self.height = 25
         self.width = 80
         self.text = [[[(' ', (7, 0, False, False))]*80 for _ in range(25)]]
+        video_cli.VideoCLI.__init__(self)
 
     def _close(self):
         """ Close the text interface. """
+        video.VideoPlugin._close(self)
         sys.stdout.write(ansi.esc_set_colour % 0)
         sys.stdout.write(ansi.esc_clear_screen)
         sys.stdout.write(ansi.esc_move_cursor % (1, 1))

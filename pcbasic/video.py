@@ -14,30 +14,20 @@ import time
 import backend
 
 plugin_dict = {}
-thread = None
+plugin = None
+
 
 def prepare():
     """ Initialise video module. """
 
 def init(plugin_name):
     """ Launch consumer thread. """
-    global thread, plugin
+    global plugin
     # initialise video plugin
     plugin = plugin_dict[plugin_name]()
-    # start video thread
-    thread = threading.Thread(target=plugin._consumer_thread)
-    thread.start()
 
 def close():
-    """ Close the interface. """
-    # drain signal queue (to allow for persistence) and request exit
-    # signal quit and wait for thread to finish
-    if backend.video_queue:
-        backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
-        backend.video_queue.join()
-    if thread and thread.is_alive():
-        # signal quit and wait for thread to finish
-        thread.join()
+    plugin._close()
 
 
 class VideoPlugin(object):
@@ -46,9 +36,21 @@ class VideoPlugin(object):
     def __init__(self):
         """ Setup the interface and start the event handling thread. """
         self.ok = True
+        # start video thread
+        self.thread = threading.Thread(target=self._consumer_thread)
+        self.thread.start()
 
     def _close(self):
         """ Close the interface. """
+        # drain signal queue (to allow for persistence) and request exit
+        # signal quit and wait for thread to finish
+        if backend.video_queue:
+            backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
+            backend.video_queue.join()
+        if self.thread and self.thread.is_alive():
+            # signal quit and wait for thread to finish
+            self.thread.join()
+            self.thread = None
 
     # direct calls
 
@@ -63,7 +65,6 @@ class VideoPlugin(object):
             self._check_display()
             self._check_input()
             self._sleep()
-        self._close()
 
     def _check_display(self):
         """ Display update cycle. """

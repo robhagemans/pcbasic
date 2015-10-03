@@ -92,6 +92,7 @@ class VideoCLI(video.VideoPlugin):
 
     def _close(self):
         """ Close command-line interface. """
+        video.VideoPlugin._close(self)
         if self.ok:
             self._update_position()
             term_echo()

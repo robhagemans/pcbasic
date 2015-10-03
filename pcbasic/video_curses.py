@@ -122,9 +122,11 @@ class VideoCurses(video.VideoPlugin):
         self.vpagenum, self.apagenum = 0, 0
         self.height, self.width = 25, 80
         self.text = [[[(' ', 0)]*80 for _ in range(25)]]
+        video.VideoPlugin.__init__(self)
 
     def _close(self):
         """ Close the text interface. """
+        video.VideoPlugin._close(self)
         if self.ok and curses:
             curses.noraw()
             curses.nl()
