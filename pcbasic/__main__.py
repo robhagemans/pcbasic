@@ -220,44 +220,28 @@ def prepare_console():
     import backend
     import display
     import sound
-    # load backend modules
-    # this can't be done in backend.py as it would create circular dependency
     import console
     import error
     import fp
     # we need this prepared for input to work,
     # even if we don't use any function from it
     import redirect
-    import video_none
-    import video_ansi
-    import video_cli
-    import video_curses
-    import video_pygame
+    interface = config.get('interface') or 'graphical'
+    display.init(interface)
     # hack: mark modules for inclusion by pyinstaller
     # see https://groups.google.com/forum/#!topic/pyinstaller/S8QgHXiGJ_A
     if False:
         import audio_none
         import audio_beep
         import audio_pygame
-    backends = {
-        'none': ('none', 'audio_none', None),
-        'cli': ('cli', 'audio_beep', 'none'),
-        'text': ('curses', 'audio_beep', 'ansi'),
-        'ansi': ('ansi', 'audio_beep', 'cli'),
-        'graphical': ('pygame', 'audio_pygame', 'curses'),
-        }
-    if not config.get('interface'):
-        config.options['interface'] = 'graphical'
-    # select interface
-    video_name, audio_name, video_fallback = backends[config.get('interface')]
-    # initialise video backend before console
-    while not display.init(video_name):
-        if video_fallback:
-            logging.info('Could not initialise %s, video plugin. Falling back to %s interface.', video_name, video_fallback)
-            video_name = video_fallback
-        else:
-            logging.error('Failed to initialise interface.')
-            raise error.Exit()
+    audio_backends = {
+            'none': 'audio_none',
+            'cli': 'audio_beep',
+            'text': 'audio_beep',
+            'ansi': 'audio_beep',
+            'graphical': 'audio_pygame',
+            }
+    audio_name = audio_backends[interface]
     if config.get('nosound'):
         sound.audio = __import__('audio_none', globals={"__name__": __name__})
     else:

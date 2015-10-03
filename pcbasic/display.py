@@ -25,6 +25,19 @@ import unicodepage
 import basictoken as tk
 
 import video
+import video_none
+import video_ansi
+import video_cli
+import video_curses
+import video_pygame
+video_backends = {
+    # interface_name: video_plugin_name, fallback, warn_on_fallback
+    'none': ('none', None, True),
+    'cli': ('cli', 'none', True),
+    'ansi': ('ansi', 'cli', True),
+    'text': ('curses', 'ansi', False),
+    'graphical': ('pygame', 'curses', True),
+    }
 
 # create the window icon
 backend.icon = typeface.build_glyph('icon', {'icon':
@@ -57,18 +70,29 @@ def prepare():
     fonts = typeface.load_fonts(config.get('font'), heights_needed)
     fonts[9] = fonts[8]
 
-def init(video_plugin):
+def init(interface_name):
     """ Initialise the video backend. """
-    video.init(video_plugin)
-    if not video.plugin.ok:
+    # select interface
+    video_name, video_fallback, warn_on_fallback = video_backends[interface_name]
+    # initialise video backend before console
+    while True:
+        video.init(video_name)
+        if video.plugin.ok:
+            break
         video.close()
-        return False
+        if video_fallback:
+            if warn_on_fallback:
+                logging.info('Could not initialise %s video plugin. Falling back to %s plugin.', video_name, video_fallback)
+            video_name = video_fallback
+        else:
+            logging.error('Failed to initialise interface.')
+            raise error.Exit()
 
     #MOVE to backend or video_pygame
     # clipboard handler may need an initialised pygame screen
     # incidentally, we only need a clipboard handler when we use pygame
     # avoid error messages by not calling
-    if video_plugin == 'pygame':
+    if video_name == 'pygame':
         backend.clipboard_handler = clipboard.get_handler()
     else:
         backend.clipboard_handler = clipboard.Clipboard()
