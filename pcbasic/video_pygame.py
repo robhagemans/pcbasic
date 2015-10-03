@@ -132,10 +132,12 @@ class VideoPygame(video.VideoPlugin):
             logging.warning('PyGame module not found.')
             raise video.InitFailed()
         pygame.init()
-        # exclude some backend drivers as they give unusable results
-        if pygame.display.get_driver() == 'caca':
-            pygame.display.quit()
-            logging.warning('Refusing to use libcaca.')
+        try:
+            # poll the driver to force an exception if not initialised
+            pygame.display.get_driver()
+        except pygame.error:
+            self._close_pygame()
+            logging.warning('No suitable display driver for PyGame.')
             raise video.InitFailed()
         # display & border
         # display buffer
@@ -190,10 +192,15 @@ class VideoPygame(video.VideoPlugin):
         self.set_icon(backend.icon)
         # first set the screen non-resizeable, to trick things like maximus into not full-screening
         # I hate it when applications do this ;)
-        if not fullscreen:
-            pygame.display.set_mode(self.display_size, 0)
-        self.fullscreen = fullscreen
-        self._resize_display(*self.display_size)
+        try:
+            if not fullscreen:
+                pygame.display.set_mode(self.display_size, 0)
+            self.fullscreen = fullscreen
+            self._resize_display(*self.display_size)
+        except pygame.error:
+            self._close_pygame()
+            logging.warning('Could not initialise PyGame display')
+            raise video.InitFailed()
         if smooth and self.display.get_bitsize() < 24:
             logging.warning("Smooth scaling not available on this display (depth %d < 24)", self.display.get_bitsize())
             smooth = False
@@ -228,14 +235,17 @@ class VideoPygame(video.VideoPlugin):
     def close(self):
         """ Close the pygame interface. """
         video.VideoPlugin.close(self)
+        self._close_pygame()
+
+    def _close_pygame(self):
+        """ Close pygame modules and displays. """
+        # if pygame import failed, close() is called while pygame is None
         if android:
             pygame_android.close()
-        # if pygame import failed, close() is called while pygame is None
         if pygame:
-            if pygame.joystick.get_init():
-                pygame.joystick.quit()
-            if pygame.display.get_init():
-                pygame.display.quit()
+            pygame.joystick.quit()
+            pygame.display.quit()
+            pygame.quit()
 
     def set_icon(self, mask):
         """ Set the window icon. """

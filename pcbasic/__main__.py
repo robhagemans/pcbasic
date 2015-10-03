@@ -186,6 +186,10 @@ def start_basic():
         exit_error = "Unhandled exception\n%s" % traceback.format_exc()
     finally:
         try:
+            sound.audio.close()
+        except (NameError, AttributeError) as e:
+            logging.debug('Error on closing audio: %s', e)
+        try:
             # fix the terminal on exit (important for ANSI terminals)
             # and save display interface state into screen state
             state.console_state.screen.close()
@@ -207,10 +211,6 @@ def start_basic():
             devices.close_devices()
         except (NameError, AttributeError) as e:
             logging.debug('Error on closing devices: %s', e)
-        try:
-            sound.audio.close()
-        except (NameError, AttributeError) as e:
-            logging.debug('Error on closing audio: %s', e)
         if exit_error:
             logging.error(exit_error)
 
