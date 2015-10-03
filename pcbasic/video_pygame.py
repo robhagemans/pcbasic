@@ -487,9 +487,7 @@ class VideoPygame(video.VideoPlugin):
         under_char_area = pygame.Rect(
                 (self.cursor_col-1) * self.font_width,
                 (self.cursor_row-1) * self.font_height,
-                #FIXME: shouldn't this just be width, height?
-                (self.cursor_col-1) * self.font_width + self.cursor_width,
-                self.cursor_row * self.font_height)
+                self.cursor_width, self.font_height)
         self.under_cursor.blit(screen, (0,0), area=under_char_area)
         if self.text_mode:
             # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
