@@ -500,7 +500,6 @@ class VideoPygame(video.VideoPlugin):
 
     def _resize_display(self, width, height):
         """ Change the display size. """
-        display_info = pygame.display.Info()
         flags = pygame.RESIZABLE
         if self.fullscreen:
             flags |= pygame.FULLSCREEN | pygame.NOFRAME
