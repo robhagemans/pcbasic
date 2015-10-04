@@ -327,7 +327,8 @@ class KeyHandler(EventHandler):
         if (self.modcode == modcode and self.scancode and
                     self.scancode == scancode):
             # drop key from key buffer
-            state.console_state.keyb.buf.getc(expand=False)
+            if self.enabled:
+                state.console_state.keyb.buf.getc(expand=False)
             # trigger event
             self.trigger()
             return self.enabled
