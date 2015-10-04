@@ -111,7 +111,7 @@ class VideoPygame(video.VideoPlugin):
 
     def __init__(self):
         """ Initialise pygame interface. """
-        global smooth, state_loaded
+        global smooth
         # set state objects to whatever is now in state (may have been unpickled)
         if not pygame:
             logging.warning('PyGame module not found.')
