@@ -225,7 +225,7 @@ def prepare_console():
     import fp
     # we need this prepared for input to work,
     # even if we don't use any function from it
-    import redirect
+    import inputs
     interface = config.get('interface') or 'graphical'
     display.init(interface)
     # hack: mark modules for inclusion by pyinstaller
