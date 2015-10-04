@@ -219,7 +219,6 @@ class VideoPygame(video.VideoPlugin):
         self.move_cursor(0, 0)
         self.set_page(0, 0)
         self.set_mode(backend.initial_mode)
-        self.f12_active = False
         self.f11_active = False
         # keep a text buffer (for clipboard operations)
         self.text = [[[' ']*80 for _ in range(25)]]
@@ -320,8 +319,6 @@ class VideoPygame(video.VideoPlugin):
         elif e.key == pygame.K_F11:
             self.f11_active = True
             self.clipboard.start(self.cursor_row, self.cursor_col)
-        elif e.key == pygame.K_F12:
-            self.f12_active = True
         elif self.f11_active:
             # F11+f to toggle fullscreen mode
             if e.key == pygame.K_f:
@@ -347,62 +344,49 @@ class VideoPygame(video.VideoPlugin):
             if len(c) == 1 and ord(c) == 0:
                 c = '\0\0'
             # current key pressed; modifiers handled by backend interface
-            if self.f12_active:
-                if e.key == pygame.K_b:
-                    # F12+b sends ctrl+break event
-                    backend.input_queue.put(backend.Event(backend.KEYB_BREAK))
-                try:
-                    scan, c = key_to_scan_f12[e.key]
-                except KeyError:
-                    scan = None
-                backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, c)))
-            else:
-                try:
-                    scan = key_to_scan[e.key]
-                except KeyError:
-                    scan = None
-                    if android:
-                        # android hacks - send keystroke sequences
-                        if e.key == pygame.K_ASTERISK:
-                            backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
-                                    (scancode.RSHIFT, '')))
-                            backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
-                                    (scancode.N8, '*')))
-                            backend.input_queue.put(backend.Event(backend.KEYB_UP,
-                                    scancode.RSHIFT))
-                        elif e.key == pygame.K_AT:
-                            backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
-                                    (scancode.RSHIFT, '')))
-                            backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
-                                    (scancode.N2, '@')))
-                            backend.input_queue.put(backend.Event(backend.KEYB_UP,
-                                    scancode.RSHIFT))
-                    if plat.system == 'Windows':
-                        # Windows 7 and above send AltGr as Ctrl+RAlt
-                        # if 'altgr' option is off, Ctrl+RAlt is sent.
-                        # if 'altgr' is on, the RAlt key is being ignored
-                        # but a Ctrl keydown event has already been sent
-                        # so send keyup event to tell backend to release Ctrl modifier
-                        if e.key == pygame.K_RALT:
-                            backend.input_queue.put(backend.Event(backend.KEYB_UP,
-                                                                  scancode.CTRL))
-                # insert into keyboard queue
-                backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, c)))
+            try:
+                scan = key_to_scan[e.key]
+            except KeyError:
+                scan = None
+            if android:
+                # android hacks - send keystroke sequences
+                if e.key == pygame.K_ASTERISK:
+                    backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
+                            (scancode.RSHIFT, '')))
+                    backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
+                            (scancode.N8, '*')))
+                    backend.input_queue.put(backend.Event(backend.KEYB_UP,
+                            scancode.RSHIFT))
+                elif e.key == pygame.K_AT:
+                    backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
+                            (scancode.RSHIFT, '')))
+                    backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
+                            (scancode.N2, '@')))
+                    backend.input_queue.put(backend.Event(backend.KEYB_UP,
+                            scancode.RSHIFT))
+            if plat.system == 'Windows':
+                # Windows 7 and above send AltGr as Ctrl+RAlt
+                # if 'altgr' option is off, Ctrl+RAlt is sent.
+                # if 'altgr' is on, the RAlt key is being ignored
+                # but a Ctrl keydown event has already been sent
+                # so send keyup event to tell backend to release Ctrl modifier
+                if e.key == pygame.K_RALT:
+                    backend.input_queue.put(backend.Event(backend.KEYB_UP,
+                                                          scancode.CTRL))
+            # insert into keyboard queue
+            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, c)))
 
     def _handle_key_up(self, e):
         """ Handle key-up event. """
         if e.key == pygame.K_F11:
             self.clipboard.stop()
             self.f11_active = False
-        elif e.key == pygame.K_F12:
-            self.f12_active = False
-        if not (self.f12_active and e.key in key_to_scan_f12):
-            # last key released gets remembered
-            try:
-                backend.input_queue.put(backend.Event(backend.KEYB_UP,
-                                                      key_to_scan[e.key]))
-            except KeyError:
-                pass
+        # last key released gets remembered
+        try:
+            backend.input_queue.put(backend.Event(backend.KEYB_UP,
+                                                  key_to_scan[e.key]))
+        except KeyError:
+            pass
 
 
     ###########################################################################
@@ -1026,34 +1010,6 @@ if pygame:
         pygame.K_PAUSE: scancode.BREAK,
         pygame.K_BREAK: scancode.BREAK,
     }
-
-    key_to_scan_kplock = {
-        pygame.K_0: (scancode.KP0, '0'),
-        pygame.K_1: (scancode.KP1, '1'),
-        pygame.K_2: (scancode.KP2, '2'),
-        pygame.K_3: (scancode.KP3, '3'),
-        pygame.K_4: (scancode.KP4, '4'),
-        pygame.K_5: (scancode.KP5, '5'),
-        pygame.K_6: (scancode.KP6, '6'),
-        pygame.K_7: (scancode.KP7, '7'),
-        pygame.K_8: (scancode.KP8, '8'),
-        pygame.K_9: (scancode.KP9, '9'),
-        pygame.K_PLUS: (scancode.KPPLUS, '+'),
-        pygame.K_MINUS: (scancode.KPMINUS, '-'),
-        pygame.K_LEFT: (scancode.KP4, '4'),
-        pygame.K_RIGHT: (scancode.KP6, '6'),
-        pygame.K_UP: (scancode.KP8, '8'),
-        pygame.K_DOWN: (scancode.KP2, '2'),
-    }
-
-    key_to_scan_f12 = {
-        pygame.K_b: (scancode.BREAK, ''),
-        pygame.K_p: (scancode.BREAK, ''),
-        pygame.K_n: (scancode.NUMLOCK, ''),
-        pygame.K_s: (scancode.SCROLLOCK, ''),
-        pygame.K_c: (scancode.CAPSLOCK, ''),
-    }
-    key_to_scan_f12.update(key_to_scan_kplock)
 
 # composite palettes, see http://nerdlypleasures.blogspot.co.uk/2013_11_01_archive.html
 composite_640 = {

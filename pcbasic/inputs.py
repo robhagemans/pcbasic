@@ -207,8 +207,10 @@ class Keyboard(object):
         self.mod = 0
         # store for alt+keypad ascii insertion
         self.keypad_ascii = ''
-        # PAUSE is active
+        # PAUSE is inactive
         self.pause = False
+        # F12 is inactive
+        self.home_key_active = False
 
     def read_chars(self, num):
         """ Read num keystrokes, blocking. """
@@ -240,6 +242,13 @@ class Keyboard(object):
 
     def key_down(self, scan, eascii='', check_full=True):
         """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
+        # emulator home-key (f12) replacements
+        # f12+b -> ctrl+break is handled separately below
+        if self.home_key_active:
+            try:
+                scan, eascii = home_key_replacements[scan]
+            except KeyError:
+                pass
         # set port and low memory address regardless of event triggers
         self.pause = False
         if scan is not None:
@@ -262,8 +271,10 @@ class Keyboard(object):
                 # meaning exit and delete state. This is useful on android.
             raise error.Reset()
         elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) or
-                        ctrl_c_is_break and scan==scancode.c)
+                        (ctrl_c_is_break and scan==scancode.c))
                     and self.mod & modifier[scancode.CTRL]):
+            raise error.Break()
+        elif (self.home_key_active and scan==scancode.b):
             raise error.Break()
         elif (scan == scancode.BREAK or
                 (scan == scancode.NUMLOCK and self.mod & modifier[scancode.CTRL])):
@@ -277,6 +288,10 @@ class Keyboard(object):
             if self.mod & modifier[scancode.CTRL]:
                 # ctrl + printscreen
                 redirect.toggle_echo(state.io_state.lpt1_file)
+        # F12 emulator home key combinations
+        elif scan == scancode.F12:
+            self.home_key_active = True
+            return
         # alt+keypad ascii replacement
         # we can't depend on internal NUM LOCK state as it doesn't get updated
         if (self.mod & modifier[scancode.ALT] and
@@ -320,6 +335,8 @@ class Keyboard(object):
                 char = '\0\0'
             self.buf.insert(char, check_full=True)
             self.keypad_ascii = ''
+        elif scan == scancode.F12:
+            self.home_key_active = False
 
 
 ################
@@ -356,6 +373,31 @@ def scan_to_eascii(scan, mod):
         return scancode.eascii_table[scan][1]
     else:
         return scancode.eascii_table[scan][0]
+
+# F12 emulator home-key
+# also f12+b -> ctrl+break
+home_key_replacements = {
+    scancode.N0: (scancode.KP0, '0'),
+    scancode.N1: (scancode.KP1, '1'),
+    scancode.N2: (scancode.KP2, '2'),
+    scancode.N3: (scancode.KP3, '3'),
+    scancode.N4: (scancode.KP4, '4'),
+    scancode.N5: (scancode.KP5, '5'),
+    scancode.N6: (scancode.KP6, '6'),
+    scancode.N7: (scancode.KP7, '7'),
+    scancode.N8: (scancode.KP8, '8'),
+    scancode.N9: (scancode.KP9, '9'),
+    scancode.EQUALS: (scancode.KPPLUS, '+'),
+    scancode.MINUS: (scancode.KPMINUS, '-'),
+    scancode.LEFT: (scancode.KP4, '4'),
+    scancode.RIGHT: (scancode.KP6, '6'),
+    scancode.UP: (scancode.KP8, '8'),
+    scancode.DOWN: (scancode.KP2, '2'),
+    scancode.p: (scancode.BREAK, ''),
+    scancode.n: (scancode.NUMLOCK, ''),
+    scancode.s: (scancode.SCROLLOCK, ''),
+    scancode.c: (scancode.CAPSLOCK, ''),
+}
 
 
 ###############################################################################
