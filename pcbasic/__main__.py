@@ -138,6 +138,7 @@ def start_basic():
     import cassette
     import reset
     import sound
+    import audio
     do_reset = False
     backend, console = None, None
     exit_error = ''
@@ -186,7 +187,7 @@ def start_basic():
         exit_error = "Unhandled exception\n%s" % traceback.format_exc()
     finally:
         try:
-            sound.audio.close()
+            audio.close()
         except (NameError, AttributeError) as e:
             logging.debug('Error on closing audio: %s', e)
         try:
@@ -228,28 +229,7 @@ def prepare_console():
     import inputs
     interface = config.get('interface') or 'graphical'
     display.init(interface)
-    # hack: mark modules for inclusion by pyinstaller
-    # see https://groups.google.com/forum/#!topic/pyinstaller/S8QgHXiGJ_A
-    if False:
-        import audio_none
-        import audio_beep
-        import audio_pygame
-    audio_backends = {
-            'none': 'audio_none',
-            'cli': 'audio_beep',
-            'text': 'audio_beep',
-            'ansi': 'audio_beep',
-            'graphical': 'audio_pygame',
-            }
-    audio_name = audio_backends[interface]
-    if config.get('nosound'):
-        sound.audio = __import__('audio_none', globals={"__name__": __name__})
-    else:
-        sound.audio = __import__(audio_name, globals={"__name__": __name__})
-    if not sound.init():
-        sound.audio = __import__('audio_none', globals={"__name__": __name__})
-        sound.init()
-        logging.warning('Failed to initialise sound. Sound will be disabled.\r')
+    sound.init('none' if config.get('nosound') else interface)
     if not state.loaded:
         console.init_mode()
     # set the output for maths error messages

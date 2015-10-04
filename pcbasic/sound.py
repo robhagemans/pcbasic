@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3.
 import Queue
 import threading
 import time
+import logging
 
 try:
     from cStringIO import StringIO
@@ -24,34 +25,11 @@ import representation
 import vartypes
 import backend
 
+import audio
+import audio_none
+import audio_beep
+#import audio_pygame
 
-class PersistentQueue(Queue.Queue):
-    """ Simple picklable Queue. """
-
-    def __getstate__(self):
-        """ Get pickling dict for queue. """
-        qlist = []
-        while True:
-            try:
-                qlist.append(self.get(False))
-                self.task_done()
-            except Queue.Empty:
-                break
-        return { 'qlist': qlist }
-
-    def __setstate__(self, st):
-        """ Initialise queue from pickling dict. """
-        self.__init__()
-        qlist = st['qlist']
-        for item in qlist:
-            self.put(item)
-
-
-message_queue = Queue.Queue()
-tone_queue = None
-
-# audio plugin
-audio = None
 
 # sound capabilities - '', 'pcjr' or 'tandy'
 pcjr_sound = ''
@@ -66,18 +44,6 @@ notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6,
             'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
 
 
-# event class
-AudioEvent = backend.Event
-
-# audio queue signals
-AUDIO_TONE = 0
-AUDIO_STOP = 1
-AUDIO_NOISE = 2
-AUDIO_QUIT = 4
-AUDIO_PERSIST = 6
-
-
-
 def prepare():
     """ Prepare the audio subsystem. """
     global pcjr_sound
@@ -90,18 +56,31 @@ def prepare():
     state.console_state.sound.sound_on = (pcjr_sound == 'tandy')
     # pc-speaker on/off; (not implemented; not sure whether should be on)
     state.console_state.sound.beep_on = True
-    # persist tone queue
-    state.console_state.tone_queue = [PersistentQueue(), PersistentQueue(),
-                                      PersistentQueue(), PersistentQueue() ]
 
-def init():
-    """ Initialise the audio backend. """
-    global audio, tone_queue
-    # NOTE that we shouldn't assign to either of these queues after this point
-    tone_queue = state.console_state.tone_queue
-    if not audio or not audio.init():
-        return False
-    return True
+
+def init(interface_name):
+    """ Initialise the sound system. """
+    init_audio_plugin(interface_name)
+
+audio_backends = {
+    # interface_name: plugin_name, fallback, warn_on_fallback
+    'none': ('none',),
+    'cli': ('beep', 'none'),
+    'text': ('beep', 'none'),
+    'ansi': ('beep', 'none'),
+    'graphical': ('pygame', 'beep', 'none'),
+    }
+
+def init_audio_plugin(interface_name):
+    """ Find and initialise audio plugin for given interface. """
+    #import audio_pygame
+    names = audio_backends[interface_name]
+    for audio_name in names:
+        if audio.init(audio_name):
+            return interface_name
+        logging.debug('Could not initialise %s plugin.', audio_name)
+    logging.error('Null sound plugin malfunction. Could not initialise interface.')
+    raise error.Exit()
 
 
 class PlayState(object):
@@ -151,7 +130,7 @@ class Sound(object):
                 frequency < 110. and frequency != 0):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
-        tone = AudioEvent(AUDIO_TONE, (frequency, duration, fill, loop, volume))
+        tone = backend.Event(backend.AUDIO_TONE, (frequency, duration, fill, loop, volume))
         state.console_state.tone_queue[voice].put(tone)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
@@ -182,12 +161,12 @@ class Sound(object):
                 except Queue.Empty:
                     continue
                 q.task_done()
-        message_queue.put(AudioEvent(AUDIO_STOP))
+        backend.message_queue.put(backend.Event(backend.AUDIO_STOP))
 
     def play_noise(self, source, volume, duration, loop=False):
         """ Play a sound on the noise generator. """
         frequency = self.noise_freq[source]
-        noise = AudioEvent(AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
+        noise = backend.Event(backend.AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
         state.console_state.tone_queue[3].put(noise)
         # don't wait for noise
 
@@ -196,15 +175,16 @@ class Sound(object):
         # NOTE: this returns zero when there are still TWO notes to play
         # one in the pre-play buffer and another because we subtract 1 here
         # this agrees with empirical GW-BASIC ON PLAY() timings!
-        return max(0, tone_queue[voice].qsize()-1)
+        return max(0, state.console_state.tone_queue[voice].qsize()-1)
 
     def is_playing(self, voice):
         """ A note is playing or queued at the given voice. """
-        return self.queue_length(voice) or audio.next_tone[voice]
+        # this is the only dependence on audio.plugin - inelegant, can remove?
+        return self.queue_length(voice) or audio.plugin.next_tone[voice]
 
     def persist(self, flag):
         """ Set mixer persistence flag (runmode). """
-        message_queue.put(AudioEvent(AUDIO_PERSIST, flag))
+        backend.message_queue.put(backend.Event(backend.AUDIO_PERSIST, flag))
 
     ### PLAY statement
 

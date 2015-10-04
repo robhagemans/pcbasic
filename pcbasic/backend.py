@@ -19,6 +19,32 @@ import error
 
 video_queue = Queue.Queue()
 input_queue = Queue.Queue()
+# audio queues
+message_queue = Queue.Queue()
+tone_queue = None
+
+
+class PersistentQueue(Queue.Queue):
+    """ Simple picklable Queue. """
+
+    def __getstate__(self):
+        """ Get pickling dict for queue. """
+        qlist = []
+        while True:
+            try:
+                qlist.append(self.get(False))
+                self.task_done()
+            except Queue.Empty:
+                break
+        return { 'qlist': qlist }
+
+    def __setstate__(self, st):
+        """ Initialise queue from pickling dict. """
+        self.__init__()
+        qlist = st['qlist']
+        for item in qlist:
+            self.put(item)
+
 
 class Event(object):
     """ Signal object for video queue. """
@@ -28,6 +54,13 @@ class Event(object):
         self.event_type = event_type
         self.params = params
 
+
+# audio queue signals
+AUDIO_TONE = 0
+AUDIO_STOP = 1
+AUDIO_NOISE = 2
+AUDIO_QUIT = 4
+AUDIO_PERSIST = 6
 
 # video queue signals
 # save state and quit
@@ -116,7 +149,16 @@ def prepare():
         pcjr_sound = config.get('syntax')
     else:
         pcjr_sound = None
+    global tone_queue
+    # persist tone queue
+    state.console_state.tone_queue = [PersistentQueue(), PersistentQueue(),
+                                      PersistentQueue(), PersistentQueue() ]
+    # kludge: link tone queue to global
+    # NOTE that we shouldn't assign to either of these queues after this point
+    tone_queue = state.console_state.tone_queue
+    # set up events
     state.basic_state.events = Events()
+
 
 ###############################################################################
 # main event checker
