@@ -18,7 +18,6 @@ PC-BASIC depends on the following open-source projects:
   * [PyGame](http://www.pygame.org)
   * [Simple DirectMedia Layer (SDL)](http://www.libsdl.org)
   * [NumPy](http://www.numpy.org)
-  * [PyXDG](http://freedesktop.org/wiki/Software/pyxdg/)
   * [Python for Windows Extensions (PyWin32)](https://sourceforge.net/projects/pywin32/)
   * [PySerial](http://pyserial.sourceforge.net/pyserial.html)
   * [PExpect](http://pexpect.readthedocs.org/en/latest/)

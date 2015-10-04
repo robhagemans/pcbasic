@@ -8,7 +8,7 @@
 <section>
     <h3 id="man_files">Files</h3>
     <dl>
-        <dt><code><i>~/.config/pcbasic/PCBASIC.INI</i></code></dt>
+        <dt><code><i>$XDG_CONFIG_HOME/PCBASIC.INI</i></code> or <code><i>~/.config/pcbasic/PCBASIC.INI</i></code></dt>
         <dd>
             User configuration file. Options in this file take the form of command-line options
             without the preceding <code><b>--</b></code>. One option per line. Options added under the <code>[pcbasic]</code>
@@ -17,7 +17,7 @@
             of that name is loaded.
         </dd>
 
-        <dt><code><i>~/.local/share/pcbasic/PCBASIC.SAV</i></code></dt>
+        <dt><code><i>$XDG_DATA_HOME/PCBASIC.SAV</i></code> or <code><i>~/.local/share/pcbasic/PCBASIC.SAV</i></code></dt>
         <dd>
             Saved state of the last PC-BASIC session.
             Continue the last session with <code><b><a href="#--resume">--resume</a></b></code>.

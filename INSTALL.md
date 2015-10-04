@@ -12,7 +12,6 @@ The following packages are needed or recommended when installing PC-BASIC from s
 |-----------------------------------------------------------------|--------------------|--------------|----------------------------
 | [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all                | required     |
 | [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows            | required     |
-| [PyXDG](http://freedesktop.org/wiki/Software/pyxdg/)            | Linux, other       | required     |
 | [PyGame 1.9.1](http://www.pygame.org/download.shtml)            | all                | essential    | sound and graphics
 | [NumPy](https://sourceforge.net/projects/numpy/files/)          | all                | essential    | sound and graphics
 | [PySerial](https://pypi.python.org/pypi/pyserial)               | all                | recommended  | physical or emulated serial port access

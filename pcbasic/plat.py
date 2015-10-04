@@ -50,9 +50,10 @@ elif system == 'Android':
     user_config_dir = info_dir
     state_path = info_dir
 else:
-    import xdg.BaseDirectory
-    user_config_dir = os.path.join(xdg.BaseDirectory.xdg_config_home, 'pcbasic')
-    state_path = os.path.join(xdg.BaseDirectory.xdg_data_home, 'pcbasic')
+    xdg_data_home = os.environ.get('XDG_DATA_HOME') or os.path.join(home_dir, '.local', 'share')
+    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or os.path.join(home_dir, '.config')
+    user_config_dir = os.path.join(xdg_config_home, 'pcbasic')
+    state_path = os.path.join(xdg_data_home, 'pcbasic')
 if not os.path.exists(state_path):
     os.makedirs(state_path)
 
