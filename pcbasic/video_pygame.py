@@ -46,7 +46,6 @@ if plat.system == 'Windows':
 
 # monitor type and colours
 composite_monitor = False
-mono_monitor = False
 composite_640_palette = None
 # screen size parameters
 fullscreen = False
@@ -74,7 +73,7 @@ def prepare():
     global composite_monitor
     global composite_640_palette, border_width
     global mousebutton_copy, mousebutton_paste, mousebutton_pen
-    global mono_monitor, aspect, force_square_pixel
+    global aspect, force_square_pixel
     global caption
     # display dimensions
     force_display_size = config.get('dimensions')
@@ -85,8 +84,6 @@ def prepare():
     smooth = (config.get('scaling') == 'smooth')
     # don't catch Alt+F4
     noquit = config.get('nokill')
-    # monitor choice
-    mono_monitor =  config.get('monitor') == 'mono'
     # if no composite palette available for this card, ignore.
     composite_monitor = (config.get('monitor') == 'composite' and
                          config.get('video') in composite_640)
