@@ -99,11 +99,6 @@ def prepare():
                          config.get('video') in composite_640)
     if composite_monitor:
             composite_640_palette = composite_640[config.get('video')]
-    # keyboard setting based on video card...
-    if config.get('video') == 'tandy':
-        # enable tandy F11, F12
-        key_to_scan[pygame.K_F11] = scancode.F11
-        key_to_scan[pygame.K_F12] = scancode.F12
     # mouse setups
     buttons = { 'left': 1, 'middle': 2, 'right': 3, 'none': -1 }
     mousebutton_copy = buttons[config.get('copy-paste')[0]]
@@ -1008,6 +1003,7 @@ if pygame:
         pygame.K_F5: scancode.F5, pygame.K_F6: scancode.F6,
         pygame.K_F7: scancode.F7, pygame.K_F8: scancode.F8,
         pygame.K_F9: scancode.F9, pygame.K_F10: scancode.F10,
+        pygame.K_F11: scancode.F11, pygame.K_F12: scancode.F12,
         # top middle
         pygame.K_NUMLOCK: scancode.NUMLOCK,
         pygame.K_SCROLLOCK: scancode.SCROLLOCK,
