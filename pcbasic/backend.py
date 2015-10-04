@@ -306,7 +306,7 @@ class KeyHandler(EventHandler):
 
     def check(self):
         """ Trigger KEY events. """
-        scancode, modifiers, _ = state.console_state.keyb.buf.peek_all()
+        _, scancode, modifiers = state.console_state.keyb.buf.peek_all()
         # build KEY trigger code
         # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt
         # second byte is scan code; first byte
