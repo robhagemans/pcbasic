@@ -28,7 +28,7 @@ import backend
 import audio
 import audio_none
 import audio_beep
-#import audio_pygame
+import audio_pygame
 
 
 # sound capabilities - '', 'pcjr' or 'tandy'

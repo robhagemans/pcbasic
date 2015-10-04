@@ -30,13 +30,24 @@ else:
 
 from math import ceil
 import logging
-import threading
 import Queue
 
-import sound
+import backend
+import audio
+
+tick_ms = 24
+# quit sound server after quiet period of quiet_quit ticks
+# to avoid high-ish cpu load from the sound server.
+quiet_quit = 10000
+
+# mixer settings
+mixer_bits = 16
+sample_rate = 44100
+
 
 def prepare():
     """ Initialise sound module. """
+    audio.plugin_dict['pygame'] = AudioPygame
     if pygame:
         # must be called before pygame.init()
         if mixer:
@@ -44,52 +55,157 @@ def prepare():
 
 
 ##############################################################################
-# interface
+# plugin
 
-def init():
-    """ Initialise sound system. """
-    if not numpy:
-        logging.warning('NumPy module not found. Failed to initialise audio.')
-        return False
-    if not mixer:
-        return False
-    launch_thread()
-    return True
+class AudioPygame(audio.AudioPlugin):
+    """ Pygame-based audio plugin. """
 
-def close():
-    """ Clean up and exit sound system. """
-    # drain signal queue (to allow for persistence) and request exit
-    if sound.message_queue:
-        sound.message_queue.put(sound.AudioEvent(sound.AUDIO_QUIT))
-        sound.message_queue.join()
-    # don't wait for tone que, it will not drain but be pickled later.
-    if thread and thread.is_alive():
-        # signal quit and wait for thread to finish
-        thread.join()
+    def __init__(self):
+        """ Initialise sound system. """
+        if not numpy:
+            logging.warning('NumPy module not found. Failed to initialise audio.')
+            raise audio.InitFailed()
+        if not mixer:
+            raise audio.InitFailed()
+        # currently looping sound
+        self.loop_sound = [ None, None, None, None ]
+        # do not quit mixer if true
+        self.persist = False
+        # keep track of quiet time to shut down mixer after a while
+        self.quiet_ticks = 0
+        audio.AudioPlugin.__init__(self)
 
-# sound generators for sounds not played yet
-# if not None, something is playing
-next_tone = [ None, None, None, None ]
+    def _init_sound(self):
+        """ Perform any necessary initialisations. """
+        # initialise mixer as silent
+        # this is necessary to be able to set channels to mono
+        mixer.quit()
+
+    def _sleep(self):
+        """ Sleep a tick to avoid hogging the cpu. """
+        pygame.time.wait(tick_ms)
+
+    def _drain_message_queue(self):
+        """ Drain signal queue. """
+        alive = True
+        while alive:
+            try:
+                signal = backend.message_queue.get(False)
+            except Queue.Empty:
+                return True
+            if signal.event_type == backend.AUDIO_STOP:
+                # stop all channels
+                for voice in range(4):
+                    stop_channel(voice)
+                self.loop_sound = [None, None, None, None]
+                self.next_tone = [None, None, None, None]
+            elif signal.event_type == backend.AUDIO_QUIT:
+                # close thread after task_done
+                alive = False
+            elif signal.event_type == backend.AUDIO_PERSIST:
+                # allow/disallow mixer to quit
+                self.persist = signal.params
+            backend.message_queue.task_done()
+
+    def _drain_tone_queue(self):
+        """ Drain signal queue. """
+        empty = False
+        while not empty:
+            empty = True
+            for voice, q in enumerate(backend.tone_queue):
+                # don't get the next tone if we're still working on one
+                if self.next_tone[voice]:
+                    continue
+                try:
+                    signal = q.get(False)
+                    empty = False
+                except Queue.Empty:
+                    continue
+                if signal.event_type == backend.AUDIO_TONE:
+                    # enqueue a tone
+                    self.next_tone[voice] = SoundGenerator(signal_sources[voice],
+                                                      feedback_tone, *signal.params)
+                elif signal.event_type == backend.AUDIO_NOISE:
+                    # enqueue a noise
+                    feedback = feedback_noise if signal.params[0] else feedback_periodic
+                    self.next_tone[voice] = SoundGenerator(signal_sources[3],
+                                                      feedback, *signal.params[1:])
+        return empty
+
+    def _play_sound(self):
+        """ play sounds. """
+        current_chunk = [ None, None, None, None ]
+        if (self.next_tone == [ None, None, None, None ]
+                and self.loop_sound == [ None, None, None, None ]):
+            return
+        check_init_mixer()
+        for voice in range(4):
+            # if there is a sound queue, stop looping sound
+            if self.next_tone[voice] and self.loop_sound[voice]:
+                stop_channel(voice)
+                self.loop_sound[voice] = None
+            if mixer.Channel(voice).get_queue() is None:
+                if self.next_tone[voice]:
+                    if self.next_tone[voice].loop:
+                        # it's a looping tone, handle there
+                        self.loop_sound[voice] = self.next_tone[voice]
+                        self.next_tone[voice] = None
+                        backend.tone_queue[voice].task_done()
+                    else:
+                        current_chunk[voice] = numpy.array([], dtype=numpy.int16)
+                        while (self.next_tone[voice] and
+                                        len(current_chunk[voice]) < chunk_length):
+                            chunk = self.next_tone[voice].build_chunk()
+                            if chunk is None:
+                                # tone has finished
+                                self.next_tone[voice] = None
+                                backend.tone_queue[voice].task_done()
+                            else:
+                                current_chunk[voice] = numpy.concatenate(
+                                                    (current_chunk[voice], chunk))
+                if self.loop_sound[voice]:
+                    # currently looping sound
+                    current_chunk[voice] = self.loop_sound[voice].build_chunk()
+        for voice in range(4):
+            if current_chunk[voice] is not None and len(current_chunk[voice]) != 0:
+                snd = pygame.sndarray.make_sound(current_chunk[voice])
+                mixer.Channel(voice).queue(snd)
+        # check if mixer can be quit
+        self._check_quit()
+
+    def _check_quit(self):
+        """ Quit the mixer if not running a program and sound quiet for a while. """
+        global quiet_ticks
+        if self.next_tone != [None, None, None, None]:
+            self.quiet_ticks = 0
+        else:
+            self.quiet_ticks += 1
+            if not self.persist and self.quiet_ticks > quiet_quit:
+                # mixer is quiet and we're not running a program.
+                # quit to reduce pulseaudio cpu load
+                # this takes quite a while and leads to missed frames...
+                if mixer.get_init() is not None:
+                    mixer.quit()
+                self.quiet_ticks = 0
+
+
+def stop_channel(channel):
+    """ Stop sound on a channel. """
+    if mixer.get_init():
+        mixer.Channel(channel).stop()
+        # play short silence to avoid blocking the channel
+        # otherwise it won't play on queue()
+        silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.int16))
+        mixer.Channel(channel).play(silence)
+
+def check_init_mixer():
+    """ Initialise the mixer if necessary. """
+    if mixer.get_init() is None:
+        mixer.init()
+
 
 ##############################################################################
-# implementation
-
-thread = None
-
-tick_ms = 24
-# quit sound server after quiet period of quiet_quit ticks
-# to avoid high-ish cpu load from the sound server.
-quiet_quit = 10000
-quiet_ticks = 0
-# do not quit mixer if true
-persist = False
-
-# currently looping sound
-loop_sound = [ None, None, None, None ]
-
-# mixer settings
-mixer_bits = 16
-sample_rate = 44100
+# synthesizer
 
 # initial condition - see dosbox source
 init_noise = 0x0f35
@@ -206,143 +322,5 @@ signal_sources = [  SignalSource(feedback_tone),
                     SignalSource(feedback_tone),
                     SignalSource(feedback_noise, init_noise) ]
 
-
-def launch_thread():
-    """ Launch consumer thread. """
-    global thread
-    thread = threading.Thread(target=consumer_thread)
-    thread.start()
-
-def consumer_thread():
-    """ Audio signal queue consumer thread. """
-    # initialise mixer as silent
-    # this is necessary to be able to set channels to mono
-    mixer.quit()
-    while drain_message_queue():
-        empty = drain_tone_queue()
-        # generate and play chunks
-        play_sound()
-        # do not hog cpu
-        if empty and next_tone == [None, None, None, None]:
-            pygame.time.wait(tick_ms)
-
-def drain_message_queue():
-    """ Drain signal queue. """
-    global next_tone, loop_sound, persist
-    alive = True
-    while alive:
-        try:
-            signal = sound.message_queue.get(False)
-        except Queue.Empty:
-            return True
-        if signal.event_type == sound.AUDIO_STOP:
-            # stop all channels
-            for voice in range(4):
-                stop_channel(voice)
-            loop_sound = [None, None, None, None]
-            next_tone = [None, None, None, None]
-        elif signal.event_type == sound.AUDIO_QUIT:
-            # close thread after task_done
-            alive = False
-        elif signal.event_type == sound.AUDIO_PERSIST:
-            # allow/disallow mixer to quit
-            persist = signal.params
-        sound.message_queue.task_done()
-
-def drain_tone_queue():
-    """ Drain signal queue. """
-    empty = False
-    while not empty:
-        empty = True
-        for voice, q in enumerate(sound.tone_queue):
-            # don't get the next tone if we're still working on one
-            if next_tone[voice]:
-                continue
-            try:
-                signal = q.get(False)
-                empty = False
-            except Queue.Empty:
-                continue
-            if signal.event_type == sound.AUDIO_TONE:
-                # enqueue a tone
-                next_tone[voice] = SoundGenerator(signal_sources[voice],
-                                                  feedback_tone, *signal.params)
-            elif signal.event_type == sound.AUDIO_NOISE:
-                # enqueue a noise
-                feedback = feedback_noise if signal.params[0] else feedback_periodic
-                next_tone[voice] = SoundGenerator(signal_sources[3],
-                                                  feedback, *signal.params[1:])
-    return empty
-
-def play_sound():
-    """ play sounds. """
-    global loop_sound
-    current_chunk = [ None, None, None, None ]
-    if (next_tone == [ None, None, None, None ]
-            and loop_sound == [ None, None, None, None ]):
-        return
-    check_init_mixer()
-    for voice in range(4):
-        # if there is a sound queue, stop looping sound
-        if next_tone[voice] and loop_sound[voice]:
-            stop_channel(voice)
-            loop_sound[voice] = None
-        if mixer.Channel(voice).get_queue() is None:
-            if next_tone[voice]:
-                if next_tone[voice].loop:
-                    # it's a looping tone, handle there
-                    loop_sound[voice] = next_tone[voice]
-                    next_tone[voice] = None
-                    sound.tone_queue[voice].task_done()
-                else:
-                    current_chunk[voice] = numpy.array([], dtype=numpy.int16)
-                    while (next_tone[voice] and
-                                    len(current_chunk[voice]) < chunk_length):
-                        chunk = next_tone[voice].build_chunk()
-                        if chunk is None:
-                            # tone has finished
-                            next_tone[voice] = None
-                            sound.tone_queue[voice].task_done()
-                        else:
-                            current_chunk[voice] = numpy.concatenate(
-                                                (current_chunk[voice], chunk))
-            if loop_sound[voice]:
-                # currently looping sound
-                current_chunk[voice] = loop_sound[voice].build_chunk()
-    for voice in range(4):
-        if current_chunk[voice] is not None and len(current_chunk[voice]) != 0:
-            snd = pygame.sndarray.make_sound(current_chunk[voice])
-            mixer.Channel(voice).queue(snd)
-    # check if mixer can be quit
-    check_quit()
-
-def check_quit():
-    """ Quit the mixer if not running a program and sound quiet for a while. """
-    global quiet_ticks
-    if next_tone != [None, None, None, None]:
-        quiet_ticks = 0
-    else:
-        quiet_ticks += 1
-        if not persist and quiet_ticks > quiet_quit:
-            # mixer is quiet and we're not running a program.
-            # quit to reduce pulseaudio cpu load
-            # this takes quite a while and leads to missed frames...
-            if mixer.get_init() is not None:
-                mixer.quit()
-            quiet_ticks = 0
-
-def stop_channel(channel):
-    """ Stop sound on a channel. """
-    if mixer.get_init():
-        mixer.Channel(channel).stop()
-        # play short silence to avoid blocking the channel
-        # otherwise it won't play on queue()
-        silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.int16))
-        mixer.Channel(channel).play(silence)
-
-def check_init_mixer():
-    """ Initialise the mixer if necessary. """
-    if mixer.get_init() is None:
-        mixer.init()
 
 prepare()
