@@ -139,22 +139,12 @@ def check_events():
     """ Main event cycle. """
     time.sleep(tick_s)
     check_input()
-    trigger_basic_events()
-
-def trigger_basic_events():
-    """ Trigger & handle BASIC events. """
     if state.basic_state.run_mode:
-        for k in state.basic_state.events.key:
-            k.check()
-        # trigger TIMER, PLAY and COM events
-        state.basic_state.events.timer.check()
-        state.basic_state.events.play.check()
-        for c in state.basic_state.events.com:
-            c.check()
+        for e in state.basic_state.events.all:
+            e.check()
 
 def check_input():
     """ Handle input events. """
-    # PEN and STRIG are triggered on handling the input queue
     while True:
         try:
             signal = input_queue.get(False)
@@ -236,7 +226,6 @@ class EventHandler(object):
 
     def check(self):
         """ Stub for event checker. """
-        pass
 
 
 class PlayHandler(EventHandler):
@@ -352,6 +341,30 @@ class KeyHandler(EventHandler):
             self.scancode = ord(keystr[1])
 
 
+class PenHandler(EventHandler):
+    """ Manage PEN events. """
+
+    def check(self):
+        """ Trigger PEN events. """
+        if state.console_state.pen.poll_event():
+            self.trigger()
+
+
+class StrigHandler(EventHandler):
+    """ Manage STRIG events. """
+
+    def __init__(self, joy, button):
+        """ Initialise STRIG trigger. """
+        EventHandler.__init__(self)
+        self.joy = joy
+        self.button = button
+
+    def check(self):
+        """ Trigger STRIG events. """
+        if state.console_state.stick.poll_event(self.joy, self.button):
+            self.trigger()
+
+
 class Events(object):
     """ Event management. """
 
@@ -375,8 +388,10 @@ class Events(object):
         self.timer = TimerHandler()
         self.play = PlayHandler()
         self.com = [ComHandler(0), ComHandler(1)]
-        self.pen = EventHandler()
-        self.strig = [EventHandler() for _ in xrange(4)]
+        self.pen = PenHandler()
+        # joy*2 + button
+        self.strig = [StrigHandler(joy, button)
+                      for joy in range(2) for button in range(2)]
         # all handlers in order of handling; TIMER first
         # key events are not handled FIFO but first 11-20 in that order, then 1-10
         self.all = ([self.timer]
@@ -732,16 +747,19 @@ class Pen(object):
 
     def __init__(self):
         """ Initialise light pen. """
+        # signal pen has been down for PEN polls in poll()
         self.was_down = False
+        # signal pen has been down for event triggers in poll_event()
+        self.was_down_event = False
         self.down_pos = (0, 0)
 
     def down(self, x, y):
         """ Report a pen-down event at graphical x,y """
         global pen_is_down
-        # trigger PEN event
-        state.basic_state.events.pen.trigger()
         # TRUE until polled
         self.was_down = True
+        # TRUE until events checked
+        self.was_down_event = True
         # TRUE until pen up
         pen_is_down = True
         self.down_pos = x, y
@@ -755,6 +773,11 @@ class Pen(object):
         """ Report a pen-move event at graphical x,y """
         global pen_pos
         pen_pos = x, y
+
+    def poll_event(self):
+        """ Poll the pen for a pen-down event since last poll. """
+        result, self.was_down_event = self.was_down_event, False
+        return result
 
     def poll(self, fn):
         """ Poll the pen. """
@@ -800,6 +823,7 @@ class Stick(object):
         """ Initialise joysticks. """
         self.is_on = False
         self.was_fired = [[False, False], [False, False]]
+        self.was_fired_event = [[False, False], [False, False]]
 
     def switch(self, on):
         """ Switch joystick handling on or off. """
@@ -810,8 +834,7 @@ class Stick(object):
         try:
             self.was_fired[joy][button] = True
             stick_is_firing[joy][button] = True
-            # trigger STRIG event
-            state.basic_state.events.strig[joy*2 + button].trigger()
+            self.was_fired_event[joy][button] = True
         except IndexError:
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
@@ -831,6 +854,12 @@ class Stick(object):
         except IndexError:
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
+
+    def poll_event(self, joy, button):
+        """ Poll the joystick for button events since last poll. """
+        result = self.was_fired_event[joy][button]
+        self.was_fired_event[joy][button] = False
+        return result
 
     def poll(self, fn):
         """ Poll the joystick axes. """
