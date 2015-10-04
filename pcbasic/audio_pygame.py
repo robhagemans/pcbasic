@@ -16,17 +16,10 @@ try:
 except ImportError:
     numpy = None
 
-import plat
-if plat.system == 'Android':
-    android = True
-    # don't do sound for now on Android
-    mixer = None
+if pygame:
+    import pygame.mixer as mixer
 else:
-    android = False
-    if pygame:
-        import pygame.mixer as mixer
-    else:
-        mixer = None
+    mixer = None
 
 from math import ceil
 import logging

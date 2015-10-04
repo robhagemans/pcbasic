@@ -41,13 +41,6 @@ if plat.system == 'Windows':
         # old versions of Windows don't have this in user32.dll
         pass
 
-# Android-specific definitions
-android = (plat.system == 'Android')
-if android:
-    numpy = None
-    if pygame:
-        import pygame_android
-
 
 ###############################################################################
 
@@ -203,9 +196,6 @@ class VideoPygame(video.VideoPlugin):
         pygame.key.set_repeat(500, 24)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
-        if android:
-            pygame_android.init()
-            state_loaded = False
         pygame.joystick.init()
         self.joysticks = [pygame.joystick.Joystick(x)
                             for x in range(pygame.joystick.get_count())]
@@ -232,8 +222,6 @@ class VideoPygame(video.VideoPlugin):
     def _close_pygame(self):
         """ Close pygame modules and displays. """
         # if pygame import failed, close() is called while pygame is None
-        if android:
-            pygame_android.close()
         if pygame:
             pygame.joystick.quit()
             pygame.display.quit()
@@ -312,11 +300,7 @@ class VideoPygame(video.VideoPlugin):
         """ Handle key-down event. """
         c = ''
         mods = pygame.key.get_mods()
-        if e.key == pygame.K_MENU and android:
-            # Android: toggle keyboard on menu key
-            pygame_android.toggle_keyboard()
-            self.screen_changed = True
-        elif e.key == pygame.K_F11:
+        if e.key == pygame.K_F11:
             self.f11_active = True
             self.clipboard.start(self.cursor_row, self.cursor_col)
         elif self.f11_active:
@@ -327,19 +311,17 @@ class VideoPygame(video.VideoPlugin):
                                 self.size[0], self.size[1], self.border_width))
             self.clipboard.handle_key(e)
         else:
-            if not android:
-                # android unicode values are wrong, use the scancode only
-                utf8 = e.unicode.encode('utf-8')
-                try:
-                    c = unicodepage.from_utf8(utf8)
-                except KeyError:
-                    # no codepage encoding found, ignore
-                    # this happens for control codes like '\r' since
-                    # unicodepage defines the special graphic characters for those
-                    # let control codes be handled by scancode
-                    # as e.unicode isn't always the correct thing for ascii controls
-                    # e.g. ctrl+enter should be '\n' but has e.unicode=='\r'
-                    pass
+            utf8 = e.unicode.encode('utf-8')
+            try:
+                c = unicodepage.from_utf8(utf8)
+            except KeyError:
+                # no codepage encoding found, ignore
+                # this happens for control codes like '\r' since
+                # unicodepage defines the special graphic characters for those
+                # let control codes be handled by scancode
+                # as e.unicode isn't always the correct thing for ascii controls
+                # e.g. ctrl+enter should be '\n' but has e.unicode=='\r'
+                pass
             # double NUL characters, as single NUL signals scan code
             if len(c) == 1 and ord(c) == 0:
                 c = '\0\0'
@@ -348,22 +330,6 @@ class VideoPygame(video.VideoPlugin):
                 scan = key_to_scan[e.key]
             except KeyError:
                 scan = None
-            if android:
-                # android hacks - send keystroke sequences
-                if e.key == pygame.K_ASTERISK:
-                    backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
-                            (scancode.RSHIFT, '')))
-                    backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
-                            (scancode.N8, '*')))
-                    backend.input_queue.put(backend.Event(backend.KEYB_UP,
-                            scancode.RSHIFT))
-                elif e.key == pygame.K_AT:
-                    backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
-                            (scancode.RSHIFT, '')))
-                    backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
-                            (scancode.N2, '@')))
-                    backend.input_queue.put(backend.Event(backend.KEYB_UP,
-                            scancode.RSHIFT))
             if plat.system == 'Windows':
                 # Windows 7 and above send AltGr as Ctrl+RAlt
                 # if 'altgr' option is off, Ctrl+RAlt is sent.
@@ -394,13 +360,6 @@ class VideoPygame(video.VideoPlugin):
 
     def _check_display(self):
         """ Check screen and blink events; update screen if necessary. """
-        # handle Android pause/resume
-        if android and pygame_android.check_events():
-            # force immediate redraw of screen
-            self._do_flip()
-            # force redraw on next tick
-            # we seem to have to redraw twice to see anything
-            self.screen_changed = True
         self.blink_state = 0
         if self.mode_has_blink:
             self.blink_state = 0 if self.cycle < self.blink_cycles * 2 else 1
@@ -439,10 +398,6 @@ class VideoPygame(video.VideoPlugin):
         self._draw_cursor(workscreen)
         if self.clipboard.active():
             self.clipboard.create_feedback(workscreen)
-        # android: shift screen if keyboard is on so that cursor remains visible
-        if android:
-            pygame_android.shift_screen(screen, border_x, border_y,
-                                        self.size, self.cursor_row, self.font_height)
         if self.composite_artifacts and numpy:
             screen = apply_composite_artifacts(screen, 4//self.bitsperpixel)
             screen.set_palette(composite_640_palette)
