@@ -144,6 +144,8 @@ def check_events():
 def trigger_basic_events():
     """ Trigger & handle BASIC events. """
     if state.basic_state.run_mode:
+        for k in state.basic_state.events.key:
+            k.check()
         # trigger TIMER, PLAY and COM events
         state.basic_state.events.timer.check()
         state.basic_state.events.play.check()
@@ -152,7 +154,7 @@ def trigger_basic_events():
 
 def check_input():
     """ Handle input events. """
-    # KEY, PEN and STRIG are triggered on handling the input queue
+    # PEN and STRIG are triggered on handling the input queue
     while True:
         try:
             signal = input_queue.get(False)
@@ -189,20 +191,6 @@ def check_input():
             state.console_state.stick.moved(*signal.params)
         elif signal.event_type == CLIP_PASTE:
             state.console_state.keyb.insert_chars(signal.params, check_full=False)
-
-
-
-#D
-def check_key_event(scancode, modifiers):
-    """ Trigger KEYboard events. """
-    if not scancode:
-        return False
-    result = False
-    for k in state.basic_state.events.key:
-        k.set_scancode_for_check(scancode, modifiers)
-        # drop from keyboard queu if triggered and enabled
-        result = result or k.check()
-    return result
 
 
 ###############################################################################
@@ -327,17 +315,9 @@ class KeyHandler(EventHandler):
         self.scancode = scancode
         self.predefined = (scancode is not None)
 
-    #D
-    # access keyqueue from check() instead
-    def set_scancode_for_check(self, scancode, modifiers):
-        """ Kludge. """
-        self.check_scancode = scancode
-        self.check_modifiers = modifiers
-
     def check(self):
         """ Trigger KEY events. """
-        scancode = self.check_scancode
-        modifiers = self.check_modifiers
+        scancode, modifiers, _ = state.console_state.keyb.buf.peek_all()
         # build KEY trigger code
         # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt
         # second byte is scan code; first byte
@@ -350,14 +330,16 @@ class KeyHandler(EventHandler):
         #  128       if we are defining some extended key
         # extended keys are for example the arrow keys on the non-numerical keyboard
         # presumably all the keys in the middle region of a standard PC keyboard?
-        if self.predefined:
+        modcode = None
+        if modifiers and not self.predefined:
             # for predefined keys, modifier is ignored
-            modcode = None
-        else:
             # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
             modcode = modifiers & 0x6f
         if (self.modcode == modcode and self.scancode and
                     self.scancode == scancode):
+            # drop key from key buffer
+            state.console_state.keyb.buf.getc(expand=False)
+            # trigger event
             self.trigger()
             return self.enabled
         return False
@@ -424,14 +406,23 @@ modifier = {
 state.console_state.key_replace = [
     'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
     'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
-# default function key scancodes for KEY autotext. F1-F10
-# F11 and F12 here are TANDY scancodes only!
+# default function key eascii codes for KEY autotext. F1-F10
+# F11 and F12 here are TANDY eascii codes only!
 function_key = {
-    scancode.F1: 0, scancode.F2: 1, scancode.F3: 2, scancode.F4: 3,
-    scancode.F5: 4, scancode.F6: 5, scancode.F7: 6, scancode.F8: 7,
-    scancode.F9: 8, scancode.F10: 9, scancode.F11: 10, scancode.F12: 11}
+    '\0\x3b': 0, '\0\x3c': 1, '\0\x3d': 2, '\0\x3e': 3,
+    '\0\x3f': 4, '\0\x40': 5, '\0\x41': 6, '\0\x42': 7,
+    '\0\x43': 8, '\0\x44': 9, '\x98': 10, '\x99': 11}
 # switch off macro repacements
 state.basic_state.key_macros_off = False
+
+
+def expand_key(c):
+    """ Expand function key macros. """
+    try:
+        keynum = function_key[c]
+        return list(state.console_state.key_replace[keynum])
+    except KeyError:
+        return [c]
 
 
 def prepare_keyboard():
@@ -449,9 +440,9 @@ def prepare_keyboard():
     for u in keystring:
         c = u.encode('utf-8')
         try:
-            state.console_state.keyb.buf.insert(unicodepage.from_utf8(c))
+            state.console_state.keyb.buf.insert(unicodepage.from_utf8(c), check_full=False)
         except KeyError:
-            state.console_state.keyb.buf.insert(c)
+            state.console_state.keyb.buf.insert(c, check_full=False)
     # handle caps lock only if requested
     ignore_caps = not config.get('capture-caps')
     # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
@@ -472,6 +463,8 @@ class KeyboardBuffer(object):
         self.ring_length = ring_length
         self.start = 0
         self.insert(s)
+        # expansion buffer for keyboard macros; also used for DBCS
+        self.expansion_vessel = []
 
     def length(self):
         """ Return the number of keystrokes in the buffer. """
@@ -479,35 +472,58 @@ class KeyboardBuffer(object):
 
     def is_empty(self):
         """ True if no keystrokes in buffer. """
-        return len(self.buffer) == 0
+        return len(self.buffer) == 0 and len(self.expansion_vessel) == 0
 
     def insert(self, s, check_full=True):
         """ Append a string of e-ascii keystrokes. """
         d = ''
         for c in s:
-            if check_full and len(self.buffer) >= self.ring_length:
-                return False
             if d or c != '\0':
-                self.buffer.append(d+c)
+                self.insert_keypress(d+c, None, None, check_full)
                 d = ''
             elif c == '\0':
                 d = c
-        return True
 
-    def getc(self):
+    def insert_keypress(self, eascii, scancode, modifier, check_full=True):
+        """ Append a single keystroke with scancode, modifier. """
+        if check_full and len(self.buffer) >= self.ring_length:
+            # emit a sound signal when buffer is full (and we care)
+            state.console_state.sound.play_sound(800, 0.01)
+        else:
+            if eascii:
+                self.buffer.append((eascii, scancode, modifier))
+
+    def getc(self, expand=True):
         """ Read a keystroke. """
         try:
-            c = self.buffer.pop(0)
+            return self.expansion_vessel.pop(0)
         except IndexError:
-            c = ''
-        if c:
-            self.start = (self.start + 1) % self.ring_length
-        return c
+            try:
+                c = self.buffer.pop(0)[0]
+            except IndexError:
+                c = ''
+            if c:
+                self.start = (self.start + 1) % self.ring_length
+            if not expand:
+                return c
+            else:
+                self.expansion_vessel = expand_key(c)
+                try:
+                    return self.expansion_vessel.pop(0)
+                except IndexError:
+                    return ''
+
+    def peek_all(self):
+        """ Show top keystroke in keyboard buffer. """
+        try:
+            return self.buffer[0]
+        except IndexError:
+            return ('', None, None)
 
     def peek(self):
         """ Show top keystroke in keyboard buffer. """
         try:
-            return self.buffer[0]
+            return self.buffer[0][0]
         except IndexError:
             return ''
 
@@ -535,7 +551,7 @@ class KeyboardBuffer(object):
             # marker of buffer position
             return '\x0d'
         try:
-            return self.buffer[index]
+            return self.buffer[index][0]
         except IndexError:
             return '\0\0'
 
@@ -544,7 +560,7 @@ class KeyboardBuffer(object):
         index = self.ring_index(index)
         if index < self.ring_length:
             try:
-                self.buffer[index] = c
+                self.buffer[index] = (c, None, None)
             except IndexError:
                 pass
 
@@ -555,7 +571,7 @@ class KeyboardBuffer(object):
         start_index = self.ring_index(start)
         stop_index = self.ring_index(stop)
         self.buffer = self.buffer[start_index:] + self.buffer[:stop_index]
-        self.buffer += ['\0']*(length - len(self.buffer))
+        self.buffer += [('\0', None, None)]*(length - len(self.buffer))
         self.start = start
 
 
@@ -601,15 +617,10 @@ class Keyboard(object):
         self.wait_char()
         return self.buf.getc()
 
-
-##############
-
     def insert_chars(self, s, check_full=False):
         """ Insert characters into keyboard buffer. """
         self.pause = False
-        if not self.buf.insert(s, check_full):
-            # keyboard buffer is full; short beep and exit
-            state.console_state.sound.play_sound(800, 0.01)
+        self.buf.insert(s, check_full)
 
     def key_down(self, scan, eascii='', check_full=True):
         """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
@@ -659,27 +670,6 @@ class Keyboard(object):
                 return
             except KeyError:
                 pass
-        # trigger events
-        if check_key_event(scan, self.mod):
-            # this key is being trapped, don't replace
-            return
-        # function key macros
-        try:
-            # only check function keys
-            # can't be redefined in events - so must be fn 1-10 (1-12 on Tandy).
-            keynum = function_key[scan]
-            if (state.basic_state.key_macros_off or state.basic_state.run_mode
-                    and state.basic_state.events.key[keynum].enabled):
-                # this key is paused from being trapped, don't replace
-                self.insert_chars(scan_to_eascii(scan, self.mod), check_full)
-                return
-            else:
-                macro = state.console_state.key_replace[keynum]
-                # insert directly, avoid caps handling
-                self.insert_chars(macro, check_full=check_full)
-                return
-        except KeyError:
-            pass
         if not eascii or (scan is not None and self.mod &
                     (modifier[scancode.ALT] | modifier[scancode.CTRL])):
             # any provided e-ASCII value overrides when CTRL & ALT are off
@@ -696,7 +686,7 @@ class Keyboard(object):
                 eascii = chr(ord(eascii)-32)
             elif eascii >= 'A' and eascii <= 'Z':
                 eascii = chr(ord(eascii)+32)
-        self.insert_chars(eascii, check_full=True)
+        self.buf.insert_keypress(eascii, scan, self.mod, check_full=True)
 
     def key_up(self, scan):
         """ Insert a key-up event. """
@@ -712,7 +702,7 @@ class Keyboard(object):
             char = chr(int(self.keypad_ascii)%256)
             if char == '\0':
                 char = '\0\0'
-            self.insert_chars(char, check_full=True)
+            self.buf.insert(char, check_full=True)
             self.keypad_ascii = ''
 
 
