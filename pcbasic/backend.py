@@ -303,10 +303,17 @@ class KeyHandler(EventHandler):
         self.modcode = None
         self.scancode = scancode
         self.predefined = (scancode is not None)
+        # poll scancode to clear it from keypress dict
+        # where it might liger if this scancode has not tbeen polled before
+        state.console_state.keyb.buf.poll_event(self.scancode)
 
     def check(self):
         """ Trigger KEY events. """
-        _, scancode, modifiers = state.console_state.keyb.buf.peek_all()
+        if self.scancode is None:
+            return False
+        scancode, modifiers = state.console_state.keyb.buf.poll_event(self.scancode)
+        if scancode != self.scancode:
+            return False
         # build KEY trigger code
         # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt
         # second byte is scan code; first byte
@@ -319,19 +326,16 @@ class KeyHandler(EventHandler):
         #  128       if we are defining some extended key
         # extended keys are for example the arrow keys on the non-numerical keyboard
         # presumably all the keys in the middle region of a standard PC keyboard?
-        modcode = None
-        if modifiers and not self.predefined:
-            # for predefined keys, modifier is ignored
-            # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
-            modcode = modifiers & 0x6f
-        if (self.modcode == modcode and self.scancode and
-                    self.scancode == scancode):
-            # drop key from key buffer
-            if self.enabled:
-                state.console_state.keyb.buf.getc(expand=False)
+        #
+        # for predefined keys, modifier is ignored
+        # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
+        if (self.predefined) or (modifiers is None or self.modcode == modifiers & 0x6f):
             # trigger event
             self.trigger()
-            return self.enabled
+            # drop key from key buffer
+            if self.enabled:
+                state.console_state.keyb.buf.drop_any(scancode, modifiers)
+                return True
         return False
 
     def set_trigger(self, keystr):
@@ -481,6 +485,9 @@ class KeyboardBuffer(object):
         self.insert(s)
         # expansion buffer for keyboard macros; also used for DBCS
         self.expansion_vessel = []
+        # dict (scancode: modifier) of all keys that have been pressed for event polls
+        # includes keys that have not made it into the buffer
+        self.has_been_pressed_event = {}
 
     def length(self):
         """ Return the number of keystrokes in the buffer. """
@@ -491,7 +498,7 @@ class KeyboardBuffer(object):
         return len(self.buffer) == 0 and len(self.expansion_vessel) == 0
 
     def insert(self, s, check_full=True):
-        """ Append a string of e-ascii keystrokes. """
+        """ Append a string of e-ascii keystrokes. Does not trigger events (we have no scancodes). """
         d = ''
         for c in s:
             if d or c != '\0':
@@ -502,11 +509,12 @@ class KeyboardBuffer(object):
 
     def insert_keypress(self, eascii, scancode, modifier, check_full=True):
         """ Append a single keystroke with scancode, modifier. """
-        if check_full and len(self.buffer) >= self.ring_length:
-            # emit a sound signal when buffer is full (and we care)
-            state.console_state.sound.play_sound(800, 0.01)
-        else:
-            if eascii:
+        self.has_been_pressed_event[scancode] = modifier
+        if eascii:
+            if check_full and len(self.buffer) >= self.ring_length:
+                # emit a sound signal when buffer is full (and we care)
+                state.console_state.sound.play_sound(800, 0.01)
+            else:
                 self.buffer.append((eascii, scancode, modifier))
 
     def getc(self, expand=True):
@@ -529,12 +537,14 @@ class KeyboardBuffer(object):
                 except IndexError:
                     return ''
 
-    def peek_all(self):
-        """ Show top keystroke in keyboard buffer. """
+    def poll_event(self, scancode):
+        """ Poll the keyboard for a keypress event since last poll. """
         try:
-            return self.buffer[0]
-        except IndexError:
-            return ('', None, None)
+            pressed = self.has_been_pressed_event[scancode]
+            del self.has_been_pressed_event[scancode]
+            return (scancode, pressed)
+        except KeyError:
+            return (None, None)
 
     def peek(self):
         """ Show top keystroke in keyboard buffer. """
@@ -542,6 +552,10 @@ class KeyboardBuffer(object):
             return self.buffer[0][0]
         except IndexError:
             return ''
+
+    def drop_any(self, scancode, modifier):
+        """ Drop any characters with given scancode & mod from keyboard buffer. """
+        self.buffer = [c for c in self.buffer if c[1:] != (scancode, modifier)]
 
     def drop(self, n):
         """ Drop n characters from keyboard buffer. """
