@@ -131,8 +131,6 @@ class VideoPygame(video.VideoPlugin):
         self.border_attr = 0
         # border widh in pixels
         self.border_width = 5
-        # screen width and height in pixels
-        self.display_size = (640, 480)
         # palette and colours
         # composite colour artifacts
         self.composite_artifacts = False
@@ -207,8 +205,6 @@ class VideoPygame(video.VideoPlugin):
         self.set_page(0, 0)
         self.set_mode(backend.initial_mode)
         self.f11_active = False
-        # keep a text buffer (for clipboard operations)
-        self.text = [[[' ']*80 for _ in range(25)]]
         video.VideoPlugin.__init__(self)
 
     def close(self):
