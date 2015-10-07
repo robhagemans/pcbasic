@@ -158,7 +158,6 @@ class VideoPygame(video.VideoPlugin):
         # cursor is visible
         self.cursor_visible = True
         # buffer for text under cursor
-        self.under_cursor = None
         self.under_top_left = None
         # fonts
         # prebuilt glyphs
@@ -415,7 +414,6 @@ class VideoPygame(video.VideoPlugin):
                 (self.cursor_col-1) * self.font_width,
                 (self.cursor_row-1) * self.font_height,
                 self.cursor_width, self.font_height)
-        self.under_cursor.blit(screen, (0,0), area=under_char_area)
         if self.text_mode:
             # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
             if self.cycle/self.blink_cycles in (1, 3):
@@ -695,8 +693,6 @@ class VideoPygame(video.VideoPlugin):
         """ Build a sprite for the cursor. """
         self.cursor_width = width
         self.cursor_from, self.cursor_to = from_line, to_line
-        self.under_cursor = pygame.Surface((width, height), depth=8)
-        self.under_cursor.set_palette(self.work_palette)
         self.cursor = pygame.Surface((width, height), depth=8)
         color, bg = 254, 255
         self.cursor.set_colorkey(bg)
