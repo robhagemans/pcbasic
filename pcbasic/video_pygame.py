@@ -130,11 +130,10 @@ class VideoPygame(video.VideoPlugin):
         # border attribute
         self.border_attr = 0
         # border widh in pixels
-        self.border_width = 5
+        self.border_width = border_width
         # palette and colours
         # composite colour artifacts
         self.composite_artifacts = False
-        self.mode_has_artifacts = False
         # working palette - attribute index in blue channel
         self.work_palette = [(0, 0, index) for index in range(256)]
         # display palettes for blink states 0, 1
@@ -527,6 +526,7 @@ class VideoPygame(video.VideoPlugin):
         self.text = [[[' ']*mode_info.width
                         for _ in range(mode_info.height)]
                         for _ in range(self.num_pages)]
+        self.mode_has_artifacts = False
         if not self.text_mode:
             self.bitsperpixel = mode_info.bitsperpixel
             self.mode_has_artifacts = mode_info.supports_artifacts
