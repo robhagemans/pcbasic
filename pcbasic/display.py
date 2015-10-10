@@ -29,6 +29,7 @@ import video_ansi
 import video_cli
 import video_curses
 import video_pygame
+import video_sdl2
 video_backends = {
     # interface_name: video_plugin_name, fallback, warn_on_fallback
     'none': (('none',), None),

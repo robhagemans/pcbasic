@@ -97,7 +97,10 @@ def prepare():
     # if no composite palette available for this card, ignore.
     composite_monitor = (config.get('monitor') == 'composite' and
                          config.get('video') in composite_640)
-    composite_colors = composite_640[config.get('video')]
+    try:
+        composite_colors = composite_640[config.get('video')]
+    except KeyError:
+        composite_colors = None
     video.plugin_dict['sdl2'] = VideoSDL2
 
 ###############################################################################
@@ -164,7 +167,7 @@ class VideoSDL2(video.VideoPlugin):
             # if a joystick is present, its axes report 128 for mid, not 0
             for axis in (0, 1):
                 backend.input_queue.put(backend.Event(backend.STICK_MOVED,
-                                                      (joy, axis, 128)))
+                                                      (j, axis, 128)))
 
         ###
         # if smooth and self.display.get_bitsize() < 24:
