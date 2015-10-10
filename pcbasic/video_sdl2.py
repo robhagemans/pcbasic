@@ -100,7 +100,7 @@ def prepare():
     try:
         composite_colors = composite_640[config.get('video')]
     except KeyError:
-        composite_colors = None
+        composite_colors = composite_640['cga']
     video.plugin_dict['sdl2'] = VideoSDL2
 
 ###############################################################################
@@ -150,7 +150,7 @@ class VideoSDL2(video.VideoPlugin):
         self.set_icon(backend.icon)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
-        self.move_cursor(0, 0)
+        self.move_cursor(1, 1)
         self.set_page(0, 0)
         self.set_mode(backend.initial_mode)
 
@@ -368,8 +368,9 @@ class VideoSDL2(video.VideoPlugin):
         #     pixels[:] = apply_composite_artifacts(pixels, 4//self.bitsperpixel)
         #     sdl2.SDL_SetSurfacePalette(screen, self.composite_palette)
         # else:
-        #     sdl2.SDL_SetSurfacePalette(screen, self.show_palette[self.blink_state])
-        # self._show_cursor(True)
+
+        sdl2.SDL_SetSurfacePalette(screen, self.show_palette[self.blink_state])
+        self._show_cursor(True)
 
         ###
         #if smooth:
