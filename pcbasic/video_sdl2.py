@@ -277,9 +277,9 @@ class VideoSDL2(video.VideoPlugin):
                 backend.input_queue.put(backend.Event(backend.STICK_MOVED,
                                     (event.jaxis.which, event.jaxis.axis,
                                     int((event.jaxis.value/32768.)*127 + 128))))
-            elif (event.type == sdl2.SDL_WINDOWEVENT and
-                    event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED):
-                self._resize_display(event.window.data1, event.window.data2)
+            elif event.type == sdl2.SDL_WINDOWEVENT:
+                if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
+                    self._resize_display(event.window.data1, event.window.data2)
             elif event.type == sdl2.SDL_QUIT:
                 if noquit:
                     self.set_caption_message('to exit type <CTRL+BREAK> <ESC> SYSTEM')
@@ -495,9 +495,22 @@ class VideoSDL2(video.VideoPlugin):
 
     def _resize_display(self, width, height):
         """ Change the display size. """
-        sdl2.SDL_SetWindowSize(self.display.window, width, height)
+        if self.fullscreen:
+            return
+        maximised = sdl2.SDL_GetWindowFlags(self.display.window) & sdl2.SDL_WINDOW_MAXIMIZED
+        to_maximised = (width >= 0.95*self.physical_size[0] and height >= 0.9*self.physical_size[1])
+        if not maximised:
+            if to_maximised:
+                # force maximise for large windows
+                # workaround for maximised state not reporting correctly (at least on Ubuntu Unity)
+                sdl2.SDL_MaximizeWindow(self.display.window)
+            else:
+                # regular resize on non-maximised windows
+                sdl2.SDL_SetWindowSize(self.display.window, width, height)
+        # it's up to the window manager to get us out of maximised mode
+        # in which case no resizing call is made to SDL
+        # even so, we do need to refresh the surface in this case.
         self.display_surface = self.display.get_surface()
-        # load display if requested
         self.screen_changed = True
 
     def _normalise_pos(self, x, y):
