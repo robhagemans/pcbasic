@@ -148,6 +148,9 @@ class VideoSDL2(video.VideoPlugin):
         self.fullscreen = fullscreen
 
         self.set_icon(backend.icon)
+
+        self._do_create_window(640, 400)
+
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
         self.move_cursor(1, 1)
@@ -211,6 +214,17 @@ class VideoSDL2(video.VideoPlugin):
         sdl2.SDL_FreeSurface(icon)
         sdl2.SDL_FreePalette(icon_palette)
 
+    def _do_create_window(self, width, height):
+        """ Create a new SDL window """
+        flags = sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN
+        if self.fullscreen:
+             flags |= sdl2.SDL_WINDOW_FULLSCREEN | sdl2.SDL_WINDOW_BORDERLESS
+        self.display = sdl2.ext.Window(caption, size=(width, height), flags=flags)
+        self._do_set_icon()
+        self.display_surface = self.display.get_surface()
+        self.screen_changed = True
+
+
     ###########################################################################
     # input cycle
 
@@ -263,9 +277,8 @@ class VideoSDL2(video.VideoPlugin):
                 backend.input_queue.put(backend.Event(backend.STICK_MOVED,
                                     (event.jaxis.which, event.jaxis.axis,
                                     int((event.jaxis.value/32768.)*127 + 128))))
-            elif event.type == sdl2.SDL_WINDOWEVENT and event.window.event in (
-                    sdl2.SDL_WINDOWEVENT_RESIZED, sdl2.SDL_WINDOWEVENT_SIZE_CHANGED):
-                self.fullscreen = False
+            elif (event.type == sdl2.SDL_WINDOWEVENT and
+                    event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED):
                 self._resize_display(event.window.data1, event.window.data2)
             elif event.type == sdl2.SDL_QUIT:
                 if noquit:
@@ -283,8 +296,8 @@ class VideoSDL2(video.VideoPlugin):
         elif self.f11_active:
             # F11+f to toggle fullscreen mode
             if e.key.keysym.sym == sdl2.SDLK_f:
-                self.fullscreen = not fullscreen
-                self._resize_display(*self._find_display_size(
+                self.fullscreen = not self.fullscreen
+                self._do_create_window(*self._find_display_size(
                                 self.size[0], self.size[1], self.border_width))
             self.clipboard.handle_key(e)
         else:
@@ -482,12 +495,8 @@ class VideoSDL2(video.VideoPlugin):
 
     def _resize_display(self, width, height):
         """ Change the display size. """
-        flags = sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN
-        if self.fullscreen:
-             flags |= sdl2.SDL_WINDOW_FULLSCREEN | sdl2.SDL_WINDOW_BORDERLESS
-        self.display = sdl2.ext.Window(caption, size=(width, height), flags=flags)
+        sdl2.SDL_SetWindowSize(self.display.window, width, height)
         self.display_surface = self.display.get_surface()
-        self._do_set_icon()
         # load display if requested
         self.screen_changed = True
 
