@@ -146,17 +146,15 @@ class VideoSDL2(video.VideoPlugin):
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
         self.physical_size = display_mode.w, display_mode.h
         self.fullscreen = fullscreen
-
+        # load the icon
         self.set_icon(backend.icon)
-
+        # create the window initially, size will be corrected later
         self._do_create_window(640, 400)
-
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
         self.move_cursor(1, 1)
         self.set_page(0, 0)
         self.set_mode(backend.initial_mode)
-
         # support for CGA composite
         self.composite_palette = sdl2.SDL_AllocPalette(256)
         colors = (sdl2.SDL_Color * 256)(*[sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in composite_colors])
@@ -218,7 +216,7 @@ class VideoSDL2(video.VideoPlugin):
         """ Create a new SDL window """
         flags = sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN
         if self.fullscreen:
-             flags |= sdl2.SDL_WINDOW_FULLSCREEN | sdl2.SDL_WINDOW_BORDERLESS
+             flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
         self.display = sdl2.ext.Window(caption, size=(width, height), flags=flags)
         self._do_set_icon()
         self.display_surface = self.display.get_surface()
@@ -495,8 +493,6 @@ class VideoSDL2(video.VideoPlugin):
 
     def _resize_display(self, width, height):
         """ Change the display size. """
-        if self.fullscreen:
-            return
         maximised = sdl2.SDL_GetWindowFlags(self.display.window) & sdl2.SDL_WINDOW_MAXIMIZED
         # workaround for maximised state not reporting correctly (at least on Ubuntu Unity)
         # detect if window is very large compared to screen; force maximise if so.
