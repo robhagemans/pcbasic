@@ -116,6 +116,9 @@ class VideoPygame(video.VideoPlugin):
         if not pygame:
             logging.warning('PyGame module not found.')
             raise video.InitFailed()
+        if not numpy:
+            logging.debug('NumPy module not found.')
+            raise video.InitFailed()
         pygame.init()
         try:
             # poll the driver to force an exception if not initialised
@@ -389,7 +392,7 @@ class VideoPygame(video.VideoPlugin):
         self._draw_cursor(workscreen)
         if self.clipboard.active():
             self.clipboard.create_feedback(workscreen)
-        if self.composite_artifacts and numpy:
+        if self.composite_artifacts:
             screen = apply_composite_artifacts(screen, 4//self.bitsperpixel)
             screen.set_palette(composite_640_palette)
         else:
@@ -421,25 +424,14 @@ class VideoPygame(video.VideoPlugin):
                         (self.cursor_row-1) * self.font_height) )
         else:
             index = self.cursor_attr % self.num_fore_attrs
-            if numpy:
-                # reference the destination area
-                dest_array = pygame.surfarray.pixels2d(
-                        screen.subsurface(pygame.Rect(
-                            (self.cursor_col-1) * self.font_width,
-                            (self.cursor_row-1) * self.font_height + self.cursor_from,
-                            self.cursor_width,
-                            self.cursor_to - self.cursor_from + 1)))
-                dest_array ^= index
-            else:
-                # no surfarray if no numpy
-                for x in range(
+            # reference the destination area
+            dest_array = pygame.surfarray.pixels2d(
+                    screen.subsurface(pygame.Rect(
                         (self.cursor_col-1) * self.font_width,
-                        (self.cursor_col-1) * self.font_width + self.cursor_width):
-                    for y in range(
-                            (self.cursor_row-1) * self.font_height + self.cursor_from,
-                            (self.cursor_row-1) * self.font_height + self.cursor_to + 1):
-                        pixel = self.canvas[self.vpagenum].get_at((x,y)).b
-                        screen.set_at((x,y), pixel^index)
+                        (self.cursor_row-1) * self.font_height + self.cursor_from,
+                        self.cursor_width,
+                        self.cursor_to - self.cursor_from + 1)))
+            dest_array ^= index
         self.last_row = self.cursor_row
         self.last_col = self.cursor_col
 
@@ -718,38 +710,21 @@ class VideoPygame(video.VideoPlugin):
         self.canvas[pagenum].fill(index, (x0, y, dx, 1))
         self.screen_changed = True
 
-    if numpy:
-        def put_interval(self, pagenum, x, y, colours):
-            """ Write a list of attributes to a scanline interval. """
-            # reference the interval on the canvas
-            pygame.surfarray.pixels2d(self.canvas[pagenum]
-                    )[x:x+len(colours), y] = numpy.array(colours).astype(int)
-            self.screen_changed = True
+    def put_interval(self, pagenum, x, y, colours):
+        """ Write a list of attributes to a scanline interval. """
+        # reference the interval on the canvas
+        pygame.surfarray.pixels2d(self.canvas[pagenum]
+                )[x:x+len(colours), y] = numpy.array(colours).astype(int)
+        self.screen_changed = True
 
-        def put_rect(self, pagenum, x0, y0, x1, y1, array):
-            """ Apply numpy array [y][x] of attribytes to an area. """
-            if (x1 < x0) or (y1 < y0):
-                return
-            # reference the destination area
-            pygame.surfarray.pixels2d(self.canvas[pagenum].subsurface(
-                pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))[:] = numpy.array(array).T
-            self.screen_changed = True
-
-    else:
-        def put_interval(self, pagenum, x, y, colours, mask=0xff):
-            """ Write a list of attributes to a scanline interval. """
-            # list comprehension and ignoring result seems faster than loop
-            [self.canvas[pagenum].set_at((x+i, y), index)
-                             for i, index in enumerate(colours)]
-            self.screen_changed = True
-
-        def put_rect(self, pagenum, x0, y0, x1, y1, array):
-            """ Apply a 2D list [y][x] of attributes to an area. """
-            [[ self.canvas[pagenum].set_at((x0+i, y0+j), index)
-                                for i, index in enumerate(array[j]) ]
-                                for j in xrange(y1-y0+1) ]
-            self.screen_changed = True
-
+    def put_rect(self, pagenum, x0, y0, x1, y1, array):
+        """ Apply numpy array [y][x] of attribytes to an area. """
+        if (x1 < x0) or (y1 < y0):
+            return
+        # reference the destination area
+        pygame.surfarray.pixels2d(self.canvas[pagenum].subsurface(
+            pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))[:] = numpy.array(array).T
+        self.screen_changed = True
 
 ###############################################################################
 # clipboard handling
@@ -991,24 +966,12 @@ def apply_composite_artifacts(screen, pixels=4):
     return pygame.surfarray.make_surface(numpy.repeat(s[0], pixels, axis=0))
 
 
-if numpy:
-    def glyph_to_surface(glyph):
-        """ Build a sprite surface for the given character glyph. """
-        glyph = numpy.asarray(glyph).T
-        surf = pygame.Surface(glyph.shape, depth=8)
-        pygame.surfarray.pixels2d(surf)[:] = glyph
-        return surf
-
-else:
-    def glyph_to_surface(glyph):
-        """ Build a sprite surface for the given character glyph. """
-        color, bg = 1, 0
-        glyph_width, glyph_height = len(glyph[0]), len(glyph)
-        surf = pygame.Surface((glyph_width, glyph_height), depth=8)
-        surf.fill(bg)
-        [[ surf.set_at((i, j), index)   for i, index in enumerate(glyph[j]) ]
-                                        for j in xrange(glyph_height) ]
-        return surf
+def glyph_to_surface(glyph):
+    """ Build a sprite surface for the given character glyph. """
+    glyph = numpy.asarray(glyph).T
+    surf = pygame.Surface(glyph.shape, depth=8)
+    pygame.surfarray.pixels2d(surf)[:] = glyph
+    return surf
 
 
 prepare()
