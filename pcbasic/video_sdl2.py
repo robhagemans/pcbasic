@@ -392,20 +392,38 @@ class VideoSDL2(video.VideoPlugin):
         #                           self.display.get_size(), self.display)
         ###
         conv = sdl2.SDL_ConvertSurface(screen, self.display_surface.format, 0)
-        sdl2.SDL_BlitScaled(conv, None, self.display_surface, None)
+
+
+        # TODO: do this on resizing and store values
+        # get window size
+        w, h = ctypes.c_int(), ctypes.c_int()
+        sdl2.SDL_GetWindowSize(self.display.window, ctypes.byref(w), ctypes.byref(h))
+        w, h = w.value, h.value
+        # get scaled canvas size
+        border_factor = (1 + self.border_width/100.)
+        dst_w = int(w / border_factor)
+        dst_h = int(h / border_factor)
+        dst_rect = sdl2.SDL_Rect((w - dst_w) // 2, (h-dst_h) // 2, dst_w, dst_h)
+
+        # fill display with border colour
+        # get RGB out of surface palette
+        r, g, b = ctypes.c_ubyte(), ctypes.c_ubyte(), ctypes.c_ubyte()
+        sdl2.SDL_GetRGB(self.border_attr, screen.contents.format, ctypes.byref(r), ctypes.byref(g), ctypes.byref(b))
+        sdl2.SDL_FillRect(self.display_surface, None, sdl2.SDL_MapRGB(self.display_surface.format, r, g, b))
+
+        # blit canvas onto display
+        sdl2.SDL_BlitScaled(conv, None, self.display_surface, dst_rect)
 
         # create clipboard feedback
         if self.clipboard.active():
-            rects = [sdl2.SDL_Rect(
-                    r[0]+self.border_x, r[1]+self.border_y, r[2], r[3])
-                    for r in self.clipboard.selection_rect]
+            rects = [sdl2.SDL_Rect(*r) for r in self.clipboard.selection_rect]
             #sdl2.SDL_FillRects(self.overlay, (sdl2.SDL_rect*len(rects))(rects), len(rects), 1)
             sdl2.SDL_FillRect(self.overlay, None, sdl2.SDL_MapRGBA(
                                         self.overlay.contents.format, 0, 0, 0, 0))
             for r in rects:
                 sdl2.SDL_FillRect(self.overlay, r, sdl2.SDL_MapRGBA(
                                         self.overlay.contents.format, 128, 0, 128, 0))
-            sdl2.SDL_BlitScaled(self.overlay, None, self.display_surface, None)
+            sdl2.SDL_BlitScaled(self.overlay, None, self.display_surface, dst_rect)
 
         self.display.refresh() #sdl2.SDL_UpdateWindowSurface(self.display.window)
         self._show_cursor(False)
@@ -431,7 +449,7 @@ class VideoSDL2(video.VideoPlugin):
                 curs_height = min(self.cursor_to - self.cursor_from+1,
                                   self.font_height - self.cursor_from)
                 curs_rect = sdl2.SDL_Rect(
-                    self.border_x + left, self.border_y + top + self.cursor_from,
+                    left, top + self.cursor_from,
                     self.font_width, curs_height)
                 sdl2.SDL_FillRect(screen, curs_rect, self.cursor_attr)
         else:
@@ -551,19 +569,12 @@ class VideoSDL2(video.VideoPlugin):
         self.set_cursor_shape(self.font_width, self.font_height,
                               0, self.font_height)
         # screen pages
-        self.border_x = int(self.size[0] * self.border_width / 200.)
-        self.border_y = int(self.size[1] * self.border_width / 200.)
-        canvas_width = self.size[0] + 2*self.border_x
-        canvas_height = self.size[1] + 2*self.border_y
+        canvas_width, canvas_height = self.size
         self.canvas = [
             sdl2.SDL_CreateRGBSurface(0, canvas_width, canvas_height, 8, 0, 0, 0, 0)
             for _ in range(self.num_pages)]
-        for canvas in self.canvas:
-            sdl2.SDL_FillRect(canvas, None, self.border_attr % self.num_fore_attrs)
         self.pixels = [
                 sdl2.ext.pixels2d(canvas.contents)
-                        [self.border_x : canvas_width-self.border_x,
-                         self.border_y : canvas_height-self.border_y]
                 for canvas in self.canvas]
         # create overlay for clipboard selection feedback
         # use convertsurface to create a copy of the display surface format
@@ -614,7 +625,7 @@ class VideoSDL2(video.VideoPlugin):
         self.text[self.apagenum][start-1:stop] = [
             [' ']*len(self.text[self.apagenum][0]) for _ in range(start-1, stop)]
         scroll_area = sdl2.SDL_Rect(
-                self.border_x, self.border_y + (start-1)*self.font_height,
+                0, (start-1)*self.font_height,
                 self.size[0], (stop-start+1)*self.font_height)
         sdl2.SDL_FillRect(self.canvas[self.apagenum], scroll_area, back_attr)
         self.screen_changed = True
@@ -702,7 +713,7 @@ class VideoSDL2(video.VideoPlugin):
         if underline:
             sdl2.SDL_FillRect(
                 self.canvas[self.apagenum], sdl2.SDL_Rect(
-                    self.border_x + x0, self.border_y + y0 + self.font_height - 1,
+                    x0, y0 + self.font_height - 1,
                     self.font_width, 1)
                 , attr)
         self.screen_changed = True
@@ -726,13 +737,13 @@ class VideoSDL2(video.VideoPlugin):
 
     def fill_rect(self, pagenum, x0, y0, x1, y1, index):
         """ Fill a rectangle in a solid attribute. """
-        rect = sdl2.SDL_Rect(self.border_x+x0, self.border_y+y0, x1-x0+1, y1-y0+1)
+        rect = sdl2.SDL_Rect(x0, y0, x1-x0+1, y1-y0+1)
         sdl2.SDL_FillRect(self.canvas[pagenum], rect, index)
         self.screen_changed = True
 
     def fill_interval(self, pagenum, x0, x1, y, index):
         """ Fill a scanline interval in a solid attribute. """
-        rect = sdl2.SDL_Rect(self.border_x+x0, self.border_y+y, x1-x0+1, 1)
+        rect = sdl2.SDL_Rect(x0, y, x1-x0+1, 1)
         sdl2.SDL_FillRect(self.canvas[pagenum], rect, index)
         self.screen_changed = True
 
