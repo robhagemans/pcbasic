@@ -145,10 +145,10 @@ class VideoSDL2(video.VideoPlugin):
         display_mode = sdl2.SDL_DisplayMode()
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
         self.physical_size = display_mode.w, display_mode.h
-        self.fullscreen = fullscreen
         # load the icon
         self.set_icon(backend.icon)
         # create the window initially, size will be corrected later
+        self.fullscreen = fullscreen
         self._do_create_window(640, 400)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
@@ -373,14 +373,14 @@ class VideoSDL2(video.VideoPlugin):
     def _do_flip(self):
         """ Draw the canvas to the screen. """
         screen = self.canvas[self.vpagenum]
-        pixels = self.pixels[self.vpagenum]
 
-        # if self.composite_artifacts:
-        #     pixels[:] = apply_composite_artifacts(pixels, 4//self.bitsperpixel)
-        #     sdl2.SDL_SetSurfacePalette(screen, self.composite_palette)
-        # else:
-
-        sdl2.SDL_SetSurfacePalette(screen, self.show_palette[self.blink_state])
+        if self.composite_artifacts:
+            pixels = self.pixels[self.vpagenum]
+            self.work_pixels[:] = apply_composite_artifacts(pixels, 4//self.bitsperpixel)
+            sdl2.SDL_SetSurfacePalette(self.work_surface, self.composite_palette)
+            screen = self.work_surface
+        else:
+            sdl2.SDL_SetSurfacePalette(screen, self.show_palette[self.blink_state])
         self._show_cursor(True)
 
         ###
@@ -575,6 +575,10 @@ class VideoSDL2(video.VideoPlugin):
         self.pixels = [
                 sdl2.ext.pixels2d(canvas.contents)
                 for canvas in self.canvas]
+        # create work surface for border and composite
+        self.work_surface = sdl2.SDL_CreateRGBSurface(
+                                0, canvas_width, canvas_height, 8, 0, 0, 0, 0)
+        self.work_pixels = sdl2.ext.pixels2d(self.work_surface.contents)
         # create overlay for clipboard selection feedback
         # use convertsurface to create a copy of the display surface format
         self.overlay = sdl2.SDL_ConvertSurface(
