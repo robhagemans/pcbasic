@@ -393,14 +393,9 @@ class VideoSDL2(video.VideoPlugin):
         ###
         conv = sdl2.SDL_ConvertSurface(screen, self.display_surface.format, 0)
 
-
-        # TODO: do this on resizing and store values
-        # get window size
-        w, h = ctypes.c_int(), ctypes.c_int()
-        sdl2.SDL_GetWindowSize(self.display.window, ctypes.byref(w), ctypes.byref(h))
-        w, h = w.value, h.value
         # get scaled canvas size
         border_factor = (1 + self.border_width/100.)
+        w, h = self.window_width, self.window_height
         dst_w = int(w / border_factor)
         dst_h = int(h / border_factor)
         dst_rect = sdl2.SDL_Rect((w - dst_w) // 2, (h-dst_h) // 2, dst_w, dst_h)
@@ -526,6 +521,10 @@ class VideoSDL2(video.VideoPlugin):
             # resizing throws us out of maximised mode
             if not to_maximised:
                 sdl2.SDL_RestoreWindow(self.display.window)
+        # get window size
+        w, h = ctypes.c_int(), ctypes.c_int()
+        sdl2.SDL_GetWindowSize(self.display.window, ctypes.byref(w), ctypes.byref(h))
+        self.window_width, self.window_height = w.value, h.value
         self.display_surface = self.display.get_surface()
         self.screen_changed = True
 
@@ -533,8 +532,8 @@ class VideoSDL2(video.VideoPlugin):
         """ Convert physical to logical coordinates within screen bounds. """
         border_x = int(self.size[0] * self.border_width / 200.)
         border_y = int(self.size[1] * self.border_width / 200.)
-        xscale = self.physical_size[0] / (1.*(self.size[0]+2*border_x))
-        yscale = self.physical_size[1] / (1.*(self.size[1]+2*border_y))
+        xscale = self.window_width / (1.*(self.size[0]+2*border_x))
+        yscale = self.window_height / (1.*(self.size[1]+2*border_y))
         xpos = min(self.size[0]-1, max(0, int(x//xscale - border_x)))
         ypos = min(self.size[1]-1, max(0, int(y//yscale - border_y)))
         return xpos, ypos
