@@ -498,18 +498,20 @@ class VideoSDL2(video.VideoPlugin):
         if self.fullscreen:
             return
         maximised = sdl2.SDL_GetWindowFlags(self.display.window) & sdl2.SDL_WINDOW_MAXIMIZED
+        # workaround for maximised state not reporting correctly (at least on Ubuntu Unity)
+        # detect if window is very large compared to screen; force maximise if so.
         to_maximised = (width >= 0.95*self.physical_size[0] and height >= 0.9*self.physical_size[1])
         if not maximised:
             if to_maximised:
                 # force maximise for large windows
-                # workaround for maximised state not reporting correctly (at least on Ubuntu Unity)
                 sdl2.SDL_MaximizeWindow(self.display.window)
             else:
                 # regular resize on non-maximised windows
                 sdl2.SDL_SetWindowSize(self.display.window, width, height)
-        # it's up to the window manager to get us out of maximised mode
-        # in which case no resizing call is made to SDL
-        # even so, we do need to refresh the surface in this case.
+        else:
+            # resizing throws us out of maximised mode
+            if not to_maximised:
+                sdl2.SDL_RestoreWindow(self.display.window)
         self.display_surface = self.display.get_surface()
         self.screen_changed = True
 
