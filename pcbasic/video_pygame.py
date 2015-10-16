@@ -224,10 +224,9 @@ class VideoPygame(video.VideoPlugin):
     def set_icon(self, mask):
         """ Set the window icon. """
         height, width = len(mask), len(mask[0])
-        icon = pygame.Surface((width+1, height+1), depth=8)
+        icon = pygame.Surface((width, height), depth=8)
         icon.fill(0)
-        icon.fill(1, (1, 8, 8, 8))
-        icon.blit(glyph_to_surface(mask), (1, 0, width, height))
+        icon.blit(glyph_to_surface(mask), (0, 0, width, height))
         icon.set_palette_at(0, (0, 0, 0))
         icon.set_palette_at(1, (0xff, 0xff, 0xff))
         pygame.transform.scale2x(icon)

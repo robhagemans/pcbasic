@@ -40,9 +40,9 @@ video_backends = {
     }
 
 # create the window icon
-backend.icon = typeface.build_glyph('icon', {'icon':
-    '\x00\x00\x7C\xE0\xC6\x60\xC6\x66\xC6\x6C\xC6\x78\xC6\x6C\x7C\xE6' +
-    '\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00'}, 16, 16)
+backend.icon = typeface.build_glyph('icon', {
+    'icon': '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
+    .decode('hex')}, 16, 16)
 
 def prepare():
     """ Prepare the video subsystem. """
