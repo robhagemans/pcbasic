@@ -12,6 +12,7 @@ import Queue
 try:
     import sdl2
     import sdl2.ext
+    import sdl2.sdlgfx
 except ImportError:
     sdl2 = None
 import ctypes
@@ -140,7 +141,6 @@ class VideoSDL2(video.VideoPlugin):
         self.last_col = 1
         # cursor is visible
         self.cursor_visible = True
-
         # get physical screen dimensions (needs to be called before set_mode)
         display_mode = sdl2.SDL_DisplayMode()
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
@@ -159,7 +159,10 @@ class VideoSDL2(video.VideoPlugin):
         self.composite_palette = sdl2.SDL_AllocPalette(256)
         colors = (sdl2.SDL_Color * 256)(*[sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in composite_colors])
         sdl2.SDL_SetPaletteColors(self.composite_palette, colors, 0, 256)
-
+        # check if we can honour scaling=smooth
+        if smooth and self.display_surface.format.contents.BitsPerPixel < 24:
+            logging.warning("Smooth scaling not available on this display of colour depth < 24 bits")
+            smooth = False
         # joystick and mouse
         # available joysticks
         num_joysticks = sdl2.SDL_NumJoysticks()
@@ -169,13 +172,6 @@ class VideoSDL2(video.VideoPlugin):
             for axis in (0, 1):
                 backend.input_queue.put(backend.Event(backend.STICK_MOVED,
                                                       (j, axis, 128)))
-
-        ###
-        # if smooth and self.display.get_bitsize() < 24:
-        #     logging.warning("Smooth scaling not available on this display (depth %d < 24)", self.display.get_bitsize())
-        #     smooth = False
-        ###
-
         self.f11_active = False
         video.VideoPlugin.__init__(self)
 
@@ -373,7 +369,6 @@ class VideoSDL2(video.VideoPlugin):
     def _do_flip(self):
         """ Draw the canvas to the screen. """
         screen = self.canvas[self.vpagenum]
-
         if self.composite_artifacts:
             pixels = self.pixels[self.vpagenum]
             self.work_pixels[:] = apply_composite_artifacts(pixels, 4//self.bitsperpixel)
@@ -381,34 +376,30 @@ class VideoSDL2(video.VideoPlugin):
             screen = self.work_surface
         else:
             sdl2.SDL_SetSurfacePalette(screen, self.show_palette[self.blink_state])
-        self._show_cursor(True)
-
-        ###
-        #if smooth:
-        #    pygame.transform.smoothscale(screen.convert(self.display),
-        #                                 self.display.get_size(), self.display)
-        #else:
-        #    pygame.transform.scale(screen.convert(self.display),
-        #                           self.display.get_size(), self.display)
-        ###
-        conv = sdl2.SDL_ConvertSurface(screen, self.display_surface.format, 0)
-
         # get scaled canvas size
         border_factor = (1 + self.border_width/100.)
         w, h = self.window_width, self.window_height
         dst_w = int(w / border_factor)
         dst_h = int(h / border_factor)
         dst_rect = sdl2.SDL_Rect((w - dst_w) // 2, (h-dst_h) // 2, dst_w, dst_h)
-
         # fill display with border colour
         # get RGB out of surface palette
         r, g, b = ctypes.c_ubyte(), ctypes.c_ubyte(), ctypes.c_ubyte()
         sdl2.SDL_GetRGB(self.border_attr, screen.contents.format, ctypes.byref(r), ctypes.byref(g), ctypes.byref(b))
         sdl2.SDL_FillRect(self.display_surface, None, sdl2.SDL_MapRGB(self.display_surface.format, r, g, b))
-
-        # blit canvas onto display
-        sdl2.SDL_BlitScaled(conv, None, self.display_surface, dst_rect)
-
+        self._show_cursor(True)
+        # convert 8-bit canvas surface to (usually) 32-bit display surface
+        conv = sdl2.SDL_ConvertSurface(screen, self.display_surface.format, 0)
+        # scale canvas and blit onto display
+        if not smooth:
+            sdl2.SDL_BlitScaled(conv, None, self.display_surface, dst_rect)
+        else:
+            zoomx = ctypes.c_double(dst_w/(1.0*self.size[0]))
+            zoomy = ctypes.c_double(dst_h/(1.0*self.size[1]))
+            zoomed = sdl2.sdlgfx.zoomSurface(conv, zoomx, zoomy, sdl2.sdlgfx.SMOOTHING_ON)
+            sdl2.SDL_BlitSurface(zoomed, None, self.display_surface, dst_rect)
+            sdl2.SDL_FreeSurface(zoomed)
+        self._show_cursor(False)
         # create clipboard feedback
         if self.clipboard.active():
             rects = [sdl2.SDL_Rect(*r) for r in self.clipboard.selection_rect]
@@ -419,9 +410,9 @@ class VideoSDL2(video.VideoPlugin):
                 sdl2.SDL_FillRect(self.overlay, r, sdl2.SDL_MapRGBA(
                                         self.overlay.contents.format, 128, 0, 128, 0))
             sdl2.SDL_BlitScaled(self.overlay, None, self.display_surface, dst_rect)
-
-        self.display.refresh() #sdl2.SDL_UpdateWindowSurface(self.display.window)
-        self._show_cursor(False)
+        # flip the display
+        self.display.refresh()
+        #sdl2.SDL_UpdateWindowSurface(self.display.window)
 
     def _show_cursor(self, do_show):
         """ Draw or remove the cursor on the visible page. """
