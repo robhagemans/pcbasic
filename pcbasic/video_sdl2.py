@@ -160,8 +160,8 @@ class VideoSDL2(video.VideoPlugin):
         colors = (sdl2.SDL_Color * 256)(*[sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in composite_colors])
         sdl2.SDL_SetPaletteColors(self.composite_palette, colors, 0, 256)
         # check if we can honour scaling=smooth
-        if smooth and self.display_surface.format.contents.BitsPerPixel < 24:
-            logging.warning("Smooth scaling not available on this display of colour depth < 24 bits")
+        if smooth and self.display_surface.format.contents.BitsPerPixel != 32:
+            logging.warning("Smooth scaling not available on this display of %d-bit colour depth: needs 32-bit", self.display_surface.format.contents.BitsPerPixel)
             smooth = False
         # joystick and mouse
         # available joysticks
