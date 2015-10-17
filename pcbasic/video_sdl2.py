@@ -402,13 +402,12 @@ class VideoSDL2(video.VideoPlugin):
         self._show_cursor(False)
         # create clipboard feedback
         if self.clipboard.active():
-            rects = [sdl2.SDL_Rect(*r) for r in self.clipboard.selection_rect]
-            #sdl2.SDL_FillRects(self.overlay, (sdl2.SDL_rect*len(rects))(rects), len(rects), 1)
-            sdl2.SDL_FillRect(self.overlay, None, sdl2.SDL_MapRGBA(
-                                        self.overlay.contents.format, 0, 0, 0, 0))
-            for r in rects:
-                sdl2.SDL_FillRect(self.overlay, r, sdl2.SDL_MapRGBA(
-                                        self.overlay.contents.format, 128, 0, 128, 0))
+            rects = (sdl2.SDL_Rect(*r) for r in self.clipboard.selection_rect)
+            sdl_rects = (sdl2.SDL_Rect*len(self.clipboard.selection_rect))(*rects)
+            sdl2.SDL_FillRect(self.overlay, None,
+                sdl2.SDL_MapRGBA(self.overlay.contents.format, 0, 0, 0, 0))
+            sdl2.SDL_FillRects(self.overlay, sdl_rects, len(sdl_rects),
+                sdl2.SDL_MapRGBA(self.overlay.contents.format, 128, 0, 128, 0))
             sdl2.SDL_BlitScaled(self.overlay, None, self.display_surface, dst_rect)
         # flip the display
         self.display.refresh()
