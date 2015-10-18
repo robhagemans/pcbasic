@@ -368,38 +368,31 @@ class VideoSDL2(video.VideoPlugin):
 
     def _do_flip(self):
         """ Draw the canvas to the screen. """
-        screen = self.canvas[self.vpagenum]
+        screen = self.work_surface
+        sdl2.SDL_FillRect(self.work_surface, None, self.border_attr)
         if self.composite_artifacts:
-            pixels = self.pixels[self.vpagenum]
-            self.work_pixels[:] = apply_composite_artifacts(pixels, 4//self.bitsperpixel)
-            sdl2.SDL_SetSurfacePalette(self.work_surface, self.composite_palette)
-            screen = self.work_surface
+            self.work_pixels[:] = apply_composite_artifacts(
+                            self.pixels[self.vpagenum], 4//self.bitsperpixel)
+            sdl2.SDL_SetSurfacePalette(screen, self.composite_palette)
         else:
+            self.work_pixels[:] = self.pixels[self.vpagenum]
             sdl2.SDL_SetSurfacePalette(screen, self.show_palette[self.blink_state])
-        # get scaled canvas size
-        border_factor = (1 + self.border_width/100.)
-        w, h = self.window_width, self.window_height
-        dst_w = int(w / border_factor)
-        dst_h = int(h / border_factor)
-        dst_rect = sdl2.SDL_Rect((w - dst_w) // 2, (h-dst_h) // 2, dst_w, dst_h)
-        # fill display with border colour
-        # get RGB out of surface palette
-        r, g, b = ctypes.c_ubyte(), ctypes.c_ubyte(), ctypes.c_ubyte()
-        sdl2.SDL_GetRGB(self.border_attr, screen.contents.format, ctypes.byref(r), ctypes.byref(g), ctypes.byref(b))
-        sdl2.SDL_FillRect(self.display_surface, None, sdl2.SDL_MapRGB(self.display_surface.format, r, g, b))
+        # apply cursor to work surface
         self._show_cursor(True)
-        # convert 8-bit canvas surface to (usually) 32-bit display surface
+        # convert 8-bit work surface to (usually) 32-bit display surface format
         conv = sdl2.SDL_ConvertSurface(screen, self.display_surface.format, 0)
-        # scale canvas and blit onto display
+        # scale converted surface and blit onto display
         if not smooth:
-            sdl2.SDL_BlitScaled(conv, None, self.display_surface, dst_rect)
+            sdl2.SDL_BlitScaled(conv, None, self.display_surface, None)
         else:
-            zoomx = ctypes.c_double(dst_w/(1.0*self.size[0]))
-            zoomy = ctypes.c_double(dst_h/(1.0*self.size[1]))
+            # smooth-scale converted surface
+            w, h = self.window_width, self.window_height
+            zoomx = ctypes.c_double(w/(self.size[0] + 2.0*self.border_x))
+            zoomy = ctypes.c_double(h/(self.size[1] + 2.0*self.border_y))
             zoomed = sdl2.sdlgfx.zoomSurface(conv, zoomx, zoomy, sdl2.sdlgfx.SMOOTHING_ON)
-            sdl2.SDL_BlitSurface(zoomed, None, self.display_surface, dst_rect)
+            # blit onto display
+            sdl2.SDL_BlitSurface(zoomed, None, self.display_surface, None)
             sdl2.SDL_FreeSurface(zoomed)
-        self._show_cursor(False)
         # create clipboard feedback
         if self.clipboard.active():
             rects = (sdl2.SDL_Rect(*r) for r in self.clipboard.selection_rect)
@@ -408,7 +401,7 @@ class VideoSDL2(video.VideoPlugin):
                 sdl2.SDL_MapRGBA(self.overlay.contents.format, 0, 0, 0, 0))
             sdl2.SDL_FillRects(self.overlay, sdl_rects, len(sdl_rects),
                 sdl2.SDL_MapRGBA(self.overlay.contents.format, 128, 0, 128, 0))
-            sdl2.SDL_BlitScaled(self.overlay, None, self.display_surface, dst_rect)
+            sdl2.SDL_BlitScaled(self.overlay, None, self.display_surface, None)
         # flip the display
         self.display.refresh()
         #sdl2.SDL_UpdateWindowSurface(self.display.window)
@@ -417,8 +410,8 @@ class VideoSDL2(video.VideoPlugin):
         """ Draw or remove the cursor on the visible page. """
         if not self.cursor_visible or self.vpagenum != self.apagenum:
             return
-        screen = self.canvas[self.vpagenum]
-        pixels = self.pixels[self.vpagenum]
+        screen = self.work_surface
+        pixels = self.work_pixels
         top = (self.cursor_row-1) * self.font_height
         left = (self.cursor_col-1) * self.font_width
         if not do_show:
@@ -434,7 +427,7 @@ class VideoSDL2(video.VideoPlugin):
                 curs_height = min(self.cursor_to - self.cursor_from+1,
                                   self.font_height - self.cursor_from)
                 curs_rect = sdl2.SDL_Rect(
-                    left, top + self.cursor_from,
+                    self.border_x + left, self.border_y + top + self.cursor_from,
                     self.font_width, curs_height)
                 sdl2.SDL_FillRect(screen, curs_rect, self.cursor_attr)
         else:
@@ -566,9 +559,15 @@ class VideoSDL2(video.VideoPlugin):
                 sdl2.ext.pixels2d(canvas.contents)
                 for canvas in self.canvas]
         # create work surface for border and composite
+        self.border_x = int(canvas_width * self.border_width // 200)
+        self.border_y = int(canvas_height * self.border_width // 200)
+        work_width = canvas_width + 2*self.border_x
+        work_height = canvas_height + 2*self.border_y
         self.work_surface = sdl2.SDL_CreateRGBSurface(
-                                0, canvas_width, canvas_height, 8, 0, 0, 0, 0)
-        self.work_pixels = sdl2.ext.pixels2d(self.work_surface.contents)
+                                0, work_width, work_height, 8, 0, 0, 0, 0)
+        self.work_pixels = sdl2.ext.pixels2d(self.work_surface.contents)[
+                self.border_x : work_width-self.border_x,
+                self.border_y : work_height-self.border_y]
         # create overlay for clipboard selection feedback
         # use convertsurface to create a copy of the display surface format
         self.overlay = sdl2.SDL_ConvertSurface(
