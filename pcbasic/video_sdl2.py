@@ -12,9 +12,12 @@ import Queue
 try:
     import sdl2
     import sdl2.ext
-    import sdl2.sdlgfx
 except ImportError:
     sdl2 = None
+try:
+    import sdl2.sdlgfx
+except ImportError:
+    pass
 import ctypes
 
 
@@ -160,9 +163,13 @@ class VideoSDL2(video.VideoPlugin):
         colors = (sdl2.SDL_Color * 256)(*[sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in composite_colors])
         sdl2.SDL_SetPaletteColors(self.composite_palette, colors, 0, 256)
         # check if we can honour scaling=smooth
-        if smooth and self.display_surface.format.contents.BitsPerPixel != 32:
-            logging.warning("Smooth scaling not available on this display of %d-bit colour depth: needs 32-bit", self.display_surface.format.contents.BitsPerPixel)
-            smooth = False
+        if smooth:
+            if self.display_surface.format.contents.BitsPerPixel != 32:
+                logging.warning('Smooth scaling not available on this display of %d-bit colour depth: needs 32-bit', self.display_surface.format.contents.BitsPerPixel)
+                smooth = False
+            if not hasattr(sdl2, 'sdlgfx'):
+                logging.warning('Smooth scaling not available: SDL_GFX extension not found.')
+                smooth = False
         # joystick and mouse
         # available joysticks
         num_joysticks = sdl2.SDL_NumJoysticks()
