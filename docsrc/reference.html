@@ -4422,9 +4422,9 @@
                 expression in <code>[15&#8212;20]</code>.
             </li>
             <li>
-                <code><var>string_value</var></code> is a string expression of length 2. The first character is interpreted as a modifier
+                <code><var>two_char_string</var></code> is a string expression of length 2. The first character is interpreted as a modifier
                 while the second character is interpreted as a scancode. See <code><a href="#INP">INP</a></code> for scancodes.
-                Modifiers are:
+                The modifier character is a bitwise <code>OR</code> combination of the following flags:
                 <div class="scrollable">
                     <table>
                         <tr>
@@ -4457,19 +4457,20 @@
                         </tr>
                     </table>
                 </div>
+                For the unmodified key, the modifier character is <code>CHR$(0)</code>.
             </li>
         </ul>
         <h5>Notes</h5>
         <ul>
             <li>
-                If <code><var>key_id</var></code> is not in <code>[15&#8212;20]</code>, no error is raised, but strange things can
-                happen in GW-BASIC: screen anomalies and crashes suggestive of unintended
-                memory access. This is not implemented in PC-BASIC: such values are
-                ignored.
+                If <code><var>key_id</var></code> is not in <code>[15&#8212;20]</code>, no error is raised; such values are ignored.
+                In GW-BASIC strange things can
+                happen in this case: screen anomalies and crashes suggestive of unintended
+                memory access.
             </li>
             <li>
-                If <code><var>key_id</var></code> is in <code>[1&#8212;10]</code>, the statement is interpreted as a string macro
-                definition; see above.
+                If <code><var>key_id</var></code> is in <code>[1&#8212;10]</code>, the statement is interpreted as a
+                <a href="#KEY-def">function-key macro definition</a>.
             </li>
         </ul>
         <h5>Errors</h5>
