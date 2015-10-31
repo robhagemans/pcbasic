@@ -229,21 +229,17 @@ class VideoSDL2(video.VideoPlugin):
     ###########################################################################
     # input cycle
 
-
     def _check_input(self):
         """ Handle screen and interface events. """
         # check and handle input events
+        self.last_down = None
         for event in sdl2.ext.get_events():
             if event.type == sdl2.SDL_KEYDOWN:
                 self._handle_key_down(event)
             elif event.type == sdl2.SDL_KEYUP:
                 self._handle_key_up(event)
-
-            # elif event.type == sdl2.SDL_TEXTINPUT:
-            #     #this is where input methods would come in
-            #     #FIXME: do we get both a textinput and a keydown event? how shall we deal?
-            #     backend.input_queue.put(backend.Event(backend.KEYB_CHAR, event.text.text))
-
+            elif event.type == sdl2.SDL_TEXTINPUT:
+                self._handle_text_input(event)
             elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
                 pos = self._normalise_pos(event.button.x, event.button.y)
                 # copy, paste and pen may be on the same button, so no elifs
@@ -286,10 +282,10 @@ class VideoSDL2(video.VideoPlugin):
                     self.set_caption_message('to exit type <CTRL+BREAK> <ESC> SYSTEM')
                 else:
                     backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
+        self._flush_keypress()
 
     def _handle_key_down(self, e):
         """ Handle key-down event. """
-        c = ''
         mods = sdl2.SDL_GetModState()
         if e.key.keysym.sym == sdl2.SDLK_F11:
             self.f11_active = True
@@ -302,24 +298,6 @@ class VideoSDL2(video.VideoPlugin):
                                 self.size[0], self.size[1], self.border_width))
             self.clipboard.handle_key(e)
         else:
-            ###
-            # utf8 = e.unicode.encode('utf-8')
-            # try:
-            #     c = unicodepage.from_utf8(utf8)
-            # except KeyError:
-            #     # no codepage encoding found, ignore
-            #     # this happens for control codes like '\r' since
-            #     # unicodepage defines the special graphic characters for those
-            #     # let control codes be handled by scancode
-            #     # as e.unicode isn't always the correct thing for ascii controls
-            #     # e.g. ctrl+enter should be '\n' but has e.unicode=='\r'
-            #     pass
-            # double NUL characters, as single NUL signals scan code
-            # if len(c) == 1 and ord(c) == 0:
-            #     c = '\0\0'
-            # current key pressed; modifiers handled by backend interface
-            ###
-
             try:
                 scan = key_to_scan[e.key.keysym.sym]
             except KeyError:
@@ -333,8 +311,20 @@ class VideoSDL2(video.VideoPlugin):
                 if e.key.keysym.sym == sdl2.SDLK_RALT:
                     backend.input_queue.put(backend.Event(backend.KEYB_UP,
                                                           scancode.CTRL))
-            # insert into keyboard queue
-            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, c)))
+            # keep scancode in buffer
+            # to combine with text event
+            # flush buffer on next key down, text event or end of loop
+            if scan is not None:
+                self._flush_keypress()
+                self.last_down = scan, e.key.timestamp
+
+    def _flush_keypress(self):
+        """ Flush last keypress from buffer. """
+        if self.last_down is not None:
+            # insert into keyboard queue; no text event
+            scan, _ = self.last_down
+            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, '')))
+            self.last_down = None
 
     def _handle_key_up(self, e):
         """ Handle key-up event. """
@@ -347,6 +337,28 @@ class VideoSDL2(video.VideoPlugin):
                                                   key_to_scan[e.key.keysym.sym]))
         except KeyError:
             pass
+
+    def _handle_text_input(self, event):
+        """ Handle text-input event. """
+        c = event.text.text
+        # the text input event follows the key down event immediately
+        if self.last_down is None:
+            # no key down event waiting: other input method
+            backend.input_queue.put(backend.Event(
+                    backend.KEYB_CHAR, c))
+        else:
+            scan, ts = self.last_down
+            self.last_down = None
+            if ts == event.text.timestamp:
+                # combine if same time stamp
+                backend.input_queue.put(backend.Event(
+                        backend.KEYB_DOWN, (scan, c)))
+            else:
+                # two separate events
+                backend.input_queue.put(backend.Event(
+                        backend.KEYB_DOWN, (scan, '')))
+                backend.input_queue.put(backend.Event(
+                        backend.KEYB_CHAR, c))
 
 
     ###########################################################################
