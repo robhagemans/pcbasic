@@ -69,7 +69,8 @@ arguments = {
     'append': {'type': 'bool', 'default': False, },
     'interface': {
         'type': 'string', 'default': '',
-        'choices': ('', 'none', 'cli', 'ansi', 'text', 'graphical'), },
+        'choices': ('', 'none', 'cli', 'text', 'graphical',
+                    'ansi', 'curses', 'pygame', 'sdl2'), },
     'load': {'type': 'string', 'default': '', },
     'run': {'type': 'string', 'default': '',  },
     'convert': {'type': 'string', 'default': '', },

@@ -34,9 +34,13 @@ video_backends = {
     # interface_name: video_plugin_name, fallback, warn_on_fallback
     'none': (('none',), None),
     'cli': (('cli',), 'none'),
-    'ansi': (('ansi',), 'cli'),
     'text': (('curses', 'ansi'), 'cli'),
-    'graphical': (('sdl2', 'pygame',), 'text'),
+    'graphical':  (('sdl2', 'pygame',), 'text'),
+    # force a particular plugin to be used
+    'ansi': (('ansi',), 'cli'),
+    'curses': (('curses',), 'cli'),
+    'pygame': (('pygame',), 'text'),
+    'sdl2': (('sdl2',), 'text'),
     }
 
 # create the window icon
