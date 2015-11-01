@@ -237,6 +237,22 @@ class VideoPygame(video_graphical.VideoGraphical):
         """ Handle key-down event. """
         c = ''
         mods = pygame.key.get_mods()
+        # current key pressed; modifiers handled by backend interface
+        try:
+            scan = key_to_scan[e.key]
+        except KeyError:
+            scan = None
+        utf8 = e.unicode.encode('utf-8')
+        try:
+            c = unicodepage.from_utf8(utf8)
+        except KeyError:
+            # no codepage encoding found, ignore
+            # this happens for control codes like '\r' since
+            # unicodepage defines the special graphic characters for those
+            # let control codes be handled by scancode
+            # as e.unicode isn't always the correct thing for ascii controls
+            # e.g. ctrl+enter should be '\n' but has e.unicode=='\r'
+            pass
         if e.key == pygame.K_F11:
             self.f11_active = True
             self.clipboard.start(self.cursor_row, self.cursor_col)
@@ -246,27 +262,11 @@ class VideoPygame(video_graphical.VideoGraphical):
                 self.fullscreen = not self.fullscreen
                 self._resize_display(*self._find_display_size(
                                 self.size[0], self.size[1], self.border_width))
-            self.clipboard.handle_key(e)
+            self.clipboard.handle_key(scan, c)
         else:
-            utf8 = e.unicode.encode('utf-8')
-            try:
-                c = unicodepage.from_utf8(utf8)
-            except KeyError:
-                # no codepage encoding found, ignore
-                # this happens for control codes like '\r' since
-                # unicodepage defines the special graphic characters for those
-                # let control codes be handled by scancode
-                # as e.unicode isn't always the correct thing for ascii controls
-                # e.g. ctrl+enter should be '\n' but has e.unicode=='\r'
-                pass
             # double NUL characters, as single NUL signals scan code
             if len(c) == 1 and ord(c) == 0:
                 c = '\0\0'
-            # current key pressed; modifiers handled by backend interface
-            try:
-                scan = key_to_scan[e.key]
-            except KeyError:
-                scan = None
             if plat.system == 'Windows':
                 # Windows 7 and above send AltGr as Ctrl+RAlt
                 # if 'altgr' option is off, Ctrl+RAlt is sent.
@@ -334,7 +334,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         workscreen = screen.subsurface((border_x, border_y, self.size[0], self.size[1]))
         self._draw_cursor(workscreen)
         if self.clipboard.active():
-            self.clipboard.create_feedback(workscreen)
+            create_feedback(workscreen, self.clipboard.selection_rect)
         if self.composite_artifacts:
             screen = apply_composite_artifacts(screen, 4//self.bitsperpixel)
             screen.set_palette(self.composite_640_palette)
@@ -423,7 +423,8 @@ class VideoPygame(video_graphical.VideoGraphical):
         for i in range(self.num_pages):
             self.canvas[i].set_palette(self.work_palette)
         # initialise clipboard
-        self.clipboard = ClipboardInterface(self, mode_info.width, mode_info.height)
+        self.clipboard = video_graphical.ClipboardInterface(self,
+                mode_info.width, mode_info.height, get_clipboard_handler())
         self.screen_changed = True
 
     def set_caption_message(self, msg):
@@ -617,133 +618,87 @@ class VideoPygame(video_graphical.VideoGraphical):
 ###############################################################################
 # clipboard handling
 
-class ClipboardInterface(object):
-    """ Clipboard user interface. """
+class PygameClipboard(clipboard.Clipboard):
+    """ Clipboard handling using Pygame.Scrap. """
 
-    def __init__(self, videoplugin, width, height):
-        """ Initialise clipboard feedback handler. """
-        self._active = False
-        self.select_start = None
-        self.select_stop = None
-        self.selection_rect = None
-        self.width = width
-        self.height = height
-        self.font_width = videoplugin.font_width
-        self.font_height = videoplugin.font_height
-        self.size = videoplugin.size
-        self.videoplugin = videoplugin
-        # clipboard handler may need an initialised pygame screen
-        self.clipboard_handler = clipboard.get_handler()
+    # text type we look for in the clipboard
+    text = ('UTF8_STRING', 'text/plain;charset=utf-8', 'text/plain',
+            'TEXT', 'STRING')
 
-    def active(self):
-        """ True if clipboard mode is active. """
-        return self._active
+    def __init__(self):
+        """ Initialise the clipboard handler. """
+        try:
+            pygame.scrap.init()
+            self.ok = True
+        except Exception:
+            if pygame:
+                logging.warning('PyGame.Scrap clipboard handling module not found.')
+            self.ok = False
 
-    def start(self, r, c):
-        """ Enter clipboard mode (clipboard key pressed). """
-        self._active = True
-        self.select_start = [r, c]
-        self.select_stop = [r, c]
-        self.selection_rect = []
-
-    def stop(self):
-        """ Leave clipboard mode (clipboard key released). """
-        self._active = False
-        self.select_start = None
-        self.select_stop = None
-        self.selection_rect = None
-        self.videoplugin.screen_changed = True
-
-    def copy(self, mouse=False):
-        """ Copy screen characters from selection into clipboard. """
-        start, stop = self.select_start, self.select_stop
-        if not start or not stop:
-            return
-        if start[0] == stop[0] and start[1] == stop[1]:
-            return
-        if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
-            start, stop = stop, start
-        text_rows = self.videoplugin.text[self.videoplugin.vpagenum][start[0]-1:stop[0]]
-        text_rows[0] = text_rows[0][start[1]-1:]
-        if stop[1] < self.width:
-            text_rows[-1] = text_rows[-1][:stop[1]-self.width-1]
-        text = '\n'.join(''.join(row) for row in text_rows)
-        self.clipboard_handler.copy(text, mouse)
+    def copy(self, text, mouse=False):
+        """ Put text on clipboard. """
+        if mouse:
+            pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
+        else:
+            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
+        try:
+            if plat.system == 'Windows':
+                # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
+                pygame.scrap.put('text/plain;charset=utf-8', text.decode('utf-8').encode('utf-16le') + '\0\0')
+            else:
+                pygame.scrap.put(pygame.SCRAP_TEXT, text)
+        except KeyError:
+            logging.debug('Clipboard copy failed for clip %s', repr(text))
 
     def paste(self, mouse=False):
-        """ Paste from clipboard into keyboard buffer. """
-        text = self.clipboard_handler.paste(mouse)
-        backend.input_queue.put(backend.Event(backend.CLIP_PASTE, text))
-
-    def move(self, r, c):
-        """ Move the head of the selection and update feedback. """
-        self.select_stop = [r, c]
-        start, stop = self.select_start, self.select_stop
-        if stop[1] < 1:
-            stop[0] -= 1
-            stop[1] = self.width+1
-        if stop[1] > self.width+1:
-            stop[0] += 1
-            stop[1] = 1
-        if stop[0] > self.height:
-            stop[:] = [self.height, self.width+1]
-        if stop[0] < 1:
-            stop[:] = [1, 1]
-        if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
-            start, stop = stop, start
-        rect_left = (start[1] - 1) * self.font_width
-        rect_top = (start[0] - 1) * self.font_height
-        rect_right = (stop[1] - 1) * self.font_width
-        rect_bot = stop[0] * self.font_height
-        if start[0] == stop[0]:
-            # single row selection
-            self.selection_rect = [pygame.Rect(rect_left, rect_top,
-                                    rect_right-rect_left, rect_bot-rect_top)]
+        """ Return text from clipboard. """
+        if mouse:
+            pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
         else:
-            # multi-row selection
-            self.selection_rect = [
-                pygame.Rect(rect_left, rect_top,
-                      self.size[0]-rect_left, self.font_height),
-                pygame.Rect(0, rect_top + self.font_height,
-                      self.size[0], rect_bot - rect_top - 2*self.font_height),
-                pygame.Rect(0, rect_bot - self.font_height,
-                      rect_right, self.font_height)]
-        self.videoplugin.screen_changed = True
+            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
+        us = None
+        available = pygame.scrap.get_types()
+        for text_type in self.text:
+            if text_type not in available:
+                continue
+            us = pygame.scrap.get(text_type)
+            if us:
+                break
+        if plat.system == 'Windows':
+            if text_type == 'text/plain;charset=utf-8':
+                # it's lying, it's giving us UTF16 little-endian
+                # ignore any bad UTF16 characters from outside
+                us = us.decode('utf-16le', 'ignore')
+            # null-terminated strings
+            us = us[:us.find('\0')]
+            us = us.encode('utf-8')
+        if not us:
+            return ''
+        return clipboard.utf8_to_cp(us)
 
-    def handle_key(self, e):
-        """ Handle keyboard clipboard commands. """
-        if not self._active:
-            return
-        if e.unicode.upper() ==  u'C':
-            self.copy()
-        elif e.unicode.upper() == u'V':
-            self.paste()
-        elif e.unicode.upper() == u'A':
-            # select all
-            self.select_start = [1, 1]
-            self.move(self.height, self.width+1)
-        elif e.key == pygame.K_LEFT:
-            # move selection head left
-            self.move(self.select_stop[0], self.select_stop[1]-1)
-        elif e.key == pygame.K_RIGHT:
-            # move selection head right
-            self.move(self.select_stop[0], self.select_stop[1]+1)
-        elif e.key == pygame.K_UP:
-            # move selection head up
-            self.move(self.select_stop[0]-1, self.select_stop[1])
-        elif e.key == pygame.K_DOWN:
-            # move selection head down
-            self.move(self.select_stop[0]+1, self.select_stop[1])
 
-    def create_feedback(self, surface):
-        """ Create visual feedback for selection onto a surface. """
-        for r in self.selection_rect:
-            work_area = surface.subsurface(r)
-            orig = work_area.copy()
-            # add 1 to the color as a highlight
-            orig.fill(pygame.Color(0, 0, 1))
-            work_area.blit(orig, (0, 0), special_flags=pygame.BLEND_ADD)
+def get_clipboard_handler():
+    """ Get a working Clipboard handler object. """
+    # Pygame.Scrap doesn't work on OSX and is buggy on Linux; avoid if we can
+    if plat.system == 'OSX':
+        handler = clipboard.MacClipboard()
+    elif plat.system in ('Linux', 'Unknown_OS') and clipboard.XClipboard().ok:
+        handler = clipboard.XClipboard()
+    else:
+        handler = PygameClipboard()
+    if not handler.ok:
+        logging.warning('Clipboard copy and paste not available.')
+        handler = clipboard.Clipboard()
+    return handler
 
+def create_feedback(surface, selection_rects):
+    """ Create visual feedback for selection onto a surface. """
+    for r in selection_rects:
+        work_area = surface.subsurface(pygame.Rect(r))
+        orig = work_area.copy()
+        # add 1 to the color as a highlight
+        orig.fill(pygame.Color(0, 0, 1))
+        work_area.blit(orig, (0, 0), special_flags=pygame.BLEND_ADD)
 
 
 ###############################################################################

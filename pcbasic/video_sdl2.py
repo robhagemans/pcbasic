@@ -474,7 +474,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
                         self.canvas[0], self.display_surface.format, 0)
         sdl2.SDL_SetSurfaceBlendMode(self.overlay, sdl2.SDL_BLENDMODE_ADD)
         # initialise clipboard
-        self.clipboard = ClipboardInterface(self, mode_info.width, mode_info.height)
+        self.clipboard = video_graphical.ClipboardInterface(self,
+                mode_info.width, mode_info.height, SDL2Clipboard())
         self.screen_changed = True
 
     def set_caption_message(self, msg):
@@ -677,130 +678,7 @@ class SDL2Clipboard(clipboard.Clipboard):
         return text
 
 
-
-#MOVE to sdl2/pygame agnostic place
-class ClipboardInterface(object):
-    """ Clipboard user interface. """
-
-    def __init__(self, videoplugin, width, height):
-        """ Initialise clipboard feedback handler. """
-        self._active = False
-        self.select_start = None
-        self.select_stop = None
-        self.selection_rect = None
-        self.width = width
-        self.height = height
-        self.font_width = videoplugin.font_width
-        self.font_height = videoplugin.font_height
-        self.size = videoplugin.size
-        self.videoplugin = videoplugin
-        #SDL2
-        self.clipboard_handler = SDL2Clipboard()
-
-    def active(self):
-        """ True if clipboard mode is active. """
-        return self._active
-
-    def start(self, r, c):
-        """ Enter clipboard mode (clipboard key pressed). """
-        self._active = True
-        self.select_start = [r, c]
-        self.select_stop = [r, c]
-        self.selection_rect = []
-
-    def stop(self):
-        """ Leave clipboard mode (clipboard key released). """
-        self._active = False
-        self.select_start = None
-        self.select_stop = None
-        self.selection_rect = None
-        self.videoplugin.screen_changed = True
-
-    def copy(self, mouse=False):
-        """ Copy screen characters from selection into clipboard. """
-        start, stop = self.select_start, self.select_stop
-        if not start or not stop:
-            return
-        if start[0] == stop[0] and start[1] == stop[1]:
-            return
-        if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
-            start, stop = stop, start
-        text_rows = self.videoplugin.text[self.videoplugin.vpagenum][start[0]-1:stop[0]]
-        text_rows[0] = text_rows[0][start[1]-1:]
-        if stop[1] < self.width:
-            text_rows[-1] = text_rows[-1][:stop[1]-self.width-1]
-        text = '\n'.join(''.join(row) for row in text_rows)
-        self.clipboard_handler.copy(text, mouse)
-
-    def paste(self, mouse=False):
-        """ Paste from clipboard into keyboard buffer. """
-        text = self.clipboard_handler.paste(mouse)
-        backend.input_queue.put(backend.Event(backend.CLIP_PASTE, text))
-
-    def move(self, r, c):
-        """ Move the head of the selection and update feedback. """
-        self.select_stop = [r, c]
-        start, stop = self.select_start, self.select_stop
-        if stop[1] < 1:
-            stop[0] -= 1
-            stop[1] = self.width+1
-        if stop[1] > self.width+1:
-            stop[0] += 1
-            stop[1] = 1
-        if stop[0] > self.height:
-            stop[:] = [self.height, self.width+1]
-        if stop[0] < 1:
-            stop[:] = [1, 1]
-        if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
-            start, stop = stop, start
-        rect_left = (start[1] - 1) * self.font_width
-        rect_top = (start[0] - 1) * self.font_height
-        rect_right = (stop[1] - 1) * self.font_width
-        rect_bot = stop[0] * self.font_height
-        if start[0] == stop[0]:
-            # single row selection
-            self.selection_rect = [(rect_left, rect_top,
-                                    rect_right-rect_left, rect_bot-rect_top)]
-        else:
-            # multi-row selection
-            self.selection_rect = [
-                (rect_left, rect_top,
-                      self.size[0]-rect_left, self.font_height),
-                (0, rect_top + self.font_height,
-                      self.size[0], rect_bot - rect_top - 2*self.font_height),
-                (0, rect_bot - self.font_height,
-                      rect_right, self.font_height)]
-        self.videoplugin.screen_changed = True
-
-    def handle_key(self, scan, c):
-        """ Handle keyboard clipboard commands. """
-        if not self._active:
-            return
-        if c.upper() == 'C':
-            self.copy()
-        elif c.upper() == 'V':
-            self.paste()
-        elif c.upper() == 'A':
-            # select all
-            self.select_start = [1, 1]
-            self.move(self.height, self.width+1)
-        elif scan == scancode.LEFT:
-            # move selection head left
-            self.move(self.select_stop[0], self.select_stop[1]-1)
-        elif scan == scancode.RIGHT:
-            # move selection head right
-            self.move(self.select_stop[0], self.select_stop[1]+1)
-        elif scan == scancode.UP:
-            # move selection head up
-            self.move(self.select_stop[0]-1, self.select_stop[1])
-        elif scan == scancode.DOWN:
-            # move selection head down
-            self.move(self.select_stop[0]+1, self.select_stop[1])
-
-
-
 ###############################################################################
-
 
 if sdl2:
     # these are PC keyboard scancodes

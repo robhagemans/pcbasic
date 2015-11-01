@@ -36,7 +36,7 @@ video_backends = {
     'cli': (('cli',), 'none'),
     'ansi': (('ansi',), 'cli'),
     'text': (('curses', 'ansi'), 'cli'),
-    'graphical': (('sdl2', 'pygame',), 'text'),
+    'graphical': (('pygame',), 'text'),
     }
 
 # create the window icon

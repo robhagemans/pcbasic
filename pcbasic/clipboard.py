@@ -7,10 +7,6 @@ This file is released under the GNU GPL version 3.
 """
 
 import subprocess
-try:
-    import pygame
-except ImportError:
-    pygame = None
 import os
 import logging
 
@@ -41,65 +37,6 @@ class Clipboard(object):
     def paste(self, mouse=False):
         """ Return text from clipboard. """
         return ''
-
-
-class PygameClipboard(Clipboard):
-    """ Clipboard handling using Pygame.Scrap. """
-
-    # text type we look for in the clipboard
-    text = ('UTF8_STRING', 'text/plain;charset=utf-8', 'text/plain',
-            'TEXT', 'STRING')
-
-    def __init__(self):
-        """ Initialise the clipboard handler. """
-        try:
-            pygame.scrap.init()
-            self.ok = True
-        except Exception:
-            if pygame:
-                logging.warning('PyGame.Scrap clipboard handling module not found.')
-            self.ok = False
-
-    def copy(self, text, mouse=False):
-        """ Put text on clipboard. """
-        if mouse:
-            pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
-        else:
-            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
-        try:
-            if plat.system == 'Windows':
-                # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
-                pygame.scrap.put('text/plain;charset=utf-8', text.decode('utf-8').encode('utf-16le') + '\0\0')
-            else:
-                pygame.scrap.put(pygame.SCRAP_TEXT, text)
-        except KeyError:
-            logging.debug('Clipboard copy failed for clip %s', repr(text))
-
-    def paste(self, mouse=False):
-        """ Return text from clipboard. """
-        if mouse:
-            pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
-        else:
-            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
-        us = None
-        available = pygame.scrap.get_types()
-        for text_type in self.text:
-            if text_type not in available:
-                continue
-            us = pygame.scrap.get(text_type)
-            if us:
-                break
-        if plat.system == 'Windows':
-            if text_type == 'text/plain;charset=utf-8':
-                # it's lying, it's giving us UTF16 little-endian
-                # ignore any bad UTF16 characters from outside
-                us = us.decode('utf-16le', 'ignore')
-            # null-terminated strings
-            us = us[:us.find('\0')]
-            us = us.encode('utf-8')
-        if not us:
-            return ''
-        return utf8_to_cp(us)
 
 
 class MacClipboard(Clipboard):
@@ -178,19 +115,5 @@ def utf8_to_cp(text_utf8):
         text += char
         last = c
     return text
-
-def get_handler():
-    """ Get a working Clipboard handler object. """
-    # Pygame.Scrap doesn't work on OSX and is buggy on Linux; avoid if we can
-    if plat.system == 'OSX':
-        clipboard = MacClipboard()
-    elif plat.system in ('Linux', 'Unknown_OS') and XClipboard().ok:
-        clipboard = XClipboard()
-    else:
-        clipboard = PygameClipboard()
-    if not clipboard.ok:
-        logging.warning('Clipboard copy and paste not available.')
-        clipboard = Clipboard()
-    return clipboard
 
 prepare()
