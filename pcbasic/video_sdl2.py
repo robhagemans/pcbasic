@@ -36,21 +36,10 @@ import scancode
 import basictoken as tk
 import clipboard
 import video
-
-if plat.system == 'Windows':
-    # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
-    # see https://bitbucket.org/pygame/pygame/issues/245/wrong-resolution-unless-you-use-ctypes
-    try:
-        ctypes.windll.user32.SetProcessDPIAware()
-    except AttributeError:
-        # old versions of Windows don't have this in user32.dll
-        pass
+import video_graphical
 
 
 ###############################################################################
-
-# percentage of the screen to leave unused for window decorations etc.
-display_slack = 15
 
 def prepare():
     """ Initialise video_sdl2 module. """
@@ -59,7 +48,7 @@ def prepare():
 
 ###############################################################################
 
-class VideoSDL2(video.VideoPlugin):
+class VideoSDL2(video_graphical.VideoGraphical):
     """ SDL2-based graphical interface. """
 
     def __init__(self, **kwargs):
@@ -70,8 +59,7 @@ class VideoSDL2(video.VideoPlugin):
         if not numpy:
             logging.debug('NumPy module not found.')
             raise video.InitFailed()
-        # set parameters
-        self._prepare(**kwargs)
+        video_graphical.VideoGraphical.__init__(self, **kwargs)
         # initialise SDL
         sdl2.ext.init()
         # display & border
@@ -109,7 +97,8 @@ class VideoSDL2(video.VideoPlugin):
         self.set_mode(backend.initial_mode)
         # support for CGA composite
         self.composite_palette = sdl2.SDL_AllocPalette(256)
-        composite_colors = composite_640.get(self.composite_card, composite_640['cga'])
+        composite_colors = video_graphical.composite_640.get(
+                self.composite_card, video_graphical.composite_640['cga'])
         colors = (sdl2.SDL_Color * 256)(*[sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in composite_colors])
         sdl2.SDL_SetPaletteColors(self.composite_palette, colors, 0, 256)
         # check if we can honour scaling=smooth
@@ -120,7 +109,13 @@ class VideoSDL2(video.VideoPlugin):
             if not hasattr(sdl2, 'sdlgfx'):
                 logging.warning('Smooth scaling not available: SDL_GFX extension not found.')
                 self.smooth = False
-        # joystick and mouse
+        # mouse setups
+        buttons = {'left': sdl2.SDL_BUTTON_LEFT, 'middle': sdl2.SDL_BUTTON_MIDDLE,
+                   'right': sdl2.SDL_BUTTON_RIGHT, 'none': None}
+        copy_paste = kwargs.get('copy-paste', ('left', 'middle'))
+        self.mousebutton_copy = buttons[copy_paste[0]]
+        self.mousebutton_paste = buttons[copy_paste[1]]
+        self.mousebutton_pen = buttons[kwargs.get('pen', 'right')]
         # available joysticks
         num_joysticks = sdl2.SDL_NumJoysticks()
         for j in range(num_joysticks):
@@ -130,37 +125,6 @@ class VideoSDL2(video.VideoPlugin):
                 backend.input_queue.put(backend.Event(backend.STICK_MOVED,
                                                       (j, axis, 128)))
         self.f11_active = False
-        video.VideoPlugin.__init__(self)
-
-    def _prepare(self, **kwargs):
-        """ Initialise SDL2 plugin parameters. """
-        # use native pixel sizes
-        self.force_native_pixel = kwargs.get('force_native_pixel', False)
-        # display dimensions
-        self.force_display_size = kwargs.get('force_display_size', None)
-        # aspect ratio
-        self.aspect = kwargs.get('aspect', (4, 3))
-        # border width percentage
-        self.border_width = kwargs.get('border_width', 0)
-        # start in fullscreen mode
-        self.fullscreen = kwargs.get('fullscreen', False)
-        # request smooth scaling
-        self.smooth = kwargs.get('smooth', False)
-        # ignore ALT+F4 and window X button
-        self.nokill = config.get('nokill')
-        # mouse setups
-        buttons = {'left': sdl2.SDL_BUTTON_LEFT, 'middle': sdl2.SDL_BUTTON_MIDDLE,
-                   'right': sdl2.SDL_BUTTON_RIGHT, 'none': None}
-        copy_paste = kwargs.get('copy-paste', ('left', 'middle'))
-        self.mousebutton_copy = buttons[copy_paste[0]]
-        self.mousebutton_paste = buttons[copy_paste[1]]
-        self.mousebutton_pen = buttons[kwargs.get('pen', 'right')]
-        # window caption/title
-        self.caption = kwargs.get('caption', '')
-        # if no composite palette available for this card, ignore.
-        self.composite_monitor = kwargs.get('composite_monitor', False)
-        # video card to emulate (only used for composite)
-        self.composite_card = kwargs.get('composite_card')
 
     def close(self):
         """ Close the SDL2 interface. """
@@ -369,7 +333,7 @@ class VideoSDL2(video.VideoPlugin):
         screen = self.work_surface
         sdl2.SDL_FillRect(self.work_surface, None, self.border_attr)
         if self.composite_artifacts:
-            self.work_pixels[:] = apply_composite_artifacts(
+            self.work_pixels[:] = video_graphical.apply_composite_artifacts(
                             self.pixels[self.vpagenum], 4//self.bitsperpixel)
             sdl2.SDL_SetSurfacePalette(screen, self.composite_palette)
         else:
@@ -434,56 +398,6 @@ class VideoSDL2(video.VideoPlugin):
                 ] ^= self.cursor_attr
         self.last_row = self.cursor_row
         self.last_col = self.cursor_col
-
-
-
-    ###########################################################################
-    # miscellaneous helper functions
-
-    #MOVE outside of class
-    def _find_display_size(self, canvas_x, canvas_y, border_width):
-        """ Determine the optimal size for the display. """
-        # comply with requested size unless we're fullscreening
-        if self.force_display_size and not self.fullscreen:
-            return self.force_display_size
-        if not self.force_native_pixel:
-            # this assumes actual display aspect ratio is wider than 4:3
-            # scale y to fit screen
-            canvas_y = (1 - display_slack/100.) * (
-                        self.physical_size[1] // int(1 + border_width/100.))
-            # scale x to match aspect ratio
-            canvas_x = (canvas_y * self.aspect[0]) / self.aspect[1]
-            # add back border
-            pixel_x = int(canvas_x * (1 + border_width/100.))
-            pixel_y = int(canvas_y * (1 + border_width/100.))
-            return pixel_x, pixel_y
-        else:
-            pixel_x = int(canvas_x * (1 + border_width/100.))
-            pixel_y = int(canvas_y * (1 + border_width/100.))
-            # leave part of the screen either direction unused
-            # to account for task bars, window decorations, etc.
-            xmult = max(1, int((100.-display_slack) *
-                                        self.physical_size[0] / (100.*pixel_x)))
-            ymult = max(1, int((100.-display_slack) *
-                                        self.physical_size[1] / (100.*pixel_y)))
-            # find the multipliers mx <= xmult, my <= ymult
-            # such that mx * pixel_x / my * pixel_y
-            # is multiplicatively closest to aspect[0] / aspect[1]
-            target = self.aspect[0]/(1.0*self.aspect[1])
-            current = xmult*canvas_x / (1.0*ymult*canvas_y)
-            # find the absolute multiplicative distance (always > 1)
-            best = max(current, target) / min(current, target)
-            apx = xmult, ymult
-            for mx in range(1, xmult+1):
-                my = min(ymult,
-                         int(round(mx*canvas_x*self.aspect[1] / (1.0*canvas_y*self.aspect[0]))))
-                current = mx*pixel_x / (1.0*my*pixel_y)
-                dist = max(current, target) / min(current, target)
-                # prefer larger multipliers if distance is equal
-                if dist <= best:
-                    best = dist
-                    apx = mx, my
-            return apx[0] * pixel_x, apx[1] * pixel_y
 
     def _resize_display(self, width, height):
         """ Change the display size. """
@@ -976,40 +890,5 @@ if sdl2:
         sdl2.SDLK_DELETE: scancode.DELETE,
         sdl2.SDLK_PAUSE: scancode.BREAK,
     }
-
-# composite palettes, see http://nerdlypleasures.blogspot.co.uk/2013_11_01_archive.html
-composite_640 = {
-    'cga_old': [
-        (0x00, 0x00, 0x00),        (0x00, 0x71, 0x00),        (0x00, 0x3f, 0xff),        (0x00, 0xab, 0xff),
-        (0xc3, 0x00, 0x67),        (0x73, 0x73, 0x73),        (0xe6, 0x39, 0xff),        (0x8c, 0xa8, 0xff),
-        (0x53, 0x44, 0x00),        (0x00, 0xcd, 0x00),        (0x73, 0x73, 0x73),        (0x00, 0xfc, 0x7e),
-        (0xff, 0x39, 0x00),        (0xe2, 0xca, 0x00),        (0xff, 0x7c, 0xf4),        (0xff, 0xff, 0xff)    ],
-    'cga': [
-        (0x00, 0x00, 0x00),        (0x00, 0x6a, 0x2c),        (0x00, 0x39, 0xff),        (0x00, 0x94, 0xff),
-        (0xca, 0x00, 0x2c),        (0x77, 0x77, 0x77),        (0xff, 0x31, 0xff),        (0xc0, 0x98, 0xff),
-        (0x1a, 0x57, 0x00),        (0x00, 0xd6, 0x00),        (0x77, 0x77, 0x77),        (0x00, 0xf4, 0xb8),
-        (0xff, 0x57, 0x00),        (0xb0, 0xdd, 0x00),        (0xff, 0x7c, 0xb8),        (0xff, 0xff, 0xff)    ],
-    'tandy': [
-        (0x00, 0x00, 0x00),        (0x7c, 0x30, 0x00),        (0x00, 0x75, 0x00),        (0x00, 0xbe, 0x00),
-        (0x00, 0x47, 0xee),        (0x77, 0x77, 0x77),        (0x00, 0xbb, 0xc4),        (0x00, 0xfb, 0x3f),
-        (0xb2, 0x0f, 0x9d),        (0xff, 0x1e, 0x0f),        (0x77, 0x77, 0x77),        (0xff, 0xb8, 0x00),
-        (0xb2, 0x44, 0xff),        (0xff, 0x78, 0xff),        (0x4b, 0xba, 0xff),        (0xff, 0xff, 0xff)    ],
-    'pcjr': [
-        (0x00, 0x00, 0x00),
-        (0x98, 0x20, 0xcb),        (0x9f, 0x1c, 0x00),        (0xff, 0x11, 0x71),        (0x00, 0x76, 0x00),
-        (0x77, 0x77, 0x77),        (0x5b, 0xaa, 0x00),        (0xff, 0xa5, 0x00),        (0x00, 0x4e, 0xcb),
-        (0x74, 0x53, 0xff),        (0x77, 0x77, 0x77),        (0xff, 0x79, 0xff),        (0x00, 0xc8, 0x71),
-        (0x00, 0xcc, 0xff),        (0x00, 0xfa, 0x00),        (0xff, 0xff, 0xff) ]        }
-
-#MOVE to sdl2/pygame agnostic place
-def apply_composite_artifacts(src_array, pixels=4):
-    """ Process the canvas to apply composite colour artifacts. """
-    width, height = src_array.shape
-    s = [None]*pixels
-    for p in range(pixels):
-        s[p] = src_array[p:width:pixels]&(4//pixels)
-    for p in range(1,pixels):
-        s[0] = s[0]*2 + s[p]
-    return numpy.repeat(s[0], pixels, axis=0)
 
 prepare()

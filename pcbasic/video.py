@@ -26,10 +26,12 @@ def init(plugin_name, **kwargs):
     # initialise video plugin
     try:
         plugin = plugin_dict[plugin_name](**kwargs)
-        return True
     except InitFailed:
         close()
         return False
+    else:
+        plugin.start()
+        return True
 
 def close():
     """ Close video plugin. """
@@ -44,8 +46,10 @@ class VideoPlugin(object):
     """ Base class for display/input interface plugins. """
 
     def __init__(self):
-        """ Setup the interface and start the event handling thread. """
-        # start video thread
+        """ Setup the interface. """
+
+    def start(self):
+        """ Start the event handling thread. """
         self.thread = threading.Thread(target=self._consumer_thread)
         self.thread.start()
 
