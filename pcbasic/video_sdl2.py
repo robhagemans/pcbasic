@@ -133,7 +133,11 @@ class VideoSDL2(video_graphical.VideoGraphical):
         if sdl2 and numpy:
             # free windows
             sdl2.SDL_DestroyWindow(self.display)
-            #TODO: free surfaces
+            # free surfaces
+            for s in self.canvas:
+                sdl2.SDL_FreeSurface(s)
+            sdl2.SDL_FreeSurface(self.work_surface)
+            sdl2.SDL_FreeSurface(self.overlay)
             # free palettes
             for p in self.show_palette:
                 sdl2.SDL_FreePalette(p)
