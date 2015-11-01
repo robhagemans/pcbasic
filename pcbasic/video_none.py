@@ -45,7 +45,7 @@ def prepare():
 class VideoNone(video.VideoPlugin):
     """ Command-line filter interface. """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """ Initialise filter interface. """
         # use redirection echos; these are not kept in state
         redirect.set_output(sys.stdout, utf8=True)

@@ -33,8 +33,6 @@ import ansi
 
 def prepare():
     """ Initialise the video_curses module. """
-    global caption
-    caption = config.get('caption')
     video.plugin_dict['ansi'] = VideoANSI
 
 
@@ -57,8 +55,9 @@ def set_attributes(fore, back, blink, underline):
 class VideoANSI(video_cli.VideoCLI):
     """ Text interface implemented with ANSI escape sequences. """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """ Initialise the text interface. """
+        self.caption = kwargs.get('caption', '')
         self.set_caption_message('')
         # prevent logger from defacing the screen
         self.logger = logging.getLogger()
@@ -236,9 +235,9 @@ class VideoANSI(video_cli.VideoCLI):
     def set_caption_message(self, msg):
         """ Add a message to the window caption. """
         if msg:
-            sys.stdout.write(ansi.esc_set_title % (caption + ' - ' + msg))
+            sys.stdout.write(ansi.esc_set_title % (self.caption + ' - ' + msg))
         else:
-            sys.stdout.write(ansi.esc_set_title % caption)
+            sys.stdout.write(ansi.esc_set_title % self.caption)
         sys.stdout.flush()
 
 

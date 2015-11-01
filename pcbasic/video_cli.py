@@ -66,7 +66,7 @@ def term_echo(on=True):
 class VideoCLI(video.VideoPlugin):
     """ Command-line interface. """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """ Initialise command-line interface. """
         if not plat.stdin_is_tty:
             logging.warning('Input device is not a terminal. '

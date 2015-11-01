@@ -99,8 +99,7 @@ def init_video_plugin(interface_name):
                     smooth=(config.get('scaling') == 'smooth'),
                     nokill=config.get('nokill'),
                     caption=config.get('caption'),
-                    composite_monitor=(config.get('monitor') == 'composite' and
-                                      config.get('video') in composite_640),
+                    composite_monitor=(config.get('monitor') == 'composite'),
                     composite_card=config.get('video'),
                     copy_paste=config.get('copy-paste'),
                     pen=config.get('pen')):

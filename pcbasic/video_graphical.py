@@ -56,6 +56,8 @@ class VideoGraphical(video.VideoPlugin):
         self.composite_monitor = kwargs.get('composite_monitor', False)
         # video card to emulate (only used for composite)
         self.composite_card = kwargs.get('composite_card')
+        # don't try composite unless our video card supports it
+        self.composite_monitor = self.composite_monitor and self.composite_card in composite_640
         # these must be overwritten by child classes
         self.physical_size = None
 
