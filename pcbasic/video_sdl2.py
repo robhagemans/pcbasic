@@ -226,21 +226,16 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def _handle_key_down(self, e):
         """ Handle key-down event. """
         mods = sdl2.SDL_GetModState()
+        try:
+            scan = key_to_scan[e.key.keysym.sym]
+        except KeyError:
+            scan = None
         if e.key.keysym.sym == sdl2.SDLK_F11:
             self.f11_active = True
             self.clipboard.start(self.cursor_row, self.cursor_col)
         elif self.f11_active:
-            # F11+f to toggle fullscreen mode
-            if e.key.keysym.sym == sdl2.SDLK_f:
-                self.fullscreen = not self.fullscreen
-                self._do_create_window(*self._find_display_size(
-                                self.size[0], self.size[1], self.border_width))
-            self.clipboard.handle_key(e)
+            self.clipboard.handle_key(scan, '')
         else:
-            try:
-                scan = key_to_scan[e.key.keysym.sym]
-            except KeyError:
-                scan = None
             if plat.system == 'Windows':
                 # Windows 7 and above send AltGr as Ctrl+RAlt
                 # if 'altgr' option is off, Ctrl+RAlt is sent.
@@ -280,8 +275,15 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def _handle_text_input(self, event):
         """ Handle text-input event. """
         c = event.text.text
+        if self.f11_active:
+            # F11+f to toggle fullscreen mode
+            if c.upper() == 'F':
+                self.fullscreen = not self.fullscreen
+                self._do_create_window(*self._find_display_size(
+                                self.size[0], self.size[1], self.border_width))
+            self.clipboard.handle_key(None, c)
         # the text input event follows the key down event immediately
-        if self.last_down is None:
+        elif self.last_down is None:
             # no key down event waiting: other input method
             backend.input_queue.put(backend.Event(
                     backend.KEYB_CHAR, c))
@@ -770,28 +772,28 @@ class ClipboardInterface(object):
                       rect_right, self.font_height)]
         self.videoplugin.screen_changed = True
 
-    def handle_key(self, e):
+    def handle_key(self, scan, c):
         """ Handle keyboard clipboard commands. """
         if not self._active:
             return
-        if e.key.keysym.sym == sdl2.SDLK_c:
+        if c.upper() == 'C':
             self.copy()
-        elif e.key.keysym.sym == sdl2.SDLK_v:
+        elif c.upper() == 'V':
             self.paste()
-        elif e.key.keysym.sym == sdl2.SDLK_a:
+        elif c.upper() == 'A':
             # select all
             self.select_start = [1, 1]
             self.move(self.height, self.width+1)
-        elif e.key.keysym.sym == sdl2.SDLK_LEFT:
+        elif scan == scancode.LEFT:
             # move selection head left
             self.move(self.select_stop[0], self.select_stop[1]-1)
-        elif e.key.keysym.sym == sdl2.SDLK_RIGHT:
+        elif scan == scancode.RIGHT:
             # move selection head right
             self.move(self.select_stop[0], self.select_stop[1]+1)
-        elif e.key.keysym.sym == sdl2.SDLK_UP:
+        elif scan == scancode.UP:
             # move selection head up
             self.move(self.select_stop[0]-1, self.select_stop[1])
-        elif e.key.keysym.sym == sdl2.SDLK_DOWN:
+        elif scan == scancode.DOWN:
             # move selection head down
             self.move(self.select_stop[0]+1, self.select_stop[1])
 
