@@ -242,17 +242,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             scan = key_to_scan[e.key]
         except KeyError:
             scan = None
-        utf8 = e.unicode.encode('utf-8')
-        try:
-            c = unicodepage.from_utf8(utf8)
-        except KeyError:
-            # no codepage encoding found, ignore
-            # this happens for control codes like '\r' since
-            # unicodepage defines the special graphic characters for those
-            # let control codes be handled by scancode
-            # as e.unicode isn't always the correct thing for ascii controls
-            # e.g. ctrl+enter should be '\n' but has e.unicode=='\r'
-            pass
+        c = e.unicode.encode('utf-8')
         if e.key == pygame.K_F11:
             self.f11_active = True
             self.clipboard.start(self.cursor_row, self.cursor_col)
@@ -264,7 +254,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                                 self.size[0], self.size[1], self.border_width))
             self.clipboard.handle_key(scan, c)
         else:
-            # double NUL characters, as single NUL signals scan code
+            # double NUL characters, as single NUL signals e-ASCII
             if len(c) == 1 and ord(c) == 0:
                 c = '\0\0'
             if plat.system == 'Windows':

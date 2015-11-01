@@ -120,13 +120,8 @@ class VideoCLI(video.VideoPlugin):
                 # backspace
                 backend.input_queue.put(backend.Event(backend.KEYB_CHAR, '\b'))
             else:
-                try:
-                    # check_full=False?
-                    backend.input_queue.put(backend.Event(backend.KEYB_CHAR,
-                                                        unicodepage.from_utf8(u8)))
-                except KeyError:
-                    # check_full=False?
-                    backend.input_queue.put(backend.Event(backend.KEYB_CHAR, u8))
+                # check_full=False?
+                backend.input_queue.put(backend.Event(backend.KEYB_CHAR, u8))
 
 
     ###############################################################################
@@ -134,7 +129,7 @@ class VideoCLI(video.VideoPlugin):
     def put_glyph(self, pagenum, row, col, c, fore, back, blink, underline, for_keys):
         """ Put a single-byte character at a given position. """
         try:
-            char = unicodepage.UTF8Converter().to_utf8(c)
+            char = unicodepage.cp_to_utf8[c]
         except KeyError:
             char = ' ' * len(c)
         self.text[pagenum][row-1][col-1] = char

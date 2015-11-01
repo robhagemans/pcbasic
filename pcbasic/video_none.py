@@ -12,7 +12,6 @@ import time
 import video
 
 import backend
-import unicodepage
 import plat
 import redirect
 
@@ -64,11 +63,6 @@ class VideoNone(video.VideoPlugin):
             # replace LF -> CR if needed
             if c == '\n' and lf_to_cr:
                 c = '\r'
-            # convert utf8 to codepage if necessary
-            try:
-                c = unicodepage.from_utf8(c)
-            except KeyError:
-                pass
             # check_full=False?
             backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
 

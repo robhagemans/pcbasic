@@ -183,7 +183,7 @@ class VideoANSI(video_cli.VideoCLI):
     def put_glyph(self, pagenum, row, col, c, fore, back, blink, underline, for_keys):
         """ Put a single-byte character at a given position. """
         try:
-            char = unicodepage.UTF8Converter().to_utf8(c)
+            char = unicodepage.cp_to_utf8[c]
         except KeyError:
             char = ' ' * len(c)
         self.text[pagenum][row-1][col-1] = char, (fore, back, blink, underline)

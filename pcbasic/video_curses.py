@@ -187,13 +187,8 @@ class VideoCurses(video.VideoPlugin):
                 # scancode; go add next char
                 continue
             else:
-                try:
-                    #check_full=False?
-                    backend.input_queue.put(backend.Event(backend.KEYB_CHAR,
-                                                        unicodepage.from_utf8(c)))
-                except KeyError:
-                    #check_full=False?
-                    backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
+                #check_full=False?
+                backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
             c = ''
 
     def _redraw(self):
@@ -324,7 +319,7 @@ class VideoCurses(video.VideoPlugin):
         if c == '\0':
             c = ' '
         try:
-            char = unicodepage.UTF8Converter().to_utf8(c)
+            char = unicodepage.cp_to_utf8[c]
         except KeyError:
             char = ' '*len(c)
         colour = self._curses_colour(fore, back, blink)
