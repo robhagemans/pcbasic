@@ -60,8 +60,14 @@ class VideoGraphical(video.VideoPlugin):
         self.composite_card = kwargs.get('composite_card')
         # don't try composite unless our video card supports it
         self.composite_monitor = self.composite_monitor and self.composite_card in composite_640
-        # these must be overwritten by child classes
+        # the following attributes must be overridden by child classes
+        # size of display
         self.physical_size = None
+        # size of canvas
+        self.size = None
+        # size of window (canvas+border)
+        self.window_width = None
+        self.window_height = None
 
 
     ###########################################################################
