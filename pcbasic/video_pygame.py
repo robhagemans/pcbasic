@@ -30,88 +30,24 @@ import scancode
 import basictoken as tk
 import clipboard
 import video
-
-if plat.system == 'Windows':
-    # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
-    # see https://bitbucket.org/pygame/pygame/issues/245/wrong-resolution-unless-you-use-ctypes
-    import ctypes
-    try:
-        ctypes.windll.user32.SetProcessDPIAware()
-    except AttributeError:
-        # old versions of Windows don't have this in user32.dll
-        pass
+import video_graphical
 
 
 ###############################################################################
 
-# monitor type and colours
-composite_monitor = False
-composite_640_palette = None
-# screen size parameters
-fullscreen = False
-smooth = False
-force_square_pixel = False
-force_display_size = None
-border_width = 0
-# percentage of the screen to leave unused for window decorations etc.
-display_slack = 15
-# screen aspect ratio x, y
-aspect = (4, 3)
-# ignore ALT+F4 (and consequently window X button)
-noquit = False
-# window title
-caption = ''
-# mouse button functions
-mousebutton_copy = 1
-mousebutton_paste = 2
-mousebutton_pen = 3
-
-
 def prepare():
     """ Initialise video_pygame module. """
-    global fullscreen, smooth, noquit, force_display_size
-    global composite_monitor
-    global composite_640_palette, border_width
-    global mousebutton_copy, mousebutton_paste, mousebutton_pen
-    global aspect, force_square_pixel
-    global caption
-    # display dimensions
-    force_display_size = config.get('dimensions')
-    aspect = config.get('aspect') or aspect
-    border_width = config.get('border')
-    force_square_pixel = (config.get('scaling') == 'native')
-    fullscreen = config.get('fullscreen')
-    smooth = (config.get('scaling') == 'smooth')
-    # don't catch Alt+F4
-    noquit = config.get('nokill')
-    # if no composite palette available for this card, ignore.
-    composite_monitor = (config.get('monitor') == 'composite' and
-                         config.get('video') in composite_640)
-    if composite_monitor:
-            composite_640_palette = composite_640[config.get('video')]
-    # mouse setups
-    buttons = { 'left': 1, 'middle': 2, 'right': 3, 'none': -1 }
-    mousebutton_copy = buttons[config.get('copy-paste')[0]]
-    mousebutton_paste = buttons[config.get('copy-paste')[1]]
-    mousebutton_pen = buttons[config.get('pen')]
-    if not config.get('altgr'):
-        # on Windows, AltGr key is reported as right-alt
-        key_to_scan[pygame.K_RALT] = scancode.ALT
-        # on Linux, AltGr is reported as mode key
-        key_to_scan[pygame.K_MODE] = scancode.ALT
-    # window caption/title
-    caption = config.get('caption')
     video.plugin_dict['pygame'] = VideoPygame
 
 
 ###############################################################################
 
-class VideoPygame(video.VideoPlugin):
+class VideoPygame(video_graphical.VideoGraphical):
     """ Pygame-based graphical interface. """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """ Initialise pygame interface. """
-        global smooth
+        video_graphical.VideoGraphical.__init__(self, **kwargs)
         # set state objects to whatever is now in state (may have been unpickled)
         if not pygame:
             logging.warning('PyGame module not found.')
@@ -132,8 +68,6 @@ class VideoPygame(video.VideoPlugin):
         self.canvas = []
         # border attribute
         self.border_attr = 0
-        # border widh in pixels
-        self.border_width = border_width
         # palette and colours
         # composite colour artifacts
         self.composite_artifacts = False
@@ -141,6 +75,12 @@ class VideoPygame(video.VideoPlugin):
         self.work_palette = [(0, 0, index) for index in range(256)]
         # display palettes for blink states 0, 1
         self.show_palette = [None, None]
+        # composite palette
+        try:
+            self.composite_640_palette = video_graphical.composite_640[
+                                                            self.composite_card]
+        except KeyError:
+            self.composite_640_palette = video_graphical.composite_640['cga']
         # text attributes supported
         self.mode_has_blink = True
         # update cycle
@@ -172,23 +112,22 @@ class VideoPygame(video.VideoPlugin):
         display_info = pygame.display.Info()
         self.physical_size = display_info.current_w, display_info.current_h
         # determine initial display size
-        self.display_size = self._find_display_size(640, 480, border_width)
+        self.display_size = self._find_display_size(640, 480, self.border_width)
         self.set_icon(backend.icon)
         # first set the screen non-resizeable, to trick things like maximus into not full-screening
         # I hate it when applications do this ;)
         try:
-            if not fullscreen:
+            if not self.fullscreen:
                 pygame.display.set_mode(self.display_size, 0)
-            self.fullscreen = fullscreen
             self._resize_display(*self.display_size)
         except pygame.error:
             self._close_pygame()
             logging.warning('Could not initialise PyGame display')
             raise video.InitFailed()
-        if smooth and self.display.get_bitsize() < 24:
+        if self.smooth and self.display.get_bitsize() < 24:
             logging.warning("Smooth scaling not available on this display (depth %d < 24)", self.display.get_bitsize())
-            smooth = False
-        pygame.display.set_caption(caption)
+            self.smooth = False
+        pygame.display.set_caption(self.caption)
         pygame.key.set_repeat(500, 24)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
@@ -202,11 +141,16 @@ class VideoPygame(video.VideoPlugin):
             for axis in (0, 1):
                 backend.input_queue.put(backend.Event(backend.STICK_MOVED,
                                                       (joy, axis, 128)))
+        # mouse setups
+        buttons = { 'left': 1, 'middle': 2, 'right': 3, 'none': -1 }
+        copy_paste = kwargs.get('copy-paste', ('left', 'middle'))
+        self.mousebutton_copy = buttons[copy_paste[0]]
+        self.mousebutton_paste = buttons[copy_paste[1]]
+        self.mousebutton_pen = buttons[kwargs.get('pen', 'right')]
         self.move_cursor(0, 0)
         self.set_page(0, 0)
         self.set_mode(backend.initial_mode)
         self.f11_active = False
-        video.VideoPlugin.__init__(self)
 
     def close(self):
         """ Close the pygame interface. """
@@ -247,21 +191,21 @@ class VideoPygame(video.VideoPlugin):
                 self._handle_key_up(event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # copy, paste and pen may be on the same button, so no elifs
-                if event.button == mousebutton_copy:
+                if event.button == self.mousebutton_copy:
                     # LEFT button: copy
                     pos = self._normalise_pos(*event.pos)
                     self.clipboard.start(1 + pos[1] // self.font_height,
                             1 + (pos[0]+self.font_width//2) // self.font_width)
-                if event.button == mousebutton_paste:
+                if event.button == self.mousebutton_paste:
                     # MIDDLE button: paste
                     self.clipboard.paste(mouse=True)
-                if event.button == mousebutton_pen:
+                if event.button == self.mousebutton_pen:
                     # right mouse button is a pen press
                     backend.input_queue.put(backend.Event(backend.PEN_DOWN,
                                                 self._normalise_pos(*event.pos)))
             elif event.type == pygame.MOUSEBUTTONUP:
                 backend.input_queue.put(backend.Event(backend.PEN_UP))
-                if event.button == mousebutton_copy:
+                if event.button == self.mousebutton_copy:
                     self.clipboard.copy(mouse=True)
                     self.clipboard.stop()
             elif event.type == pygame.MOUSEMOTION:
@@ -284,7 +228,7 @@ class VideoPygame(video.VideoPlugin):
                 self.fullscreen = False
                 self._resize_display(event.w, event.h)
             elif event.type == pygame.QUIT:
-                if noquit:
+                if self.nokill:
                     self.set_caption_message('to exit type <CTRL+BREAK> <ESC> SYSTEM')
                 else:
                     backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
@@ -299,7 +243,7 @@ class VideoPygame(video.VideoPlugin):
         elif self.f11_active:
             # F11+f to toggle fullscreen mode
             if e.key == pygame.K_f:
-                self.fullscreen = not fullscreen
+                self.fullscreen = not self.fullscreen
                 self._resize_display(*self._find_display_size(
                                 self.size[0], self.size[1], self.border_width))
             self.clipboard.handle_key(e)
@@ -393,10 +337,10 @@ class VideoPygame(video.VideoPlugin):
             self.clipboard.create_feedback(workscreen)
         if self.composite_artifacts:
             screen = apply_composite_artifacts(screen, 4//self.bitsperpixel)
-            screen.set_palette(composite_640_palette)
+            screen.set_palette(self.composite_640_palette)
         else:
             screen.set_palette(self.show_palette[self.blink_state])
-        if smooth:
+        if self.smooth:
             pygame.transform.smoothscale(screen.convert(self.display),
                                          self.display.get_size(), self.display)
         else:
@@ -436,51 +380,6 @@ class VideoPygame(video.VideoPlugin):
 
     ###########################################################################
     # miscellaneous helper functions
-
-    #MOVE outside of class
-    def _find_display_size(self, canvas_x, canvas_y, border_width):
-        """ Determine the optimal size for the display. """
-        # comply with requested size unless we're fullscreening
-        if force_display_size and not self.fullscreen:
-            return force_display_size
-        if not force_square_pixel:
-            # this assumes actual display aspect ratio is wider than 4:3
-            # scale y to fit screen
-            canvas_y = (1 - display_slack/100.) * (
-                        self.physical_size[1] // int(1 + border_width/100.))
-            # scale x to match aspect ratio
-            canvas_x = (canvas_y * aspect[0]) / aspect[1]
-            # add back border
-            pixel_x = int(canvas_x * (1 + border_width/100.))
-            pixel_y = int(canvas_y * (1 + border_width/100.))
-            return pixel_x, pixel_y
-        else:
-            pixel_x = int(canvas_x * (1 + border_width/100.))
-            pixel_y = int(canvas_y * (1 + border_width/100.))
-            # leave part of the screen either direction unused
-            # to account for task bars, window decorations, etc.
-            xmult = max(1, int((100.-display_slack) *
-                                        self.physical_size[0] / (100.*pixel_x)))
-            ymult = max(1, int((100.-display_slack) *
-                                        self.physical_size[1] / (100.*pixel_y)))
-            # find the multipliers mx <= xmult, my <= ymult
-            # such that mx * pixel_x / my * pixel_y
-            # is multiplicatively closest to aspect[0] / aspect[1]
-            target = aspect[0]/(1.0*aspect[1])
-            current = xmult*canvas_x / (1.0*ymult*canvas_y)
-            # find the absolute multiplicative distance (always > 1)
-            best = max(current, target) / min(current, target)
-            apx = xmult, ymult
-            for mx in range(1, xmult+1):
-                my = min(ymult,
-                         int(round(mx*canvas_x*aspect[1] / (1.0*canvas_y*aspect[0]))))
-                current = mx*pixel_x / (1.0*my*pixel_y)
-                dist = max(current, target) / min(current, target)
-                # prefer larger multipliers if distance is equal
-                if dist <= best:
-                    best = dist
-                    apx = mx, my
-            return apx[0] * pixel_x, apx[1] * pixel_y
 
     def _resize_display(self, width, height):
         """ Change the display size. """
@@ -540,9 +439,9 @@ class VideoPygame(video.VideoPlugin):
     def set_caption_message(self, msg):
         """ Add a message to the window caption. """
         if msg:
-            pygame.display.set_caption(caption + ' - ' + msg)
+            pygame.display.set_caption(self.caption + ' - ' + msg)
         else:
-            pygame.display.set_caption(caption)
+            pygame.display.set_caption(self.caption)
 
     def set_palette(self, rgb_palette_0, rgb_palette_1):
         """ Build the palette. """
@@ -566,7 +465,7 @@ class VideoPygame(video.VideoPlugin):
     def set_colorburst(self, on, rgb_palette, rgb_palette1):
         """ Change the NTSC colorburst setting. """
         self.set_palette(rgb_palette, rgb_palette1)
-        self.composite_artifacts = on and self.mode_has_artifacts and composite_monitor
+        self.composite_artifacts = on and self.mode_has_artifacts and self.composite_monitor
 
     def clear_rows(self, back_attr, start, stop):
         """ Clear a range of screen rows. """
@@ -928,41 +827,11 @@ if pygame:
         pygame.K_BREAK: scancode.BREAK,
     }
 
-# composite palettes, see http://nerdlypleasures.blogspot.co.uk/2013_11_01_archive.html
-composite_640 = {
-    'cga_old': [
-        (0x00, 0x00, 0x00),        (0x00, 0x71, 0x00),        (0x00, 0x3f, 0xff),        (0x00, 0xab, 0xff),
-        (0xc3, 0x00, 0x67),        (0x73, 0x73, 0x73),        (0xe6, 0x39, 0xff),        (0x8c, 0xa8, 0xff),
-        (0x53, 0x44, 0x00),        (0x00, 0xcd, 0x00),        (0x73, 0x73, 0x73),        (0x00, 0xfc, 0x7e),
-        (0xff, 0x39, 0x00),        (0xe2, 0xca, 0x00),        (0xff, 0x7c, 0xf4),        (0xff, 0xff, 0xff)    ],
-    'cga': [
-        (0x00, 0x00, 0x00),        (0x00, 0x6a, 0x2c),        (0x00, 0x39, 0xff),        (0x00, 0x94, 0xff),
-        (0xca, 0x00, 0x2c),        (0x77, 0x77, 0x77),        (0xff, 0x31, 0xff),        (0xc0, 0x98, 0xff),
-        (0x1a, 0x57, 0x00),        (0x00, 0xd6, 0x00),        (0x77, 0x77, 0x77),        (0x00, 0xf4, 0xb8),
-        (0xff, 0x57, 0x00),        (0xb0, 0xdd, 0x00),        (0xff, 0x7c, 0xb8),        (0xff, 0xff, 0xff)    ],
-    'tandy': [
-        (0x00, 0x00, 0x00),        (0x7c, 0x30, 0x00),        (0x00, 0x75, 0x00),        (0x00, 0xbe, 0x00),
-        (0x00, 0x47, 0xee),        (0x77, 0x77, 0x77),        (0x00, 0xbb, 0xc4),        (0x00, 0xfb, 0x3f),
-        (0xb2, 0x0f, 0x9d),        (0xff, 0x1e, 0x0f),        (0x77, 0x77, 0x77),        (0xff, 0xb8, 0x00),
-        (0xb2, 0x44, 0xff),        (0xff, 0x78, 0xff),        (0x4b, 0xba, 0xff),        (0xff, 0xff, 0xff)    ],
-    'pcjr': [
-        (0x00, 0x00, 0x00),
-        (0x98, 0x20, 0xcb),        (0x9f, 0x1c, 0x00),        (0xff, 0x11, 0x71),        (0x00, 0x76, 0x00),
-        (0x77, 0x77, 0x77),        (0x5b, 0xaa, 0x00),        (0xff, 0xa5, 0x00),        (0x00, 0x4e, 0xcb),
-        (0x74, 0x53, 0xff),        (0x77, 0x77, 0x77),        (0xff, 0x79, 0xff),        (0x00, 0xc8, 0x71),
-        (0x00, 0xcc, 0xff),        (0x00, 0xfa, 0x00),        (0xff, 0xff, 0xff) ]        }
-
-
 def apply_composite_artifacts(screen, pixels=4):
     """ Process the canvas to apply composite colour artifacts. """
     src_array = pygame.surfarray.array2d(screen)
-    width, height = src_array.shape
-    s = [None]*pixels
-    for p in range(pixels):
-        s[p] = src_array[p:width:pixels]&(4//pixels)
-    for p in range(1,pixels):
-        s[0] = s[0]*2 + s[p]
-    return pygame.surfarray.make_surface(numpy.repeat(s[0], pixels, axis=0))
+    return pygame.surfarray.make_surface(
+                    video_graphical.apply_composite_artifacts(src_array, pixels))
 
 
 def glyph_to_surface(glyph):
