@@ -12,7 +12,6 @@ import ctypes
 
 try:
     import sdl2
-    import sdl2.ext
 except ImportError:
     sdl2 = None
 
@@ -61,7 +60,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             raise video.InitFailed()
         video_graphical.VideoGraphical.__init__(self, **kwargs)
         # initialise SDL
-        sdl2.ext.init()
+        sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO)
         # display & border
         # border attribute
         self.border_attr = 0
@@ -103,7 +102,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         sdl2.SDL_SetPaletteColors(self.composite_palette, colors, 0, 256)
         # check if we can honour scaling=smooth
         if self.smooth:
-            if self.display_surface.format.contents.BitsPerPixel != 32:
+            pixelformat = self.display_surface.contents.format
+            if pixelformat.contents.BitsPerPixel != 32:
                 logging.warning('Smooth scaling not available on this display of %d-bit colour depth: needs 32-bit', self.display_surface.format.contents.BitsPerPixel)
                 self.smooth = False
             if not hasattr(sdl2, 'sdlgfx'):
@@ -136,9 +136,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 sdl2.SDL_FreePalette(p)
             sdl2.SDL_FreePalette(self.composite_palette)
             # close SDL2
-            sdl2.ext.quit()
-            # if using SDL_Init():
-            #sdl2.SDL_Quit()
+            sdl2.SDL_Quit()
 
     def _set_icon(self):
         """ Set the icon on the SDL window. """
@@ -150,7 +148,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         icon_colors = [ sdl2.SDL_Color(x, x, x, 255) for x in [0, 255] + [255]*254 ]
         sdl2.SDL_SetPaletteColors(icon_palette, (sdl2.SDL_Color * 256)(*icon_colors), 0, 2)
         sdl2.SDL_SetSurfacePalette(icon, icon_palette)
-        sdl2.SDL_SetWindowIcon(self.display.window, icon)
+        sdl2.SDL_SetWindowIcon(self.display, icon)
         sdl2.SDL_FreeSurface(icon)
         sdl2.SDL_FreePalette(icon_palette)
 
@@ -159,9 +157,11 @@ class VideoSDL2(video_graphical.VideoGraphical):
         flags = sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN
         if self.fullscreen:
              flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
-        self.display = sdl2.ext.Window(self.caption, size=(width, height), flags=flags)
+        self.display = sdl2.SDL_CreateWindow(self.caption,
+                    sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED,
+                    width, height, flags)
         self._set_icon()
-        self.display_surface = self.display.get_surface()
+        self.display_surface = sdl2.SDL_GetWindowSurface(self.display)
         self.screen_changed = True
 
 
@@ -172,7 +172,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         """ Handle screen and interface events. """
         # check and handle input events
         self.last_down = None
-        for event in sdl2.ext.get_events():
+        event = sdl2.SDL_Event()
+        while sdl2.SDL_PollEvent(ctypes.byref(event)) != 0:
             if event.type == sdl2.SDL_KEYDOWN:
                 self._handle_key_down(event)
             elif event.type == sdl2.SDL_KEYUP:
@@ -340,7 +341,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # apply cursor to work surface
         self._show_cursor(True)
         # convert 8-bit work surface to (usually) 32-bit display surface format
-        conv = sdl2.SDL_ConvertSurface(screen, self.display_surface.format, 0)
+        pixelformat = self.display_surface.contents.format
+        conv = sdl2.SDL_ConvertSurface(screen, pixelformat, 0)
         # scale converted surface and blit onto display
         if not self.smooth:
             sdl2.SDL_BlitScaled(conv, None, self.display_surface, None)
@@ -363,8 +365,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 sdl2.SDL_MapRGBA(self.overlay.contents.format, 128, 0, 128, 0))
             sdl2.SDL_BlitScaled(self.overlay, None, self.display_surface, None)
         # flip the display
-        self.display.refresh()
-        #sdl2.SDL_UpdateWindowSurface(self.display.window)
+        sdl2.SDL_UpdateWindowSurface(self.display)
 
     def _show_cursor(self, do_show):
         """ Draw or remove the cursor on the visible page. """
@@ -399,26 +400,26 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def _resize_display(self, width, height):
         """ Change the display size. """
-        maximised = sdl2.SDL_GetWindowFlags(self.display.window) & sdl2.SDL_WINDOW_MAXIMIZED
+        maximised = sdl2.SDL_GetWindowFlags(self.display) & sdl2.SDL_WINDOW_MAXIMIZED
         # workaround for maximised state not reporting correctly (at least on Ubuntu Unity)
         # detect if window is very large compared to screen; force maximise if so.
         to_maximised = (width >= 0.95*self.physical_size[0] and height >= 0.9*self.physical_size[1])
         if not maximised:
             if to_maximised:
                 # force maximise for large windows
-                sdl2.SDL_MaximizeWindow(self.display.window)
+                sdl2.SDL_MaximizeWindow(self.display)
             else:
                 # regular resize on non-maximised windows
-                sdl2.SDL_SetWindowSize(self.display.window, width, height)
+                sdl2.SDL_SetWindowSize(self.display, width, height)
         else:
             # resizing throws us out of maximised mode
             if not to_maximised:
-                sdl2.SDL_RestoreWindow(self.display.window)
+                sdl2.SDL_RestoreWindow(self.display)
         # get window size
         w, h = ctypes.c_int(), ctypes.c_int()
-        sdl2.SDL_GetWindowSize(self.display.window, ctypes.byref(w), ctypes.byref(h))
+        sdl2.SDL_GetWindowSize(self.display, ctypes.byref(w), ctypes.byref(h))
         self.window_width, self.window_height = w.value, h.value
-        self.display_surface = self.display.get_surface()
+        self.display_surface = sdl2.SDL_GetWindowSurface(self.display)
         self.screen_changed = True
 
 
@@ -470,8 +471,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 self.border_y : work_height-self.border_y]
         # create overlay for clipboard selection feedback
         # use convertsurface to create a copy of the display surface format
-        self.overlay = sdl2.SDL_ConvertSurface(
-                        self.canvas[0], self.display_surface.format, 0)
+        pixelformat = self.display_surface.contents.format
+        self.overlay = sdl2.SDL_ConvertSurface(self.canvas[0], pixelformat, 0)
         sdl2.SDL_SetSurfaceBlendMode(self.overlay, sdl2.SDL_BLENDMODE_ADD)
         # initialise clipboard
         self.clipboard = video_graphical.ClipboardInterface(self,
@@ -480,10 +481,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def set_caption_message(self, msg):
         """ Add a message to the window caption. """
-        if msg:
-            self.display.title = self.caption + ' - ' + msg
-        else:
-            self.display.title = self.caption
+        title = self.caption + (' - ' + msg if msg else '')
+        sdl2.SDL_SetWindowTitle(self.display, title)
 
     def set_palette(self, rgb_palette_0, rgb_palette_1):
         """ Build the palette. """
