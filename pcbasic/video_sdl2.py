@@ -419,16 +419,6 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.display_surface = self.display.get_surface()
         self.screen_changed = True
 
-    def _normalise_pos(self, x, y):
-        """ Convert physical to logical coordinates within screen bounds. """
-        border_x = int(self.size[0] * self.border_width / 200.)
-        border_y = int(self.size[1] * self.border_width / 200.)
-        xscale = self.window_width / (1.*(self.size[0]+2*border_x))
-        yscale = self.window_height / (1.*(self.size[1]+2*border_y))
-        xpos = min(self.size[0]-1, max(0, int(x//xscale - border_x)))
-        ypos = min(self.size[1]-1, max(0, int(y//yscale - border_y)))
-        return xpos, ypos
-
 
     ###########################################################################
     # signal handlers

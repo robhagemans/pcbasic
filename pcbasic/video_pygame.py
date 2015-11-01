@@ -387,19 +387,9 @@ class VideoPygame(video_graphical.VideoGraphical):
         if self.fullscreen:
             flags |= pygame.FULLSCREEN | pygame.NOFRAME
         self.display = pygame.display.set_mode((width, height), flags)
+        self.window_width, self.window_height = width, height
         # load display if requested
         self.screen_changed = True
-
-    def _normalise_pos(self, x, y):
-        """ Convert physical to logical coordinates within screen bounds. """
-        border_x = int(self.size[0] * self.border_width / 200.)
-        border_y = int(self.size[1] * self.border_width / 200.)
-        display_info = pygame.display.Info()
-        xscale = display_info.current_w / (1.*(self.size[0]+2*border_x))
-        yscale = display_info.current_h / (1.*(self.size[1]+2*border_y))
-        xpos = min(self.size[0]-1, max(0, int(x//xscale - border_x)))
-        ypos = min(self.size[1]-1, max(0, int(y//yscale - border_y)))
-        return xpos, ypos
 
 
     ###########################################################################
