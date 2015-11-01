@@ -88,6 +88,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # load the icon
         self.icon = kwargs['icon']
         # create the window initially, size will be corrected later
+        self.display = None
         self._do_create_window(640, 400)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
@@ -130,6 +131,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         """ Close the SDL2 interface. """
         video.VideoPlugin.close(self)
         if sdl2 and numpy:
+            # free windows
+            sdl2.SDL_DestroyWindow(self.display)
             #TODO: free surfaces
             # free palettes
             for p in self.show_palette:
@@ -157,6 +160,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         flags = sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN
         if self.fullscreen:
              flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
+        sdl2.SDL_DestroyWindow(self.display)
         self.display = sdl2.SDL_CreateWindow(self.caption,
                     sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED,
                     width, height, flags)
