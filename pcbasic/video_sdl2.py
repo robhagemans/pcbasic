@@ -337,20 +337,19 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def _do_flip(self):
         """ Draw the canvas to the screen. """
-        screen = self.work_surface
         sdl2.SDL_FillRect(self.work_surface, None, self.border_attr)
         if self.composite_artifacts:
             self.work_pixels[:] = video_graphical.apply_composite_artifacts(
                             self.pixels[self.vpagenum], 4//self.bitsperpixel)
-            sdl2.SDL_SetSurfacePalette(screen, self.composite_palette)
+            sdl2.SDL_SetSurfacePalette(self.work_surface, self.composite_palette)
         else:
             self.work_pixels[:] = self.pixels[self.vpagenum]
-            sdl2.SDL_SetSurfacePalette(screen, self.show_palette[self.blink_state])
+            sdl2.SDL_SetSurfacePalette(self.work_surface, self.show_palette[self.blink_state])
         # apply cursor to work surface
         self._show_cursor(True)
         # convert 8-bit work surface to (usually) 32-bit display surface format
         pixelformat = self.display_surface.contents.format
-        conv = sdl2.SDL_ConvertSurface(screen, pixelformat, 0)
+        conv = sdl2.SDL_ConvertSurface(self.work_surface, pixelformat, 0)
         # scale converted surface and blit onto display
         if not self.smooth:
             sdl2.SDL_BlitScaled(conv, None, self.display_surface, None)
@@ -365,7 +364,9 @@ class VideoSDL2(video_graphical.VideoGraphical):
             sdl2.SDL_FreeSurface(zoomed)
         # create clipboard feedback
         if self.clipboard.active():
-            rects = (sdl2.SDL_Rect(*r) for r in self.clipboard.selection_rect)
+            rects = (sdl2.SDL_Rect(
+                        r[0]+self.border_x, r[1]+self.border_y, r[2], r[3])
+                        for r in self.clipboard.selection_rect)
             sdl_rects = (sdl2.SDL_Rect*len(self.clipboard.selection_rect))(*rects)
             sdl2.SDL_FillRect(self.overlay, None,
                 sdl2.SDL_MapRGBA(self.overlay.contents.format, 0, 0, 0, 0))
@@ -480,7 +481,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # create overlay for clipboard selection feedback
         # use convertsurface to create a copy of the display surface format
         pixelformat = self.display_surface.contents.format
-        self.overlay = sdl2.SDL_ConvertSurface(self.canvas[0], pixelformat, 0)
+        self.overlay = sdl2.SDL_ConvertSurface(self.work_surface, pixelformat, 0)
         sdl2.SDL_SetSurfaceBlendMode(self.overlay, sdl2.SDL_BLENDMODE_ADD)
         # initialise clipboard
         self.clipboard = video_graphical.ClipboardInterface(self,
