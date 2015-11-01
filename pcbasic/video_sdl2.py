@@ -144,7 +144,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         """ Set the icon on the SDL window. """
         mask = numpy.array(self.icon).T.repeat(2, 0).repeat(2, 1)
         icon = sdl2.SDL_CreateRGBSurface(0, mask.shape[0], mask.shape[1], 8, 0, 0, 0, 0)
-        sdl2.ext.pixels2d(icon.contents)[:] = mask
+        pixels2d(icon.contents)[:] = mask
         # icon palette (black & white)
         icon_palette = sdl2.SDL_AllocPalette(256)
         icon_colors = [ sdl2.SDL_Color(x, x, x, 255) for x in [0, 255] + [255]*254 ]
@@ -456,7 +456,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             sdl2.SDL_CreateRGBSurface(0, canvas_width, canvas_height, 8, 0, 0, 0, 0)
             for _ in range(self.num_pages)]
         self.pixels = [
-                sdl2.ext.pixels2d(canvas.contents)
+                pixels2d(canvas.contents)
                 for canvas in self.canvas]
         # create work surface for border and composite
         self.border_x = int(canvas_width * self.border_width // 200)
@@ -465,7 +465,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         work_height = canvas_height + 2*self.border_y
         self.work_surface = sdl2.SDL_CreateRGBSurface(
                                 0, work_width, work_height, 8, 0, 0, 0, 0)
-        self.work_pixels = sdl2.ext.pixels2d(self.work_surface.contents)[
+        self.work_pixels = pixels2d(self.work_surface.contents)[
                 self.border_x : work_width-self.border_x,
                 self.border_y : work_height-self.border_y]
         # create overlay for clipboard selection feedback
@@ -679,6 +679,22 @@ class SDL2Clipboard(clipboard.Clipboard):
 
 
 ###############################################################################
+
+
+def pixels2d(source):
+    """ Creates a 2D pixel array from the passed 8-bit surface. """
+    # limited, specialised version of pysdl2.ext.pixels2d by Marcus von Appen
+    # original is CC0 public domain with zlib fallback licence
+    # https://bitbucket.org/marcusva/py-sdl2
+    psurface = source
+    strides = (psurface.pitch, 1)
+    srcsize = psurface.h * psurface.pitch
+    shape = psurface.h, psurface.w
+    pxbuf = ctypes.cast(psurface.pixels,
+                        ctypes.POINTER(ctypes.c_ubyte * srcsize)).contents
+    # NOTE: transpose() brings it on [x][y] form - we may prefer [y][x] instead
+    return numpy.ndarray(shape, numpy.uint8, pxbuf, 0, strides, "C").transpose()
+
 
 if sdl2:
     # these are PC keyboard scancodes
