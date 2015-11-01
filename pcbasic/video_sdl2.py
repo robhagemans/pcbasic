@@ -8,25 +8,23 @@ This file is released under the GNU GPL version 3.
 
 import logging
 import Queue
+import ctypes
 
 try:
     import sdl2
     import sdl2.ext
 except ImportError:
     sdl2 = None
+
 try:
     import sdl2.sdlgfx
 except ImportError:
     pass
-import ctypes
-
-
 
 try:
     import numpy
 except ImportError:
     numpy = None
-
 
 import plat
 import config
@@ -42,7 +40,6 @@ import video
 if plat.system == 'Windows':
     # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
     # see https://bitbucket.org/pygame/pygame/issues/245/wrong-resolution-unless-you-use-ctypes
-    import ctypes
     try:
         ctypes.windll.user32.SetProcessDPIAware()
     except AttributeError:
@@ -52,81 +49,34 @@ if plat.system == 'Windows':
 
 ###############################################################################
 
-# screen size parameters
-fullscreen = False
-smooth = False
-force_square_pixel = False
-force_display_size = None
-border_width = 0
 # percentage of the screen to leave unused for window decorations etc.
 display_slack = 15
-# screen aspect ratio x, y
-aspect = (4, 3)
-# ignore ALT+F4 (and consequently window X button)
-noquit = False
-# window title
-caption = ''
-# mouse button functions
-mousebutton_copy = 1
-mousebutton_paste = 2
-mousebutton_pen = 3
-
 
 def prepare():
     """ Initialise video_sdl2 module. """
-    global fullscreen, smooth, noquit, force_display_size
-    global border_width
-    global mousebutton_copy, mousebutton_paste, mousebutton_pen
-    global aspect, force_square_pixel
-    global caption
-    global composite_monitor, composite_colors
-    # display dimensions
-    force_display_size = config.get('dimensions')
-    aspect = config.get('aspect') or aspect
-    border_width = config.get('border')
-    force_square_pixel = (config.get('scaling') == 'native')
-    fullscreen = config.get('fullscreen')
-    smooth = (config.get('scaling') == 'smooth')
-    # don't catch Alt+F4
-    noquit = config.get('nokill')
-    # mouse setups
-    if sdl2:
-        buttons = {'left': sdl2.SDL_BUTTON_LEFT, 'middle': sdl2.SDL_BUTTON_MIDDLE,
-                   'right': sdl2.SDL_BUTTON_RIGHT, 'none': None}
-        mousebutton_copy = buttons[config.get('copy-paste')[0]]
-        mousebutton_paste = buttons[config.get('copy-paste')[1]]
-        mousebutton_pen = buttons[config.get('pen')]
-    # window caption/title
-    caption = config.get('caption')
-    # if no composite palette available for this card, ignore.
-    composite_monitor = (config.get('monitor') == 'composite' and
-                         config.get('video') in composite_640)
-    try:
-        composite_colors = composite_640[config.get('video')]
-    except KeyError:
-        composite_colors = composite_640['cga']
     video.plugin_dict['sdl2'] = VideoSDL2
+
 
 ###############################################################################
 
 class VideoSDL2(video.VideoPlugin):
     """ SDL2-based graphical interface. """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """ Initialise SDL2 interface. """
-        global smooth
         if not sdl2:
             logging.debug('PySDL2 module not found.')
             raise video.InitFailed()
         if not numpy:
             logging.debug('NumPy module not found.')
             raise video.InitFailed()
+        # set parameters
+        self._prepare(**kwargs)
+        # initialise SDL
         sdl2.ext.init()
         # display & border
         # border attribute
         self.border_attr = 0
-        # border widh in pixels
-        self.border_width = border_width
         # palette and colours
         # composite colour artifacts
         self.composite_artifacts = False
@@ -151,7 +101,6 @@ class VideoSDL2(video.VideoPlugin):
         # load the icon
         self.set_icon(backend.icon)
         # create the window initially, size will be corrected later
-        self.fullscreen = fullscreen
         self._do_create_window(640, 400)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
@@ -160,16 +109,17 @@ class VideoSDL2(video.VideoPlugin):
         self.set_mode(backend.initial_mode)
         # support for CGA composite
         self.composite_palette = sdl2.SDL_AllocPalette(256)
+        composite_colors = composite_640.get(self.composite_card, composite_640['cga'])
         colors = (sdl2.SDL_Color * 256)(*[sdl2.SDL_Color(r, g, b, 255) for (r, g, b) in composite_colors])
         sdl2.SDL_SetPaletteColors(self.composite_palette, colors, 0, 256)
         # check if we can honour scaling=smooth
-        if smooth:
+        if self.smooth:
             if self.display_surface.format.contents.BitsPerPixel != 32:
                 logging.warning('Smooth scaling not available on this display of %d-bit colour depth: needs 32-bit', self.display_surface.format.contents.BitsPerPixel)
-                smooth = False
+                self.smooth = False
             if not hasattr(sdl2, 'sdlgfx'):
                 logging.warning('Smooth scaling not available: SDL_GFX extension not found.')
-                smooth = False
+                self.smooth = False
         # joystick and mouse
         # available joysticks
         num_joysticks = sdl2.SDL_NumJoysticks()
@@ -182,6 +132,35 @@ class VideoSDL2(video.VideoPlugin):
         self.f11_active = False
         video.VideoPlugin.__init__(self)
 
+    def _prepare(self, **kwargs):
+        """ Initialise SDL2 plugin parameters. """
+        # use native pixel sizes
+        self.force_native_pixel = kwargs.get('force_native_pixel', False)
+        # display dimensions
+        self.force_display_size = kwargs.get('force_display_size', None)
+        # aspect ratio
+        self.aspect = kwargs.get('aspect', (4, 3))
+        # border width percentage
+        self.border_width = kwargs.get('border_width', 0)
+        # start in fullscreen mode
+        self.fullscreen = kwargs.get('fullscreen', False)
+        # request smooth scaling
+        self.smooth = kwargs.get('smooth', False)
+        # ignore ALT+F4 and window X button
+        self.nokill = config.get('nokill')
+        # mouse setups
+        buttons = {'left': sdl2.SDL_BUTTON_LEFT, 'middle': sdl2.SDL_BUTTON_MIDDLE,
+                   'right': sdl2.SDL_BUTTON_RIGHT, 'none': None}
+        copy_paste = kwargs.get('copy-paste', ('left', 'middle'))
+        self.mousebutton_copy = buttons[copy_paste[0]]
+        self.mousebutton_paste = buttons[copy_paste[1]]
+        self.mousebutton_pen = buttons[kwargs.get('pen', 'right')]
+        # window caption/title
+        self.caption = kwargs.get('caption', '')
+        # if no composite palette available for this card, ignore.
+        self.composite_monitor = kwargs.get('composite_monitor', False)
+        # video card to emulate (only used for composite)
+        self.composite_card = kwargs.get('composite_card')
 
     def close(self):
         """ Close the SDL2 interface. """
@@ -220,7 +199,7 @@ class VideoSDL2(video.VideoPlugin):
         flags = sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN
         if self.fullscreen:
              flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
-        self.display = sdl2.ext.Window(caption, size=(width, height), flags=flags)
+        self.display = sdl2.ext.Window(self.caption, size=(width, height), flags=flags)
         self._do_set_icon()
         self.display_surface = self.display.get_surface()
         self.screen_changed = True
@@ -243,19 +222,19 @@ class VideoSDL2(video.VideoPlugin):
             elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
                 pos = self._normalise_pos(event.button.x, event.button.y)
                 # copy, paste and pen may be on the same button, so no elifs
-                if event.button.button == mousebutton_copy:
+                if event.button.button == self.mousebutton_copy:
                     # LEFT button: copy
                     self.clipboard.start(1 + pos[1] // self.font_height,
                             1 + (pos[0]+self.font_width//2) // self.font_width)
-                if event.button.button == mousebutton_paste:
+                if event.button.button == self.mousebutton_paste:
                     # MIDDLE button: paste
                     self.clipboard.paste(mouse=True)
-                if event.button.button == mousebutton_pen:
+                if event.button.button == self.mousebutton_pen:
                     # right mouse button is a pen press
                     backend.input_queue.put(backend.Event(backend.PEN_DOWN, pos))
             elif event.type == sdl2.SDL_MOUSEBUTTONUP:
                 backend.input_queue.put(backend.Event(backend.PEN_UP))
-                if event.button.button == mousebutton_copy:
+                if event.button.button == self.mousebutton_copy:
                     self.clipboard.copy(mouse=True)
                     self.clipboard.stop()
             elif event.type == sdl2.SDL_MOUSEMOTION:
@@ -278,7 +257,7 @@ class VideoSDL2(video.VideoPlugin):
                 if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
                     self._resize_display(event.window.data1, event.window.data2)
             elif event.type == sdl2.SDL_QUIT:
-                if noquit:
+                if self.nokill:
                     self.set_caption_message('to exit type <CTRL+BREAK> <ESC> SYSTEM')
                 else:
                     backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
@@ -401,7 +380,7 @@ class VideoSDL2(video.VideoPlugin):
         # convert 8-bit work surface to (usually) 32-bit display surface format
         conv = sdl2.SDL_ConvertSurface(screen, self.display_surface.format, 0)
         # scale converted surface and blit onto display
-        if not smooth:
+        if not self.smooth:
             sdl2.SDL_BlitScaled(conv, None, self.display_surface, None)
         else:
             # smooth-scale converted surface
@@ -465,15 +444,15 @@ class VideoSDL2(video.VideoPlugin):
     def _find_display_size(self, canvas_x, canvas_y, border_width):
         """ Determine the optimal size for the display. """
         # comply with requested size unless we're fullscreening
-        if force_display_size and not self.fullscreen:
-            return force_display_size
-        if not force_square_pixel:
+        if self.force_display_size and not self.fullscreen:
+            return self.force_display_size
+        if not self.force_native_pixel:
             # this assumes actual display aspect ratio is wider than 4:3
             # scale y to fit screen
             canvas_y = (1 - display_slack/100.) * (
                         self.physical_size[1] // int(1 + border_width/100.))
             # scale x to match aspect ratio
-            canvas_x = (canvas_y * aspect[0]) / aspect[1]
+            canvas_x = (canvas_y * self.aspect[0]) / self.aspect[1]
             # add back border
             pixel_x = int(canvas_x * (1 + border_width/100.))
             pixel_y = int(canvas_y * (1 + border_width/100.))
@@ -490,14 +469,14 @@ class VideoSDL2(video.VideoPlugin):
             # find the multipliers mx <= xmult, my <= ymult
             # such that mx * pixel_x / my * pixel_y
             # is multiplicatively closest to aspect[0] / aspect[1]
-            target = aspect[0]/(1.0*aspect[1])
+            target = self.aspect[0]/(1.0*self.aspect[1])
             current = xmult*canvas_x / (1.0*ymult*canvas_y)
             # find the absolute multiplicative distance (always > 1)
             best = max(current, target) / min(current, target)
             apx = xmult, ymult
             for mx in range(1, xmult+1):
                 my = min(ymult,
-                         int(round(mx*canvas_x*aspect[1] / (1.0*canvas_y*aspect[0]))))
+                         int(round(mx*canvas_x*self.aspect[1] / (1.0*canvas_y*self.aspect[0]))))
                 current = mx*pixel_x / (1.0*my*pixel_y)
                 dist = max(current, target) / min(current, target)
                 # prefer larger multipliers if distance is equal
@@ -599,9 +578,9 @@ class VideoSDL2(video.VideoPlugin):
     def set_caption_message(self, msg):
         """ Add a message to the window caption. """
         if msg:
-            self.display.title = caption + ' - ' + msg
+            self.display.title = self.caption + ' - ' + msg
         else:
-            self.display.title = caption
+            self.display.title = self.caption
 
     def set_palette(self, rgb_palette_0, rgb_palette_1):
         """ Build the palette. """
@@ -629,7 +608,7 @@ class VideoSDL2(video.VideoPlugin):
     def set_colorburst(self, on, rgb_palette, rgb_palette1):
         """ Change the NTSC colorburst setting. """
         self.set_palette(rgb_palette, rgb_palette1)
-        self.composite_artifacts = on and self.mode_has_artifacts and composite_monitor
+        self.composite_artifacts = on and self.mode_has_artifacts and self.composite_monitor
 
     def clear_rows(self, back_attr, start, stop):
         """ Clear a range of screen rows. """

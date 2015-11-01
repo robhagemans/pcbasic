@@ -20,12 +20,12 @@ plugin = None
 def prepare():
     """ Initialise video module. """
 
-def init(plugin_name):
+def init(plugin_name, **kwargs):
     """ Start video plugin. """
     global plugin
     # initialise video plugin
     try:
-        plugin = plugin_dict[plugin_name]()
+        plugin = plugin_dict[plugin_name](**kwargs)
         return True
     except InitFailed:
         close()

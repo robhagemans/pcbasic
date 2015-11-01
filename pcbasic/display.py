@@ -90,7 +90,20 @@ def init_video_plugin(interface_name):
         # select interface
         names, fallback = video_backends[interface_name]
         for video_name in names:
-            if video.init(video_name):
+            if video.init(video_name,
+                    force_display_size=config.get('dimensions'),
+                    aspect=config.get('aspect'),
+                    border_width=config.get('border'),
+                    force_native_pixel=(config.get('scaling') == 'native'),
+                    fullscreen=config.get('fullscreen'),
+                    smooth=(config.get('scaling') == 'smooth'),
+                    nokill=config.get('nokill'),
+                    caption=config.get('caption'),
+                    composite_monitor=(config.get('monitor') == 'composite' and
+                                      config.get('video') in composite_640),
+                    composite_card=config.get('video'),
+                    copy_paste=config.get('copy-paste'),
+                    pen=config.get('pen')):
                 return interface_name
             logging.debug('Could not initialise %s plugin.', video_name)
         if fallback:
