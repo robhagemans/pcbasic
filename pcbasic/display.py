@@ -40,7 +40,7 @@ video_backends = {
     }
 
 # create the window icon
-backend.icon = typeface.build_glyph('icon', {
+icon = typeface.build_glyph('icon', {
     'icon': '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
     .decode('hex')}, 16, 16)
 
@@ -60,7 +60,6 @@ def prepare():
     # set initial video mode
     state.console_state.screen = Screen(config.get('text-width'),
                                         config.get('video-memory'))
-    backend.initial_mode = state.console_state.screen.mode
     heights_needed = set([8])
     for mode in state.console_state.screen.text_data.values():
         heights_needed.add(mode.font_height)
@@ -102,7 +101,9 @@ def init_video_plugin(interface_name):
                     composite_monitor=(config.get('monitor') == 'composite'),
                     composite_card=config.get('video'),
                     copy_paste=config.get('copy-paste'),
-                    pen=config.get('pen')):
+                    pen=config.get('pen'),
+                    icon=icon,
+                    initial_mode=state.console_state.screen.mode):
                 return interface_name
             logging.debug('Could not initialise %s plugin.', video_name)
         if fallback:

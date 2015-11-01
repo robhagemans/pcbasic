@@ -113,7 +113,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.physical_size = display_info.current_w, display_info.current_h
         # determine initial display size
         self.display_size = self._find_display_size(640, 480, self.border_width)
-        self.set_icon(backend.icon)
+        self._set_icon(kwargs['icon'])
         # first set the screen non-resizeable, to trick things like maximus into not full-screening
         # I hate it when applications do this ;)
         try:
@@ -149,7 +149,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.mousebutton_pen = buttons[kwargs.get('pen', 'right')]
         self.move_cursor(0, 0)
         self.set_page(0, 0)
-        self.set_mode(backend.initial_mode)
+        self.set_mode(kwargs['initial_mode'])
         self.f11_active = False
 
     def close(self):
@@ -165,7 +165,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             pygame.display.quit()
             pygame.quit()
 
-    def set_icon(self, mask):
+    def _set_icon(self, mask):
         """ Set the window icon. """
         height, width = len(mask), len(mask[0])
         icon = pygame.Surface((width, height), depth=8)

@@ -87,14 +87,14 @@ class VideoSDL2(video_graphical.VideoGraphical):
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
         self.physical_size = display_mode.w, display_mode.h
         # load the icon
-        self.set_icon(backend.icon)
+        self.icon = kwargs['icon']
         # create the window initially, size will be corrected later
         self._do_create_window(640, 400)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
         self.move_cursor(1, 1)
         self.set_page(0, 0)
-        self.set_mode(backend.initial_mode)
+        self.set_mode(kwargs['initial_mode'])
         # support for CGA composite
         self.composite_palette = sdl2.SDL_AllocPalette(256)
         composite_colors = video_graphical.composite_640.get(
@@ -140,12 +140,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
             # if using SDL_Init():
             #sdl2.SDL_Quit()
 
-    def set_icon(self, mask):
-        """ Set the window icon. """
-        self.icon = mask
-
-    def _do_set_icon(self):
-        """ Actually set the icon on the SDL window. """
+    def _set_icon(self):
+        """ Set the icon on the SDL window. """
         mask = numpy.array(self.icon).T.repeat(2, 0).repeat(2, 1)
         icon = sdl2.SDL_CreateRGBSurface(0, mask.shape[0], mask.shape[1], 8, 0, 0, 0, 0)
         sdl2.ext.pixels2d(icon.contents)[:] = mask
@@ -164,7 +160,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         if self.fullscreen:
              flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
         self.display = sdl2.ext.Window(self.caption, size=(width, height), flags=flags)
-        self._do_set_icon()
+        self._set_icon()
         self.display_surface = self.display.get_surface()
         self.screen_changed = True
 

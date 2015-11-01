@@ -65,11 +65,6 @@ class VideoPlugin(object):
             self.thread.join()
             self.thread = None
 
-    # direct calls
-
-    def set_icon(self, mask):
-        """ Set the window icon. """
-
     # queue management
 
     def _consumer_thread(self):
