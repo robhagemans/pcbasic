@@ -171,6 +171,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self._set_icon()
         self.display_surface = sdl2.SDL_GetWindowSurface(self.display)
         self.screen_changed = True
+        self.window_width, self.window_height = width, height
 
 
     ###########################################################################
