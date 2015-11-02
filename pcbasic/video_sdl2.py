@@ -317,6 +317,10 @@ class VideoSDL2(video_graphical.VideoGraphical):
     ###########################################################################
     # screen drawing cycle
 
+    def _sleep(self):
+        """ Sleep a tick to avoid hogging the cpu. """
+        sdl2.SDL_Delay(24)
+
     def _check_display(self):
         """ Check screen and blink events; update screen if necessary. """
         self.blink_state = 0
