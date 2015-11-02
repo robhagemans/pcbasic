@@ -103,6 +103,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         sdl2.SDL_SetPaletteColors(self.composite_palette, colors, 0, 256)
         # check if we can honour scaling=smooth
         if self.smooth:
+            # pointer to the zoomed surface
+            self.zoomed = None
             pixelformat = self.display_surface.contents.format
             if pixelformat.contents.BitsPerPixel != 32:
                 logging.warning('Smooth scaling not available on this display of %d-bit colour depth: needs 32-bit', self.display_surface.format.contents.BitsPerPixel)
@@ -359,10 +361,13 @@ class VideoSDL2(video_graphical.VideoGraphical):
             w, h = self.window_width, self.window_height
             zoomx = ctypes.c_double(w/(self.size[0] + 2.0*self.border_x))
             zoomy = ctypes.c_double(h/(self.size[1] + 2.0*self.border_y))
-            zoomed = sdl2.sdlgfx.zoomSurface(conv, zoomx, zoomy, sdl2.sdlgfx.SMOOTHING_ON)
+            # only free the surface just before zoomSurface needs to re-allocate
+            # so that the memory block is highly likely to be easily available
+            # this seems to avoid unpredictable delays
+            sdl2.SDL_FreeSurface(self.zoomed)
+            self.zoomed = sdl2.sdlgfx.zoomSurface(conv, zoomx, zoomy, sdl2.sdlgfx.SMOOTHING_ON)
             # blit onto display
-            sdl2.SDL_BlitSurface(zoomed, None, self.display_surface, None)
-            sdl2.SDL_FreeSurface(zoomed)
+            sdl2.SDL_BlitSurface(self.zoomed, None, self.display_surface, None)
         # create clipboard feedback
         if self.clipboard.active():
             rects = (sdl2.SDL_Rect(
