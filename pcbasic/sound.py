@@ -67,13 +67,15 @@ audio_backends = {
     'none': ('none',),
     'cli': ('beep', 'none'),
     'text': ('beep', 'none'),
-    'ansi': ('beep', 'none'),
     'graphical': ('pygame', 'beep', 'none'),
+    'ansi': ('beep', 'none'),
+    'curses': ('beep', 'none'),
+    'pygame': ('pygame', 'beep', 'none'),
+    'sdl2': ('beep', 'none'),
     }
 
 def init_audio_plugin(interface_name):
     """ Find and initialise audio plugin for given interface. """
-    #import audio_pygame
     names = audio_backends[interface_name]
     for audio_name in names:
         if audio.init(audio_name):

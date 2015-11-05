@@ -29,19 +29,24 @@ import video_ansi
 import video_cli
 import video_curses
 import video_pygame
+import video_sdl2
 video_backends = {
     # interface_name: video_plugin_name, fallback, warn_on_fallback
     'none': (('none',), None),
     'cli': (('cli',), 'none'),
-    'ansi': (('ansi',), 'cli'),
     'text': (('curses', 'ansi'), 'cli'),
-    'graphical': (('pygame',), 'text'),
+    'graphical':  (('sdl2', 'pygame',), 'text'),
+    # force a particular plugin to be used
+    'ansi': (('ansi',), 'cli'),
+    'curses': (('curses',), 'cli'),
+    'pygame': (('pygame',), 'text'),
+    'sdl2': (('sdl2',), 'text'),
     }
 
 # create the window icon
-backend.icon = typeface.build_glyph('icon', {'icon':
-    '\x00\x00\x7C\xE0\xC6\x60\xC6\x66\xC6\x6C\xC6\x78\xC6\x6C\x7C\xE6' +
-    '\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00\xFF\x00'}, 16, 16)
+icon = typeface.build_glyph('icon', {
+    'icon': '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
+    .decode('hex')}, 16, 16)
 
 def prepare():
     """ Prepare the video subsystem. """
@@ -59,7 +64,6 @@ def prepare():
     # set initial video mode
     state.console_state.screen = Screen(config.get('text-width'),
                                         config.get('video-memory'))
-    backend.initial_mode = state.console_state.screen.mode
     heights_needed = set([8])
     for mode in state.console_state.screen.text_data.values():
         heights_needed.add(mode.font_height)
@@ -89,7 +93,21 @@ def init_video_plugin(interface_name):
         # select interface
         names, fallback = video_backends[interface_name]
         for video_name in names:
-            if video.init(video_name):
+            if video.init(video_name,
+                    force_display_size=config.get('dimensions'),
+                    aspect=config.get('aspect'),
+                    border_width=config.get('border'),
+                    force_native_pixel=(config.get('scaling') == 'native'),
+                    fullscreen=config.get('fullscreen'),
+                    smooth=(config.get('scaling') == 'smooth'),
+                    nokill=config.get('nokill'),
+                    caption=config.get('caption'),
+                    composite_monitor=(config.get('monitor') == 'composite'),
+                    composite_card=config.get('video'),
+                    copy_paste=config.get('copy-paste'),
+                    pen=config.get('pen'),
+                    icon=icon,
+                    initial_mode=state.console_state.screen.mode):
                 return interface_name
             logging.debug('Could not initialise %s plugin.', video_name)
         if fallback:

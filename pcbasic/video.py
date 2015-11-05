@@ -20,16 +20,18 @@ plugin = None
 def prepare():
     """ Initialise video module. """
 
-def init(plugin_name):
+def init(plugin_name, **kwargs):
     """ Start video plugin. """
     global plugin
     # initialise video plugin
     try:
-        plugin = plugin_dict[plugin_name]()
-        return True
+        plugin = plugin_dict[plugin_name](**kwargs)
     except InitFailed:
         close()
         return False
+    else:
+        plugin.start()
+        return True
 
 def close():
     """ Close video plugin. """
@@ -44,8 +46,10 @@ class VideoPlugin(object):
     """ Base class for display/input interface plugins. """
 
     def __init__(self):
-        """ Setup the interface and start the event handling thread. """
-        # start video thread
+        """ Setup the interface. """
+
+    def start(self):
+        """ Start the event handling thread. """
         self.thread = threading.Thread(target=self._consumer_thread)
         self.thread.start()
 
@@ -60,11 +64,6 @@ class VideoPlugin(object):
             # signal quit and wait for thread to finish
             self.thread.join()
             self.thread = None
-
-    # direct calls
-
-    def set_icon(self, mask):
-        """ Set the window icon. """
 
     # queue management
 

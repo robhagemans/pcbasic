@@ -12,7 +12,6 @@ import time
 import video
 
 import backend
-import unicodepage
 import plat
 import redirect
 
@@ -45,7 +44,7 @@ def prepare():
 class VideoNone(video.VideoPlugin):
     """ Command-line filter interface. """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """ Initialise filter interface. """
         # use redirection echos; these are not kept in state
         redirect.set_output(sys.stdout, utf8=True)
@@ -64,11 +63,6 @@ class VideoNone(video.VideoPlugin):
             # replace LF -> CR if needed
             if c == '\n' and lf_to_cr:
                 c = '\r'
-            # convert utf8 to codepage if necessary
-            try:
-                c = unicodepage.from_utf8(c)
-            except KeyError:
-                pass
             # check_full=False?
             backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
 

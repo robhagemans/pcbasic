@@ -40,6 +40,7 @@ def load_codepage(codepage_name):
     box_right = [set(), set()]
     cp_to_utf8 = {}
     cp_to_unicodepoint = {}
+    cp_to_unicode = {}
     dbcs_num_chars = 0
     try:
         with open(name, 'rb') as f:
@@ -58,6 +59,7 @@ def load_codepage(codepage_name):
                     # extract unicode point
                     ucs_point = int('0x' + splitline[1].split()[0].strip(), 16)
                     cp_to_unicodepoint[cp_point] = ucs_point
+                    cp_to_unicode[cp_point] = unichr(ucs_point)
                     cp_to_utf8[cp_point] = unichr(ucs_point).encode('utf-8')
                     # track lead and trail bytes
                     if len(cp_point) == 2:
@@ -85,7 +87,9 @@ def load_codepage(codepage_name):
         if chr(c) not in cp_to_utf8:
             cp_to_utf8[chr(c)] = '\0'
             cp_to_unicodepoint[chr(c)] = 0
+            cp_to_unicode[chr(c)] = u'\0'
     utf8_to_cp = dict((reversed(item) for item in cp_to_utf8.items()))
+    unicode_to_cp = dict((reversed(item) for item in cp_to_unicode.items()))
     if dbcs_num_chars > 0:
         dbcs = True
     return codepage_name
@@ -165,6 +169,10 @@ def from_utf8(c):
     """ Convert utf8 char sequence to codepage char sequence. """
     return utf8_to_cp[c]
 
+def from_unicode(uc):
+    """ Convert unicode char to codepage char sequence. """
+    return unicode_to_cp[uc]
+
 def str_from_utf8(s):
     """ Convert utf8 string to codepage string. """
     chars, s = split_utf8(s), ''
@@ -176,6 +184,19 @@ def str_from_utf8(s):
             # pass unknown sequences untranslated. this includes \r.
             s += c
     return s
+
+def str_from_unicode(ucs):
+    """ Convert unicode string to codepage string. """
+    s = ''
+    for uc in ucs:
+        try:
+            # try to codepage-encode the one-char UTF8 byte sequence
+            s += from_unicode(uc)
+        except KeyError:
+            # pass unknown sequences as utf-8. this includes \r.
+            s += c.encode('utf-8')
+    return s
+
 
 class UTF8Converter(object):
     """ Buffered converter to UTF8 - supports DBCS and box-drawing protection. """

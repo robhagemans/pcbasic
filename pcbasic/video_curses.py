@@ -30,8 +30,6 @@ import ansi
 
 def prepare():
     """ Initialise the video_curses module. """
-    global caption
-    caption = config.get('caption')
     video.plugin_dict['curses'] = VideoCurses
 
 if curses:
@@ -58,7 +56,7 @@ if curses:
 class VideoCurses(video.VideoPlugin):
     """ Curses-based text interface. """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """ Initialise the text interface. """
         self.curses_init = False
         if not curses:
@@ -94,7 +92,8 @@ class VideoCurses(video.VideoPlugin):
         self.window.scrollok(False)
         self.can_change_palette = (curses.can_change_color() and curses.COLORS >= 16
                               and curses.COLOR_PAIRS > 128)
-        sys.stdout.write(ansi.esc_set_title % caption)
+        self.caption = kwargs.get('caption', '')
+        sys.stdout.write(ansi.esc_set_title % self.caption)
         sys.stdout.flush()
         if self.can_change_palette:
             self.default_colors = range(16, 32)
@@ -188,13 +187,8 @@ class VideoCurses(video.VideoPlugin):
                 # scancode; go add next char
                 continue
             else:
-                try:
-                    #check_full=False?
-                    backend.input_queue.put(backend.Event(backend.KEYB_CHAR,
-                                                        unicodepage.from_utf8(c)))
-                except KeyError:
-                    #check_full=False?
-                    backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
+                #check_full=False?
+                backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
             c = ''
 
     def _redraw(self):
@@ -325,7 +319,7 @@ class VideoCurses(video.VideoPlugin):
         if c == '\0':
             c = ' '
         try:
-            char = unicodepage.UTF8Converter().to_utf8(c)
+            char = unicodepage.cp_to_utf8[c]
         except KeyError:
             char = ' '*len(c)
         colour = self._curses_colour(fore, back, blink)
@@ -382,9 +376,9 @@ class VideoCurses(video.VideoPlugin):
     def set_caption_message(self, msg):
         """ Add a message to the window caption. """
         if msg:
-            sys.stdout.write(ansi.esc_set_title % (caption + ' - ' + msg))
+            sys.stdout.write(ansi.esc_set_title % (self.caption + ' - ' + msg))
         else:
-            sys.stdout.write(ansi.esc_set_title % caption)
+            sys.stdout.write(ansi.esc_set_title % self.caption)
         sys.stdout.flush()
         # redraw in case terminal didn't recognise ansi sequence
         self._redraw()

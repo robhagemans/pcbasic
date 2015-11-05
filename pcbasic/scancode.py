@@ -6,9 +6,12 @@ Keyboard scancodes
 This file is released under the GNU GPL version 3.
 """
 
-# these are PC keyboard scancodes for a UK keyboard
+# these are PC-XT keyboard scancodes
+# they are labelled by their value on an IBM PC/XT US keyboard
+# but they correspond to a physical key regardless of its logical value
+#
+# ROW 0
 ESCAPE = 0x01
-# top-row numbers
 N1 = 0x02
 N2 = 0x03
 N3 = 0x04
@@ -22,6 +25,7 @@ N0 = 0x0B
 MINUS = 0x0C
 EQUALS = 0x0D
 BACKSPACE = 0x0E
+# ROW 1
 TAB = 0x0F
 q = 0x10
 w = 0x11
@@ -36,6 +40,7 @@ p = 0x19
 LEFTBRACKET = 0x1A
 RIGHTBRACKET = 0x1B
 RETURN = 0x1C
+# ROW 2
 CTRL = 0x1D
 a = 0x1E
 s = 0x1F
@@ -49,8 +54,9 @@ l = 0x26
 SEMICOLON = 0x27
 QUOTE = 0x28
 BACKQUOTE = 0x29
+# ROW 3
 LSHIFT = 0x2A
-BACKSLASH = 0x2B    # hash on UK keyboard
+BACKSLASH = 0x2B
 z = 0x2C
 x = 0x2D
 c = 0x2E
@@ -62,12 +68,12 @@ COMMA = 0x33
 PERIOD = 0x34
 SLASH = 0x35
 RSHIFT = 0x36
-PRINT = 0x37
-SYSREQ = 0x37
+PRINT = 0x37; SYSREQ = 0x37
+# ROW 4
 ALT = 0x38
 SPACE = 0x39
 CAPSLOCK = 0x3A
-# function keys
+# function keypad
 F1 = 0x3B
 F2 = 0x3C
 F3 = 0x3D
@@ -78,33 +84,21 @@ F7 = 0x41
 F8 = 0x42
 F9 = 0x43
 F10 = 0x44
+# numeric keypad
 NUMLOCK = 0x45
 SCROLLOCK = 0x46
-KP7 = 0x47
-HOME = 0x47
-KP8 = 0x48
-UP = 0x48
-KP9 = 0x49
-PAGEUP = 0x49
+KP7 = 0x47; HOME = 0x47
+KP8 = 0x48; UP = 0x48
+KP9 = 0x49; PAGEUP = 0x49
 KPMINUS = 0x4A
-KP4 = 0x4B
-LEFT = 0x4B
+KP4 = 0x4B; LEFT = 0x4B
 KP5 = 0x4C
-KP6 = 0x4D
-RIGHT = 0x4D
+KP6 = 0x4D; RIGHT = 0x4D
 KPPLUS = 0x4E
-KP1 = 0x4F
-END = 0x4F
-KP2 = 0x50
-DOWN = 0x50
-KP3 = 0x51
-PAGEDOWN = 0x51
-KP0 = 0x52
-INSERT = 0x52
-#keypaddot
-#times
-#div
-#enter?
+KP1 = 0x4F; END = 0x4F
+KP2 = 0x50; DOWN = 0x50
+KP3 = 0x51; PAGEDOWN = 0x51
+KP0 = 0x52; INSERT = 0x52
 # various
 DELETE = 0x53
 BREAK = 0x54
@@ -119,8 +113,6 @@ keypad = {
 
 # eascii code for keys based on US keyboard
 # normal, shift, ctrl, alt
-# backends can override the eascii code using the override string
-# so that the OS's keyboard settings are used.
 # based on Tandy-1000 basic manual, modified for IBM PC keyboard
 eascii_table = {
     ESCAPE: ('\x1b', '\x1b', '\x1b', ''),
