@@ -168,7 +168,6 @@ class AudioPygame(audio.AudioPlugin):
 
     def _check_quit(self):
         """ Quit the mixer if not running a program and sound quiet for a while. """
-        global quiet_ticks
         if self.next_tone != [None, None, None, None]:
             self.quiet_ticks = 0
         else:
