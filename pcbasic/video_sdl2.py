@@ -228,6 +228,11 @@ class VideoSDL2(video_graphical.VideoGraphical):
             elif event.type == sdl2.SDL_WINDOWEVENT:
                 if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
                     self._resize_display(event.window.data1, event.window.data2)
+                if event.window.event == sdl2.SDL_WINDOWEVENT_FOCUS_LOST:
+                    # hack: send a key-up for alt in case we used alt-tab
+                    # because the key-up won't be registered
+                    backend.input_queue.put(backend.Event(
+                                                backend.KEYB_UP, scancode.ALT))
             elif event.type == sdl2.SDL_QUIT:
                 if self.nokill:
                     self.set_caption_message('to exit type <CTRL+BREAK> <ESC> SYSTEM')
