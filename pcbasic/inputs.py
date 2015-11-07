@@ -246,9 +246,12 @@ class Keyboard(object):
         # f12+b -> ctrl+break is handled separately below
         if self.home_key_active:
             try:
-                scan, eascii = home_key_replacements[scan]
+                scan, eascii = home_key_replacements_scancode[scan]
             except KeyError:
-                pass
+                try:
+                    scan, eascii = home_key_replacements_eascii[eascii.upper()]
+                except KeyError:
+                    pass
         # set port and low memory address regardless of event triggers
         self.pause = False
         if scan is not None:
@@ -271,10 +274,10 @@ class Keyboard(object):
                 # meaning exit and delete state. This is useful on android.
             raise error.Reset()
         elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) or
-                        (ctrl_c_is_break and scan==scancode.c))
+                        (ctrl_c_is_break and eascii.upper() == 'C'))
                     and self.mod & modifier[scancode.CTRL]):
             raise error.Break()
-        elif (self.home_key_active and scan==scancode.b):
+        elif (self.home_key_active and eascii.upper() == 'B'):
             raise error.Break()
         elif (scan == scancode.BREAK or
                 (scan == scancode.NUMLOCK and self.mod & modifier[scancode.CTRL])):
@@ -376,29 +379,31 @@ def scan_to_eascii(scan, mod):
 
 # F12 emulator home-key
 # also f12+b -> ctrl+break
-home_key_replacements = {
-    scancode.N0: (scancode.KP0, '0'),
-    scancode.N1: (scancode.KP1, '1'),
-    scancode.N2: (scancode.KP2, '2'),
-    scancode.N3: (scancode.KP3, '3'),
-    scancode.N4: (scancode.KP4, '4'),
-    scancode.N5: (scancode.KP5, '5'),
-    scancode.N6: (scancode.KP6, '6'),
-    scancode.N7: (scancode.KP7, '7'),
-    scancode.N8: (scancode.KP8, '8'),
-    scancode.N9: (scancode.KP9, '9'),
-    scancode.EQUALS: (scancode.KPPLUS, '+'),
-    scancode.MINUS: (scancode.KPMINUS, '-'),
+home_key_replacements_scancode = {
     scancode.LEFT: (scancode.KP4, '4'),
     scancode.RIGHT: (scancode.KP6, '6'),
     scancode.UP: (scancode.KP8, '8'),
     scancode.DOWN: (scancode.KP2, '2'),
-    scancode.p: (scancode.BREAK, ''),
-    scancode.n: (scancode.NUMLOCK, ''),
-    scancode.s: (scancode.SCROLLOCK, ''),
-    scancode.c: (scancode.CAPSLOCK, ''),
 }
 
+home_key_replacements_eascii = {
+    '0': (scancode.KP0, '0'),
+    '1': (scancode.KP1, '1'),
+    '2': (scancode.KP2, '2'),
+    '3': (scancode.KP3, '3'),
+    '4': (scancode.KP4, '4'),
+    '5': (scancode.KP5, '5'),
+    '6': (scancode.KP6, '6'),
+    '7': (scancode.KP7, '7'),
+    '8': (scancode.KP8, '8'),
+    '9': (scancode.KP9, '9'),
+    '+': (scancode.KPPLUS, '+'),
+    '-': (scancode.KPMINUS, '-'),
+    'P': (scancode.BREAK, ''),
+    'N': (scancode.NUMLOCK, ''),
+    'S': (scancode.SCROLLOCK, ''),
+    'C': (scancode.CAPSLOCK, ''),
+}
 
 ###############################################################################
 # light pen
