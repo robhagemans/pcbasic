@@ -101,6 +101,7 @@ def init_video_plugin(interface_name):
                     fullscreen=config.get('fullscreen'),
                     smooth=(config.get('scaling') == 'smooth'),
                     nokill=config.get('nokill'),
+                    altgr=config.get('altgr'),
                     caption=config.get('caption'),
                     composite_monitor=(config.get('monitor') == 'composite'),
                     composite_card=config.get('video'),

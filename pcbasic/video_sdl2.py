@@ -128,7 +128,11 @@ class VideoSDL2(video_graphical.VideoGraphical):
             for axis in (0, 1):
                 backend.input_queue.put(backend.Event(backend.STICK_MOVED,
                                                       (j, axis, 128)))
+        # keyboard setup
         self.f11_active = False
+        self.altgr = kwargs['altgr']
+        if not self.altgr:
+            scan_to_scan[sdl2.SDL_SCANCODE_RALT] = scancode.ALT
 
     def close(self):
         """ Close the SDL2 interface. """
@@ -248,7 +252,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         except KeyError:
             scan = None
         try:
-            if e.key.keysym.mod & sdl2.KMOD_ALT:
+            if e.key.keysym.mod & sdl2.KMOD_LALT or (not self.altgr and e.key.keysym.mod & sdl2.KMOD_RALT):
                 c = alt_scan_to_eascii[e.key.keysym.scancode]
             elif e.key.keysym.mod & sdl2.KMOD_CTRL:
                 c = ctrl_key_to_eascii[e.key.keysym.sym]
