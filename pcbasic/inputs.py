@@ -84,7 +84,7 @@ class KeyboardBuffer(object):
         return len(self.buffer) == 0 and len(self.expansion_vessel) == 0
 
     def insert(self, s, check_full=True):
-        """ Append a string of e-ascii keystrokes. Does not trigger events (we have no scancodes). """
+        """ Append a string of e-ascii/utf-8 keystrokes. Does not trigger events (we have no scancodes). """
         d = ''
         for c in s:
             if d or c != '\0':
@@ -172,7 +172,7 @@ class KeyboardBuffer(object):
             return '\0\0', 0
 
     def ring_write(self, index, c, scan):
-        """ Write e-ascii character at position i in ring. """
+        """ Write character at position i in ring. """
         index = self.ring_index(index)
         if index < self.ring_length:
             try:
@@ -236,12 +236,12 @@ class Keyboard(object):
         return self.buf.getc()
 
     def insert_chars(self, s, check_full=False):
-        """ Insert characters into keyboard buffer. """
+        """ Insert eascii/utf-8 characters into keyboard buffer. """
         self.pause = False
         self.buf.insert(s, check_full)
 
     def key_down(self, scan, eascii='', check_full=True):
-        """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
+        """ Insert a key-down event by scancode and eascii or utf-8 code. """
         # emulator home-key (f12) replacements
         # f12+b -> ctrl+break is handled separately below
         if self.home_key_active:
