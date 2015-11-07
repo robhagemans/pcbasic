@@ -31,6 +31,7 @@ import unicodepage
 import backend
 import typeface
 import scancode
+import eascii
 # for operation tokens for PUT
 import basictoken as tk
 import clipboard
@@ -242,16 +243,32 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def _handle_key_down(self, e):
         """ Handle key-down event. """
-        mods = sdl2.SDL_GetModState()
         try:
-            scan = key_to_scan[e.key.keysym.scancode]
+            scan = scan_to_scan[e.key.keysym.scancode]
         except KeyError:
             scan = None
+        try:
+            if e.key.keysym.mod & sdl2.KMOD_ALT:
+                c = alt_scan_to_eascii[e.key.keysym.scancode]
+            elif e.key.keysym.mod & sdl2.KMOD_CTRL:
+                c = ctrl_key_to_eascii[e.key.keysym.sym]
+            elif e.key.keysym.mod & sdl2.KMOD_SHIFT:
+                c = shift_key_to_eascii[e.key.keysym.sym]
+            else:
+                c = key_to_eascii[e.key.keysym.sym]
+        except KeyError:
+            key = e.key.keysym.sym
+            if e.key.keysym.mod & sdl2.KMOD_CTRL and key >= ord('a') and key <= ord('z'):
+                c = chr(key - ord('a') + 1)
+            elif e.key.keysym.mod & sdl2.KMOD_CTRL and key >= ord('[') and key <= ord('_'):
+                c = chr(key - ord('A') + 1)
+            else:
+                c = ''
         if e.key.keysym.sym == sdl2.SDLK_F11:
             self.f11_active = True
             self.clipboard.start(self.cursor_row, self.cursor_col)
         elif self.f11_active:
-            self.clipboard.handle_key(scan, '')
+            self.clipboard.handle_key(scan, c)
         else:
             if plat.system == 'Windows':
                 # Windows 7 and above send AltGr as Ctrl+RAlt
@@ -267,14 +284,14 @@ class VideoSDL2(video_graphical.VideoGraphical):
             # flush buffer on next key down, text event or end of loop
             if scan is not None:
                 self._flush_keypress()
-                self.last_down = scan, e.key.timestamp
+                self.last_down = scan, c, e.key.timestamp
 
     def _flush_keypress(self):
         """ Flush last keypress from buffer. """
         if self.last_down is not None:
             # insert into keyboard queue; no text event
-            scan, _ = self.last_down
-            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, '')))
+            scan, c, _ = self.last_down
+            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, c)))
             self.last_down = None
 
     def _handle_key_up(self, e):
@@ -285,7 +302,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # last key released gets remembered
         try:
             backend.input_queue.put(backend.Event(
-                    backend.KEYB_UP, key_to_scan[e.key.keysym.scancode]))
+                    backend.KEYB_UP, scan_to_scan[e.key.keysym.scancode]))
         except KeyError:
             pass
 
@@ -305,18 +322,22 @@ class VideoSDL2(video_graphical.VideoGraphical):
             backend.input_queue.put(backend.Event(
                     backend.KEYB_CHAR, c))
         else:
-            scan, ts = self.last_down
-            self.last_down = None
+            scan, eascii, ts = self.last_down
+            if eascii:
+                c = eascii
             if ts == event.text.timestamp:
                 # combine if same time stamp
                 backend.input_queue.put(backend.Event(
                         backend.KEYB_DOWN, (scan, c)))
             else:
                 # two separate events
-                backend.input_queue.put(backend.Event(
-                        backend.KEYB_DOWN, (scan, '')))
+                # previous keypress has no corresponding textinput
+                self._flush_keypress()
+                # current textinput has no corresponding keypress
                 backend.input_queue.put(backend.Event(
                         backend.KEYB_CHAR, c))
+            self.last_down = None
+
 
 
     ###########################################################################
@@ -721,7 +742,7 @@ def pixels2d(source):
 
 if sdl2:
     # these are PC keyboard scancodes
-    key_to_scan = {
+    scan_to_scan = {
         # top row
         sdl2.SDL_SCANCODE_ESCAPE: scancode.ESCAPE, sdl2.SDL_SCANCODE_1: scancode.N1,
         sdl2.SDL_SCANCODE_2: scancode.N2, sdl2.SDL_SCANCODE_3: scancode.N3,
@@ -814,6 +835,160 @@ if sdl2:
         # Korean keyboards
         sdl2.SDL_SCANCODE_LANG2: scancode.HANJA,
         sdl2.SDL_SCANCODE_LANG1: scancode.HAN_YEONG,
+    }
+
+    key_to_eascii = {
+        sdl2.SDLK_F1: eascii.F1,
+        sdl2.SDLK_F2: eascii.F2,
+        sdl2.SDLK_F3: eascii.F3,
+        sdl2.SDLK_F4: eascii.F4,
+        sdl2.SDLK_F5: eascii.F5,
+        sdl2.SDLK_F6: eascii.F6,
+        sdl2.SDLK_F7: eascii.F7,
+        sdl2.SDLK_F8: eascii.F8,
+        sdl2.SDLK_F9: eascii.F9,
+        sdl2.SDLK_F10: eascii.F10,
+        sdl2.SDLK_F11: eascii.F11,
+        sdl2.SDLK_F12: eascii.F12,
+        sdl2.SDLK_HOME: eascii.HOME,
+        sdl2.SDLK_UP: eascii.UP,
+        sdl2.SDLK_PAGEUP: eascii.PAGEUP,
+        sdl2.SDLK_LEFT: eascii.LEFT,
+        sdl2.SDLK_RIGHT: eascii.RIGHT,
+        sdl2.SDLK_END: eascii.END,
+        sdl2.SDLK_DOWN: eascii.DOWN,
+        sdl2.SDLK_PAGEDOWN: eascii.PAGEDOWN,
+        sdl2.SDLK_ESCAPE: eascii.ESCAPE,
+        sdl2.SDLK_BACKSPACE: eascii.BACKSPACE,
+        sdl2.SDLK_TAB: eascii.TAB,
+        sdl2.SDLK_RETURN: eascii.RETURN,
+        sdl2.SDLK_KP_ENTER: eascii.RETURN,
+        sdl2.SDLK_SPACE: eascii.SPACE,
+        sdl2.SDLK_INSERT: eascii.INSERT,
+        sdl2.SDLK_DELETE: eascii.DELETE,
+    }
+
+    shift_key_to_eascii = {
+        sdl2.SDLK_F1: eascii.SHIFT_F1,
+        sdl2.SDLK_F2: eascii.SHIFT_F2,
+        sdl2.SDLK_F3: eascii.SHIFT_F3,
+        sdl2.SDLK_F4: eascii.SHIFT_F4,
+        sdl2.SDLK_F5: eascii.SHIFT_F5,
+        sdl2.SDLK_F6: eascii.SHIFT_F6,
+        sdl2.SDLK_F7: eascii.SHIFT_F7,
+        sdl2.SDLK_F8: eascii.SHIFT_F8,
+        sdl2.SDLK_F9: eascii.SHIFT_F9,
+        sdl2.SDLK_F10: eascii.SHIFT_F10,
+        sdl2.SDLK_F11: eascii.SHIFT_F11,
+        sdl2.SDLK_F12: eascii.SHIFT_F12,
+        sdl2.SDLK_HOME: eascii.SHIFT_HOME,
+        sdl2.SDLK_UP: eascii.SHIFT_UP,
+        sdl2.SDLK_PAGEUP: eascii.SHIFT_PAGEUP,
+        sdl2.SDLK_LEFT: eascii.SHIFT_LEFT,
+        sdl2.SDLK_RIGHT: eascii.SHIFT_RIGHT,
+        sdl2.SDLK_END: eascii.SHIFT_END,
+        sdl2.SDLK_DOWN: eascii.SHIFT_DOWN,
+        sdl2.SDLK_PAGEDOWN: eascii.SHIFT_PAGEDOWN,
+        sdl2.SDLK_ESCAPE: eascii.SHIFT_ESCAPE,
+        sdl2.SDLK_BACKSPACE: eascii.SHIFT_BACKSPACE,
+        sdl2.SDLK_TAB: eascii.SHIFT_TAB,
+        sdl2.SDLK_RETURN: eascii.SHIFT_RETURN,
+        sdl2.SDLK_KP_ENTER: eascii.SHIFT_RETURN,
+        sdl2.SDLK_SPACE: eascii.SHIFT_SPACE,
+        sdl2.SDLK_INSERT: eascii.SHIFT_INSERT,
+        sdl2.SDLK_DELETE: eascii.SHIFT_DELETE,
+        sdl2.SDLK_KP_5: eascii.SHIFT_KP5,
+    }
+
+    ctrl_key_to_eascii = {
+        sdl2.SDLK_F1: eascii.CTRL_F1,
+        sdl2.SDLK_F2: eascii.CTRL_F2,
+        sdl2.SDLK_F3: eascii.CTRL_F3,
+        sdl2.SDLK_F4: eascii.CTRL_F4,
+        sdl2.SDLK_F5: eascii.CTRL_F5,
+        sdl2.SDLK_F6: eascii.CTRL_F6,
+        sdl2.SDLK_F7: eascii.CTRL_F7,
+        sdl2.SDLK_F8: eascii.CTRL_F8,
+        sdl2.SDLK_F9: eascii.CTRL_F9,
+        sdl2.SDLK_F10: eascii.CTRL_F10,
+        sdl2.SDLK_F11: eascii.CTRL_F11,
+        sdl2.SDLK_F12: eascii.CTRL_F12,
+        sdl2.SDLK_HOME: eascii.CTRL_HOME,
+        sdl2.SDLK_PAGEUP: eascii.CTRL_PAGEUP,
+        sdl2.SDLK_LEFT: eascii.CTRL_LEFT,
+        sdl2.SDLK_RIGHT: eascii.CTRL_RIGHT,
+        sdl2.SDLK_END: eascii.CTRL_END,
+        sdl2.SDLK_PAGEDOWN: eascii.CTRL_PAGEDOWN,
+        sdl2.SDLK_ESCAPE: eascii.CTRL_ESCAPE,
+        sdl2.SDLK_BACKSPACE: eascii.CTRL_BACKSPACE,
+        sdl2.SDLK_TAB: eascii.CTRL_TAB,
+        sdl2.SDLK_RETURN: eascii.CTRL_RETURN,
+        sdl2.SDLK_KP_ENTER: eascii.CTRL_RETURN,
+        sdl2.SDLK_SPACE: eascii.CTRL_SPACE,
+        sdl2.SDLK_PRINTSCREEN: eascii.CTRL_PRINT,
+        sdl2.SDLK_2: eascii.CTRL_2,
+        sdl2.SDLK_6: eascii.CTRL_6,
+        sdl2.SDLK_MINUS: eascii.CTRL_MINUS,
+    }
+
+    alt_scan_to_eascii = {
+        sdl2.SDL_SCANCODE_1: eascii.ALT_1,
+        sdl2.SDL_SCANCODE_2: eascii.ALT_2,
+        sdl2.SDL_SCANCODE_3: eascii.ALT_3,
+        sdl2.SDL_SCANCODE_4: eascii.ALT_4,
+        sdl2.SDL_SCANCODE_5: eascii.ALT_5,
+        sdl2.SDL_SCANCODE_6: eascii.ALT_6,
+        sdl2.SDL_SCANCODE_7: eascii.ALT_7,
+        sdl2.SDL_SCANCODE_8: eascii.ALT_8,
+        sdl2.SDL_SCANCODE_9: eascii.ALT_9,
+        sdl2.SDL_SCANCODE_0: eascii.ALT_0,
+        sdl2.SDL_SCANCODE_MINUS: eascii.ALT_MINUS,
+        sdl2.SDL_SCANCODE_EQUALS: eascii.ALT_EQUALS,
+        sdl2.SDL_SCANCODE_Q: eascii.ALT_q,
+        sdl2.SDL_SCANCODE_W: eascii.ALT_w,
+        sdl2.SDL_SCANCODE_E: eascii.ALT_e,
+        sdl2.SDL_SCANCODE_R: eascii.ALT_r,
+        sdl2.SDL_SCANCODE_T: eascii.ALT_t,
+        sdl2.SDL_SCANCODE_Y: eascii.ALT_y,
+        sdl2.SDL_SCANCODE_U: eascii.ALT_u,
+        sdl2.SDL_SCANCODE_I: eascii.ALT_i,
+        sdl2.SDL_SCANCODE_O: eascii.ALT_o,
+        sdl2.SDL_SCANCODE_P: eascii.ALT_p,
+        sdl2.SDL_SCANCODE_A: eascii.ALT_a,
+        sdl2.SDL_SCANCODE_S: eascii.ALT_s,
+        sdl2.SDL_SCANCODE_D: eascii.ALT_d,
+        sdl2.SDL_SCANCODE_F: eascii.ALT_f,
+        sdl2.SDL_SCANCODE_G: eascii.ALT_g,
+        sdl2.SDL_SCANCODE_H: eascii.ALT_h,
+        sdl2.SDL_SCANCODE_J: eascii.ALT_j,
+        sdl2.SDL_SCANCODE_K: eascii.ALT_k,
+        sdl2.SDL_SCANCODE_L: eascii.ALT_l,
+        sdl2.SDL_SCANCODE_Z: eascii.ALT_z,
+        sdl2.SDL_SCANCODE_X: eascii.ALT_x,
+        sdl2.SDL_SCANCODE_C: eascii.ALT_c,
+        sdl2.SDL_SCANCODE_V: eascii.ALT_v,
+        sdl2.SDL_SCANCODE_B: eascii.ALT_b,
+        sdl2.SDL_SCANCODE_N: eascii.ALT_n,
+        sdl2.SDL_SCANCODE_M: eascii.ALT_m,
+        sdl2.SDL_SCANCODE_F1: eascii.ALT_F1,
+        sdl2.SDL_SCANCODE_F2: eascii.ALT_F2,
+        sdl2.SDL_SCANCODE_F3: eascii.ALT_F3,
+        sdl2.SDL_SCANCODE_F4: eascii.ALT_F4,
+        sdl2.SDL_SCANCODE_F5: eascii.ALT_F5,
+        sdl2.SDL_SCANCODE_F6: eascii.ALT_F6,
+        sdl2.SDL_SCANCODE_F7: eascii.ALT_F7,
+        sdl2.SDL_SCANCODE_F8: eascii.ALT_F8,
+        sdl2.SDL_SCANCODE_F9: eascii.ALT_F9,
+        sdl2.SDL_SCANCODE_F10: eascii.ALT_F10,
+        sdl2.SDL_SCANCODE_F11: eascii.ALT_F11,
+        sdl2.SDL_SCANCODE_F12: eascii.ALT_F12,
+        sdl2.SDL_SCANCODE_BACKSPACE: eascii.ALT_BACKSPACE,
+        sdl2.SDL_SCANCODE_TAB: eascii.ALT_TAB,
+        sdl2.SDL_SCANCODE_RETURN: eascii.ALT_RETURN,
+        sdl2.SDL_SCANCODE_KP_ENTER: eascii.ALT_RETURN,
+        sdl2.SDL_SCANCODE_SPACE: eascii.ALT_SPACE,
+        sdl2.SDL_SCANCODE_PRINTSCREEN: eascii.ALT_PRINT,
+        sdl2.SDL_SCANCODE_KP_5: eascii.ALT_KP5,
     }
 
 prepare()

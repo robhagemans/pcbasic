@@ -274,7 +274,7 @@ class Keyboard(object):
                 # meaning exit and delete state. This is useful on android.
             raise error.Reset()
         elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) or
-                        (ctrl_c_is_break and scancode == scancode.c))
+                        (ctrl_c_is_break and eascii == '\x03'))
                     and self.mod & modifier[scancode.CTRL]):
             raise error.Break()
         elif (self.home_key_active and eascii.upper() == 'B'):
@@ -304,16 +304,6 @@ class Keyboard(object):
                 return
             except KeyError:
                 pass
-        if not eascii or (scan is not None and self.mod &
-                    (modifier[scancode.ALT] | modifier[scancode.CTRL])):
-            # any provided e-ASCII value overrides when CTRL & ALT are off
-            # this helps make keyboards do what's expected
-            # independent of language setting
-            try:
-                eascii = scan_to_eascii(scan, self.mod)
-            except KeyError:
-                # no eascii found
-                return
         if (self.mod & toggle[scancode.CAPSLOCK]
                 and not ignore_caps and len(eascii) == 1):
             if eascii >= 'a' and eascii <= 'z':
@@ -365,17 +355,6 @@ def expand_key(c):
         return list(state.console_state.key_replace[keynum])
     except KeyError:
         return [c]
-
-def scan_to_eascii(scan, mod):
-    """ Translate scancode and modifier state to e-ASCII. """
-    if mod & modifier[scancode.ALT]:
-        return scancode.eascii_table[scan][3]
-    elif mod & modifier[scancode.CTRL]:
-        return scancode.eascii_table[scan][2]
-    elif mod & (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT]):
-        return scancode.eascii_table[scan][1]
-    else:
-        return scancode.eascii_table[scan][0]
 
 # F12 emulator home-key
 # also f12+b -> ctrl+break
