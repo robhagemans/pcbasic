@@ -779,7 +779,7 @@ class Screen(object):
             # ega ignores colorburst; tandy and pcjr have no mode 5
             self.cga_mode_5 = not on
             self.set_cga4_palette(1)
-        elif (on or not composite_monitor and not mono_monitor):
+        elif not mono_monitor and (on or not composite_monitor):
             modes.colours16[:] = modes.colours16_colour
         else:
             modes.colours16[:] = modes.colours16_mono
