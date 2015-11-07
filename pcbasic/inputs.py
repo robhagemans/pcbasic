@@ -273,9 +273,8 @@ class Keyboard(object):
                 # ctrl-alt-del: if not captured by the OS, reset the emulator
                 # meaning exit and delete state. This is useful on android.
             raise error.Reset()
-        elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) or
-                        (ctrl_c_is_break and eascii == '\x03'))
-                    and self.mod & modifier[scancode.CTRL]):
+        elif (scan in (scancode.BREAK, scancode.SCROLLOCK) or
+                        (ctrl_c_is_break and eascii == '\x03')):
             raise error.Break()
         elif (self.home_key_active and eascii.upper() == 'B'):
             raise error.Break()

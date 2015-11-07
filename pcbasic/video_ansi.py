@@ -16,7 +16,6 @@ import Queue
 import plat
 import config
 import unicodepage
-import scancode
 import backend
 
 import video

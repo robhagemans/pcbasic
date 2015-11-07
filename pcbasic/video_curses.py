@@ -18,6 +18,7 @@ except ImportError:
 import config
 import unicodepage
 import scancode
+import eascii
 import backend
 import video
 
@@ -49,7 +50,21 @@ if curses:
         curses.KEY_BACKSPACE: scancode.BACKSPACE,
         curses.KEY_PRINT: scancode.PRINT, curses.KEY_CANCEL: scancode.ESCAPE,
     }
-
+    curses_to_eascii = {
+        curses.KEY_F1: eascii.F1, curses.KEY_F2: eascii.F2,
+        curses.KEY_F3: eascii.F3, curses.KEY_F4: eascii.F4,
+        curses.KEY_F5: eascii.F5, curses.KEY_F6: eascii.F6,
+        curses.KEY_F7: eascii.F7, curses.KEY_F8: eascii.F8,
+        curses.KEY_F9: eascii.F9, curses.KEY_F10: eascii.F10,
+        curses.KEY_F11: eascii.F11, curses.KEY_F12: eascii.F12,
+        curses.KEY_END: eascii.END, curses.KEY_HOME: eascii.HOME,
+        curses.KEY_UP: eascii.UP, curses.KEY_DOWN: eascii.DOWN,
+        curses.KEY_RIGHT: eascii.RIGHT, curses.KEY_LEFT: eascii.LEFT,
+        curses.KEY_IC: eascii.INSERT, curses.KEY_DC: eascii.DELETE,
+        curses.KEY_PPAGE: eascii.PAGEUP, curses.KEY_NPAGE: eascii.PAGEDOWN,
+        curses.KEY_BACKSPACE: eascii.BACKSPACE,
+        curses.KEY_CANCEL: eascii.ESCAPE,
+    }
 
 ###############################################################################
 
@@ -58,6 +73,7 @@ class VideoCurses(video.VideoPlugin):
 
     def __init__(self, **kwargs):
         """ Initialise the text interface. """
+        video.VideoPlugin.__init__(self)
         self.curses_init = False
         if not curses:
             raise video.InitFailed()
@@ -120,7 +136,7 @@ class VideoCurses(video.VideoPlugin):
         self.vpagenum, self.apagenum = 0, 0
         self.height, self.width = 25, 80
         self.text = [[[(' ', 0)]*80 for _ in range(25)]]
-        video.VideoPlugin.__init__(self)
+        self.f12_active = False
 
     def close(self):
         """ Close the text interface. """
@@ -148,7 +164,7 @@ class VideoCurses(video.VideoPlugin):
             if i == -1:
                 break
             elif i == 0:
-                s += '\0\0'
+                s += '\0'
             elif i < 256:
                 s += chr(i)
             else:
@@ -160,36 +176,33 @@ class VideoCurses(video.VideoPlugin):
                     sys.stdout.flush()
                     self.window.resize(self.height, self.width)
                     self._redraw()
-                try:
-                    # scancode, insert here and now
-                    # there shouldn't be a mix of special keys and utf8 in one
-                    # uninterrupted string, since the only reason an uninterrupted
-                    # string would be longer than 1 char is because it's a single
-                    # utf-8 sequence or a pasted utf-8 string, neither of which
-                    # can contain special characters.
-                    # however, if that does occur, this won't work correctly.
+                # scancode, insert here and now
+                # there shouldn't be a mix of special keys and utf8 in one
+                # uninterrupted string, since the only reason an uninterrupted
+                # string would be longer than 1 char is because it's a single
+                # utf-8 sequence or a pasted utf-8 string, neither of which
+                # can contain special characters.
+                # however, if that does occur, this won't work correctly.
+                scan = curses_to_scan.get(i, None)
+                c = curses_to_eascii.get(i, '')
+                if scan or c:
                     #check_full=False?
-                    backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
-                                                        (curses_to_scan[i], '')))
-                except KeyError:
-                    pass
+                    backend.input_queue.put(backend.Event(
+                                backend.KEYB_DOWN, (scan, c)))
+            if i == curses.KEY_F12:
+                self.f12_active = True
         # replace utf-8 with codepage
         # convert into unicode codepoints
         u = s.decode('utf-8')
         # then handle these one by one as UTF-8 sequences
-        c = ''
         for uc in u:
-            c += uc.encode('utf-8')
-            if c == '\x03':
-                # send BREAK for ctrl-C
-                backend.input_queue.put(backend.Event(backend.KEYB_BREAK))
-            elif c == '\0':
-                # scancode; go add next char
-                continue
-            else:
-                #check_full=False?
-                backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
-            c = ''
+            c = uc.encode('utf-8')
+            #check_full=False?
+            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (None, c)))
+            if self.f12_active:
+                backend.input_queue.put(backend.Event(
+                                backend.KEYB_UP, scancode.F12))
+                self.f12_active = False
 
     def _redraw(self):
         """ Redraw the screen. """

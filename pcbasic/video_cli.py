@@ -18,6 +18,7 @@ import plat
 import unicodepage
 import backend
 import scancode
+import eascii
 # ANSI escape codes for output, need arrow movements and clear line and esc_to_scan under Unix.
 import ansi
 
@@ -72,6 +73,7 @@ class VideoCLI(video.VideoPlugin):
             logging.warning('Input device is not a terminal. '
                             'Could not initialise CLI interface.')
             raise video.InitFailed()
+        video.VideoPlugin.__init__(self)
         term_echo(False)
         # start the stdin thread for non-blocking reads
         self.input_handler = InputHandlerCLI()
@@ -87,7 +89,7 @@ class VideoCLI(video.VideoPlugin):
         self.num_pages = 1
         self.vpagenum, self.apagenum = 0, 0
         self.text = [[[' ']*80 for _ in range(25)]]
-        video.VideoPlugin.__init__(self)
+        self.f12_active = False
 
     def close(self):
         """ Close command-line interface. """
@@ -105,24 +107,22 @@ class VideoCLI(video.VideoPlugin):
         # s is one utf-8 sequence or one scancode
         # or a failed attempt at one of the above
         u8, sc = self.input_handler.get_key()
-        if sc:
-            # if it's an ansi sequence/scan code, insert immediately
+        if u8 == eof:
+            # ctrl-D (unix) / ctrl-Z (windows)
+            backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
+        elif u8 == '\x7f':
+            # backspace
+            backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
+                                        (scancode.BACKSPACE, eascii.BACKSPACE)))
+        elif sc or u8:
             # check_full=False?
-            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (sc, '')))
-        elif u8:
-            if u8 == '\x03':
-                # ctrl-C
-                backend.input_queue.put(backend.Event(backend.KEYB_BREAK))
-            if u8 == eof:
-                # ctrl-D (unix) / ctrl-Z (windows)
-                backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
-            elif u8 == '\x7f':
-                # backspace
-                backend.input_queue.put(backend.Event(backend.KEYB_CHAR, '\b'))
+            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (sc, u8)))
+            if sc == scancode.F12:
+                self.f12_active = True
             else:
-                # check_full=False?
-                backend.input_queue.put(backend.Event(backend.KEYB_CHAR, u8))
-
+                backend.input_queue.put(backend.Event(
+                                            backend.KEYB_UP, scancode.F12))
+                self.f12_active = False
 
     ###############################################################################
 
@@ -293,15 +293,68 @@ class InputHandlerCLI(object):
             more -= 1
             s += c
             if esc:
-                try:
-                    return None, ansi.esc_to_scan[s]
-                except KeyError:
-                    pass
+                c = esc_to_eascii.get(s, '')
+                scan = esc_to_scan.get(s, None)
+                if c or scan:
+                    return c, scan
         # convert into utf-8 if necessary
         if sys.stdin.encoding and sys.stdin.encoding != 'utf-8':
             return s.decode(sys.stdin.encoding).encode('utf-8'), None
         else:
             return s, None
+
+
+
+# escape sequence to scancode dictionary
+esc_to_scan = {
+    ansi.F1: scancode.F1,
+    ansi.F2: scancode.F2,
+    ansi.F3: scancode.F3,
+    ansi.F4: scancode.F4,
+    ansi.F5: scancode.F5,
+    ansi.F6: scancode.F6,
+    ansi.F7: scancode.F7,
+    ansi.F8: scancode.F8,
+    ansi.F9: scancode.F9,
+    ansi.F10: scancode.F10,
+    ansi.F11: scancode.F11,
+    ansi.F12: scancode.F12,
+    ansi.END: scancode.END,
+    ansi.HOME: scancode.HOME,
+    ansi.UP: scancode.UP,
+    ansi.DOWN: scancode.DOWN,
+    ansi.RIGHT: scancode.RIGHT,
+    ansi.LEFT: scancode.LEFT,
+    ansi.INSERT: scancode.INSERT,
+    ansi.DELETE: scancode.DELETE,
+    ansi.PAGEUP: scancode.PAGEUP,
+    ansi.PAGEDOWN: scancode.PAGEDOWN,
+    }
+
+esc_to_eascii = {
+    ansi.F1: eascii.F1,
+    ansi.F2: eascii.F2,
+    ansi.F3: eascii.F3,
+    ansi.F4: eascii.F4,
+    ansi.F5: eascii.F5,
+    ansi.F6: eascii.F6,
+    ansi.F7: eascii.F7,
+    ansi.F8: eascii.F8,
+    ansi.F9: eascii.F9,
+    ansi.F10: eascii.F10,
+    ansi.F11: eascii.F11,
+    ansi.F12: eascii.F12,
+    ansi.END: eascii.END,
+    ansi.HOME: eascii.HOME,
+    ansi.UP: eascii.UP,
+    ansi.DOWN: eascii.DOWN,
+    ansi.RIGHT: eascii.RIGHT,
+    ansi.LEFT: eascii.LEFT,
+    ansi.INSERT: eascii.INSERT,
+    ansi.DELETE: eascii.DELETE,
+    ansi.PAGEUP: eascii.PAGEUP,
+    ansi.PAGEDOWN: eascii.PAGEDOWN,
+    }
 
 
 prepare()

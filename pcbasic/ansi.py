@@ -2,11 +2,9 @@
 PC-BASIC - ansi.py
 Definitions for ANSI escape sequences
 
-(c) 2013, 2014, 2015 Rob Hagemans 
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
-
-import scancode
 
 # ANSI colour numbers for EGA colours: black, blue, green, cyan, red, magenta, yellow, white
 colours = (0, 4, 2, 6, 1, 5, 3, 7)
@@ -41,28 +39,25 @@ esc_clear_line = '\x1b[2K'
 esc_move_right = '\x1b\x5b\x43'
 esc_move_left = '\x1b\x5b\x44'
 
-# escape sequence to scancode dictionary
-esc_to_scan = {
-    '\x1b\x4f\x50': scancode.F1,
-    '\x1b\x4f\x51': scancode.F2,
-    '\x1b\x4f\x52': scancode.F3,
-    '\x1b\x4f\x53': scancode.F4,
-    '\x1b\x5b\x31\x35\x7e':  scancode.F5,
-    '\x1b\x5b\x31\x37\x7e':  scancode.F6,
-    '\x1b\x5b\x31\x38\x7e':  scancode.F7,
-    '\x1b\x5b\x31\x39\x7e':  scancode.F8,
-    '\x1b\x5b\x32\x30\x7e':  scancode.F9,
-    '\x1b\x5b\x32\x31\x7e':  scancode.F10,
-    '\x1b\x5b\x32\x33\x7e':  scancode.F11,
-    '\x1b\x5b\x32\x34\x7e':  scancode.F12,
-    '\x1b\x4f\x46': scancode.END,
-    '\x1b\x4f\x48': scancode.HOME,
-    '\x1b\x5b\x41': scancode.UP,
-    '\x1b\x5b\x42': scancode.DOWN,
-    '\x1b\x5b\x43': scancode.RIGHT,
-    '\x1b\x5b\x44': scancode.LEFT,
-    '\x1b\x5b\x32\x7e': scancode.INSERT,
-    '\x1b\x5b\x33\x7e': scancode.DELETE,
-    '\x1b\x5b\x35\x7e': scancode.PAGEUP,
-    '\x1b\x5b\x36\x7e': scancode.PAGEDOWN,
-    }
+F1 = '\x1b\x4f\x50'
+F2 = '\x1b\x4f\x51'
+F3 = '\x1b\x4f\x52'
+F4 = '\x1b\x4f\x53'
+F5 = '\x1b\x5b\x31\x35\x7e'
+F6 = '\x1b\x5b\x31\x37\x7e'
+F7 = '\x1b\x5b\x31\x38\x7e'
+F8 = '\x1b\x5b\x31\x39\x7e'
+F9 = '\x1b\x5b\x32\x30\x7e'
+F10 = '\x1b\x5b\x32\x31\x7e'
+F11 = '\x1b\x5b\x32\x33\x7e'
+F12 = '\x1b\x5b\x32\x34\x7e'
+END = '\x1b\x4f\x46'
+HOME = '\x1b\x4f\x48'
+UP = '\x1b\x5b\x41'
+DOWN = '\x1b\x5b\x42'
+RIGHT = '\x1b\x5b\x43'
+LEFT = '\x1b\x5b\x44'
+INSERT = '\x1b\x5b\x32\x7e'
+DELETE = '\x1b\x5b\x33\x7e'
+PAGEUP = '\x1b\x5b\x35\x7e'
+PAGEDOWN = '\x1b\x5b\x36\x7e'
