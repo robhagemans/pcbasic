@@ -26,6 +26,7 @@ import unicodepage
 import backend
 import typeface
 import scancode
+import eascii
 # for operation tokens for PUT
 import basictoken as tk
 import clipboard
@@ -151,6 +152,9 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.set_page(0, 0)
         self.set_mode(kwargs['initial_mode'])
         self.f11_active = False
+        self.altgr = kwargs['altgr']
+        if not self.altgr:
+            key_to_scan[pygame.K_RALT] = scancode.ALT
 
     def close(self):
         """ Close the pygame interface. """
@@ -238,11 +242,24 @@ class VideoPygame(video_graphical.VideoGraphical):
         c = ''
         mods = pygame.key.get_mods()
         # current key pressed; modifiers handled by backend interface
+        scan = key_to_scan.get(e.key, None)
         try:
-            scan = key_to_scan[e.key]
+            if e.mod & pygame.KMOD_LALT or (not self.altgr and e.mod & pygame.KMOD_RALT):
+                c = alt_key_to_eascii[e.key]
+            elif e.mod & pygame.KMOD_CTRL:
+                c = ctrl_key_to_eascii[e.key]
+            elif e.mod & pygame.KMOD_SHIFT:
+                c = shift_key_to_eascii[e.key]
+            else:
+                c = key_to_eascii[e.key]
         except KeyError:
-            scan = None
-        c = e.unicode.encode('utf-8')
+            key = e.key
+            if e.mod & pygame.KMOD_CTRL and key >= ord('a') and key <= ord('z'):
+                c = chr(key - ord('a') + 1)
+            elif e.mod & pygame.KMOD_CTRL and key >= ord('[') and key <= ord('_'):
+                c = chr(key - ord('A') + 1)
+            else:
+                c = e.unicode.encode('utf-8')
         if e.key == pygame.K_F11:
             self.f11_active = True
             self.clipboard.start(self.cursor_row, self.cursor_col)
@@ -255,7 +272,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             self.clipboard.handle_key(scan, c)
         else:
             # double NUL characters, as single NUL signals e-ASCII
-            if len(c) == 1 and ord(c) == 0:
+            if c == '\0':
                 c = '\0\0'
             if plat.system == 'Windows':
                 # Windows 7 and above send AltGr as Ctrl+RAlt
@@ -764,6 +781,161 @@ if pygame:
         pygame.K_DELETE: scancode.DELETE,
         pygame.K_PAUSE: scancode.BREAK,
         pygame.K_BREAK: scancode.BREAK,
+    }
+
+
+    key_to_eascii = {
+        pygame.K_F1: eascii.F1,
+        pygame.K_F2: eascii.F2,
+        pygame.K_F3: eascii.F3,
+        pygame.K_F4: eascii.F4,
+        pygame.K_F5: eascii.F5,
+        pygame.K_F6: eascii.F6,
+        pygame.K_F7: eascii.F7,
+        pygame.K_F8: eascii.F8,
+        pygame.K_F9: eascii.F9,
+        pygame.K_F10: eascii.F10,
+        pygame.K_F11: eascii.F11,
+        pygame.K_F12: eascii.F12,
+        pygame.K_HOME: eascii.HOME,
+        pygame.K_UP: eascii.UP,
+        pygame.K_PAGEUP: eascii.PAGEUP,
+        pygame.K_LEFT: eascii.LEFT,
+        pygame.K_RIGHT: eascii.RIGHT,
+        pygame.K_END: eascii.END,
+        pygame.K_DOWN: eascii.DOWN,
+        pygame.K_PAGEDOWN: eascii.PAGEDOWN,
+        pygame.K_ESCAPE: eascii.ESCAPE,
+        pygame.K_BACKSPACE: eascii.BACKSPACE,
+        pygame.K_TAB: eascii.TAB,
+        pygame.K_RETURN: eascii.RETURN,
+        pygame.K_KP_ENTER: eascii.RETURN,
+        pygame.K_SPACE: eascii.SPACE,
+        pygame.K_INSERT: eascii.INSERT,
+        pygame.K_DELETE: eascii.DELETE,
+    }
+
+    shift_key_to_eascii = {
+        pygame.K_F1: eascii.SHIFT_F1,
+        pygame.K_F2: eascii.SHIFT_F2,
+        pygame.K_F3: eascii.SHIFT_F3,
+        pygame.K_F4: eascii.SHIFT_F4,
+        pygame.K_F5: eascii.SHIFT_F5,
+        pygame.K_F6: eascii.SHIFT_F6,
+        pygame.K_F7: eascii.SHIFT_F7,
+        pygame.K_F8: eascii.SHIFT_F8,
+        pygame.K_F9: eascii.SHIFT_F9,
+        pygame.K_F10: eascii.SHIFT_F10,
+        pygame.K_F11: eascii.SHIFT_F11,
+        pygame.K_F12: eascii.SHIFT_F12,
+        pygame.K_HOME: eascii.SHIFT_HOME,
+        pygame.K_UP: eascii.SHIFT_UP,
+        pygame.K_PAGEUP: eascii.SHIFT_PAGEUP,
+        pygame.K_LEFT: eascii.SHIFT_LEFT,
+        pygame.K_RIGHT: eascii.SHIFT_RIGHT,
+        pygame.K_END: eascii.SHIFT_END,
+        pygame.K_DOWN: eascii.SHIFT_DOWN,
+        pygame.K_PAGEDOWN: eascii.SHIFT_PAGEDOWN,
+        pygame.K_ESCAPE: eascii.SHIFT_ESCAPE,
+        pygame.K_BACKSPACE: eascii.SHIFT_BACKSPACE,
+        pygame.K_TAB: eascii.SHIFT_TAB,
+        pygame.K_RETURN: eascii.SHIFT_RETURN,
+        pygame.K_KP_ENTER: eascii.SHIFT_RETURN,
+        pygame.K_SPACE: eascii.SHIFT_SPACE,
+        pygame.K_INSERT: eascii.SHIFT_INSERT,
+        pygame.K_DELETE: eascii.SHIFT_DELETE,
+        pygame.K_KP5: eascii.SHIFT_KP5,
+    }
+
+    ctrl_key_to_eascii = {
+        pygame.K_F1: eascii.CTRL_F1,
+        pygame.K_F2: eascii.CTRL_F2,
+        pygame.K_F3: eascii.CTRL_F3,
+        pygame.K_F4: eascii.CTRL_F4,
+        pygame.K_F5: eascii.CTRL_F5,
+        pygame.K_F6: eascii.CTRL_F6,
+        pygame.K_F7: eascii.CTRL_F7,
+        pygame.K_F8: eascii.CTRL_F8,
+        pygame.K_F9: eascii.CTRL_F9,
+        pygame.K_F10: eascii.CTRL_F10,
+        pygame.K_F11: eascii.CTRL_F11,
+        pygame.K_F12: eascii.CTRL_F12,
+        pygame.K_HOME: eascii.CTRL_HOME,
+        pygame.K_PAGEUP: eascii.CTRL_PAGEUP,
+        pygame.K_LEFT: eascii.CTRL_LEFT,
+        pygame.K_RIGHT: eascii.CTRL_RIGHT,
+        pygame.K_END: eascii.CTRL_END,
+        pygame.K_PAGEDOWN: eascii.CTRL_PAGEDOWN,
+        pygame.K_ESCAPE: eascii.CTRL_ESCAPE,
+        pygame.K_BACKSPACE: eascii.CTRL_BACKSPACE,
+        pygame.K_TAB: eascii.CTRL_TAB,
+        pygame.K_RETURN: eascii.CTRL_RETURN,
+        pygame.K_KP_ENTER: eascii.CTRL_RETURN,
+        pygame.K_SPACE: eascii.CTRL_SPACE,
+        pygame.K_PRINT: eascii.CTRL_PRINT,
+        pygame.K_2: eascii.CTRL_2,
+        pygame.K_6: eascii.CTRL_6,
+        pygame.K_MINUS: eascii.CTRL_MINUS,
+    }
+
+    alt_key_to_eascii = {
+        pygame.K_1: eascii.ALT_1,
+        pygame.K_2: eascii.ALT_2,
+        pygame.K_3: eascii.ALT_3,
+        pygame.K_4: eascii.ALT_4,
+        pygame.K_5: eascii.ALT_5,
+        pygame.K_6: eascii.ALT_6,
+        pygame.K_7: eascii.ALT_7,
+        pygame.K_8: eascii.ALT_8,
+        pygame.K_9: eascii.ALT_9,
+        pygame.K_0: eascii.ALT_0,
+        pygame.K_MINUS: eascii.ALT_MINUS,
+        pygame.K_EQUALS: eascii.ALT_EQUALS,
+        pygame.K_q: eascii.ALT_q,
+        pygame.K_w: eascii.ALT_w,
+        pygame.K_e: eascii.ALT_e,
+        pygame.K_r: eascii.ALT_r,
+        pygame.K_t: eascii.ALT_t,
+        pygame.K_y: eascii.ALT_y,
+        pygame.K_u: eascii.ALT_u,
+        pygame.K_i: eascii.ALT_i,
+        pygame.K_o: eascii.ALT_o,
+        pygame.K_p: eascii.ALT_p,
+        pygame.K_a: eascii.ALT_a,
+        pygame.K_s: eascii.ALT_s,
+        pygame.K_d: eascii.ALT_d,
+        pygame.K_f: eascii.ALT_f,
+        pygame.K_g: eascii.ALT_g,
+        pygame.K_h: eascii.ALT_h,
+        pygame.K_j: eascii.ALT_j,
+        pygame.K_k: eascii.ALT_k,
+        pygame.K_l: eascii.ALT_l,
+        pygame.K_z: eascii.ALT_z,
+        pygame.K_x: eascii.ALT_x,
+        pygame.K_c: eascii.ALT_c,
+        pygame.K_v: eascii.ALT_v,
+        pygame.K_b: eascii.ALT_b,
+        pygame.K_n: eascii.ALT_n,
+        pygame.K_m: eascii.ALT_m,
+        pygame.K_F1: eascii.ALT_F1,
+        pygame.K_F2: eascii.ALT_F2,
+        pygame.K_F3: eascii.ALT_F3,
+        pygame.K_F4: eascii.ALT_F4,
+        pygame.K_F5: eascii.ALT_F5,
+        pygame.K_F6: eascii.ALT_F6,
+        pygame.K_F7: eascii.ALT_F7,
+        pygame.K_F8: eascii.ALT_F8,
+        pygame.K_F9: eascii.ALT_F9,
+        pygame.K_F10: eascii.ALT_F10,
+        pygame.K_F11: eascii.ALT_F11,
+        pygame.K_F12: eascii.ALT_F12,
+        pygame.K_BACKSPACE: eascii.ALT_BACKSPACE,
+        pygame.K_TAB: eascii.ALT_TAB,
+        pygame.K_RETURN: eascii.ALT_RETURN,
+        pygame.K_KP_ENTER: eascii.ALT_RETURN,
+        pygame.K_SPACE: eascii.ALT_SPACE,
+        pygame.K_PRINT: eascii.ALT_PRINT,
+        pygame.K_KP5: eascii.ALT_KP5,
     }
 
 def apply_composite_artifacts(screen, pixels=4):
