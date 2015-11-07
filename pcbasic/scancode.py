@@ -6,7 +6,11 @@ Keyboard scancodes
 This file is released under the GNU GPL version 3.
 """
 
-# these are PC keyboard scancodes for a UK keyboard
+# these are PC-XT keyboard scancodes without E0 extended codes
+# they are labelled by their value on an IBM PC/XT US keyboard
+# but they correspond to a physical key regardless of its logical value
+# http://www.quadibloc.com/comp/scan.htm
+#
 ESCAPE = 0x01
 # top-row numbers
 N1 = 0x02
@@ -78,13 +82,10 @@ F8 = 0x42
 F9 = 0x43
 F10 = 0x44
 NUMLOCK = 0x45
-SCROLLOCK = 0x46
-KP7 = 0x47
-HOME = 0x47
-KP8 = 0x48
-UP = 0x48
-KP9 = 0x49
-PAGEUP = 0x49
+SCROLLOCK = 0x46; BREAK = 0x46; PAUSE = 0x46;
+KP7 = 0x47; HOME = 0x47
+KP8 = 0x48; UP = 0x48
+KP9 = 0x49; PAGEUP = 0x49
 KPMINUS = 0x4A
 KP4 = 0x4B
 LEFT = 0x4B
@@ -107,9 +108,38 @@ INSERT = 0x52
 # various
 DELETE = 0x53
 SYSREQ = 0x54
+# 56 - INT1, next to left shift, (\ on UK keyboard)
+INT1 = 0x56
+F11 = 0x57
+F12 = 0x58
+# Windows or Logo keys
+LSUPER = 0x5B
+RSUPER = 0x5C
+MENU = 0x5D
+
+# Japanese keyboards
+# https://www.win.tue.nl/~aeb/linux/kbd/scancodes-8.html
+# https://en.wikipedia.org/wiki/Language_input_keys
+HIRAGANA_KATAKANA = 0x70
+# backslash/underscore on Japanese keyboard
+INT3 = 0x73
+HENKAN = 0x79
+MUHENKAN = 0x7B
+ZENKAKU_HANKAKU = 0x29
+# yen key on Japanese keyboard
+INT4 = 0x7D
+
+# Korean keyboards
+# https://www.win.tue.nl/~aeb/linux/kbd/scancodes-9.html
+# Hanja key (left of Space on Korean keyboard)
+HANJA = 0xF1
+# Hangul/English key (right of Space on Korean keyboard)
+HAN_YEONG = 0xF2
+
+
 # tandy scancodes
-F11 = 0xF9  # 0x57 on IBM PC
-F12 = 0xFA  # 0x58 on IBM PC
+#F11 = 0xF9
+#F12 = 0xFA
 
 # numeric keypad
 keypad = {
