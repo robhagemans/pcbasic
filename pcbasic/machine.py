@@ -578,12 +578,14 @@ def get_low_memory(addr):
     elif addr in range(1024+key_buffer_offset, 1024+key_buffer_offset+32):
         index = (addr-1024-key_buffer_offset)//2
         odd = (addr-1024-key_buffer_offset)%2
-        c = state.console_state.keyb.buf.ring_read(index)
-        if c[0] == '\0':
-            return ord(c[-1]) if odd else 0xe0
+        c, scan = state.console_state.keyb.buf.ring_read(index)
+        if odd:
+            return scan
+        elif c == '':
+            return 0
         else:
-            # should return scancode here, not implemented
-            return 0 if odd else ord(c[0])
+            # however, arrow keys (all extended scancodes?) give 0xe0 instead of 0
+            return ord(c[0])
     # 1097 screen mode number
     elif addr == 1097:
         # these are the low-level mode numbers used by mode switching interrupt
@@ -672,17 +674,13 @@ def set_low_memory(addr, value):
     elif addr in range(1024+key_buffer_offset, 1024+key_buffer_offset+32):
         index = (addr-1024-key_buffer_offset)//2
         odd = (addr-1024-key_buffer_offset)%2
-        if not odd and value == 0xe0:
-            value = 0
-        c = state.console_state.keyb.buf.ring_read(index)
-        if len(c) < 2:
-            c += '\0'
+        c, scan = state.console_state.keyb.buf.ring_read(index)
         if odd:
-            c = c[0] + chr(value)
+            scan = value
+        elif value in (0, 0xe0):
+            c = ''
         else:
-            c = chr(value) + c[1]
-        if c[1] == '\0' and c[0] != '\0':
-            c = c[0]
-        state.console_state.keyb.buf.ring_write(index, c)
+            c = chr(value)
+        state.console_state.keyb.buf.ring_write(index, c, scan)
 
 prepare()

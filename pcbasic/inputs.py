@@ -165,18 +165,18 @@ class KeyboardBuffer(object):
         index = self.ring_index(index)
         if index == self.ring_length:
             # marker of buffer position
-            return '\x0d'
+            return '\x0d', 0
         try:
-            return self.buffer[index][0]
+            return self.buffer[index][0:2]
         except IndexError:
-            return '\0\0'
+            return '\0\0', 0
 
-    def ring_write(self, index, c):
+    def ring_write(self, index, c, scan):
         """ Write e-ascii character at position i in ring. """
         index = self.ring_index(index)
         if index < self.ring_length:
             try:
-                self.buffer[index] = (c, None, None)
+                self.buffer[index] = (c, scan, None)
             except IndexError:
                 pass
 
