@@ -944,6 +944,578 @@
     <hr />
 
     <section>
+        <h3 id="eascii">Extended ASCII (e-ASCII) codes</h3>
+        <p>
+            In addition <a href="#scancodes">scancodes</a>, some keys also carry
+            a character value given as 'extended ASCII'. e-ASCII codes are one or
+            two bytes long; single-byte codes are simply ASCII codes whereas
+            double-byte codes consist of a <code>CHR$(0)</code> character plus
+            a code indicating the key pressed. Some, but certainly not all,
+            of these codes agree with the keys' scancodes.
+        </p>
+        <p>
+            Unlike scancodes, e-ASCII codes of unmodified keys and those
+            of keys modified by <kbd>Shift</kbd>, <kbd>Ctrl</kbd> or <kbd>Alt</kbd>
+            are all different.
+        </p>
+        <p>
+            Unmodified, <kbd>Shift</kbd>ed and <kbd>Ctrl</kbd>ed e-ASCII codes are
+            connected to a key's meaning, not its location. For example, the e-ASCII
+            for <kbd>Ctrl</kbd>+<kbd>a</kbd> are the same on a
+            French and a US keyboard. The US keyboard layout is used in the
+            table below.
+        </p>
+        <p>
+            The values returned by the
+            <a href="#INKEY$"><code>INKEY$</code></a> function are e-ASCII values.
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th>Key</th>
+                    <th>e-ASCII</th>
+                    <th>e-ASCII <kbd>Shift</kbd></th>
+                    <th>e-ASCII <kbd>Ctrl</kbd></th>
+                    <th>e-ASCII <kbd>Alt</kbd></th>
+                </tr>
+                <tr>
+                    <td><kbd>Esc</kbd></td>
+                    <td><code>1B</code></td>
+                    <td><code>1B</code></td>
+                    <td><code>1B</code></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>1 !</kbd></td>
+                    <td><code>31</code></td>
+                    <td><code>21</code></td>
+                    <td></td>
+                    <td><code>00 78</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>2 @</kbd></td>
+                    <td><code>32</code></td>
+                    <td><code>40</code></td>
+                    <td><code>03</code></td>
+                    <td><code>00 79</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>3 #</kbd></td>
+                    <td><code>33</code></td>
+                    <td><code>23</code></td>
+                    <td></td>
+                    <td><code>00 7A</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>4 $</kbd></td>
+                    <td><code>34</code></td>
+                    <td><code>24</code></td>
+                    <td></td>
+                    <td><code>00 7B</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>5 %</kbd></td>
+                    <td><code>35</code></td>
+                    <td><code>25</code></td>
+                    <td></td>
+                    <td><code>00 7C</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>6 ^</kbd></td>
+                    <td><code>36</code></td>
+                    <td><code>5E</code></td>
+                    <td><code>1E</code></td>
+                    <td><code>00 7D</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>7 &amp;</kbd></td>
+                    <td><code>37</code></td>
+                    <td><code>26</code></td>
+                    <td></td>
+                    <td><code>00 7E</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>8 *</kbd></td>
+                    <td><code>38</code></td>
+                    <td><code>2A</code></td>
+                    <td></td>
+                    <td><code>00 7F</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>9 (</kbd></td>
+                    <td><code>39</code></td>
+                    <td><code>28</code></td>
+                    <td></td>
+                    <td><code>00 80</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>0 )</kbd></td>
+                    <td><code>30</code></td>
+                    <td><code>29</code></td>
+                    <td></td>
+                    <td><code>00 81</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>- _</kbd></td>
+                    <td><code>2D</code></td>
+                    <td><code>5F</code></td>
+                    <td><code>1F</code></td>
+                    <td><code>00 82</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>= +</kbd></td>
+                    <td><code>3D</code></td>
+                    <td><code>2B</code></td>
+                    <td></td>
+                    <td><code>00 83</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>Backspace</kbd></td>
+                    <td><code>08</code></td>
+                    <td><code>08</code></td>
+                    <td><code>7F</code></td>
+                    <td><code>00 8C</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>Tab</kbd></td>
+                    <td><code>09</code></td>
+                    <td><code>00 0F</code></td>
+                    <td><code>00 8D</code></td>
+                    <td><code>00 8E</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>q Q</kbd></td>
+                    <td><code>71</code></td>
+                    <td><code>51</code></td>
+                    <td><code>11</code></td>
+                    <td><code>00 10</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>w W</kbd></td>
+                    <td><code>77</code></td>
+                    <td><code>57</code></td>
+                    <td><code>17</code></td>
+                    <td><code>00 11</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>e E</kbd></td>
+                    <td><code>65</code></td>
+                    <td><code>45</code></td>
+                    <td><code>05</code></td>
+                    <td><code>00 12</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>r R</kbd></td>
+                    <td><code>72</code></td>
+                    <td><code>52</code></td>
+                    <td><code>12</code></td>
+                    <td><code>00 13</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>t T</kbd></td>
+                    <td><code>74</code></td>
+                    <td><code>54</code></td>
+                    <td><code>14</code></td>
+                    <td><code>00 14</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>y Y</kbd></td>
+                    <td><code>79</code></td>
+                    <td><code>59</code></td>
+                    <td><code>19</code></td>
+                    <td><code>00 15</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>u U</kbd></td>
+                    <td><code>75</code></td>
+                    <td><code>55</code></td>
+                    <td><code>15</code></td>
+                    <td><code>00 16</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>i I</kbd></td>
+                    <td><code>69</code></td>
+                    <td><code>49</code></td>
+                    <td><code>09</code></td>
+                    <td><code>00 17</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>o O</kbd></td>
+                    <td><code>6F</code></td>
+                    <td><code>4F</code></td>
+                    <td><code>0F</code></td>
+                    <td><code>00 18</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>p P</kbd></td>
+                    <td><code>70</code></td>
+                    <td><code>50</code></td>
+                    <td><code>10</code></td>
+                    <td><code>00 19</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>[ {</kbd></td>
+                    <td><code>5B</code></td>
+                    <td><code>7B</code></td>
+                    <td><code>1B</code></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>] }</kbd></td>
+                    <td><code>5D</code></td>
+                    <td><code>7D</code></td>
+                    <td><code>1D</code></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>Enter</kbd></td>
+                    <td><code>0D</code></td>
+                    <td><code>0D</code></td>
+                    <td><code>0A</code></td>
+                    <td><code>00 8F</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>a A</kbd></td>
+                    <td><code>61</code></td>
+                    <td><code>41</code></td>
+                    <td><code>01</code></td>
+                    <td><code>00 1E</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>s S</kbd></td>
+                    <td><code>73</code></td>
+                    <td><code>53</code></td>
+                    <td><code>13</code></td>
+                    <td><code>00 1F</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>d D</kbd></td>
+                    <td><code>64</code></td>
+                    <td><code>44</code></td>
+                    <td><code>04</code></td>
+                    <td><code>00 20</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>f F</kbd></td>
+                    <td><code>66</code></td>
+                    <td><code>46</code></td>
+                    <td><code>06</code></td>
+                    <td><code>00 21</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>g G</kbd></td>
+                    <td><code>67</code></td>
+                    <td><code>47</code></td>
+                    <td><code>07</code></td>
+                    <td><code>00 22</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>h H</kbd></td>
+                    <td><code>68</code></td>
+                    <td><code>48</code></td>
+                    <td><code>08</code></td>
+                    <td><code>00 23</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>j J</kbd></td>
+                    <td><code>6A</code></td>
+                    <td><code>4A</code></td>
+                    <td><code>0A</code></td>
+                    <td><code>00 24</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>k K</kbd></td>
+                    <td><code>6B</code></td>
+                    <td><code>4B</code></td>
+                    <td><code>0B</code></td>
+                    <td><code>00 25</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>l L</kbd></td>
+                    <td><code>6C</code></td>
+                    <td><code>4C</code></td>
+                    <td><code>0C</code></td>
+                    <td><code>00 26</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>; :</kbd></td>
+                    <td><code>3B</code></td>
+                    <td><code>3A</code></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>' "</kbd></td>
+                    <td><code>27</code></td>
+                    <td><code>22</code></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>` ~</kbd></td>
+                    <td><code>60</code></td>
+                    <td><code>7E</code></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>\ |</kbd></td>
+                    <td><code>5C</code></td>
+                    <td><code>7C</code></td>
+                    <td><code>1C</code></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>z Z</kbd></td>
+                    <td><code>7A</code></td>
+                    <td><code>5A</code></td>
+                    <td><code>1A</code></td>
+                    <td><code>00 2C</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>x X</kbd></td>
+                    <td><code>78</code></td>
+                    <td><code>58</code></td>
+                    <td><code>18</code></td>
+                    <td><code>00 2d</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>c C</kbd></td>
+                    <td><code>63</code></td>
+                    <td><code>43</code></td>
+                    <td><code>03</code></td>
+                    <td><code>00 2E</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>v V</kbd></td>
+                    <td><code>76</code></td>
+                    <td><code>56</code></td>
+                    <td><code>16</code></td>
+                    <td><code>00 2F</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>b B</kbd></td>
+                    <td><code>62</code></td>
+                    <td><code>42</code></td>
+                    <td><code>02</code></td>
+                    <td><code>00 30</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>n N</kbd></td>
+                    <td><code>6E</code></td>
+                    <td><code>4E</code></td>
+                    <td><code>0E</code></td>
+                    <td><code>00 31</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>m M</kbd></td>
+                    <td><code>6D</code></td>
+                    <td><code>4D</code></td>
+                    <td><code>0D</code></td>
+                    <td><code>00 32</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>, &lt;</kbd></td>
+                    <td><code>2C</code></td>
+                    <td><code>3C</code></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>. &gt;</kbd></td>
+                    <td><code>2E</code></td>
+                    <td><code>3E</code></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>/ ?</kbd></td>
+                    <td><code>2F</code></td>
+                    <td><code>3F</code></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>PrtSc</kbd></td>
+                    <td></td>
+                    <td></td>
+                    <td><code>00 72</code></td>
+                    <td><code>00 46</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>Space</kbd></td>
+                    <td><code>20</code></td>
+                    <td><code>20</code></td>
+                    <td><code>20</code></td>
+                    <td><code>00 20</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>F1</kbd></td>
+                    <td><code>00 3B</code></td>
+                    <td><code>00 54</code></td>
+                    <td><code>00 5E</code></td>
+                    <td><code>00 68</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>F2</kbd></td>
+                    <td><code>00 3C</code></td>
+                    <td><code>00 55</code></td>
+                    <td><code>00 5F</code></td>
+                    <td><code>00 69</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>F3</kbd></td>
+                    <td><code>00 3D</code></td>
+                    <td><code>00 56</code></td>
+                    <td><code>00 60</code></td>
+                    <td><code>00 6A</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>F4</kbd></td>
+                    <td><code>00 3E</code></td>
+                    <td><code>00 57</code></td>
+                    <td><code>00 61</code></td>
+                    <td><code>00 6C</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>F5</kbd></td>
+                    <td><code>00 3F</code></td>
+                    <td><code>00 58</code></td>
+                    <td><code>00 62</code></td>
+                    <td><code>00 6D</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>F6</kbd></td>
+                    <td><code>00 40</code></td>
+                    <td><code>00 59</code></td>
+                    <td><code>00 63</code></td>
+                    <td><code>00 6E</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>F7</kbd></td>
+                    <td><code>00 41</code></td>
+                    <td><code>00 5A</code></td>
+                    <td><code>00 64</code></td>
+                    <td><code>00 6F</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>F8</kbd></td>
+                    <td><code>00 42</code></td>
+                    <td><code>00 5B</code></td>
+                    <td><code>00 65</code></td>
+                    <td><code>00 70</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>F9</kbd></td>
+                    <td><code>00 43</code></td>
+                    <td><code>00 5C</code></td>
+                    <td><code>00 66</code></td>
+                    <td><code>00 71</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>F10</kbd></td>
+                    <td><code>00 44</code></td>
+                    <td><code>00 5D</code></td>
+                    <td><code>00 67</code></td>
+                    <td><code>00 72</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>F11</kbd> (Tandy)</td>
+                    <td><code>00 98</code></td>
+                    <td><code>00 A2</code></td>
+                    <td><code>00 AC</code></td>
+                    <td><code>00 B6</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>F12</kbd> (Tandy)</td>
+                    <td><code>00 99</code></td>
+                    <td><code>00 A3</code></td>
+                    <td><code>00 AD</code></td>
+                    <td><code>00 B7</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>Home</kbd></td>
+                    <td><code>00 47</code></td>
+                    <td><code>00 47</code></td>
+                    <td><code>00 77</code></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>End</kbd></td>
+                    <td><code>00 4F</code></td>
+                    <td><code>00 4F</code></td>
+                    <td><code>00 75</code></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>PgUp</kbd></td>
+                    <td><code>00 49</code></td>
+                    <td><code>00 49</code></td>
+                    <td><code>00 84</code></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>PgDn</kbd></td>
+                    <td><code>00 51</code></td>
+                    <td><code>00 51</code></td>
+                    <td><code>00 76</code></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8593;<!--up--></kbd></td>
+                    <td><code>00 48</code></td>
+                    <td><code>00 48</code></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8592;<!--left--></kbd></td>
+                    <td><code>00 4B</code></td>
+                    <td><code>00 87</code></td>
+                    <td><code>00 73</code></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8594;<!--right--></kbd></td>
+                    <td><code>00 4D</code></td>
+                    <td><code>00 88</code></td>
+                    <td><code>00 74</code></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8595;<!--down--></kbd></td>
+                    <td><code>00 50</code></td>
+                    <td><code>00 50</code></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>keypad 5</kbd></td>
+                    <td><code>35</code></td>
+                    <td><code>35</code></td>
+                    <td></td>
+                    <td><code>05</code></td>
+                </tr>
+                <tr>
+                    <td><kbd>Ins</kbd></td>
+                    <td><code>00 52</code></td>
+                    <td><code>00 52</code></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td><kbd>Del</kbd></td>
+                    <td><code>00 53</code></td>
+                    <td><code>00 53</code></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
+    </section>
+    <hr />
+
+    <section>
         <h3 id="colours">Colours</h3>
         <p>
             The emulated video adapter can produce more colours than can be shown on the

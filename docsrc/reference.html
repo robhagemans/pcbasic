@@ -3284,9 +3284,8 @@
         </code>
         <p>
             Returns one key-press from the keyboard buffer. If the keyboard buffer is
-            empty, returns the empty string. Otherwise, the return value is either a one
-            character string or a two-character string of which the first is <code>CHR$(0)</code> and
-            the second a keyboard scancode.
+            empty, returns the empty string. Otherwise, the return value is a one- or two-
+            character string holding the <a href="#eascii">e-ASCII code</a> of the pressed key.
         </p>
         <h5>Notes</h5>
         <ul>
@@ -3294,138 +3293,6 @@
                 This function has no brackets.
             </li>
         </ul>
-        <h5>Keyboard scancodes returned by <code>INKEY$</code></h5>
-        <div class="scrollable">
-            <table>
-                <tr>
-                    <th>Key</th>
-                    <th>Scancode</th>
-                </tr>
-                <tr>
-                    <td><kbd>&#8593;<!--up--></kbd></td>
-                    <td>48</td>
-                </tr>
-                <tr>
-                    <td><kbd>&#8595;<!--down--></kbd></td>
-                    <td>50</td>
-                </tr>
-                <tr>
-                    <td><kbd>&#8594;<!--right--></kbd></td>
-                    <td>4D</td>
-                </tr>
-                <tr>
-                    <td><kbd>&#8592;<!--left--></kbd></td>
-                    <td>4B</td>
-                </tr>
-                <tr>
-                    <td><kbd>Ins</kbd></td>
-                    <td>52</td>
-                </tr>
-                <tr>
-                    <td><kbd>Del</kbd></td>
-                    <td>53</td>
-                </tr>
-                <tr>
-                    <td><kbd>Home</kbd></td>
-                    <td>47</td>
-                </tr>
-                <tr>
-                    <td><kbd>End</kbd></td>
-                    <td>4F</td>
-                </tr>
-                <tr>
-                    <td><kbd>Pg Up</kbd></td>
-                    <td>49</td>
-                </tr>
-                <tr>
-                    <td><kbd>Pg Dn</kbd></td>
-                    <td>51</td>
-                </tr>
-                <tr>
-                    <td><kbd>F1</kbd></td>
-                    <td>3B</td>
-                </tr>
-                <tr>
-                    <td><kbd>F2</kbd></td>
-                    <td>3C</td>
-                </tr><tr>
-                    <td><kbd>F3</kbd></td>
-                    <td>3D</td>
-                </tr>
-                <tr>
-                    <td><kbd>F4</kbd></td>
-                    <td>3E</td>
-                </tr>
-                <tr>
-                    <td><kbd>F5</kbd></td>
-                    <td>3F</td>
-                </tr>
-                <tr>
-                    <td><kbd>F6</kbd></td>
-                    <td>40</td>
-                </tr>
-                <tr>
-                    <td><kbd>F7</kbd></td>
-                    <td>41</td>
-                </tr>
-                <tr>
-                    <td><kbd>F8</kbd></td>
-                    <td>42</td>
-                </tr>
-                <tr>
-                    <td><kbd>F9</kbd></td>
-                    <td>43</td>
-                </tr>
-                <tr>
-                    <td><kbd>F10</kbd></td>
-                    <td>44</td>
-                </tr>
-                <tr>
-                    <td><kbd>PrtSc</kbd></td>
-                    <td>37</td>
-                </tr>
-                <tr>
-                    <td><kbd>CTRL</kbd>+<kbd>&#8594;<!--right--></kbd></td>
-                    <td>74</td>
-                </tr>
-                <tr>
-                    <td><kbd>CTRL</kbd>+<kbd>&#8592;<!--left--></kbd></td>
-                    <td>73</td>
-                </tr>
-                <tr>
-                    <td><kbd>CTRL</kbd>+<kbd>Home</kbd></td>
-                    <td>77</td>
-                </tr>
-                <tr>
-                    <td><kbd>CTRL</kbd>+<kbd>End</kbd></td>
-                    <td>75</td>
-                </tr>
-                <tr>
-                    <td><kbd>CTRL</kbd>+<kbd>Pg Up</kbd></td>
-                    <td>84</td>
-                </tr>
-                <tr>
-                    <td><kbd>CTRL</kbd>+<kbd>Pg Dn</kbd></td>
-                    <td>76</td>
-                </tr>
-                <tr>
-                    <td><kbd>CTRL</kbd>+<kbd>2</kbd></td>
-                    <td>03</td>
-                </tr>
-                <tr>
-                    <td><kbd>CTRL</kbd>+<kbd>9</kbd></td>
-                    <td>84</td>
-                </tr>
-                <tr>
-                    <td><kbd>CTRL</kbd>+<kbd>F2</kbd></td>
-                    <td>5F</td>
-                </tr>
-                <tr>
-                    <td><kbd>CTRL</kbd>+<kbd>F3</kbd></td>
-                    <td>60</td>
-                </tr>
-            </table>
-        </div>
     </section>
 <hr />
 
