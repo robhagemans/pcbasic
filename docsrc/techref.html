@@ -501,6 +501,385 @@
     <hr />
 
     <section>
+        <h3 id="scancodes">Keyboard scancodes</h3>
+        <p>
+            PC-BASIC uses PC/XT scancodes, which originated on the 83-key IBM Model F keyboard
+            supplied with the IBM PC 5150. The layout of this keyboard was quite distinct
+            from modern standard keyboards with 101 or more keys, but keys on a modern keyboard produce
+            the same scancode as the key with the same function on the Model F. For example,
+            the key that (on a US keyboard) produces the <kbd>\</kbd> was located next to
+            the left <kbd>Shift</kbd> key on the Model F keyboard and has scancode
+            <code>&amp;h2B</code>. The (US) backslash key still has this scancode, even
+            though it is now usually found above the <kbd>Enter</kbd> key.
+        </p>
+        <p>
+            To further complicate matters, keyboards for different langages have their layout remapped in software
+            rather than in hardware, which means that they produce the same scancode as
+            the key that on a US keyboard is in the same location, regardless of which character they actually produce.
+        </p>
+        <p>
+            Therefore, the <kbd>A</kbd> on
+            a French keyboard will produce the same scancode as the <kbd>Q</kbd> on a UK or US keyboard.
+            The aforementioned US <kbd>\</kbd> key is identified with the key that is generally found
+            to the bottom left of <kbd>Enter</kbd> on non-US keyboards. For example, on my UK keyboard
+            this is the <kbd>#</kbd> key. Non-US keyboards have an additional key next
+            to the left <kbd>Shift</kbd> which on the UK keyboard is the <kbd>\</kbd>. Therefore,
+            while this key is in the same location and has the same function as the Model F <kbd>\</kbd>,
+            it has a different scancode.
+        </p>
+        <p>
+            In the table below, the keys are marked by their function on a US keyboard,
+            but it should be kept in mind that the scancode is linked to the position,
+            not the function, of the key.
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th>Key</th>
+                    <th>Scancode</th>
+                </tr>
+                <tr>
+                    <td><kbd>Esc</kbd></td>
+                    <td>01</td>
+                </tr>
+                <tr>
+                    <td><kbd>1</kbd></td>
+                    <td>02</td>
+                </tr>
+                <tr>
+                    <td><kbd>2</kbd></td>
+                    <td>03</td>
+                </tr>
+                <tr>
+                    <td><kbd>3</kbd></td>
+                    <td>04</td>
+                </tr>
+                <tr>
+                    <td><kbd>4</kbd></td>
+                    <td>05</td>
+                </tr>
+                <tr>
+                    <td><kbd>5</kbd></td>
+                    <td>06</td>
+                </tr>
+                <tr>
+                    <td><kbd>6</kbd></td>
+                    <td>07</td>
+                </tr>
+                <tr>
+                    <td><kbd>7</kbd></td>
+                    <td>08</td>
+                </tr>
+                <tr>
+                    <td><kbd>8</kbd></td>
+                    <td>09</td>
+                </tr>
+                <tr>
+                    <td><kbd>9</kbd></td>
+                    <td>0A</td>
+                </tr>
+                <tr>
+                    <td><kbd>0</kbd></td>
+                    <td>0B</td>
+                </tr>
+                <tr>
+                    <td><kbd>-</kbd></td>
+                    <td>0C</td>
+                </tr>
+                <tr>
+                    <td><kbd>=</kbd></td>
+                    <td>0D</td>
+                </tr>
+                <tr>
+                    <td><kbd>Backspace</kbd></td>
+                    <td>0E</td>
+                </tr>
+                <tr>
+                    <td><kbd>Tab</kbd></td>
+                    <td>0F</td>
+                </tr>
+                <tr>
+                    <td><kbd>q</kbd></td>
+                    <td>10</td>
+                </tr>
+                <tr>
+                    <td><kbd>w</kbd></td>
+                    <td>11</td>
+                </tr>
+                <tr>
+                    <td><kbd>e</kbd></td>
+                    <td>12</td>
+                </tr>
+                <tr>
+                    <td><kbd>r</kbd></td>
+                    <td>13</td>
+                </tr>
+                <tr>
+                    <td><kbd>t</kbd></td>
+                    <td>14</td>
+                </tr>
+                <tr>
+                    <td><kbd>y</kbd></td>
+                    <td>15</td>
+                </tr>
+                <tr>
+                    <td><kbd>u</kbd></td>
+                    <td>16</td>
+                </tr>
+                <tr>
+                    <td><kbd>i</kbd></td>
+                    <td>17</td>
+                </tr>
+                <tr>
+                    <td><kbd>o</kbd></td>
+                    <td>18</td>
+                </tr>
+                <tr>
+                    <td><kbd>p</kbd></td>
+                    <td>19</td>
+                </tr>
+                <tr>
+                    <td><kbd>[</kbd></td>
+                    <td>1A</td>
+                </tr>
+                <tr>
+                    <td><kbd>]</kbd></td>
+                    <td>1B</td>
+                </tr>
+                <tr>
+                    <td><kbd>Enter</kbd></td>
+                    <td>1C</td>
+                </tr>
+                <tr>
+                    <td><kbd>Ctrl</kbd></td>
+                    <td>1D</td>
+                </tr>
+                <tr>
+                    <td><kbd>a</kbd></td>
+                    <td>1E</td>
+                </tr>
+                <tr>
+                    <td><kbd>s</kbd></td>
+                    <td>1F</td>
+                </tr>
+                <tr>
+                    <td><kbd>d</kbd></td>
+                    <td>20</td>
+                </tr>
+                <tr>
+                    <td><kbd>f</kbd></td>
+                    <td>21</td>
+                </tr>
+                <tr>
+                    <td><kbd>g</kbd></td>
+                    <td>22</td>
+                </tr>
+                <tr>
+                    <td><kbd>h</kbd></td>
+                    <td>23</td>
+                </tr>
+                <tr>
+                    <td><kbd>j</kbd></td>
+                    <td>24</td>
+                </tr>
+                <tr>
+                    <td><kbd>k</kbd></td>
+                    <td>25</td>
+                </tr>
+                <tr>
+                    <td><kbd>l</kbd></td>
+                    <td>26</td>
+                </tr>
+                <tr>
+                    <td><kbd>;</kbd></td>
+                    <td>27</td>
+                </tr>
+                <tr>
+                    <td><kbd>'</kbd></td>
+                    <td>28</td>
+                </tr>
+                <tr>
+                    <td><kbd>`</kbd></td>
+                    <td>29</td>
+                </tr>
+                <tr>
+                    <td><kbd>Left Shift</kbd></td>
+                    <td>2A</td>
+                </tr>
+                <tr>
+                    <td><kbd>#</kbd></td>
+                    <td>2B</td>
+                </tr>
+                <tr>
+                    <td><kbd>z</kbd></td>
+                    <td>2C</td>
+                </tr>
+                <tr>
+                    <td><kbd>x</kbd></td>
+                    <td>2D</td>
+                </tr>
+                <tr>
+                    <td><kbd>c</kbd></td>
+                    <td>2E</td>
+                </tr>
+                <tr>
+                    <td><kbd>v</kbd></td>
+                    <td>2F</td>
+                </tr>
+                <tr>
+                    <td><kbd>b</kbd></td>
+                    <td>  30</td>
+                </tr>
+                <tr>
+                    <td><kbd>n</kbd></td>
+                    <td>31</td>
+                </tr>
+                <tr>
+                    <td><kbd>m</kbd></td>
+                    <td>32</td>
+                </tr>
+                <tr>
+                    <td><kbd>,</kbd></td>
+                    <td>33</td>
+                </tr>
+                <tr>
+                    <td><kbd>.</kbd></td>
+                    <td>34</td>
+                </tr>
+                <tr>
+                    <td><kbd>/</kbd></td>
+                    <td>35</td>
+                </tr>
+                <tr>
+                    <td><kbd>Right Shift</kbd></td>
+                    <td>36</td>
+                </tr>
+                <tr>
+                    <td><kbd>PrtSc</kbd></td>
+                    <td>37</td>
+                </tr>
+                <tr>
+                    <td><kbd>SysRq</kbd></td>
+                    <td>37</td>
+                </tr>
+                <tr>
+                    <td><kbd>Alt</kbd></td>
+                    <td>38</td>
+                </tr>
+                <tr>
+                    <td><kbd>Space</kbd></td>
+                    <td>39</td>
+                </tr>
+                <tr>
+                    <td><kbd>Caps Lock</kbd></td>
+                    <td>3A</td>
+                </tr>
+                <tr>
+                    <td><kbd>F1</kbd></td>
+                    <td>3B</td>
+                </tr>
+                <tr>
+                    <td><kbd>F2</kbd></td>
+                    <td>3C</td>
+                </tr>
+                <tr>
+                    <td><kbd>F3</kbd></td>
+                    <td>3D</td>
+                </tr>
+                <tr>
+                    <td><kbd>F4</kbd></td>
+                    <td>3E</td>
+                </tr>
+                <tr>
+                    <td><kbd>F5</kbd></td>
+                    <td>3F</td>
+                </tr>
+                <tr>
+                    <td><kbd>F6</kbd></td>
+                    <td>40</td>
+                </tr>
+                <tr>
+                    <td><kbd>F7</kbd></td>
+                    <td>41</td>
+                </tr>
+                <tr>
+                    <td><kbd>F8</kbd></td>
+                    <td>42</td>
+                </tr>
+                <tr>
+                    <td><kbd>F9</kbd></td>
+                    <td>43</td>
+                </tr>
+                <tr>
+                    <td><kbd>F10</kbd></td>
+                    <td>44</td>
+                </tr>
+                <tr>
+                    <td><kbd>Num Lock</kbd></td>
+                    <td>45</td>
+                </tr>
+                <tr>
+                    <td><kbd>Scroll Lock</kbd></td>
+                    <td>46</td>
+                </tr>
+                <tr>
+                    <td><kbd>Home</kbd></td>
+                    <td>47</td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8593;<!--up--></kbd></td>
+                    <td>48</td>
+                </tr>
+                <tr>
+                    <td><kbd>Pg Up</kbd></td>
+                    <td>49</td>
+                </tr>
+                <tr>
+                    <td><kbd>keypad -</kbd></td>
+                    <td>4A</td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8592;<!--left--></kbd></td>
+                    <td>4B</td>
+                </tr>
+                <tr>
+                    <td><kbd>keypad 5</kbd></td>
+                    <td>4C</td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8594;<!--right--></kbd></td>
+                    <td>4D</td>
+                </tr>
+                <tr>
+                    <td><kbd>keypad +</kbd></td>
+                    <td>4E</td>
+                </tr>
+                <tr>
+                    <td><kbd>End</kbd></td>
+                    <td>4F</td>
+                </tr>
+                <tr>
+                    <td><kbd>&#8595;<!--down--></kbd></td>
+                    <td>50</td>
+                </tr>
+                <tr>
+                    <td><kbd>Pg Dn</kbd></td>
+                    <td>51</td>
+                </tr>
+                <tr>
+                    <td><kbd>Ins</kbd></td>
+                    <td>52</td>
+                </tr>
+                <tr>
+                    <td><kbd>Del</kbd></td>
+                    <td>53</td>
+                </tr>
+            </table>
+        </div>
+    </section>
+    <hr />
+
+    <section>
         <h3 id="colours">Colours</h3>
         <p>
             The emulated video adapter can produce more colours than can be shown on the
