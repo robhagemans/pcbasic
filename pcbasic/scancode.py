@@ -112,17 +112,20 @@ LSUPER = 0x5B
 RSUPER = 0x5C
 MENU = 0x5D
 
-# Japanese keyboards
+# Japanese and Brazilian keyboards
 # https://www.win.tue.nl/~aeb/linux/kbd/scancodes-8.html
 # https://en.wikipedia.org/wiki/Language_input_keys
 HIRAGANA_KATAKANA = 0x70
 # backslash/underscore on Japanese keyboard
+# /? on Brazilian keyboard
 INT3 = 0x73
 HENKAN = 0x79
 MUHENKAN = 0x7B
 ZENKAKU_HANKAKU = 0x29
 # yen key on Japanese keyboard
 INT4 = 0x7D
+# keypad . on Brazilian keyboard
+INT5 = 0x7E
 
 # Korean keyboards
 # https://www.win.tue.nl/~aeb/linux/kbd/scancodes-9.html
