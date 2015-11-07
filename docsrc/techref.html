@@ -946,7 +946,7 @@
     <section>
         <h3 id="eascii">Extended ASCII (e-ASCII) codes</h3>
         <p>
-            In addition <a href="#scancodes">scancodes</a>, some keys also carry
+            In addition to <a href="#scancodes">scancodes</a>, most keys also carry
             a character value given as 'extended ASCII'. e-ASCII codes are one or
             two bytes long; single-byte codes are simply ASCII codes whereas
             double-byte codes consist of a <code>CHR$(0)</code> character plus
@@ -962,8 +962,10 @@
             Unmodified, <kbd>Shift</kbd>ed and <kbd>Ctrl</kbd>ed e-ASCII codes are
             connected to a key's meaning, not its location. For example, the e-ASCII
             for <kbd>Ctrl</kbd>+<kbd>a</kbd> are the same on a
-            French and a US keyboard. The US keyboard layout is used in the
-            table below.
+            French and a US keyboard.
+            By contrast, the <kdb>Alt</kbd>ed codes are connected
+            to the key's location, like scancodes.
+            The US keyboard layout is used in the table below.
         </p>
         <p>
             The values returned by the
