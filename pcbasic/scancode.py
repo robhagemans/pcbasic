@@ -69,7 +69,7 @@ COMMA = 0x33
 PERIOD = 0x34
 SLASH = 0x35
 RSHIFT = 0x36
-PRINT = 0x37;
+PRINT = 0x37; KPTIMES = 0x37;
 # ROW 4
 ALT = 0x38
 SPACE = 0x39
@@ -100,8 +100,8 @@ KP1 = 0x4F; END = 0x4F
 KP2 = 0x50; DOWN = 0x50
 KP3 = 0x51; PAGEDOWN = 0x51
 KP0 = 0x52; INSERT = 0x52
-# various
-DELETE = 0x53
+KPPOINT = 0x53; DELETE = 0x53
+# extensions (keys not on the US PC/XT keyboard)
 SYSREQ = 0x54
 # 56 - INT1, next to left shift, (\ on UK keyboard)
 INT1 = 0x56

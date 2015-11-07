@@ -754,21 +754,23 @@ if sdl2:
         sdl2.SDL_SCANCODE_M: scancode.m, sdl2.SDL_SCANCODE_COMMA: scancode.COMMA,
         sdl2.SDL_SCANCODE_PERIOD: scancode.PERIOD, sdl2.SDL_SCANCODE_SLASH: scancode.SLASH,
         sdl2.SDL_SCANCODE_RSHIFT: scancode.RSHIFT,
-        sdl2.SDL_SCANCODE_PRINTSCREEN: scancode.PRINT,
         sdl2.SDL_SCANCODE_SYSREQ: scancode.SYSREQ,
         sdl2.SDL_SCANCODE_LALT: scancode.ALT,
         sdl2.SDL_SCANCODE_SPACE: scancode.SPACE, sdl2.SDL_SCANCODE_CAPSLOCK: scancode.CAPSLOCK,
-        # function key row
+        # function keys
         sdl2.SDL_SCANCODE_F1: scancode.F1, sdl2.SDL_SCANCODE_F2: scancode.F2,
         sdl2.SDL_SCANCODE_F3: scancode.F3, sdl2.SDL_SCANCODE_F4: scancode.F4,
         sdl2.SDL_SCANCODE_F5: scancode.F5, sdl2.SDL_SCANCODE_F6: scancode.F6,
         sdl2.SDL_SCANCODE_F7: scancode.F7, sdl2.SDL_SCANCODE_F8: scancode.F8,
         sdl2.SDL_SCANCODE_F9: scancode.F9, sdl2.SDL_SCANCODE_F10: scancode.F10,
         sdl2.SDL_SCANCODE_F11: scancode.F11, sdl2.SDL_SCANCODE_F12: scancode.F12,
-        # top middle
+        # top of keypad
         sdl2.SDL_SCANCODE_NUMLOCKCLEAR: scancode.NUMLOCK,
         sdl2.SDL_SCANCODE_SCROLLLOCK: scancode.SCROLLOCK,
+        sdl2.SDL_SCANCODE_PAUSE: scancode.BREAK,
         # keypad
+        sdl2.SDL_SCANCODE_KP_MULTIPLY: scancode.KPTIMES,
+        sdl2.SDL_SCANCODE_PRINTSCREEN: scancode.PRINT,
         sdl2.SDL_SCANCODE_KP_7: scancode.KP7,
         sdl2.SDL_SCANCODE_HOME: scancode.HOME,
         sdl2.SDL_SCANCODE_KP_8: scancode.KP8,
@@ -790,9 +792,9 @@ if sdl2:
         sdl2.SDL_SCANCODE_PAGEDOWN: scancode.PAGEDOWN,
         sdl2.SDL_SCANCODE_KP_0: scancode.KP0,
         sdl2.SDL_SCANCODE_INSERT: scancode.INSERT,
-        # various
+        sdl2.SDL_SCANCODE_KP_PERIOD: scancode.KPPOINT,
         sdl2.SDL_SCANCODE_DELETE: scancode.DELETE,
-        sdl2.SDL_SCANCODE_PAUSE: scancode.BREAK,
+        # extensions
         sdl2.SDL_SCANCODE_NONUSBACKSLASH: scancode.INT1,
         # windows keys
         sdl2.SDL_SCANCODE_LGUI: scancode.LSUPER,
