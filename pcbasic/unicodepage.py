@@ -30,7 +30,7 @@ def prepare():
 
 def load_codepage(codepage_name):
     """ Load codepage to Unicode table. """
-    global cp_to_utf8, utf8_to_cp, cp_to_unicodepoint
+    global cp_to_utf8, utf8_to_cp, cp_to_unicodepoint, unicode_to_cp
     global lead, trail, dbcs, dbcs_num_chars, box_left, box_right
     name = os.path.join(plat.encoding_dir, codepage_name + '.ucp')
     # lead and trail bytes
@@ -194,7 +194,7 @@ def str_from_unicode(ucs):
             s += from_unicode(uc)
         except KeyError:
             # pass unknown sequences as utf-8. this includes \r.
-            s += c.encode('utf-8')
+            s += uc.encode('utf-8')
     return s
 
 
