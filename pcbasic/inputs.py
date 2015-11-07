@@ -274,7 +274,7 @@ class Keyboard(object):
                 # meaning exit and delete state. This is useful on android.
             raise error.Reset()
         elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) or
-                        (ctrl_c_is_break and eascii.upper() == 'C'))
+                        (ctrl_c_is_break and scancode == scancode.c))
                     and self.mod & modifier[scancode.CTRL]):
             raise error.Break()
         elif (self.home_key_active and eascii.upper() == 'B'):
