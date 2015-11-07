@@ -790,10 +790,28 @@ if sdl2:
         sdl2.SDLK_PAGEDOWN: scancode.PAGEDOWN,
         sdl2.SDLK_KP_0: scancode.KP0,
         sdl2.SDLK_INSERT: scancode.INSERT,
-        # keypad dot, times, div, enter ?
         # various
         sdl2.SDLK_DELETE: scancode.DELETE,
         sdl2.SDLK_PAUSE: scancode.BREAK,
+        sdl2.SDL_SCANCODE_NONUSBACKSLASH: scancode.INT1,
+        # windows keys
+        sdl2.SDL_SCANCODE_LGUI: scancode.LSUPER,
+        sdl2.SDL_SCANCODE_RGUI: scancode.RSUPER,
+        sdl2.SDL_SCANCODE_MENU: scancode.MENU,
+        # Japanese keyboards
+        # mapping to SDL scancodes unknown
+        #HIRAGANA_KATAKANA = 0x70
+        # backslash/underscore on Japanese keyboard
+        #INT3 = 0x73
+        #HENKAN = 0x79
+        # this is a guess based on https://wiki.libsdl.org/SDL_Scancode
+        # and http://www.quadibloc.com/comp/scan.htm
+        sdl2.SDL_SCANCODE_LANG4: scancode.MUHENKAN,
+        sdl2.SDL_SCANCODE_LANG5: scancode.ZENKAKU_HANKAKU,
+        sdl2.SDL_SCANCODE_INTERNATIONAL3: scancode.INT4,
+        # Korean keyboards
+        sdl2.SDL_SCANCODE_LANG2: scancode.HANJA,
+        sdl2.SDL_SCANCODE_LANG1: scancode.HAN_YEONG,
     }
 
 prepare()
