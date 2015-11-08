@@ -178,7 +178,7 @@ class ClipboardInterface(object):
         text_rows[0] = text_rows[0][start[1]-1:]
         if stop[1] < self.width:
             text_rows[-1] = text_rows[-1][:stop[1]-self.width-1]
-        text = '\n'.join(''.join(row) for row in text_rows)
+        text = '\n'.join(''.join(row) for row in text_rows).decode('utf-8')
         self.clipboard_handler.copy(text, mouse)
 
     def paste(self, mouse=False):

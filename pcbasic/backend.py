@@ -14,7 +14,6 @@ import config
 import state
 import timedate
 import scancode
-import unicodepage
 import error
 
 
@@ -223,9 +222,8 @@ def check_input():
         elif signal.event_type == STICK_MOVED:
             state.console_state.stick.moved(*signal.params)
         elif signal.event_type == CLIP_PASTE:
-            # params is a utf-8 string
-            str = signal.params.decode('utf-8', errors='ignore')
-            state.console_state.keyb.insert_chars(str, check_full=False)
+            # params is a unicode string
+            state.console_state.keyb.insert_chars(signal.params, check_full=False)
 
 
 ###############################################################################

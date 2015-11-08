@@ -647,7 +647,7 @@ class PygameClipboard(clipboard.Clipboard):
             self.ok = False
 
     def copy(self, text, mouse=False):
-        """ Put text on clipboard. """
+        """ Put unicode text on clipboard. """
         if mouse:
             pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
         else:
@@ -655,19 +655,20 @@ class PygameClipboard(clipboard.Clipboard):
         try:
             if plat.system == 'Windows':
                 # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
-                pygame.scrap.put('text/plain;charset=utf-8', text.decode('utf-8').encode('utf-16le') + '\0\0')
+                # but give it a utf-8 MIME type, because that's how Windows likes it
+                pygame.scrap.put('text/plain;charset=utf-8', text.encode('utf-16le') + '\0\0')
             else:
-                pygame.scrap.put(pygame.SCRAP_TEXT, text)
+                pygame.scrap.put(pygame.SCRAP_TEXT, text.encode('utf-8'))
         except KeyError:
             logging.debug('Clipboard copy failed for clip %s', repr(text))
 
     def paste(self, mouse=False):
-        """ Return text from clipboard. """
+        """ Return unicode text from clipboard. """
         if mouse:
             pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
         else:
             pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
-        us = None
+        us = ''
         available = pygame.scrap.get_types()
         for text_type in self.text:
             if text_type not in available:
@@ -679,14 +680,12 @@ class PygameClipboard(clipboard.Clipboard):
             if text_type == 'text/plain;charset=utf-8':
                 # it's lying, it's giving us UTF16 little-endian
                 # ignore any bad UTF16 characters from outside
-                us = us.decode('utf-16le', 'ignore')
-            # null-terminated strings
-            us = us[:us.find('\0')]
-            us = us.encode('utf-8')
-        if not us:
-            return ''
-        return clipboard.utf8_to_cp(us)
-
+                us = us.decode('utf-16le', errors='ignore')
+            # remove null-terminator
+            us = us[:us.find(u'\0')]
+        else:
+            us = us.decode('utf-8', errors='ignore')
+        return us or u''
 
 def get_clipboard_handler():
     """ Get a working Clipboard handler object. """

@@ -7,20 +7,19 @@ This file is released under the GNU GPL version 3.
 """
 
 import subprocess
-import os
 import logging
+import sys
+import locale
 
 import plat
 import unicodepage
 
-# set any UTF-8 environment for subprocess
-# we're assuming en_US locale always exists
-env = os.environ
-env['LANG'] = 'en_US.UTF-8'
 
 def prepare():
     """ Prepare the clipboard module. """
-    pass
+    global encoding
+    locale.setlocale(locale.LC_ALL, '')
+    encoding = locale.getpreferredencoding()
 
 
 class Clipboard(object):
@@ -30,12 +29,12 @@ class Clipboard(object):
         """ Initialise the clipboard handler. """
         self.ok = True
 
-    def copy(self, text_utf8, mouse=False):
-        """ Put text on clipboard. """
+    def copy(self, text, mouse=False):
+        """ Put unicode text on clipboard. """
         pass
 
     def paste(self, mouse=False):
-        """ Return text from clipboard. """
+        """ Return unicode text from clipboard. """
         return ''
 
 
@@ -43,14 +42,15 @@ class MacClipboard(Clipboard):
     """ Clipboard handling for OSX. """
 
     def paste(self, mouse=False):
-        """ Get text from clipboard. """
-        return utf8_to_cp(subprocess.check_output('pbpaste', env=env))
+        """ Get unicode text from clipboard. """
+        return (subprocess.check_output('pbpaste', env=env)
+                .decode(encoding).replace('\r\n','\r').replace('\n', '\r'))
 
-    def copy(self, thing, mouse=False):
-        """ Put text on clipboard. """
+    def copy(self, text, mouse=False):
+        """ Put unicode text on clipboard. """
         try:
             p = subprocess.Popen('pbcopy', env=env, stdin=subprocess.PIPE)
-            p.communicate(thing)
+            p.communicate(text.encode(encoding))
         except subprocess.CalledProcessError:
             pass
 
@@ -73,16 +73,16 @@ class XClipboard(Clipboard):
             self.ok = False
 
     def paste(self, mouse=False):
-        """ Get text from clipboard. """
+        """ Get unicode text from clipboard. """
         if mouse:
             output = subprocess.check_output((self._command, '-o'), env=env)
         else:
             output = subprocess.check_output(
                                 [self._command, '-o'] + self._notmouse, env=env)
-        return utf8_to_cp(output)
+        return output.decode(encoding).replace('\r\n','\r').replace('\n', '\r')
 
-    def copy(self, thing, mouse=False):
-        """ Put text on clipboard. """
+    def copy(self, text, mouse=False):
+        """ Put unicode text on clipboard. """
         try:
             if mouse:
                 p = subprocess.Popen((self._command, '-i'),
@@ -90,30 +90,8 @@ class XClipboard(Clipboard):
             else:
                 p = subprocess.Popen([self._command, '-i'] + self._notmouse,
                                      env=env, stdin=subprocess.PIPE)
-            p.communicate(thing)
+            p.communicate(text.encode(encoding))
         except subprocess.CalledProcessError:
             pass
-
-
-def utf8_to_cp(text_utf8):
-    """ Convert clipboard utf8 string to codepage. """
-    # ignore any bad UTF8 characters from outside
-    text = ''
-    for u in text_utf8.decode('utf-8', 'ignore'):
-        c = u.encode('utf-8')
-        last = ''
-        if c == '\n':
-            if last != '\r':
-                char = '\r'
-            else:
-                char = ''
-        else:
-            try:
-                char = unicodepage.from_utf8(c)
-            except KeyError:
-                char = c
-        text += char
-        last = c
-    return text
 
 prepare()
