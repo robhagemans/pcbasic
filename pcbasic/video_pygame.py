@@ -273,7 +273,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         else:
             # double NUL characters, as single NUL signals e-ASCII
             if c == '\0':
-                c = '\0\0'
+                c = eascii.NUL
             if plat.system == 'Windows':
                 # Windows 7 and above send AltGr as Ctrl+RAlt
                 # if 'altgr' option is off, Ctrl+RAlt is sent.

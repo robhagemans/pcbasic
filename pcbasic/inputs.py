@@ -12,6 +12,7 @@ import state
 import error
 import unicodepage
 import scancode
+import eascii
 import redirect
 
 import backend
@@ -93,15 +94,15 @@ class KeyboardBuffer(object):
             elif c == '\0':
                 d = c
 
-    def insert_keypress(self, eascii, scancode, modifier, check_full=True):
+    def insert_keypress(self, c, scancode, modifier, check_full=True):
         """ Append a single keystroke with scancode, modifier. """
         self.has_been_pressed_event[scancode] = modifier
-        if eascii:
+        if c:
             if check_full and len(self.buffer) >= self.ring_length:
                 # emit a sound signal when buffer is full (and we care)
                 state.console_state.sound.play_sound(800, 0.01)
             else:
-                self.buffer.append((eascii, scancode, modifier))
+                self.buffer.append((c, scancode, modifier))
 
     def getc(self, expand=True):
         """ Read a keystroke. """
@@ -240,16 +241,16 @@ class Keyboard(object):
         self.pause = False
         self.buf.insert(s, check_full)
 
-    def key_down(self, scan, eascii='', check_full=True):
+    def key_down(self, scan, c='', check_full=True):
         """ Insert a key-down event by scancode and eascii or utf-8 code. """
         # emulator home-key (f12) replacements
         # f12+b -> ctrl+break is handled separately below
         if self.home_key_active:
             try:
-                scan, eascii = home_key_replacements_scancode[scan]
+                scan, c = home_key_replacements_scancode[scan]
             except KeyError:
                 try:
-                    scan, eascii = home_key_replacements_eascii[eascii.upper()]
+                    scan, c = home_key_replacements_eascii[c.upper()]
                 except KeyError:
                     pass
         # set port and low memory address regardless of event triggers
@@ -274,9 +275,9 @@ class Keyboard(object):
                 # meaning exit and delete state. This is useful on android.
             raise error.Reset()
         elif (scan in (scancode.BREAK, scancode.SCROLLOCK) or
-                        (ctrl_c_is_break and eascii == '\x03')):
+                        (ctrl_c_is_break and c == eascii.CTRL_c)):
             raise error.Break()
-        elif (self.home_key_active and eascii.upper() == 'B'):
+        elif (self.home_key_active and c.upper() == 'B'):
             raise error.Break()
         elif (scan == scancode.BREAK or
                 (scan == scancode.NUMLOCK and self.mod & modifier[scancode.CTRL])):
@@ -297,19 +298,19 @@ class Keyboard(object):
         # alt+keypad ascii replacement
         # we can't depend on internal NUM LOCK state as it doesn't get updated
         if (self.mod & modifier[scancode.ALT] and
-                len(eascii) == 1 and eascii >= '0' and eascii <= '9'):
+                len(c) == 1 and c >= '0' and c <= '9'):
             try:
                 self.keypad_ascii += scancode.keypad[scan]
                 return
             except KeyError:
                 pass
         if (self.mod & toggle[scancode.CAPSLOCK]
-                and not ignore_caps and len(eascii) == 1):
-            if eascii >= 'a' and eascii <= 'z':
-                eascii = chr(ord(eascii)-32)
-            elif eascii >= 'A' and eascii <= 'Z':
-                eascii = chr(ord(eascii)+32)
-        self.buf.insert_keypress(eascii, scan, self.mod, check_full=True)
+                and not ignore_caps and len(c) == 1):
+            if c >= 'a' and c <= 'z':
+                c = chr(ord(c)-32)
+            elif c >= 'A' and c <= 'Z':
+                c = chr(ord(c)+32)
+        self.buf.insert_keypress(c, scan, self.mod, check_full=True)
 
     def key_up(self, scan):
         """ Insert a key-up event. """
@@ -324,7 +325,7 @@ class Keyboard(object):
         if scan == scancode.ALT and self.keypad_ascii:
             char = chr(int(self.keypad_ascii)%256)
             if char == '\0':
-                char = '\0\0'
+                char = eascii.NUL
             self.buf.insert(char, check_full=True)
             self.keypad_ascii = ''
         elif scan == scancode.F12:
@@ -337,12 +338,11 @@ class Keyboard(object):
 state.console_state.key_replace = [
     'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
     'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
-# default function key eascii codes for KEY autotext. F1-F10
-# F11 and F12 here are TANDY eascii codes only!
+# default function key eascii codes for KEY autotext.
 function_key = {
-    '\0\x3b': 0, '\0\x3c': 1, '\0\x3d': 2, '\0\x3e': 3,
-    '\0\x3f': 4, '\0\x40': 5, '\0\x41': 6, '\0\x42': 7,
-    '\0\x43': 8, '\0\x44': 9, '\x98': 10, '\x99': 11}
+    eascii.F1: 0, eascii.F2: 1, eascii.F3: 2, eascii.F4: 3,
+    eascii.F5: 4, eascii.F6: 5, eascii.F7: 6, eascii.F8: 7,
+    eascii.F9: 8, eascii.F10: 9, eascii.F11: 10, eascii.F12: 11}
 # switch off macro repacements
 state.basic_state.key_macros_off = False
 

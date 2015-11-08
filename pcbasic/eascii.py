@@ -9,6 +9,9 @@ This file is released under the GNU GPL version 3.
 # based on Tandy-1000 basic manual, modified for IBM PC keyboard
 # we don't specify the standard ASCII character values here
 # nor the CTRL+a -> '\x01' etc. series
+# except where convenient
+NUL = '\0\0'
+CTRL_c = '\x03'
 
 ESCAPE = '\x1B'
 SHIFT_ESCAPE = '\x1B'
