@@ -42,11 +42,17 @@ def prepare_redirects():
         except EnvironmentError as e:
             logging.warning('Could not open input file %s: %s', option_input, e.strerror)
 
-def set_input(f):
+def set_input(f, encoding=None):
     """ BASIC-style redirected input. """
     global input_closed
     # read everything
-    all_input = f.read().decode('utf-8')
+    all_input = f.read()
+    if encoding:
+        all_input = all_input.decode(encoding)
+    else:
+        # raw input means it's already in the BASIC codepage
+        # but the keyboard functions use unicode
+        all_input = unicodepage.Converter(preserve_control=True).to_unicode(all_input)
     last = ''
     for c in all_input:
         # replace CRLF with CR
@@ -55,21 +61,21 @@ def set_input(f):
         last = c
     input_closed = True
 
-def set_output(f, utf8=False):
-    """ Redirected output as raw bytes or UTF-8 """
-    if not utf8:
+def set_output(f, encoding=None):
+    """ Redirected output as raw bytes or UTF-8 or other encoding """
+    if not encoding:
         echo = partial(echo_raw, f=f)
     else:
-        echo = partial(echo_utf8, f=f)
+        echo = partial(echo_encoded, f=f, encoding=encoding)
     output_echos.append(echo)
 
 def echo_raw(s, f):
     """ Output redirection echo as raw bytes. """
     f.write(str(s))
 
-def echo_utf8(s, f):
-    """ Output redirection echo as UTF-8. """
-    f.write(uniconv.to_unicode(str(s)).encode('utf-8'))
+def echo_encoded(s, f, encoding='utf-8'):
+    """ Output redirection echo as UTF-8 or other encoding. """
+    f.write(uniconv.to_unicode(str(s)).encode(encoding))
 
 def toggle_echo(device):
     """ Toggle copying of all screen I/O to LPT1. """
