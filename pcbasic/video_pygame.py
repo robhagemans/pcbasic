@@ -154,6 +154,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.altgr = kwargs['altgr']
         if not self.altgr:
             key_to_scan[pygame.K_RALT] = scancode.ALT
+            mod_to_scan[pygame.KMOD_RALT] = scancode.ALT
 
     def close(self):
         """ Close the pygame interface. """
@@ -238,10 +239,11 @@ class VideoPygame(video_graphical.VideoGraphical):
 
     def _handle_key_down(self, e):
         """ Handle key-down event. """
-        c = u''
-        mods = pygame.key.get_mods()
-        # current key pressed; modifiers handled by backend interface
+        # get scancode
         scan = key_to_scan.get(e.key, None)
+        # get modifiers
+        mod = [s for m, s in mod_to_scan.iteritems() if e.mod & m]
+        # get eascii
         try:
             if e.mod & pygame.KMOD_LALT or (not self.altgr and e.mod & pygame.KMOD_RALT):
                 c = alt_key_to_eascii[e.key]
@@ -259,6 +261,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                 c = unichr(key - ord('A') + 1)
             else:
                 c = e.unicode
+        # handle F11 home-key
         if e.key == pygame.K_F11:
             self.f11_active = True
             self.clipboard.start(self.cursor_row, self.cursor_col)
@@ -273,17 +276,9 @@ class VideoPygame(video_graphical.VideoGraphical):
             # double NUL characters, as single NUL signals e-ASCII
             if c == u'\0':
                 c = eascii.NUL
-            if plat.system == 'Windows':
-                # Windows 7 and above send AltGr as Ctrl+RAlt
-                # if 'altgr' option is off, Ctrl+RAlt is sent.
-                # if 'altgr' is on, the RAlt key is being ignored
-                # but a Ctrl keydown event has already been sent
-                # so send keyup event to tell backend to release Ctrl modifier
-                if e.key == pygame.K_RALT:
-                    backend.input_queue.put(backend.Event(backend.KEYB_UP,
-                                                          scancode.CTRL))
             # insert into keyboard queue
-            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, c)))
+            backend.input_queue.put(backend.Event(
+                                    backend.KEYB_DOWN, (c, scan, mod)))
 
     def _handle_key_up(self, e):
         """ Handle key-up event. """
@@ -292,8 +287,8 @@ class VideoPygame(video_graphical.VideoGraphical):
             self.f11_active = False
         # last key released gets remembered
         try:
-            backend.input_queue.put(backend.Event(backend.KEYB_UP,
-                                                  key_to_scan[e.key]))
+            backend.input_queue.put(backend.Event(
+                                    backend.KEYB_UP, key_to_scan[e.key]))
         except KeyError:
             pass
 
@@ -934,6 +929,14 @@ if pygame:
         pygame.K_SPACE: eascii.ALT_SPACE,
         pygame.K_PRINT: eascii.ALT_PRINT,
         pygame.K_KP5: eascii.ALT_KP5,
+    }
+
+    mod_to_scan = {
+        pygame.KMOD_LSHIFT: scancode.LSHIFT,
+        pygame.KMOD_RSHIFT: scancode.RSHIFT,
+        pygame.KMOD_LCTRL: scancode.CTRL,
+        pygame.KMOD_RCTRL: scancode.CTRL,
+        pygame.KMOD_LALT: scancode.ALT,
     }
 
 def apply_composite_artifacts(screen, pixels=4):

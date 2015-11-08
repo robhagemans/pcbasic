@@ -202,11 +202,10 @@ def check_input():
             raise error.Break()
         elif signal.event_type == KEYB_CHAR:
             # params is a unicode sequence
-            state.console_state.keyb.insert_chars(signal.params, check_full=True)
+            state.console_state.keyb.insert_chars(signal.params)
         elif signal.event_type == KEYB_DOWN:
-            # params is scancode and e-ASCII/unicode character sequence
-            scan, eascii = signal.params
-            state.console_state.keyb.key_down(scan, eascii, check_full=True)
+            # params is e-ASCII/unicode character sequence, scancode, modifier
+            state.console_state.keyb.key_down(*signal.params)
         elif signal.event_type == KEYB_UP:
             state.console_state.keyb.key_up(signal.params)
         elif signal.event_type == PEN_DOWN:

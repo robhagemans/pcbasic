@@ -176,7 +176,7 @@ class VideoCurses(video.VideoPlugin):
                 if scan or c:
                     #check_full=False?
                     backend.input_queue.put(backend.Event(
-                                backend.KEYB_DOWN, (scan, c)))
+                                            backend.KEYB_DOWN, (c, scan, [])))
             if i == curses.KEY_F12:
                 self.f12_active = True
         # convert into unicode chars
@@ -184,10 +184,11 @@ class VideoCurses(video.VideoPlugin):
         # then handle these one by one
         for c in u:
             #check_full=False?
-            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (None, c)))
+            backend.input_queue.put(backend.Event(
+                                    backend.KEYB_DOWN, (c, None, [])))
             if self.f12_active:
                 backend.input_queue.put(backend.Event(
-                                backend.KEYB_UP, scancode.F12))
+                                        backend.KEYB_UP, scancode.F12))
                 self.f12_active = False
 
     def _redraw(self):

@@ -57,7 +57,7 @@ def set_input(f, encoding=None):
     for c in all_input:
         # replace CRLF with CR
         if not (c == u'\n' and last == u'\r'):
-            state.console_state.keyb.insert_chars(c)
+            state.console_state.keyb.insert_chars(c, check_full=False)
         last = c
     input_closed = True
 

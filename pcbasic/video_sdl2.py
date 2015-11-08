@@ -132,6 +132,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.altgr = kwargs['altgr']
         if not self.altgr:
             scan_to_scan[sdl2.SDL_SCANCODE_RALT] = scancode.ALT
+            mod_to_scan[sdl2.KMOD_RALT] = scancode.ALT
 
     def close(self):
         """ Close the SDL2 interface. """
@@ -232,11 +233,15 @@ class VideoSDL2(video_graphical.VideoGraphical):
             elif event.type == sdl2.SDL_WINDOWEVENT:
                 if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
                     self._resize_display(event.window.data1, event.window.data2)
-                if event.window.event == sdl2.SDL_WINDOWEVENT_FOCUS_LOST:
-                    # hack: send a key-up for alt in case we used alt-tab
-                    # because the key-up won't be registered
-                    backend.input_queue.put(backend.Event(
-                                                backend.KEYB_UP, scancode.ALT))
+                # unset Alt modifiers on entering/leaving the window
+                # workaround for what seems to be an SDL2 bug
+                # where the ALT modifier sticks on the first Alt-Tab out
+                # of the window
+                elif event.window.event in (sdl2.SDL_WINDOWEVENT_LEAVE,
+                        sdl2.SDL_WINDOWEVENT_ENTER,
+                        sdl2.SDL_WINDOWEVENT_FOCUS_LOST,
+                        sdl2.SDL_WINDOWEVENT_FOCUS_GAINED):
+                    sdl2.SDL_SetModState(sdl2.SDL_GetModState() & ~sdl2.KMOD_ALT)
             elif event.type == sdl2.SDL_QUIT:
                 if self.nokill:
                     self.set_caption_message('to exit type <CTRL+BREAK> <ESC> SYSTEM')
@@ -246,10 +251,11 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def _handle_key_down(self, e):
         """ Handle key-down event. """
-        try:
-            scan = scan_to_scan[e.key.keysym.scancode]
-        except KeyError:
-            scan = None
+        # get scancode
+        scan = scan_to_scan.get(e.key.keysym.scancode, None)
+        # get modifiers
+        mod = [s for m, s in mod_to_scan.iteritems() if e.key.keysym.mod & m]
+        # get eascii
         try:
             if e.key.keysym.mod & sdl2.KMOD_LALT or (not self.altgr and e.key.keysym.mod & sdl2.KMOD_RALT):
                 c = alt_scan_to_eascii[e.key.keysym.scancode]
@@ -260,6 +266,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             else:
                 c = key_to_eascii[e.key.keysym.sym]
         except KeyError:
+            # try control+letter -> control codes
             key = e.key.keysym.sym
             if e.key.keysym.mod & sdl2.KMOD_CTRL and key >= ord('a') and key <= ord('z'):
                 c = unichr(key - ord('a') + 1)
@@ -269,34 +276,27 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 c = u''
         if c == u'\0':
             c = eascii.NUL
+        # handle F11 home-key combinations
         if e.key.keysym.sym == sdl2.SDLK_F11:
             self.f11_active = True
             self.clipboard.start(self.cursor_row, self.cursor_col)
         elif self.f11_active:
             self.clipboard.handle_key(scan, c)
         else:
-            if plat.system == 'Windows':
-                # Windows 7 and above send AltGr as Ctrl+RAlt
-                # if 'altgr' option is off, Ctrl+RAlt is sent.
-                # if 'altgr' is on, the RAlt key is being ignored
-                # but a Ctrl keydown event has already been sent
-                # so send keyup event to tell backend to release Ctrl modifier
-                if e.key.keysym.sym == sdl2.SDLK_RALT:
-                    backend.input_queue.put(backend.Event(backend.KEYB_UP,
-                                                          scancode.CTRL))
             # keep scancode in buffer
             # to combine with text event
             # flush buffer on next key down, text event or end of loop
             if scan is not None:
                 self._flush_keypress()
-                self.last_down = scan, c, e.key.timestamp
+                self.last_down = c, scan, mod, e.key.timestamp
 
     def _flush_keypress(self):
         """ Flush last keypress from buffer. """
         if self.last_down is not None:
             # insert into keyboard queue; no text event
-            scan, c, _ = self.last_down
-            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (scan, c)))
+            c, scan, mod, _ = self.last_down
+            backend.input_queue.put(backend.Event(
+                                    backend.KEYB_DOWN, (c, scan, mod)))
             self.last_down = None
 
     def _handle_key_up(self, e):
@@ -325,22 +325,22 @@ class VideoSDL2(video_graphical.VideoGraphical):
         elif self.last_down is None:
             # no key down event waiting: other input method
             backend.input_queue.put(backend.Event(
-                    backend.KEYB_CHAR, c))
+                                    backend.KEYB_CHAR, c))
         else:
-            scan, eascii, ts = self.last_down
+            eascii, scan, mod, ts = self.last_down
             if eascii:
                 c = eascii
             if ts == event.text.timestamp:
                 # combine if same time stamp
                 backend.input_queue.put(backend.Event(
-                        backend.KEYB_DOWN, (scan, c)))
+                                        backend.KEYB_DOWN, (c, scan, mod)))
             else:
                 # two separate events
                 # previous keypress has no corresponding textinput
                 self._flush_keypress()
                 # current textinput has no corresponding keypress
                 backend.input_queue.put(backend.Event(
-                        backend.KEYB_CHAR, c))
+                                        backend.KEYB_CHAR, c))
             self.last_down = None
 
 
@@ -655,7 +655,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                                                     glyph*(attr-back) + back)
         if underline:
             sdl2.SDL_FillRect(
-                self.canvas[self.apagenum], 
+                self.canvas[self.apagenum],
                 sdl2.SDL_Rect(x0, y0 + self.font_height - 1, glyph_width, 1),
                 attr)
         self.screen_changed = True
@@ -996,4 +996,11 @@ if sdl2:
         sdl2.SDL_SCANCODE_KP_5: eascii.ALT_KP5,
     }
 
+    mod_to_scan = {
+        sdl2.KMOD_LSHIFT: scancode.LSHIFT,
+        sdl2.KMOD_RSHIFT: scancode.RSHIFT,
+        sdl2.KMOD_LCTRL: scancode.CTRL,
+        sdl2.KMOD_RCTRL: scancode.CTRL,
+        sdl2.KMOD_LALT: scancode.ALT,
+    }
 prepare()

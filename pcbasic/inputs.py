@@ -234,13 +234,13 @@ class Keyboard(object):
         self.wait_char()
         return self.buf.getc()
 
-    def insert_chars(self, us, check_full=False):
+    def insert_chars(self, us, check_full=True):
         """ Insert eascii/unicode string into keyboard buffer. """
         self.pause = False
         self.buf.insert(unicodepage.str_from_unicode(us), check_full)
 
-    def key_down(self, scan, c=u'', check_full=True):
-        """ Insert a key-down event by scancode and eascii/unicode. """
+    def key_down(self, c, scan, mods, check_full=True):
+        """ Insert a key-down event by eascii/unicode, scancode and modifiers. """
         # emulator home-key (f12) replacements
         # f12+b -> ctrl+break is handled separately below
         if self.home_key_active:
@@ -255,39 +255,38 @@ class Keyboard(object):
         self.pause = False
         if scan is not None:
             self.last_scancode = scan
-        # set modifier status
-        try:
-            self.mod |= modifier[scan]
-        except KeyError:
-           pass
+        # update ephemeral modifier status at every keypress
+        # mods is a list of scancodes; OR together the known modifiers
+        self.mod &= ~(modifier[scancode.CTRL] | modifier[scancode.ALT] | modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])
+        for m in mods:
+            self.mod |= modifier.get(m, 0)
         # set toggle-key modifier status
+        # these are triggered by keydown events
         try:
            self.mod ^= toggle[scan]
         except KeyError:
            pass
         # handle BIOS events
         if (scan == scancode.DELETE and
-                    self.mod & modifier[scancode.CTRL] and
-                    self.mod & modifier[scancode.ALT]):
-                # ctrl-alt-del: if not captured by the OS, reset the emulator
-                # meaning exit and delete state. This is useful on android.
+                    scancode.CTRL in mods and scancode.ALT in mods):
+            # ctrl-alt-del: if not captured by the OS, reset the emulator
+            # meaning exit and delete state. This is useful on android.
             raise error.Reset()
         elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) and
-                self.mod & modifier[scancode.CTRL]) or
+                scancode.CTRL in mods) or
                 (ctrl_c_is_break and c == eascii.CTRL_c)):
             raise error.Break()
         elif (self.home_key_active and c.upper() == u'B'):
             raise error.Break()
         elif (scan == scancode.BREAK or
-                (scan == scancode.NUMLOCK and self.mod & modifier[scancode.CTRL])):
+                (scan == scancode.NUMLOCK and scancode.CTRL in mods)):
             self.pause = True
             return
         elif scan == scancode.PRINT:
-            if (self.mod &
-                    (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])):
+            if (scancode.LSHIFT in mods or scancode.RSHIFT in mods):
                 # shift + printscreen
                 state.console_state.screen.print_screen()
-            if self.mod & modifier[scancode.CTRL]:
+            elif scancode.CTRL in mods:
                 # ctrl + printscreen
                 redirect.toggle_echo(state.io_state.lpt1_file)
         # F12 emulator home key combinations
@@ -296,7 +295,7 @@ class Keyboard(object):
             return
         # alt+keypad ascii replacement
         # we can't depend on internal NUM LOCK state as it doesn't get updated
-        if (self.mod & modifier[scancode.ALT] and len(c) == 1):
+        if (scancode.ALT in mods and len(c) == 1):
             try:
                 self.keypad_ascii += scancode.keypad[scan]
                 return

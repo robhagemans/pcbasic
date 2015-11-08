@@ -111,15 +111,16 @@ class VideoCLI(video.VideoPlugin):
         elif uc == u'\x7f':
             # backspace
             backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
-                                        (scancode.BACKSPACE, eascii.BACKSPACE)))
+                                    (eascii.BACKSPACE, scancode.BACKSPACE, [])))
         elif sc or uc:
             # check_full=False?
-            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (sc, uc)))
+            backend.input_queue.put(backend.Event(
+                                    backend.KEYB_DOWN, (uc, sc, [])))
             if sc == scancode.F12:
                 self.f12_active = True
             else:
                 backend.input_queue.put(backend.Event(
-                                            backend.KEYB_UP, scancode.F12))
+                                        backend.KEYB_UP, scancode.F12))
                 self.f12_active = False
 
     ###############################################################################
