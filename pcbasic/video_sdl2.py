@@ -263,12 +263,12 @@ class VideoSDL2(video_graphical.VideoGraphical):
         except KeyError:
             key = e.key.keysym.sym
             if e.key.keysym.mod & sdl2.KMOD_CTRL and key >= ord('a') and key <= ord('z'):
-                c = chr(key - ord('a') + 1)
+                c = unichr(key - ord('a') + 1)
             elif e.key.keysym.mod & sdl2.KMOD_CTRL and key >= ord('[') and key <= ord('_'):
-                c = chr(key - ord('A') + 1)
+                c = unichr(key - ord('A') + 1)
             else:
-                c = ''
-        if c == '\0':
+                c = u''
+        if c == u'\0':
             c = eascii.NUL
         if e.key.keysym.sym == sdl2.SDLK_F11:
             self.f11_active = True
@@ -314,10 +314,10 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def _handle_text_input(self, event):
         """ Handle text-input event. """
-        c = event.text.text
+        c = event.text.text.decode('utf-8')
         if self.f11_active:
             # F11+f to toggle fullscreen mode
-            if c.upper() == 'F':
+            if c.upper() == u'F':
                 self.fullscreen = not self.fullscreen
                 self._do_create_window(*self._find_display_size(
                                 self.size[0], self.size[1], self.border_width))

@@ -225,11 +225,11 @@ class ClipboardInterface(object):
         """ Handle keyboard clipboard commands. """
         if not self._active:
             return
-        if c.upper() == 'C':
+        if c.upper() == u'C':
             self.copy()
-        elif c.upper() == 'V':
+        elif c.upper() == u'V':
             self.paste()
-        elif c.upper() == 'A':
+        elif c.upper() == u'A':
             # select all
             self.select_start = [1, 1]
             self.move(self.height, self.width+1)

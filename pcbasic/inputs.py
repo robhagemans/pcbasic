@@ -48,12 +48,7 @@ def prepare():
     else:
         keystring = config.get('keys').decode('string_escape').decode('utf-8')
     state.console_state.keyb = Keyboard()
-    for u in keystring:
-        c = u.encode('utf-8')
-        try:
-            state.console_state.keyb.buf.insert(unicodepage.from_utf8(c), check_full=False)
-        except KeyError:
-            state.console_state.keyb.buf.insert(c, check_full=False)
+    state.console_state.keyb.buf.insert(unicodepage.str_from_unicode(keystring), check_full=False)
     # handle caps lock only if requested
     ignore_caps = not config.get('capture-caps')
     # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
@@ -66,11 +61,13 @@ class KeyboardBuffer(object):
 
     def __init__(self, ring_length, s=''):
         """ Initialise to given length. """
+        # buffer holds tuples (eascii/codepage, scancode, modifier)
         self.buffer = []
         self.ring_length = ring_length
         self.start = 0
         self.insert(s)
         # expansion buffer for keyboard macros; also used for DBCS
+        # expansion vessel holds codepage chars
         self.expansion_vessel = []
         # dict (scancode: modifier) of all keys that have been pressed for event polls
         # includes keys that have not made it into the buffer
@@ -84,28 +81,29 @@ class KeyboardBuffer(object):
         """ True if no keystrokes in buffer. """
         return len(self.buffer) == 0 and len(self.expansion_vessel) == 0
 
-    def insert(self, s, check_full=True):
-        """ Append a string of e-ascii/utf-8 keystrokes. Does not trigger events (we have no scancodes). """
+    def insert(self, cp_s, check_full=True):
+        """ Append a string of e-ascii/codepage as keystrokes. Does not trigger events (we have no scancodes). """
         d = ''
-        for c in s:
+        for c in cp_s:
             if d or c != '\0':
                 self.insert_keypress(d+c, None, None, check_full)
                 d = ''
             elif c == '\0':
+                # eascii code is \0 plus one char
                 d = c
 
-    def insert_keypress(self, c, scancode, modifier, check_full=True):
-        """ Append a single keystroke with scancode, modifier. """
+    def insert_keypress(self, cp_c, scancode, modifier, check_full=True):
+        """ Append a single keystroke with eascii/codepage, scancode, modifier. """
         self.has_been_pressed_event[scancode] = modifier
-        if c:
+        if cp_c:
             if check_full and len(self.buffer) >= self.ring_length:
                 # emit a sound signal when buffer is full (and we care)
                 state.console_state.sound.play_sound(800, 0.01)
             else:
-                self.buffer.append((c, scancode, modifier))
+                self.buffer.append((cp_c, scancode, modifier))
 
     def getc(self, expand=True):
-        """ Read a keystroke. """
+        """ Read a keystroke as eascii/codepage. """
         try:
             return self.expansion_vessel.pop(0)
         except IndexError:
@@ -134,7 +132,7 @@ class KeyboardBuffer(object):
             return (None, None)
 
     def peek(self):
-        """ Show top keystroke in keyboard buffer. """
+        """ Show top keystroke in keyboard buffer as eascii/codepage. """
         try:
             return self.buffer[0][0]
         except IndexError:
@@ -162,7 +160,7 @@ class KeyboardBuffer(object):
         return index
 
     def ring_read(self, index):
-        """ Read character at position i in ring. """
+        """ Read character at position i in ring as eascii/codepage. """
         index = self.ring_index(index)
         if index == self.ring_length:
             # marker of buffer position
@@ -173,7 +171,7 @@ class KeyboardBuffer(object):
             return '\0\0', 0
 
     def ring_write(self, index, c, scan):
-        """ Write character at position i in ring. """
+        """ Write character at position i in ring as eascii/codepage. """
         index = self.ring_index(index)
         if index < self.ring_length:
             try:
@@ -188,7 +186,7 @@ class KeyboardBuffer(object):
         start_index = self.ring_index(start)
         stop_index = self.ring_index(stop)
         self.buffer = self.buffer[start_index:] + self.buffer[:stop_index]
-        self.buffer += [('\0', None, None)]*(length - len(self.buffer))
+        self.buffer += [('\0\0', None, None)]*(length - len(self.buffer))
         self.start = start
 
 
@@ -236,13 +234,13 @@ class Keyboard(object):
         self.wait_char()
         return self.buf.getc()
 
-    def insert_chars(self, s, check_full=False):
-        """ Insert eascii/utf-8 characters into keyboard buffer. """
+    def insert_chars(self, us, check_full=False):
+        """ Insert eascii/unicode string into keyboard buffer. """
         self.pause = False
-        self.buf.insert(s, check_full)
+        self.buf.insert(unicodepage.str_from_unicode(us), check_full)
 
-    def key_down(self, scan, c='', check_full=True):
-        """ Insert a key-down event by scancode and eascii or utf-8 code. """
+    def key_down(self, scan, c=u'', check_full=True):
+        """ Insert a key-down event by scancode and eascii/unicode. """
         # emulator home-key (f12) replacements
         # f12+b -> ctrl+break is handled separately below
         if self.home_key_active:
@@ -277,7 +275,7 @@ class Keyboard(object):
         elif (scan in (scancode.BREAK, scancode.SCROLLOCK) or
                         (ctrl_c_is_break and c == eascii.CTRL_c)):
             raise error.Break()
-        elif (self.home_key_active and c.upper() == 'B'):
+        elif (self.home_key_active and c.upper() == u'B'):
             raise error.Break()
         elif (scan == scancode.BREAK or
                 (scan == scancode.NUMLOCK and self.mod & modifier[scancode.CTRL])):
@@ -297,8 +295,7 @@ class Keyboard(object):
             return
         # alt+keypad ascii replacement
         # we can't depend on internal NUM LOCK state as it doesn't get updated
-        if (self.mod & modifier[scancode.ALT] and
-                len(c) == 1 and c >= '0' and c <= '9'):
+        if (self.mod & modifier[scancode.ALT] and len(c) == 1):
             try:
                 self.keypad_ascii += scancode.keypad[scan]
                 return
@@ -306,11 +303,9 @@ class Keyboard(object):
                 pass
         if (self.mod & toggle[scancode.CAPSLOCK]
                 and not ignore_caps and len(c) == 1):
-            if c >= 'a' and c <= 'z':
-                c = chr(ord(c)-32)
-            elif c >= 'A' and c <= 'Z':
-                c = chr(ord(c)+32)
-        self.buf.insert_keypress(c, scan, self.mod, check_full=True)
+            c = c.swapcase()
+        self.buf.insert_keypress(
+                unicodepage.from_unicode(c), scan, self.mod, check_full=True)
 
     def key_up(self, scan):
         """ Insert a key-up event. """
@@ -323,8 +318,8 @@ class Keyboard(object):
            pass
         # ALT+keycode
         if scan == scancode.ALT and self.keypad_ascii:
-            char = chr(int(self.keypad_ascii)%256)
-            if char == '\0':
+            char = unichr(int(self.keypad_ascii)%256)
+            if char == u'\0':
                 char = eascii.NUL
             self.buf.insert(char, check_full=True)
             self.keypad_ascii = ''
@@ -358,29 +353,29 @@ def expand_key(c):
 # F12 emulator home-key
 # also f12+b -> ctrl+break
 home_key_replacements_scancode = {
-    scancode.LEFT: (scancode.KP4, '4'),
-    scancode.RIGHT: (scancode.KP6, '6'),
-    scancode.UP: (scancode.KP8, '8'),
-    scancode.DOWN: (scancode.KP2, '2'),
+    scancode.LEFT: (scancode.KP4, u'4'),
+    scancode.RIGHT: (scancode.KP6, u'6'),
+    scancode.UP: (scancode.KP8, u'8'),
+    scancode.DOWN: (scancode.KP2, u'2'),
 }
 
 home_key_replacements_eascii = {
-    '0': (scancode.KP0, '0'),
-    '1': (scancode.KP1, '1'),
-    '2': (scancode.KP2, '2'),
-    '3': (scancode.KP3, '3'),
-    '4': (scancode.KP4, '4'),
-    '5': (scancode.KP5, '5'),
-    '6': (scancode.KP6, '6'),
-    '7': (scancode.KP7, '7'),
-    '8': (scancode.KP8, '8'),
-    '9': (scancode.KP9, '9'),
-    '+': (scancode.KPPLUS, '+'),
-    '-': (scancode.KPMINUS, '-'),
-    'P': (scancode.BREAK, ''),
-    'N': (scancode.NUMLOCK, ''),
-    'S': (scancode.SCROLLOCK, ''),
-    'C': (scancode.CAPSLOCK, ''),
+    u'0': (scancode.KP0, u'0'),
+    u'1': (scancode.KP1, u'1'),
+    u'2': (scancode.KP2, u'2'),
+    u'3': (scancode.KP3, u'3'),
+    u'4': (scancode.KP4, u'4'),
+    u'5': (scancode.KP5, u'5'),
+    u'6': (scancode.KP6, u'6'),
+    u'7': (scancode.KP7, u'7'),
+    u'8': (scancode.KP8, u'8'),
+    u'9': (scancode.KP9, u'9'),
+    u'+': (scancode.KPPLUS, u'+'),
+    u'-': (scancode.KPMINUS, u'-'),
+    u'P': (scancode.BREAK, u''),
+    u'N': (scancode.NUMLOCK, u''),
+    u'S': (scancode.SCROLLOCK, u''),
+    u'C': (scancode.CAPSLOCK, u''),
 }
 
 ###############################################################################

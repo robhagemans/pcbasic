@@ -171,7 +171,15 @@ def from_utf8(c):
 
 def from_unicode(uc):
     """ Convert unicode char to codepage char sequence. """
-    return unicode_to_cp[uc]
+    try:
+        # try to codepage-encode the one-char UTF8 byte sequence
+        return unicode_to_cp[uc]
+    except KeyError:
+        # pass control sequences as ascii. this includes \r.
+        # control sequences are not in the dictionary
+        # because it holds their graphical replacement characters.
+        # ignore everything else (unicode chars not in codepage)
+        return uc.encode('ascii', errors='ignore')
 
 def str_from_utf8(s):
     """ Convert utf8 string to codepage string. """
@@ -187,15 +195,7 @@ def str_from_utf8(s):
 
 def str_from_unicode(ucs):
     """ Convert unicode string to codepage string. """
-    s = ''
-    for uc in ucs:
-        try:
-            # try to codepage-encode the one-char UTF8 byte sequence
-            s += from_unicode(uc)
-        except KeyError:
-            # pass unknown sequences as utf-8. this includes \r.
-            s += uc.encode('utf-8')
-    return s
+    return ''.join(from_unicode(uc) for uc in ucs)
 
 
 class UTF8Converter(object):

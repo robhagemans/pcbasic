@@ -202,20 +202,11 @@ def check_input():
         elif signal.event_type == KEYB_BREAK:
             raise error.Break()
         elif signal.event_type == KEYB_CHAR:
-            # params is a utf-8 character sequence
-            try:
-                cp_str = unicodepage.from_utf8(signal.params)
-            except KeyError:
-                # not in dictionary, pass unchanged (happens for e.g. \r)
-                cp_str = signal.params
-            state.console_state.keyb.insert_chars(cp_str, check_full=True)
+            # params is a unicode sequence
+            state.console_state.keyb.insert_chars(signal.params, check_full=True)
         elif signal.event_type == KEYB_DOWN:
-            # params is scancode and utf-8 or e-ASCII character sequence
+            # params is scancode and e-ASCII/unicode character sequence
             scan, eascii = signal.params
-            try:
-                eascii = unicodepage.from_utf8(eascii)
-            except KeyError:
-                pass
             state.console_state.keyb.key_down(scan, eascii, check_full=True)
         elif signal.event_type == KEYB_UP:
             state.console_state.keyb.key_up(signal.params)
@@ -233,8 +224,8 @@ def check_input():
             state.console_state.stick.moved(*signal.params)
         elif signal.event_type == CLIP_PASTE:
             # params is a utf-8 string
-            cp_str = unicodepage.str_from_utf8(signal.params)
-            state.console_state.keyb.insert_chars(cp_str, check_full=False)
+            str = signal.params.decode('utf-8', errors='ignore')
+            state.console_state.keyb.insert_chars(str, check_full=False)
 
 
 ###############################################################################
