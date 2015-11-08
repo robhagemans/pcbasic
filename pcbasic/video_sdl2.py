@@ -268,6 +268,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 c = chr(key - ord('A') + 1)
             else:
                 c = ''
+        if c == '\0':
+            c = eascii.NUL
         if e.key.keysym.sym == sdl2.SDLK_F11:
             self.f11_active = True
             self.clipboard.start(self.cursor_row, self.cursor_col)
