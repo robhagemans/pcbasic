@@ -46,7 +46,16 @@ video_backends = {
 # create the window icon
 icon = typeface.build_glyph('icon', {
     'icon': '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
-    .decode('hex')}, 16, 16)
+    .decode('hex')}, 16, 16, False, False)
+
+
+# ascii codepoints for which to repeat column 8 in column 9 (box drawing)
+# Many internet sources say this should be 0xC0--0xDF. However, that would
+# exclude the shading characters. It appears to be traced back to a mistake in
+# IBM's VGA docs. See https://01.org/linuxgraphics/sites/default/files/documentation/ilk_ihd_os_vol3_part1r2.pdf
+carry_col_9_chars = [chr(c) for c in range(0xb0, 0xdf+1)]
+# ascii codepoints for which to repeat row 8 in row 9 (box drawing)
+carry_row_9_chars = [chr(c) for c in range(0xb0, 0xdf+1)]
 
 def prepare():
     """ Prepare the video subsystem. """
@@ -70,7 +79,9 @@ def prepare():
     for mode in state.console_state.screen.mode_data.values():
         heights_needed.add(mode.font_height)
     # load the graphics fonts, including the 8-pixel RAM font
-    fonts = typeface.load_fonts(config.get('font'), heights_needed)
+    # use set() for speed - lookup is O(1) rather than O(n) for list
+    chars_needed = set(unicodepage.cp_to_unicode.values())
+    fonts = typeface.load_fonts(config.get('font'), heights_needed, chars_needed)
     fonts[9] = fonts[8]
 
 def init(interface_name):
@@ -674,10 +685,12 @@ class Screen(object):
             raise error.RunError(error.IFC)
         # preload SBCS glyphs
         try:
-            self.glyphs = { chr(c): typeface.build_glyph(chr(c),
-                                        fonts[mode_info.font_height],
-                                        mode_info.font_width, mode_info.font_height)
-                            for c in range(256) }
+            self.glyphs = {
+                chr(c): typeface.build_glyph(unicodepage.cp_to_unicode[chr(c)],
+                                fonts[mode_info.font_height],
+                                mode_info.font_width, mode_info.font_height,
+                                c in carry_col_9_chars, c in carry_row_9_chars)
+                for c in range(256) }
         except (KeyError, AttributeError):
             logging.warning(
                 'No %d-pixel font available. Could not enter video mode %s.',
@@ -688,7 +701,8 @@ class Screen(object):
             # send glyphs to backend; copy is necessary
             # as dict may change here while the other thread is working on it
             backend.video_queue.put(backend.Event(backend.VIDEO_BUILD_GLYPHS,
-                    dict((k,v) for k,v in self.glyphs.iteritems())))
+                    {unicodepage.cp_to_unicode[k]: v
+                        for k, v in self.glyphs.iteritems()}))
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
                 self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
@@ -886,7 +900,9 @@ class Screen(object):
             fore, back, blink, underline = self.split_attr(attr)
             # ensure glyph is stored
             mask = self.get_glyph(char)
-            backend.video_queue.put(backend.Event(backend.VIDEO_PUT_GLYPH, (pagenum, r, c, char,
+            uc = unicodepage.cp_to_unicode[char]
+            backend.video_queue.put(backend.Event(backend.VIDEO_PUT_GLYPH,
+                    (pagenum, r, c, uc, len(char) > 1,
                                  fore, back, blink, underline, for_keys)))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer
@@ -930,7 +946,8 @@ class Screen(object):
         if cx >= 0 and cy >= 0 and cx <= cxmax and cy <= cymax:
             self.apage.row[cy].buf[cx] = (' ', self.attr)
         fore, back, blink, underline = self.split_attr(self.attr)
-        backend.video_queue.put(backend.Event(backend.VIDEO_PUT_GLYPH, (self.apagenum, cy+1, cx+1, ' ',
+        backend.video_queue.put(backend.Event(backend.VIDEO_PUT_GLYPH,
+                (self.apagenum, cy+1, cx+1, u' ', False,
                              fore, back, blink, underline, True)))
 
     #MOVE to TextBuffer? replace with graphics_to_text_loc v.v.?
@@ -1122,11 +1139,16 @@ class Screen(object):
         try:
             mask = self.glyphs[c]
         except KeyError:
-            mask = typeface.build_glyph(c, fonts[self.mode.font_height],
-                                self.mode.font_width*2, self.mode.font_height)
+            uc = unicodepage.cp_to_unicode[c]
+            carry_col_9 = c in carry_col_9_chars
+            carry_row_9 = c in carry_row_9_chars
+            mask = typeface.build_glyph(uc, fonts[self.mode.font_height],
+                                self.mode.font_width*2, self.mode.font_height,
+                                carry_col_9, carry_row_9)
             self.glyphs[c] = mask
             if self.mode.is_text_mode:
-                backend.video_queue.put(backend.Event(backend.VIDEO_BUILD_GLYPHS, {c: mask}))
+                backend.video_queue.put(backend.Event(backend.VIDEO_BUILD_GLYPHS,
+                    {unicodepage.cp_to_unicode[c]: mask}))
         return mask
 
     if numpy:

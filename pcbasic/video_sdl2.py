@@ -27,7 +27,6 @@ except ImportError:
 
 import plat
 import config
-import unicodepage
 import backend
 import typeface
 import scancode
@@ -485,7 +484,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.font_width = mode_info.font_width
         # prebuilt glyphs
         # NOTE: [x][y] format - change this if we change pixels2d
-        self.glyph_dict = {'\0': numpy.zeros((self.font_width, self.font_height))}
+        self.glyph_dict = {u'\0': numpy.zeros((self.font_width, self.font_height))}
         self.num_pages = mode_info.num_pages
         self.mode_has_blink = mode_info.has_blink
         self.text = [[[' ']*mode_info.width
@@ -627,10 +626,10 @@ class VideoSDL2(video_graphical.VideoGraphical):
         pixels[x0:x1, old_y0:new_y0] = numpy.zeros((x1-x0, new_y0-old_y0))
         self.screen_changed = True
 
-    def put_glyph(self, pagenum, row, col, c, fore, back, blink, underline, for_keys):
+    def put_glyph(self, pagenum, row, col, c, dbcs, fore, back, blink, underline, for_keys):
         """ Put a single-byte character at a given position. """
-        self.text[pagenum][row-1][col-1] = unicodepage.cp_to_utf8[c]
-        if len(c) > 1:
+        self.text[pagenum][row-1][col-1] = c
+        if dbcs:
             self.text[pagenum][row-1][col] = ''
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
@@ -642,9 +641,9 @@ class VideoSDL2(video_graphical.VideoGraphical):
         try:
             glyph = self.glyph_dict[c]
         except KeyError:
-            logging.warning('No glyph received for code point %s', repr(c))
+            logging.warning('No glyph received for code point %x', ord(c))
             try:
-                glyph = self.glyph_dict['\0']
+                glyph = self.glyph_dict[u'\0']
             except KeyError:
                 logging.error('No glyph received for code point 0')
                 return
