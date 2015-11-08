@@ -28,15 +28,15 @@ On **Linux distributions with APT or DNF** (including Debian, Ubuntu, Mint and F
 
 The install script can also be used on **other Unix** systems or when not installing as root. The dependencies can often be installed through your package manager. For example, on Debian-based systems:
 
-        sudo apt-get install python2.7 python-xdg python-sdl2 python-numpy python-serial python-pexpect python-parallel xsel
+        sudo apt-get install python2.7 python-sdl2 python-numpy python-serial python-pexpect python-parallel
 
 On Fedora:
 
-        sudo dnf install python pyxdg pysdl2 numpy pyserial python-pexpect xsel
+        sudo dnf install python pysdl2 numpy pyserial python-pexpect
 
 On FreeBSD:
 
-        sudo pkg install python27 py27-xdg py27-sdl2 py27-numpy py27-serial py27-pexpect xsel
+        sudo pkg install python27 py27-sdl2 py27-numpy py27-serial py27-pexpect
 
 Note that PyParallel is not available from the Fedora and FreeBSD repos. PyParallel does not support BSD; on Fedora, you'll need to install from source if you need access to physical parallel ports. However, since most modern machines do not actually have parallel ports, you probably don't need it. PyParallel is _not_ needed for printing to a CUPS or Windows printer.
 
