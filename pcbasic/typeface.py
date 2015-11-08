@@ -15,7 +15,12 @@ except ImportError:
     numpy = None
 
 import plat
+import config
 
+def prepare():
+    """ Perpare the typeface module. """
+    global debug
+    debug = config.get('debug')
 
 def font_filename(name, height, ext='hex'):
     """ Return name_height.hex if filename exists in current path, else font_dir/name_height.hex. """
@@ -36,9 +41,9 @@ def load(families, height, unicode_needed, nowarn=False):
     fontdict = load_hex(fontfiles, height, unicode_needed)
     for f in fontfiles:
         f.close()
-    # check if we have all needed glyphs
+    # in debug mode, check if we have all needed glyphs
     # fontdict: unicode char -> glyph
-    if not nowarn:
+    if debug and not nowarn:
         missing = unicode_needed - set(fontdict)
         warnings = 0
         for u in missing:
@@ -190,3 +195,5 @@ def build_glyph(c, font_face, req_width, req_height, carry_col_9, carry_row_9):
                     glyph[yy][2*xx+1] = glyph[yy][xx]
                     glyph[yy][2*xx] = glyph[yy][xx]
     return glyph
+
+prepare()
