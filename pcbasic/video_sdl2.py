@@ -648,16 +648,16 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 logging.error('No glyph received for code point 0')
                 return
         # pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
+        glyph_width = glyph.shape[0]
         # changle glyph color by numpy scalar mult (is there a better way?)
         self.pixels[pagenum][
-            x0:x0+self.font_width, y0:y0+self.font_height] = (
+            x0:x0+glyph_width, y0:y0+self.font_height] = (
                                                     glyph*(attr-back) + back)
         if underline:
             sdl2.SDL_FillRect(
-                self.canvas[self.apagenum], sdl2.SDL_Rect(
-                    x0, y0 + self.font_height - 1,
-                    self.font_width, 1)
-                , attr)
+                self.canvas[self.apagenum], 
+                sdl2.SDL_Rect(x0, y0 + self.font_height - 1, glyph_width, 1),
+                attr)
         self.screen_changed = True
 
     def build_glyphs(self, new_dict):
