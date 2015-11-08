@@ -19,7 +19,6 @@ import unicodepage
 import backend
 import scancode
 import eascii
-# ANSI escape codes for output, need arrow movements and clear line and esc_to_scan under Unix.
 import ansi
 
 
@@ -37,11 +36,11 @@ if plat.system == 'Windows':
     tty = ansipipe
     termios = ansipipe
     # Ctrl+Z to exit
-    eof = '\x1A'
+    eof = eascii.CTRL_z
 elif plat.system != 'Android':
     import tty, termios
     # Ctrl+D to exit
-    eof = '\x04'
+    eof = eascii.CTRL_d
 
 term_echo_on = True
 term_attr = None

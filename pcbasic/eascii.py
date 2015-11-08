@@ -12,6 +12,8 @@ This file is released under the GNU GPL version 3.
 # except where convenient
 NUL = '\0\0'
 CTRL_c = '\x03'
+CTRL_d = '\x04'
+CTRL_z = '\x1A'
 
 ESCAPE = '\x1B'
 SHIFT_ESCAPE = '\x1B'
