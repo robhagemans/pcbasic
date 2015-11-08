@@ -21,6 +21,7 @@ import scancode
 import eascii
 import ansi
 
+encoding = sys.stdin.encoding or 'utf-8'
 
 ###############################################################################
 
@@ -103,19 +104,18 @@ class VideoCLI(video.VideoPlugin):
 
     def _check_input(self):
         """ Handle keyboard events. """
-        # s is one utf-8 sequence or one scancode
-        # or a failed attempt at one of the above
-        u8, sc = self.input_handler.get_key()
-        if u8 == eof:
+        # s is one unicode char or one scancode
+        uc, sc = self.input_handler.get_key()
+        if uc == eof:
             # ctrl-D (unix) / ctrl-Z (windows)
             backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
-        elif u8 == '\x7f':
+        elif uc == u'\x7f':
             # backspace
             backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
                                         (scancode.BACKSPACE, eascii.BACKSPACE)))
-        elif sc or u8:
+        elif sc or uc:
             # check_full=False?
-            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (sc, u8)))
+            backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (sc, uc)))
             if sc == scancode.F12:
                 self.f12_active = True
             else:
@@ -262,15 +262,15 @@ class InputHandlerCLI(object):
             return ''
 
     def get_key(self):
-        """ Retrieve one scancode, or one UTF-8 sequence from keyboard. """
+        """ Retrieve one scancode sequence or one unicode char from keyboard. """
         s = self._getc()
-        esc = False
-        more = 0
         if s == '':
             return None, None
-        if s == '\x1b':
+        # ansi sequences start with \x1b
+        esc = (s == '\x1B')
+        more = 0
+        if esc:
             # ansi sequence, +4 bytes max
-            esc = True
             more = 4
         elif ord(s) >= 0b11110000:
             # utf-8, +3 bytes
@@ -292,15 +292,13 @@ class InputHandlerCLI(object):
             more -= 1
             s += c
             if esc:
-                c = esc_to_eascii.get(s, '')
+                # return the first recognised escape sequence
+                uc = esc_to_eascii.get(s, '')
                 scan = esc_to_scan.get(s, None)
-                if c or scan:
-                    return c, scan
-        # convert into utf-8 if necessary
-        if sys.stdin.encoding and sys.stdin.encoding != 'utf-8':
-            return s.decode(sys.stdin.encoding).encode('utf-8'), None
-        else:
-            return s, None
+                if uc or scan:
+                    return uc, scan
+        # convert to unicode
+        return s.decode(encoding, errors='ignore'), None
 
 
 

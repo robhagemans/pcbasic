@@ -239,7 +239,7 @@ class VideoPygame(video_graphical.VideoGraphical):
 
     def _handle_key_down(self, e):
         """ Handle key-down event. """
-        c = ''
+        c = u''
         mods = pygame.key.get_mods()
         # current key pressed; modifiers handled by backend interface
         scan = key_to_scan.get(e.key, None)
@@ -255,11 +255,11 @@ class VideoPygame(video_graphical.VideoGraphical):
         except KeyError:
             key = e.key
             if e.mod & pygame.KMOD_CTRL and key >= ord('a') and key <= ord('z'):
-                c = chr(key - ord('a') + 1)
+                c = unichr(key - ord('a') + 1)
             elif e.mod & pygame.KMOD_CTRL and key >= ord('[') and key <= ord('_'):
-                c = chr(key - ord('A') + 1)
+                c = unichr(key - ord('A') + 1)
             else:
-                c = e.unicode.encode('utf-8')
+                c = e.unicode
         if e.key == pygame.K_F11:
             self.f11_active = True
             self.clipboard.start(self.cursor_row, self.cursor_col)
@@ -272,7 +272,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             self.clipboard.handle_key(scan, c)
         else:
             # double NUL characters, as single NUL signals e-ASCII
-            if c == '\0':
+            if c == u'\0':
                 c = eascii.NUL
             if plat.system == 'Windows':
                 # Windows 7 and above send AltGr as Ctrl+RAlt

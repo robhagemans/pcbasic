@@ -46,11 +46,11 @@ def set_input(f):
     """ BASIC-style redirected input. """
     global input_closed
     # read everything
-    all_input = f.read()
+    all_input = f.read().decode('utf-8')
     last = ''
     for c in all_input:
         # replace CRLF with CR
-        if not (c == '\n' and last == '\r'):
+        if not (c == u'\n' and last == u'\r'):
             state.console_state.keyb.insert_chars(c)
         last = c
     input_closed = True

@@ -31,7 +31,11 @@ import ansi
 
 def prepare():
     """ Initialise the video_curses module. """
+    global encoding
     video.plugin_dict['curses'] = VideoCurses
+    # allow unicode input
+    locale.setlocale(locale.LC_ALL, '')
+    encoding = locale.getpreferredencoding()
 
 if curses:
     # curses keycodes
@@ -76,19 +80,6 @@ class VideoCurses(video.VideoPlugin):
         video.VideoPlugin.__init__(self)
         self.curses_init = False
         if not curses:
-            raise video.InitFailed()
-        # find a supported UTF-8 locale, with a preference for C, en-us, default
-        languages = (['C', 'en-US', locale.getdefaultlocale()[0]] +
-                     [a for a in locale.locale_alias.values()
-                        if '.' in a and a.split('.')[1] == 'UTF-8'])
-        for lang in languages:
-            try:
-                locale.setlocale(locale.LC_ALL,(lang, 'utf-8'))
-                break
-            except locale.Error:
-                pass
-        if locale.getlocale()[1] != 'UTF-8':
-            logging.warning('No supported UTF-8 locale found.')
             raise video.InitFailed()
         # set the ESC-key delay to 25 ms unless otherwise set
         # set_escdelay seems to be unavailable on python curses.
@@ -161,10 +152,8 @@ class VideoCurses(video.VideoPlugin):
         i = 0
         while True:
             i = self.window.getch()
-            if i == -1:
+            if i < 0:
                 break
-            elif i == 0:
-                s += '\0'
             elif i < 256:
                 s += chr(i)
             else:
@@ -191,12 +180,10 @@ class VideoCurses(video.VideoPlugin):
                                 backend.KEYB_DOWN, (scan, c)))
             if i == curses.KEY_F12:
                 self.f12_active = True
-        # replace utf-8 with codepage
-        # convert into unicode codepoints
-        u = s.decode('utf-8')
-        # then handle these one by one as UTF-8 sequences
-        for uc in u:
-            c = uc.encode('utf-8')
+        # convert into unicode chars
+        u = s.decode(encoding)
+        # then handle these one by one
+        for c in u:
             #check_full=False?
             backend.input_queue.put(backend.Event(backend.KEYB_DOWN, (None, c)))
             if self.f12_active:
