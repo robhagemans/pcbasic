@@ -270,7 +270,7 @@ def open_native_or_dos_filename(infile):
 def debug_details():
     logging.info('os: %s', plat.system)
     # try numpy before pygame to avoid strange ImportError on FreeBSD
-    modules = ('numpy', 'pygame', 'curses', 'pexpect', 'serial')
+    modules = ('numpy', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial')
     for module in modules:
         try:
             __import__(module)
