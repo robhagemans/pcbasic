@@ -17,7 +17,7 @@ import state
 input_closed = False
 
 # converter with DBCS lead-byte buffer for utf8 output redirection
-utf8conv = unicodepage.UTF8Converter(preserve_control=True)
+uniconv = unicodepage.Converter(preserve_control=True)
 
 # redirect i/o to file or printer
 output_echos = []
@@ -56,20 +56,20 @@ def set_input(f):
     input_closed = True
 
 def set_output(f, utf8=False):
-    """ Redirected output in ASCII or UTF-8 """
+    """ Redirected output as raw bytes or UTF-8 """
     if not utf8:
-        echo = partial(echo_ascii, f=f)
+        echo = partial(echo_raw, f=f)
     else:
         echo = partial(echo_utf8, f=f)
     output_echos.append(echo)
 
-def echo_ascii(s, f):
+def echo_raw(s, f):
     """ Output redirection echo as raw bytes. """
     f.write(str(s))
 
 def echo_utf8(s, f):
     """ Output redirection echo as UTF-8. """
-    f.write(utf8conv.to_utf8(str(s)))
+    f.write(uniconv.to_unicode(str(s)).encode('utf-8'))
 
 def toggle_echo(device):
     """ Toggle copying of all screen I/O to LPT1. """

@@ -852,13 +852,13 @@ class TextFile(devices.CRLFTextFileBase):
     def write_line(self, s=''):
         """ Write to file in normal or UTF-8 mode. """
         if self.utf8:
-            s = unicodepage.UTF8Converter().to_utf8(s)
+            s = unicodepage.Converter().to_unicode(s).encode('utf-8')
         devices.CRLFTextFileBase.write(self, s + '\r\n')
 
     def write(self, s):
         """ Write to file in normal or UTF-8 mode. """
         if self.utf8:
-            s = unicodepage.UTF8Converter().to_utf8(s)
+            s = unicodepage.Converter().to_unicode(s).encode('utf-8')
         devices.CRLFTextFileBase.write(self, s)
 
     def _read_line_universal(self):
@@ -895,7 +895,7 @@ class TextFile(devices.CRLFTextFileBase):
         else:
             s = self._read_line_universal()
         if self.utf8 and s is not None:
-            s = unicodepage.str_from_utf8(s)
+            s = unicodepage.str_from_unicode(s.decode('utf-8'))
         return s
 
     def lock(self, start, stop, lock_list):

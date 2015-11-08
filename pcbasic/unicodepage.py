@@ -30,7 +30,7 @@ def prepare():
 
 def load_codepage(codepage_name):
     """ Load codepage to Unicode table. """
-    global cp_to_utf8, utf8_to_cp, unicode_to_cp, cp_to_unicode
+    global unicode_to_cp, cp_to_unicode
     global lead, trail, dbcs, dbcs_num_chars, box_left, box_right
     name = os.path.join(plat.encoding_dir, codepage_name + '.ucp')
     # lead and trail bytes
@@ -38,7 +38,6 @@ def load_codepage(codepage_name):
     trail = set()
     box_left = [set(), set()]
     box_right = [set(), set()]
-    cp_to_utf8 = {}
     cp_to_unicode = {}
     dbcs_num_chars = 0
     try:
@@ -58,7 +57,6 @@ def load_codepage(codepage_name):
                     # extract unicode point
                     ucs_point = int('0x' + splitline[1].split()[0].strip(), 16)
                     cp_to_unicode[cp_point] = unichr(ucs_point)
-                    cp_to_utf8[cp_point] = unichr(ucs_point).encode('utf-8')
                     # track lead and trail bytes
                     if len(cp_point) == 2:
                         lead.add(cp_point[0])
@@ -82,10 +80,8 @@ def load_codepage(codepage_name):
             return load_codepage('437')
     # fill up any undefined 1-byte codepoints
     for c in range(256):
-        if chr(c) not in cp_to_utf8:
-            cp_to_utf8[chr(c)] = '\0'
+        if chr(c) not in cp_to_unicode:
             cp_to_unicode[chr(c)] = u'\0'
-    utf8_to_cp = dict((reversed(item) for item in cp_to_utf8.items()))
     unicode_to_cp = dict((reversed(item) for item in cp_to_unicode.items()))
     if dbcs_num_chars > 0:
         dbcs = True
@@ -152,24 +148,10 @@ def connects(c, d, bset):
 ##################################################
 # conversion
 
-
-def split_utf8(s):
-    """ Split UTF8 string into single-char byte sequences. """
-    # decode and encode each char back
-    try:
-        return [c.encode('utf-8') for c in s.decode('utf-8')]
-    except UnicodeDecodeError:
-        # not valid UTF8, pass through raw.
-        return list(s)
-
-def from_utf8(c):
-    """ Convert utf8 char sequence to codepage char sequence. """
-    return utf8_to_cp[c]
-
 def from_unicode(uc):
     """ Convert unicode char to codepage char sequence. """
     try:
-        # try to codepage-encode the one-char UTF8 byte sequence
+        # try to codepage-encode the unicode char
         return unicode_to_cp[uc]
     except KeyError:
         # pass control sequences as ascii. this includes \r.
@@ -178,25 +160,13 @@ def from_unicode(uc):
         # ignore everything else (unicode chars not in codepage)
         return uc.encode('ascii', errors='ignore')
 
-def str_from_utf8(s):
-    """ Convert utf8 string to codepage string. """
-    chars, s = split_utf8(s), ''
-    for c in chars:
-        try:
-            # try to codepage-encode the one-char UTF8 byte sequence
-            s += from_utf8(c)
-        except KeyError:
-            # pass unknown sequences untranslated. this includes \r.
-            s += c
-    return s
-
 def str_from_unicode(ucs):
     """ Convert unicode string to codepage string. """
     return ''.join(from_unicode(uc) for uc in ucs)
 
 
-class UTF8Converter(object):
-    """ Buffered converter to UTF8 - supports DBCS and box-drawing protection. """
+class Converter(object):
+    """ Buffered converter to Unicode - supports DBCS and box-drawing protection. """
 
     def __init__(self, preserve_control=False, do_dbcs=None, protect_box=None):
         """ Initialise with empty buffer. """
@@ -212,40 +182,43 @@ class UTF8Converter(object):
         self.bset = -1
         self.last = ''
 
-    def to_utf8(self, s):
-        """ Process codepage string, returning utf8 string when ready. """
+    def to_unicode(self, s):
+        """ Process codepage string, returning unicode string when ready. """
         if not self.dbcs:
             # stateless if not dbcs
-            return ''.join([ (c if (self.preserve_control and c in control) else cp_to_utf8[c]) for c in s ])
+            return u''.join([ (c.decode('ascii', errors='ignore')
+                                if (self.preserve_control and c in control)
+                                else cp_to_unicode[c])
+                            for c in s ])
         else:
-            out = ''
+            out = u''
             # remove any naked lead-byte first
             if self.buf:
-                out += '\b'*len(self.buf)
+                out += u'\b'*len(self.buf)
             # process the string
             for c in s:
                 out += self.process(c)
             # any naked lead-byte or boxable dbcs left will be printed (but don't flush buffers!)
             if self.buf:
-                out += cp_to_utf8[self.buf]
+                out += cp_to_unicode[self.buf]
             return out
 
     def flush(self, num=None):
         """ Empty buffer and return contents. """
-        out = ''
+        out = u''
         if num is None:
             num = len(self.buf)
         if self.buf:
             # can be one or two-byte sequence in self.buf
-            out = cp_to_utf8[self.buf[:num]]
+            out = cp_to_unicode[self.buf[:num]]
         self.buf = self.buf[num:]
         return out
 
     def process(self, c):
-        """ Process a single char, returning UTF8 char sequences when ready """
+        """ Process a single char, returning unicode char sequences when ready """
         if not self.protect_box:
             return self.process_nobox(c)
-        out = ''
+        out = u''
         if self.preserve_control and c in control:
             # control char; flush buffer as SBCS and add control char unchanged
             out += self.flush() + c
@@ -272,10 +245,10 @@ class UTF8Converter(object):
 
     def process_nobox(self, c):
         """ Process a single char, no box drawing protection """
-        out = ''
+        out = u''
         if self.preserve_control and c in control:
             # control char; flush buffer as SBCS and add control char unchanged
-            out += self.flush() + c
+            out += self.flush() + c.decode('ascii', errors='ignore')
             return out
         elif self.buf:
             if c in trail:
@@ -289,14 +262,14 @@ class UTF8Converter(object):
         if c in lead:
             self.buf = c
         else:
-            out += cp_to_utf8[c]
+            out += cp_to_unicode[c]
         return out
 
     def process_case0(self, c):
         """ Process a single char with box drawing protection; case 0, starting point """
-        out = ''
+        out = u''
         if c not in lead:
-            out += cp_to_utf8[c]
+            out += cp_to_unicode[c]
             # goes to case 0
         else:
             self.buf += c
@@ -305,9 +278,9 @@ class UTF8Converter(object):
 
     def process_case1(self, c):
         """ Process a single char with box drawing protection; case 1 """
-        out = ''
+        out = u''
         if c not in trail:
-            out += self.flush() + cp_to_utf8[c]
+            out += self.flush() + cp_to_unicode[c]
             # goes to case 0
         else:
             for bset in (0, 1):
@@ -324,9 +297,9 @@ class UTF8Converter(object):
 
     def process_case2(self, c):
         """ Process a single char with box drawing protection; case 2 """
-        out = ''
+        out = u''
         if c not in lead:
-            out += self.flush() + cp_to_utf8[c]
+            out += self.flush() + cp_to_unicode[c]
             # goes to case 0
         else:
             for bset in (0, 1):
@@ -346,13 +319,13 @@ class UTF8Converter(object):
 
     def process_case3(self, c):
         """ Process a single char with box drawing protection; case 3 """
-        out = ''
+        out = u''
         if c not in lead:
-            out += self.flush() + cp_to_utf8[c]
+            out += self.flush() + cp_to_unicode[c]
         elif connects(self.buf[-1], c, self.bset):
             self.last = self.buf[-1]
             # output box drawing
-            out += self.flush(1) + self.flush(1) + cp_to_utf8[c]
+            out += self.flush(1) + self.flush(1) + cp_to_unicode[c]
             # goes to case 4
         else:
             out += self.flush()
@@ -363,13 +336,13 @@ class UTF8Converter(object):
 
     def process_case4(self, c):
         """ Process a single char with box drawing protection; case 4, continuing box drawing """
-        out = ''
+        out = u''
         if c not in lead:
-            out += cp_to_utf8[c]
+            out += cp_to_unicode[c]
             # goes to case 0
         elif connects(self.last, c, self.bset):
             self.last = c
-            out += cp_to_utf8[c]
+            out += cp_to_unicode[c]
             # goes to case 4
         else:
             self.buf += c
