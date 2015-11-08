@@ -15,13 +15,22 @@ sending in patches, and documenting GW-BASIC's behaviour. Thank you all!
 PC-BASIC depends on the following open-source projects:
 
   * [Python](http://www.python.org)
-  * [PyGame](http://www.pygame.org)
   * [Simple DirectMedia Layer (SDL)](http://www.libsdl.org)
+  * [PySDL2](https://pysdl2.readthedocs.org/en/latest/)
   * [NumPy](http://www.numpy.org)
   * [Python for Windows Extensions (PyWin32)](https://sourceforge.net/projects/pywin32/)
   * [PySerial](http://pyserial.sourceforge.net/pyserial.html)
   * [PExpect](http://pexpect.readthedocs.org/en/latest/)
   * [ANSI|pipe](https://github.com/robhagemans/ansipipe)
+
+
+### Fond memories
+
+PC-BASIC would not have been what it is without the following open-source projects
+which it has depended on in the past:
+
+  * [PyGame](http://www.pygame.org)
+  * **Tom Rothamel**'s [PyGame Subset for Android](https://web.archive.org/web/20150712040220/http://pygame.renpy.org/) (superseded by [RAPT](http://www.renpy.org/doc/html/android.html))
 
 
 ### Technical Documentation
@@ -102,7 +111,6 @@ Packaging and documentation depends on the following projects:
   * [Nullsoft Scriptable Install System](http://nsis.sourceforge.net)
   * [7-Zip](http://www.7-zip.org)
   * [The GNU Base System](http://www.gnu.org/)
-  * **Tom Rothamel**'s [Pygame Subset for Android](https://web.archive.org/web/20150712040220/http://pygame.renpy.org/) (superseded by [RAPT](http://www.renpy.org/doc/html/android.html))
   * [LXML](http://lxml.de)
   * [Markdown](https://pypi.python.org/pypi/Markdown)
 

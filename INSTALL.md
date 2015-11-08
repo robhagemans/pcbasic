@@ -12,7 +12,7 @@ The following packages are needed or recommended when installing PC-BASIC from s
 |-----------------------------------------------------------------|--------------------|--------------|----------------------------
 | [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all                | required     |
 | [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows            | required     |
-| [PyGame 1.9.1](http://www.pygame.org/download.shtml)            | all                | essential    | sound and graphics
+| [PySDL2](https://pysdl2.readthedocs.org/en/latest/)             | all                | essential    | sound and graphics
 | [NumPy](https://sourceforge.net/projects/numpy/files/)          | all                | essential    | sound and graphics
 | [PySerial](https://pypi.python.org/pypi/pyserial)               | all                | recommended  | physical or emulated serial port access
 | [PyParallel](https://pypi.python.org/pypi/pyserial)             | Windows, Linux     | optional     | physical parallel port access
@@ -28,15 +28,15 @@ On **Linux distributions with APT or DNF** (including Debian, Ubuntu, Mint and F
 
 The install script can also be used on **other Unix** systems or when not installing as root. The dependencies can often be installed through your package manager. For example, on Debian-based systems:
 
-        sudo apt-get install python2.7 python-xdg python-pygame python-numpy python-serial python-pexpect python-parallel xsel
+        sudo apt-get install python2.7 python-xdg python-sdl2 python-numpy python-serial python-pexpect python-parallel xsel
 
 On Fedora:
 
-        sudo dnf install python pyxdg pygame numpy pyserial python-pexpect xsel
+        sudo dnf install python pyxdg pysdl2 numpy pyserial python-pexpect xsel
 
 On FreeBSD:
 
-        sudo pkg install python27 py27-xdg py27-game py27-numpy py27-serial py27-pexpect xsel
+        sudo pkg install python27 py27-xdg py27-sdl2 py27-numpy py27-serial py27-pexpect xsel
 
 Note that PyParallel is not available from the Fedora and FreeBSD repos. PyParallel does not support BSD; on Fedora, you'll need to install from source if you need access to physical parallel ports. However, since most modern machines do not actually have parallel ports, you probably don't need it. PyParallel is _not_ needed for printing to a CUPS or Windows printer.
 
@@ -63,7 +63,11 @@ Of course, you'll also need [`git`](https://git-scm.com/) and all the PC-BASIC d
         python pcbasic
 
 
-#### Pygame issues ####
+#### Installing with Pygame ####
+It is possible to install PC-BASIC with a [PyGame](http://pygame.org/)-based
+graphical interface in addition to, or instead of, the default SDL2-based interface.
+This section covers workarounds for several issues you may run into when using PyGame.
+
 The 1.9.1 release of PyGame, as currently distributed with Ubuntu and others, unfortunately still contains a few bugs that
 have already been resolved in the upstream PyGame code. This section documents workarounds for these bugs that can be used
 until a newer build of PyGame is released with major distributions.
