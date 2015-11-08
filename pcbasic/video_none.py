@@ -58,7 +58,9 @@ class VideoNone(video.VideoPlugin):
         # avoid blocking on ttys if there's no input
         if plat.stdin_is_tty and not kbhit():
             return
-        s = sys.stdin.readline().decode(encoding)
+        # NOTE: errors occur when backspace is used with text input
+        # only the last byte is erased, not the whole utf-8 sequence
+        s = sys.stdin.readline().decode(encoding, errors='ignore')
         if s == '':
             redirect.input_closed = True
         for c in s:
