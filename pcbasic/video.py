@@ -182,8 +182,8 @@ class VideoPlugin(object):
     def scroll_down(self, from_line, scroll_height, back_attr):
         """ Scroll the screen down between from_line and scroll_height. """
 
-    def put_glyph(self, pagenum, row, col, c, fore, back, blink, underline, for_keys):
-        """ Put a single-byte character at a given position. """
+    def put_glyph(self, pagenum, row, col, c, dbcs, fore, back, blink, underline, for_keys):
+        """ Put a character at a given position. """
 
     def build_glyphs(self, new_dict):
         """ Build a dict of glyphs for use in text mode. """

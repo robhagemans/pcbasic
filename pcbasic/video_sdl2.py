@@ -487,7 +487,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.glyph_dict = {u'\0': numpy.zeros((self.font_width, self.font_height))}
         self.num_pages = mode_info.num_pages
         self.mode_has_blink = mode_info.has_blink
-        self.text = [[[' ']*mode_info.width
+        self.text = [[[u' ']*mode_info.width
                         for _ in range(mode_info.height)]
                         for _ in range(self.num_pages)]
         self.mode_has_artifacts = False
@@ -565,7 +565,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def clear_rows(self, back_attr, start, stop):
         """ Clear a range of screen rows. """
         self.text[self.apagenum][start-1:stop] = [
-            [' ']*len(self.text[self.apagenum][0]) for _ in range(start-1, stop)]
+            [u' ']*len(self.text[self.apagenum][0]) for _ in range(start-1, stop)]
         scroll_area = sdl2.SDL_Rect(
                 0, (start-1)*self.font_height,
                 self.size[0], (stop-start+1)*self.font_height)
@@ -602,7 +602,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         """ Scroll the screen up between from_line and scroll_height. """
         self.text[self.apagenum][from_line-1:scroll_height] = (
                 self.text[self.apagenum][from_line:scroll_height]
-                + [[' ']*len(self.text[self.apagenum][0])])
+                + [[u' ']*len(self.text[self.apagenum][0])])
         pixels = self.pixels[self.apagenum]
         # these are exclusive ranges [x0, x1) etc
         x0, x1 = 0, self.size[0]
@@ -615,7 +615,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def scroll_down(self, from_line, scroll_height, back_attr):
         """ Scroll the screen down between from_line and scroll_height. """
         self.text[self.apagenum][from_line-1:scroll_height] = (
-                [[' ']*len(self.text[self.apagenum][0])] +
+                [[u' ']*len(self.text[self.apagenum][0])] +
                 self.text[self.apagenum][from_line-1:scroll_height-1])
         pixels = self.pixels[self.apagenum]
         # these are exclusive ranges [x0, x1) etc
@@ -627,10 +627,10 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def put_glyph(self, pagenum, row, col, c, dbcs, fore, back, blink, underline, for_keys):
-        """ Put a single-byte character at a given position. """
+        """ Put a character at a given position. """
         self.text[pagenum][row-1][col-1] = c
         if dbcs:
-            self.text[pagenum][row-1][col] = ''
+            self.text[pagenum][row-1][col] = u''
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return

@@ -15,7 +15,6 @@ import Queue
 
 import video
 import plat
-import unicodepage
 import backend
 import scancode
 import eascii
@@ -88,7 +87,7 @@ class VideoCLI(video.VideoPlugin):
         # text buffer
         self.num_pages = 1
         self.vpagenum, self.apagenum = 0, 0
-        self.text = [[[' ']*80 for _ in range(25)]]
+        self.text = [[[u' ']*80 for _ in range(25)]]
         self.f12_active = False
 
     def close(self):
@@ -125,15 +124,11 @@ class VideoCLI(video.VideoPlugin):
 
     ###############################################################################
 
-    def put_glyph(self, pagenum, row, col, c, fore, back, blink, underline, for_keys):
-        """ Put a single-byte character at a given position. """
-        try:
-            char = unicodepage.cp_to_utf8[c]
-        except KeyError:
-            char = ' ' * len(c)
+    def put_glyph(self, pagenum, row, col, char, dbcs, fore, back, blink, underline, for_keys):
+        """ Put a character at a given position. """
         self.text[pagenum][row-1][col-1] = char
-        if len(c) > 1:
-            self.text[pagenum][row-1][col] = ''
+        if dbcs:
+            self.text[pagenum][row-1][col] = u''
         if self.vpagenum != pagenum:
             return
         if for_keys:
@@ -141,7 +136,7 @@ class VideoCLI(video.VideoPlugin):
         self._update_position(row, col)
         sys.stdout.write(char)
         sys.stdout.flush()
-        self.last_col += len(c)
+        self.last_col += 2 if dbcs else 1
 
     def move_cursor(self, crow, ccol):
         """ Move the cursor to a new position. """
@@ -150,7 +145,7 @@ class VideoCLI(video.VideoPlugin):
     def clear_rows(self, back_attr, start, stop):
         """ Clear screen rows. """
         self.text[self.apagenum][start-1:stop] = [
-            [' ']*len(self.text[self.apagenum][0]) for _ in range(start-1, stop)]
+            [u' ']*len(self.text[self.apagenum][0]) for _ in range(start-1, stop)]
         if (start <= self.cursor_row and stop >= self.cursor_row and
                     self.vpagenum == self.apagenum):
             # clear_line before update_position to avoid redrawing old lines on CLS
@@ -162,7 +157,7 @@ class VideoCLI(video.VideoPlugin):
         """ Scroll the screen up between from_line and scroll_height. """
         self.text[self.apagenum][from_line-1:scroll_height] = (
                 self.text[self.apagenum][from_line:scroll_height]
-                + [[' ']*len(self.text[self.apagenum][0])])
+                + [[u' ']*len(self.text[self.apagenum][0])])
         if self.vpagenum != self.apagenum:
             return
         sys.stdout.write('\r\n')
@@ -171,13 +166,13 @@ class VideoCLI(video.VideoPlugin):
     def scroll_down(self, from_line, scroll_height, back_attr):
         """ Scroll the screen down between from_line and scroll_height. """
         self.text[self.apagenum][from_line-1:scroll_height] = (
-                [[(' ', 0)]*len(self.text[self.apagenum][0])] +
+                [[(u' ', 0)]*len(self.text[self.apagenum][0])] +
                 self.text[self.apagenum][from_line-1:scroll_height-1])
 
     def set_mode(self, mode_info):
         """ Initialise video mode """
         self.num_pages = mode_info.num_pages
-        self.text = [[[' ']*mode_info.width for _ in range(mode_info.height)]
+        self.text = [[[u' ']*mode_info.width for _ in range(mode_info.height)]
                                             for _ in range(self.num_pages)]
 
     def set_page(self, new_vpagenum, new_apagenum):
@@ -193,7 +188,7 @@ class VideoCLI(video.VideoPlugin):
 
     def _redraw_row(self, row):
         """ Draw the stored text in a row. """
-        rowtext = ''.join(self.text[self.vpagenum][row-1])
+        rowtext = u''.join(self.text[self.vpagenum][row-1])
         sys.stdout.write(rowtext)
         sys.stdout.write(ansi.esc_move_left*len(rowtext))
         sys.stdout.flush()

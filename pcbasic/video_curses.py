@@ -16,7 +16,6 @@ except ImportError:
     curses = None
 
 import config
-import unicodepage
 import scancode
 import eascii
 import backend
@@ -126,7 +125,7 @@ class VideoCurses(video.VideoPlugin):
         self.num_pages = 1
         self.vpagenum, self.apagenum = 0, 0
         self.height, self.width = 25, 80
-        self.text = [[[(' ', 0)]*80 for _ in range(25)]]
+        self.text = [[[(u' ', 0)]*80 for _ in range(25)]]
         self.f12_active = False
 
     def close(self):
@@ -199,7 +198,7 @@ class VideoCurses(video.VideoPlugin):
         for row, textrow in enumerate(self.text[self.vpagenum]):
             for col, charattr in enumerate(textrow):
                 try:
-                    self.window.addstr(row, col, charattr[0], charattr[1])
+                    self.window.addstr(row, col, charattr[0].encode(encoding), charattr[1])
                 except curses.error:
                     pass
         if self.cursor_visible:
@@ -248,7 +247,7 @@ class VideoCurses(video.VideoPlugin):
         self.height = mode_info.height
         self.width = mode_info.width
         self.num_pages = mode_info.num_pages
-        self.text = [[[(' ', 0)]*self.width for _ in range(self.height)]
+        self.text = [[[(u' ', 0)]*self.width for _ in range(self.height)]
                                             for _ in range(self.num_pages)]
         self.window.clear()
         self.window.refresh()
@@ -273,7 +272,7 @@ class VideoCurses(video.VideoPlugin):
     def clear_rows(self, back_attr, start, stop):
         """ Clear screen rows. """
         self.text[self.apagenum][start-1:stop] = [
-                [(' ', 0)]*len(self.text[self.apagenum][0])
+                [(u' ', 0)]*len(self.text[self.apagenum][0])
                 for _ in range(start-1, stop)]
         if self.apagenum != self.vpagenum:
             return
@@ -314,24 +313,20 @@ class VideoCurses(video.VideoPlugin):
             self.cursor_shape = 1
         curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
 
-    def put_glyph(self, pagenum, row, col, c, fore, back, blink, underline, for_keys):
+    def put_glyph(self, pagenum, row, col, c, dbcs, fore, back, blink, underline, for_keys):
         """ Put a character at a given position. """
-        if c == '\0':
-            c = ' '
-        try:
-            char = unicodepage.cp_to_utf8[c]
-        except KeyError:
-            char = ' '*len(c)
+        if c == u'\0':
+            c = u' '
         colour = self._curses_colour(fore, back, blink)
-        self.text[pagenum][row-1][col-1] = char, colour
+        self.text[pagenum][row-1][col-1] = c, colour
         if len(c) > 1:
-            self.text[pagenum][row-1][col] = '', colour
+            self.text[pagenum][row-1][col] = u'', colour
         if pagenum == self.vpagenum:
             if colour != self.last_colour:
                 self.last_colour = colour
                 self.window.bkgdset(' ', colour)
             try:
-                self.window.addstr(row-1, col-1, char, colour)
+                self.window.addstr(row-1, col-1, c.encode(encoding), colour)
             except curses.error:
                 pass
 
@@ -339,7 +334,7 @@ class VideoCurses(video.VideoPlugin):
         """ Scroll the screen up between from_line and scroll_height. """
         self.text[self.apagenum][from_line-1:scroll_height] = (
                     self.text[self.apagenum][from_line:scroll_height]
-                    + [[(' ', 0)]*len(self.text[self.apagenum][0])])
+                    + [[(u' ', 0)]*len(self.text[self.apagenum][0])])
         if self.apagenum != self.vpagenum:
             return
         self.window.scrollok(True)
@@ -357,7 +352,7 @@ class VideoCurses(video.VideoPlugin):
     def scroll_down(self, from_line, scroll_height, back_attr):
         """ Scroll the screen down between from_line and scroll_height. """
         self.text[self.apagenum][from_line-1:scroll_height] = (
-                    [[(' ', 0)]*len(self.text[self.apagenum][0])]
+                    [[(u' ', 0)]*len(self.text[self.apagenum][0])]
                     + self.text[self.apagenum][from_line-1:scroll_height-1])
         if self.apagenum != self.vpagenum:
             return

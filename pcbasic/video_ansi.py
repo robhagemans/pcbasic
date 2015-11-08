@@ -15,7 +15,6 @@ import Queue
 
 import plat
 import config
-import unicodepage
 import backend
 
 import video
@@ -78,7 +77,7 @@ class VideoANSI(video_cli.VideoCLI):
         self.vpagenum, self.apagenum = 0, 0
         self.height = 25
         self.width = 80
-        self.text = [[[(' ', (7, 0, False, False))]*80 for _ in range(25)]]
+        self.text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
         video_cli.VideoCLI.__init__(self)
 
     def close(self):
@@ -117,7 +116,7 @@ class VideoANSI(video_cli.VideoCLI):
         self.height = mode_info.height
         self.width = mode_info.width
         self.num_pages = mode_info.num_pages
-        self.text = [[[(' ', (7, 0, False, False))]*self.width
+        self.text = [[[(u' ', (7, 0, False, False))]*self.width
                             for _ in range(self.height)]
                             for _ in range(self.num_pages)]
         sys.stdout.write(ansi.esc_resize_term % (self.height, self.width))
@@ -139,7 +138,7 @@ class VideoANSI(video_cli.VideoCLI):
     def clear_rows(self, back_attr, start, stop):
         """ Clear screen rows. """
         self.text[self.apagenum][start-1:stop] = [
-            [(' ', (7, 0, False, False))]*len(self.text[self.apagenum][0])
+            [(u' ', (7, 0, False, False))]*len(self.text[self.apagenum][0])
                         for _ in range(start-1, stop)]
         if self.vpagenum == self.apagenum:
             set_attributes(7, back_attr, False, False)
@@ -179,15 +178,11 @@ class VideoANSI(video_cli.VideoCLI):
             #sys.stdout.write(ansi.esc_set_cursor_shape % cursor_shape)
             sys.stdout.flush()
 
-    def put_glyph(self, pagenum, row, col, c, fore, back, blink, underline, for_keys):
-        """ Put a single-byte character at a given position. """
-        try:
-            char = unicodepage.cp_to_utf8[c]
-        except KeyError:
-            char = ' ' * len(c)
+    def put_glyph(self, pagenum, row, col, char, dbcs, fore, back, blink, underline, for_keys):
+        """ Put a character at a given position. """
         self.text[pagenum][row-1][col-1] = char, (fore, back, blink, underline)
-        if len(c) > 1:
-            self.text[pagenum][row-1][col] = '', (fore, back, blink, underline)
+        if dbcs:
+            self.text[pagenum][row-1][col] = u'', (fore, back, blink, underline)
         if self.vpagenum != pagenum:
             return
         sys.stdout.write(ansi.esc_move_cursor % (row, col))
@@ -195,7 +190,7 @@ class VideoANSI(video_cli.VideoCLI):
             self.last_attributes = fore, back, blink, underline
             set_attributes(fore, back, blink, underline)
         sys.stdout.write(char)
-        if len(c) > 1:
+        if dbcs:
             sys.stdout.write(' ')
         sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
         self.last_pos = (self.cursor_row, self.cursor_col)
@@ -205,7 +200,7 @@ class VideoANSI(video_cli.VideoCLI):
         """ Scroll the screen up between from_line and scroll_height. """
         self.text[self.apagenum][from_line-1:scroll_height] = (
                 self.text[self.apagenum][from_line:scroll_height] +
-                [[(' ', 0)]*len(self.text[self.apagenum][0])])
+                [[(u' ', 0)]*len(self.text[self.apagenum][0])])
         if self.apagenum != self.vpagenum:
             return
         sys.stdout.write(ansi.esc_set_scroll_region % (from_line, scroll_height))
@@ -219,7 +214,7 @@ class VideoANSI(video_cli.VideoCLI):
     def scroll_down(self, from_line, scroll_height, back_attr):
         """ Scroll the screen down between from_line and scroll_height. """
         self.text[self.apagenum][from_line-1:scroll_height] = (
-                [[(' ', 0)]*len(self.text[self.apagenum][0])] +
+                [[(u' ', 0)]*len(self.text[self.apagenum][0])] +
                 self.text[self.apagenum][from_line-1:scroll_height-1])
         if self.apagenum != self.vpagenum:
             return
