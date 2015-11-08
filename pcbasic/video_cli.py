@@ -262,26 +262,15 @@ class InputHandlerCLI(object):
         if s == '':
             return None, None
         # ansi sequences start with \x1b
-        esc = (s == '\x1B')
-        more = 0
-        if esc:
-            # ansi sequence, +4 bytes max
-            more = 4
-        elif ord(s) >= 0b11110000:
-            # utf-8, +3 bytes
-            more = 3
-        elif ord(s) >= 0b11100000:
-            # utf-8, +2 bytes
-            more = 2
-        elif ord(s) >= 0b11000000:
-            # utf-8, +1 bytes
-            more = 1
-        cutoff = 0
-        while (more > 0) and (cutoff < 100):
+        esc = (s == ansi.ESC)
+        # both escape sequences and UTF-8 are at most 4 chars long
+        more = 4
+        cutoff = 100
+        while (more > 0) and (cutoff > 0):
             # give time for the queue to fill up
             time.sleep(0.0005)
             c = self._getc()
-            cutoff += 1
+            cutoff -= 1
             if c == '':
                 continue
             more -= 1
@@ -292,7 +281,14 @@ class InputHandlerCLI(object):
                 scan = esc_to_scan.get(s, None)
                 if uc or scan:
                     return uc, scan
-        # convert to unicode
+            else:
+                # return the first recognised encoding sequence
+                try:
+                    return s.decode(encoding), None
+                except UnicodeDecodeError:
+                    pass
+        # no sequence or decodable string found
+        # decode as good as it gets
         return s.decode(encoding, errors='ignore'), None
 
 

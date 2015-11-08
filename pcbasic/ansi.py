@@ -17,6 +17,9 @@ colournames = ('Black','Dark Blue','Dark Green','Dark Cyan','Dark Red','Dark Mag
 # http://en.wikipedia.org/wiki/ANSI_escape_code
 # http://misc.flogisoft.com/bash/tip_colors_and_formatting
 
+# escape, the start char for an escape sequence
+ESC = '\x1B'
+
 esc_reset = '\x1b[0m\x1bc'
 esc_set_scroll_screen = '\x1b[r'
 esc_set_scroll_region = '\x1b[%i;%ir'
