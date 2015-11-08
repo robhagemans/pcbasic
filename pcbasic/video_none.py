@@ -18,6 +18,8 @@ import redirect
 # replace lf with cr
 lf_to_cr = False
 
+encoding = sys.stdin.encoding or 'utf-8'
+
 if plat.system == 'Windows':
     from msvcrt import kbhit
 else:
@@ -55,14 +57,13 @@ class VideoNone(video.VideoPlugin):
         # avoid blocking on ttys if there's no input
         if plat.stdin_is_tty and not kbhit():
             return
-        s = sys.stdin.readline().decode('utf-8')
+        s = sys.stdin.readline().decode(encoding)
         if s == '':
             redirect.input_closed = True
-        for u in s:
-            c = u.encode('utf-8')
+        for c in s:
             # replace LF -> CR if needed
-            if c == '\n' and lf_to_cr:
-                c = '\r'
+            if c == u'\n' and lf_to_cr:
+                c = u'\r'
             # check_full=False?
             backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
 
