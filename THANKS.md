@@ -88,7 +88,7 @@ apologies to those whose contribution I have failed to acknowledge here.
   * [DOSBox](http://www.dosbox.com) VGA fonts
 
 
-### Unicode codepage mapping tables
+### Unicode-codepage mappings
 
   * [The Unicode Consortium and contributors](http://www.unicode.org/Public/MAPPINGS/VENDORS)
   * [GNU libiconv Project](https://www.gnu.org/software/libiconv/)
