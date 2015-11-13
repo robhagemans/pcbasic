@@ -182,6 +182,7 @@ def check_events():
     if state.basic_state.run_mode:
         for e in state.basic_state.events.all:
             e.check()
+    state.console_state.keyb.drain_event_buffer()
 
 def check_input():
     """ Handle input events. """
@@ -350,31 +351,31 @@ class KeyHandler(EventHandler):
         """ Trigger KEY events. """
         if self.scancode is None:
             return False
-        scancode, modifiers = state.console_state.keyb.buf.poll_event(self.scancode)
-        if scancode != self.scancode:
-            return False
-        # build KEY trigger code
-        # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt
-        # second byte is scan code; first byte
-        #  0       if the key is pressed alone
-        #  1 to 3    if any Shift and the key are combined
-        #    4       if Ctrl and the key are combined
-        #    8       if Alt and the key are combined
-        #   32       if NumLock is activated
-        #   64       if CapsLock is activated
-        #  128       if we are defining some extended key
-        # extended keys are for example the arrow keys on the non-numerical keyboard
-        # presumably all the keys in the middle region of a standard PC keyboard?
-        #
-        # for predefined keys, modifier is ignored
-        # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
-        if (self.predefined) or (modifiers is None or self.modcode == modifiers & 0x6f):
-            # trigger event
-            self.trigger()
-            # drop key from key buffer
-            if self.enabled:
-                state.console_state.keyb.buf.drop_any(scancode, modifiers)
-                return True
+        for c, scancode, modifiers in state.console_state.keyb.prebuf:
+            if scancode != self.scancode:
+                continue
+            # build KEY trigger code
+            # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt
+            # second byte is scan code; first byte
+            #  0       if the key is pressed alone
+            #  1 to 3    if any Shift and the key are combined
+            #    4       if Ctrl and the key are combined
+            #    8       if Alt and the key are combined
+            #   32       if NumLock is activated
+            #   64       if CapsLock is activated
+            #  128       if we are defining some extended key
+            # extended keys are for example the arrow keys on the non-numerical keyboard
+            # presumably all the keys in the middle region of a standard PC keyboard?
+            #
+            # for predefined keys, modifier is ignored
+            # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
+            if (self.predefined) or (modifiers is None or self.modcode == modifiers & 0x6f):
+                # trigger event
+                self.trigger()
+                # drop key from key buffer
+                if self.enabled:
+                    state.console_state.keyb.prebuf.remove((c, scancode, modifiers))
+                    return True
         return False
 
     def set_trigger(self, keystr):
@@ -383,9 +384,6 @@ class KeyHandler(EventHandler):
         if not self.predefined:
             self.modcode = ord(keystr[0])
             self.scancode = ord(keystr[1])
-        # poll scancode to clear it from keypress dict
-        # where it might liger if this scancode has not tbeen polled before
-        state.console_state.keyb.buf.poll_event(self.scancode)
 
 
 class PenHandler(EventHandler):

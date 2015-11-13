@@ -69,9 +69,6 @@ class KeyboardBuffer(object):
         # expansion buffer for keyboard macros; also used for DBCS
         # expansion vessel holds codepage chars
         self.expansion_vessel = []
-        # dict (scancode: modifier) of all keys that have been pressed for event polls
-        # includes keys that have not made it into the buffer
-        self.has_been_pressed_event = {}
 
     def length(self):
         """ Return the number of keystrokes in the buffer. """
@@ -94,7 +91,6 @@ class KeyboardBuffer(object):
 
     def insert_keypress(self, cp_c, scancode, modifier, check_full=True):
         """ Append a single keystroke with eascii/codepage, scancode, modifier. """
-        self.has_been_pressed_event[scancode] = modifier
         if cp_c:
             if check_full and len(self.buffer) >= self.ring_length:
                 # emit a sound signal when buffer is full (and we care)
@@ -122,31 +118,12 @@ class KeyboardBuffer(object):
                 except IndexError:
                     return ''
 
-    def poll_event(self, scancode):
-        """ Poll the keyboard for a keypress event since last poll. """
-        try:
-            pressed = self.has_been_pressed_event[scancode]
-            del self.has_been_pressed_event[scancode]
-            return (scancode, pressed)
-        except KeyError:
-            return (None, None)
-
     def peek(self):
         """ Show top keystroke in keyboard buffer as eascii/codepage. """
         try:
             return self.buffer[0][0]
         except IndexError:
             return ''
-
-    def drop_any(self, scancode, modifier):
-        """ Drop any characters with given scancode & mod from keyboard buffer. """
-        self.buffer = [c for c in self.buffer if c[1:] != (scancode, modifier)]
-
-    def drop(self, n):
-        """ Drop n characters from keyboard buffer. """
-        n = min(n, len(self.buffer))
-        self.buffer = self.buffer[n:]
-        self.start = (self.start + n) % self.ring_length
 
     def stop(self):
         """ Ring buffer stopping index. """
@@ -200,6 +177,8 @@ class Keyboard(object):
         """ Initilise keyboard state. """
         # key queue
         self.buf = KeyboardBuffer(15)
+        # pre-buffer for keystrokes to enable event handling
+        self.prebuf = []
         # INP(&H60) scancode
         self.last_scancode = 0
         # active status of caps, num, scroll, alt, ctrl, shift modifiers
@@ -304,8 +283,7 @@ class Keyboard(object):
         if (self.mod & toggle[scancode.CAPSLOCK]
                 and not ignore_caps and len(c) == 1):
             c = c.swapcase()
-        self.buf.insert_keypress(
-                unicodepage.from_unicode(c), scan, self.mod, check_full=True)
+        self.prebuf.append((unicodepage.from_unicode(c), scan, self.mod))
 
     def key_up(self, scan):
         """ Insert a key-up event. """
@@ -325,6 +303,13 @@ class Keyboard(object):
             self.keypad_ascii = ''
         elif scan == scancode.F12:
             self.home_key_active = False
+
+    def drain_event_buffer(self):
+        """ Drain prebuffer into key buffer proper. """
+        while self.prebuf:
+            c, scan, mod = self.prebuf.pop(0)
+            self.buf.insert_keypress(c, scan, mod, check_full=True)
+
 
 
 ################
