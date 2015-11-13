@@ -6640,7 +6640,7 @@
     <section>
         <h4 id="PMAP"><code>PMAP</code> function</h4>
         <code class="block">
-            <var>physical</var> <b>= PMAP(</b><var>logical</var><b>,</b> <var>fn</var><b>)</b>
+            <var>transformed_coord</var> <b>= PMAP(</b><var>original_coord</var><b>,</b> <var>fn</var><b>)</b>
         </code>
         <p>
             Maps between viewport and logical (<code><a href="#WINDOW">WINDOW</a></code>) coordinates.
@@ -6648,7 +6648,8 @@
             are physical coordinates.
         </p>
         <p>
-            The return value depends on <code><var>fn</var></code>:
+            Depending on the value of <code><var>fn</var></code>, <code>PMAP</code>
+            transforms from logical to viewport coordinates or vice versa:
         </p>
         <div class="scrollable">
             <table>
