@@ -158,7 +158,9 @@ class VideoCurses(video.VideoPlugin):
             else:
                 if i == curses.KEY_BREAK:
                     # this is fickle, on many terminals doesn't work
-                    backend.input_queue.put(backend.Event(backend.KEYB_BREAK))
+                    backend.input_queue.put(backend.Event(
+                                            backend.KEYB_DOWN,
+                                            (u'', scancode.BREAK, [scancode.CTRL])))
                 elif i == curses.KEY_RESIZE:
                     sys.stdout.write(ansi.esc_resize_term % (self.height, self.width))
                     sys.stdout.flush()

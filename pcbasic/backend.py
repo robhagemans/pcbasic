@@ -108,8 +108,6 @@ VIDEO_SET_CAPTION = 29
 # input queue signals
 # special keys
 KEYB_QUIT = 0
-# break event (an alternative to Ctrl+Break keydown events)
-KEYB_BREAK = 1
 # insert character
 KEYB_CHAR = 4
 # insert keydown
@@ -199,8 +197,6 @@ def check_input():
         input_queue.task_done()
         if signal.event_type == KEYB_QUIT:
             raise error.Exit()
-        elif signal.event_type == KEYB_BREAK:
-            raise error.Break()
         elif signal.event_type == KEYB_CHAR:
             # params is a unicode sequence
             state.console_state.keyb.insert_chars(signal.params)
