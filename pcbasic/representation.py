@@ -93,7 +93,7 @@ Double.type_sign, Double.exp_sign = '#', 'D'
 
 def just_under(n_in):
     """ Return the largest floating-point number less than the given value. """
-    # decrease mantissa by one (leaving carry unchanged)
+    # decrease mantissa by one
     return n_in.__class__(n_in.neg, n_in.man - 0x100, n_in.exp)
 
 def get_digits(num, digits, remove_trailing=True):
