@@ -167,11 +167,14 @@ if plat.system == 'Windows':
             try:
                 os.chdir(letter + ':')
                 cwd = win32api.GetShortPathName(os.getcwd())
+            except Exception:
+                # something went wrong, do not mount this drive
+                # this is often a pywintypes.error rather than a WindowsError
+                pass
+            else:
                 # must not start with \\
                 path, cwd = cwd[:3], cwd[3:]
                 state.io_state.devices[letter + ':'] = DiskDevice(letter, path, cwd)
-            except OSError:
-                pass
         os.chdir(save_current)
         return current_drive
 else:
@@ -273,8 +276,10 @@ if plat.system == 'Windows':
         try:
             # gets the short name if it exists, keeps long name otherwise
             path_and_name = win32api.GetShortPathName(path_and_longname)
-        except OSError:
+        except Exception:
             # something went wrong - keep long name (happens for swap file)
+            # this should be a WindowsError which is an OSError
+            # but it often is a pywintypes.error
             path_and_name = path_and_longname
         # last element of path is name
         name = path_and_name.split(os.sep)[-1]
