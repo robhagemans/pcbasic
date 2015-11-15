@@ -23,7 +23,7 @@ def prepare():
 def init(plugin_name):
     """ Start audio plugin. """
     global plugin
-    # initialise video plugin
+    # initialise audio plugin
     try:
         plugin = plugin_dict[plugin_name]()
         return True
@@ -48,7 +48,7 @@ class AudioPlugin(object):
         # sound generators for sounds not played yet
         # if not None, something is playing
         self.next_tone = [ None, None, None, None ]
-        # start video thread
+        # start audio thread
         self.thread = threading.Thread(target=self._consumer_thread)
         self.thread.start()
 
@@ -67,7 +67,7 @@ class AudioPlugin(object):
     # queue management
 
     def _consumer_thread(self):
-        """ Video signal queue consumer thread. """
+        """ Audio message and tone queue consumer thread. """
         self._init_sound()
         while self._drain_message_queue():
             empty = self._drain_tone_queue()
