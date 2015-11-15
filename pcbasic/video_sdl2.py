@@ -60,7 +60,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             raise video.InitFailed()
         video_graphical.VideoGraphical.__init__(self, **kwargs)
         # initialise SDL
-        sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO)
+        sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO | sdl2.SDL_INIT_AUDIO)
         # display & border
         # border attribute
         self.border_attr = 0

@@ -29,6 +29,7 @@ import audio
 import audio_none
 import audio_beep
 import audio_pygame
+import audio_sdl2
 
 
 # sound capabilities - '', 'pcjr' or 'tandy'
@@ -67,11 +68,11 @@ audio_backends = {
     'none': ('none',),
     'cli': ('beep', 'none'),
     'text': ('beep', 'none'),
-    'graphical': ('pygame', 'beep', 'none'),
+    'graphical': ('sdl2', 'pygame', 'beep', 'none'),
     'ansi': ('beep', 'none'),
     'curses': ('beep', 'none'),
     'pygame': ('pygame', 'beep', 'none'),
-    'sdl2': ('beep', 'none'),
+    'sdl2': ('sdl2', 'beep', 'none'),
     }
 
 def init_audio_plugin(interface_name):
