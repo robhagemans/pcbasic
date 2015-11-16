@@ -69,10 +69,10 @@ audio_backends = {
     'cli': ('beep', 'none'),
     'text': ('beep', 'none'),
     'graphical': ('sdl2', 'pygame', 'beep', 'none'),
-    'ansi': ('beep', 'none'),
-    'curses': ('beep', 'none'),
-    'pygame': ('pygame', 'beep', 'none'),
-    'sdl2': ('sdl2', 'beep', 'none'),
+    'ansi': ('none'),
+    'curses': ('none'),
+    'pygame': ('pygame', 'none'),
+    'sdl2': ('sdl2', 'none'),
     }
 
 def init_audio_plugin(interface_name):

@@ -37,10 +37,10 @@ video_backends = {
     'text': (('curses', 'ansi'), 'cli'),
     'graphical':  (('sdl2', 'pygame',), 'text'),
     # force a particular plugin to be used
-    'ansi': (('ansi',), 'cli'),
-    'curses': (('curses',), 'cli'),
-    'pygame': (('pygame',), 'text'),
-    'sdl2': (('sdl2',), 'text'),
+    'ansi': (('ansi',), None),
+    'curses': (('curses',), None),
+    'pygame': (('pygame',), None),
+    'sdl2': (('sdl2',), None),
     }
 
 # create the window icon
