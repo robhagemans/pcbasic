@@ -53,8 +53,11 @@ class AudioSDL2(audio.AudioPlugin):
 
     def __init__(self):
         """ Initialise sound system. """
+        if not sdl2:
+            logging.warning('SDL2 module not found. Failed to initialise SDL2 audio plugin.')
+            raise audio.InitFailed()
         if not numpy:
-            logging.warning('NumPy module not found. Failed to initialise audio.')
+            logging.warning('NumPy module not found. Failed to initialise SDL2 audio plugin.')
             raise audio.InitFailed()
         # sound generators for each tone
         self.generators = [deque(), deque(), deque(), deque()]

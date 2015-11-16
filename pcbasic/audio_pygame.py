@@ -55,10 +55,14 @@ class AudioPygame(audio.AudioPlugin):
 
     def __init__(self):
         """ Initialise sound system. """
+        if not pygame:
+            logging.warning('PyGame module not found. Failed to initialise PyGame audio plugin.')
+            raise audio.InitFailed()
         if not numpy:
-            logging.warning('NumPy module not found. Failed to initialise audio.')
+            logging.warning('NumPy module not found. Failed to initialise PyGame audio plugin.')
             raise audio.InitFailed()
         if not mixer:
+            logging.warning('PyGame mixer module not found. Failed to initialise PyGame audio plugin.')
             raise audio.InitFailed()
         # currently looping sound
         self.loop_sound = [ None, None, None, None ]
