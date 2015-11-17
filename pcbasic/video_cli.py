@@ -167,7 +167,7 @@ class VideoCLI(video.VideoPlugin):
     def scroll_down(self, from_line, scroll_height, back_attr):
         """ Scroll the screen down between from_line and scroll_height. """
         self.text[self.apagenum][from_line-1:scroll_height] = (
-                [[(u' ', 0)]*len(self.text[self.apagenum][0])] +
+                [[u' ']*len(self.text[self.apagenum][0])] +
                 self.text[self.apagenum][from_line-1:scroll_height-1])
 
     def set_mode(self, mode_info):
