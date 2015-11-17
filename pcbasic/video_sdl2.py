@@ -25,14 +25,9 @@ try:
 except ImportError:
     numpy = None
 
-import plat
-import config
 import backend
-import typeface
 import scancode
 import eascii
-# for operation tokens for PUT
-import basictoken as tk
 import clipboard
 import video
 import video_graphical
