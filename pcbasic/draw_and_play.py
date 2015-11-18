@@ -37,8 +37,6 @@ def ml_parse_value(gmls, default=None):
     """ Parse a value in a macro-language string. """
     c = util.skip(gmls, ml_whitepace)
     sgn = -1 if c == '-' else 1
-    if not c:
-        raise error.RunError(error.IFC)
     if c in ('+', '-'):
         gmls.read(1)
         c = util.peek(gmls)
@@ -57,7 +55,7 @@ def ml_parse_value(gmls, default=None):
         else:
             # varptr$
             step = get_value_for_varptrstr(gmls.read(3))
-    elif c in representation.ascii_digits:
+    elif c and c in representation.ascii_digits:
         step = ml_parse_const(gmls)
     elif default is not None:
         step = default
