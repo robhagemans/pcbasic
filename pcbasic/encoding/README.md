@@ -17,7 +17,6 @@ Additional notes on some codepages:
 | Codepage   | Notes  
 |------------|----------------------------------------------------------------  
 |        864 | MS-DOS Arabic. Note that 0x25 is mapped to %, not ARABIC PERCENT SIGN.  
-|        866 | MS-DOS Cyrillic Russian. Also known as Alternativny Variant.  
 |        874 | MS-DOS Thai. Note that combining diacritics are not handled.  
 |        932 | MS-DOS Japanese. Superset of Shift-JIS. 5c, 7e are mapped to \, ~, not YEN, OVERLINE.  
 |        936 | Windows Simplified Chinese GBK. Superset of GB2312/EUC-CN.  
