@@ -9,7 +9,6 @@ This file is released under the GNU GPL version 3.
 import subprocess
 import logging
 import sys
-import locale
 
 import plat
 import unicodepage
@@ -18,8 +17,7 @@ import unicodepage
 def prepare():
     """ Prepare the clipboard module. """
     global encoding
-    locale.setlocale(locale.LC_ALL, '')
-    encoding = locale.getpreferredencoding()
+    encoding = plat.preferred_encoding
 
 
 class Clipboard(object):

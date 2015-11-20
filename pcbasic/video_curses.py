@@ -8,13 +8,14 @@ This file is released under the GNU GPL version 3.
 
 import sys
 import os
-import locale
 import logging
 try:
     import curses
 except ImportError:
     curses = None
 
+# ensure setlocale() has been run to allow unicode input
+import plat
 import config
 import scancode
 import eascii
@@ -32,9 +33,7 @@ def prepare():
     """ Initialise the video_curses module. """
     global encoding
     video.plugin_dict['curses'] = VideoCurses
-    # allow unicode input
-    locale.setlocale(locale.LC_ALL, '')
-    encoding = locale.getpreferredencoding()
+    encoding = plat.preferred_encoding
 
 if curses:
     # curses keycodes

@@ -86,7 +86,15 @@ else:
     import tempfile
     temp_dir = tempfile.mkdtemp(prefix='pcbasic-')
 
-# PC_BASIC version
+# preferred locale
+import locale
+# language must be 'C' internally to ensure bytes >= 0x80 are treated as bytes,
+# not as Windows-1252 characters or some such
+locale.setlocale(locale.LC_ALL, 'C')
+# this platform's preferred encoding
+preferred_encoding = locale.getpreferredencoding()
+
+# PC-BASIC version
 try:
     with open(os.path.join(info_dir, 'version.txt')) as f:
         version = f.read().rstrip()
