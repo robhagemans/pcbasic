@@ -271,9 +271,9 @@ class Keyboard(object):
            pass
         # ALT+keycode
         if scan == scancode.ALT and self.keypad_ascii:
-            char = unichr(int(self.keypad_ascii)%256)
-            if char == u'\0':
-                char = eascii.NUL
+            char = chr(int(self.keypad_ascii)%256)
+            if char == '\0':
+                char = '\0\0'
             self.buf.insert(char, check_full=True)
             self.keypad_ascii = ''
         elif scan == scancode.F12:
