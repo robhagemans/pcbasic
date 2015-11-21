@@ -249,8 +249,7 @@ class Keyboard(object):
         except KeyError:
             pass
         # alt+keypad ascii replacement
-        # we can't depend on internal NUM LOCK state as it doesn't get updated
-        if (scancode.ALT in mods and len(c) == 1):
+        if (scancode.ALT in mods):
             try:
                 self.keypad_ascii += scancode.keypad[scan]
                 return
@@ -341,19 +340,22 @@ home_key_replacements_scancode = {
     scancode.RIGHT: (scancode.KP6, u'6'),
     scancode.UP: (scancode.KP8, u'8'),
     scancode.DOWN: (scancode.KP2, u'2'),
+    # catch numbers by scancode, not eACSII
+    # becasue the eASCII for Alt+number is different and that
+    # will break inserting Alt+keypad numbers as Alt+F12+numbers
+    scancode.N0: (scancode.KP0, u'0'),
+    scancode.N1: (scancode.KP1, u'1'),
+    scancode.N2: (scancode.KP2, u'2'),
+    scancode.N3: (scancode.KP3, u'3'),
+    scancode.N4: (scancode.KP4, u'4'),
+    scancode.N5: (scancode.KP5, u'5'),
+    scancode.N6: (scancode.KP6, u'6'),
+    scancode.N7: (scancode.KP7, u'7'),
+    scancode.N8: (scancode.KP8, u'8'),
+    scancode.N9: (scancode.KP9, u'9'),
 }
 
 home_key_replacements_eascii = {
-    u'0': (scancode.KP0, u'0'),
-    u'1': (scancode.KP1, u'1'),
-    u'2': (scancode.KP2, u'2'),
-    u'3': (scancode.KP3, u'3'),
-    u'4': (scancode.KP4, u'4'),
-    u'5': (scancode.KP5, u'5'),
-    u'6': (scancode.KP6, u'6'),
-    u'7': (scancode.KP7, u'7'),
-    u'8': (scancode.KP8, u'8'),
-    u'9': (scancode.KP9, u'9'),
     u'+': (scancode.KPPLUS, u'+'),
     u'-': (scancode.KPMINUS, u'-'),
     u'P': (scancode.BREAK, u''),
