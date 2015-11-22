@@ -175,9 +175,9 @@ class Keyboard(object):
 
     def __init__(self):
         """ Initilise keyboard state. """
-        # key queue
+        # key queue (holds bytes)
         self.buf = KeyboardBuffer(15)
-        # pre-buffer for keystrokes to enable event handling
+        # pre-buffer for keystrokes to enable event handling (holds unicode)
         self.prebuf = []
         # INP(&H60) scancode
         self.last_scancode = 0
@@ -258,7 +258,7 @@ class Keyboard(object):
         if (self.mod & toggle[scancode.CAPSLOCK]
                 and not ignore_caps and len(c) == 1):
             c = c.swapcase()
-        self.prebuf.append((unicodepage.from_unicode(c), scan, self.mod))
+        self.prebuf.append((c, scan, self.mod))
 
     def key_up(self, scan):
         """ Insert a key-up event. """
@@ -306,7 +306,7 @@ class Keyboard(object):
                 elif mod & modifier[scancode.CTRL]:
                     # ctrl + printscreen
                     redirect.toggle_echo(state.io_state.lpt1_file)
-            self.buf.insert_keypress(c, scan, mod, check_full=True)
+            self.buf.insert_keypress(unicodepage.from_unicode(c), scan, mod, check_full=True)
 
 
 
