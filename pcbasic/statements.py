@@ -406,7 +406,7 @@ def exec_com(ins):
     util.require(ins, ('(',))
     num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
     util.range_check(1, 2, num)
-    if state.basic_state.events.com[num].command(util.skip_white(ins)):
+    if state.basic_state.events.com[num-1].command(util.skip_white(ins)):
         ins.read(1)
     else:
         raise error.RunError(error.STX)
