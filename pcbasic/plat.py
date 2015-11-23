@@ -88,9 +88,10 @@ else:
 
 # preferred locale
 import locale
-# language must be 'C' internally to ensure bytes >= 0x80 are treated as bytes,
-# not as Windows-1252 characters or some such
-locale.setlocale(locale.LC_ALL, 'C')
+# this is necessary for curses and *maybe* for clipboard handling
+# there's only one locale setting so best to do it all upfront here
+# NOTE that this affects str.upper() etc.
+locale.setlocale(locale.LC_ALL, '')
 # this platform's preferred encoding
 preferred_encoding = locale.getpreferredencoding()
 
