@@ -830,6 +830,15 @@ class TextFile(devices.CRLFTextFileBase):
         elif self.mode == 'O' and self.utf8:
             # start UTF-8 files with BOM as many Windows readers expect this
             self.fhandle.write('\xef\xbb\xbf')
+        elif self.mode == 'I' and self.utf8:
+            # check for BOM, ignore if present
+            # this is a bit of a kludge to avoid messing up the peek buffer
+            if self.next_char == '\xef':
+                twochar = self.fhandle.read(2)
+                self.fhandle.seek(-len(twochar), 1)
+                if twochar == '\xbb\xbf':
+                    # it's a BOM, officially read the BOM
+                    self.read_raw(3)
 
     def close(self):
         """ Close text file. """
