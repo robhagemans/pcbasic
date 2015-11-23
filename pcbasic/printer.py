@@ -32,7 +32,7 @@ class PrinterStream(StringIO):
             return
         self.truncate(0)
         # any naked lead bytes in DBCS will remain just that - avoid in-line flushes.
-        utf8buf = unicodepage.Converter(preserve_control=True).to_unicode(printbuf).encode('utf-8')
+        utf8buf = unicodepage.Converter(preserve_control=True).to_unicode(printbuf).encode('utf-8', 'replace')
         line_print(utf8buf, self.printer_name)
 
 

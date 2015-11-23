@@ -712,14 +712,14 @@ class SDL2Clipboard(clipboard.Clipboard):
 
     def copy(self, text, mouse=False):
         """ Put unicode text on clipboard. """
-        sdl2.SDL_SetClipboardText(text.encode('utf-8', errors='ignore'))
+        sdl2.SDL_SetClipboardText(text.encode('utf-8', errors='replace'))
 
     def paste(self, mouse=False):
         """ Return unicode text from clipboard. """
         text = sdl2.SDL_GetClipboardText()
         if text is None:
             return u''
-        return text.decode('utf-8')
+        return text.decode('utf-8', 'replace')
 
 
 ###############################################################################

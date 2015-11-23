@@ -646,9 +646,9 @@ class PygameClipboard(clipboard.Clipboard):
             if plat.system == 'Windows':
                 # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
                 # but give it a utf-8 MIME type, because that's how Windows likes it
-                pygame.scrap.put('text/plain;charset=utf-8', text.encode('utf-16le') + '\0\0')
+                pygame.scrap.put('text/plain;charset=utf-8', text.encode('utf-16le', 'replace') + '\0\0')
             else:
-                pygame.scrap.put(pygame.SCRAP_TEXT, text.encode('utf-8'))
+                pygame.scrap.put(pygame.SCRAP_TEXT, text.encode('utf-8', 'replace'))
         except KeyError:
             logging.debug('Clipboard copy failed for clip %s', repr(text))
 
@@ -670,11 +670,11 @@ class PygameClipboard(clipboard.Clipboard):
             if text_type == 'text/plain;charset=utf-8':
                 # it's lying, it's giving us UTF16 little-endian
                 # ignore any bad UTF16 characters from outside
-                us = us.decode('utf-16le', errors='ignore')
+                us = us.decode('utf-16le', errors='replace')
             # remove null-terminator
             us = us[:us.find(u'\0')]
         else:
-            us = us.decode('utf-8', errors='ignore')
+            us = us.decode('utf-8', errors='replace')
         return us or u''
 
 def get_clipboard_handler():

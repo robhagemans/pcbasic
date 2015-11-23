@@ -857,13 +857,13 @@ class TextFile(devices.CRLFTextFileBase):
     def write_line(self, s=''):
         """ Write to file in normal or UTF-8 mode. """
         if self.utf8:
-            s = unicodepage.Converter().to_unicode(s).encode('utf-8')
+            s = unicodepage.Converter().to_unicode(s).encode('utf-8', 'replace')
         devices.CRLFTextFileBase.write(self, s + '\r\n')
 
     def write(self, s):
         """ Write to file in normal or UTF-8 mode. """
         if self.utf8:
-            s = unicodepage.Converter().to_unicode(s).encode('utf-8')
+            s = unicodepage.Converter().to_unicode(s).encode('utf-8', 'replace')
         devices.CRLFTextFileBase.write(self, s)
 
     def _read_line_universal(self):

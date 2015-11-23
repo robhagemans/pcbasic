@@ -41,14 +41,14 @@ class MacClipboard(Clipboard):
 
     def paste(self, mouse=False):
         """ Get unicode text from clipboard. """
-        return (subprocess.check_output('pbpaste')
-                .decode(encoding).replace('\r\n','\r').replace('\n', '\r'))
+        return (subprocess.check_output('pbpaste').decode(encoding, 'replace')
+                .replace('\r\n','\r').replace('\n', '\r'))
 
     def copy(self, text, mouse=False):
         """ Put unicode text on clipboard. """
         try:
             p = subprocess.Popen('pbcopy', stdin=subprocess.PIPE)
-            p.communicate(text.encode(encoding))
+            p.communicate(text.encode(encoding, 'replace'))
         except subprocess.CalledProcessError:
             pass
 
@@ -77,7 +77,8 @@ class XClipboard(Clipboard):
         else:
             output = subprocess.check_output(
                                 [self._command, '-o'] + self._notmouse)
-        return output.decode(encoding).replace('\r\n','\r').replace('\n', '\r')
+        return (output.decode(encoding, 'replace')
+                .replace('\r\n','\r').replace('\n', '\r'))
 
     def copy(self, text, mouse=False):
         """ Put unicode text on clipboard. """
@@ -88,7 +89,7 @@ class XClipboard(Clipboard):
             else:
                 p = subprocess.Popen([self._command, '-i'] + self._notmouse,
                                      stdin=subprocess.PIPE)
-            p.communicate(text.encode(encoding))
+            p.communicate(text.encode(encoding, 'replace'))
         except subprocess.CalledProcessError:
             pass
 

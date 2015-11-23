@@ -135,7 +135,7 @@ class VideoCLI(video.VideoPlugin):
         if for_keys:
             return
         self._update_position(row, col)
-        sys.stdout.write(char)
+        sys.stdout.write(char.encode(encoding, 'replace'))
         sys.stdout.flush()
         self.last_col += 2 if dbcs else 1
 
@@ -189,7 +189,7 @@ class VideoCLI(video.VideoPlugin):
 
     def _redraw_row(self, row):
         """ Draw the stored text in a row. """
-        rowtext = u''.join(self.text[self.vpagenum][row-1])
+        rowtext = u''.join(self.text[self.vpagenum][row-1]).encode(encoding, 'replace')
         sys.stdout.write(rowtext)
         sys.stdout.write(ansi.esc_move_left*len(rowtext))
         sys.stdout.flush()
@@ -290,7 +290,7 @@ class InputHandlerCLI(object):
                     pass
         # no sequence or decodable string found
         # decode as good as it gets
-        return s.decode(encoding, errors='ignore'), None
+        return s.decode(encoding, errors='replace'), None
 
 
 

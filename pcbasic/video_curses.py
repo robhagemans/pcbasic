@@ -181,7 +181,7 @@ class VideoCurses(video.VideoPlugin):
             if i == curses.KEY_F12:
                 self.f12_active = True
         # convert into unicode chars
-        u = s.decode(encoding)
+        u = s.decode(encoding, 'replace')
         # then handle these one by one
         for c in u:
             #check_full=False?
@@ -200,7 +200,7 @@ class VideoCurses(video.VideoPlugin):
         for row, textrow in enumerate(self.text[self.vpagenum]):
             for col, charattr in enumerate(textrow):
                 try:
-                    self.window.addstr(row, col, charattr[0].encode(encoding), charattr[1])
+                    self.window.addstr(row, col, charattr[0].encode(encoding, 'replace'), charattr[1])
                 except curses.error:
                     pass
         if self.cursor_visible:
@@ -328,7 +328,7 @@ class VideoCurses(video.VideoPlugin):
                 self.last_colour = colour
                 self.window.bkgdset(' ', colour)
             try:
-                self.window.addstr(row-1, col-1, c.encode(encoding), colour)
+                self.window.addstr(row-1, col-1, c.encode(encoding, 'replace'), colour)
             except curses.error:
                 pass
 

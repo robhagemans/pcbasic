@@ -48,7 +48,7 @@ def set_input(f, encoding=None):
     # read everything
     all_input = f.read()
     if encoding:
-        all_input = all_input.decode(encoding)
+        all_input = all_input.decode(encoding, 'replace')
     else:
         # raw input means it's already in the BASIC codepage
         # but the keyboard functions use unicode
@@ -75,7 +75,7 @@ def echo_raw(s, f):
 
 def echo_encoded(s, f, encoding='utf-8'):
     """ Output redirection echo as UTF-8 or other encoding. """
-    f.write(uniconv.to_unicode(str(s)).encode(encoding))
+    f.write(uniconv.to_unicode(str(s)).encode(encoding, 'replace'))
 
 def toggle_echo(device):
     """ Toggle copying of all screen I/O to LPT1. """
