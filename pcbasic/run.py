@@ -16,7 +16,6 @@ import state
 import backend
 import reset
 import flow
-from representation import ascii_whitespace
 
 # true if a prompt is needed on next cycle
 state.basic_state.prompt = True

@@ -66,7 +66,7 @@ def parse_statement():
     try:
         ins = flow.get_codestream()
         state.basic_state.current_statement = ins.tell()
-        c = util.skip_white(ins).upper()
+        c = util.skip_white(ins)
         if c == '':
             # stream has ended.
             return False
@@ -90,12 +90,12 @@ def parse_statement():
             debug.debug_step(linenum)
         elif c == ':':
             ins.read(1)
-        c = util.skip_white(ins).upper()
+        c = util.skip_white(ins)
         # empty statement, return to parse next
         if c in tk.end_statement:
             return True
         # implicit LET
-        elif c in string.ascii_uppercase:
+        elif c in string.ascii_letters:
             exec_let(ins)
         # token
         else:
@@ -1838,18 +1838,18 @@ def exec_deftype(ins, typechar):
     """ DEFSTR/DEFINT/DEFSNG/DEFDBL: set type defaults for variables. """
     start, stop = -1, -1
     while True:
-        d = util.skip_white_read(ins).upper()
-        if d < 'A' or d > 'Z':
+        d = util.skip_white_read(ins)
+        if d not in string.ascii_letters:
             raise error.RunError(error.STX)
         else:
-            start = ord(d) - ord('A')
+            start = ord(d.upper()) - ord('A')
             stop = start
         if util.skip_white_read_if(ins, (tk.O_MINUS,)):
-            d = util.skip_white_read(ins).upper()
-            if d < 'A' or d > 'Z':
+            d = util.skip_white_read(ins)
+            if d not in string.ascii_letters:
                 raise error.RunError(error.STX)
             else:
-                stop = ord(d) - ord('A')
+                stop = ord(d.upper()) - ord('A')
         state.basic_state.deftype[start:stop+1] = [typechar] * (stop-start+1)
         if not util.skip_white_read_if(ins, (',',)):
             break

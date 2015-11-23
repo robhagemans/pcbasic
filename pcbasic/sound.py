@@ -10,6 +10,7 @@ import Queue
 import threading
 import time
 import logging
+import string
 
 try:
     from cStringIO import StringIO
@@ -264,9 +265,9 @@ class Sound(object):
                         elif c == '.':
                             gmls.read(1)
                             dur *= 1.5
-                        elif c in representation.ascii_digits:
+                        elif c in string.digits:
                             numstr = ''
-                            while c and c in representation.ascii_digits:
+                            while c and c in string.digits:
                                 gmls.read(1)
                                 numstr += c
                                 c = util.skip(gmls, draw_and_play.ml_whitepace)

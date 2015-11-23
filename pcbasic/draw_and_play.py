@@ -6,6 +6,8 @@ DRAW and PLAY macro language stream utilities
 This file is released under the GNU GPL version 3.
 """
 
+import string
+
 import error
 import fp
 import vartypes
@@ -55,7 +57,7 @@ def ml_parse_value(gmls, default=None):
         else:
             # varptr$
             step = get_value_for_varptrstr(gmls.read(3))
-    elif c and c in representation.ascii_digits:
+    elif c and c in string.digits:
         step = ml_parse_const(gmls)
     elif default is not None:
         step = default
@@ -72,9 +74,9 @@ def ml_parse_number(gmls, default=None):
 def ml_parse_const(gmls):
     """ Parse and return a constant value in a macro-language string. """
     c = util.skip(gmls, ml_whitepace)
-    if c and c in representation.ascii_digits:
+    if c and c in string.digits:
         numstr = ''
-        while c and c in representation.ascii_digits:
+        while c and c in string.digits:
             gmls.read(1)
             numstr += c
             c = util.skip(gmls, ml_whitepace)

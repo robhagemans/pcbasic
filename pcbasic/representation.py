@@ -6,9 +6,7 @@ Convert between numbers and their string representations
 This file is released under the GNU GPL version 3.
 """
 
-from string import digits as ascii_digits
-from string import hexdigits as ascii_hexits
-from string import octdigits as ascii_octits
+import string
 
 try:
     from cStringIO import StringIO
@@ -78,7 +76,7 @@ def oct_to_str(s):
 
 # for to_str
 # for numbers, tab and LF are whitespace
-ascii_whitespace = ' \t\n'
+number_whitespace = ' \t\n'
 
 # string representations
 
@@ -299,7 +297,7 @@ def str_to_float(s, allow_nonnum = True):
     is_double, is_single = False, False
     for c in s:
         # ignore whitespace throughout (x = 1   234  56  .5  means x=123456.5 in gw!)
-        if c in ascii_whitespace:
+        if c in number_whitespace:
             continue
         # determine sign
         if (not found_sign):
@@ -382,11 +380,11 @@ def tokenise_hex(ins, outs):
     ins.read(1)
     word = ''
     while True:
-        c = util.peek(ins).upper()
-        if not c or c not in ascii_hexits:
+        c = util.peek(ins)
+        if not c or c not in string.hexdigits:
             break
         else:
-            word += ins.read(1).upper()
+            word += ins.read(1)
     val = int(word, 16) if word else 0
     outs.write(tk.T_HEX + str(vartypes.value_to_uint(val)))
 
@@ -397,11 +395,11 @@ def tokenise_oct(ins, outs):
         ins.read(1)
     word = ''
     while True:
-        c = util.peek(ins).upper()
-        if not c or c not in ascii_octits:
+        c = util.peek(ins)
+        if not c or c not in string.octdigits:
             break
         else:
-            word += ins.read(1).upper()
+            word += ins.read(1)
     val = int(word, 8) if word else 0
     outs.write(tk.T_OCT + str(vartypes.value_to_uint(val)))
 
@@ -433,9 +431,9 @@ def tokenise_dec(ins, outs):
         elif c in '-+' and (not word or word[-1] in 'ED'):
             # must be first token or in exponent
             word += c
-        elif c in ascii_digits:
+        elif c in string.digits:
             word += c
-        elif c in ascii_whitespace:
+        elif c in number_whitespace:
             # we'll remove this later but need to keep it for now
             # so we can reposition the stream on removing trailing whitespace
             word += c
@@ -452,17 +450,17 @@ def tokenise_dec(ins, outs):
     if kill:
         word = '0'
     # don't claim trailing whitespace
-    while len(word)>0 and (word[-1] in ascii_whitespace):
+    while len(word)>0 and (word[-1] in number_whitespace):
         word = word[:-1]
         ins.seek(-1,1) # even if c==''
     # remove all internal whitespace
     trimword = ''
     for c in word:
-        if c not in ascii_whitespace:
+        if c not in number_whitespace:
             trimword += c
     word = trimword
     # write out the numbers
-    if len(word) == 1 and word in ascii_digits:
+    if len(word) == 1 and word in string.digits:
         # digit
         outs.write(chr(0x11+int(word)))
     elif (not (have_exp or have_point or word[-1] in '!#') and
@@ -494,7 +492,7 @@ def tokenise_number(ins, outs):
         else:
             # octal constant
             tokenise_oct(ins, outs)
-    elif c in ascii_digits + '.+-':
+    elif c in string.digits + '.+-':
         # handle other numbers
         # note GW passes signs separately as a token
         # and only stores positive numbers in the program

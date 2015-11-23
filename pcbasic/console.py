@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3.
 """
 
 import logging
+import string
 
 import config
 import state
@@ -520,8 +521,8 @@ def skip_word_right():
     crow, ccol = state.console_state.row, state.console_state.col
     # find non-alphanumeric chars
     while True:
-        c = state.console_state.screen.apage.row[crow-1].buf[ccol-1][0].upper()
-        if (c < '0' or c > '9') and (c < 'A' or c > 'Z'):
+        c = state.console_state.screen.apage.row[crow-1].buf[ccol-1][0]
+        if (c not in string.digits + string.ascii_letters):
             break
         ccol += 1
         if ccol > state.console_state.screen.mode.width:
@@ -532,8 +533,8 @@ def skip_word_right():
             ccol = 1
     # find alphanumeric chars
     while True:
-        c = state.console_state.screen.apage.row[crow-1].buf[ccol-1][0].upper()
-        if not ((c < '0' or c > '9') and (c < 'A' or c > 'Z')):
+        c = state.console_state.screen.apage.row[crow-1].buf[ccol-1][0]
+        if (c in string.digits + string.ascii_letters):
             break
         ccol += 1
         if ccol > state.console_state.screen.mode.width:
@@ -556,8 +557,8 @@ def skip_word_left():
                 return
             crow -= 1
             ccol = state.console_state.screen.mode.width
-        c = state.console_state.screen.apage.row[crow-1].buf[ccol-1][0].upper()
-        if not ((c < '0' or c > '9') and (c < 'A' or c > 'Z')):
+        c = state.console_state.screen.apage.row[crow-1].buf[ccol-1][0]
+        if (c in string.digits + string.ascii_letters):
             break
     # find non-alphanumeric chars
     while True:
@@ -568,8 +569,8 @@ def skip_word_left():
                 break
             crow -= 1
             ccol = state.console_state.screen.mode.width
-        c = state.console_state.screen.apage.row[crow-1].buf[ccol-1][0].upper()
-        if (c < '0' or c > '9') and (c < 'A' or c > 'Z'):
+        c = state.console_state.screen.apage.row[crow-1].buf[ccol-1][0]
+        if (c not in string.digits + string.ascii_letters):
             break
     set_pos(last_row, last_col)
 

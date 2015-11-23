@@ -146,7 +146,7 @@ def parse_expr_unit(ins):
             ins.seek(-1, 1)
         return vartypes.pack_string(output)
     # variable name
-    elif d in string.ascii_uppercase:
+    elif d in string.ascii_letters:
         name, indices = get_var_or_array_name(ins)
         return var.get_var_or_array(name, indices)
     # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)

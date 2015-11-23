@@ -6,8 +6,7 @@ Convert between tokenised and ASCII formats of a GW-BASIC program file
 This file is released under the GNU GPL version 3.
 """
 
-from string import ascii_uppercase
-from string import digits as ascii_digits
+import string
 
 try:
     from cStringIO import StringIO
@@ -21,7 +20,8 @@ import util
 import vartypes
 
 # newline is considered whitespace: ' ', '\t', '\n'
-from representation import ascii_whitespace
+ascii_whitespace = ' \t\n'
+# accepted characters for variable names
 from util import name_chars
 
 ascii_operators = '+-=/\\^*<>'
@@ -129,7 +129,7 @@ def detokenise_keyword(ins, output):
             return False
     # when we're here, s is an actual keyword token.
     # number followed by token is separated by a space
-    if (output and chr(output[-1]) in ascii_digits and s not in tk.operator):
+    if (output and chr(output[-1]) in string.digits and s not in tk.operator):
         output += ' '
     output += keyword
     comment = False
@@ -161,7 +161,7 @@ def detokenise_keyword(ins, output):
     # SIC: len(output) > 4 and str(output[-4:])
     elif len(output) > 4 and str(output[-4:]) == "ELSE":
         if (len(output) > 5 and chr(output[-5]) == ':' and
-                    chr(output[-6]) in ascii_digits):
+                    chr(output[-6]) in string.digits):
             output[:] = output[:-5] + " ELSE"
         else:
             output[:] = output[:-5] + "ELSE"
@@ -169,7 +169,7 @@ def detokenise_keyword(ins, output):
     # except operator tokens and SPC(, TAB(, FN, USR
     nxt = util.peek(ins)
     if (not comment and
-            nxt.upper() not in tk.end_line + tk.operator +
+            nxt not in tk.end_line + tk.operator +
                                 (tk.O_REM, '"', ',', ' ', ':', '(', ')', '$',
                                  '%', '!', '#', '_', '@', '~', '|', '`') and
             s not in tk.operator + tk.with_bracket + (tk.USR, tk.FN)):
@@ -199,8 +199,8 @@ def tokenise_line(line):
     spc_or_tab = False
     # parse through elements of line
     while True:
-        # peek next character, convert to uppercase
-        c = util.peek(ins).upper()
+        # peek next character
+        c = util.peek(ins)
         # anything after NUL is ignored till EOL
         if c == '\0':
             ins.read(1)
@@ -217,7 +217,7 @@ def tokenise_line(line):
         elif util.peek(ins) == '"':
             tokenise_literal(ins, outs)
         # handle jump numbers
-        elif allow_number and allow_jumpnum and c in ascii_digits + '.':
+        elif allow_number and allow_jumpnum and c in string.digits + '.':
             tokenise_jump_number(ins, outs)
         # handle numbers
         # numbers following var names with no operator or token in between
@@ -225,7 +225,7 @@ def tokenise_line(line):
         # note we don't include leading signs, encoded as unary operators
         # number starting with . or & are always parsed
         elif c in ('&', '.') or (allow_number and
-                                  not allow_jumpnum and c in ascii_digits):
+                                  not allow_jumpnum and c in string.digits):
             representation.tokenise_number(ins, outs)
         # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):
         elif c in ascii_operators:
@@ -246,7 +246,7 @@ def tokenise_line(line):
             outs.write(tk.PRINT)
             allow_number = True
         # keywords & variable names
-        elif c in ascii_uppercase:
+        elif c in string.ascii_letters:
             word = tokenise_word(ins, outs)
             # handle non-parsing modes
             if (word in ('REM', "'") or
@@ -335,7 +335,7 @@ def tokenise_uint(ins):
     word = bytearray()
     while True:
         c = ins.read(1)
-        if c and c in ascii_digits + ascii_whitespace:
+        if c and c in string.digits + ascii_whitespace:
             word += c
         else:
             ins.seek(-len(c), 1)
@@ -367,8 +367,8 @@ def tokenise_word(ins, outs):
     """ Convert a keyword to tokenised form. """
     word = ''
     while True:
-        c = ins.read(1).upper()
-        word += c
+        c = ins.read(1)
+        word += c.upper()
         # special cases 'GO     TO' -> 'GOTO', 'GO SUB' -> 'GOSUB'
         if word == 'GO':
             pos = ins.tell()
@@ -384,14 +384,14 @@ def tokenise_word(ins, outs):
                 else:
                     ins.seek(pos)
             if word in ('GOTO', 'GOSUB'):
-                nxt = util.peek(ins).upper()
+                nxt = util.peek(ins)
                 if nxt and nxt in name_chars:
                     ins.seek(pos)
                     word = 'GO'
         if word in keyword_to_token:
             # ignore if part of a longer name, except FN, SPC(, TAB(, USR
             if word not in ('FN', 'SPC(', 'TAB(', 'USR'):
-                nxt = util.peek(ins).upper()
+                nxt = util.peek(ins)
                 if nxt and nxt in name_chars:
                     continue
             token = keyword_to_token[word]

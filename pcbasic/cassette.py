@@ -476,7 +476,7 @@ class BasicodeStream(CassetteStream):
                 is_rem, is_str = False, False
                 word = ''
             # add space to keywords
-            if c not in string.ascii_uppercase:
+            if c not in string.ascii_letters:
                 word = ''
                 if c == '"':
                     is_str = not is_str
