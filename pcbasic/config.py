@@ -303,7 +303,7 @@ def parse_package(remaining):
             os.chdir(contents[0])
         # recursively rename all files to all-caps to avoid case issues on Unix
         # collisions: the last file renamed overwrites earlier ones
-        for root, dirs, files in os.walk('.', topdown=False):
+        for root, dirs, files in os.walk(u'.', topdown=False):
             for name in dirs + files:
                 try:
                     os.rename(os.path.join(root, name),
