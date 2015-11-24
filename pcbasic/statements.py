@@ -2226,7 +2226,7 @@ def exec_key(ins):
     """ KEY: switch on/off or list function-key row on screen. """
     d = util.skip_white_read(ins)
     if d == tk.ON:
-        # tandy can have VIEW PRINT 1 to 25, should raise ILLEGAN FUNCTION CALL then
+        # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
         if state.console_state.scroll_height == 25:
             raise error.RunError(error.IFC)
         if not state.console_state.keys_visible:
