@@ -177,26 +177,29 @@ class COMDevice(devices.Device):
         for named_param in param_list[4:]:
             if not named_param:
                 continue
-            elif named_param == 'RS':
-                # suppress request to send
-                rs = True
-            elif named_param[:2] == 'CS':
-                # set CTS timeout - clear to send
-                cs = named_param[2:]
-            elif named_param[:2] == 'DS':
-                # set DSR timeout - data set ready
-                ds = named_param[2:]
-            elif named_param[:2] == 'CD':
-                # set CD timeout - carrier detect
-                cd = named_param[2:]
-            elif named_param == 'LF':
-                # send a line feed at each return
-                lf = True
-            elif named_param == 'PE':
-                # enable parity checking
-                # not implemented
-                pe = True
-            else:
+            try:
+                if named_param == 'RS':
+                    # suppress request to send
+                    rs = True
+                elif named_param[:2] == 'CS':
+                    # set CTS timeout - clear to send
+                    cs = int(named_param[2:])
+                elif named_param[:2] == 'DS':
+                    # set DSR timeout - data set ready
+                    ds = int(named_param[2:])
+                elif named_param[:2] == 'CD':
+                    # set CD timeout - carrier detect
+                    cd = int(named_param[2:])
+                elif named_param == 'LF':
+                    # send a line feed at each return
+                    lf = True
+                elif named_param == 'PE':
+                    # enable parity checking
+                    # not implemented
+                    pe = True
+                else:
+                    raise error.RunError(error.BAD_FILE_NAME)
+            except ValueError:
                 raise error.RunError(error.BAD_FILE_NAME)
         # CS default depends on RS
         if cs is None:
