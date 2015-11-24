@@ -112,11 +112,18 @@ class KeyboardBuffer(object):
             if not expand:
                 return c
             else:
-                self.expansion_vessel = expand_key(c)
+                try:
+                    self.expansion_vessel = list(
+                            state.console_state.key_replace[function_key[c]])
+                except KeyError:
+                    # not a function key or undefined, return scancode
+                    return c
                 try:
                     return self.expansion_vessel.pop(0)
                 except IndexError:
-                    return ''
+                    # function macro has been redefined as empty: return scancode
+                    # e.g. KEY 1, "" enables catching F1 with INKEY$
+                    return c
 
     def peek(self):
         """ Show top keystroke in keyboard buffer as eascii/codepage. """
@@ -324,14 +331,6 @@ function_key = {
 # switch off macro repacements
 state.basic_state.key_macros_off = False
 
-
-def expand_key(c):
-    """ Expand function key macros. """
-    try:
-        keynum = function_key[c]
-        return list(state.console_state.key_replace[keynum])
-    except KeyError:
-        return [c]
 
 # F12 emulator home-key
 # also f12+b -> ctrl+break
