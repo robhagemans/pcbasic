@@ -3292,6 +3292,13 @@
             <li>
                 This function has no brackets.
             </li>
+            <li>
+                When a function key <kbd>F1</kbd>&ndash;<kbd>F10</kbd> is pressed,
+                <code>INKEY$</code> will return the letters of the associated macro
+                &mdash; unless this macro has been set to empty with the
+                <code><a href="#KEY-def">KEY</a></code> statement, in which case
+                it returns the e-ASCII code for the function key.
+            </li>
         </ul>
     </section>
 <hr />
@@ -3809,6 +3816,13 @@
                 If <code><var>key_id</var></code> is not in the range <code>[1&#8212;10]</code>,
                 the statement is interpreted as an
                 event-trapping <code><a href="#KEY-event">KEY</a></code> statement.
+            </li>
+            <li>
+                If <code><var>string_value</var></code> is the empty string or
+                the first character of <code><var>string_value</var></code> is
+                <code>CHR$(0)</code>, the function key macro is switched off and
+                subsequent catching of the associated function key with
+                <code><a href="#INKEY$">INKEY$</a></code> is enabled.
             </li>
         </ul>
         <h5>Errors</h5>
