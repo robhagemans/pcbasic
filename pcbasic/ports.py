@@ -183,13 +183,14 @@ class COMDevice(devices.Device):
                     rs = True
                 elif named_param[:2] == 'CS':
                     # set CTS timeout - clear to send
-                    cs = int(named_param[2:])
+                    # 0 for empty string; BAD FILE NAME if not numeric
+                    cs = int(named_param[2:]) if named_param[2:] else 0
                 elif named_param[:2] == 'DS':
                     # set DSR timeout - data set ready
-                    ds = int(named_param[2:])
+                    ds = int(named_param[2:]) if named_param[2:] else 0
                 elif named_param[:2] == 'CD':
                     # set CD timeout - carrier detect
-                    cd = int(named_param[2:])
+                    cd = int(named_param[2:]) if named_param[2:] else 0
                 elif named_param == 'LF':
                     # send a line feed at each return
                     lf = True
