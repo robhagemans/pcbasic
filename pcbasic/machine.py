@@ -470,8 +470,9 @@ def set_font_memory(addr, value):
     char = addr // 8 + 128
     if char < 128 or char > 254:
         return
-    old = display.fonts[8][chr(char)]
-    display.fonts[8][chr(char)] = old[:addr%8]+chr(value)+old[addr%8+1:]
+    uc = unicodepage.cp_to_unicode[chr(char)]
+    old = display.fonts[8][uc]
+    display.fonts[8][uc] = old[:addr%8]+chr(value)+old[addr%8+1:]
     state.console_state.screen.rebuild_glyph(char)
 
 #################################################################################
