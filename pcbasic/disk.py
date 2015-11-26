@@ -749,9 +749,11 @@ class RandomFile(devices.CRLFTextFileBase):
     def get(self, dummy=None):
         """ Read a record. """
         if self.eof():
-            self.field.buffer[:] = '\0' * self.reclen
+            contents = '\0' * self.reclen
         else:
-            self.field.buffer[:] = self.output_stream.read(self.reclen)
+            contents = self.output_stream.read(self.reclen)
+        # take contents and pad with NULL to required size
+        self.field.buffer[:] = contents + '\0' * (self.reclen - len(contents))
         # reset field text file loc
         self.fhandle.seek(0)
         self.recpos += 1
