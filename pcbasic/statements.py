@@ -2254,6 +2254,9 @@ def exec_key_define(ins):
     util.require_read(ins, (',',), err=error.IFC)
     text = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     if keynum <= backend.num_fn_keys:
+        # macro starting with NUL is empty macro
+        if text and str(text)[0] == '\0':
+            text = ''
         state.console_state.key_replace[keynum-1] = str(text)
         if state.console_state.keys_visible:
             console.show_keys(True)

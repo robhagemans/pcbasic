@@ -548,9 +548,11 @@ class Keyboard(object):
                 return
             else:
                 macro = state.console_state.key_replace[keynum]
-                # insert directly, avoid caps handling
-                self.insert_chars(macro, check_full=check_full)
-                return
+                # empty macro means no replacement
+                if macro:
+                    # insert directly, avoid caps handling
+                    self.insert_chars(macro, check_full=check_full)
+                    return
         except KeyError:
             pass
         if not eascii or (scan is not None and self.mod &
