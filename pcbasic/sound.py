@@ -70,8 +70,8 @@ audio_backends = {
     'cli': ('beep', 'none'),
     'text': ('beep', 'none'),
     'graphical': ('sdl2', 'pygame', 'beep', 'none'),
-    'ansi': ('none'),
-    'curses': ('none'),
+    'ansi': ('none',),
+    'curses': ('none',),
     'pygame': ('pygame', 'none'),
     'sdl2': ('sdl2', 'none'),
     }
