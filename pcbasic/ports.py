@@ -128,10 +128,7 @@ class COMDevice(devices.Device):
                 logging.debug("Serial exception: %s", e)
                 raise error.RunError(error.DEVICE_TIMEOUT)
         try:
-            self.stream.baudrate = speed
-            self.stream.parity = parity
-            self.stream.bytesize = bytesize
-            self.stream.stopbits = stop
+            self.stream.set_params(speed, parity, bytesize, stop)
         except Exception:
             self.stream.close()
             raise
@@ -142,7 +139,7 @@ class COMDevice(devices.Device):
         return f
 
     def get_params(self, param):
-        """ Set serial port connection parameters """
+        """ Parse serial port connection parameters """
         max_param = 10
         param_list = param.upper().split(',')
         if len(param_list) > max_param:
@@ -358,6 +355,20 @@ class StdIOStream(object):
         """ Flush stdout. """
         sys.stdout.flush()
 
+    def set_params(self, speed, parity, bytesize, stop):
+        """ Set serial port connection parameters """
+
+    def get_params(self):
+        """ Get serial port connection parameters """
+        return 300, 'E', 8, 2
+
+    def set_pins(self, rts=None, dtr=None, brk=None):
+        """ Set signal pins. """
+
+    def get_pins(self):
+        """ Get signal pins. """
+        return False, False, False, False
+
 
 class SerialStream(object):
     """ Wrapper object for Serial to enable pickling. """
@@ -417,6 +428,32 @@ class SerialStream(object):
             raise error.RunError(error.DEVICE_TIMEOUT)
         self.is_open = True
 
+    def set_params(self, speed, parity, bytesize, stop):
+        """ Set serial port connection parameters. """
+        self._serial.baudrate = speed
+        self._serial.parity = parity
+        self._serial.bytesize = bytesize
+        self._serial.stopbits = stop
+
+    def get_params(self):
+        """ Get serial port connection parameters. """
+        return (self._serial.baudrate, self._serial.parity,
+                self._serial.bytesize, self._serial.stopbits)
+
+    def set_pins(self, rts=None, dtr=None, brk=None):
+        """ Set signal pins. """
+        if rts is not None:
+            self._serial.setRTS(rts)
+        if dtr is not None:
+            self._serial.setDTR(dtr)
+        if brk is not None:
+            self._serial.setBreak(brk)
+
+    def get_pins(self):
+        """ Get signal pins. """
+        return (self._serial.getCD(), self._serial.getRI(),
+                self._serial.getDSR(), self._serial.getCTS())
+
     def close(self):
         """ Close the serial connection. """
         self._serial.close()
@@ -469,6 +506,7 @@ class SocketSerialStream(SerialStream):
             if e.errno == 11:
                 return ''
             raise SerialException('connection failed (%s)' % e)
+
 
 
 ###############################################################################
