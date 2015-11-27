@@ -139,7 +139,8 @@ class Drawing(object):
     def get_view_mid(self):
         """ Get the midpoint of the current graphics view. """
         x0, y0, x1, y1 = self.get_view()
-        return x0 + (x1-x0)/2, y0 + (y1-y0)/2
+        # +1 to match GW-BASIC
+        return x0 + (x1-x0)/2 + 1, y0 + (y1-y0)/2 + 1
 
     def view_coords(self, x, y):
         """ Retrieve absolute coordinates for viewport coordinates. """
