@@ -516,11 +516,11 @@ def walk_memory(self, addr, num_bytes, factor=1):
     while page_offset + bank_offset + offset < num_bytes:
         y += self.interleave_times
         # not an integer number of rows in a bank
-        if offset > bank_size:
+        if offset >= bank_size:
             bank_offset += bank_size
             start_y += 1
             offset, y = 0, start_y
-            if bank_offset > page_size:
+            if bank_offset >= page_size:
                 page_offset += page_size
                 page += 1
                 bank_offset, offset = 0, 0
