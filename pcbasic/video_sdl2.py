@@ -102,6 +102,10 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.physical_size = display_mode.w, display_mode.h
         # create the window initially, size will be corrected later
         self.display = None
+        # create window in same thread that manipulates it
+        # "NOTE: You should not expect to be able to create a window, render, or receive events on any thread other than the main one"
+        # https://wiki.libsdl.org/CategoryThread
+        # http://stackoverflow.com/questions/27751533/sdl2-threading-seg-fault
         self._do_create_window(640, 400)
         # load an all-black 16-colour game palette to get started
         self.set_palette([(0,0,0)]*16, None)
