@@ -19,6 +19,8 @@ import memory
 import devices
 import program
 import timedate
+# ensure state.io_state.devices is populated with com ports
+import ports
 
 # pre-defined PEEK outputs
 peek_values = {}
@@ -68,6 +70,18 @@ joystick_out_time = timedate.timer_milliseconds()
 #  use 100./255. for 100ms.
 joystick_time_factor = 75. / 255.
 
+# serial port base address:
+# http://www.petesqbsite.com/sections/tutorials/zines/qbnews/9-com_ports.txt
+#            COM1             &H3F8
+#            COM2             &H2F8
+#            COM3             &H3E8 (not implemented)
+#            COM4             &H2E8 (not implemented)
+com_base = {0x3f8: 0, 0x2f8: 1}
+com_device = [state.io_state.devices['COM1:'], state.io_state.devices['COM2:']]
+com_enable_baud_write = [False, False]
+com_baud_divisor = [0, 0]
+com_break = [False, False]
+
 def inp(port):
     """ Get the value in an emulated machine port. """
     # keyboard
@@ -92,6 +106,33 @@ def inp(port):
             value += 0x08
         return value
     else:
+        # serial port machine ports
+        # http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers
+        # http://control.com/thread/1026221083
+        for base_addr, com_port_nr in com_base.iteritems():
+            com_port = com_device[com_port_nr]
+            if com_port.stream is None:
+                continue
+            # Line Control Register: base_address + 3 (r/w)
+            if port == base_addr + 3:
+                _, parity, bytesize, stopbits = com_port.stream.get_params()
+                value = com_enable_baud_write[com_port_nr] * 0x80
+                value += com_break[com_port_nr] * 0x40
+                value += {'S': 0x38, 'M': 0x28, 'E': 0x18, 'O': 0x8, 'N': 0}[parity]
+                if stopbits > 1:
+                    value += 0x4
+                value += bytesize - 5
+                return value
+            # Line Status Register: base_address + 5 (read only)
+            elif port == base_addr + 5:
+                # not implemented
+                return 0
+            # Modem Status Register: base_address + 6 (read only)
+            elif port == base_addr + 6:
+                cd, ri, dsr, cts = com_port.stream.get_pins()
+                # delta bits not implemented
+                return (cd*0x80 + ri*0x40 + dsr*0x20 + cts*0x10)
+        # addr isn't one of the covered ports
         return 0
 
 def out(addr, val):
@@ -111,6 +152,57 @@ def out(addr, val):
         #OUT &H3D8,&H1E: REM disable color burst
         # 0x1a == 0001 1010     0x1e == 0001 1110
         state.console_state.screen.set_colorburst(val & 4 == 0)
+    else:
+        # serial port machine ports
+        # http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers
+        # http://control.com/thread/1026221083
+        for base_addr, com_port_nr in com_base.iteritems():
+            com_port = com_device[com_port_nr]
+            if com_port.stream is None:
+                continue
+            # ports at base addr and the next one are used for writing baud rate
+            # (among other things that aren't implemented)
+            if addr == base_addr and com_enable_baud_write[com_port_nr]:
+                com_baud_divisor[com_port_nr] = (com_baud_divisor[com_port_nr] & 0xff00) + val
+            elif addr == base_addr + 1 and com_enable_baud_write[com_port_nr]:
+                com_baud_divisor[com_port_nr] = val*0x100 + (com_baud_divisor[com_port_nr] & 0xff)
+            if com_enable_baud_write[com_port_nr] and com_baud_divisor[com_port_nr]:
+                baudrate = 115200 // com_baud_divisor[com_port_nr]
+            # Line Control Register: base_address + 3 (r/w)
+            if addr == base_addr + 3:
+                baudrate, parity, bytesize, stopbits = com_port.stream.get_params()
+                if val & 0x80:
+                    com_enable_baud_write[com_port_nr] = True
+                # break condition
+                com_break[com_port_nr] = val & 0x40
+                com_port.stream.set_pins(brk=val & 0x40)
+                if val & 0x38 == 0x38:
+                    # set low parity (space)
+                    parity = 'S'
+                elif val & 0x28 == 0x28:
+                    # set high parity (mark)
+                    parity = 'M'
+                elif val & 0x18 == 0x18:
+                    # set even parity
+                    parity = 'E'
+                elif val & 0x8:
+                    # set odd parity
+                    parity = 'O'
+                elif val & 0x38 == 0:
+                    # set no parity
+                    parity = 'N'
+                if val & 0x4:
+                    # 2 or 1.5 stop bits
+                    stopbits = 2
+                else:
+                    # 1 stop bit
+                    stopbits = 1
+                # set byte size to 5, 6, 7, 8
+                bytesize = (val & 0x3) + 5
+                com_port.stream.set_params(baudrate, parity, bytesize, stopbits)
+            # Modem Control Register: base_address + 4 (r/w)
+            elif addr == base_addr + 4:
+                com_port.stream.set_pins(rts=val & 0x2, dtr=val & 0x1)
 
 def wait(addr, ander, xorer):
     """ Wait untial an emulated machine port has a specified value. """
