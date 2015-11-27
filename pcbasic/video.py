@@ -69,10 +69,14 @@ class VideoPlugin(object):
 
     def _consumer_thread(self):
         """ Video signal queue consumer thread. """
+        self._init_thread()
         while self._drain_video_queue():
             self._check_display()
             self._check_input()
             self._sleep()
+
+    def _init_thread(self):
+        """ Final initialisation after staring video thread. """
 
     def _check_display(self):
         """ Display update cycle. """

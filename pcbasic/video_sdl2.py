@@ -54,16 +54,12 @@ class VideoSDL2(video_graphical.VideoGraphical):
             logging.debug('NumPy module not found.')
             raise video.InitFailed()
         video_graphical.VideoGraphical.__init__(self, **kwargs)
-        # initialise SDL
-        sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO | sdl2.SDL_INIT_AUDIO)
         # display & border
         # border attribute
         self.border_attr = 0
         # palette and colours
         # composite colour artifacts
         self.composite_artifacts = False
-        # display palettes for blink states 0, 1
-        self.show_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         # update cycle
         # refresh cycle parameters
         self.cycle = 0
@@ -76,12 +72,34 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.last_col = 1
         # cursor is visible
         self.cursor_visible = True
+        # load the icon
+        self.icon = kwargs['icon']
+        # mouse setups
+        buttons = {'left': sdl2.SDL_BUTTON_LEFT, 'middle': sdl2.SDL_BUTTON_MIDDLE,
+                   'right': sdl2.SDL_BUTTON_RIGHT, 'none': None}
+        copy_paste = kwargs.get('copy-paste', ('left', 'middle'))
+        self.mousebutton_copy = buttons[copy_paste[0]]
+        self.mousebutton_paste = buttons[copy_paste[1]]
+        self.mousebutton_pen = buttons[kwargs.get('pen', 'right')]
+        # keyboard setup
+        self.f11_active = False
+        self.altgr = kwargs['altgr']
+        if not self.altgr:
+            scan_to_scan[sdl2.SDL_SCANCODE_RALT] = scancode.ALT
+            mod_to_scan[sdl2.KMOD_RALT] = scancode.ALT
+        # keep params for _init_thread
+        self.kwargs = kwargs
+
+    def _init_thread(self):
+        """ Complete SDL2 interface initialisation. """
+        # initialise SDL
+        sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING)
+        # display palettes for blink states 0, 1
+        self.show_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         # get physical screen dimensions (needs to be called before set_mode)
         display_mode = sdl2.SDL_DisplayMode()
         sdl2.SDL_GetCurrentDisplayMode(0, ctypes.byref(display_mode))
         self.physical_size = display_mode.w, display_mode.h
-        # load the icon
-        self.icon = kwargs['icon']
         # create the window initially, size will be corrected later
         self.display = None
         self._do_create_window(640, 400)
@@ -89,7 +107,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.set_palette([(0,0,0)]*16, None)
         self.move_cursor(1, 1)
         self.set_page(0, 0)
-        self.set_mode(kwargs['initial_mode'])
+        self.set_mode(self.kwargs['initial_mode'])
         # support for CGA composite
         self.composite_palette = sdl2.SDL_AllocPalette(256)
         composite_colors = video_graphical.composite_640.get(
@@ -107,13 +125,6 @@ class VideoSDL2(video_graphical.VideoGraphical):
             if not hasattr(sdl2, 'sdlgfx'):
                 logging.warning('Smooth scaling not available: SDL_GFX extension not found.')
                 self.smooth = False
-        # mouse setups
-        buttons = {'left': sdl2.SDL_BUTTON_LEFT, 'middle': sdl2.SDL_BUTTON_MIDDLE,
-                   'right': sdl2.SDL_BUTTON_RIGHT, 'none': None}
-        copy_paste = kwargs.get('copy-paste', ('left', 'middle'))
-        self.mousebutton_copy = buttons[copy_paste[0]]
-        self.mousebutton_paste = buttons[copy_paste[1]]
-        self.mousebutton_pen = buttons[kwargs.get('pen', 'right')]
         # available joysticks
         num_joysticks = sdl2.SDL_NumJoysticks()
         for j in range(num_joysticks):
@@ -122,12 +133,6 @@ class VideoSDL2(video_graphical.VideoGraphical):
             for axis in (0, 1):
                 backend.input_queue.put(backend.Event(backend.STICK_MOVED,
                                                       (j, axis, 128)))
-        # keyboard setup
-        self.f11_active = False
-        self.altgr = kwargs['altgr']
-        if not self.altgr:
-            scan_to_scan[sdl2.SDL_SCANCODE_RALT] = scancode.ALT
-            mod_to_scan[sdl2.KMOD_RALT] = scancode.ALT
 
     def close(self):
         """ Close the SDL2 interface. """
