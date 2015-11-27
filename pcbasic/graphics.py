@@ -131,7 +131,7 @@ class Drawing(object):
     def view_clip_list(self, x0, y0, attr_list):
         """ Return rect clipped to view. """
         vx0, vy0, vx1, vy1 = self.get_view()
-        if not (vy0 <= y0 < vy1):
+        if not (vy0 <= y0 <= vy1):
             return x0, y0, []
         nx0, nx1 = max(x0, vx0), min(x0+len(attr_list), vx1)
         return nx0, y0, attr_list[nx0-x0:nx1-x0+1]
