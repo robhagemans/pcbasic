@@ -77,6 +77,8 @@ class AudioSDL2(audio.AudioPlugin):
 
     def _init_sound(self):
         """ Perform any necessary initialisations. """
+        # init sdl audio in this thread separately
+        sdl2.SDL_Init(sdl2.SDL_INIT_AUDIO)
         self.dev = sdl2.SDL_OpenAudioDevice(None, 0, self.audiospec, None, 0)
         if self.dev == 0:
             logging.warning('Could not open audio device: %s', sdl2.SDL_GetError())
