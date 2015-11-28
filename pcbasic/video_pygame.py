@@ -223,6 +223,18 @@ if pygame:
     }
     key_to_scan_f12.update(key_to_scan_kplock)
 
+    key_to_eascii_num = {
+        pygame.K_KP0: '0',
+        pygame.K_KP1: '1',
+        pygame.K_KP2: '2',
+        pygame.K_KP3: '3',
+        pygame.K_KP4: '4',
+        pygame.K_KP5: '5',
+        pygame.K_KP6: '6',
+        pygame.K_KP7: '7',
+        pygame.K_KP8: '8',
+        pygame.K_KP9: '9',
+    }
 
 # cursor is visible
 cursor_visible = True
@@ -1037,6 +1049,12 @@ def handle_key_down(e):
                     # so send keyup event to tell backend to release Ctrl modifier
                     if e.key == pygame.K_RALT:
                         backend.key_up(scancode.CTRL)
+            # fix missing ascii for numeric keypad on Windows
+            if e.mod & pygame.KMOD_NUM:
+                try:
+                    c = key_to_eascii_num[e.key]
+                except KeyError:
+                    pass
             # insert into keyboard queue
             backend.key_down(scan, c)
 
