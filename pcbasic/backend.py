@@ -524,9 +524,8 @@ class Keyboard(object):
                 # ctrl + printscreen
                 redirect.toggle_echo(state.io_state.lpt1_file)
         # alt+keypad ascii replacement
-        # we can't depend on internal NUM LOCK state as it doesn't get updated
-        if (self.mod & modifier[scancode.ALT] and
-                len(eascii) == 1 and eascii >= '0' and eascii <= '9'):
+        # can't use eascii here as pygame never sends one on Windows for numpad
+        if (self.mod & modifier[scancode.ALT]):
             try:
                 self.keypad_ascii += scancode.keypad[scan]
                 return
