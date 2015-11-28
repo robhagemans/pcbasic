@@ -272,6 +272,12 @@ class VideoPygame(video_graphical.VideoGraphical):
             # double NUL characters, as single NUL signals e-ASCII
             if c == u'\0':
                 c = eascii.NUL
+            # fix missing ascii for numeric keypad on Windows
+            if e.mod & pygame.KMOD_NUM:
+                try:
+                    c = key_to_eascii_num[e.key]
+                except KeyError:
+                    pass
             # insert into keyboard queue
             backend.input_queue.put(backend.Event(
                                     backend.KEYB_DOWN, (c, scan, mod)))
@@ -934,6 +940,20 @@ if pygame:
         pygame.KMOD_RCTRL: scancode.CTRL,
         pygame.KMOD_LALT: scancode.ALT,
     }
+
+    key_to_eascii_num = {
+        pygame.K_KP0: u'0',
+        pygame.K_KP1: u'1',
+        pygame.K_KP2: u'2',
+        pygame.K_KP3: u'3',
+        pygame.K_KP4: u'4',
+        pygame.K_KP5: u'5',
+        pygame.K_KP6: u'6',
+        pygame.K_KP7: u'7',
+        pygame.K_KP8: u'8',
+        pygame.K_KP9: u'9',
+    }
+
 
 def apply_composite_artifacts(screen, pixels=4):
     """ Process the canvas to apply composite colour artifacts. """
