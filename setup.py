@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 """
 PC-BASIC setup module.
 
@@ -19,8 +20,8 @@ with open(path.join(here, 'docsrc', 'description.txt'), encoding='utf-8') as f:
 with open(path.join(here, 'docsrc', 'tagline.txt'), encoding='utf-8') as f:
     description = f.read()
 
-with open(path.join(here, 'pcbasic', 'data', 'version.txt'), encoding='utf-8') as f:
-    version_string = f.read()
+import pcbasic
+version_string = pcbasic.__version__
 
 
 ###############################################################################
