@@ -7,7 +7,6 @@ This file is released under the GNU GPL version 3.
 """
 
 import logging
-import Queue
 import ctypes
 
 try:
