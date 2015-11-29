@@ -1759,6 +1759,9 @@ def exec_clear(ins):
             exp2 = expressions.parse_expression(ins, allow_empty = True)
             if exp2:
                 stack_size = vartypes.pass_int_unpack(exp2, maxint=0xffff)
+                # this should be an unsigned int
+                if stack_size < 0:
+                    stack_size += 0x10000
                 if stack_size == 0:
                     #  0 leads to illegal fn call
                     raise error.RunError(error.IFC)
