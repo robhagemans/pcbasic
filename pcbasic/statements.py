@@ -1676,6 +1676,9 @@ def exec_on_error(ins):
     if state.basic_state.on_error == 0 and state.basic_state.error_handle_mode:
         # re-raise the error so that execution stops
         raise error.RunError(state.basic_state.errn, state.basic_state.errp)
+    # ON ERROR statements quits any trapping that's going on
+    state.basic_state.error_handle_mode = False
+    state.basic_state.error_resume = None
     # this will be caught by the trapping routine just set
     util.require(ins, tk.end_statement)
 
