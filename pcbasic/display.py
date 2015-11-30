@@ -81,7 +81,8 @@ def prepare():
     # load the graphics fonts, including the 8-pixel RAM font
     # use set() for speed - lookup is O(1) rather than O(n) for list
     chars_needed = set(unicodepage.cp_to_unicode.values())
-    fonts = typeface.load_fonts(config.get('font'), heights_needed, chars_needed)
+    fonts = typeface.load_fonts(config.get('font'), heights_needed,
+                                chars_needed, unicodepage.substitutes)
     fonts[9] = fonts[8]
 
 def init(interface_name):

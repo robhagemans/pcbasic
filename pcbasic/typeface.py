@@ -30,7 +30,7 @@ def font_filename(name, height, ext='hex'):
         name = os.path.join(plat.font_dir, name)
     return name
 
-def load(families, height, unicode_needed, nowarn=False):
+def load(families, height, unicode_needed, substitutes, nowarn=False):
     """ Load the specified fonts for a given codepage. """
     names = [ font_filename(name, height) for name in families ]
     fontfiles = [ open(name, 'rb') for name in reversed(names) if os.path.exists(name) ]
@@ -38,7 +38,7 @@ def load(families, height, unicode_needed, nowarn=False):
         if not nowarn:
             logging.warning('Could not read font file for height %d', height)
         return None
-    fontdict = load_hex(fontfiles, height, unicode_needed)
+    fontdict = load_hex(fontfiles, height, unicode_needed, substitutes)
     for f in fontfiles:
         f.close()
     # in debug mode, check if we have all needed glyphs
@@ -54,9 +54,10 @@ def load(families, height, unicode_needed, nowarn=False):
                 break
     return fontdict
 
-def load_hex(fontfiles, height, unicode_needed):
+def load_hex(fontfiles, height, unicode_needed, substitutes):
     """ Load a set of overlaying unifont .hex files. """
     fontdict = {}
+    all_needed = unicode_needed | set(substitutes)
     for fontfile in fontfiles:
         for line in fontfile:
             # ignore empty lines and comment lines (first char is #)
@@ -70,7 +71,7 @@ def load_hex(fontfiles, height, unicode_needed):
             try:
                 c = unichr(int(ucshex, 16))
                 # skip chars we won't need
-                if c not in unicode_needed:
+                if c not in all_needed:
                     continue
                 # skip chars we already have
                 if (c in fontdict):
@@ -85,6 +86,10 @@ def load_hex(fontfiles, height, unicode_needed):
                 fontdict[c] = fonthex.decode('hex')
             except Exception as e:
                 logging.warning('Could not parse line in font file: %s', repr(line))
+    # substitute code points
+    fontdict.update({old: fontdict[new]
+            for (new, old) in substitutes.iteritems()
+            if new in fontdict})
     # char 0 should always be defined and empty
     fontdict[u'\0'] = '\0'*height
     return fontdict
@@ -116,7 +121,7 @@ def glyph_16_to(height, glyph16):
         return ''.join([ s16[i] for i in range(start*2, 32-start*2) ])
 
 
-def load_fonts(font_families, heights_needed, unicode_needed):
+def load_fonts(font_families, heights_needed, unicode_needed, substitutes):
     """ Load font typefaces. """
     fonts = {}
     for height in reversed(sorted(heights_needed)):
@@ -124,11 +129,11 @@ def load_fonts(font_families, heights_needed, unicode_needed):
             # already force loaded
             continue
         # load a Unifont .hex font and take the codepage subset
-        fonts[height] = load(font_families, height, unicode_needed)
+        fonts[height] = load(font_families, height, unicode_needed, substitutes)
         # fix missing code points font based on 16-line font
         if 16 not in fonts:
             # if available, load the 16-pixel font unrequested
-            font_16 = load(font_families, 16, unicode_needed, nowarn=True)
+            font_16 = load(font_families, 16, unicode_needed, substitutes, nowarn=True)
             if font_16:
                 fonts[16] = font_16
         if 16 in fonts and fonts[16]:

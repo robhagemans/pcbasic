@@ -1,6 +1,8 @@
 # OEM 949: Korean EUC-KR superset.
 # dbcs code points are from http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP949.TXT
 # sbcs code points are OEM 437 for fallback.
+# the status of x5c is complicated: it is shown as U+20a9 WON SIGN
+# but behaves as the backslash U+005c REVERSE SOLIDUS
 #
 00:0000
 01:263a
@@ -94,7 +96,7 @@
 59:0059
 5a:005a
 5b:005b
-5c:005c
+5c:20A9
 5d:005d
 5e:005e
 5f:005f

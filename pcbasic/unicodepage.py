@@ -57,6 +57,12 @@ def load_codepage(codepage_name):
                     # extract unicode point
                     ucs_point = int('0x' + splitline[1].split()[0].strip(), 16)
                     cp_to_unicode[cp_point] = unichr(ucs_point)
+                    # do not redefine printable ASCII, but substitute glyphs
+                    if cp_point in printable_ascii and ucs_point != ord(cp_point):
+                        # substitutes is in reverse order: { yen: backslash }
+                        ascii_cp = unichr(ord(cp_point))
+                        substitutes[unichr(ucs_point)] = ascii_cp
+                        cp_to_unicode[cp_point] = ascii_cp
                     # track lead and trail bytes
                     if len(cp_point) == 2:
                         lead.add(cp_point[0])
@@ -86,6 +92,16 @@ def load_codepage(codepage_name):
     if dbcs_num_chars > 0:
         dbcs = True
     return codepage_name
+
+########################################
+# printable ASCII substitution
+
+# characters in the printable ASCII range 0x20-0x7E cannot be redefined
+# but can have their glyphs subsituted - they will work and transcode as the
+# ASCII but show as the subsitute glyph. Used e.g. for YEN SIGN in Shift-JIS
+printable_ascii = map(chr, range(0x20, 0x7F))
+substitutes = {}
+
 
 ########################################
 # control character protection
