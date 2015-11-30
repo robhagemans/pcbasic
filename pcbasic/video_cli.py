@@ -19,6 +19,7 @@ import backend
 import scancode
 # ANSI escape codes for output, need arrow movements and clear line and esc_to_scan under Unix.
 import ansi
+import ansipipe
 
 #D!!
 import state
@@ -77,6 +78,8 @@ def init():
         ok = False
         return ok
     term_echo(False)
+    # suppress stderr on ansipipe to avoid mixing ouputs
+    ansipipe.suppress_stderr()
     sys.stdout.flush()
     # start the stdin thread for non-blocking reads
     stdin_q = Queue.Queue()
@@ -184,7 +187,6 @@ def rebuild_glyph(ordval):
 # IMPLEMENTATION
 
 if plat.system == 'Windows':
-    import ansipipe
     tty = ansipipe
     termios = ansipipe
     # Ctrl+Z to exit

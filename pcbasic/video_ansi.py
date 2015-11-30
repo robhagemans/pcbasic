@@ -18,6 +18,7 @@ import config
 import unicodepage
 import scancode
 import backend
+import ansipipe
 
 #D!!
 import state
@@ -56,6 +57,8 @@ def init():
     if not check_tty():
         return False
     term_echo(False)
+    # suppress stderr on ansipipe to avoid mixing ouputs
+    ansipipe.suppress_stderr()
     sys.stdout.flush()
     # start the stdin thread for non-blocking reads
     stdin_q = Queue.Queue()
@@ -261,7 +264,6 @@ def update_palette(new_palette, new_palette1):
 ###### shared with video_cli:
 
 if plat.system == 'Windows':
-    import ansipipe
     tty = ansipipe
     termios = ansipipe
     # Ctrl+Z to exit
