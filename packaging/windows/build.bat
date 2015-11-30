@@ -1,7 +1,7 @@
 set /p VERSION=<..\..\pcbasic\data\version.txt
 pyinstaller installer.spec
 cd ..\..\ansipipe
-gcc -s launcher.c -o launcher -DSUPPRESS_STDERR
+gcc -s launcher.c -o launcher
 cd ..\packaging\windows
 move ..\..\ansipipe\launcher.exe dist\pcbasic\pcbasic.com
 makensis pcbasic.nsi
