@@ -268,7 +268,7 @@ def prepare_console():
             if video:
                 video.close()
             if video_name:
-                logging.info('Falling back to %s interface.', video_name)
+                logging.debug('Falling back to %s interface.', video_name)
     if config.get('nosound'):
         sound.audio = __import__('audio_none', globals={"__name__": __name__})
     else:
