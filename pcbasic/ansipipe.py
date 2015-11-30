@@ -1,4 +1,4 @@
-""" 
+"""
 ANSI|pipe Python connection module
 Redirect standard I/O through ANSI|pipe executable
 to enable UTF-8, ANSI escape sequences and dual mode CLI/GUI executables
@@ -6,7 +6,8 @@ when packaging Python applications to a Windows executable.
 
 based on DualModeI.cpp from dualsybsystem.
 Python version (c) 2015 Rob Hagemans
-This module is released under the terms of the MIT license.
+Licensed under the Expat MIT licence.
+See LICENSE.md or http://opensource.org/licenses/mit-license.php
 """
 
 import os
@@ -64,6 +65,11 @@ if platform.system() == 'Windows':
             else:
                 return 0
 
+        def suppress_stderr(do_suppress=True):
+            """ Signal to suppress output of stderr stream. """
+            num = 255 if do_suppress else 254
+            sys.stdout.write('\x1b]%d;SUPPSTDERR\x07' % num)
+
     else:
         def setraw(fd, dummy=None):
             pass
@@ -71,6 +77,8 @@ if platform.system() == 'Windows':
             pass
         def tcgetattr(fd):
             return 0
+        def suppress_stderr(do_suppress=True):
+            pass
 
 else:
     ok = True;
