@@ -99,6 +99,7 @@ def load_codepage(codepage_name):
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
 # ASCII but show as the subsitute glyph. Used e.g. for YEN SIGN in Shift-JIS
+# see http://www.siao2.com/2005/09/17/469941.aspx
 printable_ascii = map(chr, range(0x20, 0x7F))
 substitutes = {}
 
