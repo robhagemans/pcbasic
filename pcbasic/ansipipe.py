@@ -14,6 +14,21 @@ import os
 import sys
 import platform
 
+ok = True;
+
+def setraw(fd, dummy=None):
+    pass
+
+def tcsetattr(fd, dummy, attr):
+    pass
+
+def tcgetattr(fd):
+    return 0
+
+def suppress_stderr(do_suppress=True):
+    pass
+
+
 if platform.system() == 'Windows':
     pid = os.getpid()
 
@@ -68,17 +83,4 @@ if platform.system() == 'Windows':
         def suppress_stderr(do_suppress=True):
             """ Signal to suppress output of stderr stream. """
             num = 255 if do_suppress else 254
-            sys.stdout.write('\x1b]%d;SUPPSTDERR\x07' % num)
-
-    else:
-        def setraw(fd, dummy=None):
-            pass
-        def tcsetattr(fd, dummy, attr):
-            pass
-        def tcgetattr(fd):
-            return 0
-        def suppress_stderr(do_suppress=True):
-            pass
-
-else:
-    ok = True;
+            sys.stderr.write('\x1b]%d;SUPPSTDERR\x07' % num)
