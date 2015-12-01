@@ -257,7 +257,8 @@ class VideoCurses(video.VideoPlugin):
         self.window.resize(self.height, self.width)
         # this appears necessary to have a black background immediately
         # rather than after the first CLS
-        curses.init_color(0, 0, 0, 0)
+        if self.can_change_palette:
+            curses.init_color(0, 0, 0, 0)
         self._set_curses_palette()
         self.window.clear()
         self.window.refresh()
