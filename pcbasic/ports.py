@@ -468,7 +468,7 @@ class SerialStream(object):
         # NOTE: num=1 follows PySerial
         # stream default is num=-1 to mean all available
         # but that's ill-defined for ports
-        self._serial.read(num)
+        return self._serial.read(num)
 
     def write(self, s):
         """ Write to socket. """
