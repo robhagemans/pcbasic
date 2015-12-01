@@ -85,6 +85,7 @@ class VideoCurses(video.VideoPlugin):
             os.environ['ESCDELAY'] = '25'
         self.curses_init = True
         self.screen = curses.initscr()
+        self.orig_size = self.screen.getmaxyx()
         curses.noecho()
         curses.cbreak()
         curses.nonl()
@@ -139,6 +140,9 @@ class VideoCurses(video.VideoPlugin):
         """ Close the text interface. """
         video.VideoPlugin.close(self)
         if self.curses_init:
+            # restore original terminal size
+            self._resize(*self.orig_size)
+            # restore sane terminal state
             curses.noraw()
             curses.nl()
             curses.nocbreak()
