@@ -124,9 +124,9 @@ class VideoCurses(video.VideoPlugin):
         self.num_pages = 1
         self.vpagenum, self.apagenum = 0, 0
         self.height, self.width = 25, 80
-        self.text = [[[(u' ', 0)]*80 for _ in range(25)]]
+        bgcolor = self._curses_colour(7, 0, False)
+        self.text = [[[(u' ', bgcolor)]*80 for _ in range(25)]]
         self.f12_active = False
-
 
     def close(self):
         """ Close the text interface. """
@@ -197,7 +197,7 @@ class VideoCurses(video.VideoPlugin):
         """ Redraw the screen. """
         self.window.clear()
         if self.last_colour != 0:
-            self.window.bkgdset(' ', 0)
+            self.window.bkgdset(' ', self._curses_colour(7, 0, False))
         for row, textrow in enumerate(self.text[self.vpagenum]):
             for col, charattr in enumerate(textrow):
                 try:
@@ -255,10 +255,6 @@ class VideoCurses(video.VideoPlugin):
         sys.stdout.write(ansi.esc_resize_term % (self.height, self.width))
         sys.stdout.flush()
         self.window.resize(self.height, self.width)
-        # this appears necessary to have a black background immediately
-        # rather than after the first CLS
-        if self.can_change_palette:
-            curses.init_color(0, 0, 0, 0)
         self._set_curses_palette()
         self.window.clear()
         self.window.refresh()
@@ -277,12 +273,13 @@ class VideoCurses(video.VideoPlugin):
 
     def clear_rows(self, back_attr, start, stop):
         """ Clear screen rows. """
+        bgcolor = self._curses_colour(7, back_attr, False)
         self.text[self.apagenum][start-1:stop] = [
-                [(u' ', 0)]*len(self.text[self.apagenum][0])
+                [(u' ', bgcolor)]*len(self.text[self.apagenum][0])
                 for _ in range(start-1, stop)]
         if self.apagenum != self.vpagenum:
             return
-        self.window.bkgdset(' ', self._curses_colour(7, back_attr, False))
+        self.window.bkgdset(' ', bgcolor)
         for r in range(start, stop+1):
             try:
                 self.window.move(r-1, 0)
@@ -338,9 +335,10 @@ class VideoCurses(video.VideoPlugin):
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """ Scroll the screen up between from_line and scroll_height. """
+        bgcolor = self._curses_colour(7, back_attr, False)
         self.text[self.apagenum][from_line-1:scroll_height] = (
                     self.text[self.apagenum][from_line:scroll_height]
-                    + [[(u' ', 0)]*len(self.text[self.apagenum][0])])
+                    + [[(u' ', bgcolor)]*len(self.text[self.apagenum][0])])
         if self.apagenum != self.vpagenum:
             return
         self.window.scrollok(True)
@@ -357,8 +355,9 @@ class VideoCurses(video.VideoPlugin):
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """ Scroll the screen down between from_line and scroll_height. """
+        bgcolor = self._curses_colour(7, back_attr, False)
         self.text[self.apagenum][from_line-1:scroll_height] = (
-                    [[(u' ', 0)]*len(self.text[self.apagenum][0])]
+                    [[(u' ', bgcolor)]*len(self.text[self.apagenum][0])]
                     + self.text[self.apagenum][from_line-1:scroll_height-1])
         if self.apagenum != self.vpagenum:
             return
