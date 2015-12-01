@@ -127,6 +127,7 @@ class VideoCurses(video.VideoPlugin):
         self.text = [[[(u' ', 0)]*80 for _ in range(25)]]
         self.f12_active = False
 
+
     def close(self):
         """ Close the text interface. """
         video.VideoPlugin.close(self)
@@ -251,14 +252,16 @@ class VideoCurses(video.VideoPlugin):
         self.num_pages = mode_info.num_pages
         self.text = [[[(u' ', 0)]*self.width for _ in range(self.height)]
                                             for _ in range(self.num_pages)]
+        sys.stdout.write(ansi.esc_resize_term % (self.height, self.width))
+        sys.stdout.flush()
+        self.window.resize(self.height, self.width)
+        # this appears necessary to have a black background immediately
+        # rather than after the first CLS
+        curses.init_color(0, 0, 0, 0)
+        self._set_curses_palette()
         self.window.clear()
         self.window.refresh()
         self.window.move(0, 0)
-        sys.stdout.write(ansi.esc_resize_term % (self.height, self.width))
-        sys.stdout.flush()
-        #curses.resizeterm(self.height, self.width)
-        self.window.resize(self.height, self.width)
-        self._set_curses_palette()
 
     def set_page(self, new_vpagenum, new_apagenum):
         """ Set visible and active page. """
