@@ -204,6 +204,8 @@ class VideoCurses(video.VideoPlugin):
     def _resize(self, height, width):
         """ Resize the terminal. """
         by, bx = self.border_y, self.border_x
+        # curses.resizeterm triggers KEY_RESIZE leading to a flickering loop
+        # curses.resize_term doesn't resize the terminal
         sys.stdout.write(ansi.esc_resize_term % (height + by*2, width + bx*2))
         sys.stdout.flush()
         self.underlay.resize(height + by*2, width + bx*2)
