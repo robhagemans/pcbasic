@@ -264,8 +264,9 @@ class VideoCurses(video.VideoPlugin):
         self.height = mode_info.height
         self.width = mode_info.width
         self.num_pages = mode_info.num_pages
-        self.text = [[[(u' ', 0)]*self.width for _ in range(self.height)]
-                                            for _ in range(self.num_pages)]
+        bgcolor = self._curses_colour(7, 0, False)
+        self.text = [[[(u' ', bgcolor)]*self.width
+                for _ in range(self.height)] for _ in range(self.num_pages)]
         self._resize(self.height, self.width)
         self._set_curses_palette()
         self.window.clear()
