@@ -91,7 +91,14 @@ class VideoCurses(video.VideoPlugin):
         curses.raw()
         curses.start_color()
         self.screen.clear()
-        self.window = curses.newwin(25, 80, 0, 0)
+        self.height, self.width = 25, 80
+        # border width percentage
+        border_width = kwargs.get('border_width', 0)
+        self.border_y = int(round((self.height * border_width)/200.))
+        self.border_x = int(round((self.width * border_width)/200.))
+        self.underlay = curses.newwin(
+            self.height + self.border_y*2, self.width + self.border_x*2, 0, 0)
+        self.window = curses.newwin(self.height, self.width, self.border_y, self.border_x)
         self.window.nodelay(True)
         self.window.keypad(True)
         self.window.scrollok(False)
@@ -123,10 +130,10 @@ class VideoCurses(video.VideoPlugin):
         # text and colour buffer
         self.num_pages = 1
         self.vpagenum, self.apagenum = 0, 0
-        self.height, self.width = 25, 80
         bgcolor = self._curses_colour(7, 0, False)
-        self.text = [[[(u' ', bgcolor)]*80 for _ in range(25)]]
+        self.text = [[[(u' ', bgcolor)]*self.width for _ in range(self.height)]]
         self.f12_active = False
+        self.set_border_attr(0)
 
     def close(self):
         """ Close the text interface. """
@@ -162,10 +169,7 @@ class VideoCurses(video.VideoPlugin):
                                             backend.KEYB_DOWN,
                                             (u'', scancode.BREAK, [scancode.CTRL])))
                 elif i == curses.KEY_RESIZE:
-                    sys.stdout.write(ansi.esc_resize_term % (self.height, self.width))
-                    sys.stdout.flush()
-                    self.window.resize(self.height, self.width)
-                    self._redraw()
+                    self._resize(self.height, self.width)
                 # scancode, insert here and now
                 # there shouldn't be a mix of special keys and utf8 in one
                 # uninterrupted string, since the only reason an uninterrupted
@@ -192,6 +196,16 @@ class VideoCurses(video.VideoPlugin):
                 backend.input_queue.put(backend.Event(
                                         backend.KEYB_UP, scancode.F12))
                 self.f12_active = False
+
+    def _resize(self, height, width):
+        """ Resize the terminal. """
+        by, bx = self.border_y, self.border_x
+        sys.stdout.write(ansi.esc_resize_term % (height + by*2, width + bx*2))
+        sys.stdout.flush()
+        self.underlay.resize(height + by*2, width + bx*2)
+        self.window.resize(height, width)
+        self.set_border_attr(self.border_attr)
+
 
     def _redraw(self):
         """ Redraw the screen. """
@@ -252,9 +266,7 @@ class VideoCurses(video.VideoPlugin):
         self.num_pages = mode_info.num_pages
         self.text = [[[(u' ', 0)]*self.width for _ in range(self.height)]
                                             for _ in range(self.num_pages)]
-        sys.stdout.write(ansi.esc_resize_term % (self.height, self.width))
-        sys.stdout.flush()
-        self.window.resize(self.height, self.width)
+        self._resize(self.height, self.width)
         self._set_curses_palette()
         self.window.clear()
         self.window.refresh()
@@ -294,6 +306,13 @@ class VideoCurses(video.VideoPlugin):
                 r, g, b = new_palette[i]
                 curses.init_color(self.default_colors[i],
                                 (r*1000)//255, (g*1000)//255, (b*1000)//255)
+
+    def set_border_attr(self, attr):
+        """ Change border attribute. """
+        self.border_attr = attr
+        self.underlay.bkgd(' ', self._curses_colour(0, attr, False))
+        self.underlay.refresh()
+        self._redraw()
 
     def move_cursor(self, crow, ccol):
         """ Move the cursor to a new position. """
