@@ -98,6 +98,12 @@ utf8_files = False
 # allowable drive letters in GW-BASIC are letters or @
 drive_letters = '@' + string.ascii_uppercase
 
+# allowable characters in DOS file name
+# GW-BASIC also allows 0x7F and up, but replaces accented chars with unaccented
+# based on CHCP code page, which may differ from display codepage in COUNTRY.SYS
+# this is complex and leads to unpredictable results depending on host platform.
+allowable_chars = set(string.ascii_letters + string.digits + " !#$%&'()-^_`{}~")
+
 #####################
 
 def prepare():
@@ -317,8 +323,13 @@ def istype(path, native_name, isdir):
 
 def dossify(longname, defext=''):
     """ Put name in 8x3, all upper-case format and apply default extension. """
-    # convert to all uppercase; one trunk, one extension
-    name, ext = split_dosname(longname.strip().upper(), defext)
+    # convert to all uppercase
+    name = str(longname).strip().upper()
+    # enforce allowable characters
+    if set(name) - allowable_chars:
+        raise error.RunError(error.BAD_FILE_NAME)
+    # one trunk, one extension
+    name, ext = split_dosname(name, defext)
     # no dot if no ext
     return join_dosname(name, ext)
 
