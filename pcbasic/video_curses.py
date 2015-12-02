@@ -108,17 +108,7 @@ class VideoCurses(video.VideoPlugin):
         self.caption = kwargs.get('caption', '')
         sys.stdout.write(ansi.esc_set_title % self.caption)
         sys.stdout.flush()
-        if self.can_change_palette:
-            self.default_colors = range(16, 32)
-        else:
-            # curses colours mapped onto EGA
-            self.default_colors = (
-                curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN,
-                curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA,
-                curses.COLOR_YELLOW, curses.COLOR_WHITE,
-                curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN,
-                curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA,
-                curses.COLOR_YELLOW, curses.COLOR_WHITE)
+        self._set_default_colours(16)
         # cursor is visible
         self.cursor_visible = True
         # 1 is line ('visible'), 2 is block ('highly visible'), 3 is invisible
@@ -228,6 +218,26 @@ class VideoCurses(video.VideoPlugin):
             self.window.move(self.cursor_row-1, self.cursor_col-1)
         self.window.refresh()
 
+    def _set_default_colours(self, num_attrs):
+        """ Initialise the default colours for the palette. """
+        if self.can_change_palette:
+            self.default_colors = range(16, 32)
+        elif num_attrs == 2:
+            self.default_colors = (curses.COLOR_BLACK, curses.COLOR_WHITE) * 8
+        elif num_attrs == 4:
+            self.default_colors = (
+                curses.COLOR_BLACK, curses.COLOR_CYAN,
+                curses.COLOR_MAGENTA, curses.COLOR_WHITE) * 4
+        else:
+            # curses colours mapped onto EGA
+            self.default_colors = (
+                curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN,
+                curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA,
+                curses.COLOR_YELLOW, curses.COLOR_WHITE,
+                curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN,
+                curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA,
+                curses.COLOR_YELLOW, curses.COLOR_WHITE)
+
     def _set_curses_palette(self):
         """ Initialise the curses colour palette. """
         if self.can_change_palette:
@@ -270,6 +280,7 @@ class VideoCurses(video.VideoPlugin):
         self.height = mode_info.height
         self.width = mode_info.width
         self.num_pages = mode_info.num_pages
+        self._set_default_colours(len(mode_info.palette))
         bgcolor = self._curses_colour(7, 0, False)
         self.text = [[[(u' ', bgcolor)]*self.width
                 for _ in range(self.height)] for _ in range(self.num_pages)]
