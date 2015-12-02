@@ -6,8 +6,11 @@ PC-BASIC would not exist without those contributing code, reporting bugs,
 sending in patches, and documenting GW-BASIC's behaviour. Thank you all!
 
 - **Rob Hagemans**,   lead author
-- **Wengier Wu**,     bug fixes and advice for CJK support
+- **Wengier Wu**,     bug fixes, advice for CJK support
 - **WJB**,            bug fixes
+- **Ronald Herrera**, testing
+- **Miguel Dorta**,   testing, serial ports
+- **Patrik**,         testing, serial ports
 
 
 ### Shoulders of Giants
@@ -78,7 +81,7 @@ apologies to those whose contribution I have failed to acknowledge here.
 
   * [VOGONS](http://www.vogons.org/)
   * **Erik S. Klein**'s [Vintage computer forums](http://www.vintage-computer.com)
-
+  * **Peter Berg**'s [Pete's QBasic/QuickBasic site](http://www.petesqbsite.com/)
 
 ### Fonts
 
