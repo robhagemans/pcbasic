@@ -6,10 +6,8 @@ Console front-end
 This file is released under the GNU GPL version 3.
 """
 
-import logging
 import string
 
-import config
 import state
 import backend
 import redirect

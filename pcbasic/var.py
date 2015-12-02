@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3.
 
 from operator import itemgetter
 
-import config
 import error
 import vartypes
 import state

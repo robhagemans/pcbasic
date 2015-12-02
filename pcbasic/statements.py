@@ -25,7 +25,6 @@ import error
 import expressions
 import flow
 import fp
-import graphics
 import devices
 import machine
 import memory

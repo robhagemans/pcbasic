@@ -16,7 +16,6 @@ import util
 import console
 import state
 import flow
-import unicodepage
 import memory
 import logging
 # ensure initialisation of state_console_state.sound

@@ -39,7 +39,7 @@ class PrinterStream(StringIO):
 if plat.system == 'Windows':
     import os
     import win32print
-    import win32api
+    #import win32api
     import win32com
     import win32com.shell.shell
     import win32event

@@ -7,15 +7,7 @@ This file is released under the GNU GPL version 3.
 """
 
 import sys
-import os
-import time
 import logging
-import threading
-import Queue
-
-import plat
-import config
-import backend
 
 import video
 import video_cli

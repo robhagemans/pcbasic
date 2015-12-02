@@ -15,13 +15,14 @@ import inputs
 import display
 import vartypes
 import var
-import console
 import error
 import memory
 import devices
 import program
 import timedate
 import unicodepage
+# for state.console_state globals
+import console
 # ensure state.io_state.devices is populated with com ports
 import ports
 

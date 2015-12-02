@@ -6,7 +6,6 @@ Sound implementation through the linux beep utility
 This file is released under the GNU GPL version 3.
 """
 
-import time
 import Queue
 import subprocess
 

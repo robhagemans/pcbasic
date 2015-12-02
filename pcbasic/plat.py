@@ -6,20 +6,16 @@ Platform identification
 This file is released under the GNU GPL version 3.
 """
 
-try:
-    import android
-    system = 'Android'
-except ImportError:
-    import platform
-    if platform.system() == 'Windows':
-        system = 'Windows'
-    elif platform.system() == 'Linux':
-        system = 'Linux'
-    elif platform.system() == 'Darwin':
-        system = 'OSX'
-    else:
-        # Everything else. Assume it's a Unix.
-        system = 'Unknown_OS'
+import platform
+if platform.system() == 'Windows':
+    system = 'Windows'
+elif platform.system() == 'Linux':
+    system = 'Linux'
+elif platform.system() == 'Darwin':
+    system = 'OSX'
+else:
+    # Everything else. Assume it's a Unix.
+    system = 'Unknown_OS'
 
 # get basepath (__file__ is undefined in pyinstaller packages)
 import sys

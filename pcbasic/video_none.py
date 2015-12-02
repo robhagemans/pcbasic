@@ -7,10 +7,8 @@ This file is released under the GNU GPL version 3.
 """
 
 import sys
-import time
 
 import video
-
 import backend
 import plat
 import redirect

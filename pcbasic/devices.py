@@ -14,6 +14,7 @@ import error
 import console
 import state
 import memory
+# unused import, needed to initialise state.console_state.screen
 import display
 
 # file numbers

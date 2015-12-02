@@ -7,8 +7,6 @@ This file is released under the GNU GPL version 3.
 """
 
 import Queue
-import threading
-import time
 import logging
 import string
 
@@ -26,6 +24,7 @@ import representation
 import vartypes
 import backend
 
+# these are unused but need to be initialised and packaged
 import audio
 import audio_none
 import audio_beep

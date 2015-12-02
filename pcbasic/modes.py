@@ -7,7 +7,6 @@ This file is released under the GNU GPL version 3.
 """
 
 import config
-import state
 import vartypes
 
 try:

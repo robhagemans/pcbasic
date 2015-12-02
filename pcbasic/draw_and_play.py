@@ -9,7 +9,6 @@ This file is released under the GNU GPL version 3.
 import string
 
 import error
-import fp
 import vartypes
 import representation
 import util

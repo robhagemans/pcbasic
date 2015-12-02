@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3.
 
 import sys
 import os
-import logging
 try:
     import curses
 except ImportError:
@@ -16,7 +15,6 @@ except ImportError:
 
 # ensure setlocale() has been run to allow unicode input
 import plat
-import config
 import scancode
 import eascii
 import backend

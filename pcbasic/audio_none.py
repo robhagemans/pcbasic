@@ -8,11 +8,8 @@ This file is released under the GNU GPL version 3.
 
 import datetime
 import Queue
-import subprocess
 
-import plat
 import backend
-
 import audio
 
 def prepare():

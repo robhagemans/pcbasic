@@ -11,7 +11,6 @@ This file is released under the GNU GPL version 3.
 from math import ceil
 import logging
 import Queue
-import ctypes
 from collections import deque
 
 try:

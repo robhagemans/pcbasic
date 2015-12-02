@@ -9,7 +9,6 @@ This file is released under the GNU GPL version 3.
 import time
 import Queue
 
-import plat
 import config
 import state
 import timedate

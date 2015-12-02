@@ -6,9 +6,7 @@ Base classes for audio handlers
 This file is released under the GNU GPL version 3.
 """
 
-import logging
 import threading
-import Queue
 import time
 
 import backend

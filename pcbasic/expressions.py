@@ -24,8 +24,6 @@ import util
 import error
 import var
 import devices
-import graphics
-import console
 # for FRE() only
 import program
 import state

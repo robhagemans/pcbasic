@@ -7,11 +7,8 @@ This file is released under the GNU GPL version 3.
 """
 
 import subprocess
-import logging
-import sys
 
 import plat
-import unicodepage
 
 
 def prepare():
