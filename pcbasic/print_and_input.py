@@ -14,6 +14,7 @@ except ImportError:
 import util
 import console
 import devices
+import vartypes
 
 
 class InputTextFile(devices.TextFileBase):
@@ -43,12 +44,14 @@ def input_console(prompt, readvar, newline):
         # read the values and group them and the separators
         values, seps = zip(*[inputstream.read_var(v) for v in readvar])
         # last separator not empty: there were too many values or commas
-        # if there are Nones: there were too few or empty values
-        if (seps[-1] or None in values):
+        # earlier separators empty: there were too few values
+        # empty values are OK
+        if (seps[-1] or '' in seps[:-1]):
             # good old Redo!
             console.write_line('?Redo from start')
         else:
-            return [ r + [v] for r, v in zip(readvar, values) ]
+            return [r + [v if v else vartypes.null[r[0][-1]]] 
+                    for r, v in zip(readvar, values)]
 
 
 ########################################
