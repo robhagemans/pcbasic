@@ -700,13 +700,32 @@
     <section>
         <h3 id="cp437">Codepage 437</h3>
         <p>
-            This table shows the graphical characters that, by default,
-            are produced by the 256 single-byte character codes.
-            Code points <code>00</code> and <code>20</code>&ndash;<code>7E</code>
-            are fixed while the other characters, as well as any double-byte characters,
-            can be redefined by loading another codepage.
-            Only the default DOS Latin USA codepage 437 is shown here.
+            This table shows the characters that
+            are produced by the 256 single-byte code points when
+            the DOS Latin USA codepage 437 is loaded, which is the default.
+            Other codepages can be loaded to assign other characters to these
+            code points.
         </p>
+        <ul>
+            <li>
+                Code point <code>&amp;H00</code> cannot be redefined.
+            </li>
+            <li>
+                Redefining characters
+                in the printable ASCII code point range <code>&amp;H20</code>&ndash;<code>&amp;H7E</code>
+                will result in a different glyph being shown on the screen, but the
+                character will continue to be treated as the corresponding ASCII character.
+                It will retain its ASCII value when transcoded into UTF-8. This happens,
+                for example, with the Yen sign (<code>&#xa5;</code>) which is
+                assigned to ASCII code point <code>&amp;H5C</code> in code page 932:
+                in that codepage it is treated as if it were a backslash (<code>\</code>).
+            </li>
+            <li>
+                All other characters can be redefined by loading another codepage,
+                which will affect both their visual glyph and Unicode
+                character value.
+            </li>
+        </ul>
         <div class="scrollable">
             <table>
                 <tr>
