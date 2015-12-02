@@ -505,17 +505,17 @@
         <h3 id="ascii">ASCII</h3>
         <p>
             This is a list of the Americal Standard Code for Information Interchange (ASCII).
-            ASCII only covers 128 characters and defines the ranges
+            ASCII only covers 128 characters and defines the code point ranges
             <code>&amp;H00</code>&nbsp;<code>&amp;H1F</code> and <code>&amp;7F</code>
             as <em>control characters</em> which do not have a printable glyph assigned
             to them. This includes such values as the <em>Carriage Return</em> (<code><em>CR</em></code>)
             character that ends a program line.
         </p>
         <p>
-            Depending on context, PC-BASIC will treat a byte value in
+            Depending on context, PC-BASIC will treat a code point in
             the control characters range as a control character or as a
             glyph defined by the active <a href="#codepages">codepage</a> which by
-            default is <a href="#cp437">codepage 437</a>. Byte values of
+            default is <a href="#cp437">codepage 437</a>. Code points of
             <code>&amp;H80</code> or higher are always interpreted as a
             codepage glyph.
         </p>
