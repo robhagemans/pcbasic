@@ -27,20 +27,20 @@
     <h5>String literals</h5>
     <p>
         String literals are of the following form:
-        <code class="block">"[<var>characters</var>][<code>NUL</code>|<code>CR</code>|<code>EOF</code>|"]</code>
+        <code class="block"><b>"</b>[<var>characters</var>][<b><i>NUL</i></b>|<b><i>CR</i></b>|<b><i>EOF</i></b>|<b>"</b>]</code>
         where <code><var>characters</var></code> is a string of characters. Any
         character from the current code page can be used, with the following
         exceptions, all of which terminate the string literal (aside from other effects they may have):
     </p>
     <ul>
-        <li><code>NUL</code> (<code>CHR$(0)</code>)</li>
-        <li><code>CR</code> (<code>CHR$(13)</code>)</li>
-        <li><code>EOF</code> (<code>CHR$(26)</code>)</li>
+        <li><code><i>NUL</i></code> (<code>CHR$(0)</code>)</li>
+        <li><code><i>CR</i></code> (<code>CHR$(13)</code>)</li>
+        <li><code><i>EOF</i></code> (<code>CHR$(26)</code>)</li>
         <li><code>"</code> (<code>CHR$(34)</code>)</li>
     </ul>
     <p>
         Apart from these, string literals should not contain any of the characters
-        in the ASCII range <code>13&mdash;31</code>, which lead to unpredictable results.
+        in the ASCII range <code>&amp;H0D</code>&mdash;<code>&amp;H1F</code>, which lead to unpredictable results.
         There is no escaping mechanism. To include one of the above
         characters in a string, use <a href="#string-operators">string concatenation</a> and
         the <code><a href="#CHR$">CHR$</a></code> function.
@@ -49,12 +49,12 @@
     <h5>Numeric literals</h5>
     <p>
         Numeric literals have one of the following forms:
-        <code class="block">[{+|-}] [<var>digits</var>] [.] [<var>digits</var>] [ { {E|D} [{+|-}] [<var>digits</var>] | # | ! | % } ]</code>
-        <code class="block">&amp;{H|h}<var>hexadecimal_digits</var></code>
-        <code class="block">&amp;[O|o]<var>octal_digits</var></code>
-        where <code><var>octal_digits</var></code> is a string of characters from <code>01234567</code>,
-        <code><var>digits</var></code> is a string of characters from <code>0123456789</code>, and
-        <code><var>hexadecimal_digits</var></code> is a case-insensitive string of characters from <code>0123456789ABCDEF</code>.
+        <code class="block">[{<b>+</b>|<b>-</b>}] [<var>digits</var>] [<b>.</b>] [<var>digits</var>] [ { {<b>E</b>|<b>D</b>} [{<b>+</b>|<b>-</b>}] [<var>digits</var>] | <b>#</b> | <b>!</b> | <b>%</b> } ]</code>
+        <code class="block"><b>&amp;</b>{<b>H</b>|<b>h</b>}<var>hexadecimal_digits</var></code>
+        <code class="block"><b>&amp;</b>[<b>O</b>|<b>o</b>]<var>octal_digits</var></code>
+        where <code><var>octal_digits</var></code> is a string of characters from <code><b>01234567</b></code>,
+        <code><var>digits</var></code> is a string of characters from <code><b>0123456789</b></code>, and
+        <code><var>hexadecimal_digits</var></code> is a case-insensitive string of characters from <code><b>0123456789ABCDEF</b></code>.
     </p>
     <p>
         Trailing <code>%</code> is ignored; trailing <code>!</code> or <code>#</code> <a href="#typechars">specify the type</a>.
