@@ -8,6 +8,10 @@ This file is released under the GNU GPL version 3.
 
 # ANSI colour numbers for EGA colours: black, blue, green, cyan, red, magenta, yellow, white
 colours = (0, 4, 2, 6, 1, 5, 3, 7)
+# CGA colours: black, cyan, magenta, white
+colours_4 = (0, 6, 5, 7) * 4
+# Mono colours: black, white
+colours_2 = (0, 7) * 8
 # ANSI colour names for EGA colours
 colournames = ('Black','Dark Blue','Dark Green','Dark Cyan','Dark Red','Dark Magenta','Brown','Light Gray',
 'Dark Gray','Blue','Green','Cyan','Red','Magenta','Yellow','White')

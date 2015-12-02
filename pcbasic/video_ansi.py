@@ -34,22 +34,6 @@ def prepare():
     video.plugin_dict['ansi'] = VideoANSI
 
 
-def set_attributes(fore, back, blink, underline):
-    """ Set ANSI colours based on split attribute. """
-    bright = (fore & 8)
-    if bright == 0:
-        fore = 30 + ansi.colours[fore%8]
-    else:
-        fore = 90 + ansi.colours[fore%8]
-    back = 40 + ansi.colours[back%8]
-    sys.stdout.write(ansi.esc_set_colour % 0)
-    sys.stdout.write(ansi.esc_set_colour % back)
-    sys.stdout.write(ansi.esc_set_colour % fore)
-    if blink:
-        sys.stdout.write(ansi.esc_set_colour % 5)
-    sys.stdout.flush()
-
-
 class VideoANSI(video_cli.VideoCLI):
     """ Text interface implemented with ANSI escape sequences. """
 
@@ -78,6 +62,7 @@ class VideoANSI(video_cli.VideoCLI):
         self.height = 25
         self.width = 80
         self.text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
+        self._set_default_colours(16)
         video_cli.VideoCLI.__init__(self)
 
     def close(self):
@@ -105,13 +90,37 @@ class VideoANSI(video_cli.VideoCLI):
         for row, textrow in enumerate(self.text[self.vpagenum]):
             for col, charattr in enumerate(textrow):
                 sys.stdout.write(ansi.esc_move_cursor % (row+1, col+1))
-                set_attributes(*charattr[1])
+                self._set_attributes(*charattr[1])
                 sys.stdout.write(charattr[0])
         sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
         sys.stdout.flush()
 
+    def _set_default_colours(self, num_attr):
+        """ Set colours for default palette. """
+        if num_attr == 2:
+            self.default_colours = ansi.colours_2
+        elif num_attr == 4:
+            self.default_colours = ansi.colours_4
+        else:
+            self.default_colours = ansi.colours
 
-    def set_mode(self, mode_info=None):
+    def _set_attributes(self, fore, back, blink, underline):
+        """ Set ANSI colours based on split attribute. """
+        bright = (fore & 8)
+        if bright == 0:
+            fore = 30 + self.default_colours[fore%8]
+        else:
+            fore = 90 + self.default_colours[fore%8]
+        back = 40 + self.default_colours[back%8]
+        sys.stdout.write(ansi.esc_set_colour % 0)
+        sys.stdout.write(ansi.esc_set_colour % back)
+        sys.stdout.write(ansi.esc_set_colour % fore)
+        if blink:
+            sys.stdout.write(ansi.esc_set_colour % 5)
+        sys.stdout.flush()
+
+
+    def set_mode(self, mode_info):
         """ Change screen mode. """
         self.height = mode_info.height
         self.width = mode_info.width
@@ -119,6 +128,7 @@ class VideoANSI(video_cli.VideoCLI):
         self.text = [[[(u' ', (7, 0, False, False))]*self.width
                             for _ in range(self.height)]
                             for _ in range(self.num_pages)]
+        self._set_default_colours(len(mode_info.palette))
         sys.stdout.write(ansi.esc_resize_term % (self.height, self.width))
         sys.stdout.write(ansi.esc_clear_screen)
         sys.stdout.flush()
@@ -141,7 +151,7 @@ class VideoANSI(video_cli.VideoCLI):
             [(u' ', (7, 0, False, False))]*len(self.text[self.apagenum][0])
                         for _ in range(start-1, stop)]
         if self.vpagenum == self.apagenum:
-            set_attributes(7, back_attr, False, False)
+            self._set_attributes(7, back_attr, False, False)
             for r in range(start, stop+1):
                 sys.stdout.write(ansi.esc_move_cursor % (r, 1))
                 sys.stdout.write(ansi.esc_clear_line)
@@ -188,7 +198,7 @@ class VideoANSI(video_cli.VideoCLI):
         sys.stdout.write(ansi.esc_move_cursor % (row, col))
         if self.last_attributes != (fore, back, blink, underline):
             self.last_attributes = fore, back, blink, underline
-            set_attributes(fore, back, blink, underline)
+            self._set_attributes(fore, back, blink, underline)
         sys.stdout.write(char)
         if dbcs:
             sys.stdout.write(' ')
