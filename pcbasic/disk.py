@@ -102,7 +102,7 @@ drive_letters = '@' + string.ascii_uppercase
 # GW-BASIC also allows 0x7F and up, but replaces accented chars with unaccented
 # based on CHCP code page, which may differ from display codepage in COUNTRY.SYS
 # this is complex and leads to unpredictable results depending on host platform.
-allowable_chars = set(string.ascii_letters + string.digits + " !#$%&'()-^_`{}~")
+allowable_chars = set(string.ascii_letters + string.digits + " !#$%&'()-@^_`{}~")
 
 #####################
 
