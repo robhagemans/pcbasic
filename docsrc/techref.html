@@ -500,8 +500,205 @@
     </section>
     <hr />
 
+
     <section>
-        <h3 id="cp347">Codepage 437</h3>
+        <h3 id="ascii">ASCII</h3>
+        <p>
+            This is a list of the Americal Standard Code for Information Interchange (ASCII).
+            ASCII only covers 128 characters and defines the ranges
+            <code>&amp;H00</code>&nbsp;<code>&amp;H1F</code> and <code>&amp;7F</code>
+            as <em>control characters</em> which do not have a printable glyph assigned
+            to them. This includes such values as the <em>Carriage Return</em> (<code><em>CR</em></code>)
+            character that ends a program line.
+        </p>
+        <p>
+            Depending on context, PC-BASIC will treat a byte value in
+            the control characters range as a control character or as a
+            glyph defined by the active <a href="#codepages">codepage</a> which by
+            default is <a href="#cp437">codepage 437</a>. Byte values of
+            <code>&amp;H80</code> or higher are always interpreted as a
+            codepage glyph.
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <td>&nbsp;</td>
+                    <th><code>_0</code></th>
+                    <th><code>_1</code></th>
+                    <th><code>_2</code></th>
+                    <th><code>_3</code></th>
+                    <th><code>_4</code></th>
+                    <th><code>_5</code></th>
+                    <th><code>_6</code></th>
+                    <th><code>_7</code></th>
+                    <th><code>_8</code></th>
+                    <th><code>_9</code></th>
+                    <th><code>_A</code></th>
+                    <th><code>_B</code></th>
+                    <th><code>_C</code></th>
+                    <th><code>_D</code></th>
+                    <th><code>_E</code></th>
+                    <th><code>_F</code></th>
+                </tr>
+                <tr>
+                    <th><code>0_</code></th>
+                    <td><code><em>NUL</em></code></td>
+                    <td><code><em>SOH</em></code></td>
+                    <td><code><em>STX</em></code></td>
+                    <td><code><em>ETX</em></code></td>
+                    <td><code><em>EOT</em></code></td>
+                    <td><code><em>ENQ</em></code></td>
+                    <td><code><em>ACK</em></code></td>
+                    <td><code><em>BEL</em></code></td>
+                    <td><code><em>BS&nbsp;</em></code></td>
+                    <td><code><em>HT&nbsp;</em></code></td>
+                    <td><code><em>LF&nbsp;</em></code></td>
+                    <td><code><em>VT&nbsp;</em></code></td>
+                    <td><code><em>FF&nbsp;</em></code></td>
+                    <td><code><em>CR&nbsp;</em></code></td>
+                    <td><code><em>SO&nbsp;</em></code></td>
+                    <td><code><em>SI&nbsp;</em></code></td>
+                </tr>
+                <tr>
+                    <th><code>1_</code></th>
+                    <td><code><em>DLE</em></code></td>
+                    <td><code><em>DC1</em></code></td>
+                    <td><code><em>DC2</em></code></td>
+                    <td><code><em>DC3</em></code></td>
+                    <td><code><em>DC4</em></code></td>
+                    <td><code><em>NAK</em></code></td>
+                    <td><code><em>SYN</em></code></td>
+                    <td><code><em>ETB</em></code></td>
+                    <td><code><em>CAN</em></code></td>
+                    <td><code><em>EM&nbsp;</em></code></td>
+                    <td><code><em>SUB</em></code></td>
+                    <td><code><em>ESC</em></code></td>
+                    <td><code><em>FS&nbsp;</em></code></td>
+                    <td><code><em>GS&nbsp;</em></code></td>
+                    <td><code><em>RS&nbsp;</em></code></td>
+                    <td><code><em>US&nbsp;</em></code></td>
+                </tr>
+                <tr>
+                    <th><code>2_</code></th>
+                    <td><code>&#x0020;</code></td>
+                    <td><code>&#x0021;</code></td>
+                    <td><code>&#x0022;</code></td>
+                    <td><code>&#x0023;</code></td>
+                    <td><code>&#x0024;</code></td>
+                    <td><code>&#x0025;</code></td>
+                    <td><code>&#x0026;</code></td>
+                    <td><code>&#x0027;</code></td>
+                    <td><code>&#x0028;</code></td>
+                    <td><code>&#x0029;</code></td>
+                    <td><code>&#x002a;</code></td>
+                    <td><code>&#x002b;</code></td>
+                    <td><code>&#x002c;</code></td>
+                    <td><code>&#x002d;</code></td>
+                    <td><code>&#x002e;</code></td>
+                    <td><code>&#x002f;</code></td>
+                </tr>
+                <tr>
+                    <th><code>3_</code></th>
+                    <td><code>&#x0030;</code></td>
+                    <td><code>&#x0031;</code></td>
+                    <td><code>&#x0032;</code></td>
+                    <td><code>&#x0033;</code></td>
+                    <td><code>&#x0034;</code></td>
+                    <td><code>&#x0035;</code></td>
+                    <td><code>&#x0036;</code></td>
+                    <td><code>&#x0037;</code></td>
+                    <td><code>&#x0038;</code></td>
+                    <td><code>&#x0039;</code></td>
+                    <td><code>&#x003a;</code></td>
+                    <td><code>&#x003b;</code></td>
+                    <td><code>&#x003c;</code></td>
+                    <td><code>&#x003d;</code></td>
+                    <td><code>&#x003e;</code></td>
+                    <td><code>&#x003f;</code></td>
+                </tr>
+                <tr>
+                    <th><code>4_</code></th>
+                    <td><code>&#x0040;</code></td>
+                    <td><code>&#x0041;</code></td>
+                    <td><code>&#x0042;</code></td>
+                    <td><code>&#x0043;</code></td>
+                    <td><code>&#x0044;</code></td>
+                    <td><code>&#x0045;</code></td>
+                    <td><code>&#x0046;</code></td>
+                    <td><code>&#x0047;</code></td>
+                    <td><code>&#x0048;</code></td>
+                    <td><code>&#x0049;</code></td>
+                    <td><code>&#x004a;</code></td>
+                    <td><code>&#x004b;</code></td>
+                    <td><code>&#x004c;</code></td>
+                    <td><code>&#x004d;</code></td>
+                    <td><code>&#x004e;</code></td>
+                    <td><code>&#x004f;</code></td>
+                </tr>
+                <tr>
+                    <th><code>5_</code></th>
+                    <td><code>&#x0050;</code></td>
+                    <td><code>&#x0051;</code></td>
+                    <td><code>&#x0052;</code></td>
+                    <td><code>&#x0053;</code></td>
+                    <td><code>&#x0054;</code></td>
+                    <td><code>&#x0055;</code></td>
+                    <td><code>&#x0056;</code></td>
+                    <td><code>&#x0057;</code></td>
+                    <td><code>&#x0058;</code></td>
+                    <td><code>&#x0059;</code></td>
+                    <td><code>&#x005a;</code></td>
+                    <td><code>&#x005b;</code></td>
+                    <td><code>&#x005c;</code></td>
+                    <td><code>&#x005d;</code></td>
+                    <td><code>&#x005e;</code></td>
+                    <td><code>&#x005f;</code></td>
+                </tr>
+                <tr>
+                    <th><code>6_</code></th>
+                    <td><code>&#x0060;</code></td>
+                    <td><code>&#x0061;</code></td>
+                    <td><code>&#x0062;</code></td>
+                    <td><code>&#x0063;</code></td>
+                    <td><code>&#x0064;</code></td>
+                    <td><code>&#x0065;</code></td>
+                    <td><code>&#x0066;</code></td>
+                    <td><code>&#x0067;</code></td>
+                    <td><code>&#x0068;</code></td>
+                    <td><code>&#x0069;</code></td>
+                    <td><code>&#x006a;</code></td>
+                    <td><code>&#x006b;</code></td>
+                    <td><code>&#x006c;</code></td>
+                    <td><code>&#x006d;</code></td>
+                    <td><code>&#x006e;</code></td>
+                    <td><code>&#x006f;</code></td>
+                </tr>
+                <tr>
+                    <th><code>7_</code></th>
+                    <td><code>&#x0070;</code></td>
+                    <td><code>&#x0071;</code></td>
+                    <td><code>&#x0072;</code></td>
+                    <td><code>&#x0073;</code></td>
+                    <td><code>&#x0074;</code></td>
+                    <td><code>&#x0075;</code></td>
+                    <td><code>&#x0076;</code></td>
+                    <td><code>&#x0077;</code></td>
+                    <td><code>&#x0078;</code></td>
+                    <td><code>&#x0079;</code></td>
+                    <td><code>&#x007a;</code></td>
+                    <td><code>&#x007b;</code></td>
+                    <td><code>&#x007c;</code></td>
+                    <td><code>&#x007d;</code></td>
+                    <td><code>&#x007e;</code></td>
+                    <td><code><em>DEL</em></code></td>
+                </tr>
+            </table>
+        </div>
+    </section>
+    <hr />
+
+    <section>
+        <h3 id="cp437">Codepage 437</h3>
         <p>
             This table shows the graphical characters that, by default,
             are produced by the 256 single-byte character codes.
