@@ -505,6 +505,12 @@
             <p>
                 PC-BASIC follows DOS file system conventions, where file and directory names consist of a
                 8-character name and 3-character extension. Names are case insensitive.
+                Permissible characters for both filename and extension are the
+                printable ASCII characters in the range
+                <code>&amp;H20</code>&ndash;<code>&amp;H7E</code> excluding the characters
+                <code>" * + . , / : ; < = > ? \ [ ] |</code>.
+            </p>
+            <p>
                 Note that DOS conventions are subtly different from Windows short filename
                 conventions and not-so-subtly different from Unix conventions. This may lead
                 to surprising effects in the presence of several files that match
@@ -530,7 +536,17 @@
                 specified, the extension <code>.BAS</code> will be implicitly added. To load a program
                 with no extension, end the filename in a dot. On file systems without
                 short filenames, it is not possible to load a program if its filename is
-                longer than 8.3 or ends in a dot.
+                longer than 8.3, contains non-permissible characters or ends in a dot.
+            </p>
+            <p>
+                Note on compatibility: In some setups, MS-DOS
+                also allows some characters in the range
+                <code>&amp;H7F</code>&ndash;<code>&amp;HFF</code>. However, their
+                permissibility and interpretation depends on the console code page,
+                which may be different from the display code page that affects GW-BASIC.
+                Depending on its console code page, MS-DOS will replace accented
+                letters by their unaccented uppercase variant. In PC-BASIC, this is
+                not supported.
             </p>
         </section>
         <hr />
