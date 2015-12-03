@@ -48,23 +48,24 @@ def load_codepage(codepage_name):
                 # ignore empty lines and comment lines (first char is #)
                 if (not line) or (line[0] == '#'):
                     continue
-                # split unicodepoint and hex string
-                splitline = line.split(':')
+                # strip off comments; split unicodepoint and hex string
+                splitline = line.split('#')[0].split(':')
                 # ignore malformed lines
                 if len(splitline) < 2:
                     continue
                 try:
                     # extract codepage point
                     cp_point = splitline[0].strip().decode('hex')
-                    # extract unicode point
-                    ucs_point = int('0x' + splitline[1].split()[0].strip(), 16)
-                    cp_to_unicode[cp_point] = unichr(ucs_point)
+                    # allow sequence of code points separated by commas
+                    grapheme_cluster = u''.join(unichr(int('0x' + ucs_str.strip(), 16)) for ucs_str in splitline[1].split(','))
                     # do not redefine printable ASCII, but substitute glyphs
-                    if cp_point in printable_ascii and ucs_point != ord(cp_point):
+                    if cp_point in printable_ascii and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point)):
                         # substitutes is in reverse order: { yen: backslash }
                         ascii_cp = unichr(ord(cp_point))
-                        substitutes[unichr(ucs_point)] = ascii_cp
+                        substitutes[grapheme_cluster] = ascii_cp
                         cp_to_unicode[cp_point] = ascii_cp
+                    else:
+                        cp_to_unicode[cp_point] = grapheme_cluster
                     # track lead and trail bytes
                     if len(cp_point) == 2:
                         lead.add(cp_point[0])
@@ -73,9 +74,9 @@ def load_codepage(codepage_name):
                     # track box drawing chars
                     else:
                         for i in (0, 1):
-                            if ucs_point in box_left_unicode[i]:
+                            if grapheme_cluster in box_left_unicode[i]:
                                 box_left[i].add(cp_point[0])
-                            if ucs_point in box_right_unicode[i]:
+                            if grapheme_cluster in box_right_unicode[i]:
                                 box_right[i].add(cp_point[0])
                 except ValueError:
                     logging.warning('Could not parse line in unicode mapping table: %s', repr(line))
@@ -121,10 +122,10 @@ control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e
 box_protect = True
 
 # left-connecting box drawing chars [ single line, double line ]
-box_left_unicode = [ (0x2500,), (0x2550,) ]
+box_left_unicode = [u'\u2500', u'\u2550']
 
 # right-connecting box drawing chars [ single line, double line ]
-box_right_unicode = [ (0x2500,), (0x2550,) ]
+box_right_unicode = [u'\u2500', u'\u2550']
 
 def connects(c, d, bset):
     """ Return True if c and d connect according to box-drawing set bset. """

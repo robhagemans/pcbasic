@@ -63,14 +63,17 @@ def load_hex(fontfiles, height, unicode_needed, substitutes):
             # ignore empty lines and comment lines (first char is #)
             if (not line) or (line[0] == '#'):
                 continue
+            # strip off comments
             # split unicodepoint and hex string (max 32 chars)
-            ucshex = line[0:4]
-            fonthex = line[5:69]
+            ucs_str, fonthex = line.split('#')[0].split(':')
+            ucs_sequence = ucs_str.split(',')
+            fonthex = fonthex.strip()
             # extract codepoint and hex string;
             # discard anything following whitespace; ignore malformed lines
             try:
-                c = unichr(int(ucshex, 16))
-                # skip chars we won't need
+                # construct grapheme cluster
+                c = u''.join(unichr(int(ucshex.strip(), 16)) for ucshex in ucs_sequence)
+                # skip grapheme clusters we won't need
                 if c not in all_needed:
                     continue
                 # skip chars we already have
