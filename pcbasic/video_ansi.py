@@ -11,6 +11,7 @@ import logging
 
 import video
 import video_cli
+from video_cli import encoding
 
 # for a few ansi sequences not supported by curses
 # only use these if you clear the screen afterwards,
@@ -83,7 +84,7 @@ class VideoANSI(video_cli.VideoCLI):
             for col, charattr in enumerate(textrow):
                 sys.stdout.write(ansi.esc_move_cursor % (row+1, col+1))
                 self._set_attributes(*charattr[1])
-                sys.stdout.write(charattr[0])
+                sys.stdout.write(charattr[0].encode(encoding, 'replace'))
         sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
         sys.stdout.flush()
 
@@ -191,7 +192,7 @@ class VideoANSI(video_cli.VideoCLI):
         if self.last_attributes != (fore, back, blink, underline):
             self.last_attributes = fore, back, blink, underline
             self._set_attributes(fore, back, blink, underline)
-        sys.stdout.write(char)
+        sys.stdout.write(char.encode(encoding, 'replace'))
         if dbcs:
             sys.stdout.write(' ')
         sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
