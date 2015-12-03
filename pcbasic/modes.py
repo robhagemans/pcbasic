@@ -414,7 +414,7 @@ class TextMode(VideoMode):
                 else:
                     a = bytes[i]
                 self.screen.text.pages[page].put_char_attr(crow+1, ccol+1, c, a, one_only=False)
-                if last_row != crow:
+                if last_row >= 0 and last_row != crow:
                     # set for_keys to true to avoid echoing to text terminal
                     self.screen.refresh_range(page, last_row+1, 1, self.width, for_keys=True)
             except IndexError:
