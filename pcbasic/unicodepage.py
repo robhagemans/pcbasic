@@ -6,6 +6,8 @@ Codepage conversions
 This file is released under the GNU GPL version 3.
 """
 
+import unicodedata
+
 import config
 import state
 import logging
@@ -166,7 +168,7 @@ def connects(c, d, bset):
 # conversion
 
 def from_unicode(uc):
-    """ Convert unicode char to codepage char sequence. """
+    """ Convert normalised unicode char to codepage char sequence. """
     try:
         # try to codepage-encode the unicode char
         return unicode_to_cp[uc]
@@ -179,7 +181,7 @@ def from_unicode(uc):
 
 def str_from_unicode(ucs):
     """ Convert unicode string to codepage string. """
-    return ''.join(from_unicode(uc) for uc in ucs)
+    return ''.join(from_unicode(uc) for uc in unicodedata.normalize('NFC', ucs))
 
 
 class Converter(object):
