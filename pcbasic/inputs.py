@@ -313,7 +313,7 @@ class Keyboard(object):
                 elif mod & modifier[scancode.CTRL]:
                     # ctrl + printscreen
                     redirect.toggle_echo(state.io_state.lpt1_file)
-            self.buf.insert_keypress(unicodepage.str_from_unicode(c), scan, mod, check_full=True)
+            self.buf.insert_keypress(unicodepage.from_unicode(c), scan, mod, check_full=True)
 
 
 
