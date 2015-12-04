@@ -1,5 +1,7 @@
 # OEM 437: MS-DOS Latin US
 # 80-FF: http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP437.TXT
+# Most code pages use the Special Graphic Characters range at 01-1F and 7F; the
+# mapping is at http://www.unicode.org/Public/MAPPINGS/VENDORS/MISC/IBMGRAPH.TXT
 #
 00:0000
 01:263a
