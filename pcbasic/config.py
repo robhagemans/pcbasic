@@ -381,6 +381,8 @@ def parse_type(d, arg):
     """ Convert argument to required type. """
     if d not in arguments:
         return arg
+    if 'choices' in arguments[d]:
+        arg = arg.lower()
     if 'type' in arguments[d]:
         if (arguments[d]['type'] == 'int'):
             arg = parse_int(d, arg)
