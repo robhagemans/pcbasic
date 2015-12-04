@@ -325,11 +325,11 @@ def dossify(longname, defext=''):
     """ Put name in 8x3, all upper-case format and apply default extension. """
     # convert to all uppercase
     name = str(longname).strip().upper()
+    # one trunk, one extension
+    name, ext = split_dosname(name, defext)
     # enforce allowable characters
     if set(name) - allowable_chars:
         raise error.RunError(error.BAD_FILE_NAME)
-    # one trunk, one extension
-    name, ext = split_dosname(name, defext)
     # no dot if no ext
     return join_dosname(name, ext)
 
