@@ -28,7 +28,7 @@ else:
     basepath = os.path.dirname(os.path.realpath(__file__))
 
 # directories
-encoding_dir = os.path.join(basepath, 'encoding')
+encoding_dir = os.path.join(basepath, 'codepage')
 font_dir = os.path.join(basepath, 'font')
 info_dir = os.path.join(basepath, 'data')
 system_config_dir = info_dir
