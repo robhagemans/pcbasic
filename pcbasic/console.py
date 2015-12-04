@@ -654,6 +654,8 @@ def list_line(line, newline=True):
     # no wrap if 80-column line, clear row before printing.
     # flow of listing is visible on screen
     backend.check_events()
+    # replace LF CR with LF
+    line = line.replace('\n\r', '\n')
     cuts = line.split('\n')
     for i, l in enumerate(cuts):
         # clear_line looks back along wraps, use clear_rest_of_line instead
