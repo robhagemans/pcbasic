@@ -74,11 +74,14 @@ def detokenise_line(ins, bytepos=None):
         # parse_line_number has returned -1 and left us at: .. 00 | _00_ 00 1A
         # stream ends or end of file sequence \x00\x00\x1A
         return -1, '', 0
-    elif current_line == 0 and util.peek(ins)==' ':
+    elif current_line == 0 and util.peek(ins) == ' ':
         # ignore up to one space after line number 0
         ins.read(1)
+    output = bytearray(str(current_line))
     # write one extra whitespace character after line number
-    output = str(current_line) + bytearray(' ')
+    # unless first char is TAB
+    if util.peek(ins) != '\t':
+        output += bytearray(' ')
     # detokenise tokens until end of line
     while True:
         s = ins.read(1)
