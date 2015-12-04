@@ -97,18 +97,24 @@ def detokenise_line(ins, bytepos=None):
             output += s
             litstring = not litstring
         elif s in tk.number:
-            ins.seek(-1,1)
+            ins.seek(-1, 1)
             representation.detokenise_number(ins, output)
         elif s in tk.linenum:
             # 0D: line pointer (unsigned int) - this token should not be here;
             #     interpret as line number and carry on
             # 0E: line number (unsigned int)
             output += representation.uint_to_str(bytearray(ins.read(2)))
-        elif comment or litstring or ('\x20' <= s <= '\x7e'):
+        elif comment or litstring or ('\x20' <= s <= '\x7E'):
             # honest ASCII
             output += s
+        elif s == '\x0A':
+            # LF becomes LF CR
+            output += '\x0A\x0D'
+        elif s <= '\x09':
+            # controls that do not double as tokens
+            output += s
         else:
-            ins.seek(-1,1)
+            ins.seek(-1, 1)
             comment = detokenise_keyword(ins, output)
     return current_line, output, textpos
 
