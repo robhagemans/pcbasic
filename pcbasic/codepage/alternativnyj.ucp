@@ -1,7 +1,9 @@
 # Soviet PC codepage
-# Alternativnyj Variant
+# GOST Alternativnyj Variant (V.M. Brjabrin & V.E. Figurnov)
 # https://www.math.nmsu.edu/~mleisher/Software/csets/ALTVAR.TXT
-# http://segfault.kiev.ua/cyrillic-encodings/
+# http://www.brama.com/compute/rustex.html#AV has acute-below (U+0317 ?) at 242 and grave-below (U+0316 ?) at 243, but do those make sense in Cyrillic?
+# http://segfault.kiev.ua/cyrillic-encodings/ claims f0, f1 should be cp437 symbols
+# but most other sources have uppercase and lowercase Yo here.
 00:0000
 01:263a
 02:263b
@@ -242,10 +244,10 @@ ec:044c
 ed:044d
 ee:044e
 ef:044f
-#f0:0401
-#f1:0451
-F0:2261
-F1:00B1
+f0:0401
+f1:0451
+#F0:2261
+#F1:00B1
 f2:0301
 f3:0300
 f4:0301
