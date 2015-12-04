@@ -148,9 +148,8 @@ class VideoCLI(video.VideoPlugin):
             [u' ']*len(self.text[self.apagenum][0]) for _ in range(start-1, stop)]
         if (start <= self.cursor_row and stop >= self.cursor_row and
                     self.vpagenum == self.apagenum):
-            # clear_line before update_position to avoid redrawing old lines on CLS
-            sys.stdout.write(ansi.esc_clear_line)
             self._update_position(self.cursor_row, 1)
+            sys.stdout.write(ansi.esc_clear_line)
             sys.stdout.flush()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
