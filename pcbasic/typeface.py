@@ -48,7 +48,7 @@ def load(families, height, unicode_needed, substitutes, nowarn=False):
         warnings = 0
         for u in missing:
             warnings += 1
-            logging.debug(u'Codepoint %x [%s] not represented in font', ord(u), u)
+            logging.debug(u'Codepoint %s [%s] not represented in font', repr(u), u)
             if warnings == 3:
                 logging.debug('Further codepoint warnings suppressed.')
                 break
