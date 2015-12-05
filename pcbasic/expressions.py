@@ -568,7 +568,7 @@ def value_loc(ins):
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     util.range_check(0, 255, num)
     the_file = devices.get_file(num)
-    return vartypes.pack_int(the_file.loc())
+    return fp.pack(fp.Single.from_int(the_file.loc()))
 
 def value_eof(ins):
     """ EOF: get end-of-file. """
@@ -586,7 +586,7 @@ def value_lof(ins):
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     util.range_check(0, 255, num)
     the_file = devices.get_file(num)
-    return vartypes.pack_int(the_file.lof() )
+    return fp.pack(fp.Single.from_int(the_file.lof()))
 
 
 ######################################################################
