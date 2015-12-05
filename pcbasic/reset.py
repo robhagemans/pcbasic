@@ -11,6 +11,7 @@ import rnd
 import devices
 import disk
 import state
+import flow
 
 
 def clear(close_files=False, preserve_common=False, preserve_all=False, preserve_deftype=False):
@@ -43,3 +44,5 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     state.console_state.sound.reset()
     # reset DRAW state (angle, scale) and current graphics position
     state.console_state.screen.drawing.reset()
+    # reset the DATA pointer
+    flow.restore()
