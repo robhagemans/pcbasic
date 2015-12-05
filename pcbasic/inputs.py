@@ -94,7 +94,7 @@ class KeyboardBuffer(object):
         if cp_c:
             if check_full and len(self.buffer) >= self.ring_length:
                 # emit a sound signal when buffer is full (and we care)
-                state.console_state.sound.play_sound(800, 0.01)
+                state.console_state.sound.play_sound_no_wait(800, 0.01)
             else:
                 self.buffer.append((cp_c, scancode, modifier))
 

@@ -124,7 +124,7 @@ class Sound(object):
         """ Play the BEEP sound. """
         self.play_sound(800, 0.25)
 
-    def play_sound(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
+    def play_sound_no_wait(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
         """ Play a sound on the tone generator. """
         if frequency < 0:
             frequency = 0
@@ -140,6 +140,11 @@ class Sound(object):
             # /2 because we're using a 0x4000 rotation rather than 0x8000
             self.noise_freq[3] = frequency/2.
             self.noise_freq[7] = frequency/2.
+
+
+    def play_sound(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
+        """ Play a sound on the tone generator; wait if tone queu is full. """
+        self.play_sound_no_wait(frequency, duration, fill, loop, voice, volume)
         # at most 16 notes in the sound queue (not 32 as the guide says!)
         self.wait_music(15)
 
