@@ -151,7 +151,7 @@ def build_glyph(c, font_face, req_width, req_height, carry_col_9, carry_row_9):
     try:
         face = bytearray(font_face[c])
     except KeyError:
-        logging.debug(u'%s [code point %x] not represented in font, replacing with blank glyph.', c, ord(c))
+        logging.debug(u'%s [%s] not represented in font, replacing with blank glyph.', c, repr(c))
         # codepoint 0 must be blank by our definitions
         face = bytearray(font_face[u'\0'])
         c = u'\0'
@@ -162,7 +162,7 @@ def build_glyph(c, font_face, req_width, req_height, carry_col_9, carry_row_9):
     force_single = code_width >= (req_width-1)*2
     if force_double or force_single:
         # i.e. we need a double-width char but got single or v.v.
-        logging.debug(u'Incorrect glyph width for %s [code point %x]: %d-pixel requested, %d-pixel found.', c, ord(c), req_width, code_width)
+        logging.debug(u'Incorrect glyph width for %s [%s]: %d-pixel requested, %d-pixel found.', c, repr(c), req_width, code_width)
     if numpy:
         glyph = numpy.unpackbits(face, axis=0).reshape((code_height, code_width)).astype(bool)
         # repeat last rows (e.g. for 9-bit high chars)
