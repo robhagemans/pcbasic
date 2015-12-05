@@ -81,6 +81,8 @@ def prepare():
     # load the graphics fonts, including the 8-pixel RAM font
     # use set() for speed - lookup is O(1) rather than O(n) for list
     chars_needed = set(unicodepage.cp_to_unicode.values())
+    # break up any grapheme clusters and add components to set of needed glyphs
+    chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
     fonts = typeface.load_fonts(config.get('font'), heights_needed,
                                 chars_needed, unicodepage.substitutes)
     fonts[9] = fonts[8]

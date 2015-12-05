@@ -18,11 +18,11 @@ import plat
 import config
 
 def prepare():
-    """ Perpare the typeface module. """
+    """ Prepare the typeface module. """
     global debug
     debug = config.get('debug')
 
-def font_filename(name, height, ext='hex'):
+def _font_filename(name, height, ext='hex'):
     """ Return name_height.hex if filename exists in current path, else font_dir/name_height.hex. """
     name = '%s_%02d.%s' % (name, height, ext)
     if not os.path.exists(name):
@@ -32,7 +32,7 @@ def font_filename(name, height, ext='hex'):
 
 def load(families, height, unicode_needed, substitutes, nowarn=False):
     """ Load the specified fonts for a given codepage. """
-    names = [ font_filename(name, height) for name in families ]
+    names = [ _font_filename(name, height) for name in families ]
     fontfiles = [ open(name, 'rb') for name in reversed(names) if os.path.exists(name) ]
     if len(fontfiles) == 0:
         if not nowarn:
@@ -95,26 +95,40 @@ def load_hex(fontfiles, height, unicode_needed, substitutes):
             if new in fontdict})
     # char 0 should always be defined and empty
     fontdict[u'\0'] = '\0'*height
+    _combine_glyphs(fontdict, unicode_needed)
     return fontdict
 
-def fixfont(height, font, unicode_needed, font16):
+def _combine_glyphs(font, unicode_needed):
+    """ Fix missing grapheme clusters by combining components. """
+    for cluster in unicode_needed:
+        if cluster not in font:
+            # try to combine grapheme clusters first
+            if len(cluster) > 1:
+                # combine strings
+                font[cluster] = bytearray(font[u'\0'])
+                try:
+                    for c in cluster:
+                        for y, row in enumerate(font[c]):
+                            font[cluster][y] |= ord(row)
+                except KeyError as e:
+                    logging.debug('Could not combine grapheme cluster %s, missing %s [%s]',
+                        cluster, repr(c), c)
+                font[cluster] = str(font[cluster])
+
+def _fixfont(height, font, unicode_needed, font16):
     """ Fill in missing codepoints in font using 16-line font or blanks. """
     if not font:
         font = {}
-    if height == 16:
-        for c in unicode_needed:
-            if c not in font:
-                font[c] = ('\0'*16 if len(c) == 1 else '\0'*32)
-    else:
-        for c in unicode_needed:
-            if c not in font:
-                if font16 and c in font16:
-                    font[c] = glyph_16_to(height, font16[c])
-                else:
-                    font[c] = ('\0'*height if len(c) == 1 else '\0'*2*height)
+    for c in unicode_needed:
+        if c not in font:
+            # try to construct from 16-bit font
+            if height != 16 and font16 and c in font16:
+                font[c] = _glyph_16_to(height, font16[c])
+            else:
+                font[c] = '\0'*height
     return font
 
-def glyph_16_to(height, glyph16):
+def _glyph_16_to(height, glyph16):
     """ Crudely convert 16-line character to n-line character by taking out top and bottom. """
     s16 = list(glyph16)
     start = (16 - height) // 2
@@ -140,7 +154,7 @@ def load_fonts(font_families, heights_needed, unicode_needed, substitutes):
             if font_16:
                 fonts[16] = font_16
         if 16 in fonts and fonts[16]:
-            fixfont(height, fonts[height], unicode_needed, fonts[16])
+            _fixfont(height, fonts[height], unicode_needed, fonts[16])
     return fonts
 
 
