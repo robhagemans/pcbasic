@@ -509,6 +509,8 @@
                 printable ASCII characters in the range
                 <code>&amp;H20</code>&ndash;<code>&amp;H7E</code> excluding the characters
                 <code>" * + . , / : ; < = > ? \ [ ] |</code>.
+                The special device filenames <code>AUX</code>, <code>CON</code>, <code>PRN</code> and
+                <code>NUL</code> are not legal names for files on disk.
             </p>
             <p>
                 Note that DOS conventions are subtly different from Windows short filename
@@ -650,15 +652,21 @@
             as handshake specifications for serial devices, a filename for cassette devices and a path for disk devices.
             When operating on disk devices, specifying a path is mandatory.
         </p>
+        <p>
+            The <i>filename aliases</i> listed here are only available if the
+            <a href="#--current-device">current device</a> is a disk device.
+        </p>
         <div class="scrollable">
             <table>
                 <tr>
                     <th>Device</th>
+                    <th>Filename alias</th>
                     <th>Allowed modes</th>
                     <th>Description</th>
                 </tr>
                 <tr>
                     <td><code>SCRN:</code></td>
+                    <td><code>CON</code></td>
                     <td><code>OUTPUT</code></td>
                     <td>
                         The screen. Output to <code>SCRN:</code> has largely the same
@@ -668,6 +676,7 @@
                     </td>
                 </tr><tr>
                     <td><code>KYBD:</code></td>
+                    <td><code>CON</code></td>
                     <td><code>INPUT</code></td>
                     <td>
                         The keyboard. Input read from <code>KYBD:</code> is not echoed
@@ -677,6 +686,7 @@
                     </td>
                 </tr><tr>
                     <td><code>LPT1:</code> <code>LPT2:</code> <code>LPT3:</code></td>
+                    <td><code>PRN</code> for <code>LPT1:</code></td>
                     <td><code>OUTPUT</code> <code>RANDOM</code></td>
                     <td>
                         Parallel ports 1&#8212;3.
@@ -690,6 +700,7 @@
                     </td>
                 </tr><tr>
                     <td><code>COM1:</code> <code>COM2:</code></td>
+                    <td><code>AUX</code> for <code>COM1:</code></td>
                     <td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
                     <td>
                         Serial ports 1&#8212;2.
@@ -700,6 +711,7 @@
                 </tr>
                 <tr>
                     <td><code>CAS1:</code></td>
+                    <td></td>
                     <td><code>INPUT</code> <code>OUTPUT</code></td>
                     <td>
                         Cassette tape driver. <code>CAS</code> devices can be
@@ -708,6 +720,7 @@
                 </tr>
                 <tr>
                     <td><code>A:</code> &#8212; <code>Z:</code> and <code>@:</code></td>
+                    <td></td>
                     <td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
                 <td>
                     Disk devices. These devices can be mounted to a directory on
@@ -715,6 +728,15 @@
                      They do not automatically match drive letters on Windows,
                     unless the <code><a href="#--map-drives">--map-drives</a></code> option
                      is set.
+                </td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><code>NUL</code></td>
+                    <td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
+                <td>
+                    Null device. This device produces no bytes when opened for <code>INPUT</code>
+                    and absorbs all bytes when opened for <code>OUTPUT</code>.
                 </td>
                 </tr>
             </table>

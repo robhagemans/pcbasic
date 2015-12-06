@@ -40,6 +40,9 @@ state.io_state.current_device = None
 type_to_magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd' }
 magic_to_type = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
 
+# MS-DOS device files
+device_files = ('AUX', 'CON', 'NUL', 'PRN')
+
 def prepare():
     """ Initialise iolayer module. """
     global max_files
@@ -75,7 +78,21 @@ def open_file(number, description, filetype, mode='I', access='R', lock='',
             raise error.RunError(error.BAD_FILE_NUMBER)
     else:
         device = state.io_state.current_device
-        dev_param = name
+        # MS-DOS device aliases - these can't be names of disk files
+        if device != state.io_state.devices['CAS1:'] and name in device_files:
+            if name == 'AUX':
+                device, dev_param = state.io_state.devices['COM1:'], ''
+            elif name == 'CON' and mode == 'I':
+                device, dev_param = state.io_state.devices['KYBD:'], ''
+            elif name == 'CON' and mode == 'O':
+                device, dev_param = state.io_state.devices['SCRN:'], ''
+            elif name == 'PRN':
+                device, dev_param = state.io_state.devices['LPT1:'], ''
+            elif name == 'NUL':
+                device, dev_param = NullDevice(), ''
+        else:
+            # open file on default device
+            dev_param = name
     # check if device exists and allows the requested mode
     new_file = device.open(number, dev_param, filetype, mode, access, lock,
                            reclen, seg, offset, length)
@@ -156,8 +173,24 @@ class Device(object):
         return new_file
 
     def close(self):
+        """ Close the device. """
         if self.device_file:
             self.device_file.close()
+
+
+class NullDevice():
+    """ Null device (NUL) """
+
+    def __init__(self):
+        """ Set up device. """
+
+    def open(self, number, param, filetype, mode, access, lock,
+                   reclen, seg, offset, length):
+        """ Open a file on the device. """
+        return TextFileBase(nullstream(), filetype, mode)
+
+    def close(self):
+        """ Close the device. """
 
 
 class SCRNDevice(Device):
