@@ -288,7 +288,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         # last key released gets remembered
         try:
             backend.input_queue.put(backend.Event(
-                                    backend.KEYB_UP, key_to_scan[e.key]))
+                                    backend.KEYB_UP, (key_to_scan[e.key],)))
         except KeyError:
             pass
 

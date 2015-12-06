@@ -310,7 +310,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # last key released gets remembered
         try:
             backend.input_queue.put(backend.Event(
-                    backend.KEYB_UP, scan_to_scan[e.key.keysym.scancode]))
+                    backend.KEYB_UP, (scan_to_scan[e.key.keysym.scancode],)))
         except KeyError:
             pass
 

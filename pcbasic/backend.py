@@ -203,7 +203,7 @@ def check_input():
             # params is e-ASCII/unicode character sequence, scancode, modifier
             state.console_state.keyb.key_down(*signal.params)
         elif signal.event_type == KEYB_UP:
-            state.console_state.keyb.key_up(signal.params)
+            state.console_state.keyb.key_up(*signal.params)
         elif signal.event_type == PEN_DOWN:
             state.console_state.pen.down(*signal.params)
         elif signal.event_type == PEN_UP:

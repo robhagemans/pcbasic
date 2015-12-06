@@ -185,7 +185,7 @@ class VideoCurses(video.VideoPlugin):
                                     backend.KEYB_DOWN, (c, None, [], False)))
             if self.f12_active:
                 backend.input_queue.put(backend.Event(
-                                        backend.KEYB_UP, scancode.F12))
+                                        backend.KEYB_UP, (scancode.F12,)))
                 self.f12_active = False
 
     def _resize(self, height, width):

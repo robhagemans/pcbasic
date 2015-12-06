@@ -122,7 +122,7 @@ class VideoCLI(video.VideoPlugin):
                     self.f12_active = True
                 else:
                     backend.input_queue.put(backend.Event(
-                                            backend.KEYB_UP, scancode.F12))
+                                            backend.KEYB_UP, (scancode.F12,)))
                     self.f12_active = False
 
     ###############################################################################
