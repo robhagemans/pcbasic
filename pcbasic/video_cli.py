@@ -269,14 +269,6 @@ class InputHandlerCLI(object):
         more = 4
         cutoff = 100
         while (more > 0) and (cutoff > 0):
-            # give time for the queue to fill up
-            time.sleep(0.0005)
-            c = self._getc()
-            cutoff -= 1
-            if c == '':
-                continue
-            more -= 1
-            s += c
             if esc:
                 # return the first recognised escape sequence
                 uc = esc_to_eascii.get(s, '')
@@ -289,6 +281,14 @@ class InputHandlerCLI(object):
                     return s.decode(encoding), None
                 except UnicodeDecodeError:
                     pass
+            # give time for the queue to fill up
+            time.sleep(0.0005)
+            c = self._getc()
+            cutoff -= 1
+            if c == '':
+                continue
+            more -= 1
+            s += c
         # no sequence or decodable string found
         # decode as good as it gets
         return s.decode(encoding, errors='replace'), None
