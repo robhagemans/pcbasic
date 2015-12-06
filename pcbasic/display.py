@@ -692,7 +692,7 @@ class Screen(object):
                 chr(c): typeface.build_glyph(unicodepage.cp_to_unicode[chr(c)],
                                 fonts[mode_info.font_height],
                                 mode_info.font_width, mode_info.font_height,
-                                c in carry_col_9_chars, c in carry_row_9_chars)
+                                chr(c) in carry_col_9_chars, chr(c) in carry_row_9_chars)
                 for c in range(256) }
         except (KeyError, AttributeError):
             logging.warning(
