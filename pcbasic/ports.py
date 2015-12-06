@@ -545,10 +545,10 @@ class LPTDevice(devices.Device):
         elif addr == 'STDIO' or (not addr and val == 'STDIO'):
             crlf = (val.upper() == 'CRLF')
             self.stream = StdIOStream(crlf)
-        elif addr == 'PRINTER' or not addr:
+        elif addr == 'PRINTER' or (val and not addr):
             # 'PRINTER' is default
             self.stream = printer.PrinterStream(val)
-        else:
+        elif val:
             logging.warning('Could not attach %s to LPT device', arg)
         if self.stream:
             self.device_file = LPTFile(self.stream, flush_trigger)
