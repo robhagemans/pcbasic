@@ -228,8 +228,11 @@ class Keyboard(object):
     def key_down(self, c, scan, mods, check_full=True):
         """ Insert a key-down event by eascii/unicode, scancode and modifiers. """
         # emulator home-key (f12) replacements
-        # f12+b -> ctrl+break is handled separately below
         if self.home_key_active:
+            if c.upper() == 'B':
+                # f12+b -> ctrl+break
+                self.prebuf.append(('', scancode.BREAK, modifier[scancode.CTRL], check_full))
+                return
             try:
                 scan, c = home_key_replacements_scancode[scan]
             except KeyError:
@@ -299,8 +302,6 @@ class Keyboard(object):
             elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) and
                     mod & modifier[scancode.CTRL]) or
                     (ctrl_c_is_break and c == eascii.CTRL_c)):
-                raise error.Break()
-            elif (self.home_key_active and c.upper() == u'B'):
                 raise error.Break()
             elif (scan == scancode.BREAK or
                     (scan == scancode.NUMLOCK and mod & modifier[scancode.CTRL])):
