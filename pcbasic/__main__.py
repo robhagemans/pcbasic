@@ -16,6 +16,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 import traceback
+import subprocess
 
 import plat
 import ansipipe
@@ -269,6 +270,7 @@ def open_native_or_dos_filename(infile):
 
 def debug_details():
     logging.info('os: %s', plat.system)
+    logging.info('\nMODULES')
     # try numpy before pygame to avoid strange ImportError on FreeBSD
     modules = ('numpy', 'win32api', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial', 'parallel')
     for module in modules:
@@ -287,6 +289,15 @@ def debug_details():
                     pass
             else:
                 sys.stdout.write('available\n')
+    if plat.system != 'Windows':
+        logging.info('\nEXTERNAL TOOLS')
+        tools = ('paps', 'beep', 'xclip', 'xsel')
+        for tool in tools:
+            try:
+                location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')
+                logging.info('%s: %s', tool, location)
+            except Exception as e:
+                logging.info('%s: not available', tool)
 
 
 if __name__ == "__main__":
