@@ -174,8 +174,10 @@ class VideoCurses(video.VideoPlugin):
                 if scan or c:
                     backend.input_queue.put(backend.Event(
                                             backend.KEYB_DOWN, (c, scan, [])))
-            if i == curses.KEY_F12:
-                self.f12_active = True
+                    if i == curses.KEY_F12:
+                        self.f12_active = True
+                    else:
+                        self._unset_f12()
         # convert into unicode chars
         u = s.decode(encoding, 'replace')
         # then handle these one by one
@@ -183,10 +185,14 @@ class VideoCurses(video.VideoPlugin):
             #check_full=False to allow pasting chunks of text
             backend.input_queue.put(backend.Event(
                                     backend.KEYB_DOWN, (c, None, [], False)))
-            if self.f12_active:
-                backend.input_queue.put(backend.Event(
-                                        backend.KEYB_UP, (scancode.F12,)))
-                self.f12_active = False
+            self._unset_f12()
+
+    def _unset_f12(self):
+        """ Deactivate F12 """
+        if self.f12_active:
+            backend.input_queue.put(backend.Event(
+                                    backend.KEYB_UP, (scancode.F12,)))
+            self.f12_active = False
 
     def _resize(self, height, width):
         """ Resize the terminal. """
