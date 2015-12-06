@@ -198,7 +198,7 @@ def check_input():
             raise error.Exit()
         elif signal.event_type == KEYB_CHAR:
             # params is a unicode sequence
-            state.console_state.keyb.insert_chars(signal.params)
+            state.console_state.keyb.insert_chars(*signal.params)
         elif signal.event_type == KEYB_DOWN:
             # params is e-ASCII/unicode character sequence, scancode, modifier
             state.console_state.keyb.key_down(*signal.params)

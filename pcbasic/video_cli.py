@@ -112,9 +112,9 @@ class VideoCLI(video.VideoPlugin):
             backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
                                     (eascii.BACKSPACE, scancode.BACKSPACE, [])))
         elif sc or uc:
-            # check_full=False?
+            # check_full=False to allow pasting chunks of text
             backend.input_queue.put(backend.Event(
-                                    backend.KEYB_DOWN, (uc, sc, [])))
+                                    backend.KEYB_DOWN, (uc, sc, [], False)))
             if sc == scancode.F12:
                 self.f12_active = True
             else:

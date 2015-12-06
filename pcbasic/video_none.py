@@ -65,7 +65,7 @@ class VideoNone(video.VideoPlugin):
             # replace LF -> CR if needed
             if c == u'\n' and lf_to_cr:
                 c = u'\r'
-            # check_full=False?
-            backend.input_queue.put(backend.Event(backend.KEYB_CHAR, c))
+            # check_full=False as all input may come at once
+            backend.input_queue.put(backend.Event(backend.KEYB_CHAR, (c, False)))
 
 prepare()

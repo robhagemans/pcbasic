@@ -328,7 +328,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         elif self.last_down is None:
             # no key down event waiting: other input method
             backend.input_queue.put(backend.Event(
-                                    backend.KEYB_CHAR, c))
+                                    backend.KEYB_CHAR, (c, )))
         else:
             eascii, scan, mod, ts = self.last_down
             if eascii:
@@ -343,7 +343,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 self._flush_keypress()
                 # current textinput has no corresponding keypress
                 backend.input_queue.put(backend.Event(
-                                        backend.KEYB_CHAR, c))
+                                        backend.KEYB_CHAR, (c, )))
             self.last_down = None
 
 

@@ -265,7 +265,7 @@ class Keyboard(object):
         if (self.mod & toggle[scancode.CAPSLOCK]
                 and not ignore_caps and len(c) == 1):
             c = c.swapcase()
-        self.prebuf.append((c, scan, self.mod))
+        self.prebuf.append((c, scan, self.mod, check_full))
 
     def key_up(self, scan):
         """ Insert a key-up event. """
@@ -289,7 +289,7 @@ class Keyboard(object):
     def drain_event_buffer(self):
         """ Drain prebuffer into key buffer and handle trappable special keys. """
         while self.prebuf:
-            c, scan, mod = self.prebuf.pop(0)
+            c, scan, mod, check_full = self.prebuf.pop(0)
             # handle special key combinations
             if (scan == scancode.DELETE and
                     mod & (modifier[scancode.CTRL] | modifier[scancode.ALT])):
@@ -313,7 +313,7 @@ class Keyboard(object):
                 elif mod & modifier[scancode.CTRL]:
                     # ctrl + printscreen
                     redirect.toggle_echo(state.io_state.lpt1_file)
-            self.buf.insert_keypress(unicodepage.from_unicode(c), scan, mod, check_full=True)
+            self.buf.insert_keypress(unicodepage.from_unicode(c), scan, mod, check_full)
 
 
 

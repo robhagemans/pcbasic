@@ -172,7 +172,6 @@ class VideoCurses(video.VideoPlugin):
                 scan = curses_to_scan.get(i, None)
                 c = curses_to_eascii.get(i, '')
                 if scan or c:
-                    #check_full=False?
                     backend.input_queue.put(backend.Event(
                                             backend.KEYB_DOWN, (c, scan, [])))
             if i == curses.KEY_F12:
@@ -181,9 +180,9 @@ class VideoCurses(video.VideoPlugin):
         u = s.decode(encoding, 'replace')
         # then handle these one by one
         for c in u:
-            #check_full=False?
+            #check_full=False to allow pasting chunks of text
             backend.input_queue.put(backend.Event(
-                                    backend.KEYB_DOWN, (c, None, [])))
+                                    backend.KEYB_DOWN, (c, None, [], False)))
             if self.f12_active:
                 backend.input_queue.put(backend.Event(
                                         backend.KEYB_UP, scancode.F12))
