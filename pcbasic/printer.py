@@ -35,6 +35,13 @@ class PrinterStream(StringIO):
         utf8buf = unicodepage.Converter(preserve_control=True).to_unicode(printbuf).encode('utf-8', 'replace')
         line_print(utf8buf, self.printer_name)
 
+    def set_control(self, select=False, init=False, lf=False, strobe=False):
+        """ Set the values of the control pins. """
+
+    def get_status(self):
+        """ Get the values of the status pins. """
+        return False, False, False, False, False
+
 
 if plat.system == 'Windows':
     import os

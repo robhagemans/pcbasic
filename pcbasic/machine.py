@@ -86,6 +86,13 @@ com_enable_baud_write = [False, False]
 com_baud_divisor = [0, 0]
 com_break = [False, False]
 
+# parallel port base address:
+# http://retired.beyondlogic.org/spp/parallel.htm
+# 3BCh - 3BFh  Used for Parallel Ports which were incorporated on to Video Cards - Doesn't support ECP addresses
+# 378h - 37Fh  Usual Address For LPT 1
+# 278h - 27Fh  Usual Address For LPT 2
+lpt_device = [state.io_state.devices['LPT1:'], state.io_state.devices['LPT2:']]
+
 def inp(port):
     """ Get the value in an emulated machine port. """
     # keyboard
@@ -109,6 +116,15 @@ def inp(port):
         if decay < inputs.stick_axis[1][1] * joystick_time_factor:
             value += 0x08
         return value
+    elif port in (0x379, 0x279):
+        # parallel port input ports
+        # http://www.aaroncake.net/electronics/qblpt.htm
+        # http://retired.beyondlogic.org/spp/parallel.htm
+        lpt_port_nr = 0 if port >= 0x378 else 1
+        base_addr = {0: 0x378, 1: 0x278}
+        # get status port
+        busy, ack, paper, select, err = lpt_device[lpt_port_nr].stream.get_status()
+        return busy * 0x80 | ack * 0x40 | paper * 0x20 | select * 0x10 | err * 0x8
     else:
         # serial port machine ports
         # http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers
@@ -156,6 +172,19 @@ def out(addr, val):
         #OUT &H3D8,&H1E: REM disable color burst
         # 0x1a == 0001 1010     0x1e == 0001 1110
         state.console_state.screen.set_colorburst(val & 4 == 0)
+    elif addr in (0x378, 0x37A, 0x278, 0x27A):
+        # parallel port output ports
+        # http://www.aaroncake.net/electronics/qblpt.htm
+        # http://retired.beyondlogic.org/spp/parallel.htm
+        lpt_port_nr = 0 if addr >= 0x378 else 1
+        base_addr = {0: 0x378, 1: 0x278}
+        if addr - base_addr[lpt_port_nr] == 0:
+            # set data port
+            lpt_device[lpt_port_nr].stream.write(chr(val))
+        else:
+            # set control port
+            lpt_device[lpt_port_nr].stream.set_control(
+                select=val & 0x8, init=val&0x4, lf=val&0x2, strobe=val&0x1)
     else:
         # serial port machine ports
         # http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers

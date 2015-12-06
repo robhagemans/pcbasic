@@ -369,6 +369,13 @@ class StdIOStream(object):
         """ Get signal pins. """
         return False, False, False, False
 
+    def set_control(self, select=False, init=False, lf=False, strobe=False):
+        """ Set the values of the control pins. """
+
+    def get_status(self):
+        """ Get the values of the status pins. """
+        return False, False, False, False, False
+
 
 class SerialStream(object):
     """ Wrapper object for Serial to enable pickling. """
@@ -662,8 +669,27 @@ class ParallelStream(object):
 
     def write(self, s):
         """ Write to the parallel port. """
+        if self._parallel.getInPaperOut():
+            raise error.RunError(error.OUT_OF_PAPER)
         for c in s:
             self._parallel.setData(ord(c))
+
+    def set_control(self, select=False, init=False, lf=False, strobe=False):
+        """ Set the values of the control pins. """
+        self._parallel.setDataStrobe(strobe)
+        self._parallel.setAutoFeed(lf)
+        self._parallel.setInitOut(init)
+        # select-printer pin not implemented
+
+    def get_status(self):
+        """ Get the values of the status pins. """
+        paper = self._parallel.getInPaperOut()
+        ack = self._parallel.getInAcknowledge()
+        select = self._parallel.getInSelected()
+        # not implemented: busy, error pins
+        busy = False
+        err = False
+        return busy, ack, paper, select, err
 
     def close(self):
         """ Close the stream. """
