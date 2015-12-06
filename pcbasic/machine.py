@@ -682,10 +682,17 @@ def get_low_memory(addr):
         else:
             # 80x25 graphics
             return 32 + 6
+    # http://textfiles.com/programming/peekpoke.txt
+    #   "(PEEK (1041) AND 14)/2" WILL PROVIDE NUMBER OF RS232 PORTS INSTALLED.
+    #   "(PEEK (1041) AND 16)/16" WILL PROVIDE NUMBER OF GAME PORTS INSTALLED.
+    #   "(PEEK (1041) AND 192)/64" WILL PROVIDE NUMBER OF PRINTERS INSTALLED.
     elif addr == 1041:
-        return 18 + 64 * (1 +
-                (state.io_state.devices['LPT2:'] is not None) +
-                (state.io_state.devices['LPT3:'] is not None))
+        return (2 * ((state.io_state.devices['COM1:'].stream is not None) +
+                    (state.io_state.devices['COM2:'].stream is not None)) +
+                16 +
+                64 * ((state.io_state.devices['LPT1:'].stream is not None) +
+                    (state.io_state.devices['LPT2:'].stream is not None) +
+                    (state.io_state.devices['LPT3:'].stream is not None)))
     elif addr == 1047:
         return state.console_state.keyb.mod
     # not implemented: peek(1048)==4 if sysrq pressed, 0 otherwise
