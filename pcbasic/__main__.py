@@ -316,8 +316,11 @@ def open_native_or_dos_filename(infile):
         return devices.open_file(0, infile, filetype='BPA', mode='I')
 
 def debug_details():
+    """ Show detailed version/debugging information. """
+    import platform
     logging.info('\nPLATFORM')
-    logging.info('os: %s', plat.system)
+    logging.info('os: %s %s %s', plat.system, platform.processor(), platform.version())
+    logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
     logging.info('\nMODULES')
     # try numpy before pygame to avoid strange ImportError on FreeBSD
     modules = ('numpy', 'win32api', 'pygame', 'curses', 'pexpect', 'serial', 'parallel')
@@ -325,7 +328,7 @@ def debug_details():
         try:
             m = __import__(module)
         except ImportError:
-            logging.info('%s: not available', module)
+            logging.info('%s: --', module)
         else:
             for version_attr in ('__version__', 'version', 'VERSION'):
                 try:
@@ -344,7 +347,7 @@ def debug_details():
                 location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')
                 logging.info('%s: %s', tool, location)
             except Exception as e:
-                logging.info('%s: not available', tool)
+                logging.info('%s: --', tool)
 
 
 if __name__ == "__main__":
