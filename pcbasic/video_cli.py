@@ -102,25 +102,28 @@ class VideoCLI(video.VideoPlugin):
 
     def _check_input(self):
         """ Handle keyboard events. """
-        # s is one unicode char or one scancode
-        uc, sc = self.input_handler.get_key()
-        if uc == eof:
-            # ctrl-D (unix) / ctrl-Z (windows)
-            backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
-        elif uc == u'\x7f':
-            # backspace
-            backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
-                                    (eascii.BACKSPACE, scancode.BACKSPACE, [])))
-        elif sc or uc:
-            # check_full=False to allow pasting chunks of text
-            backend.input_queue.put(backend.Event(
-                                    backend.KEYB_DOWN, (uc, sc, [], False)))
-            if sc == scancode.F12:
-                self.f12_active = True
-            else:
+        while True:
+            # s is one unicode char or one scancode
+            uc, sc = self.input_handler.get_key()
+            if not uc and not sc:
+                break
+            if uc == eof:
+                # ctrl-D (unix) / ctrl-Z (windows)
+                backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
+            elif uc == u'\x7f':
+                # backspace
+                backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
+                                        (eascii.BACKSPACE, scancode.BACKSPACE, [])))
+            elif sc or uc:
+                # check_full=False to allow pasting chunks of text
                 backend.input_queue.put(backend.Event(
-                                        backend.KEYB_UP, scancode.F12))
-                self.f12_active = False
+                                        backend.KEYB_DOWN, (uc, sc, [], False)))
+                if sc == scancode.F12:
+                    self.f12_active = True
+                else:
+                    backend.input_queue.put(backend.Event(
+                                            backend.KEYB_UP, scancode.F12))
+                    self.f12_active = False
 
     ###############################################################################
 
