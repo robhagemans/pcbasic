@@ -78,6 +78,8 @@ def prepare():
         heights_needed.add(mode.font_height)
     for mode in state.console_state.screen.mode_data.values():
         heights_needed.add(mode.font_height)
+    # 9-pixel font is same as 8-pixel font
+    heights_needed -= set([9])
     # load the graphics fonts, including the 8-pixel RAM font
     # use set() for speed - lookup is O(1) rather than O(n) for list
     chars_needed = set(unicodepage.cp_to_unicode.values())
