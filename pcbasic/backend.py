@@ -346,7 +346,7 @@ class KeyHandler(EventHandler):
         """ Trigger KEY events. """
         if self.scancode is None:
             return False
-        for c, scancode, modifiers in state.console_state.keyb.prebuf:
+        for c, scancode, modifiers, check_full in state.console_state.keyb.prebuf:
             if scancode != self.scancode:
                 continue
             # build KEY trigger code
@@ -369,7 +369,7 @@ class KeyHandler(EventHandler):
                 self.trigger()
                 # drop key from key buffer
                 if self.enabled:
-                    state.console_state.keyb.prebuf.remove((c, scancode, modifiers))
+                    state.console_state.keyb.prebuf.remove((c, scancode, modifiers, check_full))
                     return True
         return False
 
