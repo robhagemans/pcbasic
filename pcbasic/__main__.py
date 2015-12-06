@@ -270,13 +270,24 @@ def open_native_or_dos_filename(infile):
 def debug_details():
     logging.info('os: %s', plat.system)
     # try numpy before pygame to avoid strange ImportError on FreeBSD
-    modules = ('numpy', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial')
+    modules = ('numpy', 'win32api', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial', 'parallel')
     for module in modules:
         try:
-            __import__(module)
-            sys.stdout.write("%s: available\n" % module)
+            m = __import__(module)
+            sys.stdout.write('%s: ' % module)
         except ImportError:
-            sys.stdout.write("%s: not available\n" % module)
+            sys.stdout.write('%s: not available\n' % module)
+        else:
+            for version_attr in ('__version__', 'version', 'VERSION'):
+                try:
+                    version = getattr(m, version_attr)
+                    sys.stdout.write('%s\n' % version)
+                    break
+                except AttributeError:
+                    pass
+            else:
+                sys.stdout.write('available\n')
+
 
 if __name__ == "__main__":
     main()
