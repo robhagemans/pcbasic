@@ -316,6 +316,7 @@ def open_native_or_dos_filename(infile):
         return devices.open_file(0, infile, filetype='BPA', mode='I')
 
 def debug_details():
+    logging.info('\nPLATFORM')
     logging.info('os: %s', plat.system)
     logging.info('\nMODULES')
     # try numpy before pygame to avoid strange ImportError on FreeBSD
@@ -323,19 +324,18 @@ def debug_details():
     for module in modules:
         try:
             m = __import__(module)
-            sys.stdout.write('%s: ' % module)
         except ImportError:
-            sys.stdout.write('%s: not available\n' % module)
+            logging.info('%s: not available', module)
         else:
             for version_attr in ('__version__', 'version', 'VERSION'):
                 try:
                     version = getattr(m, version_attr)
-                    sys.stdout.write('%s\n' % version)
+                    logging.info('%s: %s', module, version)
                     break
                 except AttributeError:
                     pass
             else:
-                sys.stdout.write('available\n')
+                logging.info('available\n')
     if plat.system != 'Windows':
         logging.info('\nEXTERNAL TOOLS')
         tools = ('paps', 'beep', 'xclip', 'xsel')
