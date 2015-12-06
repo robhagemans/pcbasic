@@ -265,8 +265,8 @@ class InputHandlerCLI(object):
             return None, None
         # ansi sequences start with \x1b
         esc = (s == ansi.ESC)
-        # both escape sequences and UTF-8 are at most 4 chars long
-        more = 4
+        # escape sequences are at most 5 and UTF-8 at most 4 chars long
+        more = 5
         cutoff = 100
         while (more > 0) and (cutoff > 0):
             if esc:
