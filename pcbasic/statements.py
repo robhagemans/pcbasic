@@ -1886,7 +1886,9 @@ def exec_let(ins):
 
 def exec_mid(ins):
     """ MID$: set part of a string. """
-    util.require_read(ins, ('(',))
+    # do not use require_read as we don't allow whitespace here
+    if ins.read(1) != '(':
+        raise error.RunError(error.STX)
     name, indices = expressions.get_var_or_array_name(ins)
     if indices != []:
         # pre-dim even if this is not a legal statement!
