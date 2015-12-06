@@ -398,8 +398,6 @@ class TextFileBase(RawFile):
             raise error.RunError(error.INPUT_PAST_END)
         # we read the ending char before breaking the loop
         # this may raise FIELD OVERFLOW
-        # on reading from a KYBD: file, control char replacement takes place
-        # which means we need to use read() not read_raw()
         while c and not ((typechar != '$' and c in self.soft_sep) or
                         (c in ',\r' and not quoted)):
             if c == '"' and quoted:
@@ -428,7 +426,6 @@ class TextFileBase(RawFile):
                 c = self.read(1)
             else:
                 # no CRLF replacement inside quotes.
-                # -- but should there be KYBD: control char replacement?
                 c = self.read_raw(1)
         # if separator was a whitespace char or closing quote
         # skip trailing whitespace before any comma or hard separator
@@ -518,6 +515,9 @@ class KYBDFile(TextFileBase):
         """ Initialise keyboard file. """
         # use mode = 'A' to avoid needing a first char from nullstream
         TextFileBase.__init__(self, nullstream(), filetype='D', mode='A')
+        # buffer for the separator character that broke the last INPUT# field
+        # to be attached to the next
+        self.input_last = ''
 
     def read_raw(self, n=1):
         """ Read a list of chars from the keyboard - INPUT$ """
@@ -565,6 +565,65 @@ class KYBDFile(TextFileBase):
         """ Setting width on KYBD device (not files) changes screen width. """
         if self.is_master:
             console.set_width(new_width)
+
+    def _input_entry(self, typechar, allow_past_end):
+        """ Read a number or string entry from KYBD: for INPUT# """
+        word, blanks = '', ''
+        if self.input_last:
+            c, self.input_last = self.input_last, ''
+        else:
+            last = self._skip_whitespace(self.whitespace_input)
+            # read first non-whitespace char
+            c = self.read(1)
+        # LF escapes quotes
+        # may be true if last == '', hence "in ('\n', '\0')" not "in '\n0'"
+        quoted = (c == '"' and typechar == '$' and last not in ('\n', '\0'))
+        if quoted:
+            c = self.read(1)
+        # LF escapes end of file, return empty string
+        if not c and not allow_past_end and last not in ('\n', '\0'):
+            raise error.RunError(error.INPUT_PAST_END)
+        # we read the ending char before breaking the loop
+        # this may raise FIELD OVERFLOW
+        # on reading from a KYBD: file, control char replacement takes place
+        # which means we need to use read() not read_raw()
+        parsing_trail = False
+        while c and not (c in ',\r' and not quoted):
+            if c == '"' and quoted:
+                parsing_trail = True
+            elif c == '\n' and not quoted:
+                # LF, LFCR are dropped entirely
+                c = self.read(1)
+                if c == '\r':
+                    c = self.read(1)
+                continue
+            elif c == '\0':
+                # NUL is dropped even within quotes
+                pass
+            elif c in self.whitespace_input and not quoted:
+                # ignore whitespace in numbers, except soft separators
+                # include internal whitespace in strings
+                if typechar == '$':
+                    blanks += c
+            else:
+                word += blanks + c
+                blanks = ''
+            if len(word) + len(blanks) >= 255:
+                break
+            # there should be KYBD: control char replacement here even if quoted
+            c = self.read(1)
+            if parsing_trail:
+                if c not in self.whitespace_input:
+                    if c not in (',', '\r'):
+                        self.input_last = c
+                    break
+            parsing_trail = parsing_trail or (typechar != '$' and c == ' ')
+        # file position is at one past the separator char
+        # convert result to requested type, be strict about non-numeric chars
+        value = vartypes.pack_string(bytearray(word))
+        if typechar != '$':
+            value = representation.str_to_value_keep(value, allow_nonnum=False)
+        return value, c
 
 
 class SCRNFile(RawFile):
