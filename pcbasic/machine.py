@@ -122,6 +122,8 @@ def inp(port):
         # http://retired.beyondlogic.org/spp/parallel.htm
         lpt_port_nr = 0 if port >= 0x378 else 1
         base_addr = {0: 0x378, 1: 0x278}
+        if lpt_device[lpt_port_nr].stream is None:
+            return 0
         # get status port
         busy, ack, paper, select, err = lpt_device[lpt_port_nr].stream.get_status()
         return busy * 0x80 | ack * 0x40 | paper * 0x20 | select * 0x10 | err * 0x8
@@ -178,6 +180,8 @@ def out(addr, val):
         # http://retired.beyondlogic.org/spp/parallel.htm
         lpt_port_nr = 0 if addr >= 0x378 else 1
         base_addr = {0: 0x378, 1: 0x278}
+        if lpt_device[lpt_port_nr].stream is None:
+            return
         if addr - base_addr[lpt_port_nr] == 0:
             # set data port
             lpt_device[lpt_port_nr].stream.write(chr(val))
