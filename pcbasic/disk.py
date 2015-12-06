@@ -31,6 +31,8 @@ import console
 import vartypes
 import devices
 import unicodepage
+# to be abled to set current-device to CAS1
+import cassette
 
 
 # GW-BASIC FILE CONTROL BLOCK structure:

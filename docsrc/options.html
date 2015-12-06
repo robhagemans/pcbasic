@@ -276,11 +276,13 @@
         </dd>
 
         <dt id="--current-device">
-            <code><b>--current-device=</b>{<b>A</b>|<b>B</b> ... |<b>Z</b>}</code></dt>
+            <code><b>--current-device=</b>{<b>CAS1</b>|<b>@</b>|<b>A</b>|<b>B</b> ... |<b>Z</b>}</code></dt>
         <dd>
-            Set the current disk device to the indicated PC-BASIC drive letter. The device chosen
+            Set the current device to the indicated PC-BASIC drive letter or
+            <code><b>CAS1</b></code> for the cassette device. The device chosen
             should be mounted to an actual location using
-            <code><a href="#--mount">--mount</a></code>. Default is <code><b>Z</b></code>,
+            <code><a href="#--mount">--mount</a></code> (or <code><a href="#--cas1">--cas1</a></code> 
+            if the cassette device is chosen). Default is <code><b>Z</b></code>,
             with the <code>Z:</code> device mounted to your current drive.
         </dd>
 
