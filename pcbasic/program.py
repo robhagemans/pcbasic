@@ -254,12 +254,6 @@ def renum(new_line, start_line, step):
         # skip the \x00\xC0\xDE & overwrite line number
         state.basic_state.bytecode.read(3)
         state.basic_state.bytecode.write(str(vartypes.value_to_uint(old_to_new[old_line])))
-    # rebuild the line number dictionary
-    new_lines = {}
-    for old_line in old_to_new:
-        new_lines[old_to_new[old_line]] = state.basic_state.line_numbers[old_line]
-        del state.basic_state.line_numbers[old_line]
-    state.basic_state.line_numbers.update(new_lines)
     # write the indirect line numbers
     state.basic_state.bytecode.seek(0)
     while util.skip_to_read(state.basic_state.bytecode, ('\x0e',)) == '\x0e':
@@ -269,13 +263,18 @@ def renum(new_line, start_line, step):
             newjump = old_to_new[jumpnum]
         except KeyError:
             # not redefined, exists in program?
-            if jumpnum in state.basic_state.line_numbers:
-                newjump = jumpnum
-            else:
-                linum = get_line_number(state.basic_state.bytecode.tell())
+            if jumpnum not in state.basic_state.line_numbers:
+                linum = get_line_number(state.basic_state.bytecode.tell()-1)
                 console.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
+            newjump = jumpnum
         state.basic_state.bytecode.seek(-2, 1)
         state.basic_state.bytecode.write(str(vartypes.value_to_uint(newjump)))
+    # rebuild the line number dictionary
+    new_lines = {}
+    for old_line in old_to_new:
+        new_lines[old_to_new[old_line]] = state.basic_state.line_numbers[old_line]
+        del state.basic_state.line_numbers[old_line]
+    state.basic_state.line_numbers.update(new_lines)
     # stop running if we were
     flow.set_pointer(False)
     # reset loop stacks
