@@ -1,14 +1,15 @@
 # GNU UniFont
 #
-# This file includes the glyphs of the Basic Multilingual plane, excluding 
-# Private Use Areas, from GNU UniFont 7.0.03. Unassigned and non-character
-# code points are left blank. In other words, it consists of the
-# following .HEX files concatenated:
+# This file includes the Unicode Plane 0 glyphs from GNU UniFont 8.0.01.
+# Unassigned, non-character and private use code points are left blank.
+# In other words, it consists of the following .HEX files concatenated:
 #   plane00/hangul-syllables.hex  
 #   plane00/spaces.hex  
 #   plane00/unifont-base.hex  
 #   plane00/wqy.hex
-# GNU UniFont can be obtained at https://savannah.gnu.org/projects/unifont
+# GNU UniFont can be obtained at 
+# * https://savannah.gnu.org/projects/unifont
+# * http://unifoundry.com/unifont.html
 #
 # AUTHORS:
 #     Roman Czyborra created the original GNU Unifont, including the
