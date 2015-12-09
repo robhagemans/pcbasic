@@ -199,35 +199,26 @@ def out(addr, val):
                 continue
             # ports at base addr and the next one are used for writing baud rate
             # (among other things that aren't implemented)
-            if addr == base_addr and com_enable_baud_write[com_port_nr]:
-                com_baud_divisor[com_port_nr] = (com_baud_divisor[com_port_nr] & 0xff00) + val
-            elif addr == base_addr + 1 and com_enable_baud_write[com_port_nr]:
-                com_baud_divisor[com_port_nr] = val*0x100 + (com_baud_divisor[com_port_nr] & 0xff)
-            if com_enable_baud_write[com_port_nr] and com_baud_divisor[com_port_nr]:
-                baudrate = 115200 // com_baud_divisor[com_port_nr]
+            if addr in (base_addr, base_addr+1) and com_enable_baud_write[com_port_nr]:
+                if addr == base_addr:
+                    com_baud_divisor[com_port_nr] = (com_baud_divisor[com_port_nr] & 0xff00) + val
+                elif addr == base_addr + 1:
+                    com_baud_divisor[com_port_nr] = val*0x100 + (com_baud_divisor[com_port_nr] & 0xff)
+                if com_baud_divisor[com_port_nr]:
+                    baudrate, parity, bytesize, stopbits = com_port.stream.get_params()
+                    baudrate = 115200 // com_baud_divisor[com_port_nr]
+                    com_port.stream.set_params(baudrate, parity, bytesize, stopbits)
             # Line Control Register: base_address + 3 (r/w)
-            if addr == base_addr + 3:
+            elif addr == base_addr + 3:
                 baudrate, parity, bytesize, stopbits = com_port.stream.get_params()
                 if val & 0x80:
                     com_enable_baud_write[com_port_nr] = True
                 # break condition
                 com_break[com_port_nr] = val & 0x40
                 com_port.stream.set_pins(brk=val & 0x40)
-                if val & 0x38 == 0x38:
-                    # set low parity (space)
-                    parity = 'S'
-                elif val & 0x28 == 0x28:
-                    # set high parity (mark)
-                    parity = 'M'
-                elif val & 0x18 == 0x18:
-                    # set even parity
-                    parity = 'E'
-                elif val & 0x8:
-                    # set odd parity
-                    parity = 'O'
-                elif val & 0x38 == 0:
-                    # set no parity
-                    parity = 'N'
+                # parity
+                parity = {0x38:'S', 0x28:'M', 0x18:'E', 0x8:'O', 0:'N'}[val&0x38]
+                # stopbits
                 if val & 0x4:
                     # 2 or 1.5 stop bits
                     stopbits = 2
