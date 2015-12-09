@@ -168,7 +168,7 @@ a6:011e
 a7:011f
 a8:0124
 a9:0125
-aa:0000
+aa:20ac
 ab:00bd
 ac:0134
 ad:015f
@@ -206,8 +206,8 @@ cc:2560
 cd:2550
 ce:256c
 cf:00a4
-d0:0000
-d1:0000
+d0:00a2
+d1:00a5
 d2:00ca
 d3:00cb
 d4:00c8
@@ -219,7 +219,8 @@ d9:2518
 da:250c
 db:2588
 dc:2584
-dd:0000
+# variant of sterling sign with double bar
+dd:f705
 de:00cc
 df:2580
 e0:00d3
@@ -239,7 +240,7 @@ ed:016d
 ee:00b7
 ef:00b4
 f0:00ad
-f1:0000
+f1:00b1
 f2:2113
 f3:0149
 f4:02d8
@@ -249,7 +250,8 @@ f7:00b8
 f8:00b0
 f9:00a8
 fa:02d9
-fb:0000
+# no idea what this S-like glyph is
+fb:f703
 fc:00b3
 fd:00b2
 fe:25a0
