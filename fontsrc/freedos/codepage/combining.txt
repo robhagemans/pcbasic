@@ -1,0 +1,252 @@
+#30003.ucp:# LATIN SMALL LETTER N WITH DIAERESIS [titus]
+e5d5:006E,0308
+#30003.ucp:# LATIN CAPITAL LETTER N WITH DIAERESIS [titus]
+e5d5:004E,0308
+#30003.ucp:# LATIN CAPITAL LETTER X WITH BREVE [titus]
+e35f:0058,0306
+#30003.ucp:# LATIN SMALL LETTER X WITH BREVE [titus]
+e75f:0078,0306
+#30003.ucp:# LATIN CAPITAL LETTER G WITH LONG SOLIDUS OVERLAY [titus]
+e108:0047,0338
+#30003.ucp:# LATIN SMALL LETTER G WITH TILDE [titus]
+e4f5:0067,0303
+#30003.ucp:# LATIN CAPITAL LETTER G WITH TILDE ABOVE [titus]
+e0f5:0047,0303
+#30003.ucp:# latin capital letter turned v with acute
+e580:0245,0301
+#30003.ucp:# latin small letter turned v with acute
+e581:028C,0301
+
+30004.ucp:# LATIN CAPITAL LETTER O WITH OGONEK AND ACUTE [http://folk.uib.no/hnooh/mufi/]
+30004.ucp:# LATIN SMALL LETTER O WITH OGONEK AND ACUTE [http://folk.uib.no/hnooh/mufi/]
+30004.ucp:# latin small letter e with ogonek and acute
+30004.ucp:# latin capital letter e with ogonek and acute
+
+30005.ucp:# latin small letter i with dot below and dot above and acute
+30005.ucp:# latin capital letter i with dot below and acute
+30005.ucp:# latin small letter i with dot below and dot above and grave
+30005.ucp:# latin capital letter i with dot below and grave
+30005.ucp:# latin small letter u with dot below and grave
+30005.ucp:# latin capital letter u with dot below and grave
+30005.ucp:# LATIN SMALL LETTER E WITH ACUTE ABOVE AND DOT BELOW [titus]
+30005.ucp:# LATIN CAPITAL LETTER E WITH ACUTE AND DOT BELOW [titus]
+30005.ucp:# LATIN CAPITAL LETTER U WITH ACUTE AND DOT BELOW [titus]
+30005.ucp:# LATIN SMALL LETTER E WITH GRAVE AND DOT BELOW [titus]
+30005.ucp:# LATIN CAPITAL LETTER E WITH GRAVE AND DOT BELOW [titus]
+30005.ucp:# LATIN SMALL LETTER U WITH ACUTE AND DOT BELOW [titus]
+30005.ucp:# LATIN SMALL LETTER O WITH ACUTE AND DOT BELOW [titus]
+30005.ucp:# LATIN CAPITAL LETTER O WITH ACUTE AND DOT BELOW [titus]
+30005.ucp:# LATIN SMALL LETTER O WITH GRAVE AND DOT BELOW [titus]
+30005.ucp:# LATIN CAPITAL LETTER O WITH GRAVE AND DOT BELOW [titus]
+
+30006.ucp:#
+30006.ucp:#02:263b
+30006.ucp:#05:2663
+30006.ucp:#06:2660
+30006.ucp:#14:00b6
+30006.ucp:#19:2193
+30006.ucp:#1e:25b2
+
+30007.ucp:# LATIN SMALL LETTER E WITH RING ABOVE [mufi]
+30007.ucp:# LATIN CAPITAL LETTER E WITH RING ABOVE [titus]
+30007.ucp:# LATIN SMALL LETTER L WITH DOT ABOVE [mufi]
+30007.ucp:# LATIN CAPITAL LETTER L WITH DOT ABOVE [mufi]
+
+30009.ucp:# LATIN SMALL LETTER P WITH BREVE [titus]
+30009.ucp:# LATIN CAPITAL LETTER P WITH BREVE [titus]
+
+30011.ucp:# cyrillic capital U with acute [titus]
+30011.ucp:# cyrillic small U with acute [titus]
+
+30016.ucp:# cyrillic capital letter ye with diaeresis and macron
+30016.ucp:# cyrillic small letter ye with diaeresis and macron
+30016.ucp:# cyrillic capital letter e with macron
+30016.ucp:# cyrillic small letter e with macron
+30016.ucp:# cyrillic capital letter yu with macron
+30016.ucp:# cyrillic small letter yu with macron
+30016.ucp:# cyrillic capital letter ya with macron
+30016.ucp:# cyrillic small letter ya with macron
+30016.ucp:# cyrillic capital letter ye with macron
+30016.ucp:# cyrillic small letter ye with macron
+30016.ucp:# cyrillic capital letter a with macron
+30016.ucp:# cyrillic small letter a with macron
+30016.ucp:# cyrillic capital letter o with macron
+30016.ucp:# cyrillic small letter o with macron
+30016.ucp:# cyrillic capital letter yeru with macron
+30016.ucp:# cyrillic small letter yeru with macron
+
+30017.ucp:# cyrillic capital letter e with dot above
+30017.ucp:# cyrillic small letter e with dot above
+
+30019.ucp:# Latin capital letter IE
+30019.ucp:# Latin small letter IE
+30019.ucp:# latin capital letter C with dot above and cedilla
+30019.ucp:# latin small letter C with dot above and cedilla
+30019.ucp:# latin capital letter Q with dot above [titus]
+30019.ucp:# latin small letter Q with dot above [titus]
+30019.ucp:# Latin capital letter UO
+30019.ucp:# Latin small letter UO
+
+30020.ucp:# latin small letter o with diaeresis and ogonek [titus]
+30020.ucp:# latin capital letter o with diaeresis and ogonek [titus]
+
+30021.ucp:# latin small letter m with cedilla [titus]
+30021.ucp:# latin capital letter m with cedilla [titus]
+30021.ucp:# latin small letter n with macron [titus]
+30021.ucp:# latin capital letter n with macron [titus]
+30021.ucp:# latin small letter o with cedilla [titus]
+30021.ucp:# latin capital letter o with cedilla [titus]
+
+30022.ucp:# latin small letter a with acute and ogonek [titus]
+30022.ucp:# latin capital letter i with grave and ogonek [titus]
+30022.ucp:# latin capital letter u with grave and ogonek
+30022.ucp:# LATIN CAPITAL LETTER E WITH GRAVE AND OGONEK [titus]
+30022.ucp:# latin small letter u with grave and ogonek
+30022.ucp:# LATIN CAPITAL LETTER A WITH GRAVE AND OGONEK [titus]
+30022.ucp:# LATIN CAPITAL LETTER O WITH GRAVE AND OGONEK [titus]
+
+30023.ucp:# latin small letter n with diaeresis [titus]
+
+30024.ucp:# LATIN SMALL LETTER OPEN O WITH DIAERESIS [titus]
+30024.ucp:# LATIN CAPITAL LETTER OPEN O WITH DIAERESIS [titus]
+30024.ucp:# latin small letter open e with diaeresis
+30024.ucp:# latin capital letter open e with diaeresis
+30024.ucp:# latin small letter open e with diaeresis and macron below
+30024.ucp:# latin capital letter open e with diaeresis and macron below
+30024.ucp:# latin small letter open o with diaeresis and macron below
+30024.ucp:# latin capital letter open o with diaeresis and macron below
+
+30026.ucp:# latin small letter open e with circumflex
+30026.ucp:# latin capital letter open e with circumflex
+30026.ucp:# latin small letter open e with caron
+30026.ucp:# latin capital letter open e with caron
+30026.ucp:# latin small letter open o with acute [titus]
+30026.ucp:# latin capital letter open o with acute [titus]
+30026.ucp:# latin small letter open o with circumflex [titus]
+30026.ucp:# latin capital letter open o with circumflex [titus]
+30026.ucp:# latin small letter open o with caron
+30026.ucp:# latin capital letter open o with caron
+
+30027.ucp:# latin small letter open e with breve
+30027.ucp:# latin capital letter open e with breve
+30027.ucp:# latin small letter open o with grave
+30027.ucp:# latin capital letter open o with grave
+30027.ucp:# latin small letter open o with breve
+30027.ucp:# latin capital letter open o with breve
+30028.ucp:# latin capital letter j with caron [titus]
+
+30029.ucp:# LATIN SMALL LETTER A WITH GRAVE AND MACRON BELOW
+30029.ucp:# LATIN SMALL LETTER A WITH MACRON BELOW [titus]
+30029.ucp:# LATIN SMALL LETTER E WITH GRAVE AND MACRON BELOW
+30029.ucp:# LATIN SMALL LETTER I WITH GRAVE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER A WITH MACRON BELOW [titus]
+30029.ucp:# LATIN SMALL LETTER E WITH MACRON BELOW [titus]
+30029.ucp:# LATIN CAPITAL LETTER E WITH MACRON BELOW [titus]
+30029.ucp:# LATIN SMALL LETTER O WITH GRAVE AND MACRON BELOW
+30029.ucp:# LATIN SMALL LETTER U WITH GRAVE AND MACRON BELOW
+30029.ucp:# LATIN SMALL LETTER I WITH MACRON BELOW [titus]
+30029.ucp:# LATIN SMALL LETTER U WITH MACRON BELOW [titus]
+30029.ucp:# LATIN CAPITAL LETTER U WITH MACRON BELOW [titus]
+30029.ucp:# LATIN SMALL LETTER A WITH ACUTE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER A WITH ACUTE AND MACRON BELOW
+30029.ucp:# LATIN SMALL LETTER I WITH ACUTE AND MACRON BELOW
+30029.ucp:# LATIN SMALL LETTER E WITH ACUTE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER E WITH ACUTE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER A WITH GRAVE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER I WITH ACUTE AND MACRON BELOW
+30029.ucp:# LATIN SMALL LETTER O WITH ACUTE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER O WITH ACUTE AND MACRON BELOW
+30029.ucp:# LATIN SMALL LETTER TRESILLO WITH ACUTE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER TRESILLO WITH ACUTE AND MACRON BELOW
+30029.ucp:# LATIN SMALL LETTER U WITH ACUTE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER U WITH ACUTE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER E WITH GRAVE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER I WITH GRAVE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER S WITH DIAERESIS [titus]
+30029.ucp:# LATIN SMALL LETTER O WITH MACRON BELOW [titus]
+30029.ucp:# LATIN CAPITAL LETTER O WITH GRAVE AND MACRON BELOW
+30029.ucp:# LATIN SMALL LETTER TRESILLO WITH GRAVE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER TRESILLO WITH GRAVE AND MACRON BELOW
+30029.ucp:# LATIN SMALL LETTER TRESILLO WITH ACUTE
+30029.ucp:# LATIN CAPITAL LETTER U WITH GRAVE AND MACRON BELOW
+30029.ucp:# LATIN CAPITAL LETTER O WITH MACRON BELOW [titus]
+30029.ucp:# LATIN CAPITAL LETTER TRESILLO WITH GRAVE
+30029.ucp:# LATIN SMALL LETTER U BAR WITH ACUTE
+30029.ucp:# LATIN CAPITAL LETTER U BAR WITH ACUTE
+30029.ucp:# LATIN CAPITAL LETTER I WITH MACRON BELOW [titus]
+30029.ucp:# LATIN SMALL LETTER U BAR, variant
+30029.ucp:# LATIN CAPITAL LETTER U BAR, variant
+30029.ucp:# LATIN SMALL LETTER TRESILLO WITH GRAVE
+30029.ucp:# LATIN SMALL LETTER S WITH DIAERESIS [titus]
+30029.ucp:# LATIN CAPITAL LETTER TRESILLO WITH GRAVE
+30029.ucp:# perhaps this was intended to be a variant of tresillo?
+30029.ucp:# perhaps this was intended to be a variant of tresillo?
+
+30030.ucp:# latin small letter c with breve and dot below
+30030.ucp:# LATIN SMALL LETTER A WITH MACRON AND ACUTE [titus]
+30030.ucp:# latin small letter c with breve
+30030.ucp:# LATIN SMALL LETTER A WITH MACRON AND ACUTE AND OGONEK [titus]
+30030.ucp:# LATIN SMALL LETTER E WITH MACRON AND ACUTE ABOVE AND OGONEK [titus]
+30030.ucp:# LATIN SMALL LETTER I WITH MACRON AND ACUTE [titus]
+30030.ucp:# LATIN SMALL LETTER I WITH MACRON AND ACUTE AND OGONEK
+30030.ucp:# LATIN SMALL LETTER U WITH MACRON AND ACUTE [titus]
+30030.ucp:# LATIN SMALL LETTER I WITH MACRON AND ACUTE AND OGONEK
+30030.ucp:# LATIN SMALL LETTER O WITH MACRON AND ACUTE AND OGONEK [titus]
+30030.ucp:# LATIN SMALL LETTER A WITH GRAVE AND OGONEK [titus]
+30030.ucp:# LATIN SMALL LETTER E WITH GRAVE AND OGONEK [titus]
+30030.ucp:# LATIN SMALL LETTER A WITH MACRON AND OGONEK [titus]
+30030.ucp:# LATIN SMALL LETTER E WITH MACRON AND OGONEK [titus]
+30030.ucp:# LATIN SMALL LETTER I WITH ACUTE AND OGONEK [titus]
+30030.ucp:# latin small letter s with breve and dot below
+30030.ucp:# LATIN SMALL LETTER I WITH GRAVE AND OGONEK [titus]
+30030.ucp:# LATIN SMALL LETTER O WITH GRAVE AND OGONEK [titus]
+30030.ucp:# LATIN SMALL LETTER U WITH GRAVE AND OGONEK
+30030.ucp:# LATIN SMALL LETTER I WITH MACRON AND OGONEK [titus]
+30030.ucp:# latin small letter z with breve and dot below
+30030.ucp:# LATIN SMALL LETTER U WITH MACRON AND OGONEK [titus]
+30030.ucp:# latin small letter z with breve
+30030.ucp:# latin small letter s with breve
+
+57781.ucp:# Hungarian Forint sign
+Ft
+
+58335.ucp:# polish zloty sign
+Zł
+
+59829.ucp:# doesn't seem to have a unicode codepoint; assign to pua
+
+777.ucp:# latin small letter a with ogonek and acute [titus]
+777.ucp:# latin capital letter e with tilde and dot above [titus]
+777.ucp:# latin small letter e with tilde and dot above [titus]
+777.ucp:# latin small letter i with dot above and acute [titus]
+777.ucp:# latin small letter u with macron and acute [titus]
+777.ucp:# latin capital letter u with macron and acute [titus]
+777.ucp:# latin capital letter e with ogonek and acute [titus]
+777.ucp:# latin small letter e with dot above and acute [titus]
+777.ucp:# latin capital letter e with ogonek and tilde [titus]
+777.ucp:# latin capital letter e with dot above and acute [titus]
+777.ucp:# latin small letter i with dot above and tilde [titus]
+777.ucp:# latin capital letter l with tilde [titus]
+777.ucp:# latin capital letter m with tilde [titus]
+777.ucp:# latin capital letter u with macron and tilde [titus]
+777.ucp:# latin capital letter u with ogonek and acute [titus]
+777.ucp:# latin capital letter u with ogonek and tilde [titus]
+777.ucp:# latin small letter u with ogonek and acute [titus]
+777.ucp:# latin capital letter r with tilde [titus]
+777.ucp:# latin small letter r with tilde [titus]
+777.ucp:# latin small letter a with ogonek and tilde [titus]
+777.ucp:# latin small letter u with macron and tilde [titus]
+777.ucp:# latin capital letter a with ogonek and tilde [titus]
+777.ucp:# latin small letter m with tilde [titus]
+777.ucp:# latin small letter e with ogonek and tilde [titus]
+777.ucp:# latin small letter e with ogonek and acute [titus]
+777.ucp:# latin capital letter i with ogonek and tilde [titus]
+777.ucp:# latin small letter l with tilde [titus]
+777.ucp:# latin small letter i with ogonek, dot above and tilde [titus]
+777.ucp:# latin small letter i with dot above and grave
+777.ucp:# latin capital letter i with dot above and acute [titus]
+777.ucp:# latin small letter i with ogonek, dot above and acute
+777.ucp:# latin capital letter a with ogonek and acute [titus]
+777.ucp:# latin small letter u with ogonek and tilde [titus]
+864.ucp:# I don't know what this Arabic glyph is.
+991.ucp:# Polish Zloty sign
