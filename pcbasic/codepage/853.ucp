@@ -1,5 +1,6 @@
 # OEM 853: MS-DOS Latin 3
 # 80-FF: http://www.kostis.net/charsets/cp853.htm
+# https://en.wikipedia.org/wiki/Code_page_853
 #
 00:0000
 01:263a
@@ -239,9 +240,9 @@ ea:00db
 eb:00d9
 ec:016c
 ed:016d
-ee:0000
+ee:00b7
 ef:00b4
-f0:0000
+f0:00ad
 f1:0000
 f2:2113
 f3:0149
@@ -256,4 +257,4 @@ fb:0000
 fc:00b3
 fd:00b2
 fe:25a0
-ff:0000
+ff:00a0
