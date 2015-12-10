@@ -37,7 +37,7 @@
 24:0024
 25:0025
 26:0026
-27:0027
+27:055b
 28:0028
 29:0029
 2a:002a
@@ -253,4 +253,5 @@ fb:0585
 fc:0556
 fd:0586
 fe:055a
-ff:055b
+# another kind of apostrophe - meant to be a variant of U+055A, U+055B or U+0027 ?
+ff:F704
