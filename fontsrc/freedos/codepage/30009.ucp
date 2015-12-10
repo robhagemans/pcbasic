@@ -224,8 +224,7 @@ dd:01e7
 de:01e6
 df:2580
 e0:00d3
-# LATIN CAPITAL LETTER P WITH BREVE [titus]
-e1:e266
+e1:00df
 e2:019f
 e3:0143
 e4:0148
@@ -249,7 +248,8 @@ f5:00a7
 f6:0154
 f7:00b8
 f8:00b0
-f9:00a8
+# LATIN CAPITAL LETTER P WITH BREVE [titus]
+f9:e266
 fa:015b
 fb:015a
 fc:0158

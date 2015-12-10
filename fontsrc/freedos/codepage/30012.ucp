@@ -205,7 +205,9 @@ cb:2566
 cc:2560
 cd:2550
 ce:256c
-cf:0406
+# dotted cyrillic capital ukrainian I - mapped to PUA U+F706
+cf:f706
+#cf:0406
 d0:0456
 d1:0408
 d2:0458
