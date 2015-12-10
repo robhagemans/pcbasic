@@ -470,18 +470,26 @@ def collect_garbage():
     for name in state.basic_state.variables:
         if name[-1] == '$':
             v = state.basic_state.variables[name]
-            string_list.append((v, 0,
-                    state.basic_state.strings.address(v),
-                    state.basic_state.strings.retrieve(v)))
+            try:
+                string_list.append((v, 0,
+                        state.basic_state.strings.address(v),
+                        state.basic_state.strings.retrieve(v)))
+            except KeyError:
+                # string is not located in memory - FIELD or code
+                pass
     for name in state.basic_state.arrays:
         if name[-1] == '$':
             # ignore version - we can't put and get into string arrays
             dimensions, lst, _ = state.basic_state.arrays[name]
             for i in range(0, len(lst), 3):
                 v = lst[i:i+3]
-                string_list.append((lst, i,
-                        state.basic_state.strings.address(v),
-                        state.basic_state.strings.retrieve(v)))
+                try:
+                    string_list.append((lst, i,
+                            state.basic_state.strings.address(v),
+                            state.basic_state.strings.retrieve(v)))
+                except KeyError:
+                    # string is not located in memory - FIELD or code
+                    pass
     # sort by str_ptr, largest first (maintain order of storage)
     string_list.sort(key=itemgetter(2), reverse=True)
     # clear the string buffer and re-store all referenced strings
