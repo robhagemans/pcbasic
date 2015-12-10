@@ -214,8 +214,7 @@ def out(addr, val):
                 if val & 0x80:
                     com_enable_baud_write[com_port_nr] = True
                 # break condition
-                com_break[com_port_nr] = val & 0x40
-                com_port.stream.set_pins(brk=val & 0x40)
+                com_break[com_port_nr] = (val & 0x40) != 0
                 # parity
                 parity = {0x38:'S', 0x28:'M', 0x18:'E', 0x8:'O', 0:'N'}[val&0x38]
                 # stopbits
@@ -228,6 +227,7 @@ def out(addr, val):
                 # set byte size to 5, 6, 7, 8
                 bytesize = (val & 0x3) + 5
                 com_port.stream.set_params(baudrate, parity, bytesize, stopbits)
+                com_port.stream.set_pins(brk=com_break[com_port_nr])
             # Modem Control Register: base_address + 4 (r/w)
             elif addr == base_addr + 4:
                 com_port.stream.set_pins(rts=val & 0x2, dtr=val & 0x1)
