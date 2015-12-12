@@ -1208,7 +1208,7 @@ class Screen(object):
                 force = True
         start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr, one_only, force)
         # update the screen
-        self.refresh_range(pagenum, crow, start, stop, for_keys)
+        self.refresh_range(pagenum, crow, start, stop-1, for_keys)
 
     def get_text(self, start_row, start_col, stop_row, stop_col):
         """ Retrieve a clip of the text between start and stop. """
@@ -1237,7 +1237,7 @@ class Screen(object):
         """ Redraw a section of a screen row, assuming DBCS buffer has been set. """
         therow = self.text.pages[pagenum].row[crow-1]
         ccol = start
-        while ccol < stop:
+        while ccol <= stop:
             double = therow.double[ccol-1]
             if double == 1:
                 ca = therow.buf[ccol-1]
