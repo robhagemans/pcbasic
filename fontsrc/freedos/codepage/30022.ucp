@@ -133,7 +133,7 @@
 84:0105
 85:00e0
 # latin small letter a with acute and ogonek [titus]
-86:e404
+86:0105,0301
 87:00e7
 88:00ea
 89:00eb
@@ -142,7 +142,7 @@
 8c:00ee
 8d:00ec
 8e:0104
-8f:e004
+8f:0104,0301
 90:00c9
 91:00e6
 92:00c6
@@ -154,9 +154,9 @@
 98:00ff
 99:01ea
 9a:00dc
-9b:e60c
+9b:01eb,0301
 9c:00a3
-9d:e20c
+9d:01ea,0301
 9e:0119
 9f:0118
 a0:00e1
@@ -172,7 +172,7 @@ a9:0172
 aa:00ac
 ab:0153
 ac:0152
-ad:e302
+ad:0172,0301
 ae:00ab
 af:00bb
 b0:2591
@@ -183,13 +183,13 @@ b4:2524
 b5:00c1
 b6:00c2
 b7:00c0
-b8:e702
+b8:0173,0301
 b9:2563
 ba:2551
 bb:2557
 bc:255d
-bd:e499
-be:e099
+bd:0119,0301
+be:0118,0301
 bf:2510
 c0:2514
 c1:2534
@@ -220,11 +220,11 @@ d9:2518
 da:250c
 db:2588
 dc:2584
-dd:e12f
+dd:0130,0301
 de:00cc
 df:2580
 e0:00d3
-e1:e52d
+e1:012f,0300
 e2:00d4
 e3:00d2
 e4:014d
@@ -238,26 +238,26 @@ eb:00d9
 ec:0113
 ed:0112
 # latin capital letter i with grave and ogonek [titus]
-ee:e12d
+ee:012e,0300
 # latin capital letter u with grave and ogonek
-ef:f50d
+ef:0172,0300
 f0:00ad
-f1:e494
+f1:0119,0300
 # LATIN CAPITAL LETTER E WITH GRAVE AND OGONEK [titus]
-f2:e080
+f2:0118,0300
 f3:0178
 f4:012b
 f5:00a7
 f6:012a
 # latin small letter u with grave and ogonek
-f7:f520
+f7:0173,0300
 f8:00b0
-f9:e52e
-fa:e403
+f9:0119,0301
+fa:0105,0300
 # LATIN CAPITAL LETTER A WITH GRAVE AND OGONEK [titus]
-fb:e003
-fc:e60a
+fb:0104,0300
+fc:01eb,0300
 # LATIN CAPITAL LETTER O WITH GRAVE AND OGONEK [titus]
-fd:e20a
+fd:01ea,0300
 fe:25a0
 ff:00a0

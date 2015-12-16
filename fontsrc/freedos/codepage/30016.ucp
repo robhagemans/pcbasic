@@ -180,18 +180,18 @@ b2:2593
 b3:2502
 b4:2524
 # cyrillic capital letter ye with diaeresis and macron
-b5:f602
+b5:0401,0304
 b6:2562
 b7:2556
 # cyrillic small letter ye with diaeresis and macron
-b8:f603
+b8:0451,0304
 b9:2563
 ba:2551
 bb:2557
 bc:255d
 bd:255c
 # cyrillic capital letter e with macron
-be:f604
+be:042d,0304
 bf:2510
 c0:2514
 c1:2534
@@ -200,7 +200,7 @@ c3:251c
 c4:2500
 c5:253c
 # cyrillic small letter e with macron
-c6:f605
+c6:044d,0304
 c7:255f
 c8:255a
 c9:2554
@@ -210,16 +210,16 @@ cc:2560
 cd:2550
 ce:256c
 # cyrillic capital letter yu with macron
-cf:f606
+cf:042e,0304
 d0:2568
 # cyrillic small letter yu with macron
-d1:f607
+d1:044e,0304
 d2:2565
 d3:2559
 # cyrillic capital letter ya with macron
-d4:f608
+d4:042f,0304
 # cyrillic small letter ya with macron
-d5:f609
+d5:044f,0304
 d6:2553
 d7:256b
 d8:256a
@@ -227,9 +227,9 @@ d9:2518
 da:250c
 db:2588
 # cyrillic capital letter ye with macron
-dc:f60a
+dc:0415,0304
 # cyrillic small letter ye with macron
-dd:f60b
+dd:0435,0304
 de:04c7
 df:04c8
 e0:0440
@@ -251,21 +251,21 @@ ef:044f
 f0:0401
 f1:0451
 # cyrillic capital letter a with macron
-f2:f60c
+f2:0410,0304
 # cyrillic small letter a with macron
-f3:f60d
+f3:0430,0304
 # cyrillic capital letter o with macron
-f4:f60e
+f4:041e,0304
 # cyrillic small letter o with macron
-f5:f60f
+f5:043e,0304
 f6:04ee
 f7:04ef
 f8:04e2
 f9:04e3
 # cyrillic capital letter yeru with macron
-fa:f610
+fa:042b,0304
 # cyrillic small letter yeru with macron
-fb:f611
+fb:044b,0304
 fc:2116
 fd:20ac
 fe:25a0

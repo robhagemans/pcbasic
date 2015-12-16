@@ -25,9 +25,11 @@ def load_codepage(name):
             continue
         # extract codepage point
         cp_point = splitline[0].strip().decode('hex')
-        # extract unicode point
-        ucs_point = int('0x' + splitline[1].split()[0].strip(), 16)
-        cp_to_unicode[cp_point] = unichr(ucs_point)
+        # extract unicode points
+        ucs = u''
+        for cp_str in splitline[1].split()[0].strip().split(','):
+            ucs += unichr(int('0x' + cp_str.strip(), 16))
+        cp_to_unicode[cp_point] = ucs
     # fill up any undefined 1-byte codepoints
     for c in range(256):
         if chr(c) not in cp_to_unicode:
@@ -77,12 +79,13 @@ def save_rom_font(font, out_name):
 def write_hex(outfile, font, unitbl):
     with open(outfile, 'w') as of:
         for i, f in enumerate(font):
-            of.write(hexline(ord(unitbl[chr(i)]), f))
+            of.write(hexline(unitbl[chr(i)], f))
 
-def hexline(cp, glyph):
+def hexline(ucp, glyph):
     s = glyph.encode('hex').upper()
     tohex = s + '0'*(32-len(s))
-    return "%04X:%s\n" % (cp, tohex)
+    ucp_str = ','.join(['%04X' % ord(c) for c in ucp])
+    return "%s:%s\n" % (ucp_str, tohex)
 
 def add_to_multidict(mdict, key, value):
     try:
@@ -168,25 +171,25 @@ def main():
                     # save intermediate HEX
                     write_hex('hex/%s_%d_%02d.hex' % (cpi_name, codepage, height), font, unitbl)
             print
+    pua = range(0xe000, 0xf900)
     for height in (8, 14, 16):
+        keys = sorted(multidict[height].keys())
         # write out all except pua
         with open('base_%02d.hex' % height, 'w') as f:
             # header
             with open ('../header.txt', 'r') as h:
                 for line in h:
                     f.write(line)
-            for unicp in range(0xe000) + range(0xf900, 0x10000):
-                try:
-                    for glyph in multidict[height][unichr(unicp)]:
-                        f.write(hexline(unicp, glyph))
-                except KeyError:
-                    pass
+            for key in keys:
+                if len(key) > 1 or ord(key) not in pua:
+                    for glyph in multidict[height][key]:
+                        f.write(hexline(key, glyph))
         # write out pua
         with open('pua_%02d.hex' % height, 'w') as f:
-            for unicp in range(0xe000, 0xf900):
+            for unicp in pua:
                 try:
                     for glyph in multidict[height][unichr(unicp)]:
-                        f.write(hexline(unicp, glyph))
+                        f.write(hexline(unichr(unicp), glyph))
                 except KeyError:
                     pass
         # write out dropped glyphs
@@ -195,6 +198,8 @@ def main():
                 for glyph in glyphset:
                     # only output what differs from base
                     if unicp not in multidict[height] or glyph not in multidict[height][unicp]:
-                        f.write(hexline(ord(unicp), glyph))
+                        f.write(hexline(unicp, glyph))
+
+        #print multidict[16].keys()
 
 main()

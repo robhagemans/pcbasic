@@ -157,9 +157,9 @@
 9c:00a3
 9d:013b
 # latin small letter m with cedilla [titus]
-9e:e5c7
+9e:006d,0327
 # latin capital letter m with cedilla [titus]
-9f:e1c7
+9f:004d,0327
 a0:00e1
 a1:00ed
 a2:00f3
@@ -237,16 +237,16 @@ e9:00da
 ea:00db
 eb:00d9
 # latin small letter n with macron [titus]
-ec:e5dc
+ec:006e,0304
 # latin capital letter n with macron [titus]
-ed:e1dc
+ed:004e,0304
 ee:0101
 ef:0100
 f0:00ad
 # latin small letter o with cedilla [titus]
-f1:e642
+f1:006f,0327
 # latin capital letter o with cedilla [titus]
-f2:e242
+f2:004f,0327
 f3:0178
 f4:00b6
 f5:00a7

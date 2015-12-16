@@ -130,7 +130,7 @@
 81:00fc
 82:00e9
 83:00e2
-84:e47f
+84:1eb9,0300
 85:00e0
 #86:0103
 86:025b
@@ -141,7 +141,7 @@
 8b:00ef
 8c:00ee
 8d:00ec
-8e:e07f
+8e:1eb8,0300
 #8f:0102
 #8f:a72a
 8f:0190
@@ -149,12 +149,12 @@
 91:00e6
 92:00c6
 93:00f4
-94:e484
+94:1eb9,0301
 95:00f2
 96:00fb
 97:00f9
 98:00ff
-99:e084
+99:1eb8,0301
 9a:00dc
 9b:0254
 9c:0144
@@ -211,8 +211,8 @@ cc:2560
 cd:2550
 ce:256c
 cf:0143
-d0:f543
-d1:f544
+d0:a72b,0300
+d1:a72a,0300
 d2:00ca
 d3:00cb
 d4:00c8
@@ -228,40 +228,40 @@ dd:1e62
 de:00cc
 df:2580
 e0:00d3
-e1:e5e8
+e1:1ecd,0300
 e2:00d4
 e3:00d2
 e4:1ecd
 e5:1ecc
 e6:00b5
 # latin small letter open e with breve
-e7:f51a
+e7:025b,0306
 # latin capital letter open e with breve
-e8:f51b
+e8:0190,0306
 e9:00da
 ea:00db
 eb:00d9
-ec:e7c9
-ed:e3c9
-ee:e1e8
-ef:e1ea
+ec:0254,0301
+ed:0186,0301
+ee:1ecc,0300
+ef:1ecc,0301
 f0:00ad
-f1:f541
-f2:f542
+f1:a72b,0301
+f2:a72a,0300
 f3:0178
 f4:016d
 f5:00a7
 f6:016c
-f7:e5ea
+f7:1ecd,0301
 f8:00b0
 f9:1e63
 # latin small letter open o with grave
-fa:f51c
+fa:0254,0300
 # latin capital letter open o with grave
-fb:f51d
+fb:0186,0300
 # latin small letter open o with breve
-fc:f51e
+fc:0254,0306
 # latin capital letter open o with breve
-fd:f51f
+fd:0186,0306
 fe:25a0
 ff:00a0

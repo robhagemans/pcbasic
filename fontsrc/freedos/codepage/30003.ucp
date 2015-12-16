@@ -165,12 +165,12 @@ a3:00fa
 a4:00f1
 a5:00d1
 # LATIN SMALL LETTER N WITH DIAERESIS [titus]
-a6:e5d5
+a6:006e,0308
 # LATIN CAPITAL LETTER N WITH DIAERESIS [titus]
-a7:e1d5
+a7:004e,0308
 a8:00bf
 # LATIN CAPITAL LETTER X WITH BREVE [titus]
-a9:e35f
+a9:0058,0306
 aa:00ac
 ab:010d
 ac:010c
@@ -186,7 +186,7 @@ b5:00c1
 b6:00c2
 b7:00c0
 # LATIN SMALL LETTER X WITH BREVE [titus]
-b8:e75f
+b8:0078,0306
 b9:2563
 ba:2551
 bb:2557
@@ -210,11 +210,11 @@ cc:2560
 cd:2550
 ce:256c
 # LATIN CAPITAL LETTER G WITH LONG SOLIDUS OVERLAY [titus]
-cf:e108
+cf:0047,0338
 # LATIN SMALL LETTER G WITH TILDE [titus]
-d0:e4f5
+d0:0067,0303
 # LATIN CAPITAL LETTER G WITH TILDE ABOVE [titus]
-d1:e0f5
+d1:0047,0303
 d2:00ca
 d3:00cb
 d4:00c8
@@ -236,7 +236,7 @@ e3:00d2
 e4:00f5
 e5:00d5
 # latin capital letter turned v with acute
-e6:e580
+e6:0245,0301
 e7:1ef9
 e8:1ef8
 e9:00da
@@ -258,7 +258,7 @@ f8:00b0
 f9:0161
 fa:00b7
 # latin small letter turned v with acute
-fb:e581
+fb:028c,0301
 fc:019a
 fd:023d
 fe:25a0

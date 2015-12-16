@@ -211,9 +211,9 @@ cd:2550
 ce:256c
 cf:00a4
 # latin small letter open e with circumflex
-d0:f514
+d0:025b,0302
 # latin capital letter open e with circumflex
-d1:f515
+d1:0190,0302
 d2:00ca
 d3:00cb
 d4:00c8
@@ -236,21 +236,21 @@ e4:00f5
 e5:00d5
 e6:00b5
 # latin small letter open e with caron
-e7:f516
+e7:025b,030c
 # latin capital letter open e with caron
-e8:f517
+e8:0190,030c
 e9:00da
 ea:00db
 eb:00d9
 # latin small letter open o with acute [titus]
-ec:e7c9
+ec:0254,0301
 # latin capital letter open o with acute [titus]
-ed:e3c9
+ed:0186,0301
 ee:00af
 ef:017d
 f0:00ad
-f1:f541
-f2:f542
+f1:a72b,0301
+f2:a72a,0300
 f3:0178
 f4:01d2
 f5:00a7
@@ -259,12 +259,12 @@ f7:017e
 f8:00b0
 f9:0161
 # latin small letter open o with circumflex [titus]
-fa:e7ca
+fa:0254,0302
 # latin capital letter open o with circumflex [titus]
-fb:e3ca
+fb:0186,0302
 # latin small letter open o with caron
-fc:f518
+fc:0254,030c
 # latin capital letter open o with caron
-fd:f519
+fd:0186,030c
 fe:25a0
 ff:00a0

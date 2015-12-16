@@ -206,10 +206,10 @@ cc:2560
 cd:2550
 ce:256c
 # cyrillic capital U with acute [titus]
-cf:ee19
+cf:0423,0301
 d0:2568
 # cyrillic small U with acute [titus]
-d1:ee99
+d1:0443,0301
 d2:2565
 d3:2559
 d4:04d4

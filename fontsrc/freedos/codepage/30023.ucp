@@ -168,7 +168,7 @@ a6:00aa
 a7:00ba
 a8:00bf
 # latin small letter n with diaeresis [titus]
-a9:e5e6
+a9:006e,0308
 aa:00ac
 ab:0153
 ac:0152
@@ -183,7 +183,7 @@ b4:2524
 b5:00c1
 b6:00c2
 b7:00c0
-b8:e1d5
+b8:004e,0308
 b9:2563
 ba:2551
 bb:2557

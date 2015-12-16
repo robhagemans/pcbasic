@@ -136,39 +136,39 @@
 87:00e1
 88:00f9
 # latin small letter a with ogonek and acute [titus]
-89:e404
+89:0105,0301
 # latin capital letter e with tilde and dot above [titus]
-8a:e0c9
+8a:1ebc,0307
 # latin small letter e with tilde and dot above [titus]
-8b:e4c9
+8b:1ebd,0307
 # latin small letter i with dot above and acute [titus]
-8c:e7a3
+8c:0069,0307,0301
 8d:00c8
 8e:00c4
 8f:00c3
 90:00c9
 # latin small letter u with macron and acute [titus]
-91:e709
+91:016b,0301
 # latin capital letter u with macron and acute [titus]
-92:e309
+92:016a,0301
 93:00fd
 94:00f6
 95:1ebc
 # latin capital letter e with ogonek and acute [titus]
-96:e099
+96:0118,0301
 97:00da
 98:00fa
 99:00d6
 9a:00dc
 # latin small letter e with dot above and acute [titus]
-9b:e4ca
+9b:0117,0301
 # latin capital letter e with ogonek and tilde [titus]
-9c:e0a7
+9c:0118,0303
 # latin capital letter e with dot above and acute [titus]
-9d:e0ca
+9d:0116,0301
 9e:0168
 # latin small letter i with dot above and tilde [titus]
-9f:e7a4
+9f:0069,0307,0303
 a0:00c0
 a1:00cd
 a2:00f3
@@ -176,42 +176,42 @@ a3:1ef8
 a4:1ef9
 a5:00e8
 # latin capital letter l with tilde [titus]
-a6:e194
+a6:004c,0303
 # latin capital letter m with tilde [titus]
-a7:e1b7
+a7:004d,0303
 a8:00d1
 # latin capital letter u with macron and tilde [titus]
-a9:e30a
+a9:016a,0303
 # latin capital letter u with ogonek and acute [titus]
-aa:e302
+aa:0172,0301
 # latin capital letter u with ogonek and tilde [titus]
-ab:e305
+ab:0172,0303
 # latin small letter u with ogonek and acute [titus]
-ac:e702
+ac:0173,0301
 ad:00d9
 # latin capital letter r with tilde [titus]
-ae:e294
+ae:0052,0303
 # latin small letter r with tilde [titus]
-af:e694
+af:0072,0303
 b0:2591
 b1:2592
 b2:2593
 b3:2502
 b4:0251
 # latin small letter a with ogonek and tilde [titus]
-b5:e408
+b5:0105,0303
 b6:028c
 b7:201c
 # latin small letter u with macron and tilde [titus]
-b8:e70a
+b8:016b,0303
 b9:0254
 ba:2551
 bb:2557
 bc:255d
 # latin capital letter a with ogonek and tilde [titus]
-bd:e008
+bd:0104,0303
 # latin small letter m with tilde [titus]
-be:e5b7
+be:006d,0303
 bf:2510
 c0:2514
 c1:0259
@@ -236,10 +236,10 @@ d3:00f0
 d4:00f1
 d5:201e
 # latin small letter e with ogonek and tilde [titus]
-d6:e4a7
+d6:0119,0303
 d7:00ad
 # latin small letter e with ogonek and acute [titus]
-d8:e499
+d8:0119,0301
 d9:2518
 da:250c
 db:2588
@@ -251,26 +251,26 @@ e0:00d3
 e1:00df
 e2:00dd
 # latin capital letter i with ogonek and tilde [titus]
-e3:e132
+e3:012e,0303
 e4:00f5
 e5:00d5
 # latin small letter l with tilde [titus]
-e6:e594
+e6:006c,0303
 # latin small letter i with ogonek, dot above and tilde [titus]
-e7:e7a5
+e7:012f,0307,0303
 e8:00cc
 # latin small letter i with dot above and grave
-e9:f527
+e9:0069,0307,0300
 # latin capital letter i with dot above and acute [titus]
-ea:e12f
+ea:0130,0301
 # latin small letter i with ogonek, dot above and acute
-eb:f528
+eb:012f,0307,0301
 ec:00f2
 # latin capital letter a with ogonek and acute [titus]
-ed:e004
+ed:0104,0301
 ee:00d2
 # latin small letter u with ogonek and tilde [titus]
-ef:e705
+ef:0173,0303
 f0:0118
 f1:0119
 f2:0116

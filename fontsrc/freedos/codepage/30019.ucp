@@ -210,15 +210,15 @@ ce:256c
 cf:010a
 d0:010b
 # latin capital letter C with dot above and cedilla
-d1:f523
+d1:00c7,0307
 # latin small letter C with dot above and cedilla
-d2:f524
+d2:00e7,0307
 d3:1e8a
 d4:1e8b
 # latin capital letter Q with dot above [titus]
-d5:e282
+d5:0051,0307
 # latin small letter Q with dot above [titus]
-d6:e682
+d6:0071,0307
 d7:01b5
 d8:01b6
 d9:2518

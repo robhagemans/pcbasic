@@ -227,9 +227,9 @@ e1:00df
 e2:00d4
 e3:00d2
 # latin small letter o with diaeresis and ogonek [titus]
-e4:e635
+e4:01eb,0308
 # latin capital letter o with diaeresis and ogonek [titus]
-e5:e235
+e5:01ea,0308
 e6:00b5
 e7:012b
 e8:012a

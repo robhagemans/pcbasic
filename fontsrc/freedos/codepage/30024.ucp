@@ -154,12 +154,12 @@
 99:00d6
 9a:00dc
 9b:0254
-9c:e42a
+9c:0061,0331
 9d:0186
 # LATIN SMALL LETTER OPEN O WITH DIAERESIS [titus]
-9e:e7df
+9e:0254,0308
 # LATIN CAPITAL LETTER OPEN O WITH DIAERESIS [titus]
-9f:e3df
+9f:0186,0308
 a0:00e1
 a1:00ed
 a2:00f3
@@ -207,7 +207,7 @@ cb:2566
 cc:2560
 cd:2550
 ce:256c
-cf:e02a
+cf:0041,0331
 d0:0257
 d1:018a
 d2:00ca
@@ -225,7 +225,7 @@ dd:0160
 de:00cc
 df:2580
 e0:00d3
-e1:e641
+e1:006f,0331
 e2:00d4
 e3:00d2
 e4:00f5
@@ -238,27 +238,27 @@ ea:00db
 eb:00d9
 ec:01b4
 ed:01b3
-ee:e241
+ee:004f,0331
 ef:017d
 f0:00ad
 # latin small letter open e with diaeresis
-f1:f50e
+f1:025b,0308
 # latin capital letter open e with diaeresis
-f2:f50f
+f2:0190,0308
 f3:0178
-f4:e549
+f4:0069,0331
 f5:014a
-f6:e149
+f6:0049,0331
 f7:017e
 f8:00b0
 f9:0161
 # latin small letter open e with diaeresis and macron below
-fa:f510
+fa:025b,0331,0308
 # latin capital letter open e with diaeresis and macron below
-fb:f511
+fb:0190,0331,0308
 # latin small letter open o with diaeresis and macron below
-fc:f512
+fc:0254,0331,0308
 # latin capital letter open o with diaeresis and macron below
-fd:f513
+fd:0186,0331,0308
 fe:25a0
 ff:00a0

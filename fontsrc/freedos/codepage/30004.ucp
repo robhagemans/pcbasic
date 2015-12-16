@@ -127,7 +127,7 @@
 7e:007e
 7f:2302
 # LATIN CAPITAL LETTER O WITH OGONEK AND ACUTE [http://folk.uib.no/hnooh/mufi/]
-80:e20c
+80:01ea,0301
 81:00fc
 82:00e9
 83:00e2
@@ -135,12 +135,12 @@
 85:00e0
 86:00e5
 # LATIN SMALL LETTER O WITH OGONEK AND ACUTE [http://folk.uib.no/hnooh/mufi/]
-87:e60c
+87:01eb,0301
 88:00ea
 89:0119
 8a:01fd
 # latin small letter e with ogonek and acute
-8b:e499
+8b:0119,0301
 8c:00ee
 8d:0129
 8e:00c4
@@ -218,7 +218,7 @@ d5:20ac
 d6:00cd
 d7:00ce
 # latin capital letter e with ogonek and acute
-d8:e099
+d8:0118,0301
 d9:2518
 da:250c
 db:2588

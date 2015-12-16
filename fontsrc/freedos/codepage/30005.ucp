@@ -147,23 +147,23 @@
 92:00c6
 93:00f4
 # latin small letter i with dot below and dot above and acute
-94:f507
+94:1ecb,0301
 95:00f2
 96:00fb
 97:00f9
 98:00ff
 # latin capital letter i with dot below and acute
-99:f508
+99:1eca,0301
 9a:00dc
 # latin small letter i with dot below and dot above and grave
-9b:f509
+9b:1ecb,0300
 9c:00a3
 # latin capital letter i with dot below and grave
-9d:f50a
+9d:1eca,0300
 # latin small letter u with dot below and grave
-9e:f50b
+9e:1ee5,0300
 # latin capital letter u with dot below and grave
-9f:f50c
+9f:1ee4,0300
 a0:00e1
 a1:00ed
 a2:00f3
@@ -194,9 +194,9 @@ ba:2551
 bb:2557
 bc:255d
 # LATIN SMALL LETTER E WITH ACUTE ABOVE AND DOT BELOW [titus]
-bd:e484
+bd:1eb9,0301
 # LATIN CAPITAL LETTER E WITH ACUTE AND DOT BELOW [titus]
-be:e084
+be:1eb8,0301
 bf:2510
 c0:2514
 c1:2534
@@ -246,27 +246,27 @@ ec:0144
 ed:0143
 ee:00af
 # LATIN CAPITAL LETTER U WITH ACUTE AND DOT BELOW [titus]
-ef:e2d4
+ef:1ee4,0301
 f0:00ad
 # LATIN SMALL LETTER E WITH GRAVE AND DOT BELOW [titus]
-f1:e47f
+f1:1eb9,0300
 # LATIN CAPITAL LETTER E WITH GRAVE AND DOT BELOW [titus]
-f2:e07f
+f2:1eb8,0300
 f3:0178
 f4:00b6
 f5:00a7
 f6:00f7
 # LATIN SMALL LETTER U WITH ACUTE AND DOT BELOW [titus]
-f7:e6d4
+f7:1ee5,0301
 f8:00b0
 f9:1e63
 # LATIN SMALL LETTER O WITH ACUTE AND DOT BELOW [titus]
-fa:e5ea
+fa:1ecd,0301
 # LATIN CAPITAL LETTER O WITH ACUTE AND DOT BELOW [titus]
-fb:e1ea
+fb:1ecc,0301
 # LATIN SMALL LETTER O WITH GRAVE AND DOT BELOW [titus]
-fc:e5e8
+fc:1ecd,0300
 # LATIN CAPITAL LETTER O WITH GRAVE AND DOT BELOW [titus]
-fd:e1e8
+fd:1ecc,0300
 fe:25a0
 ff:00a0

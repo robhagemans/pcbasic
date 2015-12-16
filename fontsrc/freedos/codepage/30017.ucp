@@ -189,7 +189,7 @@ bb:2557
 bc:255d
 bd:255c
 # cyrillic capital letter e with dot above
-be:f600
+be:042d,0307
 bf:2510
 c0:2514
 c1:2534
@@ -198,7 +198,7 @@ c3:251c
 c4:2500
 c5:253c
 # cyrillic small letter e with dot above
-c6:f601
+c6:044d,0307
 c7:255f
 c8:255a
 c9:2554
