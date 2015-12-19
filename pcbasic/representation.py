@@ -420,13 +420,13 @@ def tokenise_dec(ins, outs):
             have_point = True
             word += c
         elif c in 'ED' and not have_exp:
-            have_exp = True
             # there's a special exception for number followed by EL or EQ
             # presumably meant to protect ELSE and maybe EQV ?
             if c == 'E' and util.peek(ins).upper() in ('L', 'Q'):
                 ins.seek(-1, 1)
                 break
             else:
+                have_exp = True
                 word += c
         elif c in '-+' and (not word or word[-1] in 'ED'):
             # must be first token or in exponent
