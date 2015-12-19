@@ -261,8 +261,8 @@ e7:012f,0307,0303
 e8:00cc
 # latin small letter i with dot above and grave
 e9:0069,0307,0300
-# latin capital letter i with dot above and acute [titus]
-ea:0130,0301
+# latin capital letter i with ogonek and acute
+ea:012e,0301
 # latin small letter i with ogonek, dot above and acute
 eb:012f,0307,0301
 ec:00f2
