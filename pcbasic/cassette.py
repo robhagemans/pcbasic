@@ -139,12 +139,14 @@ class CASDevice(object):
                 if ((not trunk_req or trunk.rstrip() == trunk_req.rstrip()) and
                         (not filetypes_req or filetype in filetypes_req)):
                     message = "%s Found." % (trunk + '.' + filetype)
-                    msgstream.write_line(message)
+                    if not state.basic_state.run_mode:
+                        msgstream.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
                     return trunk, filetype, seg, offset, length
                 else:
                     message = "%s Skipped." % (trunk + '.' + filetype)
-                    msgstream.write_line(message)
+                    if not state.basic_state.run_mode:
+                        msgstream.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
         except EndOfTape:
             # reached end-of-tape without finding appropriate file
