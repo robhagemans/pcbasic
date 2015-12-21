@@ -758,7 +758,7 @@
     <section>
         <h4 id="BLOAD"><code>BLOAD</code> statement</h4>
         <code class="block">
-            <b>BLOAD</b> <var>filename</var> [<b>,</b> <var>offset</var>]
+            <b>BLOAD</b> <var>file_spec</var> [<b>,</b> <var>offset</var>]
         </code>
         <p>
             Loads a memory image file into memory.
@@ -766,8 +766,12 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>filename</var></code> is a string expression indicating the
-                file to read from.
+                <code><var>file_spec</var></code> is a string expression indicating
+                the device and file to read the program from. See the <a href="#OPEN">OPEN</a>
+                statement for valid file specifications. Refer to
+                the section on <a href="#eightpointthree">file names on disk</a>
+                for information on how this statement matches filenames on a disk
+                device.
             </li>
             <li>
                 <code><var>offset</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code>.
@@ -794,7 +798,7 @@
     <section>
         <h4 id="BSAVE"><code>BSAVE</code> statement</h4>
         <code class="block">
-            <b>BSAVE</b> <var>filename</var><b>,</b> <var>offset</var><b>,</b> <var>length</var>
+            <b>BSAVE</b> <var>file_spec</var><b>,</b> <var>offset</var><b>,</b> <var>length</var>
         </code>
         <p>
             Saves a region of memory to an image file.
@@ -802,8 +806,14 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>filename</var></code> is a string expression indicating the
-                file to read from.
+                <code><var>file_spec</var></code> is a string expression indicating
+                the device and file to write from.
+                See the <a href="#OPEN">OPEN</a> statement for valid file specifications.
+                On disk devices, the file name will be converted to uppercase. If it
+                is not an <a href="#eightpointthree">MS-DOS 8.3 filename</a>,
+                additional characters will be clipped off and the name is converted to
+                uppercase; if the filename contains no <code>.</code>, a default extension <code>.BAS</code> will
+                be added. If the resulting file name already exists, it will be overwritten.
             </li>
             <li>
                 <code><var>offset</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code> indicating
@@ -927,10 +937,10 @@
     <section>
     <h4 id="CHAIN"><code>CHAIN</code> statement</h4>
         <code class="block">
-            <b>CHAIN</b> [<b>MERGE</b>] <var>program</var> [<b>,</b> [<var>line_number_expr</var>] [<b>, ALL</b>] [<b>, DELETE</b> <var>range</var> [<b>,</b> <var>ign</var>]]]
+            <b>CHAIN</b> [<b>MERGE</b>] <var>file_spec</var> [<b>,</b> [<var>line_number_expr</var>] [<b>, ALL</b>] [<b>, DELETE</b> <var>range</var> [<b>,</b> <var>ign</var>]]]
         </code>
         <p>
-            Loads <code><var>program</var></code> into memory and runs it, optionally transferring variables.
+            Loads a program from file into memory and runs it, optionally transferring variables.
         </p>
         <ul>
             <li>
@@ -938,8 +948,8 @@
                 specified in a <code><a href="#COMMON">COMMON</a></code> statement are transferred.
             </li>
             <li>
-                If <code>MERGE</code> is specified, <code><var>program</var></code> is merged into the existing program. To be
-                able to use this, <code><var>program</var></code> must be saved as ASCII.
+                If <code>MERGE</code> is specified, the loaded program is merged into the existing program. To be
+                able to use this, the program file indicated by <code><var>file_spec</var></code> must be in ASCII text format.
             </li>
             <li>
                 If <code>DELETE</code> is specified, the <code><var>range</var></code> of line numbers is deleted from the
@@ -948,6 +958,14 @@
         </ul>
         <h5>Parameters</h5>
         <ul>
+            <li>
+                <code><var>file_spec</var></code> is a string expression indicating
+                the device and file to read the program from. See the <a href="#OPEN">OPEN</a>
+                statement for valid file specifications. Refer to
+                the section on <a href="#eightpointthree">file names on disk</a>
+                for information on how this statement matches filenames on a disk
+                device.
+            </li>
             <li>
                 <code><var>line_number_expr</var></code> is a numeric expression. It
                 will be interpreted as a line number in the new program and execution will
@@ -978,14 +996,21 @@
                 are preserved.
             </li>
             <li>
-            If specified, <code>ALL</code> must precede <code>DELETE</code>; if unspecified, no comma must
+                If specified, <code>ALL</code> must precede <code>DELETE</code>; if unspecified, no comma must
                 be put in its place and only two commas should precede <code>DELETE</code>.
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
-                <code>MERGE</code> is specified and <code><var>program</var></code> was not saved in ASCII mode:
+                <code><var>file_spec</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                The file specified in <code><var>file_spec</var></code>
+                cannot be found: <samp>File not found</samp>.
+            </li>
+            <li>
+                <code>MERGE</code> is specified and the loaded program was not saved in ASCII mode:
                 <samp>Bad file mode</samp>.
             </li>
             <li>
@@ -1013,22 +1038,19 @@
             <b>CHDIR</b> <var>pathname</var>
         </code>
         <p>
-            Change the working directory to <code><var>pathname</var></code>.
+            Change the working directory on a disk device to <code><var>pathname</var></code>.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>pathname</var></code> is a string expression which can be absolute or relative to the current path.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                <code><var>pathname</var></code>
-                must be specified with MS-DOS path separators <code>\</code>.
-            </li>
-            <li>
-                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
+                <code><var>pathname</var></code> is a string expression indicating an
+                absolute or relative path on a disk device.
+                The device name may optionally be specified
+                at the start of the expression (e.g. <code>"A:\"</code>. If the device
+                name is omitted, the current directory on the current disk device is
+                changed.
+                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a>
+                for information on how this statement matches file and directory names.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -2724,7 +2746,7 @@
             <b>FILES</b> [<var>path_and_filter</var>]
         </code>
         <p>
-            Displays the files fitting the specified filter in the specified directory. If
+            Displays the files fitting the specified filter in the specified directory on a disk device. If
             <code><var>path_and_filter</var></code> is not specified, displays all files in the current working
             directory.
         </p>
@@ -2756,9 +2778,9 @@
             </li>
             <li>
                 A filter
-                will only match MS-DOS style 8.3 all-uppercase filenames.
-                The path directories, however, can be case sensitive and longer according to
-                the host OS's standards.
+                will only match <a href="#eightpointthree">MS-DOS style filenames</a>.
+                The directory names in the path, however, can be case sensitive
+                and longer if the host OS supports this.
             </li>
             <li>
                 If all files in a
@@ -4056,13 +4078,14 @@
             <b>KILL</b> <var>file_path</var>
         </code>
         <p>
-            Deletes a file. <code><var>file_path</var></code> must be a string expression that specifies a
-            valid path to an existing file with MS-DOS path separators <code>\</code>. The extension
-            must be specified: no default extensions are assumed.
+            Deletes a file on a disk device.
         </p>
-        <h5>Notes</h5>
+        <h5>Parameters</h5>
         <ul>
             <li>
+                <code><var>file_path</var></code> is a string expression that specifies a
+                valid path to an existing file. The extension
+                must be specified: no default extensions are assumed.
                 Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
             </li>
         </ul>
@@ -4386,13 +4409,14 @@
     <section>
         <h4 id="LIST"><code>LIST</code> statement</h4>
         <code class="block">
-            <b>LIST</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>]] [<b>,</b> <var>file_name</var>]
+            <b>LIST</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>]] [<b>,</b> <var>file_spec</var>]
         </code>
         <p>
-            Prints the program to the screen, starting with <code><var>line_number_0</var></code> up to and
+            Prints the program to the screen or a specified device,
+            starting with <code><var>line_number_0</var></code> up to and
             including <code><var>line_number_1</var></code>.
             Also stops program execution and returns control to the user. Any further
-            statements on a line after <code>LIST</code> will be ignored, both in a program and on a direct line.
+            statements on a line after <code>LIST</code> will be ignored, both in a program and in interactive mode.
         </p>
         <h5>Parameters</h5>
         <ul>
@@ -4402,8 +4426,8 @@
                 they specify a range. If the range is empty, nothing is printed.
             </li>
             <li>
-                <code><var>file_name</var></code> is a file or device name. This file will be created; if it already
-                exists, it will be overwritten.
+                <code><var>file_spec</var></code> is a string expression indicating the device and file name to list to.
+                If this file already exists, it will be overwritten.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -4412,10 +4436,10 @@
                 A line number is greater than <code>65529</code>: <samp>Syntax error</samp>.
             </li>
             <li>
-                <code><var>file_name</var></code> has a numeric value: <samp>Type mismatch</samp>.
+                <code><var>file_spec</var></code> has a numeric value: <samp>Type mismatch</samp>.
             </li>
             <li>
-                <code><var>file_name</var></code> ends in a colon but is not a device name or drive letter:
+                <code><var>file_spec</var></code> ends in a colon but is not a device name or drive letter:
                 <samp>Bad file number</samp>.
             </li>
         </ul>
@@ -4431,7 +4455,7 @@
             Prints the program to the screen, starting with <code><var>line_number_0</var></code> up to and
             including <code><var>line_number_1</var></code>.
             Also stops program execution and returns control to the user. Any further
-            statements on a line after <code>LLIST</code> will be ignored, both in a program and on a direct line.
+            statements on a line after <code>LLIST</code> will be ignored, both in a program and in interactive mode.
         </p>
         <h5>Parameters</h5>
         <ul>
@@ -4453,10 +4477,10 @@
     <section>
         <h4 id="LOAD"><code>LOAD</code> statement</h4>
         <code class="block">
-            <b>LOAD</b> <var>file_name</var> [<b>, R</b>]
+            <b>LOAD</b> <var>file_spec</var> [<b>, R</b>]
         </code>
         <p>
-            Loads the program stored in file <code><var>file_name</var></code> into memory.
+            Loads the program stored in a file into memory.
             If <code>,R</code> is specified, runs the file after loading.
             <code>LOAD ,R</code> keeps all data files open. Existing variables will be
             cleared and any program in memory will be erased. <code>LOAD</code> implies a
@@ -4465,19 +4489,28 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>file_name</var></code> is a string expression yielding the name of an existing program file.
+                <code><var>file_spec</var></code> is a string expression indicating
+                the device and file to read the program from. See the <a href="#OPEN">OPEN</a>
+                statement for valid file specifications. Refer to
+                the section on <a href="#eightpointthree">file names on disk</a>
+                for information on how this statement matches filenames on a disk
+                device.
             </li>
         </ul>
         <h5>Notes</h5>
         <ul>
             <li>
-                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
+                Refer to
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>file_name</var></code> cannot be found: <samp>File not found</samp>.
+                <code><var>file_spec</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                The file specified in <code><var>file_spec</var></code>
+                cannot be found: <samp>File not found</samp>.
             </li>
             <li>
                 A loaded ASCII file contains lines without line numbers:
@@ -4843,26 +4876,30 @@
     <section>
         <h4 id="MERGE"><code>MERGE</code> statement</h4>
         <code class="block">
-            <b>MERGE</b> <var>file_name</var>
+            <b>MERGE</b> <var>file_spec</var>
         </code>
         <p>
-            Overlays the lines of program <code><var>file_name</var></code> into the existing program. The loaded
-            lines overwrite existing lines if they have the same line number. <code><var>file_name</var></code>
-            must be the name of an existing program file stored in ASCII format only.
+            Overlays the lines of a program from an ASCII program file into the existing program. The loaded
+            lines overwrite existing lines if they have the same line number.
         </p>
-        <h5>Notes</h5>
+        <h5>Parameters</h5>
         <ul>
             <li>
-                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
+                <code><var>file_spec</var></code> is a string expression indicating
+                the device and file to read the program from. See the <a href="#OPEN">OPEN</a>
+                statement for valid file specifications. Refer to
+                the section on <a href="#eightpointthree">file names on disk</a>
+                for information on how this statement matches filenames on a disk
+                device.
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>file_name</var></code> cannot be found: <samp>File not found</samp>.
+                <code><var>file_spec</var></code> cannot be found: <samp>File not found</samp>.
             </li>
             <li>
-                <code><var>file_name</var></code> was not saved as ASCII: <samp>Bad file mode</samp>.
+                <code><var>file_spec</var></code> was not saved as ASCII: <samp>Bad file mode</samp>.
             </li>
             <li>
                 A loaded ASCII file contains lines without line numbers:
@@ -4970,19 +5007,17 @@
             <b>MKDIR</b> <var>path</var>
         </code>
         <p>
-            Creates a directory on a disk device.
+            Creates a new directory on a disk device.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>path</var></code> is a string expression that specifies the
-                path of the new directory.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-               <code><var>path</var></code> will be truncated into all-uppercase 8.3 format.
+                path of the new directory. The path may optionally be preceded by the
+                name of the disk device; if the device name is omitted, a directory is
+                created on the current disk device.
+                <code><var>path</var></code> will be truncated into
+                <a href="#eightpointthree">all-uppercase 8.3 format</a>.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -5107,13 +5142,15 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>old_name</var></code> and <code><var>new_name</var></code> are string expressions.
+                <code><var>old_name</var></code> and <code><var>new_name</var></code>
+                are string expressions giving the path on disk to the old and new filenames,
+                respectively.
             </li>
         </ul>
         <h5>Notes</h5>
         <ul>
             <li>
-               <code><var>new_name</var></code> will be modified into all-uppercase 8.3 format.
+               <code><var>new_name</var></code> will be modified into <a href="#eightpointthree">all-uppercase 8.3 format</a>.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -5485,11 +5522,8 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>file_spec</var></code> is a string expression of the form
-                <code><b>"</b><var>device</var><b>:</b><var>parameters</var><b>"</b></code>
-                where <code><var>device</var></code> is
-                a PC-BASIC device and device-specific <code><var>parameters</var></code>
-                can be given on some devices (e.g. a file path on a disk device).
+                <code><var>file_spec</var></code> is a string expression.
+                See below for the form of valid file specifications.
             </li>
             <li>
                 <code><var>file_num</var></code> is a numeric expression in <code>[1&#8212;3]</code>.
@@ -5644,10 +5678,13 @@
             the locks are only implemented internally. Whether other processes may access
             the file will depend on the host OS.
         </p>
-        <h5>Device-specific parameters</h5>
+        <h5>File specifications</h5>
         <p>
-            On some devices, the <code><var>file_spec</var></code> is just the device name; on others,
-            in particular disk, cassette and serial devices, further parameters may be given.
+            <code><var>file_spec</var></code> is a string expression of the form
+            <code><b>"</b><var>device</var><b>:</b><var>parameters</var><b>"</b></code>,
+            where <code><var>device</var></code> is a PC-BASIC <a href="#devices">device</a>
+            and the form of the <code><var>parameters</var></code> is specific to
+            the type of device:
         </p>
         <dl>
             <dt>
@@ -5663,6 +5700,31 @@
             <dd>
                 <code><var>parameters</var></code> can be a file name of up to eight characters.
                 Cassette file names have no path or extension, may be empty and do not need to be unique.
+                On the cassette device, when called in interactive mode,
+                <code><a href="#OPEN">OPEN</a></code>,
+                <code><a href="#MERGE">MERGE</a></code>,
+                <code><a href="#LOAD">LOAD</a></code>
+                and <code><a href="#BLOAD">BLOAD</a></code> will print a message to the console
+                for each file found while winding the tape. The message consists
+                of the filename followed by a dot and the
+                file type and concluded with a status message. The file type is one of
+                the following:
+                <dl class="compact">
+                    <dt><samp>A</samp></dt>
+                    <dd>Program file in text format</dd>
+                    <dt><samp>B</samp></dt>
+                    <dd>Program file in bytecode format</dd>
+                    <dt><samp>D</samp></dt>
+                    <dd>Data file</dd>
+                    <dt><samp>M</samp></d1>
+                    <dd><code><a href="#BSAVE">BSAVE</a></code> memory image</dd>
+                    <dt><samp>P</samp></dt>
+                    <dd>Program file in protected format</dd>
+                </dl>
+                If the file does not match the file specification and required file type,
+                the status is <samp>Skipped</samp>; if the file matches, the status is
+                <samp>Found</samp>. When called from a program, these statements do
+                not print messages to the console.
             </dd>
             <dt>
                 Console and parallel devices <code>SCRN:</code>, <code>KYBD:</code>, and <code>LPT<var>n</var>:</code>
@@ -7631,25 +7693,29 @@
             <b>RMDIR</b> <var>path</var>
         </code>
         <p>
-            Removes an empty directory. <code><var>path</var></code> is a string expression that specifies
-            the path of the directory.
+            Removes an empty directory on a disk device.
         </p>
-        <h5>Notes</h5>
+        <h5>Parameters</h5>
         <ul>
             <li>
-                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
+                <code><var>path</var></code> is a string
+                expression that specifies the path of the directory. The path
+                may optionally be preceded by the device name. If the device name is
+                omitted, a directory on the current disk is removed.
+                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a>
+                for information on how this statement matches filenames.
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>pathname</var></code> has a numeric value: <samp>Type mismatch</samp>.
+                <code><var>path</var></code> has a numeric value: <samp>Type mismatch</samp>.
             </li>
             <li>
-                <code><var>pathname</var></code> is empty, <samp>Bad file name</samp> .
+                <code><var>path</var></code> is empty: <samp>Bad file name</samp> .
             </li>
             <li>
-                No matching path is found, <samp>Path not found</samp> .
+                No matching path is found: <samp>Path not found</samp> .
             </li>
         </ul>
     </section>
@@ -7728,27 +7794,46 @@
     <section>
         <h4 id="SAVE"><code>SAVE</code> statement</h4>
         <code class="block">
-            <b>SAVE</b> <var>filename</var> [<b>,</b> {<b>A</b>|<b>P</b>}]
+            <b>SAVE</b> <var>file_spec</var> [<b>,</b> {<b>A</b>|<b>P</b>}]
         </code>
         <p>
-            Stores the program in file <code><var>filename</var></code>. If <code><var>filename</var></code> is not in 8.3 uppercase
-            format, additional characters will be clipped off and the name is converted to
-            uppercase. If <code><var>filename</var></code> contains no <code>.</code>, a default extension <code>.BAS</code> will
-            be added. If the resulting file name already exists, it will be overwritten.
+            Stores the current program in a file.
         </p>
-        <p>
-            If <code>,A</code> is specified, the program will be saved as plain ASCII text. <br/>
-            If <code>,P</code> is specified, the program will be saved in protected form.<br/>
-            When a protected program is loaded in GW-BASIC, it cannot be <code>LIST</code>ed or <code>SAVE</code>d in non-protected
-            form.
-        </p>
+        <ul>
+            <li>
+                If <code><b>,A</b></code> is specified, the program will be saved in ASCII text format.
+            </li>
+            <li>
+                If <code><b>,P</b></code> is specified, the program will be saved in protected format.
+                When a protected program is loaded in GW-BASIC, it cannot be <code>LIST</code>ed or <code>SAVE</code>d in non-protected
+                format.
+            </li>
+            <li>
+                If neither is specified, the program will be saved in bytecode format.
+            </li>
+        </ul>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>file_spec</var></code> is a string expression indicating the device and file to store to.
+                See the <a href="#OPEN">OPEN</a> statement for valid file specifications.
+                On disk devices, the file name will be converted to uppercase. If it
+                is not an <a href="#eightpointthree">MS-DOS 8.3 filename</a>,
+                additional characters will be clipped off and the name is converted to
+                uppercase; if the filename contains no <code>.</code>, a default extension <code>.BAS</code> will
+                be added. If the resulting file name already exists, it will be overwritten.
+           </li>
+        </ul>
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>filename</var></code> has a number value: <samp>Type mismatch</samp>.
+                <code><var>file_spec</var></code> has a number value: <samp>Type mismatch</samp>.
             </li>
             <li>
-                <code><var>filename</var></code> is an empty string: <samp>Bad file number</samp>.
+                <code><var>file_spec</var></code> is an empty string: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code><var>file_spec</var></code> includes characters not allowed for filenames on the device: <samp>Bad file name</samp>.
             </li>
             <li>
                 <code><a href="#--strict-protect">--strict-protect</a></code> is enabled, the current program is protected and <code>,P</code> is not specified:
