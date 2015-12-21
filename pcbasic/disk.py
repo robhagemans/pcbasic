@@ -158,8 +158,10 @@ def set_current_device(current_drive, default='Z:'):
 def reset_fields():
     """ Initialise FIELD buffers. """
     state.io_state.fields = {}
-    for i in range(devices.max_files):
-        state.io_state.fields[i] = devices.Field(i)
+    # fields are indexed by BASIC file number, hence max_files+1
+    # file 0 (program/system file) probably doesn't need a field
+    for i in range(devices.max_files+1):
+        state.io_state.fields[i+1] = devices.Field(i+1)
 
 
 if plat.system == 'Windows':
