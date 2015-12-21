@@ -65,10 +65,6 @@ apologies to those whose contribution I have failed to acknowledge here.
 
   * Forum contributions by **[Julian Brucknall](http://www.boyet.com/Articles/MBFSinglePrecision.html)** and **[Adam Burgoyne](http://www.experts-exchange.com/Programming/Languages/Pascal/Delphi/Q_20245266.html)**
 
-##### Font documentation
-
-  * **Andries Brouwer**'s [CPI font file format documentation](http://www.win.tue.nl/~aeb/linux/kbd/font-formats-3.html)
-
 ##### Data cassette format
 
   * **Mike Brutman**'s [Analysis of the IBM PC Data cassette format](http://www.brutman.com/Cassette_Waveforms/Cassette_Waveforms.html)
@@ -90,7 +86,7 @@ apologies to those whose contribution I have failed to acknowledge here.
   * **Dmitry Bolkhovityanov**'s [Uni-VGA font](http://www.inp.nsk.su/~bolkhov/files/fonts/univga/)
   * **Roman Czyborra**, **Qianqian Fang** and others' [GNU UniFont](https://savannah.gnu.org/projects/unifont)
   * [DOSBox](http://www.dosbox.com) VGA fonts
-
+  * **Andries Brouwer**'s [CPI font file format documentation](http://www.win.tue.nl/~aeb/linux/kbd/font-formats-3.html)
 
 ### Unicode-codepage mappings
 
