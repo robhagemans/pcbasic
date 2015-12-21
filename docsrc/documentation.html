@@ -519,6 +519,7 @@
                 the same DOS name. To avoid such surprises, run PC-BASIC in a working
                 directory of its own and use all-caps 8.3 format for all files.
             </p>
+            <h5>Data files</h5>
             <p>
                 When opening a data file, PC-BASIC will first look for a file with the name
                 exactly as provided. This can be a long name and will be case sensitive if
@@ -531,6 +532,7 @@
                 long filename provided it is of 8.3 length &#8212; it may, for example, contain
                 spaces and thus not be a valid Windows short file name.
             </p>
+            <h5>Program files</h5>
             <p>
                 When loading or saving a program or memory-dump file, no attempt is made to find an exact
                 match. Instead, the search will first match the all-caps 8.3 version of the
@@ -540,16 +542,43 @@
                 short filenames, it is not possible to load a program if its filename is
                 longer than 8.3, contains non-permissible characters or ends in a dot.
             </p>
+            <h5>Directory paths</h5>
             <p>
-                Note on compatibility: In some setups, MS-DOS
-                also allows some characters in the range
-                <code>&amp;H7F</code>&ndash;<code>&amp;HFF</code>. However, their
-                permissibility and interpretation depends on the console code page,
-                which may be different from the display code page that affects GW-BASIC.
-                Depending on its console code page, MS-DOS will replace accented
-                letters by their unaccented uppercase variant. In PC-BASIC, this is
-                not supported.
+                In paths, the directory names must be separated with
+                backslashes <code>\</code> &mdash; even if the OS normally separates paths with
+                forward slashes. The matching rules for directory names
+                are the same as for data files.
             </p>
+            <p>
+                A path starting with a backslash is interpreted as an absolute path,
+                starting at the root of the specified disk device. Otherwise, the
+                path is interpreted as relative to the current directory on the
+                specified device. The directory name
+                <code>..</code> refers to the parent directory of a preceding path, or the
+                parent directory of the current directory if no path is given.
+                The directory name <code>.</code> refers to the same directory as
+                given by the preceding path, or the current directory if no preceding path is given.
+            </p>
+            <h5>Differences with GW-BASIC under MS-DOS</h5>
+            <ul>
+                <li>
+                    In some setups, MS-DOS
+                    also allows some characters in the range
+                    <code>&amp;H7F</code>&ndash;<code>&amp;HFF</code>. However, their
+                    permissibility and interpretation depends on the console code page,
+                    which may be different from the display code page that affects GW-BASIC.
+                    Depending on its console code page, MS-DOS will replace accented
+                    letters by their unaccented uppercase variant.
+                </li>
+                <li>
+                    Some DOS implementations will remove spaces from filenames.
+                    Notably, this is the case on DOSBox.
+                </li>
+                <li>
+                    PC-BASIC allows spaces in file names but no characters in the range
+                    <code>&amp;H7F</code>&ndash;<code>&amp;HFF</code>.
+                </li>
+            </ul>
         </section>
         <hr />
 
