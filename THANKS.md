@@ -8,9 +8,10 @@ sending in patches, and documenting GW-BASIC's behaviour. Thank you all!
 - **Rob Hagemans**,   lead author
 - **Wengier Wu**,     bug fixes, advice for CJK support
 - **WJB**,            bug fixes
-- **Ronald Herrera**, testing
+- **Ronald Herrera**, testing, bug hunting
 - **Miguel Dorta**,   testing, serial ports
 - **Patrik**,         testing, serial ports
+- **Duane**,          testing, serial ports
 
 
 ### Shoulders of Giants
