@@ -294,15 +294,17 @@ if plat.system == 'Windows':
         # last element of path is name
         name = path_and_name.split(os.sep)[-1]
         # if we still have a long name, shorten it now
-        return split_dosname(name.strip().upper())
+        return split_dosname(name)
 else:
     def short_name(dummy_path, longname):
         """ Get Windows short name or fake it. """
         # path is only needed on Windows
-        return split_dosname(longname.strip().upper())
+        return split_dosname(longname)
 
 def split_dosname(name, defext=''):
-    """ Convert filename into 8-char trunk and 3-char extension. """
+    """ Convert name into uppercase 8.3 tuple; apply default extension """
+    # convert to all uppercase, no leading or trailing spaces
+    name = str(name).strip().upper()
     dotloc = name.find('.')
     if name in ('.', '..'):
         trunk, ext = '', name[1:]
@@ -325,18 +327,6 @@ def istype(path, native_name, isdir):
         # happens for name = '\0'
         return False
 
-def dossify(longname, defext=''):
-    """ Put name in 8x3, all upper-case format and apply default extension. """
-    # convert to all uppercase
-    name = str(longname).strip().upper()
-    # one trunk, one extension
-    name, ext = split_dosname(name, defext)
-    # enforce allowable characters
-    if set(name) - allowable_chars:
-        raise error.RunError(error.BAD_FILE_NAME)
-    # no dot if no ext
-    return join_dosname(name, ext)
-
 def match_dosname(dosname, path, isdir, find_case):
     """ Find a matching native file name for a given 8.3 DOS name. """
     # check if the dossified name exists as-is
@@ -358,12 +348,16 @@ def match_filename(name, defext, path, name_err, isdir, find_case=True):
     if not defext and istype(path, name, isdir):
         return name
     # try to match dossified names with default extension
-    dosname = dossify(name, defext)
+    dosname = join_dosname(*split_dosname(name, defext))
+    # enforce allowable characters
+    if set(dosname) - allowable_chars:
+        raise error.RunError(error.BAD_FILE_NAME)
     fullname = match_dosname(dosname, path, isdir, find_case)
     if fullname:
         return fullname
     # not found
     if not name_err:
+        # create a new filename
         return dosname
     else:
         raise error.RunError(name_err)
@@ -587,9 +581,9 @@ class DiskDevice(object):
         console.write_line(self.letter + ':\\' + '\\'.join(dir_elems))
         fils = ''
         if mask == '.':
-            dirs = [split_dosname(dossify((os.sep+relpath).split(os.sep)[-1:][0]))]
+            dirs = [split_dosname((os.sep+relpath).split(os.sep)[-1:][0])]
         elif mask == '..':
-            dirs = [split_dosname(dossify((os.sep+relpath).split(os.sep)[-2:][0]))]
+            dirs = [split_dosname((os.sep+relpath).split(os.sep)[-2:][0])]
         else:
             all_names = safe(os.listdir, path)
             dirs = [n for n in all_names if os.path.isdir(os.path.join(path, n))]
