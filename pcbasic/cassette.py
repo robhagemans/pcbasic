@@ -74,6 +74,9 @@ class DummyDeviceFile(object):
 class CASDevice(object):
     """ Cassette tape device (CASn:) """
 
+    # control characters not allowed in file name on tape
+    _illegal_chars = set(map(chr, range(0x20)))
+
     def __init__(self, arg):
         """ Initialise tape device. """
         addr, val = devices.parse_protocol_string(arg)
@@ -115,6 +118,9 @@ class CASDevice(object):
             raise error.RunError(error.DEVICE_UNAVAILABLE)
         if self.tapestream.is_open:
             raise error.RunError(error.FILE_ALREADY_OPEN)
+        if set(param) & self._illegal_chars:
+            # Cassette BASIC throws bad file NUMBER, for some reason.
+            raise error.RunError(error.BAD_FILE_NUMBER)
         try:
             if mode == 'O':
                 self.tapestream.open_write(param, filetype, seg, offset, length)
