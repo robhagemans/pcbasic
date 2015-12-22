@@ -324,7 +324,7 @@ def split_dosname(name, defext='', mark_shortened=False):
         if strunk != trunk:
             strunk = strunk[:7] + '+'
         if sext != ext:
-            sext = sext[:7] + '+'
+            sext = sext[:2] + '+'
     return strunk, sext
 
 def join_dosname(trunk, ext):
