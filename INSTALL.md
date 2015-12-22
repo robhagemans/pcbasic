@@ -41,6 +41,21 @@ On FreeBSD:
 Note that PyParallel is not available from the Fedora and FreeBSD repos. PyParallel does not support BSD; on Fedora, you'll need to install from source if you need access to physical parallel ports. However, since most modern machines do not actually have parallel ports, you probably don't need it. PyParallel is _not_ needed for printing to a CUPS or Windows printer.
 
 
+#### External tools ####
+On Linux, OSX and other Unix-like systems, PC-BASIC can employ the following
+external command-line tools:
+
+| Tool                                      | OS                | Status      | Used for
+-------------------------------------------------------------------------------------------------------------
+| `lpr`                                     | OSX, Linux, other | essential   | printing to CUPS printers
+| `paps`                                    | OSX, Linux, other | recommended | improved Unicode support for CUPS printing
+| `pbcopy`                                  | OSX               | essential   | clipboard operation
+| `pbpaste`                                 | OSX               | essential   | clipboard operation
+| `xsel`                                    | Linux, other      | optional    | more intuitive clipboard operation
+| `xclip`                                   | Linux, other      | optional    | more intuitive clipboard operation (alternative to `xsel`)
+| `beep`                                    | OSX, Linux, other | optional    | sound in cli/text interface
+
+
 #### Building from GitHub repository source ####
 The instructions above refer to the source *distribution*, which has pre-built
 documentation files and other niceties.
