@@ -341,7 +341,7 @@ def debug_details():
                 logging.info('available\n')
     if plat.system != 'Windows':
         logging.info('\nEXTERNAL TOOLS')
-        tools = ('paps', 'beep', 'xclip', 'xsel')
+        tools = ('lpr', 'paps', 'beep', 'xclip', 'xsel', 'pbcopy', 'pbpaste')
         for tool in tools:
             try:
                 location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')
