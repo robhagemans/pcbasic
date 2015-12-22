@@ -306,6 +306,11 @@ def split_dosname(name, defext='', mark_shortened=False):
     """ Convert name into uppercase 8.3 tuple; apply default extension """
     # convert to all uppercase, no leading or trailing spaces
     name = str(name).strip().upper()
+    # don't try to split special directory names
+    if name == '.':
+        return '', ''
+    elif name == '..':
+        return '', '.'
     # take whatever comes after last dot as extension
     # and whatever comes before first dot as trunk
     elements = name.split('.')
