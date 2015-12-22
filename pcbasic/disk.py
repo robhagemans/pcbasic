@@ -253,17 +253,18 @@ def handle_oserror(e):
 
 def get_diskdevice_and_path(path):
     """ Return the disk device and remaining path for given BASIC path. """
-    splits = str(path).upper().split(':', 1)
+    # careful - do not convert path to uppercase, we still need to match
+    splits = str(path).split(':', 1)
     if len(splits) == 0:
         return state.io_state.current_device, ''
     elif len(splits) == 1:
-        return state.io_state.current_device, splits[0]
+        return state.io_state.current_device, splits[0].upper()
     else:
         # must be a disk device
         if len(splits[0]) > 1:
             raise error.RunError(error.DEVICE_UNAVAILABLE)
         try:
-            return state.io_state.devices[splits[0] + ':'], splits[1]
+            return state.io_state.devices[splits[0].upper() + ':'], splits[1]
         except KeyError:
             raise error.RunError(error.DEVICE_UNAVAILABLE)
 
