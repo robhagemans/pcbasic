@@ -114,12 +114,12 @@ def prepare():
     utf8_files = config.get('utf8')
     universal_newline = not config.get('strict-newline')
     for letter in drive_letters:
-        state.io_state.devices[letter + ':'] = DiskDevice(letter, None, '')
+        state.io_state.devices[letter + ':'] = DiskDevice(letter, None, u'')
     current_drive = config.get('current-device').upper()
     if config.get('map-drives'):
         current_drive = map_drives()
     else:
-        state.io_state.devices['Z:'] = DiskDevice('Z', os.getcwd(), '')
+        state.io_state.devices['Z:'] = DiskDevice('Z', os.getcwdu(), u'')
     mount_drives(config.get('mount'))
     set_current_device(current_drive + ':')
     reset_fields()
@@ -137,13 +137,13 @@ def mount_drives(mount_list):
     for a in mount_list:
         try:
             # the last one that's specified will stick
-            letter, path = a.split(':', 1)
-            letter = letter.upper()
+            letter, path = a.decode('utf-8').split(u':', 1)
+            letter = letter.encode('ascii', errors='replace').upper()
             path = os.path.realpath(path)
             if not os.path.isdir(path):
-                logging.warning('Could not mount %s', a)
+                logging.warning(u'Could not mount %s', a)
             else:
-                state.io_state.devices[letter + ':'] = DiskDevice(letter, path, '')
+                state.io_state.devices[letter + ':'] = DiskDevice(letter, path, u'')
         except (TypeError, ValueError):
             logging.warning('Could not mount %s', a)
 
@@ -176,7 +176,7 @@ if plat.system == 'Windows':
         for letter in win32api.GetLogicalDriveStrings().split(':\\\0')[:-1]:
             try:
                 os.chdir(letter + ':')
-                cwd = win32api.GetShortPathName(os.getcwd())
+                cwd = win32api.GetShortPathName(os.getcwdu())
             except Exception:
                 # something went wrong, do not mount this drive
                 # this is often a pywintypes.error rather than a WindowsError
@@ -190,18 +190,18 @@ if plat.system == 'Windows':
 else:
     def map_drives():
         """ Map useful Unix directories to PC-BASIC disk devices. """
-        cwd = os.getcwd()
+        cwd = os.getcwdu()
         # map C to root
-        state.io_state.devices['C:'] = DiskDevice('C', '/', cwd[1:])
+        state.io_state.devices['C:'] = DiskDevice('C', u'/', cwd[1:])
         # map Z to cwd
-        state.io_state.devices['Z:'] = DiskDevice('Z', cwd, '')
+        state.io_state.devices['Z:'] = DiskDevice('Z', cwd, u'')
         # map H to home
-        home = os.path.expanduser('~')
+        home = os.path.expanduser(u'~')
         # if cwd is in home tree, set it also on H:
         if cwd[:len(home)] == home:
             state.io_state.devices['H:'] = DiskDevice('H', home, cwd[len(home)+1:])
         else:
-            state.io_state.devices['H:'] = DiskDevice('H', home, '')
+            state.io_state.devices['H:'] = DiskDevice('H', home, u'')
         # default durrent drive
         return 'Z'
 
@@ -304,9 +304,9 @@ else:
         return split_dosname(longname, mark_shortened=True)
 
 def split_dosname(name, defext='', mark_shortened=False):
-    """ Convert name into uppercase 8.3 tuple; apply default extension """
+    """ Convert unicode name into uppercase 8.3 tuple; apply default extension """
     # convert to all uppercase, no leading or trailing spaces
-    name = str(name).strip().upper()
+    name = str(name.encode('ascii', errors='replace')).strip().upper()
     # don't try to split special directory names
     if name == '.':
         return '', ''
@@ -333,7 +333,7 @@ def join_dosname(trunk, ext):
 
 def istype(path, native_name, isdir):
     """ Return whether a file exists and is a directory or regular. """
-    name = os.path.join(str(path), str(native_name))
+    name = os.path.join(path, native_name)
     try:
         return os.path.isdir(name) if isdir else os.path.isfile(name)
     except TypeError:
@@ -341,7 +341,12 @@ def istype(path, native_name, isdir):
         return False
 
 def match_dosname(dosname, path, isdir):
-    """ Find a matching native file name for a given 8.3 DOS name. """
+    """ Find a matching native file name for a given 8.3 unicode DOS name. """
+    try:
+        dosname = dosname.decode('ascii')
+    except UnicodeDecodeError:
+        # non-ascii characters are not allowable for DOS filenames
+        return None
     # check if the dossified name exists as-is
     if istype(path, dosname, isdir):
         return dosname
@@ -390,7 +395,12 @@ def match_wildcard(name, mask):
     cregexp = re.compile(regexp)
     return cregexp.match(name) is not None
 
-def filter_names(path, files_list, mask='*.*'):
+def filename_from_unicode(name):
+    """ Replace disallowed characters in filename with ?. """
+    name_str = name.encode('ascii', 'replace')
+    return ''.join(c if c in allowable_chars | set('.') else '?' for c in name_str)
+
+def filter_names(path, files_list, mask=u'*.*'):
     """ Apply filename filter to short version of names. """
     all_files = [short_name(path, name) for name in files_list]
     # apply mask separately to trunk and extension, dos-style.
@@ -413,7 +423,7 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     _access_access = { 'R': 'rb', 'W': 'wb', 'RW': 'r+b' }
 
-    def __init__(self, letter, path, cwd=''):
+    def __init__(self, letter, path, cwd=u''):
         """ Initialise a disk device. """
         self.letter = letter
         # mount root
@@ -422,7 +432,7 @@ class DiskDevice(object):
         # current working directory on this drive
         # this is a DOS relative path, no drive letter; including leading \\
         # stored with os.sep but given using backslash separators
-        self.cwd = os.path.join(*cwd.split('\\'))
+        self.cwd = os.path.join(*cwd.split(u'\\'))
 
     def close(self):
         """ Close disk device. """
@@ -463,7 +473,7 @@ class DiskDevice(object):
 
     def _open_stream(self, native_name, mode, access):
         """ Open a stream on disk by os-native name with BASIC mode and access level. """
-        name = str(native_name)
+        name = native_name
         if (access and mode == 'R'):
             posix_access = self._access_access[access]
         else:
@@ -505,31 +515,32 @@ class DiskDevice(object):
 
     def _native_path_elements(self, path_without_drive, path_err, join_name=False):
         """ Return elements of the native path for a given BASIC path. """
-        path_without_drive = str(path_without_drive)
-        if '/' in path_without_drive:
+        path_without_drive = (unicodepage.Converter(protect_box=False)
+                                        .to_unicode(str(path_without_drive)))
+        if u'/' in path_without_drive:
             # bad file number - this is what GW produces here
             raise error.RunError(error.BAD_FILE_NUMBER)
         if not self.path:
             # this drive letter is not available (not mounted)
             raise error.RunError(error.PATH_NOT_FOUND)
         # get path below drive letter
-        if path_without_drive and path_without_drive[0] == '\\':
+        if path_without_drive and path_without_drive[0] == u'\\':
             # absolute path specified
-            elements = path_without_drive.split('\\')
+            elements = path_without_drive.split(u'\\')
         else:
-            elements = self.cwd.split(os.sep) + path_without_drive.split('\\')
+            elements = self.cwd.split(os.sep) + path_without_drive.split(u'\\')
         # strip whitespace
-        elements = map(str.strip, elements)
+        elements = map(unicode.strip, elements)
         # whatever's after the last \\ is the name of the subject file or dir
         # if the path ends in \\, there's no name
-        name = '' if (join_name or not elements) else elements.pop()
+        name = u'' if (join_name or not elements) else elements.pop()
         # parse internal .. and . (like normpath but with \\)
         # drop leading . and .. (this is what GW-BASIC does at drive root)
         i = 0
         while i < len(elements):
-            if elements[i] == '.':
+            if elements[i] == u'.':
                 del elements[i]
-            elif elements[i] == '..':
+            elif elements[i] == u'..':
                 del elements[i]
                 if i > 0:
                     del elements[i-1]
@@ -606,6 +617,7 @@ class DiskDevice(object):
             raise error.RunError(error.FILE_NOT_FOUND)
         drivepath, relpath, mask = self._native_path_elements(pathmask, path_err=error.FILE_NOT_FOUND)
         path = os.path.join(drivepath, relpath)
+
         mask = mask.upper() or '*.*'
         # output working dir in DOS format
         # NOTE: this is always the current dir, not the one being listed
@@ -618,8 +630,8 @@ class DiskDevice(object):
             dirs = [split_dosname((os.sep+relpath).split(os.sep)[-2:][0])]
         else:
             all_names = safe(os.listdir, path)
-            dirs = [n for n in all_names if os.path.isdir(os.path.join(path, n))]
-            fils = [n for n in all_names if not os.path.isdir(os.path.join(path, n))]
+            dirs = [filename_from_unicode(n) for n in all_names if os.path.isdir(os.path.join(path, n))]
+            fils = [filename_from_unicode(n) for n in all_names if not os.path.isdir(os.path.join(path, n))]
             # filter according to mask
             dirs = filter_names(path, dirs + ['.', '..'], mask)
             fils = filter_names(path, fils, mask)
