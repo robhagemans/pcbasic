@@ -353,10 +353,11 @@ def match_filename(name, defext, path, name_err, isdir):
     if not defext and istype(path, name, isdir):
         return name
     # try to match dossified names with default extension
-    dosname = join_dosname(*split_dosname(name, defext))
+    trunk, ext = split_dosname(name, defext)
     # enforce allowable characters
-    if set(dosname) - allowable_chars:
+    if (set(trunk) & set(ext)) - allowable_chars:
         raise error.RunError(error.BAD_FILE_NAME)
+    dosname = join_dosname(trunk, ext)
     fullname = match_dosname(dosname, path, isdir)
     if fullname:
         return fullname
