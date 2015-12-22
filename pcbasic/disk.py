@@ -213,7 +213,6 @@ def list_locks(name):
 def acquire_lock(name, number, lock_type, access):
     """ Try to lock a file. """
     already_open = list_locks(name)
-    state.io_state.locks[number] = name
     for f in already_open:
         if (
                 # default mode: don't accept if SHARED/LOCK present
@@ -225,6 +224,8 @@ def acquire_lock(name, number, lock_type, access):
                 # LOCK READ or LOCK WRITE: accept base on ACCESS of open file
                 (lock_type in f.access) or (f.lock_type in access)):
             raise error.RunError(error.PERMISSION_DENIED)
+    state.io_state.locks[number] = name
+
 
 def release_lock(number):
     """ Release the lock on a file before closing. """
@@ -417,11 +418,15 @@ class DiskDevice(object):
             self.check_file_not_open(param)
         # obtain a lock
         acquire_lock(name, number, lock, access)
-        # open the underlying stream
-        fhandle = self.open_stream(name, mode, access)
-        # apply the BASIC file wrapper
-        return open_diskfile(fhandle, filetype, mode, name, number,
-                             access, lock, reclen, seg, offset, length)
+        try:
+            # open the underlying stream
+            fhandle = self.open_stream(name, mode, access)
+            # apply the BASIC file wrapper
+            return open_diskfile(fhandle, filetype, mode, name, number,
+                                 access, lock, reclen, seg, offset, length)
+        except Exception:
+            release_lock(number)
+            raise
 
     def open_stream(self, native_name, mode, access):
         """ Open a stream on disk by os-native name with BASIC mode and access level. """
