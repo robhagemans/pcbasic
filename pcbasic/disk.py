@@ -328,20 +328,18 @@ def istype(path, native_name, isdir):
         # happens for name = '\0'
         return False
 
-def match_dosname(dosname, path, isdir, find_case):
+def match_dosname(dosname, path, isdir):
     """ Find a matching native file name for a given 8.3 DOS name. """
     # check if the dossified name exists as-is
     if istype(path, dosname, isdir):
         return dosname
-    if not find_case:
-        return None
     # for case-sensitive filenames: find other case combinations, if present
     for f in sorted(os.listdir(path)):
         if f.upper() == dosname and istype(path, f, isdir):
             return f
     return None
 
-def match_filename(name, defext, path, name_err, isdir, find_case=True):
+def match_filename(name, defext, path, name_err, isdir):
     """ Find or create a matching native file name for a given BASIC name. """
     # check if the name exists as-is; should also match Windows short names.
     # EXCEPT if default extension is not empty, in which case
@@ -353,7 +351,7 @@ def match_filename(name, defext, path, name_err, isdir, find_case=True):
     # enforce allowable characters
     if set(dosname) - allowable_chars:
         raise error.RunError(error.BAD_FILE_NAME)
-    fullname = match_dosname(dosname, path, isdir, find_case)
+    fullname = match_dosname(dosname, path, isdir)
     if fullname:
         return fullname
     # not found
@@ -519,7 +517,7 @@ class DiskDevice(object):
         return path[:baselen], path[baselen:], name
 
     def _native_path(self, path_and_name, defext='', name_err=error.FILE_NOT_FOUND,
-                    isdir=False, find_case=True):
+                    isdir=False):
         """ Find os-native path to match the given BASIC path. """
         # substitute drives and cwds
         # always use Path Not Found error if not found at this stage
@@ -528,7 +526,7 @@ class DiskDevice(object):
         path = os.path.join(drivepath, relpath)
         if name:
             path = os.path.join(path,
-                match_filename(name, defext, path, name_err, isdir, find_case))
+                match_filename(name, defext, path, name_err, isdir))
         # get full normalised path
         return os.path.abspath(path)
 
