@@ -117,20 +117,20 @@ def prepare():
         state.io_state.devices[letter + ':'] = DiskDevice(letter, None, u'')
     current_drive = config.get('current-device').upper()
     if config.get('map-drives'):
-        current_drive = map_drives()
+        current_drive = _map_drives()
     else:
         state.io_state.devices['Z:'] = DiskDevice('Z', os.getcwdu(), u'')
-    mount_drives(config.get('mount'))
-    set_current_device(current_drive + ':')
+    _mount_drives(config.get('mount'))
+    _set_current_device(current_drive + ':')
     reset_fields()
 
 def override():
     """ Initialise module settings that override --resume. """
-    mount_drives(config.get('mount', False))
+    _mount_drives(config.get('mount', False))
     # we always need to reset this or it may be a reference to an old device
-    set_current_device(config.get('current-device', True).upper() + ':')
+    _set_current_device(config.get('current-device', True).upper() + ':')
 
-def mount_drives(mount_list):
+def _mount_drives(mount_list):
     """ Mount disk drives """
     if not mount_list:
         return
@@ -147,7 +147,7 @@ def mount_drives(mount_list):
         except (TypeError, ValueError):
             logging.warning('Could not mount %s', a)
 
-def set_current_device(current_drive, default='Z:'):
+def _set_current_device(current_drive, default='Z:'):
     """ Set the current device. """
     try:
         state.io_state.current_device = state.io_state.devices[current_drive]
@@ -165,7 +165,7 @@ def reset_fields():
 
 
 if plat.system == 'Windows':
-    def map_drives():
+    def _map_drives():
         """ Map Windows drive letters to PC-BASIC disk devices. """
         # get all drives in use by windows
         # if started from CMD.EXE, get the 'current working dir' for each drive
@@ -188,7 +188,7 @@ if plat.system == 'Windows':
         os.chdir(save_current)
         return current_drive
 else:
-    def map_drives():
+    def _map_drives():
         """ Map useful Unix directories to PC-BASIC disk devices. """
         cwd = os.getcwdu()
         # map C to root
@@ -207,20 +207,60 @@ else:
 
 
 ##############################################################################
+# Disk file object wrapper
+
+def create_file_object(fhandle, filetype, mode, name='', number=0,
+                       access='RW', lock='', reclen=128,
+                       seg=0, offset=0, length=0):
+    """ Create disk file object of requested type. """
+    # determine file type if needed
+    if len(filetype) > 1 and mode == 'I':
+        # read magic
+        first = fhandle.read(1)
+        fhandle.seek(-1, 1)
+        try:
+            filetype_found = devices.magic_to_type[first]
+            if filetype_found not in filetype:
+                raise error.RunError(error.BAD_FILE_MODE)
+            filetype = filetype_found
+        except KeyError:
+            filetype = 'A'
+    if filetype in 'BPM':
+        # binary [B]LOAD, [B]SAVE
+        return BinaryFile(fhandle, filetype, number, name, mode,
+                           seg, offset, length)
+    elif filetype == 'A':
+        # ascii program file (UTF8 or universal newline if option given)
+        return TextFile(fhandle, filetype, number, name, mode, access, lock,
+                         utf8_files, universal_newline, split_long_lines=False)
+    elif filetype == 'D':
+        if mode in 'IAO':
+            # text data
+            return TextFile(fhandle, filetype, number, name, mode, access, lock)
+        else:
+            return RandomFile(fhandle, number, name, access, lock, reclen)
+    else:
+        # internal error - incorrect file type requested
+        logging.debug('Incorrect file type %s requested for mode %s',
+                      filetype, mode)
+        raise error.RunError(error.INTERNAL_ERROR)
+
+
+##############################################################################
 # Locks
 
 # dict of native file names by number, for locking
 state.io_state.locks = {}
 
-def list_locks(name):
+def _list_locks(name):
     """ Retrieve a list of files open to the same disk stream. """
     return [ state.io_state.files[fnum]
                    for (fnum, fname) in state.io_state.locks.iteritems()
                    if fname == name ]
 
-def acquire_lock(name, number, lock_type, access):
+def _acquire_lock(name, number, lock_type, access):
     """ Try to lock a file. """
-    already_open = list_locks(name)
+    already_open = _list_locks(name)
     for f in already_open:
         if (
                 # default mode: don't accept if SHARED/LOCK present
@@ -235,7 +275,7 @@ def acquire_lock(name, number, lock_type, access):
     state.io_state.locks[number] = name
 
 
-def release_lock(number):
+def _release_lock(number):
     """ Release the lock on a file before closing. """
     try:
         del state.io_state.locks[number]
@@ -460,7 +500,7 @@ class DiskDevice(object):
         if mode in ('O', 'A'):
             self.check_file_not_open(param)
         # obtain a lock
-        acquire_lock(name, number, lock, access)
+        _acquire_lock(name, number, lock, access)
         try:
             # open the underlying stream
             fhandle = self._open_stream(name, mode, access)
@@ -468,7 +508,7 @@ class DiskDevice(object):
             return create_file_object(fhandle, filetype, mode, name, number,
                                       access, lock, reclen, seg, offset, length)
         except Exception:
-            release_lock(number)
+            _release_lock(number)
             raise
 
     def _open_stream(self, native_name, mode, access):
@@ -668,43 +708,6 @@ class DiskDevice(object):
 #################################################################################
 # Disk files
 
-def create_file_object(fhandle, filetype, mode, name='', number=0,
-                       access='RW', lock='', reclen=128,
-                       seg=0, offset=0, length=0):
-    """ Create disk file object of requested type. """
-    # determine file type if needed
-    if len(filetype) > 1 and mode == 'I':
-        # read magic
-        first = fhandle.read(1)
-        fhandle.seek(-1, 1)
-        try:
-            filetype_found = devices.magic_to_type[first]
-            if filetype_found not in filetype:
-                raise error.RunError(error.BAD_FILE_MODE)
-            filetype = filetype_found
-        except KeyError:
-            filetype = 'A'
-    if filetype in 'BPM':
-        # binary [B]LOAD, [B]SAVE
-        return BinaryFile(fhandle, filetype, number, name, mode,
-                           seg, offset, length)
-    elif filetype == 'A':
-        # ascii program file (UTF8 or universal newline if option given)
-        return TextFile(fhandle, filetype, number, name, mode, access, lock,
-                         utf8_files, universal_newline, split_long_lines=False)
-    elif filetype == 'D':
-        if mode in 'IAO':
-            # text data
-            return TextFile(fhandle, filetype, number, name, mode, access, lock)
-        else:
-            return RandomFile(fhandle, number, name, access, lock, reclen)
-    else:
-        # internal error - incorrect file type requested
-        logging.debug('Incorrect file type %s requested for mode %s',
-                      filetype, mode)
-        raise error.RunError(error.INTERNAL_ERROR)
-
-
 class BinaryFile(devices.RawFile):
     """ File class for binary (B, P, M) files on disk device. """
 
@@ -738,7 +741,7 @@ class BinaryFile(devices.RawFile):
         if self.mode == 'O':
             self.write('\x1a')
         devices.RawFile.close(self)
-        release_lock(self.number)
+        _release_lock(self.number)
 
 
 class RandomFile(devices.CRLFTextFileBase):
@@ -798,7 +801,7 @@ class RandomFile(devices.CRLFTextFileBase):
         """ Close random-access file. """
         devices.CRLFTextFileBase.close(self)
         self.output_stream.close()
-        release_lock(self.number)
+        _release_lock(self.number)
 
     def get(self, dummy=None):
         """ Read a record. """
@@ -847,7 +850,7 @@ class RandomFile(devices.CRLFTextFileBase):
     def lock(self, start, stop, lock_list):
         """ Lock range of records. """
         bstart, bstop = (start-1) * self.reclen, stop*self.reclen - 1
-        other_lock_list = set.union(f.lock_list for f in list_locks(self.name))
+        other_lock_list = set.union(f.lock_list for f in _list_locks(self.name))
         for start_1, stop_1 in other_lock_list:
             if (stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1)
                              or (bstop >= start_1 and bstop <= stop_1)):
@@ -893,7 +896,7 @@ class TextFile(devices.CRLFTextFileBase):
             # write EOF char
             self.fhandle.write('\x1a')
         devices.CRLFTextFileBase.close(self)
-        release_lock(self.number)
+        _release_lock(self.number)
 
     def loc(self):
         """ Get file pointer LOC """
@@ -961,7 +964,7 @@ class TextFile(devices.CRLFTextFileBase):
 
     def lock(self, start, stop, lock_list):
         """ Lock the file. """
-        if set.union(f.lock_list for f in list_locks(self.name)):
+        if set.union(f.lock_list for f in _list_locks(self.name)):
             raise error.RunError(error.PERMISSION_DENIED)
         self.lock_list.add((0, -1))
 
