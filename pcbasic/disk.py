@@ -258,7 +258,7 @@ def get_diskdevice_and_path(path):
     if len(splits) == 0:
         return state.io_state.current_device, ''
     elif len(splits) == 1:
-        return state.io_state.current_device, splits[0].upper()
+        return state.io_state.current_device, splits[0]
     else:
         # must be a disk device
         if len(splits[0]) > 1:
