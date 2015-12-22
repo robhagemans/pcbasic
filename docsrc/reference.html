@@ -783,10 +783,15 @@
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>filename</var></code> is not in <code>BSAVE</code> format: <samp>Bad file mode</samp>.
+                The loaded file is not in <code>BSAVE</code> format: <samp>Bad file mode</samp>.
             </li>
             <li>
-                <code><var>filename</var></code> has a numeric value: <samp>Type mismatch</samp>.
+                <code><var>file_spec</var></code> contains disallowed characters:
+                <samp>Bad file number</samp> (on <code>CAS1:</code>);
+                <samp>Bad file name</samp> (on disk devices).
+            </li>
+            <li>
+                <code><var>file_spec</var></code> has a numeric value: <samp>Type mismatch</samp>.
             </li>
             <li>
                 <code><var>offset</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
@@ -831,7 +836,12 @@
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>filename</var></code> has a numeric value: <samp>Type mismatch</samp>.
+                <code><var>file_spec</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_spec</var></code> contains disallowed characters:
+                <samp>Bad file number</samp> (on <code>CAS1:</code>);
+                <samp>Bad file name</samp> (on disk devices).
             </li>
             <li>
                 <code><var>offset</var></code> is not in the range <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
@@ -1004,6 +1014,11 @@
         <ul>
             <li>
                 <code><var>file_spec</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_spec</var></code> contains disallowed characters:
+                <samp>Bad file number</samp> (on <code>CAS1:</code>);
+                <samp>Bad file name</samp> (on disk devices).
             </li>
             <li>
                 The file specified in <code><var>file_spec</var></code>
@@ -4442,6 +4457,11 @@
                 <code><var>file_spec</var></code> ends in a colon but is not a device name or drive letter:
                 <samp>Bad file number</samp>.
             </li>
+            <li>
+                <code><var>file_spec</var></code> contains disallowed characters:
+                <samp>Bad file number</samp> (on <code>CAS1:</code>);
+                <samp>Bad file name</samp> (on disk devices).
+            </li>
         </ul>
     </section>
 <hr />
@@ -4507,6 +4527,11 @@
         <ul>
             <li>
                 <code><var>file_spec</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_spec</var></code> contains disallowed characters:
+                <samp>Bad file number</samp> (on <code>CAS1:</code>);
+                <samp>Bad file name</samp> (on disk devices).
             </li>
             <li>
                 The file specified in <code><var>file_spec</var></code>
@@ -4897,6 +4922,11 @@
         <ul>
             <li>
                 <code><var>file_spec</var></code> cannot be found: <samp>File not found</samp>.
+            </li>
+            <li>
+                <code><var>file_spec</var></code> contains disallowed characters:
+                <samp>Bad file number</samp> (on <code>CAS1:</code>);
+                <samp>Bad file name</samp> (on disk devices).
             </li>
             <li>
                 <code><var>file_spec</var></code> was not saved as ASCII: <samp>Bad file mode</samp>.
@@ -5699,7 +5729,9 @@
             </dt>
             <dd>
                 <code><var>parameters</var></code> can be a file name of up to eight characters.
-                Cassette file names have no path or extension, may be empty and do not need to be unique.
+                Cassette file names are case sensitive, have no path or extension,
+                may be empty and do not need to be unique. They may contain any
+                character in the range <code>&amp;H20</code>&ndash;<code>&amp;HFF</code>.
                 On the cassette device, when called in interactive mode,
                 <code><a href="#OPEN">OPEN</a></code>,
                 <code><a href="#MERGE">MERGE</a></code>,
@@ -5904,6 +5936,10 @@
             <li>
                 The <code>COM:</code> <code><var>file_spec</var></code> parameters do not follow the specification:
                 <samp>Bad file name</samp>.
+            </li>
+            <li>
+                The <code>CAS1:</code> <code><var>file_spec</var></code> contains disallowed characters:
+                <samp>Bad file number</samp>.
             </li>
             <li>
                 A file is already open for <code>OUTPUT</code> or <code>APPEND</code>: <samp>File already open</samp>.
@@ -7833,7 +7869,9 @@
                 <code><var>file_spec</var></code> is an empty string: <samp>Bad file number</samp>.
             </li>
             <li>
-                <code><var>file_spec</var></code> includes characters not allowed for filenames on the device: <samp>Bad file name</samp>.
+                <code><var>file_spec</var></code> contains disallowed characters:
+                <samp>Bad file number</samp> (on <code>CAS1:</code>);
+                <samp>Bad file name</samp> (on disk devices).
             </li>
             <li>
                 <code><a href="#--strict-protect">--strict-protect</a></code> is enabled, the current program is protected and <code>,P</code> is not specified:
