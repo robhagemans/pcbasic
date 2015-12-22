@@ -432,8 +432,8 @@ class DiskDevice(object):
         # open the underlying stream
         fhandle = self.open_stream(name, mode, access)
         # apply the BASIC file wrapper
-        return open_diskfile(fhandle, filetype, mode, name, number,
-                             access, lock, reclen, seg, offset, length)
+        return create_file_object(fhandle, filetype, mode, name, number,
+                                  access, lock, reclen, seg, offset, length)
 
     def open_stream(self, native_name, mode, access):
         """ Open a stream on disk by os-native name with BASIC mode and access level. """
@@ -630,8 +630,9 @@ class DiskDevice(object):
 #################################################################################
 # Disk files
 
-def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock='',
-                  reclen=128, seg=0, offset=0, length=0):
+def create_file_object(fhandle, filetype, mode, name='', number=0,
+                       access='RW', lock='', reclen=128,
+                       seg=0, offset=0, length=0):
     """ Create disk file object of requested type. """
     # determine file type if needed
     if len(filetype) > 1 and mode == 'I':

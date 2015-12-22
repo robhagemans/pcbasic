@@ -110,16 +110,16 @@ def convert():
         elif plat.has_stdin:
             # use StringIO buffer for seekability
             in_buffer = StringIO(sys.stdin.read())
-            prog_infile = disk.open_diskfile(in_buffer, filetype='ABP', mode='I')
+            prog_infile = disk.create_file_object(in_buffer, filetype='ABP', mode='I')
         if prog_infile:
             with prog_infile:
                 program.load(prog_infile)
         prog_outfile = None
         if outfile:
             # on save from command-line, use exact file name
-            prog_outfile = disk.open_diskfile(open(outfile, 'wb'), filetype=mode, mode='O')
+            prog_outfile = disk.create_file_object(open(outfile, 'wb'), filetype=mode, mode='O')
         elif plat.has_stdout:
-            prog_outfile = disk.open_diskfile(sys.stdout, filetype=mode, mode='O')
+            prog_outfile = disk.create_file_object(sys.stdout, filetype=mode, mode='O')
         if prog_outfile:
             with prog_outfile:
                 program.save(prog_outfile)
@@ -263,7 +263,7 @@ def open_native_or_dos_filename(infile):
     import error
     try:
         # first try exact file name
-        return disk.open_diskfile(open(os.path.expandvars(os.path.expanduser(infile)), 'r'), filetype='BPA', mode='I')
+        return disk.create_file_object(open(os.path.expandvars(os.path.expanduser(infile)), 'r'), filetype='BPA', mode='I')
     except EnvironmentError as e:
         # otherwise, accept capitalised versions and default extension
         return devices.open_file(0, infile, filetype='BPA', mode='I')
