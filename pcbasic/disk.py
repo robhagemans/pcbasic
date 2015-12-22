@@ -360,7 +360,7 @@ def match_filename(name, defext, path, name_err, isdir):
     # try to match dossified names with default extension
     trunk, ext = split_dosname(name, defext)
     # enforce allowable characters
-    if (set(trunk) & set(ext)) - allowable_chars:
+    if (set(trunk) | set(ext)) - allowable_chars:
         raise error.RunError(error.BAD_FILE_NAME)
     dosname = join_dosname(trunk, ext)
     fullname = match_dosname(dosname, path, isdir)
