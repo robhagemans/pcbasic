@@ -295,25 +295,31 @@ if plat.system == 'Windows':
         # last element of path is name
         name = path_and_name.split(os.sep)[-1]
         # if we still have a long name, shorten it now
-        return split_dosname(name)
+        return split_dosname(name, mark_shortened=True)
 else:
     def short_name(dummy_path, longname):
         """ Get Windows short name or fake it. """
         # path is only needed on Windows
-        return split_dosname(longname)
+        return split_dosname(longname, mark_shortened=True)
 
-def split_dosname(name, defext=''):
+def split_dosname(name, defext='', mark_shortened=False):
     """ Convert name into uppercase 8.3 tuple; apply default extension """
     # convert to all uppercase, no leading or trailing spaces
     name = str(name).strip().upper()
-    dotloc = name.find('.')
-    if name in ('.', '..'):
-        trunk, ext = '', name[1:]
-    elif dotloc > -1:
-        trunk, ext = name[:dotloc][:8], name[dotloc+1:][:3]
+    # take whatever comes after last dot as extension
+    # and whatever comes before first dot as trunk
+    elements = name.split('.')
+    if len(elements) == 1:
+        trunk, ext = elements[0], defext
     else:
-        trunk, ext = name[:8], defext
-    return trunk, ext
+        trunk, ext = elements[0], elements[-1]
+    strunk, sext = trunk[:8], ext[:3]
+    if mark_shortened:
+        if strunk != trunk:
+            strunk = strunk[:7] + '+'
+        if sext != ext:
+            sext = sext[:7] + '+'
+    return strunk, sext
 
 def join_dosname(trunk, ext):
     """ Join trunk and extension into file name. """
@@ -368,7 +374,7 @@ def filter_names(path, files_list, mask='*.*'):
     # hide dotfiles
     trunkmask, extmask = split_dosname(mask)
     return sorted([(t, e) for (t, e) in all_files
-        if (fnmatch(t, trunkmask.upper()) and fnmatch(e, extmask.upper()) and
+        if (fnmatch(t, trunkmask) and fnmatch(e, extmask) and
             (t or not e or e == '.'))])
 
 ################################
