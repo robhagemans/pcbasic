@@ -13,7 +13,7 @@ import os
 import errno
 import logging
 import string
-from fnmatch import fnmatch
+import re
 
 import plat
 if plat.system == 'Windows':
@@ -373,6 +373,22 @@ def match_filename(name, defext, path, name_err, isdir):
     else:
         raise error.RunError(name_err)
 
+def match_wildcard(name, mask):
+    """ Whether filename name matches DOS wildcard mask. """
+    # convert wildcard mask to regexp
+    regexp = '\A'
+    for c in mask:
+        if c == '?':
+            regexp += '.'
+        elif c == '*':
+            # we won't need to match newlines, so dot is fine
+            regexp += '.*'
+        else:
+            regexp += re.escape(c)
+    regexp += '\Z'
+    cregexp = re.compile(regexp)
+    return cregexp.match(name) is not None
+
 def filter_names(path, files_list, mask='*.*'):
     """ Apply filename filter to short version of names. """
     all_files = [short_name(path, name) for name in files_list]
@@ -380,7 +396,7 @@ def filter_names(path, files_list, mask='*.*'):
     # hide dotfiles
     trunkmask, extmask = split_dosname(mask)
     return sorted([(t, e) for (t, e) in all_files
-        if (fnmatch(t, trunkmask) and fnmatch(e, extmask) and
+        if (match_wildcard(t, trunkmask) and match_wildcard(e, extmask) and
             (t or not e or e == '.'))])
 
 ################################
