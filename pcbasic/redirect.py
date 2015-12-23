@@ -17,7 +17,7 @@ import state
 input_closed = False
 
 # converter with DBCS lead-byte buffer for utf8 output redirection
-uniconv = unicodepage.Converter(preserve_control=True)
+uniconv = state.console_state.codepage.get_converter(preserve_control=True)
 
 # redirect i/o to file or printer
 output_echos = []
@@ -52,7 +52,8 @@ def set_input(f, encoding=None):
     else:
         # raw input means it's already in the BASIC codepage
         # but the keyboard functions use unicode
-        all_input = unicodepage.Converter(preserve_control=True).to_unicode(all_input)
+        all_input = state.console_state.codepage.str_to_unicode(
+                                            all_input, preserve_control=True)
     last = ''
     for c in all_input:
         # replace CRLF with CR

@@ -31,6 +31,7 @@ import console
 # for value_to_uint
 import vartypes
 import devices
+# to initialise state.console_state.codepage
 import unicodepage
 # to be abled to set current-device to CAS1
 import cassette
@@ -555,8 +556,8 @@ class DiskDevice(object):
 
     def _native_path_elements(self, path_without_drive, path_err, join_name=False):
         """ Return elements of the native path for a given BASIC path. """
-        path_without_drive = (unicodepage.Converter(protect_box=False)
-                                        .to_unicode(str(path_without_drive)))
+        path_without_drive = state.console_state.codepage.str_to_unicode(
+                str(path_without_drive), box_protect=False)
         if u'/' in path_without_drive:
             # bad file number - this is what GW produces here
             raise error.RunError(error.BAD_FILE_NUMBER)
@@ -916,13 +917,15 @@ class TextFile(devices.CRLFTextFileBase):
     def write_line(self, s=''):
         """ Write to file in normal or UTF-8 mode. """
         if self.utf8:
-            s = unicodepage.Converter().to_unicode(s).encode('utf-8', 'replace')
+            s = (state.console_state.codepage
+                .str_to_unicode(s).encode('utf-8', 'replace'))
         devices.CRLFTextFileBase.write(self, s + '\r\n')
 
     def write(self, s):
         """ Write to file in normal or UTF-8 mode. """
         if self.utf8:
-            s = unicodepage.Converter().to_unicode(s).encode('utf-8', 'replace')
+            s = (state.console_state.codepage
+                .str_to_unicode(s).encode('utf-8', 'replace'))
         devices.CRLFTextFileBase.write(self, s)
 
     def _read_line_universal(self):
@@ -959,7 +962,7 @@ class TextFile(devices.CRLFTextFileBase):
         else:
             s = self._read_line_universal()
         if self.utf8 and s is not None:
-            s = unicodepage.str_from_unicode(s.decode('utf-8'))
+            s = state.console_state.codepage.str_from_unicode(s.decode('utf-8'))
         return s
 
     def lock(self, start, stop, lock_list):

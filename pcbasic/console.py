@@ -12,6 +12,7 @@ import state
 import backend
 import redirect
 import error
+# to initialise state.console_state.codepage
 import unicodepage
 
 # alt+key macros for interactive mode
@@ -202,8 +203,9 @@ def wait_interactive(prompt_width):
             # wait_char returns one e-ASCII code
             d = state.console_state.keyb.get_char_block()
             # insert dbcs chars from keyboard buffer two bytes at a time
-            if (d in unicodepage.lead and
-                    state.console_state.keyb.buf.peek() in unicodepage.trail):
+            if (d in state.console_state.codepage.lead and
+                    state.console_state.keyb.buf.peek() in
+                    state.console_state.codepage.trail):
                 d += state.console_state.keyb.buf.getc()
             if not d:
                 # input stream closed

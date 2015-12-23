@@ -14,122 +14,151 @@ import logging
 import os
 import plat
 
-########################################
-# codepage loader
-
-# is the current codepage a double-byte codepage?
-dbcs = False
-
-def prepare():
-    """ Initialise unicodepage module. """
-    global box_protext
-    codepage = config.get('codepage')
-    if not codepage:
-        codepage = '437'
-    box_protect = not config.get('nobox')
-    state.console_state.codepage = codepage
-    load_codepage(codepage)
-
-def load_codepage(codepage_name):
-    """ Load codepage to Unicode table. """
-    global unicode_to_cp, cp_to_unicode
-    global lead, trail, dbcs, dbcs_num_chars, box_left, box_right
-    name = os.path.join(plat.encoding_dir, codepage_name + '.ucp')
-    # lead and trail bytes
-    lead = set()
-    trail = set()
-    box_left = [set(), set()]
-    box_right = [set(), set()]
-    cp_to_unicode = {}
-    dbcs_num_chars = 0
-    try:
-        with open(name, 'rb') as f:
-            for line in f:
-                # ignore empty lines and comment lines (first char is #)
-                if (not line) or (line[0] == '#'):
-                    continue
-                # strip off comments; split unicodepoint and hex string
-                splitline = line.split('#')[0].split(':')
-                # ignore malformed lines
-                if len(splitline) < 2:
-                    continue
-                try:
-                    # extract codepage point
-                    cp_point = splitline[0].strip().decode('hex')
-                    # allow sequence of code points separated by commas
-                    grapheme_cluster = u''.join(unichr(int('0x' + ucs_str.strip(), 16)) for ucs_str in splitline[1].split(','))
-                    # do not redefine printable ASCII, but substitute glyphs
-                    if cp_point in printable_ascii and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point)):
-                        # substitutes is in reverse order: { yen: backslash }
-                        ascii_cp = unichr(ord(cp_point))
-                        substitutes[grapheme_cluster] = ascii_cp
-                        cp_to_unicode[cp_point] = ascii_cp
-                    else:
-                        cp_to_unicode[cp_point] = grapheme_cluster
-                    # track lead and trail bytes
-                    if len(cp_point) == 2:
-                        lead.add(cp_point[0])
-                        trail.add(cp_point[1])
-                        dbcs_num_chars += 1
-                    # track box drawing chars
-                    else:
-                        for i in (0, 1):
-                            if grapheme_cluster in box_left_unicode[i]:
-                                box_left[i].add(cp_point[0])
-                            if grapheme_cluster in box_right_unicode[i]:
-                                box_right[i].add(cp_point[0])
-                except ValueError:
-                    logging.warning('Could not parse line in unicode mapping table: %s', repr(line))
-    except IOError:
-        if codepage_name == '437':
-            logging.error('Could not load unicode mapping table for codepage 437.')
-            return None
-        else:
-            logging.warning('Could not load unicode mapping table for codepage %s. Falling back to codepage 437.', codepage_name)
-            return load_codepage('437')
-    # fill up any undefined 1-byte codepoints
-    for c in range(256):
-        if chr(c) not in cp_to_unicode:
-            cp_to_unicode[chr(c)] = u'\0'
-    unicode_to_cp = dict((reversed(item) for item in cp_to_unicode.items()))
-    if dbcs_num_chars > 0:
-        dbcs = True
-    return codepage_name
-
-########################################
-# printable ASCII substitution
-
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
 # ASCII but show as the subsitute glyph. Used e.g. for YEN SIGN in Shift-JIS
 # see http://www.siao2.com/2005/09/17/469941.aspx
 printable_ascii = map(chr, range(0x20, 0x7F))
-substitutes = {}
-
-
-########################################
-# control character protection
 
 # on the terminal, these values are not shown as special graphic chars but as their normal effect
 # BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
 control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
 
 
+###############################################################################
+# initialisation
+
+def prepare():
+    """ Initialise unicodepage module. """
+    global current_codepage
+    codepage = config.get('codepage')
+    if not codepage:
+        codepage = '437'
+    state.console_state.codepage = Codepage(
+                            codepage, box_protect=not config.get('nobox'))
+
+
+###############################################################################
+# codepages
+
+class Codepage(object):
+    """ Codepage tables. """
+
+    def __init__(self, codepage_name, box_protect=True):
+        """ Load and initialise codepage tables. """
+        # is the current codepage a double-byte codepage?
+        self.dbcs = False
+        # substitutes for printable ascii
+        self.substitutes = {}
+        # load codepage (overrides the above)
+        self.load(codepage_name)
+        # protect box drawing sequences under dbcs?
+        self.box_protect = box_protect
+
+    def load(self, codepage_name):
+        """ Load codepage to Unicode table. """
+        name = os.path.join(plat.encoding_dir, codepage_name + '.ucp')
+        # lead and trail bytes
+        self.lead = set()
+        self.trail = set()
+        self.box_left = [set(), set()]
+        self.box_right = [set(), set()]
+        self.cp_to_unicode = {}
+        self.dbcs_num_chars = 0
+        try:
+            with open(name, 'rb') as f:
+                for line in f:
+                    # ignore empty lines and comment lines (first char is #)
+                    if (not line) or (line[0] == '#'):
+                        continue
+                    # strip off comments; split unicodepoint and hex string
+                    splitline = line.split('#')[0].split(':')
+                    # ignore malformed lines
+                    if len(splitline) < 2:
+                        continue
+                    try:
+                        # extract codepage point
+                        cp_point = splitline[0].strip().decode('hex')
+                        # allow sequence of code points separated by commas
+                        grapheme_cluster = u''.join(unichr(int('0x' + ucs_str.strip(), 16)) for ucs_str in splitline[1].split(','))
+                        # do not redefine printable ASCII, but substitute glyphs
+                        if cp_point in printable_ascii and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point)):
+                            # substitutes is in reverse order: { yen: backslash }
+                            ascii_cp = unichr(ord(cp_point))
+                            self.substitutes[grapheme_cluster] = ascii_cp
+                            self.cp_to_unicode[cp_point] = ascii_cp
+                        else:
+                            self.cp_to_unicode[cp_point] = grapheme_cluster
+                        # track lead and trail bytes
+                        if len(cp_point) == 2:
+                            self.lead.add(cp_point[0])
+                            self.trail.add(cp_point[1])
+                            self.dbcs_num_chars += 1
+                        # track box drawing chars
+                        else:
+                            for i in (0, 1):
+                                if grapheme_cluster in box_left_unicode[i]:
+                                    self.box_left[i].add(cp_point[0])
+                                if grapheme_cluster in box_right_unicode[i]:
+                                    self.box_right[i].add(cp_point[0])
+                    except ValueError:
+                        logging.warning('Could not parse line in unicode mapping table: %s', repr(line))
+        except IOError:
+            if codepage_name == '437':
+                logging.error('Could not load unicode mapping table for codepage 437.')
+                return None
+            else:
+                logging.warning('Could not load unicode mapping table for codepage %s. Falling back to codepage 437.', codepage_name)
+                return self.load('437')
+        # fill up any undefined 1-byte codepoints
+        for c in range(256):
+            if chr(c) not in self.cp_to_unicode:
+                self.cp_to_unicode[chr(c)] = u'\0'
+        self.unicode_to_cp = dict((reversed(item) for item in self.cp_to_unicode.items()))
+        if self.dbcs_num_chars > 0:
+            self.dbcs = True
+        return codepage_name
+
+    def connects(self, c, d, bset):
+        """ Return True if c and d connect according to box-drawing set bset. """
+        return c in self.box_right[bset] and d in self.box_left[bset]
+
+    def from_unicode(self, uc):
+        """ Convert normalised unicode grapheme cluster to codepage char sequence. """
+        # bring cluster on C normal form (combine what can be combined)
+        if len(uc) > 1:
+            uc = unicodedata.normalize('NFC', uc)
+        try:
+            # try to codepage-encode the unicode char
+            return self.unicode_to_cp[uc]
+        except KeyError:
+            # pass control sequences as ascii. this includes \r.
+            # control sequences are not in the dictionary
+            # because it holds their graphical replacement characters.
+            # ignore everything else (unicode chars not in codepage)
+            return uc.encode('ascii', errors='ignore')
+
+    def str_from_unicode(self, ucs):
+        """ Convert unicode string to codepage string. """
+        return ''.join(self.from_unicode(uc) for uc in split_graphemes(ucs))
+
+    def str_to_unicode(self, cps, preserve_control=False, box_protect=True):
+        """ Convert codepage string to unicode string. """
+        return Converter(self, preserve_control, box_protect).to_unicode(cps)
+
+    def get_converter(self, preserve_control=False, box_protect=None):
+        """ Get converter from codepage to unicode. """
+        return Converter(self, preserve_control, box_protect)
+
+
 ########################################
 # box drawing protection
-
-# protect box drawing sequences under dbcs?
-box_protect = True
 
 # left-connecting box drawing chars [ single line, double line ]
 box_left_unicode = [u'\u2500', u'\u2550']
 
 # right-connecting box drawing chars [ single line, double line ]
 box_right_unicode = [u'\u2500', u'\u2550']
-
-def connects(c, d, bset):
-    """ Return True if c and d connect according to box-drawing set bset. """
-    return c in box_right[bset] and d in box_left[bset]
 
 # left-connecting
 ## single line:
@@ -166,42 +195,19 @@ def connects(c, d, bset):
 
 
 ##################################################
-# conversion
-
-def from_unicode(uc):
-    """ Convert normalised unicode grapheme cluster to codepage char sequence. """
-    # bring cluster on C normal form (combine what can be combined)
-    if len(uc) > 1:
-        uc = unicodedata.normalize('NFC', uc)
-    try:
-        # try to codepage-encode the unicode char
-        return unicode_to_cp[uc]
-    except KeyError:
-        # pass control sequences as ascii. this includes \r.
-        # control sequences are not in the dictionary
-        # because it holds their graphical replacement characters.
-        # ignore everything else (unicode chars not in codepage)
-        return uc.encode('ascii', errors='ignore')
-
-def str_from_unicode(ucs):
-    """ Convert unicode string to codepage string. """
-    return ''.join(from_unicode(uc) for uc in split_graphemes(ucs))
-
+# conversion with box protection
 
 class Converter(object):
     """ Buffered converter to Unicode - supports DBCS and box-drawing protection. """
 
-    def __init__(self, preserve_control=False, do_dbcs=None, protect_box=None):
+    def __init__(self, codepage, preserve_control=False, box_protect=None):
         """ Initialise with empty buffer. """
+        self.cp = codepage
         self.buf = ''
         self.preserve_control = preserve_control
-        self.protect_box = protect_box
-        self.dbcs = do_dbcs
-        # set dbcs and box protection defaults according to global settings
-        if protect_box is None:
-            self.protect_box = box_protect
-        if do_dbcs is None:
-            self.dbcs = dbcs
+        # may override box protection defaults
+        self.box_protect = box_protect or self.cp.box_protect
+        self.dbcs = self.cp.dbcs
         self.bset = -1
         self.last = ''
 
@@ -211,7 +217,7 @@ class Converter(object):
             # stateless if not dbcs
             return u''.join([ (c.decode('ascii', errors='ignore')
                                 if (self.preserve_control and c in control)
-                                else cp_to_unicode[c])
+                                else self.cp.cp_to_unicode[c])
                             for c in s ])
         else:
             out = u''
@@ -223,7 +229,7 @@ class Converter(object):
                 out += self.process(c)
             # any naked lead-byte or boxable dbcs left will be printed (but don't flush buffers!)
             if self.buf:
-                out += cp_to_unicode[self.buf]
+                out += self.cp.cp_to_unicode[self.buf]
             return out
 
     def flush(self, num=None):
@@ -233,13 +239,13 @@ class Converter(object):
             num = len(self.buf)
         if self.buf:
             # can be one or two-byte sequence in self.buf
-            out = cp_to_unicode[self.buf[:num]]
+            out = self.cp.cp_to_unicode[self.buf[:num]]
         self.buf = self.buf[num:]
         return out
 
     def process(self, c):
         """ Process a single char, returning unicode char sequences when ready """
-        if not self.protect_box:
+        if not self.box_protect:
             return self.process_nobox(c)
         out = u''
         if self.preserve_control and c in control:
@@ -274,7 +280,7 @@ class Converter(object):
             out += self.flush() + c.decode('ascii', errors='ignore')
             return out
         elif self.buf:
-            if c in trail:
+            if c in self.cp.trail:
                 # add a DBCS character
                 self.buf += c
                 out += self.flush()
@@ -282,17 +288,17 @@ class Converter(object):
             else:
                 # flush buffer
                 out += self.flush()
-        if c in lead:
+        if c in self.cp.lead:
             self.buf = c
         else:
-            out += cp_to_unicode[c]
+            out += self.cp.cp_to_unicode[c]
         return out
 
     def process_case0(self, c):
         """ Process a single char with box drawing protection; case 0, starting point """
         out = u''
-        if c not in lead:
-            out += cp_to_unicode[c]
+        if c not in self.cp.lead:
+            out += self.cp.cp_to_unicode[c]
             # goes to case 0
         else:
             self.buf += c
@@ -302,12 +308,12 @@ class Converter(object):
     def process_case1(self, c):
         """ Process a single char with box drawing protection; case 1 """
         out = u''
-        if c not in trail:
-            out += self.flush() + cp_to_unicode[c]
+        if c not in self.cp.trail:
+            out += self.flush() + self.cp.cp_to_unicode[c]
             # goes to case 0
         else:
             for bset in (0, 1):
-                if connects(self.buf, c, bset):
+                if self.cp.connects(self.buf, c, bset):
                     self.bset = bset
                     self.buf += c
                     break
@@ -321,12 +327,12 @@ class Converter(object):
     def process_case2(self, c):
         """ Process a single char with box drawing protection; case 2 """
         out = u''
-        if c not in lead:
-            out += self.flush() + cp_to_unicode[c]
+        if c not in self.cp.lead:
+            out += self.flush() + self.cp.cp_to_unicode[c]
             # goes to case 0
         else:
             for bset in (0, 1):
-                if connects(self.buf[-1], c, bset):
+                if self.cp.connects(self.buf[-1], c, bset):
                     self.bset = bset
                     # take out only first byte
                     out += self.flush(1)
@@ -343,12 +349,12 @@ class Converter(object):
     def process_case3(self, c):
         """ Process a single char with box drawing protection; case 3 """
         out = u''
-        if c not in lead:
-            out += self.flush() + cp_to_unicode[c]
-        elif connects(self.buf[-1], c, self.bset):
+        if c not in self.cp.lead:
+            out += self.flush() + self.cp.cp_to_unicode[c]
+        elif self.cp.connects(self.buf[-1], c, self.bset):
             self.last = self.buf[-1]
             # output box drawing
-            out += self.flush(1) + self.flush(1) + cp_to_unicode[c]
+            out += self.flush(1) + self.flush(1) + self.cp.cp_to_unicode[c]
             # goes to case 4
         else:
             out += self.flush()
@@ -360,12 +366,12 @@ class Converter(object):
     def process_case4(self, c):
         """ Process a single char with box drawing protection; case 4, continuing box drawing """
         out = u''
-        if c not in lead:
-            out += cp_to_unicode[c]
+        if c not in self.cp.lead:
+            out += self.cp.cp_to_unicode[c]
             # goes to case 0
-        elif connects(self.last, c, self.bset):
+        elif self.cp.connects(self.last, c, self.bset):
             self.last = c
-            out += cp_to_unicode[c]
+            out += self.cp.cp_to_unicode[c]
             # goes to case 4
         else:
             self.buf += c
@@ -373,10 +379,9 @@ class Converter(object):
             # goes to case 1
         return out
 
+
 ##################################################
 # grapheme cluster boundaries
-
-
 
 # sets of code points by grapheme break property
 # http://www.unicode.org/Public/UCD/latest/ucd/auxiliary/GraphemeBreakProperty.txt
@@ -684,7 +689,7 @@ grapheme_break = {
         range(55121, 55148) + range(55149, 55176) + range(55177, 55204)),
 }
 
-def get_grapheme_break(c):
+def _get_grapheme_break(c):
     """ Get grapheme break property of unicode char. """
     for key, value in grapheme_break.iteritems():
         if ord(c) in value:
@@ -692,15 +697,15 @@ def get_grapheme_break(c):
     # no grapheme break property found
     return ''
 
-def is_grapheme_boundary(last_c, current_c):
+def _is_grapheme_boundary(last_c, current_c):
     """ Return whether a grapheme boundary occurs between two chars. """
     # see http://bugs.python.org/issue18406
     # and http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries
     # Break at the start and end of the text.
     if last_c == '' or current_c == '':
         return True
-    last = get_grapheme_break(last_c)
-    current = get_grapheme_break(current_c)
+    last = _get_grapheme_break(last_c)
+    current = _get_grapheme_break(current_c)
     # Don't break within CRLF.
     if last == 'CR' and current == 'LF':
         return False
@@ -732,7 +737,7 @@ def is_grapheme_boundary(last_c, current_c):
 def split_graphemes(ucs):
     """ Split unicode string to list of grapheme clusters. """
     # generate pairs do_break, character_after
-    split_iter = ((is_grapheme_boundary(a, b), b) for a, b in zip([''] + list(ucs), list(ucs) + ['']))
+    split_iter = ((_is_grapheme_boundary(a, b), b) for a, b in zip([''] + list(ucs), list(ucs) + ['']))
     # split string on breaks
     grapheme_list = []
     current_grapheme = u''

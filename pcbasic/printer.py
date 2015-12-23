@@ -10,6 +10,7 @@ from StringIO import StringIO
 import subprocess
 import logging
 
+import state
 import unicodepage
 import plat
 
@@ -32,7 +33,8 @@ class PrinterStream(StringIO):
             return
         self.truncate(0)
         # any naked lead bytes in DBCS will remain just that - avoid in-line flushes.
-        utf8buf = unicodepage.Converter(preserve_control=True).to_unicode(printbuf).encode('utf-8', 'replace')
+        utf8buf = state.console_state.codepage.str_to_unicode(
+                    printbuf, preserve_control=True).encode('utf-8', 'replace')
         line_print(utf8buf, self.printer_name)
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):

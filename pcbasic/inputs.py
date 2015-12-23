@@ -48,7 +48,9 @@ def prepare():
     else:
         keystring = config.get('keys').decode('string_escape').decode('utf-8')
     state.console_state.keyb = Keyboard()
-    state.console_state.keyb.buf.insert(unicodepage.str_from_unicode(keystring), check_full=False)
+    state.console_state.keyb.buf.insert(
+            state.console_state.codepage.str_from_unicode(keystring),
+            check_full=False)
     # handle caps lock only if requested
     ignore_caps = not config.get('capture-caps')
     # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
@@ -223,7 +225,8 @@ class Keyboard(object):
     def insert_chars(self, us, check_full=True):
         """ Insert eascii/unicode string into keyboard buffer. """
         self.pause = False
-        self.buf.insert(unicodepage.str_from_unicode(us), check_full)
+        self.buf.insert(state.console_state.codepage.str_from_unicode(us),
+                        check_full)
 
     def key_down(self, c, scan, mods, check_full=True):
         """ Insert a key-down event by eascii/unicode, scancode and modifiers. """
@@ -314,8 +317,9 @@ class Keyboard(object):
                 elif mod & modifier[scancode.CTRL]:
                     # ctrl + printscreen
                     redirect.toggle_echo(state.io_state.lpt1_file)
-            self.buf.insert_keypress(unicodepage.from_unicode(c), scan, mod, check_full)
-
+            self.buf.insert_keypress(
+                    state.console_state.codepage.from_unicode(c),
+                    scan, mod, check_full)
 
 
 ################

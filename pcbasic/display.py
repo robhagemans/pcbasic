@@ -82,11 +82,11 @@ def prepare():
     heights_needed -= set([9])
     # load the graphics fonts, including the 8-pixel RAM font
     # use set() for speed - lookup is O(1) rather than O(n) for list
-    chars_needed = set(unicodepage.cp_to_unicode.values())
+    chars_needed = set(state.console_state.codepage.cp_to_unicode.values())
     # break up any grapheme clusters and add components to set of needed glyphs
     chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
     fonts = typeface.load_fonts(config.get('font'), heights_needed,
-                                chars_needed, unicodepage.substitutes)
+                        chars_needed, state.console_state.codepage.substitutes)
     fonts[9] = fonts[8]
 
 def init(interface_name):
@@ -189,22 +189,23 @@ class TextPage(object):
         start, stop = ccol, ccol+1
         self.row[crow-1].double[ccol-1] = 0
         # mark out sbcs and dbcs characters
-        if unicodepage.dbcs and self.do_dbcs:
+        if state.console_state.codepage.dbcs and self.do_dbcs:
             orig_col = ccol
             # replace chars from here until necessary to update double-width chars
             therow = self.row[crow-1]
             # replacing a trail byte? take one step back
             # previous char could be a lead byte? take a step back
             if (ccol > 1 and therow.double[ccol-2] != 2 and
-                    (therow.buf[ccol-1][0] in unicodepage.trail or
-                     therow.buf[ccol-2][0] in unicodepage.lead)):
+                    (therow.buf[ccol-1][0] in state.console_state.codepage.trail or
+                     therow.buf[ccol-2][0] in state.console_state.codepage.lead)):
                 ccol -= 1
                 start -= 1
             # check all dbcs characters between here until it doesn't matter anymore
             while ccol < self.width:
                 c = therow.buf[ccol-1][0]
                 d = therow.buf[ccol][0]
-                if (c in unicodepage.lead and d in unicodepage.trail):
+                if (c in state.console_state.codepage.lead and
+                        d in state.console_state.codepage.trail):
                     if (therow.double[ccol-1] == 1 and
                             therow.double[ccol] == 2 and ccol > orig_col):
                         break
@@ -222,21 +223,21 @@ class TextPage(object):
                         (one_only and ccol > orig_col)):
                     break
             # check for box drawing
-            if unicodepage.box_protect:
+            if state.console_state.codepage.box_protect:
                 ccol = start-2
                 connecting = 0
                 bset = -1
                 while ccol < stop+2 and ccol < self.width:
                     c = therow.buf[ccol-1][0]
                     d = therow.buf[ccol][0]
-                    if bset > -1 and unicodepage.connects(c, d, bset):
+                    if bset > -1 and state.console_state.codepage.connects(c, d, bset):
                         connecting += 1
                     else:
                         connecting = 0
                         bset = -1
                     if bset == -1:
                         for b in (0, 1):
-                            if unicodepage.connects(c, d, b):
+                            if state.console_state.codepage.connects(c, d, b):
                                 bset = b
                                 connecting = 1
                     if connecting >= 2:
@@ -691,7 +692,7 @@ class Screen(object):
         # preload SBCS glyphs
         try:
             self.glyphs = {
-                chr(c): typeface.build_glyph(unicodepage.cp_to_unicode[chr(c)],
+                chr(c): typeface.build_glyph(state.console_state.codepage.cp_to_unicode[chr(c)],
                                 fonts[mode_info.font_height],
                                 mode_info.font_width, mode_info.font_height,
                                 chr(c) in carry_col_9_chars, chr(c) in carry_row_9_chars)
@@ -706,7 +707,7 @@ class Screen(object):
             # send glyphs to backend; copy is necessary
             # as dict may change here while the other thread is working on it
             backend.video_queue.put(backend.Event(backend.VIDEO_BUILD_GLYPHS,
-                    {unicodepage.cp_to_unicode[k]: v
+                    {state.console_state.codepage.cp_to_unicode[k]: v
                         for k, v in self.glyphs.iteritems()}))
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
@@ -905,7 +906,7 @@ class Screen(object):
             fore, back, blink, underline = self.split_attr(attr)
             # ensure glyph is stored
             mask = self.get_glyph(char)
-            uc = unicodepage.cp_to_unicode[char]
+            uc = state.console_state.codepage.cp_to_unicode[char]
             backend.video_queue.put(backend.Event(backend.VIDEO_PUT_GLYPH,
                     (pagenum, r, c, uc, len(char) > 1,
                                  fore, back, blink, underline, for_keys)))
@@ -1144,7 +1145,7 @@ class Screen(object):
         try:
             mask = self.glyphs[c]
         except KeyError:
-            uc = unicodepage.cp_to_unicode[c]
+            uc = state.console_state.codepage.cp_to_unicode[c]
             carry_col_9 = c in carry_col_9_chars
             carry_row_9 = c in carry_row_9_chars
             mask = typeface.build_glyph(uc, fonts[self.mode.font_height],
@@ -1153,7 +1154,7 @@ class Screen(object):
             self.glyphs[c] = mask
             if self.mode.is_text_mode:
                 backend.video_queue.put(backend.Event(backend.VIDEO_BUILD_GLYPHS,
-                    {unicodepage.cp_to_unicode[c]: mask}))
+                    {state.console_state.codepage.cp_to_unicode[c]: mask}))
         return mask
 
     if numpy:
