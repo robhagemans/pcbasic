@@ -142,6 +142,10 @@ class Codepage(object):
         """ Convert unicode string to codepage string. """
         return ''.join(self.from_unicode(uc) for uc in split_graphemes(ucs))
 
+    def to_unicode(self, cp, replace=''):
+        """ Convert codepage point to unicode grapheme cluster """
+        return self.cp_to_unicode.get(cp, replace)
+
     def str_to_unicode(self, cps, preserve_control=False, box_protect=True):
         """ Convert codepage string to unicode string. """
         return Converter(self, preserve_control, box_protect).to_unicode(cps)

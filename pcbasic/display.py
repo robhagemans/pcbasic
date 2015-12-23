@@ -691,7 +691,7 @@ class Screen(object):
         # preload SBCS glyphs
         try:
             self.glyphs = {
-                chr(c): fonts[mode_info.font_height].build_glyph(state.console_state.codepage.cp_to_unicode[chr(c)],
+                chr(c): fonts[mode_info.font_height].build_glyph(state.console_state.codepage.to_unicode(chr(c), u'\0'),
                                 mode_info.font_width, mode_info.font_height,
                                 chr(c) in carry_col_9_chars, chr(c) in carry_row_9_chars)
                 for c in range(256) }
@@ -705,7 +705,7 @@ class Screen(object):
             # send glyphs to backend; copy is necessary
             # as dict may change here while the other thread is working on it
             backend.video_queue.put(backend.Event(backend.VIDEO_BUILD_GLYPHS,
-                    {state.console_state.codepage.cp_to_unicode[k]: v
+                    {state.console_state.codepage.to_unicode(k): v
                         for k, v in self.glyphs.iteritems()}))
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
@@ -904,7 +904,7 @@ class Screen(object):
             fore, back, blink, underline = self.split_attr(attr)
             # ensure glyph is stored
             mask = self.get_glyph(char)
-            uc = state.console_state.codepage.cp_to_unicode[char]
+            uc = state.console_state.codepage.to_unicode(char, u'\0')
             backend.video_queue.put(backend.Event(backend.VIDEO_PUT_GLYPH,
                     (pagenum, r, c, uc, len(char) > 1,
                                  fore, back, blink, underline, for_keys)))
@@ -1143,7 +1143,7 @@ class Screen(object):
         try:
             mask = self.glyphs[c]
         except KeyError:
-            uc = state.console_state.codepage.cp_to_unicode[c]
+            uc = state.console_state.codepage.to_unicode(c, u'\0')
             carry_col_9 = c in carry_col_9_chars
             carry_row_9 = c in carry_row_9_chars
             mask = fonts[self.mode.font_height].build_glyph(uc,
@@ -1152,7 +1152,7 @@ class Screen(object):
             self.glyphs[c] = mask
             if self.mode.is_text_mode:
                 backend.video_queue.put(backend.Event(backend.VIDEO_BUILD_GLYPHS,
-                    {state.console_state.codepage.cp_to_unicode[c]: mask}))
+                    {state.console_state.codepage.to_unicode(c): mask}))
         return mask
 
     if numpy:
