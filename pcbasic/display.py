@@ -44,10 +44,9 @@ video_backends = {
     }
 
 # create the window icon
-icon = typeface.build_glyph('icon', {
-    'icon': '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
-    .decode('hex')}, 16, 16, False, False)
-
+icon_hex = '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
+icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}).build_glyph(
+                                                'icon', 16, 16, False, False)
 
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)
 # Many internet sources say this should be 0xC0--0xDF. However, that would
@@ -692,8 +691,7 @@ class Screen(object):
         # preload SBCS glyphs
         try:
             self.glyphs = {
-                chr(c): typeface.build_glyph(state.console_state.codepage.cp_to_unicode[chr(c)],
-                                fonts[mode_info.font_height],
+                chr(c): fonts[mode_info.font_height].build_glyph(state.console_state.codepage.cp_to_unicode[chr(c)],
                                 mode_info.font_width, mode_info.font_height,
                                 chr(c) in carry_col_9_chars, chr(c) in carry_row_9_chars)
                 for c in range(256) }
@@ -1148,7 +1146,7 @@ class Screen(object):
             uc = state.console_state.codepage.cp_to_unicode[c]
             carry_col_9 = c in carry_col_9_chars
             carry_row_9 = c in carry_row_9_chars
-            mask = typeface.build_glyph(uc, fonts[self.mode.font_height],
+            mask = fonts[self.mode.font_height].build_glyph(uc,
                                 self.mode.font_width*2, self.mode.font_height,
                                 carry_col_9, carry_row_9)
             self.glyphs[c] = mask

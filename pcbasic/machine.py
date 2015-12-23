@@ -571,7 +571,7 @@ def get_rom_memory(addr):
     char = addr // 8
     if char > 127 or char<0:
         return -1
-    return ord(display.fonts[8][
+    return ord(display.fonts[8].fontdict[
                 state.console_state.codepage.cp_to_unicode[chr(char)]][addr%8])
 
 def get_font_memory(addr):
@@ -580,7 +580,7 @@ def get_font_memory(addr):
     char = addr // 8 + 128
     if char < 128 or char > 254:
         return -1
-    return ord(display.fonts[8][
+    return ord(display.fonts[8].fontdict[
                 state.console_state.codepage.cp_to_unicode[chr(char)]][addr%8])
 
 def set_font_memory(addr, value):
@@ -590,8 +590,8 @@ def set_font_memory(addr, value):
     if char < 128 or char > 254:
         return
     uc = state.console_state.codepage.cp_to_unicode[chr(char)]
-    old = display.fonts[8][uc]
-    display.fonts[8][uc] = old[:addr%8]+chr(value)+old[addr%8+1:]
+    old = display.fonts[8].fontdict[uc]
+    display.fonts[8].fontdict[uc] = old[:addr%8]+chr(value)+old[addr%8+1:]
     state.console_state.screen.rebuild_glyph(char)
 
 #################################################################################
