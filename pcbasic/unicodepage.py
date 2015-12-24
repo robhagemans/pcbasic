@@ -20,7 +20,7 @@ dbcs = False
 
 def prepare():
     """ Initialise unicodepage module. """
-    global box_protext
+    global box_protect
     codepage = config.get('codepage')
     if not codepage:
         codepage = '437'
