@@ -9,7 +9,7 @@ To install from source, download the source distribution and unpack the TGZ arch
 The following packages are needed or recommended when installing PC-BASIC from source:
 
 | Package                                                         | OS                 | Status       | Needed for
-|-----------------------------------------------------------------|--------------------|--------------|----------------------------
+|-----------------------------------------------------------------|--------------------|--------------|----------------------------------------
 | [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all                | required     |
 | [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows            | required     |
 | [PyXDG](http://freedesktop.org/wiki/Software/pyxdg/)            | Linux, other       | required     |
@@ -22,6 +22,12 @@ The following packages are needed or recommended when installing PC-BASIC from s
 In this list, _other_ refers to operating systems other than Windows, Linux or OSX.
 
 On **Windows**, you should download all the required packages from the project web sites linked above.
+
+Download `launcher.exe` from the [ANSI|pipe release page](http://github.com/robhagemans/ansipipe/releases/) and place it in the directory where `pcbasic.py` is located.
+You can now run pc-basic with the command `launcher python pcbasic.py`. Without ANSI|pipe, PC-BASIC will run but you will
+be unable to use the text-based interfaces (options `--text` and `--cli`) as they will print only gibberish on the console.
+
+The ANSI|pipe C source is included with PC-BASIC; if you prefer this to downloading the launcher binary, you can compile it from source by running `winbuild.bat`. You will need a working C compiler (MinGW or Microsoft Visual C++) on your system.
 
 On **OSX**, there are several versions of Python 2.7 and all downloads need to match your version and CPU architecture. It's a bit tricky, I'm afraid. The easiest option seems to be installing both Python and PyGame through MacPorts or Homebrew.
 
