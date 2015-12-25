@@ -2,9 +2,11 @@
 # double-byte code points:
 #    from http://source.icu-project.org/repos/icu/data/trunk/charset/data/ucm/windows-936-2000.ucm
 #    these are a superset of http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP936.TXT
-# single-byte code points: #
+# single-byte code points:
 #    same as codepage 437; used as fallback where these are undefined in Windows-936.
-#    except code point 80 which is 20AC EURO SIGN as in Windows-936
+#    except:
+#    - code point 80 is U+20AC EURO SIGN as in Windows-936
+#    - code point FF's mapping to U+F8F5 in private use area has been removed
 #
 00:0000
 01:263a
@@ -24204,4 +24206,4 @@ fefb:e4c2
 fefc:e4c3
 fefd:e4c4
 fefe:e4c5
-ff:f8f5
+#ff:f8f5
