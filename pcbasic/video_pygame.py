@@ -525,7 +525,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.canvas[self.apagenum].set_clip(None)
         self.screen_changed = True
 
-    def put_glyph(self, pagenum, row, col, c, dbcs, fore, back, blink, underline, for_keys):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
         """ Put a single-byte character at a given position. """
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
@@ -533,19 +533,19 @@ class VideoPygame(video_graphical.VideoGraphical):
         color = (0, 0, fore + self.num_fore_attrs*back + 128*blink)
         bg = (0, 0, back)
         x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
-        if c == u'\0':
+        if cp == '\0':
             # guaranteed to be blank, saves time on some BLOADs
             self.canvas[pagenum].fill(bg,
                                     (x0, y0, self.font_width, self.font_height))
         else:
             try:
-                glyph = self.glyph_dict[c]
+                glyph = self.glyph_dict[cp]
             except KeyError:
-                if u'\0' not in self.glyph_dict:
+                if '\0' not in self.glyph_dict:
                     logging.error('No glyph received for code point 0')
                     return
-                logging.warning('No glyph received for code point %s', repr(c))
-                glyph = self.glyph_dict[u'\0']
+                logging.warning('No glyph received for code point %s', cp.encode('hex'))
+                glyph = self.glyph_dict['\0']
             if glyph.get_palette_at(0) != bg:
                 glyph.set_palette_at(0, bg)
             if glyph.get_palette_at(1) != color:

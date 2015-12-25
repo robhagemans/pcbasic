@@ -705,8 +705,7 @@ class Screen(object):
             # send glyphs to backend; copy is necessary
             # as dict may change here while the other thread is working on it
             backend.video_queue.put(backend.Event(backend.VIDEO_BUILD_GLYPHS,
-                    {state.console_state.codepage.to_unicode(k): v
-                        for k, v in self.glyphs.iteritems()}))
+                                                                self.glyphs))
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
                 self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
@@ -904,9 +903,8 @@ class Screen(object):
             fore, back, blink, underline = self.split_attr(attr)
             # ensure glyph is stored
             mask = self.get_glyph(char)
-            uc = state.console_state.codepage.to_unicode(char, u'\0')
             backend.video_queue.put(backend.Event(backend.VIDEO_PUT_GLYPH,
-                    (pagenum, r, c, uc, len(char) > 1,
+                    (pagenum, r, c, char, len(char) > 1,
                                  fore, back, blink, underline, for_keys)))
             if not self.mode.is_text_mode and not text_only:
                 # update pixel buffer
@@ -951,7 +949,7 @@ class Screen(object):
             self.apage.row[cy].buf[cx] = (' ', self.attr)
         fore, back, blink, underline = self.split_attr(self.attr)
         backend.video_queue.put(backend.Event(backend.VIDEO_PUT_GLYPH,
-                (self.apagenum, cy+1, cx+1, u' ', False,
+                (self.apagenum, cy+1, cx+1, ' ', False,
                              fore, back, blink, underline, True)))
 
     #MOVE to TextBuffer? replace with graphics_to_text_loc v.v.?
@@ -1096,7 +1094,7 @@ class Screen(object):
                 r += 1
                 c = 1
         full += state.console_state.codepage.str_to_unicode(clip)
-        return full
+        return full.replace(u'\0', u' ')
 
 
     ## graphics primitives
@@ -1176,7 +1174,7 @@ class Screen(object):
             self.glyphs[c] = mask
             if self.mode.is_text_mode:
                 backend.video_queue.put(backend.Event(backend.VIDEO_BUILD_GLYPHS,
-                    {state.console_state.codepage.to_unicode(c): mask}))
+                    {c: mask}))
         return mask
 
     if numpy:

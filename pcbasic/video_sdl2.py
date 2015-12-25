@@ -619,7 +619,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         pixels[x0:x1, old_y0:new_y0] = numpy.zeros((x1-x0, new_y0-old_y0))
         self.screen_changed = True
 
-    def put_glyph(self, pagenum, row, col, c, dbcs, fore, back, blink, underline, for_keys):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
         """ Put a character at a given position. """
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
@@ -629,11 +629,11 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # NOTE: in pygame plugin we used a surface fill for the NUL character
         # which was an optimisation early on -- consider if we need speedup.
         try:
-            glyph = self.glyph_dict[c]
+            glyph = self.glyph_dict[cp]
         except KeyError:
-            logging.warning('No glyph received for code point %x', ord(c))
+            logging.warning('No glyph received for code point %s', cp.encode('hex'))
             try:
-                glyph = self.glyph_dict[u'\0']
+                glyph = self.glyph_dict['\0']
             except KeyError:
                 logging.error('No glyph received for code point 0')
                 return
