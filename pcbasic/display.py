@@ -123,7 +123,8 @@ def init_video_plugin(interface_name):
                     copy_paste=config.get('copy-paste'),
                     pen=config.get('pen'),
                     icon=icon,
-                    initial_mode=state.console_state.screen.mode):
+                    initial_mode=state.console_state.screen.mode,
+                    codepage=state.console_state.codepage):
                 return interface_name
             logging.debug('Could not initialise %s plugin.', video_name)
         if fallback:
