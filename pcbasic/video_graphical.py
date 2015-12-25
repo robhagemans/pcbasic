@@ -132,7 +132,7 @@ class VideoGraphical(video.VideoPlugin):
 class ClipboardInterface(object):
     """ Clipboard user interface. """
 
-    def __init__(self, videoplugin, width, height, handler):
+    def __init__(self, videoplugin, width, height):
         """ Initialise clipboard feedback handler. """
         self._active = False
         self.select_start = None
@@ -144,7 +144,6 @@ class ClipboardInterface(object):
         self.font_height = videoplugin.font_height
         self.size = videoplugin.size
         self.videoplugin = videoplugin
-        self.clipboard_handler = handler
 
     def active(self):
         """ True if clipboard mode is active. """
@@ -174,17 +173,12 @@ class ClipboardInterface(object):
             return
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        text_rows = self.videoplugin.text[self.videoplugin.vpagenum][start[0]-1:stop[0]]
-        text_rows[0] = text_rows[0][start[1]-1:]
-        if stop[1] < self.width:
-            text_rows[-1] = text_rows[-1][:stop[1]-self.width-1]
-        text = u'\n'.join(u''.join(row) for row in text_rows)
-        self.clipboard_handler.copy(text, mouse)
+        backend.input_queue.put(backend.Event(backend.CLIP_COPY,
+                (start[0], start[1], stop[0], stop[1], mouse)))
 
     def paste(self, mouse=False):
         """ Paste from clipboard into keyboard buffer. """
-        text = self.clipboard_handler.paste(mouse)
-        backend.input_queue.put(backend.Event(backend.CLIP_PASTE, text))
+        backend.input_queue.put(backend.Event(backend.CLIP_PASTE, (mouse,)))
 
     def move(self, r, c):
         """ Move the head of the selection and update feedback. """

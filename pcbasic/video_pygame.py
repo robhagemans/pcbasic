@@ -149,6 +149,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         if not self.altgr:
             key_to_scan[pygame.K_RALT] = scancode.ALT
             mod_to_scan[pygame.KMOD_RALT] = scancode.ALT
+        backend.clipboard_handler = get_clipboard_handler()
 
     def close(self):
         """ Close the pygame interface. """
@@ -429,7 +430,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             self.canvas[i].set_palette(self.work_palette)
         # initialise clipboard
         self.clipboard = video_graphical.ClipboardInterface(self,
-                mode_info.width, mode_info.height, get_clipboard_handler())
+                mode_info.width, mode_info.height)
         self.screen_changed = True
 
     def set_caption_message(self, msg):

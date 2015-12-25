@@ -30,7 +30,7 @@ class Clipboard(object):
 
     def paste(self, mouse=False):
         """ Return unicode text from clipboard. """
-        return ''
+        return u''
 
 
 class MacClipboard(Clipboard):

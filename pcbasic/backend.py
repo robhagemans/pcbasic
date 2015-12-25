@@ -14,14 +14,15 @@ import state
 import timedate
 import scancode
 import error
-
+import clipboard
 
 video_queue = Queue.Queue()
 input_queue = Queue.Queue()
 # audio queues
 message_queue = Queue.Queue()
 tone_queue = None
-
+# clipboard handler, to be overridden by input backend
+clipboard_handler = clipboard.Clipboard()
 
 class PersistentQueue(Queue.Queue):
     """ Simple picklable Queue. """
@@ -122,6 +123,7 @@ STICK_DOWN = 201
 STICK_UP = 202
 STICK_MOVED = 203
 # clipboard events
+CLIP_COPY = 254
 CLIP_PASTE = 255
 
 
@@ -217,8 +219,11 @@ def check_input():
         elif signal.event_type == STICK_MOVED:
             state.console_state.stick.moved(*signal.params)
         elif signal.event_type == CLIP_PASTE:
-            # params is a unicode string
-            state.console_state.keyb.insert_chars(signal.params, check_full=False)
+            text = clipboard_handler.paste(*signal.params)
+            state.console_state.keyb.insert_chars(text, check_full=False)
+        elif signal.event_type == CLIP_COPY:
+            text = state.console_state.screen.get_text(*(signal.params[:4]))
+            clipboard_handler.copy(text, signal.params[-1])
 
 
 ###############################################################################

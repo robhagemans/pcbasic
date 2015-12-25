@@ -1075,6 +1075,30 @@ class Screen(object):
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
         del self.apage.row[state.console_state.scroll_height-1]
 
+    def get_text(self, start_row, start_col, stop_row, stop_col):
+        """ Retrieve unicode text for copying. """
+        r, c = start_row, start_col
+        full = ''
+        clip = ''
+        if self.vpage.row[r-1].double[c-1] == 2:
+            # include lead byte
+            c -= 1
+        if self.vpage.row[stop_row-1].double[stop_col-1] == 1:
+            # include trail byte
+            stop_col += 1
+        while r < stop_row or (r == stop_row and c <= stop_col):
+            clip += self.vpage.row[r-1].buf[c-1][0]
+            c += 1
+            if c > self.mode.width:
+                if not self.vpage.row[r-1].wrap:
+                    full += state.console_state.codepage.str_to_unicode(clip) + '\r\n'
+                    clip = ''
+                r += 1
+                c = 1
+        full += state.console_state.codepage.str_to_unicode(clip)
+        return full
+
+
     ## graphics primitives
 
     def put_pixel(self, x, y, index, pagenum=None):

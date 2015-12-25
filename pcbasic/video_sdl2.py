@@ -93,6 +93,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         """ Complete SDL2 interface initialisation. """
         # initialise SDL
         sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING)
+        # set clipboard handler to SDL2
+        backend.clipboard_handler = SDL2Clipboard()
         # display palettes for blink states 0, 1
         self.show_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         # get physical screen dimensions (needs to be called before set_mode)
@@ -529,7 +531,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         sdl2.SDL_SetSurfaceBlendMode(self.overlay, sdl2.SDL_BLENDMODE_ADD)
         # initialise clipboard
         self.clipboard = video_graphical.ClipboardInterface(self,
-                mode_info.width, mode_info.height, SDL2Clipboard())
+                mode_info.width, mode_info.height)
         self.screen_changed = True
 
     def set_caption_message(self, msg):
