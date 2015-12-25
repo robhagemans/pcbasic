@@ -102,6 +102,8 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
                 ins.read(1) # for positioning of cursor in edit gadget
             # always 22 here now that the bracket is taken out?
             raise error.RunError(error.STX if d in (')', ']') else empty_err)
+    if None in units:
+        raise error.RunError(error.STX)
     if len(units) <= len(operators):
         if d in (')', ']'):
             ins.read(1)
