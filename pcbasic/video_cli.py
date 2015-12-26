@@ -69,7 +69,7 @@ class VideoCLI(video.VideoPlugin):
         """ Initialise command-line interface. """
         if not plat.stdin_is_tty:
             logging.warning('Input device is not a terminal. '
-                            'Could not initialise CLI interface.')
+                            'Could not initialise text-based interface.')
             raise video.InitFailed()
         video.VideoPlugin.__init__(self)
         term_echo(False)
@@ -88,6 +88,12 @@ class VideoCLI(video.VideoPlugin):
         self.vpagenum, self.apagenum = 0, 0
         self.text = [[[u' ']*80 for _ in range(25)]]
         self.f12_active = False
+        # set codepage
+        try:
+            self.codepage = kwargs['codepage']
+        except KeyError:
+            logging.error('No codepage supplied to text-based interface.')
+            raise video.InitFailed()
 
     def close(self):
         """ Close command-line interface. """
@@ -127,10 +133,13 @@ class VideoCLI(video.VideoPlugin):
 
     ###############################################################################
 
-    def put_glyph(self, pagenum, row, col, char, dbcs, fore, back, blink, underline, for_keys):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
         """ Put a character at a given position. """
+        char = self.codepage.to_unicode(cp, replace=u' ')
+        if char == u'\0':
+            char = u' '
         self.text[pagenum][row-1][col-1] = char
-        if dbcs:
+        if is_fullwidth:
             self.text[pagenum][row-1][col] = u''
         if self.vpagenum != pagenum:
             return
@@ -139,7 +148,7 @@ class VideoCLI(video.VideoPlugin):
         self._update_position(row, col)
         sys.stdout.write(char.encode(encoding, 'replace'))
         sys.stdout.flush()
-        self.last_col += 2 if dbcs else 1
+        self.last_col += 2 if is_fullwidth else 1
 
     def move_cursor(self, crow, ccol):
         """ Move the cursor to a new position. """

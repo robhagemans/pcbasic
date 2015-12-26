@@ -93,6 +93,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         """ Complete SDL2 interface initialisation. """
         # initialise SDL
         sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING)
+        # set clipboard handler to SDL2
+        backend.clipboard_handler = SDL2Clipboard()
         # display palettes for blink states 0, 1
         self.show_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         # get physical screen dimensions (needs to be called before set_mode)
@@ -490,9 +492,6 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.glyph_dict = {u'\0': numpy.zeros((self.font_width, self.font_height))}
         self.num_pages = mode_info.num_pages
         self.mode_has_blink = mode_info.has_blink
-        self.text = [[[u' ']*mode_info.width
-                        for _ in range(mode_info.height)]
-                        for _ in range(self.num_pages)]
         self.mode_has_artifacts = False
         if not self.text_mode:
             self.bitsperpixel = mode_info.bitsperpixel
@@ -529,7 +528,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         sdl2.SDL_SetSurfaceBlendMode(self.overlay, sdl2.SDL_BLENDMODE_ADD)
         # initialise clipboard
         self.clipboard = video_graphical.ClipboardInterface(self,
-                mode_info.width, mode_info.height, SDL2Clipboard())
+                mode_info.width, mode_info.height)
         self.screen_changed = True
 
     def set_caption_message(self, msg):
@@ -567,8 +566,6 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def clear_rows(self, back_attr, start, stop):
         """ Clear a range of screen rows. """
-        self.text[self.apagenum][start-1:stop] = [
-            [u' ']*len(self.text[self.apagenum][0]) for _ in range(start-1, stop)]
         scroll_area = sdl2.SDL_Rect(
                 0, (start-1)*self.font_height,
                 self.size[0], (stop-start+1)*self.font_height)
@@ -582,7 +579,6 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def copy_page(self, src, dst):
         """ Copy source to destination page. """
-        self.text[dst] = [row[:] for row in self.text[src]]
         self.pixels[dst][:] = self.pixels[src][:]
         # alternative:
         # sdl2.SDL_BlitSurface(self.canvas[src], None, self.canvas[dst], None)
@@ -603,9 +599,6 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """ Scroll the screen up between from_line and scroll_height. """
-        self.text[self.apagenum][from_line-1:scroll_height] = (
-                self.text[self.apagenum][from_line:scroll_height]
-                + [[u' ']*len(self.text[self.apagenum][0])])
         pixels = self.pixels[self.apagenum]
         # these are exclusive ranges [x0, x1) etc
         x0, x1 = 0, self.size[0]
@@ -617,9 +610,6 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """ Scroll the screen down between from_line and scroll_height. """
-        self.text[self.apagenum][from_line-1:scroll_height] = (
-                [[u' ']*len(self.text[self.apagenum][0])] +
-                self.text[self.apagenum][from_line-1:scroll_height-1])
         pixels = self.pixels[self.apagenum]
         # these are exclusive ranges [x0, x1) etc
         x0, x1 = 0, self.size[0]
@@ -629,11 +619,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
         pixels[x0:x1, old_y0:new_y0] = numpy.zeros((x1-x0, new_y0-old_y0))
         self.screen_changed = True
 
-    def put_glyph(self, pagenum, row, col, c, dbcs, fore, back, blink, underline, for_keys):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
         """ Put a character at a given position. """
-        self.text[pagenum][row-1][col-1] = c
-        if dbcs:
-            self.text[pagenum][row-1][col] = u''
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
@@ -642,11 +629,11 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # NOTE: in pygame plugin we used a surface fill for the NUL character
         # which was an optimisation early on -- consider if we need speedup.
         try:
-            glyph = self.glyph_dict[c]
+            glyph = self.glyph_dict[cp]
         except KeyError:
-            logging.warning('No glyph received for code point %x', ord(c))
+            logging.warning('No glyph received for code point %s', cp.encode('hex'))
             try:
-                glyph = self.glyph_dict[u'\0']
+                glyph = self.glyph_dict['\0']
             except KeyError:
                 logging.error('No glyph received for code point 0')
                 return

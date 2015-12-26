@@ -149,6 +149,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         if not self.altgr:
             key_to_scan[pygame.K_RALT] = scancode.ALT
             mod_to_scan[pygame.KMOD_RALT] = scancode.ALT
+        backend.clipboard_handler = get_clipboard_handler()
 
     def close(self):
         """ Close the pygame interface. """
@@ -408,9 +409,6 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.font_width = mode_info.font_width
         self.num_pages = mode_info.num_pages
         self.mode_has_blink = mode_info.has_blink
-        self.text = [[[u' ']*mode_info.width
-                        for _ in range(mode_info.height)]
-                        for _ in range(self.num_pages)]
         self.mode_has_artifacts = False
         if not self.text_mode:
             self.bitsperpixel = mode_info.bitsperpixel
@@ -429,7 +427,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             self.canvas[i].set_palette(self.work_palette)
         # initialise clipboard
         self.clipboard = video_graphical.ClipboardInterface(self,
-                mode_info.width, mode_info.height, get_clipboard_handler())
+                mode_info.width, mode_info.height)
         self.screen_changed = True
 
     def set_caption_message(self, msg):
@@ -465,8 +463,6 @@ class VideoPygame(video_graphical.VideoGraphical):
 
     def clear_rows(self, back_attr, start, stop):
         """ Clear a range of screen rows. """
-        self.text[self.apagenum][start-1:stop] = [
-            [u' ']*len(self.text[self.apagenum][0]) for _ in range(start-1, stop)]
         bg = (0, 0, back_attr)
         scroll_area = pygame.Rect(0, (start-1)*self.font_height,
                                   self.size[0], (stop-start+1)*self.font_height)
@@ -480,7 +476,6 @@ class VideoPygame(video_graphical.VideoGraphical):
 
     def copy_page(self, src, dst):
         """ Copy source to destination page. """
-        self.text[dst] = [row[:] for row in self.text[src]]
         self.canvas[dst].blit(self.canvas[src], (0, 0))
         self.screen_changed = True
 
@@ -501,9 +496,6 @@ class VideoPygame(video_graphical.VideoGraphical):
 
     def scroll_up(self, from_line, scroll_height, back_attr):
         """ Scroll the screen up between from_line and scroll_height. """
-        self.text[self.apagenum][from_line-1:scroll_height] = (
-                self.text[self.apagenum][from_line:scroll_height]
-                + [[u' ']*len(self.text[self.apagenum][0])])
         temp_scroll_area = pygame.Rect(
                 0, (from_line-1)*self.font_height,
                 self.size[0], (scroll_height-from_line+1) * self.font_height)
@@ -520,9 +512,6 @@ class VideoPygame(video_graphical.VideoGraphical):
 
     def scroll_down(self, from_line, scroll_height, back_attr):
         """ Scroll the screen down between from_line and scroll_height. """
-        self.text[self.apagenum][from_line-1:scroll_height] = (
-                [[u' ']*len(self.text[self.apagenum][0])] +
-                self.text[self.apagenum][from_line-1:scroll_height-1])
         temp_scroll_area = pygame.Rect(
                 0, (from_line-1) * self.font_height,
                 self.size[0], (scroll_height-from_line+1) * self.font_height)
@@ -536,30 +525,27 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.canvas[self.apagenum].set_clip(None)
         self.screen_changed = True
 
-    def put_glyph(self, pagenum, row, col, c, dbcs, fore, back, blink, underline, for_keys):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
         """ Put a single-byte character at a given position. """
-        self.text[pagenum][row-1][col-1] = c
-        if dbcs:
-            self.text[pagenum][row-1][col] = u''
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
         color = (0, 0, fore + self.num_fore_attrs*back + 128*blink)
         bg = (0, 0, back)
         x0, y0 = (col-1)*self.font_width, (row-1)*self.font_height
-        if c == u'\0':
+        if cp == '\0':
             # guaranteed to be blank, saves time on some BLOADs
             self.canvas[pagenum].fill(bg,
                                     (x0, y0, self.font_width, self.font_height))
         else:
             try:
-                glyph = self.glyph_dict[c]
+                glyph = self.glyph_dict[cp]
             except KeyError:
-                if u'\0' not in self.glyph_dict:
+                if '\0' not in self.glyph_dict:
                     logging.error('No glyph received for code point 0')
                     return
-                logging.warning('No glyph received for code point %s', repr(c))
-                glyph = self.glyph_dict[u'\0']
+                logging.warning('No glyph received for code point %s', cp.encode('hex'))
+                glyph = self.glyph_dict['\0']
             if glyph.get_palette_at(0) != bg:
                 glyph.set_palette_at(0, bg)
             if glyph.get_palette_at(1) != color:

@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3.
 
 import sys
 import os
+import logging
 try:
     import curses
 except ImportError:
@@ -123,6 +124,13 @@ class VideoCurses(video.VideoPlugin):
         self.text = [[[(u' ', bgcolor)]*self.width for _ in range(self.height)]]
         self.f12_active = False
         self.set_border_attr(0)
+        # set codepage
+        try:
+            self.codepage = kwargs['codepage']
+        except KeyError:
+            logging.error('No codepage supplied to text-based interface.')
+            raise video.InitFailed()
+
 
     def close(self):
         """ Close the text interface. """
@@ -356,8 +364,9 @@ class VideoCurses(video.VideoPlugin):
             self.cursor_shape = 1
         curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
 
-    def put_glyph(self, pagenum, row, col, c, dbcs, fore, back, blink, underline, for_keys):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
         """ Put a character at a given position. """
+        c = self.codepage.to_unicode(cp, replace=u' ')
         if c == u'\0':
             c = u' '
         colour = self._curses_colour(fore, back, blink)

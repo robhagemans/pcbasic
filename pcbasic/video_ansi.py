@@ -181,10 +181,13 @@ class VideoANSI(video_cli.VideoCLI):
             #sys.stdout.write(ansi.esc_set_cursor_shape % cursor_shape)
             sys.stdout.flush()
 
-    def put_glyph(self, pagenum, row, col, char, dbcs, fore, back, blink, underline, for_keys):
+    def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
         """ Put a character at a given position. """
+        char = self.codepage.to_unicode(cp, replace=u' ')
+        if char == u'\0':
+            char = u' '
         self.text[pagenum][row-1][col-1] = char, (fore, back, blink, underline)
-        if dbcs:
+        if is_fullwidth:
             self.text[pagenum][row-1][col] = u'', (fore, back, blink, underline)
         if self.vpagenum != pagenum:
             return
@@ -193,7 +196,7 @@ class VideoANSI(video_cli.VideoCLI):
             self.last_attributes = fore, back, blink, underline
             self._set_attributes(fore, back, blink, underline)
         sys.stdout.write(char.encode(encoding, 'replace'))
-        if dbcs:
+        if is_fullwidth:
             sys.stdout.write(' ')
         sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
         self.last_pos = (self.cursor_row, self.cursor_col)

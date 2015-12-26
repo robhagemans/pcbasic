@@ -221,7 +221,7 @@ class Converter(object):
             # stateless if not dbcs
             return u''.join([ (c.decode('ascii', errors='ignore')
                                 if (self.preserve_control and c in control)
-                                else self.cp.cp_to_unicode[c])
+                                else self.cp.to_unicode(c))
                             for c in s ])
         else:
             out = u''
@@ -233,7 +233,7 @@ class Converter(object):
                 out += self.process(c)
             # any naked lead-byte or boxable dbcs left will be printed (but don't flush buffers!)
             if self.buf:
-                out += self.cp.cp_to_unicode[self.buf]
+                out += self.cp.to_unicode(self.buf)
             return out
 
     def flush(self, num=None):
@@ -243,7 +243,7 @@ class Converter(object):
             num = len(self.buf)
         if self.buf:
             # can be one or two-byte sequence in self.buf
-            out = self.cp.cp_to_unicode[self.buf[:num]]
+            out = self.cp.to_unicode(self.buf[:num])
         self.buf = self.buf[num:]
         return out
 
@@ -295,14 +295,14 @@ class Converter(object):
         if c in self.cp.lead:
             self.buf = c
         else:
-            out += self.cp.cp_to_unicode[c]
+            out += self.cp.to_unicode(c)
         return out
 
     def process_case0(self, c):
         """ Process a single char with box drawing protection; case 0, starting point """
         out = u''
         if c not in self.cp.lead:
-            out += self.cp.cp_to_unicode[c]
+            out += self.cp.to_unicode(c)
             # goes to case 0
         else:
             self.buf += c
@@ -313,7 +313,7 @@ class Converter(object):
         """ Process a single char with box drawing protection; case 1 """
         out = u''
         if c not in self.cp.trail:
-            out += self.flush() + self.cp.cp_to_unicode[c]
+            out += self.flush() + self.cp.to_unicode(c)
             # goes to case 0
         else:
             for bset in (0, 1):
@@ -332,7 +332,7 @@ class Converter(object):
         """ Process a single char with box drawing protection; case 2 """
         out = u''
         if c not in self.cp.lead:
-            out += self.flush() + self.cp.cp_to_unicode[c]
+            out += self.flush() + self.cp.to_unicode(c)
             # goes to case 0
         else:
             for bset in (0, 1):
@@ -354,11 +354,11 @@ class Converter(object):
         """ Process a single char with box drawing protection; case 3 """
         out = u''
         if c not in self.cp.lead:
-            out += self.flush() + self.cp.cp_to_unicode[c]
+            out += self.flush() + self.cp.to_unicode(c)
         elif self.cp.connects(self.buf[-1], c, self.bset):
             self.last = self.buf[-1]
             # output box drawing
-            out += self.flush(1) + self.flush(1) + self.cp.cp_to_unicode[c]
+            out += self.flush(1) + self.flush(1) + self.cp.to_unicode(c)
             # goes to case 4
         else:
             out += self.flush()
@@ -371,11 +371,11 @@ class Converter(object):
         """ Process a single char with box drawing protection; case 4, continuing box drawing """
         out = u''
         if c not in self.cp.lead:
-            out += self.cp.cp_to_unicode[c]
+            out += self.cp.to_unicode(c)
             # goes to case 0
         elif self.cp.connects(self.last, c, self.bset):
             self.last = c
-            out += self.cp.cp_to_unicode[c]
+            out += self.cp.to_unicode(c)
             # goes to case 4
         else:
             self.buf += c
