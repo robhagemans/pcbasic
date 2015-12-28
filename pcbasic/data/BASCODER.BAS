@@ -168,14 +168,13 @@
 651   DEF SEG = &HF000
 652   O.HO% = PMAP(HO, 0): O.VE% = PMAP(VE, 1)
 655   WINDOW
-657   LINE (O.HO%, O.VE%)-(O.HO% + 8*LEN(A$)-1, O.VE%+7), 0, BF
+657   'LINE (O.HO%, O.VE%)-(O.HO% + 8*LEN(SR$)-1, O.VE%+7), CC[1-CN]+8, BF
 660   FOR O.P% = 1 TO LEN(SR$)
 662       O.C$ = MID$(SR$, O.P%, 1)
 665       FOR O.I% = 0 TO 7
 667           IF ASC(O.C$) > 127 THEN O.V = 0 ELSE O.V = PEEK(&HFA6E+8*ASC(O.C$)+O.I%)*256
 670           IF O.V > 32767 THEN O.V = O.V-65536!
-671           'LINE (O.HO%+7+8*(O.P%-1), O.VE%+O.I%) - (O.HO%+8*(O.P%-1), O.VE%+O.I%), 0
-672           LINE (O.HO%+7+8*(O.P%-1), O.VE%+O.I%) - (O.HO%+8*(O.P%-1), O.VE%+O.I%), CC[0]+8,, O.V
+672           LINE (O.HO%+7+8*(O.P%-1), O.VE%+O.I%) - (O.HO%+8*(O.P%-1), O.VE%+O.I%), CC[CN]+8,, O.V
 675       NEXT
 677   NEXT
 680   WINDOW SCREEN (0, 0) - (1, 1)
