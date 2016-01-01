@@ -1108,57 +1108,42 @@ class WAVBitStream(TapeBitStream):
 
 ##############################################################################
 
+# Prof. Dr. rer. nat. habil. HORST VOELZ, Datenaustausch mit Basicode
+# Radio Fernsehen Elektronik 1/1990
+# http://www.kc85emu.de/scans/rfe0190/Basicode.htm
 
-# http://en.wikipedia.org/wiki/BASICODE
-# A data block begins with the character 02 (STX, start of text), and ends with
-# the character 03 (ETX, end of text). After ETX, a check byte made up of the
-# previous bytes including STX and ETX by binary addition (XOR), is transmitted.
-# A 0D character (decimal 13) marks the end of a line during transmission.
-# Data files created by programs are able to use all characters as data and
-# must contain no control characters. They are read and written in blocks
-# of 1024 bytes.
-
-# Each byte is transmitted in the sequence "1 start bit - 8 data bits - 2 stop
-# bits". The data bits are little-endian ordered. The resulting redundancy is
-# intended for maximising compatibility with different computers. Bit 7 is
-# always 0, which is especially useful when transmitting ASCII characters,
-# because these always have bit 7 set to 0.
-
-# For the audio signals, square waves in the form of a 1200 Hz wave for a "0"
-# bit and two 2400 Hz waves for a "1" bit are used, resulting in a time of
-# 1/1200 seconds for each bit. A pause longer than 1/1800 seconds between
-# waves marks the beginning of a byte, making the following wave the start
-# bit. After the start bit and before the eight data bits is another pause of
-# at least 1/1800 seconds. A 2400 Hz signal with a length of five seconds
-# marks the beginning of a transmission and is used for synchronization of
-# the reading program. At the end of the transmission, a 2400 Hz signal with
-# a length of one second is sent.
-
-
-# NOTE
-# In actual recordings I find no 1/1800s pauses.
-# Start and stop bits are 1. Bit 7 is inverted, hence 1 for ASCII chars.
-
-
-# http://www.nostalgia8.nl/basicode.htm
-# Het Basicode Protocol:
-# 1200 baud / 8 data bit / 2 stop bit
-
-#     Aanlooptoon
-#     Startbyte ASCII 130 (10000010)
-#     BASIC informatie
-#     (Bit nummer 7 is bij Basicode altijd 1 in plaats van de eigenlijke 0)
-#     Stopbyte ASCII 131 (10000011)
-#     Checksum byte
-#     Uitlooptoon
-
-# De data in een Basicode file bestaat uit de 'schone' ASCII  karakters van
-# Hex 20 (31 decimaal)  t/m Hex 7E (126 decimaal). De tekstregels worden
-# afgesloten met Hex 0D (13 decimaal = ASCII code carriage return).
-
-# Bij de omvorming naar AUDIO signalen wordt bit 7 (normaal 0) veranderd in
-# een 1 (geinverteerd).
-
+# BITS:
+# 0 - 1 period  at 1200 Hz
+# 1 - 2 periods at 2400 Hz
+#
+# BYTES:
+# 1 start bit
+# 2 stop bits
+# bit 7 (most significant bit) is inverted and therefore always 1 for ASCII
+# least significant bit is sent first
+#
+# PROGRAM FILES:
+# - synchronising tone: 5s at 2400 Hz
+# - start byte 0x82 (i.e., 0x02 STX because of the inverted bit 7)
+# - ASCII text; only 0x20 -- 0x7e inclusive with lines separated by 0x0D
+# - stop byte 0x83 (i.e, 0x03 ETX)
+# - checksum byte; XOR of all previous bytes including STX and ETX
+# - 1s at 2400 Hz
+#
+# DATA FILES:
+# All code points 0x00 - 0xFF allowed
+# sent in blocks of 1024 bytes
+# each block:
+# - synch tone: 5s of 2400 Hz
+# - start byte 0x81 (i.e., 0x01 STH)
+# - block number; first is 0x80 (i.e., 0x00) incremented by 1 for each consecutive block
+# - 1024 data bytes with inverted bit 7
+# - stop byte 0x83 (i.e., 0x02, ETX)
+# - checksum byte: XOR of previous 1027 bytes
+# - 1s at 2400 Hz
+# if the final block is shorter than 1024 bytes, then the unused space is filled
+# with 0x84 (i.e., 0x04 EOT). These bytes are included in the checksum.
+# the checksum of a data file always has a 1 in bit 7 due to its structure
 
 
 class BasicodeWAVBitStream(WAVBitStream):
