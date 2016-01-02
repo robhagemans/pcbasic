@@ -475,7 +475,8 @@ def build_default_config_file(file_name):
     "# options for that preset and not the system ones. This is not recommended.\n")
     argnames = sorted(arguments.keys())
     try:
-        with open(file_name, 'w') as f:
+        # use utf_8_sig to ignore a BOM if it's at the start of the file (e.g. created by Notepad)
+        with codecs.open(file_name, 'w', 'utf_8_sig') as f:
             f.write(header)
             for a in argnames:
                 try:
