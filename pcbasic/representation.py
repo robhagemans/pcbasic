@@ -533,10 +533,7 @@ def parse_value(ins):
 def str_to_value_keep(strval, allow_nonnum=True):
     """ Convert BASIC string to BASIC value (VAL). """
     if strval == ('$', ''):
-        if allow_nonnum:
-            return vartypes.null['%']
-        else:
-            return None
+        return vartypes.null['%']
     strval = str(vartypes.pass_string_unpack(strval))
     ins = StringIO(strval)
     outs = StringIO()

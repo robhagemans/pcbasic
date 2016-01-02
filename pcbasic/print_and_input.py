@@ -45,13 +45,13 @@ def input_console(prompt, readvar, newline):
         values, seps = zip(*[inputstream.read_var(v) for v in readvar])
         # last separator not empty: there were too many values or commas
         # earlier separators empty: there were too few values
-        # empty values are OK
-        if (seps[-1] or '' in seps[:-1]):
+        # empty values will be converted to zero by str_to_value_keep
+        # Nene means a conversion error occurred
+        if (seps[-1] or '' in seps[:-1] or None in values):
             # good old Redo!
             console.write_line('?Redo from start')
         else:
-            return [r + [v if v else vartypes.null[r[0][-1]]] 
-                    for r, v in zip(readvar, values)]
+            return [r + [v] for r, v in zip(readvar, values)]
 
 
 ########################################
