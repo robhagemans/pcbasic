@@ -597,6 +597,8 @@ def write(s, scroll_ok=True, do_echo=True):
             # CR -> CRLF, CRLF -> CRLF LF
             echo(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
     last = ''
+    # if our line wrapped at the end before, it doesn't anymore
+    state.console_state.screen.apage.row[state.console_state.row-1].wrap = False
     for c in s:
         row, col = state.console_state.row, state.console_state.col
         if c == '\t':
