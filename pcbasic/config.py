@@ -35,6 +35,8 @@ families = sorted(list(set([ x[0] for x in [ c.split('_')
 options = {}
 # flag True if we're running from a package
 package = False
+# sys.argv converted to unicode
+uargv = []
 
 # number of positional arguments
 positional = 2
@@ -150,10 +152,14 @@ arguments = {
 
 def prepare():
     """ Initialise config.py """
-    global options, logger
+    global options, logger, uargv
+    # convert arguments to unicode using preferred encoding
+    # on windows, this is the mbcs CP_ACP - this only works if that codepage
+    # includes the characters of the file we need
+    uargv = [arg.decode(plat.preferred_encoding) for arg in sys.argv]
     # first parse a logfile argument, if any
-    for args in sys.argv:
-        if args[:9] == '--logfile':
+    for args in uargv:
+        if args[:9] == u'--logfile':
             logfile = args[10:]
             break
     else:
@@ -168,11 +174,12 @@ def prepare():
         build_default_config_file(user_config_path)
     # store options in options dictionary
     options = retrieve_options()
+    print options
 
 def retrieve_options():
     """ Retrieve command line and option file options. """
     # convert command line arguments to string dictionary form
-    remaining = get_arguments(sys.argv[1:])
+    remaining = get_arguments(uargv[1:])
     # unpack any packages
     parse_package(remaining)
     # get preset groups from specified config file
@@ -208,7 +215,7 @@ def append_arg(args, key, value):
     """ Update a single argument by appending a value """
     if key in args and args[key]:
         if value:
-            args[key] += ',' + value
+            args[key] += u',' + value
     else:
         args[key] = value
 
@@ -218,7 +225,7 @@ def safe_split(s, sep):
     if len(slist) > 1:
         s1 = slist[1]
     else:
-        s1 = ''
+        s1 = u''
     return s0, s1
 
 def get_arguments(argv):
@@ -226,15 +233,15 @@ def get_arguments(argv):
     args = {}
     pos = 0
     for arg in argv:
-        key, value = safe_split(arg, '=')
+        key, value = safe_split(arg, u'=')
         if key:
-            if key[0:2] == '--':
+            if key[0:2] == u'--':
                 if key[2:]:
                     append_arg(args, key[2:], value)
-            elif key[0] == '-':
+            elif key[0] == u'-':
                 for i, short_arg in enumerate(key[1:]):
                     try:
-                        skey, svalue = safe_split(short_args[short_arg], '=')
+                        skey, svalue = safe_split(short_args[short_arg], u'=')
                         if not svalue and not skey:
                             continue
                         if (not svalue) and i == len(key)-2:
@@ -243,15 +250,15 @@ def get_arguments(argv):
                         else:
                             append_arg(args, skey, svalue)
                     except KeyError:
-                        logger.warning('Ignored unrecognised option "-%s"', short_arg)
+                        logger.warning(u'Ignored unrecognised option "-%s"', short_arg)
             elif pos < positional:
                 # positional argument
                 args[pos] = arg
                 pos += 1
             else:
-                logger.warning('Ignored extra positional argument "%s"', arg)
+                logger.warning(u'Ignored extra positional argument "%s"', arg)
         else:
-            logger.warning('Ignored unrecognised option "=%s"', value)
+            logger.warning(u'Ignored unrecognised option "=%s"', value)
     return args
 
 def parse_presets(remaining, conf_dict):
