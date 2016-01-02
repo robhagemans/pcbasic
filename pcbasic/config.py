@@ -13,6 +13,10 @@ import logging
 import zipfile
 import plat
 
+if plat.system == 'Windows':
+    import ctypes
+    import ctypes.wintypes
+
 # system-wide config path
 system_config_path = os.path.join(plat.system_config_dir, 'default.ini')
 
@@ -154,9 +158,7 @@ def prepare():
     """ Initialise config.py """
     global options, logger, uargv
     # convert arguments to unicode using preferred encoding
-    # on windows, this is the mbcs CP_ACP - this only works if that codepage
-    # includes the characters of the file we need
-    uargv = [arg.decode(plat.preferred_encoding) for arg in sys.argv]
+    uargv = get_unicode_argv()
     # first parse a logfile argument, if any
     for args in uargv:
         if args[:9] == u'--logfile':
@@ -174,7 +176,25 @@ def prepare():
         build_default_config_file(user_config_path)
     # store options in options dictionary
     options = retrieve_options()
-    print options
+
+def get_unicode_argv():
+    """ Convert command-line arguments to unicode. """
+    if plat.system == 'Windows':
+        # see http://code.activestate.com/recipes/572200-get-sysargv-with-unicode-characters-under-windows/
+        GetCommandLineW = ctypes.cdll.kernel32.GetCommandLineW
+        GetCommandLineW.argtypes = []
+        GetCommandLineW.restype = ctypes.wintypes.LPCWSTR
+        cmd = GetCommandLineW()
+        argc = ctypes.c_int(0)
+        CommandLineToArgvW = ctypes.windll.shell32.CommandLineToArgvW
+        CommandLineToArgvW.argtypes = [ctypes.wintypes.LPCWSTR, ctypes.POINTER(ctypes.c_int)]
+        CommandLineToArgvW.restype = ctypes.POINTER(ctypes.wintypes.LPWSTR)
+        argv = CommandLineToArgvW(cmd, ctypes.byref(argc))
+        return [argv[i] for i in xrange(argc.value)]
+    else:
+        # the official parameter should be LC_CTYPE but that's None in my locale
+        # on windows, this would only work if the mbcs CP_ACP includes the characters we need
+        return [arg.decode(plat.preferred_encoding) for arg in sys.argv]
 
 def retrieve_options():
     """ Retrieve command line and option file options. """
