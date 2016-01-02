@@ -762,14 +762,17 @@ def put_char(c, do_scroll_down=False):
 def check_wrap(do_scroll_down):
     """ Wrap if we need to. """
     if state.console_state.col > state.console_state.screen.mode.width:
-        # wrap line
-        state.console_state.screen.apage.row[state.console_state.row-1].wrap = True
-        if do_scroll_down:
-            # scroll down (make space by shifting the next rows down)
-            if state.console_state.row < state.console_state.scroll_height:
-                state.console_state.screen.scroll_down(state.console_state.row+1)
-        # move cursor and reset cursor attribute
-        state.console_state.screen.move_cursor(state.console_state.row + 1, 1)
+        if state.console_state.row < state.console_state.screen.mode.height:
+            # wrap line
+            state.console_state.screen.apage.row[state.console_state.row-1].wrap = True
+            if do_scroll_down:
+                # scroll down (make space by shifting the next rows down)
+                if state.console_state.row < state.console_state.scroll_height:
+                    state.console_state.screen.scroll_down(state.console_state.row+1)
+            # move cursor and reset cursor attribute
+            state.console_state.screen.move_cursor(state.console_state.row + 1, 1)
+        else:
+            state.console_state.col = state.console_state.screen.mode.width
 
 def set_pos(to_row, to_col, scroll_ok=True):
     """ Set the current position. """

@@ -688,7 +688,7 @@ class SCRNFile(RawFile):
         # writes to SCRN files should *not* be echoed
         do_echo = self.is_master
         self._col = state.console_state.col
-        # take column 80+overflow int account
+        # take column 80+overflow into account
         if state.console_state.overflow:
             self._col += 1
         # only break lines at the start of a new string. width 255 means unlimited width
@@ -705,7 +705,7 @@ class SCRNFile(RawFile):
             elif ord(c) >= 32:
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
-        if (self.width != 255
+        if (self.width != 255 and state.console_state.row != state.console_state.screen.mode.height
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
             console.write_line(do_echo=do_echo)
             self._col = 1
