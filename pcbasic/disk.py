@@ -261,6 +261,8 @@ def _list_locks(name):
 
 def _acquire_lock(name, number, lock_type, access):
     """ Try to lock a file. """
+    if not number:
+        return
     already_open = _list_locks(name)
     for f in already_open:
         if (
