@@ -93,7 +93,7 @@ def open_file(number, description, filetype, mode='I', access='R', lock='',
         else:
             # open file on default device
             dev_param = name
-    # check if device exists and allows the requested mode
+    # open the file on the device
     new_file = device.open(number, dev_param, filetype, mode, access, lock,
                            reclen, seg, offset, length)
     if number:
