@@ -41,7 +41,7 @@
 123 RETURN
 150 ' Print highlighted text block to screen
 151   COLOR CC[0], CC[1]: PRINT " ";
-152   COLOR CC[1], CC[0]: PRINT "   "; SR$; "   ";
+152   COLOR CC[1], CC[0]: PRINT "  "; SR$; "  ";
 153   COLOR CC[0], CC[1]: PRINT " ";
 154 RETURN
 200 ' Read keystroke
