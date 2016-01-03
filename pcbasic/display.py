@@ -597,6 +597,8 @@ class Screen(object):
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum,
                erase=1, new_width=None):
         """ SCREEN: change the video mode, colourburst, visible or active page. """
+        # reset palette happens even if the SCREEN call fails
+        self.palette = Palette(self.mode)
         # set default arguments
         if new_mode is None:
             new_mode = self.screen_mode
@@ -683,8 +685,6 @@ class Screen(object):
         if (not mode_info or
                 new_apagenum >= mode_info.num_pages or
                 new_vpagenum >= mode_info.num_pages):
-            # reset palette happens even if the SCREEN call fails
-            self.palette = Palette(self.mode)
             raise error.RunError(error.IFC)
         # preload SBCS glyphs
         try:
