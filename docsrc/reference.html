@@ -3859,7 +3859,9 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>key_id</var></code> is a numeric expression in the range <code>[1&#8212;10]</code>.
+                <code><var>key_id</var></code> is a numeric expression in the range
+                <code>[1&#8212;10]</code> (or <code>[1&#8212;12]</code>
+                when <code><a href="#--syntax">--syntax</a>=tandy</code>).
             </li>
             <li>
                 <code><var>string_value</var></code> is a string expression.
@@ -3868,7 +3870,7 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                If <code><var>key_id</var></code> is not in the range <code>[1&#8212;10]</code>,
+                If <code><var>key_id</var></code> is not in the prescribed range,
                 the statement is interpreted as an
                 event-trapping <code><a href="#KEY-event">KEY</a></code> statement.
             </li>
@@ -4012,7 +4014,8 @@
         <ul>
             <li>
                 <code><var>key_id</var></code> is a numeric
-                expression in <code>[15&#8212;20]</code>.
+                expression in <code>[15&#8212;20]</code>
+                (or <code>[17&#8212;20]</code> when <code><a href="#--syntax">--syntax</a>=tandy</code>).
             </li>
             <li>
                 <code><var>two_char_string</var></code> is a string expression of length 2. The first character is interpreted as a modifier
@@ -4056,13 +4059,15 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                If <code><var>key_id</var></code> is not in <code>[15&#8212;20]</code>, no error is raised; such values are ignored.
+                If <code><var>key_id</var></code> is not in the prescribed range, no error is raised; such values are ignored.
                 In GW-BASIC strange things can
                 happen in this case: screen anomalies and crashes suggestive of unintended
                 memory access.
             </li>
             <li>
-                If <code><var>key_id</var></code> is in <code>[1&#8212;10]</code>, the statement is interpreted as a
+                If <code><var>key_id</var></code> is in <code>[1&#8212;10]</code>
+                (or <code>[1&#8212;12]</code> when <code><a href="#--syntax">--syntax</a>=tandy</code>),
+                the statement is interpreted as a
                 <a href="#KEY-def">function-key macro definition</a>.
             </li>
         </ul>
