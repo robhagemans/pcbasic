@@ -135,7 +135,7 @@ def parse_jumpnum(ins, allow_empty=False, err=error.STX):
         # Syntax error
         raise error.RunError(err)
 
-def get_var_name(ins, allow_empty=False):
+def get_var_name(ins, allow_empty=False, err=error.STX):
     """ Get variable name from token stream. """
     name = ''
     d = skip_white_read(ins).upper()
@@ -153,7 +153,7 @@ def get_var_name(ins, allow_empty=False):
         else:
             ins.seek(-len(d), 1)
     if not name and not allow_empty:
-        raise error.RunError(error.STX)
+        raise error.RunError(err)
     # append type specifier
     name = vartypes.complete_name(name)
     # only the first 40 chars are relevant in GW-BASIC, rest is discarded
