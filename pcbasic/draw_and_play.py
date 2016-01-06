@@ -93,7 +93,7 @@ def ml_parse_string(gmls):
     if len(c) == 0:
         raise error.RunError(error.IFC)
     elif ord(c) > 8:
-        name = util.get_var_name(gmls)
+        name = util.get_var_name(gmls, err=error.IFC)
         indices = ml_parse_indices(gmls)
         sub = var.get_var_or_array(name, indices)
         util.require_read(gmls, (';',), err=error.IFC)
