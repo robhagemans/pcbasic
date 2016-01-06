@@ -49,6 +49,9 @@ class StringSpace(object):
 
     def store(self, string_buffer, address=None):
         """ Store a new string and return the 3-byte memory sequence. """
+        # don't store overlong strings
+        if len(string_buffer) > 255:
+            raise error.RunError(error.STRING_TOO_LONG)
         if address is None:
             # find new string address
             self.current -= len(string_buffer)
