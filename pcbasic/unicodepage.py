@@ -80,7 +80,7 @@ class Codepage(object):
                         # extract codepage point
                         cp_point = splitline[0].strip().decode('hex')
                         # allow sequence of code points separated by commas
-                        grapheme_cluster = u''.join(unichr(int('0x' + ucs_str.strip(), 16)) for ucs_str in splitline[1].split(','))
+                        grapheme_cluster = u''.join(unichr(int(ucs_str.strip(), 16)) for ucs_str in splitline[1].split(','))
                         # do not redefine printable ASCII, but substitute glyphs
                         if cp_point in printable_ascii and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point)):
                             # substitutes is in reverse order: { yen: backslash }
