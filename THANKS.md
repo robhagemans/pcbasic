@@ -73,6 +73,7 @@ apologies to those whose contribution I have failed to acknowledge here.
 ##### BASICODE
 
   * **Janny Looyenga**'s documentation of the [BASICODE format](http://www.nostalgia8.nl/basicode.htm)
+  * **Prof. Dr. Horst Völz**'s documentation of the [BASICODE cassette file format](http://www.kc85emu.de/scans/rfe0190/Basicode.htm)
 
 ##### Technical information on many topics
 
