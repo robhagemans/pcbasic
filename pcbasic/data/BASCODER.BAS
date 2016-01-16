@@ -1,5 +1,5 @@
 1 REM BASCODER.BAS - Implementation of the BASICODE-3C API on PC-BASIC
-2 REM Copyright (c) 2015 Rob Hagemans
+2 REM Copyright (c) 2015, 2016 Rob Hagemans
 3 REM This file is released under the GNU GPL version 3
 4 REM
 9 GOTO 1000 ' Initialise client

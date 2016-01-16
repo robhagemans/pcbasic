@@ -1,6 +1,6 @@
 1 '  PC-BASIC - PCTERM.BAS
 2 '  Simple terminal emulator for the TERM statement
-3 '  (c) 2015 Rob Hagemans
+3 '  Copyright (c) 2015 Rob Hagemans
 4 '  This file is released under the GNU GPL version 3
 5 '
 100 GOSUB 23000 ' Reset
