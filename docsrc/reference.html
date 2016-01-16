@@ -117,7 +117,7 @@
     <h3 id="variables">Variables</h3>
     <p>
         Variable names must start with a letter; all characters of the variable name
-        (except the <a href="#typechars">type character</a>) must be letters <code>A&#8212;Z</code>, figures <code>0&#8212;9</code>, or a dot <code>.</code>
+        (except the <a href="#typechars">sigil</a>) must be letters <code>A&#8212;Z</code>, figures <code>0&#8212;9</code>, or a dot <code>.</code>
         Only the first 40 characters in the name are significant. Variable names must
         not be identical to <a href="#keywords">keywords</a>. Variable
         names may start with a keyword, with the exception of <code><a href="#USR">USR</a></code> and
@@ -164,15 +164,15 @@
 
 <section>
     <h3 id="types">Types</h3>
-    <h4 id="typechars">Type characters</h4>
+    <h4 id="typechars">Sigils</h4>
     <p>
-        PC-BASIC recognises four variable types, distinguished by their type character
-        which is the last character of the variable's full name:
+        PC-BASIC recognises four variable types, distinguished by their <dfn>sigil</dfn>
+        or <dfn>type character</dfn>, the last character of the variable's full name:
     </p>
     <div class="scrollable">
         <table>
             <tr>
-                <th>char</th>
+                <th>sigil</th>
                 <th>type</th>
                 <th>size</th>
             </tr><tr>
@@ -195,7 +195,7 @@
         </table>
     </div>
     <p>
-        If no type character is specified, the first letter of the name determines
+        If no sigil is specified, the first letter of the name determines
         the type according to the settings of
         <code><a href="#DEFINT">DEFINT</a></code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>.
         If no such setting has been made, the default type is single-precision float.
@@ -1873,7 +1873,7 @@
             <b>{DEFINT|DEFDBL|DEFSNG|DEFSTR}</b> <var>first_0</var>[<b>-</b> <var>last_0</var>] [<b>,</b> <var>first_1</var>[<b>-</b> <var>last_1</var>]] ...
         </code>
         <p>
-            Sets the type that is assumed if no type character is specified when a variable name is used.
+            Sets the type that is assumed if no <a href="#typechars">sigil</a> is specified when a variable name is used.
             The statement sets the default type for varables starting with a letter from the ranges specified.
         </p>
         <p>
