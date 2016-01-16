@@ -266,7 +266,7 @@
         <li><code>IMP</code></li>
     </ol>
     <p>
-        Note in particular that exponentiation is more tightly bound than negation:
+        For example, exponentiation is more tightly bound than negation:
         <code>-1^2 = -1</code> but <code>(-1)^2 = 1</code>.
     </p>
 
@@ -445,8 +445,7 @@
     <h4 id="boolean-operators">Bitwise operators</h4>
     <p>
         PC-BASIC has no Boolean type and does not implement Boolean operators.
-        It does, however, implement bitwise operators. Note that PC-BASIC represents
-        negative integers using the two's complement.
+        It does, however, implement bitwise operators.
     </p>
     <p>
         Bitwise operators operate on numeric expressions only. If either
@@ -504,7 +503,10 @@
     <p>
         These operators can be used
         as Boolean operators only if <code>-1</code> is used to represent <i>true</i> while <code>0</code>
-        represents <i>false</i>. This interpretation is given in the table below.
+        represents <i>false</i>. Note that PC-BASIC represents
+        negative integers using the two's complement, so <code>NOT 0 = -1</code>.
+        The boolean interpretation of bitwise operators
+        is given in the table below.
     </p>
     <div class="scrollable">
         <table>
@@ -588,7 +590,35 @@
 
 <section>
     <h3 id="statements-functions">Statements and functions</h3>
-
+    <p>
+        A program line is composed of a line number and one or more <dfn>statements</dfn>. If multiple statements
+        are put on one line, they must be separated by colons <code>:</code>. Statements may be empty.
+    </p>
+    <p>
+        <dfn>Functions</dfn> can only be used as part of an expression within a statement; they may take input values
+        and produce a return value. For example,
+        in <code>PRINT ABS(-1)</code> the <code>ABS</code> function is used in an expression within the
+        <code>PRINT</code> statement.
+    </p>
+    <p>
+        Many reference works on GW-BASIC distinguish <dfn>commands</dfn> and statements; this distinction stems
+        from the original Dartmouth design of the BASIC language, in which commands were not part of the
+        language itself and could not be used in programs, but were rather used to control the
+        interpreter itself. However, in GW-BASIC this distinction is less useful and therefore this reference
+        includes what is traditionally thought of as commands in the category of statements.
+    </p>
+    <p>
+        Some reference works also use terms such as <dfn>system variable</dfn> for functions that do not take
+        an input, presumably since in the GW-BASIC syntax such functions have no brackets, in contrast to
+        the languages in the C family (and indeed some modern BASICs).
+        However, this is simply the GW-BASIC syntax for functions without inputs.
+        For example, one can do <code>DEF FNA=1: PRINT FNA</code>
+        in which no brackets are allowed.
+    </p>
+    <p>
+        Each statement has its own idiosyncratic syntax. In this section, statements and functions are listed alphabetically
+        with their syntax and notes on their use.
+    </p>
     <section>
         <h4 id="ABS"><code>ABS</code> function</h4>
         <code class="block">
