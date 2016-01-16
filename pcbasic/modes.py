@@ -876,7 +876,7 @@ class Tandy6Mode(GraphicsMode):
             mask = 2 ** (parity^(addr%2))
             for page, x, y, ofs, length in walk_memory(self, addr, len(bytes), 2):
                 self.screen.put_interval(page, x, y,
-                    bytes_to_interval(hbytes[ofs:ofs+length], 2*self.ppb, mask),
+                    bytes_to_interval(hbytes[parity][ofs:ofs+length], 2*self.ppb, mask),
                     mask)
 
     sprite_to_array = sprite_to_array_ega
