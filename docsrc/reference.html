@@ -9,18 +9,18 @@
 <h2 id="reference">Language reference</h2>
 
 <p>
-    This documentation describes the PC-BASIC language. Since PC-BASIC emulates
-    GW-BASIC 3.23, IBM Advanced BASIC, IBM Cartridge BASIC and Tandy 1000 GW-BASIC,
-    it can also be used as documentation for those languages. Any differences
-    between these original dialects and the PC-BASIC implementation are
-    documented as well.
+    This documentation describes the PC-BASIC language, which aims to faithfully emulate
+    GW-BASIC 3.23, IBM Advanced BASIC, IBM Cartridge BASIC and Tandy 1000 GW-BASIC.
 </p>
 <p>
-    Please note that the original Microsoft documentation, as found in various
-    forms on the internet, is rather hit-and-miss;
-    GW-BASIC often behaves differently than documented by Microsoft.
+    Differences with the original languages do arise, and where this is the case they are documented.
 </p>
-
+<p>
+    Please note that Microsoft's official documentation for the original languages is rather hit-and-miss;
+    it leaves several features undocumented and incorrectly describes others. To avoid making the same errors,
+    the present documentation was written from scratch with reference to the actual behaviour.
+    The errors in this document are therefore all my own. Please contact me if you encounter them.
+</p>
 <section>
     <h3 id="metasyntax">Metasyntax</h3>
     <p>
@@ -3562,7 +3562,7 @@
 <hr />
 
     <section>
-        <h4 id="INPUT-file"><code>INPUT</code> statement (devices and files)</h4>
+        <h4 id="INPUT-file"><code>INPUT</code> statement (files)</h4>
         <code class="block">
             <b>INPUT #</b> <var>file_num</var><b>,</b> <var>var_0</var> [<b>,</b> <var>var_1</var>] ...
         </code>
