@@ -31,6 +31,7 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     # disable error trapping
     state.basic_state.on_error = None
     state.basic_state.error_resume = None
+    state.basic_state.error_handle_mode = False
     # stop all sound
     state.console_state.sound.stop_all_sound()
     # Resets STRIG to off
