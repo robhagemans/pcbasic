@@ -588,22 +588,6 @@
 </section>
 <hr />
 
-<section>
-    <h3 id="statements">Statements</h3>
-    <p>
-        A program line is composed of a line number and one or more <dfn>statements</dfn>. If multiple statements
-        are put on one line, they must be separated by colons <code>:</code>. Statements may be empty.
-        Each statement has its own idiosyncratic syntax.
-    </p>
-    <p>
-        Many reference works on GW-BASIC distinguish <dfn>commands</dfn> and statements; this distinction stems
-        from the original Dartmouth design of the BASIC language, in which commands were not part of the
-        language itself and could not be used in programs, but were rather used to control the
-        interpreter itself. However, in GW-BASIC this distinction is less useful and therefore this reference
-        includes what is traditionally thought of as commands in the category of statements.
-    </p>
-</section>
-<hr />
 
 <section>
     <h3 id="functions">Functions</h3>
@@ -621,11 +605,6 @@
         For example, one can do <code>DEF FNA=1: PRINT FNA</code>
         in which no brackets are allowed.
     </p>
-</section>
-<hr/>
-
-<section>
-    <h3 id="statements-functions">Alphabetic reference</h3>
 
     <section>
         <h4 id="ABS"><code>ABS</code> function</h4>
@@ -709,6 +688,2298 @@
         </ul>
     </section>
 <hr />
+
+    <section>
+        <h4 id="CDBL"><code>CDBL</code> function</h4>
+        <code class="block">
+            <var>y</var><b> = CDBL(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Converts the numeric expression <code><var>x</var></code> to a double-precision value.
+        </p>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="CHR$"><code>CHR$</code> function</h4>
+        <code class="block">
+            <var>char</var> <b>= CHR$(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns the character with ASCII code <code><var>x</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="CINT"><code>CINT</code> function</h4>
+        <code class="block">
+            <var>y</var> <b>= CINT(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Converts the numeric expression <code><var>x</var></code> to a signed integer.
+        </p>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="COS"><code>COS</code> function</h4>
+        <code class="block">
+            <var>cosine</var> <b>= COS(</b><var>angle</var><b>)</b>
+        </code>
+        <p>
+            Returns the cosine of <code><var>angle</var></code>.
+            Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option,
+            this function returns a single-precision
+            value.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>angle</var></code> is a numeric expression that
+                gives the angle in radians.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                The return value usually differs from the value returned by GW-BASIC in the least significant figure.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="CSNG"><code>CSNG</code> function</h4>
+        <code class="block">
+            <var>y</var> <b>= CSNG(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Converts the numeric expression <code><var>x</var></code> to a single-precision value.
+        </p>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="CSRLIN"><code>CSRLIN</code> function</h4>
+        <code class="block">
+            <var>y</var> <b>= CSRLIN</b>
+        </code>
+        <p>
+            Returns the screen row of the cursor on the active page.
+            The return value is in the range <code>[1&#8212;25]</code>.
+        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="CVI"><code>CVI</code> function</h4>
+        <code class="block">
+            <var>y</var> <b>= CVI(</b><var>s</var><b>)</b>
+        </code>
+        <p>
+            Converts a two-byte string to a signed integer.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>s</var></code> is a string expression that represents an integer using
+                little-endian two's complement encoding. Only the first two bytes are used.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="CVS"><code>CVS</code> function</h4>
+        <code class="block">
+            <var>y</var> <b>= CVS(</b><var>s</var><b>)</b>
+        </code>
+        <p>
+            Converts a four-byte string to a single-precision floating-point number.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>s</var></code> is a string expression that represents a single-precision
+                number in Microsoft Binary Format. Only the first four bytes are used.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="CVD"><code>CVD</code> function</h4>
+        <code class="block">
+            <var>y</var> <b>= CVD(</b><var>s</var><b>)</b>
+        </code>
+        <p>
+            Converts an eight-byte string to a double-precision floating-point number.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>s</var></code> is a string expression  that represents a double-precision
+                number in Microsoft Binary Format. Only the first eight bytes are used.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="DATE$"><code>DATE$</code> function</h4>
+        <code class="block">
+            <var>s</var> <b>= DATE$</b>
+        </code>
+        <p>
+            Returns the system date as a string in the format <code>"mm-dd-yyyy"</code>.
+        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="ENVIRON$"><code>ENVIRON$</code> function</h4>
+        <code class="block">
+            <var>value</var> <b>= ENVIRON</b>[ ]<b>$</b>(<var>x</var>)
+        </code>
+        <p>
+            Returns an environment variable.
+        </p>
+        <h5>Parameters</h5>
+        <p>
+            <code><var>x</var></code> is an expression.
+        </p>
+        <ul>
+            <li>
+                If <code><var>x</var></code> has a string value, returns the value for the environment variable <code><var>x</var></code> or the empty
+                string if no variable with the name <code><var>x</var></code> is set in the environment table.
+            </li>
+            <li>
+                If <code><var>x</var></code> has a numeric value, it must be in <code>[1&#8212;255]</code>. Returns the <code><var>x</var></code>th entry in
+                the environment table.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> is the empty string: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is a number not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="EOF"><code>EOF</code> function</h4>
+        <code class="block">
+            <var>is_at_end</var> <b>= EOF(</b><var>file_num</var><b>)</b>
+        </code>
+        <p>
+            Returns -1 if file with number <code><var>file_num</var></code> has reached end-of-file; 0 otherwise.
+            The file must be open in <code>INPUT</code> or <code>RANDOM</code> mode. <code>EOF(0)</code> returns 0.
+        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                If <code><var>file_num</var></code> is open to <code>KYBD:</code>, performs a blocking read and returns -1 if
+                <kbd>CTRL</kbd>+<kbd>Z</kbd> is entered, 0 otherwise. The character entered is then echoed to
+                the console.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is a number not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not 0 or the number of an open file:
+                <samp>Bad file number</samp>.
+            </li>
+            <li>
+                The file with number <code><var>file_num</var></code> is in OUTPUT or APPEND mode:
+                <samp>Bad file mode</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="ERDEV"><code>ERDEV</code> function</h4>
+        <code class="block">
+            <var>zero</var> <b>= ERDEV</b>
+        </code>
+        <p>
+            Returns 0.
+        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                In GW-BASIC, returns the value of a device error.
+            </li>
+            <li>
+                This function is not implemented in PC-BASIC.
+            </li>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="ERDEV$"><code>ERDEV$</code> function</h4>
+        <code class="block">
+            <var>empty</var> <b>= ERDEV</b>[ ]<b>$</b>
+        </code>
+        <p>
+            Returns the empty string.
+        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                In GW-BASIC, returns the device name of a device error.
+            </li>
+            <li>
+                This function is not implemented in PC-BASIC.
+            </li>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="ERL"><code>ERL</code> function</h4>
+        <code class="block">
+            <var>error_line</var> <b>= ERL</b>
+        </code>
+        <p>
+            Returns the line number where the last error was raised.
+        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                If the error was
+                raised by a direct statement, returns 65535.
+            </li>
+            <li>
+                If no error has been raised,
+                returns 0.
+            </li>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="ERR"><code>ERR</code> function</h4>
+        <code class="block">
+            <var>error_code</var> <b>= ERR</b>
+        </code>
+        <p>
+            Returns the number of the last error.
+        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                If no error has been raised, returns 0.
+            </li>
+            <li>
+               If the last error was a <samp>Syntax error</samp> raised by a direct statement, returns 0.
+            </li>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="EXP"><code>EXP</code> function</h4>
+        <code class="block">
+            <var>y</var> <b>= EXP(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns the exponential of <code><var>x</var></code>, i.e. <code>e</code> to the power <code><var>x</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a number-
+                valued expression.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option, this function returns a single-precision
+                value.
+            </li>
+            <li>
+                The return value sometimes differs in the least significant digit from GW-BASIC. For
+                large values of <code><var>x</var></code>, the difference may be 3 digits.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is larger than the natural logarithm of the maximum single-precision
+                value: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="EXTERR"><code>EXTERR</code> function</h4>
+        <code class="block">
+            <var>zero</var> <b>= EXTERR(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns 0.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                In GW-BASIC, this function returns extended error information from MS-DOS.
+            </li>
+            <li>
+                This function is not implemented in PC-BASIC.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="FIX"><code>FIX</code> function</h4>
+        <code class="block">
+            <var>whole</var> <b>= FIX(</b><var>number</var><b>)</b>
+        </code>
+        <p>
+            Returns <code><var>number</var></code> truncated towards zero.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>number</var></code> is a numeric expression.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                <code>FIX</code> truncates towards zero: it removes the fractional part. By contrast, <code><a href="#INT">INT</a></code>
+                truncates towards negative infinity. For negative <code><var>x</var></code>, <code>FIX(<var>x</var>)-INT(<var>x</var>)=1</code>.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>number</var></code> is a string expression: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="FN"><code>FN</code> function</h4>
+        <code class="block">
+            <var>result</var> <b>= FN</b>[ ]<var>name</var> [<b>(</b><var>arg_0</var> [<b>,</b> <var>arg_1</var>] ...<b>)</b>]
+        </code>
+        <p>
+            Evaluates the user-defined function previously defined with <code><a href="#DEF-FN">DEF FN</a> <var>name</var></code>.
+            Spaces between <code>FN</code> and <code><var>name</var></code> are optional.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>name</var></code> is the name of a previously defined function.
+            </li>
+            <li>
+                <code><var>arg_0</var>, <var>arg_1</var>, ...</code> are expressions, given as parameters to the function.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                No function named <code><var>name</var></code> is defined:
+                <samp>Undefined user function</samp>.
+            </li>
+            <li>
+                The number of parameters differs from the function definition:
+                <samp>Syntax error</samp>.
+            </li>
+            <li>
+                The type of one or more parameters differs from the function definition:
+                <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="FRE"><code>FRE</code> function</h4>
+        <code class="block">
+            <var>free_mem</var> <b>= FRE(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns the available BASIC memory.
+        </p>
+        <h5>Parameters</h5>
+        <p>
+            <code><var>x</var></code> is an expression.
+        </p>
+        <ul>
+            <li>
+                If <code><var>x</var></code> has a numeric value, it is ignored.
+            </li>
+            <li>
+                If <code><var>x</var></code> has a string value, garbage collection is performed
+                before returning available memory.
+        </li></ul>
+    </section>
+<hr />
+
+
+    <section>
+        <h4 id="HEX$"><code>HEX$</code> function</h4>
+        <code class="block">
+            <var>hex_repr</var> <b>= HEX$(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns a string with the hexadecimal representation of <code><var>x</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a
+                numeric expression in <code>[-32768&#8212;65535]</code>. Values for
+                negative <code><var>x</var></code> are shown as two's-complement.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="INKEY$"><code>INKEY$</code> function</h4>
+        <code class="block">
+            <var>key</var> <b>= INKEY$</b>
+        </code>
+        <p>
+            Returns one key-press from the keyboard buffer. If the keyboard buffer is
+            empty, returns the empty string. Otherwise, the return value is a one- or two-
+            character string holding the <a href="#eascii">e-ASCII code</a> of the pressed key.
+        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                This function has no brackets.
+            </li>
+            <li>
+                When a function key <kbd>F1</kbd>&ndash;<kbd>F10</kbd> is pressed,
+                <code>INKEY$</code> will return the letters of the associated macro
+                &mdash; unless this macro has been set to empty with the
+                <code><a href="#KEY-def">KEY</a></code> statement, in which case
+                it returns the e-ASCII code for the function key.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="INP"><code>INP</code> function</h4>
+        <code class="block">
+            <var>code</var> <b>= INP(</b><var>port</var><b>)</b>
+        </code>
+        <p>
+            Returns the value of an emulated machine port.
+        </p>
+        <h5>Parameters</h5>
+        <p>
+            <code><var>port</var></code> is a numeric expression in <code>[0&#8212;65535]</code>.
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th><code>port</code></th>
+                    <th>Effect</th>
+                </tr>
+                <tr>
+                    <td><code>&amp;H60</code></td>
+                    <td>
+                        Returns the keyboard scancode for the current key pressed or the last key released.
+                        The scancodes returned by <code>INP(&amp;H60)</code> are those
+                        listed in the <a href="#scancodes">keyboard scancodes table</a>.
+                        If a key is currently down, the return value is its scancode.
+                        If no key is down, the return value is the scancode of
+                        the last key released, incremented by 128.
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>&amp;H201</code></td>
+                    <td>
+                        Returns the value of the game port (joystick port). This value is
+                        constructed as follows:
+                        <table>
+                            <tr>
+                                <th>Bit</th>
+                                <th>Meaning</th>
+                            </tr>
+                            <tr>
+                                <td>0</td>
+                                <td>joystick 2 x-axis</td>
+                            </tr>
+                            <tr>
+                                <td>1</td>
+                                <td>joystick 1 y-axis</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>joystick 1 x-axis</td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>joystick 2 y-axis</td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>joystick 2 button 1</td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>joystick 1 button 2</td>
+                            </tr>
+                            <tr>
+                                <td>6</td>
+                                <td>joystick 1 button 1</td>
+                            </tr>
+                            <tr>
+                                <td>7</td>
+                                <td>joystick 2 button 2</td>
+                            </tr>
+                        </table>
+                        The button bits are 0 when the button is fired, 1 otherwise. The axis values
+                        are normally 0 but are set to 1 by <code><a href="#OUT">OUT</a> &amp;H201, <var>x</var></code> and then fall back to 0
+                        after a delay. The longer the delay, the higher the axis value.
+                    </td>
+                </tr>
+                <tr>
+                    <td>other values</td>
+                    <td>Returns zero.</td>
+                </tr>
+            </table>
+        </div>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Only a limited number of machine ports are emulated in PC-BASIC.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>port</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="INPUT$"><code>INPUT$</code> function</h4>
+        <code class="block">
+            <var>chars</var> <b>= INPUT</b>[ ]<b>$</b> <b>(</b><var>num_chars</var> [<b>,</b> [<b>#</b>] <var>file_num</var>]<b>)</b>
+        </code>
+        <p>
+            Returns a string of <code><var>num_chars</var></code> characters from the keyboard or,
+            if <code><var>file_num</var></code> is provided, from a text file.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>num_chars</var></code> is a numeric expression in <code>[1&#8212;255]</code>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is a numeric expression that returns the number of a text file opened in
+                <code>INPUT</code> mode. The <code>#</code> is optional and has no effect.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                This is a blocking read. It will wait for characters if there are none
+                in the buffer.
+            </li>
+            <li>
+                All control characters except <kbd>Ctrl</kbd>+<kbd>Break</kbd>, <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> and <kbd>Pause</kbd>
+                are passed to the string by <code>INPUT$</code>. <kbd>Ctrl</kbd>+<kbd>Break</kbd> and <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> break
+                execution whereas <kbd>Pause</kbd> halts until another key is pressed (and not read).
+            </li>
+            <li>
+                When reading from the keyboard directly or through <code>KYBD:</code>, arrow keys, <kbd>Del</kbd>,
+                <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Pg Up</kbd>, <kbd>Pg Dn</kbd> are passed as <code>NUL</code> characters. Function keys
+                are ignored if they are event-trapped, otherwise keyword replacement is
+                active as normal.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is less than zero: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is greater than <code>32767</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not open for <code>INPUT</code>: <samp>Bad file mode</samp>.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> or <code><var>file_num</var></code> are strings: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is open to a <code>COM</code> port and this is the
+                first <code><a href="#INPUT-file">INPUT</a></code>, <code><a href="#LINE-INPUT-file">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
+                since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<var>file_num</var>)</code> has become zero):
+                <samp>Communication buffer overflow</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="INSTR"><code>INSTR</code> function</h4>
+        <code class="block">
+            <var>position</var> <b>= INSTR(</b>[<var>start</var><b>,</b>] <var>parent</var><b>,</b> <var>child</var><b>)</b>
+        </code>
+        <p>
+            Returns the location of the first occurrence of the substring <code><var>child</var></code> in
+            <code><var>parent</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>parent</var></code> and <code><var>child</var></code> are string expressions.
+            </li>
+            <li>
+                <code><var>start</var></code> is a numeric expression in <code>[1&#8212;255]</code>, specifying
+                the starting position from where to look; if not specified, the search starts
+                at character 1.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                If <code><var>child</var></code> is not a substring of <code><var>parent</var></code> occurring at or before <code><var>start</var></code>,
+                <code>INSTR</code> returns 0.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>start</var></code> has a string value or <code><var>parent</var></code> or <code><var>child</var></code> have numeric values: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>start</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>start</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="INT"><code>INT</code> function</h4>
+        <code class="block">
+            <var>whole</var> <b>= INT(</b><var>number</var><b>)</b>
+        </code>
+        <p>
+            Returns <code><var>number</var></code> truncated towards negative infinity.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>number</var></code> is a numeric expression.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                <code><a href="#FIX">FIX</a></code> truncates towards zero: it removes the
+                fractional part. By contrast, <code>INT</code> truncates towards negative infinity.
+                For negative <code><var>x</var></code>, <code>FIX(<var>x</var>)-INT(<var>x</var>)=1</code>.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>number</var></code> is a string expression, <samp>Type mismatch</samp> .
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="IOCTL$"><code>IOCTL$</code> function</h4>
+        <code class="block">
+            <var>result</var> <b>= IOCTL</b>[ ]<b>$ (</b>[<b>#</b>] <var>file_num</var><b>)</b>
+        </code>
+        <p>
+            Raises <samp>Illegal function call</samp>.
+        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                In GW-BASIC, <code>IOCTL$</code> reads the reply to
+                <code><a href="#IOCTL">IOCTL</a></code> from a device.
+            </li>
+            <li>
+                This function is not implemented in PC-BASIC.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                Otherwise: <samp>Illegal function call</samp>
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="LEFT$"><code>LEFT$</code> function</h4>
+        <code class="block">
+            <var>child</var> <b>= LEFT$(</b><var>parent</var><b>,</b> <var>num_chars</var><b>)</b>
+        </code>
+        <p>
+            Returns the leftmost <code><var>num_chars</var></code> characters of <code><var>parent</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>parent</var></code> is a string expression.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                If <code><var>num_chars</var></code> is zero or <code><var>parent</var></code> is empty, <code>LEFT$</code> returns
+                an empty string.
+            </li>
+            <li>
+                If <code><var>num_chars</var></code> is greater than the length of <code><var>parent</var></code>,
+                returns <code><var>parent</var></code>.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>parent</var></code> has a numeric value or <code><var>num_chars</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="LEN"><code>LEN</code> function</h4>
+        <code class="block">
+            <var>length</var> <b>= LEN(</b><var>string</var><b>)</b>
+        </code>
+        <p>
+            Returns the number of characters in <code><var>string</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>string</var></code> is a string
+                expression.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="LOC"><code>LOC</code> function</h4>
+        <code class="block">
+            <var>location</var> <b>= LOC(</b><var>file_num</var><b>)</b>
+        </code>
+        <p>
+            Returns the current location in the file opened under number <code><var>file_num</var></code>.
+        </p>
+        <ul>
+            <li>
+                If the file is opened for <code>INPUT</code>, <code>OUTPUT</code> or <code>APPEND</code>, <code>LOC</code> returns the number
+                of 128-byte blocks read or written since opening the file.
+            </li>
+            <li>
+                If the file is opened for <code>RANDOM</code>, <code>LOC</code> returns the record number last read or
+                written.
+            </li>
+            <li>
+                If the file is opened to a <code>COM</code> device, <code>LOC</code> returns the number of characters
+                in the input buffer, with a maximum of 255.
+            </li>
+            <li>
+                If the file is opened to <code>KYBD:</code>, <code>LOC</code> returns 0.
+            </li>
+        </ul>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+               <code><var>file_num</var></code> must not be preceded by a <code>#</code>.
+            </li>
+            <li>
+                In <code>OUTPUT</code> or <code>APPEND</code> mode, before any writes  <code>LOC</code> returns 0. After the 128th
+                character is written,  <code>LOC</code> returns 1.
+            </li>
+            <li>
+                In <code>INPUT</code> mode, before any reads  <code>LOC</code> returns 1. After the <strong>129th</strong> character
+                is read, <code>LOC</code> returns 2.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is open for output to a device: <samp>Bad file mode</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="LOF"><code>LOF</code> function</h4>
+        <code class="block">
+            <var>length</var> <b>= LOF(</b><var>file_num</var><b>)</b>
+        </code>
+        <p>
+            Returns the number of bytes in the file open under <code><var>file_num</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                If <code><var>file_num</var></code> is open to a <code>COM:</code> device, <code>LOF</code> returns the number of bytes
+                free in the input buffer.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is open for output to a device: <samp>Bad file mode</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="LOG"><code>LOG</code> function</h4>
+        <code class="block">
+            <var>y</var> <b>= LOG(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns the natural logarithm of <code><var>x</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a numeric expression greater than zero.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+                option, this function returns a single-precision value.
+            </li>
+            <li>
+               <code>LOG(<var>x</var>)</code> can differ from GW-BASIC by 1 in the least significant digit.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is zero or negative: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="LPOS"><code>LPOS</code> function</h4>
+        <code class="block">
+            <var>position</var> <b>= LPOS(</b><var>printer_number</var><b>)</b>
+        </code>
+        <p>
+            Returns the column position for a printer.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>printer_number</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
+                If it is 0
+                or 1, the position for <code>LPT1:</code> is returned. If it is 2, <code>LPT2:</code>; 3, <code>LPT3:</code>.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                In GW-BASIC, when entering direct mode, <code>LPT1:</code> (but not other printers)
+                is flushed and its position is reset to 1. This is not implemented in
+                PC-BASIC.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>printer_number</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>printer_number</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>printer_number</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="MID$"><code>MID$</code> function</h4>
+        <code class="block">
+            <var>substring</var> <b>= MID$(</b><var>string</var><b>,</b> <var>position</var> [<b>,</b> <var>length</var>]<b>)</b>
+        </code>
+        <p>
+            Returns a substring of <code><var>string</var></code> starting at <code><var>position</var></code>, counting from 1. The
+            substring has length <code><var>length</var></code> if specified, defaulting to 1.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>string</var></code> is a string expression.
+            </li>
+            <li>
+                <code><var>position</var></code> is a numeric expression between 1 and the string length, inclusive.
+            </li>
+            <li>
+                <code><var>length</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>string</var></code> has a number value or <code><var>position</var></code> or <code><var>length</var></code> have string values: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>position</var></code> or <code><var>length</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>position</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="MKD$"><code>MKD$</code> function</h4>
+        <code class="block">
+            <var>bytes</var> <b>= MKD$(</b><var>double</var><b>)</b>
+        </code>
+        <p>
+            Returns the internal 8-byte Microsoft Binary Format representation of a double-
+            precision number.
+        </p>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>double</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="MKI$"><code>MKI$</code> function</h4>
+        <code class="block">
+            <var>bytes</var> <b>= MKI$(</b><var>int</var><b>)</b>
+        </code>
+        <p>
+            Returns the internal 2-byte little-endian representation of an integer.
+        </p>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>int</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>int</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="MKS$"><code>MKS$</code> function</h4>
+        <code class="block">
+            <var>bytes</var> <b>= MKS$(</b><var>single</var><b>)</b>
+        </code>
+        <p>
+            Returns the internal 8-byte Microsoft Binary Format representation of a single-
+            precision number.
+        </p>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>single</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="OCT$"><code>OCT$</code> function</h4>
+        <code class="block">
+            <var>octal</var> <b>= OCT$(</b><var>x</var><b>)</b>
+        </code>
+        <p>
+            Returns a string with the octal representation of <code><var>x</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> is a
+                numeric expression in <code>[-32768&#8212;65535]</code>. Values for
+                negative <code><var>x</var></code> are shown as two's-complement.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="PEEK"><code>PEEK</code> function</h4>
+        <code class="block">
+            <var>value</var> <b>= PEEK(</b><var>address</var><b>)</b>
+        </code>
+        <p>
+            Returns the value of the memory at  <code><var>segment</var> * 16 + <var>address</var></code> where <code><var>segment</var></code>
+            is the current segment set with <code>DEF SEG</code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>. Negative values are interpreted as their
+                two's complement.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+               The memory is only partly emulated in PC-BASIC. See <a href="#memory">Memory model</a> for supported addresses.
+               Outside emulated areas, <code>PEEK</code> returns 0.
+            </li>
+            <li>
+               Values for particular memory address can be preset on the command line
+                using the <code><a href="#--peek">--peek</a></code> option. This can be used for compatibility with old
+                programs. These values will override video or data segment values, if they
+                are in those locations.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="PEN"><code>PEN</code> function</h4>
+        <code class="block"><var>x</var> <b>= PEN(</b><var>mode</var><b>)</b></code>
+        <p>
+            Reads the light pen. What this function returns depends on <code><var>mode</var></code>:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th><code><var>mode</var></code></th>
+                    <th>Return value</th>
+                </tr>
+                <tr>
+                    <td>0</td>
+                    <td>Boolean; whether the light pen has been down since last poll.</td>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>x coordinate of last pen down position</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>y coordinate of last pen down position</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Boolean; whether the pen is currently down</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>x coordinate of current pen position</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>y coordinate of current pen position</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>character row coordinate of last pen down position</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>character column coordinate of last pen down position</td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td>character row coordinate of current pen position</td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td>character column coordinate of current pen position</td>
+                </tr>
+            </table>
+        </div>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>mode</var></code> is a numeric expression in <code>[0&#8212;9]</code>.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                In PC-BASIC, for <i>pen down</i> read <i>mouse button pressed</i>. For <i>pen
+                position</i> read <i>mouse pointer position</i>.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>mode</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>mode</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>mode</var></code> is not in <code>[0&#8212;9]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="PLAY-function"><code>PLAY</code> function</h4>
+        <code class="block">
+            <var>length</var> <b>= PLAY(</b><var>voice</var><b>)</b>
+        </code>
+        <p>
+            Returns the number of notes in the background music queue. The return value is in <code>[0&#8212;16]</code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>voice</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+                If <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code>, indicates for which tone voice channel
+                the number of notes is to be returned. If <code><var>voice</var></code> is not in <code>[0&#8212;2]</code>, the
+                queue for voice 0 is returned.
+                For other choices of <code>--syntax</code>, the <code><var>voice</var></code> value has no effect.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                There are at most 16 notes in the music queue. Some GW-BASIC manuals
+                claim there can be up to 32, but in reality <code>PLAY</code> only returns at the
+                last 16 notes.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>voice</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>voice</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>voice</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="PMAP"><code>PMAP</code> function</h4>
+        <code class="block">
+            <var>transformed_coord</var> <b>= PMAP(</b><var>original_coord</var><b>,</b> <var>fn</var><b>)</b>
+        </code>
+        <p>
+            Maps between viewport and logical (<code><a href="#WINDOW">WINDOW</a></code>) coordinates.
+            If no <code><a href="#VIEW">VIEW</a></code> has been set, the viewport coordinates
+            are physical coordinates.
+        </p>
+        <p>
+            Depending on the value of <code><var>fn</var></code>, <code>PMAP</code>
+            transforms from logical to viewport coordinates or vice versa:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th><code><var>fn</var></code></th>
+                    <th>Return value</th>
+                </tr>
+                <tr>
+                    <td>0</td>
+                    <td>return viewport x given logical x</td>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>return viewport y given logical y</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>return logical x given viewport x</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>return logical y given viewport y</td>
+                </tr>
+            </table>
+        </div>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Initially, in text mode, <code>PMAP</code> returns 0.
+            </li>
+            <li>
+                In GW-BASIC, <code>PMAP</code> behaves anomalously on <code><a href="#SCREEN-statement">SCREEN</a></code> changes, where it sometimes
+                returns results as if the last <code>WINDOW</code> setting had persisted. This behaviour is not
+                implemented in PC-BASIC.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                Any of the parameters has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                A physical coordinate is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>fn</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="POINT-coord"><code>POINT</code> function (current coordinate)</h4>
+        <code class="block">
+            <var>coord</var> <b>= POINT(</b><var>fn</var><b>)</b>
+        </code>
+        <p>
+            Returns a currently active coordinate of the graphics screen. This is usually
+            the last position at which a pixel has been plotted, the second corner given
+            in a <code>LINE</code> command, or the centre of the viewport if nothing has been plotted.
+            <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
+        </p>
+        <p>
+            The coordinate returned depends on the value of <code><var>fn</var></code>:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th><code><var>fn</var></code></th>
+                    <th>Return value</th>
+                </tr>
+                <tr>
+                    <td>0</td>
+                    <td>viewport x</td>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>viewport y</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>logical x</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>logical y</td>
+                </tr>
+            </table>
+        </div>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                In text mode, returns the active coordinate of any previous graphics mode;
+                if no graphics mode has been active, returns 0.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>fn</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>fn</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="POINT-attr"><code>POINT</code> function (pixel attribute)</h4>
+        <code class="block">
+            <var>attrib</var> <b>= POINT(</b><var>x</var><b>,</b> <var>y</var><b>)</b>
+        </code>
+        <p>
+            Returns the attribute of the pixel at logical coordinate <code><var>x</var></code>,<code><var>y</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code>, <code><var>y</var></code> are numeric expressions in <code>[-32768&#8212;32767]</code>.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                If <code><var>x</var></code>,<code><var>y</var></code> is outside the screen, returns -1.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                Function is called in text mode: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> or <code><var>y</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>x</var></code> or <code><var>y</var></code> or the physical coordinates they translate into are not in
+                <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="POS"><code>POS</code> function</h4>
+        <code class="block">
+            <var>pos</var> <b>= POS(</b><var>dummy</var><b>)</b>
+        </code>
+        <p>
+            Returns the current cursor column position, in the range <code>[1&#8212;80]</code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>dummy</var></code> is a valid expression of any type; its value has no effect.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="RIGHT$"><code>RIGHT$</code> function</h4>
+        <code class="block">
+            <var>child</var> <b>= RIGHT$(</b><var>parent</var><b>,</b> <var>num_chars</var><b>)</b>
+        </code>
+        <p>
+            Returns the rightmost <code><var>num_chars</var></code> characters of <code><var>parent</var></code>.
+            If <code><var>num_chars</var></code> is zero or <code><var>parent</var></code> is empty, <code>RIGHT$</code> returns
+            an empty string. If <code><var>num_chars</var></code> is greater than the length of <code><var>parent</var></code>,
+            returns <code><var>parent</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>parent</var></code> is a string expression.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>num_chars</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>num_chars</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="RND"><code>RND</code> function</h4>
+        <code class="block">
+            <var>random</var> <b>= RND</b>[<b>(</b><var>x</var><b>)</b>]
+        </code>
+        <p>
+            Returns a pseudorandom number in the interval <code>[0&#8212;1)</code>.
+            <code><var>x</var></code> is a numeric expression. If <code><var>x</var></code> is zero, <code>RND</code> repeats the last pseudo-
+            random number. If <code><var>x</var></code> is greater than zero, a new pseudorandom number is
+            returned. If <code><var>x</var></code> is negative, the value of <code><var>x</var></code> is used to generate a new
+            random number seed; after that, a new pseudorandom number is returned.
+            The seed is generated in a different way than by <code><a href="#RANDOMIZE">RANDOMIZE</a></code>.
+        </p>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="SCREEN-function"><code>SCREEN</code> function</h4>
+        <code class="block">
+            <var>value</var> <b>= SCREEN(</b><var>row</var><b>,</b> <var>column</var> [<b>,</b> <var>fn</var>]<b>)</b>
+        </code>
+        <p>
+            Returns the ASCII code or colour attribute for the character at position
+            <code><var>row</var></code>, <code><var>col</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>row</var></code> is a numeric expression in the range <code>[1&#8212;25]</code>.
+            </li>
+            <li>
+                <code><var>col</var></code> is a numeric expression between 1 and the screen width (40 or 80).
+            </li>
+            <li>
+                <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;255]</code>. If it is zero or not specified,
+                the ASCII code of the character is returned. If it is non-zero, in text mode the
+                attribute is returned; in other screens, 0 is returned.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                Any parameter has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>fn</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>row</var></code> is not inside the current <code>VIEW PRINT</code> area:
+                <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><a href="#KEY-list">KEY ON</a></code> and <code><var>row</var>=25</code>: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>col</var></code> is not in <code>[1, <var>width</var>]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="SGN"><code>SGN</code> function</h4>
+        <code class="block">
+            <var>sign</var> <b>= SGN(</b><var>number</var><b>)</b>
+        </code>
+        <p>
+            Returns the sign of <code><var>number</var></code>: <code>1</code> for positive, <code>0</code> for zero and <code>-1</code> for negative.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>number</var></code> is a numeric expression.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>number</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="SIN"><code>SIN</code> function</h4>
+        <code class="block">
+            <var>sine</var> <b>= SIN(</b><var>angle</var><b>)</b>
+        </code>
+        <p>
+            Returns the sine of <code><var>angle</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+            <code><var>angle</var></code> is a numeric expression giving
+            the angle in radians.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+                option, this function returns a single-precision value.
+            </li>
+            <li>
+                The sine returned usually differs from the value returned by GW-BASIC in the least significant figure.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>angle</var></code> has a string value:
+                <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="SPACE$"><code>SPACE$</code> function</h4>
+        <code class="block">
+            <var>spaces</var> <b>= SPACE$(</b><var>number</var><b>)</b>
+        </code>
+        <p>
+            Returns a string of <code><var>number</var></code> spaces.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>number</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>number</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>number</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="SQR"><code>SQR</code> function</h4>
+        <code class="block">
+            <var>root</var> <b>= SQR(</b><var>number</var><b>)</b>
+        </code>
+        <p>
+            Returns the square root of <code><var>number</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>number</var></code> is a numeric expression.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+                option, this function returns a single-precision value.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>number</var></code> has a string value: <samp>Type mismatch</samp>
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="STICK"><code>STICK</code> function</h4>
+        <code class="block">
+            <var>pos</var> <b>= STICK(</b><var>axis</var><b>)</b>
+        </code>
+        <p>
+            Returns a coordinate of a joystick axis. All coordinates returned are in the
+            range <code>[1&#8212;254]</code> with <code>128</code> indicating the neutral position.
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th><code><var>axis</var></code></th>
+                    <th>Return value</th>
+                </tr>
+                <tr>
+                    <td>0</td>
+                    <td>1st joystick x coordinate</td>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>1st joystick y coordinate</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>2nd joystick x coordinate</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>2nd joystick y coordinate</td>
+                </tr>
+            </table>
+        </div>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>axis</var></code> is a numeric expression in <code>[0&#8212;3]</code> and indicates which axis to read.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>axis</var></code> has a string value: <samp>Type mismatch</samp>
+            </li>
+            <li>
+                <code><var>axis</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>axis</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="STR$"><code>STR$</code> function</h4>
+        <code class="block">
+            <var>repr</var> <b>= STR$(</b><var>number</var><b>)</b>
+        </code>
+        <p>
+            Returns the string representation of <code><var>number</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>number</var></code> is a numeric expression.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>number</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="STRIG-function"><code>STRIG</code> function</h4>
+        <code class="block">
+            <var>result</var> <b>= STRIG(</b><var>mode</var><b>)</b>
+        </code>
+        <p>
+            Returns the status of the joystick trigger buttons.
+            <code>STRIG</code> returns the following
+            results, all Boolean values:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th><code><var>mode</var></code></th>
+                    <th>Return value</th>
+                </tr>
+                <tr>
+                    <td>0</td>
+                    <td>1st joystick, 1st trigger has been pressed since last poll.</td>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>1st joystick, 1st trigger is currently pressed.</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>2nd joystick, 1st trigger has been pressed since last poll.</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>2nd joystick, 1st trigger is currently pressed.</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>1st joystick, 2nd trigger has been pressed since last poll.</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>1st joystick, 2nd trigger is currently pressed.</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>2nd joystick, 2nd trigger has been pressed since last poll.</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>2nd joystick, 2nd trigger is currently pressed.</td>
+                </tr>
+            </table>
+        </div>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>mode</var></code> is a numeric expression in <code>[0&#8212;7]</code>.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                The <code>STRIG</code> function returns correct results regardless of the
+                <code><a href="#STRIG-switch">STRIG ON</a></code>
+                status or whether <code><a href="#STRIG-function">STRIG(0)</a></code>
+                has been called first.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>mode</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>mode</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>mode</var></code> is not in <code>[0&#8212;7]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="STRING$"><code>STRING$</code> function</h4>
+        <code class="block">
+            <var>string</var> <b>= STRING$(</b><var>length</var><b>,</b> <var>char</var><b>)</b>
+        </code>
+        <p>
+            Returns a string of <code><var>length</var></code> times character <code><var>char</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                If <code><var>char</var></code> is a numeric expression, it must be in <code>[0&#8212;255]</code> and is
+                interpreted as the ASCII value of the character.
+            </li>
+            <li>
+                If <code><var>char</var></code> is a string expression, its first character is used.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>length</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>char</var></code> is the empty string: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>char</var></code> or <code><var>length</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>char</var></code> or <code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="TAN"><code>TAN</code> function</h4>
+        <code class="block">
+            <var>tangent</var> <b>= TAN(</b><var>angle</var><b>)</b>
+        </code>
+        <p>
+            Returns the tangent of <code><var>angle</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>angle</var></code> is a numeric expression giving
+                the angle in radians.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+                option, this function returns a single-precision value.
+            </li>
+            <li>
+                The tangent returned usually differs from the value returned by GW-BASIC in the least significant figure.
+            </li>
+            <li>
+                For <code><var>angle</var></code> close to multiples of <code>&#960;/2</code>, the tangent is divergent or close
+                to zero. The values returned will have very low precision in these cases.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="TIME$-function"><code>TIME$</code> function</h4>
+        <code class="block">
+            <var>time</var> <b>= TIME$</b>
+        </code>
+        <p>
+            Returns the current BASIC time in the form <code>"HH:mm:ss"</code>.
+        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                This function has no brackets.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="TIMER"><code>TIMER</code> function</h4>
+        <code class="block">
+            <var>seconds</var> <b>= TIMER</b>
+        </code>
+        <p>
+            Returns the number of seconds since midnight on the internal BASIC
+            clock.
+        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                <code>TIMER</code> updates in ticks of 1/20 second.
+            </li>
+            <li>
+                The least-significant two bytes of <code>TIMER</code> are often used as a seed for the
+                pseudorandom number generator through <code><a href="#RANDOMIZE">RANDOMIZE</a> TIMER</code>. Since these bytes
+                only take values from a limited set, that's not in fact a particularly good
+                random seed. However, the pseudorandom number generator included with GW-BASIC and PC-BASIC
+                is so weak that it should not be used for anything serious anyway.
+            </li>
+            <li>
+            This function has no brackets.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="USR"><code>USR</code> function</h4>
+        <code class="block">
+            <var>value</var> <b>= USR</b>[<var>n</var>]<b>(</b><var>expr</var><b>)</b>
+        </code>
+        <p>
+            Returns zero.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>n</var></code> is a digit <code>[<b>0</b>&#8212;<b>9</b>]</code>.
+            </li>
+            <li>
+                <code><var>expr</var></code> is an expression.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                In GW-BASIC, calls a machine-code function and returns its return value.
+            </li>
+            <li>
+                This function is not implemented in PC-BASIC.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>n</var></code> is not a digit <code>[<b>0</b>&#8212;<b>9</b>]</code>: <samp>Syntax error</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="VAL"><code>VAL</code> function</h4>
+        <code class="block">
+            <var>value</var> <b>= VAL(</b><var>string</var><b>)</b>
+        </code>
+        <p>
+            Returns the numeric value of the string expression <code><var>string</var></code>.
+            Parsing stops as soon as the first character is encountered that cannot be
+            part of a number. If no characters are parsed, <code>VAL</code> returns zero.
+            See the section on <a href="#literals">numeric literals</a> for the
+            recognised number formats.
+        </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Spaces before or even inside a number are ignored:
+                <code>VAL(" 1 0")</code> returns <code>10</code>.
+            </li>
+            <li>
+                If <code><var>string</var></code> contains one of the ASCII separator
+                characters <code>CHR$(28)</code> (file separator),
+                <code>CHR$(29)</code> (group separator) or
+                <code>CHR$(31)</code> (unit separator),
+                <code>VAL</code> returns zero.
+                This is not the case with <code>CHR$(30)</code> (record separator).
+                This behaviour conforms to GW-BASIC.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="VARPTR"><code>VARPTR</code> function</h4>
+        <code class="block">
+            <var>pointer</var> <b>= VARPTR(</b>{<var>name</var>|<b>#</b><var>file_num</var>}<b>)</b>
+        </code>
+        <p>
+            Returns the memory address of variable <code><var>name</var></code>
+            or of the File Control Block of
+            file number <code><var>file_num</var></code>.
+        </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>name</var></code> is a
+                previously defined variable or fully indexed array element.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is a legal file number.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                <code>VARPTR</code> can be used with <code><a href="#PEEK">PEEK</a></code>
+                to read a variable's internal representation.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>name</var></code> has not been previously defined: <samp>Illegal function call</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>file_num</var></code> is not in <code>[1, <var>max_files</var>]</code>,
+                where <code><var>max_files</var></code> is the maximum number of files
+                as set by the <code><a href="#--max-files">max-files</a></code> option:
+                <samp>Bad file number</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+    <section>
+        <h4 id="VARPTR$"><code>VARPTR$</code> function</h4>
+        <code class="block">
+            <var>pointer</var> <b>= VARPTR$(</b><var>name</var><b>)</b>
+        </code>
+        <p>
+            Returns the memory address of variable <code><var>name</var></code> in the form of a 3-byte string.
+            The first byte is the length of the record the pointer points to:
+        </p>
+        <dl class="compact">
+            <dt>2</dt>
+            <dd>for integers</dd>
+
+            <dt>3</dt>
+            <dd>for strings (length + pointer to string space)</dd>
+
+            <dt>4</dt>
+            <dd>for single-precision floats</dd>
+
+            <dt>8</dt>
+            <dd>for double-precision floats</dd>
+        </dl>
+        <p>
+            The last two bytes are the pointer address (as returned by
+            <code><a href="#VARPTR">VARPTR</a></code>) in little-endian order.
+        </p>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>name</var></code> has not been previously defined: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+    </section>
+<hr />
+
+</section>
+<hr />
+
+<section>
+    <h3 id="statements">Statements</h3>
+    <p>
+        A program line is composed of a line number and one or more <dfn>statements</dfn>. If multiple statements
+        are put on one line, they must be separated by colons <code>:</code>. Statements may be empty.
+        Each statement has its own idiosyncratic syntax.
+    </p>
+    <p>
+        Many reference works on GW-BASIC distinguish <dfn>commands</dfn> and statements; this distinction stems
+        from the original Dartmouth design of the BASIC language, in which commands were not part of the
+        language itself and could not be used in programs, but were rather used to control the
+        interpreter itself. However, in GW-BASIC this distinction is less useful and therefore this reference
+        includes what is traditionally thought of as commands in the category of statements.
+    </p>
 
     <section>
         <h4 id="AUTO"><code>AUTO</code> statement</h4>
@@ -966,23 +3237,6 @@
 <hr />
 
     <section>
-        <h4 id="CDBL"><code>CDBL</code> function</h4>
-        <code class="block">
-            <var>y</var><b> = CDBL(</b><var>x</var><b>)</b>
-        </code>
-        <p>
-            Converts the numeric expression <code><var>x</var></code> to a double-precision value.
-        </p>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
     <h4 id="CHAIN"><code>CHAIN</code> statement</h4>
         <code class="block">
             <b>CHAIN</b> [<b>MERGE</b>] <var>file_spec</var> [<b>,</b> [<var>line_number_expr</var>] [<b>, ALL</b>] [<b>, DELETE</b> <var>range</var> [<b>,</b> <var>ign</var>]]]
@@ -1116,55 +3370,6 @@
             </li>
             <li>
                 <code><var>pathname</var></code> is empty: <samp>Bad file name</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="CHR$"><code>CHR$</code> function</h4>
-        <code class="block">
-            <var>char</var> <b>= CHR$(</b><var>x</var><b>)</b>
-        </code>
-        <p>
-            Returns the character with ASCII code <code><var>x</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="CINT"><code>CINT</code> function</h4>
-        <code class="block">
-            <var>y</var> <b>= CINT(</b><var>x</var><b>)</b>
-        </code>
-        <p>
-            Converts the numeric expression <code><var>x</var></code> to a signed integer.
-        </p>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
             </li>
         </ul>
     </section>
@@ -1621,146 +3826,6 @@
 <hr />
 
     <section>
-        <h4 id="COS"><code>COS</code> function</h4>
-        <code class="block">
-            <var>cosine</var> <b>= COS(</b><var>angle</var><b>)</b>
-        </code>
-        <p>
-            Returns the cosine of <code><var>angle</var></code>.
-            Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option,
-            this function returns a single-precision
-            value.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>angle</var></code> is a numeric expression that
-                gives the angle in radians.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                The return value usually differs from the value returned by GW-BASIC in the least significant figure.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="CSNG"><code>CSNG</code> function</h4>
-        <code class="block">
-            <var>y</var> <b>= CSNG(</b><var>x</var><b>)</b>
-        </code>
-        <p>
-            Converts the numeric expression <code><var>x</var></code> to a single-precision value.
-        </p>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="CSRLIN"><code>CSRLIN</code> function</h4>
-        <code class="block">
-            <var>y</var> <b>= CSRLIN</b>
-        </code>
-        <p>
-            Returns the screen row of the cursor on the active page.
-            The return value is in the range <code>[1&#8212;25]</code>.
-        </p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                This function has no brackets.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="CVI"><code>CVI</code> function</h4>
-        <code class="block">
-            <var>y</var> <b>= CVI(</b><var>s</var><b>)</b>
-        </code>
-        <p>
-            Converts a two-byte string to a signed integer.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>s</var></code> is a string expression that represents an integer using
-                little-endian two's complement encoding. Only the first two bytes are used.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="CVS"><code>CVS</code> function</h4>
-        <code class="block">
-            <var>y</var> <b>= CVS(</b><var>s</var><b>)</b>
-        </code>
-        <p>
-            Converts a four-byte string to a single-precision floating-point number.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>s</var></code> is a string expression that represents a single-precision
-                number in Microsoft Binary Format. Only the first four bytes are used.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="CVD"><code>CVD</code> function</h4>
-        <code class="block">
-            <var>y</var> <b>= CVD(</b><var>s</var><b>)</b>
-        </code>
-        <p>
-            Converts an eight-byte string to a double-precision floating-point number.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>s</var></code> is a string expression  that represents a double-precision
-                number in Microsoft Binary Format. Only the first eight bytes are used.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>s</var></code> has a numeric value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="DATA"><code>DATA</code> statement</h4>
         <code class="block">
             <b>DATA</b> [<var>const_0</var>] [<b>,</b> [<var>const_1</var>]] ...
@@ -1783,23 +3848,6 @@
             <li>
                 If the type of the literal does not match that of the corresponding <code><a href="#READ">READ</a></code>
                 statement, a <samp>Syntax error</samp> occurs on the <code>DATA</code> statement.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="DATE$"><code>DATE$</code> function</h4>
-        <code class="block">
-            <var>s</var> <b>= DATE$</b>
-        </code>
-        <p>
-            Returns the system date as a string in the format <code>"mm-dd-yyyy"</code>.
-        </p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                This function has no brackets.
             </li>
         </ul>
     </section>
@@ -2404,83 +4452,6 @@
 <hr />
 
     <section>
-        <h4 id="ENVIRON$"><code>ENVIRON$</code> function</h4>
-        <code class="block">
-            <var>value</var> <b>= ENVIRON</b>[ ]<b>$</b>(<var>x</var>)
-        </code>
-        <p>
-            Returns an environment variable.
-        </p>
-        <h5>Parameters</h5>
-        <p>
-            <code><var>x</var></code> is an expression.
-        </p>
-        <ul>
-            <li>
-                If <code><var>x</var></code> has a string value, returns the value for the environment variable <code><var>x</var></code> or the empty
-                string if no variable with the name <code><var>x</var></code> is set in the environment table.
-            </li>
-            <li>
-                If <code><var>x</var></code> has a numeric value, it must be in <code>[1&#8212;255]</code>. Returns the <code><var>x</var></code>th entry in
-                the environment table.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> is the empty string: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> is a number not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="EOF"><code>EOF</code> function</h4>
-        <code class="block">
-            <var>is_at_end</var> <b>= EOF(</b><var>file_num</var><b>)</b>
-        </code>
-        <p>
-            Returns -1 if file with number <code><var>file_num</var></code> has reached end-of-file; 0 otherwise.
-            The file must be open in <code>INPUT</code> or <code>RANDOM</code> mode. <code>EOF(0)</code> returns 0.
-        </p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                If <code><var>file_num</var></code> is open to <code>KYBD:</code>, performs a blocking read and returns -1 if
-                <kbd>CTRL</kbd>+<kbd>Z</kbd> is entered, 0 otherwise. The character entered is then echoed to
-                the console.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is a number not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is a number not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is not 0 or the number of an open file:
-                <samp>Bad file number</samp>.
-            </li>
-            <li>
-                The file with number <code><var>file_num</var></code> is in OUTPUT or APPEND mode:
-                <samp>Bad file mode</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="ERASE"><code>ERASE</code> statement</h4>
         <code class="block">
             <b>ERASE</b> <var>array_0</var> [<b>,</b> <var>array_1</var>] ...
@@ -2512,100 +4483,6 @@
 <hr />
 
     <section>
-        <h4 id="ERDEV"><code>ERDEV</code> function</h4>
-        <code class="block">
-            <var>zero</var> <b>= ERDEV</b>
-        </code>
-        <p>
-            Returns 0.
-        </p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                In GW-BASIC, returns the value of a device error.
-            </li>
-            <li>
-                This function is not implemented in PC-BASIC.
-            </li>
-            <li>
-                This function has no brackets.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="ERDEV$"><code>ERDEV$</code> function</h4>
-        <code class="block">
-            <var>empty</var> <b>= ERDEV</b>[ ]<b>$</b>
-        </code>
-        <p>
-            Returns the empty string.
-        </p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                In GW-BASIC, returns the device name of a device error.
-            </li>
-            <li>
-                This function is not implemented in PC-BASIC.
-            </li>
-            <li>
-                This function has no brackets.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="ERL"><code>ERL</code> function</h4>
-        <code class="block">
-            <var>error_line</var> <b>= ERL</b>
-        </code>
-        <p>
-            Returns the line number where the last error was raised.
-        </p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                If the error was
-                raised by a direct statement, returns 65535.
-            </li>
-            <li>
-                If no error has been raised,
-                returns 0.
-            </li>
-            <li>
-                This function has no brackets.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="ERR"><code>ERR</code> function</h4>
-        <code class="block">
-            <var>error_code</var> <b>= ERR</b>
-        </code>
-        <p>
-            Returns the number of the last error.
-        </p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                If no error has been raised, returns 0.
-            </li>
-            <li>
-               If the last error was a <samp>Syntax error</samp> raised by a direct statement, returns 0.
-            </li>
-            <li>
-                This function has no brackets.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="ERROR"><code>ERROR</code> statement</h4>
         <code class="block">
             <b>ERROR</b> <var>error_number</var>
@@ -2630,83 +4507,6 @@
             </li>
             <li>
                 <code><var>error_number</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="EXP"><code>EXP</code> function</h4>
-        <code class="block">
-            <var>y</var> <b>= EXP(</b><var>x</var><b>)</b>
-        </code>
-        <p>
-            Returns the exponential of <code><var>x</var></code>, i.e. <code>e</code> to the power <code><var>x</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> is a number-
-                valued expression.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option, this function returns a single-precision
-                value.
-            </li>
-            <li>
-                The return value sometimes differs in the least significant digit from GW-BASIC. For
-                large values of <code><var>x</var></code>, the difference may be 3 digits.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> is larger than the natural logarithm of the maximum single-precision
-                value: <samp>Overflow</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="EXTERR"><code>EXTERR</code> function</h4>
-        <code class="block">
-            <var>zero</var> <b>= EXTERR(</b><var>x</var><b>)</b>
-        </code>
-        <p>
-            Returns 0.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                In GW-BASIC, this function returns extended error information from MS-DOS.
-            </li>
-            <li>
-                This function is not implemented in PC-BASIC.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
             </li>
         </ul>
     </section>
@@ -2856,72 +4656,6 @@
 <hr />
 
     <section>
-        <h4 id="FIX"><code>FIX</code> function</h4>
-        <code class="block">
-            <var>whole</var> <b>= FIX(</b><var>number</var><b>)</b>
-        </code>
-        <p>
-            Returns <code><var>number</var></code> truncated towards zero.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>number</var></code> is a numeric expression.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                <code>FIX</code> truncates towards zero: it removes the fractional part. By contrast, <code><a href="#INT">INT</a></code>
-                truncates towards negative infinity. For negative <code><var>x</var></code>, <code>FIX(<var>x</var>)-INT(<var>x</var>)=1</code>.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>number</var></code> is a string expression: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="FN"><code>FN</code> function</h4>
-        <code class="block">
-            <var>result</var> <b>= FN</b>[ ]<var>name</var> [<b>(</b><var>arg_0</var> [<b>,</b> <var>arg_1</var>] ...<b>)</b>]F
-        </code>
-        <p>
-            Evaluates the user-defined function previously defined with <code><a href="#DEF-FN">DEF FN</a> <var>name</var></code>.
-            Spaces between <code>FN</code> and <code><var>name</var></code> are optional.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>name</var></code> is the name of a previously defined function.
-            </li>
-            <li>
-                <code><var>arg_0</var>, <var>arg_1</var>, ...</code> are expressions, given as parameters to the function.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                No function named <code><var>name</var></code> is defined:
-                <samp>Undefined user function</samp>.
-            </li>
-            <li>
-                The number of parameters differs from the function definition:
-                <samp>Syntax error</samp>.
-            </li>
-            <li>
-                The type of one or more parameters differs from the function definition:
-                <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="FOR"><code>FOR</code> statement</h4>
         <code class="block">
             <b>FOR</b> <var>loop_var</var> <b>=</b> <var>start</var> <b>TO</b> <var>stop</var> [<b>STEP</b> <var>step</var>]
@@ -2961,29 +4695,6 @@
                 <code><var>loop_var</var></code> is an array element: <samp>Syntax error</samp> .
             </li>
         </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="FRE"><code>FRE</code> function</h4>
-        <code class="block">
-            <var>free_mem</var> <b>= FRE(</b><var>x</var><b>)</b>
-        </code>
-        <p>
-            Returns the available BASIC memory.
-        </p>
-        <h5>Parameters</h5>
-        <p>
-            <code><var>x</var></code> is an expression.
-        </p>
-        <ul>
-            <li>
-                If <code><var>x</var></code> has a numeric value, it is ignored.
-            </li>
-            <li>
-                If <code><var>x</var></code> has a string value, garbage collection is performed
-                before returning available memory.
-        </li></ul>
     </section>
 <hr />
 
@@ -3281,34 +4992,6 @@
 <hr />
 
     <section>
-        <h4 id="HEX$"><code>HEX$</code> function</h4>
-        <code class="block">
-            <var>hex_repr</var> <b>= HEX$(</b><var>x</var><b>)</b>
-        </code>
-        <p>
-            Returns a string with the hexadecimal representation of <code><var>x</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> is a
-                numeric expression in <code>[-32768&#8212;65535]</code>. Values for
-                negative <code><var>x</var></code> are shown as two's-complement.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="IF"><code>IF</code> statement</h4>
         <code class="block">
             <b>IF</b> <var>truth_value</var> [<b>,</b>] {<b>THEN</b>|<b>GOTO</b>} [<var>statements_1</var>|<var>line_number_1</var> [<var>anything</var>]]
@@ -3365,133 +5048,6 @@
                 or
                 <code><var>truth_value</var></code> equals <code>1</code> and <code><var>line_number_1</var></code> is a non-existing line number:
                 <samp>Undefined line number</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="INKEY$"><code>INKEY$</code> function</h4>
-        <code class="block">
-            <var>key</var> <b>= INKEY$</b>
-        </code>
-        <p>
-            Returns one key-press from the keyboard buffer. If the keyboard buffer is
-            empty, returns the empty string. Otherwise, the return value is a one- or two-
-            character string holding the <a href="#eascii">e-ASCII code</a> of the pressed key.
-        </p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                This function has no brackets.
-            </li>
-            <li>
-                When a function key <kbd>F1</kbd>&ndash;<kbd>F10</kbd> is pressed,
-                <code>INKEY$</code> will return the letters of the associated macro
-                &mdash; unless this macro has been set to empty with the
-                <code><a href="#KEY-def">KEY</a></code> statement, in which case
-                it returns the e-ASCII code for the function key.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="INP"><code>INP</code> function</h4>
-        <code class="block">
-            <var>code</var> <b>= INP(</b><var>port</var><b>)</b>
-        </code>
-        <p>
-            Returns the value of an emulated machine port.
-        </p>
-        <h5>Parameters</h5>
-        <p>
-            <code><var>port</var></code> is a numeric expression in <code>[0&#8212;65535]</code>.
-        </p>
-        <div class="scrollable">
-            <table>
-                <tr>
-                    <th><code>port</code></th>
-                    <th>Effect</th>
-                </tr>
-                <tr>
-                    <td><code>&amp;H60</code></td>
-                    <td>
-                        Returns the keyboard scancode for the current key pressed or the last key released.
-                        The scancodes returned by <code>INP(&amp;H60)</code> are those
-                        listed in the <a href="#scancodes">keyboard scancodes table</a>.
-                        If a key is currently down, the return value is its scancode.
-                        If no key is down, the return value is the scancode of
-                        the last key released, incremented by 128.
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>&amp;H201</code></td>
-                    <td>
-                        Returns the value of the game port (joystick port). This value is
-                        constructed as follows:
-                        <table>
-                            <tr>
-                                <th>Bit</th>
-                                <th>Meaning</th>
-                            </tr>
-                            <tr>
-                                <td>0</td>
-                                <td>joystick 2 x-axis</td>
-                            </tr>
-                            <tr>
-                                <td>1</td>
-                                <td>joystick 1 y-axis</td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>joystick 1 x-axis</td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>joystick 2 y-axis</td>
-                            </tr>
-                            <tr>
-                                <td>4</td>
-                                <td>joystick 2 button 1</td>
-                            </tr>
-                            <tr>
-                                <td>5</td>
-                                <td>joystick 1 button 2</td>
-                            </tr>
-                            <tr>
-                                <td>6</td>
-                                <td>joystick 1 button 1</td>
-                            </tr>
-                            <tr>
-                                <td>7</td>
-                                <td>joystick 2 button 2</td>
-                            </tr>
-                        </table>
-                        The button bits are 0 when the button is fired, 1 otherwise. The axis values
-                        are normally 0 but are set to 1 by <code><a href="#OUT">OUT</a> &amp;H201, <var>x</var></code> and then fall back to 0
-                        after a delay. The longer the delay, the higher the axis value.
-                    </td>
-                </tr>
-                <tr>
-                    <td>other values</td>
-                    <td>Returns zero.</td>
-                </tr>
-            </table>
-        </div>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                Only a limited number of machine ports are emulated in PC-BASIC.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>port</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>port</var></code> has a string value: <samp>Type mismatch</samp>.
             </li>
         </ul>
     </section>
@@ -3656,149 +5212,6 @@
 <hr />
 
     <section>
-        <h4 id="INPUT$"><code>INPUT$</code> function</h4>
-        <code class="block">
-            <var>chars</var> <b>= INPUT</b>[ ]<b>$</b> <b>(</b><var>num_chars</var> [<b>,</b> [<b>#</b>] <var>file_num</var>]<b>)</b>
-        </code>
-        <p>
-            Returns a string of <code><var>num_chars</var></code> characters from the keyboard or,
-            if <code><var>file_num</var></code> is provided, from a text file.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>num_chars</var></code> is a numeric expression in <code>[1&#8212;255]</code>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is a numeric expression that returns the number of a text file opened in
-                <code>INPUT</code> mode. The <code>#</code> is optional and has no effect.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                This is a blocking read. It will wait for characters if there are none
-                in the buffer.
-            </li>
-            <li>
-                All control characters except <kbd>Ctrl</kbd>+<kbd>Break</kbd>, <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> and <kbd>Pause</kbd>
-                are passed to the string by <code>INPUT$</code>. <kbd>Ctrl</kbd>+<kbd>Break</kbd> and <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd> break
-                execution whereas <kbd>Pause</kbd> halts until another key is pressed (and not read).
-            </li>
-            <li>
-                When reading from the keyboard directly or through <code>KYBD:</code>, arrow keys, <kbd>Del</kbd>,
-                <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Pg Up</kbd>, <kbd>Pg Dn</kbd> are passed as <code>NUL</code> characters. Function keys
-                are ignored if they are event-trapped, otherwise keyword replacement is
-                active as normal.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>num_chars</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is less than zero: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is greater than <code>32767</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is not open for <code>INPUT</code>: <samp>Bad file mode</samp>.
-            </li>
-            <li>
-                <code><var>num_chars</var></code> or <code><var>file_num</var></code> are strings: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is open to a <code>COM</code> port and this is the
-                first <code><a href="#INPUT-file">INPUT</a></code>, <code><a href="#LINE-INPUT-file">LINE INPUT</a></code> or <code><a href="#INPUT$">INPUT$</a></code> call on that port
-                since the buffer has filled up completely (i.e. <code><a href="#LOF">LOF</a>(<var>file_num</var>)</code> has become zero):
-                <samp>Communication buffer overflow</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="INSTR"><code>INSTR</code> function</h4>
-        <code class="block">
-            <var>position</var> <b>= INSTR(</b>[<var>start</var><b>,</b>] <var>parent</var><b>,</b> <var>child</var><b>)</b>
-        </code>
-        <p>
-            Returns the location of the first occurrence of the substring <code><var>child</var></code> in
-            <code><var>parent</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>parent</var></code> and <code><var>child</var></code> are string expressions.
-            </li>
-            <li>
-                <code><var>start</var></code> is a numeric expression in <code>[1&#8212;255]</code>, specifying
-                the starting position from where to look; if not specified, the search starts
-                at character 1.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                If <code><var>child</var></code> is not a substring of <code><var>parent</var></code> occurring at or before <code><var>start</var></code>,
-                <code>INSTR</code> returns 0.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>start</var></code> has a string value or <code><var>parent</var></code> or <code><var>child</var></code> have numeric values: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>start</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>start</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="INT"><code>INT</code> function</h4>
-        <code class="block">
-            <var>whole</var> <b>= INT(</b><var>number</var><b>)</b>
-        </code>
-        <p>
-            Returns <code><var>number</var></code> truncated towards negative infinity.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>number</var></code> is a numeric expression.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                <code><a href="#FIX">FIX</a></code> truncates towards zero: it removes the
-                fractional part. By contrast, <code>INT</code> truncates towards negative infinity.
-                For negative <code><var>x</var></code>, <code>FIX(<var>x</var>)-INT(<var>x</var>)=1</code>.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>number</var></code> is a string expression, <samp>Type mismatch</samp> .
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="IOCTL"><code>IOCTL</code> statement</h4>
         <code class="block">
             <b>IOCTL</b> [<b>#</b>] <var>file_num</var><b>,</b> <var>control_string</var>
@@ -3828,42 +5241,6 @@
             </li>
             <li>
                Otherwise: <samp>Illegal function call</samp>
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="IOCTL$"><code>IOCTL$</code> function</h4>
-        <code class="block">
-            <var>result</var> <b>= IOCTL</b>[ ]<b>$ (</b>[<b>#</b>] <var>file_num</var><b>)</b>
-        </code>
-        <p>
-            Raises <samp>Illegal function call</samp>.
-        </p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                In GW-BASIC, <code>IOCTL$</code> reads the reply to
-                <code><a href="#IOCTL">IOCTL</a></code> from a device.
-            </li>
-            <li>
-                This function is not implemented in PC-BASIC.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
-            </li>
-            <li>
-                Otherwise: <samp>Illegal function call</samp>
             </li>
         </ul>
     </section>
@@ -4206,73 +5583,6 @@
 <hr />
 
     <section>
-        <h4 id="LEFT$"><code>LEFT$</code> function</h4>
-        <code class="block">
-            <var>child</var> <b>= LEFT$(</b><var>parent</var><b>,</b> <var>num_chars</var><b>)</b>
-        </code>
-        <p>
-            Returns the leftmost <code><var>num_chars</var></code> characters of <code><var>parent</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>parent</var></code> is a string expression.
-            </li>
-            <li>
-                <code><var>num_chars</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                If <code><var>num_chars</var></code> is zero or <code><var>parent</var></code> is empty, <code>LEFT$</code> returns
-                an empty string.
-            </li>
-            <li>
-                If <code><var>num_chars</var></code> is greater than the length of <code><var>parent</var></code>,
-                returns <code><var>parent</var></code>.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>parent</var></code> has a numeric value or <code><var>num_chars</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>num_chars</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="LEN"><code>LEN</code> function</h4>
-        <code class="block">
-            <var>length</var> <b>= LEN(</b><var>string</var><b>)</b>
-        </code>
-        <p>
-            Returns the number of characters in <code><var>string</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>string</var></code> is a string
-                expression.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="LET"><code>LET</code> statement</h4>
         <code class="block">
             [<b>LET</b>] <var>name</var> <b>=</b> <var>expression</var>
@@ -4589,72 +5899,6 @@
 <hr />
 
     <section>
-        <h4 id="LOC"><code>LOC</code> function</h4>
-        <code class="block">
-            <var>location</var> <b>= LOC(</b><var>file_num</var><b>)</b>
-        </code>
-        <p>
-            Returns the current location in the file opened under number <code><var>file_num</var></code>.
-        </p>
-        <ul>
-            <li>
-                If the file is opened for <code>INPUT</code>, <code>OUTPUT</code> or <code>APPEND</code>, <code>LOC</code> returns the number
-                of 128-byte blocks read or written since opening the file.
-            </li>
-            <li>
-                If the file is opened for <code>RANDOM</code>, <code>LOC</code> returns the record number last read or
-                written.
-            </li>
-            <li>
-                If the file is opened to a <code>COM</code> device, <code>LOC</code> returns the number of characters
-                in the input buffer, with a maximum of 255.
-            </li>
-            <li>
-                If the file is opened to <code>KYBD:</code>, <code>LOC</code> returns 0.
-            </li>
-        </ul>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>file_num</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-               <code><var>file_num</var></code> must not be preceded by a <code>#</code>.
-            </li>
-            <li>
-                In <code>OUTPUT</code> or <code>APPEND</code> mode, before any writes  <code>LOC</code> returns 0. After the 128th
-                character is written,  <code>LOC</code> returns 1.
-            </li>
-            <li>
-                In <code>INPUT</code> mode, before any reads  <code>LOC</code> returns 1. After the <strong>129th</strong> character
-                is read, <code>LOC</code> returns 2.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is open for output to a device: <samp>Bad file mode</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="LOCATE"><code>LOCATE</code> statement</h4>
         <code class="block">
             <b>LOCATE</b> [<var>row</var>] [<b>,</b> [<var>col</var>] [<b>,</b> [<var>cursor_visible</var>] [<b>,</b> [<var>start_line</var>] [<b>,</b> [<var>stop_line</var>] [<b>,</b>]]]]]
@@ -4771,123 +6015,6 @@
 <hr />
 
     <section>
-        <h4 id="LOF"><code>LOF</code> function</h4>
-        <code class="block">
-            <var>length</var> <b>= LOF(</b><var>file_num</var><b>)</b>
-        </code>
-        <p>
-            Returns the number of bytes in the file open under <code><var>file_num</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>file_num</var></code> is a numeric expression in the range <code>[0&#8212;255]</code>.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                If <code><var>file_num</var></code> is open to a <code>COM:</code> device, <code>LOF</code> returns the number of bytes
-                free in the input buffer.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is open for output to a device: <samp>Bad file mode</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="LOG"><code>LOG</code> function</h4>
-        <code class="block">
-            <var>y</var> <b>= LOG(</b><var>x</var><b>)</b>
-        </code>
-        <p>
-            Returns the natural logarithm of <code><var>x</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> is a numeric expression greater than zero.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
-                option, this function returns a single-precision value.
-            </li>
-            <li>
-               <code>LOG(<var>x</var>)</code> can differ from GW-BASIC by 1 in the least significant digit.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> is zero or negative: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="LPOS"><code>LPOS</code> function</h4>
-        <code class="block">
-            <var>position</var> <b>= LPOS(</b><var>printer_number</var><b>)</b>
-        </code>
-        <p>
-            Returns the column position for a printer.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>printer_number</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
-                If it is 0
-                or 1, the position for <code>LPT1:</code> is returned. If it is 2, <code>LPT2:</code>; 3, <code>LPT3:</code>.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                In GW-BASIC, when entering direct mode, <code>LPT1:</code> (but not other printers)
-                is flushed and its position is reset to 1. This is not implemented in
-                PC-BASIC.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>printer_number</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>printer_number</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>printer_number</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="LPRINT"><code>LPRINT</code> statement</h4>
         <p>
             See <code><a href="#PRINT">PRINT</a></code>.
@@ -4983,45 +6110,6 @@
 <hr />
 
     <section>
-        <h4 id="MID$"><code>MID$</code> function</h4>
-        <code class="block">
-            <var>substring</var> <b>= MID$(</b><var>string</var><b>,</b> <var>position</var> [<b>,</b> <var>length</var>]<b>)</b>
-        </code>
-        <p>
-            Returns a substring of <code><var>string</var></code> starting at <code><var>position</var></code>, counting from 1. The
-            substring has length <code><var>length</var></code> if specified, defaulting to 1.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>string</var></code> is a string expression.
-            </li>
-            <li>
-                <code><var>position</var></code> is a numeric expression between 1 and the string length, inclusive.
-            </li>
-            <li>
-                <code><var>length</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>string</var></code> has a number value or <code><var>position</var></code> or <code><var>length</var></code> have string values: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>position</var></code> or <code><var>length</var></code> are not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>position</var></code> is not in <code>[1&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="MID$-statement"><code>MID$</code> statement</h4>
         <code class="block">
             <b>MID$(</b><var>string_name</var><b>,</b> <var>position</var> [<b>,</b> <var>length</var>]<b>) =</b> <var>substring</var>
@@ -5106,62 +6194,6 @@
             </li>
             <li>
                 The user has no write permission: <samp>Permission denied</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="MKD$"><code>MKD$</code> function</h4>
-        <code class="block">
-            <var>bytes</var> <b>= MKD$(</b><var>double</var><b>)</b>
-        </code>
-        <p>
-            Returns the internal 8-byte Microsoft Binary Format representation of a double-
-            precision number.
-        </p>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>double</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="MKI$"><code>MKI$</code> function</h4>
-        <code class="block">
-            <var>bytes</var> <b>= MKI$(</b><var>int</var><b>)</b>
-        </code>
-        <p>
-            Returns the internal 2-byte little-endian representation of an integer.
-        </p>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>int</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>int</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="MKS$"><code>MKS$</code> function</h4>
-        <code class="block">
-            <var>bytes</var> <b>= MKS$(</b><var>single</var><b>)</b>
-        </code>
-        <p>
-            Returns the internal 8-byte Microsoft Binary Format representation of a single-
-            precision number.
-        </p>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>single</var></code> has a string value: <samp>Type mismatch</samp>.
             </li>
         </ul>
     </section>
@@ -5381,34 +6413,6 @@
             </li>
             <li>
                 <code><var>source</var></code> is not in <code>[0&#8212;7]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="OCT$"><code>OCT$</code> function</h4>
-        <code class="block">
-            <var>octal</var> <b>= OCT$(</b><var>x</var><b>)</b>
-        </code>
-        <p>
-            Returns a string with the octal representation of <code><var>x</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> is a
-                numeric expression in <code>[-32768&#8212;65535]</code>. Values for
-                negative <code><var>x</var></code> are shown as two's-complement.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
             </li>
         </ul>
     </section>
@@ -6406,47 +7410,6 @@
 <hr />
 
     <section>
-        <h4 id="PEEK"><code>PEEK</code> function</h4>
-        <code class="block">
-            <var>value</var> <b>= PEEK(</b><var>address</var><b>)</b>
-        </code>
-        <p>
-            Returns the value of the memory at  <code><var>segment</var> * 16 + <var>address</var></code> where <code><var>segment</var></code>
-            is the current segment set with <code>DEF SEG</code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>. Negative values are interpreted as their
-                two's complement.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-               The memory is only partly emulated in PC-BASIC. See <a href="#memory">Memory model</a> for supported addresses.
-               Outside emulated areas, <code>PEEK</code> returns 0.
-            </li>
-            <li>
-               Values for particular memory address can be preset on the command line
-                using the <code><a href="#--peek">--peek</a></code> option. This can be used for compatibility with old
-                programs. These values will override video or data segment values, if they
-                are in those locations.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>address</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>address</var></code> is not in <code>[-32768&#8212;65535]</code>: <samp>Overflow</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="PEN-statement"><code>PEN</code> statement</h4>
         <code class="block"><b>PEN</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}</code>
         <p>
@@ -6457,88 +7420,6 @@
             event handling was switched on prior to suspension. The event triggered during
             suspension is handled immediately after the next <code>PEN ON</code> statement.
         </p>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="PEN"><code>PEN</code> function</h4>
-        <code class="block"><var>x</var> <b>= PEN(</b><var>mode</var><b>)</b></code>
-        <p>
-            Reads the light pen. What this function returns depends on <code><var>mode</var></code>:
-        </p>
-        <div class="scrollable">
-            <table>
-                <tr>
-                    <th><code><var>mode</var></code></th>
-                    <th>Return value</th>
-                </tr>
-                <tr>
-                    <td>0</td>
-                    <td>Boolean; whether the light pen has been down since last poll.</td>
-                </tr>
-                <tr>
-                    <td>1</td>
-                    <td>x coordinate of last pen down position</td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>y coordinate of last pen down position</td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td>Boolean; whether the pen is currently down</td>
-                </tr>
-                <tr>
-                    <td>4</td>
-                    <td>x coordinate of current pen position</td>
-                </tr>
-                <tr>
-                    <td>5</td>
-                    <td>y coordinate of current pen position</td>
-                </tr>
-                <tr>
-                    <td>6</td>
-                    <td>character row coordinate of last pen down position</td>
-                </tr>
-                <tr>
-                    <td>7</td>
-                    <td>character column coordinate of last pen down position</td>
-                </tr>
-                <tr>
-                    <td>8</td>
-                    <td>character row coordinate of current pen position</td>
-                </tr>
-                <tr>
-                    <td>9</td>
-                    <td>character column coordinate of current pen position</td>
-                </tr>
-            </table>
-        </div>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>mode</var></code> is a numeric expression in <code>[0&#8212;9]</code>.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                In PC-BASIC, for <i>pen down</i> read <i>mouse button pressed</i>. For <i>pen
-                position</i> read <i>mouse pointer position</i>.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>mode</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>mode</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>mode</var></code> is not in <code>[0&#8212;9]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
     </section>
 <hr />
 
@@ -6778,222 +7659,6 @@
 <hr />
 
     <section>
-        <h4 id="PLAY-function"><code>PLAY</code> function</h4>
-        <code class="block">
-            <var>length</var> <b>= PLAY(</b><var>voice</var><b>)</b>
-        </code>
-        <p>
-            Returns the number of notes in the background music queue. The return value is in <code>[0&#8212;16]</code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>voice</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-                If <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code>, indicates for which tone voice channel
-                the number of notes is to be returned. If <code><var>voice</var></code> is not in <code>[0&#8212;2]</code>, the
-                queue for voice 0 is returned.
-                For other choices of <code>--syntax</code>, the <code><var>voice</var></code> value has no effect.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                There are at most 16 notes in the music queue. Some GW-BASIC manuals
-                claim there can be up to 32, but in reality <code>PLAY</code> only returns at the
-                last 16 notes.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>voice</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>voice</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>voice</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="PMAP"><code>PMAP</code> function</h4>
-        <code class="block">
-            <var>transformed_coord</var> <b>= PMAP(</b><var>original_coord</var><b>,</b> <var>fn</var><b>)</b>
-        </code>
-        <p>
-            Maps between viewport and logical (<code><a href="#WINDOW">WINDOW</a></code>) coordinates.
-            If no <code><a href="#VIEW">VIEW</a></code> has been set, the viewport coordinates
-            are physical coordinates.
-        </p>
-        <p>
-            Depending on the value of <code><var>fn</var></code>, <code>PMAP</code>
-            transforms from logical to viewport coordinates or vice versa:
-        </p>
-        <div class="scrollable">
-            <table>
-                <tr>
-                    <th><code><var>fn</var></code></th>
-                    <th>Return value</th>
-                </tr>
-                <tr>
-                    <td>0</td>
-                    <td>return viewport x given logical x</td>
-                </tr>
-                <tr>
-                    <td>1</td>
-                    <td>return viewport y given logical y</td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>return logical x given viewport x</td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td>return logical y given viewport y</td>
-                </tr>
-            </table>
-        </div>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                Initially, in text mode, <code>PMAP</code> returns 0.
-            </li>
-            <li>
-                In GW-BASIC, <code>PMAP</code> behaves anomalously on <code><a href="#SCREEN-statement">SCREEN</a></code> changes, where it sometimes
-                returns results as if the last <code>WINDOW</code> setting had persisted. This behaviour is not
-                implemented in PC-BASIC.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                Any of the parameters has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                A physical coordinate is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>fn</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="POINT-coord"><code>POINT</code> function (current coordinate)</h4>
-        <code class="block">
-            <var>coord</var> <b>= POINT(</b><var>fn</var><b>)</b>
-        </code>
-        <p>
-            Returns a currently active coordinate of the graphics screen. This is usually
-            the last position at which a pixel has been plotted, the second corner given
-            in a <code>LINE</code> command, or the centre of the viewport if nothing has been plotted.
-            <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
-        </p>
-        <p>
-            The coordinate returned depends on the value of <code><var>fn</var></code>:
-        </p>
-        <div class="scrollable">
-            <table>
-                <tr>
-                    <th><code><var>fn</var></code></th>
-                    <th>Return value</th>
-                </tr>
-                <tr>
-                    <td>0</td>
-                    <td>viewport x</td>
-                </tr>
-                <tr>
-                    <td>1</td>
-                    <td>viewport y</td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>logical x</td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td>logical y</td>
-                </tr>
-            </table>
-        </div>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;3]</code>.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                In text mode, returns the active coordinate of any previous graphics mode;
-                if no graphics mode has been active, returns 0.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>fn</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>fn</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="POINT-attr"><code>POINT</code> function (pixel attribute)</h4>
-        <code class="block">
-            <var>attrib</var> <b>= POINT(</b><var>x</var><b>,</b> <var>y</var><b>)</b>
-        </code>
-        <p>
-            Returns the attribute of the pixel at logical coordinate <code><var>x</var></code>,<code><var>y</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code>, <code><var>y</var></code> are numeric expressions in <code>[-32768&#8212;32767]</code>.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                If <code><var>x</var></code>,<code><var>y</var></code> is outside the screen, returns -1.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                Function is called in text mode: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> or <code><var>y</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>x</var></code> or <code><var>y</var></code> or the physical coordinates they translate into are not in
-                <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="POKE"><code>POKE</code> statement</h4>
         <code class="block">
             <b>POKE</b> <var>address</var><b>,</b> <var>value</var>
@@ -7034,23 +7699,6 @@
             </li>
             <li>
                 <code><var>value</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="POS"><code>POS</code> function</h4>
-        <code class="block">
-            <var>pos</var> <b>= POS(</b><var>dummy</var><b>)</b>
-        </code>
-        <p>
-            Returns the current cursor column position, in the range <code>[1&#8212;80]</code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>dummy</var></code> is a valid expression of any type; its value has no effect.
             </li>
         </ul>
     </section>
@@ -7733,41 +8381,6 @@
 <hr />
 
     <section>
-        <h4 id="RIGHT$"><code>RIGHT$</code> function</h4>
-        <code class="block">
-            <var>child</var> <b>= RIGHT$(</b><var>parent</var><b>,</b> <var>num_chars</var><b>)</b>
-        </code>
-        <p>
-            Returns the rightmost <code><var>num_chars</var></code> characters of <code><var>parent</var></code>.
-            If <code><var>num_chars</var></code> is zero or <code><var>parent</var></code> is empty, <code>RIGHT$</code> returns
-            an empty string. If <code><var>num_chars</var></code> is greater than the length of <code><var>parent</var></code>,
-            returns <code><var>parent</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>parent</var></code> is a string expression.
-            </li>
-            <li>
-                <code><var>num_chars</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>num_chars</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>num_chars</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>num_chars</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="RMDIR"><code>RMDIR</code> statement</h4>
         <code class="block">
             <b>RMDIR</b> <var>path</var>
@@ -7796,28 +8409,6 @@
             </li>
             <li>
                 No matching path is found: <samp>Path not found</samp> .
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="RND"><code>RND</code> function</h4>
-        <code class="block">
-            <var>random</var> <b>= RND</b>[<b>(</b><var>x</var><b>)</b>]
-        </code>
-        <p>
-            Returns a pseudorandom number in the interval <code>[0&#8212;1)</code>.
-            <code><var>x</var></code> is a numeric expression. If <code><var>x</var></code> is zero, <code>RND</code> repeats the last pseudo-
-            random number. If <code><var>x</var></code> is greater than zero, a new pseudorandom number is
-            returned. If <code><var>x</var></code> is negative, the value of <code><var>x</var></code> is used to generate a new
-            random number seed; after that, a new pseudorandom number is returned.
-            The seed is generated in a different way than by <code><a href="#RANDOMIZE">RANDOMIZE</a></code>.
-        </p>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
             </li>
         </ul>
     </section>
@@ -7920,54 +8511,6 @@
             <li>
                 <code><a href="#--strict-protect">--strict-protect</a></code> is enabled, the current program is protected and <code>,P</code> is not specified:
                 <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="SCREEN-function"><code>SCREEN</code> function</h4>
-        <code class="block">
-            <var>value</var> <b>= SCREEN(</b><var>row</var><b>,</b> <var>column</var> [<b>,</b> <var>fn</var>]<b>)</b>
-        </code>
-        <p>
-            Returns the ASCII code or colour attribute for the character at position
-            <code><var>row</var></code>, <code><var>col</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>row</var></code> is a numeric expression in the range <code>[1&#8212;25]</code>.
-            </li>
-            <li>
-                <code><var>col</var></code> is a numeric expression between 1 and the screen width (40 or 80).
-            </li>
-            <li>
-                <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;255]</code>. If it is zero or not specified,
-                the ASCII code of the character is returned. If it is non-zero, in text mode the
-                attribute is returned; in other screens, 0 is returned.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                Any parameter has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>fn</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>fn</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>row</var></code> is not inside the current <code>VIEW PRINT</code> area:
-                <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><a href="#KEY-list">KEY ON</a></code> and <code><var>row</var>=25</code>: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>col</var></code> is not in <code>[1, <var>width</var>]</code>: <samp>Illegal function call</samp>.
             </li>
         </ul>
     </section>
@@ -8116,29 +8659,6 @@
 <hr />
 
     <section>
-        <h4 id="SGN"><code>SGN</code> function</h4>
-        <code class="block">
-            <var>sign</var> <b>= SGN(</b><var>number</var><b>)</b>
-        </code>
-        <p>
-            Returns the sign of <code><var>number</var></code>: <code>1</code> for positive, <code>0</code> for zero and <code>-1</code> for negative.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>number</var></code> is a numeric expression.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>number</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="SHELL"><code>SHELL</code> statement</h4>
         <code class="block">
             <b>SHELL</b> [<var>command</var>]
@@ -8173,41 +8693,6 @@
             <li>
                 All output from the operating system subshell, including error messages, is displayed
                 on the PC-BASIC screen.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="SIN"><code>SIN</code> function</h4>
-        <code class="block">
-            <var>sine</var> <b>= SIN(</b><var>angle</var><b>)</b>
-        </code>
-        <p>
-            Returns the sine of <code><var>angle</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-            <code><var>angle</var></code> is a numeric expression giving
-            the angle in radians.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
-                option, this function returns a single-precision value.
-            </li>
-            <li>
-                The sine returned usually differs from the value returned by GW-BASIC in the least significant figure.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>angle</var></code> has a string value:
-                <samp>Type mismatch</samp>.
             </li>
         </ul>
     </section>
@@ -8338,119 +8823,6 @@
 <hr />
 
     <section>
-        <h4 id="SPACE$"><code>SPACE$</code> function</h4>
-        <code class="block">
-            <var>spaces</var> <b>= SPACE$(</b><var>number</var><b>)</b>
-        </code>
-        <p>
-            Returns a string of <code><var>number</var></code> spaces.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>number</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>number</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>number</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>number</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="SQR"><code>SQR</code> function</h4>
-        <code class="block">
-            <var>root</var> <b>= SQR(</b><var>number</var><b>)</b>
-        </code>
-        <p>
-            Returns the square root of <code><var>number</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>number</var></code> is a numeric expression.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
-                option, this function returns a single-precision value.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>number</var></code> has a string value: <samp>Type mismatch</samp>
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="STICK"><code>STICK</code> function</h4>
-        <code class="block">
-            <var>pos</var> <b>= STICK(</b><var>axis</var><b>)</b>
-        </code>
-        <p>
-            Returns a coordinate of a joystick axis. All coordinates returned are in the
-            range <code>[1&#8212;254]</code> with <code>128</code> indicating the neutral position.
-        </p>
-        <div class="scrollable">
-            <table>
-                <tr>
-                    <th><code><var>axis</var></code></th>
-                    <th>Return value</th>
-                </tr>
-                <tr>
-                    <td>0</td>
-                    <td>1st joystick x coordinate</td>
-                </tr>
-                <tr>
-                    <td>1</td>
-                    <td>1st joystick y coordinate</td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>2nd joystick x coordinate</td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td>2nd joystick y coordinate</td>
-                </tr>
-            </table>
-        </div>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>axis</var></code> is a numeric expression in <code>[0&#8212;3]</code> and indicates which axis to read.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>axis</var></code> has a string value: <samp>Type mismatch</samp>
-            </li>
-            <li>
-                <code><var>axis</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>axis</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="STOP"><code>STOP</code> statement</h4>
         <code class="block">
             <b>STOP</b>
@@ -8462,30 +8834,7 @@
             <code><a href="#CONT">CONT</a></code>.
         </p>
     </section>
-<hr />
-
-    <section>
-        <h4 id="STR$"><code>STR$</code> function</h4>
-        <code class="block">
-            <var>repr</var> <b>= STR$(</b><var>number</var><b>)</b>
-        </code>
-        <p>
-            Returns the string representation of <code><var>number</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>number</var></code> is a numeric expression.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>number</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
+    <hr />
 
     <section>
         <h4 id="STRIG-switch"><code>STRIG</code> statement</h4>
@@ -8558,122 +8907,6 @@
 <hr />
 
     <section>
-    <h4 id="STRIG-function"><code>STRIG</code> function</h4>
-    <code class="block">
-        <var>result</var> <b>= STRIG(</b><var>mode</var><b>)</b>
-    </code>
-    <p>
-        Returns the status of the joystick trigger buttons.
-        <code>STRIG</code> returns the following
-        results, all Boolean values:
-    </p>
-    <div class="scrollable">
-        <table>
-            <tr>
-                <th><code><var>mode</var></code></th>
-                <th>Return value</th>
-            </tr>
-            <tr>
-                <td>0</td>
-                <td>1st joystick, 1st trigger has been pressed since last poll.</td>
-            </tr>
-            <tr>
-                <td>1</td>
-                <td>1st joystick, 1st trigger is currently pressed.</td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td>2nd joystick, 1st trigger has been pressed since last poll.</td>
-            </tr>
-            <tr>
-                <td>3</td>
-                <td>2nd joystick, 1st trigger is currently pressed.</td>
-            </tr>
-            <tr>
-                <td>4</td>
-                <td>1st joystick, 2nd trigger has been pressed since last poll.</td>
-            </tr>
-            <tr>
-                <td>5</td>
-                <td>1st joystick, 2nd trigger is currently pressed.</td>
-            </tr>
-            <tr>
-                <td>6</td>
-                <td>2nd joystick, 2nd trigger has been pressed since last poll.</td>
-            </tr>
-            <tr>
-                <td>7</td>
-                <td>2nd joystick, 2nd trigger is currently pressed.</td>
-            </tr>
-        </table>
-    </div>
-    <h5>Parameters</h5>
-    <ul>
-        <li>
-            <code><var>mode</var></code> is a numeric expression in <code>[0&#8212;7]</code>.
-        </li>
-    </ul>
-    <h5>Notes</h5>
-    <ul>
-        <li>
-            The <code>STRIG</code> function returns correct results regardless of the
-            <code><a href="#STRIG-switch">STRIG ON</a></code>
-            status or whether <code><a href="#STRIG-function">STRIG(0)</a></code>
-            has been called first.
-        </li>
-    </ul>
-    <h5>Errors</h5>
-    <ul>
-        <li>
-            <code><var>mode</var></code> has a string value: <samp>Type mismatch</samp>.
-        </li>
-        <li>
-            <code><var>mode</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-        </li>
-        <li>
-            <code><var>mode</var></code> is not in <code>[0&#8212;7]</code>: <samp>Illegal function call</samp>.
-        </li>
-    </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="STRING$"><code>STRING$</code> function</h4>
-        <code class="block">
-            <var>string</var> <b>= STRING$(</b><var>length</var><b>,</b> <var>char</var><b>)</b>
-        </code>
-        <p>
-            Returns a string of <code><var>length</var></code> times character <code><var>char</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                If <code><var>char</var></code> is a numeric expression, it must be in <code>[0&#8212;255]</code> and is
-                interpreted as the ASCII value of the character.
-            </li>
-            <li>
-                If <code><var>char</var></code> is a string expression, its first character is used.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>length</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>char</var></code> is the empty string: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>char</var></code> or <code><var>length</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
-            </li>
-            <li>
-                <code><var>char</var></code> or <code><var>length</var></code> is not in <code>[0&#8212;255]</code>: <samp>Illegal function call</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="SWAP"><code>SWAP</code> statement</h4>
         <code class="block">
             <b>SWAP</b> <var>var_0</var><b>,</b> <var>var_1</var>
@@ -8728,44 +8961,6 @@
 <hr />
 
     <section>
-        <h4 id="TAN"><code>TAN</code> function</h4>
-        <code class="block">
-            <var>tangent</var> <b>= TAN(</b><var>angle</var><b>)</b>
-        </code>
-        <p>
-            Returns the tangent of <code><var>angle</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>angle</var></code> is a numeric expression giving
-                the angle in radians.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
-                option, this function returns a single-precision value.
-            </li>
-            <li>
-                The tangent returned usually differs from the value returned by GW-BASIC in the least significant figure.
-            </li>
-            <li>
-                For <code><var>angle</var></code> close to multiples of <code>&#960;/2</code>, the tangent is divergent or close
-                to zero. The values returned will have very low precision in these cases.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>angle</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
         <h4 id="TERM"><code>TERM</code> statement</h4>
         <code class="block">
             <b>TERM</b>
@@ -8787,23 +8982,6 @@
                 If <code><a href="#--syntax">--syntax</a></code> is not set to
                 <code>pcjr</code> or <code>tandy</code>, this keyword is not present.
                 Calling <code>TERM</code> will raise <samp>Syntax error</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="TIME$-function"><code>TIME$</code> function</h4>
-        <code class="block">
-            <var>time</var> <b>= TIME$</b>
-        </code>
-        <p>
-            Returns the current BASIC time in the form <code>"HH:mm:ss"</code>.
-        </p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                This function has no brackets.
             </li>
         </ul>
     </section>
@@ -8863,34 +9041,6 @@
                 <code>STOP</code>: halts trapping until <code>TIMER ON</code> is used.
                 Events that occur while trapping is halted will trigger immediately when
                 trapping is re-enabled.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="TIMER"><code>TIMER</code> function</h4>
-        <code class="block">
-            <var>seconds</var> <b>= TIMER</b>
-        </code>
-        <p>
-            Returns the number of seconds since midnight on the internal BASIC
-            clock.
-        </p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                <code>TIMER</code> updates in ticks of 1/20 second.
-            </li>
-            <li>
-                The least-significant two bytes of <code>TIMER</code> are often used as a seed for the
-                pseudorandom number generator through <code><a href="#RANDOMIZE">RANDOMIZE</a> TIMER</code>. Since these bytes
-                only take values from a limited set, that's not in fact a particularly good
-                random seed. However, the pseudorandom number generator included with GW-BASIC and PC-BASIC
-                is so weak that it should not be used for anything serious anyway.
-            </li>
-            <li>
-            This function has no brackets.
             </li>
         </ul>
     </section>
@@ -8958,158 +9108,6 @@
             </li>
             <li>
                 <code><var>record_0</var></code> or <code><var>record_1</var></code> is not in <code>[1&#8212;2^25-2]</code>: <samp>Bad record number</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="USR"><code>USR</code> function</h4>
-        <code class="block">
-            <var>value</var> <b>= USR</b>[<var>n</var>]<b>(</b><var>expr</var><b>)</b>
-        </code>
-        <p>
-            Returns zero.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>n</var></code> is a digit <code>[<b>0</b>&#8212;<b>9</b>]</code>.
-            </li>
-            <li>
-                <code><var>expr</var></code> is an expression.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                In GW-BASIC, calls a machine-code function and returns its return value.
-            </li>
-            <li>
-                This function is not implemented in PC-BASIC.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>n</var></code> is not a digit <code>[<b>0</b>&#8212;<b>9</b>]</code>: <samp>Syntax error</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="VAL"><code>VAL</code> function</h4>
-        <code class="block">
-            <var>value</var> <b>= VAL(</b><var>string</var><b>)</b>
-        </code>
-        <p>
-            Returns the numeric value of the string expression <code><var>string</var></code>.
-            Parsing stops as soon as the first character is encountered that cannot be
-            part of a number. If no characters are parsed, <code>VAL</code> returns zero.
-            See the section on <a href="#literals">numeric literals</a> for the
-            recognised number formats.
-        </p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                Spaces before or even inside a number are ignored:
-                <code>VAL(" 1 0")</code> returns <code>10</code>.
-            </li>
-            <li>
-                If <code><var>string</var></code> contains one of the ASCII separator
-                characters <code>CHR$(28)</code> (file separator),
-                <code>CHR$(29)</code> (group separator) or
-                <code>CHR$(31)</code> (unit separator),
-                <code>VAL</code> returns zero.
-                This is not the case with <code>CHR$(30)</code> (record separator).
-                This behaviour conforms to GW-BASIC.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>string</var></code> has a number value: <samp>Type mismatch</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="VARPTR"><code>VARPTR</code> function</h4>
-        <code class="block">
-            <var>pointer</var> <b>= VARPTR(</b>{<var>name</var>|<b>#</b><var>file_num</var>}<b>)</b>
-        </code>
-        <p>
-            Returns the memory address of variable <code><var>name</var></code>
-            or of the File Control Block of
-            file number <code><var>file_num</var></code>.
-        </p>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>name</var></code> is a
-                previously defined variable or fully indexed array element.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is a legal file number.
-            </li>
-        </ul>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                <code>VARPTR</code> can be used with <code><a href="#PEEK">PEEK</a></code>
-                to read a variable's internal representation.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>name</var></code> has not been previously defined: <samp>Illegal function call</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> has a string value: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>file_num</var></code> is not in <code>[1, <var>max_files</var>]</code>,
-                where <code><var>max_files</var></code> is the maximum number of files
-                as set by the <code><a href="#--max-files">max-files</a></code> option:
-                <samp>Bad file number</samp>.
-            </li>
-        </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="VARPTR$"><code>VARPTR$</code> function</h4>
-        <code class="block">
-            <var>pointer</var> <b>= VARPTR$(</b><var>name</var><b>)</b>
-        </code>
-        <p>
-            Returns the memory address of variable <code><var>name</var></code> in the form of a 3-byte string.
-            The first byte is the length of the record the pointer points to:
-        </p>
-        <dl class="compact">
-            <dt>2</dt>
-            <dd>for integers</dd>
-
-            <dt>3</dt>
-            <dd>for strings (length + pointer to string space)</dd>
-
-            <dt>4</dt>
-            <dd>for single-precision floats</dd>
-
-            <dt>8</dt>
-            <dd>for double-precision floats</dd>
-        </dl>
-        <p>
-            The last two bytes are the pointer address (as returned by
-            <code><a href="#VARPTR">VARPTR</a></code>) in little-endian order.
-        </p>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>name</var></code> has not been previously defined: <samp>Illegal function call</samp>.
             </li>
         </ul>
     </section>
@@ -9405,7 +9403,6 @@
         </ul>
     </section>
 <hr />
-
 
     <section>
         <h4 id="WINDOW"><code>WINDOW</code> statement</h4>
