@@ -1,0 +1,1457 @@
+<!--
+    PC-BASIC documentation
+    Copyright (c) 2014-2016 Rob Hagemans
+    This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+    http://creativecommons.org/licenses/by-sa/4.0/legalcode
+-->
+
+<article>
+<h2 id="guide">Language guide</h2>
+<p>
+    This documentation describes the PC-BASIC language, which aims to faithfully emulate
+    GW-BASIC 3.23, IBM Advanced BASIC, IBM Cartridge BASIC and Tandy 1000 GW-BASIC.
+</p>
+<p>
+    The BASIC Language Guide covers the language topic by topic, thematically grouping
+    language elements used for a related purpose. Please refer to the
+    <a href="reference">BASIC Language Reference</a> for a formal description of
+    the langage elements and their syntax.
+</p>
+
+<section>
+    <h3 id="guide-programs">Working with programs</h3>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#AUTO"><code>AUTO</code></a></td>
+                <td>Enter automatic line numbering mode</td>
+            </tr>
+            <tr>
+                <td><a href="#CHAIN"><code>CHAIN</code></a></td>
+                <td>Load a new program and run it, preserving common variables</td>
+            </tr>
+            <tr>
+                <td><a href="#COMMON"><code>COMMON</code></a></td>
+                <td>Set common variables</td>
+            </tr>
+            <tr>
+                <td><a href="#DELETE"><code>DELETE</code></a></td>
+                <td>Delete lines from the program</td>
+            </tr>
+            <tr>
+                <td><a href="#EDIT"><code>EDIT</code></a></td>
+                <td>Print a program line to the screen for editing</td>
+            </tr>
+            <tr>
+                <td><a href="#LIST"><code>LIST</code></a></td>
+                <td>Print program lines to the screen</td>
+            </tr>
+            <tr>
+                <td><a href="#LLIST"><code>LLIST</code></a></td>
+                <td>Print program lines to the printer</td>
+            </tr>
+            <tr>
+                <td><a href="#LOAD"><code>LOAD</code></a></td>
+                <td>Read a new program from file</td>
+            </tr>
+            <tr>
+                <td><a href="#MERGE"><code>MERGE</code></a></td>
+                <td>Overlay a program file onto the current program</td>
+            </tr>
+            <tr>
+                <td><a href="#NEW"><code>NEW</code></a></td>
+                <td>Clear the current program from memory</td>
+            </tr>
+            <tr>
+                <td><a href="#RENUM"><code>RENUM</code></a></td>
+                <td>Replace the program's line numbers</td>
+            </tr>
+            <tr>
+                <td><a href="#RUN"><code>RUN</code></a></td>
+                <td>Start the current program</td>
+            </tr>
+            <tr>
+                <td><a href="#SAVE"><code>SAVE</code></a></td>
+                <td>Store the current program to file</td>
+            </tr>
+            <tr>
+                <td><a href="#TRON"><code>TRON</code></a></td>
+                <td>Enable line number tracing</td>
+            </tr>
+            <tr>
+                <td><a href="#TROFF"><code>TROFF</code></a></td>
+                <td>Disable line number tracing</td>
+            </tr>
+            <tr>
+                <td><a href="#SYSTEM"><code>SYSTEM</code></a></td>
+                <td>Exit the BASIC interpreter</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="guide-flow">Looping and branching</h3>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#CONT"><code>CONT</code></a></td>
+                <td>Continue interrupted program</td>
+            </tr>
+            <tr>
+                <td><a href="#ELSE"><code>ELSE</code></a></td>
+                <td>Ignore the remainder of the line (standalone <code>ELSE</code>)</td>
+            </tr>
+            <tr>
+                <td><a href="#END"><code>END</code></a></td>
+                <td>Stop execution of the program</td>
+            </tr>
+            <tr>
+                <td><a href="#FOR"><code>FOR</code></a></td>
+                <td>Start a for-loop</td>
+            </tr>
+            <tr>
+                <td><a href="#GOSUB"><code>GOSUB</code></a></td>
+                <td>Call a subroutine</td>
+            </tr>
+            <tr>
+                <td><a href="#GOTO"><code>GOTO</code></a></td>
+                <td>Jump to another location in the program</td>
+            </tr>
+            <tr>
+                <td><a href="#IF"><code>IF</code></a></td>
+                <td>Branch on a condition</td>
+            </tr>
+            <tr>
+                <td><a href="#NEXT"><code>NEXT</code></a></td>
+                <td>Iterate a for-loop</td>
+            </tr>
+            <tr>
+                <td><a href="#ON-jump"><code>ON</code></a></td>
+                <td>Calculated jump or subroutine call</td>
+            </tr>
+            <tr>
+                <td><a href="#RETURN"><code>RETURN</code></a></td>
+                <td>Return from subroutine</td>
+            </tr>
+            <tr>
+                <td><a href="#STOP"><code>STOP</code></a></td>
+                <td>Interrupt program execution</td>
+            </tr>
+            <tr>
+                <td><a href="#WEND"><code>WEND</code></a></td>
+                <td>Iterate a while-loop</td>
+            </tr>
+            <tr>
+                <td><a href="#WHILE"><code>WHILE</code></a></td>
+                <td>Enter a while-loop</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="guide-var">Arrays and variables</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#DEFINT"><code>DEFDBL</code></a></td>
+                <td>Specify variable name range for double-precision floats</td>
+            </tr>
+            <tr>
+                <td><a href="#DEFINT"><code>DEFINT</code></a></td>
+                <td>Specify variable name range for integers</td>
+            </tr>
+            <tr>
+                <td><a href="#DEFINT"><code>DEFSNG</code></a></td>
+                <td>Specify variable name range for single-precision floats</td>
+            </tr>
+            <tr>
+                <td><a href="#DEFINT"><code>DEFSTR</code></a></td>
+                <td>Specify variable name range for strings</td>
+            </tr>
+            <tr>
+                <td><a href="#DIM"><code>DIM</code></a></td>
+                <td>Allocate an array</td>
+            </tr>
+            <tr>
+                <td><a href="#ERASE"><code>ERASE</code></a></td>
+                <td>Deallocate an array</td>
+            </tr>
+            <tr>
+                <td><a href="#LET"><code>LET</code></a></td>
+                <td>Assign a value to a variable</td>
+            </tr>
+            <tr>
+                <td><a href="#MID$"><code>MID$</code></a></td>
+                <td>Assign a value to part of a string</td>
+            </tr>
+            <tr>
+                <td><a href="#OPTION-BASE"><code>OPTION-BASE</code></a></td>
+                <td>Set the starting index of arrays</td>
+            </tr>
+            <tr>
+                <td><a href="#SWAP"><code>SWAP</code></a></td>
+                <td>Swap two variables</td>
+            </tr>
+        </table>
+    </div>
+
+
+    <h4 id="func-conv">Type conversion functions</h4>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#ASC"><code>ASC</code></a></td>
+                <td>Character to ordinal value</td>
+            </tr>
+            <tr>
+                <td><a href="#CHR$"><code>CHR$</code></a></td>
+                <td>Ordinal value to character</td>
+            </tr>
+            <tr>
+                <td><a href="#HEX$"><code>HEX$</code></a></td>
+                <td>Integer to hexadecimal string representation</td>
+            </tr>
+            <tr>
+                <td><a href="#OCT$"><code>OCT$</code></a></td>
+                <td>Integer to octal string representation</td>
+            </tr>
+            <tr>
+                <td><a href="#STR$"><code>STR$</code></a></td>
+                <td>Numeric value to decimal string representation</td>
+            </tr>
+            <tr>
+                <td><a href="#VAL"><code>VAL</code></a></td>
+                <td>String representation to numeric value</td>
+            </tr>
+            <tr>
+                <td><a href="#CDBL"><code>CDBL</code></a></td>
+                <td>Numeric value to double-precision float</td>
+            </tr>
+            <tr>
+                <td><a href="#CINT"><code>CINT</code></a></td>
+                <td>Numeric value to integer</td>
+            </tr>
+            <tr>
+                <td><a href="#CSNG"><code>CSNG</code></a></td>
+                <td>Numeric value to single-precision float</td>
+            </tr>
+            <tr>
+                <td><a href="#CDBL"><code>CVD</code></a></td>
+                <td>Byte representation to double-precision float</td>
+            </tr>
+            <tr>
+                <td><a href="#CINT"><code>CVI</code></a></td>
+                <td>Byte representation to integer</td>
+            </tr>
+            <tr>
+                <td><a href="#CSNG"><code>CVS</code></a></td>
+                <td>Byte representation to single-precision float</td>
+            </tr>
+            <tr>
+                <td><a href="#MKD$"><code>MKD$</code></a></td>
+                <td>Double-precision float to byte representation</td>
+            </tr>
+            <tr>
+                <td><a href="#MKD$"><code>MKI$</code></a></td>
+                <td>Integer to byte representation</td>
+            </tr>
+            <tr>
+                <td><a href="#MKD$"><code>MKS$</code></a></td>
+                <td>Single-precision float to byte representation</td>
+            </tr>
+        </table>
+    </div>
+
+    <h4 id="func-str">String functions</h4>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#INSTR"><code>INSTR</code></a></td>
+                <td>Find</td>
+            </tr>
+            <tr>
+                <td><a href="#LEFT$"><code>LEFT$</code></a></td>
+                <td>Left substring</td>
+            </tr>
+            <tr>
+                <td><a href="#LEN"><code>LEN</code></a></td>
+                <td>String length</td>
+            </tr>
+            <tr>
+                <td><a href="#MID$"><code>MID$</code></a></td>
+                <td>Substring</td>
+            </tr>
+            <tr>
+                <td><a href="#RIGHT$"><code>RIGHT$</code></a></td>
+                <td>Right substring</td>
+            </tr>
+            <tr>
+                <td><a href="#SPACE$"><code>SPACE$</code></a></td>
+                <td>Repeat spaces</td>
+            </tr>
+            <tr>
+                <td><a href="#STRING$"><code>STRING$</code></a></td>
+                <td>Repeat characters</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+
+
+<section>
+    <h3 id="stat-screen">Text and the screen</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#CLS"><code>CLS</code></a></td>
+                <td>Clear the screen</td>
+            </tr>
+            <tr>
+                <td><a href="#COLOR"><code>COLOR</code></a></td>
+                <td>Set colour and palette values</td>
+            </tr>
+            <tr>
+                <td><a href="#LOCATE"><code>LOCATE</code></a></td>
+                <td>Set the position and shape of the text screen cursor</td>
+            </tr>
+            <tr>
+                <td><a href="#PALETTE"><code>PALETTE</code></a></td>
+                <td>Assign a colour to an attribute</td>
+            </tr>
+            <tr>
+                <td><a href="#PALETTE-USING"><code>PALETTE USING</code></a></td>
+                <td>Assign an array of colours to attributes</td>
+            </tr>
+            <tr>
+                <td><a href="#PCOPY"><code>PCOPY</code></a></td>
+                <td>Copy a screen page</td>
+            </tr>
+            <tr>
+                <td><a href="#PRINT"><code>PRINT</code></a></td>
+                <td>Print expressions to the screen</td>
+            </tr>
+            <tr>
+                <td><a href="#VIEW-PRINT"><code>VIEW PRINT</code></a></td>
+                <td>Set the text scrolling region</td>
+            </tr>
+            <tr>
+                <td><a href="#WIDTH"><code>WIDTH</code></a></td>
+                <td>Set the number of text columns on the screen</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#CSRLIN"><code>CSRLIN</code></a></td>
+                <td>Current row of cursor</td>
+            </tr>
+            <tr>
+                <td><a href="#POS"><code>POS</code></a></td>
+                <td>Current column of cursor</td>
+            </tr>
+            <tr>
+                <td><a href="#SCREEN"><code>SCREEN</code></a></td>
+                <td>Character or attribute at given location</td>
+            </tr>
+        </table>
+    </div>
+</section>
+
+<section>
+    <h3 id="stat-printer">The printer</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#LCOPY"><code>LCOPY</code></a></td>
+                <td>Do nothing</td>
+            </tr>
+            <tr>
+                <td><a href="#PRINT"><code>LPRINT</code></a></td>
+                <td>Print expressions to the printer</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#LPOS"><code>LPOS</code></a></td>
+                <td>Column position of printer head</td>
+            </tr>
+        </table>
+    </div>
+</section>
+
+<section>
+    <h3 id="guide-input">User input</h3>
+    <p>
+        PC-BASIC can receive user input through the keyboard, a light pen (or mouse),
+        or a joystick. The most common input mode is the keyboard, which can be used
+        to enter strings and numbers.
+    </p>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#INPUT"><code>INPUT</code></a></td>
+                <td>Retrieve user input on the console</td>
+            </tr>
+            <tr>
+                <td><a href="LINE-INPUT"><code>LINE INPUT</code></a></td>
+                <td>Retrieve a line of user input on the console</td>
+            </tr>
+            <tr>
+                <td><a href="STRIG-switch"><code>STRIG</code></a></td>
+                <td>Joystick switch</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#INKEY$"><code>INKEY$</code></a></td>
+                <td>Nonblocking read from keyboard</td>
+            </tr>
+            <tr>
+                <td><a href="#INPUT$"><code>INPUT$</code></a></td>
+                <td>Blocking read from keyboard</td>
+            </tr>
+            <tr>
+                <td><a href="#PEN"><code>PEN</code></a></td>
+                <td>Status of light pen</td>
+            </tr>
+            <tr>
+                <td><a href="#STICK"><code>STICK</code></a></td>
+                <td>Coordinate of joystick axis</td>
+            </tr>
+            <tr>
+                <td><a href="#STRIG"><code>STRIG</code></a></td>
+                <td>Status of joystick fire button</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="stat-key">Function-key macros</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#KEY-list"><code>KEY</code></a></td>
+                <td>Manage the visibility of the function-key macro list</td>
+            </tr>
+            <tr>
+                <td><a href="#KEY-def"><code>KEY</code></a></td>
+                <td>Define a function-key macro</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="guide-graph">Graphics</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#CIRCLE"><code>CIRCLE</code></a></td>
+                <td>Draw an ellipse or arc section</td>
+            </tr>
+            <tr>
+                <td><a href="#DRAW"><code>DRAW</code></a></td>
+                <td>Draw a shape defined by a Graphics Macro Language string</td>
+            </tr>
+            <tr>
+                <td><a href="#GET-graphics"><code>GET</code></a></td>
+                <td>Store a screen area as a sprite</td>
+            </tr>
+            <tr>
+                <td><a href="#LINE"><code>LINE</code></a></td>
+                <td>Draw a line segment</td>
+            </tr>
+            <tr>
+                <td><a href="#PAINT"><code>PAINT</code></a></td>
+                <td>Flood-fill a connected region</td>
+            </tr>
+            <tr>
+                <td><a href="#PSET"><code>PSET</code></a></td>
+                <td>Put a pixel</td>
+            </tr>
+            <tr>
+                <td><a href="#PRESET"><code>PRESET</code></a></td>
+                <td>Change a pixel to background attribute</td>
+            </tr>
+            <tr>
+                <td><a href="#PUT-graphics"><code>PUT</code></a></td>
+                <td>Draw a sprite to the screen</td>
+            </tr>
+            <tr>
+                <td><a href="#SCREEN-statement"><code>SCREEN</code></a></td>
+                <td>Change the video mode</td>
+            </tr>
+            <tr>
+                <td><a href="#VIEW"><code>VIEW</code></a></td>
+                <td>Set the graphics viewport</td>
+            </tr>
+            <tr>
+                <td><a href="#WINDOW"><code>WINDOW</code></a></td>
+                <td>Set logical coordinates</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#POINT-coord"><code>POINT</code></a></td>
+                <td>Graphical pointer coordinates</td>
+            </tr>
+            <tr>
+                <td><a href="#POINT-attr"><code>POINT</code></a></td>
+                <td>Pixel attribute</td>
+            </tr>
+            <tr>
+                <td><a href="#PMAP"><code>PMAP</code></a></td>
+                <td>Convert between physical and logical coordinates</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+
+<section>
+    <h3 id="guide-sound">Sound</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#BEEP"><code>BEEP</code></a></td>
+                <td>Beep the speaker</td>
+            </tr>
+            <tr>
+                <td><a href="#BEEP-switch"><code>BEEP</code></a></td>
+                <td>Speaker switch</td>
+            </tr>
+            <tr>
+                <td><a href="#NOISE"><code>NOISE</code></a></td>
+                <td>Generate noise</td>
+            </tr>
+            <tr>
+                <td><a href="#PLAY"><code>PLAY</code></a></td>
+                <td>Play a tune encoded in Music Macro Language</td>
+            </tr>
+            <tr>
+                <td><a href="#SOUND"><code>SOUND</code></a></td>
+                <td>Generate a tone</td>
+            </tr>
+            <tr>
+                <td><a href="#SOUND-switch"><code>SOUND</code></a></td>
+                <td>Sound switch</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#PLAY-function"><code>PLAY</code></a></td>
+                <td>Length of the background music queue</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="guide-math">Calculations and maths</h3>
+
+    <h4 id="func-math">Mathematical functions</h4>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#ABS"><code>ABS</code></a></td>
+                <td>Absolute value</td>
+            </tr>
+            <tr>
+                <td><a href="#ATN"><code>ATN</code></a></td>
+                <td>Arctangent</td>
+            </tr>
+            <tr>
+                <td><a href="#COS"><code>COS</code></a></td>
+                <td>Cosine</td>
+            </tr>
+            <tr>
+                <td><a href="#EXP"><code>EXP</code></a></td>
+                <td>Exponential</td>
+            </tr>
+            <tr>
+                <td><a href="#FIX"><code>FIX</code></a></td>
+                <td>Truncation</td>
+            </tr>
+            <tr>
+                <td><a href="#INT"><code>INT</code></a></td>
+                <td>Floor</td>
+            </tr>
+            <tr>
+                <td><a href="#LOG"><code>LOG</code></a></td>
+                <td>Natural logarithm</td>
+            </tr>
+            <tr>
+                <td><a href="#SIN"><code>SIN</code></a></td>
+                <td>Sine</td>
+            </tr>
+            <tr>
+                <td><a href="#SGN"><code>SGN</code></a></td>
+                <td>Sign</td>
+            </tr>
+            <tr>
+                <td><a href="#SQR"><code>SQR</code></a></td>
+                <td>Square root</td>
+            </tr>
+            <tr>
+                <td><a href="#TAN"><code>TAN</code></a></td>
+                <td>Tangent</td>
+            </tr>
+        </table>
+    </div>
+
+    <h4 id="guide-rnd">Random numbers</h4>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#RANDOMIZE"><code>RANDOMIZE</code></a></td>
+                <td>Seed the random number generator</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#RND"><code>RND</code></a></td>
+                <td>Pseudorandom number</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="guide-dev-file">Devices and files</h3>
+
+    <h4 id="guide-file">File operations</h4>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#CLOSE"><code>CLOSE</code></a></td>
+                <td>Close a file</td>
+            </tr>
+            <tr>
+                <td><a href="#FIELD"><code>FIELD</code></a></td>
+                <td>Assign a string to a random-access record buffer</td>
+            </tr>
+            <tr>
+                <td><a href="#GET-files"><code>GET</code></a></td>
+                <td>Read a record from a random-access file</td>
+            </tr>
+            <tr>
+                <td><a href="#INPUT-file"><code>INPUT</code></a></td>
+                <td>Read a variable from a file</td>
+            </tr>
+            <tr>
+                <td><a href="#LINE-INPUT-file"><code>LINE INPUT</code></a></td>
+                <td>Read a line from a file</td>
+            </tr>
+            <tr>
+                <td><a href="#LOCK"><code>LOCK</code></a></td>
+                <td>Locks a file or a range of records against other use</td>
+            </tr>
+            <tr>
+                <td><a href="#LSET"><code>LSET</code></a></td>
+                <td>Change the value of a random-access record buffer string</td>
+            </tr>
+            <tr>
+                <td><a href="#LSET"><code>RSET</code></a></td>
+                <td>Change the value of a random-access record buffer string</td>
+            </tr>
+            <tr>
+                <td><a href="#OPEN"><code>OPEN</code></a></td>
+                <td>Open a data file</td>
+            </tr>
+            <tr>
+                <td><a href="#PUT-files"><code>PUT</code></a></td>
+                <td>Write the random-access record buffer to disk</td>
+            </tr>
+            <tr>
+                <td><a href="#RESET"><code>RESET</code></a></td>
+                <td>Close all files</td>
+            </tr>
+            <tr>
+                <td><a href="#UNLOCK"><code>UNLOCK</code></a></td>
+                <td>Unlocks a file or a range of records against other use</td>
+            </tr>
+            <tr>
+                <td><a href="#WIDTH"><code>WIDTH</code></a></td>
+                <td>Set the number of text columns in a file</td>
+            </tr>
+            <tr>
+                <td><a href="#WRITE"><code>WRITE</code></a></td>
+                <td>Write expressions to a file</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#EOF"><code>EOF</code></a></td>
+                <td>End of file</td>
+            </tr>
+            <tr>
+                <td><a href="#LOC"><code>LOC</code></a></td>
+                <td>Location in file</td>
+            </tr>
+            <tr>
+                <td><a href="#LOF"><code>LOF</code></a></td>
+                <td>Length of file</td>
+            </tr>
+            <tr>
+                <td><a href="#INPUT$"><code>INPUT$</code></a></td>
+                <td>Read a string from a file</td>
+            </tr>
+        </table>
+    </div>
+
+
+    <h4 id="devices">Devices</h4>
+    <p>
+        PC-BASIC recognises the following DOS-style devices, which can be used by opening a file on them.
+        Some devices allow specification of further file parameters, such
+        as handshake specifications for serial devices, a filename for cassette devices and a path for disk devices.
+        When operating on disk devices, specifying a path is mandatory.
+    </p>
+    <p>
+        The <dfn>filename aliases</dfn> listed here are only available if the
+        <a href="#--current-device">current device</a> is a disk device.
+    </p>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Device</th>
+                <th>Filename alias</th>
+                <th>Allowed modes</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><code>SCRN:</code></td>
+                <td><code>CON</code></td>
+                <td><code>OUTPUT</code></td>
+                <td>
+                    The screen. Output to <code>SCRN:</code> has largely the same
+                    effect as straight output using <code><a href="#PRINT">PRINT</a></code>.
+                    A difference is the <code><a href="#WIDTH">WIDTH</a></code> setting which is
+                    independent of the real screen width.
+                </td>
+            </tr><tr>
+                <td><code>KYBD:</code></td>
+                <td><code>CON</code></td>
+                <td><code>INPUT</code></td>
+                <td>
+                    The keyboard. Input read from <code>KYBD:</code> is not echoed
+                    to the screen. Special keys like arrow keys are
+                    registered differently than when using <code><a href="#INPUT">INPUT</a></code>
+                    or <code><a href="#INPUT$">INPUT$</a></code> straight.
+                </td>
+            </tr><tr>
+                <td><code>LPT1:</code> <code>LPT2:</code> <code>LPT3:</code></td>
+                <td><code>PRN</code> for <code>LPT1:</code></td>
+                <td><code>OUTPUT</code> <code>RANDOM</code></td>
+                <td>
+                    Parallel ports 1&#8212;3.
+                    <code>LPT</code> devices can be
+                    attached to the physical parallel port, to a printer or to a text file
+                    with the
+                    <code><a href="#--lpt1">--lpt<var>n</var></a></code> options.
+                    Opening a printer for <code>RANDOM</code> has the same effect as opening it
+                    for <code>OUTPUT</code>; attempting random-file operations will raise
+                    <samp>Bad file mode</samp>.
+                </td>
+            </tr><tr>
+                <td><code>COM1:</code> <code>COM2:</code></td>
+                <td><code>AUX</code> for <code>COM1:</code></td>
+                <td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
+                <td>
+                    Serial ports 1&#8212;2.
+                    <code>COM</code> devices can be attached to a
+                    physical serial port or to a network socket with the
+                    <code><a href="#--com1">--com<var>n</var></a></code> options.
+                </td>
+            </tr>
+            <tr>
+                <td><code>CAS1:</code></td>
+                <td></td>
+                <td><code>INPUT</code> <code>OUTPUT</code></td>
+                <td>
+                    Cassette tape driver. <code>CAS</code> devices can be
+                    attached to a WAV (RIFF Wave) or a CAS (bitmap tape image) file with the <code><a href="#--cas1">--cas1</a></code> option.
+                </td>
+            </tr>
+            <tr>
+                <td><code>A:</code> &#8212; <code>Z:</code> and <code>@:</code></td>
+                <td></td>
+                <td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
+            <td>
+                Disk devices. These devices can be mounted to a directory on
+                the host file system with the <code><a href="#--mount">--mount</a></code> option.
+                 They do not automatically match drive letters on Windows,
+                unless the <code><a href="#--map-drives">--map-drives</a></code> option
+                 is set.
+            </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><code>NUL</code></td>
+                <td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
+            <td>
+                Null device. This device produces no bytes when opened for <code>INPUT</code>
+                and absorbs all bytes when opened for <code>OUTPUT</code>.
+            </td>
+            </tr>
+        </table>
+    </div>
+    <p>
+        GW-BASIC additionally recognises the following little-used device, which is not implemented in PC-BASIC.
+    </p>
+    <div class="scrollable" id="gwbasic-devices">
+        <table>
+            <tr>
+                <th>Device</th>
+                <th>Allowed modes</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><code>CONS:</code></td>
+                <td><code>OUTPUT</code></td>
+                <td>
+                    The screen (console). Output to <code>CONS:</code> is displayed
+                    directly at the cursor position when <kbd>Enter</kbd> is
+                    pressed. It does not update the end-of-line value
+                    for the interpreter, which means that it does not
+                    move with <kbd>Backspace</kbd> or <kbd>Del</kbd> and is not
+                    stored in program lines if it appears beyond the
+                    end of the existing line. <code>CONS:</code> can be opened with
+                    any access mode, but the effect is always to open
+                    it for <code>OUTPUT</code>.
+                </td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="guide-disk">Disks and DOS</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#CHDIR"><code>CHDIR</code></a></td>
+                <td>Change current directory</td>
+            </tr>
+            <tr>
+                <td><a href="#FILES"><code>FILES</code></a></td>
+                <td>List the files in the current directory</td>
+            </tr>
+            <tr>
+                <td><a href="#KILL"><code>KILL</code></a></td>
+                <td>Delete a file on a disk device</td>
+            </tr>
+            <tr>
+                <td><a href="#MKDIR"><code>MKDIR</code></a></td>
+                <td>Create a new directory</td>
+            </tr>
+            <tr>
+                <td><a href="#NAME"><code>NAME</code></a></td>
+                <td>Rename a file on disk</td>
+            </tr>
+            <tr>
+                <td><a href="#RMDIR"><code>RMDIR</code></a></td>
+                <td>Remove a directory</td>
+            </tr>
+            <tr>
+                <td><a href="#ENVIRON"><code>ENVIRON</code></a></td>
+                <td>Set a shell environment string</td>
+            </tr>
+            <tr>
+                <td><a href="#SHELL"><code>SHELL</code></a></td>
+                <td>Enter a DOS shell</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#ENVIRON$"><code>ENVIRON$</code></a></td>
+                <td>String from shell environment table</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="stat-com">Serial communications</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#GET-serial"><code>GET</code></a></td>
+                <td>Read bytes from a serial port</td>
+            </tr>
+            <tr>
+                <td><a href="#PUT-serial"><code>PUT</code></a></td>
+                <td>Write bytes to a serial port</td>
+            </tr>
+            <tr>
+                <td><a href="#TERM"><code>TERM</code></a></td>
+                <td>Open the terminal emulator</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="event-trapping">Event handling</h3>
+    <p>
+        Event trapping allows to define subroutines which are executed outside
+        of the normal course of operation. Events that can be trapped are:
+    </p>
+    <ul>
+        <li>Time intervals (<code><a href="#ON-event">ON TIMER</a></code>)</li>
+        <li>Keypresses (<code><a href="#ON-event">ON KEY</a></code>)</li>
+        <li>Serial port input (<code><a href="#ON-event">ON COM</a></code>)</li>
+        <li>Music queue exhaustion (<code><a href="#ON-event">ON PLAY</a></code>)</li>
+        <li>Joystick triggers (<code><a href="#ON-event">ON STRIG</a></code>)</li>
+        <li>Light pen activation (<code><a href="#ON-event">ON PEN</a></code>)</li>
+    </ul>
+    <p>
+        Event trapping subroutines are defined as regular subroutines. At the
+        <code><a href="#RETURN">RETURN</a></code> statement, the normal course of
+        program execution is resumed. Event trapping can be switched on and off or
+        paused temporarily with statements of the form
+        <code><a href="#PEN-statement">PEN ON</a></code>, <code>PEN OFF</code>,
+        <code>PEN STOP</code>.
+        Event trapping only takes place during program execution and is paused while
+        the program is in an error trap. If an event occurs while event-trapping is
+        paused, then the event is triggered immediately when event trapping is resumed.
+    </p>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#COM"><code>COM</code></a></td>
+                <td>Manage serial port event trapping</td>
+            </tr>
+            <tr>
+                <td><a href="#KEY-event"><code>KEY</code></a></td>
+                <td>Manage keyboard event trapping</td>
+            </tr>
+            <tr>
+                <td><a href="#KEY-event-def"><code>KEY</code></a></td>
+                <td>Define key to trap in keyboard event trapping</td>
+            </tr>
+            <tr>
+                <td><a href="#ON-event"><code>ON</code></a></td>
+                <td>Define event-trapping subroutine</td>
+            </tr>
+            <tr>
+                <td><a href="#PEN-statement"><code>PEN</code></a></td>
+                <td>Manage light pen event trapping</td>
+            </tr>
+            <tr>
+                <td><a href="#PLAY-event"><code>PLAY</code></a></td>
+                <td>Manage music queue event trapping</td>
+            </tr>
+            <tr>
+                <td><a href="#STRIG-event"><code>STRIG</code></a></td>
+                <td>Manage joystick event trapping</td>
+            </tr>
+            <tr>
+                <td><a href="#TIMER-event"><code>TIMER</code></a></td>
+                <td>Manage timer event trapping</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="error-trapping">Error handling</h3>
+    <p>
+        Normally, any error will interrupt program execution and print a message on
+        the console (exceptions are <samp>Overflow</samp> and
+        <samp>Division by zero</samp>, which print a message but do not interrupt
+        execution). It is possible to handle errors more graciously by
+        setting an error-handling routine with the
+        <code><a href="#ON-ERROR">ON ERROR</a> GOTO <var>line_number</var></code>
+        statement. The error-handling routine starts at the given line number
+        <code><var>line_number</var></code> and continues until a
+        <code><a href="#RESUME">RESUME</a></code> statement is encountered.
+        Error trapping is in effect both when a program is running and in interactive
+        mode. Error trapping is switched off with the <code>ON ERROR GOTO 0</code>
+        statement. If an error occurs, or error trapping is switched off, while the
+        program is executing an error-trapping routine, the program terminates and
+        an error message is shown.
+    </p>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#ERROR"><code>ERROR</code></a></td>
+                <td>Raise an error</td>
+            </tr>
+            <tr>
+                <td><a href="#ON-ERROR"><code>ON ERROR</code></a></td>
+                <td>Define an error handler</td>
+            </tr>
+            <tr>
+                <td><a href="#RESUME"><code>RESUME</code></a></td>
+                <td>End error handler and return to normal execution</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#ERR"><code>ERR</code></a></td>
+                <td>Error number of last error</td>
+            </tr>
+            <tr>
+                <td><a href="#ERL"><code>ERL</code></a></td>
+                <td>Line number of last error</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="guide-user">User-defined functions</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#DEF-FN"><code>DEF FN</code></a></td>
+                <td>Define a new function</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#FN"><code>FN</code></a></td>
+                <td>User-defined function</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="guide-time">Date and time</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#DATE$-statement"><code>DATE$</code></a></td>
+                <td>Set the system date</td>
+            </tr>
+            <tr>
+                <td><a href="#TIME$-statement"><code>TIME$</code></a></td>
+                <td>Set the system time</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#DATE$"><code>DATE$</code></a></td>
+                <td>System date as a string</td>
+            </tr>
+            <tr>
+                <td><a href="#TIME$-function"><code>TIME$</code></a></td>
+                <td>System time as a string</td>
+            </tr>
+            <tr>
+                <td><a href="#TIMER"><code>TIMER</code></a></td>
+                <td>System time in seconds since midnight</td>
+            </tr>
+        </table>
+    </div>
+
+</section>
+<hr />
+
+<section>
+    <h3 id="guide-data">Including data in a program</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#DATA"><code>DATA</code></a></td>
+                <td>Define data to be used by the program</td>
+            </tr>
+            <tr>
+                <td><a href="#READ"><code>READ</code></a></td>
+                <td>Retrieve a data entry</td>
+            </tr>
+            <tr>
+                <td><a href="#RESTORE"><code>RESTORE</code></a></td>
+                <td>Reset the data pointer</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="stat-memory">Memory and machine ports</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#BLOAD"><code>BLOAD</code></a></td>
+                <td>Load a binary file into memory</td>
+            </tr>
+            <tr>
+                <td><a href="#BSAVE"><code>BSAVE</code></a></td>
+                <td>Save a memory region to file</td>
+            </tr>
+            <tr>
+                <td><a href="#BSAVE"><code>CLEAR</code></a></td>
+                <td>Clears BASIC memory</td>
+            </tr>
+            <tr>
+                <td><a href="#DEF-SEG"><code>DEF SEG</code></a></td>
+                <td>Set the memory segment</td>
+            </tr>
+            <tr>
+                <td><a href="#OUT"><code>OUT</code></a></td>
+                <td>Write a byte to a machine port</td>
+            </tr>
+            <tr>
+                <td><a href="#POKE"><code>POKE</code></a></td>
+                <td>Write a byte to a memory location</td>
+            </tr>
+            <tr>
+                <td><a href="#WAIT"><code>WAIT</code></a></td>
+                <td>Wait for a value on a machine port</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#FRE"><code>FRE</code></a></td>
+                <td>Amount of free memory</td>
+            </tr>
+            <tr>
+                <td><a href="#INP"><code>INP</code></a></td>
+                <td>Byte at machine port</td>
+            </tr>
+            <tr>
+                <td><a href="#PEEK"><code>PEEK</code></a></td>
+                <td>Byte at memory address</td>
+            </tr>
+            <tr>
+                <td><a href="#VARPTR"><code>VARPTR</code></a></td>
+                <td>Memory address of variable</td>
+            </tr>
+            <tr>
+                <td><a href="#VARPTR$"><code>VARPTR$</code></a></td>
+                <td>Byte representation of length and memory address of variable</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="gwbasic-differences">Features not fully supported</h3>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Statement</th>
+                <th>Support level</th>
+            </tr>
+            <tr>
+                <td><code><a href="#BLOAD">BLOAD</a></code></td>
+                <td>Selected memory areas supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#BSAVE">BSAVE</a></code></td>
+                <td>Selected memory areas supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#CALL">CALL</a></code></td>
+                <td>Not supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#CALLS">CALLS</a></code></td>
+                <td>Not supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#DEF-USR">DEF USR</a></code></td>
+                <td>Not supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#ERDEV">ERDEV</a></code></td>
+                <td>Not supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#EXTERR">EXTERR</a></code></td>
+                <td>Not supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#INP">INP</a></code></td>
+                <td>Selected ports supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#IOCTL">IOCTL</a></code>, <code><a href="#IOCTL$">IOCTL$</a></code></td>
+                <td>Not supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#OUT">OUT</a></code></td>
+                <td>Selected ports supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#PEEK">PEEK</a></code></td>
+                <td>Selected memory areas supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#POKE">POKE</a></code></td>
+                <td>Selected memory areas supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#SHELL">SHELL</a></code></td>
+                <td>Supported through OS-native shell if <code><b><a href="#--shell">shell</a>=native</b></code> is set.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#USR">USR</a></code></td>
+                <td>Not supported.</td>
+            </tr>
+            <tr>
+                <td><code><a href="#WAIT">WAIT</a></code></td>
+                <td>Selected ports supported.</td>
+            </tr>
+        </table>
+    </div>
+
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#CALL"><code>CALL</code></a></td>
+                <td>Call a machine code subroutine</td>
+            </tr>
+            <tr>
+                <td><a href="#CALLS"><code>CALLS</code></a></td>
+                <td>Call a FORTRAN subroutine</td>
+            </tr>
+            <tr>
+                <td><a href="#DEF-USR"><code>DEF USR</code></a></td>
+                <td>Define a machine code function</td>
+            </tr>
+            <tr>
+                <td><a href="#IOCTL"><code>IOCTL</code></a></td>
+                <td>Send a control string to a device</td>
+            </tr>
+            <tr>
+                <td><a href="#MOTOR"><code>MOTOR</code></a></td>
+                <td>Turn on cassette motor</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#IOCTL$"><code>IOCTL$</code></a></td>
+                <td>Device response to <code>IOCTL</code></td>
+            </tr>
+            <tr>
+                <td><a href="#ERDEV"><code>ERDEV</code></a></td>
+                <td>Device error value</td>
+            </tr>
+            <tr>
+                <td><a href="#ERDEV$"><code>ERDEV$</code></a></td>
+                <td>Name of device raising error</td>
+            </tr>
+            <tr>
+                <td><a href="#EXTERR"><code>EXTERR</code></a></td>
+                <td>Extended error information from DOS</td>
+            </tr>
+            <tr>
+                <td><a href="#USR"><code>USR</code></a></td>
+                <td>Machine code function</td>
+            </tr>
+        </table>
+    </div>
+</section>
+
+</article>
