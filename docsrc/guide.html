@@ -428,13 +428,7 @@
 </section>
 
 <section>
-    <h3 id="guide-input">User input</h3>
-    <p>
-        PC-BASIC can receive user input through the keyboard, a light pen (or mouse),
-        or a joystick. The most common input mode is the keyboard, which can be used
-        to enter strings and numbers.
-    </p>
-
+    <h3 id="guide-input">Keyboard input</h3>
     <div class="scrollable">
         <table>
             <tr>
@@ -450,10 +444,6 @@
                 <td>Retrieve a line of user input on the console</td>
             </tr>
             <tr>
-                <td><a href="STRIG-switch"><code>STRIG</code></a></td>
-                <td>Joystick switch</td>
-            </tr>
-            <tr>
                 <th>Function</th>
                 <th>Description</th>
             </tr>
@@ -464,18 +454,6 @@
             <tr>
                 <td><a href="#INPUT$"><code>INPUT$</code></a></td>
                 <td>Blocking read from keyboard</td>
-            </tr>
-            <tr>
-                <td><a href="#PEN"><code>PEN</code></a></td>
-                <td>Status of light pen</td>
-            </tr>
-            <tr>
-                <td><a href="#STICK"><code>STICK</code></a></td>
-                <td>Coordinate of joystick axis</td>
-            </tr>
-            <tr>
-                <td><a href="#STRIG"><code>STRIG</code></a></td>
-                <td>Status of joystick fire button</td>
             </tr>
         </table>
     </div>
@@ -503,124 +481,6 @@
 </section>
 <hr />
 
-<section>
-    <h3 id="guide-graph">Graphics</h3>
-    <div class="scrollable">
-        <table>
-            <tr>
-                <th>Statement</th>
-                <th>Description</th>
-            </tr>
-            <tr>
-                <td><a href="#CIRCLE"><code>CIRCLE</code></a></td>
-                <td>Draw an ellipse or arc section</td>
-            </tr>
-            <tr>
-                <td><a href="#DRAW"><code>DRAW</code></a></td>
-                <td>Draw a shape defined by a Graphics Macro Language string</td>
-            </tr>
-            <tr>
-                <td><a href="#GET-graphics"><code>GET</code></a></td>
-                <td>Store a screen area as a sprite</td>
-            </tr>
-            <tr>
-                <td><a href="#LINE"><code>LINE</code></a></td>
-                <td>Draw a line segment</td>
-            </tr>
-            <tr>
-                <td><a href="#PAINT"><code>PAINT</code></a></td>
-                <td>Flood-fill a connected region</td>
-            </tr>
-            <tr>
-                <td><a href="#PSET"><code>PSET</code></a></td>
-                <td>Put a pixel</td>
-            </tr>
-            <tr>
-                <td><a href="#PRESET"><code>PRESET</code></a></td>
-                <td>Change a pixel to background attribute</td>
-            </tr>
-            <tr>
-                <td><a href="#PUT-graphics"><code>PUT</code></a></td>
-                <td>Draw a sprite to the screen</td>
-            </tr>
-            <tr>
-                <td><a href="#SCREEN-statement"><code>SCREEN</code></a></td>
-                <td>Change the video mode</td>
-            </tr>
-            <tr>
-                <td><a href="#VIEW"><code>VIEW</code></a></td>
-                <td>Set the graphics viewport</td>
-            </tr>
-            <tr>
-                <td><a href="#WINDOW"><code>WINDOW</code></a></td>
-                <td>Set logical coordinates</td>
-            </tr>
-            <tr>
-                <th>Function</th>
-                <th>Description</th>
-            </tr>
-            <tr>
-                <td><a href="#POINT-coord"><code>POINT</code></a></td>
-                <td>Graphical pointer coordinates</td>
-            </tr>
-            <tr>
-                <td><a href="#POINT-attr"><code>POINT</code></a></td>
-                <td>Pixel attribute</td>
-            </tr>
-            <tr>
-                <td><a href="#PMAP"><code>PMAP</code></a></td>
-                <td>Convert between physical and logical coordinates</td>
-            </tr>
-        </table>
-    </div>
-</section>
-<hr />
-
-
-<section>
-    <h3 id="guide-sound">Sound</h3>
-    <div class="scrollable">
-        <table>
-            <tr>
-                <th>Statement</th>
-                <th>Description</th>
-            </tr>
-            <tr>
-                <td><a href="#BEEP"><code>BEEP</code></a></td>
-                <td>Beep the speaker</td>
-            </tr>
-            <tr>
-                <td><a href="#BEEP-switch"><code>BEEP</code></a></td>
-                <td>Speaker switch</td>
-            </tr>
-            <tr>
-                <td><a href="#NOISE"><code>NOISE</code></a></td>
-                <td>Generate noise</td>
-            </tr>
-            <tr>
-                <td><a href="#PLAY"><code>PLAY</code></a></td>
-                <td>Play a tune encoded in Music Macro Language</td>
-            </tr>
-            <tr>
-                <td><a href="#SOUND"><code>SOUND</code></a></td>
-                <td>Generate a tone</td>
-            </tr>
-            <tr>
-                <td><a href="#SOUND-switch"><code>SOUND</code></a></td>
-                <td>Sound switch</td>
-            </tr>
-            <tr>
-                <th>Function</th>
-                <th>Description</th>
-            </tr>
-            <tr>
-                <td><a href="#PLAY-function"><code>PLAY</code></a></td>
-                <td>Length of the background music queue</td>
-            </tr>
-        </table>
-    </div>
-</section>
-<hr />
 
 <section>
     <h3 id="guide-math">Calculations and maths</h3>
@@ -918,6 +778,160 @@
     </div>
 </section>
 <hr />
+
+
+<section>
+    <h3 id="guide-graph">Graphics</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Statement</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#CIRCLE"><code>CIRCLE</code></a></td>
+                <td>Draw an ellipse or arc section</td>
+            </tr>
+            <tr>
+                <td><a href="#DRAW"><code>DRAW</code></a></td>
+                <td>Draw a shape defined by a Graphics Macro Language string</td>
+            </tr>
+            <tr>
+                <td><a href="#GET-graphics"><code>GET</code></a></td>
+                <td>Store a screen area as a sprite</td>
+            </tr>
+            <tr>
+                <td><a href="#LINE"><code>LINE</code></a></td>
+                <td>Draw a line segment</td>
+            </tr>
+            <tr>
+                <td><a href="#PAINT"><code>PAINT</code></a></td>
+                <td>Flood-fill a connected region</td>
+            </tr>
+            <tr>
+                <td><a href="#PSET"><code>PSET</code></a></td>
+                <td>Put a pixel</td>
+            </tr>
+            <tr>
+                <td><a href="#PRESET"><code>PRESET</code></a></td>
+                <td>Change a pixel to background attribute</td>
+            </tr>
+            <tr>
+                <td><a href="#PUT-graphics"><code>PUT</code></a></td>
+                <td>Draw a sprite to the screen</td>
+            </tr>
+            <tr>
+                <td><a href="#SCREEN-statement"><code>SCREEN</code></a></td>
+                <td>Change the video mode</td>
+            </tr>
+            <tr>
+                <td><a href="#VIEW"><code>VIEW</code></a></td>
+                <td>Set the graphics viewport</td>
+            </tr>
+            <tr>
+                <td><a href="#WINDOW"><code>WINDOW</code></a></td>
+                <td>Set logical coordinates</td>
+            </tr>
+            <tr>
+                <th>Function</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#POINT-coord"><code>POINT</code></a></td>
+                <td>Graphical pointer coordinates</td>
+            </tr>
+            <tr>
+                <td><a href="#POINT-attr"><code>POINT</code></a></td>
+                <td>Pixel attribute</td>
+            </tr>
+            <tr>
+                <td><a href="#PMAP"><code>PMAP</code></a></td>
+                <td>Convert between physical and logical coordinates</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+
+<section>
+    <h3 id="guide-sound">Sound</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Statement</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#BEEP"><code>BEEP</code></a></td>
+                <td>Beep the speaker</td>
+            </tr>
+            <tr>
+                <td><a href="#BEEP-switch"><code>BEEP</code></a></td>
+                <td>Speaker switch</td>
+            </tr>
+            <tr>
+                <td><a href="#NOISE"><code>NOISE</code></a></td>
+                <td>Generate noise</td>
+            </tr>
+            <tr>
+                <td><a href="#PLAY"><code>PLAY</code></a></td>
+                <td>Play a tune encoded in Music Macro Language</td>
+            </tr>
+            <tr>
+                <td><a href="#SOUND"><code>SOUND</code></a></td>
+                <td>Generate a tone</td>
+            </tr>
+            <tr>
+                <td><a href="#SOUND-switch"><code>SOUND</code></a></td>
+                <td>Sound switch</td>
+            </tr>
+            <tr>
+                <th>Function</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#PLAY-function"><code>PLAY</code></a></td>
+                <td>Length of the background music queue</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="guide-stick-pen">Joystick and pen</h3>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Statement</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="STRIG-switch"><code>STRIG</code></a></td>
+                <td>Joystick switch</td>
+            </tr>
+            <tr>
+                <th>Function</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><a href="#PEN"><code>PEN</code></a></td>
+                <td>Status of light pen</td>
+            </tr>
+            <tr>
+                <td><a href="#STICK"><code>STICK</code></a></td>
+                <td>Coordinate of joystick axis</td>
+            </tr>
+            <tr>
+                <td><a href="#STRIG"><code>STRIG</code></a></td>
+                <td>Status of joystick fire button</td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
 
 <section>
     <h3 id="guide-disk">Disks and DOS</h3>
