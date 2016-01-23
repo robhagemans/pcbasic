@@ -281,7 +281,7 @@
             Set the current device to the indicated PC-BASIC drive letter or
             <code><b>CAS1</b></code> for the cassette device. The device chosen
             should be mounted to an actual location using
-            <code><a href="#--mount">--mount</a></code> (or <code><a href="#--cas1">--cas1</a></code> 
+            <code><a href="#--mount">--mount</a></code> (or <code><a href="#--cas1">--cas1</a></code>
             if the cassette device is chosen). Default is <code><b>Z</b></code>,
             with the <code>Z:</code> device mounted to your current drive.
         </dd>
@@ -891,4 +891,92 @@
         </dd>
     </dl>
 </section>
+<hr />
+
+<section>
+    <h3 id="gwbasic-options">GW-BASIC options</h4>
+    <p>
+        GW-BASIC recognised a number of DOS-style command-line options on the command-line when invoking it from DOS
+        with a command like <code>BASIC</code>, <code>BASICA</code>, or <code>GWBASIC</code>.
+        These are matched by PC-BASIC with only minor modifications, usually just replacing the
+        forward slash <code><b>/</b></code> with a dash <code><b>-</b></code>. The GW-BASIC syntax is shown here
+        for reference only; use the Unix-style syntax with PC-BASIC.
+    </p>
+    <dl>
+        <dt>
+            <code><b>/d</b></code>
+            becomes
+            <code><b><a href="#-d">-d</a></b></code>
+        </dt>
+        <dd>
+            Enable double-precision floating-point math functions.
+        </dd>
+        <dt>
+            <code><b>/f:</b><var>n</var></code>
+            becomes
+            <code><b><a href="#-f">-f</a>=</b><var>n</var></code>
+        </dt>
+        <dd>
+            Set the maximum number of open files.
+        </dd>
+        <dt>
+            <code><b>/s:</b><var>n</var></code>
+            becomes
+            <code><b><a href="#-s">-s</a>=</b><var>n</var></code>
+        </dt>
+        <dd>
+            Set the maximum record length for <code>RANDOM</code> files.
+        </dd>
+        <dt>
+            <code><b>/c:</b><var>n</var></code>
+            becomes
+            <code><b><a href="#-c">-c</a>=</b><var>n</var></code>
+        </dt>
+        <dd>
+            Set the size of the receive buffer for <code>COM</code> devices.
+        </dd>
+        <dt>
+            <code><b>/i:</b><var>n</var></code>
+            becomes
+            <code><b><a href="#-i">-i</a>=</b><var>n</var></code>
+        </dt>
+        <dd>
+            No effect.
+        </dd>
+        <dt>
+            <code><b>/m:</b><var>n</var>,<var>m</var></code>
+            becomes
+            <code><b><a href="#-m">-m</a>=</b><var>n</var>,<var>m</var></code>
+        </dt>
+        <dd>
+            Set the highest memory location to <code><var>n</var></code> and maximum
+            BASIC memory size to <code><var>m</var>*16</code> bytes.
+        </dd>
+        <dt>
+            <code><b>&gt;</b><var>filename</var></code>
+            becomes
+            <code><b><a href="#--output">--output</a>=</b><var>filename</var></code>
+        </dt>
+        <dd>
+            Write screen output to <code><var>filename</var></code>.
+        </dd>
+        <dt>
+            <code><b>&gt;&gt;</b><var>filename</var></code>
+            becomes
+            <code><b>--output=</b><var>filename</var> <b><a href="#--append">--append</a></b></code>
+        </dt>
+        <dd>
+            Append screen output to <code><var>filename</var></code>.
+        </dd>
+        <dt>
+            <code><b>&lt;</b><var>filename</var></code>
+            becomes
+            <code><b><a href="#--input">--input</a>=</b><var>filename</var></code>
+        </dt>
+        <dd>
+            Read keyboard input from <code><var>filename</var></code>.
+        </dd>
+    </dl>
+</section>
+
 <hr />
