@@ -858,6 +858,17 @@
                 you can now run <code><b>pcbasic --preset=my_preset</b></code> to start an emulation of
                 a hypothetical machine with a VGA video card running PCjr Cartridge BASIC.
             </p>
+            <h5 id="gwbasic">GW-BASIC compatibility features</h5>
+            <p>
+                PC-BASIC aims for a very high level of compatibility with GW-BASIC. However,
+                some compatibility features are disabled by default for convenience or security reasons.
+                These features can be switched on using individual command-line options. The highest level of
+                compatibility with GW-BASIC can be attained by setting
+                <code><a href="#--preset">preset</a>=strict</code>,
+                which switches off all convenience and security features that cause differences with
+                GW-BASIC.
+            </p>
+
         </section>
         <hr />
 
@@ -1478,71 +1489,4 @@ me@mybox$
         <hr />
     </section>
 
-    <section>
-        <h3 id="gwbasic">Differences with GW-BASIC</h3>
-        <p>
-            PC-BASIC aims for a very high level of compatibility with GW-BASIC. However,
-            some features of the original interpreter are not supported.
-        </p>
-        <p>
-            Some compatibility features are disabled by default for convenience or security reasons.
-            These can be switched on using command-line options. The highest level of
-            compatibility with GW-BASIC can be attained by setting
-            <code><a href="#--preset">preset</a>=strict</code>,
-            which switches off all convenience and security features that cause differences with
-            GW-BASIC.
-        </p>
-
-        <section>
-            <h4 id="gwbasic-machine">Machine code</h4>
-            <p>
-                GW-BASIC was a real-mode DOS program, which means that it had full control
-                over an IBM-compatible 8086 computer. It had direct access to all areas of
-                memory and all devices. Some BASIC programs used this fact, by using
-                <code><a href="#POKE">POKE</a></code> and <code><a href="#OUT">OUT</a></code>
-                statements as well as <code><a href="#CALL">CALL</a></code>
-                and <code><a href="#USR">USR</a></code> machine-code subroutines to perform tasks for which BASIC
-                did not provide support. PC-BASIC runs on modern machines which may be based on
-                completely different architectures and anyway do not allow applications to
-                directly access memory or devices. Therefore, it is not possible to run machine
-                code on PC-BASIC. If you need machine code, you'll need to use full CPU
-                emulation such as provided by DOSBox, Bochs or VirtualBox.
-            </p>
-        </section>
-        <hr />
-
-        <section>
-            <h4 id="gwbasic-memory">Memory emulation</h4>
-            <p>
-                PC-BASIC <em>does</em> provide limited support for the <code><a href="#POKE">POKE</a></code> and <code><a
-                href="#PEEK">PEEK</a></code> statements: some of the most commonly accessed
-                regions of memory are emulated and can be read and (sometimes) written. There is
-                read and write support for video memory, font RAM and selected locations of the
-                low memory segment, including the keyboard buffer. Additionally, there is read
-                support for font ROM, variable, array and string memory, <code><a href="#FIELD">FIELD</a></code>
-                buffers as well as the program code itself. Writing into the program code is
-                disabled by default, but can be enabled with the <code><a href="--allow-code-poke">allow-code-poke</a></code>
-                option. Use with care. A number of machine ports related to keyboard input and
-                video modes are supported as well.
-            </p>
-        </section>
-        <hr />
-
-        <section>
-            <h4 id="gwbasic-dos">DOS shell access</h4>
-            <p>
-                The <code><a href="SHELL">SHELL</a></code> statement is, by default,
-                disabled; this is to avoid unpleasant surprises. In GW-BASIC under MS-DOS,
-                <code>SHELL</code> opens a DOS prompt or executes commands in it. The command
-                shells of modern operating systems work differently than those of DOS; in
-                particular, it is impossible to retrieve changes in the environment variables,
-                so that many use cases of <code>SHELL</code> simply would not work; for
-                example, changing the current drive on Windows. Moreover, Unix shells have a
-                syntax that is completely different from that of DOS. You can, however, enable
-                <code>SHELL</code> by setting the <code><b><a href="#--shell">shell</a>=native</b></code> option. Use with
-                care.
-            </p>
-        </section>
-        <hr />
-    </section>
 </article>

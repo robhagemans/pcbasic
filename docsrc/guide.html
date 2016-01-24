@@ -935,6 +935,17 @@
 
 <section>
     <h3 id="guide-disk">Disks and DOS</h3>
+    <p>
+        The <code><a href="SHELL">SHELL</a></code> statement is, by default,
+        disabled; this is to avoid unpleasant surprises. In GW-BASIC under MS-DOS,
+        <code>SHELL</code> opens a DOS prompt or executes commands in it. The command
+        shells of modern operating systems work differently than those of DOS; in
+        particular, it is impossible to retrieve changes in the environment variables,
+        so that many use cases of <code>SHELL</code> simply would not work; for
+        example, changing the current drive on Windows. Moreover, Unix shells have a
+        syntax that is completely different from that of DOS. You can, however, enable
+        <code>SHELL</code> by setting the <code><b><a href="#--shell">shell</a>=native</b></code> option.
+    </p>
     <div class="scrollable">
         <table>
             <tr>
@@ -1223,7 +1234,15 @@
 <section>
     <h3 id="stat-memory">Memory and machine ports</h3>
     <p>
-        Only selected memory ranges and selected ports are emulated in PC-BASIC.
+        Only selected memory ranges and selected ports are emulated in PC-BASIC. Some of the most commonly accessed
+        regions of memory are emulated and can be read and (sometimes) written. There is
+        read and write support for video memory, font RAM and selected locations of the
+        low memory segment, including the keyboard buffer. Additionally, there is read
+        support for font ROM, variable, array and string memory, <code><a href="#FIELD">FIELD</a></code>
+        buffers as well as the program code itself. Writing into the program code is
+        disabled by default, but can be enabled with the <code><a href="--allow-code-poke">allow-code-poke</a></code>
+        option. A number of machine ports related to keyboard input and
+        video modes are supported as well.
     </p>
     <div class="scrollable">
         <table>
@@ -1289,19 +1308,79 @@
 <hr />
 
 <section>
-    <h3 id="gwbasic-differences">Unsupported features</h3>
+    <h3 id="guide-unimplemented">Features not yet implemented</h3>
     <p>
-        The following language elements are unsupported in PC-BASIC. The keyword
+        The following language elements are not currently supported in PC-BASIC. The keyword
+        syntax is supported, so no <samp>Syntax error</samp> should be raised if
+        the statements or functions are used correctly. However, the statements
+        do nothing and the functions return zero or the empty string.
+    </p><p>
+        These language elements may be implemented in future
+        versions of PC-BASIC.
+    </p>
+    <div class="scrollable">
+        <table>
+            <tr>
+                <th>Statement</th>
+                <th>Description</th>
+                <th>PC-BASIC implementation</th>
+            </tr>
+            <tr>
+                <td><a href="#MOTOR"><code>MOTOR</code></a></td>
+                <td>Turn on cassette motor</td>
+                <td>Do nothing</td>
+            </tr>
+            <tr>
+                <th>Function</th>
+                <th>Description</th>
+                <th>PC-BASIC implementation</th>
+            </tr>
+            <tr>
+                <td><a href="#ERDEV"><code>ERDEV</code></a></td>
+                <td>Device error value</td>
+                <td>Return <code>0</code></td>
+            </tr>
+            <tr>
+                <td><a href="#ERDEV$"><code>ERDEV$</code></a></td>
+                <td>Name of device raising error</td>
+                <td>Return <code>""</code></td>
+            </tr>
+            <tr>
+                <td><a href="#EXTERR"><code>EXTERR</code></a></td>
+                <td>Extended error information from DOS</td>
+                <td>Return <code>0</code></td>
+            </tr>
+        </table>
+    </div>
+</section>
+<hr />
+
+<section>
+    <h3 id="gwbasic-machine">Unsupported features</h3>
+    <p>
+        GW-BASIC was a real-mode DOS program, which means that it had full control
+        over an IBM-compatible 8086 computer. It had direct access to all areas of
+        memory and all devices. Some BASIC programs used this fact, by using
+        machine-code subroutines to perform tasks for which BASIC
+        did not provide support. PC-BASIC runs on modern machines which may be based on
+        completely different architectures and do not allow applications to
+        access the memory directly. Therefore, it is not possible to run machine
+        code on PC-BASIC. If you need machine code, you'll need to use full CPU
+        emulation such as provided by DOSBox, Bochs or VirtualBox.
+    </p>
+    <p>
+        Similarly, the <code>IOCTL</code> functionality depends on an MS-DOS interrupt
+        and sends a <dfn>device control string</dfn> to any DOS device driver. The
+        syntax of such strings is device-dependent. Since PC-BASIC
+        emulates neither DOS nor whatever device might be parsing the control string,
+        it is not possible to use such functionality.
+    </p>
+    <p>
+        The following language elements are therefore not supported in PC-BASIC. The keyword
         syntax is supported, so no <samp>Syntax error</samp> should be raised if
         the statements or functions are used correctly. However, the statements
         either do nothing or raise <samp>Illegal function call</samp>; the functions
         return zero or the empty string or raise <samp>Illegal function call</samp>.
-    </p>
-    <p>
-        Some of these elements (<code>MOTOR</code>, <code>ERDEV</code>,
-        <code>ERDEV$</code> and <code>EXTERR</code>) may be implemented in future
-        versions of PC-BASIC, but those calling machine code or providing direct
-        device access are unlikely ever to be supported.
     </p>
     <div class="scrollable">
         <table>
@@ -1327,13 +1406,8 @@
             </tr>
             <tr>
                 <td><a href="#IOCTL"><code>IOCTL</code></a></td>
-                <td>Send a control string to a device</td>
+                <td>Send a device control string to a device</td>
                 <td>Raise <samp>Illegal function call</samp></td>
-            </tr>
-            <tr>
-                <td><a href="#MOTOR"><code>MOTOR</code></a></td>
-                <td>Turn on cassette motor</td>
-                <td>Do nothing</td>
             </tr>
             <tr>
                 <th>Function</th>
@@ -1344,21 +1418,6 @@
                 <td><a href="#IOCTL$"><code>IOCTL$</code></a></td>
                 <td>Device response to <code>IOCTL</code></td>
                 <td>Raise <samp>Illegal function call</samp></td>
-            </tr>
-            <tr>
-                <td><a href="#ERDEV"><code>ERDEV</code></a></td>
-                <td>Device error value</td>
-                <td>Return <code>0</code></td>
-            </tr>
-            <tr>
-                <td><a href="#ERDEV$"><code>ERDEV$</code></a></td>
-                <td>Name of device raising error</td>
-                <td>Return <code>""</code></td>
-            </tr>
-            <tr>
-                <td><a href="#EXTERR"><code>EXTERR</code></a></td>
-                <td>Extended error information from DOS</td>
-                <td>Return <code>0</code></td>
             </tr>
             <tr>
                 <td><a href="#USR"><code>USR</code></a></td>
