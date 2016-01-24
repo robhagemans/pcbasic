@@ -3075,9 +3075,9 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>file_spec</var></code> is a string expression indicating
-                the device and file to read the memory image from. See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications.
+                The string expression <code><var>file_spec</var></code> is a
+                valid <a href="#filespec">file specification</a> indicating
+                the device and file to read the memory image from.
             </li>
             <li>
                 <code><var>offset</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code>.
@@ -3117,9 +3117,9 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>file_spec</var></code> is a string expression indicating
+                The string expression <code><var>file_spec</var></code> is a
+                valid <a href="#filespec">file specification</a> indicating
                 the device and file to write to.
-                See the <code><a href="#OPEN">OPEN</a></code> statement for valid file specifications.
             </li>
             <li>
                 <code><var>offset</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code> indicating
@@ -3253,12 +3253,9 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>file_spec</var></code> is a string expression indicating
-                the device and file to read the program from. See the <a href="#OPEN">OPEN</a>
-                statement for valid file specifications. Refer to
-                the section on <a href="#eightpointthree">file names on disk</a>
-                for information on how this statement matches filenames on a disk
-                device.
+                The string expression <code><var>file_spec</var></code> is a
+                valid <a href="#filespec">file specification</a> indicating
+                the device and file to read the program from.
             </li>
             <li>
                 <code><var>line_number_expr</var></code> is a numeric expression. It
@@ -3343,10 +3340,9 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>dir_spec</var></code> is a string expression indicating an existing
+                The string expression <code><var>dir_spec</var></code> is a
+                valid <a href="#filespec">file specification</a> indicating an existing
                 directory on a disk device.
-                See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -4596,10 +4592,8 @@
         <ul>
             <li>
                 <code><var>filter_spec</var></code> is a string expression that
-                is much like a file specification, but optionally allows the file
+                is much like a <a href="#filespec">file specification</a>, but optionally allows the file
                 name part to contain <dfn>wildcards</dfn>.
-                See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications.
             </li>
         </ul>
         <h5>Notes</h5>
@@ -5511,10 +5505,9 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>file_spec</var></code> is a string expression indicating the file to delete.
+                The string expression <code><var>file_spec</var></code> is a
+                valid <a href="#filespec">file specification</a> indicating the file to delete.
                 It must point to an existing file on a disk device.
-                See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -5787,10 +5780,9 @@
                 they specify a range. If the range is empty, nothing is printed.
             </li>
             <li>
-                <code><var>file_spec</var></code> is a string expression indicating the device and file name to list to.
+                The string expression <code><var>file_spec</var></code> is a
+                valid <a href="#filespec">file specification</a> indicating the device and file name to list to.
                 If this file already exists, it will be overwritten.
-                See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -5857,9 +5849,8 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>file_spec</var></code> is a string expression indicating
-                the device and file to read the program from. See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications.
+                The string expression <code><var>file_spec</var></code> is a valid <a href="#filespec">file specification</a> indicating
+                the device and file to read the program from.
             </li>
         </ul>
         <h5>Notes</h5>
@@ -6072,9 +6063,8 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>file_spec</var></code> is a string expression indicating
-                the device and file to read the program from. See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications.
+                The string expression <code><var>file_spec</var></code> is a valid <a href="#filespec">file specification</a> indicating
+                the device and file to read the program from.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -6162,10 +6152,9 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>dir_spec</var></code> is a string expression that specifies the
+                The string expression <code><var>dir_spec</var></code> is a valid
+                <a href="#filespec">file specification</a> that specifies the
                 path of the new directory on a disk device.
-                See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -6234,11 +6223,9 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>old_name</var></code> and <code><var>new_name</var></code>
-                are string expressions giving the path on disk to the old and new filenames,
-                respectively. They must be file specifications on disk devices.
-                See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications.
+                The string expressions <code><var>old_name</var></code> and <code><var>new_name</var></code>
+                are valid <a href="#filespec">file specifications</a> giving the path on a disk device to the old and new filenames,
+                respectively.
             </li>
         </ul>
         <h5>Notes</h5>
@@ -6588,8 +6575,7 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>file_spec</var></code> is a string expression.
-                See below for the form of valid file specifications.
+                The string expression <code><var>file_spec</var></code> is a valid <a href="#filespec">file specification</a>.
             </li>
             <li>
                 <code><var>file_num</var></code> is a numeric expression in <code>[1&#8212;<var>max_files</var>]</code>,
@@ -6745,7 +6731,7 @@
             the locks are only implemented internally. Whether other processes may access
             the file will depend on the host OS.
         </p>
-        <h5>File specifications</h5>
+        <h5 id="filespec">File specifications</h5>
         <p>
             A <dfn>file specification</dfn> <code><var>file_spec</var></code>
             is a non-empty string expression of the form
@@ -8500,10 +8486,8 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>dir_spec</var></code> is a string
-                expression that specifies the path and name of the directory.
-                See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications.
+                The string expression <code><var>dir_spec</var></code> is a
+                valid <a href="#filespec">file specification</a> that specifies the path and name of the directory.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -8547,9 +8531,9 @@
                 If specified, execution starts from this line number.
             </li>
             <li>
-                <code><var>file_spec</var></code>, if specified, is a string expression indicating
-                the device and file to read the program from. See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications.
+                The string expression <code><var>file_spec</var></code>, if specified,
+                is a valid <a href="#filespec">file specification</a> indicating
+                the device and file to read the program from.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -8595,9 +8579,8 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>file_spec</var></code> is a string expression indicating the device and file to store to.
-                See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications.
+                The string expression <code><var>file_spec</var></code> is a valid <a href="#filespec">file specification</a>
+                indicating the device and file to store to.
            </li>
         </ul>
         <h5>Errors</h5>
