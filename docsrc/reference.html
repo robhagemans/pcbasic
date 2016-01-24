@@ -3077,15 +3077,12 @@
             <li>
                 <code><var>file_spec</var></code> is a string expression indicating
                 the device and file to read the memory image from. See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications. Refer to
-                the section on <a href="#eightpointthree">file names on disk</a>
-                for information on how this statement matches filenames on a disk
-                device.
+                statement for valid file specifications.
             </li>
             <li>
                 <code><var>offset</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code>.
                 It indicates an offset in the current <code><a href="#DEF-SEG">DEF SEG</a></code> segment where the file is to be
-                stored. If not specified, the offset stored in the <code><a href="BSAVE">BSAVE</a></code> file will be used. If
+                stored. If not specified, the offset stored in the <code><a href="#BSAVE">BSAVE</a></code> file will be used. If
                 negative, its two's complement will be used.
             </li>
         </ul>
@@ -3121,13 +3118,8 @@
         <ul>
             <li>
                 <code><var>file_spec</var></code> is a string expression indicating
-                the device and file to write from.
-                See the <a href="#OPEN">OPEN</a> statement for valid file specifications.
-                On disk devices, the file name will be converted to uppercase. If it
-                is not an <a href="#eightpointthree">MS-DOS 8.3 filename</a>,
-                additional characters will be clipped off and the name is converted to
-                uppercase; if the filename contains no <code>.</code>, a default extension <code>.BAS</code> will
-                be added. If the resulting file name already exists, it will be overwritten.
+                the device and file to write to.
+                See the <code><a href="#OPEN">OPEN</a></code> statement for valid file specifications.
             </li>
             <li>
                 <code><var>offset</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code> indicating
@@ -3342,22 +3334,19 @@
     <section>
         <h4 id="CHDIR"><code>CHDIR</code></h4>
         <code class="block">
-            <b>CHDIR</b> <var>pathname</var>
+            <b>CHDIR</b> <var>dir_spec</var>
         </code>
         <p>
-            Change the working directory on a disk device to <code><var>pathname</var></code>.
+            Change the current directory on a disk device to <code><var>dir_spec</var></code>.
+            Each disk device has its own current directory.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>pathname</var></code> is a string expression indicating an
-                absolute or relative path on a disk device.
-                The device name may optionally be specified
-                at the start of the expression (e.g. <code>"A:\"</code>. If the device
-                name is omitted, the current directory on the current disk device is
-                changed.
-                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a>
-                for information on how this statement matches file and directory names.
+                <code><var>dir_spec</var></code> is a string expression indicating an existing
+                directory on a disk device.
+                See the <code><a href="#OPEN">OPEN</a></code>
+                statement for valid file specifications.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -3366,10 +3355,10 @@
                 No matching path is found: <samp>Path not found</samp>.
             </li>
             <li>
-                <code><var>pathname</var></code> has a numeric value: <samp>Type mismatch</samp>.
+                <code><var>dir_spec</var></code> has a numeric value: <samp>Type mismatch</samp>.
             </li>
             <li>
-                <code><var>pathname</var></code> is empty: <samp>Bad file name</samp>.
+                <code><var>dir_spec</var></code> is empty: <samp>Bad file name</samp>.
             </li>
         </ul>
     </section>
@@ -4596,57 +4585,61 @@
     <section>
         <h4 id="FILES"><code>FILES</code></h4>
         <code class="block">
-            <b>FILES</b> [<var>path_and_filter</var>]
+            <b>FILES</b> [<var>filter_spec</var>]
         </code>
         <p>
             Displays the files fitting the specified filter in the specified directory on a disk device. If
-            <code><var>path_and_filter</var></code> is not specified, displays all files in the current working
+            <code><var>filter_spec</var></code> is not specified, displays all files in the current working
             directory.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>path_and_filter</var></code> is a string expression that
-                consists of two optional parts: the first part is the path to the directory;
-                the second part is the filename filter.
+                <code><var>filter_spec</var></code> is a string expression that
+                is much like a file specification, but optionally allows the file
+                name part to contain <dfn>wildcards</dfn>.
+                See the <code><a href="#OPEN">OPEN</a></code>
+                statement for valid file specifications.
             </li>
         </ul>
         <h5>Notes</h5>
         <ul>
             <li>
-                The filename filter consists of file name
-                parts and the following wildcards:
+                The filename filter may contain the following wildcards:
                 <div class="scrollable">
                     <table>
                         <tr>
                             <td><code>?</code></td>
-                            <td>matches any character but not the <code>\</code> or <code>.</code></td>
+                            <td>Matches any legal file name character</td>.
                         </tr>
                         <tr>
                             <td><code>*</code></td>
-                            <td>matches any series of characters excluding <code>\</code> or <code>.</code></td>
+                            <td>Matches any series of legal file name characters</td>.
                         </tr>
                     </table>
                 </div>
             </li>
             <li>
-                A filter
+                The filter
                 will only match <a href="#eightpointthree">MS-DOS style filenames</a>.
-                The directory names in the path, however, can be case sensitive
-                and longer if the host OS supports this.
             </li>
             <li>
-                If all files in a
+                Matched character series do not stretch across directory separators <code>\</code>
+                or extension separators <code>.</code>. To match all files with all extensions,
+                use <code>*.*</code>.
+            </li>
+            <li>
+                Alternatively, if all files in a
                 specified directory are required, end the directory name with a backslash <code>\</code>.
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>path_and_filter</var></code> has a numeric value: <samp>Type mismatch</samp>.
+                <code><var>filter_spec</var></code> has a numeric value: <samp>Type mismatch</samp>.
             </li>
             <li>
-                <code><var>path_and_filter</var></code> is the empty string: <samp>Bad file name</samp>.
+                <code><var>filter_spec</var></code> is the empty string: <samp>Bad file name</samp>.
             </li>
             <li>
                 The specified filter does not match any files: <samp>File not found</samp>.
@@ -5510,7 +5503,7 @@
     <section>
         <h4 id="KILL"><code>KILL</code></h4>
         <code class="block">
-            <b>KILL</b> <var>file_path</var>
+            <b>KILL</b> <var>file_spec</var>
         </code>
         <p>
             Deletes a file on a disk device.
@@ -5518,28 +5511,28 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>file_path</var></code> is a string expression that specifies a
-                valid path to an existing file. The extension
-                must be specified: no default extensions are assumed.
-                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
+                <code><var>file_spec</var></code> is a string expression indicating the file to delete.
+                It must point to an existing file on a disk device.
+                See the <code><a href="#OPEN">OPEN</a></code>
+                statement for valid file specifications.
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>file_path</var></code> has a number value: <samp>Type mismatch</samp>.
+                <code><var>file_spec</var></code> has a number value: <samp>Type mismatch</samp>.
             </li>
             <li>
-                The file <code><var>file_path</var></code> is open: <samp>File already open</samp>
+                The file <code><var>file_spec</var></code> is open: <samp>File already open</samp>
             </li>
             <li>
-                The file or path <code><var>file_path</var></code> does not exist: <samp>File not found</samp>
+                The file or path <code><var>file_spec</var></code> does not exist: <samp>File not found</samp>
             </li>
             <li>
                 The user has no write permission: <samp>Permission denied</samp>
             </li>
             <li>
-                If a syntax error occurs after the closing quote, the file is removed    anyway.
+                If a syntax error occurs after the closing quote, the file is removed anyway.
             </li>
         </ul>
     </section>
@@ -5866,10 +5859,7 @@
             <li>
                 <code><var>file_spec</var></code> is a string expression indicating
                 the device and file to read the program from. See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications. Refer to
-                the section on <a href="#eightpointthree">file names on disk</a>
-                for information on how this statement matches filenames on a disk
-                device.
+                statement for valid file specifications.
             </li>
         </ul>
         <h5>Notes</h5>
@@ -6084,10 +6074,7 @@
             <li>
                 <code><var>file_spec</var></code> is a string expression indicating
                 the device and file to read the program from. See the <code><a href="#OPEN">OPEN</a></code>
-                statement for valid file specifications. Refer to
-                the section on <a href="#eightpointthree">file names on disk</a>
-                for information on how this statement matches filenames on a disk
-                device.
+                statement for valid file specifications.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -6167,7 +6154,7 @@
     <section>
         <h4 id="MKDIR"><code>MKDIR</code></h4>
         <code class="block">
-            <b>MKDIR</b> <var>path</var>
+            <b>MKDIR</b> <var>dir_spec</var>
         </code>
         <p>
             Creates a new directory on a disk device.
@@ -6175,24 +6162,22 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>path</var></code> is a string expression that specifies the
-                path of the new directory. The path may optionally be preceded by the
-                name of the disk device; if the device name is omitted, a directory is
-                created on the current disk device.
-                <code><var>path</var></code> will be truncated into
-                <a href="#eightpointthree">all-uppercase 8.3 format</a>.
+                <code><var>dir_spec</var></code> is a string expression that specifies the
+                path of the new directory on a disk device.
+                See the <code><a href="#OPEN">OPEN</a></code>
+                statement for valid file specifications.
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>path</var></code> is not a string: <samp>Type mismatch</samp>.
+                <code><var>dir_spec</var></code> is not a string: <samp>Type mismatch</samp>.
             </li>
             <li>
-                The parent directory of <code><var>path</var></code> does not exist: <samp>Path not found</samp>.
+                The parent directory does not exist: <samp>Path not found</samp>.
             </li>
             <li>
-                The pathname already exists: <samp>Path/File access error</samp>.
+                The directory name already exists on that path: <samp>Path/File access error</samp>.
             </li>
             <li>
                 The user has no write permission: <samp>Permission denied</samp>.
@@ -6251,7 +6236,9 @@
             <li>
                 <code><var>old_name</var></code> and <code><var>new_name</var></code>
                 are string expressions giving the path on disk to the old and new filenames,
-                respectively.
+                respectively. They must be file specifications on disk devices.
+                See the <code><a href="#OPEN">OPEN</a></code>
+                statement for valid file specifications.
             </li>
         </ul>
         <h5>Notes</h5>
@@ -6874,6 +6861,10 @@
                         short filenames, it is not possible to load a program if its filename is
                         longer than 8.3, contains non-permissible characters or ends in a dot.
                     </dd>
+                    <p>
+                        If no matching file is found for an output file name, a new file will be
+                        created with an all-caps 8.3 file name.
+                    </p>
                 </dl>
             </dd>
             <dt>
@@ -8501,7 +8492,7 @@
     <section>
         <h4 id="RMDIR"><code>RMDIR</code></h4>
         <code class="block">
-            <b>RMDIR</b> <var>path</var>
+            <b>RMDIR</b> <var>dir_spec</var>
         </code>
         <p>
             Removes an empty directory on a disk device.
@@ -8509,21 +8500,19 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>path</var></code> is a string
-                expression that specifies the path of the directory. The path
-                may optionally be preceded by the device name. If the device name is
-                omitted, a directory on the current disk is removed.
-                Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a>
-                for information on how this statement matches filenames.
+                <code><var>dir_spec</var></code> is a string
+                expression that specifies the path and name of the directory.
+                See the <code><a href="#OPEN">OPEN</a></code>
+                statement for valid file specifications.
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>path</var></code> has a numeric value: <samp>Type mismatch</samp>.
+                <code><var>dir_spec</var></code> has a numeric value: <samp>Type mismatch</samp>.
             </li>
             <li>
-                <code><var>path</var></code> is empty: <samp>Bad file name</samp> .
+                <code><var>dir_spec</var></code> is an empty string: <samp>Bad file name</samp> .
             </li>
             <li>
                 No matching path is found: <samp>Path not found</samp> .
@@ -8609,11 +8598,6 @@
                 <code><var>file_spec</var></code> is a string expression indicating the device and file to store to.
                 See the <code><a href="#OPEN">OPEN</a></code>
                 statement for valid file specifications.
-                On disk devices, the file name will be converted to uppercase. If it
-                is not an <a href="#eightpointthree">MS-DOS 8.3 filename</a>,
-                additional characters will be clipped off and the name is converted to
-                uppercase; if the filename contains no <code>.</code>, a default extension <code>.BAS</code> will
-                be added. If the resulting file name already exists, it will be overwritten.
            </li>
         </ul>
         <h5>Errors</h5>
