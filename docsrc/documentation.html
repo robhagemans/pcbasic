@@ -501,88 +501,6 @@
         </code>
 
         <section>
-            <h4 id="eightpointthree">File names on disk</h4>
-            <p>
-                PC-BASIC follows DOS file system conventions, where file and directory names consist of a
-                8-character name and 3-character extension. Names are case insensitive.
-                Permissible characters for both filename and extension are the
-                printable ASCII characters in the range
-                <code>&amp;H20</code>&ndash;<code>&amp;H7E</code> excluding the characters
-                <code>" * + . , / : ; < = > ? \ [ ] |</code>.
-                The special device filenames <code>AUX</code>, <code>CON</code>, <code>PRN</code> and
-                <code>NUL</code> are not legal names for files on disk.
-            </p>
-            <p>
-                Note that DOS conventions are subtly different from Windows short filename
-                conventions and not-so-subtly different from Unix conventions. This may lead
-                to surprising effects in the presence of several files that match
-                the same DOS name. To avoid such surprises, run PC-BASIC in a working
-                directory of its own and use all-caps 8.3 format for all files.
-            </p>
-            <h5>Data files</h5>
-            <p>
-                When opening a data file, PC-BASIC will first look for a file with the name
-                exactly as provided. This can be a long name and will be case sensitive if
-                your file system is. If such a file is not found, it will truncate the name
-                provided to 8.3 format and convert to all uppercase. If that exact name is
-                not found, it will look for 8.3 names in mixed case which match the name
-                provided in a case-insensitive way. Such files are searched in lexicographic
-                order. Files names longer than 8.3 will not be matched, unless their name is entered exactly.
-                On Windows, the name matched can be a short filename as well as a
-                long filename provided it is of 8.3 length &#8212; it may, for example, contain
-                spaces and thus not be a valid Windows short file name.
-            </p>
-            <h5>Program files</h5>
-            <p>
-                When loading or saving a program or memory-dump file, no attempt is made to find an exact
-                match. Instead, the search will first match the all-caps 8.3 version of the
-                name and continue in lexicographic order as above. If no extension is
-                specified, the extension <code>.BAS</code> will be implicitly added. To load a program
-                with no extension, end the filename in a dot. On file systems without
-                short filenames, it is not possible to load a program if its filename is
-                longer than 8.3, contains non-permissible characters or ends in a dot.
-            </p>
-            <h5>Directory paths</h5>
-            <p>
-                In paths, the directory names must be separated with
-                backslashes <code>\</code> &mdash; even if the OS normally separates paths with
-                forward slashes. The matching rules for directory names
-                are the same as for data files.
-            </p>
-            <p>
-                A path starting with a backslash is interpreted as an absolute path,
-                starting at the root of the specified disk device. Otherwise, the
-                path is interpreted as relative to the current directory on the
-                specified device. The directory name
-                <code>..</code> refers to the parent directory of a preceding path, or the
-                parent directory of the current directory if no path is given.
-                The directory name <code>.</code> refers to the same directory as
-                given by the preceding path, or the current directory if no preceding path is given.
-            </p>
-            <h5>Differences with GW-BASIC under MS-DOS</h5>
-            <ul>
-                <li>
-                    In some setups, MS-DOS
-                    also allows some characters in the range
-                    <code>&amp;H7F</code>&ndash;<code>&amp;HFF</code>. However, their
-                    permissibility and interpretation depends on the console code page,
-                    which may be different from the display code page that affects GW-BASIC.
-                    Depending on its console code page, MS-DOS will replace accented
-                    letters by their unaccented uppercase variant.
-                </li>
-                <li>
-                    Some DOS implementations will remove spaces from filenames.
-                    Notably, this is the case on DOSBox.
-                </li>
-                <li>
-                    PC-BASIC allows spaces in file names but no characters in the range
-                    <code>&amp;H7F</code>&ndash;<code>&amp;HFF</code>.
-                </li>
-            </ul>
-        </section>
-        <hr />
-
-        <section>
             <h4 id="mounting">Accessing your drives</h4>
             <p>
                 By default, drive letter <code>Z:</code> is mapped to the current working directory and
@@ -599,10 +517,18 @@
                 will map those locations to the PC-BASIC <code>A:</code> and <code>C:</code> drives.
             </p>
              <p>
-                 If you want PC-BASIC's drive letters to be the same as those in Windows,
+                If you want PC-BASIC's drive letters to be the same as those in Windows,
                 enable the option <code><a href="#--map-drives">map-drives</a></code>. Use this with caution, since it
                 means that your programs can now read and write on all drives that Windows
                 allows you access to.
+            </p>
+            <p>
+                PC-BASIC uses <a href="#eightpointthree">DOS conventions</a> for filenames and paths.
+                These are subtly different from Windows short filename
+                conventions and not-so-subtly different from Unix conventions. This may lead
+                to surprising effects in the presence of several files that match
+                the same DOS name. To avoid such surprises, it's best to run PC-BASIC in a working
+                directory of its own and use all-caps 8.3 format for all files.
             </p>
         </section>
         <hr />
