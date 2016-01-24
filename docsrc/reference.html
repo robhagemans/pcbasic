@@ -8305,6 +8305,17 @@
         <p>
             Closes all open files.
         </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                Official GW-BASIC documentation and many other sources state that
+                <code>RESET</code> closes all files <em>on disk devices</em>.
+                However, in reality GW-BASIC 3.23 also closes files on tape
+                and any other device, making this statement identical to
+                <code><a href="#CLOSE">CLOSE</a></code> with no arguments.
+                PC-BASIC follows this behaviour.
+            </li>
+        </ul>
     </section>
 <hr />
 
