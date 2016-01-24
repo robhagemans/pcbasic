@@ -333,7 +333,9 @@ def read_config_file(config_file):
     """ Read config file. """
     try:
         config = ConfigParser.RawConfigParser(allow_no_value=True)
-        config.read(config_file)
+        # use utf_8_sig to ignore a BOM if it's at the start of the file (e.g. created by Notepad)
+        with codecs.open(config_file, 'r', 'utf_8_sig') as f:
+            config.readfp(f)
     except (ConfigParser.Error, IOError):
         logger.warning('Error in configuration file %s. '
                         'Configuration not loaded.', config_file)
