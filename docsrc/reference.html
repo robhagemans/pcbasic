@@ -3076,7 +3076,7 @@
         <ul>
             <li>
                 <code><var>file_spec</var></code> is a string expression indicating
-                the device and file to read the program from. See the <a href="#OPEN">OPEN</a>
+                the device and file to read the program from. See the <code><a href="#OPEN">OPEN</a></code>
                 statement for valid file specifications. Refer to
                 the section on <a href="#eightpointthree">file names on disk</a>
                 for information on how this statement matches filenames on a disk
@@ -5796,6 +5796,8 @@
             <li>
                 <code><var>file_spec</var></code> is a string expression indicating the device and file name to list to.
                 If this file already exists, it will be overwritten.
+                See the <code><a href="#OPEN">OPEN</a></code>
+                statement for valid file specifications.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -5863,7 +5865,7 @@
         <ul>
             <li>
                 <code><var>file_spec</var></code> is a string expression indicating
-                the device and file to read the program from. See the <a href="#OPEN">OPEN</a>
+                the device and file to read the program from. See the <code><a href="#OPEN">OPEN</a></code>
                 statement for valid file specifications. Refer to
                 the section on <a href="#eightpointthree">file names on disk</a>
                 for information on how this statement matches filenames on a disk
@@ -6081,7 +6083,7 @@
         <ul>
             <li>
                 <code><var>file_spec</var></code> is a string expression indicating
-                the device and file to read the program from. See the <a href="#OPEN">OPEN</a>
+                the device and file to read the program from. See the <code><a href="#OPEN">OPEN</a></code>
                 statement for valid file specifications. Refer to
                 the section on <a href="#eightpointthree">file names on disk</a>
                 for information on how this statement matches filenames on a disk
@@ -6758,7 +6760,8 @@
         </p>
         <h5>File specifications</h5>
         <p>
-            <code><var>file_spec</var></code> is a non-empty string expression of the form
+            A <dfn>file specification</dfn> <code><var>file_spec</var></code>
+            is a non-empty string expression of the form
             <code><b>"</b>[<var>device</var><b>:</b>]<var>parameters</var><b>"</b></code>,
             where <code><var>device</var></code> is a PC-BASIC <a href="#devices">device</a>
             and the form of the <code><var>parameters</var></code> is specific to
@@ -6767,12 +6770,111 @@
             is used.
         </p>
         <dl>
-            <dt>
+            <dt id="eightpointthree">
                 Disk devices <code>A:</code>&mdash;<code>Z:</code> and <code>@:</code>
             </dt>
             <dd>
-                <code><var>parameters</var></code> must specify a valid file path on the disk.
-                See <a href="#eightpointthree">MS-DOS 8.3 filenames</a> for interpretation of path specifications.
+                <p>
+                    <code><var>parameters</var></code> must specify a valid file path of
+                    the form <code>[<b>\</b>][<var>dirname</var><b>\</b>] ... <var>filename</var></code>.
+                </p>
+                <p>
+                    PC-BASIC follows DOS file system conventions.
+                    Directory names are separated with
+                    backslashes <code>\</code> (even if the host OS separates paths with
+                    forward slashes). File and directory names consist of a
+                    8-character name and 3-character extension. Names are case insensitive.
+                    Permissible characters for both filename and extension are the
+                    printable ASCII characters in the range
+                    <code>&amp;H20</code>&ndash;<code>&amp;H7E</code> excluding the characters
+                    <code>" * + . , / : ; < = > ? \ [ ] |</code>.
+                    Spaces are allowed but leading and trailing spaces are ignored.
+                    The names <code>AUX</code>, <code>CON</code>, <code>PRN</code> and
+                    <code>NUL</code> are reserved as device aliases and are not legal names
+                    for files or directories on a disk device.
+                </p>
+                <p>
+                    A path starting with a backslash is interpreted as an absolute path,
+                    starting at the root of the specified disk device. Otherwise, the
+                    path is interpreted as relative to the current directory on the
+                    specified device. The special directory name
+                    <code><b>..</b></code> refers to the parent directory of a preceding path, or the
+                    parent directory of the current directory if no path is given.
+                    The special directory name <code><b>.</b></code> refers to the same directory as
+                    given by the preceding path, or the current directory if no preceding path is given.
+                </p>
+                <p>
+                    The <code><a href="#LOAD">LOAD</a></code>,
+                    <code><a href="#SAVE">SAVE</a></code>,
+                    <code><a href="#BLOAD">BLOAD</a></code>,
+                    <code><a href="#BSAVE">BSAVE</a></code>,
+                    <code><a href="#MERGE">MERGE</a></code>,
+                    <code><a href="#RUN">RUN</a></code>, and
+                    <code><a href="#LIST">LIST</a></code> statements
+                    (but not <code><a href="#OPEN">OPEN</a></code>) implicitly add a default
+                    extension <code>.BAS</code> if no extension is specified. To refer
+                    to a file name without an extension, the file specification should
+                    end in a dot <code>.</code>.
+                </p>
+                <h5>Compatibility notes</h5>
+                <p>
+                    Unlike PC-BASIC, some versions of MS-DOS
+                    allow certain characters in the range
+                    <code>&amp;H7F</code>&ndash;<code>&amp;HFF</code>. However, their
+                    permissibility and interpretation depends on the console code page,
+                    which may be different from the display code page that affects GW-BASIC.
+                    Depending on its console code page, MS-DOS will replace accented
+                    letters by their unaccented uppercase variant.
+                    Some DOS implementations will remove spaces from filenames;
+                    notably, this is the case on DOSBox.
+                </p>
+                <p>
+                    Since disk devices are mapped onto directories on the host system,
+                    DOS style names need to be mapped onto file names following the
+                    host system's (usually much less restrictive) standards.
+                    To allow access to files whose name on the host system does
+                    not conform to DOS standards, the following matching procedures are observed.
+                </p>
+                <dl>
+                    <dt>
+                        <code><a href="#OPEN">OPEN</a></code>,
+                        <code><a href="#KILL">KILL</a></code>,
+                        <code><a href="#NAME">NAME</a></code>,
+                        <code><a href="#CHDIR">CHDIR</a></code>,
+                        <code><a href="#MKDIR">MKDIR</a></code>,
+                        <code><a href="#RMDIR">RMDIR</a></code>
+                    </dt>
+                    <dd>
+                        PC-BASIC will first look for a file with the name
+                        exactly as provided. This can be a long name and will be case sensitive if
+                        your file system is. If such a file is not found, it will truncate the name
+                        provided to 8.3 format and convert to all uppercase. If that exact name is
+                        not found, it will look for 8.3 names in mixed case which match the name
+                        provided in a case-insensitive way. Such files are searched in lexicographic
+                        order. Files names longer than 8.3 will not be matched, unless their name is entered exactly.
+                        On Windows, the name matched can be a short filename as well as a
+                        long filename provided it is of 8.3 length &#8212; it may, for example, contain
+                        spaces and thus not be a valid Windows short file name.
+                    </dd>
+                    <dt>
+                        <code><a href="#LOAD">LOAD</a></code>,
+                        <code><a href="#SAVE">SAVE</a></code>,
+                        <code><a href="#BLOAD">BLOAD</a></code>,
+                        <code><a href="#BSAVE">BSAVE</a></code>,
+                        <code><a href="#MERGE">MERGE</a></code>,
+                        <code><a href="#RUN">RUN</a></code>,
+                        <code><a href="#LIST">LIST</a></code>
+                    </dt>
+                    <dd>
+                        No attempt is made to find an exact
+                        match. Instead, the search will first match the all-caps 8.3 version of the
+                        name and continue in lexicographic order as above. If no extension is
+                        specified, the extension <code>.BAS</code> will be implicitly added. To load a program
+                        with no extension, end the filename in a dot. On file systems without
+                        short filenames, it is not possible to load a program if its filename is
+                        longer than 8.3, contains non-permissible characters or ends in a dot.
+                    </dd>
+                </dl>
             </dd>
             <dt>
                 Cassette device <code>CAS1:</code>
@@ -8503,7 +8605,8 @@
         <ul>
             <li>
                 <code><var>file_spec</var></code> is a string expression indicating the device and file to store to.
-                See the <a href="#OPEN">OPEN</a> statement for valid file specifications.
+                See the <code><a href="#OPEN">OPEN</a></code>
+                statement for valid file specifications.
                 On disk devices, the file name will be converted to uppercase. If it
                 is not an <a href="#eightpointthree">MS-DOS 8.3 filename</a>,
                 additional characters will be clipped off and the name is converted to
