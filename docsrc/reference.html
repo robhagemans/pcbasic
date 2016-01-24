@@ -3076,7 +3076,7 @@
         <ul>
             <li>
                 <code><var>file_spec</var></code> is a string expression indicating
-                the device and file to read the program from. See the <code><a href="#OPEN">OPEN</a></code>
+                the device and file to read the memory image from. See the <code><a href="#OPEN">OPEN</a></code>
                 statement for valid file specifications. Refer to
                 the section on <a href="#eightpointthree">file names on disk</a>
                 for information on how this statement matches filenames on a disk
@@ -8543,7 +8543,7 @@
     <section>
         <h4 id="RUN"><code>RUN</code></h4>
         <code class="block">
-            <b>RUN</b> [<var>line</var>|<var>filename</var>] [<b>,R</b>]
+            <b>RUN</b> [<var>line</var>|<var>file_spec</var>] [<b>,R</b>]
         </code>
         <p>
             Executes a program.
@@ -8558,7 +8558,9 @@
                 If specified, execution starts from this line number.
             </li>
             <li>
-                If <code><var>filename</var></code> is specified, the file with that name is loaded and executed.
+                <code><var>file_spec</var></code>, if specified, is a string expression indicating
+                the device and file to read the program from. See the <code><a href="#OPEN">OPEN</a></code>
+                statement for valid file specifications.
             </li>
         </ul>
         <h5>Errors</h5>
