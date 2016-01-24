@@ -362,7 +362,9 @@ def read_config_file(config_file):
     """ Read config file. """
     try:
         config = ConfigParser.RawConfigParser(allow_no_value=True)
-        config.read(config_file)
+        # use utf_8_sig to ignore a BOM if it's at the start of the file (e.g. created by Notepad)
+        with codecs.open(config_file, 'r', 'utf_8_sig') as f:
+            config.readfp(f)
     except (ConfigParser.Error, IOError):
         logger.warning('Error in configuration file %s. '
                         'Configuration not loaded.', config_file)
@@ -503,8 +505,7 @@ def build_default_config_file(file_name):
     "# options for that preset and not the system ones. This is not recommended.\n")
     argnames = sorted(arguments.keys())
     try:
-        # use utf_8_sig to ignore a BOM if it's at the start of the file (e.g. created by Notepad)
-        with codecs.open(file_name, 'w', 'utf_8_sig') as f:
+        with open(file_name, 'w') as f:
             f.write(header)
             for a in argnames:
                 try:
