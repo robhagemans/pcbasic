@@ -6758,11 +6758,13 @@
         </p>
         <h5>File specifications</h5>
         <p>
-            <code><var>file_spec</var></code> is a string expression of the form
-            <code><b>"</b><var>device</var><b>:</b><var>parameters</var><b>"</b></code>,
+            <code><var>file_spec</var></code> is a non-empty string expression of the form
+            <code><b>"</b>[<var>device</var><b>:</b>]<var>parameters</var><b>"</b></code>,
             where <code><var>device</var></code> is a PC-BASIC <a href="#devices">device</a>
             and the form of the <code><var>parameters</var></code> is specific to
-            the type of device:
+            the type of device. If <code><var>device</var></code> is omitted,
+            the current device (one of the disk devices or <code>CAS1:</code>)
+            is used.
         </p>
         <dl>
             <dt>
@@ -6805,6 +6807,9 @@
                 the status is <samp>Skipped</samp>; if the file matches, the status is
                 <samp>Found</samp>. When called from a program, these statements do
                 not print messages to the console.
+                If the <code><var>device</var></code> was specified explicitly,
+                <code><var>parameters</var></code> may also be empty. In this case the
+                first file of the appropriate type is opened.
             </dd>
             <dt>
                 Console and parallel devices <code>SCRN:</code>, <code>KYBD:</code>, and <code>LPT<var>n</var>:</code>
