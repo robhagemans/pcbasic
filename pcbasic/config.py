@@ -511,12 +511,12 @@ def build_default_config_file(file_name):
                 try:
                     # check if it's a list
                     arguments[a]['list']
-                    formatted = ', '.join(map(str, arguments[a]['default']))
+                    formatted = ','.join(map(str, arguments[a]['default']))
                 except(KeyError, TypeError):
                     formatted = str(arguments[a]['default'])
                 f.write("# %s=%s" % (a, formatted))
                 try:
-                    f.write(' # choices: %s\n' %
+                    f.write(' ; choices: %s\n' %
                                 ', '.join(map(str, arguments[a]['choices'])))
                 except(KeyError, TypeError):
                     f.write('\n')
