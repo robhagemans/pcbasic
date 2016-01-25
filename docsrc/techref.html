@@ -10,16 +10,24 @@
 
     <section>
         <h3 id="internal">Representation of variables</h3>
-        <p>Internal representation:</p>
+        <p>
+            Variables are stored in memory and literals are stored in program bytecode
+            according to the following representation.
+        </p>
         <ul>
             <li>
-               Line numbers are two-byte unsigned little-endian ints.
+                Line numbers are two-byte unsigned little-endian ints.
             </li>
             <li>
-               Integers are two-byte signed little-endian two's complement ints.
+                Integer variables are stored as two-byte signed little-endian two's complement ints.
             </li>
             <li>
-               Floats are represented in the Microsoft Binary Format (MBF).
+                Float variables are stored in the Microsoft Binary Format (MBF).
+            </li>
+            <li>
+                String variables are stored as a one-byte length field and a two-byte pointer
+                to the start of the contents' storage space. In program bytecode, strings are
+                stored the same as in ASCII programs.
             </li>
         </ul>
         <p>
