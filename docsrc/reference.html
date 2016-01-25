@@ -5775,6 +5775,16 @@
             In all cases, any further
             statements in a compound after <code>LIST</code> will be ignored, both in a program and in interactive mode.
         </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                In GW-BASIC 3.23, <code>LIST</code> will not show line numbers
+                <code>65531</code>&mdash;<code>65535</code> inclusive.
+                By default, PC-BASIC's <code>LIST</code> does show these lines. However,
+                showing them can be disabled with the option
+                <code><a href="#--strict-hidden-lines">strict-hidden-lines</a></code>.
+            </li>
+        </ul>
         <h5>Parameters</h5>
         <ul>
             <li>
@@ -5821,6 +5831,17 @@
             Also stops program execution and returns control to the user. Any further
             statements on a line after <code>LLIST</code> will be ignored, both in a program and in interactive mode.
         </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                In GW-BASIC 3.23, <code>LLIST</code> will not show line numbers
+                <code>65531</code>&mdash;<code>65535</code> inclusive.
+                By default, PC-BASIC's <code>LLIST</code> does show these lines. However,
+                showing them can be disabled with the option
+                <code><a href="#--strict-hidden-lines">strict-hidden-lines</a></code>.
+            </li>
+        </ul>
+        <h5>Paramet
         <h5>Parameters</h5>
         <ul>
             <li>
