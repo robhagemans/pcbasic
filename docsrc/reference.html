@@ -5764,19 +5764,22 @@
     <section>
         <h4 id="LIST"><code>LIST</code></h4>
         <code class="block">
-            <b>LIST</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>]] [<b>,</b> <var>file_spec</var>]
+            <b>LIST</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>]] [<b>,</b> <var>file_spec</var> [<var>anything</var>]]
         </code>
         <p>
             Prints the program to the screen or a file,
             starting with <code><var>line_number_0</var></code> up to and
             including <code><var>line_number_1</var></code>.
-            Also stops program execution and returns control to the user. Any further
-            statements on a line after <code>LIST</code> will be ignored, both in a program and in interactive mode.
+            Also stops program execution and returns control to the user.
+            If the <code>LIST</code> statement ends with a file specification, anything further is ignored.
+            In all cases, any further
+            statements in a compound after <code>LIST</code> will be ignored, both in a program and in interactive mode.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are  line numbers in the range <code>[0&#8212;65529]</code>.
+                <code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are
+                line numbers in the range <code>[0&#8212;65529]</code>
                 or a <code>.</code> to indicate the last line edited. The line numbers do not need to exist;
                 they specify a range. If the range is empty, nothing is printed.
             </li>
