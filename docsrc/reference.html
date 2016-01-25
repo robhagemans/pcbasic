@@ -1711,7 +1711,7 @@
                 <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
             </li>
             <li>
-                <code><var>file_num</var></code> is open for output to a device: <samp>Bad file mode</samp>.
+                <code><var>file_num</var></code> is open to a <code>LPT</code> device: <samp>Bad file mode</samp>.
             </li>
         </ul>
     </section>
@@ -1753,7 +1753,7 @@
                 <code><var>file_num</var></code> is not an open file: <samp>Bad file number</samp>.
             </li>
             <li>
-                <code><var>file_num</var></code> is open for output to a device: <samp>Bad file mode</samp>.
+                <code><var>file_num</var></code> is open to a <code>LPT</code> device: <samp>Bad file mode</samp>.
             </li>
         </ul>
     </section>
@@ -3077,7 +3077,7 @@
             <li>
                 The string expression <code><var>file_spec</var></code> is a
                 valid <a href="#filespec">file specification</a> indicating
-                the device and file to read the memory image from.
+                the file to read the memory image from.
             </li>
             <li>
                 <code><var>offset</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code>.
@@ -3119,7 +3119,7 @@
             <li>
                 The string expression <code><var>file_spec</var></code> is a
                 valid <a href="#filespec">file specification</a> indicating
-                the device and file to write to.
+                the file to write to.
             </li>
             <li>
                 <code><var>offset</var></code> is a numeric expression in the range <code>[-32768&#8212;65535]</code> indicating
@@ -3255,7 +3255,7 @@
             <li>
                 The string expression <code><var>file_spec</var></code> is a
                 valid <a href="#filespec">file specification</a> indicating
-                the device and file to read the program from.
+                the file to read the program from.
             </li>
             <li>
                 <code><var>line_number_expr</var></code> is a numeric expression. It
@@ -5118,14 +5118,14 @@
             <b>INPUT #</b> <var>file_num</var><b>,</b> <var>var_0</var> [<b>,</b> <var>var_1</var>] ...
         </code>
         <p>
-            Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
+            Reads string or numeric variables from a text file or the <code>FIELD</code> buffer
             of a random access file.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
                 <code><var>file_num</var></code> is the number of a file open in
-                <code>INPUT</code> mode or a device or random-access file open in <code>RANDOM</code> mode.
+                <code>INPUT</code> mode or a random-access file open in <code>RANDOM</code> mode.
             </li>
             <li>
                 <code><var>var_0</var>, <var>var_1</var>, ...</code> are variable names or fully indexed array elements.
@@ -5701,10 +5701,10 @@
             <b>LINE INPUT</b> <b>#</b> <var>file_num</var><b>,</b> <var>string_name</var>
         </code>
         <p>
-            Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
+            Reads string or numeric variables from a text file or the <code>FIELD</code> buffer
             of a random access file. All input is read until <kbd>Enter</kbd> is pressed; the first
             255 characters are stored. <code><var>file_num</var></code> must be the number of a file open in
-            <code>INPUT</code> mode or a device or random-access file open in <code>RANDOM</code> mode.
+            <code>INPUT</code> mode or a random-access file open in <code>RANDOM</code> mode.
         </p>
         <h5>Parameters</h5>
         <ul>
@@ -5766,7 +5766,7 @@
             <b>LIST</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>]] [<b>,</b> <var>file_spec</var>]
         </code>
         <p>
-            Prints the program to the screen or a specified device,
+            Prints the program to the screen or a file,
             starting with <code><var>line_number_0</var></code> up to and
             including <code><var>line_number_1</var></code>.
             Also stops program execution and returns control to the user. Any further
@@ -5781,7 +5781,7 @@
             </li>
             <li>
                 The string expression <code><var>file_spec</var></code> is a
-                valid <a href="#filespec">file specification</a> indicating the device and file name to list to.
+                valid <a href="#filespec">file specification</a> indicating the file to list to.
                 If this file already exists, it will be overwritten.
             </li>
         </ul>
@@ -5850,7 +5850,7 @@
         <ul>
             <li>
                 The string expression <code><var>file_spec</var></code> is a valid <a href="#filespec">file specification</a> indicating
-                the device and file to read the program from.
+                the file to read the program from.
             </li>
         </ul>
         <h5>Notes</h5>
@@ -6064,7 +6064,7 @@
         <ul>
             <li>
                 The string expression <code><var>file_spec</var></code> is a valid <a href="#filespec">file specification</a> indicating
-                the device and file to read the program from.
+                the file to read the program from.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -8535,7 +8535,7 @@
             <li>
                 The string expression <code><var>file_spec</var></code>, if specified,
                 is a valid <a href="#filespec">file specification</a> indicating
-                the device and file to read the program from.
+                the file to read the program from.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -8582,7 +8582,7 @@
         <ul>
             <li>
                 The string expression <code><var>file_spec</var></code> is a valid <a href="#filespec">file specification</a>
-                indicating the device and file to store to.
+                indicating the file to store to.
            </li>
         </ul>
         <h5>Errors</h5>
