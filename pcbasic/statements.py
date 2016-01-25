@@ -892,6 +892,8 @@ def exec_list(ins):
     if util.skip_white_read_if(ins, (',',)):
         outname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         out = devices.open_file(0, outname, filetype='A', mode='O')
+        # ignore everything after file spec
+        util.skip_to(ins, tk.end_line)
     util.require(ins, tk.end_statement)
     lines = program.list_lines(from_line, to_line)
     if out:
