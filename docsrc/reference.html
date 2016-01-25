@@ -4981,12 +4981,12 @@
     <section>
         <h4 id="IF"><code>IF</code></h4>
         <code class="block">
-            <b>IF</b> <var>truth_value</var> [<b>,</b>] {<b>THEN</b>|<b>GOTO</b>} [<var>statements_1</var>|<var>line_number_1</var> [<var>anything</var>]]
-            [<b>ELSE</b> [<var>statements_0</var>|<var>line_number_0</var> [<var>anything</var>]]]
+            <b>IF</b> <var>truth_value</var> [<b>,</b>] {<b>THEN</b>|<b>GOTO</b>} [<var>compound_statement_true</var>|<var>line_number_true</var> [<var>anything</var>]]
+            [<b>ELSE</b> [<var>compound_statement_false</var>|<var>line_number_false</var> [<var>anything</var>]]]
        </code>
         <p>
-            If <code><var>truth_value</var></code> is non-zero, executes <code><var>statements_1</var></code> or jumps to <code><var>line_number_1</var></code> .
-            If it is zero, executes <code><var>statements_0</var></code> or jumps to <code><var>line_number_0</var></code> .
+            If <code><var>truth_value</var></code> is non-zero, executes <code><var>compound_statement_true</var></code> or jumps to <code><var>line_number_true</var></code> .
+            If it is zero, executes <code><var>compound_statement_false</var></code> or jumps to <code><var>line_number_false</var></code> .
         </p>
         <h5>Parameters</h5>
         <ul>
@@ -4995,12 +4995,12 @@
                 is a numeric expression.
             </li>
             <li>
-                <code><var>line_number_0</var></code> and <code><var>line_number_1</var></code> are existing line numbers.
+                <code><var>line_number_false</var></code> and <code><var>line_number_true</var></code> are existing line numbers.
             </li>
             <li>
-                Statements <code><var>statements_0</var></code> and <code><var>statements_1</var></code> can be compound statements with
-                one or more colons (<code>:</code>) separating single statements. The compound statements
-                can contain nested <code>IF&#8212;THEN&#8212;ELSE</code> statements.
+                <code><var>compound_statement_false</var></code> and <code><var>compound_statement_true</var></code> are compound statements,
+                consisting of at least one statement, optionally followed by further statements separated by colons <code>:</code>. The compound statements
+                may contain nested <code>IF&#8212;THEN&#8212;ELSE</code> statements.
             </li>
         </ul>
         <h5>Notes</h5>
@@ -5031,9 +5031,9 @@
                If <code><var>truth_value</var></code> has a string value: <samp>Type mismatch</samp>.
             </li>
             <li>
-                <code><var>truth_value</var></code> equals <code>0</code> and <code><var>line_number_0</var></code> is a non-existing line number,
+                <code><var>truth_value</var></code> equals <code>0</code> and <code><var>line_number_false</var></code> is a non-existing line number,
                 or
-                <code><var>truth_value</var></code> equals <code>1</code> and <code><var>line_number_1</var></code> is a non-existing line number:
+                <code><var>truth_value</var></code> is nonzero and <code><var>line_number_true</var></code> is a non-existing line number:
                 <samp>Undefined line number</samp>.
             </li>
         </ul>
