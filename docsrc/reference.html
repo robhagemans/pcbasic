@@ -7839,10 +7839,9 @@
             [<b>USING</b> <var>format</var><b>;</b> <var>uexpr_0</var> [{<b>;</b>|<b>,</b>} <var>uexpr_1</var>] ... [<b>;</b>|<b>,</b>]]
         </code>
         <p>
-            Writes expressions to the screen, printer, file or device. If <code>LPRINT</code> is used,
-            output goes to <code>LPT1:</code>. If <code><var>file_num</var></code> is specified, output goes to the file or
-            device open under that number. <code>?</code> is a shorthand for <code>PRINT</code> and has the same
-            effect.
+            Writes expressions to the screen, printer, or file. If <code>LPRINT</code> is used,
+            output goes to <code>LPT1:</code>. If <code><var>file_num</var></code> is specified, output goes to the file
+            open under that number. <code>?</code> is a shorthand for <code>PRINT</code>.
         </p>
         <p>
             Expressions can optionally be separated by one or more of the following tokens:
@@ -7898,7 +7897,7 @@
         <h5>Format string syntax</h5>
         <p>
             A <code>USING</code> declaration occurs at the end of an <code>[L]PRINT[#]</code> statement and writes a
-            formatted string to the screen, printer, file or device. The following tables list the format tokens
+            formatted string to the screen, printer or file. The following tables list the format tokens
             that can be used inside the <code><var>format</var></code> string.
         </p>
         <div class="scrollable">
@@ -7952,7 +7951,7 @@
                 <tr>
                     <td><code>,</code></td>
                     <td>
-                    Before the decimal point: cause digits to be grouped in threes separated by
+                        Before the decimal point: cause digits to be grouped in threes separated by
                         commas. After the decimal point it is not a token.
                         Provides one digit position.
                     </td>
