@@ -117,15 +117,24 @@
     <section>
         <h3 id="keywords">Keyword tokens</h3>
         <p>
-            Not all keywords are statements or functions. Conversely, some parts of statement or
-            function syntax are not keywords. Keywords are not legal variable names.
-            Therefore, you cannot name a variable <code>TO!</code> but you can
-            name it <code>AS!</code>: <code>TO</code> is a keyword but <code>AS</code> is not,
-            even though both appear as part of BASIC statements.
+            <dfn>Keywords</dfn> in PC-BASIC are reserved words, meaning that a variable or
+            array name cannot be identical to a keyword or a keyword plus a sigil.
+            However, variable and array names containing or even starting with a keyword are allowed.
+            The complete list of keywords is given in this section.
+            All function names and operators are keywords and all statements start with a keyword
+            (which in the case of <code>LET</code> is optional). However, the converse is not true:
+            not all keywords are statements or functions. For example, <code>USING</code> and <code>SPC(</code>
+            only occur as part of a statement syntax.
+            Furthermore, some words that form part of statement syntax are not keywords:
+            examples are <code>AS</code>, <code>BASE</code>, and <code>ACCESS</code>.
+        </p>
+        <p>
+            Therefore, for example, you cannot name a variable <code>TO!</code> but you can
+            name it <code>AS!</code>.
         </p>
         <p>
             The keywords are listed below with the bytecode token used to
-            represent them in a BASIC file.
+            represent them in a tokenised BASIC program file.
         </p>
         <ul class="compact10">
             <li><code>81</code> <code>END</code></li>
