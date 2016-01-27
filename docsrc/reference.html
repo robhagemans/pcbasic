@@ -53,11 +53,18 @@
 <hr />
 
 <section>
-    <h3 id="literals">Definitions</h3>
+    <h3 id="definitions">Definitions</h3>
     <p>
-        A direct line of BASIC consists of a <dfn>compound statement</dfn>:
+        A <dfn>program line</dfn> consists of a line number followed by a compound statement.
+    </p>
+    <p>
+        A <dfn>line number</dfn> is a whole number in the range <code>[0&#8212;65535]</code>.
+        Note that the line numbers <code>65530&#8212;65535</code> cannot be entered
+        from the console or a text program file, but can be part of a tokenised program file.
+    </p>
+    <p>
+        A <dfn>compound statement</dfn> consists of <a href="#statements">statements</a> separated by colons:
         <code class="block"><var>statement</var> [<b>:</b> <var>statement</var>] ...</code>
-        where <dfn>statements</dfn> are as described in the section <a href="#statements">Statements</a>.
     </p>
     <p>
         An <dfn>expression</dfn> takes one of the following forms:
@@ -68,18 +75,11 @@
         whose elements are described the sections <a href="#literals">Literals</a>,
         <a href="#variables">Variables</a>, <a href="#operators">Operators</a> and
         <a href="#functions">Functions</a>.
+    </p>
+    <p>
         An <dfn>array element</dfn> takes the form
         <code class="block"><var>array</var> {<b>[</b>|<b>(</b>} <var>numeric_expression</var> [<b>,</b> <var>numeric_expression</var> ] ... {<b>)</b>|<b>]</b>}</code>
     </p>
-    <p>
-        A <dfn>program line</dfn> consists of a line number and a compound statement:
-        <code class="block"><var>line_number</var> <var>statement</var> [<b>:</b> <var>statement</var>] ...</code>
-    <p>
-    <p>
-        A <dfn>line number</dfn> is a whole number in the range <code>[0&#8212;65535]</code>.
-        Note that the line numbers <code>65530&#8212;65535</code> cannot be entered
-        from the console or a text program file, but can be part of a tokenised program file.
-    <p>
 </section>
 <hr />
 
