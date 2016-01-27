@@ -176,7 +176,7 @@
 
             <p>
                 When a program is started, the commands in the program are followed until the
-                program quits and returns to interactive mode or until user input is required.
+                program quits and returns to direct mode or until user input is required.
                 When a program is running, a few keys have immediate effect:
             </p>
             <div class="scrollable">
@@ -195,7 +195,7 @@
                             or <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd>
                         </td>
                         <td>
-                            Stop execution and return to interactive mode. A <samp>Break</samp> message is printed.
+                            Stop execution and return to direct mode. A <samp>Break</samp> message is printed.
                         </td>
                     </tr>
                     <tr>
@@ -203,7 +203,7 @@
                             <kbd>Ctrl</kbd>+<kbd>C</kbd>
                         </td>
                         <td>
-                            If <code><a href="#--ctrl-c-break">ctrl-c-break</a>=True</code>: stop execution and return to interactive mode.
+                            If <code><a href="#--ctrl-c-break">ctrl-c-break</a>=True</code>: stop execution and return to direct mode.
                             A <samp>Break</samp> message is printed.
                         </td>
                     </tr>
@@ -212,7 +212,7 @@
 
             <p>
                 If user input is required by the statements <code>INPUT</code>, <code>LINE INPUT</code>, or <code>RANDOMIZE</code>,
-                most keys have the same effect as in interactive mode. The following keys have a different effect:
+                most keys have the same effect as in direct mode. The following keys have a different effect:
             </p>
             <div class="scrollable">
                 <table>
@@ -222,7 +222,7 @@
                             or <kbd>Ctrl</kbd>+<kbd>Scroll Lock</kbd>
                         </td>
                         <td>
-                            Stop execution and return to interactive mode.
+                            Stop execution and return to direct mode.
                             A <samp>Break</samp> message is printed.
                         </td>
                     </tr>

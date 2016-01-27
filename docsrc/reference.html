@@ -5794,7 +5794,7 @@
             Also stops program execution and returns control to the user.
             If the <code>LIST</code> statement ends with a file specification, anything further is ignored.
             In all cases, any further
-            statements in a compound after <code>LIST</code> will be ignored, both in a program and in interactive mode.
+            statements in a compound after <code>LIST</code> will be ignored, both in a program and in direct mode.
         </p>
         <h5>Notes</h5>
         <ul>
@@ -5850,7 +5850,7 @@
             Prints the program to the screen, starting with <code><var>line_number_0</var></code> up to and
             including <code><var>line_number_1</var></code>.
             Also stops program execution and returns control to the user. Any further
-            statements on a line after <code>LLIST</code> will be ignored, both in a program and in interactive mode.
+            statements on a line after <code>LLIST</code> will be ignored, both in a program and in direct mode.
         </p>
         <h5>Notes</h5>
         <ul>
@@ -6909,7 +6909,7 @@
                 Cassette file names are case sensitive, have no path or extension,
                 may be empty and do not need to be unique. They may contain any
                 character in the range <code>&amp;H20</code>&ndash;<code>&amp;HFF</code>.
-                On the cassette device, when called in interactive mode,
+                On the cassette device, when called in direct mode,
                 <code><a href="#OPEN">OPEN</a></code>,
                 <code><a href="#CHAIN">CHAIN</a></code>,
                 <code><a href="#MERGE">MERGE</a></code>,
