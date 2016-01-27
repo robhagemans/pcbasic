@@ -544,13 +544,18 @@
             </ul>
             <p>
                 In particular, QBASIC files (which have no line numbers) and QuickBASIC files
-                (magic byte <code>FC</code>) will not run.</p>
-                <p>PC-BASIC will accept both DOS and Unix newline conventions for programs
-                stored as ASCII text. This behaviour is different from GW-BASIC, which only
-                accepts text files in DOS format: <code>CR/LF</code> line endings,
-                <code>^Z</code> (character 26) at end-of-file. In some exceptional cases,
-                correct GW-BASIC ASCII files may not be loaded correctly: for example, if they
-                contain LF characters followed by a number. If you encounter such a case, use
+                (magic byte <code>FC</code>) will not run.
+            </p>
+            <p>
+                PC-BASIC will accept both DOS and Unix newline conventions for programs
+                stored as ASCII text. Any line not starting with a number will be considered a
+                continuation (through <code>LF</code>) of the previous line
+                This behaviour is different from GW-BASIC, which only
+                accepts text files in DOS format: <code>CR LF</code> line endings and
+                <code>^Z</code> (<code>CHR$(26)</code>) at end-of-file.
+                As a consequence, in exceptional cases where a program line is continued through <code>LF</code>
+                just before a number, correct GW-BASIC ASCII files may not be loaded correctly.
+                If you encounter such a case, use
                 the <code><a href="#--strict-newline">strict-newline</a></code> option to enable GW-BASIC behaviour. If
                 <code>strict-newline</code> is enabled, ASCII files in standard Unix format
                 (<code>LF</code> line endings, no end-of-file character) will fail to load. On
