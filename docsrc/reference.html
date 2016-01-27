@@ -53,12 +53,43 @@
 <hr />
 
 <section>
+    <h3 id="literals">Definitions</h3>
+    <p>
+        A direct line of BASIC consists of a <dfn>compound statement</dfn>:
+        <code class="block"><var>statement</var> [<b>:</b> <var>statement</var>] ...</code>
+        where <dfn>statements</dfn> are as described in the section <a href="#statements">Statements</a>.
+    </p>
+    <p>
+        An <dfn>expression</dfn> takes one of the following forms:
+        <code class="block"><var>unary_operator</var> {<var>literal</var> | <var>variable</var> |
+             <var>array_element</var> | <var>function</var>}</code>
+        <code class="block"><var>expression</var> <var>binary_operator</var> <var>expression</var></code>
+        <code class="block"><b>(</b><var>expression</var><b>)</b></code>
+        whose elements are described the sections <a href="#literals">Literals</a>,
+        <a href="#variables">Variables</a>, <a href="#operators">Operators</a> and
+        <a href="#functions">Functions</a>.
+        An <dfn>array element</dfn> takes the form
+        <code class="block"><var>array</var> {<b>[</b>|<b>(</b>} <var>numeric_expression</var> [<b>,</b> <var>numeric_expression</var> ] ... {<b>)</b>|<b>]</b>}</code>
+    </p>
+    <p>
+        A <dfn>program line</dfn> consists of a line number and a compound statement:
+        <code class="block"><var>line_number</var> <var>statement</var> [<b>:</b> <var>statement</var>] ...</code>
+    <p>
+    <p>
+        A <dfn>line number</dfn> is a whole number in the range <code>[0&#8212;65535]</code>.
+        Note that the line numbers <code>65530&#8212;65535</code> cannot be entered
+        from the console or a text program file, but can be part of a tokenised program file.
+    <p>
+</section>
+<hr />
+
+<section>
     <h3 id="literals">Literals</h3>
 
     <h5>String literals</h5>
     <p>
         String literals are of the following form:
-        <code class="block"><b>"</b>[<var>characters</var>][<b><i>NUL</i></b>|<b><i>CR</i></b>|<b><i>EOF</i></b>|<b>"</b>]</code>
+        <code class="block"><b>"</b>[<var>characters</var>]{<b><i>NUL</i></b>|<b><i>CR</i></b>|<b><i>EOF</i></b>|<b>"</b>}</code>
         where <code><var>characters</var></code> is a string of characters. Any
         character from the current code page can be used, with the following
         exceptions, all of which terminate the string literal (aside from other effects they may have):
@@ -80,7 +111,7 @@
     <h5>Numeric literals</h5>
     <p>
         Numeric literals have one of the following forms:
-        <code class="block">[{<b>+</b>|<b>-</b>}] [<var>digits</var>] [<b>.</b>] [<var>digits</var>] [ { {<b>E</b>|<b>D</b>} [{<b>+</b>|<b>-</b>}] [<var>digits</var>] | <b>#</b> | <b>!</b> | <b>%</b> } ]</code>
+        <code class="block">[{<b>+</b>|<b>-</b>}] [<var>digits</var>] [<b>.</b>] [<var>digits</var>] [ {<b>E</b>|<b>D</b>} [{<b>+</b>|<b>-</b>}] [<var>digits</var>] | <b>#</b> | <b>!</b> | <b>%</b> ]</code>
         <code class="block"><b>&amp;</b>{<b>H</b>|<b>h</b>}<var>hexadecimal_digits</var></code>
         <code class="block"><b>&amp;</b>[<b>O</b>|<b>o</b>]<var>octal_digits</var></code>
         where <code><var>octal_digits</var></code> is a string of characters from <code><b>01234567</b></code>,
@@ -174,9 +205,7 @@
 
     <h4 id="limits">Machine limits</h4>
     <ul>
-        <li>
-            Line numbers are in <code>[0&#8212;65535]</code>, although line numbers <code>65530&#8212;65535</code> cannot be entered from the console.
-        </li>
+
         <li>
             Integers are in <code>[-32768&#8212;32767]</code>. Negative integers are represented by the two's complement.
             Depending on context they may be interpreted as unsigned integers in the range <code>[0&#8212;65535]</code>.
@@ -188,13 +217,9 @@
             Double-precision floats can hold more decimals, but not larger or smaller numbers, than single-precision floats.
         </li>
     </ul>
-</section>
-<hr />
-
-<section>
-    <h3 id="arrays">Arrays</h3>
+    <h4 id="arrays">Arrays</h3>
     <p>
-        Arrays are groups of variables and can have the same types as <a href="#variables">variables</a>. Arrays are indexed with round or square
+        Arrays are indexed lists of variables and can have the same types as <a href="#variables">variables</a>. Arrays are indexed with round or square
         brackets; even mixing brackets is allowed. The following all work: <code>A[0]</code>, <code>A(0)</code>,
         <code>A(0]</code>, <code>A[0)</code>. Multidimensional arrays are specified with commas: <code>A(0, 0)</code>, <code>A[0, 0, 0]</code>, etc.
     </p>
