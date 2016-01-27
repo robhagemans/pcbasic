@@ -111,16 +111,30 @@
     <h5>Numeric literals</h5>
     <p>
         Numeric literals have one of the following forms:
-        <code class="block">[{<b>+</b>|<b>-</b>}] [<var>digits</var>] [<b>.</b>] [<var>digits</var>] [ {<b>E</b>|<b>D</b>} [{<b>+</b>|<b>-</b>}] [<var>digits</var>] | <b>#</b> | <b>!</b> | <b>%</b> ]</code>
-        <code class="block"><b>&amp;</b>{<b>H</b>|<b>h</b>}<var>hexadecimal_digits</var></code>
-        <code class="block"><b>&amp;</b>[<b>O</b>|<b>o</b>]<var>octal_digits</var></code>
-        where <code><var>octal_digits</var></code> is a string of characters from <code><b>01234567</b></code>,
-        <code><var>digits</var></code> is a string of characters from <code><b>0123456789</b></code>, and
-        <code><var>hexadecimal_digits</var></code> is a case-insensitive string of characters from <code><b>0123456789ABCDEF</b></code>.
+        <code class="block">[{<b>+</b>|<b>-</b>}]... [<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>]...
+            [<b>.</b>][<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>]...
+            [{<b>E</b>|<b>e</b>|<b>D</b>|<b>d</b>}[{<b>+</b>|<b>-</b>}][<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>]...
+            |<b>#</b>|<b>!</b>|<b>%</b>]</code>
+        <code class="block">[{<b>+</b>|<b>-</b>}]... <b>&amp;</b>{<b>H</b>|<b>h</b>}[{<b>+</b>|<b>-</b>}]...[<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>|<b>A</b>|<b>B</b>|<b>C</b>|<b>D</b>|<b>E</b>|<b>F</b>|<b>a</b>|<b>b</b>|<b>c</b>|<b>d</b>|<b>e</b>|<b>f</b>] ...</code>
+        <code class="block">[{<b>+</b>|<b>-</b>}]... <b>&amp;</b>[<b>O</b>|<b>o</b>] [{<b>+</b>|<b>-</b>}]... [<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>] ...</code>
     </p>
     <p>
-        Trailing <code>%</code> is ignored; trailing <code>!</code> or <code>#</code> <a href="#typechars">specify the type</a>.
+        Hexadecimal literals must not contain spaces, but decimal and octal literals may. The <code>o</code> character in octal literals is optional: they can be
+        specified equally as <code>&amp;o777</code> or <code>&amp;777</code>.
     </p>
+    <p>
+        Hexadecimal and octal literals denote integers. They must range between
+        [<code>-&amp;h7FFF</code>&mdash;<code>&amp;hFFFF</code>],
+        of which the range [<code>&amp;h8000</code>&mdash;<code>&amp;hFFFF</code>]
+        is interpreted as a two's complement negative integer. Signs can appear on either side of the <code>&amp;</code>
+        but do not combine between the sides; the combined sign after <code>&amp;</code> overrides that before.
+        For example, <code>&amp;hFFFF = -&amp;h1 = &amp;h-1 = -&amp;h-1 = -1</code>.
+    </p>
+    <p>
+        Floating-point literals must be specified in decimal notation. The decimal separator is the point.
+        A base-10 exponent may be specified after <code>E</code> in single-precision floats, or after <code>D</code> in double-precision floats.
+        The exponent must have no more than one sign.
+        Trailing <code>%</code> is ignored; trailing <code>!</code> or <code>#</code> mark the literal as single- or double-precision, respectively.
     <p>
         Examples of valid numeric literals are
         <code>-1</code> <code>42</code> <code>42!</code> <code>42#</code>
@@ -129,18 +143,6 @@
         <code>1.1d+7</code> <code>1e2</code> <code>1e-2</code> <code>&amp;7</code>
         <code>&amp;hffff</code> <code>&amp;O20</code>
     </p>
-
-    <h5>Notes</h5>
-    <ul>
-        <li>
-            Hexadecimal and octal literals are treated as unsigned integers. They must range between
-            <code>-&amp;h7FFF</code> and <code>&amp;hFFFF</code>. <code>&amp;hFFFF = -&amp;h1 = &amp;h-1</code>.
-        </li>
-        <li>
-            The <code>O</code> character in octal literals is optional. They can be
-            specified equally as <code>&amp;o777</code> or <code>&amp;777</code>.
-        </li>
-    </ul>
 </section>
 <hr />
 
@@ -161,12 +163,12 @@
         <code>A%</code>, <code>A!</code> and <code>A#</code> as different variables.
         Which one of those is also known as <code>A</code> depends on the settings in
         <code><a href="#DEFINT">DEFINT</a></code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>.
-        The default is <code> A = A!</code>. In addition, you can have
+        By default, <code>A</code> equals the single-precision <code>A!</code>. The
         <a href="#arrays">arrays</a> <code>A$()</code>, <code>A%()</code>,
-        <code>A!()</code>, <code>A#()</code> which are separate from the scalar
+        <code>A!()</code>, <code>A#()</code> are separate from the scalar
         variables of the same name.
     </p>
-    <h4 id="typechars">Sigils</h4>
+    <h4 id="typechars">Types and sigils</h4>
     <p>
         PC-BASIC recognises four variable types, distinguished by their <dfn>sigil</dfn>
         or <dfn>type character</dfn>, the last character of the variable's full name:
@@ -177,58 +179,55 @@
                 <th>sigil</th>
                 <th>type</th>
                 <th>size</th>
+                <th>range</th>
+                <th>precision</th>
             </tr><tr>
                 <td><code>$</code></td>
                 <td>string</td>
                 <td>3 bytes plus allocated string space</td>
+                <td>0&mdash;255 characters</td>
             </tr><tr>
                 <td><code>%</code></td>
                 <td>integer</td>
-                <td>2 bytes </td>
+                <td>2 bytes</td>
+                <td>-32768&#8212;32767</td>
+                <td>exact</td>
             </tr><tr>
                 <td><code>!</code></td>
                 <td>single-precision float</td>
                 <td>4 bytes</td>
+                <td>&plusmn;2.938726&middot;10<sup>-39</sup>&mdash;&plusmn;1.701412&middot;10<sup>38</sup></td>
+                <td>~6 significant figures</td>
             </tr><tr>
                 <td><code>#</code></td>
                 <td>double-precision float</td>
                 <td>8 bytes</td>
+                <td>&plusmn;2.938735877055719&middot;10<sup>-39</sup>&mdash;&plusmn;1.701411834604692&middot;10<sup>38</sup></td>
+                <td>~16 significant figures</td>
             </tr>
         </table>
     </div>
     <p>
-        If no sigil is specified, the first letter of the name determines
-        the type according to the settings of
-        <code><a href="#DEFINT">DEFINT</a></code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>.
-        If no such setting has been made, the default type is single-precision float.
+        Note that double-precision floats can hold more decimals than single-precision floats, but not larger or smaller numbers.
+    </p>
+    <p>
+        While all integers are signed, some statements will interpret negative
+        integers as their two's complement.
     </p>
 
-    <h4 id="limits">Machine limits</h4>
-    <ul>
-
-        <li>
-            Integers are in <code>[-32768&#8212;32767]</code>. Negative integers are represented by the two's complement.
-            Depending on context they may be interpreted as unsigned integers in the range <code>[0&#8212;65535]</code>.
-        </li>
-        <li>
-            Floats: largest <code>1.701412E+38</code>; smallest <code>2.938726E-39</code>
-        </li>
-        <li>
-            Double-precision floats can hold more decimals, but not larger or smaller numbers, than single-precision floats.
-        </li>
-    </ul>
-    <h4 id="arrays">Arrays</h3>
+    <h4 id="arrays">Array elements</h3>
     <p>
-        Arrays are indexed lists of variables and can have the same types as <a href="#variables">variables</a>. Arrays are indexed with round or square
-        brackets; even mixing brackets is allowed. The following all work: <code>A[0]</code>, <code>A(0)</code>,
-        <code>A(0]</code>, <code>A[0)</code>. Multidimensional arrays are specified with commas: <code>A(0, 0)</code>, <code>A[0, 0, 0]</code>, etc.
+        Arrays are indexed with round or square
+        brackets; even mixing brackets is allowed. The following are all legal array elements: <code>A[0]</code>, <code>A(0)</code>,
+        <code>A(0]</code>, <code>A[0)</code>. Multidimensional arrays are specified by separating the indices with commas: <code>A(0, 0)</code>, <code>A[0, 0, 0]</code>, etc.
     </p>
     <p>
         By default, arrays are indexed from <code>0</code>. This can be changed to
         <code>1</code> using <code><a href="#OPTION-BASE">OPTION BASE</a> 1</code>.
     </p>
     <p>
-        Arrays can be allocated using <code><a href="#DIM">DIM</a></code>. If all indices of the array
+        Arrays can be allocated by specifying the largest allowed index using
+        <code><a href="#DIM">DIM</a></code>. If all indices of the array
         are <code>10</code> or less, they need not be explicitly allocated. The first
         access of the array (read or write) will automatically allocate it with
         a maximum index of <code>10</code> and the same number of indices as in the first
