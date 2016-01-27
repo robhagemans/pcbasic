@@ -285,6 +285,7 @@
         <li><code>IMP</code></li>
     </ol>
     <p>
+        Expressions within parentheses <code>()</code> are evaluated first.
         For example, exponentiation is more tightly bound than negation:
         <code>-1^2 = -1</code> but <code>(-1)^2 = 1</code>.
     </p>
@@ -612,17 +613,18 @@
     <h3 id="functions">Functions</h3>
     <p>
         <dfn>Functions</dfn> can only be used as part of an expression within a statement; they may take input values
-        and produce a return value. For example,
-        in <code>PRINT ABS(-1)</code> the <code>ABS</code> function is used in an expression within the
-        <code>PRINT</code> statement.
+        between parentheses and produce a return value. For example,
+        in <code>PRINT ABS(-1)</code> the <code>ABS</code> function is used in an expression within a
+        <code>PRINT</code> statement; in <code>Y = SQR(X) + 2</code> the <code>SQR</code> function
+        is used in an expression within a <code>LET</code> statement.
     </p>
     <p>
         Some reference works also use terms such as <dfn>system variable</dfn> for functions that do not take
-        an input, presumably since in the GW-BASIC syntax such functions have no brackets, in contrast to
+        an input, presumably since in the GW-BASIC syntax such functions have no parentheses, in contrast to
         the languages in the C family (and indeed some modern BASICs).
         However, this is simply the GW-BASIC syntax for functions without inputs.
         For example, one can do <code>DEF FNA=1: PRINT FNA</code>
-        in which no brackets are allowed.
+        in which no parentheses are allowed.
     </p>
 
     <section>
@@ -3782,7 +3784,7 @@
         <ul>
             <li>
                 <code><var>var_0</var>, <var>var_1</var>, ...</code> are names of variables or arrays. Array names
-                must be followed by round or square brackets. Brackets may also be mixed <code>a(]</code> <code>b[)</code>.
+                must be followed by parentheses or square brackets. Brackets may also be mixed: <code>a(]</code> <code>b[)</code>.
             </li>
         </ul>
     </section>
@@ -9443,7 +9445,8 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>num_columns</var></code> is either a literal <code>20</code>, <code>40</code> or <code>80</code> or a numeric expression in brackets.
+                <code><var>num_columns</var></code> is either a literal <code>20</code>,
+                <code>40</code> or <code>80</code> or a numeric expression in parentheses.
                 The trailing comma is optional and has no effect.
             </li>
             <li>
