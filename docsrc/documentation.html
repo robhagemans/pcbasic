@@ -549,10 +549,9 @@
             <p>
                 PC-BASIC will accept both DOS and Unix newline conventions for programs
                 stored as ASCII text. Any line not starting with a number will be considered a
-                continuation (through <code>LF</code>) of the previous line
+                continuation (through <code>LF</code>) of the previous line.
                 This behaviour is different from GW-BASIC, which only
-                accepts text files in DOS format: <code>CR LF</code> line endings and
-                <code>^Z</code> (<code>CHR$(26)</code>) at end-of-file.
+                accepts text files with <code>CR LF</code> line endings.
                 As a consequence, in exceptional cases where a program line is continued through <code>LF</code>
                 just before a number, correct GW-BASIC ASCII files may not be loaded correctly.
                 If you encounter such a case, use
@@ -562,7 +561,7 @@
                 Linux or Mac, use a utility such as
                 <a href="http://waterlan.home.xs4all.nl/dos2unix.html"><code>unix2dos</code></a>
                 to convert programs saved as text files before loading them. When saving as ASCII,
-                PC-BASIC always uses the DOS conventions.
+                PC-BASIC always uses <code>CR LF</code> line endings and <code>^Z</code> (<code>CHR$(26)</code>) at end-of-file.
             </p>
         </section>
         <hr />
