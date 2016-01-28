@@ -111,37 +111,41 @@
     <h5>Numeric literals</h5>
     <p>
         Numeric literals have one of the following forms:
-        <code class="block">[{<b>+</b>|<b>-</b>}]... [<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>]...
+        <code class="block">[<b>+</b>|<b>-</b>] [<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>]...
             [<b>.</b>][<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>]...
-            [{<b>E</b>|<b>e</b>|<b>D</b>|<b>d</b>}[{<b>+</b>|<b>-</b>}][<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>]...
+            [{<b>E</b>|<b>e</b>|<b>D</b>|<b>d</b>}[<b>+</b>|<b>-</b>][<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>]...]
             |<b>#</b>|<b>!</b>|<b>%</b>]</code>
-        <code class="block">[{<b>+</b>|<b>-</b>}]... <b>&amp;</b>{<b>H</b>|<b>h</b>}[{<b>+</b>|<b>-</b>}]...[<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>|<b>A</b>|<b>B</b>|<b>C</b>|<b>D</b>|<b>E</b>|<b>F</b>|<b>a</b>|<b>b</b>|<b>c</b>|<b>d</b>|<b>e</b>|<b>f</b>] ...</code>
-        <code class="block">[{<b>+</b>|<b>-</b>}]... <b>&amp;</b>[<b>O</b>|<b>o</b>] [{<b>+</b>|<b>-</b>}]... [<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>] ...</code>
+        <code class="block"><b>&amp;</b>{<b>H</b>|<b>h</b>}[<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>|<b>A</b>|<b>B</b>|<b>C</b>|<b>D</b>|<b>E</b>|<b>F</b>|<b>a</b>|<b>b</b>|<b>c</b>|<b>d</b>|<b>e</b>|<b>f</b>]...</code>
+        <code class="block"><b>&amp;</b>[<b>O</b>|<b>o</b>] [<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>]...</code>
     </p>
     <p>
         Hexadecimal literals must not contain spaces, but decimal and octal literals may. The <code>o</code> character in octal literals is optional: they can be
         specified equally as <code>&amp;o777</code> or <code>&amp;777</code>.
     </p>
     <p>
-        Hexadecimal and octal literals denote integers. They must range between
-        [<code>-&amp;h7FFF</code>&mdash;<code>&amp;hFFFF</code>],
+        Hexadecimal and octal literals denote integers and do not include a sign. They must range between
+        [<code>&amp;h0</code>&mdash;<code>&amp;hFFFF</code>],
         of which the range [<code>&amp;h8000</code>&mdash;<code>&amp;hFFFF</code>]
-        is interpreted as a two's complement negative integer. Signs can appear on either side of the <code>&amp;</code>
-        but do not combine between the sides; the combined sign after <code>&amp;</code> overrides that before.
-        For example, <code>&amp;hFFFF = -&amp;h1 = &amp;h-1 = -&amp;h-1 = -1</code>.
+        is interpreted as a two's complement negative integer; for example, <code>&amp;hFFFF = -1</code>.
+        Signs can appear left of the <code>&amp;</code>
+        but these form an expression and are not part of the literal itself.
     </p>
     <p>
         Floating-point literals must be specified in decimal notation. The decimal separator is the point.
         A base-10 exponent may be specified after <code>E</code> in single-precision floats, or after <code>D</code> in double-precision floats.
-        The exponent must have no more than one sign.
-        Trailing <code>%</code> is ignored; trailing <code>!</code> or <code>#</code> mark the literal as single- or double-precision, respectively.
+        Trailing <code>%</code> is ignored and does <em>not</em> indicate an integer literal.
+        Trailing <code>!</code> or <code>#</code> mark the literal as single- or double-precision, respectively.
     <p>
         Examples of valid numeric literals are
         <code>-1</code> <code>42</code> <code>42!</code> <code>42#</code>
         <code>1.3523523</code> <code>.235435</code> <code>-.3</code> <code>3.</code>
         <code>.</code> <code>.e</code> <code>.D</code> <code>1.1e+7</code>
         <code>1.1d+7</code> <code>1e2</code> <code>1e-2</code> <code>&amp;7</code>
-        <code>&amp;hffff</code> <code>&amp;O20</code>
+        <code>&amp;hffff</code> <code>&amp;O20</code> <code>&amp;h</code> <code>&amp;</code> <code>65537%</code> <code>1.1%</code>
+    </p>
+    <p>
+        Note that expressions such as <code>&amp;o-77</code> are legal; these are however <em>not</em>
+        negative octals but rather the expression <code>&amp;o</code> (empty octal; zero) less <code>77</code> (decimal 77).
     </p>
 </section>
 <hr />
