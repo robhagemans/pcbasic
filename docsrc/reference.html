@@ -3273,7 +3273,7 @@
             </li>
             <li>
                 If <code>MERGE</code> is specified, the loaded program is merged into the existing program. To be
-                able to use this, the program file indicated by <code><var>file_spec</var></code> must be in ASCII text format.
+                able to use this, the program file indicated by <code><var>file_spec</var></code> must be in plain text format.
             </li>
             <li>
                 If <code>DELETE</code> is specified, the <code><var>range</var></code> of line numbers is deleted from the
@@ -3336,7 +3336,7 @@
                 cannot be found: <samp>File not found</samp>.
             </li>
             <li>
-                <code>MERGE</code> is specified and the loaded program was not saved in ASCII mode:
+                <code>MERGE</code> is specified and the loaded program was not saved in plain-text mode:
                 <samp>Bad file mode</samp>.
             </li>
             <li>
@@ -5963,7 +5963,7 @@
                 cannot be found: <samp>File not found</samp>.
             </li>
             <li>
-                A loaded ASCII file contains lines without line numbers:
+                A loaded text file contains lines without line numbers:
                 <samp>Direct statement in file</samp>.
             </li>
         </ul>
@@ -6146,7 +6146,7 @@
             <b>MERGE</b> <var>file_spec</var>
         </code>
         <p>
-            Overlays the lines of a program from an ASCII program file into the existing program. The loaded
+            Overlays the lines of a program from a plain-text program file into the existing program. The loaded
             lines overwrite existing lines if they have the same line number.
         </p>
         <h5>Parameters</h5>
@@ -6167,10 +6167,10 @@
                 <samp>Bad file name</samp> (on disk devices).
             </li>
             <li>
-                <code><var>file_spec</var></code> was not saved as ASCII: <samp>Bad file mode</samp>.
+                <code><var>file_spec</var></code> was not saved as plain text: <samp>Bad file mode</samp>.
             </li>
             <li>
-                A loaded ASCII file contains lines without line numbers:
+                A loaded text file contains lines without line numbers:
                 <samp>Direct statement in file</samp>.
             </li>
         </ul>
@@ -6966,7 +6966,7 @@
                     <dt><samp>A</samp></dt>
                     <dd>Program file in text format</dd>
                     <dt><samp>B</samp></dt>
-                    <dd>Program file in bytecode format</dd>
+                    <dd>Program file in tokenised format</dd>
                     <dt><samp>D</samp></dt>
                     <dd>Data file</dd>
                     <dt><samp>M</samp></dt>
@@ -8633,7 +8633,7 @@
                 <code><var>filename</var></code> is an empty string: <samp>Bad file number</samp>.
             </li>
             <li>
-                A loaded ASCII file contains lines without line numbers:
+                A loaded text file contains lines without line numbers:
                 <samp>Direct statement in file</samp>.
             </li>
         </ul>
@@ -8650,7 +8650,7 @@
         </p>
         <ul>
             <li>
-                If <code><b>,A</b></code> is specified, the program will be saved in ASCII text format.
+                If <code><b>,A</b></code> is specified, the program will be saved in plain text format.
             </li>
             <li>
                 If <code><b>,P</b></code> is specified, the program will be saved in protected format.
@@ -8658,7 +8658,7 @@
                 format.
             </li>
             <li>
-                If neither is specified, the program will be saved in bytecode format.
+                If neither is specified, the program will be saved in tokenised format.
             </li>
         </ul>
         <h5>Parameters</h5>
