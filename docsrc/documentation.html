@@ -362,7 +362,7 @@
                 The <kbd>F12</kbd> combinations are not present in GW-BASIC.
             </p>
             <p>
-                Furthermore, as in GW-BASIC, the <kbd>Alt</kbd> key can be used to enter characters by their ASCII code.
+                Furthermore, as in GW-BASIC, the <kbd>Alt</kbd> key can be used to enter characters by their ASCII codes.
                 This is done by pressing the <kbd>Alt</kbd> key and typing the decimal value of the
                 ASCII code on the numeric keypad, then releasing the <kbd>Alt</kbd> key.
             </p>
@@ -454,8 +454,8 @@
             A program can be stored on a drive by using the <code><a href="#SAVE">SAVE</a></code> command, in one of three ways:
         </p>
         <ol>
-            <li>ASCII text, readable by a text editor: <code>SAVE "MYPROG",A</code></li>
-            <li>Bytecode, taking up less storage space: <code>SAVE "MYPROG"</code></li>
+            <li>Plain text, readable by any text editor: <code>SAVE "MYPROG",A</code></li>
+            <li>Tokenised, taking up less storage space: <code>SAVE "MYPROG"</code></li>
             <li>Protected, which is an encrypted format:  <code>SAVE "MYPROG",P</code></li>
         </ol>
         <p>
@@ -492,7 +492,7 @@
         <p>
             PC-BASIC can be used to convert between the three program formats: either by loading the program and saving
             in your desired format, or from the command line using the <code><a href="#--convert">convert</a></code> option. To convert a
-            bytecode or protected file to ASCII you could use, for example:
+            tokenised or protected file to plain text you could use, for example:
         </p>
         <code class="block">
             <b>pcbasic --convert=A PROGRAMP.BAS PROGRAMA.BAS</b>
@@ -538,8 +538,8 @@
                 PC-BASIC runs GW-BASIC program files only. Some tips to recognise GW-BASIC programs:
             </p>
             <ul>
-                <li>GW-BASIC files stored as ASCII are plain text files with line numbers.</li>
-                <li>Bytecode files are binary files that start with magic byte <code>FF</code>.</li>
+                <li>GW-BASIC files stored as text are plain text files with line numbers.</li>
+                <li>Tokenised files are binary files that start with magic byte <code>FF</code>.</li>
                 <li>Protected files are binary files that start with magic byte <code>FE</code>.</li>
             </ul>
             <p>
@@ -548,19 +548,19 @@
             </p>
             <p>
                 PC-BASIC will accept both DOS and Unix newline conventions for programs
-                stored as ASCII text. Any line not starting with a number will be considered a
+                stored as plain text. Any line not starting with a number will be considered a
                 continuation (through <code>LF</code>) of the previous line.
                 This behaviour is different from GW-BASIC, which only
                 accepts text files with <code>CR LF</code> line endings.
                 As a consequence, in exceptional cases where a program line is continued through <code>LF</code>
-                just before a number, correct GW-BASIC ASCII files may not be loaded correctly.
+                just before a number, correct GW-BASIC text files may not be loaded correctly.
                 If you encounter such a case, use
                 the <code><a href="#--strict-newline">strict-newline</a></code> option to enable GW-BASIC behaviour. If
-                <code>strict-newline</code> is enabled, ASCII files in standard Unix format
+                <code>strict-newline</code> is enabled, text files in standard Unix format
                 (<code>LF</code> line endings, no end-of-file character) will fail to load. On
                 Linux or Mac, use a utility such as
                 <a href="http://waterlan.home.xs4all.nl/dos2unix.html"><code>unix2dos</code></a>
-                to convert programs saved as text files before loading them. When saving as ASCII,
+                to convert programs saved as text files before loading them. When saving as text,
                 PC-BASIC always uses <code>CR LF</code> line endings and <code>^Z</code> (<code>CHR$(26)</code>) at end-of-file.
             </p>
         </section>
@@ -813,7 +813,7 @@
             <p>
                 It is also possible to load and save programs in the nowadays common UTF-8
                 standard format, by enabling the <code><a href="#--utf8">utf8</a></code> option. When
-                <code>utf8</code> is enabled, "ASCII" program source will be saved and loaded in
+                <code>utf8</code> is enabled, plain-text program source will be saved and loaded in
                 standard UTF-8 encoding. Please note that you will still need to select a
                 codepage that provides all the Unicode characters that your program needs.
             </p>
