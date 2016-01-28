@@ -519,7 +519,7 @@
         <p>
             This is a list of the American Standard Code for Information Interchange (ASCII).
             ASCII only covers 128 characters and defines the code point ranges
-            <code>&amp;H00</code>&nbsp;<code>&amp;H1F</code> and <code>&amp;7F</code>
+            <code>&amp;h00</code>&nbsp;<code>&amp;h1F</code> and <code>&amp;h7F</code>
             as <dfn>control characters</dfn> which do not have a printable glyph assigned
             to them. This includes such values as the <i>Carriage Return</i> (<code><i>CR</i></code>)
             character that ends a program line.
@@ -529,8 +529,12 @@
             the control characters range as a control character or as a
             glyph defined by the active <a href="#codepages">codepage</a> which by
             default is <a href="#cp437">codepage 437</a>. Code points of
-            <code>&amp;H80</code> or higher are always interpreted as a
+            <code>&amp;h80</code> or higher are always interpreted as a
             codepage glyph.
+        </p>
+        <p>
+            In the context of this documentation, character <code>&amp;h1A</code> (<code><i>SUB</i></code>)
+            will usually be indicated as <code><i>EOF</i></code> since it plays the role of end-of-file marker in DOS.
         </p>
         <div class="scrollable">
             <table>
@@ -721,16 +725,16 @@
         </p>
         <ul>
             <li>
-                Code point <code>&amp;H00</code> cannot be redefined.
+                Code point <code>&amp;h00</code> cannot be redefined.
             </li>
             <li>
                 Redefining characters
-                in the printable ASCII code point range <code>&amp;H20</code>&ndash;<code>&amp;H7E</code>
+                in the printable ASCII code point range <code>&amp;h20</code>&ndash;<code>&amp;h7E</code>
                 will result in a different glyph being shown on the screen, but the
                 character will continue to be treated as the corresponding ASCII character.
                 It will retain its ASCII value when transcoded into UTF-8. This happens,
                 for example, with the Yen sign (<code>&#xa5;</code>) which is
-                assigned to ASCII code point <code>&amp;H5C</code> in code page 932:
+                assigned to ASCII code point <code>&amp;h5C</code> in code page 932:
                 in that codepage it is treated as if it were a backslash (<code>\</code>).
             </li>
             <li>
@@ -1518,7 +1522,7 @@
             In addition to <a href="#scancodes">scancodes</a>, most keys also carry
             a character value given as 'extended ASCII'. e-ASCII codes are one or
             two bytes long; single-byte codes are simply ASCII codes whereas
-            double-byte codes consist of a <code>CHR$(0)</code> character plus
+            double-byte codes consist of a <code><i>NUL</i></code> character plus
             a code indicating the key pressed. Some, but certainly not all,
             of these codes agree with the keys' scancodes.
         </p>
