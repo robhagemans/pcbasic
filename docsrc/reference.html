@@ -152,14 +152,20 @@
 
 <section>
     <h3 id="variables">Variables</h3>
+
+    <p>
+
+    </p>
     <p>
         Variable names must start with a letter; all characters of the variable name
         (except the <a href="#typechars">sigil</a>) must be letters <code>A&#8212;Z</code>, figures <code>0&#8212;9</code>, or a dot <code>.</code>
-        Only the first 40 characters in the name are significant. Variable names must
-        not be identical to <a href="#keywords">keywords</a>. Variable
-        names may start with a keyword, with the exception of <code><a href="#USR">USR</a></code> and
-        <code><a href="#FN">FN</a></code>. Thus, <code><a href="#FN">FN</a>ORD$</code>
-        is not a legal variable name while <code><a href="#FRE">FRE</a>CKLE%</code> is.
+        Only the first 40 characters in the name are significant. A variable name must
+        not be identical to a <a href="#keywords">keyword</a> or a keyword plus sigil.
+        Therefore, for example, you cannot name a variable <code>TO!</code> but you can
+        name it <code>AS!</code>. Variable
+        names may <em>contain</em> any keyword. Variable names may also start with a keyword, with the exception of <code><a href="#USR">USR</a></code> and
+        <code><a href="#FN">FN</a></code>. Thus, <code>FNORD%</code> and <code>USRNME$</code>
+        are not legal variable names while <code>FRECKLE%</code> and <code>LUSR$</code> are.
     </p>
     <p>
         For each name, four different
