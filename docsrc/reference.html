@@ -1994,7 +1994,7 @@
         </code>
         <p>
             Returns the value of the memory at  <code><var>segment</var> * 16 + <var>address</var></code> where <code><var>segment</var></code>
-            is the current segment set with <code>DEF SEG</code>.
+            is the current segment set with <code><a href="#DEF-SEG">DEF SEG</a></code>.
         </p>
         <h5>Parameters</h5>
         <ul>
@@ -4013,9 +4013,14 @@
         </code>
         <p>
             Sets the memory segment to be used by <code><a href="#BLOAD">BLOAD</a></code>, <code><a href="#BSAVE">BSAVE</a></code>, <code><a href="#CALL">CALL</a></code>,
-            <code><a href="#PEEK">PEEK</a></code>, <code><a href="#POKE">POKE</a></code>, or <code><a href="#USR">USR</a></code>.
-            <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>.
+            <code><a href="#PEEK">PEEK</a></code>, <code><a href="#POKE">POKE</a></code>, and <code><a href="#USR">USR</a></code>.
         </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>address</var></code> is a numeric expression in <code>[-32768&#8212;65535]</code>.
+            </li>
+        </ul>
         <h5>Notes</h5>
         <ul>
             <li>
