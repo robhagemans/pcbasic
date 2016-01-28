@@ -3635,8 +3635,13 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                The syntax and effect of this command is different in different <code>SCREEN</code>
-                modes. See below for other <code>SCREEN</code>s.
+                The syntax and effect of <code>COLOR</code> is different in different <code>SCREEN</code>
+                modes: <a href="#COLOR"><code>COLOR</code> (text mode)</a>,
+                <a href="#COLOR-1"><code>COLOR</code> (<code>SCREEN 1</code>)</a>,
+                <a href="#COLOR-3-9">(<code>SCREEN 3&#8212;9</code>)</a>.
+            </li>
+            <li>
+                At least one parameter must be provided and the statement must not end in a comma.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -3692,6 +3697,18 @@
                 instead of <code><var>palette</var></code>. <code><var>palette</var></code> is then ignored.
             </li>
         </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                The syntax and effect of <code>COLOR</code> is different in different <code>SCREEN</code>
+                modes: <a href="#COLOR"><code>COLOR</code> (text mode)</a>,
+                <a href="#COLOR-1"><code>COLOR</code> (<code>SCREEN 1</code>)</a>,
+                <a href="#COLOR-3-9">(<code>SCREEN 3&#8212;9</code>)</a>.
+            </li>
+            <li>
+                At least one parameter must be provided and the statement must not end in a comma.
+            </li>
+        </ul>
         <h5>Errors</h5>
         <ul>
             <li>
@@ -3734,6 +3751,18 @@
             <li>
                 <code><var>dummy</var></code> is a numeric expression with a value in <code>[0&#8212;255]</code>
                 The value of <code><var>dummy</var></code> is ignored.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                The syntax and effect of <code>COLOR</code> is different in different <code>SCREEN</code>
+                modes: <a href="#COLOR"><code>COLOR</code> (text mode)</a>,
+                <a href="#COLOR-1"><code>COLOR</code> (<code>SCREEN 1</code>)</a>,
+                <a href="#COLOR-3-9">(<code>SCREEN 3&#8212;9</code>)</a>.
+            </li>
+            <li>
+                At least one parameter must be provided and the statement must not end in a comma.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -7595,13 +7624,7 @@
     <section>
         <h4 id="PLAY"><code>PLAY</code> (music statement)</h4>
         <code class="block">
-            <b>PLAY</b> <var>mml_string_0</var>
-        </code>
-        <code class="block">
-            <b>PLAY</b> [<var>mml_string_0</var>] <b>,</b>  <var>mml_string_1</var>
-        </code>
-        <code class="block">
-            <b>PLAY</b> [<var>mml_string_0</var>] <b>,</b> [<var>mml_string_1</var>] <b>,</b> <var>mml_string_2</var>
+            <b>PLAY</b> [<var>mml_string_0</var>] [<b>,</b> [<var>mml_string_1</var>] [<b>,</b> <var>mml_string_2</var>]]
         </code>
         <p>
             Plays the tune defined by the Music Macro Language strings <code><var>mml_string_0</var>, ...</code>.
@@ -7617,7 +7640,7 @@
                 <code><var>mml_string_0</var></code>, <code><var>mml_string_1</var></code>, <code><var>mml_string_2</var></code> are string expressions in MML.
             </li>
             <li>
-                At least one MML string must be provided.
+                At least one parameter must be provided and the statement must not end in a comma.
             </li>
         </ul>
         <h5>Music Macro Language reference</h5>
