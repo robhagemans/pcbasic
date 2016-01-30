@@ -233,11 +233,11 @@
             Convert program to one of the following formats:
             <dl class="compact">
                 <dt><code><b>A</b></code></dt>
-                <dd>ASCII</dd>
+                <dd>Plain text</dd>
                 <dt><code><b>B</b></code></dt>
-                <dd>Bytecode (tokenised)</dd>
+                <dd>Tokenised</dd>
                 <dt><code><b>P</b></code></dt>
-                <dd>Protected (encrypted)</dd>
+                <dd>Protected</dd>
             </dl>
             If <code><var><a href="#p-output">output</a></var></code> is not specified, write to
             standard output. If program is not specified, use the argument of
@@ -754,7 +754,7 @@
             <code><b>--strict-hidden-lines</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
         <dd>
-            Disable listing and ASCII saving of lines beyond <code>65530</code>, as in
+            Disable listing and saving to plain text of lines beyond <code>65530</code>, as in
             GW-BASIC. Use with care as this allows execution of hidden
             lines of code.
         </dd>
@@ -772,7 +772,7 @@
             <code><b>--strict-protect</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
         <dd>
-            Disable listing and ASCII saving of protected files, as in
+            Disable listing and saving to plain text of protected files, as in
             GW-BASIC. Use with care as this allows execution of hidden
             lines of code.
         </dd>
@@ -815,10 +815,11 @@
             <code><b>--utf8</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
         <dd>
-            Use UTF-8 for ASCII-mode programs. If <code><b>True</b></code>,
-            programs stored as ASCII will be converted
+            Use UTF-8 for plain-text programs. If <code><b>True</b></code>,
+            programs stored as plain text will be converted
             from UTF-8 on <code><a href="#LOAD">LOAD</a></code> and to UTF-8 on
-            <code><a href="#SAVE">SAVE</a></code>.
+            <code><a href="#SAVE">SAVE</a></code>. If <code><b>False</b></code>,
+            the PC-BASIC codepage will be used.
         </dd>
 
         <dt id="--version">
