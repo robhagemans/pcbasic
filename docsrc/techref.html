@@ -516,6 +516,15 @@
 
     <section>
         <h3 id="character-codes">Character codes</h3>
+        <p>
+            Depending on context, PC-BASIC will treat a code point in
+            the control characters range as a control character or as a
+            glyph defined by the active <a href="#codepages">codepage</a> which by
+            default is <a href="#cp437">codepage 437</a>. Code points of
+            <code>&amp;h80</code> or higher are always interpreted as a
+            codepage glyph.
+        </p>
+
         <h4 id="ascii">ASCII</h4>
         <p>
             This is a list of the American Standard Code for Information Interchange (ASCII).
@@ -524,14 +533,6 @@
             as <dfn>control characters</dfn> which do not have a printable glyph assigned
             to them. This includes such values as the <i>Carriage Return</i> (<code><i>CR</i></code>)
             character that ends a program line.
-        </p>
-        <p>
-            Depending on context, PC-BASIC will treat a code point in
-            the control characters range as a control character or as a
-            glyph defined by the active <a href="#codepages">codepage</a> which by
-            default is <a href="#cp437">codepage 437</a>. Code points of
-            <code>&amp;h80</code> or higher are always interpreted as a
-            codepage glyph.
         </p>
         <p>
             In the context of this documentation, character <code>&amp;h1A</code> (<code><i>SUB</i></code>)
@@ -736,9 +737,10 @@
                 in that codepage it is treated as if it were a backslash (<code>\</code>).
             </li>
             <li>
-                All other characters can be redefined by loading another codepage,
-                which will affect both their visual glyph and Unicode
-                character value.
+                All other characters can be redefined by loading another <a hre="#codepage">codepage</a>
+                with the <a href="#--codepage">codepage</a> option.
+                This will affect both the visual glyphs and Unicode
+                character values of those characters.
             </li>
         </ul>
         <div class="scrollable">
