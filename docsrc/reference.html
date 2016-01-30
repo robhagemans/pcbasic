@@ -7933,10 +7933,158 @@
             open under that number. <code>?</code> is a shorthand for <code>PRINT</code>.
         </p>
         <p>
-            Expressions can optionally be separated by one or more of the following tokens:
+            When writing a string expression to the screen, the following control characters have special meaning.
+            Other characters are shown as their corresponding glyph in the current <a href="#cp437">codepage</a>.
         </p>
         <div class="scrollable">
             <table>
+                <tr>
+                    <th>
+                        Code point
+                    </th>
+                    <th>
+                        Control character
+                    </th>
+                    <th>
+                        Effect
+                    </th>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h07</code>
+                    </td>
+                    <td>
+                        <code><i>BEL</i></code>
+                    </td>
+                    <td>
+                        Beep the speaker.
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h08</code>
+                    </td>
+                    <td>
+                        <code><i>BS</i></code>
+                    </td>
+                    <td>
+                        Erase the character in the previous column and move the cursor back.
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h09</code>
+                    </td>
+                    <td>
+                        <code><i>HT</i></code>
+                    </td>
+                    <td>
+                        Jump to the next 8-cell tab stop.
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h0A</code>
+                    </td>
+                    <td>
+                        <code><i>LF</i></code>
+                    </td>
+                    <td>
+                        Go to the leftmost column in the next row; connect the rows to one logical line.
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h0B</code>
+                    </td>
+                    <td>
+                        <code><i>VT</i></code>
+                    </td>
+                    <td>
+                        Move the cursor to the top left of the screen.
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h0C</code>
+                    </td>
+                    <td>
+                        <code><i>FF</i></code>
+                    </td>
+                    <td>
+                        Clear the screen.
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h0D</code>
+                    </td>
+                    <td>
+                        <code><i>CR</i></code>
+                    </td>
+                    <td>
+                        Go to the leftmost column in the next row.
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h1C</code>
+                    </td>
+                    <td>
+                        <code><i>FS</i></code>
+                    </td>
+                    <td>
+                        Move the cursor one column to the right.
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h1D</code>
+                    </td>
+                    <td>
+                        <code><i>GS</i></code>
+                    </td>
+                    <td>
+                        Move the cursor one column to the left.
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h1E</code>
+                    </td>
+                    <td>
+                        <code><i>RS</i></code>
+                    </td>
+                    <td>
+                        Move the cursor one row up.
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h1F</code>
+                    </td>
+                    <td>
+                        <code><i>US</i></code>
+                    </td>
+                    <td>
+                        Move the cursor one row down.
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>
+            Expressions can optionally be separated by one or more of the following keywords:
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th>
+                        Keyword
+                    </th>
+                    <th>
+                        Effect
+                    </th>
+                </tr>
                 <tr>
                     <td><code>;</code></td>
                     <td>
