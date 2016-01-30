@@ -462,8 +462,8 @@
         <li>
             Each character position of the strings is compared starting with the leftmost character.
             When a pair of different characters is encountered, the string
-            with the character of lesser ASCII value is less than the string
-            with the character of greater ASCII value.
+            with the character of lesser <a href="#cp437">code point</a> is less than the string
+            with the character of greater code point.
         </li>
         <li>
             If the strings are of different length, but equal up to the length of the
@@ -665,7 +665,7 @@
             <var>val</var><b> = ASC(</b><var>char</var><b>)</b>
         </code>
         <p>
-            Returns the ASCII code for the first character of <code><var>char</var></code>.
+            Returns the <a href="#cp437">code point</a> (ASCII value) for the first character of <code><var>char</var></code>.
         </p>
         <h5>Parameters</h5>
         <ul>
@@ -742,7 +742,7 @@
             <var>char</var> <b>= CHR$(</b><var>x</var><b>)</b>
         </code>
         <p>
-            Returns the character with ASCII code <code><var>x</var></code>.
+            Returns the character with <a href="#cp437">code point</a> <code><var>x</var></code>.
         </p>
         <h5>Parameters</h5>
         <ul>
@@ -2406,7 +2406,7 @@
             <var>value</var> <b>= SCREEN(</b><var>row</var><b>,</b> <var>column</var> [<b>,</b> <var>fn</var>]<b>)</b>
         </code>
         <p>
-            Returns the ASCII code or colour attribute for the character at position
+            Returns the <a href="#cp437">code point</a> or colour attribute for the character at position
             <code><var>row</var></code>, <code><var>col</var></code>.
         </p>
         <h5>Parameters</h5>
@@ -2419,7 +2419,7 @@
             </li>
             <li>
                 <code><var>fn</var></code> is a numeric expression in <code>[0&#8212;255]</code>. If it is zero or not specified,
-                the ASCII code of the character is returned. If it is non-zero, in text mode the
+                the code point of the character is returned. If it is non-zero, in text mode the
                 attribute is returned; in other screens, 0 is returned.
             </li>
         </ul>
@@ -2734,7 +2734,7 @@
         <ul>
             <li>
                 If <code><var>char</var></code> is a numeric expression, it must be in <code>[0&#8212;255]</code> and is
-                interpreted as the ASCII value of the character.
+                interpreted as the <a href="#cp437">code point</a> of the character.
             </li>
             <li>
                 If <code><var>char</var></code> is a string expression, its first character is used.

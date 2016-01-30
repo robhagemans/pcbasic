@@ -515,7 +515,8 @@
 
 
     <section>
-        <h3 id="ascii">ASCII</h3>
+        <h3 id="character-codes">Character codes</h3>
+        <h4 id="ascii">ASCII</h4>
         <p>
             This is a list of the American Standard Code for Information Interchange (ASCII).
             ASCII only covers 128 characters and defines the code point ranges
@@ -711,11 +712,8 @@
                 </tr>
             </table>
         </div>
-    </section>
-    <hr />
 
-    <section>
-        <h3 id="cp437">Codepage 437</h3>
+        <h4 id="cp437">Codepage 437</h4>
         <p>
             This table shows the graphical characters that, by default,
             are produced by the 256 single-byte character codes.
@@ -1055,7 +1053,8 @@
     <hr />
 
     <section>
-        <h3 id="scancodes">Keyboard scancodes</h3>
+        <h3 id="keycodes">Keycodes</h3>
+        <h4 id="scancodes">Scancodes</h3>
         <p>
             PC-BASIC uses PC/XT scancodes, which originated on the 83-key IBM Model F keyboard
             supplied with the IBM PC 5150. The layout of this keyboard was quite distinct
@@ -1494,14 +1493,17 @@
                 </tr>
             </table>
         </div>
-    </section>
-    <hr />
 
-    <section>
-        <h3 id="eascii">Extended ASCII codes</h3>
+        <h4 id="eascii">e-ASCII codes</h4>
         <p>
-            In addition to <a href="#scancodes">scancodes</a>, most keys also carry
-            a character value given as 'extended ASCII'. e-ASCII codes are one or
+            Alongside <a href="#scancodes">scancodes</a>, most keys also carry
+            a character value the GW-BASIC documentation calls <dfn>extended ASCII</dfn>.
+            Since this is a rather overloaded term, we shall use the abbreviation
+            <dfn>e-ASCII</dfn> exclusively for these values.
+            The values returned by the
+            <a href="#INKEY$"><code>INKEY$</code></a> function are e-ASCII values.
+        </p>
+            <p> e-ASCII codes are one or
             two bytes long; single-byte codes are simply ASCII codes whereas
             double-byte codes consist of a <code><i>NUL</i></code> character plus
             a code indicating the key pressed. Some, but certainly not all,
@@ -1521,10 +1523,7 @@
             to the key's location, like scancodes.
             The US keyboard layout is used in the table below.
         </p>
-        <p>
-            The values returned by the
-            <a href="#INKEY$"><code>INKEY$</code></a> function are e-ASCII values.
-        </p>
+
         <div class="scrollable">
             <table>
                 <tr>
