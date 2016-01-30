@@ -5312,11 +5312,149 @@
             Turns the list of function-key macros on the bottom of the screen <code>ON</code> or <code>OFF</code>.
             If <code>LIST</code> is specified, prints a list of
             the 10 (or 12 with <code><a href="#--syntax">--syntax</a>=tandy</code>) function keys
-            with the function-key macros defined for those keys to the console. Special
-            characters are represented by their symbol equivalent in the loaded codepage.
-            Some characters get a special representation: e.g. <code><a href="#CHR$">CHR$</a>(13)</code> is represented
-            as a back arrow.
+            with the function-key macros defined for those keys to the console.
         </p>
+        <p>
+            Most characters are represented by their symbol equivalent in the current <a href="#cp437">codepage</a>.
+            However, some characters get a different representation, which is a symbolic representation
+            of their effect as control characters on the screen.
+        </p>
+        <div class="scrollable">
+            <table>
+                <tr>
+                    <th>
+                        Code point
+                    </th>
+                    <th>
+                        Replacement
+                    </th>
+                    <th>
+                        Usual glyph
+                    </th>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h07</code>
+                    </td>
+                    <td>
+                        <code>&amp;h0E</code>
+                    </td>
+                    <td>
+                        &#x266b;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h08</code>
+                    </td>
+                    <td>
+                        <code>&amp;hFE</code>
+                    </td>
+                    <td>
+                        &#x25a0;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h09</code>
+                    </td>
+                    <td>
+                        <code>&amp;h1A</code>
+                    </td>
+                    <td>
+                        &#x2192;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h0A</code>
+                    </td>
+                    <td>
+                        <code>&amp;h1B</code>
+                    </td>
+                    <td>
+                        &#x2190;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h0B</code>
+                    </td>
+                    <td>
+                        <code>&amp;h7F</code>
+                    </td>
+                    <td>
+                        &#x2302;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h0C</code>
+                    </td>
+                    <td>
+                        <code>&amp;h16</code>
+                    </td>
+                    <td>
+                        &#x25ac;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h0D</code>
+                    </td>
+                    <td>
+                        <code>&amp;h1B</code>
+                    </td>
+                    <td>
+                        &#x2190;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h1C</code>
+                    </td>
+                    <td>
+                        <code>&amp;h10</code>
+                    </td>
+                    <td>
+                        &#x25ba;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h1D</code>
+                    </td>
+                    <td>
+                        <code>&amp;h11</code>
+                    </td>
+                    <td>
+                        &#x25c4;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h1E</code>
+                    </td>
+                    <td>
+                        <code>&amp;h18</code>
+                    </td>
+                    <td>
+                        &#x2191;
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <code>&amp;h1F</code>
+                    </td>
+                    <td>
+                        <code>&amp;h19</code>
+                    </td>
+                    <td>
+                        &#x2193;
+                    </td>
+                </tr>
+            </table>
+        </div>
     </section>
 <hr />
 
