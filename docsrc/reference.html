@@ -3841,7 +3841,10 @@
         <h5>Notes</h5>
         <ul>
             <li>
-            Anything after the <code>CONT</code> keyword is ignored.
+                Anything after the <code>CONT</code> keyword is ignored.
+            </li>
+            <li>
+                This statement can only be used in direct mode.
             </li>
             <li>
                 If a break is encountered in <code><a href="#GOSUB">GOSUB</a></code> routine called from a continuing
@@ -3863,7 +3866,10 @@
                 has been modified or after <code><a href="#CLEAR">CLEAR</a></code>: <samp>Can't continue</samp>.
             </li>
             <li>
-                The break occurred in a direct line: <samp>Can't continue</samp>
+                The break occurred in a direct line: <samp>Can't continue</samp>.
+            </li>
+            <li>
+                <code>CONT</code> is used in a program: <samp>Can't continue</samp>.
             </li>
         </ul>
     </section>
