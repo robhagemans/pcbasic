@@ -388,6 +388,13 @@ def str_to_float(s, allow_nonnum = True):
 
 #####
 
+def str_to_int(s):
+    """ Return Python int value for Python str, zero if malformed. """
+    try:
+        return int(s)
+    except ValueError:
+        return 0
+
 def tokenise_hex(ins, outs):
     """ Convert hex expression in Python string to number token. """
     ins.read(1)
@@ -475,15 +482,15 @@ def tokenise_dec(ins, outs):
     # write out the numbers
     if len(word) == 1 and word in string.digits:
         # digit
-        outs.write(chr(0x11+int(word)))
+        outs.write(chr(0x11+str_to_int(word)))
     elif (not (have_exp or have_point or word[-1] in '!#') and
-                            int(word) <= 0x7fff and int(word) >= -0x8000):
-        if int(word) <= 0xff and int(word)>=0:
+                            str_to_int(word) <= 0x7fff and str_to_int(word) >= -0x8000):
+        if str_to_int(word) <= 0xff and str_to_int(word) >= 0:
             # one-byte constant
-            outs.write(tk.T_BYTE + chr(int(word)))
+            outs.write(tk.T_BYTE + chr(str_to_int(word)))
         else:
             # two-byte constant
-            outs.write(tk.T_INT + str(vartypes.value_to_sint(int(word))))
+            outs.write(tk.T_INT + str(vartypes.value_to_sint(str_to_int(word))))
     else:
         mbf = str(str_to_float(word).to_bytes())
         if len(mbf) == 4:
