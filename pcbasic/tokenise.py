@@ -382,13 +382,13 @@ def tokenise_word(ins, outs):
         if word == 'GO':
             pos = ins.tell()
             # GO SUB allows 1 space
-            if util.peek(ins, 4) == ' SUB':
+            if util.peek(ins, 4).upper() == ' SUB':
                 word = 'GOSUB'
                 ins.read(4)
             else:
                 # GOTO allows any number of spaces
                 nxt = util.skip(ins, ascii_whitespace)
-                if ins.read(2) == 'TO':
+                if ins.read(2).upper() == 'TO':
                     word = 'GOTO'
                 else:
                     ins.seek(pos)
