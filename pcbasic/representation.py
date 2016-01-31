@@ -24,13 +24,13 @@ import vartypes
 import basictoken as tk
 
 
-def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=False):
+def value_to_string_keep(inp, screen=False, write=False, allow_empty_expression=False):
     """ Convert BASIC number to BASIC string. """
     # screen=False means in a program listing
     # screen=True is used for screen, str$ and sequential files
     if not inp:
         if allow_empty_expression:
-            return ('$', '')
+            return vartypes.null['$']
         else:
             raise error.RunError(error.STX)
     typechar = inp[0]
@@ -38,15 +38,19 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
         return ('$', inp[1])
     elif typechar == '%':
         if screen and not write and vartypes.unpack_int(inp) >= 0:
-            return ('$', ' ' + str(vartypes.unpack_int(inp)))
+            return str_to_string(' ' + str(vartypes.unpack_int(inp)))
         else:
-            return ('$', str(vartypes.unpack_int(inp)))
+            return str_to_string(str(vartypes.unpack_int(inp)))
     elif typechar == '!':
-        return ('$', float_to_str(fp.unpack(inp), screen, write) )
+        return str_to_string(float_to_str(fp.unpack(inp), screen, write))
     elif typechar == '#':
-        return ('$', float_to_str(fp.unpack(inp), screen, write) )
+        return str_to_string(float_to_str(fp.unpack(inp), screen, write))
     else:
         raise error.RunError(error.STX)
+
+def str_to_string(python_str):
+    """ Convert Python str to BASIC string. """
+    return ('$', bytearray(python_str))
 
 # tokenised ints to python str
 
@@ -70,6 +74,15 @@ def oct_to_str(s):
     """ Convert oct token to Python string. """
     return "&O" + oct(vartypes.uint_to_value(s))[1:]
 
+# int to BASIC string
+
+def hex_to_string(val):
+    """ Convert python integer to BASIC string in hex representation. """
+    return str_to_string(hex_to_str(vartypes.value_to_sint(val))[2:])
+
+def oct_to_string(val):
+    """ Convert python integer to BASIC string in oct representation. """
+    return str_to_string(oct_to_str(vartypes.value_to_sint(val))[2:])
 
 
 # floating point to string
