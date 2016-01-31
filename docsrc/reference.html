@@ -56,6 +56,10 @@
     <h3 id="definitions">Definitions</h3>
     <p>
         A <dfn>program line</dfn> consists of a line number followed by a compound statement.
+        Program lines are terminated by a
+        <code><i>CR</i></code> or
+        or by the end of the file (optionally through an <code><i>EOF</i></code> character).
+        Anything on a program line after a <code><i>NUL</i></code> character is ignored.
     </p>
     <p>
         A <dfn>line number</dfn> is a whole number in the range <code>[0&#8212;65535]</code>.
@@ -100,6 +104,10 @@
         <li><code><i>EOF</i></code> (<code>CHR$(&amp;h1A)</code>)</li>
         <li><code>"</code> (<code>CHR$(&amp;h22)</code>)</li>
     </ul>
+    <p>
+        Strings are also legally terminated by the end of the file in the absence of
+        an <code><i>EOF</i></code> character.
+    </p>
     <p>
         Apart from these, string literals should not contain any of the characters
         in the ASCII range <code>&amp;h0D</code>&mdash;<code>&amp;h1F</code>, which lead to unpredictable results.
@@ -8697,6 +8705,10 @@
             comments. Everything after <code>REM</code> will be stored in the program unaltered and
             uninterpreted. <code>'</code> (apostrophe) is an alias for <code>:REM'</code>; it can be placed at any
             point in the program line and will ensure that the rest of the line is ignored.
+        </p>
+        <p>
+            Note that a colon <code>:</code> does not terminate the <code>REM</code> statement; the colon and everything
+            after it will be treated as part of the comment.
         </p>
     </section>
 <hr />
