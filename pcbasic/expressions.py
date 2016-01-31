@@ -364,7 +364,7 @@ def value_cdbl(ins):
 def value_str(ins):
     """ STR$: string representation of a number. """
     s = vartypes.pass_number_keep(parse_bracket(ins))
-    return representation.value_to_str_keep(s, screen=True)
+    return representation.value_to_string_keep(s, screen=True)
 
 def value_val(ins):
     """ VAL: number value of a string. """
@@ -381,13 +381,13 @@ def value_oct(ins):
     """ OCT$: octal representation of int. """
     # allow range -32768 to 65535
     val = vartypes.pass_int_unpack(parse_bracket(ins), 0xffff)
-    return vartypes.pack_string(representation.oct_to_str(vartypes.value_to_sint(val))[2:])
+    return representation.oct_to_string(val)
 
 def value_hex(ins):
     """ HEX$: hexadecimal representation of int. """
     # allow range -32768 to 65535
     val = vartypes.pass_int_unpack(parse_bracket(ins), 0xffff)
-    return vartypes.pack_string(representation.hex_to_str(vartypes.value_to_sint(val))[2:])
+    return representation.hex_to_string(val)
 
 ######################################################################
 # string maniulation

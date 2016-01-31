@@ -2319,7 +2319,7 @@ def exec_write(ins, output=None):
             if expr[0] == '$':
                 outstr += '"' + str(vartypes.unpack_string(expr)) + '"'
             else:
-                outstr += str(vartypes.unpack_string(representation.value_to_str_keep(expr, screen=True, write=True)))
+                outstr += str(vartypes.unpack_string(representation.value_to_string_keep(expr, screen=True, write=True)))
             if util.skip_white_read_if(ins, (',', ';')):
                 outstr += ','
             else:
@@ -2364,7 +2364,7 @@ def exec_print(ins, output=None):
         else:
             newline = True
             expr = expressions.parse_expression(ins)
-            word = vartypes.unpack_string(representation.value_to_str_keep(expr, screen=True))
+            word = vartypes.unpack_string(representation.value_to_string_keep(expr, screen=True))
             # numbers always followed by a space
             if expr[0] in ('%', '!', '#'):
                 word += ' '

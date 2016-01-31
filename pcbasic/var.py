@@ -81,7 +81,7 @@ def get_string_copy_packed(sequence):
     else:
         # string is stored in code space or field buffers
         if address < memory.field_mem_start:
-            return vartypes.pack_string('\0' * length)
+            return vartypes.pack_string(bytearray(length))
         # find the file we're in
         start = address - memory.field_mem_start
         number = 1 + start // memory.field_mem_offset

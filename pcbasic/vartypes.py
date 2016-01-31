@@ -11,7 +11,7 @@ import error
 import state
 
 # zeroed out
-null = { '$': ('$', ''), '%': ('%', bytearray(2)), '!': ('!', bytearray(4)), '#': ('#', bytearray(8)) }
+null = { '$': ('$', bytearray()), '%': ('%', bytearray(2)), '!': ('!', bytearray(4)), '#': ('#', bytearray(8)) }
 
 def complete_name(name):
     """ Add type specifier to a name, if missing. """
@@ -96,22 +96,22 @@ def pass_string_keep(inp, allow_empty=False, err=error.TYPE_MISMATCH):
         if not allow_empty:
             raise error.RunError(error.STX)
         else:
-            return ('$', '')
+            return null['$']
     if inp[0] == '$':
         return inp
     else:
         raise error.RunError(err)
 
 def pass_string_unpack(inp, allow_empty=False, err=error.TYPE_MISMATCH):
-    """ Convert string-valued variable to Python bytearray. """
+    """ Convert String to Python bytearray. """
     return pass_string_keep(inp, allow_empty, err)[1]
 
 def unpack_string(inp):
-    """ Convert string-valued variable to Python bytearray, no checks """
+    """ Convert String to Python bytearray, no checks """
     return inp[1]
 
 def pack_string(inp):
-    """ Convert Python bytearray to string-valued variable, no checks. """
+    """ Convert Python bytearray to String, no checks. """
     return ('$', inp)
 
 ###############################################################################
