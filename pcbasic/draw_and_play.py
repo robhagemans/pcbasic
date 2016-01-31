@@ -79,7 +79,7 @@ def ml_parse_const(gmls):
             gmls.read(1)
             numstr += c
             c = util.skip(gmls, ml_whitepace)
-        return representation.str_to_value_keep(('$', numstr))
+        return representation.string_to_value_keep(('$', numstr))
     else:
         raise error.RunError(error.IFC)
 

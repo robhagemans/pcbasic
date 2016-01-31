@@ -366,7 +366,7 @@ def value_str(ins):
 
 def value_val(ins):
     """ VAL: number value of a string. """
-    val = representation.str_to_value_keep(parse_bracket(ins))
+    val = representation.string_to_value_keep(parse_bracket(ins))
     return val if val else vartypes.null['%']
 
 def value_chr(ins):

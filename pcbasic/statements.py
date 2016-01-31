@@ -1943,7 +1943,7 @@ def exec_read(ins):
         # syntax error in DATA line (not type mismatch!) if can't convert to var type
         entry = vartypes.pack_string(bytearray(flow.read_entry()))
         if v[0][-1] != '$':
-            entry = representation.str_to_value_keep(entry, allow_nonnum=False)
+            entry = representation.string_to_value_keep(entry, allow_nonnum=False)
         if entry is None:
             # set pointer for EDIT gadget to position in DATA statement
             state.basic_state.bytecode.seek(state.basic_state.data_pos)
@@ -2079,7 +2079,7 @@ def exec_randomize(ins):
             console.write("Random number seed (-32768 to 32767)? ")
             seed = console.wait_screenline()
             # seed entered on prompt is rounded to int
-            val = representation.str_to_value_keep(vartypes.pack_string(seed))
+            val = representation.string_to_value_keep(vartypes.pack_string(seed))
         val = vartypes.pass_int_keep(val)
     rnd.randomize(val)
     util.require(ins, tk.end_statement)

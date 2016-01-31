@@ -275,7 +275,7 @@ class Sound(object):
                                 gmls.read(1)
                                 numstr += c
                                 c = util.skip(gmls, draw_and_play.ml_whitepace)
-                            length = vartypes.pass_int_unpack(representation.str_to_value_keep(('$', numstr)))
+                            length = vartypes.pass_int_unpack(representation.string_to_value_keep(('$', numstr)))
                             dur = 1. / float(length)
                         elif c in ('#', '+'):
                             gmls.read(1)

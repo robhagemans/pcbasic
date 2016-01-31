@@ -550,7 +550,7 @@ def parse_value(ins):
         return ('#', val)
     return None
 
-def str_to_value_keep(strval, allow_nonnum=True):
+def string_to_value_keep(strval, allow_nonnum=True):
     """ Convert BASIC string to BASIC value (VAL). """
     if strval == ('$', ''):
         return vartypes.null['%']

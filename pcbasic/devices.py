@@ -470,7 +470,7 @@ class TextFileBase(RawFile):
         # convert result to requested type, be strict about non-numeric chars
         value = vartypes.pack_string(bytearray(word))
         if typechar != '$':
-            value = representation.str_to_value_keep(value, allow_nonnum=False)
+            value = representation.string_to_value_keep(value, allow_nonnum=False)
         return value, c
 
 class CRLFTextFileBase(TextFileBase):
@@ -655,7 +655,7 @@ class KYBDFile(TextFileBase):
         # convert result to requested type, be strict about non-numeric chars
         value = vartypes.pack_string(bytearray(word))
         if typechar != '$':
-            value = representation.str_to_value_keep(value, allow_nonnum=False)
+            value = representation.string_to_value_keep(value, allow_nonnum=False)
         return value, c
 
 
