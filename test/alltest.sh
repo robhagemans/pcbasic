@@ -1,5 +1,2 @@
 #!/bin/bash
-for test in $(ls -d */)
-do
-    ./test.sh $test
-done
+./test.sh $(ls -d */)
