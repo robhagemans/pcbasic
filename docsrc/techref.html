@@ -11,7 +11,7 @@
     <section>
         <h3 id="tokenised-file-format">Tokenised file format</h3>
         <p>
-            A tokenised program file has the following format.
+            A tokenised program file on a disk device has the following format.
         </p>
         <dl>
             <dt>
@@ -528,7 +528,7 @@
             algorithm and keys were published in a mathematical magazine.
         </p>
         <p>
-            A protected program file has the following format.
+            A protected program file on a disk device has the following format.
         </p>
         <dl>
             <dt>
@@ -573,6 +573,96 @@
                 end-of-file marker of the tokenised program is included in the encrypted
                 content, a protected file is usually one byte longer than its
                 unprotected equivalent.
+            </dd>
+        </dl>
+    </section>
+    <hr />
+
+    <section>
+        <h3 id="bsave-file-format"><code>BSAVE</code> file format</h3>
+        <p>
+            A memory-dump file on a disk device has the following format.
+        </p>
+        <dl>
+            <dt>
+                Magic byte
+            </dt>
+            <dd>
+                <code>FD</code>
+            </dd>
+            <dt>
+                Header
+            </dt>
+            <dd>
+                <div class="scrollable">
+                    <table>
+                        <tr>
+                            <th>
+                                Bytes
+                            </th>
+                            <th>
+                                Format
+                            </th>
+                            <th>
+                                Meaning
+                            </th>
+                        </tr>
+                        <tr>
+                            <td>
+                                2
+                            </td>
+                            <td>
+                                Unsigned 16-bit little-endian integer.
+                            </td>
+                            <td>
+                                Segment of the memory block.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                2
+                            </td>
+                            <td>
+                                Unsigned 16-bit little-endian integer.
+                            </td>
+                            <td>
+                                Offset of the first byte of the memory block.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                2
+                            </td>
+                            <td>
+                                Unsigned 16-bit little-endian integer.
+                            </td>
+                            <td>
+                                Length of the memory block in bytes.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </dd>
+            <dt>
+                Payload
+            </dt>
+            <dd>
+                The bytes of the memory block.
+            </dd>
+            <dt>
+                Footer
+            </dt>
+            <dd>
+                On Tandy only, the magic byte and the six bytes of the header are repeated here.
+                This is optional;
+                the file will be read without problems if it is omitted.
+            </dd>
+            <dt>
+                End of file marker
+            </dt>
+            <dd>
+                An <code>1A</code> is written to mark the end of file. This is optional;
+                the file will be read without problems if it is omitted.
             </dd>
         </dl>
     </section>
