@@ -90,7 +90,8 @@
                 End of file marker
             </dt>
             <dd>
-                 <code>1A</code>
+                An <code>1A</code> is written to mark the end of file. This is optional;
+                the file will be read without problems if it is omitted.
              </dd>
         </dl>
         <h4 id="tokens">Tokenised BASIC</h4>
@@ -426,7 +427,7 @@
         <ul class="compact10">
             <li><code>FFFF</code> <code>DEBUG</code></li>
         </ul>
-        <h5 id="keywords">Internal use tokens</h5>
+        <h5 id="internal-use-tokens">Internal use tokens</h5>
         <p>
             The tokens <code>10</code>, <code>1E</code> and <code>0D</code> are
             known to be used internally by GW-BASIC. They should not appear in a
@@ -514,7 +515,66 @@
             A single-precision MBF float therefore has 23 bits of precision,
             while a double-precision MBF float has 55 bits of precision.
         </p>
+    </section>
+    <hr />
 
+    <section>
+        <h3 id="protected-file-format">Protected file format</h3>
+        <p>
+            The protected format is an encrypted form of the tokenised format.
+            GW-BASIC would refuse to show the source code of such files.
+            This protection scheme could easily be circumvented by changing a flag in memory.
+            Deprotection programs have circulated widely for decades and the decryption
+            algorithm and keys were published in a mathematical magazine.
+        </p>
+        <p>
+            A protected program file has the following format.
+        </p>
+        <dl>
+            <dt>
+                Magic byte
+            </dt>
+            <dd>
+                <code>FE</code>
+            </dd>
+            <dt>
+                Payload
+            </dt>
+            <dd>
+                Encrypted content of a tokenised program file, including its
+                end of file marker but excluding its magic byte. The encription cipher
+                rotates through an 11-byte and a 13-byte key so that the resulting
+                transformation is the same after 143 bytes. For each byte,
+                <ul>
+                    <li>
+                        Subtract the corresponding byte from the 11-byte sequence<br />
+                        <code>0B 0A 09 08 07 06 05 04 03 02 01</code>
+                    </li>
+                    <li>
+                        Exclusive-or with the corresponding byte from the 11-byte key<br />
+                        <code>1E 1D C4 77 26 97 E0 74 59 88 7C</code>
+                    </li>
+                    <li>
+                        Exclusive-or with the corresponding byte from the 13-byte key<br />
+                        <code>A9 84 8D CD 75 83 43 63 24 83 19 F7 9A</code>
+                    </li>
+                    <li>
+                        Add the corresponding byte from the 13-byte sequence<br />
+                        <code>0D 0C 0B 0A 09 08 07 06 05 04 03 02 01</code>
+                    </li>
+                </ul>
+            </dd>
+            <dt>
+                End of file marker
+            </dt>
+            <dd>
+                An <code>1A</code> is written to mark the end of file. This is optional;
+                the file will be read without problems if it is omitted. Since the
+                end-of-file marker of the tokenised program is included in the encrypted
+                content, a protected file is usually one byte longer than its
+                unprotected equivalent.
+            </dd>
+        </dl>
     </section>
     <hr />
 
