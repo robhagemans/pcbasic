@@ -2394,12 +2394,25 @@
         </code>
         <p>
             Returns a pseudorandom number in the interval <code>[0&#8212;1)</code>.
-            <code><var>x</var></code> is a numeric expression. If <code><var>x</var></code> is zero, <code>RND</code> repeats the last pseudo-
-            random number. If <code><var>x</var></code> is greater than zero, a new pseudorandom number is
+            <code><var>x</var></code> is a numeric expression. If <code><var>x</var></code> is zero, <code>RND</code> repeats the last
+            pseudo-random number. If <code><var>x</var></code> is greater than zero, a new pseudorandom number is
             returned. If <code><var>x</var></code> is negative, the value of <code><var>x</var></code> is used to generate a new
             random number seed; after that, a new pseudorandom number is returned.
             The seed is generated in a different way than by <code><a href="#RANDOMIZE">RANDOMIZE</a></code>.
         </p>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                PC-BASIC's <code>RND</code> function generates pseudo-random numbers through a linear congruential generator with modulo 2<sup>24</sup>,
+                multiplier 214013 and increment 2531011. This exactly reproduces the random numbers of GW-BASIC's <code>RND</code>.
+            </li>
+            <li>It should be
+                noted, however, that this is a very poor random number generator: its parameters imply a recurrence period of
+                2<sup>24</sup>, meaning that after less than 17 million calls <code>RND</code> will wrap around
+                and start running through the exact same series of numbers all over again. <code>RND</code> should not be used for
+                cryptography, scientific simulations or anything else remotely serious.
+            </li>
+        </ul>
         <h5>Errors</h5>
         <ul>
             <li>
@@ -8650,6 +8663,10 @@
             <li>
                 For the same seed, PC-BASIC produces the same pseudorandom numbers as
                 GW-BASIC 3.23.
+            </li>
+            <li>
+                The random number generator is very poor and should not be used for serious purposes.
+                See <code><a href="#RND">RND</a></code> for details.
             </li>
         </ul>
         <h5>Errors</h5>
