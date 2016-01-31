@@ -669,6 +669,265 @@
     <hr />
 
     <section>
+        <h3 id="tape-file-format">Cassette file format</h3>
+        <p>
+            Files on cassette are stored as frequency-modulated sound. The payload
+            format of files on cassette is the same as for files on disk device, but
+            the headers are different and the files may be split in chunks.
+        </p>
+        <h5 id="tape-modulation">Modulation</h5>
+        <p>
+            A 1-bit is represented by a single 1 ms wave period (1000 Hz).
+            A 0-bit is represented by a single 0.5 ms wave period (2000 Hz).
+        </p>
+        <h5 id="tape-byte">Byte format</h5>
+        <p>
+            A byte is sent as 8 bits, most significant first. There are no start- or stopbits.
+        </p>
+        <h5 id="tape-record">Record format</h5>
+        <p>
+            A file is made up of two or more records. Each record has the following format:
+            <div class="scrollable">
+                <table>
+                    <tr>
+                        <th>
+                            Length
+                        </th>
+                        <th>
+                            Format
+                        </th>
+                        <th>
+                            Meaning
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>
+                            256 bytes
+                        </td>
+                        <td>
+                            All <code>FF</code>
+                        </td>
+                        <td>
+                            2048 ms pilot wave at 1000 Hz, used for calibration.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            1 bit
+                        </td>
+                        <td>
+                            <code>0</code>
+                        </td>
+                        <td>
+                            Synchronisation bit.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            1 byte
+                        </td>
+                        <td>
+                            <code>16</code> (<code><i>SYN</i></code>)
+                        </td>
+                        <td>
+                            Synchronisation byte.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            256 bytes
+                        </td>
+                        <td>
+                        </td>
+                        <td>
+                            Data block.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            2 bytes
+                        </td>
+                        <td>
+                            Unsigned 16-bit <em>big-endian</em> integer
+                        </td>
+                        <td>
+                            CRC-16-CCITT checksum.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            4 bytes
+                        </td>
+                        <td>
+                            All <code>FF</code>
+                        </td>
+                        <td>
+                            End of record marker.
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <p>
+                Tokenised, protected and <code>BSAVE</code> files consist of a header record
+                followed by a single record which may contain multiple 256-byte data blocks, each followed by the 2 CRC bytes.
+                Plain text program files and data files consist of a header record followed by multiple single-block records.
+            </p>
+
+            <h5 id="tape-header">Header block format</h5>
+            <div class="scrollable">
+                <table>
+                    <tr>
+                        <th>
+                            Bytes
+                        </th>
+                        <th>
+                            Format
+                        </th>
+                        <th>
+                            Meaning
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>
+                            1
+                        </td>
+                        <td>
+                            <code>A5</code>
+                        </td>
+                        <td>
+                            Header record magic byte
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            8
+                        </td>
+                        <td>
+                            8 characters
+                        </td>
+                        <td>
+                            Filename.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            1
+                        </td>
+                        <td>
+
+                        </td>
+                        <td>
+                            File type. <code>00</code> for data file,
+                            <code>01</code> for memory dump,
+                            <code>20</code> or <code>A0</code> for protected,
+                            <code>40</code> for plain text program,
+                            <code>80</code> for tokenised program.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            2
+                        </td>
+                        <td>
+                            Unsigned 16-bit little-endian integer
+                        </td>
+                        <td>
+                            Length of next data record, in bytes.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            2
+                        </td>
+                        <td>
+                            Unsigned 16-bit little-endian integer
+                        </td>
+                        <td>
+                            Segment of memory location.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            2
+                        </td>
+                        <td>
+                            Unsigned 16-bit little-endian integer
+                        </td>
+                        <td>
+                            Offset of memory location.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            1
+                        </td>
+                        <td>
+                            <code>00</code>
+                        </td>
+                        <td>
+                            End of header data
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            239
+                        </td>
+                        <td>
+                            All <code>01</code>
+                        </td>
+                        <td>
+                            Filler
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <h5 id="block">Data block format</h5>
+            <div class="scrollable">
+                <table>
+                    <tr>
+                        <th>
+                            Bytes
+                        </th>
+                        <th>
+                            Format
+                        </th>
+                        <th>
+                            Meaning
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>
+                            1
+                        </td>
+                        <td>
+                            8-bit unsigned integer
+                        </td>
+                        <td>
+                            Number of payload bytes in last record, plus one.
+                            If zero, the next record is not the last record.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            255
+                        </td>
+                        <td>
+
+                        </td>
+                        <td>
+                            Payload data. If this is the last record, any unused bytes are filled
+                            by repeating the last payload byte.
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+        </p>
+    </section>
+    <hr />
+
+    <section>
         <h3 id="errors">Error codes</h3>
         <div class="scrollable">
             <table>
