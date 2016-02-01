@@ -1261,6 +1261,9 @@
                 The type of one or more parameters differs from the function definition:
                 <samp>Type mismatch</samp>.
             </li>
+            <li>
+                The function being called is recursive or mutually recursive:
+                <samp>Out of memory</samp>.
         </ul>
     </section>
 <hr />
@@ -3993,13 +3996,19 @@
             Defines a function called <code><a href="#FN">FN</a><var>name</var></code>
             (or <code>FN<var> name</var></code>: spaces between <code>FN</code> and <code><var>name</var></code> are optional).
             On calling <code>FN<var>name</var>( ... )</code>, <code><var>expression</var></code> is
-            evaluated with the supplied parameters substituted. The result of the
+            evaluated with the supplied parameters substituted. Any variable names used in the function that are not
+            in the argument list refer to the corresponding global variables.
+            The result of the
             evaluation is the return value of <code>FN<var>name</var></code>.
         </p>
         <h5>Notes</h5>
         <ul>
             <li>
                 This statement may only be used on a program line.
+            </li>
+            <li>
+                As the function must be a single expression and PC-BASIC does not have a ternary operator, there is
+                no way to define a recursive function that actually terminates.
             </li>
         </ul>
         <h5>Parameters</h5>
@@ -4012,8 +4021,7 @@
                 function. Variables of the same name may or may not exist in the program; their value is not affected or used by the defined function.
             </li>
             <li>
-                <code><var>expression</var></code> must be a legal PC-BASIC expression that may use the
-                parameters <code><var>arg_0</var>, <var>arg_1</var>, ...</code>.
+                <code><var>expression</var></code> must be a legal PC-BASIC expression.
             </li>
         </ul>
         <h5>Errors</h5>
