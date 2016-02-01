@@ -63,6 +63,9 @@ def prepare():
     global option_double, is_pcjr_syntax
     is_pcjr_syntax = config.get('syntax') in ('pcjr', 'tandy')
     option_double = config.get('double')
+    # state variable for detecting recursion
+    state.basic_state.user_function_parsing = set()
+
 
 def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
     """ Compute the value of the expression at the current code pointer. """
@@ -624,6 +627,10 @@ def value_date(ins):
 def value_fn(ins):
     """ FN: get value of user-defined function. """
     fnname = util.get_var_name(ins)
+    # recursion is not allowed as there's no way to terminate it
+    if fnname in state.basic_state.user_function_parsing:
+        raise error.RunError(error.OUT_OF_MEMORY)
+    state.basic_state.user_function_parsing.add(fnname)
     try:
         varnames, fncode = state.basic_state.functions[fnname]
     except KeyError:
