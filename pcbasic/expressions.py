@@ -470,7 +470,10 @@ def value_right(ins):
 def value_string(ins):
     """ STRING$: repeat characters. """
     util.require_read(ins, ('(',))
-    n, j = parse_expr_list(ins, 2)
+    exprs = parse_expr_list(ins, 2, err=error.STX)
+    if None in exprs:
+        raise error.RunError(error.STX)
+    n, j = exprs
     n = vartypes.pass_int_unpack(n)
     util.range_check(0, 255, n)
     if j[0] == '$':
