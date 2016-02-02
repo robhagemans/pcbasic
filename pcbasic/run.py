@@ -6,6 +6,11 @@ Main interpreter loop
 This file is released under the GNU GPL version 3.
 """
 
+import os
+import sys
+import traceback
+import logging
+
 import error
 import util
 import tokenise
@@ -16,6 +21,7 @@ import state
 import backend
 import reset
 import flow
+import debug
 
 # true if a prompt is needed on next cycle
 state.basic_state.prompt = True
@@ -86,6 +92,12 @@ def run_once():
     except error.RunError as e:
         handle_error(e)
         state.basic_state.prompt = True
+    except error.Exit:
+        raise
+    except Exception as e:
+        if debug.debug_mode:
+            raise
+        bluescreen(e)
 
 def switch_mode():
     """ Switch loop mode. """
@@ -200,3 +212,55 @@ def handle_break(e):
         console.write_error_message("Break", -1)
     state.basic_state.execute_mode = False
     state.basic_state.input_mode = False
+
+def bluescreen(e):
+    """ Display a modal exception message. """
+    state.console_state.screen.screen(0, 0, 0, 0, new_width=80)
+    console.clear()
+    console.init_mode()
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    # log the standard python error
+    logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+    # format the error more readably on the screen
+    state.console_state.screen.set_border(4)
+    state.console_state.screen.set_attr(0x70)
+    console.write_line('EXCEPTION')
+    state.console_state.screen.set_attr(15)
+    program.edit(program.get_line_number(state.basic_state.bytecode.tell()),
+                                     state.basic_state.bytecode.tell())
+    console.write_line('\n')
+    stack = traceback.extract_tb(exc_traceback)
+    for s in stack[-5:]:
+        stack_line = '{0}:{1}, {2}'.format(
+            os.path.split(s[0])[-1], s[1], s[2])
+        stack_line_2 = '    {0}'.format(s[3])
+        state.console_state.screen.set_attr(15)
+        console.write_line(stack_line)
+        state.console_state.screen.set_attr(7)
+        console.write_line(stack_line_2)
+    exc_message = traceback.format_exception_only(exc_type, exc_value)[0]
+    state.console_state.screen.set_attr(15)
+    console.write('{0}:'.format(exc_type.__name__))
+    state.console_state.screen.set_attr(7)
+    console.write_line(' {0}'.format(str(exc_value)))
+    state.console_state.screen.set_attr(0x70)
+    console.write_line(
+        '\nThis is a bug in PC-BASIC.')
+    state.console_state.screen.set_attr(7)
+    console.write(
+        'Sorry about that. Please send the above messages to the author\nby e-mail to ')
+    state.console_state.screen.set_attr(15)
+    console.write(
+        'bugs@discussion.pcbasic.p.re.sf.net')
+    state.console_state.screen.set_attr(7)
+    console.write(
+        ' or by filing a bug\nreport at ')
+    state.console_state.screen.set_attr(15)
+    console.write(
+        'https://github.com/robhagemans/pcbasic/issues')
+    state.console_state.screen.set_attr(7)
+    console.write_line(
+        '. Please include')
+    console.write_line('as much information as you can about what you were doing and how this happened.')
+    console.write_line('Thank you!')
+    state.console_state.screen.set_attr(7)
