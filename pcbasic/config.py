@@ -12,6 +12,7 @@ import ConfigParser
 import logging
 import zipfile
 import plat
+import codecs
 
 # system-wide config path
 system_config_path = os.path.join(plat.system_config_dir, 'default.ini')
