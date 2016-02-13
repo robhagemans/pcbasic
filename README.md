@@ -56,7 +56,7 @@ GW-BASIC 3.23 on a generic IBM-compatible PC with a VGA video card.
 
 A few selected command-line options:  
 `pcbasic PROGRAM.BAS` runs the program file named `PROGRAM.BAS` directly.  
-`pcbasic --preset=tandy` starts with the emulation target set to Tandy GW-BASIC on a Tandy 1000.
+`pcbasic --preset=tandy` starts with the emulation target set to Tandy GW-BASIC on a Tandy 1000.  
 `pcbasic --preset=pcjr` starts with the emulation target set to Cartridge BASIC on an IBM PCjr.  
 `pcbasic -h` shows all available command line options.  
 
