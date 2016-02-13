@@ -106,7 +106,7 @@ def detokenise_line(ins, bytepos=None):
             # 0D: line pointer (unsigned int) - this token should not be here;
             #     interpret as line number and carry on
             # 0E: line number (unsigned int)
-            output += representation.uint_to_str(bytearray(ins.read(2)))
+            output += representation.uint_token_to_str(bytearray(ins.read(2)))
         elif comment or litstring or ('\x20' <= s <= '\x7E'):
             # honest ASCII
             output += s

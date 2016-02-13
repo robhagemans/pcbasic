@@ -454,7 +454,7 @@ def exec_on_key(ins):
 def exec_on_timer(ins):
     """ ON TIMER: define timer event trapping. """
     timeval, jumpnum = parse_on_event(ins)
-    timeval = vartypes.pass_single_keep(timeval)
+    timeval = vartypes.pass_single(timeval)
     period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
     state.basic_state.events.timer.set_trigger(period)
     state.basic_state.events.timer.set_jump(jumpnum)
@@ -512,7 +512,7 @@ def exec_sound(ins):
         return
     freq = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require_read(ins, (',',))
-    dur = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+    dur = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins)))
     if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
         raise error.RunError(error.IFC)
     # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
@@ -583,7 +583,7 @@ def exec_noise(ins):
     util.require_read(ins, (',',))
     util.range_check(0, 7, source)
     util.range_check(0, 15, volume)
-    dur = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+    dur = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins)))
     if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
         raise error.RunError(error.IFC)
     util.require(ins, tk.end_statement)
@@ -624,7 +624,7 @@ def exec_def_usr(ins):
     """ DEF USR: Define a machine language function. Not implemented. """
     util.require_read(ins, tk.digit)
     util.require_read(ins, (tk.O_EQ,))
-    vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
+    vartypes.pass_integer(expressions.parse_expression(ins), maxint=0xffff)
     util.require(ins, tk.end_statement)
     logging.warning("DEF USR statement not implemented")
 
@@ -1153,7 +1153,7 @@ def parse_get_or_put_file(ins):
     # for COM files
     num_bytes = the_file.reclen
     if util.skip_white_read_if(ins, (',',)):
-        pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
+        pos = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins))).round_to_int()
         # not 2^32-1 as the manual boasts!
         # pos-1 needs to fit in a single-precision mantissa
         util.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
@@ -1180,10 +1180,10 @@ def exec_lock_or_unlock(ins, action):
     thefile = devices.get_file(expressions.parse_file_number_opthash(ins))
     lock_start_rec = 1
     if util.skip_white_read_if(ins, (',',)):
-        lock_start_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
+        lock_start_rec = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins))).round_to_int()
     lock_stop_rec = lock_start_rec
     if util.skip_white_read_if(ins, (tk.TO,)):
-        lock_stop_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
+        lock_stop_rec = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins))).round_to_int()
     if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
         raise error.RunError(error.BAD_RECORD_NUMBER)
     try:
@@ -1208,9 +1208,9 @@ def exec_ioctl(ins):
 def parse_coord_bare(ins):
     """ Helper function: parse coordinate pair. """
     util.require_read(ins, ('(',))
-    x = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+    x = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins)))
     util.require_read(ins, (',',))
-    y = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+    y = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins)))
     util.require_read(ins, (')',))
     return x, y
 
@@ -1307,7 +1307,7 @@ def exec_circle(ins):
         raise error.RunError(error.IFC)
     centre = parse_coord_step(ins)
     util.require_read(ins, (',',))
-    r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+    r = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins)))
     start, stop, c, aspect = None, None, -1, None
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
@@ -1318,7 +1318,7 @@ def exec_circle(ins):
             if util.skip_white_read_if(ins, (',',)):
                 stop = expressions.parse_expression(ins, allow_empty=True)
                 if util.skip_white_read_if(ins, (',',)):
-                    aspect = fp.unpack(vartypes.pass_single_keep(
+                    aspect = fp.unpack(vartypes.pass_single(
                                             expressions.parse_expression(ins)))
                 elif stop is None:
                     # missing operand
@@ -1458,12 +1458,12 @@ def exec_for(ins):
     util.require_read(ins, (tk.O_EQ,)) # =
     start = expressions.parse_expression(ins)
     util.require_read(ins, (tk.TO,))  # TO
-    stop = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
+    stop = vartypes.pass_type(vartype, expressions.parse_expression(ins))
     if util.skip_white_read_if(ins, (tk.STEP,)): # STEP
-        step = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
+        step = vartypes.pass_type(vartype, expressions.parse_expression(ins))
     else:
         # convert 1 to vartype
-        step = vartypes.pass_type_keep(vartype, vartypes.int_to_integer_signed(1))
+        step = vartypes.pass_type(vartype, vartypes.int_to_integer_signed(1))
     util.require(ins, tk.end_statement)
     endforpos = ins.tell()
     # find NEXT
@@ -1561,7 +1561,7 @@ def exec_run(ins):
 def exec_if(ins):
     """ IF: enter branching statement. """
     # avoid overflow: don't use bools.
-    val = vartypes.pass_single_keep(expressions.parse_expression(ins))
+    val = vartypes.pass_single(expressions.parse_expression(ins))
     util.skip_white_read_if(ins, (',',)) # optional comma
     util.require_read(ins, (tk.THEN, tk.GOTO))
     if not fp.unpack(val).is_zero():
@@ -1613,7 +1613,7 @@ def exec_while(ins, first=True):
             # WHILE without WEND
             raise error.RunError(error.WHILE_WITHOUT_WEND)
         ins.seek(whilepos)
-    boolvar = vartypes.pass_double_keep(expressions.parse_expression(ins))
+    boolvar = vartypes.pass_double(expressions.parse_expression(ins))
     # condition is zero?
     if fp.unpack(boolvar).is_zero():
         # jump to WEND
@@ -1768,7 +1768,7 @@ def exec_clear(ins):
             if pcjr_syntax and util.skip_white_read_if(ins, (',',)):
                 # Tandy/PCjr: select video memory size
                 if not state.console_state.screen.set_video_memory_size(
-                    fp.unpack(vartypes.pass_single_keep(
+                    fp.unpack(vartypes.pass_single(
                                  expressions.parse_expression(ins, empty_err=error.STX)
                              )).round_to_int()):
                     state.console_state.screen.screen(0, 0, 0, 0)
@@ -1906,7 +1906,7 @@ def exec_mid(ins):
     if num > 0:
         util.range_check(1, len(s), start)
     util.require_read(ins, (tk.O_EQ,))
-    val = vartypes.pass_string_keep(expressions.parse_expression(ins))
+    val = vartypes.pass_string(expressions.parse_expression(ins))
     util.require(ins, tk.end_statement)
     var.string_assign_into(name, indices, start - 1, num, val)
 
@@ -1941,9 +1941,9 @@ def exec_read(ins):
     # reading loop
     for v in parse_var_list(ins):
         # syntax error in DATA line (not type mismatch!) if can't convert to var type
-        entry = vartypes.pack_string(bytearray(flow.read_entry()))
+        entry = vartypes.str_to_string(flow.read_entry())
         if v[0][-1] != '$':
-            entry = representation.string_to_value_keep(entry, allow_nonnum=False)
+            entry = representation.string_to_number(entry, allow_nonnum=False)
         if entry is None:
             # set pointer for EDIT gadget to position in DATA statement
             state.basic_state.bytecode.seek(state.basic_state.data_pos)
@@ -2020,7 +2020,7 @@ def exec_line_input(ins):
         console.write(prompt)
         line = console.wait_screenline(write_endl=newline)
         state.basic_state.input_mode = False
-    var.set_var_or_array(readvar, indices, vartypes.pack_string(bytearray(line)))
+    var.set_var_or_array(readvar, indices, vartypes.str_to_string(line))
 
 def exec_restore(ins):
     """ RESTORE: reset DATA pointer. """
@@ -2072,15 +2072,15 @@ def exec_randomize(ins):
     val = expressions.parse_expression(ins, allow_empty=True)
     if val:
         # don't convert to int if provided in the code
-        val = vartypes.pass_number_keep(val)
+        val = vartypes.pass_number(val)
     else:
         # prompt for random seed if not specified
         while not val:
             console.write("Random number seed (-32768 to 32767)? ")
             seed = console.wait_screenline()
             # seed entered on prompt is rounded to int
-            val = representation.string_to_value_keep(vartypes.pack_string(seed))
-        val = vartypes.pass_int_keep(val)
+            val = representation.string_to_number(vartypes.str_to_string(seed))
+        val = vartypes.pass_integer(val)
     rnd.randomize(val)
     util.require(ins, tk.end_statement)
 
@@ -2315,9 +2315,9 @@ def exec_write(ins, output=None):
     if expr:
         while True:
             if expr[0] == '$':
-                outstr += '"' + str(vartypes.unpack_string(expr)) + '"'
+                outstr += '"' + str(vartypes.string_to_str(expr)) + '"'
             else:
-                outstr += str(vartypes.unpack_string(representation.value_to_string_keep(expr, screen=True, write=True)))
+                outstr += str(vartypes.string_to_str(representation.number_to_string(expr, screen=True, write=True)))
             if util.skip_white_read_if(ins, (',', ';')):
                 outstr += ','
             else:
@@ -2362,7 +2362,7 @@ def exec_print(ins, output=None):
         else:
             newline = True
             expr = expressions.parse_expression(ins)
-            word = vartypes.unpack_string(representation.value_to_string_keep(expr, screen=True))
+            word = vartypes.string_to_str(representation.number_to_string(expr, screen=True))
             # numbers always followed by a space
             if expr[0] in ('%', '!', '#'):
                 word += ' '
@@ -2411,7 +2411,7 @@ def exec_print_using(ins, output):
                 number_field, digits_before, decimals = print_and_input.get_number_tokens(fors)
                 if number_field:
                     if not data_ends:
-                        num = vartypes.pass_float_keep(expressions.parse_expression(ins))
+                        num = vartypes.pass_float(expressions.parse_expression(ins))
                         output.write(representation.format_number(num, number_field, digits_before, decimals))
                 else:
                     output.write(fors.read(1))

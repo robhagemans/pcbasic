@@ -45,7 +45,7 @@ def input_console(prompt, readvar, newline):
         values, seps = zip(*[inputstream.read_var(v) for v in readvar])
         # last separator not empty: there were too many values or commas
         # earlier separators empty: there were too few values
-        # empty values will be converted to zero by string_to_value_keep
+        # empty values will be converted to zero by string_to_number
         # None means a conversion error occurred
         if (seps[-1] or '' in seps[:-1] or None in values):
             # good old Redo!

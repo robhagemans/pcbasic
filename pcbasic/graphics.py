@@ -391,11 +391,11 @@ class Drawing(object):
             ry = fp.mul(r, aspect).round_to_int()
         start_octant, start_coord, start_line = -1, -1, False
         if start:
-            start = fp.unpack(vartypes.pass_single_keep(start))
+            start = fp.unpack(vartypes.pass_single(start))
             start_octant, start_coord, start_line = get_octant(start, rx, ry)
         stop_octant, stop_coord, stop_line = -1, -1, False
         if stop:
-            stop = fp.unpack(vartypes.pass_single_keep(stop))
+            stop = fp.unpack(vartypes.pass_single(stop))
             stop_octant, stop_coord, stop_line = get_octant(stop, rx, ry)
         if aspect.equals(aspect.one):
             self.draw_circle(x0, y0, rx, c,

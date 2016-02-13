@@ -23,8 +23,7 @@ import vartypes
 
 import basictoken as tk
 
-#RENAME number_to_string
-def value_to_string_keep(inp, screen=False, write=False, allow_empty_expression=False):
+def number_to_string(inp, screen=False, write=False, allow_empty_expression=False):
     """ Convert BASIC number to BASIC string. """
     # screen=False means in a program listing
     # screen=True is used for screen, str$ and sequential files
@@ -35,56 +34,52 @@ def value_to_string_keep(inp, screen=False, write=False, allow_empty_expression=
             raise error.RunError(error.STX)
     typechar = inp[0]
     if typechar == '$':
-        return ('$', inp[1])
+        return vartypes.str_to_string(inp[1])
     elif typechar == '%':
         if screen and not write and vartypes.integer_to_int_signed(inp) >= 0:
-            return str_to_string(' ' + str(vartypes.integer_to_int_signed(inp)))
+            return vartypes.str_to_string(' ' + str(vartypes.integer_to_int_signed(inp)))
         else:
-            return str_to_string(str(vartypes.integer_to_int_signed(inp)))
+            return vartypes.str_to_string(str(vartypes.integer_to_int_signed(inp)))
     elif typechar == '!':
-        return str_to_string(float_to_str(fp.unpack(inp), screen, write))
+        return vartypes.str_to_string(float_to_str(fp.unpack(inp), screen, write))
     elif typechar == '#':
-        return str_to_string(float_to_str(fp.unpack(inp), screen, write))
+        return vartypes.str_to_string(float_to_str(fp.unpack(inp), screen, write))
     else:
         raise error.RunError(error.STX)
 
-#D
-#MOVE to vartypes
-def str_to_string(python_str):
-    """ Convert Python str to BASIC string. """
-    return ('$', bytearray(python_str))
 
 # tokenised ints to python str
 
-def uint_to_str(s):
+def uint_token_to_str(s):
     """ Convert unsigned int token to Python string. """
     return str(vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(s)))
 
-def sint_to_str(s):
+def int_token_to_str(s):
     """ Convert signed int token to Python string. """
     return str(vartypes.integer_to_int_signed(vartypes.bytes_to_integer(s)))
 
-def ubyte_to_str(s):
+def byte_token_to_str(s):
     """ Convert unsigned byte token to Python string. """
-    return str(s[0])
+    return str(bytearray(s)[0])
 
-def hex_to_str(s):
-    """ Convert hex token to Python string. """
-    return "&H" + hex(vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(s)))[2:].upper()
+def hex_token_to_str(s):
+    """ Convert hex token to Python str. """
+    return '&H' + str(vartypes.string_to_str(integer_to_string_hex(vartypes.bytes_to_integer(s))))
 
-def oct_to_str(s):
-    """ Convert oct token to Python string. """
-    return "&O" + oct(vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(s)))[1:]
+def oct_token_to_str(s):
+    """ Convert oct token to Python str. """
+    return '&O' + str(vartypes.string_to_str(integer_to_string_oct(vartypes.bytes_to_integer(s))))
 
-# int to BASIC string
+def integer_to_string_oct(inp):
+    """ Convert integer to string in octal representation. """
+    if inp == 0:
+        return vartypes.str_to_string('0')
+    else:
+        return vartypes.str_to_string(oct(vartypes.integer_to_int_unsigned(inp))[1:])
 
-def hex_to_string(val):
-    """ Convert python integer to BASIC string in hex representation. """
-    return str_to_string(hex_to_str(vartypes.integer_to_bytes(vartypes.int_to_integer_signed(val)))[2:])
-
-def oct_to_string(val):
-    """ Convert python integer to BASIC string in oct representation. """
-    return str_to_string(oct_to_str(vartypes.integer_to_bytes(vartypes.int_to_integer_signed(val)))[2:])
+def integer_to_string_hex(inp):
+    """ Convert integer to string in hex representation. """
+    return vartypes.str_to_string(hex(vartypes.integer_to_int_unsigned(inp))[2:].upper())
 
 
 # floating point to string
@@ -552,9 +547,9 @@ def parse_value(ins):
         return ('#', val)
     return None
 
-def string_to_value_keep(strval, allow_nonnum=True):
+def string_to_number(strval, allow_nonnum=True):
     """ Convert BASIC string to BASIC value (VAL). """
-    if strval == ('$', ''):
+    if strval == vartypes.null['$']:
         return vartypes.null['%']
     strval = str(vartypes.pass_string_unpack(strval))
     ins = StringIO(strval)
@@ -574,17 +569,17 @@ def detokenise_number(ins, output):
     """ Convert number token to Python string. """
     s = ins.read(1)
     if s == tk.T_OCT:
-        output += oct_to_str(bytearray(ins.read(2)))
+        output += oct_token_to_str(ins.read(2))
     elif s == tk.T_HEX:
-        output += hex_to_str(bytearray(ins.read(2)))
+        output += hex_token_to_str(ins.read(2))
     elif s == tk.T_BYTE:
-        output += ubyte_to_str(bytearray(ins.read(1)))
+        output += byte_token_to_str(ins.read(1))
     elif s >= tk.C_0 and s < tk.C_10:
         output += chr(ord('0') + ord(s) - 0x11)
     elif s == tk.C_10:
         output += '10'
     elif s == tk.T_INT:
-        output += sint_to_str(bytearray(ins.read(2)))
+        output += int_token_to_str(ins.read(2))
     elif s == tk.T_SINGLE:
         output += float_to_str(fp.Single.from_bytes(bytearray(ins.read(4))), screen=False, write=False)
     elif s == tk.T_DOUBLE:

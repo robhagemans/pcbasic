@@ -147,7 +147,7 @@ def parse_expr_unit(ins):
             d = ins.read(1)
         if d == '\0':
             ins.seek(-1, 1)
-        return vartypes.pack_string(output)
+        return vartypes.str_to_string(output)
     # variable name
     elif d in string.ascii_letters:
         name, indices = get_var_or_array_name(ins)
@@ -340,55 +340,56 @@ def value_cvd(ins):
 
 def value_mki(ins):
     """ MKI$: return the byte representation of an int. """
-    return vartypes.pack_string(vartypes.integer_to_bytes(vartypes.pass_int_keep(parse_bracket(ins))))
+    return vartypes.str_to_string(vartypes.integer_to_bytes(vartypes.pass_integer(parse_bracket(ins))))
 
 def value_mks(ins):
     """ MKS$: return the byte representation of a single. """
-    return vartypes.pack_string(vartypes.pass_single_keep(parse_bracket(ins))[1])
+    return vartypes.str_to_string(vartypes.pass_single(parse_bracket(ins))[1])
 
 def value_mkd(ins):
     """ MKD$: return the byte representation of a double. """
-    return vartypes.pack_string(vartypes.pass_double_keep(parse_bracket(ins))[1])
+    return vartypes.str_to_string(vartypes.pass_double(parse_bracket(ins))[1])
 
 def value_cint(ins):
     """ CINT: convert a number to integer. """
-    return vartypes.pass_int_keep(parse_bracket(ins))
+    return vartypes.pass_integer(parse_bracket(ins))
 
 def value_csng(ins):
     """ CSNG: convert a number to single. """
-    return vartypes.pass_single_keep(parse_bracket(ins))
+    return vartypes.pass_single(parse_bracket(ins))
 
 def value_cdbl(ins):
     """ CDBL: convert a number to double. """
-    return vartypes.pass_double_keep(parse_bracket(ins))
+    return vartypes.pass_double(parse_bracket(ins))
 
 def value_str(ins):
     """ STR$: string representation of a number. """
-    s = vartypes.pass_number_keep(parse_bracket(ins))
-    return representation.value_to_string_keep(s, screen=True)
+    s = vartypes.pass_number(parse_bracket(ins))
+    return representation.number_to_string(s, screen=True)
 
 def value_val(ins):
     """ VAL: number value of a string. """
-    val = representation.string_to_value_keep(parse_bracket(ins))
+    val = representation.string_to_number(parse_bracket(ins))
     return val if val else vartypes.null['%']
 
 def value_chr(ins):
     """ CHR$: character for ASCII value. """
     val = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 255, val)
-    return vartypes.pack_string(bytearray(chr(val)))
+    return vartypes.str_to_string(chr(val))
 
 def value_oct(ins):
     """ OCT$: octal representation of int. """
     # allow range -32768 to 65535
-    val = vartypes.pass_int_unpack(parse_bracket(ins), 0xffff)
-    return representation.oct_to_string(val)
+    val = vartypes.pass_integer(parse_bracket(ins), 0xffff)
+    return representation.integer_to_string_oct(val)
 
 def value_hex(ins):
     """ HEX$: hexadecimal representation of int. """
     # allow range -32768 to 65535
-    val = vartypes.pass_int_unpack(parse_bracket(ins), 0xffff)
-    return representation.hex_to_string(val)
+    val = vartypes.pass_integer(parse_bracket(ins), 0xffff)
+    return representation.integer_to_string_hex(val)
+
 
 ######################################################################
 # string maniulation
@@ -439,7 +440,7 @@ def value_mid(ins):
     start -= 1
     stop = start + num
     stop = min(stop, len(s))
-    return vartypes.pack_string(s[start:stop])
+    return vartypes.str_to_string(s[start:stop])
 
 def value_left(ins):
     """ LEFT$: get substring at the start of string. """
@@ -452,7 +453,7 @@ def value_left(ins):
     if stop == 0:
         return vartypes.null['$']
     stop = min(stop, len(s))
-    return vartypes.pack_string(s[:stop])
+    return vartypes.str_to_string(s[:stop])
 
 def value_right(ins):
     """ RIGHT$: get substring at the end of string. """
@@ -465,7 +466,7 @@ def value_right(ins):
     if stop == 0:
         return vartypes.null['$']
     stop = min(stop, len(s))
-    return vartypes.pack_string(s[-stop:])
+    return vartypes.str_to_string(s[-stop:])
 
 def value_string(ins):
     """ STRING$: repeat characters. """
@@ -477,20 +478,20 @@ def value_string(ins):
     n = vartypes.pass_int_unpack(n)
     util.range_check(0, 255, n)
     if j[0] == '$':
-        j = vartypes.unpack_string(j)
+        j = vartypes.string_to_str(j)
         util.range_check(1, 255, len(j))
         j = j[0]
     else:
         j = vartypes.pass_int_unpack(j)
         util.range_check(0, 255, j)
     util.require_read(ins, (')',))
-    return vartypes.pack_string(bytearray(chr(j)*n))
+    return vartypes.str_to_string(chr(j)*n)
 
 def value_space(ins):
     """ SPACE$: repeat spaces. """
     num = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 255, num)
-    return vartypes.pack_string(bytearray(' '*num))
+    return vartypes.str_to_string(bytearray(' '*num))
 
 ######################################################################
 # console functions
@@ -529,11 +530,11 @@ def value_input(ins):
     if len(word) < num:
         # input past end
         raise error.RunError(error.INPUT_PAST_END)
-    return vartypes.pack_string(word)
+    return vartypes.str_to_string(word)
 
 def value_inkey(ins):
     """ INKEY$: get a character from the keyboard. """
-    return vartypes.pack_string(bytearray(state.console_state.keyb.get_char()))
+    return vartypes.str_to_string(state.console_state.keyb.get_char())
 
 def value_csrlin(ins):
     """ CSRLIN: get the current screen row. """
@@ -584,7 +585,7 @@ def value_eof(ins):
         return vartypes.null['%']
     util.range_check(0, 255, num)
     the_file = devices.get_file(num, 'IR')
-    return vartypes.bool_to_int_keep(the_file.eof())
+    return vartypes.bool_to_integer(the_file.eof())
 
 def value_lof(ins):
     """ LOF: get length of file. """
@@ -603,11 +604,11 @@ def value_environ(ins):
     util.require_read(ins, ('$',))
     expr = parse_bracket(ins)
     if expr[0] == '$':
-        return vartypes.pack_string(shell.get_env(vartypes.unpack_string(expr)))
+        return vartypes.str_to_string(shell.get_env(vartypes.string_to_str(expr)))
     else:
         expr = vartypes.pass_int_unpack(expr)
         util.range_check(1, 255, expr)
-        return vartypes.pack_string(shell.get_env_entry(expr))
+        return vartypes.str_to_string(shell.get_env_entry(expr))
 
 def value_timer(ins):
     """ TIMER: get clock ticks since midnight. """
@@ -616,11 +617,11 @@ def value_timer(ins):
 
 def value_time(ins):
     """ TIME$: get current system time. """
-    return vartypes.pack_string(timedate.get_time())
+    return vartypes.str_to_string(timedate.get_time())
 
 def value_date(ins):
     """ DATE$: get current system date. """
-    return vartypes.pack_string(timedate.get_date())
+    return vartypes.str_to_string(timedate.get_date())
 
 #######################################################
 # user-defined functions
@@ -693,8 +694,8 @@ def value_point(ins):
         if screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         return vartypes.int_to_integer_signed(screen.drawing.point(
-                        (fp.unpack(vartypes.pass_single_keep(lst[0])),
-                         fp.unpack(vartypes.pass_single_keep(lst[1])), False)))
+                        (fp.unpack(vartypes.pass_single(lst[0])),
+                         fp.unpack(vartypes.pass_single(lst[1])), False)))
 
 def value_pmap(ins):
     """ PMAP: convert between logical and physical coordinates. """
@@ -708,10 +709,10 @@ def value_pmap(ins):
     if screen.mode.is_text_mode:
         return vartypes.null['%']
     if mode == 0:
-        value, _ = screen.drawing.get_window_physical(fp.unpack(vartypes.pass_single_keep(coord)), fp.Single.zero)
+        value, _ = screen.drawing.get_window_physical(fp.unpack(vartypes.pass_single(coord)), fp.Single.zero)
         return vartypes.int_to_integer_signed(value)
     elif mode == 1:
-        _, value = screen.drawing.get_window_physical(fp.Single.zero, fp.unpack(vartypes.pass_single_keep(coord)))
+        _, value = screen.drawing.get_window_physical(fp.Single.zero, fp.unpack(vartypes.pass_single(coord)))
         return vartypes.int_to_integer_signed(value)
     elif mode == 2:
         value, _ = screen.drawing.get_window_logical(vartypes.pass_int_unpack(coord), 0)
@@ -766,7 +767,7 @@ def value_strig(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
     util.range_check(0, 7, fn)
-    return vartypes.bool_to_int_keep(state.console_state.stick.poll_trigger(fn))
+    return vartypes.bool_to_integer(state.console_state.stick.poll_trigger(fn))
 
 #########################################################
 # memory and machine
@@ -801,7 +802,7 @@ def value_varptr(ins):
         raise error.RunError(error.IFC)
     var_ptr = vartypes.int_to_integer_unsigned(var_ptr)
     if dollar:
-        return vartypes.pack_string(bytearray((var.byte_size[name[-1]],)) + vartypes.integer_to_bytes(var_ptr))
+        return vartypes.str_to_string(bytearray((var.byte_size[name[-1]],)) + vartypes.integer_to_bytes(var_ptr))
     else:
         return var_ptr
 
@@ -847,7 +848,7 @@ def value_ioctl(ins):
 
 def value_unary(ins, fn):
     """ Return value of unary math function. """
-    return fp.pack(fn(fp.unpack(vartypes.pass_float_keep(parse_bracket(ins), option_double))))
+    return fp.pack(fn(fp.unpack(vartypes.pass_float(parse_bracket(ins), option_double))))
 
 value_sqr = partial(value_unary, fn=fp.sqrt)
 value_exp = partial(value_unary, fn=fp.exp)
@@ -860,22 +861,22 @@ value_log = partial(value_unary, fn=fp.log)
 def value_rnd(ins):
     """ RND: get pseudorandom value. """
     if util.skip_white(ins) == '(':
-        return rnd.get_random(fp.unpack(vartypes.pass_single_keep(parse_bracket(ins))))
+        return rnd.get_random(fp.unpack(vartypes.pass_single(parse_bracket(ins))))
     else:
         return rnd.get_random_int(1)
 
 def value_abs(ins):
     """ ABS: get absolute value. """
-    return vartypes.number_abs(vartypes.pass_number_keep(parse_bracket(ins)))
+    return vartypes.number_abs(vartypes.pass_number(parse_bracket(ins)))
 
 def value_int(ins):
     """ INT: get floor value. """
-    inp = vartypes.pass_number_keep(parse_bracket(ins))
+    inp = vartypes.pass_number(parse_bracket(ins))
     return inp if inp[0] == '%' else fp.pack(fp.unpack(inp).ifloor())
 
 def value_sgn(ins):
     """ SGN: get sign. """
-    inp = vartypes.pass_number_keep(parse_bracket(ins))
+    inp = vartypes.pass_number(parse_bracket(ins))
     if inp[0] == '%':
         inp_int = vartypes.integer_to_int_signed(inp)
         return vartypes.int_to_integer_signed(0 if inp_int==0 else (1 if inp_int > 0 else -1))
@@ -884,7 +885,7 @@ def value_sgn(ins):
 
 def value_fix(ins):
     """ FIX: round towards zero. """
-    inp = vartypes.pass_number_keep(parse_bracket(ins))
+    inp = vartypes.pass_number(parse_bracket(ins))
     if inp[0] == '%':
         return inp
     elif inp[0] == '!':
@@ -895,7 +896,7 @@ def value_fix(ins):
 
 def value_neg(ins):
     """ -: get negative value. """
-    return vartypes.number_neg(vartypes.pass_number_keep(parse_expr_unit(ins)))
+    return vartypes.number_neg(vartypes.pass_number(parse_expr_unit(ins)))
 
 def value_not(ins):
     """ NOT: get two's complement NOT, -x-1. """
@@ -912,82 +913,82 @@ def value_operator(op, left, right):
     elif op == tk.O_DIV:
         return vdiv(left, right)
     elif op == tk.O_INTDIV:
-        return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).ifloor(),
-                fp.unpack(vartypes.pass_single_keep(right)).ifloor()).apply_carry().ifloor())
+        return fp.pack(fp.div(fp.unpack(vartypes.pass_single(left)).ifloor(),
+                fp.unpack(vartypes.pass_single(right)).ifloor()).apply_carry().ifloor())
     elif op == tk.MOD:
         numerator = vartypes.pass_int_unpack(right)
         if numerator == 0:
             # simulate division by zero
-            return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).ifloor(),
-                    fp.unpack(vartypes.pass_single_keep(right)).ifloor()).ifloor())
+            return fp.pack(fp.div(fp.unpack(vartypes.pass_single(left)).ifloor(),
+                    fp.unpack(vartypes.pass_single(right)).ifloor()).ifloor())
         return vartypes.int_to_integer_signed(vartypes.pass_int_unpack(left) % numerator)
     elif op == tk.O_PLUS:
         return vplus(left, right)
     elif op == tk.O_MINUS:
         return vartypes.number_add(left, vartypes.number_neg(right))
     elif op == tk.O_GT:
-        return vartypes.bool_to_int_keep(vartypes.gt(left,right))
+        return vartypes.bool_to_integer(vartypes.gt(left,right))
     elif op == tk.O_EQ:
-        return vartypes.bool_to_int_keep(vartypes.equals(left, right))
+        return vartypes.bool_to_integer(vartypes.equals(left, right))
     elif op == tk.O_LT:
-        return vartypes.bool_to_int_keep(not(vartypes.gt(left,right) or vartypes.equals(left, right)))
+        return vartypes.bool_to_integer(not(vartypes.gt(left,right) or vartypes.equals(left, right)))
     elif op == tk.O_GT + tk.O_EQ:
-        return vartypes.bool_to_int_keep(vartypes.gt(left,right) or vartypes.equals(left, right))
+        return vartypes.bool_to_integer(vartypes.gt(left,right) or vartypes.equals(left, right))
     elif op == tk.O_LT + tk.O_EQ:
-        return vartypes.bool_to_int_keep(not vartypes.gt(left,right))
+        return vartypes.bool_to_integer(not vartypes.gt(left,right))
     elif op == tk.O_LT + tk.O_GT:
-        return vartypes.bool_to_int_keep(not vartypes.equals(left, right))
+        return vartypes.bool_to_integer(not vartypes.equals(left, right))
     elif op == tk.AND:
         return vartypes.int_to_integer_unsigned(
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) &
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
+            vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) &
+            vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
     elif op == tk.OR:
         return vartypes.int_to_integer_unsigned(
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) |
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
+            vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) |
+            vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
     elif op == tk.XOR:
         return vartypes.int_to_integer_unsigned(
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) ^
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
+            vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) ^
+            vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
     elif op == tk.EQV:
         return vartypes.int_to_integer_unsigned(~(
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) ^
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right))))
+            vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) ^
+            vartypes.integer_to_int_unsigned(vartypes.pass_integer(right))))
     elif op == tk.IMP:
         return vartypes.int_to_integer_unsigned(
-            (~vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left))) |
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
+            (~vartypes.integer_to_int_unsigned(vartypes.pass_integer(left))) |
+            vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
     else:
         raise error.RunError(error.STX)
 
 def vcaret(left, right):
     """ Left^right. """
     if (left[0] == '#' or right[0] == '#') and option_double:
-        return fp.pack( fp.power(fp.unpack(vartypes.pass_double_keep(left)), fp.unpack(vartypes.pass_double_keep(right))) )
+        return fp.pack( fp.power(fp.unpack(vartypes.pass_double(left)), fp.unpack(vartypes.pass_double(right))) )
     else:
         if right[0] == '%':
-            return fp.pack( fp.unpack(vartypes.pass_single_keep(left)).ipow_int(vartypes.integer_to_int_signed(right)) )
+            return fp.pack( fp.unpack(vartypes.pass_single(left)).ipow_int(vartypes.integer_to_int_signed(right)) )
         else:
-            return fp.pack( fp.power(fp.unpack(vartypes.pass_single_keep(left)), fp.unpack(vartypes.pass_single_keep(right))) )
+            return fp.pack( fp.power(fp.unpack(vartypes.pass_single(left)), fp.unpack(vartypes.pass_single(right))) )
 
 def vtimes(left, right):
     """ Left*right. """
     if left[0] == '#' or right[0] == '#':
-        return fp.pack( fp.unpack(vartypes.pass_double_keep(left)).imul(fp.unpack(vartypes.pass_double_keep(right))) )
+        return fp.pack( fp.unpack(vartypes.pass_double(left)).imul(fp.unpack(vartypes.pass_double(right))) )
     else:
-        return fp.pack( fp.unpack(vartypes.pass_single_keep(left)).imul(fp.unpack(vartypes.pass_single_keep(right))) )
+        return fp.pack( fp.unpack(vartypes.pass_single(left)).imul(fp.unpack(vartypes.pass_single(right))) )
 
 def vdiv(left, right):
     """ Left/right. """
     if left[0] == '#' or right[0] == '#':
-        return fp.pack( fp.div(fp.unpack(vartypes.pass_double_keep(left)), fp.unpack(vartypes.pass_double_keep(right))) )
+        return fp.pack( fp.div(fp.unpack(vartypes.pass_double(left)), fp.unpack(vartypes.pass_double(right))) )
     else:
-        return fp.pack( fp.div(fp.unpack(vartypes.pass_single_keep(left)), fp.unpack(vartypes.pass_single_keep(right))) )
+        return fp.pack( fp.div(fp.unpack(vartypes.pass_single(left)), fp.unpack(vartypes.pass_single(right))) )
 
 def vplus(left, right):
     """ Left+right. """
     if left[0] == '$':
-        return vartypes.pack_string(vartypes.pass_string_unpack(left) + vartypes.pass_string_unpack(right))
+        return vartypes.str_to_string(vartypes.pass_string_unpack(left) + vartypes.pass_string_unpack(right))
     else:
         return vartypes.number_add(left, right)
 

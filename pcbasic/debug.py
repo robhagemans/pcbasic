@@ -53,7 +53,7 @@ def debug_step(linum):
         outs.seek(2)
         try:
             val = expressions.parse_expression(outs)
-            st = vartypes.unpack_string(representation.value_to_string_keep(val, screen=False))
+            st = vartypes.string_to_str(representation.number_to_string(val, screen=False))
             if val[0] == '$':
                 outstr += ('"'+st+'"')
             else:

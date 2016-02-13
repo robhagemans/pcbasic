@@ -45,7 +45,7 @@ class StringSpace(object):
 
     def copy_packed(self, key):
         """ Return a packed copy of the string by its 2-byte key or 3-byte sequence. """
-        return vartypes.pack_string(self.retrieve(key)[:])
+        return vartypes.str_to_string(self.retrieve(key)[:])
 
     def store(self, string_buffer, address=None):
         """ Store a new string and return the 3-byte memory sequence. """
@@ -80,16 +80,16 @@ def get_string_copy_packed(sequence):
     else:
         # string is stored in code space or field buffers
         if address < memory.field_mem_start:
-            return vartypes.pack_string(bytearray(length))
+            return vartypes.str_to_string('\0'*length)
         # find the file we're in
         start = address - memory.field_mem_start
         number = 1 + start // memory.field_mem_offset
         offset = start % memory.field_mem_offset
         try:
-            return vartypes.pack_string(state.io_state.fields[number].buffer[
+            return vartypes.str_to_string(state.io_state.fields[number].buffer[
                                                         offset : offset+length])
         except KeyError, IndexError:
-            return vartypes.pack_string('\0' * length)
+            return vartypes.str_to_string('\0'*length)
 
 def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=False):
     """ Reset and clear variables, arrays, common definitions and functions. """
@@ -136,7 +136,7 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
         for v in common:
             if v[-1] == '$':
                 state.basic_state.variables[v] = (
-                    new_strings.store(bytearray(vartypes.unpack_string(
+                    new_strings.store(bytearray(vartypes.string_to_str(
                         get_string_copy_packed(common[v])
                     ))))
             else:
@@ -146,7 +146,7 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             if a[-1] == '$':
                 s = bytearray()
                 for i in range(0, len(common_arrays[a][1]), byte_size['$']):
-                    s += (new_strings.store(bytearray(vartypes.unpack_string(
+                    s += (new_strings.store(bytearray(vartypes.string_to_str(
                         get_string_copy_packed(common_arrays[a][1][i+1:i+byte_size['$']])
                     ))))
                 state.basic_state.arrays[a][1] = s
@@ -177,9 +177,9 @@ def set_var(name, value):
         # make a copy of the value in case we want to use POKE on it - we would change both values otherwise
         # NOTE: this is an in-place copy - crucial for FOR!
         try:
-            state.basic_state.variables[name][:] = vartypes.pass_type_keep(name[-1], value)[1][:]
+            state.basic_state.variables[name][:] = vartypes.pass_type(name[-1], value)[1][:]
         except KeyError:
-            state.basic_state.variables[name] = vartypes.pass_type_keep(name[-1], value)[1][:]
+            state.basic_state.variables[name] = vartypes.pass_type(name[-1], value)[1][:]
     # update memory model
     # first two bytes: chars of name or 0 if name is one byte long
     if name not in state.basic_state.var_memory:
@@ -341,7 +341,7 @@ def set_array(name, index, value):
     [dimensions, lst] = check_dim_array(name, index)
     bigindex = index_array(index, dimensions)
     # make a copy of the value, we don't want them to be linked
-    value = (vartypes.pass_type_keep(name[-1], value)[1])[:]
+    value = (vartypes.pass_type(name[-1], value)[1])[:]
     # for strings, store the string in string space and store the key in the array
     if name[-1] == '$':
         value = state.basic_state.strings.store(bytearray(value))
@@ -411,7 +411,7 @@ def assign_field_var_or_array(name, indices, value, justify_right=False):
     if value[0] != '$':
         # type mismatch
         raise error.RunError(error.TYPE_MISMATCH)
-    s = vartypes.unpack_string(value)
+    s = vartypes.string_to_str(value)
     v = get_var_or_array_string_pointer(name, indices)
     if v is None:
         # LSET has no effect if variable does not exist
@@ -432,7 +432,7 @@ def string_assign_into(name, indices, offset, num, value):
     if value[0] != '$':
         # type mismatch
         raise error.RunError(error.TYPE_MISMATCH)
-    s = vartypes.unpack_string(value)
+    s = vartypes.string_to_str(value)
     v = get_var_or_array_string_pointer(name, indices)
     if v is None:
         # illegal function call

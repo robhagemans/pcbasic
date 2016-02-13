@@ -28,8 +28,7 @@ def complete_name(name):
 ###############################################################################
 # type checks
 
-#RENAME pass_integer
-def pass_int_keep(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
+def pass_integer(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
     """ Check if variable is numeric, convert to Int. """
     if not inp:
         raise error.RunError(error.STX)
@@ -46,8 +45,7 @@ def pass_int_keep(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
         # type mismatch
         raise error.RunError(err)
 
-#RENAME pass_single
-def pass_single_keep(num):
+def pass_single(num):
     """ Check if variable is numeric, convert to Single. """
     if not num:
         raise error.RunError(error.STX)
@@ -62,8 +60,7 @@ def pass_single_keep(num):
     elif typechar == '$':
         raise error.RunError(error.TYPE_MISMATCH)
 
-#RENAME pass_double
-def pass_double_keep(num):
+def pass_double(num):
     """ Check if variable is numeric, convert to Double. """
     if not num:
         raise error.RunError(error.STX)
@@ -77,8 +74,7 @@ def pass_double_keep(num):
     elif typechar == '$':
         raise error.RunError(error.TYPE_MISMATCH)
 
-#RENAME pass_string
-def pass_string_keep(inp, allow_empty=False, err=error.TYPE_MISMATCH):
+def pass_string(inp, allow_empty=False, err=error.TYPE_MISMATCH):
     """ Check if variable is String-valued. """
     if not inp:
         if not allow_empty:
@@ -90,61 +86,57 @@ def pass_string_keep(inp, allow_empty=False, err=error.TYPE_MISMATCH):
     else:
         raise error.RunError(err)
 
-#RENAME pass_float
-def pass_float_keep(num, allow_double=True):
+def pass_float(num, allow_double=True):
     """ Check if variable is numeric, convert to Double or Single. """
     if num and num[0] == '#' and allow_double:
         return num
     else:
-        return pass_single_keep(num)
+        return pass_single(num)
 
-#RENAME pass_number
-def pass_number_keep(inp, err=error.TYPE_MISMATCH):
+def pass_number(inp, err=error.TYPE_MISMATCH):
     """ Check if variable is numeric. """
     if inp[0] not in ('%', '!', '#'):
         raise error.RunError(err)
     return inp
 
-#RENAME pass_type
-def pass_type_keep(typechar, value):
+def pass_type(typechar, value):
     """ Check if variable can be converted to the given type and convert. """
     if typechar == '$':
-        return pass_string_keep(value)
+        return pass_string(value)
     elif typechar == '%':
-        return pass_int_keep(value)
+        return pass_integer(value)
     elif typechar == '!':
-        return pass_single_keep(value)
+        return pass_single(value)
     elif typechar == '#':
-        return pass_double_keep(value)
+        return pass_double(value)
     else:
         raise error.RunError(error.STX)
 
-#RENAME pass_most_precise
-def pass_most_precise_keep(left, right, err=error.TYPE_MISMATCH):
+def pass_most_precise(left, right, err=error.TYPE_MISMATCH):
     """ Check if variables are numeric and convert to highest-precision. """
     left_type, right_type = left[0][-1], right[0][-1]
     if left_type=='#' or right_type=='#':
-        return (pass_double_keep(left), pass_double_keep(right))
+        return (pass_double(left), pass_double(right))
     elif left_type=='!' or right_type=='!':
-        return (pass_single_keep(left), pass_single_keep(right))
+        return (pass_single(left), pass_single(right))
     elif left_type=='%' or right_type=='%':
-        return (pass_int_keep(left), pass_int_keep(right))
+        return (pass_integer(left), pass_integer(right))
     else:
         raise error.RunError(err)
 
 
 ###############################################################################
-# functions to be refactored
+# convenience functions
 
 #D
 def pass_string_unpack(inp, allow_empty=False, err=error.TYPE_MISMATCH):
     """ Convert String to Python bytearray. """
-    return pass_string_keep(inp, allow_empty, err)[1]
+    return pass_string(inp, allow_empty, err)[1]
 
 #D
 def pass_int_unpack(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
     """ Convert numeric variable to Python integer. """
-    return integer_to_int_signed(pass_int_keep(inp, maxint, err))
+    return integer_to_int_signed(pass_integer(inp, maxint, err))
 
 
 ###############################################################################
@@ -197,28 +189,22 @@ def integer_to_int_unsigned(in_integer):
 ###############################################################################
 # convert between BASIC Strings and Python str
 
-#RENAME string_to_str
-def unpack_string(inp):
-    """ Convert String to Python bytearray, no checks """
-    return inp[1]
+def string_to_str(inp):
+    """ Convert and copy String to Python bytearray """
+    return bytearray(inp[1])
 
-#RENAME str_to_string
-#D already in representations.py
-def pack_string(inp):
-    """ Convert Python bytearray to String, no checks. """
-    return ('$', inp)
-
+def str_to_string(python_str):
+    """ Convert and copy Python str or bytearray to String. """
+    return ('$', bytearray(python_str))
 
 ###############################################################################
 # boolean functions operate as bitwise functions on unsigned Python ints
 
-#RENAME bool_to_integer
-def bool_to_int_keep(boo):
+def bool_to_integer(boo):
     """ Convert Python boolean to Integer. """
     return ('%', bytearray('\xff\xff')) if boo else ('%', bytearray('\0\0'))
 
-#RENAME integer_to_bool
-def int_to_bool(in_integer):
+def integer_to_bool(in_integer):
     """ Convert Integer to Python boolean. """
     return (in_integer[1][0] != 0 or in_integer[1][1] != 0)
 
@@ -256,7 +242,7 @@ def str_instr(big, small, n):
 
 def number_add(left, right):
     """ Add two numbers. """
-    left, right = pass_most_precise_keep(left, right)
+    left, right = pass_most_precise(left, right)
     if left[0] in ('#', '!'):
         return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
     else:
@@ -311,7 +297,7 @@ def equals(left,right):
     if left[0] == '$':
         return pass_string_unpack(left) == pass_string_unpack(right)
     else:
-        left, right = pass_most_precise_keep(left, right)
+        left, right = pass_most_precise(left, right)
         if left[0] in ('#', '!'):
             return fp.unpack(left).equals(fp.unpack(right))
         else:
@@ -322,7 +308,7 @@ def gt(left, right):
     if left[0] == '$':
         return str_gt(pass_string_unpack(left), pass_string_unpack(right))
     else:
-        left, right = pass_most_precise_keep(left, right)
+        left, right = pass_most_precise(left, right)
         if left[0] in ('#', '!'):
             return fp.unpack(left).gt(fp.unpack(right))
         else:
