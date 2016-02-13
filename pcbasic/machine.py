@@ -261,9 +261,9 @@ def bsave(g, offset, length):
     g.write(str(get_memory_block(addr, length)))
     # Tandys repeat the header at the end of the file
     if tandy_syntax:
-        g.write('\xfd' + vartypes.value_to_uint(state.basic_state.segment) +
-                vartypes.value_to_uint(offset) +
-                vartypes.value_to_uint(length))
+        g.write('\xfd' + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(state.basic_state.segment)) +
+                vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(offset)) +
+                vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(length))))
 
 def varptr_file(filenum):
     """ Get address of FCB for a given file number. """
@@ -511,9 +511,11 @@ def get_data_memory_array(address):
         else:
             offset -= max(3, len(the_arr))+1
             dimensions, _, _ = state.basic_state.arrays[the_arr]
-            data_rep = vartypes.value_to_uint(var.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions))
+            data_rep = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
+                var.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)))
             for d in dimensions:
-                data_rep += vartypes.value_to_uint(d + 1 - state.basic_state.array_base)
+                data_rep += vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
+                                    d + 1 - state.basic_state.array_base))
             return data_rep[offset]
 
 def get_data_memory_string(address):

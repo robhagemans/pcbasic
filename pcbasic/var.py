@@ -58,7 +58,7 @@ class StringSpace(object):
             # find new string address
             self.current -= len(string_buffer)
             address = self.current + 1
-        key = str(vartypes.value_to_uint(address))
+        key = str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(address)))
         # don't store empty strings
         if len(string_buffer) > 0:
             if key in self.strings:
@@ -68,12 +68,12 @@ class StringSpace(object):
 
     def address(self, key):
         """ Return the address of a given key. """
-        return vartypes.uint_to_value(bytearray(key[-2:]))
+        return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(key[-2:]))
 
 def get_string_copy_packed(sequence):
     """ Return a packed copy of a string from its 3-byte sequence. """
     length = ord(sequence[0:1])
-    address = vartypes.uint_to_value(sequence[-2:])
+    address = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(sequence[-2:]))
     if address >= memory.var_start():
         # string is stored in string space
         return state.basic_state.strings.copy_packed(sequence)
@@ -373,7 +373,7 @@ def set_field_var_or_array(random_file, varname, indices, offset, length):
         # FIELD overflow
         raise error.RunError(error.FIELD_OVERFLOW)
     str_addr = random_file.field.address + offset
-    str_sequence = bytearray(chr(length)) + vartypes.value_to_uint(str_addr)
+    str_sequence = bytearray(chr(length)) + vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(str_addr))
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
     if indices == []:
@@ -446,7 +446,7 @@ def string_assign_unpacked_into(sequence, offset, num, val):
     # ensure the length of val is num, cut off any extra characters
     val = val[:num]
     length = ord(sequence[0:1])
-    address = vartypes.uint_to_value(sequence[-2:])
+    address = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(sequence[-2:]))
     if offset + num > length:
         num = length - offset
     if num <= 0:

@@ -534,12 +534,13 @@ def walk_memory(self, addr, num_bytes, factor=1):
 
 def sprite_size_to_record_ega(self, dx, dy):
     """ Write 4-byte record of sprite size in EGA modes. """
-    return vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy)
+    return (vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(dx))
+            + vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(dy)))
 
 def record_to_sprite_size_ega(self, byte_array):
     """ Read 4-byte record of sprite size in EGA modes. """
-    dx = vartypes.uint_to_value(byte_array[0:2])
-    dy = vartypes.uint_to_value(byte_array[2:4])
+    dx = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(byte_array[0:2]))
+    dy = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(byte_array[2:4]))
     return dx, dy
 
 def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offs):
@@ -692,12 +693,13 @@ class CGAMode(GraphicsMode):
 
     def sprite_size_to_record(self, dx, dy):
         """ Write 4-byte record of sprite size. """
-        return vartypes.value_to_uint(dx*self.bitsperpixel) + vartypes.value_to_uint(dy)
+        return (vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(dx*self.bitsperpixel))
+                + vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(dy)))
 
     def record_to_sprite_size(self, byte_array):
         """ Read 4-byte record of sprite size. """
-        dx = vartypes.uint_to_value(byte_array[0:2]) / self.bitsperpixel
-        dy = vartypes.uint_to_value(byte_array[2:4])
+        dx = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(byte_array[0:2])) / self.bitsperpixel
+        dy = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(byte_array[2:4]))
         return dx, dy
 
     def sprite_to_array(self, attrs, dx, dy, byte_array, offs):

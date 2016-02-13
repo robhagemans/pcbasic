@@ -164,7 +164,7 @@ def parse_expr_unit(ins):
         return representation.parse_value(ins)
     # gw-basic allows adding line numbers to numbers
     elif d == tk.T_UINT:
-        return vartypes.pack_int(util.parse_jumpnum(ins))
+        return vartypes.int_to_integer_unsigned(util.parse_jumpnum(ins))
     # brackets
     elif d == '(':
         return parse_bracket(ins)
@@ -322,7 +322,7 @@ def value_cvi(ins):
     cstr =  vartypes.pass_string_unpack(parse_bracket(ins))
     if len(cstr) < 2:
         raise error.RunError(error.IFC)
-    return vartypes.pack_int(vartypes.sint_to_value(cstr[:2]))
+    return vartypes.bytes_to_integer(cstr[:2])
 
 def value_cvs(ins):
     """ CVS: return the single-precision value of a byte representation. """
@@ -340,7 +340,7 @@ def value_cvd(ins):
 
 def value_mki(ins):
     """ MKI$: return the byte representation of an int. """
-    return vartypes.pack_string(vartypes.value_to_sint(vartypes.pass_int_unpack(parse_bracket(ins))))
+    return vartypes.pack_string(vartypes.integer_to_bytes(vartypes.pass_int_keep(parse_bracket(ins))))
 
 def value_mks(ins):
     """ MKS$: return the byte representation of a single. """
@@ -395,14 +395,14 @@ def value_hex(ins):
 
 def value_len(ins):
     """ LEN: length of string. """
-    return vartypes.pack_int(len(vartypes.pass_string_unpack(parse_bracket(ins))) )
+    return vartypes.int_to_integer_signed(len(vartypes.pass_string_unpack(parse_bracket(ins))))
 
 def value_asc(ins):
     """ ASC: ordinal ASCII value of a character. """
     s = vartypes.pass_string_unpack(parse_bracket(ins))
     if not s:
         raise error.RunError(error.IFC)
-    return vartypes.pack_int(s[0])
+    return vartypes.int_to_integer_signed(s[0])
 
 def value_instr(ins):
     """ INSTR: find substring in string. """
@@ -513,7 +513,7 @@ def value_screen(ins):
     if z and not cmode.is_text_mode:
         return vartypes.null['%']
     else:
-        return vartypes.pack_int(state.console_state.screen.apage.get_char_attr(row, col, z!=0))
+        return vartypes.int_to_integer_signed(state.console_state.screen.apage.get_char_attr(row, col, z!=0))
 
 def value_input(ins):
     """ INPUT$: get characters from the keyboard or a file. """
@@ -543,7 +543,7 @@ def value_csrlin(ins):
             row < state.console_state.scroll_height):
         # in overflow position, return row+1 except on the last row
         row += 1
-    return vartypes.pack_int(row)
+    return vartypes.int_to_integer_signed(row)
 
 def value_pos(ins):
     """ POS: get the current screen column. """
@@ -553,7 +553,7 @@ def value_pos(ins):
     if col == state.console_state.screen.mode.width and state.console_state.overflow:
         # in overflow position, return column 1.
         col = 1
-    return vartypes.pack_int(col)
+    return vartypes.int_to_integer_signed(col)
 
 def value_lpos(ins):
     """ LPOS: get the current printer column. """
@@ -561,9 +561,9 @@ def value_lpos(ins):
     util.range_check(0, 3, num)
     printer = state.io_state.devices['LPT' + max(1, num) + ':']
     if printer.device_file:
-        return vartypes.pack_int(printer.device_file.col)
+        return vartypes.int_to_integer_signed(printer.device_file.col)
     else:
-        return vartypes.pack_int(1)
+        return vartypes.int_to_integer_signed(1)
 
 ######################################################################
 # file access
@@ -677,9 +677,9 @@ def value_point(ins):
             x, y = screen.drawing.last_point
             fn = vartypes.pass_int_unpack(lst[0])
             if fn == 0:
-                return vartypes.pack_int(x)
+                return vartypes.int_to_integer_signed(x)
             elif fn == 1:
-                return vartypes.pack_int(y)
+                return vartypes.int_to_integer_signed(y)
             elif fn == 2:
                 fx, _ = screen.drawing.get_window_logical(x, y)
                 return fp.pack(fx)
@@ -692,7 +692,7 @@ def value_point(ins):
         # two-argument mode
         if screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
-        return vartypes.pack_int(screen.drawing.point(
+        return vartypes.int_to_integer_signed(screen.drawing.point(
                         (fp.unpack(vartypes.pass_single_keep(lst[0])),
                          fp.unpack(vartypes.pass_single_keep(lst[1])), False)))
 
@@ -709,10 +709,10 @@ def value_pmap(ins):
         return vartypes.null['%']
     if mode == 0:
         value, _ = screen.drawing.get_window_physical(fp.unpack(vartypes.pass_single_keep(coord)), fp.Single.zero)
-        return vartypes.pack_int(value)
+        return vartypes.int_to_integer_signed(value)
     elif mode == 1:
         _, value = screen.drawing.get_window_physical(fp.Single.zero, fp.unpack(vartypes.pass_single_keep(coord)))
-        return vartypes.pack_int(value)
+        return vartypes.int_to_integer_signed(value)
     elif mode == 2:
         value, _ = screen.drawing.get_window_logical(vartypes.pass_int_unpack(coord), 0)
         return fp.pack(value)
@@ -729,7 +729,7 @@ def value_play(ins):
     util.range_check(0, 255, voice)
     if not(is_pcjr_syntax and voice in (1, 2)):
         voice = 0
-    return vartypes.pack_int(state.console_state.sound.queue_length(voice))
+    return vartypes.int_to_integer_signed(state.console_state.sound.queue_length(voice))
 
 #####################################################################
 # error functions
@@ -740,7 +740,7 @@ def value_erl(ins):
 
 def value_err(ins):
     """ ERR: get error code of last error. """
-    return vartypes.pack_int(state.basic_state.errn)
+    return vartypes.int_to_integer_signed(state.basic_state.errn)
 
 #####################################################################
 # pen, stick and strig
@@ -753,13 +753,13 @@ def value_pen(ins):
     if pen is None or not state.basic_state.events.pen.enabled:
         # should return 0 or char pos 1 if PEN not ON
         pen = 1 if fn >= 6 else 0
-    return vartypes.pack_int(pen)
+    return vartypes.int_to_integer_signed(pen)
 
 def value_stick(ins):
     """ STICK: poll the joystick. """
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, fn)
-    return vartypes.pack_int(state.console_state.stick.poll(fn))
+    return vartypes.int_to_integer_signed(state.console_state.stick.poll(fn))
 
 def value_strig(ins):
     """ STRIG: poll the joystick fire button. """
@@ -784,7 +784,7 @@ def value_peek(ins):
     addr = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if state.basic_state.protected and not state.basic_state.run_mode:
         raise error.RunError(error.IFC)
-    return vartypes.pack_int(machine.peek(addr))
+    return vartypes.int_to_integer_signed(machine.peek(addr))
 
 def value_varptr(ins):
     """ VARPTR, VARPTR$: get memory address for variable or FCB. """
@@ -799,10 +799,11 @@ def value_varptr(ins):
     util.require_read(ins, (')',))
     if var_ptr < 0:
         raise error.RunError(error.IFC)
+    var_ptr = vartypes.int_to_integer_unsigned(var_ptr)
     if dollar:
-        return vartypes.pack_string(bytearray(chr(var.byte_size[name[-1]])) + vartypes.value_to_uint(var_ptr))
+        return vartypes.pack_string(bytearray((var.byte_size[name[-1]],)) + vartypes.integer_to_bytes(var_ptr))
     else:
-        return vartypes.pack_int(var_ptr)
+        return var_ptr
 
 def value_usr(ins):
     """ USR: get value of machine-code function; not implemented. """
@@ -814,7 +815,7 @@ def value_usr(ins):
 def value_inp(ins):
     """ INP: get value from machine port. """
     port = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
-    return vartypes.pack_int(machine.inp(port))
+    return vartypes.int_to_integer_signed(machine.inp(port))
 
 def value_erdev(ins):
     """ ERDEV$: device error string; not implemented. """
@@ -876,10 +877,10 @@ def value_sgn(ins):
     """ SGN: get sign. """
     inp = vartypes.pass_number_keep(parse_bracket(ins))
     if inp[0] == '%':
-        inp_int = vartypes.unpack_int(inp)
-        return vartypes.pack_int(0 if inp_int==0 else (1 if inp_int > 0 else -1))
+        inp_int = vartypes.integer_to_int_signed(inp)
+        return vartypes.int_to_integer_signed(0 if inp_int==0 else (1 if inp_int > 0 else -1))
     else:
-        return vartypes.pack_int(fp.unpack(inp).sign() )
+        return vartypes.int_to_integer_signed(fp.unpack(inp).sign())
 
 def value_fix(ins):
     """ FIX: round towards zero. """
@@ -898,7 +899,7 @@ def value_neg(ins):
 
 def value_not(ins):
     """ NOT: get two's complement NOT, -x-1. """
-    return vartypes.pack_int(~vartypes.pass_int_unpack(parse_expr_unit(ins)))
+    return vartypes.int_to_integer_signed(-vartypes.pass_int_unpack(parse_expr_unit(ins))-1)
 
 # binary operators
 
@@ -919,7 +920,7 @@ def value_operator(op, left, right):
             # simulate division by zero
             return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).ifloor(),
                     fp.unpack(vartypes.pass_single_keep(right)).ifloor()).ifloor())
-        return vartypes.pack_int(vartypes.pass_int_unpack(left) % numerator)
+        return vartypes.int_to_integer_signed(vartypes.pass_int_unpack(left) % numerator)
     elif op == tk.O_PLUS:
         return vplus(left, right)
     elif op == tk.O_MINUS:
@@ -937,15 +938,25 @@ def value_operator(op, left, right):
     elif op == tk.O_LT + tk.O_GT:
         return vartypes.bool_to_int_keep(not vartypes.equals(left, right))
     elif op == tk.AND:
-        return vartypes.twoscomp_to_int( vartypes.pass_twoscomp(left) & vartypes.pass_twoscomp(right) )
+        return vartypes.int_to_integer_unsigned(
+            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) &
+            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
     elif op == tk.OR:
-        return vartypes.twoscomp_to_int( vartypes.pass_twoscomp(left) | vartypes.pass_twoscomp(right) )
+        return vartypes.int_to_integer_unsigned(
+            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) |
+            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
     elif op == tk.XOR:
-        return vartypes.twoscomp_to_int( vartypes.pass_twoscomp(left) ^ vartypes.pass_twoscomp(right) )
+        return vartypes.int_to_integer_unsigned(
+            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) ^
+            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
     elif op == tk.EQV:
-        return vartypes.twoscomp_to_int( ~(vartypes.pass_twoscomp(left) ^ vartypes.pass_twoscomp(right)) )
+        return vartypes.int_to_integer_unsigned(~(
+            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) ^
+            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right))))
     elif op == tk.IMP:
-        return vartypes.twoscomp_to_int( (~vartypes.pass_twoscomp(left)) | vartypes.pass_twoscomp(right) )
+        return vartypes.int_to_integer_unsigned(
+            (~vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left))) |
+            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
     else:
         raise error.RunError(error.STX)
 
@@ -955,7 +966,7 @@ def vcaret(left, right):
         return fp.pack( fp.power(fp.unpack(vartypes.pass_double_keep(left)), fp.unpack(vartypes.pass_double_keep(right))) )
     else:
         if right[0] == '%':
-            return fp.pack( fp.unpack(vartypes.pass_single_keep(left)).ipow_int(vartypes.unpack_int(right)) )
+            return fp.pack( fp.unpack(vartypes.pass_single_keep(left)).ipow_int(vartypes.integer_to_int_signed(right)) )
         else:
             return fp.pack( fp.power(fp.unpack(vartypes.pass_single_keep(left)), fp.unpack(vartypes.pass_single_keep(right))) )
 

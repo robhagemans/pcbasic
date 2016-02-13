@@ -28,7 +28,6 @@ import state
 # for check_events during FILES
 import backend
 import console
-# for value_to_uint
 import vartypes
 import devices
 # to initialise state.console_state.codepage
@@ -726,18 +725,18 @@ class BinaryFile(devices.RawFile):
         if self.mode == 'O':
             self.write(devices.type_to_magic[filetype])
             if self.filetype == 'M':
-                self.write(vartypes.value_to_uint(seg) +
-                           vartypes.value_to_uint(offset) +
-                           vartypes.value_to_uint(length))
+                self.write(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(seg)) +
+                           vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(offset)) +
+                           vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(length)))
                 self.seg, self.offset, self.length = seg, offset, length
         else:
             # drop magic byte
             self.read_raw(1)
             if self.filetype == 'M':
-                self.seg = vartypes.uint_to_value(bytearray(self.read(2)))
-                self.offset = vartypes.uint_to_value(bytearray(self.read(2)))
+                self.seg = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(self.read(2)))
+                self.offset = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(self.read(2)))
                 # size gets ignored: even the \x1a at the end is read
-                self.length = vartypes.uint_to_value(bytearray(self.read(2)))
+                self.length = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(self.read(2)))
 
     def close(self):
         """ Write EOF and close program file. """

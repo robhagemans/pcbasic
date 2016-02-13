@@ -98,7 +98,7 @@ def rebuild_line_dict():
     last = 0
     for pos in offsets:
         state.basic_state.bytecode.read(1)
-        state.basic_state.bytecode.write(str(vartypes.value_to_uint(program_memory_start + pos)))
+        state.basic_state.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(program_memory_start + pos))))
         state.basic_state.bytecode.read(pos - last - 3)
         last = pos
     # ensure program is properly sealed - last offset must be 00 00. keep, but ignore, anything after.
@@ -111,12 +111,12 @@ def update_line_dict(pos, afterpos, length, deleteable, beyond):
     addr = program_memory_start + afterpos
     state.basic_state.bytecode.seek(afterpos + length + 1)  # pass \x00
     while True:
-        next_addr = bytearray(state.basic_state.bytecode.read(2))
+        next_addr = state.basic_state.bytecode.read(2)
         if len(next_addr) < 2 or next_addr == '\0\0':
             break
-        next_addr = vartypes.uint_to_value(next_addr)
+        next_addr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(next_addr))
         state.basic_state.bytecode.seek(-2, 1)
-        state.basic_state.bytecode.write(str(vartypes.value_to_uint(next_addr + length)))
+        state.basic_state.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(next_addr + length))))
         state.basic_state.bytecode.read(next_addr - addr - 2)
         addr = next_addr
     # update line number dict
@@ -161,7 +161,7 @@ def store_line(linebuf):
         # set offsets
         linebuf.seek(3) # pass \x00\xC0\xDE
         length = len(linebuf.getvalue())
-        state.basic_state.bytecode.write( '\0' + str(vartypes.value_to_uint(program_memory_start + pos + length)) + linebuf.read())
+        state.basic_state.bytecode.write( '\0' + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(program_memory_start + pos + length))) + linebuf.read())
     # write back the remainder of the program
     truncate_program(rest)
     # update all next offsets by shifting them by the length of the added line
@@ -252,12 +252,12 @@ def renum(new_line, start_line, step):
         state.basic_state.bytecode.seek(state.basic_state.line_numbers[old_line])
         # skip the \x00\xC0\xDE & overwrite line number
         state.basic_state.bytecode.read(3)
-        state.basic_state.bytecode.write(str(vartypes.value_to_uint(old_to_new[old_line])))
+        state.basic_state.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(old_to_new[old_line]))))
     # write the indirect line numbers
     state.basic_state.bytecode.seek(0)
     while util.skip_to_read(state.basic_state.bytecode, ('\x0e',)) == '\x0e':
         # get the old g number
-        jumpnum = vartypes.uint_to_value(bytearray(state.basic_state.bytecode.read(2)))
+        jumpnum = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(state.basic_state.bytecode.read(2)))
         try:
             newjump = old_to_new[jumpnum]
         except KeyError:
@@ -267,7 +267,7 @@ def renum(new_line, start_line, step):
                 console.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
             newjump = jumpnum
         state.basic_state.bytecode.seek(-2, 1)
-        state.basic_state.bytecode.write(str(vartypes.value_to_uint(newjump)))
+        state.basic_state.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(newjump))))
     # rebuild the line number dictionary
     new_lines = {}
     for old_line in old_to_new:
