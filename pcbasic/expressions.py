@@ -372,7 +372,7 @@ def value_str(ins):
 def value_val(ins):
     """ VAL: number value of a string. """
     val = representation.str_to_value_keep(parse_bracket(ins))
-    return val if val else vartypes.null['%']
+    return val if val else vartypes.null('%')
 
 def value_chr(ins):
     """ CHR$: character for ASCII value. """
@@ -437,7 +437,7 @@ def value_mid(ins):
     util.range_check(1, 255, start)
     util.range_check(0, 255, num)
     if num == 0 or start > len(s):
-        return vartypes.null['$']
+        return vartypes.null('$')
     start -= 1
     stop = start + num
     stop = min(stop, len(s))
@@ -452,7 +452,7 @@ def value_left(ins):
     util.require_read(ins, (')',))
     util.range_check(0, 255, stop)
     if stop == 0:
-        return vartypes.null['$']
+        return vartypes.null('$')
     stop = min(stop, len(s))
     return vartypes.pack_string(s[:stop])
 
@@ -465,7 +465,7 @@ def value_right(ins):
     util.require_read(ins, (')',))
     util.range_check(0, 255, stop)
     if stop == 0:
-        return vartypes.null['$']
+        return vartypes.null('$')
     stop = min(stop, len(s))
     return vartypes.pack_string(s[-stop:])
 
@@ -513,7 +513,7 @@ def value_screen(ins):
     util.range_check(0, 255, z)
     util.require_read(ins, (')',))
     if z and not cmode.is_text_mode:
-        return vartypes.null['%']
+        return vartypes.null('%')
     else:
         return vartypes.int_to_integer_signed(state.console_state.screen.apage.get_char_attr(row, col, z!=0))
 
@@ -583,7 +583,7 @@ def value_eof(ins):
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if num == 0:
-        return vartypes.null['%']
+        return vartypes.null('%')
     util.range_check(0, 255, num)
     the_file = devices.get_file(num, 'IR')
     return vartypes.bool_to_int_keep(the_file.eof())
@@ -689,7 +689,7 @@ def value_point(ins):
                 _, fy = screen.drawing.get_window_logical(x, y)
                 return fp.pack(fy)
         except AttributeError:
-            return vartypes.null['%']
+            return vartypes.null('%')
     else:
         # two-argument mode
         if screen.mode.is_text_mode:
@@ -708,7 +708,7 @@ def value_pmap(ins):
     util.range_check(0, 3, mode)
     screen = state.console_state.screen
     if screen.mode.is_text_mode:
-        return vartypes.null['%']
+        return vartypes.null('%')
     if mode == 0:
         value, _ = screen.drawing.get_window_physical(fp.unpack(vartypes.pass_single_keep(coord)), fp.Single.zero)
         return vartypes.int_to_integer_signed(value)
@@ -812,7 +812,7 @@ def value_usr(ins):
     util.require_read(ins, tk.digit)
     parse_bracket(ins)
     logging.warning("USR() function not implemented.")
-    return vartypes.null['%']
+    return vartypes.null('%')
 
 def value_inp(ins):
     """ INP: get value from machine port. """
@@ -823,16 +823,16 @@ def value_erdev(ins):
     """ ERDEV$: device error string; not implemented. """
     logging.warning("ERDEV or ERDEV$ function not implemented.")
     if util.skip_white_read_if(ins, ('$',)):
-        return vartypes.null['$']
+        return vartypes.null('$')
     else:
-        return vartypes.null['%']
+        return vartypes.null('%')
 
 def value_exterr(ins):
     """ EXTERR: device error information; not implemented. """
     x = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, x)
     logging.warning("EXTERR() function not implemented.")
-    return vartypes.null['%']
+    return vartypes.null('%')
 
 def value_ioctl(ins):
     """ IOCTL$: read device control string response; not implemented. """

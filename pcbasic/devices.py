@@ -366,7 +366,7 @@ class TextFileBase(RawFile):
         typechar = name[0][-1]
         value, sep = self._input_entry(typechar, allow_past_end=False)
         if value is None:
-            value = vartypes.null[typechar]
+            value = vartypes.null(typechar)
         return value, sep
 
     def _skip_whitespace(self, whitespace):

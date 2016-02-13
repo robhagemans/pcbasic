@@ -32,7 +32,7 @@ def value_to_string_keep(inp, screen=False, write=False, allow_empty_expression=
     # screen=True is used for screen, str$ and sequential files
     if not inp:
         if allow_empty_expression:
-            return vartypes.null['$']
+            return vartypes.null('$')
         else:
             raise error.RunError(error.STX)
     typechar = inp[0]
@@ -556,8 +556,8 @@ def parse_value(ins):
 
 def str_to_value_keep(strval, allow_nonnum=True):
     """ Convert BASIC string to BASIC value (VAL). """
-    if strval == ('$', ''):
-        return vartypes.null['%']
+    if strval == vartypes.null('$'):
+        return vartypes.null('%')
     strval = str(vartypes.pass_string_unpack(strval))
     ins = StringIO(strval)
     outs = StringIO()
