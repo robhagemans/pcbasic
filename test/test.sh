@@ -15,6 +15,10 @@ do
         echo "no such test."
         exit
     fi
+    if [ -e "$name/output" ]
+    then
+        rm -r "$name/output"
+    fi
     mkdir "$name/output"
     cp "$name"/* "$name/output" 2>/dev/null
     pushd "$name/output" > /dev/null
