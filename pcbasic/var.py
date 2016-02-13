@@ -197,7 +197,7 @@ def get_var(name):
         else:
             return (name[-1], state.basic_state.variables[name])
     except KeyError:
-        return vartypes.null[name[-1]]
+        return vartypes.null(name[-1])
 
 def swap_var(name1, index1, name2, index2):
     """ Swap two variables by reference (Strings) or value (everything else). """

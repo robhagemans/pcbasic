@@ -17,7 +17,9 @@ import state
 # String ($) - stored as 1-byte length plus 2-byte pointer to string space
 
 # zeroed out
-null = { '$': ('$', bytearray()), '%': ('%', bytearray(2)), '!': ('!', bytearray(4)), '#': ('#', bytearray(8)) }
+def null(sigil):
+    """ Return null value for the given type. """
+    return {'$': ('$', bytearray()), '%': ('%', bytearray(2)), '!': ('!', bytearray(4)), '#': ('#', bytearray(8))}[sigil]
 
 def complete_name(name):
     """ Add type specifier to a name, if missing. """
@@ -80,7 +82,7 @@ def pass_string(inp, allow_empty=False, err=error.TYPE_MISMATCH):
         if not allow_empty:
             raise error.RunError(error.STX)
         else:
-            return null['$']
+            return null('$')
     if inp[0] == '$':
         return inp
     else:
@@ -230,11 +232,11 @@ def str_gt(left, right):
 def str_instr(big, small, n):
     """ Find substring in string and return starting index. """
     if big == '' or n > len(big):
-        return null['%']
+        return null('%')
     # BASIC counts string positions from 1
     find = big[n-1:].find(small)
     if find == -1:
-        return null['%']
+        return null('%')
     return int_to_integer_signed(n + find)
 
 ###############################################################################
