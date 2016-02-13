@@ -22,7 +22,7 @@ def get_value_for_varptrstr(varptrstr):
     if len(varptrstr) < 3:
         raise error.RunError(error.IFC)
     varptrstr = bytearray(varptrstr)
-    varptr = vartypes.uint_to_value(bytearray(varptrstr[1:3]))
+    varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
     found_name = ''
     for name in state.basic_state.var_memory:
         _, var_ptr = state.basic_state.var_memory[name]

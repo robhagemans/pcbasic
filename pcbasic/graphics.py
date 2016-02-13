@@ -714,7 +714,7 @@ class Drawing(object):
                     self.draw_angle = draw_and_play.ml_parse_number(gmls)
             # one-variable movement commands:
             elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
-                step = draw_and_play.ml_parse_number(gmls, default=vartypes.pack_int(1))
+                step = draw_and_play.ml_parse_number(gmls, default=vartypes.int_to_integer_signed(1))
                 x0, y0 = self.last_point
                 x1, y1 = 0, 0
                 if c in ('U', 'E', 'H'):

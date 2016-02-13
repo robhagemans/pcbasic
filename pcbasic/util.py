@@ -123,12 +123,12 @@ def parse_line_number(ins):
         ins.seek(-len(off)-2, 1)
         return -1
     else:
-        return vartypes.uint_to_value(bytearray(off))
+        return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(off))
 
 def parse_jumpnum(ins, allow_empty=False, err=error.STX):
     """ Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc. """
     if skip_white_read_if(ins, (tk.T_UINT,)):
-        return vartypes.uint_to_value(bytearray(ins.read(2)))
+        return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(ins.read(2)))
     else:
         if allow_empty:
             return -1

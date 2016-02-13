@@ -85,16 +85,17 @@ def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     # set start to start-step, then iterate - slower on init but allows for faster iterate
     var.set_var(varname, vartypes.number_add(start, vartypes.number_neg(step)))
     # NOTE: all access to varname must be in-place into the bytearray - no assignments!
-    sgn = vartypes.unpack_int(vartypes.number_sgn(step))
+    sgn = vartypes.integer_to_int_signed(vartypes.number_sgn(step))
     state.basic_state.for_next_stack.append((forpos, nextpos, varname[-1], state.basic_state.variables[varname], number_unpack(stop), number_unpack(step), sgn))
     ins.seek(nextpos)
 
+#D
 def number_unpack(value):
     """ Unpack a number value. """
     if value[0] in ('#', '!'):
         return fp.unpack(value)
     else:
-        return vartypes.unpack_int(value)
+        return vartypes.integer_to_int_signed(value)
 
 def number_inc_gt(typechar, loopvar, stop, step, sgn):
     """ Increase number and check if it exceeds a limit. """
@@ -105,8 +106,8 @@ def number_inc_gt(typechar, loopvar, stop, step, sgn):
         loopvar[:] = fp_left.to_bytes()
         return fp_left.gt(stop) if sgn > 0 else stop.gt(fp_left)
     else:
-        int_left = vartypes.sint_to_value(loopvar) + step
-        loopvar[:] = vartypes.value_to_sint(int_left)
+        int_left = vartypes.integer_to_int_signed(vartypes.bytes_to_integer(loopvar)) + step
+        loopvar[:] = vartypes.integer_to_bytes(vartypes.int_to_integer_signed(int_left))
         return int_left > stop if sgn > 0 else stop > int_left
 
 def loop_iterate(ins):

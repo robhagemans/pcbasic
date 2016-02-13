@@ -25,7 +25,7 @@ import vartypes
 
 import basictoken as tk
 
-
+#RENAME number_to_string
 def value_to_string_keep(inp, screen=False, write=False, allow_empty_expression=False):
     """ Convert BASIC number to BASIC string. """
     # screen=False means in a program listing
@@ -39,10 +39,10 @@ def value_to_string_keep(inp, screen=False, write=False, allow_empty_expression=
     if typechar == '$':
         return ('$', inp[1])
     elif typechar == '%':
-        if screen and not write and vartypes.unpack_int(inp) >= 0:
-            return str_to_string(' ' + str(vartypes.unpack_int(inp)))
+        if screen and not write and vartypes.integer_to_int_signed(inp) >= 0:
+            return str_to_string(' ' + str(vartypes.integer_to_int_signed(inp)))
         else:
-            return str_to_string(str(vartypes.unpack_int(inp)))
+            return str_to_string(str(vartypes.integer_to_int_signed(inp)))
     elif typechar == '!':
         return str_to_string(float_to_str(fp.unpack(inp), screen, write))
     elif typechar == '#':
@@ -50,6 +50,8 @@ def value_to_string_keep(inp, screen=False, write=False, allow_empty_expression=
     else:
         raise error.RunError(error.STX)
 
+#D
+#MOVE to vartypes
 def str_to_string(python_str):
     """ Convert Python str to BASIC string. """
     return ('$', bytearray(python_str))
@@ -58,11 +60,11 @@ def str_to_string(python_str):
 
 def uint_to_str(s):
     """ Convert unsigned int token to Python string. """
-    return str(vartypes.uint_to_value(s))
+    return str(vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(s)))
 
 def sint_to_str(s):
     """ Convert signed int token to Python string. """
-    return str(vartypes.sint_to_value(s))
+    return str(vartypes.integer_to_int_signed(vartypes.bytes_to_integer(s)))
 
 def ubyte_to_str(s):
     """ Convert unsigned byte token to Python string. """
@@ -70,21 +72,21 @@ def ubyte_to_str(s):
 
 def hex_to_str(s):
     """ Convert hex token to Python string. """
-    return "&H" + hex(vartypes.uint_to_value(s))[2:].upper()
+    return "&H" + hex(vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(s)))[2:].upper()
 
 def oct_to_str(s):
     """ Convert oct token to Python string. """
-    return "&O" + oct(vartypes.uint_to_value(s))[1:]
+    return "&O" + oct(vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(s)))[1:]
 
 # int to BASIC string
 
 def hex_to_string(val):
     """ Convert python integer to BASIC string in hex representation. """
-    return str_to_string(hex_to_str(vartypes.value_to_sint(val))[2:])
+    return str_to_string(hex_to_str(vartypes.integer_to_bytes(vartypes.int_to_integer_signed(val)))[2:])
 
 def oct_to_string(val):
     """ Convert python integer to BASIC string in oct representation. """
-    return str_to_string(oct_to_str(vartypes.value_to_sint(val))[2:])
+    return str_to_string(oct_to_str(vartypes.integer_to_bytes(vartypes.int_to_integer_signed(val)))[2:])
 
 
 # floating point to string
@@ -408,7 +410,7 @@ def tokenise_hex(ins, outs):
         else:
             word += ins.read(1).upper()
     val = int(word, 16) if word else 0
-    outs.write(tk.T_HEX + str(vartypes.value_to_uint(val)))
+    outs.write(tk.T_HEX + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(val))))
 
 def tokenise_oct(ins, outs):
     """ Convert octal expression in Python string to number token. """
@@ -423,7 +425,7 @@ def tokenise_oct(ins, outs):
         else:
             word += ins.read(1).upper()
     val = int(word, 8) if word else 0
-    outs.write(tk.T_OCT + str(vartypes.value_to_uint(val)))
+    outs.write(tk.T_OCT + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(val))))
 
 def tokenise_dec(ins, outs):
     """ Convert decimal expression in Python string to number token. """
@@ -492,7 +494,7 @@ def tokenise_dec(ins, outs):
             outs.write(tk.T_BYTE + chr(str_to_int(word)))
         else:
             # two-byte constant
-            outs.write(tk.T_INT + str(vartypes.value_to_sint(str_to_int(word))))
+            outs.write(tk.T_INT + str(vartypes.integer_to_bytes(vartypes.int_to_integer_signed(str_to_int(word)))))
     else:
         mbf = str(str_to_float(word).to_bytes())
         if len(mbf) == 4:

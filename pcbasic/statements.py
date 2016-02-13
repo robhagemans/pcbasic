@@ -838,7 +838,7 @@ def parse_jumpnum_or_dot(ins, allow_empty=False, err=error.STX):
     """ Helper function: parse jump target. """
     c = util.skip_white_read(ins)
     if c == tk.T_UINT:
-        return vartypes.uint_to_value(bytearray(ins.read(2)))
+        return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(ins.read(2)))
     elif c == '.':
         return state.basic_state.last_stored
     else:
@@ -1465,7 +1465,7 @@ def exec_for(ins):
         step = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
     else:
         # convert 1 to vartype
-        step = vartypes.pass_type_keep(vartype, vartypes.pack_int(1))
+        step = vartypes.pass_type_keep(vartype, vartypes.int_to_integer_signed(1))
     util.require(ins, tk.end_statement)
     endforpos = ins.tell()
     # find NEXT

@@ -368,7 +368,7 @@ def tokenise_uint(ins):
             # keep 6553 as line number and push back the last number:
             ins.seek(4-len(word), 1)
             word = word[:4]
-        return str(vartypes.value_to_uint(int(word)))
+        return str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(int(word))))
     else:
         return ''
 

@@ -41,7 +41,7 @@ def randomize(val):
     if len(s) >= 4:
         mask = s[-4:-2]
     final_two = bytearray(chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1]))
-    n = vartypes.sint_to_value(final_two)
+    n = vartypes.integer_to_int_signed(vartypes.bytes_to_integer(final_two))
     state.basic_state.rnd_seed &= 0xff
     get_random_int(1) # RND(1)
     state.basic_state.rnd_seed += n * rnd_step
