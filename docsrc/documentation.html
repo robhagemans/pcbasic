@@ -539,29 +539,29 @@
             </p>
             <ul>
                 <li>GW-BASIC files stored as text are plain text files with line numbers.</li>
-                <li>Tokenised files are binary files that start with magic byte <code>FF</code>.</li>
-                <li>Protected files are binary files that start with magic byte <code>FE</code>.</li>
+                <li>Tokenised files are binary files that start with magic byte <code>&amp;hFF</code>.</li>
+                <li>Protected files are binary files that start with magic byte <code>&amp;hFE</code>.</li>
             </ul>
             <p>
                 In particular, QBASIC files (which have no line numbers) and QuickBASIC files
-                (magic byte <code>FC</code>) will not run.
+                (magic byte <code>&amp;hFC</code>) will not run.
             </p>
             <p>
                 PC-BASIC will accept both DOS and Unix newline conventions for programs
                 stored as plain text. Any line not starting with a number will be considered a
-                continuation (through <code>LF</code>) of the previous line.
+                continuation (through <code><i>LF</i></code>) of the previous line.
                 This behaviour is different from GW-BASIC, which only
-                accepts text files with <code>CR LF</code> line endings.
-                As a consequence, in exceptional cases where a program line is continued through <code>LF</code>
+                accepts text files with <code><i>CR LF</i></code> line endings.
+                As a consequence, in exceptional cases where a program line is continued through <code><i>LF</i></code>
                 just before a number, correct GW-BASIC text files may not be loaded correctly.
                 If you encounter such a case, use
                 the <code><a href="#--strict-newline">strict-newline</a></code> option to enable GW-BASIC behaviour. If
                 <code>strict-newline</code> is enabled, text files in standard Unix format
-                (<code>LF</code> line endings, no end-of-file character) will fail to load. On
+                (<code><i>LF</i></code> line endings, no end-of-file character) will fail to load. On
                 Linux or Mac, use a utility such as
                 <a href="http://waterlan.home.xs4all.nl/dos2unix.html"><code>unix2dos</code></a>
                 to convert programs saved as text files before loading them. When saving as text,
-                PC-BASIC always uses <code>CR LF</code> line endings and <code>^Z</code> (<code>CHR$(26)</code>) at end-of-file.
+                PC-BASIC always uses <code><i>CR LF</i></code> line endings and <code>&amp;h1A</code> at end-of-file.
             </p>
         </section>
         <hr />
