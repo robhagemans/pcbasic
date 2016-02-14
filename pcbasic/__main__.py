@@ -289,7 +289,7 @@ def print_greeting(console):
     import var
     greeting = (
         'PC-BASIC {version} {note}\r'
-        '(C) Copyright 2013--2015 Rob Hagemans.\r'
+        '(C) Copyright 2013--2016 Rob Hagemans.\r'
         '{free} Bytes free')
     # following GW, don't write greeting for redirected input
     # or command-line filter run
