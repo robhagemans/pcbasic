@@ -7538,7 +7538,7 @@
         <h5>Tile patterns</h5>
         <p>
             A tile pattern can be specified by a string of up to 255 characters. The
-            interpretation of the string depends on the number of bits per pixel in
+            interpretation of the string depends on the number of bits per pixel and on
             the current screen mode.
         </p>
         <dl>
@@ -7546,15 +7546,104 @@
                 1 bit per pixel (e.g. <code>SCREEN 2</code>)
             </dt>
             <dd>Here is an example:
-                <pre>
-                  76543210    value
-                  *.......    CHR$(&amp;h80)
-                  .*......    CHR$(&amp;h40)
-                  ..*.....    CHR$(&amp;h20)
-                  ...*....    CHR$(&amp;h10)
-                  ....*...    CHR$(&amp;h08)
-                  .....*..    CHR$(&amp;h04)
-                  ......*.    CHR$(&amp;h02) </pre>
+                <table>
+                    <tr>
+                        <th>
+                            <code>76543210</code>
+                        </th>
+                        <th>
+                            Byte value
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>
+                                *.......
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h80
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>
+                                .*......
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h40
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>
+                                ..*.....
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h20
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>
+                                ...*....
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h10
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>
+                                ....*...
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h08
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>
+                                .....*..
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h04
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>
+                                ......*.
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h02
+                            </code>
+                        </td>
+                    </tr>
+                </table>
+                This diagonal stripe pattern can thus be produced with
+                <code class="flow">
+                    PAINT (0, 0), CHR$(128)+CHR$(64)+CHR$(32)+CHR$(16)+CHR$(8)+CHR$(4)+CHR$(2)
+                </code>
             </dd>
             <dt>
                 <code>SCREEN 7</code>, <code>8</code>, <code>9</code>
@@ -7563,49 +7652,326 @@
                 The tile pattern is always 8 pixels wide. The first character in the
                 pattern string contains the first bit of each of these 8 pixels, the
                 second character contains the second bits, etc.
-                For example, in a 2-bits-per-pixel mode, the pattern can have many
-                colours. However, the same size pattern as above in attribute &amp;h03 is:
-                <pre>
-            bit   76543210    value
-            0     *.......    CHR$(&amp;h80)
-            1     *.......    CHR$(&amp;h80)
-            0     .*......    CHR$(&amp;h40)
-            1     .*......    CHR$(&amp;h40)
-            0     ..*.....    CHR$(&amp;h20)
-            1     ..*.....    CHR$(&amp;h20)
-            0     ...*....    CHR$(&amp;h10)
-            1     ...*....    CHR$(&amp;h10)
-            0     ....*...    CHR$(&amp;h08)
-            1     ....*...    CHR$(&amp;h08)
-            0     .....*..    CHR$(&amp;h04)
-            1     .....*..    CHR$(&amp;h04)
-            0     ......*.    CHR$(&amp;h02)
-            1     ......*.    CHR$(&amp;h02)</pre>
-            If the pattern string is truncated before all bits of the last line
-            have been defined, the remaining bits will be zero.
+                For example, in a 2-bits-per-pixel mode, four colour attributes can be used in the pattern.
+                To create a diagonal stripe pattern of the same shape, in attribute <code>&amp;h03</code>, we now need a tile
+                string that is twice as long:
+                <table>
+                    <tr>
+                        <th>
+                            Attribute bit
+                        </th>
+                        <th>
+                            <code>76543210</code>
+                        </th>
+                        <th>
+                            Byte value
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>0</td>
+                        <td>
+                            <code>
+                                *.......
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h80
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>
+                            <code>
+                                *.......
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h80
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>0</td>
+                        <td>
+                            <code>
+                                .*......
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h40
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>
+                            <code>
+                                .*......
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h40
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>0</td>
+
+                        <td>
+                            <code>
+                                ..*.....
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h20
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>
+                            <code>
+                                ..*.....
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h20
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>0</td>
+
+                        <td>
+                            <code>
+                                ...*....
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h10
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>
+                            <code>
+                                ...*....
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h10
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>0</td>
+                        <td>
+                            <code>
+                                ....*...
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h08
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>
+                            <code>
+                                ....*...
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h08
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>0</td>
+                        <td>
+                            <code>
+                                .....*..
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h04
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>
+                            <code>
+                                .....*..
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h04
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>0</td>
+                        <td>
+                            <code>
+                                ......*.
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h02
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>
+                            <code>
+                                ......*.
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h02
+                            </code>
+                        </td>
+                    </tr>
+                </table>
+                If the pattern string is truncated before all bits of the last line
+                have been defined, the remaining bits will be zero.
             </dd>
             <dt>
                 <code>SCREEN 1</code>, <code>3</code>, <code>4</code>, <code>5</code> , <code>6</code>
             </dt>
             <dd>
                 Each row of the tile pattern represents a screen row. Colours are
-                encoded in consecutive bits &#8212; the more bits per pixel, the narrower the
+                encoded in consecutive bits; the more bits per pixel, the narrower the
                 pattern is. For 2 bits per pixel, the pattern is 4 pixels wide; for 4
-                bits per pixel it is 2 pixels wide. The pattern string above now encodes
-                a multicoloured tile:
-                <pre>
-          3210    76543210    value
-          2000    *.......    CHR$(&amp;h80)
-          1000    .*......    CHR$(&amp;h40)
-          0200    ..*.....    CHR$(&amp;h20)
-          0100    ...*....    CHR$(&amp;h10)
-          0020    ....*...    CHR$(&amp;h08)
-          0010    .....*..    CHR$(&amp;h04)
-          0002    ......*.    CHR$(&amp;h02) </pre>
+                bits per pixel it is 2 pixels wide. The following pattern string encodes
+                a diagonal dotted stripe in two colours:
+                <table>
+                    <tr>
+                        <th>
+                            <code>3210</code>
+                        </th>
+                        <th>
+                            <code>76543210</code>
+                        </th>
+                        <th>
+                            Byte value
+                        </th>
+                    </tr>
+                    <tr>
+                        <td><code>2000</code></td>
+                        <td>
+                            <code>
+                                *.......
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h80
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>1000</code></td>
+                        <td>
+                            <code>
+                                .*......
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h40
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>0200</code></td>
+                        <td>
+                            <code>
+                                ..*.....
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h20
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>0100</code></td>
+                        <td>
+                            <code>
+                                ...*....
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h10
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>0020</code></td>
+                        <td>
+                            <code>
+                                ....*...
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h08
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>0010</code></td>
+                        <td>
+                            <code>
+                                .....*..
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h04
+                            </code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>0002</code></td>
+                        <td>
+                            <code>
+                                ......*.
+                            </code>
+                        </td>
+                        <td>
+                            <code>
+                                &amp;h02
+                            </code>
+                        </td>
+                    </tr>
+                </table>
             </dd>
         </dl>
         <p>
-            The tile pattern is locked to the screen; imagine a grid starting at
+            The tile pattern is anchored to the screen; imagine a grid starting at
             <code>(0,0)</code> and covering the screen. Whenever an area is tile-filled,
             the tiles are put into this grid. In this way, adjacent areas will have
             continuous tiling even if they were filled from different seed points.
