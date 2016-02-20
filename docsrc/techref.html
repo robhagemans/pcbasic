@@ -450,20 +450,32 @@
             Schematically, MBF floating point numbers are represented as follows.
         </p>
         <h5>Single precision</h5>
-<pre>
-    offset                             00   01   02   03
-       use <var>                            m3   m2   m1   exp</var>
-</pre>
+        <table>
+            <tr>
+                <th>Offset</th>
+                <td><code>00  01  02  03</code></td>
+            </tr>
+            <tr>
+                <th>Use</th>
+                <td><code><var>m3</var>  <var>m2</var>  <var>m1</var>  <var>ex</var></code></td>
+            </tr>
+        </table>
         <h5>Double precision</h5>
-<pre>
-    offset         00   01   02   03   04   05   06   07
-       use <var>        m7   m6   m5   m4   m3   m2   m1   exp</var>
-</pre>
+        <table>
+            <tr>
+                <th>Offset</th>
+                <td><code>00  01  02  03  04  05  06  07</code></td>
+            </tr>
+            <tr>
+                <th>Use</th>
+                <td><code><var>m7</var>  <var>m6</var>  <var>m5</var>  <var>m4</var>  <var>m3</var>  <var>m2</var>  <var>m1</var>  <var>ex</var></code></td>
+            </tr>
+        </table>
         <p>where:</p>
         <div class="scrollable">
             <table>
                 <tr>
-                    <td><code><var>exp</var></code></td>
+                    <td><code><var>ex</var></code></td>
                     <td>the exponent byte</td>
                 </tr>
                 <tr>
