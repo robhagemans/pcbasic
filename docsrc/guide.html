@@ -97,8 +97,77 @@
 <hr />
 
 <section>
-    <h3 id="guide-flow">Looping and branching</h3>
-
+    <h3 id="guide-flow">Control flow</h3>
+    <p>
+        A program is normally executed starting with its lowest line number (or the line number called by <code>RUN</code>). Statements on a line are executed from
+        left to right. When all statements on a line are finished, execution moves to the next lowest line number, and so on until no line numbers are left.
+        Control flow statements can be used to modify this normal flow of executon.
+    </p>
+    <p>
+        The <code>END</code> and <code>STOP</code> statements serve
+        in a program to stop its execution and return to direct mode. When <code>STOP</code> is used, a
+        <samp>Break</samp> message is printed. From
+        direct mode, <code>CONT</code> can be executed to resume the program where
+        it was stopped. While <code>END</code> seems intended to terminate the program,
+        it does not preclude the user from resuming it with <code>CONT</code>.
+    </p>
+    <p>
+        Unconditional jumps can be made with <code>GOTO</code>. The program flow will
+        continue at the line number indicated in the <code>GOTO</code> statement. Due to the PC-BASIC language's lack of
+        sophisticated looping, branching and breaking constructs, unconditional jumps are essential and used frequently.
+    </p>
+    <p>
+        The <code>GOSUB</code> statement jumps to a subroutine. Similar to <code>GOTO</code>, this is an unconditional jump;
+        however, the location of the call is stored and the program will continue its flow there after the subroutine terminates
+        with a <code>RETURN</code> statement. Subroutines are somewhat like procedures in that they allow chunks of code that perform a given task to be separated from
+        the main body of the program,
+        but they do not have separate scope since all variables in
+        PC-BASIC are global. They do not have return values. It is even possible to jump out of a subroutine to anywhere in the program by
+        supplying the <code>RETURN</code> statement with a line number.
+    </p>
+    <p>
+        The <code>ON</code> statement provides an alternative branching construct. An integer value is used to selects
+        one of a list of line numbers, and execution is continued from there. It can be used with a <code>GOTO</code> jump
+        as wellas with a <code>GOSUB</code> subroutine call.
+    </p>
+    <p>
+        <code>ON</code>, <code>GOTO</code> and <code>GOSUB</code> can also be used from direct mode to start a program or subroutine without resetting variables.
+    </p>
+    <p>
+        The <code>IF&ndash;THEN&ndash;ELSE</code> construct tests for a condition and execute different code branches based on its truth value.
+        This is not a block construct; all code in the <code>THEN</code> and <code>ELSE</code> branches must fit on one line. For this reason, branching is often used in combination with
+        <code>GOTO</code> jumps. For example:
+        <code class=block>
+            10 INPUT "How old are you"; AGE%<br>
+            20 IF AGE%&gt;30 THEN 100<br>
+            30 IF AGE%&lt;30 THEN 200 ELSE PRINT "You are 30 years old."<br>
+            40 END<br>
+            100 PRINT "You are over 30."<br>
+            110 END<br>
+            200 PRINT "You are not yet 30."<br>
+            210 END<br>
+        </code>
+    </p>
+    <p>
+        The <code>WHILE&ndash;WEND</code> looping construct repeats the block of code between <code>WHILE</code> and <code>WEND</code> as long as a given condition remains true.
+    </p>
+    <p>
+        The <code>FOR&ndash;NEXT</code> construct repeats a block of code while a counter remains in a given range. The counter is set to a starting value at the first pass of the
+        <code>FOR</code> statement and incremented by the <code>STEP</code> value at each pass of <code>NEXT</code>.
+        For example:
+        <code class=block>
+            10 FOR I=1 TO 10<br>
+            20 PRINT STRING$(I, "*"); USING " [##]"; I<br>
+            30 NEXT I<br>
+        </code>
+    </p>
+    <p>
+        Looping constructs may be nested.
+    </p>
+    <p>
+        Control flow is also affected by <a href="#event-trapping">event</a>
+        and <a href="#error-trapping">error trapping</a>.
+    </p>
     <div class="scrollable">
         <table>
             <tr>
@@ -293,7 +362,7 @@
                 <th>Description</th>
             </tr>
             <tr>
-                <td><a href="#MID$"><code>MID$</code></a></td>
+                <td><a href="#MID$-statement"><code>MID$</code></a></td>
                 <td>Assign a value to part of a string</td>
             </tr>
             <tr>
