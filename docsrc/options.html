@@ -167,8 +167,70 @@
             Load the specified codepage. The codepage determines which
             characters are associated to a given character byte or, in the case
             of double-byte codepages, two character bytes. The available codepages are
-            stored in the <code>codepage/</code> directory.
-            See the <a href="#codepages">list of default available codepages</a> in the User's Guide.
+            stored in the <code>codepage/</code> directory; by default, these are:
+            <ul class="compact">
+                <li><code><b>437</b></code></li>
+                <li><code><b>720</b></code></li>
+                <li><code><b>737</b></code></li>
+                <li><code><b>775</b></code></li>
+                <li><code><b>806</b></code></li>
+                <li><code><b>850</b></code></li>
+                <li><code><b>851</b></code></li>
+                <li><code><b>852</b></code></li>
+                <li><code><b>853</b></code></li>
+                <li><code><b>855</b></code></li>
+                <li><code><b>856</b></code></li>
+                <li><code><b>857</b></code></li>
+                <li><code><b>858</b></code></li>
+                <li><code><b>860</b></code></li>
+                <li><code><b>861</b></code></li>
+                <li><code><b>862</b></code></li>
+                <li><code><b>863</b></code></li>
+                <li><code><b>864</b></code></li>
+                <li><code><b>865</b></code></li>
+                <li><code><b>866</b></code></li>
+                <li><code><b>868</b></code></li>
+                <li><code><b>869</b></code></li>
+                <li><code><b>874</b></code></li>
+                <li><code><b>932</b></code></li>
+                <li><code><b>934</b></code></li>
+                <li><code><b>936</b></code></li>
+                <li><code><b>938</b></code></li>
+                <li><code><b>949</b></code></li>
+                <li><code><b>950</b></code></li>
+                <li><code><b>1258</b></code></li>
+                <li><code><b>alternativnyj</b></code></li>
+                <li><code><b>armscii8a</b></code></li>
+                <li><code><b>big5-2003</b></code></li>
+                <li><code><b>big5-hkscs</b></code></li>
+                <li><code><b>georgian-academy</b></code></li>
+                <li><code><b>georgian-ps</b></code></li>
+                <li><code><b>iransystem</b></code></li>
+                <li><code><b>iscii-as</b></code></li>
+                <li><code><b>iscii-be</b></code></li>
+                <li><code><b>iscii-de</b></code></li>
+                <li><code><b>iscii-gu</b></code></li>
+                <li><code><b>iscii-ka</b></code></li>
+                <li><code><b>iscii-ma</b></code></li>
+                <li><code><b>iscii-or</b></code></li>
+                <li><code><b>iscii-pa</b></code></li>
+                <li><code><b>iscii-ta</b></code></li>
+                <li><code><b>iscii-te</b></code></li>
+                <li><code><b>kamenicky</b></code></li>
+                <li><code><b>koi8-r</b></code></li>
+                <li><code><b>koi8-ru</b></code></li>
+                <li><code><b>koi8-u</b></code></li>
+                <li><code><b>mazovia</b></code></li>
+                <li><code><b>mik</b></code></li>
+                <li><code><b>osnovnoj</b></code></li>
+                <li><code><b>pascii</b></code></li>
+                <li><code><b>ruscii</b></code></li>
+                <li><code><b>russup3</b></code></li>
+                <li><code><b>russup4ac</b></code></li>
+                <li><code><b>russup4na</b></code></li>
+                <li><code><b>viscii</b></code></li>
+            </ul>.
+            See the <a href="#codepages">list of codepages</a> in the User's Guide for details.
         </dd>
 
         <dt id="--config">
@@ -319,12 +381,23 @@
         <dt id="--font">
             <code><b>--font=</b><var>font_name</var>[<b>,</b><var>font_name</var> ... ]</code></dt>
         <dd>
-            Load <a href="#--codepage">current codepage</a>
-            from specified <code>font_name.hex</code>
-            fonts. The last fonts specified take precedence, previous ones are
+            Use the specified fonts for the interface. The last fonts specified take precedence, previous ones are
             fallback. Default is <code><b>unifont,univga,freedos</b></code> (i.e. the
-            <code>freedos.hex</code> font has preference). The available fonts
-            depend on what is stored in <code>font/</code>.
+            <code>freedos</code> font has preference). The available fonts
+            are stored in <code>font/</code>. By default, the following fonts are
+            available:
+            <ul class="compact">
+                <li><code><b>unifont</b></code></li>
+                <li><code><b>univga</b></code></li>
+                <li><code><b>freedos</b></code></li>
+                <li><code><b>cga</b></code></li>
+                <li><code><b>mda</b></code></li>
+                <li><code><b>vga</b></code></li>
+                <li><code><b>olivetti</b></code></li>
+                <li><code><b>tandy1</b></code></li>
+                <li><code><b>tandy2</b></code></li>
+            </ul>.
+            See the <a href="#fonts">list of fonts</a> in the User's Guide for details.
         </dd>
 
         <dt id="--fullscreen">
