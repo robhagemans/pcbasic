@@ -68,21 +68,21 @@
     </p>
     <p>
         A <dfn>compound statement</dfn> consists of <a href="#statements">statements</a> separated by colons:
-        <code class="block"><var>statement</var> [<b>:</b> <var>statement</var>] ...</code>
+        <code class="flow"><var>statement</var> [<b>:</b> <var>statement</var>] ...</code>
     </p>
     <p>
         An <dfn>expression</dfn> takes one of the following forms:
-        <code class="block"><var>unary_operator</var> {<var>literal</var> | <var>variable</var> |
+        <code class="flow"><var>unary_operator</var> {<var>literal</var> | <var>variable</var> |
              <var>array_element</var> | <var>function</var>}</code>
-        <code class="block"><var>expression</var> <var>binary_operator</var> <var>expression</var></code>
-        <code class="block"><b>(</b><var>expression</var><b>)</b></code>
+        <code class="flow"><var>expression</var> <var>binary_operator</var> <var>expression</var></code>
+        <code class="flow"><b>(</b><var>expression</var><b>)</b></code>
         whose elements are described the sections <a href="#literals">Literals</a>,
         <a href="#variables">Variables</a>, <a href="#operators">Operators</a> and
         <a href="#functions">Functions</a>.
     </p>
     <p>
         An <dfn>array element</dfn> takes the form
-        <code class="block"><var>array</var> {<b>[</b>|<b>(</b>} <var>numeric_expression</var> [<b>,</b> <var>numeric_expression</var> ] ... {<b>)</b>|<b>]</b>}</code>
+        <code class="flow"><var>array</var> {<b>[</b>|<b>(</b>} <var>numeric_expression</var> [<b>,</b> <var>numeric_expression</var> ] ... {<b>)</b>|<b>]</b>}</code>
     </p>
 </section>
 <hr />
@@ -93,7 +93,7 @@
     <h5>String literals</h5>
     <p>
         String literals are of the following form:
-        <code class="block"><b>"</b>[<var>characters</var>]{<b><i>NUL</i></b>|<b><i>CR</i></b>|<b><i>EOF</i></b>|<b>"</b>}</code>
+        <code class="flow"><b>"</b>[<var>characters</var>]{<b><i>NUL</i></b>|<b><i>CR</i></b>|<b><i>EOF</i></b>|<b>"</b>}</code>
         where <code><var>characters</var></code> is a string of characters. Any
         character from the current code page can be used, with the following
         exceptions, all of which terminate the string literal (aside from other effects they may have):
@@ -119,12 +119,12 @@
     <h5>Numeric literals</h5>
     <p>
         Numeric literals have one of the following forms:
-        <code class="block">[<b>+</b>|<b>-</b>] [<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>]...
+        <code class="flow">[<b>+</b>|<b>-</b>] [<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>]...
             [<b>.</b>][<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>]...
             [{<b>E</b>|<b>e</b>|<b>D</b>|<b>d</b>}[<b>+</b>|<b>-</b>][<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>]...]
             |<b>#</b>|<b>!</b>|<b>%</b>]</code>
-        <code class="block"><b>&amp;</b>{<b>H</b>|<b>h</b>}[<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>|<b>A</b>|<b>B</b>|<b>C</b>|<b>D</b>|<b>E</b>|<b>F</b>|<b>a</b>|<b>b</b>|<b>c</b>|<b>d</b>|<b>e</b>|<b>f</b>]...</code>
-        <code class="block"><b>&amp;</b>[<b>O</b>|<b>o</b>] [<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>]...</code>
+        <code class="flow"><b>&amp;</b>{<b>H</b>|<b>h</b>}[<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>|<b>8</b>|<b>9</b>|<b>A</b>|<b>B</b>|<b>C</b>|<b>D</b>|<b>E</b>|<b>F</b>|<b>a</b>|<b>b</b>|<b>c</b>|<b>d</b>|<b>e</b>|<b>f</b>]...</code>
+        <code class="flow"><b>&amp;</b>[<b>O</b>|<b>o</b>] [<b>0</b>|<b>1</b>|<b>2</b>|<b>3</b>|<b>4</b>|<b>5</b>|<b>6</b>|<b>7</b>]...</code>
     </p>
     <p>
         Hexadecimal literals must not contain spaces, but decimal and octal literals may. The <code>o</code> character in octal literals is optional: they can be
@@ -647,7 +647,7 @@
 
     <section>
         <h4 id="ABS"><code>ABS</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>y</var><b> = ABS(</b><var>x</var><b>)</b>
         </code>
         <p>
@@ -670,7 +670,7 @@
 
     <section>
         <h4 id="ASC"><code>ASC</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>val</var><b> = ASC(</b><var>char</var><b>)</b>
         </code>
         <p>
@@ -696,7 +696,7 @@
 
     <section>
         <h4 id="ATN"><code>ATN</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>y</var><b> = ATN(</b><var>x</var><b>)</b>
         </code>
         <p>
@@ -730,7 +730,7 @@
 
     <section>
         <h4 id="CDBL"><code>CDBL</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>y</var><b> = CDBL(</b><var>x</var><b>)</b>
         </code>
         <p>
@@ -747,7 +747,7 @@
 
     <section>
         <h4 id="CHR$"><code>CHR$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>char</var> <b>= CHR$(</b><var>x</var><b>)</b>
         </code>
         <p>
@@ -776,7 +776,7 @@
 
     <section>
         <h4 id="CINT"><code>CINT</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>y</var> <b>= CINT(</b><var>x</var><b>)</b>
         </code>
         <p>
@@ -796,7 +796,7 @@
 
     <section>
         <h4 id="COS"><code>COS</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>cosine</var> <b>= COS(</b><var>angle</var><b>)</b>
         </code>
         <p>
@@ -829,7 +829,7 @@
 
     <section>
         <h4 id="CSNG"><code>CSNG</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>y</var> <b>= CSNG(</b><var>x</var><b>)</b>
         </code>
         <p>
@@ -846,7 +846,7 @@
 
     <section>
         <h4 id="CSRLIN"><code>CSRLIN</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>y</var> <b>= CSRLIN</b>
         </code>
         <p>
@@ -864,7 +864,7 @@
 
     <section>
         <h4 id="CVI"><code>CVI</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>y</var> <b>= CVI(</b><var>s</var><b>)</b>
         </code>
         <p>
@@ -888,7 +888,7 @@
 
     <section>
         <h4 id="CVS"><code>CVS</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>y</var> <b>= CVS(</b><var>s</var><b>)</b>
         </code>
         <p>
@@ -912,7 +912,7 @@
 
     <section>
         <h4 id="CVD"><code>CVD</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>y</var> <b>= CVD(</b><var>s</var><b>)</b>
         </code>
         <p>
@@ -936,7 +936,7 @@
 
     <section>
         <h4 id="DATE$-function"><code>DATE$</code> (function)</h4>
-        <code class="block">
+        <code class="flow">
             <var>s</var> <b>= DATE$</b>
         </code>
         <p>
@@ -953,7 +953,7 @@
 
     <section>
         <h4 id="ENVIRON$"><code>ENVIRON$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>value</var> <b>= ENVIRON</b>[ ]<b>$</b>(<var>x</var>)
         </code>
         <p>
@@ -990,7 +990,7 @@
 
     <section>
         <h4 id="EOF"><code>EOF</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>is_at_end</var> <b>= EOF(</b><var>file_num</var><b>)</b>
         </code>
         <p>
@@ -1030,7 +1030,7 @@
 
     <section>
         <h4 id="ERDEV"><code>ERDEV</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>zero</var> <b>= ERDEV</b>
         </code>
         <p>
@@ -1053,7 +1053,7 @@
 
     <section>
         <h4 id="ERDEV$"><code>ERDEV$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>empty</var> <b>= ERDEV</b>[ ]<b>$</b>
         </code>
         <p>
@@ -1076,7 +1076,7 @@
 
     <section>
         <h4 id="ERL"><code>ERL</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>error_line</var> <b>= ERL</b>
         </code>
         <p>
@@ -1101,7 +1101,7 @@
 
     <section>
         <h4 id="ERR"><code>ERR</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>error_code</var> <b>= ERR</b>
         </code>
         <p>
@@ -1124,7 +1124,7 @@
 
     <section>
         <h4 id="EXP"><code>EXP</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>y</var> <b>= EXP(</b><var>x</var><b>)</b>
         </code>
         <p>
@@ -1163,7 +1163,7 @@
 
     <section>
         <h4 id="EXTERR"><code>EXTERR</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>zero</var> <b>= EXTERR(</b><var>x</var><b>)</b>
         </code>
         <p>
@@ -1201,7 +1201,7 @@
 
     <section>
         <h4 id="FIX"><code>FIX</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>whole</var> <b>= FIX(</b><var>number</var><b>)</b>
         </code>
         <p>
@@ -1231,7 +1231,7 @@
 
     <section>
         <h4 id="FN"><code>FN</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>result</var> <b>= FN</b>[ ]<var>name</var> [<b>(</b><var>arg_0</var> [<b>,</b> <var>arg_1</var>] ...<b>)</b>]
         </code>
         <p>
@@ -1270,7 +1270,7 @@
 
     <section>
         <h4 id="FRE"><code>FRE</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>free_mem</var> <b>= FRE(</b><var>x</var><b>)</b>
         </code>
         <p>
@@ -1294,7 +1294,7 @@
 
     <section>
         <h4 id="HEX$"><code>HEX$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>hex_repr</var> <b>= HEX$(</b><var>x</var><b>)</b>
         </code>
         <p>
@@ -1322,7 +1322,7 @@
 
     <section>
         <h4 id="INKEY$"><code>INKEY$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>key</var> <b>= INKEY$</b>
         </code>
         <p>
@@ -1348,7 +1348,7 @@
 
     <section>
         <h4 id="INP"><code>INP</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>code</var> <b>= INP(</b><var>port</var><b>)</b>
         </code>
         <p>
@@ -1449,7 +1449,7 @@
 
     <section>
         <h4 id="INPUT$"><code>INPUT$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>chars</var> <b>= INPUT</b>[ ]<b>$</b> <b>(</b><var>num_chars</var> [<b>,</b> [<b>#</b>] <var>file_num</var>]<b>)</b>
         </code>
         <p>
@@ -1519,7 +1519,7 @@
 
     <section>
         <h4 id="INSTR"><code>INSTR</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>position</var> <b>= INSTR(</b>[<var>start</var><b>,</b>] <var>parent</var><b>,</b> <var>child</var><b>)</b>
         </code>
         <p>
@@ -1561,7 +1561,7 @@
 
     <section>
         <h4 id="INT"><code>INT</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>whole</var> <b>= INT(</b><var>number</var><b>)</b>
         </code>
         <p>
@@ -1592,7 +1592,7 @@
 
     <section>
         <h4 id="IOCTL$"><code>IOCTL$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>result</var> <b>= IOCTL</b>[ ]<b>$ (</b>[<b>#</b>] <var>file_num</var><b>)</b>
         </code>
         <p>
@@ -1628,7 +1628,7 @@
 
     <section>
         <h4 id="LEFT$"><code>LEFT$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>child</var> <b>= LEFT$(</b><var>parent</var><b>,</b> <var>num_chars</var><b>)</b>
         </code>
         <p>
@@ -1671,7 +1671,7 @@
 
     <section>
         <h4 id="LEN"><code>LEN</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>length</var> <b>= LEN(</b><var>string</var><b>)</b>
         </code>
         <p>
@@ -1695,7 +1695,7 @@
 
     <section>
         <h4 id="LOC"><code>LOC</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>location</var> <b>= LOC(</b><var>file_num</var><b>)</b>
         </code>
         <p>
@@ -1761,7 +1761,7 @@
 
     <section>
         <h4 id="LOF"><code>LOF</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>length</var> <b>= LOF(</b><var>file_num</var><b>)</b>
         </code>
         <p>
@@ -1803,7 +1803,7 @@
 
     <section>
         <h4 id="LOG"><code>LOG</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>y</var> <b>= LOG(</b><var>x</var><b>)</b>
         </code>
         <p>
@@ -1839,7 +1839,7 @@
 
     <section>
         <h4 id="LPOS"><code>LPOS</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>position</var> <b>= LPOS(</b><var>printer_number</var><b>)</b>
         </code>
         <p>
@@ -1878,7 +1878,7 @@
 
     <section>
         <h4 id="MID$"><code>MID$</code> (function)</h4>
-        <code class="block">
+        <code class="flow">
             <var>substring</var> <b>= MID$(</b><var>string</var><b>,</b> <var>position</var> [<b>,</b> <var>length</var>]<b>)</b>
         </code>
         <p>
@@ -1917,7 +1917,7 @@
 
     <section>
         <h4 id="MKD$"><code>MKD$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>bytes</var> <b>= MKD$(</b><var>double</var><b>)</b>
         </code>
         <p>
@@ -1935,7 +1935,7 @@
 
     <section>
         <h4 id="MKI$"><code>MKI$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>bytes</var> <b>= MKI$(</b><var>int</var><b>)</b>
         </code>
         <p>
@@ -1955,7 +1955,7 @@
 
     <section>
         <h4 id="MKS$"><code>MKS$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>bytes</var> <b>= MKS$(</b><var>single</var><b>)</b>
         </code>
         <p>
@@ -1973,7 +1973,7 @@
 
     <section>
         <h4 id="OCT$"><code>OCT$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>octal</var> <b>= OCT$(</b><var>x</var><b>)</b>
         </code>
         <p>
@@ -2001,7 +2001,7 @@
 
     <section>
         <h4 id="PEEK"><code>PEEK</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>value</var> <b>= PEEK(</b><var>address</var><b>)</b>
         </code>
         <p>
@@ -2042,7 +2042,7 @@
 
     <section>
         <h4 id="PEN"><code>PEN</code> (function)</h4>
-        <code class="block"><var>x</var> <b>= PEN(</b><var>mode</var><b>)</b></code>
+        <code class="flow"><var>x</var> <b>= PEN(</b><var>mode</var><b>)</b></code>
         <p>
             Reads the light pen. What this function returns depends on <code><var>mode</var></code>:
         </p>
@@ -2124,7 +2124,7 @@
 
     <section>
         <h4 id="PLAY-function"><code>PLAY</code> (function)</h4>
-        <code class="block">
+        <code class="flow">
             <var>length</var> <b>= PLAY(</b><var>voice</var><b>)</b>
         </code>
         <p>
@@ -2165,7 +2165,7 @@
 
     <section>
         <h4 id="PMAP"><code>PMAP</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>transformed_coord</var> <b>= PMAP(</b><var>original_coord</var><b>,</b> <var>fn</var><b>)</b>
         </code>
         <p>
@@ -2238,7 +2238,7 @@
 
     <section>
         <h4 id="POINT-coord"><code>POINT</code> (current coordinate)</h4>
-        <code class="block">
+        <code class="flow">
             <var>coord</var> <b>= POINT(</b><var>fn</var><b>)</b>
         </code>
         <p>
@@ -2304,7 +2304,7 @@
 
     <section>
         <h4 id="POINT-attr"><code>POINT</code> (pixel attribute)</h4>
-        <code class="block">
+        <code class="flow">
             <var>attrib</var> <b>= POINT(</b><var>x</var><b>,</b> <var>y</var><b>)</b>
         </code>
         <p>
@@ -2340,7 +2340,7 @@
 
     <section>
         <h4 id="POS"><code>POS</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>pos</var> <b>= POS(</b><var>dummy</var><b>)</b>
         </code>
         <p>
@@ -2357,7 +2357,7 @@
 
     <section>
         <h4 id="RIGHT$"><code>RIGHT$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>child</var> <b>= RIGHT$(</b><var>parent</var><b>,</b> <var>num_chars</var><b>)</b>
         </code>
         <p>
@@ -2392,7 +2392,7 @@
 
     <section>
         <h4 id="RND"><code>RND</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>random</var> <b>= RND</b>[<b>(</b><var>x</var><b>)</b>]
         </code>
         <p>
@@ -2427,7 +2427,7 @@
 
     <section>
         <h4 id="SCREEN-function"><code>SCREEN</code> (function)</h4>
-        <code class="block">
+        <code class="flow">
             <var>value</var> <b>= SCREEN(</b><var>row</var><b>,</b> <var>column</var> [<b>,</b> <var>fn</var>]<b>)</b>
         </code>
         <p>
@@ -2475,7 +2475,7 @@
 
     <section>
         <h4 id="SGN"><code>SGN</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>sign</var> <b>= SGN(</b><var>number</var><b>)</b>
         </code>
         <p>
@@ -2498,7 +2498,7 @@
 
     <section>
         <h4 id="SIN"><code>SIN</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>sine</var> <b>= SIN(</b><var>angle</var><b>)</b>
         </code>
         <p>
@@ -2533,7 +2533,7 @@
 
     <section>
         <h4 id="SPACE$"><code>SPACE$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>spaces</var> <b>= SPACE$(</b><var>number</var><b>)</b>
         </code>
         <p>
@@ -2562,7 +2562,7 @@
 
     <section>
         <h4 id="SQR"><code>SQR</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>root</var> <b>= SQR(</b><var>number</var><b>)</b>
         </code>
         <p>
@@ -2592,7 +2592,7 @@
 
     <section>
         <h4 id="STICK"><code>STICK</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>pos</var> <b>= STICK(</b><var>axis</var><b>)</b>
         </code>
         <p>
@@ -2646,7 +2646,7 @@
 
     <section>
         <h4 id="STR$"><code>STR$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>repr</var> <b>= STR$(</b><var>number</var><b>)</b>
         </code>
         <p>
@@ -2669,7 +2669,7 @@
 
     <section>
         <h4 id="STRIG-function"><code>STRIG</code> (function)</h4>
-        <code class="block">
+        <code class="flow">
             <var>result</var> <b>= STRIG(</b><var>mode</var><b>)</b>
         </code>
         <p>
@@ -2749,7 +2749,7 @@
 
     <section>
         <h4 id="STRING$"><code>STRING$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>string</var> <b>= STRING$(</b><var>length</var><b>,</b> <var>char</var><b>)</b>
         </code>
         <p>
@@ -2785,7 +2785,7 @@
 
     <section>
         <h4 id="TAN"><code>TAN</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>tangent</var> <b>= TAN(</b><var>angle</var><b>)</b>
         </code>
         <p>
@@ -2823,7 +2823,7 @@
 
     <section>
         <h4 id="TIME$-function"><code>TIME$</code> (function)</h4>
-        <code class="block">
+        <code class="flow">
             <var>time</var> <b>= TIME$</b>
         </code>
         <p>
@@ -2840,7 +2840,7 @@
 
     <section>
         <h4 id="TIMER"><code>TIMER</code> (function)</h4>
-        <code class="block">
+        <code class="flow">
             <var>seconds</var> <b>= TIMER</b>
         </code>
         <p>
@@ -2868,7 +2868,7 @@
 
     <section>
         <h4 id="USR"><code>USR</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>value</var> <b>= USR</b>[<var>n</var>]<b>(</b><var>expr</var><b>)</b>
         </code>
         <p>
@@ -2903,7 +2903,7 @@
 
     <section>
         <h4 id="VAL"><code>VAL</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>value</var> <b>= VAL(</b><var>string</var><b>)</b>
         </code>
         <p>
@@ -2940,7 +2940,7 @@
 
     <section>
         <h4 id="VARPTR"><code>VARPTR</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>pointer</var> <b>= VARPTR(</b>{<var>name</var>|<b>#</b><var>file_num</var>}<b>)</b>
         </code>
         <p>
@@ -2985,7 +2985,7 @@
 
     <section>
         <h4 id="VARPTR$"><code>VARPTR$</code></h4>
-        <code class="block">
+        <code class="flow">
             <var>pointer</var> <b>= VARPTR$(</b><var>name</var><b>)</b>
         </code>
         <p>
@@ -3038,7 +3038,7 @@
 
     <section>
         <h4 id="AUTO"><code>AUTO</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>AUTO</b> [<var>line_number</var>|<b>.</b>] [<b>,</b> [<var>increment</var>]]
         </code>
         <p>
@@ -3082,7 +3082,7 @@
 
     <section>
         <h4 id="BEEP"><code>BEEP</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>BEEP</b>
         </code>
         <p>
@@ -3099,7 +3099,7 @@
 
     <section>
         <h4 id="BEEP-switch"><code>BEEP</code> (switch)</h4>
-        <code class="block">
+        <code class="flow">
             <b>BEEP</b> {<b>ON</b>|<b>OFF</b>}
         </code>
         <p>
@@ -3121,7 +3121,7 @@
 
     <section>
         <h4 id="BLOAD"><code>BLOAD</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>BLOAD</b> <var>file_spec</var> [<b>,</b> <var>offset</var>]
         </code>
         <p>
@@ -3163,7 +3163,7 @@
 
     <section>
         <h4 id="BSAVE"><code>BSAVE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>BSAVE</b> <var>file_spec</var><b>,</b> <var>offset</var><b>,</b> <var>length</var>
         </code>
         <p>
@@ -3211,7 +3211,7 @@
 
     <section>
     <h4 id="CALL"><code>CALL</code></h4>
-    <code class="block">
+    <code class="flow">
         <b>CALL</b> <var>address_var</var> [<b>(</b> <var>p0</var> [<b>,</b> <var>p1</var>] ... <b>)</b>]
     </code>
     <p>
@@ -3249,7 +3249,7 @@
 
     <section>
         <h4 id="CALLS"><code>CALLS</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>CALLS</b> <var>address_var</var> [<b>(</b> <var>p0</var> [<b>,</b> <var>p1</var>] ... <b>)</b>]
         </code>
         <p>Does nothing.</p>
@@ -3285,7 +3285,7 @@
 
     <section>
     <h4 id="CHAIN"><code>CHAIN</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>CHAIN</b> [<b>MERGE</b>] <var>file_spec</var> [<b>,</b> [<var>line_number_expr</var>] [<b>, ALL</b>] [<b>, DELETE</b> <var>range</var> [<b>,</b> <var>ign</var>]]]
         </code>
         <p>
@@ -3385,7 +3385,7 @@
 
     <section>
         <h4 id="CHDIR"><code>CHDIR</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>CHDIR</b> <var>dir_spec</var>
         </code>
         <p>
@@ -3417,7 +3417,7 @@
 
     <section>
         <h4 id="CIRCLE"><code>CIRCLE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>CIRCLE</b> [<b>STEP</b>] <b>(</b><var>x</var><b>,</b> <var>y</var>)<b>,</b> <var>radius</var>
             [<b>,</b> [<var>colour</var>] [<b>,</b> [<var>start</var>] [<b>,</b> [<var>end</var>] [<b>,</b> <var>aspect</var>]]]
         </code>
@@ -3472,7 +3472,7 @@
 
     <section>
         <h4 id="CLEAR"><code>CLEAR</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>CLEAR</b> [<var>expr</var>] [<b>,</b> [<var>mem_limit</var>] [<b>,</b> [<var>stack_size</var>] [<b>,</b> <var>video_memory</var>]]]
         </code>
         <p>
@@ -3540,7 +3540,7 @@
 
     <section>
         <h4 id="CLOSE"><code>CLOSE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>CLOSE</b> [[<b>#</b>] <var>file_0</var> [<b>,</b> [<b>#</b>] <var>file_1</var>] ...]
         </code>
         <p>
@@ -3583,7 +3583,7 @@
 
     <section>
         <h4 id="CLS"><code>CLS</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>CLS</b> [<var>x</var>][<b>,</b>]
         </code>
         <p>
@@ -3633,7 +3633,7 @@
 
     <section>
         <h4 id="COLOR"><code>COLOR</code> (text mode)</h4>
-        <code class="block">
+        <code class="flow">
             <b>COLOR</b> [<var>foreground</var>] [<b>,</b> [<var>background</var>] [<b>,</b> <var>border</var>]]
         </code>
         <p>
@@ -3690,7 +3690,7 @@
 
     <section>
         <h4 id="COLOR-1"><code>COLOR</code> (<code>SCREEN 1</code>)</h4>
-        <code class="block">
+        <code class="flow">
             <b>COLOR</b> [<var>palette_0</var>] [<b>,</b> <var>palette</var> [<b>,</b> <var>override</var>]]
         </code>
         <p>
@@ -3751,7 +3751,7 @@
 
     <section>
         <h4 id="COLOR-3-9"><code>COLOR</code> (<code>SCREEN 3&#8212;9</code>)</h4>
-        <code class="block">
+        <code class="flow">
             <b>COLOR</b> [<var>foreground</var>] [<b>,</b> <var>palette_0</var> [<b>,</b> <var>dummy</var>]]
         </code>
         <p>
@@ -3808,7 +3808,7 @@
 
     <section>
         <h4 id="COM"><code>COM</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>COM(</b><var>port</var><b>)</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
         <ul>
@@ -3835,7 +3835,7 @@
 
     <section>
         <h4 id="COMMON"><code>COMMON</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>COMMON</b> [<var>var_0</var> [<b>,</b> [<var>var_1</var>]] ...]
         </code>
         <p>
@@ -3855,7 +3855,7 @@
 
     <section>
         <h4 id="CONT"><code>CONT</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>CONT</b> [<var>anything</var>]
         </code>
         <p>
@@ -3902,7 +3902,7 @@
 
     <section>
         <h4 id="DATA"><code>DATA</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>DATA</b> [<var>const_0</var>] [<b>,</b> [<var>const_1</var>]] ...
         </code>
         <p>
@@ -3930,7 +3930,7 @@
 
     <section>
         <h4 id="DATE$-statement"><code>DATE$</code> (statement)</h4>
-        <code class="block">
+        <code class="flow">
             <b>DATE$ = </b><var>date</var>
         </code>
         <p>
@@ -3989,7 +3989,7 @@
 
     <section>
         <h4 id="DEF-FN"><code>DEF FN</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>DEF FN</b>[ ]<var>name</var> [<b>(</b><var>arg_0</var> [<b>,</b> <var>arg_1</var>] ...<b>)</b>] <b>=</b> <var>expression</var>
         </code>
         <p>
@@ -4035,7 +4035,7 @@
 
     <section>
         <h4 id="DEFINT"><code>DEFINT</code>, <code>DEFDBL</code>, <code>DEFSNG</code>, <code>DEFSTR</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>{DEFINT|DEFDBL|DEFSNG|DEFSTR}</b> <var>first_0</var>[<b>-</b> <var>last_0</var>] [<b>,</b> <var>first_1</var>[<b>-</b> <var>last_1</var>]] ...
         </code>
         <p>
@@ -4073,7 +4073,7 @@
 
     <section>
         <h4 id="DEF-SEG"><code>DEF SEG</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>DEF SEG</b> [<b>=</b> <var>address</var>]
         </code>
         <p>
@@ -4110,7 +4110,7 @@
 
     <section>
         <h4 id="DEF-USR"><code>DEF USR</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>DEF USR</b>[<var>n</var>] <b>=</b> <var>address</var>
         </code>
         <p>
@@ -4154,7 +4154,7 @@
 
     <section>
         <h4 id="DELETE"><code>DELETE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>DELETE</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>] ]
         </code>
         <p>
@@ -4195,7 +4195,7 @@
 
     <section>
         <h4 id="DIM"><code>DIM</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>DIM</b> <var>name</var> {<b>(</b>|<b>[</b>} <var>limit_0</var> [<b>,</b> <var>limit_1</var>] ... {<b>)</b>|<b>]</b>}
         </code>
         <p>
@@ -4262,7 +4262,7 @@
 
     <section>
         <h4 id="DRAW"><code>DRAW</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>DRAW</b> <var>gml_string</var>
         </code>
         <p>
@@ -4273,7 +4273,7 @@
         <dl>
             <dt>Movement commands</dt>
             <dd>
-                <code class="block">
+                <code class="flow">
                     [<b>B</b>][<b>N</b>] <var>movement</var>
                 </code>
                 where the default is to move and draw; the optional prefixes mean:
@@ -4442,7 +4442,7 @@
 
     <section>
         <h4 id="EDIT"><code>EDIT</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>EDIT</b> {<var>line_number</var>|<b>.</b>}
         </code>
         <p>
@@ -4470,7 +4470,7 @@
 
     <section>
         <h4 id="ELSE"><code>ELSE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>ELSE</b> [<var>anything</var>]
         </code>
         <p>
@@ -4483,7 +4483,7 @@
 
     <section>
         <h4 id="END"><code>END</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>END</b>
         </code>
         <p>
@@ -4496,7 +4496,7 @@
 
     <section>
         <h4 id="ENVIRON"><code>ENVIRON</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>ENVIRON</b> <var>command_string</var>
         </code>
         <p>
@@ -4508,7 +4508,7 @@
         </p>
         <dl>
             <dt>
-                <code class="block">
+                <code class="flow">
                     <b>"</b><var>VARIABLE</var><b>=</b><var>VALUE</var><b>"</b>
                 </code>
             </dt>
@@ -4516,7 +4516,7 @@
                 to set <code><var>VARIABLE</var></code> to <code><var>VALUE</var></code>;
             </dd>
             <dt>
-                <code class="block">
+                <code class="flow">
                     <b>"</b><var>VARIABLE</var><b>="</b>
                 </code>
             </dt>
@@ -4538,7 +4538,7 @@
 
     <section>
         <h4 id="ERASE"><code>ERASE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>ERASE</b> <var>array_0</var> [<b>,</b> <var>array_1</var>] ...
         </code>
         <p>
@@ -4569,7 +4569,7 @@
 
     <section>
         <h4 id="ERROR"><code>ERROR</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>ERROR</b> <var>error_number</var>
         </code>
         <p>
@@ -4599,7 +4599,7 @@
 
     <section>
         <h4 id="FIELD"><code>FIELD</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>FIELD</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>width_0</var> <b>AS</b> <var>name_0</var> [<b>,</b> <var>width_1</var> <b>AS</b> <var>name_1</var>] ...]
         </code>
         <p>
@@ -4680,7 +4680,7 @@
 
     <section>
         <h4 id="FILES"><code>FILES</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>FILES</b> [<var>filter_spec</var>]
         </code>
         <p>
@@ -4744,7 +4744,7 @@
 
     <section>
         <h4 id="FOR"><code>FOR</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>FOR</b> <var>loop_var</var> <b>=</b> <var>start</var> <b>TO</b> <var>stop</var> [<b>STEP</b> <var>step</var>]
         </code>
         <p>
@@ -4787,7 +4787,7 @@
 
     <section>
         <h4 id="GET-files"><code>GET</code> (files)</h4>
-        <code class="block">
+        <code class="flow">
             <b>GET</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_number</var>]
         </code>
         <p>
@@ -4840,7 +4840,7 @@
 
     <section>
         <h4 id="GET-serial"><code>GET</code> (communications)</h4>
-        <code class="block">
+        <code class="flow">
             <b>GET</b> [<b>#</b>] <var>com_file_number</var> [<b>,</b> <var>number_bytes</var>]
         </code>
         <p>
@@ -4905,7 +4905,7 @@
 
     <section>
         <h4 id="GET-graphics"><code>GET</code> (graphics)</h4>
-        <code class="block">
+        <code class="flow">
             <b>GET (</b><var>x0</var><b>,</b> <var>y0</var><b>) -</b> [<b>STEP</b>] <b>(</b><var>x1</var><b>,</b> <var>y1</var><b>),</b> <var>array_name</var>
         </code>
         <p>
@@ -4996,7 +4996,7 @@
 
     <section>
         <h4 id="GOSUB"><code>GOSUB</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>GO</b>[ ]<b>SUB</b> <var>line_number</var> [<var>anything</var>]
         </code>
         <p>
@@ -5041,7 +5041,7 @@
 
     <section>
         <h4 id="GOTO"><code>GOTO</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>GO</b>[ ]<b>TO</b> <var>line_number</var> [<var>anything</var>]
         </code>
         <p>
@@ -5080,7 +5080,7 @@
 
     <section>
         <h4 id="IF"><code>IF</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>IF</b> <var>truth_value</var> [<b>,</b>] {<b>THEN</b>|<b>GOTO</b>} [<var>compound_statement_true</var>|<var>line_number_true</var> [<var>anything</var>]]
             [<b>ELSE</b> [<var>compound_statement_false</var>|<var>line_number_false</var> [<var>anything</var>]]]
        </code>
@@ -5142,7 +5142,7 @@
 
     <section>
         <h4 id="INPUT"><code>INPUT</code> (console)</h4>
-        <code class="block">
+        <code class="flow">
             <b>INPUT</b> [<b>;</b>] [<var>prompt</var> {<b>;</b>|<b>,</b>}] <var>var_0</var> [<b>,</b> <var>var_1</var>] ...
         </code>
         <p>
@@ -5214,7 +5214,7 @@
 
     <section>
         <h4 id="INPUT-file"><code>INPUT</code> (files)</h4>
-        <code class="block">
+        <code class="flow">
             <b>INPUT #</b> <var>file_num</var><b>,</b> <var>var_0</var> [<b>,</b> <var>var_1</var>] ...
         </code>
         <p>
@@ -5300,7 +5300,7 @@
 
     <section>
         <h4 id="IOCTL"><code>IOCTL</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>IOCTL</b> [<b>#</b>] <var>file_num</var><b>,</b> <var>control_string</var>
         </code>
         <p>
@@ -5335,7 +5335,7 @@
 
     <section>
         <h4 id="KEY-list"><code>KEY</code> (macro list)</h4>
-        <code class="block">
+        <code class="flow">
             <b>KEY</b> {<b>ON</b>|<b>OFF</b>|<b>LIST</b>}
         </code>
         <p>
@@ -5490,7 +5490,7 @@
 
     <section>
         <h4 id="KEY-def"><code>KEY</code> (macro definition)</h4>
-        <code class="block">
+        <code class="flow">
             <b>KEY</b> <var>key_id</var><b>,</b> <var>string_value</var>
         </code>
         <p>
@@ -5540,7 +5540,7 @@
 
     <section>
         <h4 id="KEY-event"><code>KEY</code> (event switch)</h4>
-        <code class="block">
+        <code class="flow">
             <b>KEY</b> <b>(</b><var>key_id</var><b>)</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
         <p>
@@ -5645,7 +5645,7 @@
 
     <section>
         <h4 id="KEY-event-def"><code>KEY</code> (event definition)</h4>
-        <code class="block">
+        <code class="flow">
             <b>KEY</b> <var>key_id</var><b>,</b> <var>two_char_string</var>
         </code>
         <p>
@@ -5735,7 +5735,7 @@
 
     <section>
         <h4 id="KILL"><code>KILL</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>KILL</b> <var>file_spec</var>
         </code>
         <p>
@@ -5772,7 +5772,7 @@
 
     <section>
         <h4 id="LCOPY"><code>LCOPY</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>LCOPY</b> [<var>num</var>]
         </code>
         <p>
@@ -5809,7 +5809,7 @@
 
     <section>
         <h4 id="LET"><code>LET</code></h4>
-        <code class="block">
+        <code class="flow">
             [<b>LET</b>] <var>name</var> <b>=</b> <var>expression</var>
         </code>
         <p>
@@ -5837,7 +5837,7 @@
 
     <section>
         <h4 id="LINE"><code>LINE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>LINE</b> [[<b>STEP</b>] <b>(</b><var>x0</var><b>,</b> <var>y0</var><b>)</b>] <b>-</b> [<b>STEP</b>]
             <b>(</b><var>x1</var><b>,</b> <var>y1</var><b>)</b> [<b>,</b> [<var>attr</var>] [<b>,</b> [<b>B</b> [<b>F</b>]] [<b>,</b> <var>pattern</var>]]]
         </code>
@@ -5900,7 +5900,7 @@
 
     <section>
         <h4 id="LINE-INPUT"><code>LINE INPUT</code> (console)</h4>
-        <code class="block">
+        <code class="flow">
             <b>LINE INPUT</b> [<b>;</b>] [<var>prompt_literal</var> {<b>;</b>|<b>,</b>}] <var>string_name</var>
         </code>
         <p>
@@ -5936,7 +5936,7 @@
 
     <section>
         <h4 id="LINE-INPUT-file"><code>LINE INPUT</code> (files)</h4>
-        <code class="block">
+        <code class="flow">
             <b>LINE INPUT</b> <b>#</b> <var>file_num</var><b>,</b> <var>string_name</var>
         </code>
         <p>
@@ -6001,7 +6001,7 @@
 
     <section>
         <h4 id="LIST"><code>LIST</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>LIST</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>]] [<b>,</b> <var>file_spec</var> [<var>anything</var>]]
         </code>
         <p>
@@ -6064,7 +6064,7 @@
 
     <section>
         <h4 id="LLIST"><code>LLIST</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>LLIST</b> [<var>line_number_0</var>|<b>.</b>] [<b>-</b>[<var>line_number_1</var>|<b>.</b>]]
         </code>
         <p>
@@ -6102,7 +6102,7 @@
 
     <section>
         <h4 id="LOAD"><code>LOAD</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>LOAD</b> <var>file_spec</var> [<b>, R</b>]
         </code>
         <p>
@@ -6149,7 +6149,7 @@
 
     <section>
         <h4 id="LOCATE"><code>LOCATE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>LOCATE</b> [<var>row</var>] [<b>,</b> [<var>col</var>] [<b>,</b> [<var>cursor_visible</var>] [<b>,</b> [<var>start_line</var>] [<b>,</b> [<var>stop_line</var>] [<b>,</b>]]]]]
         </code>
         <p>
@@ -6201,10 +6201,10 @@
 
     <section>
         <h4 id="LOCK"><code>LOCK</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>LOCK</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_0</var>]
         </code>
-        <code class="block">
+        <code class="flow">
             <b>LOCK</b> [<b>#</b>] <var>file_number</var><b>,</b> [<var>record_0</var>] <b>TO</b> <var>record_1</var>
         </code>
         <p>
@@ -6273,7 +6273,7 @@
 
     <section>
         <h4 id="LSET"><code>LSET</code> and <code>RSET</code></h4>
-        <code class="block">
+        <code class="flow">
             {<b>LSET</b>|<b>RSET</b>} <var>string_name</var> <b>=</b> <var>expression</var>
         </code>
         <p>
@@ -6319,7 +6319,7 @@
 
     <section>
         <h4 id="MERGE"><code>MERGE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>MERGE</b> <var>file_spec</var>
         </code>
         <p>
@@ -6356,7 +6356,7 @@
 
     <section>
         <h4 id="MID$-statement"><code>MID$</code> (statement)</h4>
-        <code class="block">
+        <code class="flow">
             <b>MID$(</b><var>string_name</var><b>,</b> <var>position</var> [<b>,</b> <var>length</var>]<b>) =</b> <var>substring</var>
         </code>
         <p>
@@ -6409,7 +6409,7 @@
 
     <section>
         <h4 id="MKDIR"><code>MKDIR</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>MKDIR</b> <var>dir_spec</var>
         </code>
         <p>
@@ -6443,7 +6443,7 @@
 
     <section>
         <h4 id="MOTOR"><code>MOTOR</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>MOTOR</b> [<var>num</var>]
         </code>
         <p>
@@ -6480,7 +6480,7 @@
 
     <section>
         <h4 id="NAME"><code>NAME</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>NAME</b> <var>old_name</var> <b>AS</b> <var>new_name</var>
         </code>
         <p>
@@ -6520,7 +6520,7 @@
 
     <section>
         <h4 id="NEW"><code>NEW</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>NEW</b>
         </code>
         <p>
@@ -6533,7 +6533,7 @@
 
     <section>
         <h4 id="NEXT"><code>NEXT</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>NEXT</b> [<var>var_0</var> [<b>,</b> <var>var_1</var>] ...]
         </code>
         <p>
@@ -6565,7 +6565,7 @@
 
     <section>
         <h4 id="NOISE"><code>NOISE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>NOISE</b> <var>source</var><b>,</b> <var>volume</var><b>,</b> <var>duration</var>
         </code>
         <p>
@@ -6662,7 +6662,7 @@
 
     <section>
         <h4 id="ON-jump"><code>ON</code> (calculated jump)</h4>
-        <code class="block">
+        <code class="flow">
             <b>ON</b> <var>n</var> {<b>GOTO</b>|<b>GOSUB</b>} <var>line_number_0</var> [<b>,</b> <var>line_number_1</var>] ...
         </code>
         <p>
@@ -6699,7 +6699,7 @@
 
     <section>
         <h4 id="ON-event"><code>ON</code> (event trapping)</h4>
-        <code class="block">
+        <code class="flow">
             <b>ON</b> {<b>COM(</b><var>n</var><b>)</b>|<b>KEY(</b><var>n</var><b>)</b>|<b>STRIG(</b><var>n</var><b>)</b>|<b>PEN</b>|<b>PLAY(</b><var>n</var><b>)</b>|<b>TIMER(</b><var>x</var><b>)</b>}
             <b>GOSUB</b> <var>line_number</var>
         </code>
@@ -6790,7 +6790,7 @@
 
     <section>
         <h4 id="ON-ERROR"><code>ON ERROR</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>ON ERROR GOTO</b> {<var>line_number</var>|<b>0</b>}
         </code>
         <p>
@@ -6826,10 +6826,10 @@
 
     <section>
         <h4 id="OPEN"><code>OPEN</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>OPEN</b> <var>mode_char</var><b>,</b> [<b>#</b>] <var>file_num</var><b>,</b> <var>file_spec</var> [<b>,</b> <var>rec_len</var>]
         </code>
-        <code class="block">
+        <code class="flow">
             <b>OPEN</b> <var>file_spec</var> [<b>FOR</b> {<b>INPUT</b>|<b>OUTPUT</b>|<b>APPEND</b>|<b>RANDOM</b>}]
                        [<b>ACCESS</b> {<b>READ</b>|<b>WRITE</b>|<b>READ WRITE</b>}]
                        [<b>SHARED</b>|<b>LOCK</b> {<b>READ</b>|<b>WRITE</b>|<b>READ WRITE</b>}]
@@ -7171,7 +7171,7 @@
             <dd>
                 <p>
                     When opening a <code>COM</code> port, the <code><var>file_spec</var></code> has the form
-                    <code class="block"><b>"COM</b><var>n</var><b>:</b>[<var>speed</var>[<b>,</b><var>parity</var>[<b>,</b><var>data</var>[<b>,</b><var>stop</var>[<b>,RS</b>][<b>,CS</b>[<var>n</var>]][<b>,DS</b>[<var>n</var>]][<b>,CD</b>[<var>n</var>]][<b>,LF</b>][<b>,PE</b>]]]]]<b>"</b></code>
+                    <code class="flow"><b>"COM</b><var>n</var><b>:</b>[<var>speed</var>[<b>,</b><var>parity</var>[<b>,</b><var>data</var>[<b>,</b><var>stop</var>[<b>,RS</b>][<b>,CS</b>[<var>n</var>]][<b>,DS</b>[<var>n</var>]][<b>,CD</b>[<var>n</var>]][<b>,LF</b>][<b>,PE</b>]]]]]<b>"</b></code>
                     The first four parameters after the device colon must be given
                     in the order specified but the named parameters
                     can be given in any order.
@@ -7378,7 +7378,7 @@
 
     <section>
         <h4 id="OPTION-BASE"><code>OPTION BASE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>OPTION BASE</b> <var>n</var>
         </code>
         <p>
@@ -7415,7 +7415,7 @@
 
     <section>
         <h4 id="OUT"><code>OUT</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>OUT</b> <var>port</var><b>,</b> <var>value</var>
         </code>
         <p>
@@ -7501,7 +7501,7 @@
 
     <section>
         <h4 id="PAINT"><code>PAINT</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>PAINT</b> [<b>STEP</b>] <b>(</b><var>x</var><b>,</b> <var>y</var><b>)</b> [<b>,</b> <var>attrib</var> [<b>,</b> <var>border</var> [<b>,</b> <var>background</var>]]]
         </code>
         <p>
@@ -7649,7 +7649,7 @@
 
     <section>
         <h4 id="PALETTE"><code>PALETTE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>PALETTE</b> [<var>attrib</var><b>,</b> <var>colour</var>]
         </code>
         <p>
@@ -7686,7 +7686,7 @@
 
     <section>
         <h4 id="PALETTE-USING"><code>PALETTE USING</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>PALETTE USING</b> <var>int_array_name</var> {<b>(</b>|<b>[</b>} <var>start_index</var> {<b>)</b>|<b>]</b>}
         </code>
         <p>
@@ -7733,7 +7733,7 @@
 
     <section>
         <h4 id="PCOPY"><code>PCOPY</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>PCOPY</b> <var>src</var><b>,</b> <var>dst</var>
         </code>
         <p>
@@ -7764,7 +7764,7 @@
 
     <section>
         <h4 id="PEN-statement"><code>PEN</code> (statement)</h4>
-        <code class="block"><b>PEN</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}</code>
+        <code class="flow"><b>PEN</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}</code>
         <p>
             Controls event trapping and read access of the light pen (emulated through the mouse in PC-BASIC).
             <code>PEN ON</code> switches pen reading and trapping on.  <code>PEN OFF</code> switches it off.
@@ -7778,7 +7778,7 @@
 
     <section>
         <h4 id="PLAY-event"><code>PLAY</code> (event switch)</h4>
-        <code class="block">
+        <code class="flow">
             <b>PLAY</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
         <ul>
@@ -7800,7 +7800,7 @@
 
     <section>
         <h4 id="PLAY"><code>PLAY</code> (music statement)</h4>
-        <code class="block">
+        <code class="flow">
             <b>PLAY</b> [<var>mml_string_0</var>] [<b>,</b> [<var>mml_string_1</var>] [<b>,</b> <var>mml_string_2</var>]]
         </code>
         <p>
@@ -8007,7 +8007,7 @@
 
     <section>
         <h4 id="POKE"><code>POKE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>POKE</b> <var>address</var><b>,</b> <var>value</var>
         </code>
         <p>
@@ -8053,7 +8053,7 @@
 
     <section>
         <h4 id="PSET"><code>PSET</code> and <code>PRESET</code></h4>
-        <code class="block">
+        <code class="flow">
             { <b>PSET</b> | <b>PRESET</b> } [<b>STEP</b>] <b>(</b><var>x</var><b>,</b> <var>y</var><b>)</b> [<b>,</b> <var>attrib</var>]
         </code>
         <p>
@@ -8094,7 +8094,7 @@
 
     <section>
         <h4 id="PRINT"><code>PRINT</code> and <code>LPRINT</code></h4>
-        <code class="block">
+        <code class="flow">
             {<b>LPRINT</b>|{<b>PRINT</b>|<b>?</b>} [<b>#</b> <var>file_num</var><b>,</b>]} [<var>expr_0</var>|<b>;</b>|<b>,</b>|<b>SPC(</b><var>n</var><b>)</b>|<b>TAB(</b><var>n</var><b>)</b>] ...
             [<b>USING</b> <var>format</var><b>;</b> <var>uexpr_0</var> [{<b>;</b>|<b>,</b>} <var>uexpr_1</var>] ... [<b>;</b>|<b>,</b>]]
         </code>
@@ -8491,7 +8491,7 @@
 
     <section>
         <h4 id="PUT-files"><code>PUT</code> (files)</h4>
-        <code class="block">
+        <code class="flow">
             <b>PUT</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_number</var>]
         </code>
         <p>
@@ -8533,7 +8533,7 @@
 
     <section>
         <h4 id="PUT-serial"><code>PUT</code> (communications)</h4>
-        <code class="block">
+        <code class="flow">
             <b>PUT</b> [<b>#</b>] <var>com_file_number</var> [<b>,</b> <var>number_bytes</var>]
         </code>
         <p>
@@ -8578,7 +8578,7 @@
 
     <section>
         <h4 id="PUT-graphics"><code>PUT</code> (graphics)</h4>
-        <code class="block">
+        <code class="flow">
             <b>PUT (</b><var>x0</var><b>,</b> <var>y0</var><b>),</b> <var>array_name</var> [<b>,</b> {<b>PSET</b>|<b>PRESET</b>|<b>AND</b>|<b>OR</b>|<b>XOR</b>}]
         </code>
         <p>
@@ -8646,7 +8646,7 @@
 
     <section>
         <h4 id="RANDOMIZE"><code>RANDOMIZE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>RANDOMIZE</b> [<var>expr</var>]
         </code>
         <p>
@@ -8691,7 +8691,7 @@
 
     <section>
         <h4 id="READ"><code>READ</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>READ</b> <var>var_0</var> [<b>,</b> <var>var_1</var>] ...
         </code>
         <p>
@@ -8722,7 +8722,7 @@
 
     <section>
         <h4 id="REM"><code>REM</code></h4>
-        <code class="block">
+        <code class="flow">
             {<b>REM</b>|<b>'</b>} [<var>anything</var>]
         </code>
         <p>
@@ -8740,7 +8740,7 @@
 
     <section>
         <h4 id="RENUM"><code>RENUM</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>RENUM</b> [<var>new</var>|<b>.</b>] [<b>,</b> [<var>old</var>|<b>.</b>] [<b>,</b> <var>increment</var>]]
         </code>
         <p>
@@ -8801,7 +8801,7 @@
 
     <section>
         <h4 id="RESET"><code>RESET</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>RESET</b>
         </code>
         <p>
@@ -8823,7 +8823,7 @@
 
     <section>
         <h4 id="RESTORE"><code>RESTORE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>RESTORE</b> [<var>line</var>]
         </code>
         <p>
@@ -8844,7 +8844,7 @@
 
     <section>
         <h4 id="RESUME"><code>RESUME</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>RESUME</b> [<b>0</b>|<b>NEXT</b>|<var>line</var>]
         </code>
         <p>
@@ -8872,7 +8872,7 @@
 
     <section>
         <h4 id="RETURN"><code>RETURN</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>RETURN</b> [<var>line</var>]
         </code>
         <p>
@@ -8895,7 +8895,7 @@
 
     <section>
         <h4 id="RMDIR"><code>RMDIR</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>RMDIR</b> <var>dir_spec</var>
         </code>
         <p>
@@ -8933,7 +8933,7 @@
 
     <section>
         <h4 id="RUN"><code>RUN</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>RUN</b> [<var>line</var>|<var>file_spec</var>] [<b>,R</b>]
         </code>
         <p>
@@ -8975,7 +8975,7 @@
 
     <section>
         <h4 id="SAVE"><code>SAVE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>SAVE</b> <var>file_spec</var> [<b>,</b> {<b>A</b>|<b>P</b>}]
         </code>
         <p>
@@ -9024,7 +9024,7 @@
 
     <section>
         <h4 id="SCREEN-statement"><code>SCREEN</code> (statement)</h4>
-        <code class="block">
+        <code class="flow">
             <b>SCREEN</b> [<var>mode</var>] [<b>,</b> [<var>colorburst</var>] [<b>,</b> [<var>apage</var>] [<b>,</b> [<var>vpage</var>] [<b>,</b> <var>erase</var>]]]]
         </code>
         <p>
@@ -9166,7 +9166,7 @@
 
     <section>
         <h4 id="SHELL"><code>SHELL</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>SHELL</b> [<var>command</var>]
         </code>
         <p>
@@ -9206,7 +9206,7 @@
 
     <section>
         <h4 id="SOUND"><code>SOUND</code> (tone)</h4>
-        <code class="block">
+        <code class="flow">
             <b>SOUND</b> <var>frequency</var><b>,</b> <var>duration</var> [<b>,</b> <var>volume</var> [<b>,</b> <var>voice</var>]]
         </code>
         <p>
@@ -9299,7 +9299,7 @@
 
     <section>
         <h4 id="SOUND-switch"><code>SOUND</code> (switch)</h4>
-        <code class="block">
+        <code class="flow">
             <b>SOUND</b> {<b>ON</b>|<b>OFF</b>}
         </code>
         <p>
@@ -9330,7 +9330,7 @@
 
     <section>
         <h4 id="STOP"><code>STOP</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>STOP</b>
         </code>
         <p>
@@ -9344,7 +9344,7 @@
 
     <section>
         <h4 id="STRIG-switch"><code>STRIG</code> (statement)</h4>
-        <code class="block">
+        <code class="flow">
             <b>STRIG</b> {<b>ON</b>|<b>OFF</b>}
         </code>
         <p>
@@ -9355,7 +9355,7 @@
 
     <section>
         <h4 id="STRIG-events"><code>STRIG</code> (event switch)</h4>
-        <code class="block">
+        <code class="flow">
             <b>STRIG(</b><var>button</var><b>)</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
         <p>
@@ -9414,7 +9414,7 @@
 
     <section>
         <h4 id="SWAP"><code>SWAP</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>SWAP</b> <var>var_0</var><b>,</b> <var>var_1</var>
         </code>
         <p>
@@ -9450,7 +9450,7 @@
 
     <section>
         <h4 id="SYSTEM"><code>SYSTEM</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>SYSTEM</b>
         </code>
         <p>
@@ -9468,7 +9468,7 @@
 
     <section>
         <h4 id="TERM"><code>TERM</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>TERM</b>
         </code>
         <p>
@@ -9495,7 +9495,7 @@
 
     <section>
         <h4 id="TIME$-statement"><code>TIME$</code> (statement)</h4>
-        <code class="block">
+        <code class="flow">
             <b>TIME$ = </b><var>time</var>
         </code>
         <p>
@@ -9532,7 +9532,7 @@
 
     <section>
         <h4 id="TIMER-event"><code>TIMER</code> (statement)</h4>
-        <code class="block">
+        <code class="flow">
             <b>TIMER</b> {<b>ON</b>|<b>OFF</b>|<b>STOP</b>}
         </code>
         <ul>
@@ -9554,7 +9554,7 @@
 
     <section>
         <h4 id="TRON"><code>TRON</code> and <code>TROFF</code></h4>
-        <code class="block">
+        <code class="flow">
             {<b>TRON</b>|<b>TROFF</b>}
         </code>
         <p>
@@ -9573,10 +9573,10 @@
 
     <section>
         <h4 id="UNLOCK"><code>UNLOCK</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>UNLOCK</b> [<b>#</b>] <var>file_number</var> [<b>,</b> <var>record_0</var>]
         </code>
-        <code class="block">
+        <code class="flow">
             <b>UNLOCK</b> [<b>#</b>] <var>file_number</var><b>,</b> [<var>record_0</var>] <b>TO</b> <var>record_1</var>
         </code>
         <p>
@@ -9621,7 +9621,7 @@
 
     <section>
         <h4 id="VIEW"><code>VIEW</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>VIEW</b> [[<b>SCREEN</b>] <b>(</b><var>x0</var><b>,</b> <var>y0</var><b>)-(</b><var>x1</var><b>,</b> <var>y1</var><b>)</b> [<b>,</b> [<var>fill</var>] [<b>,</b> <var>border</var>]]]
         </code>
         <p>
@@ -9663,7 +9663,7 @@
 
     <section>
         <h4 id="VIEW-PRINT"><code>VIEW PRINT</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>VIEW PRINT</b> <var>top_row</var> <b>TO</b> <var>bottom_row</var>
         </code>
         <p>
@@ -9697,7 +9697,7 @@
 
     <section>
         <h4 id="WAIT"><code>WAIT</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>WAIT</b> <var>port</var><b>,</b> <var>and_mask</var> [<b>,</b> <var>xor_mask</var>]
         </code>
         <p>
@@ -9731,7 +9731,7 @@
 
     <section>
         <h4 id="WEND"><code>WEND</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>WEND</b>
         </code>
         <p>
@@ -9759,7 +9759,7 @@
 
     <section>
         <h4 id="WHILE"><code>WHILE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>WHILE</b> <var>expr</var>
         </code>
         <p>
@@ -9788,7 +9788,7 @@
 
     <section>
         <h4 id="WIDTH"><code>WIDTH</code> (console)</h4>
-        <code class="block">
+        <code class="flow">
             <b>WIDTH</b> <var>num_columns</var> [<b>,</b> [<var>num_rows</var>] [<b>,</b>]]
         </code>
         <p>
@@ -9849,7 +9849,7 @@
 
     <section>
         <h4 id="WIDTH-files"><code>WIDTH</code> (devices and files)</h4>
-        <code class="block">
+        <code class="flow">
             <b>WIDTH</b> {<b>#</b><var>file_num</var><b>,</b>|<var>device_name</var><b>,</b>|<b>LPRINT</b>} <var>num_columns</var>
         </code>
         <p>
@@ -9913,7 +9913,7 @@
 
     <section>
         <h4 id="WINDOW"><code>WINDOW</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>WINDOW</b> [[<b>SCREEN</b>] <b>(</b><var>x0</var><b>,</b> <var>y0</var><b>)-(</b><var>x1</var><b>,</b> <var>y1</var><b>)</b>]
         </code>
         <p>
@@ -9949,7 +9949,7 @@
 
     <section>
         <h4 id="WRITE"><code>WRITE</code></h4>
-        <code class="block">
+        <code class="flow">
             <b>WRITE</b> [<b>#</b> <var>file_num</var><b>,</b>] <var>expr_0</var> [{<b>,</b>|<b>;</b>} <var>expr_1</var>] ...
         </code>
         <p>

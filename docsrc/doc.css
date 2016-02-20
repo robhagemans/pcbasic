@@ -22,11 +22,11 @@ hr {
     display: none;
 }
 
-.block {
+.block, .flow {
     display: block;
 }
 
-figure, .scrollable, pre, code.block, samp.block {
+figure, .scrollable {
     max-width: 45rem;
     width: 100%;
     overflow-x: auto;
@@ -240,11 +240,30 @@ pre, code.block, samp.block {
     border-top: 1px dotted;
     border-bottom: 1px dotted;
     padding: 0.1em 0.5em 0.1em 0.5em;
+    max-width: 45rem;
+    width: 100%;
+    overflow-x: auto;
 }
+code.flow, samp.flow {
+    font-size: 0.8em;
+    background-color: #eeeeff;
+    margin-top: 0.5em;
+    border-top: 1px dotted;
+    border-bottom: 1px dotted;
+    padding: 0.1em 0.5em 0.1em 2.5em;
+    text-indent: -2em;
+    max-width: 42rem;
+    width: 100%;
+    overflow-x: auto;
+}
+
 dt code {
     font-weight: normal;
 }
 
+.option-link {
+    white-space: nowrap;
+}
 /* tablets and desktops */
 
 @media (min-width: 55em) {

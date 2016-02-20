@@ -76,6 +76,7 @@ def get_options(html_file):
         link_id = node.getparent().get('id')
         if link_id:
             node.set('href', '#' + link_id)
+            node.set('class', 'option-link')
             node.text = '[' + (node.text or '')
             try:
                 last = node.getchildren()[-1]
