@@ -91,6 +91,13 @@ apologies to those whose contribution I have failed to acknowledge here.
   * [IBM CDRA](http://www-01.ibm.com/software/globalization/cdra/)
   * **Masaki Tojo**'s [Camellia](https://github.com/mtojo/camellia)
 
+### Bibliography
+
+  * _GW-BASIC 3.23 User's Guide_, Microsoft Corporation, 1987
+  * _IBM Personal Computer Hardware Reference Library: BASIC_, IBM, 1982
+  * _Tandy 1000 BASIC, A Reference Guide_, Tandy Corporation
+  * **William Barden, Jr.**, _Graphics and Sound for the Tandy 1000s and PC Compatibles_, Microtrend, 1987
+  * **Don Inman** and **Bob Albrecht**, _The GW-BASIC Reference_, Osborne McGraw-Hill, 1990
 
 ### Development tools
 
