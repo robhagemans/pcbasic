@@ -801,7 +801,7 @@
         </code>
         <p>
             Returns the cosine of <code><var>angle</var></code>.
-            Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option,
+            Unless PC-BASIC is run with the <code><a href="#--double">double</a></code> option,
             this function returns a single-precision
             value.
         </p>
@@ -1140,7 +1140,7 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code> option, this function returns a single-precision
+                Unless PC-BASIC is run with the <code><a href="#--double">double</a></code> option, this function returns a single-precision
                 value.
             </li>
             <li>
@@ -1818,7 +1818,7 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+                Unless PC-BASIC is run with the <code><a href="#--double">double</a></code>
                 option, this function returns a single-precision value.
             </li>
             <li>
@@ -2023,7 +2023,7 @@
             </li>
             <li>
                Values for particular memory address can be preset on the command line
-                using the <code><a href="#--peek">--peek</a></code> option. This can be used for compatibility with old
+                using the <code><a href="#--peek">peek</a></code> option. This can be used for compatibility with old
                 programs. These values will override video or data segment values, if they
                 are in those locations.
             </li>
@@ -2134,10 +2134,10 @@
         <ul>
             <li>
                 <code><var>voice</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
-                If <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code>, indicates for which tone voice channel
+                If <code><a href="#--syntax">syntax</a>={pcjr|tandy}</code>, indicates for which tone voice channel
                 the number of notes is to be returned. If <code><var>voice</var></code> is not in <code>[0&#8212;2]</code>, the
                 queue for voice 0 is returned.
-                For other choices of <code>--syntax</code>, the <code><var>voice</var></code> value has no effect.
+                For other choices of <code>syntax</code>, the <code><var>voice</var></code> value has no effect.
             </li>
         </ul>
         <h5>Notes</h5>
@@ -2514,7 +2514,7 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+                Unless PC-BASIC is run with the <code><a href="#--double">double</a></code>
                 option, this function returns a single-precision value.
             </li>
             <li>
@@ -2577,7 +2577,7 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+                Unless PC-BASIC is run with the <code><a href="#--double">double</a></code>
                 option, this function returns a single-precision value.
             </li>
         </ul>
@@ -2801,7 +2801,7 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                Unless PC-BASIC is run with the <code><a href="#--double">--double</a></code>
+                Unless PC-BASIC is run with the <code><a href="#--double">double</a></code>
                 option, this function returns a single-precision value.
             </li>
             <li>
@@ -3496,8 +3496,8 @@
             <li>
                 <code><var>video_memory</var></code> specifies the amount of memory available
                 to the video adapter. This parameter is only legal with one of the options
-                <code><a href="#--syntax">--syntax</a>={pcjr, tandy}</code>. Instead of using
-                <code>CLEAR</code>, the option <code><a href="#--video-memory">--video-memory</a></code>
+                <code><a href="#--syntax">syntax</a>={pcjr, tandy}</code>. Instead of using
+                <code>CLEAR</code>, the option <code><a href="#--video-memory">video-memory</a></code>
                 can also be used to set video memory size.
             </li>
         </ul>
@@ -5341,7 +5341,7 @@
         <p>
             Turns the list of function-key macros on the bottom of the screen <code>ON</code> or <code>OFF</code>.
             If <code>LIST</code> is specified, prints a list of
-            the 10 (or 12 with <code><a href="#--syntax">--syntax</a>=tandy</code>) function keys
+            the 10 (or 12 with <code><a href="#--syntax">syntax</a>=tandy</code>) function keys
             with the function-key macros defined for those keys to the console.
         </p>
         <p>
@@ -5502,7 +5502,7 @@
             <li>
                 <code><var>key_id</var></code> is a numeric expression in the range
                 <code>[1&#8212;10]</code> (or <code>[1&#8212;12]</code>
-                when <code><a href="#--syntax">--syntax</a>=tandy</code>).
+                when <code><a href="#--syntax">syntax</a>=tandy</code>).
             </li>
             <li>
                 <code><var>string_value</var></code> is a string expression.
@@ -5623,7 +5623,7 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                With <code><a href="#--syntax">--syntax</a>=tandy</code>, key 11
+                With <code><a href="#--syntax">syntax</a>=tandy</code>, key 11
                 is <kbd>F11</kbd> and key 12 is <kbd>F12</kbd>.
                 Pre-defined keys 11&#8212;14 shift to 13&#8212;16.
             </li>
@@ -5656,7 +5656,7 @@
             <li>
                 <code><var>key_id</var></code> is a numeric
                 expression in <code>[15&#8212;20]</code>
-                (or <code>[17&#8212;20]</code> when <code><a href="#--syntax">--syntax</a>=tandy</code>).
+                (or <code>[17&#8212;20]</code> when <code><a href="#--syntax">syntax</a>=tandy</code>).
             </li>
             <li>
                 <code><var>two_char_string</var></code> is a string expression of length 2. The first character is interpreted as a modifier
@@ -5707,7 +5707,7 @@
             </li>
             <li>
                 If <code><var>key_id</var></code> is in <code>[1&#8212;10]</code>
-                (or <code>[1&#8212;12]</code> when <code><a href="#--syntax">--syntax</a>=tandy</code>),
+                (or <code>[1&#8212;12]</code> when <code><a href="#--syntax">syntax</a>=tandy</code>),
                 the statement is interpreted as a
                 <a href="#KEY-def">function-key macro definition</a>.
             </li>
@@ -6639,7 +6639,7 @@
         <ul>
             <li>
                 This statement is only available if
-                <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code> is set.
+                <code><a href="#--syntax">syntax</a>={pcjr|tandy}</code> is set.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -7448,7 +7448,7 @@
                     <td>
                         if <code><var>value</var> = &amp;h1A</code>, enable composite colorburst.<br/>
                         if <code><var>value</var> = &amp;h1E</code>, disable composite colorburst.<br/>
-                        Requires <code><a href="#--video">--video</a>={cga, tandy, pcjr}</code>.
+                        Requires <code><a href="#--video">video</a>={cga, tandy, pcjr}</code>.
                     </td>
                 </tr>
             </table>
@@ -7807,7 +7807,7 @@
             Plays the tune defined by the Music Macro Language strings <code><var>mml_string_0</var>, ...</code>.
         </p>
         <p>
-            Unless <code><a href="#--syntax">--syntax</a>={tandy | pcjr}</code> is set, only the single-voice syntax is available.
+            Unless <code><a href="#--syntax">syntax</a>={tandy | pcjr}</code> is set, only the single-voice syntax is available.
             The three separate MML strings correspond to the three voices of the PCjr/Tandy sound adapter.
             The notes in these strings are played synchronously.
         </p>
@@ -7948,7 +7948,7 @@
         </div>
         <h6>Volume control</h6>
         <p>
-            Volume control is available on <code><a href="#--syntax">--syntax</a>={tandy | pcjr}</code> only:
+            Volume control is available on <code><a href="#--syntax">syntax</a>={tandy | pcjr}</code> only:
         </p>
         <div class="scrollable">
         <table>
@@ -7962,8 +7962,8 @@
                 </td>
                 <td>
                     Set the volume to <code><var>n</var></code>, in the range <code>[0&#8212;15]</code>.
-                    On <code><a href="#--syntax">--syntax</a>=pcjr</code>, if <code><a href="#SOUND-switch">SOUND ON</a></code>
-                    has not been executed, this has no effect. On <code><a href="#--syntax">--syntax</a>=tandy</code> it does have.
+                    On <code><a href="#--syntax">syntax</a>=pcjr</code>, if <code><a href="#SOUND-switch">SOUND ON</a></code>
+                    has not been executed, this has no effect. On <code><a href="#--syntax">syntax</a>=tandy</code> it does have.
                 </td>
             </tr>
         </table>
@@ -9015,7 +9015,7 @@
                 <samp>Bad file name</samp> (on disk devices).
             </li>
             <li>
-                <code><a href="#--strict-protect">--strict-protect</a></code> is enabled, the current program is protected and <code>,P</code> is not specified:
+                <code><a href="#--strict-protect">strict-protect</a></code> is enabled, the current program is protected and <code>,P</code> is not specified:
                 <samp>Illegal function call</samp>.
             </li>
         </ul>
@@ -9046,7 +9046,7 @@
             </li>
             <li>
                 <code><var>erase</var></code> is a numeric expression in the range <code>[0, 1, 2]</code>.
-                It is only legal with <code><a href="#--syntax">--syntax</a>={pcjr, tandy}</code>. See notes below.
+                It is only legal with <code><a href="#--syntax">syntax</a>={pcjr, tandy}</code>. See notes below.
             </li>
         </ul>
         <h5>NTSC Composite Colorburst</h5>
@@ -9101,7 +9101,7 @@
         <p>
             By default, if the <code><var>mode</var></code> changes or the <code><var>colorburst</var></code>
             changes between zero and non-zero, the old page and the new page of the screen
-            are cleared. On <code><a href="#--syntax">--syntax</a>={pcjr, tandy}</code>,
+            are cleared. On <code><a href="#--syntax">syntax</a>={pcjr, tandy}</code>,
             the <code><var>erase</var></code> parameter can be used to change this behaviour.
             Its values are as follows:
         </p>
@@ -9185,7 +9185,7 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                If the <code><a href="#--shell">--shell</a>=native</code> option is not specified, this statement does nothing.
+                If the <code><a href="#--shell">shell</a>=native</code> option is not specified, this statement does nothing.
             </li>
             <li>
             Be careful when enabling this command, as it allows the running BASIC program full access to your files and operating system.
@@ -9224,19 +9224,19 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>frequency</var></code> is a numeric expression in <code>[37&#8212;32767]</code> or <code>0</code> (for <code>--syntax={advanced | pcjr}</code>)
-                or in <code>[-32768&#8212;32767]</code> (for <code>--syntax=tandy</code>).
+                <code><var>frequency</var></code> is a numeric expression in <code>[37&#8212;32767]</code> or <code>0</code> (for <code>syntax={advanced | pcjr}</code>)
+                or in <code>[-32768&#8212;32767]</code> (for <code>syntax=tandy</code>).
             </li>
             <li>
                 <code><var>duration</var></code> is a numeric expression in <code>[0&#8212;65535]</code>.
             </li>
             <li>
                 <code><var>volume</var></code> is a numeric expression in [0, 15]. 0 is silent, 15 is full
-                volume; every step less reduces the volume by 2 dB. (For <code>--syntax={pcjr | tandy}</code>)
+                volume; every step less reduces the volume by 2 dB. (For <code>syntax={pcjr | tandy}</code>)
             </li>
             <li>
                 <code><var>voice</var></code> is a numeric expression in [0, 2], indicating which of the
-                three tone voice channels is used for this sound. (For <code><a href="#--syntax">--syntax</a>={pcjr | tandy}</code>)
+                three tone voice channels is used for this sound. (For <code><a href="#--syntax">syntax</a>={pcjr | tandy}</code>)
             </li>
         </ul>
         <h5>Notes</h5>
@@ -9274,7 +9274,7 @@
                 <samp>Syntax error</samp>.
             </li>
             <li>
-                <code><a href="#--syntax">--syntax</a>={ pcjr | tandy }</code> is not set and more than two arguments are specified:
+                <code><a href="#--syntax">syntax</a>={ pcjr | tandy }</code> is not set and more than two arguments are specified:
                 <samp>Syntax error</samp>.
             </li>
             <li>
@@ -9309,7 +9309,7 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                Only available with <code>--syntax={pcjr | tandy}</code>.
+                Only available with <code>syntax={pcjr | tandy}</code>.
             </li>
             <li>
                On PCjr and Tandy computers, <code>SOUND ON</code> would turn on the external speaker as
@@ -9321,7 +9321,7 @@
         <h5>Errors</h5>
         <ul>
             <li>
-                This statement is used and <code><a href="#--syntax">--syntax</a>={ pcjr | tandy }</code> is not set:
+                This statement is used and <code><a href="#--syntax">syntax</a>={ pcjr | tandy }</code> is not set:
                 <samp>Syntax error</samp>.
             </li>
         </ul>
@@ -9472,20 +9472,20 @@
             <b>TERM</b>
         </code>
         <p>
-            Load and run the program defined by <code><a href="#--pcjr-term">--pcjr-term</a></code>.
+            Load and run the program defined by the <code><a href="#--pcjr-term">pcjr-term</a></code> option.
             By default, as on the IBM PCjr, this is a
             built-in serial terminal emulator application.
             This statement is only available with
-            <code><a href="#--syntax">--syntax</a>={pcjr|tandy}</code>.
+            <code><a href="#--syntax">syntax</a>={pcjr|tandy}</code>.
         </p>
         <h5>Errors</h5>
         <ul>
             <li>
-                If <code><a href="#--pcjr-term">--pcjr-term</a></code> is not set,
+                If <code><a href="#--pcjr-term">pcjr-term</a></code> is not set,
                 this statement raises <code>Internal error</code>.
             </li>
             <li>
-                If <code><a href="#--syntax">--syntax</a></code> is not set to
+                If <code><a href="#--syntax">syntax</a></code> is not set to
                 <code>pcjr</code> or <code>tandy</code>, this keyword is not present.
                 Calling <code>TERM</code> will raise <samp>Syntax error</samp>.
             </li>
@@ -9680,7 +9680,7 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                If <code><a href="#--syntax">--syntax</a>={pcjr | tandy}</code> and
+                If <code><a href="#--syntax">syntax</a>={pcjr | tandy}</code> and
                 <code><a href="#KEY-list">KEY OFF</a></code> is set, <code><var>bottom_row</var></code> may be 25.
                 Otherwise, screen row 25 cannot be part of the
                 scrolling area.
@@ -9821,7 +9821,7 @@
             </li>
             <li>
                 <code><var>num_rows</var></code> is optional and must equal 25. If
-                <code><a href="#--syntax">--syntax</a>={pcjr | tandy}</code> is set,
+                <code><a href="#--syntax">syntax</a>={pcjr | tandy}</code> is set,
                 <code><var>num_rows</var></code>
                 may be in <code>[0&#8212;25]</code> but its value is ignored.
             </li>
