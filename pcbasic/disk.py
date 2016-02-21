@@ -92,8 +92,8 @@ os_error = {
     # disk not ready
     errno.ENXIO: error.DISK_NOT_READY,
     errno.ENODEV: error.DISK_NOT_READY,
-    # disk media error
-    errno.EIO: error.DISK_MEDIA_ERROR,
+    # device io error
+    errno.EIO: error.DEVICE_IO_ERROR,
     # path/file access error
     errno.EEXIST: error.PATH_FILE_ACCESS_ERROR,
     errno.ENOTEMPTY: error.PATH_FILE_ACCESS_ERROR,
@@ -247,10 +247,9 @@ def create_file_object(fhandle, filetype, mode, name='', number=0,
         else:
             return RandomFile(fhandle, number, name, access, lock, reclen)
     else:
-        # internal error - incorrect file type requested
-        logging.debug('Incorrect file type %s requested for mode %s',
-                      filetype, mode)
-        raise error.RunError(error.INTERNAL_ERROR)
+        # incorrect file type requested
+        msg = 'Incorrect file type %s requested for mode %s' % (filetype, mode)
+        raise ValueError(msg)
 
 
 ##############################################################################
@@ -306,7 +305,8 @@ def handle_oserror(e):
     try:
         basic_err = os_error[e.errno]
     except KeyError:
-        basic_err = error.INTERNAL_ERROR
+        logging.error('Unmapped environment exception: %d', e.errno)
+        basic_err = error.DEVICE_IO_ERROR
     raise error.RunError(basic_err)
 
 def get_diskdevice_and_path(path):
