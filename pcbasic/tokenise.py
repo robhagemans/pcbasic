@@ -67,8 +67,6 @@ def ascii_read_to(ins, findrange):
 
 def detokenise_line(ins, bytepos=None):
     """ Convert a tokenised program line to ascii text. """
-    litstring, comment = False, False
-    textpos = 0
     current_line = util.parse_line_number(ins)
     if current_line < 0:
         # parse_line_number has returned -1 and left us at: .. 00 | _00_ 00 1A
@@ -77,12 +75,19 @@ def detokenise_line(ins, bytepos=None):
     elif current_line == 0 and util.peek(ins) == ' ':
         # ignore up to one space after line number 0
         ins.read(1)
-    output = bytearray(str(current_line))
+    linum = bytearray(str(current_line))
     # write one extra whitespace character after line number
     # unless first char is TAB
     if util.peek(ins) != '\t':
-        output += bytearray(' ')
-    # detokenise tokens until end of line
+        linum += bytearray(' ')
+    line, textpos = detokenise_compound_statement(ins, bytepos)
+    return current_line, linum + line, textpos
+
+def detokenise_compound_statement(ins, bytepos=None):
+    """ Detokenise tokens until end of line. """
+    litstring, comment = False, False
+    textpos = 0
+    output = bytearray()
     while True:
         s = ins.read(1)
         if not textpos and ins.tell() >= bytepos:
@@ -119,7 +124,7 @@ def detokenise_line(ins, bytepos=None):
         else:
             ins.seek(-1, 1)
             comment = detokenise_keyword(ins, output)
-    return current_line, output, textpos
+    return output, textpos
 
 def detokenise_keyword(ins, output):
     """ Convert a one- or two-byte keyword token to ascii. """

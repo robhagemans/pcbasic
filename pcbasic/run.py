@@ -226,11 +226,16 @@ def bluescreen(e):
     state.console_state.screen.set_attr(0x70)
     console.write_line('EXCEPTION')
     state.console_state.screen.set_attr(15)
-    program.edit(program.get_line_number(state.basic_state.bytecode.tell()),
-                                     state.basic_state.bytecode.tell())
-    console.write_line('\n')
+    if state.basic_state.run_mode:
+        state.basic_state.bytecode.seek(-1, 1)
+        program.edit(program.get_line_number(state.basic_state.bytecode.tell()),
+                                         state.basic_state.bytecode.tell())
+        console.write_line('\n')
+    else:
+        state.basic_state.direct_line.seek(0)
+        console.write_line(str(tokenise.detokenise_compound_statement(state.basic_state.direct_line)[0])+'\n')
     stack = traceback.extract_tb(exc_traceback)
-    for s in stack[-5:]:
+    for s in stack[-4:]:
         stack_line = '{0}:{1}, {2}'.format(
             os.path.split(s[0])[-1], s[1], s[2])
         stack_line_2 = '    {0}'.format(s[3])
@@ -248,7 +253,7 @@ def bluescreen(e):
         '\nThis is a bug in PC-BASIC.')
     state.console_state.screen.set_attr(7)
     console.write(
-        'Sorry about that. Please send the above messages to the author\nby e-mail to ')
+        'Sorry about that. Please send the above messages to the bugs forum\nby e-mail to ')
     state.console_state.screen.set_attr(15)
     console.write(
         'bugs@discussion.pcbasic.p.re.sf.net')
@@ -264,3 +269,4 @@ def bluescreen(e):
     console.write_line('as much information as you can about what you were doing and how this happened.')
     console.write_line('Thank you!')
     state.console_state.screen.set_attr(7)
+    flow.set_pointer(False)

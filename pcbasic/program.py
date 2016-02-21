@@ -216,6 +216,8 @@ def edit(from_line, bytepos=None):
     # find row, column position for textpos
     newlines, c = 0, 0
     pos_row, pos_col = 0, 0
+    if not output:
+        return
     for i, byte in enumerate(output):
         c += 1
         if chr(byte) == '\n' or c > state.console_state.screen.mode.width:
