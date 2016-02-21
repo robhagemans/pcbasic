@@ -77,19 +77,26 @@ state.io_state.fields = {}
 # translate os error codes to BASIC error codes
 os_error = {
     # file not found
-    errno.ENOENT: 53, errno.EISDIR: 53, errno.ENOTDIR: 53,
+    errno.ENOENT: error.FILE_NOT_FOUND,
+    errno.EISDIR: error.FILE_NOT_FOUND,
+    errno.ENOTDIR: error.FILE_NOT_FOUND,
     # permission denied
-    errno.EAGAIN: 70, errno.EACCES: 70, errno.EBUSY: 70,
-    errno.EROFS: 70, errno.EPERM: 70,
+    errno.EAGAIN: error.PERMISSION_DENIED,
+    errno.EACCES: error.PERMISSION_DENIED,
+    errno.EBUSY: error.PERMISSION_DENIED,
+    errno.EROFS: error.PERMISSION_DENIED,
+    errno.EPERM: error.PERMISSION_DENIED,
     # disk full
-    errno.ENOSPC: 61,
+    errno.ENOSPC: error.DISK_FULL,
     # disk not ready
-    errno.ENXIO: 71, errno.ENODEV: 71,
+    errno.ENXIO: error.DISK_NOT_READY,
+    errno.ENODEV: error.DISK_NOT_READY,
     # disk media error
-    errno.EIO: 72,
+    errno.EIO: error.DISK_MEDIA_ERROR,
     # path/file access error
-    errno.EEXIST: 75, errno.ENOTEMPTY: 75,
-    }
+    errno.EEXIST: error.PATH_FILE_ACCESS_ERROR,
+    errno.ENOTEMPTY: error.PATH_FILE_ACCESS_ERROR,
+}
 
 # accept CR, LF and CRLF line endings; interpret as CR only if the next line starts with a number
 universal_newline = False
