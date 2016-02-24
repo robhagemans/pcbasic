@@ -385,6 +385,27 @@
         </tr>
     </table>
     </div>
+    <p>
+        Where necessary, the result of the operation will be upgraded to a data type
+        able to hold the result. For example, dividing integers 3 by 2 will yield a
+        single-precision 1.5. However, the exponentiation operator <code>^</code>
+        will give at most a single-precision result unless the <a href="#--double"><code>double=True</code></a>
+        option is used.
+    </p>
+    <h5>Errors</h5>
+    <ul>
+        <li>
+            If <code><var>y=0</var></code>, <code><var>x</var> / <var>y</var></code>, <code><var>x</var> MOD <var>y</var></code> and
+             <code><var>x</var> \ <var>y</var></code> will raise <samp>Division by zero</samp>.
+        </li>
+        <li>
+            If the result of any operation is too large to fit in a floating-point data type, <samp>Overflow</samp> is raised.
+        </li>
+        <li>
+            If <code><var>x&lt;0</var></code> and <code><var>y</var></code> is a fractional number,
+            <code><var>x</var> ^ <var>y</var></code> will raise <samp>Illegal function call</samp>.
+        </li>
+    </ul>
 
     <h4 id="relational-operators">Relational operators</h4>
     <p>
@@ -488,6 +509,7 @@
     <p>
         Bitwise operators operate on numeric expressions only. If either
         operand is a string, <samp>Type mismatch</samp> will be raised.
+        Floating-point operands are rounded to integers before being used.
     </p>
     <div class="scrollable">
         <table>
@@ -623,6 +645,12 @@
             </tr>
         </table>
     </div>
+    <h5>Errors</h5>
+    <ul>
+        <li>
+            If <code>LEN(<var>x</var>) + LEN(<var>y</var>) > 255</code>, <code><var>x</var> + <var>y</var></code>
+            will raise <samp>String too long</samp>.
+        </li>
 </section>
 <hr />
 
