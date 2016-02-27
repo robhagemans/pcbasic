@@ -340,7 +340,7 @@
         </tr>
         <tr>
             <td id="/"><code><var>x</var> / <var>y</var></code></td>
-            <td>Floating-point division</td>
+            <td>Division</td>
             <td>
                 Quotient of <code><var>x</var></code> and
                 <code><var>y</var></code>
@@ -348,18 +348,18 @@
         </tr>
         <tr>
             <td id="\"><code><var>x</var> \ <var>y</var></code></td>
-            <td>Integer division</td>
+            <td>Truncated division</td>
             <td>
-                Integer part of quotient of <code><var>x</var></code> and
+                Integer quotient of <code><var>x</var></code> and
                 <code><var>y</var></code>
             </td>
         </tr>
         <tr>
             <td id="MOD"><code><var>x</var> MOD <var>y</var></code></td>
-            <td>Integer modulo</td>
+            <td>Modulo</td>
             <td>
-                Remainder of the integer division of <code><var>x</var></code> by
-                <code><var>y</var></code>
+                Integer remainder of <code><var>x</var></code> by
+                <code><var>y</var></code> (with the sign of <code><var>x</var></code>)
             </td>
         </tr>
         <tr>
@@ -407,6 +407,10 @@
         </li>
         <li>
             If the result of any operation is too large to fit in a floating-point data type, <samp>Overflow</samp> is raised.
+        </li>
+        <li>
+            If the arguments or result of <code>\</code> or <code>MOD</code> are not in
+            <code>[-32768&ndash;32767]</code>, <samp>Overflow</samp> is raised.
         </li>
         <li>
             If <code><var>x&lt;0</var></code> and <code><var>y</var></code> is a fractional number,
