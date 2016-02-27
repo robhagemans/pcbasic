@@ -197,6 +197,8 @@ def string_to_str(inp):
 
 def str_to_string(python_str):
     """ Convert and copy Python str or bytearray to String. """
+    if len(python_str) > 255:
+        raise error.RunError(error.STRING_TOO_LONG)
     return ('$', bytearray(python_str))
 
 ###############################################################################
