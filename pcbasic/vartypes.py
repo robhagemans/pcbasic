@@ -206,10 +206,11 @@ def unpack_string(inp):
 
 #RENAME str_to_string
 #D already in representations.py
-def pack_string(inp):
-    """ Convert Python bytearray to String, no checks. """
-    return ('$', inp)
-
+def pack_string(python_str):
+    """ Convert and copy Python str or bytearray to String. """
+    if len(python_str) > 255:
+        raise error.RunError(error.STRING_TOO_LONG)
+    return ('$', bytearray(python_str))
 
 ###############################################################################
 # boolean functions operate as bitwise functions on unsigned Python ints
