@@ -124,6 +124,8 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
                 ins.read(1)
                 units.append(parse_expression(ins))
                 util.require_read(ins, (')',))
+                # ensure last character is kept for unary detection
+                d = ')'
             elif d and d in string.ascii_letters:
                 # variable name
                 name, indices = get_var_or_array_name(ins)
@@ -132,12 +134,12 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
                 # apply functions
                 ins.read(1)
                 units.append(functions[d](ins))
+                d = ')'
             elif d in tk.end_expression or d in tk.keyword:
                 break
             else:
                 # literal
-                unit = parse_literal(ins)
-                units.append(unit)
+                units.append(parse_literal(ins))
         empty = False
     # empty expression is a syntax error (inside brackets) or Missing Operand (in an assignment) or ok (in print)
     if empty:
