@@ -97,7 +97,8 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
                 nxt = util.skip_white(ins)
                 if nxt in combinable:
                     d += ins.read(1)
-            if last in operators or last == '(' or last == '':
+            if last in operators or last == '':
+                # also if last is ( but that leads to recursive call and last == ''
                 nargs = 1
             else:
                 nargs = 2
@@ -119,11 +120,7 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
                 # repeated literals or variables or non-keywords like 'AS'
                 break
             if d == '(':
-                ins.read(1)
-                units.append(parse_expression(ins))
-                util.require_read(ins, (')',))
-                # ensure last character is kept for unary detection
-                d = ')'
+                units.append(parse_bracket(ins))
             elif d and d in string.ascii_letters:
                 # variable name
                 name, indices = get_var_or_array_name(ins)
@@ -132,7 +129,6 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
                 # apply functions
                 ins.read(1)
                 units.append(functions[d](ins))
-                d = ')'
             elif d in tk.end_expression or d in tk.keyword:
                 break
             else:
