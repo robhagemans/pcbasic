@@ -22,7 +22,7 @@ do
     mkdir "$name/output"
     cp "$name"/* "$name/output" 2>/dev/null
     pushd "$name/output" > /dev/null
-    ../../../pcbasic.py
+    ../../../pcbasic.py --interface=none >/dev/null
     popd > /dev/null
     pass=1
     for file in "$name/model"/*
