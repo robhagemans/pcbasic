@@ -204,6 +204,11 @@ class Float(object):
             self.man = self.carry_mask #0xffffffffffffff00L
         return self
 
+    def itrunc(self):
+        """ In-place. Discard carry & truncate towards zero; return as float. """
+        self = self.from_int(self.trunc_to_int())
+        return self
+
     def ifloor(self):
         """ In-place. Discard carry & truncate towards -infinity; return as float. """
         if self.is_zero():

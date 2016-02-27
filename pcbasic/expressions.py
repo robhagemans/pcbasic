@@ -914,15 +914,9 @@ def value_operator(op, left, right):
     elif op == tk.O_DIV:
         return vdiv(left, right)
     elif op == tk.O_INTDIV:
-        return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).ifloor(),
-                fp.unpack(vartypes.pass_single_keep(right)).ifloor()).apply_carry().ifloor())
+        return vintdiv(left, right)
     elif op == tk.MOD:
-        numerator = vartypes.pass_int_unpack(right)
-        if numerator == 0:
-            # simulate division by zero
-            return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).ifloor(),
-                    fp.unpack(vartypes.pass_single_keep(right)).ifloor()).ifloor())
-        return vartypes.int_to_integer_signed(vartypes.pass_int_unpack(left) % numerator)
+        return vmod(left, right)
     elif op == tk.O_PLUS:
         return vplus(left, right)
     elif op == tk.O_MINUS:
@@ -992,5 +986,22 @@ def vplus(left, right):
         return vartypes.pack_string(vartypes.pass_string_unpack(left) + vartypes.pass_string_unpack(right))
     else:
         return vartypes.number_add(left, right)
+
+def vintdiv(left, right):
+    """ Left\\right. """
+    return fp.pack(fp.div(fp.unpack(vartypes.pass_single(left)).itrunc(),
+            fp.unpack(vartypes.pass_single(right)).itrunc()).apply_carry().itrunc())
+
+def vmod(left, right):
+    """ Left MOD right. """
+    numerator = vartypes.pass_int_unpack(right)
+    if numerator == 0:
+        # simulate (float!) division by zero
+        return vdiv(left, right)
+    intleft = vartypes.pass_int_unpack(left)
+    mod = intleft % numerator
+    if intleft < 0 or mod < 0:
+        mod -= numerator
+    return vartypes.int_to_integer_signed(mod)
 
 prepare()
