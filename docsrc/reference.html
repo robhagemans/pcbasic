@@ -3826,8 +3826,8 @@
                 <code><var>palette_0</var></code> is a numeric expression  in <code>[0&#8212;255]</code>.
                 This sets the palette colour associated with attribute 0; by default, the
                 background has this attribute. All pixels with this attribute will
-                change colour. The palette colour value is taken from the VGA 64-colour
-                set. <code><var>palette_0</var></code> is taken <code>MOD 64</code>.
+                change colour. The palette colour value is taken from the <a href="#ega-colours">64-colour
+                set</a>. <code><var>palette_0</var></code> is taken <code>MOD 64</code>.
             </li>
             <li>
                 <code><var>palette</var></code> is a numeric expression in <code>[0&#8212;255]</code> that specifies the palette:
@@ -3847,7 +3847,7 @@
                 instead of <code><var>palette</var></code>. <code><var>palette</var></code> is then ignored.
             </li>
         </ul>
-        <h5>CGA palettes</h5>
+        <h5 id="cga-palettes">CGA palettes</h5>
         <div class="scrollable">
             <table>
                 <tr>
@@ -3936,7 +3936,7 @@
                 change colour.
                 In <code>SCREEN 7</code> and <code>8</code>, the <code><var>palette_0</var></code> colour is taken from the first 8 of
                 the 16-colour EGA set. <code><var>palette_0</var></code> is taken <code>MOD 8</code>.
-                IN <code>SCREEN 9</code>, the colour value is taken from the 64-colour VGA set.
+                IN <code>SCREEN 9</code>, the colour value is taken from the <a href="#ega-colours">64-colour set</a>.
             </li>
             <li>
                 <code><var>dummy</var></code> is a numeric expression with a value in <code>[0&#8212;255]</code>
@@ -3944,7 +3944,7 @@
             </li>
         </ul>
 
-        <h5>EGA default palette</h5>
+        <h5 id="ega-palette">EGA default palette</h5>
         <div class="scrollable">
             <table>
                 <tr>
@@ -4001,7 +4001,7 @@
             </table>
         </div>
 
-        <h5>EGA colour list</h5>
+        <h5 id="ega-colours">EGA colour list</h5>
         <div class="scrollable">
             <table>
                 <tr> <td>0</td><td style="background-color:#000000;"></td> <td>8</td><td style="background-color:#000055;"></td> <td>16</td><td style="background-color:#005500;"></td> <td>24</td><td style="background-color:#005555;"></td> <td>32</td><td style="background-color:#550000;"></td> <td>40</td><td style="background-color:#550055;"></td> <td>48</td><td style="background-color:#555500;"></td> <td>56</td><td style="background-color:#555555;"></td> </tr>
