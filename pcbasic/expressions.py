@@ -928,8 +928,12 @@ def vplus(left, right):
 
 def vintdiv(left, right):
     """ Left\\right. """
-    return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).itrunc(),
-            fp.unpack(vartypes.pass_single_keep(right)).itrunc()).apply_carry().itrunc())
+    try:
+        return vartypes.int_to_integer_signed(
+            vartypes.pass_int_unpack(left) / vartypes.pass_int_unpack(right))
+    except ZeroDivisionError:
+        # simulate (float!) division by zero
+        return vdiv(left, right)
 
 def vmod(left, right):
     """ Left MOD right. """
