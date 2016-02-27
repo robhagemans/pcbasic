@@ -5052,6 +5052,10 @@
                 If the record number is beyond the end of the file, the file buffer is
                 filled with null bytes.
             </li>
+            <li>
+                The record number is stored as single-precision; this precision is not high enough to distinguish single
+                records near the maximum value of <code>2^25</code>.
+            </li>
         </ul>
             <h5>Errors</h5>
         <ul>
@@ -9110,6 +9114,13 @@
             </li>
             <li>
                 <code><var>record_number</var></code> is a numeric expression in <code>[1&#8212;33554432]</code> (<code>2^25</code>) and is interpreted as the record number.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                The record number is stored as single-precision; this precision is not high enough to distinguish single
+                records near the maximum value of <code>2^25</code>.
             </li>
         </ul>
         <h5>Errors</h5>
