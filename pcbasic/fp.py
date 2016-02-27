@@ -506,6 +506,8 @@ def power(base_in, exp_in):
     except OverflowError:
         msg_overflow()
         return base_in.__class__(base_in.neg, base_in.carry_mask, 0xff)
+    except ValueError:
+        raise error.RunError(error.IFC)
 
 def unary(mbf_in, fn):
     """ Convert to IEEE 754, apply math library function, convert back. """
