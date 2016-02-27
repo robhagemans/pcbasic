@@ -267,24 +267,21 @@
     </p>
     <ol>
         <li><code>^</code></li>
-        <li><code>+</code> <code>-</code> (unary)</li>
-        <li><code>*</code></li>
-        <li>
-            <ul class="horizontal">
-                <li><code>/</code></li>
-                <li><code>\</code></li>
-                <li><code>MOD</code></li>
-            </ul>
+        <li><ul class="horizontal">
+            <li><code>*</code></li>
+            <li><code>/</code></li>
         </li>
+        <li><code>\</code></li>
+        <li><code>MOD</code></li>
         <li>
             <ul class="horizontal">
                 <li><code>+</code></li>
-                <li><code>-</code> (binary)</li>
+                <li><code>-</code> (unary and binary)</li>
             </ul>
         </li>
-        <li><code>=</code></li>
         <li>
             <ul class="horizontal">
+                <li><code>=</code></li>
                 <li><code>&lt;&gt;</code></li>
                 <li><code>&gt;&lt;</code></li>
                 <li><code>&lt;</code></li>
@@ -304,6 +301,9 @@
     </ol>
     <p>
         Expressions within parentheses <code>()</code> are evaluated first.
+        All binary operators are left-associative: operators of equal precedence are evaluated left to right.
+    </p>
+    <p>
         For example, exponentiation is more tightly bound than negation:
         <code>-1^2 = -1</code> but <code>(-1)^2 = 1</code>.
     </p>
@@ -328,20 +328,6 @@
             <td>
                 <code><var>x</var></code> raised to the power of
                 <code><var>y</var></code>
-            </td>
-        </tr>
-        <tr>
-            <td id="unary+"><code>+ <var>y</var></code></td>
-            <td>Unary Plus</td>
-            <td>
-                Value of <code><var>y</var></code>
-            </td>
-        </tr>
-        <tr>
-            <td id="unary-"><code>- <var>y</var></code></td>
-            <td>Negation</td>
-            <td>
-                Negative value of <code><var>y</var></code>
             </td>
         </tr>
         <tr>
@@ -388,6 +374,20 @@
             <td>Subtraction</td>
             <td>
                 Difference of <code><var>x</var></code> and <code><var>y</var></code>
+            </td>
+        </tr>
+        <tr>
+            <td id="unary+"><code>+ <var>y</var></code></td>
+            <td>Unary Plus</td>
+            <td>
+                Value of <code><var>y</var></code>
+            </td>
+        </tr>
+        <tr>
+            <td id="unary-"><code>- <var>y</var></code></td>
+            <td>Negation</td>
+            <td>
+                Negative value of <code><var>y</var></code>
             </td>
         </tr>
     </table>
