@@ -82,6 +82,7 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
     empty = True
     d = ''
     # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
+    units_expected = 1
     while True:
         last = d
         d = util.skip_white(ins)
@@ -101,20 +102,18 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
             else:
                 nargs = 2
                 while stack:
-                    try:
-                        if operators[d] > operators[stack[-1][0]]:
-                            break
-                    except KeyError:
-                        # operator, nargs combination not valid
-                        raise error.RunError(error.STX)
+                    if operators[d] > operators[stack[-1][0]]:
+                        break
                     op, narity = stack.pop()
                     try:
                         units.append(value_operator(op, *pop_units(units, narity)))
                     except IndexError:
                         raise error.RunError(error.MISSING_OPERAND)
+                    units_expected -= narity
             stack.append((d, nargs))
+            units_expected += nargs
         else:
-            units_expected = 1 + sum(nargs-1 for _, nargs in stack)
+            #units_expected = 1 + sum(nargs-1 for _, nargs in stack)
             if len(units) >= units_expected:
                 # too many units ends expression
                 # repeated literals or variables or non-keywords like 'AS'
@@ -149,15 +148,14 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
         try:
             units.append(value_operator(op, *pop_units(units, narity)))
         except IndexError:
-            raise error.RunError(error.MISSING_OPERAND)
+            raise error.RunError(error.STX if d in (')', ']') else error.MISSING_OPERAND)
     return units[0]
 
 def pop_units(in_list, nargs):
     """ Pop one or two of elements from a list or deque. """
-    if nargs == 1:
-        right, left = in_list.pop(), None
-    else:
-        right, left = in_list.pop(), in_list.pop()
+    right, left = in_list.pop(), None
+    if nargs == 2:
+        left = in_list.pop()
     return left, right
 
 def parse_literal(ins):
