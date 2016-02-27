@@ -952,13 +952,13 @@ def value_operator(op, left, right):
             vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) ^
             vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
     elif op == tk.EQV:
-        return vartypes.int_to_integer_unsigned(~(
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) ^
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right))))
+        return vartypes.int_to_integer_unsigned(0xffff-(
+            vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) ^
+            vartypes.integer_to_int_unsigned(vartypes.pass_integer(right))))
     elif op == tk.IMP:
         return vartypes.int_to_integer_unsigned(
-            (~vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left))) |
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
+            (0xffff-vartypes.integer_to_int_unsigned(vartypes.pass_integer(left))) |
+            vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
     else:
         raise error.RunError(error.STX)
 
