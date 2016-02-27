@@ -30,31 +30,41 @@ import state
 import machine
 import timedate
 import basictoken as tk
+from collections import deque
 
-# binary operator priority, lowest index is tightest bound
-# operators of the same priority are evaluated left to right
-priority = (
-    (tk.O_CARET,),
-    (tk.O_TIMES, tk.O_DIV),
-    (tk.O_INTDIV,),
-    (tk.MOD,),
-    (tk.O_PLUS, tk.O_MINUS),
-    (tk.O_GT, tk.O_EQ, tk.O_LT,
-     tk.O_GT + tk.O_EQ, tk.O_LT + tk.O_EQ, tk.O_LT + tk.O_GT),
-    (tk.AND,),
-    (tk.OR,),
-    (tk.XOR,),
-    (tk.EQV,),
-    (tk.IMP,))
-
-# flatten list
-operator_tokens = [item for sublist in priority for item in sublist]
 # command line option /d
 # allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
 option_double = False
 # enable pcjr/tandy syntax extensions
 is_pcjr_syntax = False
 
+# operators and precedence
+# key is tuple (token, nargs)
+operators = {
+    tk.O_CARET: 12,
+    tk.O_TIMES: 11,
+    tk.O_DIV: 11,
+    tk.O_INTDIV: 10,
+    tk.MOD: 9,
+    tk.O_PLUS: 8,
+    tk.O_MINUS: 8,
+    tk.O_GT: 7,
+    tk.O_EQ: 7,
+    tk.O_LT: 7,
+    tk.O_GT + tk.O_EQ: 7,
+    tk.O_EQ + tk.O_GT: 7,
+    tk.O_LT + tk.O_EQ: 7,
+    tk.O_EQ + tk.O_LT: 7,
+    tk.O_LT + tk.O_GT: 7,
+    tk.O_GT + tk.O_LT: 7,
+    tk.NOT: 6,
+    tk.AND: 5,
+    tk.OR: 4,
+    tk.XOR: 3,
+    tk.EQV: 2,
+    tk.IMP: 1,
+}
+combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
 
 def prepare():
     """ Initialise expressions module. """
@@ -67,78 +77,104 @@ def prepare():
 
 def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
     """ Compute the value of the expression at the current code pointer. """
-    units, operators = [], []
+    stack = deque()
+    units = deque()
+    empty = True
+    d = ''
+    # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
     while True:
+        last = d
         d = util.skip_white(ins)
-        if d in tk.end_expression:
-            break
-        units.append(parse_expr_unit(ins))
-        d = util.skip_white(ins)
-        # string lit breaks expression, number after string lit breaks expression, + or - doesnt (could be an operator...
-        if d not in operator_tokens:
-            break
-        else:
+        # two-byte function tokens
+        if d in tk.twobyte:
             ins.read(1)
-        if d in (tk.O_LT, tk.O_EQ, tk.O_GT):
-            nxt = util.skip_white(ins)
-            if nxt in (tk.O_LT, tk.O_EQ, tk.O_GT):
+            d += util.skip_white(ins)
+        if d in operators:
+            ins.read(1)
+            # get combined operators such as >=
+            if d in combinable:
+                nxt = util.skip_white(ins)
+                if nxt in combinable:
+                    d += ins.read(1)
+            if last in operators or last == '(' or last == '':
+                nargs = 1
+            else:
+                nargs = 2
+                while stack:
+                    try:
+                        if operators[d] > operators[stack[-1][0]]:
+                            break
+                    except KeyError:
+                        # operator, nargs combination not valid
+                        raise error.RunError(error.STX)
+                    pop_operator(stack, units)
+            stack.append((d, nargs))
+        else:
+            units_expected = 1 + sum(nargs-1 for _, nargs in stack)
+            if len(units) >= units_expected:
+                # too many units ends expression
+                # repeated literals or variables or non-keywords like 'AS'
+                break
+            if d == '(':
                 ins.read(1)
-                if d == nxt:
-                    raise error.RunError(error.STX)
-                else:
-                    d += nxt
-                    if d[0] == tk.O_EQ:
-                        # =>, =<
-                        d = d[1] + d[0]
-                    elif d == tk.O_GT + tk.O_LT: # ><
-                        d = tk.O_LT + tk.O_GT
-        operators.append(d)
+                units.append(parse_expression(ins))
+                util.require_read(ins, (')',))
+            elif d and d in string.ascii_letters:
+                # variable name
+                name, indices = get_var_or_array_name(ins)
+                units.append(var.get_var_or_array(name, indices))
+            elif d in functions:
+                # apply functions
+                ins.read(1)
+                units.append(functions[d](ins))
+            elif d in tk.end_expression or d in tk.keyword:
+                break
+            else:
+                # literal
+                unit = parse_literal(ins)
+                units.append(unit)
+        empty = False
     # empty expression is a syntax error (inside brackets) or Missing Operand (in an assignment) or ok (in print)
-    # PRINT 1+      :err 22
-    # Print (1+)    :err 2
-    # print 1+)     :err 2
-    if len(units) == 0:
+    if empty:
         if allow_empty:
             return None
         else:
-            if d in (')', ']'):
-                ins.read(1) # for positioning of cursor in edit gadget
-            # always 22 here now that the bracket is taken out?
             raise error.RunError(error.STX if d in (')', ']') else empty_err)
-    if None in units:
-        raise error.RunError(error.STX)
-    if len(units) <= len(operators):
-        if d in (')', ']'):
-            ins.read(1)
-        raise error.RunError(error.STX if d in (')', ']') else error.MISSING_OPERAND)
-    return parse_operators(operators, units)
-
-def parse_operators(operators, units):
-    """ Parse the operator stack. """
-    for current_priority in priority:
-        pos = 0
-        while pos < len(operators):
-            if operators[pos] in current_priority:
-                units[pos] = value_operator(operators[pos], units[pos], units[pos+1])
-                del units[pos+1]
-                del operators[pos]
-            else:
-                pos += 1
-        if len(operators) == 0:
-            break
-    if len(operators) > 0:
-        # unrecognised operator, syntax error
-        raise error.RunError(error.STX)
+    while stack:
+        pop_operator(stack, units)
     return units[0]
 
-def parse_expr_unit(ins):
-    """ Compute the value of the expression unit at the current code pointer. """
+def pop_operator(stack, units):
+    """ Pop operator off the stack and apply to queue. """
+    # PRINT 1+      :err 22
+    # Print (1+)    :err 2
+    # print 1+)     :err 2
+    op, nargs = stack.pop()
+    if op in operators:
+        # non-operators such as brackets are simply returned
+        try:
+            right = units.pop()
+        except IndexError:
+            raise error.RunError(error.MISSING_OPERAND)
+        if nargs == 1:
+            # unary operator (NOT, + or -)
+            units.append(value_unary_operator(op, right))
+        else:
+            try:
+                left = units.pop()
+            except IndexError:
+                raise error.RunError(error.MISSING_OPERAND)
+            units.append(value_binary_operator(op, left, right))
+    return op
+
+def parse_literal(ins):
+    """ Compute the value of the literal at the current code pointer. """
     d = util.skip_white(ins)
     # string literal
     if d == '"':
         ins.read(1)
         output = bytearray()
-        # while tokenised nmbers inside a string literal will be printed as tokenised numbers, they don't actually execute as such:
+        # while tokenised numbers inside a string literal will be printed as tokenised numbers, they don't actually execute as such:
         # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a
         # line number afterwards, etc. We follow this.
         d = ins.read(1)
@@ -148,10 +184,6 @@ def parse_expr_unit(ins):
         if d == '\0':
             ins.seek(-1, 1)
         return vartypes.str_to_string(output)
-    # variable name
-    elif d in string.ascii_letters:
-        name, indices = get_var_or_array_name(ins)
-        return var.get_var_or_array(name, indices)
     # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
     # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
     elif d in string.digits:
@@ -165,90 +197,8 @@ def parse_expr_unit(ins):
     # gw-basic allows adding line numbers to numbers
     elif d == tk.T_UINT:
         return vartypes.int_to_integer_unsigned(util.parse_jumpnum(ins))
-    # brackets
-    elif d == '(':
-        return parse_bracket(ins)
-    # single-byte tokens
     else:
-        ins.read(1)
-        if d == tk.INPUT:         return value_input(ins)
-        elif d == tk.SCREEN:      return value_screen(ins)
-        elif d == tk.USR:         return value_usr(ins)
-        elif d == tk.FN:          return value_fn(ins)
-        elif d == tk.NOT:         return value_not(ins)
-        elif d == tk.ERL:         return value_erl(ins)
-        elif d == tk.ERR:         return value_err(ins)
-        elif d == tk.STRING:      return value_string(ins)
-        elif d == tk.INSTR:       return value_instr(ins)
-        elif d == tk.VARPTR:      return value_varptr(ins)
-        elif d == tk.CSRLIN:      return value_csrlin(ins)
-        elif d == tk.POINT:       return value_point(ins)
-        elif d == tk.INKEY:       return value_inkey(ins)
-        elif d == tk.O_PLUS:      return parse_expr_unit(ins)
-        elif d == tk.O_MINUS:     return value_neg(ins)
-        # two-byte tokens
-        elif d == '\xFD':
-            d += ins.read(1)
-            if d == tk.CVI:       return value_cvi(ins)
-            elif d == tk.CVS:     return value_cvs(ins)
-            elif d == tk.CVD:     return value_cvd(ins)
-            elif d == tk.MKI:     return value_mki(ins)
-            elif d == tk.MKS:     return value_mks(ins)
-            elif d == tk.MKD:     return value_mkd(ins)
-            elif d == tk.EXTERR:  return value_exterr(ins)
-        # two-byte tokens
-        elif d == '\xFE':
-            d += ins.read(1)
-            if d == tk.DATE:      return value_date(ins)
-            elif d == tk.TIME:    return value_time(ins)
-            elif d == tk.PLAY:    return value_play(ins)
-            elif d == tk.TIMER:   return value_timer(ins)
-            elif d == tk.ERDEV:   return value_erdev(ins)
-            elif d == tk.IOCTL:   return value_ioctl(ins)
-            elif d == tk.ENVIRON: return value_environ(ins)
-            elif d == tk.PMAP:    return value_pmap(ins)
-        # two-byte tokens
-        elif d == '\xFF':
-            d += ins.read(1)
-            if d == tk.LEFT:    return value_left(ins)
-            elif d == tk.RIGHT: return value_right(ins)
-            elif d == tk.MID:   return value_mid(ins)
-            elif d == tk.SGN:   return value_sgn(ins)
-            elif d == tk.INT:   return value_int(ins)
-            elif d == tk.ABS:   return value_abs(ins)
-            elif d == tk.SQR:   return value_sqr(ins)
-            elif d == tk.RND:   return value_rnd(ins)
-            elif d == tk.SIN:   return value_sin(ins)
-            elif d == tk.LOG:   return value_log(ins)
-            elif d == tk.EXP:   return value_exp(ins)
-            elif d == tk.COS:   return value_cos(ins)
-            elif d == tk.TAN:   return value_tan(ins)
-            elif d == tk.ATN:   return value_atn(ins)
-            elif d == tk.FRE:   return value_fre(ins)
-            elif d == tk.INP:   return value_inp(ins)
-            elif d == tk.POS:   return value_pos(ins)
-            elif d == tk.LEN:   return value_len(ins)
-            elif d == tk.STR:   return value_str(ins)
-            elif d == tk.VAL:   return value_val(ins)
-            elif d == tk.ASC:   return value_asc(ins)
-            elif d == tk.CHR:   return value_chr(ins)
-            elif d == tk.PEEK:  return value_peek(ins)
-            elif d == tk.SPACE: return value_space(ins)
-            elif d == tk.OCT:   return value_oct(ins)
-            elif d == tk.HEX:   return value_hex(ins)
-            elif d == tk.LPOS:  return value_lpos(ins)
-            elif d == tk.CINT:  return value_cint(ins)
-            elif d == tk.CSNG:  return value_csng(ins)
-            elif d == tk.CDBL:  return value_cdbl(ins)
-            elif d == tk.FIX:   return value_fix(ins)
-            elif d == tk.PEN:   return value_pen(ins)
-            elif d == tk.STICK: return value_stick(ins)
-            elif d == tk.STRIG: return value_strig(ins)
-            elif d == tk.EOF:   return value_eof(ins)
-            elif d == tk.LOC:   return value_loc(ins)
-            elif d == tk.LOF:   return value_lof(ins)
-        else:
-            return None
+        error.RunError(error.STX)
 
 ######################################################################
 # expression parsing utility functions
@@ -846,17 +796,17 @@ def value_ioctl(ins):
 ###########################################################
 # option_double regulated single & double precision math
 
-def value_unary(ins, fn):
+def value_func(ins, fn):
     """ Return value of unary math function. """
     return fp.pack(fn(fp.unpack(vartypes.pass_float(parse_bracket(ins), option_double))))
 
-value_sqr = partial(value_unary, fn=fp.sqrt)
-value_exp = partial(value_unary, fn=fp.exp)
-value_sin = partial(value_unary, fn=fp.sin)
-value_cos = partial(value_unary, fn=fp.cos)
-value_tan = partial(value_unary, fn=fp.tan)
-value_atn = partial(value_unary, fn=fp.atn)
-value_log = partial(value_unary, fn=fp.log)
+value_sqr = partial(value_func, fn=fp.sqrt)
+value_exp = partial(value_func, fn=fp.exp)
+value_sin = partial(value_func, fn=fp.sin)
+value_cos = partial(value_func, fn=fp.cos)
+value_tan = partial(value_func, fn=fp.tan)
+value_atn = partial(value_func, fn=fp.atn)
+value_log = partial(value_func, fn=fp.log)
 
 def value_rnd(ins):
     """ RND: get pseudorandom value. """
@@ -894,17 +844,19 @@ def value_fix(ins):
     elif inp[0] == '#':
         return fp.pack(fp.Double.from_int(fp.unpack(inp).trunc_to_int()))
 
-def value_neg(ins):
-    """ -: get negative value. """
-    return vartypes.number_neg(vartypes.pass_number(parse_expr_unit(ins)))
+def value_unary_operator(op, right):
+    """ Get value of unary operator expression. """
+    if op == tk.O_MINUS:
+        # negation
+        return vartypes.number_neg(vartypes.pass_number(right))
+    elif op == tk.O_PLUS:
+        # unary plus is no-op for numbers and strings
+        return right
+    elif op == tk.NOT:
+        # NOT: get two's complement NOT, -x-1
+        return vartypes.int_to_integer_signed(-vartypes.pass_int_unpack(right)-1)
 
-def value_not(ins):
-    """ NOT: get two's complement NOT, -x-1. """
-    return vartypes.int_to_integer_signed(-vartypes.pass_int_unpack(parse_expr_unit(ins))-1)
-
-# binary operators
-
-def value_operator(op, left, right):
+def value_binary_operator(op, left, right):
     """ Get value of binary operator expression. """
     if op == tk.O_CARET:
         return vcaret(left, right)
@@ -926,11 +878,11 @@ def value_operator(op, left, right):
         return vartypes.bool_to_integer(vartypes.equals(left, right))
     elif op == tk.O_LT:
         return vartypes.bool_to_integer(not(vartypes.gt(left,right) or vartypes.equals(left, right)))
-    elif op == tk.O_GT + tk.O_EQ:
+    elif op == tk.O_GT + tk.O_EQ or op == tk.O_EQ + tk.O_GT:
         return vartypes.bool_to_integer(vartypes.gt(left,right) or vartypes.equals(left, right))
-    elif op == tk.O_LT + tk.O_EQ:
+    elif op == tk.O_LT + tk.O_EQ or op == tk.O_EQ + tk.O_LT:
         return vartypes.bool_to_integer(not vartypes.gt(left,right))
-    elif op == tk.O_LT + tk.O_GT:
+    elif op == tk.O_LT + tk.O_GT or op == tk.O_GT + tk.O_LT:
         return vartypes.bool_to_integer(not vartypes.equals(left, right))
     elif op == tk.AND:
         return vartypes.int_to_integer_unsigned(
@@ -1002,5 +954,73 @@ def vmod(left, right):
     if intleft < 0 or mod < 0:
         mod -= numerator
     return vartypes.int_to_integer_signed(mod)
+
+
+functions = {
+    tk.INPUT: value_input,
+    tk.SCREEN: value_screen,
+    tk.USR: value_usr,
+    tk.FN: value_fn,
+    tk.ERL: value_erl,
+    tk.ERR: value_err,
+    tk.STRING: value_string,
+    tk.INSTR: value_instr,
+    tk.VARPTR: value_varptr,
+    tk.CSRLIN: value_csrlin,
+    tk.POINT: value_point,
+    tk.INKEY: value_inkey,
+    tk.CVI: value_cvi,
+    tk.CVS: value_cvs,
+    tk.CVD: value_cvd,
+    tk.MKI: value_mki,
+    tk.MKS: value_mks,
+    tk.MKD: value_mkd,
+    tk.EXTERR: value_exterr,
+    tk.DATE: value_date,
+    tk.TIME: value_time,
+    tk.PLAY: value_play,
+    tk.TIMER: value_timer,
+    tk.ERDEV: value_erdev,
+    tk.IOCTL: value_ioctl,
+    tk.ENVIRON: value_environ,
+    tk.PMAP: value_pmap,
+    tk.LEFT: value_left,
+    tk.RIGHT: value_right,
+    tk.MID: value_mid,
+    tk.SGN: value_sgn,
+    tk.INT: value_int,
+    tk.ABS: value_abs,
+    tk.SQR: value_sqr,
+    tk.RND: value_rnd,
+    tk.SIN: value_sin,
+    tk.LOG: value_log,
+    tk.EXP: value_exp,
+    tk.COS: value_cos,
+    tk.TAN: value_tan,
+    tk.ATN: value_atn,
+    tk.FRE: value_fre,
+    tk.INP: value_inp,
+    tk.POS: value_pos,
+    tk.LEN: value_len,
+    tk.STR: value_str,
+    tk.VAL: value_val,
+    tk.ASC: value_asc,
+    tk.CHR: value_chr,
+    tk.PEEK: value_peek,
+    tk.SPACE: value_space,
+    tk.OCT: value_oct,
+    tk.HEX: value_hex,
+    tk.LPOS: value_lpos,
+    tk.CINT: value_cint,
+    tk.CSNG: value_csng,
+    tk.CDBL: value_cdbl,
+    tk.FIX: value_fix,
+    tk.PEN: value_pen,
+    tk.STICK: value_stick,
+    tk.STRIG: value_strig,
+    tk.EOF: value_eof,
+    tk.LOC: value_loc,
+    tk.LOF: value_lof,
+}
 
 prepare()

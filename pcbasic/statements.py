@@ -1410,7 +1410,7 @@ def exec_draw(ins):
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(error.IFC)
     gml = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    util.require(ins, tk.end_expression)
+    util.require(ins, tk.end_statement)
     state.console_state.screen.drawing.draw(gml)
 
 ##########################################################
@@ -2450,8 +2450,9 @@ def exec_width(ins):
         dev = state.io_state.lpt1_file
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
+        # we can do calculations, but they must be bracketed...
         if d in tk.number:
-            expr = expressions.parse_expr_unit(ins)
+            expr = expressions.parse_literal(ins)
         else:
             expr = expressions.parse_expression(ins)
         if expr[0] == '$':
@@ -2465,8 +2466,6 @@ def exec_width(ins):
             w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         else:
             dev = state.io_state.scrn_file
-            # IN GW-BASIC, we can do calculations, but they must be bracketed...
-            #w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
             w = vartypes.pass_int_unpack(expr)
             if util.skip_white_read_if(ins, (',',)):
                 # pare dummy number rows setting

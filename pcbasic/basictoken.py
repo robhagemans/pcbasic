@@ -218,7 +218,7 @@ TERM = '\xfe\xa6'
 DEBUG = '\xff\xff'
 
 # keyword dictionary
-to_keyword = {
+keyword = {
     END: 'END', FOR: 'FOR', NEXT: 'NEXT', DATA: 'DATA', INPUT: 'INPUT',
     DIM: 'DIM', READ: 'READ', LET: 'LET', GOTO: 'GOTO', RUN: 'RUN', IF: 'IF',
     RESTORE: 'RESTORE', GOSUB: 'GOSUB', RETURN: 'RETURN', REM: 'REM',
@@ -279,9 +279,10 @@ end_line = ('\0', '')
 # statement ending tokens
 end_statement = end_line + (':',)
 # expression ending tokens
-# \xCC is TO, \x89 is GOTO, \x8D is GOSUB, \xCF is STEP, \xCD is THEN
-end_expression = end_statement + (')', ']', ',', ';', TO, GOTO, GOSUB, STEP, THEN)
+end_expression = end_statement + (')', ']', ',', ';')
 ## tokens followed by one or more bytes to be skipped
 plus_bytes = {
     T_BYTE:1, '\xff':1 , '\xfe':1, '\xfd':1, T_OCT:2, T_HEX:2,
     T_UINT_PROC:2, T_UINT:2, T_INT:2, T_SINGLE:4, T_DOUBLE:8, '\0':4}
+# two-byte keyword token lead bytes
+twobyte = ('\xff', '\xfe', '\xfd')

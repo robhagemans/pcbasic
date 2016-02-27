@@ -38,7 +38,7 @@ linenum_words = [
 def prepare():
     """ Initialise tokenise module. """
     global keyword_to_token, token_to_keyword
-    token_to_keyword = tk.to_keyword
+    token_to_keyword = tk.keyword
     if config.get('debug'):
         # NOTE: PC-BASIC only. Not the same command or token as Sperry DEBUG.
         token_to_keyword[tk.DEBUG] = 'DEBUG'
