@@ -109,7 +109,11 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
                     except KeyError:
                         # operator, nargs combination not valid
                         raise error.RunError(error.STX)
-                    pop_operator(stack, units)
+                    op, narity = stack.pop()
+                    try:
+                        units.append(value_operator(op, *pop_units(units, narity)))
+                    except IndexError:
+                        raise error.RunError(error.MISSING_OPERAND)
             stack.append((d, nargs))
         else:
             units_expected = 1 + sum(nargs-1 for _, nargs in stack)
@@ -143,31 +147,20 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
         else:
             raise error.RunError(error.STX if d in (')', ']') else empty_err)
     while stack:
-        pop_operator(stack, units)
-    return units[0]
-
-def pop_operator(stack, units):
-    """ Pop operator off the stack and apply to queue. """
-    # PRINT 1+      :err 22
-    # Print (1+)    :err 2
-    # print 1+)     :err 2
-    op, nargs = stack.pop()
-    if op in operators:
-        # non-operators such as brackets are simply returned
+        op, narity = stack.pop()
         try:
-            right = units.pop()
+            units.append(value_operator(op, *pop_units(units, narity)))
         except IndexError:
             raise error.RunError(error.MISSING_OPERAND)
-        if nargs == 1:
-            # unary operator (NOT, + or -)
-            units.append(value_unary_operator(op, right))
-        else:
-            try:
-                left = units.pop()
-            except IndexError:
-                raise error.RunError(error.MISSING_OPERAND)
-            units.append(value_binary_operator(op, left, right))
-    return op
+    return units[0]
+
+def pop_units(in_list, nargs):
+    """ Pop one or two of elements from a list or deque. """
+    if nargs == 1:
+        right, left = in_list.pop(), None
+    else:
+        right, left = in_list.pop(), in_list.pop()
+    return left, right
 
 def parse_literal(ins):
     """ Compute the value of the literal at the current code pointer. """
@@ -845,68 +838,66 @@ def value_fix(ins):
     elif inp[0] == '#':
         return fp.pack(fp.Double.from_int(fp.unpack(inp).trunc_to_int()))
 
-def value_unary_operator(op, right):
-    """ Get value of unary operator expression. """
-    if op == tk.O_MINUS:
-        # negation
-        return vartypes.number_neg(vartypes.pass_number_keep(right))
-    elif op == tk.O_PLUS:
-        # unary plus is no-op for numbers and strings
-        return right
-    elif op == tk.NOT:
-        # NOT: get two's complement NOT, -x-1
-        return vartypes.int_to_integer_signed(-vartypes.pass_int_unpack(right)-1)
-
-def value_binary_operator(op, left, right):
-    """ Get value of binary operator expression. """
-    if op == tk.O_CARET:
-        return vcaret(left, right)
-    elif op == tk.O_TIMES:
-        return vtimes(left, right)
-    elif op == tk.O_DIV:
-        return vdiv(left, right)
-    elif op == tk.O_INTDIV:
-        return vintdiv(left, right)
-    elif op == tk.MOD:
-        return vmod(left, right)
-    elif op == tk.O_PLUS:
-        return vplus(left, right)
-    elif op == tk.O_MINUS:
-        return vartypes.number_add(left, vartypes.number_neg(right))
-    elif op == tk.O_GT:
-        return vartypes.bool_to_int_keep(vartypes.gt(left,right))
-    elif op == tk.O_EQ:
-        return vartypes.bool_to_int_keep(vartypes.equals(left, right))
-    elif op == tk.O_LT:
-        return vartypes.bool_to_int_keep(not(vartypes.gt(left,right) or vartypes.equals(left, right)))
-    elif op == tk.O_GT + tk.O_EQ or op == tk.O_EQ + tk.O_GT:
-        return vartypes.bool_to_int_keep(vartypes.gt(left,right) or vartypes.equals(left, right))
-    elif op == tk.O_LT + tk.O_EQ or op == tk.O_EQ + tk.O_LT:
-        return vartypes.bool_to_int_keep(not vartypes.gt(left,right))
-    elif op == tk.O_LT + tk.O_GT or op == tk.O_GT + tk.O_LT:
-        return vartypes.bool_to_int_keep(not vartypes.equals(left, right))
-    elif op == tk.AND:
-        return vartypes.int_to_integer_unsigned(
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) &
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
-    elif op == tk.OR:
-        return vartypes.int_to_integer_unsigned(
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) |
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
-    elif op == tk.XOR:
-        return vartypes.int_to_integer_unsigned(
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) ^
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
-    elif op == tk.EQV:
-        return vartypes.int_to_integer_unsigned(0xffff-(
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) ^
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right))))
-    elif op == tk.IMP:
-        return vartypes.int_to_integer_unsigned(
-            (0xffff-vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left))) |
-            vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
+def value_operator(op, left, right):
+    """ Get value of binary or unary operator expression. """
+    if left is None:
+        if op == tk.O_MINUS:
+            # negation
+            return vartypes.number_neg(vartypes.pass_number_keep(right))
+        elif op == tk.O_PLUS:
+            # unary plus is no-op for numbers and strings
+            return right
+        elif op == tk.NOT:
+            # NOT: get two's complement NOT, -x-1
+            return vartypes.int_to_integer_signed(-vartypes.pass_int_unpack(right)-1)
     else:
-        raise error.RunError(error.STX)
+        if op == tk.O_CARET:
+            return vcaret(left, right)
+        elif op == tk.O_TIMES:
+            return vtimes(left, right)
+        elif op == tk.O_DIV:
+            return vdiv(left, right)
+        elif op == tk.O_INTDIV:
+            return vintdiv(left, right)
+        elif op == tk.MOD:
+            return vmod(left, right)
+        elif op == tk.O_PLUS:
+            return vplus(left, right)
+        elif op == tk.O_MINUS:
+            return vartypes.number_add(left, vartypes.number_neg(right))
+        elif op == tk.O_GT:
+            return vartypes.bool_to_int_keep(vartypes.gt(left,right))
+        elif op == tk.O_EQ:
+            return vartypes.bool_to_int_keep(vartypes.equals(left, right))
+        elif op == tk.O_LT:
+            return vartypes.bool_to_int_keep(not(vartypes.gt(left,right) or vartypes.equals(left, right)))
+        elif op == tk.O_GT + tk.O_EQ or op == tk.O_EQ + tk.O_GT:
+            return vartypes.bool_to_int_keep(vartypes.gt(left,right) or vartypes.equals(left, right))
+        elif op == tk.O_LT + tk.O_EQ or op == tk.O_EQ + tk.O_LT:
+            return vartypes.bool_to_int_keep(not vartypes.gt(left,right))
+        elif op == tk.O_LT + tk.O_GT or op == tk.O_GT + tk.O_LT:
+            return vartypes.bool_to_int_keep(not vartypes.equals(left, right))
+        elif op == tk.AND:
+            return vartypes.int_to_integer_unsigned(
+                vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) &
+                vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
+        elif op == tk.OR:
+            return vartypes.int_to_integer_unsigned(
+                vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) |
+                vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
+        elif op == tk.XOR:
+            return vartypes.int_to_integer_unsigned(
+                vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) ^
+                vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
+        elif op == tk.EQV:
+            return vartypes.int_to_integer_unsigned(0xffff-(
+                vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left)) ^
+                vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right))))
+        elif op == tk.IMP:
+            return vartypes.int_to_integer_unsigned(
+                (0xffff-vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(left))) |
+                vartypes.integer_to_int_unsigned(vartypes.pass_int_keep(right)))
+    raise error.RunError(error.STX)
 
 def vcaret(left, right):
     """ Left^right. """
