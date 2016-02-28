@@ -1682,42 +1682,12 @@ def exec_data(ins):
     # ignore rest of statement after DATA
     util.skip_to(ins, tk.end_statement)
 
-def _parse_int_list_var(ins):
-    """ Helper function for DIM: parse list of integers. """
-    output = [vartypes.pass_int_unpack(expressions.parse_expression(ins))]
-    while True:
-        d = util.skip_white(ins)
-        if d == ',':
-            ins.read(1)
-            c = util.peek(ins)
-            if c in tk.end_statement:
-                # missing operand
-                raise error.RunError(error.MISSING_OPERAND)
-            # if end_expression, syntax error
-            output.append(vartypes.pass_int_unpack(expressions.parse_expression(ins)))
-        elif d in tk.end_statement:
-            # statement ends - syntax error
-            raise error.RunError(error.STX)
-        elif d in tk.end_expression:
-            break
-        else:
-            raise error.RunError(error.STX)
-    return output
-
 def exec_dim(ins):
     """ DIM: dimension arrays. """
     while True:
-        name = util.get_var_name(ins)
-        dimensions = [10]
-        if util.skip_white_read_if(ins, ('[', '(')):
-            # at most 255 indices, but there's no way to fit those in a 255-byte command line...
-            dimensions = _parse_int_list_var(ins)
-            while len(dimensions) > 0 and dimensions[-1] is None:
-                dimensions = dimensions[:-1]
-            if None in dimensions:
-                raise error.RunError(error.STX)
-            util.require_read(ins, (')', ']'))
-            # yes, we can write dim gh[5)
+        name, dimensions = expressions.parse_name(ins)
+        if not dimensions:
+            dimensions = [10]
         var.dim_array(name, dimensions)
         if not util.skip_white_read_if(ins, (',',)):
             break
