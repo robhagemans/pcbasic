@@ -148,7 +148,7 @@ def parse_expression(ins, empty_err=error.MISSING_OPERAND):
             units.append(parse_bracket(ins))
         elif d and d in string.ascii_letters:
             # variable name
-            name, indices = get_var_or_array_name(ins)
+            name, indices = parse_name(ins)
             units.append(var.get_var_or_array(name, indices))
         elif d in functions:
             # apply functions
@@ -274,8 +274,7 @@ def parse_file_number_opthash(ins):
     util.range_check(0, 255, number)
     return number
 
-#RENAME parse_name
-def get_var_or_array_name(ins):
+def parse_name(ins):
     """ Helper function: parse a variable or array name. """
     name = util.get_var_name(ins)
     indices = []
@@ -772,7 +771,7 @@ def value_varptr(ins):
         filenum = parse_file_number_opthash(ins)
         var_ptr = machine.varptr_file(filenum)
     else:
-        name, indices = get_var_or_array_name(ins)
+        name, indices = parse_name(ins)
         var_ptr = machine.varptr(name, indices)
     util.require_read(ins, (')',))
     if var_ptr < 0:

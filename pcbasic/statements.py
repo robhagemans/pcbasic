@@ -1140,7 +1140,7 @@ def exec_field(ins):
             width = vartypes.pass_int_unpack(expressions.parse_expression(ins))
             util.range_check(0, 255, width)
             util.require_read(ins, ('AS',), err=error.IFC)
-            name, index = expressions.get_var_or_array_name(ins)
+            name, index = expressions.parse_name(ins)
             var.set_field_var_or_array(the_file, name, index, offset, width)
             offset += width
             if not util.skip_white_read_if(ins, (',',)):
@@ -1729,7 +1729,7 @@ def parse_var_list(ins):
     """ Helper function: parse variable list.  """
     readvar = []
     while True:
-        readvar.append(list(expressions.get_var_or_array_name(ins)))
+        readvar.append(list(expressions.parse_name(ins)))
         if not util.skip_white_read_if(ins, (',',)):
             break
     return readvar
@@ -1876,7 +1876,7 @@ def exec_erase(ins):
 
 def exec_let(ins):
     """ LET: assign value to variable or array. """
-    name, indices = expressions.get_var_or_array_name(ins)
+    name, indices = expressions.parse_name(ins)
     if indices != []:
         # pre-dim even if this is not a legal statement!
         # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out fo range afterwards
@@ -1890,7 +1890,7 @@ def exec_mid(ins):
     # do not use require_read as we don't allow whitespace here
     if ins.read(1) != '(':
         raise error.RunError(error.STX)
-    name, indices = expressions.get_var_or_array_name(ins)
+    name, indices = expressions.parse_name(ins)
     if indices != []:
         # pre-dim even if this is not a legal statement!
         var.check_dim_array(name, indices)
@@ -1912,7 +1912,7 @@ def exec_mid(ins):
 
 def exec_lset(ins, justify_right=False):
     """ LSET: assign string value in-place; left justified. """
-    name, index = expressions.get_var_or_array_name(ins)
+    name, index = expressions.parse_name(ins)
     util.require_read(ins, (tk.O_EQ,))
     val = expressions.parse_expression(ins)
     var.assign_field_var_or_array(name, index, val, justify_right)
@@ -2005,7 +2005,7 @@ def exec_line_input(ins):
         # get prompt
         prompt = parse_prompt(ins, '')
     # get string variable
-    readvar, indices = expressions.get_var_or_array_name(ins)
+    readvar, indices = expressions.parse_name(ins)
     if not readvar or readvar[0] == '':
         raise error.RunError(error.STX)
     elif readvar[-1] != '$':
@@ -2034,9 +2034,9 @@ def exec_restore(ins):
 
 def exec_swap(ins):
     """ SWAP: swap values of two variables. """
-    name1, index1 = expressions.get_var_or_array_name(ins)
+    name1, index1 = expressions.parse_name(ins)
     util.require_read(ins, (',',))
-    name2, index2 = expressions.get_var_or_array_name(ins)
+    name2, index2 = expressions.parse_name(ins)
     var.swap_var(name1, index1, name2, index2)
     # if syntax error. the swap has happened
     util.require(ins, tk.end_statement)
@@ -2212,7 +2212,7 @@ def exec_palette_using(ins):
     screen = state.console_state.screen
     mode = screen.mode
     num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
-    array_name, start_indices = expressions.get_var_or_array_name(ins)
+    array_name, start_indices = expressions.parse_name(ins)
     try:
         dimensions, lst, _ = state.basic_state.arrays[array_name]
     except KeyError:
