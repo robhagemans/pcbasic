@@ -310,6 +310,7 @@ def exec_def(ins):
         exec_def_fn(ins)
     elif util.read_if(ins, c, (tk.USR,)):
         exec_def_usr(ins)
+    # must be uppercase in tokenised form, otherwise syntax error
     elif util.skip_white_read_if(ins, ('SEG',)):
         exec_def_seg(ins)
     else:

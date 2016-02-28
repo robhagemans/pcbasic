@@ -81,7 +81,7 @@ def detokenise_line(ins, bytepos=None):
     if util.peek(ins) != '\t':
         linum += bytearray(' ')
     line, textpos = detokenise_compound_statement(ins, bytepos)
-    return current_line, linum + line, textpos
+    return current_line, linum + line, textpos + len(linum)
 
 def detokenise_compound_statement(ins, bytepos=None):
     """ Detokenise tokens until end of line. """
