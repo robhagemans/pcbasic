@@ -3,6 +3,7 @@ packaging/
 patches/
 test/
 docsrc/
+fontsrc/
 data/*.SAV
 *.pyc
 *.pyo
