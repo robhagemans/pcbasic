@@ -95,7 +95,10 @@ def parse_expression(ins, empty_err=error.MISSING_OPERAND):
         if d in tk.twobyte:
             ins.read(1)
             d += util.skip_white(ins)
-        if d in operators:
+        if d == tk.NOT and not (last in operators or last == ''):
+            # unary NOT ends expression except after another operator or at start
+            break
+        elif d in operators:
             ins.read(1)
             # get combined operators such as >=
             if d in combinable:
