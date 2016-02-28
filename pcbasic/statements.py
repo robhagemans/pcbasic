@@ -2123,7 +2123,7 @@ def exec_cls(ins):
 
 def exec_color(ins):
     """ COLOR: set colour attributes. """
-    fore, back, bord = expressions.parse_int_list(ins, 3, 5)
+    fore, back, bord = expressions.parse_int_list(ins, 3, err=error.IFC)
     screen = state.console_state.screen
     mode = screen.mode
     if mode.name == '320x200x4':
@@ -2277,7 +2277,7 @@ def exec_key_define(ins):
 def exec_locate(ins):
     """ LOCATE: Set cursor position, shape and visibility."""
     cmode = state.console_state.screen.mode
-    row, col, cursor, start, stop, dummy = expressions.parse_int_list(ins, 6, 2, allow_last_empty=True)
+    row, col, cursor, start, stop, dummy = expressions.parse_int_list(ins, 6, err=error.STX, allow_last_empty=True)
     if dummy is not None:
         # can end on a 5th comma but no stuff allowed after it
         raise error.RunError(error.STX)
