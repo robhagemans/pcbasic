@@ -84,7 +84,6 @@ def parse_expression(ins, empty_err=error.MISSING_OPERAND):
     units = deque()
     d = ''
     # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
-    units_expected = 1
     missing_error = error.MISSING_OPERAND
     while True:
         last = d
@@ -112,33 +111,31 @@ def parse_expression(ins, empty_err=error.MISSING_OPERAND):
                     raise error.RunError(error.STX)
             else:
                 nargs = 2
-                units_expected -= evaluate_stack(stack, units, operators[d], error.STX)
+                evaluate_stack(stack, units, operators[d], error.STX)
             stack.append((d, nargs))
-            units_expected += nargs - 1
+        elif not (last in operators or last == ''):
+            # repeated unit ends expression
+            # repeated literals or variables or non-keywords like 'AS'
+            break
+        elif d == '(':
+            units.append(parse_bracket(ins))
+        elif d and d in string.ascii_letters:
+            # variable name
+            name, indices = get_var_or_array_name(ins)
+            units.append(var.get_var_or_array(name, indices))
+        elif d in functions:
+            # apply functions
+            ins.read(1)
+            units.append(functions[d](ins))
+        elif d in tk.end_statement:
+            break
+        elif d in tk.end_expression or d in tk.keyword:
+            # missing operand inside brackets or before comma is syntax error
+            missing_error = error.STX
+            break
         else:
-            if len(units) >= units_expected:
-                # too many units ends expression
-                # repeated literals or variables or non-keywords like 'AS'
-                break
-            if d == '(':
-                units.append(parse_bracket(ins))
-            elif d and d in string.ascii_letters:
-                # variable name
-                name, indices = get_var_or_array_name(ins)
-                units.append(var.get_var_or_array(name, indices))
-            elif d in functions:
-                # apply functions
-                ins.read(1)
-                units.append(functions[d](ins))
-            elif d in tk.end_statement:
-                break
-            elif d in tk.end_expression or d in tk.keyword:
-                # missing operand inside brackets or before comma is syntax error
-                missing_error = error.STX
-                break
-            else:
-                # literal
-                units.append(parse_literal(ins))
+            # literal
+            units.append(parse_literal(ins))
     # empty expression is a syntax error (inside brackets)
     # or Missing Operand (in an assignment)
     # or not an error (in print and many functions)
@@ -152,7 +149,6 @@ def parse_expression(ins, empty_err=error.MISSING_OPERAND):
 
 def evaluate_stack(stack, units, precedence, missing_err):
     """ Drain evaluation stack until an operator of low precedence on top. """
-    units_dropped = 0
     while stack:
         if precedence > operators[stack[-1][0]]:
             break
@@ -165,8 +161,6 @@ def evaluate_stack(stack, units, precedence, missing_err):
             # insufficient operators, error depends on context
             raise error.RunError(missing_err)
         units.append(value_operator(op, left, right))
-        units_dropped += narity - 1
-    return units_dropped
 
 def parse_literal(ins):
     """ Compute the value of the literal at the current code pointer. """
