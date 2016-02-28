@@ -99,128 +99,11 @@ def parse_statement():
         # token
         else:
             ins.read(1)
-            if   c == tk.END:       exec_end(ins)
-            elif c == tk.FOR:       exec_for(ins)
-            elif c == tk.NEXT:      exec_next(ins)
-            elif c == tk.DATA:      exec_data(ins)
-            elif c == tk.INPUT:     exec_input(ins)
-            elif c == tk.DIM:       exec_dim(ins)
-            elif c == tk.READ:      exec_read(ins)
-            elif c == tk.LET:       exec_let(ins)
-            elif c == tk.GOTO:      exec_goto(ins)
-            elif c == tk.RUN:       exec_run(ins)
-            elif c == tk.IF:        exec_if(ins)
-            elif c == tk.RESTORE:   exec_restore(ins)
-            elif c == tk.GOSUB:     exec_gosub(ins)
-            elif c == tk.RETURN:    exec_return(ins)
-            elif c == tk.REM:       exec_rem(ins)
-            elif c == tk.STOP:      exec_stop(ins)
-            elif c == tk.PRINT:     exec_print(ins)
-            elif c == tk.CLEAR:     exec_clear(ins)
-            elif c == tk.LIST:      exec_list(ins)
-            elif c == tk.NEW:       exec_new(ins)
-            elif c == tk.ON:        exec_on(ins)
-            elif c == tk.WAIT:      exec_wait(ins)
-            elif c == tk.DEF:       exec_def(ins)
-            elif c == tk.POKE:      exec_poke(ins)
-            elif c == tk.CONT:      exec_cont(ins)
-            elif c == tk.OUT:       exec_out(ins)
-            elif c == tk.LPRINT:    exec_lprint(ins)
-            elif c == tk.LLIST:     exec_llist(ins)
-            elif c == tk.WIDTH:     exec_width(ins)
-            elif c == tk.ELSE:      exec_else(ins)
-            elif c == tk.TRON:      exec_tron(ins)
-            elif c == tk.TROFF:     exec_troff(ins)
-            elif c == tk.SWAP:      exec_swap(ins)
-            elif c == tk.ERASE:     exec_erase(ins)
-            elif c == tk.EDIT:      exec_edit(ins)
-            elif c == tk.ERROR:     exec_error(ins)
-            elif c == tk.RESUME:    exec_resume(ins)
-            elif c == tk.DELETE:    exec_delete(ins)
-            elif c == tk.AUTO:      exec_auto(ins)
-            elif c == tk.RENUM:     exec_renum(ins)
-            elif c == tk.DEFSTR:    exec_defstr(ins)
-            elif c == tk.DEFINT:    exec_defint(ins)
-            elif c == tk.DEFSNG:    exec_defsng(ins)
-            elif c == tk.DEFDBL:    exec_defdbl(ins)
-            elif c == tk.LINE:      exec_line(ins)
-            elif c == tk.WHILE:     exec_while(ins)
-            elif c == tk.WEND:      exec_wend(ins)
-            elif c == tk.CALL:      exec_call(ins)
-            elif c == tk.WRITE:     exec_write(ins)
-            elif c == tk.OPTION:    exec_option(ins)
-            elif c == tk.RANDOMIZE: exec_randomize(ins)
-            elif c == tk.OPEN:      exec_open(ins)
-            elif c == tk.CLOSE:     exec_close(ins)
-            elif c == tk.LOAD:      exec_load(ins)
-            elif c == tk.MERGE:     exec_merge(ins)
-            elif c == tk.SAVE:      exec_save(ins)
-            elif c == tk.COLOR:     exec_color(ins)
-            elif c == tk.CLS:       exec_cls(ins)
-            elif c == tk.MOTOR:     exec_motor(ins)
-            elif c == tk.BSAVE:     exec_bsave(ins)
-            elif c == tk.BLOAD:     exec_bload(ins)
-            elif c == tk.SOUND:     exec_sound(ins)
-            elif c == tk.BEEP:      exec_beep(ins)
-            elif c == tk.PSET:      exec_pset(ins)
-            elif c == tk.PRESET:    exec_preset(ins)
-            elif c == tk.SCREEN:    exec_screen(ins)
-            elif c == tk.KEY:       exec_key(ins)
-            elif c == tk.LOCATE:    exec_locate(ins)
-            # two-byte tokens
-            elif c == '\xFD':
-                ins.read(1)
-                # syntax error; these are all expression tokens, not statement tokens.
-                raise error.RunError(error.STX)
-            # two-byte tokens
-            elif c == '\xFE':
+            if c in tk.twobyte:
                 c += ins.read(1)
-                if   c == tk.FILES:   exec_files(ins)
-                elif c == tk.FIELD:   exec_field(ins)
-                elif c == tk.SYSTEM:  exec_system(ins)
-                elif c == tk.NAME:    exec_name(ins)
-                elif c == tk.LSET:    exec_lset(ins)
-                elif c == tk.RSET:    exec_rset(ins)
-                elif c == tk.KILL:    exec_kill(ins)
-                elif c == tk.PUT:     exec_put(ins)
-                elif c == tk.GET:     exec_get(ins)
-                elif c == tk.RESET:   exec_reset(ins)
-                elif c == tk.COMMON:  exec_common(ins)
-                elif c == tk.CHAIN:   exec_chain(ins)
-                elif c == tk.DATE:    exec_date(ins)
-                elif c == tk.TIME:    exec_time(ins)
-                elif c == tk.PAINT:   exec_paint(ins)
-                elif c == tk.COM:     exec_com(ins)
-                elif c == tk.CIRCLE:  exec_circle(ins)
-                elif c == tk.DRAW:    exec_draw(ins)
-                elif c == tk.PLAY:    exec_play(ins)
-                elif c == tk.TIMER:   exec_timer(ins)
-                elif c == tk.IOCTL:   exec_ioctl(ins)
-                elif c == tk.CHDIR:   exec_chdir(ins)
-                elif c == tk.MKDIR:   exec_mkdir(ins)
-                elif c == tk.RMDIR:   exec_rmdir(ins)
-                elif c == tk.SHELL:   exec_shell(ins)
-                elif c == tk.ENVIRON: exec_environ(ins)
-                elif c == tk.VIEW:    exec_view(ins)
-                elif c == tk.WINDOW:  exec_window(ins)
-                elif c == tk.PALETTE: exec_palette(ins)
-                elif c == tk.LCOPY:   exec_lcopy(ins)
-                elif c == tk.CALLS:   exec_calls(ins)
-                elif c == tk.NOISE:   exec_noise(ins)
-                elif c == tk.PCOPY:   exec_pcopy(ins)
-                elif c == tk.TERM:    exec_term(ins)
-                elif c == tk.LOCK:    exec_lock(ins)
-                elif c == tk.UNLOCK:  exec_unlock(ins)
-                else: raise error.RunError(error.STX)
-            # two-byte tokens
-            elif c == '\xFF':
-                c += ins.read(1)
-                if   c == tk.MID:    exec_mid(ins)
-                elif c == tk.PEN:    exec_pen(ins)
-                elif c == tk.STRIG:  exec_strig(ins)
-                elif c == tk.DEBUG:  exec_debug(ins)
-                else: raise error.RunError(error.STX)
-            else:
+            try:
+                statements[c](ins)
+            except KeyError:
                 raise error.RunError(error.STX)
         return True
     except error.RunError as e:
@@ -2516,6 +2399,117 @@ def exec_pcopy(ins):
     util.require(ins, tk.end_statement)
     util.range_check(0, state.console_state.screen.mode.num_pages-1, dst)
     state.console_state.screen.copy_page(src, dst)
+
+statements = {
+    tk.END: exec_end,
+    tk.FOR: exec_for,
+    tk.NEXT: exec_next,
+    tk.DATA: exec_data,
+    tk.INPUT: exec_input,
+    tk.DIM: exec_dim,
+    tk.READ: exec_read,
+    tk.LET: exec_let,
+    tk.GOTO: exec_goto,
+    tk.RUN: exec_run,
+    tk.IF: exec_if,
+    tk.RESTORE: exec_restore,
+    tk.GOSUB: exec_gosub,
+    tk.RETURN: exec_return,
+    tk.REM: exec_rem,
+    tk.STOP: exec_stop,
+    tk.PRINT: exec_print,
+    tk.CLEAR: exec_clear,
+    tk.LIST: exec_list,
+    tk.NEW: exec_new,
+    tk.ON: exec_on,
+    tk.WAIT: exec_wait,
+    tk.DEF: exec_def,
+    tk.POKE: exec_poke,
+    tk.CONT: exec_cont,
+    tk.OUT: exec_out,
+    tk.LPRINT: exec_lprint,
+    tk.LLIST: exec_llist,
+    tk.WIDTH: exec_width,
+    tk.ELSE: exec_else,
+    tk.TRON: exec_tron,
+    tk.TROFF: exec_troff,
+    tk.SWAP: exec_swap,
+    tk.ERASE: exec_erase,
+    tk.EDIT: exec_edit,
+    tk.ERROR: exec_error,
+    tk.RESUME: exec_resume,
+    tk.DELETE: exec_delete,
+    tk.AUTO: exec_auto,
+    tk.RENUM: exec_renum,
+    tk.DEFSTR: exec_defstr,
+    tk.DEFINT: exec_defint,
+    tk.DEFSNG: exec_defsng,
+    tk.DEFDBL: exec_defdbl,
+    tk.LINE: exec_line,
+    tk.WHILE: exec_while,
+    tk.WEND: exec_wend,
+    tk.CALL: exec_call,
+    tk.WRITE: exec_write,
+    tk.OPTION: exec_option,
+    tk.RANDOMIZE: exec_randomize,
+    tk.OPEN: exec_open,
+    tk.CLOSE: exec_close,
+    tk.LOAD: exec_load,
+    tk.MERGE: exec_merge,
+    tk.SAVE: exec_save,
+    tk.COLOR: exec_color,
+    tk.CLS: exec_cls,
+    tk.MOTOR: exec_motor,
+    tk.BSAVE: exec_bsave,
+    tk.BLOAD: exec_bload,
+    tk.SOUND: exec_sound,
+    tk.BEEP: exec_beep,
+    tk.PSET: exec_pset,
+    tk.PRESET: exec_preset,
+    tk.SCREEN: exec_screen,
+    tk.KEY: exec_key,
+    tk.LOCATE: exec_locate,
+    tk.FILES: exec_files,
+    tk.FIELD: exec_field,
+    tk.SYSTEM: exec_system,
+    tk.NAME: exec_name,
+    tk.LSET: exec_lset,
+    tk.RSET: exec_rset,
+    tk.KILL: exec_kill,
+    tk.PUT: exec_put,
+    tk.GET: exec_get,
+    tk.RESET: exec_reset,
+    tk.COMMON: exec_common,
+    tk.CHAIN: exec_chain,
+    tk.DATE: exec_date,
+    tk.TIME: exec_time,
+    tk.PAINT: exec_paint,
+    tk.COM: exec_com,
+    tk.CIRCLE: exec_circle,
+    tk.DRAW: exec_draw,
+    tk.PLAY: exec_play,
+    tk.TIMER: exec_timer,
+    tk.IOCTL: exec_ioctl,
+    tk.CHDIR: exec_chdir,
+    tk.MKDIR: exec_mkdir,
+    tk.RMDIR: exec_rmdir,
+    tk.SHELL: exec_shell,
+    tk.ENVIRON: exec_environ,
+    tk.VIEW: exec_view,
+    tk.WINDOW: exec_window,
+    tk.PALETTE: exec_palette,
+    tk.LCOPY: exec_lcopy,
+    tk.CALLS: exec_calls,
+    tk.NOISE: exec_noise,
+    tk.PCOPY: exec_pcopy,
+    tk.TERM: exec_term,
+    tk.LOCK: exec_lock,
+    tk.UNLOCK: exec_unlock,
+    tk.MID: exec_mid,
+    tk.PEN: exec_pen,
+    tk.STRIG: exec_strig,
+    tk.DEBUG: exec_debug,
+}
 
 
 prepare()
