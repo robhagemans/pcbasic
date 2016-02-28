@@ -1748,11 +1748,11 @@ def exec_mid(ins):
         # pre-dim even if this is not a legal statement!
         var.check_dim_array(name, indices)
     util.require_read(ins, (',',))
-    arglist = expressions.parse_int_list(ins, size=2, size_err=error.STX)
-    if arglist[0] is None:
+    start, num = expressions.parse_int_list(ins, size=2, size_err=error.STX)
+    if start is None:
         raise error.RunError(error.STX)
-    start = arglist[0]
-    num = arglist[1] if arglist[1] is not None else 255
+    if num is None:
+        num = 255
     util.require_read(ins, (')',))
     s = vartypes.pass_string_unpack(var.get_var_or_array(name, indices))
     util.range_check(0, 255, num)
@@ -2051,13 +2051,13 @@ def exec_palette(ins):
         # can't set blinking colours separately
         mode = state.console_state.screen.mode
         num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
-        pair = expressions.parse_int_list(ins, 2, size_err=error.IFC)
-        if pair[0] is None or pair[1] is None:
+        attrib, colour = expressions.parse_int_list(ins, 2, size_err=error.IFC)
+        if attrib is None or colour is None:
             raise error.RunError(error.STX)
-        util.range_check(0, num_palette_entries-1, pair[0])
-        util.range_check(-1, len(mode.colours)-1, pair[1])
-        if pair[1] > -1:
-            state.console_state.screen.palette.set_entry(pair[0], pair[1])
+        util.range_check(0, num_palette_entries-1, attrib)
+        util.range_check(-1, len(mode.colours)-1, colour)
+        if colour != -1:
+            state.console_state.screen.palette.set_entry(attrib, colour)
         util.require(ins, tk.end_statement)
 
 def exec_palette_using(ins):

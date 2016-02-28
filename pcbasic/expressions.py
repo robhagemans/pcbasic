@@ -621,8 +621,8 @@ def value_fn(ins):
         exprs = parse_expr_list(ins, len(varnames), size_err=error.STX)
         if None in exprs:
             raise error.RunError(error.STX)
-        for i in range(len(varnames)):
-            var.set_var(varnames[i], exprs[i])
+        for name, value in zip(varnames, exprs):
+            var.set_var(name, value)
         util.require_read(ins, (')',))
     # execute the code
     fns = StringIO(fncode)
@@ -640,16 +640,16 @@ def value_fn(ins):
 def value_point(ins):
     """ POINT: get pixel attribute at screen location. """
     util.require_read(ins, ('(',))
-    lst = parse_expr_list(ins, 2, size_err=error.STX)
+    arg0, arg1 = parse_expr_list(ins, 2, size_err=error.STX)
     util.require_read(ins, (')',))
-    if not lst[0]:
+    if arg0 is None:
         raise error.RunError(error.STX)
     screen = state.console_state.screen
-    if not lst[1]:
+    if arg1 is None:
         # single-argument version
         try:
             x, y = screen.drawing.last_point
-            fn = vartypes.pass_int_unpack(lst[0])
+            fn = vartypes.pass_int_unpack(arg0)
             if fn == 0:
                 return vartypes.int_to_integer_signed(x)
             elif fn == 1:
@@ -667,8 +667,8 @@ def value_point(ins):
         if screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         return vartypes.int_to_integer_signed(screen.drawing.point(
-                        (fp.unpack(vartypes.pass_single(lst[0])),
-                         fp.unpack(vartypes.pass_single(lst[1])), False)))
+                        (fp.unpack(vartypes.pass_single(arg0)),
+                         fp.unpack(vartypes.pass_single(arg1)), False)))
 
 def value_pmap(ins):
     """ PMAP: convert between logical and physical coordinates. """
