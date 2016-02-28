@@ -927,23 +927,27 @@ def vplus(left, right):
 
 def vintdiv(left, right):
     """ Left\\right. """
-    try:
-        return vartypes.int_to_integer_signed(
-            vartypes.pass_int_unpack(left) / vartypes.pass_int_unpack(right))
-    except ZeroDivisionError:
+    dividend = vartypes.pass_int_unpack(left)
+    divisor = vartypes.pass_int_unpack(right)
+    print dividend, divisor
+    if divisor == 0:
         # simulate (float!) division by zero
         return vdiv(left, right)
+    if (dividend >= 0) == (divisor >= 0):
+        return vartypes.int_to_integer_signed(dividend / divisor)
+    else:
+        return vartypes.int_to_integer_signed(-(abs(dividend) / abs(divisor)))
 
 def vmod(left, right):
     """ Left MOD right. """
-    numerator = vartypes.pass_int_unpack(right)
-    if numerator == 0:
+    divisor = vartypes.pass_int_unpack(right)
+    if divisor == 0:
         # simulate (float!) division by zero
         return vdiv(left, right)
-    intleft = vartypes.pass_int_unpack(left)
-    mod = intleft % numerator
-    if intleft < 0 or mod < 0:
-        mod -= numerator
+    dividend = vartypes.pass_int_unpack(left)
+    mod = dividend % divisor
+    if dividend < 0 or mod < 0:
+        mod -= divisor
     return vartypes.int_to_integer_signed(mod)
 
 
