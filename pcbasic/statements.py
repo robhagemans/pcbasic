@@ -439,18 +439,18 @@ def exec_play(ins):
     else:
         # retrieve Music Macro Language string
         mml0 = vartypes.pass_string_unpack(
-                    expressions.parse_expression(ins, empty_err=None),
+                    expressions.parse_expression(ins, allow_empty=True),
                     allow_empty=True)
         mml1, mml2 = '', ''
         if ((pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and
                                          state.console_state.sound.sound_on))
                 and util.skip_white_read_if(ins, (',',))):
             mml1 = vartypes.pass_string_unpack(
-                        expressions.parse_expression(ins, empty_err=None),
+                        expressions.parse_expression(ins, allow_empty=True),
                         allow_empty=True)
             if util.skip_white_read_if(ins, (',',)):
                 mml2 = vartypes.pass_string_unpack(
-                            expressions.parse_expression(ins, empty_err=None),
+                            expressions.parse_expression(ins, allow_empty=True),
                             allow_empty=True)
         util.require(ins, tk.end_statement)
         if not (mml0 or mml1 or mml2):
@@ -824,7 +824,7 @@ def exec_chain(ins):
     jumpnum, common_all, delete_lines = None, False, None
     if util.skip_white_read_if(ins, (',',)):
         # check for an expression that indicates a line in the other program. This is not stored as a jumpnum (to avoid RENUM)
-        expr = expressions.parse_expression(ins, empty_err=None)
+        expr = expressions.parse_expression(ins, allow_empty=True)
         if expr is not None:
             jumpnum = vartypes.pass_int_unpack(expr, maxint=0xffff)
             # negative numbers will be two's complemented into a line number
@@ -1131,7 +1131,7 @@ def exec_line_graph(ins):
     coord1 = parse_coord_step(ins)
     c, mode, pattern = -1, '', 0xffff
     if util.skip_white_read_if(ins, (',',)):
-        expr = expressions.parse_expression(ins, empty_err=None)
+        expr = expressions.parse_expression(ins, allow_empty=True)
         if expr:
             c = vartypes.pass_int_unpack(expr)
         if util.skip_white_read_if(ins, (',',)):
@@ -1140,9 +1140,8 @@ def exec_line_graph(ins):
             else:
                 util.require(ins, (',',))
             if util.skip_white_read_if(ins, (',',)):
-                pattern = vartypes.pass_int_unpack(expressions.parse_expression(
-                                    ins, empty_err=error.MISSING_OPERAND),
-                                    maxint=0x7fff)
+                pattern = vartypes.pass_int_unpack(
+                            expressions.parse_expression(ins), maxint=0x7fff)
         elif not expr:
             raise error.RunError(error.MISSING_OPERAND)
     util.require(ins, tk.end_statement)
@@ -1163,7 +1162,7 @@ def exec_view_graph(ins):
         util.range_check(0, state.console_state.screen.mode.pixel_height-1, y0, y1)
         fill, border = None, None
         if util.skip_white_read_if(ins, (',',)):
-            fill, border = expressions.parse_int_list(ins, 2, err=error.STX)
+            fill, border = expressions.parse_int_list(ins, 2, size_err=error.STX)
         state.console_state.screen.drawing.set_view(x0, y0, x1, y1, absolute, fill, border)
     else:
         state.console_state.screen.drawing.unset_view()
@@ -1194,13 +1193,13 @@ def exec_circle(ins):
     r = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins)))
     start, stop, c, aspect = None, None, -1, None
     if util.skip_white_read_if(ins, (',',)):
-        cval = expressions.parse_expression(ins, empty_err=None)
+        cval = expressions.parse_expression(ins, allow_empty=True)
         if cval:
             c = vartypes.pass_int_unpack(cval)
         if util.skip_white_read_if(ins, (',',)):
-            start = expressions.parse_expression(ins, empty_err=None)
+            start = expressions.parse_expression(ins, allow_empty=True)
             if util.skip_white_read_if(ins, (',',)):
-                stop = expressions.parse_expression(ins, empty_err=None)
+                stop = expressions.parse_expression(ins, allow_empty=True)
                 if util.skip_white_read_if(ins, (',',)):
                     aspect = fp.unpack(vartypes.pass_single(
                                             expressions.parse_expression(ins)))
@@ -1223,7 +1222,7 @@ def exec_paint(ins):
     coord = parse_coord_step(ins)
     pattern, c, border, background_pattern = None, -1, -1, None
     if util.skip_white_read_if(ins, (',',)):
-        cval = expressions.parse_expression(ins, empty_err=None)
+        cval = expressions.parse_expression(ins, allow_empty=True)
         if not cval:
             pass
         elif cval[0] == '$':
@@ -1237,7 +1236,7 @@ def exec_paint(ins):
             c = vartypes.pass_int_unpack(cval)
         border = c
         if util.skip_white_read_if(ins, (',',)):
-            bval = expressions.parse_expression(ins, empty_err=None)
+            bval = expressions.parse_expression(ins, allow_empty=True)
             if bval:
                 border = vartypes.pass_int_unpack(bval)
             if util.skip_white_read_if(ins, (',',)):
@@ -1621,13 +1620,13 @@ def parse_var_list(ins):
 def exec_clear(ins):
     """ CLEAR: clear memory and redefine memory limits. """
     # integer expression allowed but ignored
-    intexp = expressions.parse_expression(ins, empty_err=None)
+    intexp = expressions.parse_expression(ins, allow_empty=True)
     if intexp:
         expr = vartypes.pass_int_unpack(intexp)
         if expr < 0:
             raise error.RunError(error.IFC)
     if util.skip_white_read_if(ins, (',',)):
-        exp1 = expressions.parse_expression(ins, empty_err=None)
+        exp1 = expressions.parse_expression(ins, allow_empty=True)
         if exp1:
             # this produces a *signed* int
             mem_size = vartypes.pass_int_unpack(exp1, maxint=0xffff)
@@ -1639,7 +1638,7 @@ def exec_clear(ins):
                     raise error.RunError(error.OUT_OF_MEMORY)
         if util.skip_white_read_if(ins, (',',)):
             # set aside stack space for GW-BASIC. The default is the previous stack space size.
-            exp2 = expressions.parse_expression(ins, empty_err=None)
+            exp2 = expressions.parse_expression(ins, allow_empty=True)
             if exp2:
                 stack_size = vartypes.pass_int_unpack(exp2, maxint=0xffff)
                 # this should be an unsigned int
@@ -1653,7 +1652,7 @@ def exec_clear(ins):
                 # Tandy/PCjr: select video memory size
                 if not state.console_state.screen.set_video_memory_size(
                     fp.unpack(vartypes.pass_single(
-                                 expressions.parse_expression(ins, empty_err=error.STX)
+                                 expressions.parse_expression(ins)
                              )).round_to_int()):
                     state.console_state.screen.screen(0, 0, 0, 0)
                     console.init_mode()
@@ -1683,9 +1682,9 @@ def exec_data(ins):
     # ignore rest of statement after DATA
     util.skip_to(ins, tk.end_statement)
 
-def parse_int_list_var(ins):
+def _parse_int_list_var(ins):
     """ Helper function for DIM: parse list of integers. """
-    output = [ vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=error.STX)) ]
+    output = [vartypes.pass_int_unpack(expressions.parse_expression(ins))]
     while True:
         d = util.skip_white(ins)
         if d == ',':
@@ -1695,7 +1694,7 @@ def parse_int_list_var(ins):
                 # missing operand
                 raise error.RunError(error.MISSING_OPERAND)
             # if end_expression, syntax error
-            output.append(vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=error.STX)))
+            output.append(vartypes.pass_int_unpack(expressions.parse_expression(ins)))
         elif d in tk.end_statement:
             # statement ends - syntax error
             raise error.RunError(error.STX)
@@ -1709,10 +1708,10 @@ def exec_dim(ins):
     """ DIM: dimension arrays. """
     while True:
         name = util.get_var_name(ins)
-        dimensions = [ 10 ]
+        dimensions = [10]
         if util.skip_white_read_if(ins, ('[', '(')):
             # at most 255 indices, but there's no way to fit those in a 255-byte command line...
-            dimensions = parse_int_list_var(ins)
+            dimensions = _parse_int_list_var(ins)
             while len(dimensions) > 0 and dimensions[-1] is None:
                 dimensions = dimensions[:-1]
             if None in dimensions:
@@ -1779,7 +1778,7 @@ def exec_mid(ins):
         # pre-dim even if this is not a legal statement!
         var.check_dim_array(name, indices)
     util.require_read(ins, (',',))
-    arglist = expressions.parse_int_list(ins, size=2, err=error.STX)
+    arglist = expressions.parse_int_list(ins, size=2, size_err=error.STX)
     if arglist[0] is None:
         raise error.RunError(error.STX)
     start = arglist[0]
@@ -1953,7 +1952,7 @@ def exec_def_fn(ins):
 
 def exec_randomize(ins):
     """ RANDOMIZE: set random number generator seed. """
-    val = expressions.parse_expression(ins, empty_err=None)
+    val = expressions.parse_expression(ins, allow_empty=True)
     if val:
         # don't convert to int if provided in the code
         val = vartypes.pass_number(val)
@@ -2007,7 +2006,7 @@ def exec_cls(ins):
 
 def exec_color(ins):
     """ COLOR: set colour attributes. """
-    fore, back, bord = expressions.parse_int_list(ins, 3, err=error.IFC)
+    fore, back, bord = expressions.parse_int_list(ins, 3, size_err=error.IFC)
     screen = state.console_state.screen
     mode = screen.mode
     if mode.name == '320x200x4':
@@ -2082,7 +2081,7 @@ def exec_palette(ins):
         # can't set blinking colours separately
         mode = state.console_state.screen.mode
         num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
-        pair = expressions.parse_int_list(ins, 2, err=error.IFC)
+        pair = expressions.parse_int_list(ins, 2, size_err=error.IFC)
         if pair[0] is None or pair[1] is None:
             raise error.RunError(error.STX)
         util.range_check(0, num_palette_entries-1, pair[0])
@@ -2161,7 +2160,8 @@ def exec_key_define(ins):
 def exec_locate(ins):
     """ LOCATE: Set cursor position, shape and visibility."""
     cmode = state.console_state.screen.mode
-    row, col, cursor, start, stop, dummy = expressions.parse_int_list(ins, 6, err=error.STX, allow_last_empty=True)
+    row, col, cursor, start, stop, dummy = expressions.parse_int_list(
+                                ins, 6, size_err=error.STX, last_empty_err=None)
     if dummy is not None:
         # can end on a 5th comma but no stuff allowed after it
         raise error.RunError(error.STX)
@@ -2194,7 +2194,7 @@ def exec_write(ins, output=None):
     """ WRITE: Output machine-readable expressions to the screen or a file. """
     output = expressions.parse_file_number(ins, 'OAR')
     output = state.io_state.scrn_file if output is None else output
-    expr = expressions.parse_expression(ins, empty_err=None)
+    expr = expressions.parse_expression(ins, allow_empty=True)
     outstr = ''
     if expr:
         while True:
@@ -2231,12 +2231,12 @@ def exec_print(ins, output=None):
                     output.write_line()
                 else:
                     output.write(' '*(1+14*next_zone-output.col))
-            elif d == tk.SPC: #SPC(
-                numspaces = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=error.STX), 0xffff)) % output.width
+            elif d == tk.SPC:
+                numspaces = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff)) % output.width
                 util.require_read(ins, (')',))
                 output.write(' ' * numspaces)
-            elif d == tk.TAB: #TAB(
-                pos = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=error.STX), 0xffff) - 1) % output.width + 1
+            elif d == tk.TAB:
+                pos = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff) - 1) % output.width + 1
                 util.require_read(ins, (')',))
                 if pos < output.col:
                     output.write_line()
@@ -2353,7 +2353,7 @@ def exec_width(ins):
             w = vartypes.pass_int_unpack(expr)
             if util.skip_white_read_if(ins, (',',)):
                 # pare dummy number rows setting
-                num_rows_dummy = expressions.parse_expression(ins, empty_err=None)
+                num_rows_dummy = expressions.parse_expression(ins, allow_empty=True)
                 if num_rows_dummy is not None:
                     min_num_rows = 0 if pcjr_syntax else 25
                     util.range_check(min_num_rows, 25, vartypes.pass_int_unpack(num_rows_dummy))

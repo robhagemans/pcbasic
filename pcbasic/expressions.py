@@ -105,7 +105,7 @@ def prepare():
     state.basic_state.user_function_parsing = set()
 
 
-def parse_expression(ins, empty_err=error.MISSING_OPERAND):
+def parse_expression(ins, allow_empty=False):
     """ Compute the value of the expression at the current code pointer. """
     stack = deque()
     units = deque()
@@ -169,10 +169,10 @@ def parse_expression(ins, empty_err=error.MISSING_OPERAND):
     if units or stack:
         _evaluate_stack(stack, units, 0, missing_error)
         return units[0]
-    elif not empty_err:
+    elif allow_empty:
         return None
     else:
-        raise error.RunError(empty_err)
+        raise error.RunError(missing_error)
 
 def _evaluate_stack(stack, units, precedence, missing_err):
     """ Drain evaluation stack until an operator of low precedence on top. """
@@ -230,29 +230,28 @@ def parse_literal(ins):
 def parse_bracket(ins):
     """ Compute the value of the bracketed expression. """
     util.require_read(ins, ('(',))
-    # we need a Syntax error, not a Missing operand
-    val = parse_expression(ins, empty_err=error.STX)
+    # we'll get a Syntax error, not a Missing operand, if we close with )
+    val = parse_expression(ins)
     util.require_read(ins, (')',))
     return val
 
-def parse_int_list(ins, size, err=error.IFC, allow_last_empty=False):
+def parse_int_list(ins, size, size_err=error.IFC, last_empty_err=error.MISSING_OPERAND):
     """ Helper function: parse a list of integers. """
-    exprlist = parse_expr_list(ins, size, err, allow_last_empty=allow_last_empty)
-    return [(vartypes.pass_int_unpack(expr) if expr else None) for expr in exprlist]
+    exprlist = parse_expr_list(ins, size, size_err, last_empty_err)
+    return [(None if expr is None else vartypes.pass_int_unpack(expr)) for expr in exprlist]
 
-def parse_expr_list(ins, size, err=error.IFC,
-                    separators=(',',), allow_last_empty=False):
+def parse_expr_list(ins, size, size_err=error.IFC, last_empty_err=error.MISSING_OPERAND):
     """ Helper function : parse a list of expressions. """
     output = []
     while True:
-        output.append(parse_expression(ins, empty_err=None))
-        if not util.skip_white_read_if(ins, separators):
+        output.append(parse_expression(ins, allow_empty=True))
+        if not util.skip_white_read_if(ins, (',',)):
             break
     if len(output) > size:
-        raise error.RunError(err)
-    # can't end on a comma: Missing Operand
-    if not allow_last_empty and output and output[-1] is None:
-        raise error.RunError(error.MISSING_OPERAND)
+        raise error.RunError(size_err)
+    # end on a comma: Missing Operand
+    if last_empty_err and len(output) > 1 and output[-1] is None:
+        raise error.RunError(last_empty_err)
     while len(output) < size:
         output.append(None)
     return output
@@ -280,13 +279,10 @@ def parse_name(ins):
     indices = []
     if util.skip_white_read_if(ins, ('[', '(')):
         # it's an array, read indices
-        # more than 255 subscripts won't fit on line anyway, error not relevant
-        indices = parse_int_list(ins, 255)
-        while len(indices) > 0 and indices[-1] is None:
-            indices = indices[:-1]
-        if None in indices:
-            # empty expressions: syntax error
-            raise error.RunError(error.STX)
+        while True:
+            indices.append(vartypes.pass_int_unpack(parse_expression(ins)))
+            if not util.skip_white_read_if(ins, (',',)):
+                break
         util.require_read(ins, (']', ')'))
     return name, indices
 
@@ -385,16 +381,17 @@ def value_instr(ins):
     """ INSTR: find substring in string. """
     util.require_read(ins, ('(',))
     big, small, n = '', '', 1
-    s = parse_expression(ins, empty_err=error.STX)
+    # followed by coma so empty will raise STX
+    s = parse_expression(ins)
     if s[0] != '$':
         n = vartypes.pass_int_unpack(s)
         util.range_check(1, 255, n)
         util.require_read(ins, (',',))
-        big = vartypes.pass_string(parse_expression(ins, empty_err=None))
+        big = vartypes.pass_string(parse_expression(ins, allow_empty=True))
     else:
         big = vartypes.pass_string(s)
     util.require_read(ins, (',',))
-    small = vartypes.pass_string(parse_expression(ins, empty_err=None))
+    small = vartypes.pass_string(parse_expression(ins, allow_empty=True))
     util.require_read(ins, (')',))
     return vartypes.string_instr(big, small, n)
 
@@ -447,7 +444,7 @@ def value_right(ins):
 def value_string(ins):
     """ STRING$: repeat characters. """
     util.require_read(ins, ('(',))
-    exprs = parse_expr_list(ins, 2, err=error.STX)
+    exprs = parse_expr_list(ins, 2, size_err=error.STX)
     if None in exprs:
         raise error.RunError(error.STX)
     n, j = exprs
@@ -475,7 +472,7 @@ def value_space(ins):
 def value_screen(ins):
     """ SCREEN: get char or attribute at a location. """
     util.require_read(ins, ('(',))
-    row, col, z = parse_int_list(ins, 3, err=error.IFC)
+    row, col, z = parse_int_list(ins, 3, size_err=error.IFC)
     if row is None or col is None:
         raise error.RunError(error.IFC)
     if z is None:
@@ -621,7 +618,7 @@ def value_fn(ins):
             varsave[name] = state.basic_state.variables[name][:]
     # read variables
     if util.skip_white_read_if(ins, ('(',)):
-        exprs = parse_expr_list(ins, len(varnames), err=error.STX)
+        exprs = parse_expr_list(ins, len(varnames), size_err=error.STX)
         if None in exprs:
             raise error.RunError(error.STX)
         for i in range(len(varnames)):
@@ -643,7 +640,7 @@ def value_fn(ins):
 def value_point(ins):
     """ POINT: get pixel attribute at screen location. """
     util.require_read(ins, ('(',))
-    lst = parse_expr_list(ins, 2, err=error.STX)
+    lst = parse_expr_list(ins, 2, size_err=error.STX)
     util.require_read(ins, (')',))
     if not lst[0]:
         raise error.RunError(error.STX)
