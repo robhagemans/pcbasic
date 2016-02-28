@@ -310,10 +310,10 @@
 
     <h4 id="math-operators">Mathematical operators</h4>
     <p>
-        Mathematical operators operate on numeric expressions only. If either
-        operand is a string, <samp>Type mismatch</samp> will be raised.
+        Mathematical operators operate on numeric expressions only.
         Note however that <code>+</code> can take the role of the
-        <a href="#string-operators">string concatenation operator</a>.
+        <a href="#string-operators">string concatenation operator</a> if both
+        operands are strings.
     </p>
     <div class="scrollable">
     <table>
@@ -402,6 +402,11 @@
     <h5>Errors</h5>
     <ul>
         <li>
+            If either
+            operand is a string, <samp>Type mismatch</samp> will be raised. The exception is <code>+</code>
+            which will only raise <samp>Type mismatch</samp> if either <em>but not both</em> operands are strings.
+        </li>
+        <li>
             If <code><var>y=0</var></code>, <code><var>x</var> / <var>y</var></code>, <code><var>x</var> MOD <var>y</var></code> and
              <code><var>x</var> \ <var>y</var></code> will raise <samp>Division by zero</samp>.
         </li>
@@ -409,7 +414,7 @@
             If the result of any operation is too large to fit in a floating-point data type, <samp>Overflow</samp> is raised.
         </li>
         <li>
-            If the arguments or result of <code>\</code> or <code>MOD</code> are not in
+            If operands or result of <code>\</code> or <code>MOD</code> are not in
             <code>[-32768&ndash;32767]</code>, <samp>Overflow</samp> is raised.
         </li>
         <li>
@@ -518,8 +523,7 @@
         It does, however, implement bitwise operators.
     </p>
     <p>
-        Bitwise operators operate on numeric expressions only. If either
-        operand is a string, <samp>Type mismatch</samp> will be raised.
+        Bitwise operators operate on numeric expressions only.
         Floating-point operands are rounded to integers before being used.
     </p>
     <div class="scrollable">
@@ -639,6 +643,17 @@
         be interpreted as Boolean operators. For example,
         <code>2 AND 1</code> returns <code>0</code>.
     </p>
+    <h5>Errors</h5>
+    <ul>
+        <li>
+            If either
+            operand is a string, <samp>Type mismatch</samp> will be raised.
+        </li>
+        <li>
+            If the operands or result are not in
+            <code>[-32768&ndash;32767]</code>, <samp>Overflow</samp> is raised.
+        </li>
+    </ul>
 
     <h4 id="string-operators">String operators</h4>
     <p>The string concatenation operator is <code>+</code>. It has a binary as well as a unary form.</p>
@@ -665,6 +680,10 @@
     </div>
     <h5>Errors</h5>
     <ul>
+        <li>
+            If either (but not both) operands to a concatenation
+            are numeric, <samp>Type mismatch</samp> will be raised.
+        </li>
         <li>
             If <code>LEN(<var>x</var>) + LEN(<var>y</var>) > 255</code>, <code><var>x</var> + <var>y</var></code>
             will raise <samp>String too long</samp>.
