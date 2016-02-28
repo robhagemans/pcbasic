@@ -64,7 +64,10 @@ operators = {
     tk.EQV: 2,
     tk.IMP: 1,
 }
+# can be combined like <> >=
 combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
+# can be unary
+unary = (tk.O_PLUS, tk.O_MINUS, tk.NOT)
 
 def prepare():
     """ Initialise expressions module. """
@@ -75,14 +78,14 @@ def prepare():
     state.basic_state.user_function_parsing = set()
 
 
-def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
+def parse_expression(ins, empty_err=error.MISSING_OPERAND):
     """ Compute the value of the expression at the current code pointer. """
     stack = deque()
     units = deque()
-    empty = True
     d = ''
     # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
     units_expected = 1
+    missing_error = error.MISSING_OPERAND
     while True:
         last = d
         d = util.skip_white(ins)
@@ -100,21 +103,16 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
             if last in operators or last == '':
                 # also if last is ( but that leads to recursive call and last == ''
                 nargs = 1
+                # zero operands for a binary operator is always syntax error
+                # because it will be seen as an illegal unary
+                if d not in unary:
+                    raise error.RunError(error.STX)
             else:
                 nargs = 2
-                while stack:
-                    if operators[d] > operators[stack[-1][0]]:
-                        break
-                    op, narity = stack.pop()
-                    try:
-                        units.append(value_operator(op, *pop_units(units, narity)))
-                    except IndexError:
-                        raise error.RunError(error.MISSING_OPERAND)
-                    units_expected -= narity
+                units_expected -= evaluate_stack(stack, units, operators[d], error.STX)
             stack.append((d, nargs))
-            units_expected += nargs
+            units_expected += nargs - 1
         else:
-            #units_expected = 1 + sum(nargs-1 for _, nargs in stack)
             if len(units) >= units_expected:
                 # too many units ends expression
                 # repeated literals or variables or non-keywords like 'AS'
@@ -129,32 +127,43 @@ def parse_expression(ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
                 # apply functions
                 ins.read(1)
                 units.append(functions[d](ins))
+            elif d in tk.end_statement:
+                break
             elif d in tk.end_expression or d in tk.keyword:
+                # missing operand inside brackets or before comma is syntax error
+                missing_error = error.STX
                 break
             else:
                 # literal
                 units.append(parse_literal(ins))
-        empty = False
-    # empty expression is a syntax error (inside brackets) or Missing Operand (in an assignment) or ok (in print)
-    if empty:
-        if allow_empty:
-            return None
-        else:
-            raise error.RunError(error.STX if d in (')', ']') else empty_err)
+    # empty expression is a syntax error (inside brackets)
+    # or Missing Operand (in an assignment)
+    # or not an error (in print and many functions)
+    if units or stack:
+        evaluate_stack(stack, units, 0, missing_error)
+        return units[0]
+    elif not empty_err:
+        return None
+    else:
+        raise error.RunError(empty_err)
+
+def evaluate_stack(stack, units, precedence, missing_err):
+    """ Drain evaluation stack until an operator of low precedence on top. """
+    units_dropped = 0
     while stack:
+        if precedence > operators[stack[-1][0]]:
+            break
         op, narity = stack.pop()
         try:
-            units.append(value_operator(op, *pop_units(units, narity)))
+            right, left = units.pop(), None
+            if narity == 2:
+                left = units.pop()
         except IndexError:
-            raise error.RunError(error.STX if d in (')', ']') else error.MISSING_OPERAND)
-    return units[0]
-
-def pop_units(in_list, nargs):
-    """ Pop one or two of elements from a list or deque. """
-    right, left = in_list.pop(), None
-    if nargs == 2:
-        left = in_list.pop()
-    return left, right
+            # insufficient operators, error depends on context
+            raise error.RunError(missing_err)
+        units.append(value_operator(op, left, right))
+        units_dropped += narity - 1
+    return units_dropped
 
 def parse_literal(ins):
     """ Compute the value of the literal at the current code pointer. """
@@ -210,7 +219,7 @@ def parse_expr_list(ins, size, err=error.IFC,
     """ Helper function : parse a list of expressions. """
     output = []
     while True:
-        output.append(parse_expression(ins, allow_empty=True))
+        output.append(parse_expression(ins, empty_err=None))
         if not util.skip_white_read_if(ins, separators):
             break
     if len(output) > size:
@@ -239,16 +248,19 @@ def parse_file_number_opthash(ins):
     util.range_check(0, 255, number)
     return number
 
+#RENAME parse_name
 def get_var_or_array_name(ins):
     """ Helper function: parse a variable or array name. """
     name = util.get_var_name(ins)
     indices = []
     if util.skip_white_read_if(ins, ('[', '(')):
         # it's an array, read indices
-        indices = parse_int_list(ins, 255, 9) # subscript out of range
+        # more than 255 subscripts won't fit on line anyway, error not relevant
+        indices = parse_int_list(ins, 255)
         while len(indices) > 0 and indices[-1] is None:
             indices = indices[:-1]
         if None in indices:
+            # empty expressions: syntax error
             raise error.RunError(error.STX)
         util.require_read(ins, (']', ')'))
     return name, indices
@@ -353,11 +365,11 @@ def value_instr(ins):
         n = vartypes.pass_int_unpack(s)
         util.range_check(1, 255, n)
         util.require_read(ins, (',',))
-        big = vartypes.pass_string_unpack(parse_expression(ins, allow_empty=True))
+        big = vartypes.pass_string_unpack(parse_expression(ins, empty_err=None))
     else:
         big = vartypes.pass_string_unpack(s)
     util.require_read(ins, (',',))
-    small = vartypes.pass_string_unpack(parse_expression(ins, allow_empty=True))
+    small = vartypes.pass_string_unpack(parse_expression(ins, empty_err=None))
     util.require_read(ins, (')',))
     return vartypes.str_instr(big, small, n)
 
@@ -438,7 +450,7 @@ def value_space(ins):
 def value_screen(ins):
     """ SCREEN: get char or attribute at a location. """
     util.require_read(ins, ('(',))
-    row, col, z = parse_int_list(ins, 3, 5)
+    row, col, z = parse_int_list(ins, 3, err=error.IFC)
     if row is None or col is None:
         raise error.RunError(error.IFC)
     if z is None:
