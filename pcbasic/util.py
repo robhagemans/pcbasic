@@ -99,16 +99,13 @@ def skip_to_read(ins, findrange):
 
 def require_read(ins, in_range, err=error.STX):
     """ Skip whitespace, read and raise error if not in range. """
-    if skip_white_read(ins, n=len(in_range[0])) not in in_range:
+    if not skip_white_read_if(ins, in_range):
         raise error.RunError(err)
 
 def require(ins, rnge, err=error.STX):
     """ Skip whitespace, peek and raise error if not in range. """
     a = skip_white(ins, n=len(rnge[0]))
     if a not in rnge:
-        # position correctly for EDIT gadget and throw the (syntax) error
-        if a != '':
-            ins.read(1)
         raise error.RunError(err)
 
 def parse_line_number(ins):
