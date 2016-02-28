@@ -929,7 +929,6 @@ def vintdiv(left, right):
     """ Left\\right. """
     dividend = vartypes.pass_int_unpack(left)
     divisor = vartypes.pass_int_unpack(right)
-    print dividend, divisor
     if divisor == 0:
         # simulate (float!) division by zero
         return vdiv(left, right)
