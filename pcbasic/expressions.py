@@ -2,7 +2,7 @@
 PC-BASIC - expressions.py
 Expression parser
 
-(c) 2013, 2014, 2015 Rob Hagemans
+(c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -32,9 +32,7 @@ import timedate
 import basictoken as tk
 from collections import deque
 
-# command line option /d
-# allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
-option_double = False
+
 # enable pcjr/tandy syntax extensions
 is_pcjr_syntax = False
 
@@ -66,14 +64,43 @@ operators = {
 }
 # can be combined like <> >=
 combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
-# can be unary
-unary = (tk.O_PLUS, tk.O_MINUS, tk.NOT)
+
+# unary operators
+unary = {
+    tk.O_MINUS: vartypes.number_neg,
+    tk.O_PLUS: lambda x: x,
+    tk.NOT: vartypes.number_not,
+}
+
+# binary operators
+binary = {
+    tk.O_CARET: vartypes.number_power,
+    tk.O_TIMES: vartypes.number_multiply,
+    tk.O_DIV: vartypes.number_divide,
+    tk.O_INTDIV: vartypes.number_intdiv,
+    tk.MOD: vartypes.number_modulo,
+    tk.O_PLUS: vartypes.plus,
+    tk.O_MINUS: vartypes.number_subtract,
+    tk.O_GT: vartypes.gt,
+    tk.O_EQ: vartypes.equals,
+    tk.O_LT: vartypes.lt,
+    tk.O_GT + tk.O_EQ: vartypes.gte,
+    tk.O_EQ + tk.O_GT: vartypes.gte,
+    tk.O_LT + tk.O_EQ: vartypes.lte,
+    tk.O_EQ + tk.O_LT: vartypes.lte,
+    tk.O_LT + tk.O_GT: vartypes.not_equals,
+    tk.O_GT + tk.O_LT: vartypes.not_equals,
+    tk.AND: vartypes.number_and,
+    tk.OR: vartypes.number_or,
+    tk.XOR: vartypes.number_xor,
+    tk.EQV: vartypes.number_eqv,
+    tk.IMP: vartypes.number_imp,
+}
 
 def prepare():
     """ Initialise expressions module. """
-    global option_double, is_pcjr_syntax
+    global is_pcjr_syntax
     is_pcjr_syntax = config.get('syntax') in ('pcjr', 'tandy')
-    option_double = config.get('double')
     # state variable for detecting recursion
     state.basic_state.user_function_parsing = set()
 
@@ -102,7 +129,7 @@ def parse_expression(ins, empty_err=error.MISSING_OPERAND):
                 nxt = util.skip_white(ins)
                 if nxt in combinable:
                     d += ins.read(1)
-            if last in operators or last == '':
+            if last in operators or last == '' or d == tk.NOT:
                 # also if last is ( but that leads to recursive call and last == ''
                 nargs = 1
                 # zero operands for a binary operator is always syntax error
@@ -111,7 +138,7 @@ def parse_expression(ins, empty_err=error.MISSING_OPERAND):
                     raise error.RunError(error.STX)
             else:
                 nargs = 2
-                evaluate_stack(stack, units, operators[d], error.STX)
+                _evaluate_stack(stack, units, operators[d], error.STX)
             stack.append((d, nargs))
         elif not (last in operators or last == ''):
             # repeated unit ends expression
@@ -140,27 +167,29 @@ def parse_expression(ins, empty_err=error.MISSING_OPERAND):
     # or Missing Operand (in an assignment)
     # or not an error (in print and many functions)
     if units or stack:
-        evaluate_stack(stack, units, 0, missing_error)
+        _evaluate_stack(stack, units, 0, missing_error)
         return units[0]
     elif not empty_err:
         return None
     else:
         raise error.RunError(empty_err)
 
-def evaluate_stack(stack, units, precedence, missing_err):
+def _evaluate_stack(stack, units, precedence, missing_err):
     """ Drain evaluation stack until an operator of low precedence on top. """
     while stack:
         if precedence > operators[stack[-1][0]]:
             break
         op, narity = stack.pop()
         try:
-            right, left = units.pop(), None
-            if narity == 2:
+            right = units.pop()
+            if narity == 1:
+                units.append(unary[op](right))
+            else:
                 left = units.pop()
+                units.append(binary[op](left, right))
         except IndexError:
             # insufficient operators, error depends on context
             raise error.RunError(missing_err)
-        units.append(value_operator(op, left, right))
 
 def parse_literal(ins):
     """ Compute the value of the literal at the current code pointer. """
@@ -362,13 +391,13 @@ def value_instr(ins):
         n = vartypes.pass_int_unpack(s)
         util.range_check(1, 255, n)
         util.require_read(ins, (',',))
-        big = vartypes.pass_string_unpack(parse_expression(ins, empty_err=None))
+        big = vartypes.pass_string(parse_expression(ins, empty_err=None))
     else:
-        big = vartypes.pass_string_unpack(s)
+        big = vartypes.pass_string(s)
     util.require_read(ins, (',',))
-    small = vartypes.pass_string_unpack(parse_expression(ins, empty_err=None))
+    small = vartypes.pass_string(parse_expression(ins, empty_err=None))
     util.require_read(ins, (')',))
-    return vartypes.str_instr(big, small, n)
+    return vartypes.string_instr(big, small, n)
 
 def value_mid(ins):
     """ MID$: get substring. """
@@ -796,7 +825,7 @@ def value_ioctl(ins):
 
 def value_func(ins, fn):
     """ Return value of unary math function. """
-    return fp.pack(fn(fp.unpack(vartypes.pass_float(parse_bracket(ins), option_double))))
+    return fp.pack(fn(fp.unpack(vartypes.pass_float(parse_bracket(ins), vartypes.option_double))))
 
 value_sqr = partial(value_func, fn=fp.sqrt)
 value_exp = partial(value_func, fn=fp.exp)
@@ -841,122 +870,6 @@ def value_fix(ins):
         return fp.pack(fp.Single.from_int(fp.unpack(inp).trunc_to_int()))
     elif inp[0] == '#':
         return fp.pack(fp.Double.from_int(fp.unpack(inp).trunc_to_int()))
-
-def value_operator(op, left, right):
-    """ Get value of binary or unary operator expression. """
-    if left is None:
-        if op == tk.O_MINUS:
-            # negation
-            return vartypes.number_neg(vartypes.pass_number(right))
-        elif op == tk.O_PLUS:
-            # unary plus is no-op for numbers and strings
-            return right
-        elif op == tk.NOT:
-            # NOT: get two's complement NOT, -x-1
-            return vartypes.int_to_integer_signed(-vartypes.pass_int_unpack(right)-1)
-    else:
-        if op == tk.O_CARET:
-            return vcaret(left, right)
-        elif op == tk.O_TIMES:
-            return vtimes(left, right)
-        elif op == tk.O_DIV:
-            return vdiv(left, right)
-        elif op == tk.O_INTDIV:
-            return vintdiv(left, right)
-        elif op == tk.MOD:
-            return vmod(left, right)
-        elif op == tk.O_PLUS:
-            return vplus(left, right)
-        elif op == tk.O_MINUS:
-            return vartypes.number_add(left, vartypes.number_neg(right))
-        elif op == tk.O_GT:
-            return vartypes.bool_to_integer(vartypes.gt(left,right))
-        elif op == tk.O_EQ:
-            return vartypes.bool_to_integer(vartypes.equals(left, right))
-        elif op == tk.O_LT:
-            return vartypes.bool_to_integer(not(vartypes.gt(left,right) or vartypes.equals(left, right)))
-        elif op == tk.O_GT + tk.O_EQ or op == tk.O_EQ + tk.O_GT:
-            return vartypes.bool_to_integer(vartypes.gt(left,right) or vartypes.equals(left, right))
-        elif op == tk.O_LT + tk.O_EQ or op == tk.O_EQ + tk.O_LT:
-            return vartypes.bool_to_integer(not vartypes.gt(left,right))
-        elif op == tk.O_LT + tk.O_GT or op == tk.O_GT + tk.O_LT:
-            return vartypes.bool_to_integer(not vartypes.equals(left, right))
-        elif op == tk.AND:
-            return vartypes.int_to_integer_unsigned(
-                vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) &
-                vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
-        elif op == tk.OR:
-            return vartypes.int_to_integer_unsigned(
-                vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) |
-                vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
-        elif op == tk.XOR:
-            return vartypes.int_to_integer_unsigned(
-                vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) ^
-                vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
-        elif op == tk.EQV:
-            return vartypes.int_to_integer_unsigned(0xffff-(
-                vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) ^
-                vartypes.integer_to_int_unsigned(vartypes.pass_integer(right))))
-        elif op == tk.IMP:
-            return vartypes.int_to_integer_unsigned(
-                (0xffff-vartypes.integer_to_int_unsigned(vartypes.pass_integer(left))) |
-                vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
-    raise error.RunError(error.STX)
-
-def vcaret(left, right):
-    """ Left^right. """
-    if (left[0] == '#' or right[0] == '#') and option_double:
-        return fp.pack( fp.power(fp.unpack(vartypes.pass_double(left)), fp.unpack(vartypes.pass_double(right))) )
-    else:
-        if right[0] == '%':
-            return fp.pack( fp.unpack(vartypes.pass_single(left)).ipow_int(vartypes.integer_to_int_signed(right)) )
-        else:
-            return fp.pack( fp.power(fp.unpack(vartypes.pass_single(left)), fp.unpack(vartypes.pass_single(right))) )
-
-def vtimes(left, right):
-    """ Left*right. """
-    if left[0] == '#' or right[0] == '#':
-        return fp.pack( fp.unpack(vartypes.pass_double(left)).imul(fp.unpack(vartypes.pass_double(right))) )
-    else:
-        return fp.pack( fp.unpack(vartypes.pass_single(left)).imul(fp.unpack(vartypes.pass_single(right))) )
-
-def vdiv(left, right):
-    """ Left/right. """
-    if left[0] == '#' or right[0] == '#':
-        return fp.pack( fp.div(fp.unpack(vartypes.pass_double(left)), fp.unpack(vartypes.pass_double(right))) )
-    else:
-        return fp.pack( fp.div(fp.unpack(vartypes.pass_single(left)), fp.unpack(vartypes.pass_single(right))) )
-
-def vplus(left, right):
-    """ Left+right. """
-    if left[0] == '$':
-        return vartypes.str_to_string(vartypes.pass_string_unpack(left) + vartypes.pass_string_unpack(right))
-    else:
-        return vartypes.number_add(left, right)
-
-def vintdiv(left, right):
-    """ Left\\right. """
-    dividend = vartypes.pass_int_unpack(left)
-    divisor = vartypes.pass_int_unpack(right)
-    if divisor == 0:
-        # simulate (float!) division by zero
-        return vdiv(left, right)
-    if (dividend >= 0) == (divisor >= 0):
-        return vartypes.int_to_integer_signed(dividend / divisor)
-    else:
-        return vartypes.int_to_integer_signed(-(abs(dividend) / abs(divisor)))
-
-def vmod(left, right):
-    """ Left MOD right. """
-    divisor = vartypes.pass_int_unpack(right)
-    if divisor == 0:
-        # simulate (float!) division by zero
-        return vdiv(left, right)
-    dividend = vartypes.pass_int_unpack(left)
-    mod = dividend % divisor
-    if dividend < 0 or mod < 0:
-        mod -= divisor
-    return vartypes.int_to_integer_signed(mod)
 
 
 functions = {
