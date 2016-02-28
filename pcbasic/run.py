@@ -2,7 +2,7 @@
 PC-BASIC - run.py
 Main interpreter loop
 
-(c) 2013, 2014, 2015 Rob Hagemans
+(c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -192,7 +192,7 @@ def handle_error(s):
     state.basic_state.execute_mode = False
     state.basic_state.input_mode = False
     # special case: syntax error
-    if s.err == 2:
+    if s.err == error.STX:
         # for some reason, err is reset to zero by GW-BASIC in this case.
         state.basic_state.errn = 0
         if s.pos != -1:
