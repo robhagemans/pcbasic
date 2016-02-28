@@ -300,22 +300,22 @@ def dim_array(name, dimensions):
 def check_dim_array(name, index):
     """ Check if an array has been allocated. If not, auto-allocate if indices are <= 10; raise error otherwise. """
     try:
-        [dimensions, lst, _] = state.basic_state.arrays[name]
+        dimensions, lst, _ = state.basic_state.arrays[name]
     except KeyError:
         # auto-dimension - 0..10 or 1..10
         # this even fixes the dimensions if the index turns out to be out of range!
-        dimensions = [ 10 ] * len(index)
+        dimensions = [10] * len(index)
         dim_array(name, dimensions)
-        [dimensions, lst, _] = state.basic_state.arrays[name]
+        dimensions, lst, _ = state.basic_state.arrays[name]
     if len(index) != len(dimensions):
         raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
-    for i in range(len(index)):
-        if index[i] < 0:
+    for i, d in zip(index, dimensions):
+        if i < 0:
             raise error.RunError(error.IFC)
-        elif index[i] < state.basic_state.array_base or index[i] > dimensions[i]:
-            # WARNING: dimensions is the *maximum index number*, regardless of state.basic_state.array_base!
+        elif i < state.basic_state.array_base or i > d:
+            # dimensions is the *maximum index number*, regardless of state.basic_state.array_base!
             raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
-    return [dimensions, lst]
+    return dimensions, lst
 
 def base_array(base):
     """ Set the array base to 0 or 1 (OPTION BASE). Raise error if already set. """
@@ -329,16 +329,16 @@ def base_array(base):
 
 def get_array(name, index):
     """ Retrieve the value of an array element. """
-    [dimensions, lst] = check_dim_array(name, index)
+    dimensions, lst = check_dim_array(name, index)
     bigindex = index_array(index, dimensions)
     value = lst[bigindex*var_size_bytes(name):(bigindex+1)*var_size_bytes(name)]
     if name[-1] == '$':
         return get_string_copy_packed(value)
-    return (name[-1], value)
+    return name[-1], value
 
 def set_array(name, index, value):
     """ Assign a value to an array element. """
-    [dimensions, lst] = check_dim_array(name, index)
+    dimensions, lst = check_dim_array(name, index)
     bigindex = index_array(index, dimensions)
     # make a copy of the value, we don't want them to be linked
     value = (vartypes.pass_type(name[-1], value)[1])[:]
