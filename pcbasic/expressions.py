@@ -632,6 +632,7 @@ def value_fn(ins):
     for name in varsave:
         # re-assign the stored value
         state.basic_state.variables[name][:] = varsave[name]
+    state.basic_state.user_function_parsing.remove(fnname)
     return value
 
 ###############################################################
