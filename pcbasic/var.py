@@ -53,8 +53,9 @@ class StringSpace(object):
         # don't store overlong strings
         if len(string_buffer) > 255:
             raise error.RunError(error.STRING_TOO_LONG)
-        if len(string_buffer) > fre():
-            raise error.RunError(error.OUT_OF_STRING_SPACE)
+        #FIXME - correct but causes problems when strings should be stored in the code
+        #if len(string_buffer) > fre():
+        #    raise error.RunError(error.OUT_OF_STRING_SPACE)
         if address is None:
             # find new string address
             self.current -= len(string_buffer)
