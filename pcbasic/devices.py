@@ -468,9 +468,10 @@ class TextFileBase(RawFile):
                 c = self.read(1)
         # file position is at one past the separator char
         # convert result to requested type, be strict about non-numeric chars
-        value = vartypes.str_to_string(word)
-        if typechar != '$':
-            value = representation.string_to_number(value, allow_nonnum=False)
+        if typechar == '$':
+            value = state.basic_state.strings.store(word)
+        else:
+            value = representation.str_to_number(value, allow_nonnum=False)
         return value, c
 
 class CRLFTextFileBase(TextFileBase):
@@ -653,9 +654,10 @@ class KYBDFile(TextFileBase):
             parsing_trail = parsing_trail or (typechar != '$' and c == ' ')
         # file position is at one past the separator char
         # convert result to requested type, be strict about non-numeric chars
-        value = vartypes.str_to_string(word)
-        if typechar != '$':
-            value = representation.string_to_number(value, allow_nonnum=False)
+        if typechar == '$':
+            value = state.basic_state.strings.store(word)
+        else:
+            value = representation.str_to_number(word, allow_nonnum=False)
         return value, c
 
 

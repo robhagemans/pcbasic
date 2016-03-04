@@ -13,6 +13,7 @@ import vartypes
 import util
 import error
 import basictoken as tk
+import operators as op
 
 # pointer position: False for direct line, True for program
 state.basic_state.run_mode = False
@@ -83,9 +84,9 @@ def jump_return(jumpnum):
 def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     """ Initialise a FOR loop. """
     # set start to start-step, then iterate - slower on init but allows for faster iterate
-    var.set_var(varname, vartypes.number_add(start, vartypes.number_neg(step)))
+    var.set_var(varname, op.number_add(start, op.number_neg(step)))
     # NOTE: all access to varname must be in-place into the bytearray - no assignments!
-    sgn = vartypes.integer_to_int_signed(vartypes.number_sgn(step))
+    sgn = vartypes.integer_to_int_signed(op.number_sgn(step))
     state.basic_state.for_next_stack.append((forpos, nextpos, varname[-1], state.basic_state.variables[varname], number_unpack(stop), number_unpack(step), sgn))
     ins.seek(nextpos)
 

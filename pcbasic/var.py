@@ -12,6 +12,8 @@ import error
 import vartypes
 import state
 import memory
+import representation
+import fp
 
 byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
 
@@ -43,53 +45,56 @@ class StringSpace(object):
         else:
             raise KeyError('String key %s has wrong length.' % repr(key))
 
-    def copy_packed(self, key):
-        """ Return a packed copy of the string by its 2-byte key or 3-byte sequence. """
-        return vartypes.str_to_string(self.retrieve(key)[:])
+    def copy(self, key):
+        """ Return a copy of the string by its 2-byte key or 3-byte sequence. """
+        return str(self.retrieve(key))
 
-    def store(self, string_buffer, address=None):
-        """ Store a new string and return the 3-byte memory sequence. """
+    def store(self, in_str, address=None):
+        """ Store a new string and return the string pointer. """
+        size = len(in_str)
         # don't store overlong strings
-        if len(string_buffer) > 255:
+        if size > 255:
             raise error.RunError(error.STRING_TOO_LONG)
-        if len(string_buffer) > fre():
-            raise error.RunError(error.OUT_OF_STRING_SPACE)
         if address is None:
+            # reserve string space; collect garbage if necessary
+            check_free_memory(size, error.OUT_OF_STRING_SPACE)
             # find new string address
-            self.current -= len(string_buffer)
+            self.current -= size
             address = self.current + 1
         key = str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(address)))
         # don't store empty strings
-        if len(string_buffer) > 0:
+        if size > 0:
             if key in self.strings:
                 raise KeyError('String key %s at %d already defined.' % (repr(key), address))
-            self.strings[key] = string_buffer
-        return bytearray(chr(len(string_buffer)) + key)
+            # copy and convert to bytearray
+            self.strings[key] = bytearray(in_str)
+        return vartypes.bytes_to_string(chr(size) + key)
 
     def address(self, key):
         """ Return the address of a given key. """
         return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(key[-2:]))
 
-def get_string_copy_packed(sequence):
-    """ Return a packed copy of a string from its 3-byte sequence. """
+def copy_str(basic_string):
+    """ Return a copy of a string from its string pointer. """
+    sequence = vartypes.string_to_bytes(basic_string)
     length = ord(sequence[0:1])
     address = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(sequence[-2:]))
-    if address >= memory.var_start():
+    if address >= memory.code_start: #memory.var_start():
+        # strings in code are also copied into string-space object for now
         # string is stored in string space
-        return state.basic_state.strings.copy_packed(sequence)
+        return state.basic_state.strings.copy(sequence)
     else:
-        # string is stored in code space or field buffers
+        # string is stored in field buffers
         if address < memory.field_mem_start:
-            return vartypes.str_to_string('\0'*length)
+            return '\0'*length
         # find the file we're in
         start = address - memory.field_mem_start
         number = 1 + start // memory.field_mem_offset
         offset = start % memory.field_mem_offset
         try:
-            return vartypes.str_to_string(state.io_state.fields[number].buffer[
-                                                        offset : offset+length])
+            return str(state.io_state.fields[number].buffer[offset : offset+length])
         except KeyError, IndexError:
-            return vartypes.str_to_string('\0'*length)
+            return '\0'*length
 
 def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=False):
     """ Reset and clear variables, arrays, common definitions and functions. """
@@ -99,7 +104,7 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
     if not preserve_all:
         if preserve_common:
             # preserve COMMON variables (CHAIN does this)
-            common, common_arrays, common_strings = {}, {}, {}
+            common, common_arrays = {}, {}
             for varname in state.basic_state.common_names:
                 try:
                     common[varname] = state.basic_state.variables[varname]
@@ -134,21 +139,18 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
         # preserve common variables
         # use set_var and dim_array to rebuild memory model
         for v in common:
+            full_var = (v[-1], common[v])
             if v[-1] == '$':
-                state.basic_state.variables[v] = (
-                    new_strings.store(bytearray(vartypes.string_to_str(
-                        get_string_copy_packed(common[v])
-                    ))))
-            else:
-                set_var(v, (v[-1], common[v]))
+                full_var = new_strings.store(copy_str(full_var))
+            set_var(v, full_var)
         for a in common_arrays:
             dim_array(a, common_arrays[a][0])
             if a[-1] == '$':
                 s = bytearray()
                 for i in range(0, len(common_arrays[a][1]), byte_size['$']):
-                    s += (new_strings.store(bytearray(vartypes.string_to_str(
-                        get_string_copy_packed(common_arrays[a][1][i+1:i+byte_size['$']])
-                    ))))
+                    old_ptr = vartypes.bytes_to_string(common_arrays[a][1][i+1:i+byte_size['$']])
+                    new_ptr = new_strings.store(copy_str(old_ptr))
+                    s += vartypes.string_to_bytes(new_ptr)
                 state.basic_state.arrays[a][1] = s
             else:
                 state.basic_state.arrays[a] = common_arrays[a]
@@ -158,44 +160,43 @@ def set_var(name, value):
     """ Assign a value to a variable. """
     name = vartypes.complete_name(name)
     type_char = name[-1]
-    # check if garbage needs collecting before allocating mem
+    value = vartypes.pass_type(type_char, value)
+    # check if garbage needs collecting before allocating memory
     size = (max(3, len(name)) + 1 + byte_size[type_char])
-    if type_char == '$':
-        unpacked = vartypes.pass_string_unpack(value)
-        size += len(unpacked)
-    if fre() <= size:
-        # TODO: GARBTEST difference is because string literal is currently stored in string space, whereas GW stores it in code space.
-        collect_garbage()
-        if fre() <= size:
-            raise error.RunError(error.OUT_OF_MEMORY)
+    # don't check string length, string already stored
+    #if type_char == '$':
+    #    # string length
+    #    size += string_to_bytes(value)[0]
+    check_free_memory(size, error.OUT_OF_MEMORY)
     # assign variables
-    if type_char == '$':
-        # every assignment to string leads to new pointer being allocated
-        # TODO: string literals in programs have the var ptr point to program space.
-        state.basic_state.variables[name] = state.basic_state.strings.store(bytearray(unpacked[:]))
-    else:
-        # make a copy of the value in case we want to use POKE on it - we would change both values otherwise
-        # NOTE: this is an in-place copy - crucial for FOR!
-        try:
-            state.basic_state.variables[name][:] = vartypes.pass_type(name[-1], value)[1][:]
-        except KeyError:
-            state.basic_state.variables[name] = vartypes.pass_type(name[-1], value)[1][:]
+    # make a copy of the value in case we want to use POKE on it - we would change both values otherwise
+    # NOTE: this is an in-place copy - crucial for FOR!
+    try:
+        state.basic_state.variables[name][:] = value[1][:]
+    except KeyError:
+        state.basic_state.variables[name] = value[1][:]
     # update memory model
     # first two bytes: chars of name or 0 if name is one byte long
     if name not in state.basic_state.var_memory:
         name_ptr = state.basic_state.var_current
-        var_ptr = name_ptr + max(3, len(name)) + 1 # byte_size first_letter second_letter_or_nul remaining_length_or_nul
+        # byte_size first_letter second_letter_or_nul remaining_length_or_nul
+        var_ptr = name_ptr + max(3, len(name)) + 1
         state.basic_state.var_current += max(3, len(name)) + 1 + byte_size[name[-1]]
         state.basic_state.var_memory[name] = (name_ptr, var_ptr)
+
+def check_free_memory(size, err):
+    """ Check if sufficient free memory is avilable, raise error if not. """
+    if fre() <= size:
+        collect_garbage()
+        if fre() <= size:
+            raise error.RunError(err)
+
 
 def get_var(name):
     """ Retrieve the value of a variable. """
     name = vartypes.complete_name(name)
     try:
-        if name[-1] == '$':
-            return get_string_copy_packed(state.basic_state.variables[name])
-        else:
-            return (name[-1], state.basic_state.variables[name])
+        return (name[-1], state.basic_state.variables[name])
     except KeyError:
         return vartypes.null(name[-1])
 
@@ -332,8 +333,6 @@ def get_array(name, index):
     dimensions, lst = check_dim_array(name, index)
     bigindex = index_array(index, dimensions)
     value = lst[bigindex*var_size_bytes(name):(bigindex+1)*var_size_bytes(name)]
-    if name[-1] == '$':
-        return get_string_copy_packed(value)
     return name[-1], value
 
 def set_array(name, index, value):
@@ -344,7 +343,7 @@ def set_array(name, index, value):
     value = (vartypes.pass_type(name[-1], value)[1])[:]
     # for strings, store the string in string space and store the key in the array
     if name[-1] == '$':
-        value = state.basic_state.strings.store(bytearray(value))
+        value = state.basic_state.strings.store(value)[1]
     bytesize = var_size_bytes(name)
     lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
     # inc version
@@ -411,7 +410,7 @@ def assign_field_var_or_array(name, indices, value, justify_right=False):
     if value[0] != '$':
         # type mismatch
         raise error.RunError(error.TYPE_MISMATCH)
-    s = vartypes.string_to_str(value)
+    s = copy_str(value)
     v = get_var_or_array_string_pointer(name, indices)
     if v is None:
         # LSET has no effect if variable does not exist
@@ -432,7 +431,7 @@ def string_assign_into(name, indices, offset, num, value):
     if value[0] != '$':
         # type mismatch
         raise error.RunError(error.TYPE_MISMATCH)
-    s = vartypes.string_to_str(value)
+    s = copy_str(value)
     v = get_var_or_array_string_pointer(name, indices)
     if v is None:
         # illegal function call
@@ -500,11 +499,12 @@ def collect_garbage():
     # clear the string buffer and re-store all referenced strings
     state.basic_state.strings.clear()
     for item in string_list:
-        # re-allocate string space; no need to copy buffer
-        item[0][item[1]:item[1]+3] = state.basic_state.strings.store(item[3])
+        # re-allocate string space
+        item[0][item[1]:item[1]+3] = state.basic_state.strings.store(item[3])[1]
 
 def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
     return state.basic_state.strings.current - state.basic_state.var_current - state.basic_state.array_current
+
 
 prepare()

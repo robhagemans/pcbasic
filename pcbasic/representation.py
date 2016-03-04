@@ -23,29 +23,27 @@ import vartypes
 
 import basictoken as tk
 
-def number_to_string(inp, screen=False, write=False, allow_empty_expression=False):
-    """ Convert BASIC number to BASIC string. """
+def number_to_str(inp, screen=False, write=False, allow_empty_expression=False):
+    """ Convert BASIC number to Python str. """
     # screen=False means in a program listing
     # screen=True is used for screen, str$ and sequential files
     if not inp:
         if allow_empty_expression:
-            return vartypes.null('$')
+            return ''
         else:
             raise error.RunError(error.STX)
     typechar = inp[0]
-    if typechar == '$':
-        return vartypes.str_to_string(inp[1])
-    elif typechar == '%':
+    if typechar == '%':
         if screen and not write and vartypes.integer_to_int_signed(inp) >= 0:
-            return vartypes.str_to_string(' ' + str(vartypes.integer_to_int_signed(inp)))
+            return ' ' + str(vartypes.integer_to_int_signed(inp))
         else:
-            return vartypes.str_to_string(str(vartypes.integer_to_int_signed(inp)))
+            return str(vartypes.integer_to_int_signed(inp))
     elif typechar == '!':
-        return vartypes.str_to_string(float_to_str(fp.unpack(inp), screen, write))
+        return float_to_str(fp.unpack(inp), screen, write)
     elif typechar == '#':
-        return vartypes.str_to_string(float_to_str(fp.unpack(inp), screen, write))
+        return float_to_str(fp.unpack(inp), screen, write)
     else:
-        raise error.RunError(error.STX)
+        raise ValueError('Number operation on string')
 
 
 # tokenised ints to python str
@@ -64,22 +62,22 @@ def byte_token_to_str(s):
 
 def hex_token_to_str(s):
     """ Convert hex token to Python str. """
-    return '&H' + str(vartypes.string_to_str(integer_to_string_hex(vartypes.bytes_to_integer(s))))
+    return '&H' + integer_to_str_hex(vartypes.bytes_to_integer(s))
 
 def oct_token_to_str(s):
     """ Convert oct token to Python str. """
-    return '&O' + str(vartypes.string_to_str(integer_to_string_oct(vartypes.bytes_to_integer(s))))
+    return '&O' + integer_to_str_oct(vartypes.bytes_to_integer(s))
 
-def integer_to_string_oct(inp):
-    """ Convert integer to string in octal representation. """
+def integer_to_str_oct(inp):
+    """ Convert integer to str in octal representation. """
     if inp == 0:
-        return vartypes.str_to_string('0')
+        return '0'
     else:
-        return vartypes.str_to_string(oct(vartypes.integer_to_int_unsigned(inp))[1:])
+        return oct(vartypes.integer_to_int_unsigned(inp))[1:]
 
-def integer_to_string_hex(inp):
-    """ Convert integer to string in hex representation. """
-    return vartypes.str_to_string(hex(vartypes.integer_to_int_unsigned(inp))[2:].upper())
+def integer_to_str_hex(inp):
+    """ Convert integer to str in hex representation. """
+    return hex(vartypes.integer_to_int_unsigned(inp))[2:].upper()
 
 
 # floating point to string
@@ -547,11 +545,10 @@ def parse_value(ins):
         return ('#', val)
     return None
 
-def string_to_number(strval, allow_nonnum=True):
-    """ Convert BASIC string to BASIC value (VAL). """
-    if strval == vartypes.null('$'):
+def str_to_number(strval, allow_nonnum=True):
+    """ Convert Python str to BASIC value. """
+    if not strval:
         return vartypes.null('%')
-    strval = str(vartypes.pass_string_unpack(strval))
     ins = StringIO(strval)
     outs = StringIO()
     # skip spaces and line feeds (but not NUL).
