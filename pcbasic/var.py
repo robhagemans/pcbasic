@@ -70,9 +70,27 @@ class StringSpace(object):
             self.strings[key] = bytearray(in_str)
         return vartypes.bytes_to_string(chr(size) + key)
 
+    def delete_last(self):
+        """ Delete the string provided if it is at the top of string space. """
+        last_address = self.current + 1
+        last_key = str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(last_address)))
+        length = len(self.strings[last_key])
+        self.current += length
+        del self.strings[last_key]
+
     def address(self, key):
         """ Return the address of a given key. """
         return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(key[-2:]))
+
+    def __enter__(self):
+        """ Enter temp-string context guard. """
+        self.temp = self.current
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """ Exit temp-string context guard. """
+        if self.temp != self.current:
+            self.delete_last()
+
 
 def copy_str(basic_string):
     """ Return a copy of a string from its string pointer. """
@@ -372,6 +390,7 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             else:
                 state.basic_state.arrays[a] = common_arrays[a]
         state.basic_state.strings = new_strings
+
 
 def collect_garbage():
     """ Collect garbage from string space. Compactify string storage. """

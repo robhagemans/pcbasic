@@ -111,8 +111,8 @@ def parse_expression(ins, allow_empty=False):
     stack = deque()
     units = deque()
     d = ''
-    # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
     missing_error = error.MISSING_OPERAND
+    # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
     while True:
         last = d
         d = util.skip_white(ins)

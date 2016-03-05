@@ -438,18 +438,21 @@ def exec_play(ins):
         util.require(ins, tk.end_statement)
     else:
         # retrieve Music Macro Language string
-        mml0 = var.copy_str(vartypes.pass_string(
+        with state.basic_state.strings:
+            mml0 = var.copy_str(vartypes.pass_string(
                     expressions.parse_expression(ins, allow_empty=True),
                     allow_empty=True))
         mml1, mml2 = '', ''
         if ((pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and
                                          state.console_state.sound.sound_on))
                 and util.skip_white_read_if(ins, (',',))):
-            mml1 = var.copy_str(vartypes.pass_string(
+            with state.basic_state.strings:
+                mml1 = var.copy_str(vartypes.pass_string(
                         expressions.parse_expression(ins, allow_empty=True),
                         allow_empty=True))
             if util.skip_white_read_if(ins, (',',)):
-                mml2 = var.copy_str(vartypes.pass_string(
+                with state.basic_state.strings:
+                    mml2 = var.copy_str(vartypes.pass_string(
                             expressions.parse_expression(ins, allow_empty=True),
                             allow_empty=True))
         util.require(ins, tk.end_statement)
@@ -516,7 +519,8 @@ def exec_bload(ins):
     """ BLOAD: load a file into a memory location. Limited implementation. """
     if state.basic_state.protected and not state.basic_state.run_mode:
         raise error.RunError(error.IFC)
-    name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     offset = None
     if util.skip_white_read_if(ins, (',',)):
@@ -531,7 +535,8 @@ def exec_bsave(ins):
     """ BSAVE: save a block of memory to a file. Limited implementation. """
     if state.basic_state.protected and not state.basic_state.run_mode:
         raise error.RunError(error.IFC)
-    name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     util.require_read(ins, (',',))
     offset = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint = 0xffff)
@@ -597,33 +602,38 @@ def exec_wait(ins):
 
 def exec_chdir(ins):
     """ CHDIR: change working directory. """
-    dev, path = disk.get_diskdevice_and_path(
+    with state.basic_state.strings:
+        dev, path = disk.get_diskdevice_and_path(
             var.copy_str(vartypes.pass_string(expressions.parse_expression(ins))))
     dev.chdir(path)
     util.require(ins, tk.end_statement)
 
 def exec_mkdir(ins):
     """ MKDIR: create directory. """
-    dev, path = disk.get_diskdevice_and_path(
+    with state.basic_state.strings:
+        dev, path = disk.get_diskdevice_and_path(
             var.copy_str(vartypes.pass_string(expressions.parse_expression(ins))))
     dev.mkdir(path)
     util.require(ins, tk.end_statement)
 
 def exec_rmdir(ins):
     """ RMDIR: remove directory. """
-    dev, path = disk.get_diskdevice_and_path(
+    with state.basic_state.strings:
+        dev, path = disk.get_diskdevice_and_path(
             var.copy_str(vartypes.pass_string(expressions.parse_expression(ins))))
     dev.rmdir(path)
     util.require(ins, tk.end_statement)
 
 def exec_name(ins):
     """ NAME: rename file or directory. """
-    oldname = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        oldname = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # AS is not a tokenised word
     word = util.skip_white_read(ins) + ins.read(1)
     if word.upper() != 'AS':
         raise error.RunError(error.STX)
-    newname = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        newname = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     dev, oldpath = disk.get_diskdevice_and_path(oldname)
     newdev, newpath = disk.get_diskdevice_and_path(newname)
     # don't rename open files
@@ -635,7 +645,8 @@ def exec_name(ins):
 
 def exec_kill(ins):
     """ KILL: remove file. """
-    name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # don't delete open files
     dev, path = disk.get_diskdevice_and_path(name)
     dev.check_file_not_open(path)
@@ -646,7 +657,8 @@ def exec_files(ins):
     """ FILES: output directory listing. """
     pathmask = ''
     if util.skip_white(ins) not in tk.end_statement:
-        pathmask = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+        with state.basic_state.strings:
+            pathmask = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
         if not pathmask:
             raise error.RunError(error.BAD_FILE_NAME)
     dev, path = disk.get_diskdevice_and_path(pathmask)
@@ -663,7 +675,8 @@ def exec_shell(ins):
     if util.skip_white(ins) in tk.end_statement:
         cmd = ''
     else:
-        cmd = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+        with state.basic_state.strings:
+            cmd = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # no SHELL on PCjr.
     if pcjr_syntax == 'pcjr':
         raise error.RunError(error.IFC)
@@ -677,7 +690,8 @@ def exec_shell(ins):
 
 def exec_environ(ins):
     """ ENVIRON: set environment string. """
-    envstr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        envstr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     eqs = envstr.find('=')
     if eqs <= 0:
         raise error.RunError(error.IFC)
@@ -690,7 +704,8 @@ def exec_time(ins):
     """ TIME$: set time. """
     util.require_read(ins, (tk.O_EQ,)) #time$=
     # allowed formats:  hh   hh:mm   hh:mm:ss  where hh 0-23, mm 0-59, ss 0-59
-    timestr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        timestr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     util.require(ins, tk.end_statement)
     timedate.set_time(timestr)
 
@@ -700,7 +715,8 @@ def exec_date(ins):
     # allowed formats:
     # mm/dd/yy  or mm-dd-yy  mm 0--12 dd 0--31 yy 80--00--77
     # mm/dd/yyyy  or mm-dd-yyyy  yyyy 1980--2099
-    datestr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        datestr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     util.require(ins, tk.end_statement)
     timedate.set_date(datestr)
 
@@ -774,7 +790,8 @@ def exec_list(ins):
     from_line, to_line = parse_line_range(ins)
     out = None
     if util.skip_white_read_if(ins, (',',)):
-        outname = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+        with state.basic_state.strings:
+            outname = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
         out = devices.open_file(0, outname, filetype='A', mode='O')
         # ignore everything after file spec
         util.skip_to(ins, tk.end_line)
@@ -798,7 +815,8 @@ def exec_llist(ins):
 
 def exec_load(ins):
     """ LOAD: load program from file. """
-    name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     comma = util.skip_white_read_if(ins, (',',))
     if comma:
@@ -820,7 +838,8 @@ def exec_chain(ins):
         action = program.merge
     else:
         action = program.load
-    name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     jumpnum, common_all, delete_lines = None, False, None
     if util.skip_white_read_if(ins, (',',)):
         # check for an expression that indicates a line in the other program. This is not stored as a jumpnum (to avoid RENUM)
@@ -867,7 +886,8 @@ def parse_delete_clause(ins):
 
 def exec_save(ins):
     """ SAVE: save program to a file. """
-    name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     mode = 'B'
     if util.skip_white_read_if(ins, (',',)):
         mode = util.skip_white_read(ins).upper()
@@ -882,7 +902,8 @@ def exec_save(ins):
 
 def exec_merge(ins):
     """ MERGE: merge lines from file into current program. """
-    name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     with devices.open_file(0, name, filetype='A', mode='I') as f:
         program.merge(f)
@@ -935,7 +956,8 @@ default_access_modes = {'I':'R', 'O':'W', 'A':'RW', 'R':'RW'}
 
 def exec_open(ins):
     """ OPEN: open a file. """
-    first_expr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        first_expr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     mode, access, lock, reclen = 'R', 'RW', '', 128
     if util.skip_white_read_if(ins, (',',)):
         # first syntax
@@ -946,7 +968,8 @@ def exec_open(ins):
             raise error.RunError(error.BAD_FILE_MODE)
         number = expressions.parse_file_number_opthash(ins)
         util.require_read(ins, (',',))
-        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+        with state.basic_state.strings:
+            name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
         if util.skip_white_read_if(ins, (',',)):
             reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
@@ -1227,7 +1250,8 @@ def exec_paint(ins):
             pass
         elif cval[0] == '$':
             # pattern given; copy
-            pattern = bytearray(var.copy_str(vartypes.pass_string(cval)))
+            with state.basic_state.strings:
+                pattern = bytearray(var.copy_str(vartypes.pass_string(cval)))
             if not pattern:
                 # empty pattern "" is illegal function call
                 raise error.RunError(error.IFC)
@@ -1240,7 +1264,8 @@ def exec_paint(ins):
             if bval:
                 border = vartypes.pass_int_unpack(bval)
             if util.skip_white_read_if(ins, (',',)):
-                background_pattern = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins), err=error.IFC))
+                with state.basic_state.strings:
+                    background_pattern = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins), err=error.IFC))
                 # only in screen 7,8,9 is this an error (use ega memory as a check)
                 if (pattern and background_pattern[:len(pattern)] == pattern and
                         state.console_state.screen.mode.mem_start == 0xa000):
@@ -1292,7 +1317,8 @@ def exec_draw(ins):
     """ DRAW: draw a figure defined by a Graphics Macro Language string. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(error.IFC)
-    gml = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        gml = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     util.require(ins, tk.end_statement)
     state.console_state.screen.drawing.draw(gml)
 
@@ -1432,7 +1458,8 @@ def exec_run(ins):
         # parse line number, ignore rest of line and jump
         jumpnum = util.parse_jumpnum(ins)
     elif c not in tk.end_statement:
-        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+        with state.basic_state.strings:
+            name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
         util.require(ins, tk.end_statement)
         with devices.open_file(0, name, filetype='ABP', mode='I') as f:
             program.load(f)
@@ -1754,12 +1781,14 @@ def exec_mid(ins):
     if num is None:
         num = 255
     util.require_read(ins, (')',))
-    s = var.copy_str(vartypes.pass_string(var.get_var_or_array(name, indices)))
+    with state.basic_state.strings:
+        s = var.copy_str(vartypes.pass_string(var.get_var_or_array(name, indices)))
     util.range_check(0, 255, num)
     if num > 0:
         util.range_check(1, len(s), start)
     util.require_read(ins, (tk.O_EQ,))
-    val = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        val = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     util.require(ins, tk.end_statement)
     # we need to decrement basic offset by 1 to get python offset
     offset = start-1
@@ -1782,7 +1811,8 @@ def exec_lset(ins, justify_right=False):
     name, index = expressions.parse_name(ins)
     v = vartypes.pass_string(var.get_var_or_array(name, index))
     util.require_read(ins, (tk.O_EQ,))
-    s = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        s = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # v is empty string if variable does not exist
     # trim and pad to size of target buffer
     length = vartypes.string_length(v)
@@ -2142,7 +2172,8 @@ def exec_key_define(ins):
     keynum = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(1, 255, keynum)
     util.require_read(ins, (',',), err=error.IFC)
-    text = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        text = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     if keynum <= backend.num_fn_keys:
         # macro starting with NUL is empty macro
         if text and str(text)[0] == '\0':
@@ -2199,7 +2230,8 @@ def exec_write(ins, output=None):
     if expr:
         while True:
             if expr[0] == '$':
-                outstr += '"' + var.copy_str(expr) + '"'
+                with state.basic_state.strings:
+                    outstr += '"' + var.copy_str(expr) + '"'
             else:
                 outstr += representation.number_to_str(expr, screen=True, write=True)
             if util.skip_white_read_if(ins, (',', ';')):
@@ -2245,12 +2277,13 @@ def exec_print(ins, output=None):
                     output.write(' '*(pos-output.col))
         else:
             newline = True
-            expr = expressions.parse_expression(ins)
-            # numbers always followed by a space
-            if expr[0] in ('%', '!', '#'):
-                word = representation.number_to_str(expr, screen=True) + ' '
-            else:
-                word = var.copy_str(expr)
+            with state.basic_state.strings:
+                expr = expressions.parse_expression(ins)
+                # numbers always followed by a space
+                if expr[0] in ('%', '!', '#'):
+                    word = representation.number_to_str(expr, screen=True) + ' '
+                else:
+                    word = var.copy_str(expr)
             # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
             output.write(word)
     if util.skip_white_read_if(ins, (tk.USING,)):
@@ -2263,7 +2296,8 @@ def exec_print(ins, output=None):
 
 def exec_print_using(ins, output):
     """ PRINT USING: Write expressions to screen or file using a formatting string. """
-    format_expr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        format_expr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     if format_expr == '':
         raise error.RunError(error.IFC)
     util.require_read(ins, (';',))
@@ -2287,7 +2321,8 @@ def exec_print_using(ins, output):
             string_field = print_and_input.get_string_tokens(fors)
             if string_field:
                 if not data_ends:
-                    s = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+                    with state.basic_state.strings:
+                        s = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
                     if string_field == '&':
                         output.write(s)
                     else:
@@ -2341,7 +2376,8 @@ def exec_width(ins):
         else:
             expr = expressions.parse_expression(ins)
         if expr[0] == '$':
-            devname = var.copy_str(vartypes.pass_string(expr)).upper()
+            with state.basic_state.strings:
+                devname = var.copy_str(vartypes.pass_string(expr)).upper()
             try:
                 dev = state.io_state.devices[devname].device_file
             except (KeyError, AttributeError):
