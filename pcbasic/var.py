@@ -6,6 +6,7 @@ Variable & array management
 This file is released under the GNU GPL version 3.
 """
 
+import logging
 from operator import itemgetter
 
 import error
@@ -65,7 +66,7 @@ class StringSpace(object):
         # don't store empty strings
         if size > 0:
             if key in self.strings:
-                raise KeyError('String key %s at %d already defined.' % (repr(key), address))
+                logging.debug('String key %s at %d already defined.' % (repr(key), address))
             # copy and convert to bytearray
             self.strings[key] = bytearray(in_str)
         return vartypes.bytes_to_string(chr(size) + key)
@@ -162,11 +163,8 @@ def set_var(name, value):
     type_char = name[-1]
     value = vartypes.pass_type(type_char, value)
     # check if garbage needs collecting before allocating memory
+    # don't add string length, string already stored
     size = (max(3, len(name)) + 1 + byte_size[type_char])
-    # don't check string length, string already stored
-    #if type_char == '$':
-    #    # string length
-    #    size += string_to_bytes(value)[0]
     check_free_memory(size, error.OUT_OF_MEMORY)
     # assign variables
     # make a copy of the value in case we want to use POKE on it - we would change both values otherwise
@@ -213,7 +211,7 @@ def swap_var(name1, index1, name2, index2):
         raise error.RunError(error.IFC)
     typechar = name1[-1]
     size = byte_size[typechar]
-    # swap non-strings by value, strings by address
+    # get buffers (numeric representation or string pointer)
     if index1 == []:
         p1, off1 = state.basic_state.variables[name1], 0
     else:

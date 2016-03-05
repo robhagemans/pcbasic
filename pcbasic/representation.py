@@ -547,8 +547,6 @@ def parse_value(ins):
 
 def str_to_number(strval, allow_nonnum=True):
     """ Convert Python str to BASIC value. """
-    if not strval:
-        return vartypes.null('%')
     ins = StringIO(strval)
     outs = StringIO()
     # skip spaces and line feeds (but not NUL).
@@ -556,10 +554,11 @@ def str_to_number(strval, allow_nonnum=True):
     tokenise_number(ins, outs)
     outs.seek(0)
     value = parse_value(outs)
-    if not allow_nonnum:
-        if util.skip_white(ins) != '':
-            # not everything has been parsed - error
-            return None
+    if not allow_nonnum and util.skip_white(ins) != '':
+        # not everything has been parsed - error
+        return None
+    if not value:
+        return vartypes.null('%')
     return value
 
 def detokenise_number(ins, output):

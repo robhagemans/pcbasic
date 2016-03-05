@@ -380,7 +380,7 @@ def value_asc(ins):
     s = var.copy_str(vartypes.pass_string(parse_bracket(ins)))
     if not s:
         raise error.RunError(error.IFC)
-    return vartypes.int_to_integer_signed(s[0])
+    return vartypes.int_to_integer_signed(ord(s[0]))
 
 def value_instr(ins):
     """ INSTR: find substring in string. """

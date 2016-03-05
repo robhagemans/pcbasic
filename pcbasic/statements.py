@@ -101,10 +101,10 @@ def parse_statement():
             ins.read(1)
             if c in tk.twobyte:
                 c += ins.read(1)
-            try:
-                statements[c](ins)
-            except KeyError:
+            # don't use try-block to avoid catching other KeyErrors in statement
+            if c not in statements:
                 raise error.RunError(error.STX)
+            statements[c](ins)
         return True
     except error.RunError as e:
         error.set_err(e)

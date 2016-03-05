@@ -471,7 +471,7 @@ class TextFileBase(RawFile):
         if typechar == '$':
             value = state.basic_state.strings.store(word)
         else:
-            value = representation.str_to_number(value, allow_nonnum=False)
+            value = representation.str_to_number(word, allow_nonnum=False)
         return value, c
 
 class CRLFTextFileBase(TextFileBase):
