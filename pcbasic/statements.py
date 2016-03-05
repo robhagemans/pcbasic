@@ -1803,8 +1803,8 @@ def exec_mid(ins):
         return
     # cut new string to size if too long
     val = val[:num]
-    # copy new value into existing buffer
-    var.view_str(basic_str)[offset:offset+num] = val
+    # copy new value into existing buffer if possible
+    var.set_var_or_array(name, indices, var.set_str(basic_str, val, offset, num))
 
 def exec_lset(ins, justify_right=False):
     """ LSET: assign string value in-place; left justified. """
@@ -1821,8 +1821,8 @@ def exec_lset(ins, justify_right=False):
         s = ' '*(length-len(s)) + s
     else:
         s += ' '*(length-len(s))
-    # copy new value into existing buffer
-    var.view_str(v)[:] = s
+    # copy new value into existing buffer if possible
+    var.set_var_or_array(name, index, var.set_str(v, s))
 
 def exec_rset(ins):
     """ RSET: assign string value in-place; right justified. """

@@ -121,6 +121,17 @@ def view_str(basic_string):
         # memoryview slice continues to point to buffer, does not copy
         return memoryview(state.io_state.fields[number].buffer)[offset:offset+length]
 
+def set_str(basic_string, in_str, offset=None, num=None):
+    """ Assign a new string into an existing buffer. """
+    # if it is a code literal, we now do need to allocate space for a copy
+    address = vartypes.string_address(basic_string)
+    if address >= memory.code_start and address < memory.var_start():
+        basic_string = state.basic_state.strings.store(copy_str(basic_string))
+    if num is None:
+        view_str(basic_string)[:] = in_str
+    else:
+        view_str(basic_string)[offset:offset+num] = in_str
+    return basic_string
 
 ###############################################################################
 # scalar variables
