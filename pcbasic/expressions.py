@@ -373,7 +373,8 @@ def value_hex(ins):
 
 def value_len(ins):
     """ LEN: length of string. """
-    return op.string_len(parse_bracket(ins))
+    return vartypes.int_to_integer_signed(
+                vartypes.string_length(vartypes.pass_string(parse_bracket(ins))))
 
 def value_asc(ins):
     """ ASC: ordinal ASCII value of a character. """
@@ -398,7 +399,14 @@ def value_instr(ins):
     util.require_read(ins, (',',))
     small = vartypes.pass_string(parse_expression(ins, allow_empty=True))
     util.require_read(ins, (')',))
-    return op.string_instr(big, small, n)
+    big, small = var.copy_str(big), var.copy_str(small)
+    if big == '' or n > len(big):
+        return vartypes.null('%')
+    # BASIC counts string positions from 1
+    find = big[n-1:].find(small)
+    if find == -1:
+        return vartypes.null('%')
+    return vartypes.int_to_integer_signed(n + find)
 
 def value_mid(ins):
     """ MID$: get substring. """

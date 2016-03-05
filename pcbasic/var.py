@@ -80,17 +80,17 @@ def copy_str(basic_string):
         return str(bytearray(view_str(basic_string)))
     except KeyError:
         # 'Not a field string'
-        length = vartypes.string_to_bytes(basic_string)[0]
+        length = vartypes.string_length(basic_string)
         return '\0'*length
 
 def view_str(basic_string):
     """ Return a writeable view of a string from its string pointer. """
-    sequence = vartypes.string_to_bytes(basic_string)
-    length = sequence[0]
-    address = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(sequence[-2:]))
+    length = vartypes.string_length(basic_string)
+    address = vartypes.string_address(basic_string)
     # address >= memory.var_start(): if we no longer double-store code strings in string space object
     if address >= memory.code_start:
         # string stored in string space
+        sequence = vartypes.string_to_bytes(basic_string)
         return memoryview(state.basic_state.strings.retrieve(sequence))
     else:
         # string stored in field buffers
@@ -164,7 +164,7 @@ def index_array(index, dimensions):
     bigindex = 0
     area = 1
     for i in range(len(index)):
-        # WARNING: dimensions is the *maximum index number*, regardless of state.basic_state.array_base!
+        # dimensions is the *maximum index number*, regardless of state.basic_state.array_base
         bigindex += area*(index[i]-state.basic_state.array_base)
         area *= (dimensions[i]+1-state.basic_state.array_base)
     return bigindex
@@ -216,7 +216,7 @@ def check_dim_array(name, index):
         dimensions, lst, _ = state.basic_state.arrays[name]
     except KeyError:
         # auto-dimension - 0..10 or 1..10
-        # this even fixes the dimensions if the index turns out to be out of range!
+        # this even fixes the dimensions if the index turns out to be out of range
         dimensions = [10] * len(index)
         dim_array(name, dimensions)
         dimensions, lst, _ = state.basic_state.arrays[name]
@@ -226,7 +226,7 @@ def check_dim_array(name, index):
         if i < 0:
             raise error.RunError(error.IFC)
         elif i < state.basic_state.array_base or i > d:
-            # dimensions is the *maximum index number*, regardless of state.basic_state.array_base!
+            # dimensions is the *maximum index number*, regardless of state.basic_state.array_base
             raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
     return dimensions, lst
 
@@ -365,7 +365,7 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             if a[-1] == '$':
                 s = bytearray()
                 for i in range(0, len(common_arrays[a][1]), vartypes.byte_size['$']):
-                    old_ptr = vartypes.bytes_to_string(common_arrays[a][1][i+1:i+vartypes.byte_size['$']])
+                    old_ptr = vartypes.bytes_to_string(common_arrays[a][1][i:i+vartypes.byte_size['$']])
                     new_ptr = new_strings.store(copy_str(old_ptr))
                     s += vartypes.string_to_bytes(new_ptr)
                 state.basic_state.arrays[a][1] = s

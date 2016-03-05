@@ -158,46 +158,13 @@ def number_imp(left, right):
         vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
 
 
-
 ###############################################################################
 # string operations
-
-def string_gt(left, right):
-    """ String ordering: return whether left > right. """
-    left, right = var.copy_str(vartypes.pass_string(left)), var.copy_str(vartypes.pass_string(right))
-    shortest = min(len(left), len(right))
-    for i in range(shortest):
-        if left[i] > right[i]:
-            return True
-        elif left[i] < right[i]:
-            return False
-    # the same so far...
-    # the shorter string is said to be less than the longer,
-    # provided they are the same up till the length of the shorter.
-    if len(left) > len(right):
-        return True
-    # left is shorter, or equal strings
-    return False
-
-def string_instr(big, small, n):
-    """ Find substring in string and return starting index. """
-    big, small = var.copy_str(vartypes.pass_string(big)), var.copy_str(vartypes.pass_string(small))
-    if big == '' or n > len(big):
-        return vartypes.null('%')
-    # BASIC counts string positions from 1
-    find = big[n-1:].find(small)
-    if find == -1:
-        return vartypes.null('%')
-    return vartypes.int_to_integer_signed(n + find)
 
 def string_concat(left, right):
     """ Concatenate strings. """
     return state.basic_state.strings.store(var.copy_str(vartypes.pass_string(left)) + var.copy_str(vartypes.pass_string(right)))
 
-def string_len(left):
-    """ Length of string. """
-    token = vartypes.string_to_bytes(vartypes.pass_string(left))
-    return vartypes.int_to_integer_signed(token[0])
 
 ###############################################################################
 # number and string operations
@@ -216,7 +183,20 @@ def _bool_eq(left, right):
 def _bool_gt(left, right):
     """ Ordering: return -1 if left > right, 0 otherwise. """
     if left[0] == '$':
-        return string_gt(left, right)
+        left, right = var.copy_str(vartypes.pass_string(left)), var.copy_str(vartypes.pass_string(right))
+        shortest = min(len(left), len(right))
+        for i in range(shortest):
+            if left[i] > right[i]:
+                return True
+            elif left[i] < right[i]:
+                return False
+        # the same so far...
+        # the shorter string is said to be less than the longer,
+        # provided they are the same up till the length of the shorter.
+        if len(left) > len(right):
+            return True
+        # left is shorter, or equal strings
+        return False
     else:
         left, right = vartypes.pass_most_precise(left, right)
         if left[0] in ('#', '!'):

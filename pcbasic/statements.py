@@ -1767,7 +1767,7 @@ def exec_mid(ins):
     num = min(num, len(val))
     basic_str = var.get_var_or_array(name, indices)
     # ensure the length of source string matches target
-    length = vartypes.string_to_bytes(basic_str)[0]
+    length = vartypes.string_length(basic_str)
     if offset + num > length:
         num = length - offset
     if num <= 0:
@@ -1785,7 +1785,7 @@ def exec_lset(ins, justify_right=False):
     s = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # v is empty string if variable does not exist
     # trim and pad to size of target buffer
-    length = vartypes.string_to_bytes(v)[0]
+    length = vartypes.string_length(v)
     s = s[:length]
     if justify_right:
         s = ' '*(length-len(s)) + s

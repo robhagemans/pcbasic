@@ -171,6 +171,14 @@ def string_to_bytes(in_string):
     """ Copy and convert BASIC string to token bytearray. """
     return bytearray(in_string[1])
 
+def string_length(in_string):
+    """ Get string length as Python int. """
+    return in_string[1][0]
+
+def string_address(in_string):
+    """ Get string address as Python int. """
+    return integer_to_int_unsigned(bytes_to_integer(in_string[1][1:]))
+
 
 ###############################################################################
 # convert between BASIC Integer and Python int
