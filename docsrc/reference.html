@@ -4903,8 +4903,8 @@
                 associate the string variable from the field buffer.
             </li>
             <li>
-                Use <code><a href="#LSET">LSET</a></code> or <code><a href="#RSET">RSET</a></code> to change
-                values in the field buffer.
+                Use <code><a href="#LSET">LSET</a></code>, <code><a href="#RSET">RSET</a></code> or
+                <code><a href="#MID$-statement">MID$</a></code> to copy values into a <code><a href="#FIELD">FIELD</a></code> buffer.
             </li>
             <li>
                 Use <code><a href="#GET-files">GET</a></code> to read values from the file into the field
@@ -6555,21 +6555,19 @@
 <hr />
 
     <section>
-        <h4 id="LSET"><code>LSET</code> and <code>RSET</code></h4>
+        <h4 id="LSET"><code>LSET</code></h4>
         <code class="flow">
-            {<b>LSET</b>|<b>RSET</b>} <var>string_name</var> <b>=</b> <var>expression</var>
+            <b>LSET</b> <var>string_name</var> <b>=</b> <var>expression</var>
         </code>
         <p>
-            Assigns a value to a <code><a href="#FIELD">FIELD</a></code> variable such that
-            it overwrites the <code>FIELD</code> record.
-            With <code>LSET</code>, the value will be left-justified if it is shorter than the length of
-            the <code>FIELD</code> variable and the remaining characters are replaced by
-            spaces. <code>RSET</code> does the same but the value will be right-justified.
+            Copies a string value into an existing string variable or array element.
+            The value will be left-justified and any remaining characters are replaced by
+            spaces.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>string_name</var></code> is a string variable.
+                <code><var>string_name</var></code> is a string variable or array element.
             </li>
                 <li><code><var>expression</var></code> is a string expression.
             </li>
@@ -6577,23 +6575,28 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                If <code><var>string_name</var></code> is not a <code>FIELD</code> variable, the value is justified into the
-                existing string, which retains its length.
+                If <code><var>expression</var></code> has a value that is longer than the length of the target variable,
+                it is truncated at the tail to the length of the target variable.
             </li>
             <li>
-                If <code><var>expression</var></code> has a value that is longer than the length of the variable,
-                it is truncated at the back at the length of the variable.
+                If <code><var>string_name</var></code> has not been allocated before, this statement has no effect.
+            </li>
+            <li>
+                Use <code><a href="#LSET">LSET</a></code>, <code><a href="#RSET">RSET</a></code> or
+                <code><a href="#MID$-statement">MID$</a></code> to copy values into a <code><a href="#FIELD">FIELD</a></code> buffer.
             </li>
             <li>
                 If <code><a href="#LET">LET</a></code> is used on a <code>FIELD</code> variable
                 instead of <code>L|RSET</code>, the variable is
-                detached from the field and becomes a normal string variable.
+                detached from the field and a new, normal string variable is allocated.
             </li>
         </ul>
         <h5>Errors</h5>
         <ul>
             <li>
                 <code><var>string_name</var></code> is not a string variable: <samp>Type mismatch</samp>.
+            </li>
+            <li>
                 <code><var>expression</var></code> does not have a string value: <samp>Type mismatch</samp>.
             </li>
         </ul>
@@ -9579,12 +9582,55 @@
     </section>
 <hr />
 
+
     <section>
         <h4 id="RSET"><code>RSET</code></h4>
+        <code class="flow">
+            <b>RSET</b> <var>string_name</var> <b>=</b> <var>expression</var>
+        </code>
         <p>
-            See <code><a href="#LSET">LSET</a></code>.
+            Copies a string value into an existing string variable or array element.
+            The value will be right-justified and any remaining characters are replaced by
+            spaces.
         </p>
+        <h5>Parameters</h5>
+        <ul>
+            <li>
+                <code><var>string_name</var></code> is a string variable or array element.
+            </li>
+                <li><code><var>expression</var></code> is a string expression.
+            </li>
+        </ul>
+        <h5>Notes</h5>
+        <ul>
+            <li>
+                If <code><var>expression</var></code> has a value that is longer than the length of the target variable,
+                it is truncated at the tail to the length of the target variable.
+            </li>
+            <li>
+                If <code><var>string_name</var></code> has not been allocated before, this statement has no effect.
+            </li>
+            <li>
+                Use <code><a href="#LSET">LSET</a></code>, <code><a href="#RSET">RSET</a></code> or
+                <code><a href="#MID$-statement">MID$</a></code> to copy values into a <code><a href="#FIELD">FIELD</a></code> buffer.
+            </li>
+            <li>
+                If <code><a href="#LET">LET</a></code> is used on a <code>FIELD</code> variable
+                instead of <code>L|RSET</code>, the variable is
+                detached from the field and a new, normal string variable is allocated.
+            </li>
+        </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>string_name</var></code> is not a string variable: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>expression</var></code> does not have a string value: <samp>Type mismatch</samp>.
+            </li>
+        </ul>
     </section>
+<hr />
 <hr />
 
     <section>
