@@ -119,25 +119,25 @@ def set_var(name, value):
     name = vartypes.complete_name(name)
     type_char = name[-1]
     value = vartypes.pass_type(type_char, value)
-    # check if garbage needs collecting before allocating memory
-    # don't add string length, string already stored
-    size = (max(3, len(name)) + 1 + vartypes.byte_size[type_char])
-    check_free_memory(size, error.OUT_OF_MEMORY)
-    # assign variables
-    # make a copy of the value in case we want to use POKE on it - we would change both values otherwise
-    # NOTE: this is an in-place copy - crucial for FOR!
-    try:
-        state.basic_state.variables[name][:] = value[1][:]
-    except KeyError:
-        state.basic_state.variables[name] = value[1][:]
     # update memory model
-    # first two bytes: chars of name or 0 if name is one byte long
+    # check if garbage needs collecting before allocating memory
     if name not in state.basic_state.var_memory:
+        # don't add string length, string already stored
+        size = (max(3, len(name)) + 1 + vartypes.byte_size[type_char])
+        check_free_memory(size, error.OUT_OF_MEMORY)
+        # first two bytes: chars of name or 0 if name is one byte long
         name_ptr = state.basic_state.var_current
         # byte_size first_letter second_letter_or_nul remaining_length_or_nul
         var_ptr = name_ptr + max(3, len(name)) + 1
         state.basic_state.var_current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
         state.basic_state.var_memory[name] = (name_ptr, var_ptr)
+    # copy buffers
+    try:
+        # in-place copy is crucial for FOR
+        state.basic_state.variables[name][:] = value[1][:]
+    except KeyError:
+        # copy into new buffer if not existing
+        state.basic_state.variables[name] = value[1][:]
 
 def get_var(name):
     """ Retrieve the value of a variable. """
