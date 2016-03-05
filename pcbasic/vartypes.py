@@ -28,10 +28,9 @@ def prepare():
     global option_double
     option_double = config.get('double')
 
-# zeroed out
 def null(sigil):
     """ Return null value for the given type. """
-    return {'$': ('$', bytearray(3)), '%': ('%', bytearray(2)), '!': ('!', bytearray(4)), '#': ('#', bytearray(8))}[sigil]
+    return (sigil, bytearray(byte_size[sigil]))
 
 def complete_name(name):
     """ Add type specifier to a name, if missing. """
