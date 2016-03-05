@@ -14,6 +14,7 @@ import error
 import console
 import state
 import memory
+import var
 # unused import, needed to initialise state.console_state.screen
 import display
 
@@ -525,6 +526,21 @@ class Field(object):
         else:
             self.address = -1
         self.buffer = bytearray()
+
+    def attach_var(self, name, indices, offset, length):
+        """ Attach a FIELD variable. """
+        if name[-1] != '$':
+            # type mismatch
+            raise error.RunError(error.TYPE_MISMATCH)
+        if offset + length > len(self.buffer):
+            # FIELD overflow
+            raise error.RunError(error.FIELD_OVERFLOW)
+        # create a string pointer
+        str_addr = self.address + offset
+        str_sequence = chr(length) + vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(str_addr))
+        # assign the string ptr to the variable name
+        # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
+        var.set_var_or_array(name, indices, vartypes.bytes_to_string(str_sequence))
 
     def reset(self, reclen):
         """ Initialise FIELD buffer to reclen NULs. """

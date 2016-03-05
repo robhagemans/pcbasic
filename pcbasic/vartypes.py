@@ -17,6 +17,8 @@ import config
 # Double (#) - stored as 8-byte Microsoft Binary Format
 # String ($) - stored as 1-byte length plus 2-byte pointer to string space
 
+byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
+
 # command line option /d
 # allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
 option_double = False

@@ -13,14 +13,13 @@ import error
 import vartypes
 import state
 import memory
-import representation
-import fp
-
-byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
 
 def prepare():
     """ Initialise the var module """
     clear_variables()
+
+###############################################################################
+# strings
 
 class StringSpace(object):
     """ String space is a table of strings accessible by their 2-byte pointers. """
@@ -104,65 +103,16 @@ def view_str(basic_string):
         # memoryview slice continues to point to buffer, does not copy
         return memoryview(state.io_state.fields[number].buffer)[offset:offset+length]
 
-def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=False):
-    """ Reset and clear variables, arrays, common definitions and functions. """
-    if not preserve_deftype:
-        # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
-        state.basic_state.deftype = ['!']*26
-    if not preserve_all:
-        if preserve_common:
-            # preserve COMMON variables (CHAIN does this)
-            common, common_arrays = {}, {}
-            for varname in state.basic_state.common_names:
-                try:
-                    common[varname] = state.basic_state.variables[varname]
-                except KeyError:
-                    pass
-            for varname in state.basic_state.common_array_names:
-                try:
-                    common_arrays[varname] = state.basic_state.arrays[varname]
-                except KeyError:
-                    pass
-        else:
-            # clear option base
-            state.basic_state.array_base = None
-            common = {}
-            common_arrays = {}
-            # at least I think these should be cleared by CLEAR?
-            state.basic_state.common_names = []
-            state.basic_state.common_array_names = []
-        # restore only common variables
-        # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
-        state.basic_state.variables = {}
-        state.basic_state.arrays = {}
-        state.basic_state.var_memory = {}
-        state.basic_state.array_memory = {}
-        state.basic_state.var_current = memory.var_start()
-        # arrays are always kept after all vars
-        state.basic_state.array_current = 0
-        # functions are cleared except when CHAIN ... ALL is specified
-        state.basic_state.functions = {}
-        # reset string space
-        new_strings = StringSpace()
-        # preserve common variables
-        # use set_var and dim_array to rebuild memory model
-        for v in common:
-            full_var = (v[-1], common[v])
-            if v[-1] == '$':
-                full_var = new_strings.store(copy_str(full_var))
-            set_var(v, full_var)
-        for a in common_arrays:
-            dim_array(a, common_arrays[a][0])
-            if a[-1] == '$':
-                s = bytearray()
-                for i in range(0, len(common_arrays[a][1]), byte_size['$']):
-                    old_ptr = vartypes.bytes_to_string(common_arrays[a][1][i+1:i+byte_size['$']])
-                    new_ptr = new_strings.store(copy_str(old_ptr))
-                    s += vartypes.string_to_bytes(new_ptr)
-                state.basic_state.arrays[a][1] = s
-            else:
-                state.basic_state.arrays[a] = common_arrays[a]
-        state.basic_state.strings = new_strings
+
+###############################################################################
+# scalar variables
+
+def var_size_bytes(name):
+    """ Return the size of a variable, if it exists. Raise ILLEGAL FUNCTION CALL otherwise. """
+    try:
+        return vartypes.byte_size[name[-1]]
+    except KeyError:
+        raise error.RunError(error.IFC)
 
 def set_var(name, value):
     """ Assign a value to a variable. """
@@ -171,7 +121,7 @@ def set_var(name, value):
     value = vartypes.pass_type(type_char, value)
     # check if garbage needs collecting before allocating memory
     # don't add string length, string already stored
-    size = (max(3, len(name)) + 1 + byte_size[type_char])
+    size = (max(3, len(name)) + 1 + vartypes.byte_size[type_char])
     check_free_memory(size, error.OUT_OF_MEMORY)
     # assign variables
     # make a copy of the value in case we want to use POKE on it - we would change both values otherwise
@@ -186,58 +136,20 @@ def set_var(name, value):
         name_ptr = state.basic_state.var_current
         # byte_size first_letter second_letter_or_nul remaining_length_or_nul
         var_ptr = name_ptr + max(3, len(name)) + 1
-        state.basic_state.var_current += max(3, len(name)) + 1 + byte_size[name[-1]]
+        state.basic_state.var_current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
         state.basic_state.var_memory[name] = (name_ptr, var_ptr)
 
-def check_free_memory(size, err):
-    """ Check if sufficient free memory is avilable, raise error if not. """
-    if fre() <= size:
-        collect_garbage()
-        if fre() <= size:
-            raise error.RunError(err)
-
-def get_var(name, allow_nonexistant=True):
+def get_var(name):
     """ Retrieve the value of a variable. """
     name = vartypes.complete_name(name)
     try:
         return (name[-1], state.basic_state.variables[name])
     except KeyError:
-        if allow_nonexistant:
-            return vartypes.null(name[-1])
-        else:
-            raise
+        return vartypes.null(name[-1])
 
-def swap_var(name1, index1, name2, index2):
-    """ Swap two variables by reference (Strings) or value (everything else). """
-    if name1[-1] != name2[-1]:
-        # type mismatch
-        raise error.RunError(error.TYPE_MISMATCH)
-    elif ((index1 == [] and name1 not in state.basic_state.variables) or
-            (index1 != [] and name1 not in state.basic_state.arrays) or
-            (index2 == [] and name2 not in state.basic_state.variables) or
-            (index2 != [] and name2 not in state.basic_state.arrays)):
-        # illegal function call
-        raise error.RunError(error.IFC)
-    typechar = name1[-1]
-    size = byte_size[typechar]
-    # get buffers (numeric representation or string pointer)
-    if index1 == []:
-        p1, off1 = state.basic_state.variables[name1], 0
-    else:
-        dimensions, p1, _ = state.basic_state.arrays[name1]
-        off1 = index_array(index1, dimensions)*size
-    if index2 == []:
-        p2, off2 = state.basic_state.variables[name2], 0
-    else:
-        dimensions, p2, _ = state.basic_state.arrays[name2]
-        off2 = index_array(index2, dimensions)*size
-    # swap the contents
-    p1[off1:off1+size], p2[off2:off2+size] =  p2[off2:off2+size], p1[off1:off1+size]
-    # inc version
-    if name1 in state.basic_state.arrays:
-        state.basic_state.arrays[name1][2] += 1
-    if name2 in state.basic_state.arrays:
-        state.basic_state.arrays[name2][2] += 1
+
+###############################################################################
+# arrays
 
 def erase_array(name):
     """ Remove an array from memory. """
@@ -260,13 +172,6 @@ def index_array(index, dimensions):
 def array_len(dimensions):
     """ Return the flat length for given dimensioned size. """
     return index_array(dimensions, dimensions) + 1
-
-def var_size_bytes(name):
-    """ Return the size of a variable, if it exists. Raise ILLEGAL FUNCTION CALL otherwise. """
-    try:
-        return byte_size[name[-1]]
-    except KeyError:
-        raise error.RunError(error.IFC)
 
 def array_size_bytes(name):
     """ Return the byte size of an array, if it exists. Return 0 otherwise. """
@@ -353,10 +258,14 @@ def set_array(name, index, value):
     # inc version
     state.basic_state.arrays[name][2] += 1
 
-def get_var_or_array(name, indices, allow_nonexistant=True):
+
+###############################################################################
+# generic variable access
+
+def get_var_or_array(name, indices):
     """ Retrieve the value of a variable or an array element. """
     if indices == []:
-        return get_var(name, allow_nonexistant)
+        return get_var(name)
     else:
         # array is allocated if retrieved and nonexistant
         return get_array(name, indices)
@@ -368,21 +277,101 @@ def set_var_or_array(name, indices, value):
     else:
         set_array(name, indices, value)
 
-def set_field_var_or_array(random_file, varname, indices, offset, length):
-    """ Attach a string variable to a FIELD buffer. """
-    if varname[-1] != '$':
+def swap_var(name1, index1, name2, index2):
+    """ Swap two variables by reference (Strings) or value (everything else). """
+    if name1[-1] != name2[-1]:
         # type mismatch
         raise error.RunError(error.TYPE_MISMATCH)
-    if offset+length > len(random_file.field.buffer):
-        # FIELD overflow
-        raise error.RunError(error.FIELD_OVERFLOW)
-    str_addr = random_file.field.address + offset
-    str_sequence = chr(length) + vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(str_addr))
-    # assign the string ptr to the variable name
-    # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
-    set_var_or_array(varname, indices, vartypes.bytes_to_string(str_sequence))
+    elif ((index1 == [] and name1 not in state.basic_state.variables) or
+            (index1 != [] and name1 not in state.basic_state.arrays) or
+            (index2 == [] and name2 not in state.basic_state.variables) or
+            (index2 != [] and name2 not in state.basic_state.arrays)):
+        # illegal function call
+        raise error.RunError(error.IFC)
+    typechar = name1[-1]
+    size = vartypes.byte_size[typechar]
+    # get buffers (numeric representation or string pointer)
+    if index1 == []:
+        p1, off1 = state.basic_state.variables[name1], 0
+    else:
+        dimensions, p1, _ = state.basic_state.arrays[name1]
+        off1 = index_array(index1, dimensions)*size
+    if index2 == []:
+        p2, off2 = state.basic_state.variables[name2], 0
+    else:
+        dimensions, p2, _ = state.basic_state.arrays[name2]
+        off2 = index_array(index2, dimensions)*size
+    # swap the contents
+    p1[off1:off1+size], p2[off2:off2+size] =  p2[off2:off2+size], p1[off1:off1+size]
+    # inc version
+    if name1 in state.basic_state.arrays:
+        state.basic_state.arrays[name1][2] += 1
+    if name2 in state.basic_state.arrays:
+        state.basic_state.arrays[name2][2] += 1
 
-##########################################
+
+###############################################################################
+# variable memory
+
+def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=False):
+    """ Reset and clear variables, arrays, common definitions and functions. """
+    if not preserve_deftype:
+        # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
+        state.basic_state.deftype = ['!']*26
+    if not preserve_all:
+        if preserve_common:
+            # preserve COMMON variables (CHAIN does this)
+            common, common_arrays = {}, {}
+            for varname in state.basic_state.common_names:
+                try:
+                    common[varname] = state.basic_state.variables[varname]
+                except KeyError:
+                    pass
+            for varname in state.basic_state.common_array_names:
+                try:
+                    common_arrays[varname] = state.basic_state.arrays[varname]
+                except KeyError:
+                    pass
+        else:
+            # clear option base
+            state.basic_state.array_base = None
+            common = {}
+            common_arrays = {}
+            # at least I think these should be cleared by CLEAR?
+            state.basic_state.common_names = []
+            state.basic_state.common_array_names = []
+        # restore only common variables
+        # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
+        state.basic_state.variables = {}
+        state.basic_state.arrays = {}
+        state.basic_state.var_memory = {}
+        state.basic_state.array_memory = {}
+        state.basic_state.var_current = memory.var_start()
+        # arrays are always kept after all vars
+        state.basic_state.array_current = 0
+        # functions are cleared except when CHAIN ... ALL is specified
+        state.basic_state.functions = {}
+        # reset string space
+        new_strings = StringSpace()
+        # preserve common variables
+        # use set_var and dim_array to rebuild memory model
+        for v in common:
+            full_var = (v[-1], common[v])
+            if v[-1] == '$':
+                full_var = new_strings.store(copy_str(full_var))
+            set_var(v, full_var)
+        for a in common_arrays:
+            dim_array(a, common_arrays[a][0])
+            if a[-1] == '$':
+                s = bytearray()
+                for i in range(0, len(common_arrays[a][1]), vartypes.byte_size['$']):
+                    old_ptr = vartypes.bytes_to_string(common_arrays[a][1][i+1:i+vartypes.byte_size['$']])
+                    new_ptr = new_strings.store(copy_str(old_ptr))
+                    s += vartypes.string_to_bytes(new_ptr)
+                state.basic_state.arrays[a][1] = s
+            else:
+                state.basic_state.arrays[a] = common_arrays[a]
+        state.basic_state.strings = new_strings
 
 def collect_garbage():
     """ Collect garbage from string space. Compactify string storage. """
@@ -423,5 +412,14 @@ def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
     return state.basic_state.strings.current - state.basic_state.var_current - state.basic_state.array_current
 
+def check_free_memory(size, err):
+    """ Check if sufficient free memory is avilable, raise error if not. """
+    if fre() <= size:
+        collect_garbage()
+        if fre() <= size:
+            raise error.RunError(err)
+
+
+###############################################################################
 
 prepare()

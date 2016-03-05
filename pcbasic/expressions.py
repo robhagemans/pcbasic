@@ -781,7 +781,7 @@ def value_varptr(ins):
         raise error.RunError(error.IFC)
     var_ptr = vartypes.int_to_integer_unsigned(var_ptr)
     if dollar:
-        return state.basic_state.strings.store(chr(var.byte_size[name[-1]]) + vartypes.integer_to_bytes(var_ptr))
+        return state.basic_state.strings.store(chr(vartypes.byte_size[name[-1]]) + vartypes.integer_to_bytes(var_ptr))
     else:
         return var_ptr
 

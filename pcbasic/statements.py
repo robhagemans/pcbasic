@@ -1025,7 +1025,7 @@ def exec_field(ins):
             util.range_check(0, 255, width)
             util.require_read(ins, ('AS',), err=error.IFC)
             name, index = expressions.parse_name(ins)
-            var.set_field_var_or_array(the_file, name, index, offset, width)
+            the_file.field.attach_var(name, index, offset, width)
             offset += width
             if not util.skip_white_read_if(ins, (',',)):
                 break

@@ -14,6 +14,7 @@ import config
 import logging
 import state
 import vartypes
+import var
 import representation
 import expressions
 import tokenise
