@@ -77,25 +77,32 @@ class StringSpace(object):
 
 def copy_str(basic_string):
     """ Return a copy of a string from its string pointer. """
+    try:
+        return str(bytearray(view_str(basic_string)))
+    except KeyError:
+        # 'Not a field string'
+        length = vartypes.string_to_bytes(basic_string)[0]
+        return '\0'*length
+
+def view_str(basic_string):
+    """ Return a writeable view of a string from its string pointer. """
     sequence = vartypes.string_to_bytes(basic_string)
-    length = ord(sequence[0:1])
+    length = sequence[0]
     address = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(sequence[-2:]))
-    if address >= memory.code_start: #memory.var_start():
-        # strings in code are also copied into string-space object for now
-        # string is stored in string space
-        return state.basic_state.strings.copy(sequence)
+    # address >= memory.var_start(): if we no longer double-store code strings in string space object
+    if address >= memory.code_start:
+        # string stored in string space
+        return memoryview(state.basic_state.strings.retrieve(sequence))
     else:
-        # string is stored in field buffers
-        if address < memory.field_mem_start:
-            return '\0'*length
+        # string stored in field buffers
         # find the file we're in
         start = address - memory.field_mem_start
         number = 1 + start // memory.field_mem_offset
         offset = start % memory.field_mem_offset
-        try:
-            return str(state.io_state.fields[number].buffer[offset : offset+length])
-        except KeyError, IndexError:
-            return '\0'*length
+        if (number not in state.io_state.fields) or (start < 0):
+            raise KeyError('Not a field string')
+        # memoryview slice continues to point to buffer, does not copy
+        return memoryview(state.io_state.fields[number].buffer)[offset:offset+length]
 
 def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=False):
     """ Reset and clear variables, arrays, common definitions and functions. """
@@ -189,14 +196,16 @@ def check_free_memory(size, err):
         if fre() <= size:
             raise error.RunError(err)
 
-
-def get_var(name):
+def get_var(name, allow_nonexistant=True):
     """ Retrieve the value of a variable. """
     name = vartypes.complete_name(name)
     try:
         return (name[-1], state.basic_state.variables[name])
     except KeyError:
-        return vartypes.null(name[-1])
+        if allow_nonexistant:
+            return vartypes.null(name[-1])
+        else:
+            raise
 
 def swap_var(name1, index1, name2, index2):
     """ Swap two variables by reference (Strings) or value (everything else). """
@@ -331,7 +340,7 @@ def get_array(name, index):
     dimensions, lst = check_dim_array(name, index)
     bigindex = index_array(index, dimensions)
     value = lst[bigindex*var_size_bytes(name):(bigindex+1)*var_size_bytes(name)]
-    return name[-1], value
+    return (name[-1], value)
 
 def set_array(name, index, value):
     """ Assign a value to an array element. """
@@ -339,19 +348,17 @@ def set_array(name, index, value):
     bigindex = index_array(index, dimensions)
     # make a copy of the value, we don't want them to be linked
     value = (vartypes.pass_type(name[-1], value)[1])[:]
-    # for strings, store the string in string space and store the key in the array
-    if name[-1] == '$':
-        value = state.basic_state.strings.store(value)[1]
     bytesize = var_size_bytes(name)
     lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
     # inc version
     state.basic_state.arrays[name][2] += 1
 
-def get_var_or_array(name, indices):
+def get_var_or_array(name, indices, allow_nonexistant=True):
     """ Retrieve the value of a variable or an array element. """
     if indices == []:
-        return get_var(name)
+        return get_var(name, allow_nonexistant)
     else:
+        # array is allocated if retrieved and nonexistant
         return get_array(name, indices)
 
 def set_var_or_array(name, indices, value):
@@ -370,98 +377,10 @@ def set_field_var_or_array(random_file, varname, indices, offset, length):
         # FIELD overflow
         raise error.RunError(error.FIELD_OVERFLOW)
     str_addr = random_file.field.address + offset
-    str_sequence = bytearray(chr(length)) + vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(str_addr))
+    str_sequence = chr(length) + vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(str_addr))
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
-    if indices == []:
-        state.basic_state.variables[varname] = str_sequence
-        # update memory model (see set_var)
-        if varname not in state.basic_state.var_memory:
-            name_ptr = state.basic_state.var_current
-            var_ptr = name_ptr + max(3, len(varname)) + 1 # byte_size first_letter second_letter_or_nul remaining_length_or_nul
-            state.basic_state.var_current += max(3, len(varname)) + 1 + byte_size['$']
-            state.basic_state.var_memory[varname] = (name_ptr, var_ptr)
-    else:
-        check_dim_array(varname, indices)
-        dimensions, lst, _ = state.basic_state.arrays[varname]
-        bigindex = index_array(indices, dimensions)
-        lst[bigindex*3:(bigindex+1)*3] = str_sequence
-
-def get_var_or_array_string_pointer(name, indices):
-    """ Retrieve the pointer value of a string or a string-array element. """
-    if name[-1] != '$':
-        # type mismatch
-        raise error.RunError(error.TYPE_MISMATCH)
-    try:
-        if indices == []:
-            return state.basic_state.variables[name]
-        else:
-            check_dim_array(name, indices)
-            dimensions, lst, _ = state.basic_state.arrays[name]
-            bigindex = index_array(indices, dimensions)
-            return lst[bigindex*3:(bigindex+1)*3]
-    except KeyError:
-        return None
-
-def assign_field_var_or_array(name, indices, value, justify_right=False):
-    """ Write a packed value into a field-assigned string. """
-    if value[0] != '$':
-        # type mismatch
-        raise error.RunError(error.TYPE_MISMATCH)
-    s = copy_str(value)
-    v = get_var_or_array_string_pointer(name, indices)
-    if v is None:
-        # LSET has no effect if variable does not exist
-        return
-    # trim and pad to size
-    length = ord(v[0:1])
-    s = s[:length]
-    if justify_right:
-        s = ' '*(length-len(s)) + s
-    else:
-        s += ' '*(length-len(s))
-    # copy new value into existing buffer
-    string_assign_unpacked_into(v, 0, length, s)
-
-def string_assign_into(name, indices, offset, num, value):
-    """ Write a packed value into a string variable or array. """
-    # WARNING - need to decrement basic offset by 1 to get python offset
-    if value[0] != '$':
-        # type mismatch
-        raise error.RunError(error.TYPE_MISMATCH)
-    s = copy_str(value)
-    v = get_var_or_array_string_pointer(name, indices)
-    if v is None:
-        # illegal function call
-        raise error.RunError(error.IFC)
-    string_assign_unpacked_into(v, offset, num, s)
-
-def string_assign_unpacked_into(sequence, offset, num, val):
-    """ Write an unpacked value into a string buffer for given 3-byte sequence. """
-    # don't overwrite more of the old string than the length of the new string
-    num = min(num, len(val))
-    # ensure the length of val is num, cut off any extra characters
-    val = val[:num]
-    length = ord(sequence[0:1])
-    address = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(sequence[-2:]))
-    if offset + num > length:
-        num = length - offset
-    if num <= 0:
-        return
-    if address >= memory.var_start():
-        # string stored in string space
-        state.basic_state.strings.retrieve(sequence)[offset:offset+num] = val
-    else:
-        # string stored in field buffers
-        # find the file we're in
-        start = address - memory.field_mem_start
-        number = 1 + start // memory.field_mem_offset
-        field_offset = start % memory.field_mem_offset
-        try:
-            state.io_state.fields[number].buffer[
-                    field_offset+offset : field_offset+offset+num] = val
-        except KeyError, IndexError:
-            raise KeyError('Not a field string')
+    set_var_or_array(varname, indices, vartypes.bytes_to_string(str_sequence))
 
 ##########################################
 

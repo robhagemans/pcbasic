@@ -1759,16 +1759,40 @@ def exec_mid(ins):
     if num > 0:
         util.range_check(1, len(s), start)
     util.require_read(ins, (tk.O_EQ,))
-    val = vartypes.pass_string(expressions.parse_expression(ins))
+    val = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     util.require(ins, tk.end_statement)
-    var.string_assign_into(name, indices, start - 1, num, val)
+    # we need to decrement basic offset by 1 to get python offset
+    offset = start-1
+    # don't overwrite more of the old string than the length of the new string
+    num = min(num, len(val))
+    basic_str = var.get_var_or_array(name, indices)
+    # ensure the length of source string matches target
+    length = vartypes.string_to_bytes(basic_str)[0]
+    if offset + num > length:
+        num = length - offset
+    if num <= 0:
+        return
+    # cut new string to size if too long
+    val = val[:num]
+    # copy new value into existing buffer
+    var.view_str(basic_str)[offset:offset+num] = val
 
 def exec_lset(ins, justify_right=False):
     """ LSET: assign string value in-place; left justified. """
     name, index = expressions.parse_name(ins)
+    v = vartypes.pass_string(var.get_var_or_array(name, index))
     util.require_read(ins, (tk.O_EQ,))
-    val = expressions.parse_expression(ins)
-    var.assign_field_var_or_array(name, index, val, justify_right)
+    s = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    # v is empty string if variable does not exist
+    # trim and pad to size of target buffer
+    length = vartypes.string_to_bytes(v)[0]
+    s = s[:length]
+    if justify_right:
+        s = ' '*(length-len(s)) + s
+    else:
+        s += ' '*(length-len(s))
+    # copy new value into existing buffer
+    var.view_str(v)[:] = s
 
 def exec_rset(ins):
     """ RSET: assign string value in-place; right justified. """
