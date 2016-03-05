@@ -143,11 +143,12 @@ def var_size_bytes(name):
     except KeyError:
         raise error.RunError(error.IFC)
 
-def set_var(name, value):
+def set_var(name, value=None):
     """ Assign a value to a variable. """
     name = vartypes.complete_name(name)
     type_char = name[-1]
-    value = vartypes.pass_type(type_char, value)
+    if value is not None:
+        value = vartypes.pass_type(type_char, value)
     # update memory model
     # check if garbage needs collecting before allocating memory
     if name not in state.basic_state.var_memory:
@@ -160,6 +161,12 @@ def set_var(name, value):
         var_ptr = name_ptr + max(3, len(name)) + 1
         state.basic_state.var_current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
         state.basic_state.var_memory[name] = (name_ptr, var_ptr)
+    # don't change the value if just checking allocation
+    if value is None:
+        if name in state.basic_state.variables:
+            return
+        else:
+            value = vartypes.null(type_char)
     # copy buffers
     try:
         # in-place copy is crucial for FOR

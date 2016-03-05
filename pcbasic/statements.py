@@ -1957,8 +1957,11 @@ def exec_swap(ins):
 def exec_def_fn(ins):
     """ DEF FN: define a function. """
     fnname = util.get_var_name(ins)
+    fntype = fnname[-1]
     # read parameters
     fnvars = []
+    util.skip_white(ins)
+    pointer_loc = ins.tell()
     if util.skip_white_read_if(ins, ('(',)):
         while True:
             fnvars.append(util.get_var_name(ins))
@@ -1979,6 +1982,15 @@ def exec_def_fn(ins):
         # (for no good reason, works fine)
         raise error.RunError(error.ILLEGAL_DIRECT)
     state.basic_state.functions[fnname] = [fnvars, fncode]
+    # update memory model
+    # allocate function pointer
+    pointer = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(pointer_loc))
+    pointer += '\0'*(vartypes.byte_size[fntype]-2)
+    var.set_var(chr(128+ord(fnname[0]))+fnname[1:], (fntype, bytearray(pointer)))
+    for name in fnvars:
+        # allocate but don't set variables
+        var.set_var(name)
+
 
 def exec_randomize(ins):
     """ RANDOMIZE: set random number generator seed. """
