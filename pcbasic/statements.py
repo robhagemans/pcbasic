@@ -1961,7 +1961,7 @@ def exec_def_fn(ins):
     # read parameters
     fnvars = []
     util.skip_white(ins)
-    pointer_loc = ins.tell()
+    pointer_loc = memory.code_start + ins.tell()
     if util.skip_white_read_if(ins, ('(',)):
         while True:
             fnvars.append(util.get_var_name(ins))
@@ -1986,6 +1986,7 @@ def exec_def_fn(ins):
     # allocate function pointer
     pointer = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(pointer_loc))
     pointer += '\0'*(vartypes.byte_size[fntype]-2)
+    # function name is represented with first char shifted by 128
     var.set_var(chr(128+ord(fnname[0]))+fnname[1:], (fntype, bytearray(pointer)))
     for name in fnvars:
         # allocate but don't set variables
