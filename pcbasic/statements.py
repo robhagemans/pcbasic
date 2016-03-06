@@ -101,10 +101,10 @@ def parse_statement():
             ins.read(1)
             if c in tk.twobyte:
                 c += ins.read(1)
-            try:
-                statements[c](ins)
-            except KeyError:
+            # don't use try-block to avoid catching other KeyErrors in statement
+            if c not in statements:
                 raise error.RunError(error.STX)
+            statements[c](ins)
         return True
     except error.RunError as e:
         error.set_err(e)
@@ -438,20 +438,23 @@ def exec_play(ins):
         util.require(ins, tk.end_statement)
     else:
         # retrieve Music Macro Language string
-        mml0 = vartypes.pass_string_unpack(
+        with state.basic_state.strings:
+            mml0 = var.copy_str(vartypes.pass_string(
                     expressions.parse_expression(ins, allow_empty=True),
-                    allow_empty=True)
+                    allow_empty=True))
         mml1, mml2 = '', ''
         if ((pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and
                                          state.console_state.sound.sound_on))
                 and util.skip_white_read_if(ins, (',',))):
-            mml1 = vartypes.pass_string_unpack(
+            with state.basic_state.strings:
+                mml1 = var.copy_str(vartypes.pass_string(
                         expressions.parse_expression(ins, allow_empty=True),
-                        allow_empty=True)
+                        allow_empty=True))
             if util.skip_white_read_if(ins, (',',)):
-                mml2 = vartypes.pass_string_unpack(
+                with state.basic_state.strings:
+                    mml2 = var.copy_str(vartypes.pass_string(
                             expressions.parse_expression(ins, allow_empty=True),
-                            allow_empty=True)
+                            allow_empty=True))
         util.require(ins, tk.end_statement)
         if not (mml0 or mml1 or mml2):
             raise error.RunError(error.MISSING_OPERAND)
@@ -516,7 +519,8 @@ def exec_bload(ins):
     """ BLOAD: load a file into a memory location. Limited implementation. """
     if state.basic_state.protected and not state.basic_state.run_mode:
         raise error.RunError(error.IFC)
-    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     offset = None
     if util.skip_white_read_if(ins, (',',)):
@@ -531,7 +535,8 @@ def exec_bsave(ins):
     """ BSAVE: save a block of memory to a file. Limited implementation. """
     if state.basic_state.protected and not state.basic_state.run_mode:
         raise error.RunError(error.IFC)
-    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     util.require_read(ins, (',',))
     offset = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint = 0xffff)
@@ -549,7 +554,7 @@ def exec_bsave(ins):
 
 def exec_call(ins):
     """ CALL: call an external procedure. Not implemented. """
-    addr_var = util.get_var_name(ins)
+    addr_var = util.parse_scalar(ins)
     if addr_var[-1] == '$':
         # type mismatch
         raise error.RunError(error.TYPE_MISMATCH)
@@ -597,33 +602,38 @@ def exec_wait(ins):
 
 def exec_chdir(ins):
     """ CHDIR: change working directory. """
-    dev, path = disk.get_diskdevice_and_path(
-            vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        dev, path = disk.get_diskdevice_and_path(
+            var.copy_str(vartypes.pass_string(expressions.parse_expression(ins))))
     dev.chdir(path)
     util.require(ins, tk.end_statement)
 
 def exec_mkdir(ins):
     """ MKDIR: create directory. """
-    dev, path = disk.get_diskdevice_and_path(
-            vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        dev, path = disk.get_diskdevice_and_path(
+            var.copy_str(vartypes.pass_string(expressions.parse_expression(ins))))
     dev.mkdir(path)
     util.require(ins, tk.end_statement)
 
 def exec_rmdir(ins):
     """ RMDIR: remove directory. """
-    dev, path = disk.get_diskdevice_and_path(
-            vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        dev, path = disk.get_diskdevice_and_path(
+            var.copy_str(vartypes.pass_string(expressions.parse_expression(ins))))
     dev.rmdir(path)
     util.require(ins, tk.end_statement)
 
 def exec_name(ins):
     """ NAME: rename file or directory. """
-    oldname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        oldname = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # AS is not a tokenised word
     word = util.skip_white_read(ins) + ins.read(1)
     if word.upper() != 'AS':
         raise error.RunError(error.STX)
-    newname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        newname = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     dev, oldpath = disk.get_diskdevice_and_path(oldname)
     newdev, newpath = disk.get_diskdevice_and_path(newname)
     # don't rename open files
@@ -635,7 +645,8 @@ def exec_name(ins):
 
 def exec_kill(ins):
     """ KILL: remove file. """
-    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # don't delete open files
     dev, path = disk.get_diskdevice_and_path(name)
     dev.check_file_not_open(path)
@@ -646,7 +657,8 @@ def exec_files(ins):
     """ FILES: output directory listing. """
     pathmask = ''
     if util.skip_white(ins) not in tk.end_statement:
-        pathmask = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        with state.basic_state.strings:
+            pathmask = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
         if not pathmask:
             raise error.RunError(error.BAD_FILE_NAME)
     dev, path = disk.get_diskdevice_and_path(pathmask)
@@ -663,7 +675,8 @@ def exec_shell(ins):
     if util.skip_white(ins) in tk.end_statement:
         cmd = ''
     else:
-        cmd = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        with state.basic_state.strings:
+            cmd = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # no SHELL on PCjr.
     if pcjr_syntax == 'pcjr':
         raise error.RunError(error.IFC)
@@ -677,7 +690,8 @@ def exec_shell(ins):
 
 def exec_environ(ins):
     """ ENVIRON: set environment string. """
-    envstr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        envstr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     eqs = envstr.find('=')
     if eqs <= 0:
         raise error.RunError(error.IFC)
@@ -690,7 +704,8 @@ def exec_time(ins):
     """ TIME$: set time. """
     util.require_read(ins, (tk.O_EQ,)) #time$=
     # allowed formats:  hh   hh:mm   hh:mm:ss  where hh 0-23, mm 0-59, ss 0-59
-    timestr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        timestr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     util.require(ins, tk.end_statement)
     timedate.set_time(timestr)
 
@@ -700,7 +715,8 @@ def exec_date(ins):
     # allowed formats:
     # mm/dd/yy  or mm-dd-yy  mm 0--12 dd 0--31 yy 80--00--77
     # mm/dd/yyyy  or mm-dd-yyyy  yyyy 1980--2099
-    datestr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        datestr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     util.require(ins, tk.end_statement)
     timedate.set_date(datestr)
 
@@ -774,7 +790,8 @@ def exec_list(ins):
     from_line, to_line = parse_line_range(ins)
     out = None
     if util.skip_white_read_if(ins, (',',)):
-        outname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        with state.basic_state.strings:
+            outname = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
         out = devices.open_file(0, outname, filetype='A', mode='O')
         # ignore everything after file spec
         util.skip_to(ins, tk.end_line)
@@ -798,7 +815,8 @@ def exec_llist(ins):
 
 def exec_load(ins):
     """ LOAD: load program from file. """
-    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     comma = util.skip_white_read_if(ins, (',',))
     if comma:
@@ -820,7 +838,8 @@ def exec_chain(ins):
         action = program.merge
     else:
         action = program.load
-    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     jumpnum, common_all, delete_lines = None, False, None
     if util.skip_white_read_if(ins, (',',)):
         # check for an expression that indicates a line in the other program. This is not stored as a jumpnum (to avoid RENUM)
@@ -867,7 +886,8 @@ def parse_delete_clause(ins):
 
 def exec_save(ins):
     """ SAVE: save program to a file. """
-    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     mode = 'B'
     if util.skip_white_read_if(ins, (',',)):
         mode = util.skip_white_read(ins).upper()
@@ -882,7 +902,8 @@ def exec_save(ins):
 
 def exec_merge(ins):
     """ MERGE: merge lines from file into current program. """
-    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     with devices.open_file(0, name, filetype='A', mode='I') as f:
         program.merge(f)
@@ -935,7 +956,8 @@ default_access_modes = {'I':'R', 'O':'W', 'A':'RW', 'R':'RW'}
 
 def exec_open(ins):
     """ OPEN: open a file. """
-    first_expr = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    with state.basic_state.strings:
+        first_expr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     mode, access, lock, reclen = 'R', 'RW', '', 128
     if util.skip_white_read_if(ins, (',',)):
         # first syntax
@@ -946,7 +968,8 @@ def exec_open(ins):
             raise error.RunError(error.BAD_FILE_MODE)
         number = expressions.parse_file_number_opthash(ins)
         util.require_read(ins, (',',))
-        name = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+        with state.basic_state.strings:
+            name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
         if util.skip_white_read_if(ins, (',',)):
             reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
@@ -1024,8 +1047,8 @@ def exec_field(ins):
             width = vartypes.pass_int_unpack(expressions.parse_expression(ins))
             util.range_check(0, 255, width)
             util.require_read(ins, ('AS',), err=error.IFC)
-            name, index = expressions.parse_name(ins)
-            var.set_field_var_or_array(the_file, name, index, offset, width)
+            name, index = expressions.parse_variable(ins)
+            the_file.field.attach_var(name, index, offset, width)
             offset += width
             if not util.skip_white_read_if(ins, (',',)):
                 break
@@ -1162,7 +1185,9 @@ def exec_view_graph(ins):
         util.range_check(0, state.console_state.screen.mode.pixel_height-1, y0, y1)
         fill, border = None, None
         if util.skip_white_read_if(ins, (',',)):
-            fill, border = expressions.parse_int_list(ins, 2, size_err=error.STX)
+            fill = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+            util.require_read(ins, (',',))
+            border = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         state.console_state.screen.drawing.set_view(x0, y0, x1, y1, absolute, fill, border)
     else:
         state.console_state.screen.drawing.unset_view()
@@ -1227,7 +1252,8 @@ def exec_paint(ins):
             pass
         elif cval[0] == '$':
             # pattern given; copy
-            pattern = bytearray(vartypes.pass_string_unpack(cval))
+            with state.basic_state.strings:
+                pattern = bytearray(var.copy_str(vartypes.pass_string(cval)))
             if not pattern:
                 # empty pattern "" is illegal function call
                 raise error.RunError(error.IFC)
@@ -1240,7 +1266,8 @@ def exec_paint(ins):
             if bval:
                 border = vartypes.pass_int_unpack(bval)
             if util.skip_white_read_if(ins, (',',)):
-                background_pattern = vartypes.pass_string_unpack(expressions.parse_expression(ins), err=error.IFC)
+                with state.basic_state.strings:
+                    background_pattern = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins), err=error.IFC))
                 # only in screen 7,8,9 is this an error (use ega memory as a check)
                 if (pattern and background_pattern[:len(pattern)] == pattern and
                         state.console_state.screen.mode.mem_start == 0xa000):
@@ -1258,7 +1285,7 @@ def exec_get_graph(ins):
     util.require_read(ins, (tk.O_MINUS,))
     coord1 = parse_coord_step(ins)
     util.require_read(ins, (',',))
-    array = util.get_var_name(ins)
+    array = util.parse_scalar(ins)
     util.require(ins, tk.end_statement)
     if array not in state.basic_state.arrays:
         raise error.RunError(error.IFC)
@@ -1274,7 +1301,7 @@ def exec_put_graph(ins):
     util.require(ins, ('('))
     coord = parse_coord_step(ins)
     util.require_read(ins, (',',))
-    array = util.get_var_name(ins)
+    array = util.parse_scalar(ins)
     action = tk.XOR
     if util.skip_white_read_if(ins, (',',)):
         util.require(ins, (tk.PSET, tk.PRESET,
@@ -1292,7 +1319,8 @@ def exec_draw(ins):
     """ DRAW: draw a figure defined by a Graphics Macro Language string. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(error.IFC)
-    gml = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        gml = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     util.require(ins, tk.end_statement)
     state.console_state.screen.drawing.draw(gml)
 
@@ -1334,7 +1362,7 @@ def exec_cont(ins):
 def exec_for(ins):
     """ FOR: enter for-loop. """
     # read variable
-    varname = util.get_var_name(ins)
+    varname = util.parse_scalar(ins)
     vartype = varname[-1]
     if vartype == '$':
         raise error.RunError(error.TYPE_MISMATCH)
@@ -1396,7 +1424,7 @@ def find_next(ins, varname):
     # get position and line number just after the NEXT
     nextpos = ins.tell()
     # check var name for NEXT
-    varname2 = util.get_var_name(ins, allow_empty=True)
+    varname2 = util.parse_scalar(ins, allow_empty=True)
     # no-var only allowed in standalone NEXT
     if varname2 == '':
         util.require(ins, tk.end_statement)
@@ -1432,7 +1460,8 @@ def exec_run(ins):
         # parse line number, ignore rest of line and jump
         jumpnum = util.parse_jumpnum(ins)
     elif c not in tk.end_statement:
-        name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        with state.basic_state.strings:
+            name = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
         util.require(ins, tk.end_statement)
         with devices.open_file(0, name, filetype='ABP', mode='I') as f:
             program.load(f)
@@ -1612,7 +1641,7 @@ def parse_var_list(ins):
     """ Helper function: parse variable list.  """
     readvar = []
     while True:
-        readvar.append(list(expressions.parse_name(ins)))
+        readvar.append(list(expressions.parse_variable(ins)))
         if not util.skip_white_read_if(ins, (',',)):
             break
     return readvar
@@ -1665,7 +1694,7 @@ def exec_common(ins):
     """ COMMON: define variables to be preserved on CHAIN. """
     varlist, arraylist = [], []
     while True:
-        name = util.get_var_name(ins)
+        name = util.parse_scalar(ins)
         # array?
         if util.skip_white_read_if(ins, ('[', '(')):
             util.require_read(ins, (']', ')'))
@@ -1685,7 +1714,7 @@ def exec_data(ins):
 def exec_dim(ins):
     """ DIM: dimension arrays. """
     while True:
-        name, dimensions = expressions.parse_name(ins)
+        name, dimensions = expressions.parse_variable(ins)
         if not dimensions:
             dimensions = [10]
         var.dim_array(name, dimensions)
@@ -1722,20 +1751,20 @@ exec_defdbl = partial(exec_deftype, typechar='#')
 def exec_erase(ins):
     """ ERASE: erase an array. """
     while True:
-        var.erase_array(util.get_var_name(ins))
+        var.erase_array(util.parse_scalar(ins))
         if not util.skip_white_read_if(ins, (',',)):
             break
     util.require(ins, tk.end_statement)
 
 def exec_let(ins):
     """ LET: assign value to variable or array. """
-    name, indices = expressions.parse_name(ins)
+    name, indices = expressions.parse_variable(ins)
     if indices != []:
         # pre-dim even if this is not a legal statement!
         # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out fo range afterwards
         var.check_dim_array(name, indices)
     util.require_read(ins, (tk.O_EQ,))
-    var.set_var_or_array(name, indices, expressions.parse_expression(ins))
+    var.set_variable(name, indices, expressions.parse_expression(ins))
     util.require(ins, tk.end_statement)
 
 def exec_mid(ins):
@@ -1743,32 +1772,58 @@ def exec_mid(ins):
     # do not use require_read as we don't allow whitespace here
     if ins.read(1) != '(':
         raise error.RunError(error.STX)
-    name, indices = expressions.parse_name(ins)
+    name, indices = expressions.parse_variable(ins)
     if indices != []:
         # pre-dim even if this is not a legal statement!
         var.check_dim_array(name, indices)
     util.require_read(ins, (',',))
-    start, num = expressions.parse_int_list(ins, size=2, size_err=error.STX)
-    if start is None:
-        raise error.RunError(error.STX)
-    if num is None:
-        num = 255
+    start = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    num = 255
+    if util.skip_white_read_if(ins, (',',)):
+        num = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require_read(ins, (')',))
-    s = vartypes.pass_string_unpack(var.get_var_or_array(name, indices))
+    with state.basic_state.strings:
+        s = var.copy_str(vartypes.pass_string(var.get_variable(name, indices)))
     util.range_check(0, 255, num)
     if num > 0:
         util.range_check(1, len(s), start)
     util.require_read(ins, (tk.O_EQ,))
-    val = vartypes.pass_string(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        val = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     util.require(ins, tk.end_statement)
-    var.string_assign_into(name, indices, start - 1, num, val)
+    # we need to decrement basic offset by 1 to get python offset
+    offset = start-1
+    # don't overwrite more of the old string than the length of the new string
+    num = min(num, len(val))
+    basic_str = var.get_variable(name, indices)
+    # ensure the length of source string matches target
+    length = vartypes.string_length(basic_str)
+    if offset + num > length:
+        num = length - offset
+    if num <= 0:
+        return
+    # cut new string to size if too long
+    val = val[:num]
+    # copy new value into existing buffer if possible
+    var.set_variable(name, indices, var.set_str(basic_str, val, offset, num))
 
 def exec_lset(ins, justify_right=False):
     """ LSET: assign string value in-place; left justified. """
-    name, index = expressions.parse_name(ins)
+    name, index = expressions.parse_variable(ins)
+    v = vartypes.pass_string(var.get_variable(name, index))
     util.require_read(ins, (tk.O_EQ,))
-    val = expressions.parse_expression(ins)
-    var.assign_field_var_or_array(name, index, val, justify_right)
+    with state.basic_state.strings:
+        s = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
+    # v is empty string if variable does not exist
+    # trim and pad to size of target buffer
+    length = vartypes.string_length(v)
+    s = s[:length]
+    if justify_right:
+        s = ' '*(length-len(s)) + s
+    else:
+        s += ' '*(length-len(s))
+    # copy new value into existing buffer if possible
+    var.set_variable(name, index, var.set_str(v, s))
 
 def exec_rset(ins):
     """ RSET: assign string value in-place; right justified. """
@@ -1792,16 +1847,22 @@ def exec_option(ins):
 def exec_read(ins):
     """ READ: read values from DATA statement. """
     # reading loop
-    for v in parse_var_list(ins):
-        # syntax error in DATA line (not type mismatch!) if can't convert to var type
-        entry = vartypes.str_to_string(flow.read_entry())
-        if v[0][-1] != '$':
-            entry = representation.string_to_number(entry, allow_nonnum=False)
-        if entry is None:
-            # set pointer for EDIT gadget to position in DATA statement
-            state.basic_state.bytecode.seek(state.basic_state.data_pos)
-            raise error.RunError(error.STX, state.basic_state.data_pos-1)
-        var.set_var_or_array(*v, value=entry)
+    for name, indices in parse_var_list(ins):
+        entry = flow.read_entry()
+        if name[-1] == '$':
+            if ins == state.basic_state.bytecode:
+                address = state.basic_state.data_pos + memory.code_start
+            else:
+                address = None
+            value = state.basic_state.strings.store(entry, address)
+        else:
+            value = representation.str_to_number(entry, allow_nonnum=False)
+            if value is None:
+                # set pointer for EDIT gadget to position in DATA statement
+                state.basic_state.bytecode.seek(state.basic_state.data_pos)
+                # syntax error in DATA line (not type mismatch!) if can't convert to var type
+                raise error.RunError(error.STX, state.basic_state.data_pos-1)
+        var.set_variable(name, indices, value=value)
     util.require(ins, tk.end_statement)
 
 def parse_prompt(ins, question_mark):
@@ -1831,7 +1892,7 @@ def exec_input(ins):
     if finp is not None:
         for v in parse_var_list(ins):
             value, _ = finp.read_var(v)
-            var.set_var_or_array(v[0], v[1], value)
+            var.set_variable(v[0], v[1], value)
     else:
         # ; to avoid echoing newline
         newline = not util.skip_white_read_if(ins, (';',))
@@ -1845,7 +1906,7 @@ def exec_input(ins):
         varlist = print_and_input.input_console(prompt, readvar, newline)
         state.basic_state.input_mode = False
         for v in varlist:
-            var.set_var_or_array(*v)
+            var.set_variable(*v)
         ins.seek(pos)
     util.require(ins, tk.end_statement)
 
@@ -1858,7 +1919,7 @@ def exec_line_input(ins):
         # get prompt
         prompt = parse_prompt(ins, '')
     # get string variable
-    readvar, indices = expressions.parse_name(ins)
+    readvar, indices = expressions.parse_variable(ins)
     if not readvar or readvar[0] == '':
         raise error.RunError(error.STX)
     elif readvar[-1] != '$':
@@ -1873,7 +1934,7 @@ def exec_line_input(ins):
         console.write(prompt)
         line = console.wait_screenline(write_endl=newline)
         state.basic_state.input_mode = False
-    var.set_var_or_array(readvar, indices, vartypes.str_to_string(line))
+    var.set_variable(readvar, indices, state.basic_state.strings.store(line))
 
 def exec_restore(ins):
     """ RESTORE: reset DATA pointer. """
@@ -1887,21 +1948,24 @@ def exec_restore(ins):
 
 def exec_swap(ins):
     """ SWAP: swap values of two variables. """
-    name1, index1 = expressions.parse_name(ins)
+    name1, index1 = expressions.parse_variable(ins)
     util.require_read(ins, (',',))
-    name2, index2 = expressions.parse_name(ins)
-    var.swap_var(name1, index1, name2, index2)
+    name2, index2 = expressions.parse_variable(ins)
+    var.swap(name1, index1, name2, index2)
     # if syntax error. the swap has happened
     util.require(ins, tk.end_statement)
 
 def exec_def_fn(ins):
     """ DEF FN: define a function. """
-    fnname = util.get_var_name(ins)
+    fnname = util.parse_scalar(ins)
+    fntype = fnname[-1]
     # read parameters
     fnvars = []
+    util.skip_white(ins)
+    pointer_loc = memory.code_start + ins.tell()
     if util.skip_white_read_if(ins, ('(',)):
         while True:
-            fnvars.append(util.get_var_name(ins))
+            fnvars.append(util.parse_scalar(ins))
             if util.skip_white(ins) in tk.end_statement + (')',):
                 break
             util.require_read(ins, (',',))
@@ -1919,6 +1983,16 @@ def exec_def_fn(ins):
         # (for no good reason, works fine)
         raise error.RunError(error.ILLEGAL_DIRECT)
     state.basic_state.functions[fnname] = [fnvars, fncode]
+    # update memory model
+    # allocate function pointer
+    pointer = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(pointer_loc))
+    pointer += '\0'*(vartypes.byte_size[fntype]-2)
+    # function name is represented with first char shifted by 128
+    var.set_scalar(chr(128+ord(fnname[0]))+fnname[1:], (fntype, bytearray(pointer)))
+    for name in fnvars:
+        # allocate but don't set variables
+        var.set_scalar(name)
+
 
 def exec_randomize(ins):
     """ RANDOMIZE: set random number generator seed. """
@@ -1932,7 +2006,7 @@ def exec_randomize(ins):
             console.write("Random number seed (-32768 to 32767)? ")
             seed = console.wait_screenline()
             # seed entered on prompt is rounded to int
-            val = representation.string_to_number(vartypes.str_to_string(seed))
+            val = representation.str_to_number(seed)
         val = vartypes.pass_integer(val)
     rnd.randomize(val)
     util.require(ins, tk.end_statement)
@@ -1976,24 +2050,33 @@ def exec_cls(ins):
 
 def exec_color(ins):
     """ COLOR: set colour attributes. """
-    fore, back, bord = expressions.parse_int_list(ins, 3, size_err=error.IFC)
     screen = state.console_state.screen
     mode = screen.mode
+    fore = expressions.parse_expression(ins, allow_empty=True)
+    if fore is None:
+        fore = (screen.attr>>7)*0x10 + (screen.attr&0xf)
+    else:
+        fore = vartypes.pass_int_unpack(fore)
+    back, bord = None, 0
+    if util.skip_white_read_if(ins, (',')):
+        back = expressions.parse_expression(ins, allow_empty=True)
+        back = None if back is None else vartypes.pass_int_unpack(back)
+        if util.skip_white_read_if(ins, (',')):
+            bord = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    if back is None:
+        # graphics mode bg is always 0; sets palette instead
+        if mode.is_text_mode:
+            back = (screen.attr>>4) & 0x7
+        else:
+            back = screen.palette.get_entry(0)
     if mode.name == '320x200x4':
-        return exec_color_mode_1(fore, back, bord)
+        exec_color_mode_1(fore, back, bord)
+        util.require(ins, tk.end_statement)
+        return
     elif mode.name in ('640x200x2', '720x348x2'):
         # screen 2; hercules: illegal fn call
         raise error.RunError(error.IFC)
-    fore_old = (screen.attr>>7)*0x10 + (screen.attr&0xf)
-    back_old = (screen.attr>>4) & 0x7
-    bord = 0 if bord is None else bord
     util.range_check(0, 255, bord)
-    fore = fore_old if fore is None else fore
-    # graphics mode bg is always 0; sets palette instead
-    if mode.is_text_mode and back is None:
-        back = back_old
-    else:
-        back = screen.palette.get_entry(0) if back is None else back
     if mode.is_text_mode:
         util.range_check(0, mode.num_attr-1, fore)
         util.range_check(0, 15, back, bord)
@@ -2017,7 +2100,7 @@ def exec_color(ins):
         if back != 0:
             raise error.RunError(error.IFC)
         screen.palette.set_entry(1, fore, check_mode=False)
-
+    util.require(ins, tk.end_statement)
 
 def exec_color_mode_1(back, pal, override):
     """ Helper function for COLOR in SCREEN 1. """
@@ -2051,7 +2134,9 @@ def exec_palette(ins):
         # can't set blinking colours separately
         mode = state.console_state.screen.mode
         num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
-        attrib, colour = expressions.parse_int_list(ins, 2, size_err=error.IFC)
+        attrib = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+        util.require_read(ins, (',',))
+        colour = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         if attrib is None or colour is None:
             raise error.RunError(error.STX)
         util.range_check(0, num_palette_entries-1, attrib)
@@ -2065,7 +2150,7 @@ def exec_palette_using(ins):
     screen = state.console_state.screen
     mode = screen.mode
     num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
-    array_name, start_indices = expressions.parse_name(ins)
+    array_name, start_indices = expressions.parse_variable(ins)
     try:
         dimensions, lst, _ = state.basic_state.arrays[array_name]
     except KeyError:
@@ -2112,7 +2197,8 @@ def exec_key_define(ins):
     keynum = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(1, 255, keynum)
     util.require_read(ins, (',',), err=error.IFC)
-    text = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        text = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     if keynum <= backend.num_fn_keys:
         # macro starting with NUL is empty macro
         if text and str(text)[0] == '\0':
@@ -2130,11 +2216,24 @@ def exec_key_define(ins):
 def exec_locate(ins):
     """ LOCATE: Set cursor position, shape and visibility."""
     cmode = state.console_state.screen.mode
-    row, col, cursor, start, stop, dummy = expressions.parse_int_list(
-                                ins, 6, size_err=error.STX, last_empty_err=None)
-    if dummy is not None:
-        # can end on a 5th comma but no stuff allowed after it
-        raise error.RunError(error.STX)
+    row = expressions.parse_expression(ins, allow_empty=True)
+    row = None if row is None else vartypes.pass_int_unpack(row)
+    col, cursor, start, stop = None, None, None, None
+    if util.skip_white_read_if(ins, (',',)):
+        col = expressions.parse_expression(ins, allow_empty=True)
+        col = None if col is None else vartypes.pass_int_unpack(col)
+        if util.skip_white_read_if(ins, (',',)):
+            cursor = expressions.parse_expression(ins, allow_empty=True)
+            cursor = None if cursor is None else vartypes.pass_int_unpack(cursor)
+            if util.skip_white_read_if(ins, (',',)):
+                start = expressions.parse_expression(ins, allow_empty=True)
+                start = None if start is None else vartypes.pass_int_unpack(start)
+                if util.skip_white_read_if(ins, (',',)):
+                    stop = expressions.parse_expression(ins, allow_empty=True)
+                    stop = None if stop is None else vartypes.pass_int_unpack(stop)
+                    if util.skip_white_read_if(ins, (',',)):
+                        # can end on a 5th comma but no stuff allowed after it
+                        pass
     row = state.console_state.row if row is None else row
     col = state.console_state.col if col is None else col
     if row == cmode.height and state.console_state.keys_visible:
@@ -2159,6 +2258,7 @@ def exec_locate(ins):
         # cursor shape only has an effect in text mode
         if cmode.is_text_mode:
             state.console_state.screen.cursor.set_shape(start, stop)
+    util.require(ins, tk.end_statement)
 
 def exec_write(ins, output=None):
     """ WRITE: Output machine-readable expressions to the screen or a file. """
@@ -2169,9 +2269,10 @@ def exec_write(ins, output=None):
     if expr:
         while True:
             if expr[0] == '$':
-                outstr += '"' + str(vartypes.string_to_str(expr)) + '"'
+                with state.basic_state.strings:
+                    outstr += '"' + var.copy_str(expr) + '"'
             else:
-                outstr += str(vartypes.string_to_str(representation.number_to_string(expr, screen=True, write=True)))
+                outstr += representation.number_to_str(expr, screen=True, write=True)
             if util.skip_white_read_if(ins, (',', ';')):
                 outstr += ','
             else:
@@ -2215,13 +2316,15 @@ def exec_print(ins, output=None):
                     output.write(' '*(pos-output.col))
         else:
             newline = True
-            expr = expressions.parse_expression(ins)
-            word = vartypes.string_to_str(representation.number_to_string(expr, screen=True))
-            # numbers always followed by a space
-            if expr[0] in ('%', '!', '#'):
-                word += ' '
+            with state.basic_state.strings:
+                expr = expressions.parse_expression(ins)
+                # numbers always followed by a space
+                if expr[0] in ('%', '!', '#'):
+                    word = representation.number_to_str(expr, screen=True) + ' '
+                else:
+                    word = var.copy_str(expr)
             # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
-            output.write(str(word))
+            output.write(word)
     if util.skip_white_read_if(ins, (tk.USING,)):
         return exec_print_using(ins, output)
     if newline:
@@ -2232,7 +2335,8 @@ def exec_print(ins, output=None):
 
 def exec_print_using(ins, output):
     """ PRINT USING: Write expressions to screen or file using a formatting string. """
-    format_expr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    with state.basic_state.strings:
+        format_expr = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
     if format_expr == '':
         raise error.RunError(error.IFC)
     util.require_read(ins, (';',))
@@ -2256,7 +2360,8 @@ def exec_print_using(ins, output):
             string_field = print_and_input.get_string_tokens(fors)
             if string_field:
                 if not data_ends:
-                    s = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+                    with state.basic_state.strings:
+                        s = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
                     if string_field == '&':
                         output.write(s)
                     else:
@@ -2310,7 +2415,8 @@ def exec_width(ins):
         else:
             expr = expressions.parse_expression(ins)
         if expr[0] == '$':
-            devname = str(vartypes.pass_string_unpack(expr)).upper()
+            with state.basic_state.strings:
+                devname = var.copy_str(vartypes.pass_string(expr)).upper()
             try:
                 dev = state.io_state.devices[devname].device_file
             except (KeyError, AttributeError):
@@ -2336,13 +2442,22 @@ def exec_width(ins):
 
 def exec_screen(ins):
     """ SCREEN: change video mode or page. """
-    if pcjr_syntax:
-        mode, color, apagenum, vpagenum, erase = expressions.parse_int_list(ins, 5)
-    else:
-        # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
-        # this raises error before:
-        mode, color, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
-        erase = 1
+    # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
+    # this raises error before
+    mode = expressions.parse_expression(ins, allow_empty=True)
+    mode = None if mode is None else vartypes.pass_int_unpack(mode)
+    color, apagenum, vpagenum, erase = None, None, None, 1
+    if util.skip_white_read_if(ins, (',',)):
+        color = expressions.parse_expression(ins, allow_empty=True)
+        color = None if color is None else vartypes.pass_int_unpack(color)
+        if util.skip_white_read_if(ins, (',',)):
+            apagenum = expressions.parse_expression(ins, allow_empty=True)
+            apagenum = None if apagenum is None else vartypes.pass_int_unpack(apagenum)
+            if util.skip_white_read_if(ins, (',',)):
+                vpagenum = expressions.parse_expression(ins, allow_empty=pcjr_syntax)
+                vpagenum = None if vpagenum is None else vartypes.pass_int_unpack(vpagenum)
+                if pcjr_syntax and util.skip_white_read_if(ins, (',',)):
+                    erase = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     # if any parameter not in [0,255], error 5 without doing anything
     # if the parameters are outside narrow ranges
     # (e.g. not implemented screen mode, pagenum beyond max)

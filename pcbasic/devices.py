@@ -14,6 +14,7 @@ import error
 import console
 import state
 import memory
+import var
 # unused import, needed to initialise state.console_state.screen
 import display
 
@@ -468,9 +469,10 @@ class TextFileBase(RawFile):
                 c = self.read(1)
         # file position is at one past the separator char
         # convert result to requested type, be strict about non-numeric chars
-        value = vartypes.str_to_string(word)
-        if typechar != '$':
-            value = representation.string_to_number(value, allow_nonnum=False)
+        if typechar == '$':
+            value = state.basic_state.strings.store(word)
+        else:
+            value = representation.str_to_number(word, allow_nonnum=False)
         return value, c
 
 class CRLFTextFileBase(TextFileBase):
@@ -524,6 +526,21 @@ class Field(object):
         else:
             self.address = -1
         self.buffer = bytearray()
+
+    def attach_var(self, name, indices, offset, length):
+        """ Attach a FIELD variable. """
+        if name[-1] != '$':
+            # type mismatch
+            raise error.RunError(error.TYPE_MISMATCH)
+        if offset + length > len(self.buffer):
+            # FIELD overflow
+            raise error.RunError(error.FIELD_OVERFLOW)
+        # create a string pointer
+        str_addr = self.address + offset
+        str_sequence = chr(length) + vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(str_addr))
+        # assign the string ptr to the variable name
+        # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
+        var.set_variable(name, indices, vartypes.bytes_to_string(str_sequence))
 
     def reset(self, reclen):
         """ Initialise FIELD buffer to reclen NULs. """
@@ -653,9 +670,10 @@ class KYBDFile(TextFileBase):
             parsing_trail = parsing_trail or (typechar != '$' and c == ' ')
         # file position is at one past the separator char
         # convert result to requested type, be strict about non-numeric chars
-        value = vartypes.str_to_string(word)
-        if typechar != '$':
-            value = representation.string_to_number(value, allow_nonnum=False)
+        if typechar == '$':
+            value = state.basic_state.strings.store(word)
+        else:
+            value = representation.str_to_number(word, allow_nonnum=False)
         return value, c
 
 

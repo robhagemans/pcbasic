@@ -10,6 +10,7 @@ import string
 
 import error
 import vartypes
+import operators
 import representation
 import util
 import var
@@ -24,15 +25,22 @@ def get_value_for_varptrstr(varptrstr):
         raise error.RunError(error.IFC)
     varptrstr = bytearray(varptrstr)
     varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
-    found_name = ''
-    for name in state.basic_state.var_memory:
-        _, var_ptr = state.basic_state.var_memory[name]
-        if var_ptr == varptr:
+    for name, data in state.basic_state.var_memory.iteritems():
+        if data[1] == varptr:
+            return var.get_scalar(name)
+    # no scalar found, try arrays
+    found_addr = -1
+    found_name = None
+    for name, data in state.basic_state.array_memory.iteritems():
+        addr = state.basic_state.var_current + data[1]
+        if addr > found_addr and addr <= varptr:
+            found_addr = addr
             found_name = name
-            break
-    if found_name == '':
+    if found_name is None:
         raise error.RunError(error.IFC)
-    return var.get_var(found_name)
+    _, lst, _ = state.basic_state.arrays[name]
+    offset = varptr - found_addr
+    return (name[-1], lst[offset:offset+var.var_size_bytes(name)])
 
 def ml_parse_value(gmls, default=None):
     """ Parse a value in a macro-language string. """
@@ -49,9 +57,9 @@ def ml_parse_value(gmls, default=None):
         if len(c) == 0:
             raise error.RunError(error.IFC)
         elif ord(c) > 8:
-            name = util.get_var_name(gmls)
+            name = util.parse_scalar(gmls)
             indices = ml_parse_indices(gmls)
-            step = var.get_var_or_array(name, indices)
+            step = var.get_variable(name, indices)
             util.require_read(gmls, (';',), err=error.IFC)
         else:
             # varptr$
@@ -63,7 +71,7 @@ def ml_parse_value(gmls, default=None):
     else:
         raise error.RunError(error.IFC)
     if sgn == -1:
-        step = vartypes.number_neg(step)
+        step = operators.number_neg(step)
     return step
 
 def ml_parse_number(gmls, default=None):
@@ -79,7 +87,7 @@ def ml_parse_const(gmls):
             gmls.read(1)
             numstr += c
             c = util.skip(gmls, ml_whitepace)
-        return representation.string_to_number(vartypes.str_to_string(numstr))
+        return vartypes.int_to_integer_signed(int(numstr))
     else:
         raise error.RunError(error.IFC)
 
@@ -93,14 +101,15 @@ def ml_parse_string(gmls):
     if len(c) == 0:
         raise error.RunError(error.IFC)
     elif ord(c) > 8:
-        name = util.get_var_name(gmls, err=error.IFC)
+        name = util.parse_scalar(gmls, err=error.IFC)
         indices = ml_parse_indices(gmls)
-        sub = var.get_var_or_array(name, indices)
+        sub = var.get_variable(name, indices)
         util.require_read(gmls, (';',), err=error.IFC)
-        return vartypes.pass_string_unpack(sub, err=error.IFC)
+        return var.copy_str(vartypes.pass_string(sub, err=error.IFC))
     else:
         # varptr$
-        return vartypes.pass_string_unpack(get_value_for_varptrstr(gmls.read(3)))
+        return var.copy_str(
+                vartypes.pass_string(get_value_for_varptrstr(gmls.read(3))))
 
 def ml_parse_indices(gmls):
     """ Parse constant array indices. """

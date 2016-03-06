@@ -13,6 +13,7 @@ except ImportError:
 from functools import partial
 import logging
 import string
+from collections import deque
 
 import config
 import fp
@@ -30,8 +31,8 @@ import state
 import machine
 import timedate
 import basictoken as tk
-from collections import deque
-
+import memory
+import operators as op
 
 # enable pcjr/tandy syntax extensions
 is_pcjr_syntax = False
@@ -67,34 +68,34 @@ combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
 
 # unary operators
 unary = {
-    tk.O_MINUS: vartypes.number_neg,
+    tk.O_MINUS: op.number_neg,
     tk.O_PLUS: lambda x: x,
-    tk.NOT: vartypes.number_not,
+    tk.NOT: op.number_not,
 }
 
 # binary operators
 binary = {
-    tk.O_CARET: vartypes.number_power,
-    tk.O_TIMES: vartypes.number_multiply,
-    tk.O_DIV: vartypes.number_divide,
-    tk.O_INTDIV: vartypes.number_intdiv,
-    tk.MOD: vartypes.number_modulo,
-    tk.O_PLUS: vartypes.plus,
-    tk.O_MINUS: vartypes.number_subtract,
-    tk.O_GT: vartypes.gt,
-    tk.O_EQ: vartypes.equals,
-    tk.O_LT: vartypes.lt,
-    tk.O_GT + tk.O_EQ: vartypes.gte,
-    tk.O_EQ + tk.O_GT: vartypes.gte,
-    tk.O_LT + tk.O_EQ: vartypes.lte,
-    tk.O_EQ + tk.O_LT: vartypes.lte,
-    tk.O_LT + tk.O_GT: vartypes.not_equals,
-    tk.O_GT + tk.O_LT: vartypes.not_equals,
-    tk.AND: vartypes.number_and,
-    tk.OR: vartypes.number_or,
-    tk.XOR: vartypes.number_xor,
-    tk.EQV: vartypes.number_eqv,
-    tk.IMP: vartypes.number_imp,
+    tk.O_CARET: op.number_power,
+    tk.O_TIMES: op.number_multiply,
+    tk.O_DIV: op.number_divide,
+    tk.O_INTDIV: op.number_intdiv,
+    tk.MOD: op.number_modulo,
+    tk.O_PLUS: op.plus,
+    tk.O_MINUS: op.number_subtract,
+    tk.O_GT: op.gt,
+    tk.O_EQ: op.equals,
+    tk.O_LT: op.lt,
+    tk.O_GT + tk.O_EQ: op.gte,
+    tk.O_EQ + tk.O_GT: op.gte,
+    tk.O_LT + tk.O_EQ: op.lte,
+    tk.O_EQ + tk.O_LT: op.lte,
+    tk.O_LT + tk.O_GT: op.not_equals,
+    tk.O_GT + tk.O_LT: op.not_equals,
+    tk.AND: op.number_and,
+    tk.OR: op.number_or,
+    tk.XOR: op.number_xor,
+    tk.EQV: op.number_eqv,
+    tk.IMP: op.number_imp,
 }
 
 def prepare():
@@ -110,8 +111,8 @@ def parse_expression(ins, allow_empty=False):
     stack = deque()
     units = deque()
     d = ''
-    # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
     missing_error = error.MISSING_OPERAND
+    # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
     while True:
         last = d
         d = util.skip_white(ins)
@@ -148,8 +149,8 @@ def parse_expression(ins, allow_empty=False):
             units.append(parse_bracket(ins))
         elif d and d in string.ascii_letters:
             # variable name
-            name, indices = parse_name(ins)
-            units.append(var.get_var_or_array(name, indices))
+            name, indices = parse_variable(ins)
+            units.append(var.get_variable(name, indices))
         elif d in functions:
             # apply functions
             ins.read(1)
@@ -197,6 +198,10 @@ def parse_literal(ins):
     # string literal
     if d == '"':
         ins.read(1)
+        if ins == state.basic_state.bytecode:
+            address = ins.tell() + memory.code_start
+        else:
+            address = None
         output = bytearray()
         # while tokenised numbers inside a string literal will be printed as tokenised numbers, they don't actually execute as such:
         # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a
@@ -207,7 +212,8 @@ def parse_literal(ins):
             d = ins.read(1)
         if d == '\0':
             ins.seek(-1, 1)
-        return vartypes.str_to_string(output)
+        # store for easy retrieval, but don't reserve space in string memory
+        return state.basic_state.strings.store(output, address)
     # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
     # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
     elif d in string.digits:
@@ -224,6 +230,20 @@ def parse_literal(ins):
     else:
         error.RunError(error.STX)
 
+def parse_variable(ins):
+    """ Helper function: parse a variable or array element. """
+    name = util.parse_scalar(ins)
+    indices = []
+    if util.skip_white_read_if(ins, ('[', '(')):
+        # it's an array, read indices
+        while True:
+            indices.append(vartypes.pass_int_unpack(parse_expression(ins)))
+            if not util.skip_white_read_if(ins, (',',)):
+                break
+        util.require_read(ins, (']', ')'))
+    return name, indices
+
+
 ######################################################################
 # expression parsing utility functions
 
@@ -234,27 +254,6 @@ def parse_bracket(ins):
     val = parse_expression(ins)
     util.require_read(ins, (')',))
     return val
-
-def parse_int_list(ins, size, size_err=error.IFC, last_empty_err=error.MISSING_OPERAND):
-    """ Helper function: parse a list of integers. """
-    exprlist = parse_expr_list(ins, size, size_err, last_empty_err)
-    return [(None if expr is None else vartypes.pass_int_unpack(expr)) for expr in exprlist]
-
-def parse_expr_list(ins, size, size_err=error.IFC, last_empty_err=error.MISSING_OPERAND):
-    """ Helper function : parse a list of expressions. """
-    output = []
-    while True:
-        output.append(parse_expression(ins, allow_empty=True))
-        if not util.skip_white_read_if(ins, (',',)):
-            break
-    if len(output) > size:
-        raise error.RunError(size_err)
-    # end on a comma: Missing Operand
-    if last_empty_err and len(output) > 1 and output[-1] is None:
-        raise error.RunError(last_empty_err)
-    while len(output) < size:
-        output.append(None)
-    return output
 
 def parse_file_number(ins, file_mode='IOAR'):
     """ Helper function: parse a file number and retrieve the file object. """
@@ -273,54 +272,42 @@ def parse_file_number_opthash(ins):
     util.range_check(0, 255, number)
     return number
 
-def parse_name(ins):
-    """ Helper function: parse a variable or array name. """
-    name = util.get_var_name(ins)
-    indices = []
-    if util.skip_white_read_if(ins, ('[', '(')):
-        # it's an array, read indices
-        while True:
-            indices.append(vartypes.pass_int_unpack(parse_expression(ins)))
-            if not util.skip_white_read_if(ins, (',',)):
-                break
-        util.require_read(ins, (']', ')'))
-    return name, indices
 
 ######################################################################
 # conversion
 
 def value_cvi(ins):
     """ CVI: return the int value of a byte representation. """
-    cstr =  vartypes.pass_string_unpack(parse_bracket(ins))
+    cstr = var.copy_str(vartypes.pass_string(parse_bracket(ins)))
     if len(cstr) < 2:
         raise error.RunError(error.IFC)
     return vartypes.bytes_to_integer(cstr[:2])
 
 def value_cvs(ins):
     """ CVS: return the single-precision value of a byte representation. """
-    cstr =  vartypes.pass_string_unpack(parse_bracket(ins))
+    cstr = var.copy_str(vartypes.pass_string(parse_bracket(ins)))
     if len(cstr) < 4:
         raise error.RunError(error.IFC)
-    return ('!', cstr[:4])
+    return ('!', bytearray(cstr[:4]))
 
 def value_cvd(ins):
     """ CVD: return the double-precision value of a byte representation. """
-    cstr =  vartypes.pass_string_unpack(parse_bracket(ins))
+    cstr = var.copy_str(vartypes.pass_string(parse_bracket(ins)))
     if len(cstr) < 8:
         raise error.RunError(error.IFC)
-    return ('#', cstr[:8])
+    return ('#', bytearray(cstr[:8]))
 
 def value_mki(ins):
     """ MKI$: return the byte representation of an int. """
-    return vartypes.str_to_string(vartypes.integer_to_bytes(vartypes.pass_integer(parse_bracket(ins))))
+    return state.basic_state.strings.store(vartypes.integer_to_bytes(vartypes.pass_integer(parse_bracket(ins))))
 
 def value_mks(ins):
     """ MKS$: return the byte representation of a single. """
-    return vartypes.str_to_string(vartypes.pass_single(parse_bracket(ins))[1])
+    return state.basic_state.strings.store(vartypes.pass_single(parse_bracket(ins))[1])
 
 def value_mkd(ins):
     """ MKD$: return the byte representation of a double. """
-    return vartypes.str_to_string(vartypes.pass_double(parse_bracket(ins))[1])
+    return state.basic_state.strings.store(vartypes.pass_double(parse_bracket(ins))[1])
 
 def value_cint(ins):
     """ CINT: convert a number to integer. """
@@ -337,30 +324,29 @@ def value_cdbl(ins):
 def value_str(ins):
     """ STR$: string representation of a number. """
     s = vartypes.pass_number(parse_bracket(ins))
-    return representation.number_to_string(s, screen=True)
+    return state.basic_state.strings.store(representation.number_to_str(s, screen=True))
 
 def value_val(ins):
     """ VAL: number value of a string. """
-    val = representation.string_to_number(parse_bracket(ins))
-    return val if val else vartypes.null('%')
+    return representation.str_to_number(var.copy_str(vartypes.pass_string(parse_bracket(ins))))
 
 def value_chr(ins):
     """ CHR$: character for ASCII value. """
     val = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 255, val)
-    return vartypes.str_to_string(chr(val))
+    return state.basic_state.strings.store(chr(val))
 
 def value_oct(ins):
     """ OCT$: octal representation of int. """
     # allow range -32768 to 65535
     val = vartypes.pass_integer(parse_bracket(ins), 0xffff)
-    return representation.integer_to_string_oct(val)
+    return state.basic_state.strings.store(representation.integer_to_str_oct(val))
 
 def value_hex(ins):
     """ HEX$: hexadecimal representation of int. """
     # allow range -32768 to 65535
     val = vartypes.pass_integer(parse_bracket(ins), 0xffff)
-    return representation.integer_to_string_hex(val)
+    return state.basic_state.strings.store(representation.integer_to_str_hex(val))
 
 
 ######################################################################
@@ -368,14 +354,15 @@ def value_hex(ins):
 
 def value_len(ins):
     """ LEN: length of string. """
-    return vartypes.int_to_integer_signed(len(vartypes.pass_string_unpack(parse_bracket(ins))))
+    return vartypes.int_to_integer_signed(
+                vartypes.string_length(vartypes.pass_string(parse_bracket(ins))))
 
 def value_asc(ins):
     """ ASC: ordinal ASCII value of a character. """
-    s = vartypes.pass_string_unpack(parse_bracket(ins))
+    s = var.copy_str(vartypes.pass_string(parse_bracket(ins)))
     if not s:
         raise error.RunError(error.IFC)
-    return vartypes.int_to_integer_signed(s[0])
+    return vartypes.int_to_integer_signed(ord(s[0]))
 
 def value_instr(ins):
     """ INSTR: find substring in string. """
@@ -393,12 +380,19 @@ def value_instr(ins):
     util.require_read(ins, (',',))
     small = vartypes.pass_string(parse_expression(ins, allow_empty=True))
     util.require_read(ins, (')',))
-    return vartypes.string_instr(big, small, n)
+    big, small = var.copy_str(big), var.copy_str(small)
+    if big == '' or n > len(big):
+        return vartypes.null('%')
+    # BASIC counts string positions from 1
+    find = big[n-1:].find(small)
+    if find == -1:
+        return vartypes.null('%')
+    return vartypes.int_to_integer_signed(n + find)
 
 def value_mid(ins):
     """ MID$: get substring. """
     util.require_read(ins, ('(',))
-    s = vartypes.pass_string_unpack(parse_expression(ins))
+    s = var.copy_str(vartypes.pass_string(parse_expression(ins)))
     util.require_read(ins, (',',))
     start = vartypes.pass_int_unpack(parse_expression(ins))
     if util.skip_white_read_if(ins, (',',)):
@@ -413,12 +407,12 @@ def value_mid(ins):
     start -= 1
     stop = start + num
     stop = min(stop, len(s))
-    return vartypes.str_to_string(s[start:stop])
+    return state.basic_state.strings.store(s[start:stop])
 
 def value_left(ins):
     """ LEFT$: get substring at the start of string. """
     util.require_read(ins, ('(',))
-    s = vartypes.pass_string_unpack(parse_expression(ins))
+    s = var.copy_str(vartypes.pass_string(parse_expression(ins)))
     util.require_read(ins, (',',))
     stop = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, (')',))
@@ -426,12 +420,12 @@ def value_left(ins):
     if stop == 0:
         return vartypes.null('$')
     stop = min(stop, len(s))
-    return vartypes.str_to_string(s[:stop])
+    return state.basic_state.strings.store(s[:stop])
 
 def value_right(ins):
     """ RIGHT$: get substring at the end of string. """
     util.require_read(ins, ('(',))
-    s = vartypes.pass_string_unpack(parse_expression(ins))
+    s = var.copy_str(vartypes.pass_string(parse_expression(ins)))
     util.require_read(ins, (',',))
     stop = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, (')',))
@@ -439,32 +433,30 @@ def value_right(ins):
     if stop == 0:
         return vartypes.null('$')
     stop = min(stop, len(s))
-    return vartypes.str_to_string(s[-stop:])
+    return state.basic_state.strings.store(s[-stop:])
 
 def value_string(ins):
     """ STRING$: repeat characters. """
     util.require_read(ins, ('(',))
-    exprs = parse_expr_list(ins, 2, size_err=error.STX)
-    if None in exprs:
-        raise error.RunError(error.STX)
-    n, j = exprs
-    n = vartypes.pass_int_unpack(n)
+    n = vartypes.pass_int_unpack(parse_expression(ins))
     util.range_check(0, 255, n)
+    util.require_read(ins, (',',))
+    j = parse_expression(ins)
     if j[0] == '$':
-        j = vartypes.string_to_str(j)
+        j = var.copy_str(j)
         util.range_check(1, 255, len(j))
-        j = j[0]
+        j = ord(j[0])
     else:
         j = vartypes.pass_int_unpack(j)
         util.range_check(0, 255, j)
     util.require_read(ins, (')',))
-    return vartypes.str_to_string(chr(j)*n)
+    return state.basic_state.strings.store(chr(j)*n)
 
 def value_space(ins):
     """ SPACE$: repeat spaces. """
     num = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 255, num)
-    return vartypes.str_to_string(bytearray(' '*num))
+    return state.basic_state.strings.store(' '*num)
 
 ######################################################################
 # console functions
@@ -472,11 +464,12 @@ def value_space(ins):
 def value_screen(ins):
     """ SCREEN: get char or attribute at a location. """
     util.require_read(ins, ('(',))
-    row, col, z = parse_int_list(ins, 3, size_err=error.IFC)
-    if row is None or col is None:
-        raise error.RunError(error.IFC)
-    if z is None:
-        z = 0
+    row = vartypes.pass_int_unpack(parse_expression(ins))
+    util.require_read(ins, (',',), err=error.IFC)
+    col = vartypes.pass_int_unpack(parse_expression(ins))
+    z = 0
+    if util.skip_white_read_if(ins, (',',)):
+        z = vartypes.pass_int_unpack(parse_expression(ins))
     cmode = state.console_state.screen.mode
     util.range_check(1, cmode.height, row)
     if state.console_state.view_set:
@@ -503,11 +496,11 @@ def value_input(ins):
     if len(word) < num:
         # input past end
         raise error.RunError(error.INPUT_PAST_END)
-    return vartypes.str_to_string(word)
+    return state.basic_state.strings.store(word)
 
 def value_inkey(ins):
     """ INKEY$: get a character from the keyboard. """
-    return vartypes.str_to_string(state.console_state.keyb.get_char())
+    return state.basic_state.strings.store(state.console_state.keyb.get_char())
 
 def value_csrlin(ins):
     """ CSRLIN: get the current screen row. """
@@ -577,11 +570,11 @@ def value_environ(ins):
     util.require_read(ins, ('$',))
     expr = parse_bracket(ins)
     if expr[0] == '$':
-        return vartypes.str_to_string(shell.get_env(vartypes.string_to_str(expr)))
+        return state.basic_state.strings.store(shell.get_env(var.copy_str(expr)))
     else:
         expr = vartypes.pass_int_unpack(expr)
         util.range_check(1, 255, expr)
-        return vartypes.str_to_string(shell.get_env_entry(expr))
+        return state.basic_state.strings.store(shell.get_env_entry(expr))
 
 def value_timer(ins):
     """ TIMER: get clock ticks since midnight. """
@@ -590,18 +583,18 @@ def value_timer(ins):
 
 def value_time(ins):
     """ TIME$: get current system time. """
-    return vartypes.str_to_string(timedate.get_time())
+    return state.basic_state.strings.store(timedate.get_time())
 
 def value_date(ins):
     """ DATE$: get current system date. """
-    return vartypes.str_to_string(timedate.get_date())
+    return state.basic_state.strings.store(timedate.get_date())
 
 #######################################################
 # user-defined functions
 
 def value_fn(ins):
     """ FN: get value of user-defined function. """
-    fnname = util.get_var_name(ins)
+    fnname = util.parse_scalar(ins)
     # recursion is not allowed as there's no way to terminate it
     if fnname in state.basic_state.user_function_parsing:
         raise error.RunError(error.OUT_OF_MEMORY)
@@ -618,11 +611,15 @@ def value_fn(ins):
             varsave[name] = state.basic_state.variables[name][:]
     # read variables
     if util.skip_white_read_if(ins, ('(',)):
-        exprs = parse_expr_list(ins, len(varnames), size_err=error.STX)
-        if None in exprs:
+        exprs = []
+        while True:
+            exprs.append(parse_expression(ins))
+            if not util.skip_white_read_if(ins, (',',)):
+                break
+        if len(exprs) != len(varnames):
             raise error.RunError(error.STX)
         for name, value in zip(varnames, exprs):
-            var.set_var(name, value)
+            var.set_scalar(name, value)
         util.require_read(ins, (')',))
     # execute the code
     fns = StringIO(fncode)
@@ -641,13 +638,20 @@ def value_fn(ins):
 def value_point(ins):
     """ POINT: get pixel attribute at screen location. """
     util.require_read(ins, ('(',))
-    arg0, arg1 = parse_expr_list(ins, 2, size_err=error.STX)
-    util.require_read(ins, (')',))
-    if arg0 is None:
-        raise error.RunError(error.STX)
+    arg0 = parse_expression(ins)
     screen = state.console_state.screen
-    if arg1 is None:
-        # single-argument version
+    if util.skip_white_read_if(ins, (',',)):
+        # two-argument mode
+        arg1 = parse_expression(ins)
+        util.require_read(ins, (')',))
+        if screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        return vartypes.int_to_integer_signed(screen.drawing.point(
+                        (fp.unpack(vartypes.pass_single(arg0)),
+                         fp.unpack(vartypes.pass_single(arg1)), False)))
+    else:
+        # single-argument mode
+        util.require_read(ins, (')',))
         try:
             x, y = screen.drawing.last_point
             fn = vartypes.pass_int_unpack(arg0)
@@ -663,13 +667,6 @@ def value_point(ins):
                 return fp.pack(fy)
         except AttributeError:
             return vartypes.null('%')
-    else:
-        # two-argument mode
-        if screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        return vartypes.int_to_integer_signed(screen.drawing.point(
-                        (fp.unpack(vartypes.pass_single(arg0)),
-                         fp.unpack(vartypes.pass_single(arg1)), False)))
 
 def value_pmap(ins):
     """ PMAP: convert between logical and physical coordinates. """
@@ -769,14 +766,14 @@ def value_varptr(ins):
         filenum = parse_file_number_opthash(ins)
         var_ptr = machine.varptr_file(filenum)
     else:
-        name, indices = parse_name(ins)
+        name, indices = parse_variable(ins)
         var_ptr = machine.varptr(name, indices)
     util.require_read(ins, (')',))
     if var_ptr < 0:
         raise error.RunError(error.IFC)
     var_ptr = vartypes.int_to_integer_unsigned(var_ptr)
     if dollar:
-        return vartypes.str_to_string(bytearray((var.byte_size[name[-1]],)) + vartypes.integer_to_bytes(var_ptr))
+        return state.basic_state.strings.store(chr(vartypes.byte_size[name[-1]]) + vartypes.integer_to_bytes(var_ptr))
     else:
         return var_ptr
 
@@ -841,7 +838,7 @@ def value_rnd(ins):
 
 def value_abs(ins):
     """ ABS: get absolute value. """
-    return vartypes.number_abs(vartypes.pass_number(parse_bracket(ins)))
+    return op.number_abs(vartypes.pass_number(parse_bracket(ins)))
 
 def value_int(ins):
     """ INT: get floor value. """

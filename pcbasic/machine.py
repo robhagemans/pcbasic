@@ -392,7 +392,7 @@ def set_memory_block(addr, buf):
 def get_name_in_memory(name, offset):
     """ Memory representation of variable name. """
     if offset == 0:
-        return var.byte_size[name[-1]]
+        return vartypes.byte_size[name[-1]]
     elif offset == 1:
         return ord(name[0].upper())
     elif offset == 2:
@@ -478,7 +478,7 @@ def get_data_memory_var(address):
         return -1
     if address >= var_addr:
         offset = address - var_addr
-        if offset >= var.byte_size[the_var[-1]]:
+        if offset >= vartypes.byte_size[the_var[-1]]:
             return -1
         var_rep = state.basic_state.variables[the_var]
         return var_rep[offset]
