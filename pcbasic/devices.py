@@ -371,6 +371,9 @@ class TextFileBase(RawFile):
                 # nonprinting characters including tabs are not counted for WIDTH
                 if ord(c) >= 32:
                     self.col += 1
+                    # col-1 is a byte that wraps
+                    if self.col == 257:
+                        self.col = 1
 
     def write_line(self, s=''):
         """ Write string or bytearray and follow with CR or CRLF. """

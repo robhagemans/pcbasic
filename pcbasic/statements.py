@@ -2346,7 +2346,7 @@ def exec_print(ins, output=None):
             newline = False
             if d == ',':
                 next_zone = int((output.col-1)/14)+1
-                if next_zone >= number_zones and output.width >= 14:
+                if next_zone >= number_zones and output.width >= 14 and output.width != 255:
                     output.write_line()
                 else:
                     output.write(' '*(1+14*next_zone-output.col))
