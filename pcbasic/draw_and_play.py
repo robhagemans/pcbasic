@@ -25,15 +25,22 @@ def get_value_for_varptrstr(varptrstr):
         raise error.RunError(error.IFC)
     varptrstr = bytearray(varptrstr)
     varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
-    found_name = ''
-    for name in state.basic_state.var_memory:
-        _, var_ptr = state.basic_state.var_memory[name]
-        if var_ptr == varptr:
+    for name, data in state.basic_state.var_memory.iteritems():
+        if data[1] == varptr:
+            return var.get_var(name)
+    # no scalar found, try arrays
+    found_addr = -1
+    found_name = None
+    for name, data in state.basic_state.array_memory.iteritems():
+        addr = state.basic_state.var_current + data[1]
+        if addr > found_addr and addr <= varptr:
+            found_addr = addr
             found_name = name
-            break
-    if found_name == '':
+    if found_name is None:
         raise error.RunError(error.IFC)
-    return var.get_var(found_name)
+    _, lst, _ = state.basic_state.arrays[name]
+    offset = varptr - found_addr
+    return (name[-1], lst[offset:offset+var.var_size_bytes(name)])
 
 def ml_parse_value(gmls, default=None):
     """ Parse a value in a macro-language string. """
