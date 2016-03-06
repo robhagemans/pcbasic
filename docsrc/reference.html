@@ -4687,7 +4687,8 @@
                 an integer literal, e.g. <code>DRAW "U100"</code>
             </li>
             <li>
-                a numeric variable name <code><var>var</var></code> preceded by <code>=</code> and followed by <code>;</code> e.g. <code>DRAW "U=VAR;"</code>
+                a numeric variable name or array element <code><var>var</var></code> preceded by <code>=</code> and followed by <code>;</code>.
+                For example, <code>DRAW "U=VAR;"</code> or <code>DRAW "U=A(1);"</code>
             </li>
             <li>
                 the result of <code>VARPTR$(<var>var</var>)</code> preceded by <code>=</code>.  For example, <code>DRAW "U=" + VARPTR$(VAR)</code>
@@ -8629,14 +8630,15 @@
                 an integer literal, e.g. <code>PLAY "L4G"</code>
             </li>
             <li>
-                a numeric variable name <code><var>var</var></code> preceded by <code>=</code> and followed by <code>;</code> e.g. <code>PLAY "L=VAR;G"</code>
+                a numeric variable name or array element <code><var>var</var></code> preceded by <code>=</code> and followed by <code>;</code>.
+                For example, <code>PLAY "L=VAR;G"</code> or <code>PLAY "L=A(1);G"</code>
             </li>
             <li>
                 the result of <code>VARPTR$(<var>var</var>)</code> preceded by <code>=</code>.  For example, <code>PLAY "L=" + VARPTR$(VAR) + "G"</code>
             </li>
         </ul>
         <p>
-            Note that only number <em>literals</em> may follow named notes and dereferencing variables is not allowed there.
+            Note that only number <em>literals</em> may follow named notes and dereferencing variables or arrays is not allowed there.
             It is an error to write <code>PLAY "G=VAR;"</code> or <code>PLAY "G=" + VARPTR$(VAR)</code>.
             Use <code>PLAY "G4"</code> or <code>PLAY "L=VAR;G"</code> or <code>PLAY "L=" + VARPTR$(VAR) + "G"</code> instead.
         </p>
