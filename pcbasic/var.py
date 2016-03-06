@@ -74,9 +74,14 @@ class StringSpace(object):
         """ Delete the string provided if it is at the top of string space. """
         last_address = self.current + 1
         last_key = str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(last_address)))
-        length = len(self.strings[last_key])
-        self.current += length
-        del self.strings[last_key]
+        try:
+            length = len(self.strings[last_key])
+            self.current += length
+            del self.strings[last_key]
+        except KeyError:
+            # happens if we're called before an out-of-memory exception is handled
+            # and the string wasn't allocated
+            pass
 
     def address(self, key):
         """ Return the address of a given key. """
