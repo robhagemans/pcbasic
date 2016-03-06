@@ -8478,13 +8478,13 @@
                     <th>Effect</th>
                 </tr>
                 <tr>
-                    <td><code>{<b>A</b>|<b>B</b>|<b>C</b>|<b>D</b>|<b>E</b>|<b>F</b>|<b>G</b>}[<b>#</b>|<b>+</b>|<b>-</b>][<var>n</var>]</code></td>
+                    <td><code>{<b>A</b>|<b>B</b>|<b>C</b>|<b>D</b>|<b>E</b>|<b>F</b>|<b>G</b>}[<b>#</b>|<b>+</b>|<b>-</b>][<var>m</var>]</code></td>
                     <td>
                         Play a note. <br/>
                         <code>+</code> or <code>#</code> indicates sharp. <br/>
                         <code>-</code> indicates flat. <br/>
-                        <code><var>n</var></code>
-                        indicates duration of an <code><var>n</var></code>th note.
+                        <code><var>m</var></code> is a numeric literal and
+                        indicates duration of an <code><var>m</var></code>th note.
                     </td>
                 </tr>
                 <tr>
@@ -8623,15 +8623,20 @@
         </p>
         <ul>
             <li>
-                an integer literal, e.g. <code>PLAY "G4"</code>
+                an integer literal, e.g. <code>PLAY "L4G"</code>
             </li>
             <li>
-                a numeric variable name <code><var>var</var></code> preceded by <code>=</code> and followed by <code>;</code> e.g. <code>PLAY "G=VAR;"</code>
+                a numeric variable name <code><var>var</var></code> preceded by <code>=</code> and followed by <code>;</code> e.g. <code>PLAY "L=VAR;G"</code>
             </li>
             <li>
-                the result of <code>VARPTR$(<var>var</var>)</code> preceded by <code>=</code>.  For example, <code>PLAY "G=" + VARPTR$(VAR)</code>
+                the result of <code>VARPTR$(<var>var</var>)</code> preceded by <code>=</code>.  For example, <code>PLAY "L=" + VARPTR$(VAR) + "G"</code>
             </li>
         </ul>
+        <p>
+            Note that only number <em>literals</em> may follow named notes and dereferencing variables is not allowed there.
+            It is an error to write <code>PLAY "G=VAR;"</code> or <code>PLAY "G=" + VARPTR$(VAR)</code>.
+            Use <code>PLAY "G4"</code> or <code>PLAY "L=VAR;G"</code> or <code>PLAY "L=" + VARPTR$(VAR) + "G"</code> instead.
+        </p>
         <h5>Errors</h5>
         <ul>
             <li>

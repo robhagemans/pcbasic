@@ -275,7 +275,7 @@ class Sound(object):
                                 gmls.read(1)
                                 numstr += c
                                 c = util.skip(gmls, draw_and_play.ml_whitepace)
-                            # FIXME: ml_parse_number?
+                            # NOT ml_parse_number, only literals allowed here!
                             length = int(numstr)
                             dur = 1. / float(length)
                         elif c in ('#', '+'):
