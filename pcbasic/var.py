@@ -143,7 +143,7 @@ def var_size_bytes(name):
     except KeyError:
         raise error.RunError(error.IFC)
 
-def set_var(name, value=None):
+def set_scalar(name, value=None):
     """ Assign a value to a variable. """
     name = vartypes.complete_name(name)
     type_char = name[-1]
@@ -175,8 +175,8 @@ def set_var(name, value=None):
         # copy into new buffer if not existing
         state.basic_state.variables[name] = value[1][:]
 
-def get_var(name):
-    """ Retrieve the value of a variable. """
+def get_scalar(name):
+    """ Retrieve the value of a scalar variable. """
     name = vartypes.complete_name(name)
     try:
         return (name[-1], state.basic_state.variables[name])
@@ -298,22 +298,22 @@ def set_array(name, index, value):
 ###############################################################################
 # generic variable access
 
-def get_var_or_array(name, indices):
-    """ Retrieve the value of a variable or an array element. """
+def get_variable(name, indices):
+    """ Retrieve the value of a scalar variable or an array element. """
     if indices == []:
-        return get_var(name)
+        return get_scalar(name)
     else:
         # array is allocated if retrieved and nonexistant
         return get_array(name, indices)
 
-def set_var_or_array(name, indices, value):
-    """ Assign a value to a variable or an array element. """
+def set_variable(name, indices, value):
+    """ Assign a value to a scalar variable or an array element. """
     if indices == []:
-        set_var(name, value)
+        set_scalar(name, value)
     else:
         set_array(name, indices, value)
 
-def swap_var(name1, index1, name2, index2):
+def swap(name1, index1, name2, index2):
     """ Swap two variables by reference (Strings) or value (everything else). """
     if name1[-1] != name2[-1]:
         # type mismatch
@@ -390,12 +390,12 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
         # reset string space
         new_strings = StringSpace()
         # preserve common variables
-        # use set_var and dim_array to rebuild memory model
+        # use set_scalar and dim_array to rebuild memory model
         for v in common:
             full_var = (v[-1], common[v])
             if v[-1] == '$':
                 full_var = new_strings.store(copy_str(full_var))
-            set_var(v, full_var)
+            set_scalar(v, full_var)
         for a in common_arrays:
             dim_array(a, common_arrays[a][0])
             if a[-1] == '$':

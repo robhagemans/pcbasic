@@ -27,7 +27,7 @@ def get_value_for_varptrstr(varptrstr):
     varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
     for name, data in state.basic_state.var_memory.iteritems():
         if data[1] == varptr:
-            return var.get_var(name)
+            return var.get_scalar(name)
     # no scalar found, try arrays
     found_addr = -1
     found_name = None
@@ -57,9 +57,9 @@ def ml_parse_value(gmls, default=None):
         if len(c) == 0:
             raise error.RunError(error.IFC)
         elif ord(c) > 8:
-            name = util.get_var_name(gmls)
+            name = util.parse_scalar(gmls)
             indices = ml_parse_indices(gmls)
-            step = var.get_var_or_array(name, indices)
+            step = var.get_variable(name, indices)
             util.require_read(gmls, (';',), err=error.IFC)
         else:
             # varptr$
@@ -101,9 +101,9 @@ def ml_parse_string(gmls):
     if len(c) == 0:
         raise error.RunError(error.IFC)
     elif ord(c) > 8:
-        name = util.get_var_name(gmls, err=error.IFC)
+        name = util.parse_scalar(gmls, err=error.IFC)
         indices = ml_parse_indices(gmls)
-        sub = var.get_var_or_array(name, indices)
+        sub = var.get_variable(name, indices)
         util.require_read(gmls, (';',), err=error.IFC)
         return var.copy_str(vartypes.pass_string(sub, err=error.IFC))
     else:

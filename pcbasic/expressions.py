@@ -149,8 +149,8 @@ def parse_expression(ins, allow_empty=False):
             units.append(parse_bracket(ins))
         elif d and d in string.ascii_letters:
             # variable name
-            name, indices = parse_name(ins)
-            units.append(var.get_var_or_array(name, indices))
+            name, indices = parse_variable(ins)
+            units.append(var.get_variable(name, indices))
         elif d in functions:
             # apply functions
             ins.read(1)
@@ -230,6 +230,20 @@ def parse_literal(ins):
     else:
         error.RunError(error.STX)
 
+def parse_variable(ins):
+    """ Helper function: parse a variable or array element. """
+    name = util.parse_scalar(ins)
+    indices = []
+    if util.skip_white_read_if(ins, ('[', '(')):
+        # it's an array, read indices
+        while True:
+            indices.append(vartypes.pass_int_unpack(parse_expression(ins)))
+            if not util.skip_white_read_if(ins, (',',)):
+                break
+        util.require_read(ins, (']', ')'))
+    return name, indices
+
+
 ######################################################################
 # expression parsing utility functions
 
@@ -279,18 +293,6 @@ def parse_file_number_opthash(ins):
     util.range_check(0, 255, number)
     return number
 
-def parse_name(ins):
-    """ Helper function: parse a variable or array name. """
-    name = util.get_var_name(ins)
-    indices = []
-    if util.skip_white_read_if(ins, ('[', '(')):
-        # it's an array, read indices
-        while True:
-            indices.append(vartypes.pass_int_unpack(parse_expression(ins)))
-            if not util.skip_white_read_if(ins, (',',)):
-                break
-        util.require_read(ins, (']', ')'))
-    return name, indices
 
 ######################################################################
 # conversion
@@ -614,7 +616,7 @@ def value_date(ins):
 
 def value_fn(ins):
     """ FN: get value of user-defined function. """
-    fnname = util.get_var_name(ins)
+    fnname = util.parse_scalar(ins)
     # recursion is not allowed as there's no way to terminate it
     if fnname in state.basic_state.user_function_parsing:
         raise error.RunError(error.OUT_OF_MEMORY)
@@ -635,7 +637,7 @@ def value_fn(ins):
         if None in exprs:
             raise error.RunError(error.STX)
         for name, value in zip(varnames, exprs):
-            var.set_var(name, value)
+            var.set_scalar(name, value)
         util.require_read(ins, (')',))
     # execute the code
     fns = StringIO(fncode)
@@ -782,7 +784,7 @@ def value_varptr(ins):
         filenum = parse_file_number_opthash(ins)
         var_ptr = machine.varptr_file(filenum)
     else:
-        name, indices = parse_name(ins)
+        name, indices = parse_variable(ins)
         var_ptr = machine.varptr(name, indices)
     util.require_read(ins, (')',))
     if var_ptr < 0:

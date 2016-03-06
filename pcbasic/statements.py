@@ -554,7 +554,7 @@ def exec_bsave(ins):
 
 def exec_call(ins):
     """ CALL: call an external procedure. Not implemented. """
-    addr_var = util.get_var_name(ins)
+    addr_var = util.parse_scalar(ins)
     if addr_var[-1] == '$':
         # type mismatch
         raise error.RunError(error.TYPE_MISMATCH)
@@ -1047,7 +1047,7 @@ def exec_field(ins):
             width = vartypes.pass_int_unpack(expressions.parse_expression(ins))
             util.range_check(0, 255, width)
             util.require_read(ins, ('AS',), err=error.IFC)
-            name, index = expressions.parse_name(ins)
+            name, index = expressions.parse_variable(ins)
             the_file.field.attach_var(name, index, offset, width)
             offset += width
             if not util.skip_white_read_if(ins, (',',)):
@@ -1283,7 +1283,7 @@ def exec_get_graph(ins):
     util.require_read(ins, (tk.O_MINUS,))
     coord1 = parse_coord_step(ins)
     util.require_read(ins, (',',))
-    array = util.get_var_name(ins)
+    array = util.parse_scalar(ins)
     util.require(ins, tk.end_statement)
     if array not in state.basic_state.arrays:
         raise error.RunError(error.IFC)
@@ -1299,7 +1299,7 @@ def exec_put_graph(ins):
     util.require(ins, ('('))
     coord = parse_coord_step(ins)
     util.require_read(ins, (',',))
-    array = util.get_var_name(ins)
+    array = util.parse_scalar(ins)
     action = tk.XOR
     if util.skip_white_read_if(ins, (',',)):
         util.require(ins, (tk.PSET, tk.PRESET,
@@ -1360,7 +1360,7 @@ def exec_cont(ins):
 def exec_for(ins):
     """ FOR: enter for-loop. """
     # read variable
-    varname = util.get_var_name(ins)
+    varname = util.parse_scalar(ins)
     vartype = varname[-1]
     if vartype == '$':
         raise error.RunError(error.TYPE_MISMATCH)
@@ -1422,7 +1422,7 @@ def find_next(ins, varname):
     # get position and line number just after the NEXT
     nextpos = ins.tell()
     # check var name for NEXT
-    varname2 = util.get_var_name(ins, allow_empty=True)
+    varname2 = util.parse_scalar(ins, allow_empty=True)
     # no-var only allowed in standalone NEXT
     if varname2 == '':
         util.require(ins, tk.end_statement)
@@ -1639,7 +1639,7 @@ def parse_var_list(ins):
     """ Helper function: parse variable list.  """
     readvar = []
     while True:
-        readvar.append(list(expressions.parse_name(ins)))
+        readvar.append(list(expressions.parse_variable(ins)))
         if not util.skip_white_read_if(ins, (',',)):
             break
     return readvar
@@ -1692,7 +1692,7 @@ def exec_common(ins):
     """ COMMON: define variables to be preserved on CHAIN. """
     varlist, arraylist = [], []
     while True:
-        name = util.get_var_name(ins)
+        name = util.parse_scalar(ins)
         # array?
         if util.skip_white_read_if(ins, ('[', '(')):
             util.require_read(ins, (']', ')'))
@@ -1712,7 +1712,7 @@ def exec_data(ins):
 def exec_dim(ins):
     """ DIM: dimension arrays. """
     while True:
-        name, dimensions = expressions.parse_name(ins)
+        name, dimensions = expressions.parse_variable(ins)
         if not dimensions:
             dimensions = [10]
         var.dim_array(name, dimensions)
@@ -1749,20 +1749,20 @@ exec_defdbl = partial(exec_deftype, typechar='#')
 def exec_erase(ins):
     """ ERASE: erase an array. """
     while True:
-        var.erase_array(util.get_var_name(ins))
+        var.erase_array(util.parse_scalar(ins))
         if not util.skip_white_read_if(ins, (',',)):
             break
     util.require(ins, tk.end_statement)
 
 def exec_let(ins):
     """ LET: assign value to variable or array. """
-    name, indices = expressions.parse_name(ins)
+    name, indices = expressions.parse_variable(ins)
     if indices != []:
         # pre-dim even if this is not a legal statement!
         # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out fo range afterwards
         var.check_dim_array(name, indices)
     util.require_read(ins, (tk.O_EQ,))
-    var.set_var_or_array(name, indices, expressions.parse_expression(ins))
+    var.set_variable(name, indices, expressions.parse_expression(ins))
     util.require(ins, tk.end_statement)
 
 def exec_mid(ins):
@@ -1770,7 +1770,7 @@ def exec_mid(ins):
     # do not use require_read as we don't allow whitespace here
     if ins.read(1) != '(':
         raise error.RunError(error.STX)
-    name, indices = expressions.parse_name(ins)
+    name, indices = expressions.parse_variable(ins)
     if indices != []:
         # pre-dim even if this is not a legal statement!
         var.check_dim_array(name, indices)
@@ -1782,7 +1782,7 @@ def exec_mid(ins):
         num = 255
     util.require_read(ins, (')',))
     with state.basic_state.strings:
-        s = var.copy_str(vartypes.pass_string(var.get_var_or_array(name, indices)))
+        s = var.copy_str(vartypes.pass_string(var.get_variable(name, indices)))
     util.range_check(0, 255, num)
     if num > 0:
         util.range_check(1, len(s), start)
@@ -1794,7 +1794,7 @@ def exec_mid(ins):
     offset = start-1
     # don't overwrite more of the old string than the length of the new string
     num = min(num, len(val))
-    basic_str = var.get_var_or_array(name, indices)
+    basic_str = var.get_variable(name, indices)
     # ensure the length of source string matches target
     length = vartypes.string_length(basic_str)
     if offset + num > length:
@@ -1804,12 +1804,12 @@ def exec_mid(ins):
     # cut new string to size if too long
     val = val[:num]
     # copy new value into existing buffer if possible
-    var.set_var_or_array(name, indices, var.set_str(basic_str, val, offset, num))
+    var.set_variable(name, indices, var.set_str(basic_str, val, offset, num))
 
 def exec_lset(ins, justify_right=False):
     """ LSET: assign string value in-place; left justified. """
-    name, index = expressions.parse_name(ins)
-    v = vartypes.pass_string(var.get_var_or_array(name, index))
+    name, index = expressions.parse_variable(ins)
+    v = vartypes.pass_string(var.get_variable(name, index))
     util.require_read(ins, (tk.O_EQ,))
     with state.basic_state.strings:
         s = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
@@ -1822,7 +1822,7 @@ def exec_lset(ins, justify_right=False):
     else:
         s += ' '*(length-len(s))
     # copy new value into existing buffer if possible
-    var.set_var_or_array(name, index, var.set_str(v, s))
+    var.set_variable(name, index, var.set_str(v, s))
 
 def exec_rset(ins):
     """ RSET: assign string value in-place; right justified. """
@@ -1861,7 +1861,7 @@ def exec_read(ins):
                 state.basic_state.bytecode.seek(state.basic_state.data_pos)
                 # syntax error in DATA line (not type mismatch!) if can't convert to var type
                 raise error.RunError(error.STX, state.basic_state.data_pos-1)
-        var.set_var_or_array(name, indices, value=value)
+        var.set_variable(name, indices, value=value)
     util.require(ins, tk.end_statement)
 
 def parse_prompt(ins, question_mark):
@@ -1891,7 +1891,7 @@ def exec_input(ins):
     if finp is not None:
         for v in parse_var_list(ins):
             value, _ = finp.read_var(v)
-            var.set_var_or_array(v[0], v[1], value)
+            var.set_variable(v[0], v[1], value)
     else:
         # ; to avoid echoing newline
         newline = not util.skip_white_read_if(ins, (';',))
@@ -1905,7 +1905,7 @@ def exec_input(ins):
         varlist = print_and_input.input_console(prompt, readvar, newline)
         state.basic_state.input_mode = False
         for v in varlist:
-            var.set_var_or_array(*v)
+            var.set_variable(*v)
         ins.seek(pos)
     util.require(ins, tk.end_statement)
 
@@ -1918,7 +1918,7 @@ def exec_line_input(ins):
         # get prompt
         prompt = parse_prompt(ins, '')
     # get string variable
-    readvar, indices = expressions.parse_name(ins)
+    readvar, indices = expressions.parse_variable(ins)
     if not readvar or readvar[0] == '':
         raise error.RunError(error.STX)
     elif readvar[-1] != '$':
@@ -1933,7 +1933,7 @@ def exec_line_input(ins):
         console.write(prompt)
         line = console.wait_screenline(write_endl=newline)
         state.basic_state.input_mode = False
-    var.set_var_or_array(readvar, indices, state.basic_state.strings.store(line))
+    var.set_variable(readvar, indices, state.basic_state.strings.store(line))
 
 def exec_restore(ins):
     """ RESTORE: reset DATA pointer. """
@@ -1947,16 +1947,16 @@ def exec_restore(ins):
 
 def exec_swap(ins):
     """ SWAP: swap values of two variables. """
-    name1, index1 = expressions.parse_name(ins)
+    name1, index1 = expressions.parse_variable(ins)
     util.require_read(ins, (',',))
-    name2, index2 = expressions.parse_name(ins)
-    var.swap_var(name1, index1, name2, index2)
+    name2, index2 = expressions.parse_variable(ins)
+    var.swap(name1, index1, name2, index2)
     # if syntax error. the swap has happened
     util.require(ins, tk.end_statement)
 
 def exec_def_fn(ins):
     """ DEF FN: define a function. """
-    fnname = util.get_var_name(ins)
+    fnname = util.parse_scalar(ins)
     fntype = fnname[-1]
     # read parameters
     fnvars = []
@@ -1964,7 +1964,7 @@ def exec_def_fn(ins):
     pointer_loc = memory.code_start + ins.tell()
     if util.skip_white_read_if(ins, ('(',)):
         while True:
-            fnvars.append(util.get_var_name(ins))
+            fnvars.append(util.parse_scalar(ins))
             if util.skip_white(ins) in tk.end_statement + (')',):
                 break
             util.require_read(ins, (',',))
@@ -1987,10 +1987,10 @@ def exec_def_fn(ins):
     pointer = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(pointer_loc))
     pointer += '\0'*(vartypes.byte_size[fntype]-2)
     # function name is represented with first char shifted by 128
-    var.set_var(chr(128+ord(fnname[0]))+fnname[1:], (fntype, bytearray(pointer)))
+    var.set_scalar(chr(128+ord(fnname[0]))+fnname[1:], (fntype, bytearray(pointer)))
     for name in fnvars:
         # allocate but don't set variables
-        var.set_var(name)
+        var.set_scalar(name)
 
 
 def exec_randomize(ins):
@@ -2138,7 +2138,7 @@ def exec_palette_using(ins):
     screen = state.console_state.screen
     mode = screen.mode
     num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
-    array_name, start_indices = expressions.parse_name(ins)
+    array_name, start_indices = expressions.parse_variable(ins)
     try:
         dimensions, lst, _ = state.basic_state.arrays[array_name]
     except KeyError:

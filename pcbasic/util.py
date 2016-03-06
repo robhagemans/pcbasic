@@ -132,7 +132,7 @@ def parse_jumpnum(ins, allow_empty=False, err=error.STX):
         # Syntax error
         raise error.RunError(err)
 
-def get_var_name(ins, allow_empty=False, err=error.STX):
+def parse_scalar(ins, allow_empty=False, err=error.STX):
     """ Get variable name from token stream. """
     name = ''
     d = skip_white_read(ins)
