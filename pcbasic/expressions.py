@@ -255,27 +255,6 @@ def parse_bracket(ins):
     util.require_read(ins, (')',))
     return val
 
-def parse_int_list(ins, size, size_err=error.IFC, last_empty_err=error.MISSING_OPERAND):
-    """ Helper function: parse a list of integers. """
-    exprlist = parse_expr_list(ins, size, size_err, last_empty_err)
-    return [(None if expr is None else vartypes.pass_int_unpack(expr)) for expr in exprlist]
-
-def parse_expr_list(ins, size, size_err=error.IFC, last_empty_err=error.MISSING_OPERAND):
-    """ Helper function : parse a list of expressions. """
-    output = []
-    while True:
-        output.append(parse_expression(ins, allow_empty=True))
-        if not util.skip_white_read_if(ins, (',',)):
-            break
-    if len(output) > size:
-        raise error.RunError(size_err)
-    # end on a comma: Missing Operand
-    if last_empty_err and len(output) > 1 and output[-1] is None:
-        raise error.RunError(last_empty_err)
-    while len(output) < size:
-        output.append(None)
-    return output
-
 def parse_file_number(ins, file_mode='IOAR'):
     """ Helper function: parse a file number and retrieve the file object. """
     screen = None
@@ -459,12 +438,10 @@ def value_right(ins):
 def value_string(ins):
     """ STRING$: repeat characters. """
     util.require_read(ins, ('(',))
-    exprs = parse_expr_list(ins, 2, size_err=error.STX)
-    if None in exprs:
-        raise error.RunError(error.STX)
-    n, j = exprs
-    n = vartypes.pass_int_unpack(n)
+    n = vartypes.pass_int_unpack(parse_expression(ins))
     util.range_check(0, 255, n)
+    util.require_read(ins, (',',))
+    j = parse_expression(ins)
     if j[0] == '$':
         j = var.copy_str(j)
         util.range_check(1, 255, len(j))
@@ -487,11 +464,12 @@ def value_space(ins):
 def value_screen(ins):
     """ SCREEN: get char or attribute at a location. """
     util.require_read(ins, ('(',))
-    row, col, z = parse_int_list(ins, 3, size_err=error.IFC)
-    if row is None or col is None:
-        raise error.RunError(error.IFC)
-    if z is None:
-        z = 0
+    row = vartypes.pass_int_unpack(parse_expression(ins))
+    util.require_read(ins, (',',), err=error.IFC)
+    col = vartypes.pass_int_unpack(parse_expression(ins))
+    z = 0
+    if util.skip_white_read_if(ins, (',',)):
+        z = vartypes.pass_int_unpack(parse_expression(ins))
     cmode = state.console_state.screen.mode
     util.range_check(1, cmode.height, row)
     if state.console_state.view_set:
@@ -633,8 +611,12 @@ def value_fn(ins):
             varsave[name] = state.basic_state.variables[name][:]
     # read variables
     if util.skip_white_read_if(ins, ('(',)):
-        exprs = parse_expr_list(ins, len(varnames), size_err=error.STX)
-        if None in exprs:
+        exprs = []
+        while True:
+            exprs.append(parse_expression(ins))
+            if not util.skip_white_read_if(ins, (',',)):
+                break
+        if len(exprs) != len(varnames):
             raise error.RunError(error.STX)
         for name, value in zip(varnames, exprs):
             var.set_scalar(name, value)
@@ -656,13 +638,20 @@ def value_fn(ins):
 def value_point(ins):
     """ POINT: get pixel attribute at screen location. """
     util.require_read(ins, ('(',))
-    arg0, arg1 = parse_expr_list(ins, 2, size_err=error.STX)
-    util.require_read(ins, (')',))
-    if arg0 is None:
-        raise error.RunError(error.STX)
+    arg0 = parse_expression(ins)
     screen = state.console_state.screen
-    if arg1 is None:
-        # single-argument version
+    if util.skip_white_read_if(ins, (',',)):
+        # two-argument mode
+        arg1 = parse_expression(ins)
+        util.require_read(ins, (')',))
+        if screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        return vartypes.int_to_integer_signed(screen.drawing.point(
+                        (fp.unpack(vartypes.pass_single(arg0)),
+                         fp.unpack(vartypes.pass_single(arg1)), False)))
+    else:
+        # single-argument mode
+        util.require_read(ins, (')',))
         try:
             x, y = screen.drawing.last_point
             fn = vartypes.pass_int_unpack(arg0)
@@ -678,13 +667,6 @@ def value_point(ins):
                 return fp.pack(fy)
         except AttributeError:
             return vartypes.null('%')
-    else:
-        # two-argument mode
-        if screen.mode.is_text_mode:
-            raise error.RunError(error.IFC)
-        return vartypes.int_to_integer_signed(screen.drawing.point(
-                        (fp.unpack(vartypes.pass_single(arg0)),
-                         fp.unpack(vartypes.pass_single(arg1)), False)))
 
 def value_pmap(ins):
     """ PMAP: convert between logical and physical coordinates. """

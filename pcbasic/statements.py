@@ -1185,7 +1185,9 @@ def exec_view_graph(ins):
         util.range_check(0, state.console_state.screen.mode.pixel_height-1, y0, y1)
         fill, border = None, None
         if util.skip_white_read_if(ins, (',',)):
-            fill, border = expressions.parse_int_list(ins, 2, size_err=error.STX)
+            fill = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+            util.require_read(ins, (',',))
+            border = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         state.console_state.screen.drawing.set_view(x0, y0, x1, y1, absolute, fill, border)
     else:
         state.console_state.screen.drawing.unset_view()
@@ -1775,11 +1777,10 @@ def exec_mid(ins):
         # pre-dim even if this is not a legal statement!
         var.check_dim_array(name, indices)
     util.require_read(ins, (',',))
-    start, num = expressions.parse_int_list(ins, size=2, size_err=error.STX)
-    if start is None:
-        raise error.RunError(error.STX)
-    if num is None:
-        num = 255
+    start = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    num = 255
+    if util.skip_white_read_if(ins, (',',)):
+        num = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require_read(ins, (')',))
     with state.basic_state.strings:
         s = var.copy_str(vartypes.pass_string(var.get_variable(name, indices)))
@@ -2049,24 +2050,33 @@ def exec_cls(ins):
 
 def exec_color(ins):
     """ COLOR: set colour attributes. """
-    fore, back, bord = expressions.parse_int_list(ins, 3, size_err=error.IFC)
     screen = state.console_state.screen
     mode = screen.mode
+    fore = expressions.parse_expression(ins, allow_empty=True)
+    if fore is None:
+        fore = (screen.attr>>7)*0x10 + (screen.attr&0xf)
+    else:
+        fore = vartypes.pass_int_unpack(fore)
+    back, bord = None, 0
+    if util.skip_white_read_if(ins, (',')):
+        back = expressions.parse_expression(ins, allow_empty=True)
+        back = None if back is None else vartypes.pass_int_unpack(back)
+        if util.skip_white_read_if(ins, (',')):
+            bord = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    if back is None:
+        # graphics mode bg is always 0; sets palette instead
+        if mode.is_text_mode:
+            back = (screen.attr>>4) & 0x7
+        else:
+            back = screen.palette.get_entry(0)
     if mode.name == '320x200x4':
-        return exec_color_mode_1(fore, back, bord)
+        exec_color_mode_1(fore, back, bord)
+        util.require(ins, tk.end_statement)
+        return
     elif mode.name in ('640x200x2', '720x348x2'):
         # screen 2; hercules: illegal fn call
         raise error.RunError(error.IFC)
-    fore_old = (screen.attr>>7)*0x10 + (screen.attr&0xf)
-    back_old = (screen.attr>>4) & 0x7
-    bord = 0 if bord is None else bord
     util.range_check(0, 255, bord)
-    fore = fore_old if fore is None else fore
-    # graphics mode bg is always 0; sets palette instead
-    if mode.is_text_mode and back is None:
-        back = back_old
-    else:
-        back = screen.palette.get_entry(0) if back is None else back
     if mode.is_text_mode:
         util.range_check(0, mode.num_attr-1, fore)
         util.range_check(0, 15, back, bord)
@@ -2090,7 +2100,7 @@ def exec_color(ins):
         if back != 0:
             raise error.RunError(error.IFC)
         screen.palette.set_entry(1, fore, check_mode=False)
-
+    util.require(ins, tk.end_statement)
 
 def exec_color_mode_1(back, pal, override):
     """ Helper function for COLOR in SCREEN 1. """
@@ -2124,7 +2134,9 @@ def exec_palette(ins):
         # can't set blinking colours separately
         mode = state.console_state.screen.mode
         num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
-        attrib, colour = expressions.parse_int_list(ins, 2, size_err=error.IFC)
+        attrib = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+        util.require_read(ins, (',',))
+        colour = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         if attrib is None or colour is None:
             raise error.RunError(error.STX)
         util.range_check(0, num_palette_entries-1, attrib)
@@ -2204,11 +2216,24 @@ def exec_key_define(ins):
 def exec_locate(ins):
     """ LOCATE: Set cursor position, shape and visibility."""
     cmode = state.console_state.screen.mode
-    row, col, cursor, start, stop, dummy = expressions.parse_int_list(
-                                ins, 6, size_err=error.STX, last_empty_err=None)
-    if dummy is not None:
-        # can end on a 5th comma but no stuff allowed after it
-        raise error.RunError(error.STX)
+    row = expressions.parse_expression(ins, allow_empty=True)
+    row = None if row is None else vartypes.pass_int_unpack(row)
+    col, cursor, start, stop = None, None, None, None
+    if util.skip_white_read_if(ins, (',',)):
+        col = expressions.parse_expression(ins, allow_empty=True)
+        col = None if col is None else vartypes.pass_int_unpack(col)
+        if util.skip_white_read_if(ins, (',',)):
+            cursor = expressions.parse_expression(ins, allow_empty=True)
+            cursor = None if cursor is None else vartypes.pass_int_unpack(cursor)
+            if util.skip_white_read_if(ins, (',',)):
+                start = expressions.parse_expression(ins, allow_empty=True)
+                start = None if start is None else vartypes.pass_int_unpack(start)
+                if util.skip_white_read_if(ins, (',',)):
+                    stop = expressions.parse_expression(ins, allow_empty=True)
+                    stop = None if stop is None else vartypes.pass_int_unpack(stop)
+                    if util.skip_white_read_if(ins, (',',)):
+                        # can end on a 5th comma but no stuff allowed after it
+                        pass
     row = state.console_state.row if row is None else row
     col = state.console_state.col if col is None else col
     if row == cmode.height and state.console_state.keys_visible:
@@ -2233,6 +2258,7 @@ def exec_locate(ins):
         # cursor shape only has an effect in text mode
         if cmode.is_text_mode:
             state.console_state.screen.cursor.set_shape(start, stop)
+    util.require(ins, tk.end_statement)
 
 def exec_write(ins, output=None):
     """ WRITE: Output machine-readable expressions to the screen or a file. """
@@ -2416,13 +2442,22 @@ def exec_width(ins):
 
 def exec_screen(ins):
     """ SCREEN: change video mode or page. """
-    if pcjr_syntax:
-        mode, color, apagenum, vpagenum, erase = expressions.parse_int_list(ins, 5)
-    else:
-        # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
-        # this raises error before:
-        mode, color, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
-        erase = 1
+    # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
+    # this raises error before
+    mode = expressions.parse_expression(ins, allow_empty=True)
+    mode = None if mode is None else vartypes.pass_int_unpack(mode)
+    color, apagenum, vpagenum, erase = None, None, None, 1
+    if util.skip_white_read_if(ins, (',',)):
+        color = expressions.parse_expression(ins, allow_empty=True)
+        color = None if color is None else vartypes.pass_int_unpack(color)
+        if util.skip_white_read_if(ins, (',',)):
+            apagenum = expressions.parse_expression(ins, allow_empty=True)
+            apagenum = None if apagenum is None else vartypes.pass_int_unpack(apagenum)
+            if util.skip_white_read_if(ins, (',',)):
+                vpagenum = expressions.parse_expression(ins, allow_empty=pcjr_syntax)
+                vpagenum = None if vpagenum is None else vartypes.pass_int_unpack(vpagenum)
+                if pcjr_syntax and util.skip_white_read_if(ins, (',',)):
+                    erase = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     # if any parameter not in [0,255], error 5 without doing anything
     # if the parameters are outside narrow ranges
     # (e.g. not implemented screen mode, pagenum beyond max)
