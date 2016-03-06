@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3.
 
 from string import ascii_uppercase
 from string import digits as ascii_digits
+import string
 
 try:
     from cStringIO import StringIO
@@ -142,8 +143,8 @@ def detokenise_keyword(ins, output):
             output += s[0]
             return False
     # when we're here, s is an actual keyword token.
-    # number followed by token is separated by a space
-    if (output and chr(output[-1]) in ascii_digits and s not in tk.operator):
+    # letter or number followed by token is separated by a space
+    if (output and chr(output[-1]) in (string.digits + string.ascii_letters) and s not in tk.operator):
         output += ' '
     output += keyword
     comment = False
