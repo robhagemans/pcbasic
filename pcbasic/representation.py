@@ -76,7 +76,10 @@ def hex_to_str(s):
 
 def oct_to_str(s):
     """ Convert oct token to Python string. """
-    return "&O" + oct(vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(s)))[1:]
+    value = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(s))
+    if value == 0:
+        return '&O0'
+    return "&O" + oct(value)[1:]
 
 # int to BASIC string
 
@@ -405,7 +408,9 @@ def tokenise_hex(ins, outs):
     word = ''
     while True:
         c = util.peek(ins).upper()
-        if not c or c not in ascii_hexits:
+        if c and c in ascii_whitespace:
+            ins.read(1)
+        elif not c or c not in ascii_hexits:
             break
         else:
             word += ins.read(1).upper()
@@ -420,7 +425,9 @@ def tokenise_oct(ins, outs):
     word = ''
     while True:
         c = util.peek(ins).upper()
-        if not c or c not in ascii_octits:
+        if c and c in ascii_whitespace:
+            ins.read(1)
+        elif not c or c not in ascii_octits:
             break
         else:
             word += ins.read(1).upper()
