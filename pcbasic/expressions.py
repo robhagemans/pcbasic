@@ -309,14 +309,14 @@ def value_cvs(ins):
     cstr = var.copy_str(vartypes.pass_string(parse_bracket(ins)))
     if len(cstr) < 4:
         raise error.RunError(error.IFC)
-    return ('!', cstr[:4])
+    return ('!', bytearray(cstr[:4]))
 
 def value_cvd(ins):
     """ CVD: return the double-precision value of a byte representation. """
     cstr = var.copy_str(vartypes.pass_string(parse_bracket(ins)))
     if len(cstr) < 8:
         raise error.RunError(error.IFC)
-    return ('#', cstr[:8])
+    return ('#', bytearray(cstr[:8]))
 
 def value_mki(ins):
     """ MKI$: return the byte representation of an int. """
