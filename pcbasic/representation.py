@@ -70,7 +70,7 @@ def oct_token_to_str(s):
 
 def integer_to_str_oct(inp):
     """ Convert integer to str in octal representation. """
-    if inp == 0:
+    if vartypes.integer_to_int_unsigned(inp) == 0:
         return '0'
     else:
         return oct(vartypes.integer_to_int_unsigned(inp))[1:]
@@ -396,7 +396,9 @@ def tokenise_hex(ins, outs):
     word = ''
     while True:
         c = util.peek(ins)
-        if not c or c not in string.hexdigits:
+        if c and c in number_whitespace:
+            ins.read(1)
+        elif not c or c not in string.hexdigits:
             break
         else:
             word += ins.read(1)
@@ -411,7 +413,9 @@ def tokenise_oct(ins, outs):
     word = ''
     while True:
         c = util.peek(ins)
-        if not c or c not in string.octdigits:
+        if c and c in number_whitespace:
+            ins.read(1)
+        elif not c or c not in string.octdigits:
             break
         else:
             word += ins.read(1)
