@@ -98,13 +98,13 @@ def parse_expression(ins, empty_err=error.MISSING_OPERAND):
             # unary NOT ends expression except after another operator or at start
             break
         elif d in operators:
-            ins.read(1)
+            ins.read(len(d))
             # get combined operators such as >=
             if d in combinable:
                 nxt = util.skip_white(ins)
                 if nxt in combinable:
-                    d += ins.read(1)
-            if last in operators or last == '':
+                    d += ins.read(len(nxt))
+            if last in operators or last == '' or d == tk.NOT:
                 # also if last is ( but that leads to recursive call and last == ''
                 nargs = 1
                 # zero operands for a binary operator is always syntax error
@@ -115,31 +115,29 @@ def parse_expression(ins, empty_err=error.MISSING_OPERAND):
                 nargs = 2
                 units_expected -= evaluate_stack(stack, units, operators[d], error.STX)
             stack.append((d, nargs))
-            units_expected += nargs - 1
+        elif not (last in operators or last == ''):
+            # repeated unit ends expression
+            # repeated literals or variables or non-keywords like 'AS'
+            break
+        elif d == '(':
+            units.append(parse_bracket(ins))
+        elif d and d in string.ascii_letters:
+            # variable name
+            name, indices = get_var_or_array_name(ins)
+            units.append(var.get_var_or_array(name, indices))
+        elif d in functions:
+            # apply functions
+            ins.read(len(d))
+            units.append(functions[d](ins))
+        elif d in tk.end_statement:
+            break
+        elif d in tk.end_expression or d in tk.keyword:
+            # missing operand inside brackets or before comma is syntax error
+            missing_error = error.STX
+            break
         else:
-            if len(units) >= units_expected:
-                # too many units ends expression
-                # repeated literals or variables or non-keywords like 'AS'
-                break
-            if d == '(':
-                units.append(parse_bracket(ins))
-            elif d and d in string.ascii_letters:
-                # variable name
-                name, indices = get_var_or_array_name(ins)
-                units.append(var.get_var_or_array(name, indices))
-            elif d in functions:
-                # apply functions
-                ins.read(1)
-                units.append(functions[d](ins))
-            elif d in tk.end_statement:
-                break
-            elif d in tk.end_expression or d in tk.keyword:
-                # missing operand inside brackets or before comma is syntax error
-                missing_error = error.STX
-                break
-            else:
-                # literal
-                units.append(parse_literal(ins))
+            # literal
+            units.append(parse_literal(ins))
     # empty expression is a syntax error (inside brackets)
     # or Missing Operand (in an assignment)
     # or not an error (in print and many functions)
