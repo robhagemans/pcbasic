@@ -123,12 +123,12 @@ def parse_expression(ins, allow_empty=False):
             # unary NOT ends expression except after another operator or at start
             break
         elif d in operators:
-            ins.read(1)
+            ins.read(len(d))
             # get combined operators such as >=
             if d in combinable:
                 nxt = util.skip_white(ins)
                 if nxt in combinable:
-                    d += ins.read(1)
+                    d += ins.read(len(nxt))
             if last in operators or last == '' or d == tk.NOT:
                 # also if last is ( but that leads to recursive call and last == ''
                 nargs = 1
@@ -152,7 +152,7 @@ def parse_expression(ins, allow_empty=False):
             units.append(var.get_variable(name, indices))
         elif d in functions:
             # apply functions
-            ins.read(1)
+            ins.read(len(d))
             units.append(functions[d](ins))
         elif d in tk.end_statement:
             break
