@@ -506,6 +506,9 @@ def build_default_config_file(file_name):
     argnames = sorted(arguments.keys())
     try:
         with open(file_name, 'w') as f:
+            # write a BOM at start to ensure Notepad gets that it's utf-8
+            # but don't use codecs.open as that doesn't do CRLF on Windows
+            f.write('\xEF\xBB\xBF')
             f.write(header)
             for a in argnames:
                 try:
