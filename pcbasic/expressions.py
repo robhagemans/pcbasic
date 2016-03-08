@@ -118,8 +118,7 @@ def parse_expression(ins, allow_empty=False):
         d = util.skip_white(ins)
         # two-byte function tokens
         if d in tk.twobyte:
-            ins.read(1)
-            d += util.skip_white(ins)
+            d = util.peek(ins, n=2)
         if d == tk.NOT and not (last in operators or last == ''):
             # unary NOT ends expression except after another operator or at start
             break
