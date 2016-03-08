@@ -980,7 +980,7 @@ def exec_open(ins):
             c = util.skip_white_read(ins)
             # read word
             word = ''
-            while c not in tk.whitespace:
+            while c and c not in tk.whitespace:
                 word += c
                 c = ins.read(1).upper()
             try:
