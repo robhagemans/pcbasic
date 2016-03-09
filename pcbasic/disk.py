@@ -146,9 +146,7 @@ def _mount_drives(mount_list):
         try:
             letter, path = a.split(u':', 1)
             letter = letter.encode(b'ascii', errors=b'replace').upper()
-            print repr(path)
             path = os.path.realpath(path)
-            print repr(path)
             if not os.path.isdir(path):
                 logging.warning(u'Could not mount %s', a)
             else:
@@ -450,14 +448,12 @@ def match_wildcard(name, mask):
 
 def filename_from_unicode(name):
     """ Replace disallowed characters in filename with ?. """
-    print repr(name)
     name_str = name.encode(b'ascii', b'replace')
     return b''.join(c if c in allowable_chars | set(b'.') else b'?' for c in name_str)
 
 def filter_names(path, files_list, mask=b'*.*'):
     """ Apply filename filter to short version of names. """
     all_files = [short_name(path, name.decode(b'ascii')) for name in files_list]
-    print all_files
     # apply mask separately to trunk and extension, dos-style.
     # hide dotfiles
     trunkmask, extmask = split_dosname(mask)
