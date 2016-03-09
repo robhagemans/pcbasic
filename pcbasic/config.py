@@ -14,26 +14,26 @@ import zipfile
 import codecs
 
 import plat
-if plat.system == 'Windows':
+if plat.system == b'Windows':
     import ctypes
     import ctypes.wintypes
 
 # system-wide config path
-system_config_path = os.path.join(plat.system_config_dir, 'default.ini')
+system_config_path = os.path.join(plat.system_config_dir, u'default.ini')
 
 #user and local config files
-config_name = 'PCBASIC.INI'
+config_name = u'PCBASIC.INI'
 user_config_path = os.path.join(plat.user_config_dir, config_name)
 
 # by default, load what's in section [pcbasic] and override with anything
 # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
-default_presets = ['pcbasic', plat.system.lower()]
+default_presets = [u'pcbasic', plat.system.lower().decode('ascii')]
 
 # get supported codepages
-encodings = sorted([ x[0] for x in [ c.split('.ucp')
+encodings = sorted([ x[0] for x in [ c.split(u'.ucp')
                      for c in os.listdir(plat.encoding_dir) ] if len(x)>1])
 # get supported font families
-families = sorted(list(set([ x[0] for x in [ c.split('_')
+families = sorted(list(set([ x[0] for x in [ c.split(u'_')
                   for c in os.listdir(plat.font_dir) ] if len(x)>1])))
 
 # dictionary to hold all options chosen
@@ -60,98 +60,108 @@ positional = 2
 #   /m:n,m  Set the highest memory location to n (default 65534) and maximum
 #           BASIC memory to m*16 bytes (default is all available).
 short_args = {
-    'd': 'double', 'f': 'max-files',
-    's': 'max-reclen', 'c': 'serial-buffer-size',
-    'm': 'max-memory', 'i': '',
-    'b': 'interface=cli', 't': 'interface=text', 'n': 'interface=none',
-    'l': 'load', 'h': 'help',
-    'r': 'run', 'e': 'exec', 'q': 'quit', 'k': 'keys', 'v': 'version',
-    'w': 'wait',
+    u'd': u'double',
+    u'f': u'max-files',
+    u's': u'max-reclen',
+    u'c': u'serial-buffer-size',
+    u'm': u'max-memory',
+    u'i': u'',
+    u'b': u'interface=cli',
+    u't': u'interface=text',
+    u'n': u'interface=none',
+    u'l': u'load',
+    u'h': u'help',
+    u'r': u'run',
+    u'e': u'exec',
+    u'q': u'quit',
+    u'k': u'keys',
+    u'v': u'version',
+    u'w': u'wait',
     }
 
 # all long-form arguments
 arguments = {
-    'input': {'type': 'string', 'default': '', },
-    'output': {'type': 'string', 'default': '', },
-    'append': {'type': 'bool', 'default': False, },
-    'interface': {
-        'type': 'string', 'default': '',
-        'choices': ('', 'none', 'cli', 'text', 'graphical',
-                    'ansi', 'curses', 'pygame', 'sdl2'), },
-    'load': {'type': 'string', 'default': '', },
-    'run': {'type': 'string', 'default': '',  },
-    'convert': {'type': 'string', 'default': '', },
-    'help': {'type': 'bool', 'default': False, },
-    'keys': {'type': 'string', 'default': '', },
-    'exec': {'type': 'string', 'default': '',  },
-    'quit': {'type': 'bool', 'default': False,},
-    'double': {'type': 'bool', 'default': False,},
-    'max-files': {'type': 'int', 'default': 3,},
-    'max-reclen': {'type': 'int', 'default': 128,},
-    'serial-buffer-size': {'type': 'int', 'default': 256,},
-    'peek': {'type': 'string', 'list': '*', 'default': [],},
-    'lpt1': {'type': 'string', 'default': 'PRINTER:',},
-    'lpt2': {'type': 'string', 'default': '',},
-    'lpt3': {'type': 'string', 'default': '',},
-    'cas1': {'type': 'string', 'default': '',},
-    'com1': {'type': 'string', 'default': '',},
-    'com2': {'type': 'string', 'default': '',},
-    'codepage': {'type': 'string', 'choices': encodings, 'default': '437',},
-    'font': {
-        'type': 'string', 'list': '*', 'choices': families,
-        'default': ['unifont', 'univga', 'freedos'],},
-    'nosound': {'type': 'bool', 'default': False, },
-    'dimensions': {'type': 'int', 'list': 2, 'default': None,},
-    'fullscreen': {'type': 'bool', 'default': False,},
-    'nokill': {'type': 'bool', 'default': False,},
-    'debug': {'type': 'bool', 'default': False,},
-    'strict-hidden-lines': {'type': 'bool', 'default': False,},
-    'strict-protect': {'type': 'bool', 'default': False,},
-    'capture-caps': {'type': 'bool', 'default': False,},
-    'mount': {'type': 'string', 'list': '*', 'default': [],},
-    'resume': {'type': 'bool', 'default': False,},
-    'strict-newline': {'type': 'bool', 'default': False,},
-    'syntax': {
-        'type': 'string', 'choices': ('advanced', 'pcjr', 'tandy'),
-        'default': 'advanced',},
-    'pcjr-term': {'type': 'string', 'default': '',},
-    'video': {
-        'type': 'string', 'default': 'vga',
-        'choices': ('vga', 'ega', 'cga', 'cga_old', 'mda', 'pcjr', 'tandy',
-                     'hercules', 'olivetti'), },
-    'map-drives': {'type': 'bool', 'default': False,},
-    'cga-low': {'type': 'bool', 'default': False,},
-    'nobox': {'type': 'bool', 'default': False,},
-    'utf8': {'type': 'bool', 'default': False,},
-    'border': {'type': 'int', 'default': 5,},
-    'pen': {
-        'type': 'string', 'default': 'left',
-        'choices': ('left', 'middle', 'right', 'none',), },
-    'copy-paste': {'type': 'string', 'list': 2, 'default': ['left', 'middle'],
-                   'choices': ('left', 'middle', 'right', 'none',),},
-    'state': {'type': 'string', 'default': '',},
-    'mono-tint': {'type': 'int', 'list': 3, 'default': [255, 255, 255],},
-    'monitor': {
-        'type': 'string', 'choices': ('rgb', 'composite', 'mono'),
-        'default': 'rgb',},
-    'aspect': {'type': 'int', 'list': 2, 'default': [4, 3],},
-    'scaling': {'type': 'string', 'choices':('smooth', 'native', 'crisp'), 'default': 'smooth',},
-    'version': {'type': 'bool', 'default': False,},
-    'config': {'type': 'string', 'default': '',},
-    'logfile': {'type': 'string', 'default': '',},
+    u'input': {u'type': u'string', u'default': u'', },
+    u'output': {u'type': u'string', u'default': u'', },
+    u'append': {u'type': u'bool', u'default': False, },
+    u'interface': {
+        u'type': u'string', u'default': u'',
+        u'choices': (u'', u'none', u'cli', u'text', u'graphical',
+                    u'ansi', u'curses', u'pygame', u'sdl2'), },
+    u'load': {u'type': u'string', u'default': u'', },
+    u'run': {u'type': u'string', u'default': u'',  },
+    u'convert': {u'type': u'string', u'default': u'', },
+    u'help': {u'type': u'bool', u'default': False, },
+    u'keys': {u'type': u'string', u'default': u'', },
+    u'exec': {u'type': u'string', u'default': u'',  },
+    u'quit': {u'type': u'bool', u'default': False,},
+    u'double': {u'type': u'bool', u'default': False,},
+    u'max-files': {u'type': u'int', u'default': 3,},
+    u'max-reclen': {u'type': u'int', u'default': 128,},
+    u'serial-buffer-size': {u'type': u'int', u'default': 256,},
+    u'peek': {u'type': u'string', u'list': u'*', u'default': [],},
+    u'lpt1': {u'type': u'string', u'default': u'PRINTER:',},
+    u'lpt2': {u'type': u'string', u'default': u'',},
+    u'lpt3': {u'type': u'string', u'default': u'',},
+    u'cas1': {u'type': u'string', u'default': u'',},
+    u'com1': {u'type': u'string', u'default': u'',},
+    u'com2': {u'type': u'string', u'default': u'',},
+    u'codepage': {u'type': u'string', u'choices': encodings, u'default': u'437',},
+    u'font': {
+        u'type': u'string', u'list': u'*', u'choices': families,
+        u'default': [u'unifont', u'univga', u'freedos'],},
+    u'nosound': {u'type': u'bool', u'default': False, },
+    u'dimensions': {u'type': u'int', u'list': 2, u'default': None,},
+    u'fullscreen': {u'type': u'bool', u'default': False,},
+    u'nokill': {u'type': u'bool', u'default': False,},
+    u'debug': {u'type': u'bool', u'default': False,},
+    u'strict-hidden-lines': {u'type': u'bool', u'default': False,},
+    u'strict-protect': {u'type': u'bool', u'default': False,},
+    u'capture-caps': {u'type': u'bool', u'default': False,},
+    u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
+    u'resume': {u'type': u'bool', u'default': False,},
+    u'strict-newline': {u'type': u'bool', u'default': False,},
+    u'syntax': {
+        u'type': u'string', u'choices': (u'advanced', u'pcjr', u'tandy'),
+        u'default': u'advanced',},
+    u'pcjr-term': {u'type': u'string', u'default': u'',},
+    u'video': {
+        u'type': u'string', u'default': 'vga',
+        u'choices': (u'vga', u'ega', u'cga', u'cga_old', u'mda', u'pcjr', u'tandy',
+                     u'hercules', u'olivetti'), },
+    u'map-drives': {u'type': u'bool', u'default': False,},
+    u'cga-low': {u'type': u'bool', u'default': False,},
+    u'nobox': {u'type': u'bool', u'default': False,},
+    u'utf8': {u'type': u'bool', u'default': False,},
+    u'border': {u'type': u'int', u'default': 5,},
+    u'pen': {
+        u'type': u'string', u'default': u'left',
+        u'choices': (u'left', u'middle', u'right', u'none',), },
+    u'copy-paste': {u'type': u'string', u'list': 2, u'default': [u'left', u'middle'],
+                   u'choices': (u'left', u'middle', u'right', u'none',),},
+    u'state': {u'type': u'string', u'default': u'',},
+    u'mono-tint': {u'type': u'int', u'list': 3, u'default': [255, 255, 255],},
+    u'monitor': {
+        u'type': u'string', u'choices': (u'rgb', u'composite', u'mono'),
+        u'default': u'rgb',},
+    u'aspect': {u'type': u'int', u'list': 2, u'default': [4, 3],},
+    u'scaling': {u'type': u'string', u'choices':(u'smooth', u'native', u'crisp'), u'default': u'smooth',},
+    u'version': {u'type': u'bool', u'default': False,},
+    u'config': {u'type': u'string', u'default': u'',},
+    u'logfile': {u'type': u'string', u'default': u'',},
     # negative list length means 'optionally up to'
-    'max-memory': {'type': 'int', 'list': -2, 'default': [65534, 4096]},
-    'allow-code-poke': {'type': 'bool', 'default': False,},
-    'reserved-memory': {'type': 'int', 'default': 3429,},
-    'caption': {'type': 'string', 'default': 'PC-BASIC',},
-    'text-width': {'type': 'int', 'choices':(40, 80), 'default': 80,},
-    'video-memory': {'type': 'int', 'default': 262144,},
-    'shell': {'type': 'string', 'default': 'none',},
-    'print-trigger': {'type': 'string', 'choices':('close', 'page', 'line'), 'default':'close',},
-    'altgr': {'type': 'bool', 'default': True,},
-    'ctrl-c-break': {'type': 'bool', 'default': True,},
-    'wait': {'type': 'bool', 'default': False,},
-    'current-device': {'type': 'string', 'default': 'Z'},
+    u'max-memory': {u'type': u'int', u'list': -2, u'default': [65534, 4096]},
+    u'allow-code-poke': {u'type': u'bool', u'default': False,},
+    u'reserved-memory': {u'type': u'int', u'default': 3429,},
+    u'caption': {u'type': u'string', u'default': 'PC-BASIC',},
+    u'text-width': {u'type': u'int', u'choices':(40, 80), u'default': 80,},
+    u'video-memory': {u'type': u'int', u'default': 262144,},
+    u'shell': {u'type': u'string', u'default': u'none',},
+    u'print-trigger': {u'type': u'string', u'choices':(u'close', u'page', u'line'), u'default': u'close',},
+    u'altgr': {u'type': u'bool', u'default': True,},
+    u'ctrl-c-break': {u'type': u'bool', u'default': True,},
+    u'wait': {u'type': u'bool', u'default': False,},
+    u'current-device': {u'type': u'string', u'default': 'Z'},
 }
 
 
@@ -180,7 +190,7 @@ def prepare():
 
 def get_unicode_argv():
     """ Convert command-line arguments to unicode. """
-    if plat.system == 'Windows':
+    if plat.system == b'Windows':
         # see http://code.activestate.com/recipes/572200-get-sysargv-with-unicode-characters-under-windows/
         GetCommandLineW = ctypes.cdll.kernel32.GetCommandLineW
         GetCommandLineW.argtypes = []
@@ -208,7 +218,7 @@ def retrieve_options():
     # set defaults based on presets
     args = parse_presets(remaining, preset_dict)
     # local config file settings override preset settings
-    merge_arguments(args, preset_dict['pcbasic'])
+    merge_arguments(args, preset_dict[u'pcbasic'])
     # parse rest of command line
     merge_arguments(args, parse_args(remaining))
     # clean up arguments
@@ -219,15 +229,15 @@ def get(name, get_default=True):
     """ Get value of option; choose whether to get default or None. """
     try:
         value = options[name]
-        if value is None or value == '':
+        if value is None or value == u'':
             raise KeyError
     except KeyError:
         if get_default:
             try:
-                value = arguments[name]['default']
+                value = arguments[name][u'default']
             except KeyError:
                 if name in range(positional):
-                    return ''
+                    return u''
         else:
             value = None
     return value
@@ -286,7 +296,7 @@ def parse_presets(remaining, conf_dict):
     """ Parse presets. """
     presets = default_presets
     try:
-        argdict = {'preset': remaining.pop('preset')}
+        argdict = {u'preset': remaining.pop(u'preset')}
     except KeyError:
         argdict = {}
     # apply default presets, including nested presets
@@ -297,10 +307,10 @@ def parse_presets(remaining, conf_dict):
                 merge_arguments(argdict, conf_dict[p])
             except KeyError:
                 if p not in default_presets:
-                    logger.warning('Ignored undefined preset "%s"', p)
+                    logger.warning(u'Ignored undefined preset "%s"', p)
         # look for more presets in expended arglist
         try:
-            presets = parse_list('preset', argdict.pop('preset'))
+            presets = parse_list(u'preset', argdict.pop(u'preset'))
         except KeyError:
             break
     return argdict
@@ -350,7 +360,7 @@ def parse_config(remaining):
     # find any local overriding config file & read it
     config_file = None
     try:
-        config_file = remaining.pop('config')
+        config_file = remaining.pop(u'config')
     except KeyError:
         if os.path.exists(config_name):
             config_file = config_name
@@ -363,11 +373,11 @@ def read_config_file(config_file):
     try:
         config = ConfigParser.RawConfigParser(allow_no_value=True)
         # use utf_8_sig to ignore a BOM if it's at the start of the file (e.g. created by Notepad)
-        with codecs.open(config_file, 'r', 'utf_8_sig') as f:
+        with codecs.open(config_file, b'r', b'utf_8_sig') as f:
             config.readfp(f)
     except (ConfigParser.Error, IOError):
-        logger.warning('Error in configuration file %s. '
-                        'Configuration not loaded.', config_file)
+        logger.warning(u'Error in configuration file %s. '
+                       u'Configuration not loaded.', config_file)
         return {}
     presets = { header: dict(config.items(header))
                 for header in config.sections() }
@@ -380,7 +390,7 @@ def parse_args(remaining):
     args = {d:remaining[d] for d in remaining if d in known}
     not_recognised = {d:remaining[d] for d in remaining if d not in known}
     for d in not_recognised:
-        logger.warning('Ignored unrecognised option "%s=%s"',
+        logger.warning(u'Ignored unrecognised option "%s=%s"',
                         d, not_recognised[d])
     return args
 
@@ -390,8 +400,8 @@ def merge_arguments(args0, args1):
     """ Update args0 with args1. Lists of indefinite length are appended. """
     for a in args1:
         try:
-            if (a in args0 and arguments[a]['list'] == '*' and args0[a]):
-                args0[a] += ',' + args1[a]
+            if (a in args0 and arguments[a][u'list'] == u'*' and args0[a]):
+                args0[a] += u',' + args1[a]
                 continue
         except KeyError:
             pass
@@ -402,7 +412,7 @@ def clean_arguments(args):
     """ Convert arguments to required type and list length. """
     for d in args:
         try:
-            args[d] = parse_list(d, args[d], arguments[d]['list'])
+            args[d] = parse_list(d, args[d], arguments[d][u'list'])
         except KeyError:
             # not a list
             args[d] = parse_type(d, args[d])
@@ -411,24 +421,24 @@ def parse_type(d, arg):
     """ Convert argument to required type. """
     if d not in arguments:
         return arg
-    if 'choices' in arguments[d]:
+    if u'choices' in arguments[d]:
         arg = arg.lower()
-    if 'type' in arguments[d]:
-        if (arguments[d]['type'] == 'int'):
+    if u'type' in arguments[d]:
+        if (arguments[d][u'type'] == u'int'):
             arg = parse_int(d, arg)
-        elif (arguments[d]['type'] == 'bool'):
+        elif (arguments[d][u'type'] == u'bool'):
             arg = parse_bool(d, arg)
-    if 'choices' in arguments[d]:
-        if arg and arg not in arguments[d]['choices']:
-            logger.warning('Value "%s=%s" ignored; should be one of (%s)',
-                            d, str(arg), ', '.join(arguments[d]['choices']))
-            arg = ''
+    if u'choices' in arguments[d]:
+        if arg and arg not in arguments[d][u'choices']:
+            logger.warning(u'Value "%s=%s" ignored; should be one of (%s)',
+                            d, unicode(arg), u', '.join(arguments[d][u'choices']))
+            arg = u''
     return arg
 
 def parse_list(d, s, length='*'):
     """ Convert list strings to typed lists. """
-    lst = s.split(',')
-    if lst == ['']:
+    lst = s.split(u',')
+    if lst == [u'']:
         if length == '*':
             return []
         elif length < 0:
@@ -439,22 +449,22 @@ def parse_list(d, s, length='*'):
     # negative length: optional up-to
     if length < 0:
         lst += [None]*(-length-len(lst))
-    if length != '*' and (len(lst) > abs(length) or len(lst) < length):
-        logger.warning('Option "%s=%s" ignored, should have %d elements',
+    if length != u'*' and (len(lst) > abs(length) or len(lst) < length):
+        logger.warning(u'Option "%s=%s" ignored, should have %d elements',
                         d, s, abs(length))
     return lst
 
 def parse_bool(d, s):
     """ Parse bool option. Empty string (i.e. specified) means True. """
-    if s == '':
+    if s == u'':
         return True
     try:
-        if s.upper() in ('YES', 'TRUE', 'ON', '1'):
+        if s.upper() in (u'YES', u'TRUE', u'ON', u'1'):
             return True
-        elif s.upper() in ('NO', 'FALSE', 'OFF', '0'):
+        elif s.upper() in (u'NO', u'FALSE', u'OFF', u'0'):
             return False
     except AttributeError:
-        logger.warning('Option "%s=%s" ignored; should be a boolean', d, s)
+        logger.warning(u'Option "%s=%s" ignored; should be a boolean', d, s)
         return None
 
 def parse_int(d, s):
@@ -463,21 +473,21 @@ def parse_int(d, s):
         try:
             return int(s)
         except ValueError:
-            logger.warning('Option "%s=%s" ignored; should be an integer', d, s)
+            logger.warning(u'Option "%s=%s" ignored; should be an integer', d, s)
     return None
 
 #########################################################
 
 def get_logger(logfile=None):
     # use the awkward logging interface as we can only use basicConfig once
-    l = logging.getLogger('config')
+    l = logging.getLogger(__name__)
     l.setLevel(logging.INFO)
     if logfile:
-        h = logging.FileHandler(logfile, mode='w')
+        h = logging.FileHandler(logfile, mode=b'w')
     else:
         h = logging.StreamHandler()
     h.setLevel(logging.INFO)
-    h.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+    h.setFormatter(logging.Formatter(u'%(levelname)s: %(message)s'))
     l.addHandler(h)
     return l
 
@@ -486,43 +496,43 @@ def get_logger(logfile=None):
 def build_default_config_file(file_name):
     """ Write a default config file. """
     header = (
-    "# PC-BASIC private configuration file.\n"
-    "# Edit this file to change your default settings or add presets.\n"
-    "# Changes to this file will not affect any other users of your computer.\n"
-    "\n"
-    "[pcbasic]\n"
-    "# Use the [pcbasic] section to specify options you want to be enabled by default.\n"
-    "# See the documentation or run pcbasic -h for a list of available options.\n"
-    "# for example (for version '%s'):\n" % plat.version)
+    u"# PC-BASIC private configuration file.\n"
+    u"# Edit this file to change your default settings or add presets.\n"
+    u"# Changes to this file will not affect any other users of your computer.\n"
+    u"\n"
+    u"[pcbasic]\n"
+    u"# Use the [pcbasic] section to specify options you want to be enabled by default.\n"
+    u"# See the documentation or run pcbasic -h for a list of available options.\n"
+    u"# for example (for version '%s'):\n" % plat.version)
     footer = (
-    "\n\n# To add presets, create a section header between brackets and put the \n"
-    "# options you need below it, like this:\n"
-    "# [your_preset]\n"
-    "# border=0\n"
-    "# \n"
-    "# You will then be able to load these options with --preset=your_preset.\n"
-    "# If you choose the same name as a system preset, PC-BASIC will use your\n"
-    "# options for that preset and not the system ones. This is not recommended.\n")
+    u"\n\n# To add presets, create a section header between brackets and put the \n"
+    u"# options you need below it, like this:\n"
+    u"# [your_preset]\n"
+    u"# border=0\n"
+    u"# \n"
+    u"# You will then be able to load these options with --preset=your_preset.\n"
+    u"# If you choose the same name as a system preset, PC-BASIC will use your\n"
+    u"# options for that preset and not the system ones. This is not recommended.\n")
     argnames = sorted(arguments.keys())
     try:
-        with open(file_name, 'w') as f:
+        with open(file_name, b'w') as f:
             # write a BOM at start to ensure Notepad gets that it's utf-8
             # but don't use codecs.open as that doesn't do CRLF on Windows
-            f.write('\xEF\xBB\xBF')
-            f.write(header)
+            f.write(b'\xEF\xBB\xBF')
+            f.write(header.encode(b'utf-8'))
             for a in argnames:
                 try:
                     # check if it's a list
-                    arguments[a]['list']
-                    formatted = ','.join(map(str, arguments[a]['default']))
+                    arguments[a][u'list']
+                    formatted = u','.join(map(unicode, arguments[a][u'default']))
                 except(KeyError, TypeError):
-                    formatted = str(arguments[a]['default'])
-                f.write("# %s=%s" % (a, formatted))
+                    formatted = unicode(arguments[a][u'default'])
+                f.write((u'# %s=%s' % (a, formatted)).encode(b'utf-8'))
                 try:
-                    f.write(' ; choices: %s\n' %
-                                ', '.join(map(str, arguments[a]['choices'])))
+                    f.write((u' ; choices: %s\n' %
+                                u', '.join(map(unicode, arguments[a][u'choices']))).encode(b'utf-8'))
                 except(KeyError, TypeError):
-                    f.write('\n')
+                    f.write(b'\n')
             f.write(footer)
     except (OSError, IOError):
         # can't create file, ignore. we'll get a message later.
