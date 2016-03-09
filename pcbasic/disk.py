@@ -532,7 +532,7 @@ class DiskDevice(object):
         try:
             # create file if in RANDOM or APPEND mode and doesn't exist yet
             # OUTPUT mode files are created anyway since they're opened with wb
-            if ((mode == b'A' or (mode == b'R' and access == b'RW')) and
+            if ((mode == b'A' or (mode == b'R' and access in (b'RW', b'R'))) and
                     not os.path.exists(name)):
                 open(name, b'wb').close()
             if mode == b'A':
