@@ -80,10 +80,6 @@ class CASDevice(object):
     def __init__(self, arg):
         """ Initialise tape device. """
         addr, val = devices.parse_protocol_string(arg)
-        valsplit = val.split(':', 1)
-        loc = None
-        if len(valsplit) == 2:
-            val, loc = valsplit
         ext = val.split('.')[-1].upper()
         # we use a dummy device_file
         # this means WIDTH and LOC on CAS1: directly are ignored
@@ -99,8 +95,6 @@ class CASDevice(object):
             else:
                 # 'CAS' is default
                 self.tapestream = CassetteStream(CASBitStream(val, 'r'))
-            if loc:
-                self.tapestream.wind(int(loc))
         except EnvironmentError as e:
             logging.warning("Couldn't attach %s to CAS device: %s",
                             val, str(e))
