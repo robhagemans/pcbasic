@@ -38,7 +38,8 @@ else:
     # get the directory of this file
     basepath = os.path.dirname(os.path.realpath(__file__))
 if type(basepath) == bytes:
-    basepath = basepath.decode(preferred_encoding)
+    # __file__ is a bytes object, not unicode
+    basepath = basepath.decode(sys.getfilesystemencoding())
 
 # directories
 encoding_dir = os.path.join(basepath, u'codepage')
