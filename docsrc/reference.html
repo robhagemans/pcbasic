@@ -5061,6 +5061,10 @@
             <li>
                 <code><var>loop_var</var></code> is an array element: <samp>Syntax error</samp> .
             </li>
+            <li>
+                <code><var>loop_var</var></code> is an integer variable and a <code><var>start</var></code>, <code><var>stop</var></code> or <code><var>step</var></code>
+                is outside the range <code>[-32768, 32767]</code>: <samp>Overflow</samp> .
+            </li>
         </ul>
     </section>
 <hr />
@@ -6846,6 +6850,11 @@
             <li>
                 <code><var>var_0</var>, <var>var_1</var>, ...</code> are string variables: <samp>NEXT without FOR</samp>.
             </li>
+            <li>
+                The (implicit or explicit) loop variable is an integer variable and is
+                taken outside the range <code>[-32768, 32767]</code> when incremented after the final iteration: <samp>Overflow</samp> .
+            </li>
+
         </ul>
     </section>
 <hr />
@@ -11342,6 +11351,13 @@
         in which the error occurred, wth the cursor positioned at the location
         where the error was raised.
     </p>
+    <p>
+        A <samp>Division by zero</samp> error or, in a floating point calculation, an <samp>Overflow</samp>,
+        will not interrupt execution unless it occurs
+        within an error handling routine. The error message will be printed on the console
+        and the result of the offending calculation will be taken to be the maximum
+        value that fits in the appropriate floating-point variable. <samp>Overflow</samp>
+        in an integer calculation will always interrupt execution like other errors.
     </p>
     <h4 id="other-messages">Other messages</h4>
     <dl>
