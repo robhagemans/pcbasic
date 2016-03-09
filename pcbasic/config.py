@@ -334,8 +334,7 @@ def read_config_file(config_file):
     """ Read config file. """
     try:
         config = ConfigParser.RawConfigParser(allow_no_value=True)
-        # use utf_8_sig to ignore a BOM if it's at the start of the file (e.g. created by Notepad)
-        with codecs.open(config_file, 'r', 'utf_8_sig') as f:
+        with open(config_file, 'r') as f:
             config.readfp(f)
     except (ConfigParser.Error, IOError):
         logger.warning('Error in configuration file %s. '
@@ -476,9 +475,6 @@ def build_default_config_file(file_name):
     argnames = sorted(arguments.keys())
     try:
         with open(file_name, 'w') as f:
-            # write a BOM at start to ensure Notepad gets that it's utf-8
-            # but don't use codecs.open as that doesn't do CRLF on Windows
-            f.write('\xEF\xBB\xBF')
             f.write(header)
             for a in argnames:
                 try:
