@@ -27,11 +27,11 @@ from util import name_chars
 ascii_operators = '+-=/\\^*<>'
 
 # keywords than can followed by one or more line numbers
-linenum_words = [
-    'GOTO', 'THEN', 'ELSE', 'GOSUB',
-    'LIST', 'RENUM', 'EDIT', 'LLIST',
-    'DELETE', 'RUN', 'RESUME', 'AUTO',
-    'ERL', 'RESTORE', 'RETURN']
+linenum_words = [tk.keyword[token] for token in
+    (tk.GOTO, tk.THEN, tk.ELSE, tk.GOTO,
+    tk.LIST, tk.RENUM, tk.EDIT, tk.LLIST,
+    tk.DELETE, tk.RUN, tk.RESUME, tk.AUTO,
+    tk.ERL, tk.RESTORE, tk.RETURN)]
 
 #################################################################
 
