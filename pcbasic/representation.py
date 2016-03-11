@@ -404,13 +404,13 @@ def str_to_int(s):
 
 def tokenise_hex(ins, outs):
     """ Convert hex expression in Python string to number token. """
+    # pass the H in &H
     ins.read(1)
     word = ''
     while True:
         c = util.peek(ins).upper()
-        if c and c in ascii_whitespace:
-            ins.read(1)
-        elif not c or c not in ascii_hexits:
+        # hex literals must not be interrupted by whitespace
+        if not c or c not in ascii_hexits:
             break
         else:
             word += ins.read(1).upper()
@@ -425,6 +425,7 @@ def tokenise_oct(ins, outs):
     word = ''
     while True:
         c = util.peek(ins).upper()
+        # oct literals may be interrupted by whitespace
         if c and c in ascii_whitespace:
             ins.read(1)
         elif not c or c not in ascii_octits:
