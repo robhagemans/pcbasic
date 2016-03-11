@@ -1543,21 +1543,21 @@ def exec_goto(ins):
 
 def exec_run(ins):
     """ RUN: start program execution. """
-    comma = util.skip_white_read_if(ins, (',',))
-    if comma:
-        util.require_read(ins, 'R')
+    jumpnum, close_files = None, True
     c = util.skip_white(ins)
-    jumpnum = None
     if c == tk.T_UINT:
-        # parse line number, ignore rest of line and jump
+        # parse line number and ignore rest of line
         jumpnum = util.parse_jumpnum(ins)
     elif c not in tk.end_statement:
         name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        if util.skip_white_read_if(ins, (',',)):
+            util.require_read(ins, 'R')
+            close_files = False
         util.require(ins, tk.end_statement)
         with devices.open_file(0, name, filetype='ABP', mode='I') as f:
             program.load(f)
     flow.init_program()
-    reset.clear(close_files=not comma)
+    reset.clear(close_files=close_files)
     flow.jump(jumpnum)
     state.basic_state.error_handle_mode = False
 

@@ -6395,10 +6395,11 @@
         </code>
         <p>
             Loads the program stored in a file into memory.
-            If <code>,R</code> is specified, runs the file after loading.
-            <code>LOAD ,R</code> keeps all data files open. Existing variables will be
-            cleared and any program in memory will be erased. <code>LOAD</code> implies a
+            Existing variables will be cleared and any program in memory will be erased. <code>LOAD</code> implies a
             <code><a href="#CLEAR">CLEAR</a></code>.
+        </p>
+        <p>
+            If <code>,R</code> is specified, keeps all data files open and runs the specified file.
         </p>
         <h5>Parameters</h5>
         <ul>
@@ -9652,19 +9653,19 @@
     <section>
         <h4 id="RUN"><code>RUN</code></h4>
         <code class="flow">
-            <b>RUN</b> [<var>line</var>|<var>file_spec</var>] [<b>,R</b>]
+            <b>RUN</b> [<var>line_number</var> [<var>anything</var>]|<var>file_spec</var> [<b>, R</b>]]
         </code>
         <p>
             Executes a program.
             Existing variables will be
             cleared and any program in memory will be erased. <code>RUN</code> implies a <code><a href="#CLEAR">CLEAR</a></code>
-            If <code>,R</code> is specified, files are kept open; if not, all files are closed.
+            If <code>,R</code> is specified after <code><var>file_spec</var></code>, files are kept open; if not, all files are closed.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>line</var></code> is a valid line number in the current program.
-                If specified, execution starts from this line number.
+                <code><var>line_number</var></code> is a valid line number in the current program.
+                If specified, execution starts from this line number. The rest of the <code>RUN</code> statement is ignored in this case.
             </li>
             <li>
                 The string expression <code><var>file_spec</var></code>, if specified,
@@ -9675,13 +9676,13 @@
         <h5>Errors</h5>
         <ul>
             <li>
-                <code><var>line</var></code> does not exist: <samp>Undefined line number</samp>.
+                <code><var>line_number</var></code> is not a line number in the current program: <samp>Undefined line number</samp>.
             </li>
             <li>
-                <code><var>filename</var></code> cannot be found: <samp>File not found</samp>.
+                <code><var>file_spec</var></code> cannot be found: <samp>File not found</samp>.
             </li>
             <li>
-                <code><var>filename</var></code> is an empty string: <samp>Bad file number</samp>.
+                <code><var>file_spec</var></code> is an empty string: <samp>Bad file number</samp>.
             </li>
             <li>
                 A loaded text file contains lines without line numbers:
