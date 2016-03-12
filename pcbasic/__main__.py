@@ -223,8 +223,6 @@ def prepare_console():
     import display
     import sound
     import console
-    import error
-    import expressions
     # we need this prepared for input to work,
     # even if we don't use any function from it
     import inputs

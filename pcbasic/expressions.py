@@ -156,8 +156,10 @@ def parse_expression(ins, allow_empty=False):
         elif d in functions:
             # apply functions
             ins.read(len(d))
-            units.append(functions[d](ins))
-            _check_math_errors()
+            try:
+                units.append(functions[d](ins))
+            except (ValueError, ArithmeticError) as e:
+                units.append(_handle_math_error(e))
         elif d in tk.end_statement:
             break
         elif d in tk.end_expression or d in tk.keyword:
@@ -191,22 +193,34 @@ def _evaluate_stack(stack, units, precedence, missing_err):
             else:
                 left = units.pop()
                 units.append(binary[op](left, right))
-            _check_math_errors()
         except IndexError:
             # insufficient operators, error depends on context
             raise error.RunError(missing_err)
+        except (ValueError, ArithmeticError) as e:
+            units.append(_handle_math_error(e))
 
-def _check_math_errors():
+def _handle_math_error(e):
     """ Handle Overflow or Division by Zero. """
-    if state.basic_state.math_error:
-        if state.basic_state.on_error:
-            # also raises exception in error_handle_mode!
-            # in that case, prints a normal error message
-            raise(error.RunError(state.basic_state.math_error))
-        else:
-            # write a message & continue as normal
-            console.write_line(error.get_message(state.basic_state.math_error))
-    state.basic_state.math_error = None
+    if isinstance(e, ValueError):
+        # math domain errors such as SQR(-1)
+        raise error.RunError(error.IFC)
+    elif isinstance(e, OverflowError):
+        math_error = error.OVERFLOW
+    elif isinstance(e, ZeroDivisionError):
+        math_error = error.DIVISION_BY_ZERO
+    else:
+        raise e
+    if state.basic_state.on_error:
+        # also raises exception in error_handle_mode!
+        # in that case, prints a normal error message
+        raise error.RunError(math_error)
+    else:
+        # write a message & continue as normal
+        console.write_line(error.get_message(math_error))
+    # return max value for the appropriate float type
+    if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
+        return fp.pack(e.args[0])
+    return fp.pack(fp.Single.max.copy())
 
 def parse_literal(ins):
     """ Compute the value of the literal at the current code pointer. """

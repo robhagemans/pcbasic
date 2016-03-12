@@ -104,8 +104,8 @@ def number_intdiv(left, right):
     dividend = vartypes.pass_int_unpack(left)
     divisor = vartypes.pass_int_unpack(right)
     if divisor == 0:
-        # simulate (float!) division by zero
-        return number_divide(left, right)
+        # division by zero, return single-precision maximum
+        raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
     if (dividend >= 0) == (divisor >= 0):
         return vartypes.int_to_integer_signed(dividend / divisor)
     else:
@@ -114,10 +114,10 @@ def number_intdiv(left, right):
 def number_modulo(left, right):
     """ Left MOD right. """
     divisor = vartypes.pass_int_unpack(right)
-    if divisor == 0:
-        # simulate (float!) division by zero
-        return number_divide(left, right)
     dividend = vartypes.pass_int_unpack(left)
+    if divisor == 0:
+        # division by zero, return single-precision maximum
+        raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
     mod = dividend % divisor
     if dividend < 0 or mod < 0:
         mod -= divisor

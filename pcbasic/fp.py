@@ -25,16 +25,9 @@ This file is released under the GNU GPL version 3.
 import math
 from functools import partial
 
-import error
-import state
-
 # the exponent is biased by 128
 true_bias = 128
 
-# calculation exception states
-state.basic_state.math_error = None
-
-####################################
 
 class Float(object):
     """ Floating-point number in Microsoft Binary Format. """
@@ -177,8 +170,8 @@ class Float(object):
         # overflow
         if self.exp > 0xff:
             # overflow
-            state.basic_state.math_error = error.OVERFLOW
             self.exp, self.man = self.max.exp, self.max.man
+            raise OverflowError(self)
         return self
 
     def itrunc(self):
@@ -282,9 +275,8 @@ class Float(object):
     def idiv(self, right_in):
         """ In-place division. """
         if right_in.is_zero():
-            state.basic_state.math_error = error.DIVISION_BY_ZERO
-            self.man, self.exp = self.max.man, self.max.exp
-            return self
+            self.exp, self.man = self.max.exp, self.max.man
+            raise ZeroDivisionError(self)
         if self.is_zero():
             return self
         # signs
@@ -478,14 +470,9 @@ def safe(fn, *args):
     """ Convert to IEEE 754, apply function, convert back. """
     try:
         return args[0].__class__().from_value(fn(*(arg.to_value() for arg in args)))
-    except OverflowError:
-        state.basic_state.math_error = error.OVERFLOW
-        return args[0].max.copy()
-    except ZeroDivisionError:
-        state.basic_state.math_error = error.DIVISION_BY_ZERO
-        return args[0].max.copy()
-    except ValueError:
-        raise error.RunError(error.IFC)
+    except ArithmeticError as e:
+        # positive infinity
+        raise e.__class__(args[0].max.copy())
 
 power = partial(safe, lambda a,b: a**b)
 sqrt = partial(safe, math.sqrt)
