@@ -258,7 +258,7 @@ def parse_literal(ins):
     elif d == tk.T_UINT:
         return vartypes.int_to_integer_unsigned(util.parse_jumpnum(ins))
     else:
-        error.RunError(error.STX)
+        raise error.RunError(error.STX)
 
 def parse_variable(ins):
     """ Helper function: parse a variable or array element. """
