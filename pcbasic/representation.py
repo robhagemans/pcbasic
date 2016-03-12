@@ -149,20 +149,23 @@ def scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_do
 
 def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
     """ Put digits in decimal notation. """
-    valstr = ''
     # digits to decimal point
     exp10 += 1
     if exp10 >= len(digitstr):
-        valstr += digitstr + '0'*(exp10-len(digitstr))
+        valstr = digitstr + '0'*(exp10-len(digitstr))
         if force_dot:
             valstr+='.'
         if not force_dot or type_sign=='#':
             valstr += type_sign
     elif exp10 > 0:
-        valstr += digitstr[:exp10] + '.' + digitstr[exp10:]
+        valstr = digitstr[:exp10] + '.' + digitstr[exp10:]
         if type_sign=='#':
             valstr += type_sign
     else:
+        if force_dot:
+            valstr = '0'
+        else:
+            valstr = ''
         valstr += '.' + '0'*(-exp10) + digitstr
         if type_sign=='#':
             valstr += type_sign
@@ -232,8 +235,8 @@ def format_number(value, tokens, digits_before, decimals):
             if digits_before < 0:
                 digits_before = 0
             # just one of those things GW does
-            if force_dot and digits_before == 0 and decimals != 0:
-                valstr += '0'
+            #if force_dot and digits_before == 0 and decimals != 0:
+            #    valstr += '0'
     # take absolute value
     value.neg = False
     # currency sign, if any
