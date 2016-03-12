@@ -1074,8 +1074,8 @@ class Screen(object):
     def get_text(self, start_row, start_col, stop_row, stop_col):
         """ Retrieve unicode text for copying. """
         r, c = start_row, start_col
-        full = ''
-        clip = ''
+        full = []
+        clip = []
         if self.vpage.row[r-1].double[c-1] == 2:
             # include lead byte
             c -= 1
@@ -1083,16 +1083,17 @@ class Screen(object):
             # include trail byte
             stop_col += 1
         while r < stop_row or (r == stop_row and c <= stop_col):
-            clip += self.vpage.row[r-1].buf[c-1][0]
+            clip.append(self.vpage.row[r-1].buf[c-1][0])
             c += 1
-            if c > self.mode.width:
+            if c > self.vpage.row[r-1].end:
                 if not self.vpage.row[r-1].wrap:
-                    full += state.console_state.codepage.str_to_unicode(clip) + '\r\n'
-                    clip = ''
+                    full.append(state.console_state.codepage.str_to_unicode(b''.join(clip)))
+                    full.append('\r\n')
+                    clip = []
                 r += 1
                 c = 1
-        full += state.console_state.codepage.str_to_unicode(clip)
-        return full.replace(u'\0', u' ')
+        full.append(state.console_state.codepage.str_to_unicode(clip))
+        return u''.join(full).replace(u'\0', u' ')
 
 
     ## graphics primitives
