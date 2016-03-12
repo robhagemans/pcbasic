@@ -1,0 +1,23 @@
+Error:         5             100 
+Error:         5             110 
+Error:         5             120 
+Error:         5             130 
+Error:         5             140 
+Error:         5             150 
+Error:         11            160 
+Error:         11            170 
+Error:         11            180 
+Error:         5             190 
+Error:         5             195 
+Error:         11            200 
+Error:         11            210 
+Error:         11            220 
+Error:         11            230 
+Error:         11            240 
+Error:         11            250 
+Error:         11            260 
+Error:         11            270 
+Error:         11            280 
+Error:         11            290 
+Error:         6             300 
+
