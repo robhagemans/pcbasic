@@ -512,39 +512,28 @@ def pow_int(left_in, right_in):
 ####################################
 # math function
 
-def power(base_in, exp_in):
-    """ Convert to IEEE 754, raise to float power, convert back. """
+def safe(fn, *args):
+    """ Convert to IEEE 754, apply function, convert back. """
     try:
-        return base_in.__class__().from_value(base_in.to_value() ** exp_in.to_value())
+        return args[0].__class__().from_value(fn(*(arg.to_value() for arg in args)))
     except OverflowError:
         msg_overflow()
-        return base_in.__class__(base_in.neg, base_in.carry_mask, 0xff)
+        return args[0].__class__(args[0].neg, args[0].carry_mask, 0xff)
     except ZeroDivisionError:
         msg_zero_div()
-        return base_in.__class__(base_in.neg, base_in.carry_mask, 0xff)
+        return args[0].__class__(args[0].neg, args[0].carry_mask, 0xff)
     except ValueError:
         raise error.RunError(error.IFC)
 
-def unary(mbf_in, fn):
-    """ Convert to IEEE 754, apply math library function, convert back. """
-    try:
-        return mbf_in.__class__().from_value(fn(mbf_in.to_value()))
-    except OverflowError:
-        msg_overflow()
-        return mbf_in.__class__(mbf_in.neg, mbf_in.carry_mask, 0xff)
-    except ZeroDivisionError:
-        msg_zero_div()
-        return base_in.__class__(base_in.neg, base_in.carry_mask, 0xff)
-    except ValueError:
-        raise error.RunError(error.IFC)
+power = partial(safe, lambda a,b: a**b)
+sqrt = partial(safe, math.sqrt)
+exp  = partial(safe, math.exp)
+sin  = partial(safe, math.sin)
+cos  = partial(safe, math.cos)
+tan  = partial(safe, math.tan)
+atn  = partial(safe, math.atan)
+log  = partial(safe, math.log)
 
-sqrt = partial(unary, fn=math.sqrt)
-exp  = partial(unary, fn=math.exp )
-sin  = partial(unary, fn=math.sin )
-cos  = partial(unary, fn=math.cos )
-tan  = partial(unary, fn=math.tan )
-atn  = partial(unary, fn=math.atan)
-log  = partial(unary, fn=math.log )
 
 ####################################
 # constants
