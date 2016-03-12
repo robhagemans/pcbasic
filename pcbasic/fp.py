@@ -519,6 +519,9 @@ def power(base_in, exp_in):
     except OverflowError:
         msg_overflow()
         return base_in.__class__(base_in.neg, base_in.carry_mask, 0xff)
+    except ZeroDivisionError:
+        msg_zero_div()
+        return base_in.__class__(base_in.neg, base_in.carry_mask, 0xff)
     except ValueError:
         raise error.RunError(error.IFC)
 
@@ -529,9 +532,11 @@ def unary(mbf_in, fn):
     except OverflowError:
         msg_overflow()
         return mbf_in.__class__(mbf_in.neg, mbf_in.carry_mask, 0xff)
+    except ZeroDivisionError:
+        msg_zero_div()
+        return base_in.__class__(base_in.neg, base_in.carry_mask, 0xff)
     except ValueError:
         raise error.RunError(error.IFC)
-
 
 sqrt = partial(unary, fn=math.sqrt)
 exp  = partial(unary, fn=math.exp )
