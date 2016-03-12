@@ -1509,28 +1509,31 @@ def exec_else(ins):
     # any else statement by itself means the THEN has already been executed, so it's really like a REM.
     util.skip_to(ins, tk.end_line)
 
-def exec_while(ins, first=True):
+def exec_while(ins):
     """ WHILE: enter while-loop. """
     # just after WHILE opcode
     whilepos = ins.tell()
     # evaluate the 'boolean' expression
     # use double to avoid overflows
-    if first:
-        # find matching WEND
-        skip_to_next(ins, tk.WHILE, tk.WEND)
-        if ins.read(1) == tk.WEND:
-            util.skip_to(ins, tk.end_statement)
-            wendpos = ins.tell()
-            state.basic_state.while_wend_stack.append((whilepos, wendpos))
-        else:
-            # WHILE without WEND
-            raise error.RunError(error.WHILE_WITHOUT_WEND)
-        ins.seek(whilepos)
-    boolvar = vartypes.pass_double(expressions.parse_expression(ins))
+    # find matching WEND
+    skip_to_next(ins, tk.WHILE, tk.WEND)
+    if ins.read(1) == tk.WEND:
+        util.skip_to(ins, tk.end_statement)
+        wendpos = ins.tell()
+        state.basic_state.while_wend_stack.append((whilepos, wendpos))
+    else:
+        # WHILE without WEND
+        raise error.RunError(error.WHILE_WITHOUT_WEND)
+    _check_while_condition(ins, whilepos)
+    util.require(ins, tk.end_statement)
+
+def _check_while_condition(ins, whilepos):
+    """ Check condition of while-loop. """
+    ins.seek(whilepos)
     # condition is zero?
-    if fp.unpack(boolvar).is_zero():
+    if fp.unpack(vartypes.pass_double(expressions.parse_expression(ins))).is_zero():
         # jump to WEND
-        whilepos, wendpos = state.basic_state.while_wend_stack.pop()
+        _, wendpos = state.basic_state.while_wend_stack.pop()
         ins.seek(wendpos)
 
 def exec_wend(ins):
@@ -1543,14 +1546,11 @@ def exec_wend(ins):
             # WEND without WHILE
             raise error.RunError(error.WEND_WITHOUT_WHILE)
         whilepos, wendpos = state.basic_state.while_wend_stack[-1]
-        if pos != wendpos:
-            # not the expected WEND, we must have jumped out
-            state.basic_state.while_wend_stack.pop()
-        else:
-            # found it
+        if pos == wendpos:
             break
-    ins.seek(whilepos)
-    return exec_while(ins, False)
+        # not the expected WEND, we must have jumped out
+        state.basic_state.while_wend_stack.pop()
+    _check_while_condition(ins, whilepos)
 
 def exec_on_jump(ins):
     """ ON: calculated jump. """
