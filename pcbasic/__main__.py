@@ -224,7 +224,7 @@ def prepare_console():
     import sound
     import console
     import error
-    import fp
+    import expressions
     # we need this prepared for input to work,
     # even if we don't use any function from it
     import inputs
@@ -233,8 +233,6 @@ def prepare_console():
     sound.init('none' if config.get('nosound') else interface)
     if not state.loaded:
         console.init_mode()
-    # set the output for maths error messages
-    fp.init(error_stream=console)
     return backend, console
 
 def print_greeting(console):

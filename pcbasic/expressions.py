@@ -33,6 +33,9 @@ import timedate
 import basictoken as tk
 import memory
 import operators as op
+# math error output
+import console
+
 
 # enable pcjr/tandy syntax extensions
 is_pcjr_syntax = False
@@ -154,6 +157,7 @@ def parse_expression(ins, allow_empty=False):
             # apply functions
             ins.read(len(d))
             units.append(functions[d](ins))
+            _check_math_errors()
         elif d in tk.end_statement:
             break
         elif d in tk.end_expression or d in tk.keyword:
@@ -187,9 +191,22 @@ def _evaluate_stack(stack, units, precedence, missing_err):
             else:
                 left = units.pop()
                 units.append(binary[op](left, right))
+            _check_math_errors()
         except IndexError:
             # insufficient operators, error depends on context
             raise error.RunError(missing_err)
+
+def _check_math_errors():
+    """ Handle Overflow or Division by Zero. """
+    if state.basic_state.math_error:
+        if state.basic_state.on_error:
+            # also raises exception in error_handle_mode!
+            # in that case, prints a normal error message
+            raise(error.RunError(state.basic_state.math_error))
+        else:
+            # write a message & continue as normal
+            console.write_line(error.get_message(state.basic_state.math_error))
+    state.basic_state.math_error = None
 
 def parse_literal(ins):
     """ Compute the value of the literal at the current code pointer. """

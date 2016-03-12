@@ -31,42 +31,8 @@ import state
 # the exponent is biased by 128
 true_bias = 128
 
-######################################
-
 # calculation exception states
-state.basic_state.overflow = False
-state.basic_state.zero_div = False
-# stream for Division by Zero and Overflow messages
-errstream = None
-
-def init(error_stream):
-    """ Initialise the Floating-point system. """
-    global errstream
-    errstream = error_stream
-
-def msg_overflow():
-    """ Write an Overflow message. """
-    if state.basic_state.overflow:
-        return
-    state.basic_state.overflow = True
-    math_error(6)
-
-def msg_zero_div():
-    """ Write a Division by Zero message. """
-    if state.basic_state.zero_div:
-        return
-    state.basic_state.zero_div = True
-    math_error(11)
-
-def math_error(errnum):
-    """ Write an error message; only break execution if a handler is active. """
-    if state.basic_state.on_error:
-        # also raises exception in error_handle_mode! in that case, prints a normal error message
-        raise(error.RunError(errnum))
-    else:
-        # write a message & continue as normal
-        # start_line() ?
-        errstream.write_line(error.get_message(errnum)) # no space, no line number
+state.basic_state.math_error = None
 
 ####################################
 
@@ -211,10 +177,8 @@ class Float(object):
         # overflow
         if self.exp > 0xff:
             # overflow
-            # message does not break execution, no line number
-            msg_overflow()
-            self.exp = 0xff
-            self.man = self.carry_mask #0xffffffffffffff00L
+            state.basic_state.math_error = error.OVERFLOW
+            self.exp, self.man = self.max.exp, self.max.man
         return self
 
     def itrunc(self):
@@ -318,7 +282,7 @@ class Float(object):
     def idiv(self, right_in):
         """ In-place division. """
         if right_in.is_zero():
-            msg_zero_div()
+            state.basic_state.math_error = error.DIVISION_BY_ZERO
             self.man, self.exp = self.max.man, self.max.exp
             return self
         if self.is_zero():
@@ -469,8 +433,6 @@ def from_bytes(s):
 
 def unpack(value):
     """ Unpack a float for manipulation. """
-    state.basic_state.overflow = False
-    state.basic_state.zero_div = False
     return from_bytes(value[1])
 
 def pack(n):
@@ -517,11 +479,11 @@ def safe(fn, *args):
     try:
         return args[0].__class__().from_value(fn(*(arg.to_value() for arg in args)))
     except OverflowError:
-        msg_overflow()
-        return args[0].__class__(args[0].neg, args[0].carry_mask, 0xff)
+        state.basic_state.math_error = error.OVERFLOW
+        return args[0].max.copy()
     except ZeroDivisionError:
-        msg_zero_div()
-        return args[0].__class__(args[0].neg, args[0].carry_mask, 0xff)
+        state.basic_state.math_error = error.DIVISION_BY_ZERO
+        return args[0].max.copy()
     except ValueError:
         raise error.RunError(error.IFC)
 
