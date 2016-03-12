@@ -1,28 +1,29 @@
-1 REM BASCODER.BAS - Implementation of the BASICODE-3C API on PC-BASIC
-2 REM Copyright (c) 2015, 2016 Rob Hagemans
-3 REM This file is released under the GNU GPL version 3
-4 REM
-9 GOTO 1000 ' Initialise client
-10 '
-11 ' Settings and initialisation
-20 '
-21 O.VERSION$ = "3C"
-23 O.WD% = 40 ' Screen width
-24 HG = 640: VG = 350: HO = O.WD% - 1: VE = 24: CT = 0: CN = 0: SR = 0: SR$ = "": IN$ = " ": SV = 7
-25 CC[0] = 7: CC[1] = 0
-30 O.CL%[0] = 0: O.CL%[1] = 1: O.CL%[2] = 4: O.CL%[3] = 5
-31 O.CL%[4] = 2: O.CL%[5] = 3: O.CL%[6] = 6: O.CL%[7] = 63
-35 GOSUB 100
-40 FOR O.I% = 1 TO 10
-50   KEY O.I%, ""
-60 NEXT
-70 PLAY "MF"
-80 RANDOMIZE TIMER
-85 DIM O.FN%[8]: O.FFN% = 0
-90 GOTO 1010 ' Yield control to client
-97  '
-98  ' BASICODE-2 subroutines
-99  '
+001 '  PC-BASIC - BASCODER.BAS
+002 '  Implementation of the BASICODE-3C API
+003 '  Copyright (c) 2015, 2016 Rob Hagemans
+004 '  This file is released under the GNU GPL version 3
+005 '
+009 GOTO 1000 ' Initialise client
+010 '
+011 ' Settings and initialisation
+020 '
+021 O.VERSION$ = "3C"
+023 O.WD% = 40 ' Screen width
+024 HG = 640: VG = 350: HO = O.WD% - 1: VE = 24: CT = 0: CN = 0: SR = 0: SR$ = "": IN$ = " ": SV = 7
+025 CC[0] = 7: CC[1] = 0
+030 O.CL%[0] = 0: O.CL%[1] = 1: O.CL%[2] = 4: O.CL%[3] = 5
+031 O.CL%[4] = 2: O.CL%[5] = 3: O.CL%[6] = 6: O.CL%[7] = 63
+035 GOSUB 100
+040 FOR O.I% = 1 TO 10
+050   KEY O.I%, ""
+060 NEXT
+070 PLAY "MF"
+080 RANDOMIZE TIMER
+085 DIM O.FN%[8]: O.FFN% = 0
+090 GOTO 1010 ' Yield control to client
+097 '
+098 ' BASICODE-2 subroutines
+099 '
 100 ' Initialise text screen
 101   SCREEN 0, 0, 0, 0
 102   WIDTH O.WD%
