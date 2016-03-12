@@ -131,7 +131,7 @@ def loop_iterate(ins):
         state.basic_state.for_next_stack.pop()
     else:
         ins.seek(forpos)
-    return loop_ends
+    return not loop_ends
 
 def resume(jumpnum):
     """ Execute jump for a RESUME instruction. """
