@@ -73,6 +73,19 @@ def math_error(errnum):
 class Float(object):
     """ Floating-point number in Microsoft Binary Format. """
 
+    # class variables, to override
+    digits = None
+    mantissa_bits = None
+    byte_size = None
+    bias = None
+    carry_mask = None
+    # constants
+    zero = None
+    one = None
+    ten = None
+    half = None
+    max = None
+
     def __init__(self, neg=False, man=0, exp=0):
         """ Initialise float. """
         self.neg, self.man, self.exp = neg, man, exp
