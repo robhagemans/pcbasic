@@ -40,6 +40,15 @@ def skip(ins, skip_range, n=1):
     ins.seek(-len(d), 1)
     return d
 
+def backskip_white(ins):
+    """ Skip whitespace backwards, then peek next. """
+    while True:
+        ins.seek(-1, 1)
+        d = peek(ins)
+        # skip_range must not include ''
+        if d == '' or d not in tk.whitespace:
+            return d
+
 # skip whitespace, then read next
 skip_white_read = partial(skip_read, skip_range=tk.whitespace)
 # skip whitespace, then peek next
