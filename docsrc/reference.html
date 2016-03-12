@@ -9448,7 +9448,10 @@
                 including any line number offsets or increments. However silly, this agrees with GW-BASIC's behaviour.
             </li>
             <li>
-               If a referenced line number does not exist in the program, the statement prints a
+                A zero line number following the keywords <code>ERROR GOTO</code> will not be renumbered.
+            </li>
+            <li>
+                If a referenced line number does not exist in the program, the statement prints a
                 message (not an error) <code>Undefined line <var>ref</var> in <var>old_line</var></code> where <code><var>old_line</var></code>
                 is the line number prior to renumbering. The referenced line number will be
                 left unchanged, but the line's old line number will be renumbered.
