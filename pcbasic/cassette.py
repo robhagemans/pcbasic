@@ -23,6 +23,7 @@ import error
 import config
 import devices
 import console
+import basictoken as tk
 
 token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
 type_to_token = dict((reversed(item) for item in token_to_type.items()))
@@ -415,11 +416,12 @@ class BasicodeStream(CassetteStream):
     """ BASICODE-format byte stream on cassette. """
 
     # basicode-3 recognised keywords
-    keywords = ['PRINT', 'INPUT', 'LET', 'GOTO', 'GOSUB', 'RETURN', 'FOR', 'TO',
-        'STEP', 'NEXT', 'IF', 'THEN', 'ON', 'DIM', 'READ', 'DATA', 'RESTORE',
-        'REM', 'DEF', 'FN', 'ABS', 'SGN', 'INT', 'SQR', 'SIN', 'COS',
-        'TAN', 'ATN', 'EXP', 'LOG', 'ASC', 'VAL', 'LEN', 'CHR$', 'LEFT$', 'MID$',
-        'RIGHT$', 'AND', 'OR', 'NOT']
+    keywords = [tk.keyword[token] for token in (
+        tk.PRINT, tk.INPUT, tk.LET, tk.GOTO, tk.GOSUB, tk.RETURN, tk.FOR, tk.TO,
+        tk.STEP, tk.NEXT, tk.IF, tk.THEN, tk.ON, tk.DIM, tk.READ, tk.DATA, tk.RESTORE,
+        tk.REM, tk.DEF, tk.FN, tk.ABS, tk.SGN, tk.INT, tk.SQR, tk.SIN, tk.COS,
+        tk.TAN, tk.ATN, tk.EXP, tk.LOG, tk.ASC, tk.VAL, tk.LEN, tk.CHR, tk.LEFT, tk.MID,
+        tk.RIGHT, tk.AND, tk.OR, tk.NOT)]
     # TAB is recognised but does not get an extra space
 
     def open_read(self):
