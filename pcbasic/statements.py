@@ -1539,11 +1539,13 @@ def exec_while(ins):
 def _check_while_condition(ins, whilepos):
     """ Check condition of while-loop. """
     ins.seek(whilepos)
-    # condition is zero?
-    zero_cond = fp.unpack(vartypes.pass_double(expressions.parse_expression(ins))).is_zero()
-    util.require(ins, tk.end_statement)
-    if zero_cond:
-        # jump to WEND
+    # WHILE condition is zero?
+    if not fp.unpack(vartypes.pass_double(expressions.parse_expression(ins))).is_zero():
+        # statement start is before WHILE token
+        state.basic_state.current_statement = whilepos-2
+        util.require(ins, tk.end_statement)
+    else:
+        # ignore rest of line and jump to WEND
         _, wendpos = state.basic_state.while_wend_stack.pop()
         ins.seek(wendpos)
 
