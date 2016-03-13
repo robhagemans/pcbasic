@@ -1366,15 +1366,16 @@ def exec_for(ins):
     vartype = varname[-1]
     if vartype == '$':
         raise error.RunError(error.TYPE_MISMATCH)
-    util.require_read(ins, (tk.O_EQ,)) # =
-    start = expressions.parse_expression(ins)
-    util.require_read(ins, (tk.TO,))  # TO
+    util.require_read(ins, (tk.O_EQ,))
+    start = vartypes.pass_type(vartype, expressions.parse_expression(ins))
+    util.require_read(ins, (tk.TO,))
     stop = vartypes.pass_type(vartype, expressions.parse_expression(ins))
-    if util.skip_white_read_if(ins, (tk.STEP,)): # STEP
-        step = vartypes.pass_type(vartype, expressions.parse_expression(ins))
+    if util.skip_white_read_if(ins, (tk.STEP,)):
+        step = expressions.parse_expression(ins)
     else:
         # convert 1 to vartype
-        step = vartypes.pass_type(vartype, vartypes.int_to_integer_signed(1))
+        step = vartypes.int_to_integer_signed(1)
+    step = vartypes.pass_type(vartype, step)
     util.require(ins, tk.end_statement)
     endforpos = ins.tell()
     # find NEXT
