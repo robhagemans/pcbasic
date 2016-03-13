@@ -1444,14 +1444,19 @@ def exec_next(ins):
         # record the NEXT (or comma) location
         pos = ins.tell()
         # optional variable - errors in this are checked at the scan during FOR
-        util.parse_scalar(ins, allow_empty=True)
-        util.require(ins, tk.end_statement + (',',))
+        name = util.parse_scalar(ins, allow_empty=True)
+        # if we haven't read a variable, we shouldn't find something else here
+        # but if we have and we iterate, the rest of the line is ignored
+        if not name:
+            util.require(ins, tk.end_statement + (',',))
         # increment counter, check condition
         if flow.loop_iterate(ins, pos):
             break
         # done if we're not jumping into a comma'ed NEXT
         if not util.skip_white_read_if(ins, (',')):
             break
+    # if we're done iterating we no longer ignore the rest of the statement
+    util.require(ins, tk.end_statement)
 
 def exec_goto(ins):
     """ GOTO: jump to specified line number. """
