@@ -71,67 +71,50 @@ def parse_statement():
     """ Parse one statement at the current pointer in current codestream.
         Return False if stream has ended, True otherwise.
         """
-    try:
-        ins = flow.get_codestream()
-        state.basic_state.current_statement = ins.tell()
-        c = util.skip_white(ins)
-        if c == '':
-            # stream has ended.
+    ins = flow.get_codestream()
+    state.basic_state.current_statement = ins.tell()
+    c = util.skip_white(ins)
+    if c == '':
+        # stream has ended.
+        return False
+    # parse line number or : at start of statement
+    elif c == '\0':
+        # save position for error message
+        prepos = ins.tell()
+        ins.read(1)
+        # line number marker, new statement
+        linenum = util.parse_line_number(ins)
+        if linenum == -1:
+            if state.basic_state.error_resume:
+                # unfinished error handler: no RESUME (don't trap this)
+                state.basic_state.error_handle_mode = True
+                # get line number right
+                raise error.RunError(error.NO_RESUME, prepos-1)
+            # stream has ended
             return False
-        # parse line number or : at start of statement
-        elif c == '\0':
-            # save position for error message
-            prepos = ins.tell()
-            ins.read(1)
-            # line number marker, new statement
-            linenum = util.parse_line_number(ins)
-            if linenum == -1:
-                if state.basic_state.error_resume:
-                    # unfinished error handler: no RESUME (don't trap this)
-                    state.basic_state.error_handle_mode = True
-                    # get line number right
-                    raise error.RunError(error.NO_RESUME, prepos-1)
-                # stream has ended
-                return False
-            if state.basic_state.tron:
-                console.write('[' + ('%i' % linenum) + ']')
-            debug.debug_step(linenum)
-        elif c == ':':
-            ins.read(1)
-        c = util.skip_white(ins)
-        # empty statement, return to parse next
-        if c in tk.end_statement:
-            return True
-        # implicit LET
-        elif c in string.ascii_letters:
-            exec_let(ins)
-        # token
-        else:
-            ins.read(1)
-            if c in tk.twobyte:
-                c += ins.read(1)
-            # don't use try-block to avoid catching other KeyErrors in statement
-            if c not in statements:
-                raise error.RunError(error.STX)
-            statements[c](ins)
+        if state.basic_state.tron:
+            console.write('[' + ('%i' % linenum) + ']')
+        debug.debug_step(linenum)
+    elif c == ':':
+        ins.read(1)
+    c = util.skip_white(ins)
+    # empty statement, return to parse next
+    if c in tk.end_statement:
         return True
-    except error.RunError as e:
-        if e.pos is None:
-            if state.basic_state.run_mode:
-                e.pos = state.basic_state.bytecode.tell()-1
-            else:
-                e.pos = -1
-        state.basic_state.errn = e.err
-        state.basic_state.errp = e.pos
-        # don't jump if we're already busy handling an error
-        if state.basic_state.on_error is not None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
-            state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
-            flow.jump(state.basic_state.on_error)
-            state.basic_state.error_handle_mode = True
-            state.basic_state.events.suspend_all = True
-            return True
-        else:
-            raise e
+    # implicit LET
+    elif c in string.ascii_letters:
+        exec_let(ins)
+    # token
+    else:
+        ins.read(1)
+        if c in tk.twobyte:
+            c += ins.read(1)
+        # don't use try-block to avoid catching other KeyErrors in statement
+        if c not in statements:
+            raise error.RunError(error.STX)
+        statements[c](ins)
+    return True
+
 
 #################################################################
 #################################################################

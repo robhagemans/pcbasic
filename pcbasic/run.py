@@ -62,8 +62,11 @@ def run_once():
                     # may raise Break
                     backend.check_events()
                     handle_basic_events()
+                    # returns True if more statements to parse
                     if not statements.parse_statement():
                         state.basic_state.execute_mode = False
+                except error.RunError as e:
+                    trap_error(e)
                 except error.Break as e:
                     # ctrl-break stops foreground and background sound
                     state.console_state.sound.stop_all_sound()
@@ -182,8 +185,26 @@ def handle_basic_events():
             # attach handler to allow un-stopping event on RETURN
             flow.jump_gosub(event.gosub, event)
 
+def trap_error(e):
+    """ Handle a BASIC error through trapping. """
+    if e.pos is None:
+        if state.basic_state.run_mode:
+            e.pos = state.basic_state.bytecode.tell()-1
+        else:
+            e.pos = -1
+    state.basic_state.errn = e.err
+    state.basic_state.errp = e.pos
+    # don't jump if we're already busy handling an error
+    if state.basic_state.on_error is not None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
+        state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
+        flow.jump(state.basic_state.on_error)
+        state.basic_state.error_handle_mode = True
+        state.basic_state.events.suspend_all = True
+    else:
+        raise e
+
 def handle_error(e):
-    """ Handle a BASIC error through trapping or error message. """
+    """ Handle a BASIC error through error message. """
     # not handled by ON ERROR, stop execution
     console.write_error_message(e.message, program.get_line_number(e.pos))
     state.basic_state.error_handle_mode = False
