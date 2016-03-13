@@ -1073,12 +1073,12 @@ def exec_open(ins):
         name = first_expr
         # FOR clause
         if util.skip_white_read_if(ins, (tk.FOR,)):
-            c = util.skip_white_read(ins)
+            c = util.skip_white(ins)
             # read word
             word = ''
-            while c and c not in tk.whitespace:
-                word += c
-                c = ins.read(1).upper()
+            while c and c not in tk.whitespace and c not in tk.end_statement:
+                word += ins.read(1)
+                c = util.peek(ins).upper()
             try:
                 mode = long_modes[word]
             except KeyError:
