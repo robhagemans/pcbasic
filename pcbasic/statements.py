@@ -1420,7 +1420,10 @@ def find_next(ins, varname):
     """ Helper function for FOR: find the right NEXT. """
     current = ins.tell()
     skip_to_next(ins, tk.FOR, tk.NEXT, allow_comma=True)
-    util.require(ins, (tk.NEXT, ','), err=error.FOR_WITHOUT_NEXT)
+    if util.skip_white(ins) not in (tk.NEXT, ','):
+        # FOR without NEXT marked with FOR line number
+        ins.seek(current)
+        raise error.RunError(error.FOR_WITHOUT_NEXT)
     comma = (ins.read(1) == ',')
     # get position and line number just after the NEXT
     nextpos = ins.tell()
@@ -1430,8 +1433,8 @@ def find_next(ins, varname):
     if not varname2:
         util.require(ins, tk.end_statement)
     if (comma or varname2) and varname2 != varname:
-        # NEXT without FOR
-        raise error.RunError(error.NEXT_WITHOUT_FOR, nextpos-1)
+        # NEXT without FOR marked with NEXT line number, while we're only at FOR
+        raise error.RunError(error.NEXT_WITHOUT_FOR)
     ins.seek(current)
     return nextpos
 
