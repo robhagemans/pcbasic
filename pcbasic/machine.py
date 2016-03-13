@@ -602,8 +602,11 @@ def set_font_memory(addr, value):
 def get_basic_memory(addr):
     """ Retrieve data from BASIC memory. """
     addr -= memory.data_segment*0x10
+    if addr < 4:
+        # sentinel value, used by some programs to identify GW-BASIC
+        return (0, 0, 0x10, 0x82)[addr]
     # DS:2c, DS:2d  end of memory available to BASIC
-    if addr == 0x2C:
+    elif addr == 0x2C:
         return memory.total_memory % 256
     elif addr == 0x2D:
         return memory.total_memory // 256
