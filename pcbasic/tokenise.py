@@ -1,8 +1,8 @@
 """
 PC-BASIC - tokenise.py
-Convert between tokenised and ASCII formats of a GW-BASIC program file
+Convert between tokenised and plain-text formats of a GW-BASIC program file
 
-(c) 2013, 2014, 2015 Rob Hagemans
+(c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
