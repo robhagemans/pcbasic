@@ -155,7 +155,7 @@ class Break(Error):
         if not state.basic_state.run_mode:
             self.pos = -1
         else:
-            self.pos = state.basic_state.current_statement
+            self.pos = state.basic_state.bytecode.tell()-1
         self.stop = stop
 
 class Reset(Error):
@@ -176,7 +176,7 @@ class RunError(Error):
         if not state.basic_state.run_mode or pos != -1:
             self.pos = pos
         else:
-            self.pos = state.basic_state.current_statement
+            self.pos = state.basic_state.bytecode.tell()-1
 
 def set_err(e):
     """ Set the ERR and ERL values. """
