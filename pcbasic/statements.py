@@ -1437,13 +1437,18 @@ def find_next(ins, varname):
 
 def exec_next(ins):
     """ NEXT: iterate for-loop. """
-    # jump to end of FOR, increment counter, check condition.
-    while not flow.loop_iterate(ins):
+    while True:
+        # record the NEXT (or comma) location
+        pos = ins.tell()
+        # optional variable - errors in this are checked at the scan during FOR
         util.parse_scalar(ins, allow_empty=True)
+        util.require(ins, tk.end_statement + (',',))
+        # increment counter, check condition
+        if flow.loop_iterate(ins, pos):
+            break
         # done if we're not jumping into a comma'ed NEXT
         if not util.skip_white_read_if(ins, (',')):
             break
-    util.require(ins, tk.end_statement)
 
 def exec_goto(ins):
     """ GOTO: jump to specified line number. """

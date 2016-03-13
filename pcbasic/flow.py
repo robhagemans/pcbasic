@@ -111,11 +111,9 @@ def number_inc_gt(typechar, loopvar, stop, step, sgn):
         loopvar[:] = vartypes.integer_to_bytes(vartypes.int_to_integer_signed(int_left))
         return int_left > stop if sgn > 0 else stop > int_left
 
-def loop_iterate(ins):
+def loop_iterate(ins, pos):
     """ Iterate a loop (NEXT). """
-    # we MUST be at nextpos to run this
     # find the matching NEXT record
-    pos = ins.tell()
     num = len(state.basic_state.for_next_stack)
     for depth in range(num):
         forpos, nextpos, typechar, loopvar, stop, step, sgn = state.basic_state.for_next_stack[-depth-1]
