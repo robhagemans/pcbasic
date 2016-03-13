@@ -1,21 +1,10 @@
 """
 PC-BASIC - error.py
-Error handling
+Error constants and exceptions
 
-(c) 2013, 2014, 2015 Rob Hagemans
+(c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
-
-import state
-
-# number and line number of last error
-state.basic_state.errn = -1
-state.basic_state.errp = -1
-
-# jump line number
-state.basic_state.on_error = None
-state.basic_state.error_handle_mode = False
-state.basic_state.error_resume = None
 
 # error constants
 NEXT_WITHOUT_FOR = 1
@@ -146,47 +135,37 @@ errors = {
 
 class Error(Exception):
     """ Base type for exceptions. """
-    pass
-
-class Break(Error):
-    """ Program interrupt. """
-    def __init__(self, stop=False):
-        Error.__init__(self)
-        if not state.basic_state.run_mode:
-            self.pos = -1
-        else:
-            self.pos = state.basic_state.bytecode.tell()-1
-        self.stop = stop
 
 class Reset(Error):
     """ Reset emulator. """
-    def __init__(self):
-        Error.__init__(self)
 
 class Exit(Error):
     """ Exit emulator. """
-    def __init__(self):
+
+
+class Break(Error):
+    """ Program interrupt. """
+
+    def __init__(self, stop=False):
+        """ Initialise break. """
         Error.__init__(self)
+        self.stop = stop
+        self.message = 'Break'
+
 
 class RunError(Error):
     """ Runtime error. """
-    def __init__(self, value, pos=-1):
+
+    def __init__(self, value, pos=None):
+        """ Initialise error. """
         Error.__init__(self)
         self.err = value
-        if not state.basic_state.run_mode or pos != -1:
-            self.pos = pos
-        else:
-            self.pos = state.basic_state.bytecode.tell()-1
+        self.pos = pos
 
-def set_err(e):
-    """ Set the ERR and ERL values. """
-    # set ERR and ERL
-    state.basic_state.errn = e.err
-    state.basic_state.errp = e.pos
-
-def get_message(errnum):
-    """ Get error message for error code. """
-    try:
-        return errors[errnum]
-    except KeyError:
-        return default_msg
+    @property
+    def message(self):
+        """ Get error message. """
+        try:
+            return errors[self.err]
+        except KeyError:
+            return default_msg

@@ -216,7 +216,7 @@ def _handle_math_error(e):
         raise error.RunError(math_error)
     else:
         # write a message & continue as normal
-        console.write_line(error.get_message(math_error))
+        console.write_line(error.RunError(math_error).message)
     # return max value for the appropriate float type
     if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
         return fp.pack(e.args[0])

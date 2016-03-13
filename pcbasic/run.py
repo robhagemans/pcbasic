@@ -182,22 +182,20 @@ def handle_basic_events():
             # attach handler to allow un-stopping event on RETURN
             flow.jump_gosub(event.gosub, event)
 
-def handle_error(s):
+def handle_error(e):
     """ Handle a BASIC error through trapping or error message. """
-    error.set_err(s)
     # not handled by ON ERROR, stop execution
-    console.write_error_message(error.get_message(s.err), program.get_line_number(s.pos))
+    console.write_error_message(e.message, program.get_line_number(e.pos))
     state.basic_state.error_handle_mode = False
     state.basic_state.execute_mode = False
     state.basic_state.input_mode = False
     # special case: syntax error
-    if s.err == error.STX:
+    if e.err == error.STX:
         # for some reason, err is reset to zero by GW-BASIC in this case.
         state.basic_state.errn = 0
-        if s.pos != -1:
+        if e.pos != -1:
             # line edit gadget appears
-            state.basic_state.edit_prompt = (program.get_line_number(s.pos),
-                                             state.basic_state.bytecode.tell())
+            state.basic_state.edit_prompt = (program.get_line_number(e.pos), e.pos+1)
 
 def handle_break(e):
     """ Handle a Break event. """
@@ -205,11 +203,11 @@ def handle_break(e):
     if not state.basic_state.input_mode and not e.stop:
         console.write('^C')
     # if we're in a program, save pointer
+    pos = -1
     if state.basic_state.run_mode:
-        console.write_error_message("Break", program.get_line_number(e.pos))
-        state.basic_state.stop = state.basic_state.bytecode.tell()
-    else:
-        console.write_error_message("Break", -1)
+        pos = state.basic_state.bytecode.tell()
+        state.basic_state.stop = pos
+    console.write_error_message(e.message, program.get_line_number(pos))
     state.basic_state.execute_mode = False
     state.basic_state.input_mode = False
 

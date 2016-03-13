@@ -124,7 +124,7 @@ def convert():
             with prog_outfile:
                 program.save(prog_outfile)
     except error.RunError as e:
-        logging.error(error.get_message(e.err))
+        logging.error(e.message)
     except EnvironmentError as e:
         logging.error(str(e))
 
@@ -170,7 +170,7 @@ def start_basic():
             # start the interpreter (and get out if we ran with -q)
             run.start(config.get('exec'), config.get('run'), config.get('quit'))
     except error.RunError as e:
-        exit_error = error.get_message(e.err)
+        exit_error = e.message
     except error.Exit:
         # pause before exit if requested
         if config.get('wait'):

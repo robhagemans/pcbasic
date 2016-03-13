@@ -43,6 +43,15 @@ import util
 import var
 import vartypes
 
+# number and line number of last error
+state.basic_state.errn = -1
+state.basic_state.errp = -1
+
+# jump line number
+state.basic_state.on_error = None
+state.basic_state.error_handle_mode = False
+state.basic_state.error_resume = None
+
 def prepare():
     """ Initialise statements module. """
     global pcjr_syntax, pcjr_term
@@ -107,7 +116,13 @@ def parse_statement():
             statements[c](ins)
         return True
     except error.RunError as e:
-        error.set_err(e)
+        if e.pos is None:
+            if state.basic_state.run_mode:
+                e.pos = state.basic_state.bytecode.tell()-1
+            else:
+                e.pos = -1
+        state.basic_state.errn = e.err
+        state.basic_state.errp = e.pos
         # don't jump if we're already busy handling an error
         if state.basic_state.on_error is not None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
             state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
