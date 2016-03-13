@@ -1522,8 +1522,7 @@ def find_next(ins, varname):
         util.require(ins, tk.end_statement)
     if (comma or varname2) and varname2 != varname:
         # NEXT without FOR
-        errline = program.get_line_number(nextpos-1) if state.basic_state.run_mode else -1
-        raise error.RunError(error.NEXT_WITHOUT_FOR, errline)
+        raise error.RunError(error.NEXT_WITHOUT_FOR, nextpos-1)
     ins.seek(current)
     return nextpos
 
