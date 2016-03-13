@@ -6,7 +6,9 @@ then
 fi
 numtests=0
 numfail=0
+numknown=0
 failed=
+knowfailed=
 for name in $@
 do
     echo -n "Running test $name... "
@@ -25,13 +27,27 @@ do
     ../../../pcbasic.py --interface=none >/dev/null
     popd > /dev/null
     pass=1
+    known=1
     for file in "$name/model"/*
     do
         filename=$(basename "$file")
         diff "$name/output/$filename" "$name/model/$filename"
         if [ $? -ne 0 ]
         then
-            echo "$filename: FAIL";
+            if [ -d "$name/known" ]
+            then
+                diff "$name/output/$filename" "$name/known/$filename"
+                if [ $? -ne 0 ]
+                then
+                    echo "$filename: FAIL";
+                    known=0
+                else
+                    echo "$filename: known failure";
+                fi
+            else
+                echo "$filename: FAIL";
+                known=0
+            fi
             pass=0
         fi
     done
@@ -42,13 +58,21 @@ do
         then
             echo "$filename: FAIL (not in model)"
             pass=0
+            known=0
         fi
     done
     if [ $pass -ne 1 ]
     then
-        echo "FAILED.";
-        numfail=$((numfail+1))
-        failed="$failed $name"
+        if [ $known -ne 1 ]
+        then
+            echo "FAILED.";
+            failed="$failed $name"
+            numfail=$((numfail+1))
+        else
+            echo "known failure.";
+            numknown=$((numknown+1))
+            knowfailed="$knowfailed $name"
+        fi
     else
         echo "passed.";
         rm -r $name/output
@@ -56,9 +80,17 @@ do
     numtests=$((numtests+1))
 done
 echo
+echo "Ran $numtests tests:"
 if [ $numfail -ne 0 ]
 then
-    echo "Ran $numtests tests, $numfail failed: $failed"
-else
-    echo "Ran $numtests tests, all passed."
+    echo "    $numfail new failures: $failed"
+fi
+if [ $numknown -ne 0 ]
+then
+    echo "    $numknown known failures: $knowfailed"
+fi
+numpass=$((numtests-numknown-numfail))
+if [ $numpass -ne 0 ]
+then
+    echo "    $numpass passes"
 fi
