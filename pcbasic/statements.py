@@ -1364,7 +1364,7 @@ def exec_for(ins):
     # read variable
     varname = util.parse_scalar(ins)
     vartype = varname[-1]
-    if vartype == '$':
+    if vartype in ('$', '#'):
         raise error.RunError(error.TYPE_MISMATCH)
     util.require_read(ins, (tk.O_EQ,))
     start = vartypes.pass_type(vartype, expressions.parse_expression(ins))

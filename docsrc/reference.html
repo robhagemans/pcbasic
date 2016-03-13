@@ -5040,7 +5040,7 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>loop_var</var></code> is a numeric variable.
+                <code><var>loop_var</var></code> is an integer or single-precision variable.
             </li>
             <li>
                 <code><var>start</var></code>, <code><var>stop</var></code> and <code><var>step</var></code> are numeric expressions.
@@ -5056,6 +5056,10 @@
             <li>
                 <code><var>loop_var</var></code> is a string variable or <code><var>start</var></code>,
                 <code><var>stop</var></code>, or <code><var>end</var></code> has a string value:
+                <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>loop_var</var></code> is a double-precision variable:
                 <samp>Type mismatch</samp>.
             </li>
             <li>
