@@ -1420,13 +1420,13 @@ def find_next(ins, varname):
     current = ins.tell()
     skip_to_next(ins, tk.FOR, tk.NEXT, allow_comma=True)
     util.require(ins, (tk.NEXT, ','), err=error.FOR_WITHOUT_NEXT)
-    comma = (ins.read(1)==',')
+    comma = (ins.read(1) == ',')
     # get position and line number just after the NEXT
     nextpos = ins.tell()
     # check var name for NEXT
     varname2 = util.parse_scalar(ins, allow_empty=True)
     # no-var only allowed in standalone NEXT
-    if varname2 == '':
+    if not varname2:
         util.require(ins, tk.end_statement)
     if (comma or varname2) and varname2 != varname:
         # NEXT without FOR
@@ -1438,7 +1438,7 @@ def exec_next(ins):
     """ NEXT: iterate for-loop. """
     # jump to end of FOR, increment counter, check condition.
     while not flow.loop_iterate(ins):
-        util.parse_scalar(ins)
+        util.parse_scalar(ins, allow_empty=True)
         # done if we're not jumping into a comma'ed NEXT
         if not util.skip_white_read_if(ins, (',')):
             break
