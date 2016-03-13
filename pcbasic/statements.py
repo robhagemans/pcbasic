@@ -1528,6 +1528,7 @@ def exec_while(ins):
         state.basic_state.while_wend_stack.append((whilepos, wendpos))
     else:
         # WHILE without WEND
+        ins.seek(whilepos)
         raise error.RunError(error.WHILE_WITHOUT_WEND)
     _check_while_condition(ins, whilepos)
     util.require(ins, tk.end_statement)
@@ -1536,7 +1537,9 @@ def _check_while_condition(ins, whilepos):
     """ Check condition of while-loop. """
     ins.seek(whilepos)
     # condition is zero?
-    if fp.unpack(vartypes.pass_double(expressions.parse_expression(ins))).is_zero():
+    zero_cond = fp.unpack(vartypes.pass_double(expressions.parse_expression(ins))).is_zero()
+    util.require(ins, tk.end_statement)
+    if zero_cond:
         # jump to WEND
         _, wendpos = state.basic_state.while_wend_stack.pop()
         ins.seek(wendpos)
