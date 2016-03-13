@@ -235,21 +235,23 @@ def dim_array(name, dimensions):
         elif d < state.basic_state.array_base:
             raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
     size = array_len(dimensions)
+    # update memory model
+    # first two bytes: chars of name or 0 if name is one byte long
+    name_ptr = state.basic_state.array_current
+    record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
+    array_ptr = name_ptr + record_len
+    array_bytes = size*var_size_bytes(name)
+    check_free_memory(record_len + array_bytes, error.OUT_OF_MEMORY)
+    state.basic_state.array_current += record_len + array_bytes
+    state.basic_state.array_memory[name] = (name_ptr, array_ptr)
     try:
-        state.basic_state.arrays[name] = [ dimensions, bytearray(size*var_size_bytes(name)), 0 ]
+        state.basic_state.arrays[name] = [ dimensions, bytearray(array_bytes), 0 ]
     except OverflowError:
         # out of memory
         raise error.RunError(error.OUT_OF_MEMORY)
     except MemoryError:
         # out of memory
         raise error.RunError(error.OUT_OF_MEMORY)
-    # update memory model
-    # first two bytes: chars of name or 0 if name is one byte long
-    name_ptr = state.basic_state.array_current
-    record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
-    array_ptr = name_ptr + record_len
-    state.basic_state.array_current += record_len + array_size_bytes(name)
-    state.basic_state.array_memory[name] = (name_ptr, array_ptr)
 
 def check_dim_array(name, index):
     """ Check if an array has been allocated. If not, auto-allocate if indices are <= 10; raise error otherwise. """
