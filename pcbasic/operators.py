@@ -218,7 +218,7 @@ def gt(left, right):
 
 def gte(left, right):
     """ Ordering: return -1 if left >= right, 0 otherwise. """
-    return vartypes.bool_to_integer(_bool_gt(left, right) or _bool_eq(left, right))
+    return vartypes.bool_to_integer(not _bool_gt(right, left))
 
 def lte(left, right):
     """ Ordering: return -1 if left <= right, 0 otherwise. """
@@ -226,7 +226,7 @@ def lte(left, right):
 
 def lt(left, right):
     """ Ordering: return -1 if left < right, 0 otherwise. """
-    return vartypes.bool_to_integer(not _bool_gt(left, right) and not _bool_eq(left, right))
+    return vartypes.bool_to_integer(_bool_gt(right, left))
 
 def plus(left, right):
     """ + operator: add or concatenate. """
