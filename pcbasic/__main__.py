@@ -310,7 +310,7 @@ def open_native_or_dos_filename(infile):
     import error
     try:
         # first try exact file name
-        return disk.open_diskfile(open(os.path.expandvars(os.path.expanduser(infile)), 'r'), filetype='BPA', mode='I')
+        return disk.open_diskfile(open(os.path.expandvars(os.path.expanduser(infile)), 'rb'), filetype='BPA', mode='I')
     except EnvironmentError as e:
         # otherwise, accept capitalised versions and default extension
         return devices.open_file(0, infile, filetype='BPA', mode='I')
