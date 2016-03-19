@@ -39,6 +39,7 @@ class Value(object):
             buffer = memoryview(bytearray(self.size))
         self.buffer = memoryview(buffer)
 
+    #RENAME clone()
     def temp_copy(self):
         """Create a temporary copy"""
         return self.__class__().from_bytes(self.buffer)
@@ -255,6 +256,11 @@ class Float(Number):
     mask = None
     posmask = None
 
+    def __init__(self, buffer=None):
+        """Initialise the float"""
+        Number.__init__(self, buffer)
+        self.zero_flag = True
+
     def is_zero(self):
         """Value is zero"""
         return self.buffer[-1] == '\0'
@@ -424,11 +430,11 @@ class Float(Number):
 
     def iadd(self, right):
         """ Add in-place. """
-        return self._normalise(*_iadd_den(self._denormalise(), right._denormalise()))
+        return self._normalise(*self._iadd_den(self._denormalise(), right._denormalise()))
 
     def isub(self, right):
         """ Subtract in-place. """
-        return self._normalise(*_isub_den(self._denormalise(), right._denormalise()))
+        return self._normalise(*self._isub_den(self._denormalise(), right._denormalise()))
 
     def _denormalise(self):
         """Denormalise to shifted mantissa, exp, sign"""
@@ -439,27 +445,77 @@ class Float(Number):
 
     def _normalise(self, exp, man, neg):
         """Normalise from shifted mantissa, exp, sign"""
-        global pden_s
+        global pden_s, lsh, rsh, carry_s
+        lsh = 0; rsh = 0
         # zero denormalised mantissa -> make zero
         if man == 0 or exp == 0:
             exp, man, neg = False, 0, 0
         else:
+            # shift left if subnormal
             while man < self.den_mask:
+                lsh += 1
                 exp -= 1
                 man <<= 1
-            while man >= self.den_upper:
-                exp += 1
-                man >>= 1
             self._check_limits(exp, neg)
         pden_s = man
         # round
-        if man & 0x80:
-            man = (man >> 8) + 1
+        carry_s = man & 0x1ff
+
+        # strange rounding criterion to align with GW
+        if self.zero_flag:
+            if (man & 0xff > 0x80) or (man & 0x180 == 0x180):
+                carry_s = -carry_s
+                man = (man >> 8) + 1
+            else:
+                man >>= 8
         else:
-            man >>= 8
+            if (man & 0xff >= 0x80):
+                carry_s = -carry_s
+                man = (man >> 8) + 1
+            else:
+                man >>= 8
+
         struct.pack_into(self.intformat, self.buffer, 0, man & (self.mask if neg else self.posmask))
         self.buffer[-1] = chr(exp)
         return self
+
+
+    def _iadd_den(self, lden, rden):
+        """ Denormalised add. """
+        lexp, lman, lneg = lden
+        rexp, rman, rneg = rden
+        global lden_s, rden_s, sden_s
+        if rexp == 0:
+            return lexp, lman, lneg
+        if lexp == 0:
+            return rexp, rman, rneg
+        # ensure right has largest exponent
+        if lexp > rexp:
+            lexp, lman, lneg, rexp, rman, rneg = rexp, rman, rneg, lexp, lman, lneg
+        # zero flag for quirky rounding
+        # only set if all the bits we lose by matching exponents were zero
+        self.zero_flag = lman & ((1<<(rexp-lexp))-1) == 0
+        # match exponents
+        lman >>= (rexp - lexp)
+        lexp = rexp
+        lden_s = lman
+        rden_s = rman
+        # add mantissas, taking sign into account
+        sden_s = bin(lman - rman), lneg, rneg
+        if (lneg == rneg):
+            man = lman + rman
+            if man >= self.den_upper:
+                lexp += 1
+                man >>= 1
+            return lexp, man, lneg
+        elif lman > rman:
+            return lexp, lman - rman, lneg
+        return lexp, rman - lman, rneg
+
+    def _isub_den(self, lden, rden):
+        """ Denormalised subtract. """
+        rexp, rman, rneg = rden
+        return self._iadd_den(lden, (rexp, rman, not rneg))
 
 
 class Single(Float):
@@ -533,42 +589,6 @@ class Double(Float):
         return self
 
 
-def _isub_den(lden, rden):
-    """ Denormalised subtract. """
-    rexp, rman, rneg = rden
-    return _iadd_den(lden, (rexp, rman, not rneg))
-
-
-
-def _iadd_den(lden, rden):
-    """ Denormalised add. """
-    lexp, lman, lneg = lden
-    rexp, rman, rneg = rden
-    global lden_s, rden_s, sden_s
-    if rexp == 0:
-        return lexp, lman, lneg
-    if lexp == 0:
-        return rexp, rman, rneg
-    # ensure right has largest exponent
-    if lexp > rexp:
-        lexp, lman, lneg, rexp, rman, rneg = rexp, rman, rneg, lexp, lman, lneg
-    # match exponents
-    while lexp < rexp:
-        lexp += 1
-        lman >>= 1
-    lden_s = lman
-    rden_s = rman
-    # add mantissas, taking sign into account
-    if (lneg == rneg):
-        sden_s = lman + rman
-        return lexp, lman + rman, lneg
-    elif lman > rman:
-        sden_s = lman - rman
-        return lexp, lman - rman, lneg
-    sden_s = rman - lman
-    return lexp, rman - lman, rneg
-
-
 def number_from_token(token):
     """Convert number token to new Number temporary"""
     if token[0] == tk.T_SINGLE:
@@ -579,27 +599,7 @@ def number_from_token(token):
         return Integer().from_token(token)
 
 
-if __name__ == '__main__':
-    r = Single()
-    with open('BYTES.DAT', 'rb') as f:
-        with open ('GWBASADD.DAT', 'rb') as h:
-            with open('NEWADD.DAT', 'wb') as g:
-                while True:
-                    l = r
-                    buf = bytearray(f.read(4))
-                    if len(buf) < 4:
-                        break
-                    r = Single(buf)
-                    ll = l.temp_copy()
-                    out = str(l.iadd(r).to_bytes())
-                    g.write(out)
-                    inp = h.read(4)
-                    if out != inp:
-                        print str(ll.to_bytes()).encode('hex'), str(r.to_bytes()).encode('hex'), out.encode('hex'), inp.encode('hex'),
-                        print ll.to_bytes()[-1] - r.to_bytes()[-1], ll._is_negative(), r._is_negative(),
-                        #print ll.value(), r.value(), l.value() #, Single().from_bytes(inp).value()
-                        print
-                        print bin(rden_s | Single.den_upper)
-                        print bin(lden_s | Single.den_upper)
-                        print bin(sden_s | Single.den_upper)
-                        print bin(pden_s | Single.den_upper)
+
+lden_s, rden_s, sden_s, pden_s = 0,0,0,0
+lsh, rsh = 0, 0
+carry_s = 0
