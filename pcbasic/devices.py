@@ -338,7 +338,7 @@ class TextFileBase(RawFile):
 
     def _check_long_line(self, line):
         """ Check if line is longer than max length; raise error if needed. """
-        if len(line) >= 255:
+        if len(line) > 255:
             if self.split_long_lines:
                 return True
             else:
