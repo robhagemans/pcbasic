@@ -43,6 +43,11 @@ class Value(object):
         """Create a temporary copy"""
         return self.__class__().from_bytes(self.buffer)
 
+    def copy_from(self, other):
+        """Copy another value into this one"""
+        self.buffer[:] = other.buffer
+        return self
+
     def to_bytes(self):
         """Get a copy of the byte representation"""
         return bytearray(self.buffer)
@@ -429,13 +434,42 @@ class Float(Number):
         return self.buffer == rhs.buffer
 
     def iadd(self, right):
-        """ Add in-place. """
+        """Add in-place"""
         return self._normalise(*self._iadd_den(self._denormalise(), right._denormalise()))
 
     def isub(self, right):
-        """ Subtract in-place. """
+        """Subtract in-place"""
         return self._normalise(*self._isub_den(self._denormalise(), right._denormalise()))
 
+    def ishl(self, n=1):
+        """Multiply in-place by 2**n"""
+        if self.is_zero():
+            return self
+        exp = ord(self.buffer[-1]) + n
+        self._check_limits(exp, self.is_negative())
+        self.buffer[-1:] = chr(exp)
+        return self
+
+    def imul10(self):
+        """Multiply in-place by 10"""
+        # 10x == 2(x+4x)
+        self.ishl()
+        self.iadd(self.clone().ishl(2))
+        return self
+
+    def imul(self, right_in):
+        """Multiply in-place"""
+        if self.is_zero():
+            return self
+        if right_in.is_zero():
+            return self.copy_from(right_in)
+        lexp, lman, lneg = self._denormalise()
+        rexp, rman, rneg = right_in._denormalise()
+        lexp += rexp - right_in.bias - 8
+        lneg = (lneg != rneg)
+        lman *= rman
+        lman, lexp = self._bring_to_range(lman, lexp, self.den_mask, self.den_upper)
+        return self._normalise(lexp, lman, lneg)
 
     def _denormalise(self):
         """Denormalise to shifted mantissa, exp, sign"""
@@ -548,6 +582,7 @@ class Single(Float):
             raise ValueError()
         self.buffer[:] = token[-4:]
         return self
+
 
 class Double(Float):
     """Double-precision MBF float"""
