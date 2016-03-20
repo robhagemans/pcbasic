@@ -339,6 +339,9 @@ class Float(object):
 
     def equals(self, right):
         """ Float equals other float. """
+        if self.is_zero():
+            # all zeroes are equal
+            return right.is_zero()
         return (self.neg==right.neg and self.exp==right.exp and self.man&self.carry_mask == right.man&right.carry_mask)
 
     def equals_inc_carry(self, right, grace_bits=0):
