@@ -25,7 +25,7 @@ This file is released under the GNU GPL version 3.
 import struct
 import math
 
-import pcbasic.basictoken as bt
+import basictoken as bt
 
 class Value(object):
     """Abstract base class for value types"""
