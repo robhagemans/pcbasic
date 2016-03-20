@@ -39,8 +39,7 @@ class Value(object):
             buffer = memoryview(bytearray(self.size))
         self.buffer = memoryview(buffer)
 
-    #RENAME clone()
-    def temp_copy(self):
+    def clone(self):
         """Create a temporary copy"""
         return self.__class__().from_bytes(self.buffer)
 
@@ -266,7 +265,7 @@ class Float(Number):
         """Value is zero"""
         return self.buffer[-1] == '\0'
 
-    def _is_negative(self):
+    def is_negative(self):
         """Value is negative"""
         return self.buffer[-2] >= '\x80'
 
@@ -336,7 +335,7 @@ class Float(Number):
         """Return value rounded to Python int"""
         exp = ord(self.buffer[-1]) - self.bias
         mand = struct.unpack(self.intformat, '\0' + bytearray(self.buffer[:-1]))[0] | self.den_mask
-        neg = self._is_negative()
+        neg = self.is_negative()
         if exp > 0:
             mand <<= exp
         else:
@@ -383,12 +382,12 @@ class Float(Number):
         elif isinstance(rhs, Double) and isinstance(self, Single):
             # upgrade to Double
             return Double().from_single(self).gt(rhs)
-        rhsneg = rhs._is_negative()
+        rhsneg = rhs.is_negative()
         # treat zero separately to avoid comparing different mantissas
         # zero is only greater than negative
         if self.is_zero():
-            return self.buffer[-1] != '\0' and bool(rhsneg)
-        isneg = self._is_negative()
+            return bool(rhsneg) and not rhs.is_zero()
+        isneg = self.is_negative()
         if isneg != rhsneg:
             return not(isneg)
         if isneg:
@@ -437,11 +436,12 @@ class Float(Number):
         """ Subtract in-place. """
         return self._normalise(*self._isub_den(self._denormalise(), right._denormalise()))
 
+
     def _denormalise(self):
         """Denormalise to shifted mantissa, exp, sign"""
         exp = ord(self.buffer[-1])
         man = struct.unpack(self.intformat, '\0' + bytearray(self.buffer[:-1]))[0] | self.den_mask
-        neg = self._is_negative()
+        neg = self.is_negative()
         return exp, man, neg
 
     def _normalise(self, exp, man, neg):
