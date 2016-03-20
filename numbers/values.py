@@ -508,6 +508,9 @@ class Float(Number):
         lexp = rexp
         lden_s = lman
         rden_s = rman
+        # shortcut (this affects quirky rounding)
+        if lman < 0x80 and lneg != rneg:
+            return rexp, rman, rneg
         # add mantissas, taking sign into account
         sden_s = bin(lman - rman), lneg, rneg
         if (lneg == rneg):
