@@ -383,6 +383,9 @@ class Float(object):
 
     def equals(self, right):
         """ Float equals other float. """
+        if self.is_zero():
+            # all zeroes are equal
+            return right.is_zero()
         return (self.neg==right.neg and self.exp==right.exp and self.man&self.carry_mask == right.man&right.carry_mask)
 
     def bring_to_range(self, lim_bot, lim_top):
