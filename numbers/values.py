@@ -446,7 +446,7 @@ class Float(Number):
 
     def _normalise(self, exp, man, neg):
         """Normalise from shifted mantissa, exp, sign"""
-        global pden_s, lsh, rsh, carry_s
+        global pden_s, lsh, rsh
         lsh = 0; rsh = 0
         # zero denormalised mantissa -> make zero
         if man == 0 or exp == 0:
@@ -459,28 +459,16 @@ class Float(Number):
                 man <<= 1
             self._check_limits(exp, neg)
         pden_s = man
-        # round
-        carry_s = man & 0x1ff
 
         # strange rounding criterion to align with GW
         if self.zero_flag and not self.sub_flag:
-            if (man & 0xff > 0x80) or (man & 0x180 == 0x180):
-                carry_s = -carry_s
-                man = (man >> 8) + 1
-            else:
-                man >>= 8
+            round_up = (man & 0xff > 0x80) or (man & 0x180 == 0x180)
         elif self.sub_flag:
-            if (man & 0xff >= 0x80) and not ((man & 0x1c0 == 0x80) and not (man & 0x1ff == 0xa0)):
-                carry_s = -carry_s
-                man = (man >> 8) + 1
-            else:
-                man >>= 8
+            round_up = (man & 0xff >= 0x80) and not ((man & 0x1c0 == 0x80) and not (man & 0x1ff == 0xa0))
         else:
-            if (man & 0xff >= 0x80):
-                carry_s = -carry_s
-                man = (man >> 8) + 1
-            else:
-                man >>= 8
+            # normal, sane rounding
+            round_up = (man & 0xff >= 0x80)
+        man = (man >> 8) + round_up
 
         struct.pack_into(self.intformat, self.buffer, 0, man & (self.mask if neg else self.posmask))
         self.buffer[-1] = chr(exp)
@@ -613,4 +601,3 @@ def number_from_token(token):
 
 lden_s, rden_s, sden_s, pden_s = 0,0,0,0
 lsh, rsh = 0, 0
-carry_s = 0
