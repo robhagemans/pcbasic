@@ -344,10 +344,6 @@ class Float(object):
             return right.is_zero()
         return (self.neg==right.neg and self.exp==right.exp and self.man&self.carry_mask == right.man&right.carry_mask)
 
-    def equals_inc_carry(self, right, grace_bits=0):
-        """ Float equals other float, taking carry into account. """
-        return (self.neg==right.neg and self.exp==right.exp and abs(self.man-right.man) < (1<<grace_bits))
-
     def bring_to_range(self, lim_bot, lim_top):
         """ Return exponentiation needed to bring float into range. """
         exp10 = 0
