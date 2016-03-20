@@ -470,7 +470,7 @@ class Float(Number):
             else:
                 man >>= 8
         elif self.sub_flag:
-            if (man & 0xff >= 0x80) and not (man & 0x1c0 == 0x80):
+            if (man & 0xff >= 0x80) and not ((man & 0x1c0 == 0x80) and not (man & 0x3ff == 0x2a0)):
                 carry_s = -carry_s
                 man = (man >> 8) + 1
             else:
