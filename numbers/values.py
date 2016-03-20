@@ -260,6 +260,7 @@ class Float(Number):
         """Initialise the float"""
         Number.__init__(self, buffer)
         self.zero_flag = True
+        self.sub_flag = False
 
     def is_zero(self):
         """Value is zero"""
@@ -462,8 +463,14 @@ class Float(Number):
         carry_s = man & 0x1ff
 
         # strange rounding criterion to align with GW
-        if self.zero_flag:
+        if self.zero_flag and not self.sub_flag:
             if (man & 0xff > 0x80) or (man & 0x180 == 0x180):
+                carry_s = -carry_s
+                man = (man >> 8) + 1
+            else:
+                man >>= 8
+        elif self.sub_flag:
+            if (man & 0xff >= 0x80) and not (man & 0x1c0 == 0x80):
                 carry_s = -carry_s
                 man = (man >> 8) + 1
             else:
@@ -495,6 +502,7 @@ class Float(Number):
         # zero flag for quirky rounding
         # only set if all the bits we lose by matching exponents were zero
         self.zero_flag = lman & ((1<<(rexp-lexp))-1) == 0
+        self.sub_flag = lneg != rneg
         # match exponents
         lman >>= (rexp - lexp)
         lexp = rexp
