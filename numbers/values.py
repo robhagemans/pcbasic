@@ -305,7 +305,7 @@ class Float(Number):
         # why do we need this here?
         man, exp = self._bring_to_range(man, exp, self.posmask, self.mask)
         if not self._check_limits(exp, neg):
-            return
+            return self
         struct.pack_into(self.intformat, self.buffer, 0, man & (self.mask if neg else self.posmask))
         self.buffer[-1] = chr(exp)
         return self
@@ -322,7 +322,8 @@ class Float(Number):
             self.buffer[:] = self.neg_max if neg else self.pos_max
             raise OverflowError()
         elif exp <= 0:
-            self.buffer[:] = self.zero
+            # set to zero, but leave mantissa as is
+            self.buffer[-1:] = chr(0)
             return False
         return True
 
@@ -358,7 +359,7 @@ class Float(Number):
             neg = in_int < 0
             man, exp = self._bring_to_range(abs(in_int), self.bias, self.posmask, self.mask)
             if not self._check_limits(exp, neg):
-                return
+                return self
             struct.pack_into(self.intformat, self.buffer, 0, man & (self.mask if neg else self.posmask))
             self.buffer[-1] = chr(exp)
         return self
@@ -446,7 +447,8 @@ class Float(Number):
         if self.is_zero():
             return self
         exp = ord(self.buffer[-1]) + n
-        self._check_limits(exp, self.is_negative())
+        if not self._check_limits(exp, self.is_negative()):
+            return self
         self.buffer[-1:] = chr(exp)
         return self
 
@@ -459,16 +461,18 @@ class Float(Number):
 
     def imul(self, right_in):
         """Multiply in-place"""
-        if self.is_zero():
+        if self.is_zero() or right_in.is_zero():
+            # set any zeroes to standard zero
+            self.buffer[:] = self.zero
             return self
-        if right_in.is_zero():
-            return self.copy_from(right_in)
         lexp, lman, lneg = self._denormalise()
         rexp, rman, rneg = right_in._denormalise()
         lexp += rexp - right_in.bias - 8
         lneg = (lneg != rneg)
         lman *= rman
         lman, lexp = self._bring_to_range(lman, lexp, self.den_mask, self.den_upper)
+        # use sensible rounding
+        self.zero_flag, self.sub_flag = False, False
         return self._normalise(lexp, lman, lneg)
 
     def _denormalise(self):
@@ -483,15 +487,16 @@ class Float(Number):
         global pden_s, lsh, rsh
         lsh = 0; rsh = 0
         # zero denormalised mantissa -> make zero
-        if man == 0 or exp == 0:
-            exp, man, neg = False, 0, 0
-        else:
-            # shift left if subnormal
-            while man < self.den_mask:
-                lsh += 1
-                exp -= 1
-                man <<= 1
-            self._check_limits(exp, neg)
+        if man == 0 or exp <= 0:
+            self.buffer[:] = self.zero
+            return self
+        # shift left if subnormal
+        while man < self.den_mask:
+            lsh += 1
+            exp -= 1
+            man <<= 1
+        if not self._check_limits(exp, neg):
+            return self
         pden_s = man
 
         # strange rounding criterion to align with GW
