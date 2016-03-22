@@ -678,7 +678,10 @@
     </ul>
 
     <h4 id="string-operators">String operators</h4>
-    <p>The string concatenation operator is <code>+</code>. It has a binary as well as a unary form.</p>
+    <p>
+        The string concatenation operator is <code>+</code>. It has a binary as well as a unary form.
+        The unary minus may also be used on strings, but has no effect.
+    </p>
     <div class="scrollable">
         <table>
             <tr>
@@ -694,6 +697,13 @@
             <tr>
                 <td id="unary-concat"><code>+ <var>y</var></code></td>
                 <td>Unary Plus</td>
+                <td>
+                    Value of <code><var>y</var></code>
+                </td>
+            </tr>
+            <tr>
+                <td id="string-unary-minus"><code>- <var>y</var></code></td>
+                <td>Unary Minus</td>
                 <td>
                     Value of <code><var>y</var></code>
                 </td>
@@ -738,18 +748,13 @@
             <var>y</var><b> = ABS(</b><var>x</var><b>)</b>
         </code>
         <p>
-            Returns the absolute value of <code><var>x</var></code>.
+            Returns the absolute value of <code><var>x</var></code> if <code><var>x</var></code> is a number and the
+            value of <code><var>x</var></code> if <code><var>x</var></code> is a string.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>x</var></code> is an expression with a numeric value.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+                <code><var>x</var></code> is an expression.
             </li>
         </ul>
     </section>

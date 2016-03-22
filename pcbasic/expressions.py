@@ -68,6 +68,7 @@ operators = {
 }
 # can be combined like <> >=
 combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
+
 # can be unary
 unary = (tk.O_PLUS, tk.O_MINUS, tk.NOT)
 
@@ -820,7 +821,8 @@ def value_rnd(ins):
 
 def value_abs(ins):
     """ ABS: get absolute value. """
-    return vartypes.number_abs(vartypes.pass_number_keep(parse_bracket(ins)))
+    inp = parse_bracket(ins)
+    return inp if inp[0] == '$' else vartypes.number_abs(inp)
 
 def value_int(ins):
     """ INT: get floor value. """
@@ -852,7 +854,7 @@ def value_operator(op, left, right):
     if left is None:
         if op == tk.O_MINUS:
             # negation
-            return vartypes.number_neg(vartypes.pass_number_keep(right))
+            return vneg(right)
         elif op == tk.O_PLUS:
             # unary plus is no-op for numbers and strings
             return right
@@ -938,6 +940,13 @@ def vplus(left, right):
         return vartypes.pack_string(vartypes.pass_string_unpack(left) + vartypes.pass_string_unpack(right))
     else:
         return vartypes.number_add(left, right)
+
+def vneg(right):
+    """ -right. """
+    if right[0] == '$':
+        return right
+    else:
+        return vartypes.number_neg(right)
 
 def vintdiv(left, right):
     """ Left\\right. """
