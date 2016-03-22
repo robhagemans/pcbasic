@@ -71,7 +71,7 @@ combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
 
 # unary operators
 unary = {
-    tk.O_MINUS: op.unary_minus,
+    tk.O_MINUS: op.neg,
     tk.O_PLUS: lambda x: x,
     tk.NOT: op.number_not,
 }
