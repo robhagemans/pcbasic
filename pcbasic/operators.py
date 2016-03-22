@@ -229,8 +229,15 @@ def lt(left, right):
     return vartypes.bool_to_integer(_bool_gt(right, left))
 
 def plus(left, right):
-    """ + operator: add or concatenate. """
+    """ binary + operator: add or concatenate. """
     if left[0] == '$':
         return string_concat(left, right)
     else:
         return number_add(left, right)
+
+def unary_minus(right):
+    """ unary - operator: negate or no-op for strings. """
+    if right[0] == '$':
+        return right
+    else:
+        return number_neg(right)

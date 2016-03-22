@@ -71,7 +71,7 @@ combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
 
 # unary operators
 unary = {
-    tk.O_MINUS: op.number_neg,
+    tk.O_MINUS: op.unary_minus,
     tk.O_PLUS: lambda x: x,
     tk.NOT: op.number_not,
 }
@@ -868,7 +868,8 @@ def value_rnd(ins):
 
 def value_abs(ins):
     """ ABS: get absolute value. """
-    return op.number_abs(vartypes.pass_number(parse_bracket(ins)))
+    inp = parse_bracket(ins)
+    return inp if inp[0] == '$' else op.number_abs(inp)
 
 def value_int(ins):
     """ INT: get floor value. """
