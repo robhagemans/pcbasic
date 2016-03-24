@@ -513,12 +513,7 @@ class Float(Number):
             round_up = ((man & 0xff >= 0x80) and not (man & 0x1c0 == 0x80)) or (man & 0x1ff == 0xa0)
         else:
             # round to nearest; halves to even (Gaussian rounding)
-            if man & 0xff == 0x80:
-                # only round half (0x80) up if that takes us to a 0
-                round_up = (man & 0x100 == 0x100)
-            else:
-                # if zero flag not set, we're above half at 0x80
-                round_up = (man & 0xff >= 0x80)
+            round_up = (man & 0xff > 0x80) or (man & 0xff == 0x80 and man & 0x100 == 0x100)
         man = (man >> 8) + round_up
 
         struct.pack_into(self.intformat, self.buffer, 0, man & (self.mask if neg else self.posmask))
@@ -564,8 +559,10 @@ class Float(Number):
                 man >>= 1
             return lexp, man, lneg
         elif lman > rman:
-            return lexp, lman - rman, lneg
-        return lexp, rman - lman, rneg
+            man, neg = lman - rman, lneg
+        else:
+            man, neg = rman - lman, rneg
+        return lexp, man, neg
 
     def _isub_den(self, lden, rden):
         """ Denormalised subtract. """
