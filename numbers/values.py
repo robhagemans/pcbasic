@@ -499,14 +499,27 @@ class Float(Number):
             return self
         pden_s = man
 
-        # strange rounding criterion to align with GW
-        if self.zero_flag and not self.sub_flag:
-            round_up = (man & 0xff > 0x80) or (man & 0x180 == 0x180)
-        elif self.sub_flag:
-            round_up = (man & 0xff >= 0x80) and not ((man & 0x1c0 == 0x80) and not (man & 0x1ff == 0xa0))
+        if self.sub_flag:
+            # A and not (B and not C) <==> A and (not B or C) <==> (A and not B) or (A and C)  <==> (A and not B) or C (since C implies A)
+            # A: >=     x 1000 0000
+            # B: ==     0 10xx xxxx
+            # C: ==     0 1010 0000    rounds up
+            #
+            # <  x 1000 0000 always rounds down (Gaussian)
+            # == 1 1000 0000 rounds up (Gaussian)
+            # but:
+            # == 0 1010 0000 rounds up
+            # == 0 11xx xxxx always rounds up
+            # == 0 10xx xxxx rounds down except 0 1010 0000
+            round_up = ((man & 0xff >= 0x80) and not (man & 0x1c0 == 0x80)) or (man & 0x1ff == 0xa0)
         else:
-            # normal, sane rounding
-            round_up = (man & 0xff >= 0x80)
+            # round to nearest; halves to even (Gaussian rounding)
+            if man & 0xff == 0x80 and self.zero_flag:
+                # only round half (0x80) up if that takes us to a 0
+                round_up = (man & 0x100 == 0x100)
+            else:
+                # if zero flag not set, we're above half at 0x80
+                round_up = (man & 0xff >= 0x80)
         man = (man >> 8) + round_up
 
         struct.pack_into(self.intformat, self.buffer, 0, man & (self.mask if neg else self.posmask))
