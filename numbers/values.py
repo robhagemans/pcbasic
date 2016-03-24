@@ -263,7 +263,6 @@ class Float(Number):
     def __init__(self, buffer=None):
         """Initialise the float"""
         Number.__init__(self, buffer)
-        self.zero_flag = True
         self.sub_flag = False
 
     def is_zero(self):
@@ -472,7 +471,7 @@ class Float(Number):
         lman *= rman
         lman, lexp = self._bring_to_range(lman, lexp, self.den_mask, self.den_upper)
         # use sensible rounding
-        self.zero_flag, self.sub_flag = False, False
+        self.sub_flag = False
         return self._normalise(lexp, lman, lneg)
 
     def _denormalise(self):
@@ -514,7 +513,7 @@ class Float(Number):
             round_up = ((man & 0xff >= 0x80) and not (man & 0x1c0 == 0x80)) or (man & 0x1ff == 0xa0)
         else:
             # round to nearest; halves to even (Gaussian rounding)
-            if man & 0xff == 0x80 and self.zero_flag:
+            if man & 0xff == 0x80:
                 # only round half (0x80) up if that takes us to a 0
                 round_up = (man & 0x100 == 0x100)
             else:
@@ -541,10 +540,15 @@ class Float(Number):
             lexp, lman, lneg, rexp, rman, rneg = rexp, rman, rneg, lexp, lman, lneg
         # zero flag for quirky rounding
         # only set if all the bits we lose by matching exponents were zero
-        self.zero_flag = lman & ((1<<(rexp-lexp))-1) == 0
+        zero_flag = lman & ((1<<(rexp-lexp))-1) == 0
         self.sub_flag = lneg != rneg
         # match exponents
         lman >>= (rexp - lexp)
+        if not zero_flag and not self.sub_flag:
+            # break tie if we're at exact half after dropping digits
+            # does this need to be applied further down after right shift?
+            # probably only difference is when adding something to 7FFFFF
+            lman |= 0x1
         lexp = rexp
         lden_s = lman
         rden_s = rman
