@@ -471,14 +471,15 @@ class Float(Number):
         lneg = (lneg != rneg)
         lman *= rman
         sden_s = lman
+        if lexp < -31:
+            self.buffer[:] = self.zero
+            return self.buffer
         # drop some precision
         lman, lexp = self._bring_to_range(lman, lexp, self.den_mask>>4, self.den_upper>>4)
         # rounding quirk
         if lman & 0xf == 0x9:
             lman &= 0xfffffffffe
         self._normalise(lexp, lman, lneg)
-        if self.is_zero():
-            self.buffer[:] = self.zero
         return self
 
     def _denormalise(self):
@@ -499,15 +500,14 @@ class Float(Number):
         while man < self.den_mask:
             exp -= 1
             man <<= 1
-        if not self._check_limits(exp, neg):
-            return self
         pden_s = man
         # round to nearest; halves to even (Gaussian rounding)
         round_up = (man & 0xff > 0x80) or (man & 0xff == 0x80 and man & 0x100 == 0x100)
         man = (man >> 8) + round_up
         # pack into byte representation
         struct.pack_into(self.intformat, self.buffer, 0, man & (self.mask if neg else self.posmask))
-        self.buffer[-1] = chr(exp)
+        if self._check_limits(exp, neg):
+            self.buffer[-1] = chr(exp)
         return self
 
 
