@@ -263,7 +263,6 @@ class Float(Number):
     def __init__(self, buffer=None):
         """Initialise the float"""
         Number.__init__(self, buffer)
-        self.sub_flag = False
 
     def is_zero(self):
         """Value is zero"""
@@ -470,8 +469,6 @@ class Float(Number):
         lneg = (lneg != rneg)
         lman *= rman
         lman, lexp = self._bring_to_range(lman, lexp, self.den_mask, self.den_upper)
-        # use sensible rounding
-        self.sub_flag = False
         return self._normalise(lexp, lman, lneg)
 
     def _denormalise(self):
@@ -483,39 +480,22 @@ class Float(Number):
 
     def _normalise(self, exp, man, neg):
         """Normalise from shifted mantissa, exp, sign"""
-        global pden_s, lsh, rsh
-        lsh = 0; rsh = 0
+        global pden_s
         # zero denormalised mantissa -> make zero
         if man == 0 or exp <= 0:
             self.buffer[:] = self.zero
             return self
         # shift left if subnormal
         while man < self.den_mask:
-            lsh += 1
             exp -= 1
             man <<= 1
         if not self._check_limits(exp, neg):
             return self
         pden_s = man
-
-        if self.sub_flag:
-            # A and not (B and not C) <==> A and (not B or C) <==> (A and not B) or (A and C)  <==> (A and not B) or C (since C implies A)
-            # A: >=     x 1000 0000
-            # B: ==     0 10xx xxxx
-            # C: ==     0 1010 0000    rounds up
-            #
-            # <  x 1000 0000 always rounds down (Gaussian)
-            # == 1 1000 0000 rounds up (Gaussian)
-            # but:
-            # == 0 1010 0000 rounds up
-            # == 0 11xx xxxx always rounds up
-            # == 0 10xx xxxx rounds down except 0 1010 0000
-            round_up = ((man & 0xff >= 0x80) and not (man & 0x1c0 == 0x80)) or (man & 0x1ff == 0xa0)
-        else:
-            # round to nearest; halves to even (Gaussian rounding)
-            round_up = (man & 0xff > 0x80) or (man & 0xff == 0x80 and man & 0x100 == 0x100)
+        # round to nearest; halves to even (Gaussian rounding)
+        round_up = (man & 0xff > 0x80) or (man & 0xff == 0x80 and man & 0x100 == 0x100)
         man = (man >> 8) + round_up
-
+        # pack into byte representation
         struct.pack_into(self.intformat, self.buffer, 0, man & (self.mask if neg else self.posmask))
         self.buffer[-1] = chr(exp)
         return self
@@ -530,38 +510,36 @@ class Float(Number):
             return lexp, lman, lneg
         if lexp == 0:
             return rexp, rman, rneg
-        # ensure right has largest exponent
-        if lexp > rexp:
+        # ensure right is larger
+        if lexp > rexp or (lexp == rexp and lman > rman):
             lexp, lman, lneg, rexp, rman, rneg = rexp, rman, rneg, lexp, lman, lneg
         # zero flag for quirky rounding
         # only set if all the bits we lose by matching exponents were zero
         zero_flag = lman & ((1<<(rexp-lexp))-1) == 0
-        self.sub_flag = lneg != rneg
+        sub_flag = lneg != rneg
         # match exponents
         lman >>= (rexp - lexp)
-        if not zero_flag and not self.sub_flag:
-            # break tie if we're at exact half after dropping digits
-            # does this need to be applied further down after right shift?
-            # probably only difference is when adding something to 7FFFFF
-            lman |= 0x1
         lexp = rexp
         lden_s = lman
         rden_s = rman
         # shortcut (this affects quirky rounding)
-        if lman < 0x80 and lneg != rneg:
+        if (lman < 0x80 or lman == 0x80 and zero_flag) and sub_flag:
             return rexp, rman, rneg
+        if not zero_flag and not sub_flag:
+            # break tie if we're at exact half after dropping digits
+            lman |= 0x2
         # add mantissas, taking sign into account
-        sden_s = bin(lman - rman), lneg, rneg
-        if (lneg == rneg):
-            man = lman + rman
+        if not sub_flag:
+            man, neg = lman + rman, lneg
             if man >= self.den_upper:
                 lexp += 1
                 man >>= 1
-            return lexp, man, lneg
-        elif lman > rman:
-            man, neg = lman - rman, lneg
         else:
             man, neg = rman - lman, rneg
+        # attempt to match GW-BASIC subtraction rounding
+        sden_s = -man if sub_flag else man
+        if sub_flag and (man & 0x1c0 == 0x080) and not (man & 0x1ff == 0x80) and (man & 0x1ff != 0xa0):
+            man &= 0xffffffff7f
         return lexp, man, neg
 
     def _isub_den(self, lden, rden):
@@ -654,4 +632,3 @@ def number_from_token(token):
 
 
 lden_s, rden_s, sden_s, pden_s = 0,0,0,0
-lsh, rsh = 0, 0
