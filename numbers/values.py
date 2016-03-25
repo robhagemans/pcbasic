@@ -459,16 +459,23 @@ class Float(Number):
 
     def imul(self, right_in):
         """Multiply in-place"""
+        global lden_s, rden_s, sden_s
         if self.is_zero() or right_in.is_zero():
             # set any zeroes to standard zero
             self.buffer[:] = self.zero
             return self
         lexp, lman, lneg = self._denormalise()
         rexp, rman, rneg = right_in._denormalise()
+        lden_s, rden_s = lman, rman
         lexp += rexp - right_in.bias - 8
         lneg = (lneg != rneg)
         lman *= rman
-        lman, lexp = self._bring_to_range(lman, lexp, self.den_mask, self.den_upper)
+        sden_s = lman
+        # drop some precision
+        lman, lexp = self._bring_to_range(lman, lexp, self.den_mask>>4, self.den_upper>>4)
+        # rounding quirk
+        if lman & 0xf == 0x9:
+            lman &= 0xfffffffffe
         return self._normalise(lexp, lman, lneg)
 
     def _denormalise(self):
