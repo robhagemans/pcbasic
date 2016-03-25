@@ -476,7 +476,10 @@ class Float(Number):
         # rounding quirk
         if lman & 0xf == 0x9:
             lman &= 0xfffffffffe
-        return self._normalise(lexp, lman, lneg)
+        self._normalise(lexp, lman, lneg)
+        if self.is_zero():
+            self.buffer[:] = self.zero
+        return self
 
     def _denormalise(self):
         """Denormalise to shifted mantissa, exp, sign"""
