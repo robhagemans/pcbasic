@@ -31,6 +31,7 @@ def main():
     global config
     try:
         import config
+        import debug
         if plat.system == 'Android':
             # resume from existing directory (or clear it if we're not resuming)
             if not config.get('resume') and os.path.exists(plat.temp_dir):
@@ -43,7 +44,7 @@ def main():
             # in version mode, print version and exit
             sys.stdout.write(plat.version + '\n')
             if config.get('debug'):
-                debug_details()
+                debug.details()
         elif config.get('help'):
             # in help mode, print usage and exit
             with open(os.path.join(plat.info_dir, 'usage.txt')) as f:
@@ -106,7 +107,7 @@ def convert():
     try:
         prog_infile = None
         if infile:
-            prog_infile = open_native_or_dos_filename(infile)
+            prog_infile = disk.open_native_or_dos_filename(infile)
         elif plat.has_stdin:
             # use StringIO buffer for seekability
             in_buffer = StringIO(sys.stdin.read())
@@ -140,15 +141,15 @@ def start_basic():
     import reset
     import sound
     import audio
+    import video
     do_reset = False
     backend, console = None, None
     exit_error = ''
+    # resume from saved emulator state if requested and available
+    resume = config.get('resume') and state.load()
     try:
-        # resume from saved emulator state if requested and available
-        resume = config.get('resume') and state.load()
         # choose the video and sound backends
         backend, console = prepare_console()
-        # greet, load and run only if not resuming
         if resume:
             # override selected settings from command line
             cassette.override()
@@ -156,34 +157,17 @@ def start_basic():
             # suppress double prompt
             if not state.basic_state.execute_mode:
                 state.basic_state.prompt = False
-            run.start('', False, config.get('quit'))
+            run.loop()
         else:
-            # load/run program
-            config.options['run'] = config.get(0) or config.get('run')
-            prog = config.get('run') or config.get('load')
-            if prog:
-                # on load, accept capitalised versions and default extension
-                with open_native_or_dos_filename(prog) as progfile:
-                    program.load(progfile)
-                reset.clear()
-            print_greeting(console)
-            # start the interpreter (and get out if we ran with -q)
-            run.start(config.get('exec'), config.get('run'), config.get('quit'))
-    except error.RunError as e:
-        exit_error = e.message
-    except error.Exit:
-        # pause before exit if requested
-        if config.get('wait'):
-            backend.video_queue.put(backend.Event(backend.VIDEO_SET_CAPTION, 'Press a key to close window'))
-            backend.video_queue.put(backend.Event(backend.VIDEO_SHOW_CURSOR, False))
-            state.console_state.keyb.pause = True
-            # this performs a blocking keystroke read if in pause state
-            backend.check_events()
-    except error.Reset:
-        do_reset = True
+            # greet, load and start the interpreter
+            run.start()
     except KeyboardInterrupt:
         if config.get('debug'):
             raise
+    except error.Reset:
+        do_reset = True
+    except error.RunError as e:
+        exit_error = e.message
     except Exception as e:
         exit_error = "Unhandled exception\n%s" % traceback.format_exc()
     finally:
@@ -193,26 +177,14 @@ def start_basic():
             logging.debug('Error on closing audio: %s', e)
         try:
             # fix the terminal on exit (important for ANSI terminals)
-            # and save display interface state into screen state
-            state.console_state.screen.close()
+            video.close()
         except (NameError, AttributeError) as e:
-            logging.debug('Error on closing screen: %s', e)
+            logging.debug('Error on closing video: %s', e)
         # delete state if resetting
         if do_reset:
             state.delete()
             if plat.system == 'Android':
                 shutil.rmtree(plat.temp_dir)
-        else:
-            state.save()
-        try:
-            # close files if we opened any
-            devices.close_files()
-        except (NameError, AttributeError) as e:
-            logging.debug('Error on closing files: %s', e)
-        try:
-            devices.close_devices()
-        except (NameError, AttributeError) as e:
-            logging.debug('Error on closing devices: %s', e)
         if exit_error:
             logging.error(exit_error)
 
@@ -232,71 +204,6 @@ def prepare_console():
     if not state.loaded:
         console.init_mode()
     return backend, console
-
-def print_greeting(console):
-    """ Print the greeting and the KEY row if we're not running a program. """
-    import var
-    greeting = (
-        'PC-BASIC {version} {note}\r'
-        '(C) Copyright 2013--2016 Rob Hagemans.\r'
-        '{free} Bytes free')
-    # following GW, don't write greeting for redirected input
-    # or command-line filter run
-    if (not config.get('run') and not config.get('exec') and
-             not config.get('input') and not config.get(0) and
-             not config.get('interface') == 'none'):
-        debugstr = ' [DEBUG mode]' if config.get('debug') else ''
-        params = { 'version': plat.version, 'note': debugstr, 'free': var.fre()}
-        console.clear()
-        console.write_line(greeting.format(**params))
-        console.show_keys(True)
-
-def open_native_or_dos_filename(infile):
-    """ If the specified file exists, open it; if not, try as DOS file name. """
-    import devices
-    import disk
-    import cassette
-    import error
-    try:
-        # first try exact file name
-        return disk.create_file_object(open(os.path.expandvars(os.path.expanduser(infile)), 'rb'), filetype='BPA', mode='I')
-    except EnvironmentError as e:
-        # otherwise, accept capitalised versions and default extension
-        return devices.open_file(0, infile, filetype='BPA', mode='I')
-
-def debug_details():
-    """ Show detailed version/debugging information. """
-    import platform
-    logging.info('\nPLATFORM')
-    logging.info('os: %s %s %s', plat.system, platform.processor(), platform.version())
-    logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
-    logging.info('\nMODULES')
-    # try numpy before pygame to avoid strange ImportError on FreeBSD
-    modules = ('numpy', 'win32api', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial', 'parallel')
-    for module in modules:
-        try:
-            m = __import__(module)
-        except ImportError:
-            logging.info('%s: --', module)
-        else:
-            for version_attr in ('__version__', 'version', 'VERSION'):
-                try:
-                    version = getattr(m, version_attr)
-                    logging.info('%s: %s', module, version)
-                    break
-                except AttributeError:
-                    pass
-            else:
-                logging.info('available\n')
-    if plat.system != 'Windows':
-        logging.info('\nEXTERNAL TOOLS')
-        tools = ('lpr', 'paps', 'beep', 'xclip', 'xsel', 'pbcopy', 'pbpaste')
-        for tool in tools:
-            try:
-                location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')
-                logging.info('%s: %s', tool, location)
-            except Exception as e:
-                logging.info('%s: --', tool)
 
 
 if __name__ == "__main__":

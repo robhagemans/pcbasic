@@ -253,6 +253,14 @@ def create_file_object(fhandle, filetype, mode, name=b'', number=0,
         msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
         raise ValueError(msg)
 
+def open_native_or_dos_filename(infile):
+    """ If the specified file exists, open it; if not, try as DOS file name. """
+    try:
+        # first try exact file name
+        return create_file_object(open(os.path.expandvars(os.path.expanduser(infile)), 'rb'), filetype='BPA', mode='I')
+    except EnvironmentError as e:
+        # otherwise, accept capitalised versions and default extension
+        return devices.open_file(0, infile, filetype='BPA', mode='I')
 
 ##############################################################################
 # Locks

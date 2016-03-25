@@ -526,10 +526,6 @@ class Screen(object):
         self.text_data, self.mode_data = modes.get_modes(self,
                                     self.cga4_palette, self.video_mem_size)
 
-    def close(self):
-        """ Close the display. """
-        video.close()
-
     def resume(self):
         """ Load a video mode from storage and initialise. """
         # recalculate modes in case we've changed hardware emulations

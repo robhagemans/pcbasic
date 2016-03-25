@@ -11,6 +11,7 @@ import sys
 import traceback
 import logging
 
+import plat
 import error
 import util
 import tokenise
@@ -22,6 +23,10 @@ import backend
 import reset
 import flow
 import debug
+import config
+import devices
+import disk
+import var
 
 # true if a prompt is needed on next cycle
 state.basic_state.prompt = True
@@ -34,25 +39,66 @@ state.basic_state.input_mode = False
 # previous interpreter mode
 state.basic_state.last_mode = False, False
 
-def start(cmd='', run=False, quit=False):
+
+def prepare():
+    """ Initialise interpreter module. """
+    global quit, wait, run, prog, cmd
+    quit = config.get('quit')
+    wait = config.get('wait')
+    # load/run program
+    run = config.get(0) or config.get('run')
+    prog = run or config.get('load')
+    cmd = config.get('exec')
+
+def start():
     """ Start the interpreter. """
+    if prog:
+        # on load, accept capitalised versions and default extension
+        with disk.open_native_or_dos_filename(prog) as progfile:
+            program.load(progfile)
+        # ensure memory model is up to date
+        reset.clear()
+    print_greeting(console)
     if cmd:
         store_line(cmd)
     if run:
         # run command before program
         if cmd:
-            run_once()
+            cycle()
         # position the pointer at start of program and enter execute mode
         flow.jump(None)
         state.basic_state.execute_mode = True
         state.console_state.screen.cursor.reset_visibility()
-    # read-eval-print loop until quit or exception
-    while True:
-        run_once()
-        if quit and state.console_state.keyb.buf.is_empty():
-            break
+    loop()
 
-def run_once():
+def loop():
+    """ Read-eval-print loop until quit or exception. """
+    try:
+        while True:
+            cycle()
+            if quit and state.console_state.keyb.buf.is_empty():
+                break
+    except error.Exit:
+        # pause before exit if requested
+        if wait:
+            backend.video_queue.put(backend.Event(backend.VIDEO_SET_CAPTION, 'Press a key to close window'))
+            backend.video_queue.put(backend.Event(backend.VIDEO_SHOW_CURSOR, False))
+            state.console_state.keyb.pause = True
+            # this performs a blocking keystroke read if in pause state
+            backend.check_events()
+    finally:
+        state.save()
+        try:
+            # close files if we opened any
+            devices.close_files()
+        except (NameError, AttributeError) as e:
+            logging.debug('Error on closing files: %s', e)
+        try:
+            devices.close_devices()
+        except (NameError, AttributeError) as e:
+            logging.debug('Error on closing devices: %s', e)
+
+def cycle():
     """ Read-eval-print loop: run once. """
     try:
         while True:
@@ -127,6 +173,23 @@ def store_line(line):
         # it is a command, go and execute
         state.basic_state.execute_mode = True
     return not state.basic_state.execute_mode
+
+def print_greeting(console):
+    """ Print the greeting and the KEY row if we're not running a program. """
+    greeting = (
+        'PC-BASIC {version} {note}\r'
+        '(C) Copyright 2013--2016 Rob Hagemans.\r'
+        '{free} Bytes free')
+    # following GW, don't write greeting for redirected input
+    # or command-line filter run
+    if (not config.get('run') and not config.get('exec') and
+             not config.get('input') and not config.get(0) and
+             not config.get('interface') == 'none'):
+        debugstr = ' [DEBUG mode]' if config.get('debug') else ''
+        params = { 'version': plat.version, 'note': debugstr, 'free': var.fre()}
+        console.clear()
+        console.write_line(greeting.format(**params))
+        console.show_keys(True)
 
 def show_prompt():
     """ Show the Ok or EDIT prompt, unless suppressed. """
@@ -289,3 +352,6 @@ def bluescreen(e):
     console.write_line('Thank you!')
     state.console_state.screen.set_attr(7)
     flow.set_pointer(False)
+
+
+prepare()
