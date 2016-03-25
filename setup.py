@@ -2,8 +2,8 @@
 """
 PC-BASIC setup module.
 
-(c) 2015 Rob Hagemans
-This file is released under the GNU GPL version 3.
+(c) 2015, 2016 Rob Hagemans
+This file is released under the GNU GPL version 3 or later.
 """
 
 ###############################################################################

@@ -3,7 +3,7 @@ PC-BASIC - video_graphical.py
 Graphical interface base class
 
 (c) 2015, 2016 Rob Hagemans
-This file is released under the GNU GPL version 3.
+This file is released under the GNU GPL version 3 or later.
 """
 
 import plat

@@ -3,7 +3,7 @@ PC-BASIC - scancode.py
 Keyboard scancodes
 
 (c) 2014, 2015, 2016 Rob Hagemans
-This file is released under the GNU GPL version 3.
+This file is released under the GNU GPL version 3 or later.
 """
 
 # these are PC-XT keyboard scancodes without E0 extended codes

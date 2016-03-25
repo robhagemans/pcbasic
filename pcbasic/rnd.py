@@ -3,7 +3,7 @@ PC-BASIC - rnd.py
 Random number generator
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
-This file is released under the GNU GPL version 3.
+This file is released under the GNU GPL version 3 or later.
 """
 
 import fp

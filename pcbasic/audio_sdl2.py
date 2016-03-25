@@ -3,7 +3,7 @@ PC-BASIC - audio_sdl2.py
 Sound interface based on SDL2
 
 (c) 2015, 2016 Rob Hagemans
-This file is released under the GNU GPL version 3.
+This file is released under the GNU GPL version 3 or later.
 """
 
 # see e.g. http://toomanyideas.net/2014/pysdl2-playing-a-sound-from-a-wav-file.html
