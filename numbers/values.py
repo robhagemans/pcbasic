@@ -525,9 +525,6 @@ class Float(Number):
         # shortcut (this affects quirky rounding)
         if (lman < 0x80 or lman == 0x80 and zero_flag) and sub_flag:
             return rexp, rman, rneg
-        if not zero_flag and not sub_flag:
-            # break tie if we're at exact half after dropping digits
-            lman |= 0x2
         # add mantissas, taking sign into account
         if not sub_flag:
             man, neg = lman + rman, lneg
@@ -536,6 +533,9 @@ class Float(Number):
                 man >>= 1
         else:
             man, neg = rman - lman, rneg
+        # break tie for rounding if we're at exact half after dropping digits
+        if not zero_flag and not sub_flag:
+            man |= 0x1
         # attempt to match GW-BASIC subtraction rounding
         sden_s = -man if sub_flag else man
         if sub_flag and (man & 0x1c0 == 0x80) and (man & 0x1df != 0x80):
