@@ -132,7 +132,7 @@ def convert():
 def start_basic():
     """ Load & run programs and commands and hand over to interactive mode. """
     import program
-    import run
+    import interpreter
     import error
     import state
     import devices
@@ -157,10 +157,10 @@ def start_basic():
             # suppress double prompt
             if not state.basic_state.execute_mode:
                 state.basic_state.prompt = False
-            run.loop()
+            interpreter.loop()
         else:
             # greet, load and start the interpreter
-            run.start()
+            interpreter.start()
     except KeyboardInterrupt:
         if config.get('debug'):
             raise
