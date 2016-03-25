@@ -201,7 +201,11 @@ def get_unicode_argv():
         CommandLineToArgvW.argtypes = [ctypes.wintypes.LPCWSTR, ctypes.POINTER(ctypes.c_int)]
         CommandLineToArgvW.restype = ctypes.POINTER(ctypes.wintypes.LPWSTR)
         argv = CommandLineToArgvW(cmd, ctypes.byref(argc))
-        return [argv[i] for i in xrange(argc.value)]
+        argv = [argv[i] for i in xrange(argc.value)]
+        # clip off the python interpreter call, if we use it
+        if argv[0][:6].lower() == u'python':
+            argv = argv[1:]
+        return argv
     else:
         # the official parameter should be LC_CTYPE but that's None in my locale
         # on windows, this would only work if the mbcs CP_ACP includes the characters we need
