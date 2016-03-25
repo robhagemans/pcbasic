@@ -2,7 +2,7 @@
 PC-BASIC - clipboard.py
 Clipboard handling
 
-(c) 2013, 2014, 2015 Rob Hagemans 
+(c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -80,7 +80,7 @@ class PygameClipboard(Clipboard):
             pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
         else:
             pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
-        us = None
+        us = ''
         available = pygame.scrap.get_types()
         for text_type in self.text:
             if text_type not in available:
