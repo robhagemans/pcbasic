@@ -538,7 +538,7 @@ class Float(Number):
             man, neg = rman - lman, rneg
         # attempt to match GW-BASIC subtraction rounding
         sden_s = -man if sub_flag else man
-        if sub_flag and (man & 0x1c0 == 0x080) and not (man & 0x1ff == 0x80) and (man & 0x1ff != 0xa0):
+        if sub_flag and (man & 0x1c0 == 0x80) and (man & 0x1df != 0x80):
             man &= 0xffffffff7f
         return lexp, man, neg
 
