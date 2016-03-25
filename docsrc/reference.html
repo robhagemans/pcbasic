@@ -1354,6 +1354,10 @@
                 <samp>Type mismatch</samp>.
             </li>
             <li>
+                The return type is incompatible with the function name's sigil:
+                <samp>Type mismatch</samp>.
+            </li>
+            <li>
                 The function being called is recursive or mutually recursive:
                 <samp>Out of memory</samp>.
         </ul>
@@ -4283,7 +4287,8 @@
             evaluated with the supplied parameters substituted. Any variable names used in the function that are not
             in the argument list refer to the corresponding global variables.
             The result of the
-            evaluation is the return value of <code>FN<var>name</var></code>.
+            evaluation is the return value of <code>FN<var>name</var></code>. The type of the return value
+            must be compatible with the type indicated by <code><var>name</var></code>.
         </p>
         <h5>Notes</h5>
         <ul>
@@ -4312,6 +4317,11 @@
         <ul>
             <li>
                 The statement is executed directly instead of in a program line: <samp>Illegal direct</samp>.
+            </li>
+            <li>
+                If the type of the return value is incompatible with the type of <code><var>name</var></code>,
+                no error is raised at the <code>DEF FN</code> statement; however, a <samp>Type mismatch</samp>
+                will be raised at the first call of <code>FN<var>name</var></code>.
             </li>
         </ul>
     </section>
