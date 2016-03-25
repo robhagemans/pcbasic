@@ -613,7 +613,7 @@ def value_fn(ins):
         # re-assign the stored value
         state.basic_state.variables[name][:] = varsave[name]
     state.basic_state.user_function_parsing.remove(fnname)
-    return vartypes.pass_type(fnname[-1], value)
+    return vartypes.pass_type_keep(fnname[-1], value)
 
 ###############################################################
 # graphics
