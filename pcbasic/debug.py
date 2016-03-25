@@ -12,6 +12,7 @@ import traceback
 import platform
 import logging
 import subprocess
+import os
 
 import plat
 import config
@@ -23,6 +24,8 @@ import representation
 import expressions
 import tokenise
 import program
+import console
+import flow
 
 debug_mode = False
 debug_tron = False
@@ -165,6 +168,64 @@ def details():
             except Exception as e:
                 logging.info('%s: --', tool)
 
+
+def bluescreen(e):
+    """ Display a modal exception message. """
+    state.console_state.screen.screen(0, 0, 0, 0, new_width=80)
+    console.clear()
+    console.init_mode()
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    # log the standard python error
+    logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+    # format the error more readably on the screen
+    state.console_state.screen.set_border(4)
+    state.console_state.screen.set_attr(0x70)
+    console.write_line('EXCEPTION')
+    state.console_state.screen.set_attr(15)
+    if state.basic_state.run_mode:
+        state.basic_state.bytecode.seek(-1, 1)
+        program.edit(program.get_line_number(state.basic_state.bytecode.tell()),
+                                         state.basic_state.bytecode.tell())
+        console.write_line('\n')
+    else:
+        state.basic_state.direct_line.seek(0)
+        console.write_line(str(tokenise.detokenise_compound_statement(state.basic_state.direct_line)[0])+'\n')
+    stack = traceback.extract_tb(exc_traceback)
+    for s in stack[-4:]:
+        stack_line = '{0}:{1}, {2}'.format(
+            os.path.split(s[0])[-1], s[1], s[2])
+        stack_line_2 = '    {0}'.format(s[3])
+        state.console_state.screen.set_attr(15)
+        console.write_line(stack_line)
+        state.console_state.screen.set_attr(7)
+        console.write_line(stack_line_2)
+    exc_message = traceback.format_exception_only(exc_type, exc_value)[0]
+    state.console_state.screen.set_attr(15)
+    console.write('{0}:'.format(exc_type.__name__))
+    state.console_state.screen.set_attr(7)
+    console.write_line(' {0}'.format(str(exc_value)))
+    state.console_state.screen.set_attr(0x70)
+    console.write_line(
+        '\nThis is a bug in PC-BASIC.')
+    state.console_state.screen.set_attr(7)
+    console.write(
+        'Sorry about that. Please send the above messages to the bugs forum\nby e-mail to ')
+    state.console_state.screen.set_attr(15)
+    console.write(
+        'bugs@discussion.pcbasic.p.re.sf.net')
+    state.console_state.screen.set_attr(7)
+    console.write(
+        ' or by filing a bug\nreport at ')
+    state.console_state.screen.set_attr(15)
+    console.write(
+        'https://github.com/robhagemans/pcbasic/issues')
+    state.console_state.screen.set_attr(7)
+    console.write_line(
+        '. Please include')
+    console.write_line('as much information as you can about what you were doing and how this happened.')
+    console.write_line('Thank you!')
+    state.console_state.screen.set_attr(7)
+    flow.set_pointer(False)
 
 
 prepare()
