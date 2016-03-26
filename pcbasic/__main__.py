@@ -136,14 +136,17 @@ def start_basic():
     import state
     import audio
     import video
+    import display
+    import sound
     do_reset = False
-    backend, console = None, None
     exit_error = ''
     # resume from saved emulator state if requested and available
     resume = config.get('resume') and state.load()
     try:
         # choose the video and sound backends
-        backend, console = prepare_console()
+        interface = config.get('interface') or 'graphical'
+        display.init(interface)
+        sound.init('none' if config.get('nosound') else interface)
         if resume:
             interpreter.resume()
         else:
@@ -175,23 +178,6 @@ def start_basic():
                 shutil.rmtree(plat.temp_dir)
         if exit_error:
             logging.error(exit_error)
-
-def prepare_console():
-    """ Initialise backend and console. """
-    import state
-    import backend
-    import display
-    import sound
-    import console
-    # we need this prepared for input to work,
-    # even if we don't use any function from it
-    import inputs
-    interface = config.get('interface') or 'graphical'
-    display.init(interface)
-    sound.init('none' if config.get('nosound') else interface)
-    if not state.loaded:
-        console.init_mode()
-    return backend, console
 
 
 if __name__ == "__main__":

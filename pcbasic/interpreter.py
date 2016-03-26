@@ -20,6 +20,8 @@ import statements
 import console
 import state
 import backend
+# prepare input state
+import inputs
 import reset
 import flow
 import debug
@@ -29,6 +31,7 @@ import cassette
 import disk
 import var
 import events
+
 
 # true if a prompt is needed on next cycle
 state.basic_state.prompt = True
@@ -55,6 +58,8 @@ def prepare():
 
 def init():
     """ Initialise the interpreter. """
+    # initialise the console
+    console.init_mode()
     # set up event handlers
     state.basic_state.events = events.Events()
     # set up interpreter and memory model state
