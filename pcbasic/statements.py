@@ -44,14 +44,6 @@ import util
 import var
 import vartypes
 
-# number and line number of last error
-state.basic_state.errn = -1
-state.basic_state.errp = -1
-
-# jump line number
-state.basic_state.on_error = None
-state.basic_state.error_handle_mode = False
-state.basic_state.error_resume = None
 
 def prepare():
     """ Initialise statements module. """
@@ -66,7 +58,6 @@ def prepare():
         pcjr_term = os.path.join(plat.info_dir, pcjr_term)
     if not os.path.exists(pcjr_term):
         pcjr_term = ''
-    state.basic_state.edit_prompt = False
 
 def parse_statement():
     """ Parse one statement at the current pointer in current codestream.
