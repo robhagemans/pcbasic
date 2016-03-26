@@ -139,6 +139,8 @@ def start_basic():
         if config.get('debug'):
             raise
     except error.RunError as e:
+        # runtime errors that occur on interpreter launch are caught here
+        # e.g. "File not Found" for --load parameter
         exit_error = e.message
     except Exception as e:
         exit_error = "Unhandled exception\n%s" % traceback.format_exc()

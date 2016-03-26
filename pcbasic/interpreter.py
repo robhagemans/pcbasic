@@ -50,17 +50,13 @@ def prepare():
 
 def launch():
     """ Resume or start the session. """
-    try:
-        # resume from saved emulator state if requested and available
-        if config.get('resume') and state.load():
-            resume()
-        else:
-            # greet, load and start the interpreter
-            start()
-    except error.Reset:
-        # delete state if resetting
-        state.delete()
-        raise
+    # resume from saved emulator state if requested and available
+    if config.get('resume') and state.load():
+        resume()
+    else:
+        # greet, load and start the interpreter
+        start()
+
 
 def init():
     """ Initialise the interpreter. """
@@ -136,29 +132,33 @@ def close():
 def loop():
     """ Read-eval-print loop until quit or exception. """
     try:
-        while True:
-            cycle()
-            if quit and state.console_state.keyb.buf.is_empty():
-                break
-    except error.Exit:
-        # pause before exit if requested
-        if wait:
-            backend.video_queue.put(backend.Event(backend.VIDEO_SET_CAPTION, 'Press a key to close window'))
-            backend.video_queue.put(backend.Event(backend.VIDEO_SHOW_CURSOR, False))
-            state.console_state.keyb.pause = True
-            # this performs a blocking keystroke read if in pause state
-            backend.check_events()
-    finally:
-        state.save()
         try:
-            # close files if we opened any
-            devices.close_files()
-        except (NameError, AttributeError) as e:
-            logging.debug('Error on closing files: %s', e)
-        try:
-            devices.close_devices()
-        except (NameError, AttributeError) as e:
-            logging.debug('Error on closing devices: %s', e)
+            while True:
+                cycle()
+                if quit and state.console_state.keyb.buf.is_empty():
+                    break
+        except error.Exit:
+            # pause before exit if requested
+            if wait:
+                backend.video_queue.put(backend.Event(backend.VIDEO_SET_CAPTION, 'Press a key to close window'))
+                backend.video_queue.put(backend.Event(backend.VIDEO_SHOW_CURSOR, False))
+                state.console_state.keyb.pause = True
+                # this performs a blocking keystroke read if in pause state
+                backend.check_events()
+        finally:
+            state.save()
+            try:
+                # close files if we opened any
+                devices.close_files()
+            except (NameError, AttributeError) as e:
+                logging.debug('Error on closing files: %s', e)
+            try:
+                devices.close_devices()
+            except (NameError, AttributeError) as e:
+                logging.debug('Error on closing devices: %s', e)
+    except error.Reset:
+        # delete state if resetting
+        state.delete()
 
 def cycle():
     """ Read-eval-print loop: run once. """
@@ -204,6 +204,8 @@ def cycle():
         handle_error(e)
         state.basic_state.prompt = True
     except error.Exit:
+        raise
+    except error.Reset:
         raise
     except Exception as e:
         if debug.debug_mode:
