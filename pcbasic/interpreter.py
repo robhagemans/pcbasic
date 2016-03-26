@@ -10,6 +10,8 @@ import os
 import sys
 import traceback
 import logging
+import time
+import threading
 
 import plat
 import error
@@ -33,6 +35,8 @@ import disk
 import var
 import events
 
+# interpreter thread
+thread = None
 
 def prepare():
     """ Initialise interpreter module. """
@@ -99,7 +103,7 @@ def start():
         flow.jump(None)
         state.basic_state.execute_mode = True
         state.console_state.screen.cursor.reset_visibility()
-    loop()
+    launch_thread()
 
 def resume():
     """ Resume a stored interpreter session. """
@@ -112,7 +116,22 @@ def resume():
     # suppress double prompt
     if not state.basic_state.execute_mode:
         state.basic_state.prompt = False
-    loop()
+    launch_thread()
+
+def launch_thread():
+    """ Launch interpreter thread. """
+    global thread
+    thread = threading.Thread(target=loop)
+    thread.start()
+
+def close():
+    """ Wait for the interpreter to exit. """
+    # drain signal queue (to allow for persistence) and request exit
+    if backend.input_queue:
+        backend.input_queue.join()
+    if thread and thread.is_alive():
+        # wait for thread to finish
+        thread.join()
 
 def loop():
     """ Read-eval-print loop until quit or exception. """

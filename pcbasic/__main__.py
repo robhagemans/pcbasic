@@ -128,12 +128,13 @@ def start_basic():
     import video
     exit_error = ''
     try:
+        # start or resume the interpreter thread
+        interpreter.launch()
         # choose the video and sound backends
         interface = config.get('interface') or 'graphical'
         init_video_plugin(interface)
         init_audio_plugin('none' if config.get('nosound') else interface)
-        # start or resume the interpreter
-        interpreter.launch()
+        interpreter.close()
     except KeyboardInterrupt:
         if config.get('debug'):
             raise
