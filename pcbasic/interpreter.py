@@ -17,6 +17,7 @@ import util
 import tokenise
 import program
 import statements
+import display
 import console
 import state
 import backend
@@ -58,6 +59,8 @@ def prepare():
 
 def init():
     """ Initialise the interpreter. """
+    # initialise the display
+    display.init()
     # initialise the console
     console.init_mode()
     # set up event handlers
@@ -87,6 +90,9 @@ def start():
 
 def resume():
     """ Resume a stored interpreter session. """
+    # reload the screen in resumed state
+    if not state.console_state.screen.resume():
+        return False
     # override selected settings from command line
     cassette.override()
     disk.override()

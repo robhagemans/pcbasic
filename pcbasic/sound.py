@@ -24,13 +24,8 @@ import representation
 import vartypes
 import backend
 
-# these are unused but need to be initialised and packaged
+#D?
 import audio
-import audio_none
-import audio_beep
-import audio_pygame
-import audio_sdl2
-
 
 # sound capabilities - '', 'pcjr' or 'tandy'
 pcjr_sound = ''
@@ -61,29 +56,6 @@ def prepare():
 
 def init(interface_name):
     """ Initialise the sound system. """
-    init_audio_plugin(interface_name)
-
-audio_backends = {
-    # interface_name: plugin_name, fallback, warn_on_fallback
-    'none': ('none',),
-    'cli': ('beep', 'none'),
-    'text': ('beep', 'none'),
-    'graphical': ('sdl2', 'pygame', 'beep', 'none'),
-    'ansi': ('none',),
-    'curses': ('none',),
-    'pygame': ('pygame', 'none'),
-    'sdl2': ('sdl2', 'none'),
-    }
-
-def init_audio_plugin(interface_name):
-    """ Find and initialise audio plugin for given interface. """
-    names = audio_backends[interface_name]
-    for audio_name in names:
-        if audio.init(audio_name):
-            return interface_name
-        logging.debug('Could not initialise %s plugin.', audio_name)
-    logging.error('Null sound plugin malfunction. Could not initialise interface.')
-    raise error.Exit()
 
 
 class PlayState(object):

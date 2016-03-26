@@ -23,31 +23,6 @@ import graphics
 import unicodepage
 import basictoken as tk
 
-import video
-import video_none
-import video_ansi
-import video_cli
-import video_curses
-import video_pygame
-import video_sdl2
-video_backends = {
-    # interface_name: video_plugin_name, fallback, warn_on_fallback
-    'none': (('none',), None),
-    'cli': (('cli',), 'none'),
-    'text': (('curses', 'ansi'), 'cli'),
-    'graphical':  (('sdl2', 'pygame',), 'text'),
-    # force a particular plugin to be used
-    'ansi': (('ansi',), None),
-    'curses': (('curses',), None),
-    'pygame': (('pygame',), None),
-    'sdl2': (('sdl2',), None),
-    }
-
-# create the window icon
-icon_hex = '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
-icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}).build_glyph(
-                                                'icon', 16, 16, False, False)
-
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)
 # Many internet sources say this should be 0xC0--0xDF. However, that would
 # exclude the shading characters. It appears to be traced back to a mistake in
@@ -57,7 +32,7 @@ carry_col_9_chars = [chr(c) for c in range(0xb0, 0xdf+1)]
 carry_row_9_chars = [chr(c) for c in range(0xb0, 0xdf+1)]
 
 def prepare():
-    """ Prepare the video subsystem. """
+    """ Prepare the display. """
     global egacursor
     global video_capabilities, composite_monitor, mono_monitor
     global fonts
@@ -88,51 +63,11 @@ def prepare():
                         chars_needed, state.console_state.codepage.substitutes)
     fonts[9] = fonts[8]
 
-def init(interface_name):
-    """ Initialise the video backend. """
-    interface_name = init_video_plugin(interface_name)
-    if state.loaded:
-        # reload the screen in resumed state
-        if not state.console_state.screen.resume():
-            video.close()
-            return False
-    else:
-        # initialise a fresh textmode screen
-        info = state.console_state.screen.mode
-        state.console_state.screen.set_mode(info, 0, 1, 0, 0)
-    return True
-
-def init_video_plugin(interface_name):
-    """ Find and initialise video plugin for given interface. """
-    while True:
-        # select interface
-        names, fallback = video_backends[interface_name]
-        for video_name in names:
-            if video.init(video_name,
-                    force_display_size=config.get('dimensions'),
-                    aspect=config.get('aspect'),
-                    border_width=config.get('border'),
-                    force_native_pixel=(config.get('scaling') == 'native'),
-                    fullscreen=config.get('fullscreen'),
-                    smooth=(config.get('scaling') == 'smooth'),
-                    nokill=config.get('nokill'),
-                    altgr=config.get('altgr'),
-                    caption=config.get('caption'),
-                    composite_monitor=(config.get('monitor') == 'composite'),
-                    composite_card=config.get('video'),
-                    copy_paste=config.get('copy-paste'),
-                    pen=config.get('pen'),
-                    icon=icon,
-                    initial_mode=state.console_state.screen.mode,
-                    codepage=state.console_state.codepage):
-                return interface_name
-            logging.debug('Could not initialise %s plugin.', video_name)
-        if fallback:
-            logging.info('Could not initialise %s interface. Falling back to %s interface.', interface_name, fallback)
-            interface_name = fallback
-        else:
-            logging.error('Failed to initialise interface.')
-            raise error.Exit()
+def init():
+    """ Initialise the display. """
+    # initialise a fresh textmode screen
+    info = state.console_state.screen.mode
+    state.console_state.screen.set_mode(info, 0, 1, 0, 0)
 
 
 ###############################################################################
