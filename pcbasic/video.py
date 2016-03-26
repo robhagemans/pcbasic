@@ -25,11 +25,10 @@ def init(plugin_name, **kwargs):
     # initialise video plugin
     try:
         plugin = plugin_dict[plugin_name](**kwargs)
-    except InitFailed:
-        close()
+    except (KeyError, InitFailed):
         return False
     else:
-        plugin.start()
+        #plugin.start()
         return True
 
 def close():
@@ -46,6 +45,7 @@ class VideoPlugin(object):
 
     def __init__(self):
         """ Setup the interface. """
+        self.thread = None
 
     def start(self):
         """ Start the event handling thread. """
@@ -57,7 +57,7 @@ class VideoPlugin(object):
         # drain signal queue (to allow for persistence) and request exit
         # signal quit and wait for thread to finish
         if backend.video_queue:
-            backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
+            #backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
             backend.video_queue.join()
         if self.thread and self.thread.is_alive():
             # signal quit and wait for thread to finish

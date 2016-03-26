@@ -24,10 +24,10 @@ def init(plugin_name):
     # initialise audio plugin
     try:
         plugin = plugin_dict[plugin_name]()
-        return True
     except (KeyError, InitFailed):
-        close()
         return False
+    else:
+        return True
 
 def close():
     """ Close audio plugin. """
@@ -46,6 +46,9 @@ class AudioPlugin(object):
         # sound generators for sounds not played yet
         # if not None, something is playing
         self.next_tone = [ None, None, None, None ]
+        self.thread = None
+
+    def start(self):
         # start audio thread
         self.thread = threading.Thread(target=self._consumer_thread)
         self.thread.start()
@@ -54,7 +57,7 @@ class AudioPlugin(object):
         """ Close the audio interface. """
         # drain signal queue (to allow for persistence) and request exit
         if backend.message_queue:
-            backend.message_queue.put(backend.Event(backend.AUDIO_QUIT))
+            #backend.message_queue.put(backend.Event(backend.AUDIO_QUIT))
             backend.message_queue.join()
         # don't wait for tone que, it will not drain but be pickled later.
         if self.thread and self.thread.is_alive():

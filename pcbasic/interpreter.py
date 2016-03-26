@@ -146,6 +146,8 @@ def loop():
                 # this performs a blocking keystroke read if in pause state
                 backend.check_events()
         finally:
+            backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
+            backend.message_queue.put(backend.Event(backend.AUDIO_QUIT))
             state.save()
             try:
                 # close files if we opened any

@@ -11,6 +11,7 @@ import os
 import sys
 import shutil
 import logging
+import time
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -126,15 +127,13 @@ def start_basic():
     import error
     import audio
     import video
+    init_video_plugin()
+    init_audio_plugin()
     exit_error = ''
     try:
         # start or resume the interpreter thread
         interpreter.launch()
-        # choose the video and sound backends
-        interface = config.get('interface') or 'graphical'
-        init_video_plugin(interface)
-        init_audio_plugin('none' if config.get('nosound') else interface)
-        interpreter.close()
+        event_loop()
     except KeyboardInterrupt:
         if config.get('debug'):
             raise
@@ -145,6 +144,7 @@ def start_basic():
     except Exception as e:
         exit_error = "Unhandled exception\n%s" % traceback.format_exc()
     finally:
+        interpreter.close()
         try:
             audio.close()
         except (NameError, AttributeError) as e:
@@ -156,6 +156,29 @@ def start_basic():
             logging.debug('Error on closing video: %s', e)
         if exit_error:
             logging.error(exit_error)
+
+
+###############################################################################
+# interface event loop
+
+def event_loop():
+    """ Audio message and tone queue consumer thread. """
+    audio.plugin._init_sound()
+    video.plugin._init_thread()
+    while True:
+        # ensure both queues are drained
+        work = video.plugin._drain_video_queue()
+        work = audio.plugin._drain_message_queue() and work
+        if not work:
+            break
+        video.plugin._check_display()
+        video.plugin._check_input()
+        empty = audio.plugin._drain_tone_queue()
+        audio.plugin._play_sound()
+        # do not hog cpu
+        if empty and audio.plugin.next_tone == [None, None, None, None]:
+            #self._sleep()
+            time.sleep(0.024)
 
 
 ###############################################################################
@@ -186,7 +209,7 @@ video_backends = {
 # create the window icon
 icon_hex = '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
 
-def init_video_plugin(interface_name):
+def init_video_plugin():
     """ Find and initialise video plugin for given interface. """
     import typeface
     import state
@@ -196,6 +219,7 @@ def init_video_plugin(interface_name):
     import display
     icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}
                                 ).build_glyph('icon', 16, 16, False, False)
+    interface_name = config.get('interface') or 'graphical'
     while True:
         # select interface
         names, fallback = video_backends[interface_name]
@@ -249,8 +273,12 @@ audio_backends = {
     'sdl2': ('sdl2', 'none'),
     }
 
-def init_audio_plugin(interface_name):
+def init_audio_plugin():
     """ Find and initialise audio plugin for given interface. """
+    if config.get('nosound') :
+        interface_name = 'none'
+    else:
+        interface_name = config.get('interface') or 'graphical'
     names = audio_backends[interface_name]
     for audio_name in names:
         if audio.init(audio_name):
