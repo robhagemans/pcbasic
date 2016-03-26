@@ -738,7 +738,13 @@ def value_play(ins):
 
 def value_erl(ins):
     """ ERL: get line number of last error. """
-    return fp.pack(fp.Single.from_int(program.get_line_number(state.basic_state.errp)))
+    if state.basic_state.errp == 0:
+        erl = 0
+    elif state.basic_state.errp == -1:
+        erl = 65535
+    else:
+        erl = program.get_line_number(state.basic_state.errp)
+    return fp.pack(fp.Single.from_int(erl))
 
 def value_err(ins):
     """ ERR: get error code of last error. """
