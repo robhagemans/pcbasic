@@ -56,6 +56,19 @@ def prepare():
     prog = run or config.get('load')
     cmd = config.get('exec')
 
+def launch():
+    """ Resume or start the session. """
+    try:
+        # resume from saved emulator state if requested and available
+        if config.get('resume') and state.load():
+            resume()
+        else:
+            # greet, load and start the interpreter
+            start()
+    except error.Reset:
+        # delete state if resetting
+        state.delete()
+        raise
 
 def init():
     """ Initialise the interpreter. """

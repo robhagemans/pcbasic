@@ -136,7 +136,6 @@ def start_basic():
     """ Start an interactive interpreter session. """
     import interpreter
     import error
-    import state
     import audio
     import video
     exit_error = ''
@@ -145,19 +144,11 @@ def start_basic():
         interface = config.get('interface') or 'graphical'
         init_video_plugin(interface)
         init_audio_plugin('none' if config.get('nosound') else interface)
-        # resume from saved emulator state if requested and available
-        if config.get('resume') and state.load():
-            interpreter.resume()
-        else:
-            # greet, load and start the interpreter
-            interpreter.start()
+        # start or resume the interpreter
+        interpreter.launch()
     except KeyboardInterrupt:
         if config.get('debug'):
             raise
-    except error.Reset:
-        # delete state if resetting
-        state.delete()
-        raise
     except error.RunError as e:
         exit_error = e.message
     except Exception as e:
