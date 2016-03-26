@@ -28,12 +28,6 @@ import error
 def main():
     """ Initialise and do requested operations. """
     try:
-        if plat.system == 'Android':
-            # resume from existing directory (or clear it if we're not resuming)
-            if not config.get('resume') and os.path.exists(plat.temp_dir):
-                shutil.rmtree(plat.temp_dir)
-            if not os.path.exists(plat.temp_dir):
-                os.mkdir(plat.temp_dir)
         # set up the logging system
         prepare_logging()
         if config.get('version'):
@@ -53,14 +47,11 @@ def main():
         else:
             # otherwise, go into BASIC
             start_basic()
-    except error.Reset:
-        if plat.system == 'Android':
-            shutil.rmtree(plat.temp_dir)
     finally:
         try:
             printer.wait()
             # clean up our temp dir if we made one
-            if plat.temp_dir and plat.system != 'Android':
+            if plat.temp_dir:
                 shutil.rmtree(plat.temp_dir)
         except NameError:
             pass

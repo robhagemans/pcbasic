@@ -42,11 +42,7 @@ def prepare():
     global ctrl_c_is_break
     redirect.prepare_redirects()
     # inserted keystrokes
-    if plat.system == 'Android':
-        # string_escape not available on PGS4A
-        keystring = config.get('keys').decode('utf-8')
-    else:
-        keystring = config.get('keys').decode('string_escape').decode('utf-8')
+    keystring = config.get('keys').decode('string_escape').decode('utf-8')
     state.console_state.keyb = Keyboard()
     state.console_state.keyb.buf.insert(
             state.console_state.codepage.str_from_unicode(keystring),
