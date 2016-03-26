@@ -24,9 +24,6 @@ import representation
 import vartypes
 import backend
 
-#D?
-import audio
-
 # sound capabilities - '', 'pcjr' or 'tandy'
 pcjr_sound = ''
 
@@ -159,8 +156,8 @@ class Sound(object):
 
     def is_playing(self, voice):
         """ A note is playing or queued at the given voice. """
-        # this is the only dependence on audio.plugin - inelegant, can remove?
-        return self.queue_length(voice) or audio.plugin.next_tone[voice]
+        # NOTE: Queue.unfinished_tasks is undocumented, may only work in CPython
+        return self.queue_length(voice) or backend.tone_queue[voice].unfinished_tasks
 
     def persist(self, flag):
         """ Set mixer persistence flag (runmode). """
