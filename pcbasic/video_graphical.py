@@ -176,9 +176,9 @@ class ClipboardInterface(object):
         backend.input_queue.put(backend.Event(backend.CLIP_COPY,
                 (start[0], start[1], stop[0], stop[1], mouse)))
 
-    def paste(self, mouse=False):
+    def paste(self, text):
         """ Paste from clipboard into keyboard buffer. """
-        backend.input_queue.put(backend.Event(backend.CLIP_PASTE, (mouse,)))
+        backend.input_queue.put(backend.Event(backend.CLIP_PASTE, (text,)))
 
     def move(self, r, c):
         """ Move the head of the selection and update feedback. """
@@ -222,7 +222,8 @@ class ClipboardInterface(object):
         if c.upper() == u'C':
             self.copy()
         elif c.upper() == u'V':
-            self.paste()
+            text = self.videoplugin.clipboard_handler.paste(mouse=False)
+            self.paste(text)
         elif c.upper() == u'A':
             # select all
             self.select_start = [1, 1]

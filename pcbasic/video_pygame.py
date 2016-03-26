@@ -149,7 +149,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         if not self.altgr:
             key_to_scan[pygame.K_RALT] = scancode.ALT
             mod_to_scan[pygame.KMOD_RALT] = scancode.ALT
-        backend.clipboard_handler = get_clipboard_handler()
+        self.clipboard_handler = get_clipboard_handler()
 
     def close(self):
         """ Close the pygame interface. """
@@ -197,7 +197,8 @@ class VideoPygame(video_graphical.VideoGraphical):
                             1 + (pos[0]+self.font_width//2) // self.font_width)
                 if event.button == self.mousebutton_paste:
                     # MIDDLE button: paste
-                    self.clipboard.paste(mouse=True)
+                    text = self.clipboard_handler.paste(mouse=True)
+                    self.clipboard.paste(text)
                 if event.button == self.mousebutton_pen:
                     # right mouse button is a pen press
                     backend.input_queue.put(backend.Event(backend.PEN_DOWN,
@@ -436,6 +437,10 @@ class VideoPygame(video_graphical.VideoGraphical):
             pygame.display.set_caption(self.caption + ' - ' + msg)
         else:
             pygame.display.set_caption(self.caption)
+
+    def set_clipboard_text(self, text, mouse):
+        """ Put text on the clipboard. """
+        self.clipboard_handler.copy(text, mouse)
 
     def set_palette(self, rgb_palette_0, rgb_palette_1):
         """ Build the palette. """

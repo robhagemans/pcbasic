@@ -142,6 +142,8 @@ class VideoPlugin(object):
                 self.fill_rect(*signal.params)
             elif signal.event_type == backend.VIDEO_SET_CAPTION:
                 self.set_caption_message(signal.params)
+            elif signal.event_type == backend.VIDEO_SET_CLIPBOARD_TEXT:
+                self.set_clipboard_text(*signal.params)
             backend.video_queue.task_done()
 
     # signal handlers
@@ -151,6 +153,9 @@ class VideoPlugin(object):
 
     def set_caption_message(self, msg):
         """ Add a message to the window caption. """
+
+    def set_clipboard_text(self, text, mouse):
+        """ Put text on the clipboard. """
 
     def set_palette(self, rgb_palette_0, rgb_palette_1):
         """ Build the palette. """

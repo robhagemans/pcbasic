@@ -94,7 +94,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # initialise SDL
         sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING)
         # set clipboard handler to SDL2
-        backend.clipboard_handler = SDL2Clipboard()
+        self.clipboard_handler = SDL2Clipboard()
         # display palettes for blink states 0, 1
         self.show_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         # get physical screen dimensions (needs to be called before set_mode)
@@ -210,7 +210,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
                             1 + (pos[0]+self.font_width//2) // self.font_width)
                 if event.button.button == self.mousebutton_paste:
                     # MIDDLE button: paste
-                    self.clipboard.paste(mouse=True)
+                    text = self.clipboard_handler.paste(mouse=True)
+                    self.clipboard.paste(text)
                 if event.button.button == self.mousebutton_pen:
                     # right mouse button is a pen press
                     backend.input_queue.put(backend.Event(backend.PEN_DOWN, pos))
@@ -535,6 +536,10 @@ class VideoSDL2(video_graphical.VideoGraphical):
         """ Add a message to the window caption. """
         title = self.caption + (' - ' + msg if msg else '')
         sdl2.SDL_SetWindowTitle(self.display, title)
+
+    def set_clipboard_text(self, text, mouse):
+        """ Put text on the clipboard. """
+        self.clipboard_handler.copy(text, mouse)
 
     def set_palette(self, rgb_palette_0, rgb_palette_1):
         """ Build the palette. """

@@ -12,15 +12,12 @@ import Queue
 import config
 import state
 import error
-import clipboard
 
 video_queue = Queue.Queue()
 input_queue = Queue.Queue()
 # audio queues
 message_queue = Queue.Queue()
 tone_queue = None
-# clipboard handler, to be overridden by input backend
-clipboard_handler = clipboard.Clipboard()
 
 class PersistentQueue(Queue.Queue):
     """ Simple picklable Queue. """
@@ -45,7 +42,7 @@ class PersistentQueue(Queue.Queue):
 
 
 class Event(object):
-    """ Signal object for video queue. """
+    """ Signal object for input, video or audio queue. """
 
     def __init__(self, event_type, params=None):
         """ Create signal. """
@@ -102,6 +99,8 @@ VIDEO_FILL_RECT = 21
 VIDEO_COPY_PAGE = 28
 # set caption message
 VIDEO_SET_CAPTION = 29
+# clipboard copy reply
+VIDEO_SET_CLIPBOARD_TEXT = 30
 
 # input queue signals
 # special keys
@@ -201,11 +200,10 @@ def check_input():
         elif signal.event_type == STICK_MOVED:
             state.console_state.stick.moved(*signal.params)
         elif signal.event_type == CLIP_PASTE:
-            text = clipboard_handler.paste(*signal.params)
-            state.console_state.keyb.insert_chars(text, check_full=False)
+            state.console_state.keyb.insert_chars(*signal.params, check_full=False)
         elif signal.event_type == CLIP_COPY:
             text = state.console_state.screen.get_text(*(signal.params[:4]))
-            clipboard_handler.copy(text, signal.params[-1])
+            video_queue.put(Event(VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
 
 
 ###############################################################################
