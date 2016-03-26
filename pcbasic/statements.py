@@ -22,6 +22,7 @@ import console
 import debug
 import disk
 import error
+import events
 import expressions
 import flow
 import fp
@@ -2216,7 +2217,7 @@ def exec_key_define(ins):
     util.require_read(ins, (',',), err=error.IFC)
     with state.basic_state.strings:
         text = var.copy_str(vartypes.pass_string(expressions.parse_expression(ins)))
-    if keynum <= backend.num_fn_keys:
+    if keynum <= events.num_fn_keys:
         # macro starting with NUL is empty macro
         if text and str(text)[0] == '\0':
             text = ''

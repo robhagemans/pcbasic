@@ -12,6 +12,8 @@ import state
 import backend
 import redirect
 import error
+# for num_fn_keys
+import events
 # to initialise state.console_state.codepage
 import unicodepage
 
@@ -678,7 +680,7 @@ def list_line(line, newline=True):
 
 def list_keys():
     """ Print a list of the function key macros. """
-    for i in range(backend.num_fn_keys):
+    for i in range(events.num_fn_keys):
         text = bytearray(state.console_state.key_replace[i])
         for j in range(len(text)):
             try:

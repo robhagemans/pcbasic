@@ -20,17 +20,14 @@ import subprocess
 
 import plat
 import ansipipe
+import config
 import printer
+import error
 
-# declare to avoid pylint errors
-config = None
 
 def main():
     """ Initialise and do requested operations. """
-    # make imported modules available in main module
-    global config
     try:
-        import config
         if plat.system == 'Android':
             # resume from existing directory (or clear it if we're not resuming)
             if not config.get('resume') and os.path.exists(plat.temp_dir):
