@@ -70,13 +70,6 @@ def init():
     state.basic_state.input_mode = False
     # previous interpreter mode
     state.basic_state.last_mode = False, False
-    # number and line number of last error
-    state.basic_state.errn = -1
-    state.basic_state.errp = -1
-    # jump line number
-    state.basic_state.on_error = None
-    state.basic_state.error_handle_mode = False
-    state.basic_state.error_resume = None
     # syntax error prompt and EDIT
     state.basic_state.edit_prompt = False
     # initialise the display

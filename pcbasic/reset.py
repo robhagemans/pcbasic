@@ -26,7 +26,7 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
         devices.close_files()
     # release all disk buffers (FIELD)?
     disk.reset_fields()
-    # clear ERR and ERL
+    # clear last error number (ERR) and line number (ERL)
     state.basic_state.errn, state.basic_state.errp = 0, 0
     # disable error trapping
     state.basic_state.on_error = None
