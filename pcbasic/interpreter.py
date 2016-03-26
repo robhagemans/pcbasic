@@ -25,8 +25,10 @@ import flow
 import debug
 import config
 import devices
+import cassette
 import disk
 import var
+import events
 
 # true if a prompt is needed on next cycle
 state.basic_state.prompt = True
@@ -50,14 +52,21 @@ def prepare():
     prog = run or config.get('load')
     cmd = config.get('exec')
 
+
+def init():
+    """ Initialise the interpreter. """
+    # set up event handlers
+    state.basic_state.events = events.Events()
+    # set up interpreter and memory model state
+    reset.clear()
+
 def start():
     """ Start the interpreter. """
     if prog:
         # on load, accept capitalised versions and default extension
         with disk.open_native_or_dos_filename(prog) as progfile:
             program.load(progfile)
-        # ensure memory model is up to date
-        reset.clear()
+    init()
     print_greeting(console)
     if cmd:
         store_line(cmd)
@@ -69,6 +78,16 @@ def start():
         flow.jump(None)
         state.basic_state.execute_mode = True
         state.console_state.screen.cursor.reset_visibility()
+    loop()
+
+def resume():
+    """ Resume a stored interpreter session. """
+    # override selected settings from command line
+    cassette.override()
+    disk.override()
+    # suppress double prompt
+    if not state.basic_state.execute_mode:
+        state.basic_state.prompt = False
     loop()
 
 def loop():

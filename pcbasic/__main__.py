@@ -130,16 +130,10 @@ def convert():
         logging.error(str(e))
 
 def start_basic():
-    """ Load & run programs and commands and hand over to interactive mode. """
-    import program
+    """ Start an interactive interpreter session. """
     import interpreter
     import error
     import state
-    import devices
-    import disk
-    import cassette
-    import reset
-    import sound
     import audio
     import video
     do_reset = False
@@ -151,13 +145,7 @@ def start_basic():
         # choose the video and sound backends
         backend, console = prepare_console()
         if resume:
-            # override selected settings from command line
-            cassette.override()
-            disk.override()
-            # suppress double prompt
-            if not state.basic_state.execute_mode:
-                state.basic_state.prompt = False
-            interpreter.loop()
+            interpreter.resume()
         else:
             # greet, load and start the interpreter
             interpreter.start()
