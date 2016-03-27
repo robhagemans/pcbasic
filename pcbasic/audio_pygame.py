@@ -72,11 +72,12 @@ class AudioPygame(audio.AudioPlugin):
         self.quiet_ticks = 0
         audio.AudioPlugin.__init__(self)
 
-    def _init_sound(self):
+    def __enter__(self):
         """ Perform any necessary initialisations. """
         # initialise mixer as silent
         # this is necessary to be able to set channels to mono
         mixer.quit()
+        return audio.AudioPlugin.__enter__(self)
 
     def _sleep(self):
         """ Sleep a tick to avoid hogging the cpu. """

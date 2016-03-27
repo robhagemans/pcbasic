@@ -74,7 +74,7 @@ class AudioSDL2(audio.AudioPlugin):
         # start audio thread
         audio.AudioPlugin.__init__(self)
 
-    def _init_sound(self):
+    def __enter__(self):
         """ Perform any necessary initialisations. """
         # init sdl audio in this thread separately
         sdl2.SDL_Init(sdl2.SDL_INIT_AUDIO)
@@ -83,6 +83,7 @@ class AudioSDL2(audio.AudioPlugin):
             logging.warning('Could not open audio device: %s', sdl2.SDL_GetError())
         # unpause the audio device
         sdl2.SDL_PauseAudioDevice(self.dev, 0)
+        return audio.AudioPlugin.__enter__(self)
 
     def _sleep(self):
         """ Sleep a tick to avoid hogging the cpu. """

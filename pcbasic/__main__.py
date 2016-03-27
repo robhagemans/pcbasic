@@ -139,35 +139,32 @@ def start_basic():
     import interpreter
     import error
     import interface
-    try:
-        video_plugin = interface.get_video_plugin()
-        audio_plugin = interface.get_audio_plugin()
-    except interface.InitFailed:
-        logging.error('Failed to initialise interface.')
-        return
     exit_error = ''
     try:
         # start or resume the interpreter thread
-        interpreter.launch()
-        interface.event_loop(video_plugin, audio_plugin)
-    except KeyboardInterrupt:
-        if config.get('debug'):
-            raise
-    except error.RunError as e:
-        # runtime errors that occur on interpreter launch are caught here
-        # e.g. "File not Found" for --load parameter
-        exit_error = e.message
-    except Exception as e:
-        exit_error = "Unhandled exception\n%s" % traceback.format_exc()
-    finally:
-        interpreter.close()
-        audio_plugin.close()
-        # fix the terminal on exit (important for ANSI terminals)
-        video_plugin.close()
+        with interface.get_video_plugin() as vp:
+            with interface.get_audio_plugin() as ap:
+                try:
+                    interpreter.launch()
+                    interface.event_loop(vp, ap)
+                except KeyboardInterrupt:
+                    if config.get('debug'):
+                        raise
+                except error.RunError as e:
+                    # runtime errors that occur on interpreter launch are caught here
+                    # e.g. "File not Found" for --load parameter
+                    exit_error = e.message
+                except Exception as e:
+                    exit_error = "Unhandled exception\n%s" % traceback.format_exc()
+                finally:
+                    interpreter.close()
         # show any error messages after closing the video
         # so they will be readable
         if exit_error:
             logging.error(exit_error)
+    except interface.InitFailed:
+        logging.error('Failed to initialise interface.')
+        return
 
 
 if __name__ == "__main__":

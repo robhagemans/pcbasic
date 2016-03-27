@@ -151,9 +151,9 @@ class VideoPygame(video_graphical.VideoGraphical):
             mod_to_scan[pygame.KMOD_RALT] = scancode.ALT
         self.clipboard_handler = get_clipboard_handler()
 
-    def close(self):
+    def __exit__(self, type, value, traceback):
         """ Close the pygame interface. """
-        video.VideoPlugin.close(self)
+        video.VideoPlugin.__exit__(self, type, value, traceback)
         self._close_pygame()
 
     def _close_pygame(self):

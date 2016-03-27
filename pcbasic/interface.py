@@ -25,8 +25,6 @@ def prepare():
 
 def event_loop(video_plugin, audio_plugin):
     """ Main interface event loop. """
-    audio_plugin._init_sound()
-    video_plugin._init_thread()
     while True:
         # ensure both queues are drained
         video_plugin.cycle()
@@ -114,11 +112,12 @@ class VideoPlugin(object):
         """ Setup the interface. """
         self.alive = True
 
-    def close(self):
+    def __exit__(self, type, value, traceback):
         """ Close the interface. """
 
-    def _init_thread(self):
-        """ Final initialisation after starting video thread. """
+    def __enter__(self):
+        """ Final initialisation. """
+        return self
 
     def cycle(self):
         """ Video/input event cycle. """
@@ -311,11 +310,12 @@ class AudioPlugin(object):
         self.alive = True
         self.playing = False
 
-    def close(self):
+    def __exit__(self, type, value, traceback):
         """ Close the audio interface. """
 
-    def _init_sound(self):
+    def __enter__(self):
         """ Perform any necessary initialisations. """
+        return self
 
     def cycle(self):
         """ Audio event cycle. """

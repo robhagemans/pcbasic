@@ -95,9 +95,9 @@ class VideoCLI(video.VideoPlugin):
         self.text = [[[u' ']*80 for _ in range(25)]]
         self.f12_active = False
 
-    def close(self):
+    def __exit__(self, type, value, traceback):
         """ Close command-line interface. """
-        video.VideoPlugin.close(self)
+        video.VideoPlugin.__exit__(self, type, value, traceback)
         term_echo()
         if self.last_col and self.cursor_col != self.last_col:
             sys.stdout.write('\n')

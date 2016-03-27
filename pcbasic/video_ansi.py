@@ -59,9 +59,9 @@ class VideoANSI(video_cli.VideoCLI):
             self.logger.disabled = True
 
 
-    def close(self):
+    def __exit__(self, type, value, traceback):
         """ Close the text interface. """
-        video.VideoPlugin.close(self)
+        video.VideoPlugin.__exit__(self, type, value, traceback)
         sys.stdout.write(ansi.esc_set_colour % 0)
         sys.stdout.write(ansi.esc_clear_screen)
         sys.stdout.write(ansi.esc_move_cursor % (1, 1))

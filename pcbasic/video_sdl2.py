@@ -86,10 +86,10 @@ class VideoSDL2(video_graphical.VideoGraphical):
         if not self.altgr:
             scan_to_scan[sdl2.SDL_SCANCODE_RALT] = scancode.ALT
             mod_to_scan[sdl2.KMOD_RALT] = scancode.ALT
-        # keep params for _init_thread
+        # keep params for enter
         self.kwargs = kwargs
 
-    def _init_thread(self):
+    def __enter__(self):
         """ Complete SDL2 interface initialisation. """
         # initialise SDL
         sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING)
@@ -138,10 +138,11 @@ class VideoSDL2(video_graphical.VideoGraphical):
             for axis in (0, 1):
                 backend.input_queue.put(backend.Event(backend.STICK_MOVED,
                                                       (j, axis, 128)))
+        return video_graphical.VideoGraphical.__enter__(self)
 
-    def close(self):
+    def __exit__(self, type, value, traceback):
         """ Close the SDL2 interface. """
-        video.VideoPlugin.close(self)
+        video.VideoPlugin.__exit__(self, type, value, traceback)
         if sdl2 and numpy:
             # free windows
             sdl2.SDL_DestroyWindow(self.display)
