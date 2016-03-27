@@ -7,10 +7,13 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import Queue
+import logging
+
+import config
 import backend
 
 class InitFailed(Exception):
-    """ Plugin initialisation failed. """
+    """ Initialisation failed. """
 
 def prepare():
     """ Initialise interface module. """
@@ -19,14 +22,70 @@ def prepare():
 ###############################################################################
 # video plugin
 
+# create the window icon
+icon_hex = '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
+
+# plugins will need to register themselves
 video_plugin_dict = {}
 
-def get_video_plugin(plugin_name, **kwargs):
-    """ Start video plugin. """
-    try:
-        return video_plugin_dict[plugin_name](**kwargs)
-    except (KeyError, InitFailed):
-        return None
+video_backends = {
+    # interface_name: video_plugin_name, fallback, warn_on_fallback
+    'none': (('none',), None),
+    'cli': (('cli',), 'none'),
+    'text': (('curses', 'ansi'), 'cli'),
+    'graphical':  (('sdl2', 'pygame',), 'text'),
+    # force a particular plugin to be used
+    'ansi': (('ansi',), None),
+    'curses': (('curses',), None),
+    'pygame': (('pygame',), None),
+    'sdl2': (('sdl2',), None),
+    }
+
+
+def get_video_plugin():
+    """ Find and initialise video plugin for given interface. """
+    import typeface
+    import state
+    # set state.console_state.codepage
+    import unicodepage
+    # needed to set console_state.screen state before setting up video plugin
+    import display
+    icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}
+                                ).build_glyph('icon', 16, 16, False, False)
+    interface_name = config.get('interface') or 'graphical'
+    while True:
+        # select interface
+        names, fallback = video_backends[interface_name]
+        for video_name in names:
+            try:
+                plugin = video_plugin_dict[video_name](
+                    force_display_size=config.get('dimensions'),
+                    aspect=config.get('aspect'),
+                    border_width=config.get('border'),
+                    force_native_pixel=(config.get('scaling') == 'native'),
+                    fullscreen=config.get('fullscreen'),
+                    smooth=(config.get('scaling') == 'smooth'),
+                    nokill=config.get('nokill'),
+                    altgr=config.get('altgr'),
+                    caption=config.get('caption'),
+                    composite_monitor=(config.get('monitor') == 'composite'),
+                    composite_card=config.get('video'),
+                    copy_paste=config.get('copy-paste'),
+                    pen=config.get('pen'),
+                    icon=icon,
+                    initial_mode=state.console_state.screen.mode,
+                    codepage=state.console_state.codepage)
+            except KeyError:
+                logging.debug('Video plugin "%s" not available.', video_name)
+            except InitFailed:
+                logging.debug('Could not initialise video plugin "%s".', video_name)
+            else:
+                return plugin
+        if fallback:
+            logging.info('Could not initialise %s interface. Falling back to %s interface.', interface_name, fallback)
+            interface_name = fallback
+        else:
+            raise InitFailed()
 
 
 class VideoPlugin(object):
@@ -180,15 +239,40 @@ class VideoPlugin(object):
 ###############################################################################
 # audio plugin
 
+# plugins will need to register themselves
 audio_plugin_dict = {}
 
+audio_backends = {
+    # interface_name: plugin_name, fallback, warn_on_fallback
+    'none': ('none',),
+    'cli': ('beep', 'none'),
+    'text': ('beep', 'none'),
+    'graphical': ('sdl2', 'pygame', 'beep', 'none'),
+    'ansi': ('none',),
+    'curses': ('none',),
+    'pygame': ('pygame', 'none'),
+    'sdl2': ('sdl2', 'none'),
+    }
 
-def get_audio_plugin(plugin_name):
-    """ Start audio plugin. """
-    try:
-        return audio_plugin_dict[plugin_name]()
-    except (KeyError, InitFailed):
-        return None
+
+def get_audio_plugin():
+    """ Find and initialise audio plugin for given interface. """
+    if config.get('nosound') :
+        interface_name = 'none'
+    else:
+        interface_name = config.get('interface') or 'graphical'
+    names = audio_backends[interface_name]
+    for audio_name in names:
+        try:
+            plugin = audio_plugin_dict[audio_name]()
+        except KeyError:
+            logging.debug('Audio plugin "%s" not available.', audio_name)
+        except InitFailed:
+            logging.debug('Could not initialise audio plugin "%s".', audio_name)
+        else:
+            return plugin
+    logging.error('Audio plugin malfunction. Could not initialise interface.')
+    raise InitFailed()
 
 
 class AudioPlugin(object):

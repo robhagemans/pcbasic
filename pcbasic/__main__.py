@@ -25,6 +25,21 @@ import config
 import printer
 import error
 
+# video plugins
+# these are unused but need to be initialised and packaged
+import video_none
+import video_ansi
+import video_cli
+import video_curses
+import video_pygame
+import video_sdl2
+
+# audio plugins
+import audio_none
+import audio_beep
+import audio_pygame
+import audio_sdl2
+
 
 def main():
     """ Initialise and do requested operations. """
@@ -126,8 +141,12 @@ def start_basic():
     import interpreter
     import error
     import interface
-    video_plugin = init_video_plugin()
-    audio_plugin = init_audio_plugin()
+    try:
+        video_plugin = interface.get_video_plugin()
+        audio_plugin = interface.get_audio_plugin()
+    except interface.InitFailed:
+        logging.error('Failed to initialise interface.')
+        return
     exit_error = ''
     try:
         # start or resume the interpreter thread
@@ -173,115 +192,6 @@ def event_loop(video_plugin, audio_plugin):
         # do not hog cpu
         if empty and audio_plugin.next_tone == [None, None, None, None]:
             time.sleep(0.024)
-
-
-###############################################################################
-# video plugins
-
-# these are unused but need to be initialised and packaged
-import video_none
-import video_ansi
-import video_cli
-import video_curses
-import video_pygame
-import video_sdl2
-
-video_backends = {
-    # interface_name: video_plugin_name, fallback, warn_on_fallback
-    'none': (('none',), None),
-    'cli': (('cli',), 'none'),
-    'text': (('curses', 'ansi'), 'cli'),
-    'graphical':  (('sdl2', 'pygame',), 'text'),
-    # force a particular plugin to be used
-    'ansi': (('ansi',), None),
-    'curses': (('curses',), None),
-    'pygame': (('pygame',), None),
-    'sdl2': (('sdl2',), None),
-    }
-
-# create the window icon
-icon_hex = '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
-
-def init_video_plugin():
-    """ Find and initialise video plugin for given interface. """
-    import typeface
-    import state
-    import interface
-    # set state.console_state.codepage
-    import unicodepage
-    # needed to set console_state.screen state before setting up video plugin
-    import display
-    icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}
-                                ).build_glyph('icon', 16, 16, False, False)
-    interface_name = config.get('interface') or 'graphical'
-    while True:
-        # select interface
-        names, fallback = video_backends[interface_name]
-        for video_name in names:
-            plugin = interface.get_video_plugin(video_name,
-                    force_display_size=config.get('dimensions'),
-                    aspect=config.get('aspect'),
-                    border_width=config.get('border'),
-                    force_native_pixel=(config.get('scaling') == 'native'),
-                    fullscreen=config.get('fullscreen'),
-                    smooth=(config.get('scaling') == 'smooth'),
-                    nokill=config.get('nokill'),
-                    altgr=config.get('altgr'),
-                    caption=config.get('caption'),
-                    composite_monitor=(config.get('monitor') == 'composite'),
-                    composite_card=config.get('video'),
-                    copy_paste=config.get('copy-paste'),
-                    pen=config.get('pen'),
-                    icon=icon,
-                    initial_mode=state.console_state.screen.mode,
-                    codepage=state.console_state.codepage)
-            if plugin:
-                return plugin
-            else:
-                logging.debug('Could not initialise %s plugin.', video_name)
-        if fallback:
-            logging.info('Could not initialise %s interface. Falling back to %s interface.', interface_name, fallback)
-            interface_name = fallback
-        else:
-            logging.error('Failed to initialise interface.')
-            raise error.Exit()
-
-
-###############################################################################
-# audio plugins
-
-import audio_none
-import audio_beep
-import audio_pygame
-import audio_sdl2
-
-audio_backends = {
-    # interface_name: plugin_name, fallback, warn_on_fallback
-    'none': ('none',),
-    'cli': ('beep', 'none'),
-    'text': ('beep', 'none'),
-    'graphical': ('sdl2', 'pygame', 'beep', 'none'),
-    'ansi': ('none',),
-    'curses': ('none',),
-    'pygame': ('pygame', 'none'),
-    'sdl2': ('sdl2', 'none'),
-    }
-
-def init_audio_plugin():
-    """ Find and initialise audio plugin for given interface. """
-    import interface
-    if config.get('nosound') :
-        interface_name = 'none'
-    else:
-        interface_name = config.get('interface') or 'graphical'
-    names = audio_backends[interface_name]
-    for audio_name in names:
-        plugin = interface.get_audio_plugin(audio_name)
-        if plugin:
-            return plugin
-        logging.debug('Could not initialise %s plugin.', audio_name)
-    logging.error('Null sound plugin malfunction. Could not initialise interface.')
-    raise error.Exit()
 
 
 if __name__ == "__main__":
