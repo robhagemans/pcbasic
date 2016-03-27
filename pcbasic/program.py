@@ -300,7 +300,7 @@ def renum(new_line, start_line, step):
         if handler.gosub:
             handler.set_jump(old_to_new[handler.gosub])
 
-def load(g):
+def load(g, rebuild_dict=True):
     """ Load program from ascii, bytecode or protected stream. """
     erase_program()
     if g.filetype == 'B':
@@ -312,14 +312,15 @@ def load(g):
         state.basic_state.bytecode.seek(1)
         state.basic_state.protected = not dont_protect
         protect.unprotect(g, state.basic_state.bytecode)
-    else:
-        if g.filetype != 'A':
-            logging.debug("Incorrect file type '%s' on LOAD", g.filetype)
+    elif g.filetype == 'A':
         # assume ASCII file
         # anything but numbers or whitespace: Direct Statement in File
         merge(g)
+    else:
+        logging.debug("Incorrect file type '%s' on LOAD", g.filetype)
     # rebuild line number dict and offsets
-    rebuild_line_dict()
+    if rebuild_dict and g.filetype != 'A':
+        rebuild_line_dict()
 
 def merge(g):
     """ Merge program from ascii or utf8 (if utf8_files is True) stream. """

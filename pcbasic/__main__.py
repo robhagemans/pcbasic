@@ -124,7 +124,7 @@ def convert():
             prog_infile = disk.create_file_object(in_buffer, filetype='ABP', mode='I')
         if prog_infile:
             with prog_infile:
-                program.load(prog_infile)
+                program.load(prog_infile, rebuild_dict=False)
         prog_outfile = None
         if outfile:
             # on save from command-line, use exact file name
