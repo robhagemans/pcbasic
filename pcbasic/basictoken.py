@@ -256,7 +256,10 @@ keyword = {
     CHR: 'CHR$', PEEK: 'PEEK', SPACE: 'SPACE$', OCT: 'OCT$', HEX: 'HEX$',
     LPOS: 'LPOS',  CINT: 'CINT', CSNG: 'CSNG', CDBL: 'CDBL', FIX: 'FIX',
     PEN: 'PEN', STICK: 'STICK', STRIG: 'STRIG', EOF: 'EOF', LOC: 'LOC',
-    LOF: 'LOF',}
+    LOF: 'LOF',
+    }
+
+extra_keywords = {NOISE: 'NOISE', TERM: 'TERM', DEBUG: 'DEBUG'}
 
 # other keywords on http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html :
 # Sperry PC only:

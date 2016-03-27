@@ -41,11 +41,11 @@ def prepare():
     token_to_keyword = tk.keyword
     if config.get('debug'):
         # NOTE: PC-BASIC only. Not the same command or token as Sperry DEBUG.
-        token_to_keyword[tk.DEBUG] = 'DEBUG'
+        token_to_keyword[tk.DEBUG] = tk.extra_keywords[tk.DEBUG]
     if config.get('syntax') in ('pcjr', 'tandy'):
         # pcjr, tandy; incompatible with Sperry PC.
-        token_to_keyword[tk.NOISE] = 'NOISE'
-        token_to_keyword[tk.TERM] = 'TERM'
+        token_to_keyword[tk.NOISE] = tk.extra_keywords[tk.NOISE]
+        token_to_keyword[tk.TERM] = tk.extra_keywords[tk.TERM]
     keyword_to_token = dict(
             (reversed(item) for item in token_to_keyword.items()))
 
