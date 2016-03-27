@@ -18,11 +18,11 @@ import error
 import util
 import tokenise
 import program
+import signals
 import statements
 import display
 import console
 import state
-import signals
 import events
 # prepare input state
 import inputs
@@ -34,7 +34,6 @@ import devices
 import cassette
 import disk
 import var
-import events
 
 # interpreter thread
 thread = None
@@ -57,7 +56,6 @@ def launch():
     else:
         # greet, load and start the interpreter
         start()
-
 
 def init():
     """ Initialise the interpreter. """

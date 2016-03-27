@@ -42,8 +42,6 @@ def prepare():
 tick_s = 0.0006
 longtick_s = 0.024 - tick_s
 
-icon = None
-initial_mode = None
 
 def wait(suppress_events=False):
     """ Wait and check events. """
