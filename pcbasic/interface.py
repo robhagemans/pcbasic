@@ -119,9 +119,6 @@ class VideoPlugin(object):
 
     def close(self):
         """ Close the interface. """
-        # drain signal queue (to allow for persistence)
-        if backend.video_queue:
-            backend.video_queue.join()
 
     def _init_thread(self):
         """ Final initialisation after starting video thread. """
@@ -309,9 +306,6 @@ class AudioPlugin(object):
 
     def close(self):
         """ Close the audio interface. """
-        # drain signal queue (to allow for persistence) and request exit
-        if backend.message_queue:
-            backend.message_queue.join()
 
     def _init_sound(self):
         """ Perform any necessary initialisations. """
