@@ -145,15 +145,11 @@ def start_basic():
         exit_error = "Unhandled exception\n%s" % traceback.format_exc()
     finally:
         interpreter.close()
-        try:
-            audio.close()
-        except (NameError, AttributeError) as e:
-            logging.debug('Error on closing audio: %s', e)
-        try:
-            # fix the terminal on exit (important for ANSI terminals)
-            video.close()
-        except (NameError, AttributeError) as e:
-            logging.debug('Error on closing video: %s', e)
+        audio.close()
+        # fix the terminal on exit (important for ANSI terminals)
+        video.close()
+        # show any error messages after closing the video
+        # so they will be readable
         if exit_error:
             logging.error(exit_error)
 
