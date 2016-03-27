@@ -1,18 +1,21 @@
 """
 PC-BASIC - events.py
-Handlers for BASIC events
+Input event loop and handlers for BASIC events
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
+import time
+import Queue
+
+import error
+import signals
+
 import config
 import state
 import timedate
 import scancode
-
-# 12 definable function keys for Tandy
-num_fn_keys = 10
 
 
 ###############################################################################
@@ -34,7 +37,78 @@ def prepare():
 
 
 ###############################################################################
+# main event checker
+
+tick_s = 0.0006
+longtick_s = 0.024 - tick_s
+
+icon = None
+initial_mode = None
+
+def wait(suppress_events=False):
+    """ Wait and check events. """
+    time.sleep(longtick_s)
+    if not suppress_events:
+        check_events()
+
+def check_events():
+    """ Main event cycle. """
+    time.sleep(tick_s)
+    check_input()
+    if state.basic_state.run_mode:
+        for e in state.basic_state.events.all:
+            e.check()
+    state.console_state.keyb.drain_event_buffer()
+
+def check_input():
+    """ Handle input events. """
+    while True:
+        try:
+            signal = signals.input_queue.get(False)
+        except Queue.Empty:
+            if not state.console_state.keyb.pause:
+                break
+            else:
+                time.sleep(tick_s)
+                continue
+        # we're on it
+        signals.input_queue.task_done()
+        if signal.event_type == signals.KEYB_QUIT:
+            raise error.Exit()
+        elif signal.event_type == signals.KEYB_CHAR:
+            # params is a unicode sequence
+            state.console_state.keyb.insert_chars(*signal.params)
+        elif signal.event_type == signals.KEYB_DOWN:
+            # params is e-ASCII/unicode character sequence, scancode, modifier
+            state.console_state.keyb.key_down(*signal.params)
+        elif signal.event_type == signals.KEYB_UP:
+            state.console_state.keyb.key_up(*signal.params)
+        elif signal.event_type == signals.PEN_DOWN:
+            state.console_state.pen.down(*signal.params)
+        elif signal.event_type == signals.PEN_UP:
+            state.console_state.pen.up()
+        elif signal.event_type == signals.PEN_MOVED:
+            state.console_state.pen.moved(*signal.params)
+        elif signal.event_type == signals.STICK_DOWN:
+            state.console_state.stick.down(*signal.params)
+        elif signal.event_type == signals.STICK_UP:
+            state.console_state.stick.up(*signal.params)
+        elif signal.event_type == signals.STICK_MOVED:
+            state.console_state.stick.moved(*signal.params)
+        elif signal.event_type == signals.CLIP_PASTE:
+            state.console_state.keyb.insert_chars(*signal.params, check_full=False)
+        elif signal.event_type == signals.CLIP_COPY:
+            text = state.console_state.screen.get_text(*(signal.params[:4]))
+            signals.video_queue.put(signals.Event(
+                    signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
+
+
+###############################################################################
 # BASIC event triggers
+
+# 12 definable function keys for Tandy
+num_fn_keys = 10
+
 
 class EventHandler(object):
     """ Manage event triggers. """

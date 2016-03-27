@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import string
 
 import state
-import backend
+import events
 import redirect
 import error
 # for num_fn_keys
@@ -659,7 +659,7 @@ def list_line(line, newline=True):
     """ Print a line from a program listing or EDIT prompt. """
     # no wrap if 80-column line, clear row before printing.
     # flow of listing is visible on screen
-    backend.check_events()
+    events.check_events()
     # replace LF CR with LF
     line = line.replace('\n\r', '\n')
     cuts = line.split('\n')
@@ -730,8 +730,6 @@ def write_for_keys(s, col, cattr):
                 pass
             state.console_state.screen.put_char_attr(state.console_state.screen.apagenum, 25, col, c, cattr, for_keys=True)
         col += 1
-    #backend.video_queue.put(backend.Event(backend.VIDEO_SET_ATTR,
-    #                                        (state.console_state.screen.attr)))
 
 #####################
 # screen read/write

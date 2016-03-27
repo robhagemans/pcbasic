@@ -15,7 +15,7 @@ import scancode
 import eascii
 import redirect
 
-import backend
+import events
 
 
 ###############################################################################
@@ -204,13 +204,13 @@ class Keyboard(object):
 
     def get_char(self):
         """ Read any keystroke, nonblocking. """
-        backend.wait()
+        events.wait()
         return self.buf.getc()
 
     def wait_char(self):
         """ Wait for character, then return it but don't drop from queue. """
         while self.buf.is_empty() and not redirect.input_closed:
-            backend.wait()
+            events.wait()
         return self.buf.peek()
 
     def get_char_block(self):

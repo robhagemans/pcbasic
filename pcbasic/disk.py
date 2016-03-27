@@ -26,7 +26,7 @@ import config
 import error
 import state
 # for check_events during FILES
-import backend
+import events
 import console
 import vartypes
 import devices
@@ -706,7 +706,7 @@ class DiskDevice(object):
             output = output[num:]
             console.write_line(line)
             # allow to break during dir listing & show names flowing on screen
-            backend.check_events()
+            events.check_events()
         console.write_line(b' %d Bytes free' % self.get_free())
 
     def get_free(self):

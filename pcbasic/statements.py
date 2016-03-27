@@ -17,7 +17,6 @@ import string
 
 import plat
 import config
-import backend
 import console
 import debug
 import disk

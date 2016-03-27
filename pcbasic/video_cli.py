@@ -14,7 +14,7 @@ import Queue
 
 import interface as video
 import plat
-import backend
+import signals
 import scancode
 import eascii
 import ansi
@@ -115,20 +115,20 @@ class VideoCLI(video.VideoPlugin):
                 break
             if uc == eof:
                 # ctrl-D (unix) / ctrl-Z (windows)
-                backend.input_queue.put(backend.Event(backend.KEYB_QUIT))
+                signals.input_queue.put(signals.Event(signals.KEYB_QUIT))
             elif uc == u'\x7f':
                 # backspace
-                backend.input_queue.put(backend.Event(backend.KEYB_DOWN,
+                signals.input_queue.put(signals.Event(signals.KEYB_DOWN,
                                         (eascii.BACKSPACE, scancode.BACKSPACE, [])))
             elif sc or uc:
                 # check_full=False to allow pasting chunks of text
-                backend.input_queue.put(backend.Event(
-                                        backend.KEYB_DOWN, (uc, sc, [], False)))
+                signals.input_queue.put(signals.Event(
+                                        signals.KEYB_DOWN, (uc, sc, [], False)))
                 if sc == scancode.F12:
                     self.f12_active = True
                 else:
-                    backend.input_queue.put(backend.Event(
-                                            backend.KEYB_UP, (scancode.F12,)))
+                    signals.input_queue.put(signals.Event(
+                                            signals.KEYB_UP, (scancode.F12,)))
                     self.f12_active = False
 
     ###############################################################################

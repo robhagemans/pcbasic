@@ -22,7 +22,8 @@ import util
 import draw_and_play
 import representation
 import vartypes
-import backend
+import events
+import signals
 
 # sound capabilities - '', 'pcjr' or 'tandy'
 pcjr_sound = ''
@@ -102,7 +103,7 @@ class Sound(object):
                 frequency < 110. and frequency != 0):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
-        tone = backend.Event(backend.AUDIO_TONE, (frequency, duration, fill, loop, volume))
+        tone = signals.Event(signals.AUDIO_TONE, (frequency, duration, fill, loop, volume))
         state.console_state.tone_queue[voice].put(tone)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
@@ -122,12 +123,12 @@ class Sound(object):
         while (self.queue_length(0) > wait_length or
                 self.queue_length(1) > wait_length or
                 self.queue_length(2) > wait_length):
-            backend.wait()
+            events.wait()
 
     def wait_all_music(self):
         """ Wait until all music (not noise) has finished playing. """
         while (self.is_playing(0) or self.is_playing(1) or self.is_playing(2)):
-            backend.wait()
+            events.wait()
 
     def stop_all_sound(self):
         """ Terminate all sounds immediately. """
@@ -138,12 +139,12 @@ class Sound(object):
                 except Queue.Empty:
                     continue
                 q.task_done()
-        backend.message_queue.put(backend.Event(backend.AUDIO_STOP))
+        signals.message_queue.put(signals.Event(signals.AUDIO_STOP))
 
     def play_noise(self, source, volume, duration, loop=False):
         """ Play a sound on the noise generator. """
         frequency = self.noise_freq[source]
-        noise = backend.Event(backend.AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
+        noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
         state.console_state.tone_queue[3].put(noise)
         # don't wait for noise
 
@@ -157,11 +158,11 @@ class Sound(object):
     def is_playing(self, voice):
         """ A note is playing or queued at the given voice. """
         # NOTE: Queue.unfinished_tasks is undocumented, may only work in CPython
-        return self.queue_length(voice) or backend.tone_queue[voice].unfinished_tasks
+        return self.queue_length(voice) or signals.tone_queue[voice].unfinished_tasks
 
     def persist(self, flag):
         """ Set mixer persistence flag (runmode). """
-        backend.message_queue.put(backend.Event(backend.AUDIO_PERSIST, flag))
+        signals.message_queue.put(signals.Event(signals.AUDIO_PERSIST, flag))
 
     ### PLAY statement
 

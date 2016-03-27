@@ -10,7 +10,7 @@ import Queue
 import subprocess
 
 import plat
-import backend
+import signals
 
 import interface as audio
 
@@ -38,10 +38,10 @@ class AudioBeep(audio.AudioPlugin):
         alive = True
         while alive:
             try:
-                signal = backend.message_queue.get(False)
+                signal = signals.message_queue.get(False)
             except Queue.Empty:
                 return True
-            if signal.event_type == backend.AUDIO_STOP:
+            if signal.event_type == signals.AUDIO_STOP:
                 # stop all channels
                 for voice in self.now_playing:
                     if voice and voice.poll() is None:
@@ -50,28 +50,28 @@ class AudioBeep(audio.AudioPlugin):
                 self.now_playing = [None, None, None, None]
                 self.now_looping = [None, None, None, None]
                 hush()
-            elif signal.event_type == backend.AUDIO_QUIT:
+            elif signal.event_type == signals.AUDIO_QUIT:
                 # close thread after task_done
                 alive = False
             # drop other messages
-            backend.message_queue.task_done()
+            signals.message_queue.task_done()
 
     def _drain_tone_queue(self):
         """ Drain tone queue. """
         empty = False
         while not empty:
             empty = True
-            for voice, q in enumerate(backend.tone_queue):
+            for voice, q in enumerate(signals.tone_queue):
                 if self.next_tone[voice] is None:
                     try:
                         signal = q.get(False)
                         empty = False
                     except Queue.Empty:
                         continue
-                    if signal.event_type == backend.AUDIO_TONE:
+                    if signal.event_type == signals.AUDIO_TONE:
                         # enqueue a tone
                         self.next_tone[voice] = signal.params
-                    elif signal.event_type == backend.AUDIO_NOISE:
+                    elif signal.event_type == signals.AUDIO_NOISE:
                         # enqueue a noise (play as regular note)
                         self.next_tone[voice] = signal.params[1:]
         return empty

@@ -22,7 +22,8 @@ import statements
 import display
 import console
 import state
-import backend
+import signals
+import events
 # prepare input state
 import inputs
 import reset
@@ -123,8 +124,8 @@ def launch_thread():
 def close():
     """ Wait for the interpreter to exit. """
     # drain signal queue (to allow for persistence) and request exit
-    if backend.input_queue:
-        backend.input_queue.join()
+    if signals.input_queue:
+        signals.input_queue.join()
     if thread and thread.is_alive():
         # wait for thread to finish
         thread.join()
@@ -140,14 +141,14 @@ def loop():
         except error.Exit:
             # pause before exit if requested
             if wait:
-                backend.video_queue.put(backend.Event(backend.VIDEO_SET_CAPTION, 'Press a key to close window'))
-                backend.video_queue.put(backend.Event(backend.VIDEO_SHOW_CURSOR, False))
+                signals.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
+                signals.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
                 state.console_state.keyb.pause = True
                 # this performs a blocking keystroke read if in pause state
-                backend.check_events()
+                events.check_events()
         finally:
-            backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
-            backend.message_queue.put(backend.Event(backend.AUDIO_QUIT))
+            signals.video_queue.put(signals.Event(signals.VIDEO_QUIT))
+            signals.message_queue.put(signals.Event(signals.AUDIO_QUIT))
             state.save()
             try:
                 # close files if we opened any
@@ -170,7 +171,7 @@ def cycle():
             if state.basic_state.execute_mode:
                 try:
                     # may raise Break
-                    backend.check_events()
+                    events.check_events()
                     handle_basic_events()
                     # returns True if more statements to parse
                     if not statements.parse_statement():

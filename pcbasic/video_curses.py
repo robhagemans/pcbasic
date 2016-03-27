@@ -18,7 +18,7 @@ except ImportError:
 import plat
 import scancode
 import eascii
-import backend
+import signals
 import video
 
 # for a few ansi sequences not supported by curses
@@ -165,8 +165,8 @@ class VideoCurses(video.VideoPlugin):
             else:
                 if i == curses.KEY_BREAK:
                     # this is fickle, on many terminals doesn't work
-                    backend.input_queue.put(backend.Event(
-                                            backend.KEYB_DOWN,
+                    signals.input_queue.put(signals.Event(
+                                            signals.KEYB_DOWN,
                                             (u'', scancode.BREAK, [scancode.CTRL])))
                 elif i == curses.KEY_RESIZE:
                     self._resize(self.height, self.width)
@@ -180,8 +180,8 @@ class VideoCurses(video.VideoPlugin):
                 scan = curses_to_scan.get(i, None)
                 c = curses_to_eascii.get(i, '')
                 if scan or c:
-                    backend.input_queue.put(backend.Event(
-                                            backend.KEYB_DOWN, (c, scan, [])))
+                    signals.input_queue.put(signals.Event(
+                                            signals.KEYB_DOWN, (c, scan, [])))
                     if i == curses.KEY_F12:
                         self.f12_active = True
                     else:
@@ -191,15 +191,15 @@ class VideoCurses(video.VideoPlugin):
         # then handle these one by one
         for c in u:
             #check_full=False to allow pasting chunks of text
-            backend.input_queue.put(backend.Event(
-                                    backend.KEYB_DOWN, (c, None, [], False)))
+            signals.input_queue.put(signals.Event(
+                                    signals.KEYB_DOWN, (c, None, [], False)))
             self._unset_f12()
 
     def _unset_f12(self):
         """ Deactivate F12 """
         if self.f12_active:
-            backend.input_queue.put(backend.Event(
-                                    backend.KEYB_UP, (scancode.F12,)))
+            signals.input_queue.put(signals.Event(
+                                    signals.KEYB_UP, (scancode.F12,)))
             self.f12_active = False
 
     def _resize(self, height, width):

@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import plat
 import interface as video
-import backend
+import signals
 import scancode
 
 try:
@@ -173,12 +173,12 @@ class ClipboardInterface(object):
             return
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        backend.input_queue.put(backend.Event(backend.CLIP_COPY,
+        signals.input_queue.put(signals.Event(signals.CLIP_COPY,
                 (start[0], start[1], stop[0], stop[1], mouse)))
 
     def paste(self, text):
         """ Paste from clipboard into keyboard buffer. """
-        backend.input_queue.put(backend.Event(backend.CLIP_PASTE, (text,)))
+        signals.input_queue.put(signals.Event(signals.CLIP_PASTE, (text,)))
 
     def move(self, r, c):
         """ Move the head of the selection and update feedback. """

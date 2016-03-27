@@ -10,7 +10,7 @@ import logging
 
 import config
 import state
-import backend
+import events
 import inputs
 import display
 import vartypes
@@ -97,7 +97,7 @@ def inp(port):
     """ Get the value in an emulated machine port. """
     # keyboard
     if port == 0x60:
-        backend.wait()
+        events.wait()
         return state.console_state.keyb.last_scancode
     # game port (joystick)
     elif port == 0x201:
@@ -237,7 +237,7 @@ def wait(addr, ander, xorer):
     store_suspend = state.basic_state.events.suspend_all
     state.basic_state.events.suspend_all = True
     while (inp(addr) ^ xorer) & ander == 0:
-        backend.wait()
+        events.wait()
     state.basic_state.events.suspend_all = store_suspend
 
 def bload(g, offset):
@@ -663,7 +663,7 @@ def get_low_memory(addr):
     # &H20 - NumLock key is depressed
     # &H10 - ScrollLock key is depressed
     # &H08 - Suspend key has been toggled
-    backend.wait()
+    events.wait()
     # 108-115 control Ctrl-break capture; not implemented (see PC Mag POKEs)
     # 1040 monitor type
     if addr == 124:

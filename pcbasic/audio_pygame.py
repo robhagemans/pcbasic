@@ -25,7 +25,7 @@ from math import ceil
 import logging
 import Queue
 
-import backend
+import signals
 import interface as audio
 
 tick_ms = 24
@@ -88,29 +88,29 @@ class AudioPygame(audio.AudioPlugin):
         alive = True
         while alive:
             try:
-                signal = backend.message_queue.get(False)
+                signal = signals.message_queue.get(False)
             except Queue.Empty:
                 return True
-            if signal.event_type == backend.AUDIO_STOP:
+            if signal.event_type == signals.AUDIO_STOP:
                 # stop all channels
                 for voice in range(4):
                     stop_channel(voice)
                 self.loop_sound = [None, None, None, None]
                 self.next_tone = [None, None, None, None]
-            elif signal.event_type == backend.AUDIO_QUIT:
+            elif signal.event_type == signals.AUDIO_QUIT:
                 # close thread after task_done
                 alive = False
-            elif signal.event_type == backend.AUDIO_PERSIST:
+            elif signal.event_type == signals.AUDIO_PERSIST:
                 # allow/disallow mixer to quit
                 self.persist = signal.params
-            backend.message_queue.task_done()
+            signals.message_queue.task_done()
 
     def _drain_tone_queue(self):
         """ Drain signal queue. """
         empty = False
         while not empty:
             empty = True
-            for voice, q in enumerate(backend.tone_queue):
+            for voice, q in enumerate(signals.tone_queue):
                 # don't get the next tone if we're still working on one
                 if self.next_tone[voice]:
                     continue
@@ -119,11 +119,11 @@ class AudioPygame(audio.AudioPlugin):
                     empty = False
                 except Queue.Empty:
                     continue
-                if signal.event_type == backend.AUDIO_TONE:
+                if signal.event_type == signals.AUDIO_TONE:
                     # enqueue a tone
                     self.next_tone[voice] = SoundGenerator(signal_sources[voice],
                                                       feedback_tone, *signal.params)
-                elif signal.event_type == backend.AUDIO_NOISE:
+                elif signal.event_type == signals.AUDIO_NOISE:
                     # enqueue a noise
                     feedback = feedback_noise if signal.params[0] else feedback_periodic
                     self.next_tone[voice] = SoundGenerator(signal_sources[3],
@@ -148,7 +148,7 @@ class AudioPygame(audio.AudioPlugin):
                         # it's a looping tone, handle there
                         self.loop_sound[voice] = self.next_tone[voice]
                         self.next_tone[voice] = None
-                        backend.tone_queue[voice].task_done()
+                        signals.tone_queue[voice].task_done()
                     else:
                         current_chunk[voice] = numpy.array([], dtype=numpy.int16)
                         while (self.next_tone[voice] and
@@ -157,7 +157,7 @@ class AudioPygame(audio.AudioPlugin):
                             if chunk is None:
                                 # tone has finished
                                 self.next_tone[voice] = None
-                                backend.tone_queue[voice].task_done()
+                                signals.tone_queue[voice].task_done()
                             else:
                                 current_chunk[voice] = numpy.concatenate(
                                                     (current_chunk[voice], chunk))

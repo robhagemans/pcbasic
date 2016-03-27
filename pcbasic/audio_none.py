@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import datetime
 import Queue
 
-import backend
+import signals
 import interface as audio
 
 def prepare():
@@ -25,24 +25,24 @@ class AudioNone(audio.AudioPlugin):
         alive = True
         while alive:
             try:
-                signal = backend.message_queue.get(False)
+                signal = signals.message_queue.get(False)
             except Queue.Empty:
                 return True
-            if signal.event_type == backend.AUDIO_STOP:
+            if signal.event_type == signals.AUDIO_STOP:
                 # stop all channels
                 self.next_tone = [None, None, None, None]
-            elif signal.event_type == backend.AUDIO_QUIT:
+            elif signal.event_type == signals.AUDIO_QUIT:
                 # close thread after task_done
                 alive = False
             # drop other messages
-            backend.message_queue.task_done()
+            signals.message_queue.task_done()
 
     def _drain_tone_queue(self):
         """ Drain signal queue. """
         empty = False
         while not empty:
             empty = True
-            for voice, q in enumerate(backend.tone_queue):
+            for voice, q in enumerate(signals.tone_queue):
                 if self.next_tone[voice] is None:
                     try:
                         signal = q.get(False)
@@ -50,10 +50,10 @@ class AudioNone(audio.AudioPlugin):
                     except Queue.Empty:
                         continue
                     duration = 0
-                    if signal.event_type == backend.AUDIO_TONE:
+                    if signal.event_type == signals.AUDIO_TONE:
                         # enqueue a tone
                         frequency, duration, fill, loop, volume = signal.params
-                    elif signal.event_type == backend.AUDIO_NOISE:
+                    elif signal.event_type == signals.AUDIO_NOISE:
                         # enqueue a noise
                         is_white, frequency, duration, fill, loop, volume = signal.params
                     latest = self.next_tone[voice] or datetime.datetime.now()
@@ -67,7 +67,7 @@ class AudioNone(audio.AudioPlugin):
         for voice in range(4):
             if self.next_tone[voice] is not None and now >= self.next_tone[voice]:
                 self.next_tone[voice] = None
-                backend.tone_queue[voice].task_done()
+                signals.tone_queue[voice].task_done()
 
 
 prepare()

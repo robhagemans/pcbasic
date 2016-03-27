@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 
 import interface as video
-import backend
+import signals
 import plat
 import redirect
 
@@ -66,6 +66,6 @@ class VideoNone(video.VideoPlugin):
             if c == u'\n' and lf_to_cr:
                 c = u'\r'
             # check_full=False as all input may come at once
-            backend.input_queue.put(backend.Event(backend.KEYB_CHAR, (c, False)))
+            signals.input_queue.put(signals.Event(signals.KEYB_CHAR, (c, False)))
 
 prepare()

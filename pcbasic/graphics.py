@@ -22,7 +22,7 @@ import state
 import vartypes
 import util
 import draw_and_play
-import backend
+import events
 
 # degree-to-radian conversion factor
 deg_to_rad = fp.div(fp.Single.twopi, fp.Single.from_int(360))
@@ -587,7 +587,7 @@ class Drawing(object):
                 self.screen.put_interval(self.screen.apagenum, x_left, y, interval)
             # allow interrupting the paint
             if y%4 == 0:
-                backend.check_events()
+                events.check_events()
         self.last_attr = c
 
     def check_scanline(self, line_seed, x_start, x_stop, y,

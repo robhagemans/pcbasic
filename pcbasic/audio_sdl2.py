@@ -23,7 +23,7 @@ try:
 except ImportError:
     numpy = None
 
-import backend
+import signals
 import interface as audio
 
 tick_ms = 24
@@ -93,17 +93,17 @@ class AudioSDL2(audio.AudioPlugin):
         """ Drain signal queue. """
         while True:
             try:
-                signal = backend.message_queue.get(False)
+                signal = signals.message_queue.get(False)
             except Queue.Empty:
                 return True
-            backend.message_queue.task_done()
-            if signal.event_type == backend.AUDIO_STOP:
+            signals.message_queue.task_done()
+            if signal.event_type == signals.AUDIO_STOP:
                 self.next_tone = [None, None, None, None]
                 self.generators = [deque(), deque(), deque(), deque()]
                 sdl2.SDL_LockAudioDevice(self.dev)
                 self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
                 sdl2.SDL_UnlockAudioDevice(self.dev)
-            elif signal.event_type == backend.AUDIO_QUIT:
+            elif signal.event_type == signals.AUDIO_QUIT:
                 # close thread
                 return False
 
@@ -112,17 +112,17 @@ class AudioSDL2(audio.AudioPlugin):
         empty = False
         while not empty:
             empty = True
-            for voice, q in enumerate(backend.tone_queue):
+            for voice, q in enumerate(signals.tone_queue):
                 try:
                     signal = q.get(False)
                     empty = False
                 except Queue.Empty:
                     continue
-                if signal.event_type == backend.AUDIO_TONE:
+                if signal.event_type == signals.AUDIO_TONE:
                     # enqueue a tone
                     self.generators[voice].append(SoundGenerator(
                         signal_sources[voice], feedback_tone, *signal.params))
-                elif signal.event_type == backend.AUDIO_NOISE:
+                elif signal.event_type == signals.AUDIO_NOISE:
                     # enqueue a noise
                     feedback = feedback_noise if signal.params[0] else feedback_periodic
                     self.generators[voice].append(SoundGenerator(
@@ -146,7 +146,7 @@ class AudioSDL2(audio.AudioPlugin):
                 current_chunk = self.next_tone[voice].build_chunk(chunk_length)
                 if current_chunk is not None:
                     break
-                backend.tone_queue[voice].task_done()
+                signals.tone_queue[voice].task_done()
                 self.next_tone[voice] = None
             if current_chunk is not None:
                 # append chunk to samples list
