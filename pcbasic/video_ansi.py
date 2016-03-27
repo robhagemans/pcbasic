@@ -34,10 +34,6 @@ class VideoANSI(video_cli.VideoCLI):
         """ Initialise the text interface. """
         self.caption = kwargs.get('caption', '')
         self.set_caption_message('')
-        # prevent logger from defacing the screen
-        self.logger = logging.getLogger()
-        if logging.getLogger().handlers[0].stream.name == sys.stderr.name:
-            self.logger.disabled = True
         # cursor is visible
         self.cursor_visible = True
         # 1 is line ('visible'), 2 is block ('highly visible'), 3 is invisible
@@ -54,9 +50,14 @@ class VideoANSI(video_cli.VideoCLI):
         self.vpagenum, self.apagenum = 0, 0
         self.height = 25
         self.width = 80
-        self.text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
         self._set_default_colours(16)
-        video_cli.VideoCLI.__init__(self)
+        video_cli.VideoCLI.__init__(self, **kwargs)
+        self.text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
+        # prevent logger from defacing the screen
+        self.logger = logging.getLogger()
+        if logging.getLogger().handlers[0].stream.name == sys.stderr.name:
+            self.logger.disabled = True
+
 
     def close(self):
         """ Close the text interface. """

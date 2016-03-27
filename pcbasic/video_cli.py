@@ -71,6 +71,12 @@ class VideoCLI(video.VideoPlugin):
             logging.warning('Input device is not a terminal. '
                             'Could not initialise text-based interface.')
             raise video.InitFailed()
+        # set codepage
+        try:
+            self.codepage = kwargs['codepage']
+        except KeyError:
+            logging.error('No codepage supplied to text-based interface.')
+            raise video.InitFailed()
         video.VideoPlugin.__init__(self)
         term_echo(False)
         # start the stdin thread for non-blocking reads
@@ -88,12 +94,6 @@ class VideoCLI(video.VideoPlugin):
         self.vpagenum, self.apagenum = 0, 0
         self.text = [[[u' ']*80 for _ in range(25)]]
         self.f12_active = False
-        # set codepage
-        try:
-            self.codepage = kwargs['codepage']
-        except KeyError:
-            logging.error('No codepage supplied to text-based interface.')
-            raise video.InitFailed()
 
     def close(self):
         """ Close command-line interface. """
