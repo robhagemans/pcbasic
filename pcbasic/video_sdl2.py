@@ -61,9 +61,9 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.composite_artifacts = False
         # update cycle
         # refresh cycle parameters
-        self.cycle = 0
+        self._cycle = 0
         self.last_cycle = 0
-        self.cycle_time = 120
+        self._cycle_time = 120
         self.blink_cycles = 5
         # cursor
         # current cursor location
@@ -362,19 +362,19 @@ class VideoSDL2(video_graphical.VideoGraphical):
         """ Check screen and blink events; update screen if necessary. """
         self.blink_state = 0
         if self.mode_has_blink:
-            self.blink_state = 0 if self.cycle < self.blink_cycles * 2 else 1
-            if self.cycle % self.blink_cycles == 0:
+            self.blink_state = 0 if self._cycle < self.blink_cycles * 2 else 1
+            if self._cycle % self.blink_cycles == 0:
                 self.screen_changed = True
         if self.cursor_visible and (
                 (self.cursor_row != self.last_row) or
                 (self.cursor_col != self.last_col)):
             self.screen_changed = True
         tock = sdl2.SDL_GetTicks()
-        if (tock - self.last_cycle) >= (self.cycle_time/self.blink_cycles):
+        if (tock - self.last_cycle) >= (self._cycle_time/self.blink_cycles):
             self.last_cycle = tock
-            self.cycle += 1
-            if self.cycle == self.blink_cycles*4:
-                self.cycle = 0
+            self._cycle += 1
+            if self._cycle == self.blink_cycles*4:
+                self._cycle = 0
             if self.screen_changed:
                 self._do_flip()
                 self.screen_changed = False
@@ -440,7 +440,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 pixels[left : left+self.font_width, top : top+self.font_height])
         if self.text_mode:
             # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
-            if self.cycle/self.blink_cycles in (1, 3):
+            if self._cycle/self.blink_cycles in (1, 3):
                 curs_height = min(self.cursor_to - self.cursor_from+1,
                                   self.font_height - self.cursor_from)
                 curs_rect = sdl2.SDL_Rect(

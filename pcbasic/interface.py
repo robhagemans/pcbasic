@@ -29,16 +29,12 @@ def event_loop(video_plugin, audio_plugin):
     video_plugin._init_thread()
     while True:
         # ensure both queues are drained
-        work = video_plugin._drain_video_queue()
-        work = audio_plugin._drain_message_queue() and work
-        if not work:
+        video_plugin.cycle()
+        audio_plugin.cycle()
+        if not audio_plugin.alive and not video_plugin.alive:
             break
-        video_plugin._check_display()
-        video_plugin._check_input()
-        empty = audio_plugin._drain_tone_queue()
-        audio_plugin._play_sound()
         # do not hog cpu
-        if empty and audio_plugin.next_tone == [None, None, None, None]:
+        if not audio_plugin.playing:
             time.sleep(0.024)
 
 
@@ -116,12 +112,21 @@ class VideoPlugin(object):
 
     def __init__(self):
         """ Setup the interface. """
+        self.alive = True
 
     def close(self):
         """ Close the interface. """
 
     def _init_thread(self):
         """ Final initialisation after starting video thread. """
+
+    def cycle(self):
+        """ Video/input event cycle. """
+        if self.alive:
+            self.alive = self._drain_video_queue()
+        if self.alive:
+            self._check_display()
+            self._check_input()
 
     def _check_display(self):
         """ Display update cycle. """
@@ -296,19 +301,29 @@ def get_audio_plugin():
 
 
 class AudioPlugin(object):
-    """ Base class for display/input interface plugins. """
+    """ Base class for audio interface plugins. """
 
     def __init__(self):
         """ Setup the audio interface and start the event handling thread. """
         # sound generators for sounds not played yet
         # if not None, something is playing
         self.next_tone = [ None, None, None, None ]
+        self.alive = True
+        self.playing = False
 
     def close(self):
         """ Close the audio interface. """
 
     def _init_sound(self):
         """ Perform any necessary initialisations. """
+
+    def cycle(self):
+        """ Audio event cycle. """
+        if self.alive:
+            self.alive = self._drain_message_queue()
+        if self.alive:
+            self.playing = not (self._drain_tone_queue() and self.next_tone == [None, None, None, None])
+            self._play_sound()
 
     def _play_sound(self):
         """ Play the sounds queued."""
