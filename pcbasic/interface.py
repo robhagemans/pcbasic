@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import Queue
 import logging
+import time
 
 import config
 import backend
@@ -17,6 +18,28 @@ class InitFailed(Exception):
 
 def prepare():
     """ Initialise interface module. """
+
+
+###############################################################################
+# interface event loop
+
+def event_loop(video_plugin, audio_plugin):
+    """ Main interface event loop. """
+    audio_plugin._init_sound()
+    video_plugin._init_thread()
+    while True:
+        # ensure both queues are drained
+        work = video_plugin._drain_video_queue()
+        work = audio_plugin._drain_message_queue() and work
+        if not work:
+            break
+        video_plugin._check_display()
+        video_plugin._check_input()
+        empty = audio_plugin._drain_tone_queue()
+        audio_plugin._play_sound()
+        # do not hog cpu
+        if empty and audio_plugin.next_tone == [None, None, None, None]:
+            time.sleep(0.024)
 
 
 ###############################################################################

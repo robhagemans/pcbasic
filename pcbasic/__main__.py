@@ -11,13 +11,11 @@ import os
 import sys
 import shutil
 import logging
-import time
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
 import traceback
-import subprocess
 
 import plat
 import ansipipe
@@ -151,7 +149,7 @@ def start_basic():
     try:
         # start or resume the interpreter thread
         interpreter.launch()
-        event_loop(video_plugin, audio_plugin)
+        interface.event_loop(video_plugin, audio_plugin)
     except KeyboardInterrupt:
         if config.get('debug'):
             raise
@@ -170,28 +168,6 @@ def start_basic():
         # so they will be readable
         if exit_error:
             logging.error(exit_error)
-
-
-###############################################################################
-# interface event loop
-
-def event_loop(video_plugin, audio_plugin):
-    """ Audio message and tone queue consumer thread. """
-    audio_plugin._init_sound()
-    video_plugin._init_thread()
-    while True:
-        # ensure both queues are drained
-        work = video_plugin._drain_video_queue()
-        work = audio_plugin._drain_message_queue() and work
-        if not work:
-            break
-        video_plugin._check_display()
-        video_plugin._check_input()
-        empty = audio_plugin._drain_tone_queue()
-        audio_plugin._play_sound()
-        # do not hog cpu
-        if empty and audio_plugin.next_tone == [None, None, None, None]:
-            time.sleep(0.024)
 
 
 if __name__ == "__main__":
