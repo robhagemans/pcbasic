@@ -46,29 +46,22 @@ def main():
         prepare_logging()
         if config.get('version'):
             # in version mode, print version and exit
-            sys.stdout.write(plat.version + '\n')
-            if config.get('debug'):
-                import debug
-                debug.details()
+            show_version()
         elif config.get('help'):
             # in help mode, print usage and exit
-            with open(os.path.join(plat.info_dir, 'usage.txt')) as f:
-                for line in f:
-                    sys.stdout.write(line)
+            show_usage()
         elif config.get('convert'):
             # in converter mode, convert and exit
             convert()
         else:
-            # otherwise, go into BASIC
+            # otherwise, start an interpreter session
             start_basic()
     finally:
-        try:
-            printer.wait()
-            # clean up our temp dir if we made one
-            if plat.temp_dir:
-                shutil.rmtree(plat.temp_dir)
-        except NameError:
-            pass
+        # ensure any prints are done before we quit
+        printer.wait()
+        # clean up our temp dir if we made one
+        if plat.temp_dir:
+            shutil.rmtree(plat.temp_dir)
         # avoid sys.excepthook errors when piping output
         # http://stackoverflow.com/questions/7955138/addressing-sys-excepthook-error-in-bash-script
         try:
@@ -95,11 +88,23 @@ def prepare_logging():
             loglevel = logging.INFO
     logging.basicConfig(format=formatstr, level=loglevel, filename=logfile)
 
+def show_version():
+    """ Show version with optional debugging details. """
+    sys.stdout.write(plat.version + '\n')
+    if config.get('debug'):
+        import debug
+        debug.details()
+
+def show_usage():
+    """ Show usage description. """
+    with open(os.path.join(plat.info_dir, 'usage.txt')) as f:
+        for line in f:
+            sys.stdout.write(line)
+
 def convert():
     """ Perform file format conversion. """
     import program
     import disk
-    import error
     # set conversion output
     # first arg, if given, is mode; second arg, if given, is outfile
     mode = config.get('convert')
@@ -136,9 +141,8 @@ def convert():
 
 def start_basic():
     """ Start an interactive interpreter session. """
-    import interpreter
-    import error
     import interface
+    import interpreter
     exit_error = None
     try:
         # start or resume the interpreter thread
