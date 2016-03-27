@@ -50,7 +50,7 @@ video_plugins = {
     'none': (('none',), None),
     'cli': (('cli',), 'none'),
     'text': (('curses', 'ansi'), 'cli'),
-    'graphical':  (('sdl2', 'pygame',), 'text'),
+    'graphical':  (('pygame',), 'text'),
     # force a particular plugin to be used
     'ansi': (('ansi',), None),
     'curses': (('curses',), None),
@@ -271,7 +271,7 @@ audio_plugins = {
     'none': ('none',),
     'cli': ('beep', 'none'),
     'text': ('beep', 'none'),
-    'graphical': ('sdl2', 'pygame', 'beep', 'none'),
+    'graphical': ('pygame', 'beep', 'none'),
     'ansi': ('none',),
     'curses': ('none',),
     'pygame': ('pygame', 'none'),

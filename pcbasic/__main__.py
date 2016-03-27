@@ -139,7 +139,7 @@ def start_basic():
     import interpreter
     import error
     import interface
-    exit_error = ''
+    exit_error = None
     try:
         # start or resume the interpreter thread
         with interface.get_video_plugin() as vp:
@@ -147,24 +147,23 @@ def start_basic():
                 try:
                     interpreter.launch()
                     interface.event_loop(vp, ap)
-                except KeyboardInterrupt:
-                    if config.get('debug'):
-                        raise
                 except error.RunError as e:
                     # runtime errors that occur on interpreter launch are caught here
                     # e.g. "File not Found" for --load parameter
                     exit_error = e.message
-                except Exception as e:
-                    exit_error = "Unhandled exception\n%s" % traceback.format_exc()
                 finally:
                     interpreter.join()
-        # show any error messages after closing the video
-        # so they will be readable
-        if exit_error:
-            logging.error(exit_error)
     except interface.InitFailed:
-        logging.error('Failed to initialise interface.')
-        return
+        exit_error = 'Failed to initialise interface.'
+    except KeyboardInterrupt:
+        if config.get('debug'):
+            raise
+    except Exception:
+        exit_error = 'Unhandled exception\n%s' % traceback.format_exc()
+    # show any error messages after closing the video
+    # so they will be readable
+    if exit_error:
+        logging.error(exit_error)
 
 
 if __name__ == "__main__":
