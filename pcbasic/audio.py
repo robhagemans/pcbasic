@@ -6,7 +6,6 @@ Base classes for audio handlers
 This file is released under the GNU GPL version 3 or later.
 """
 
-import threading
 import time
 
 import backend
@@ -46,40 +45,12 @@ class AudioPlugin(object):
         # sound generators for sounds not played yet
         # if not None, something is playing
         self.next_tone = [ None, None, None, None ]
-        self.thread = None
-
-    def start(self):
-        # start audio thread
-        self.thread = threading.Thread(target=self._consumer_thread)
-        self.thread.start()
 
     def close(self):
         """ Close the audio interface. """
         # drain signal queue (to allow for persistence) and request exit
         if backend.message_queue:
-            #backend.message_queue.put(backend.Event(backend.AUDIO_QUIT))
             backend.message_queue.join()
-        # don't wait for tone que, it will not drain but be pickled later.
-        if self.thread and self.thread.is_alive():
-            # signal quit and wait for thread to finish
-            self.thread.join()
-
-
-    # queue management
-
-    def _consumer_thread(self):
-        """ Audio message and tone queue consumer thread. """
-        self._init_sound()
-        while self._drain_message_queue():
-            empty = self._drain_tone_queue()
-            self._play_sound()
-            # do not hog cpu
-            if empty and self.next_tone == [None, None, None, None]:
-                self._sleep()
-
-    def _sleep(self):
-        """ Sleep a tick to avoid hogging the cpu. """
-        time.sleep(0.024)
 
     def _init_sound(self):
         """ Perform any necessary initialisations. """

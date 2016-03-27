@@ -6,7 +6,6 @@ Base classes for video and input handlers
 This file is released under the GNU GPL version 3 or later.
 """
 
-import threading
 import Queue
 import time
 
@@ -28,7 +27,6 @@ def init(plugin_name, **kwargs):
     except (KeyError, InitFailed):
         return False
     else:
-        #plugin.start()
         return True
 
 def close():
@@ -45,37 +43,15 @@ class VideoPlugin(object):
 
     def __init__(self):
         """ Setup the interface. """
-        self.thread = None
-
-    def start(self):
-        """ Start the event handling thread. """
-        self.thread = threading.Thread(target=self._consumer_thread)
-        self.thread.start()
 
     def close(self):
         """ Close the interface. """
-        # drain signal queue (to allow for persistence) and request exit
-        # signal quit and wait for thread to finish
+        # drain signal queue (to allow for persistence)
         if backend.video_queue:
-            #backend.video_queue.put(backend.Event(backend.VIDEO_QUIT))
             backend.video_queue.join()
-        if self.thread and self.thread.is_alive():
-            # signal quit and wait for thread to finish
-            self.thread.join()
-            self.thread = None
-
-    # queue management
-
-    def _consumer_thread(self):
-        """ Video signal queue consumer thread. """
-        self._init_thread()
-        while self._drain_video_queue():
-            self._check_display()
-            self._check_input()
-            self._sleep()
 
     def _init_thread(self):
-        """ Final initialisation after staring video thread. """
+        """ Final initialisation after starting video thread. """
 
     def _check_display(self):
         """ Display update cycle. """
