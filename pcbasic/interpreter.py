@@ -50,6 +50,7 @@ def prepare():
 
 def launch():
     """ Resume or start the session. """
+    global thread
     if config.get('resume') and state.load():
         # resume from saved emulator state (if requested and available)
         # reload the screen in resumed state
@@ -82,38 +83,10 @@ def launch():
             flow.jump(None)
             state.basic_state.execute_mode = True
             state.console_state.screen.cursor.reset_visibility()
-    launch_thread()
-
-def init():
-    """ Initialise the interpreter. """
-    # true if a prompt is needed on next cycle
-    state.basic_state.prompt = True
-    # input mode is AUTO (used by AUTO)
-    state.basic_state.auto_mode = False
-    # interpreter is executing a command
-    state.basic_state.execute_mode = False
-    # interpreter is waiting for INPUT or LINE INPUT
-    state.basic_state.input_mode = False
-    # previous interpreter mode
-    state.basic_state.last_mode = False, False
-    # syntax error prompt and EDIT
-    state.basic_state.edit_prompt = False
-    # initialise the display
-    display.init()
-    # initialise the console
-    console.init_mode()
-    # set up event handlers
-    state.basic_state.events = events.Events()
-    # set up interpreter and memory model state
-    reset.clear()
-
-def launch_thread():
-    """ Launch interpreter thread. """
-    global thread
     thread = threading.Thread(target=run_session)
     thread.start()
 
-def close():
+def join():
     """ Wait for the interpreter to exit. """
     # drain signal queue (to allow for persistence) and request exit
     if signals.input_queue:
@@ -158,6 +131,33 @@ def run_session():
     except error.Reset:
         # delete state if resetting
         state.delete()
+
+
+###############################################################################
+# interpreter
+
+def init():
+    """ Initialise the interpreter. """
+    # true if a prompt is needed on next cycle
+    state.basic_state.prompt = True
+    # input mode is AUTO (used by AUTO)
+    state.basic_state.auto_mode = False
+    # interpreter is executing a command
+    state.basic_state.execute_mode = False
+    # interpreter is waiting for INPUT or LINE INPUT
+    state.basic_state.input_mode = False
+    # previous interpreter mode
+    state.basic_state.last_mode = False, False
+    # syntax error prompt and EDIT
+    state.basic_state.edit_prompt = False
+    # initialise the display
+    display.init()
+    # initialise the console
+    console.init_mode()
+    # set up event handlers
+    state.basic_state.events = events.Events()
+    # set up interpreter and memory model state
+    reset.clear()
 
 def loop():
     """ Run read-eval-print loop until control returns to user. """
@@ -293,7 +293,7 @@ def auto_step():
         state.basic_state.execute_mode = True
 
 
-############################
+##############################################################################
 # event and error handling
 
 def handle_basic_events():

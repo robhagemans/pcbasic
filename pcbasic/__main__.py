@@ -157,7 +157,7 @@ def start_basic():
                 except Exception as e:
                     exit_error = "Unhandled exception\n%s" % traceback.format_exc()
                 finally:
-                    interpreter.close()
+                    interpreter.join()
         # show any error messages after closing the video
         # so they will be readable
         if exit_error:
