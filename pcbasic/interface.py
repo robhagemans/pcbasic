@@ -23,6 +23,8 @@ def prepare():
 ###############################################################################
 # interface event loop
 
+delay = 0.024
+
 def event_loop(video_plugin, audio_plugin):
     """ Main interface event loop. """
     while True:
@@ -32,8 +34,8 @@ def event_loop(video_plugin, audio_plugin):
         if not audio_plugin.alive and not video_plugin.alive:
             break
         # do not hog cpu
-        if not audio_plugin.playing:
-            time.sleep(0.024)
+        if not audio_plugin.playing and not video_plugin.screen_changed:
+            time.sleep(delay)
 
 
 ###############################################################################
@@ -111,6 +113,7 @@ class VideoPlugin(object):
     def __init__(self):
         """ Setup the interface. """
         self.alive = True
+        self.screen_changed = False
 
     def __exit__(self, type, value, traceback):
         """ Close the interface. """

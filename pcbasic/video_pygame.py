@@ -319,9 +319,9 @@ class VideoPygame(video_graphical.VideoGraphical):
             self._cycle += 1
             if self._cycle == self.blink_cycles*4:
                 self._cycle = 0
-            if self.screen_changed:
-                self._do_flip()
-                self.screen_changed = False
+        if self.screen_changed:
+            self._do_flip()
+            self.screen_changed = False
 
     def _do_flip(self):
         """ Draw the canvas to the screen. """

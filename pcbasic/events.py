@@ -39,8 +39,8 @@ def prepare():
 ###############################################################################
 # main event checker
 
-tick_s = 0.0006
-longtick_s = 0.024 - tick_s
+tick_s = 0.0001
+longtick_s = 0.006 - tick_s
 
 
 def wait(suppress_events=False):
