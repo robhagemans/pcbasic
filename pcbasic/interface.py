@@ -45,7 +45,7 @@ icon_hex = '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
 # plugins will need to register themselves
 video_plugin_dict = {}
 
-video_signalss = {
+video_plugins = {
     # interface_name: video_plugin_name, fallback, warn_on_fallback
     'none': (('none',), None),
     'cli': (('cli',), 'none'),
@@ -72,7 +72,7 @@ def get_video_plugin():
     interface_name = config.get('interface') or 'graphical'
     while True:
         # select interface
-        names, fallback = video_signalss[interface_name]
+        names, fallback = video_plugins[interface_name]
         for video_name in names:
             try:
                 plugin = video_plugin_dict[video_name](
@@ -266,7 +266,7 @@ class VideoPlugin(object):
 # plugins will need to register themselves
 audio_plugin_dict = {}
 
-audio_signalss = {
+audio_plugins = {
     # interface_name: plugin_name, fallback, warn_on_fallback
     'none': ('none',),
     'cli': ('beep', 'none'),
@@ -285,7 +285,7 @@ def get_audio_plugin():
         interface_name = 'none'
     else:
         interface_name = config.get('interface') or 'graphical'
-    names = audio_signalss[interface_name]
+    names = audio_plugins[interface_name]
     for audio_name in names:
         try:
             plugin = audio_plugin_dict[audio_name]()

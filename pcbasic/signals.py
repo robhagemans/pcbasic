@@ -1,6 +1,6 @@
 """
 PC-BASIC - signals.py
-Queues and signals for communication with interface
+Queues and signals for communication between interpreter and interface
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
