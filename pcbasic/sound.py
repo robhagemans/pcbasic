@@ -39,7 +39,7 @@ notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6,
 
 
 def prepare():
-    """ Prepare the audio subsystem. """
+    """ Prepare the sound subsystem. """
     global pcjr_sound
     # pcjr/tandy sound
     if config.get('syntax') in ('pcjr', 'tandy'):
@@ -50,10 +50,6 @@ def prepare():
     state.console_state.sound.sound_on = (pcjr_sound == 'tandy')
     # pc-speaker on/off; (not implemented; not sure whether should be on)
     state.console_state.sound.beep_on = True
-
-
-def init(interface_name):
-    """ Initialise the sound system. """
 
 
 class PlayState(object):
@@ -104,7 +100,7 @@ class Sound(object):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
         tone = signals.Event(signals.AUDIO_TONE, (frequency, duration, fill, loop, volume))
-        state.console_state.tone_queue[voice].put(tone)
+        signals.tone_queue[voice].put(tone)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
@@ -132,7 +128,7 @@ class Sound(object):
 
     def stop_all_sound(self):
         """ Terminate all sounds immediately. """
-        for q in state.console_state.tone_queue:
+        for q in signals.tone_queue:
             while not q.empty():
                 try:
                     q.get(False)
@@ -145,7 +141,7 @@ class Sound(object):
         """ Play a sound on the noise generator. """
         frequency = self.noise_freq[source]
         noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
-        state.console_state.tone_queue[3].put(noise)
+        signals.tone_queue[3].put(noise)
         # don't wait for noise
 
     def queue_length(self, voice=0):
@@ -153,7 +149,7 @@ class Sound(object):
         # NOTE: this returns zero when there are still TWO notes to play
         # one in the pre-play buffer and another because we subtract 1 here
         # this agrees with empirical GW-BASIC ON PLAY() timings!
-        return max(0, state.console_state.tone_queue[voice].qsize()-1)
+        return max(0, signals.tone_queue[voice].qsize()-1)
 
     def is_playing(self, voice):
         """ A note is playing or queued at the given voice. """

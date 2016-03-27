@@ -6,16 +6,7 @@ Queues and signals for communication between interpreter and interface
 This file is released under the GNU GPL version 3 or later.
 """
 
-import time
 import Queue
-
-import state
-
-video_queue = Queue.Queue()
-input_queue = Queue.Queue()
-# audio queues
-message_queue = Queue.Queue()
-tone_queue = None
 
 
 ###############################################################################
@@ -23,39 +14,37 @@ tone_queue = None
 
 def prepare():
     """ Initialise signals module. """
-    global tone_queue
-    # persist tone queue
-    state.console_state.tone_queue = [PersistentQueue(), PersistentQueue(),
-                                      PersistentQueue(), PersistentQueue() ]
-    # kludge: link tone queue to global which is accessed from elsewhere
-    # NOTE that we shouldn't assign to either of these queues after this point
-    tone_queue = state.console_state.tone_queue
 
 
 ###############################################################################
-# persistent queue
+# queues
 
-class PersistentQueue(Queue.Queue):
-    """ Simple picklable Queue. """
+video_queue = Queue.Queue()
+input_queue = Queue.Queue()
+# audio queues
+message_queue = Queue.Queue()
+tone_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
 
-    def __getstate__(self):
-        """ Get pickling dict for queue. """
-        qlist = []
-        while True:
-            try:
-                qlist.append(self.get(False))
-                self.task_done()
-            except Queue.Empty:
-                break
-        return { 'qlist': qlist }
 
-    def __setstate__(self, st):
-        """ Initialise queue from pickling dict. """
-        self.__init__()
-        qlist = st['qlist']
-        for item in qlist:
-            self.put(item)
+def save_queue(q):
+    """ Get list of queue tasks. """
+    qlist = []
+    while True:
+        try:
+            qlist.append(q.get(False))
+            q.task_done()
+        except Queue.Empty:
+            break
+    return qlist
 
+def load_queue(q, qlist):
+    """ Initialise queue from list of tasks. """
+    for item in qlist:
+        q.put(item)
+
+
+###############################################################################
+# signals
 
 class Event(object):
     """ Signal object for input, video or audio queue. """
@@ -65,9 +54,6 @@ class Event(object):
         self.event_type = event_type
         self.params = params
 
-
-###############################################################################
-# signals
 
 # audio queue signals
 AUDIO_TONE = 0

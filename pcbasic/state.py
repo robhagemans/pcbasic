@@ -31,16 +31,13 @@ basic_state = State()
 io_state = State()
 console_state = State()
 
-# a state has been loaded
-loaded = False
-
 # name of state file
 state_name = 'PCBASIC.SAV'
 
 
 def prepare():
     """ Initialise the state module. """
-    global state_file, loaded
+    global state_file
     state_file = config.get('state')
     if os.path.exists(state_name):
         state_file = state_name
@@ -110,7 +107,7 @@ def save():
 
 def load():
     """ Load emulator state from file. """
-    global console_state, io_state, basic_state, loaded
+    global console_state, io_state, basic_state
     if not state_file:
         return False
     # decompress and unpickle
@@ -123,7 +120,6 @@ def load():
         return False
     # unpack pickling object
     io_state, basic_state, console_state = from_pickle.io, from_pickle.basic, from_pickle.console
-    loaded = True
     return True
 
 def delete():

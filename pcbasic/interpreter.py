@@ -50,12 +50,39 @@ def prepare():
 
 def launch():
     """ Resume or start the session. """
-    # resume from saved emulator state if requested and available
     if config.get('resume') and state.load():
-        resume()
+        # resume from saved emulator state (if requested and available)
+        # reload the screen in resumed state
+        if not state.console_state.screen.resume():
+            return False
+        # rebuild the audio queue
+        for q, store in zip(signals.tone_queue, state.console_state.tone_queue_store):
+            signals.load_queue(q, store)
+        # override selected settings from command line
+        cassette.override()
+        disk.override()
+        # suppress double prompt
+        if not state.basic_state.execute_mode:
+            state.basic_state.prompt = False
     else:
         # greet, load and start the interpreter
-        start()
+        if prog:
+            # on load, accept capitalised versions and default extension
+            with disk.open_native_or_dos_filename(prog) as progfile:
+                program.load(progfile)
+        init()
+        print_greeting(console)
+        if cmd:
+            store_line(cmd)
+        if run:
+            # run command before program
+            if cmd:
+                loop()
+            # position the pointer at start of program and enter execute mode
+            flow.jump(None)
+            state.basic_state.execute_mode = True
+            state.console_state.screen.cursor.reset_visibility()
+    launch_thread()
 
 def init():
     """ Initialise the interpreter. """
@@ -80,43 +107,10 @@ def init():
     # set up interpreter and memory model state
     reset.clear()
 
-def start():
-    """ Start the interpreter. """
-    if prog:
-        # on load, accept capitalised versions and default extension
-        with disk.open_native_or_dos_filename(prog) as progfile:
-            program.load(progfile)
-    init()
-    print_greeting(console)
-    if cmd:
-        store_line(cmd)
-    if run:
-        # run command before program
-        if cmd:
-            cycle()
-        # position the pointer at start of program and enter execute mode
-        flow.jump(None)
-        state.basic_state.execute_mode = True
-        state.console_state.screen.cursor.reset_visibility()
-    launch_thread()
-
-def resume():
-    """ Resume a stored interpreter session. """
-    # reload the screen in resumed state
-    if not state.console_state.screen.resume():
-        return False
-    # override selected settings from command line
-    cassette.override()
-    disk.override()
-    # suppress double prompt
-    if not state.basic_state.execute_mode:
-        state.basic_state.prompt = False
-    launch_thread()
-
 def launch_thread():
     """ Launch interpreter thread. """
     global thread
-    thread = threading.Thread(target=loop)
+    thread = threading.Thread(target=run_session)
     thread.start()
 
 def close():
@@ -128,12 +122,12 @@ def close():
         # wait for thread to finish
         thread.join()
 
-def loop():
-    """ Read-eval-print loop until quit or exception. """
+def run_session():
+    """ Interactive interpreter session. """
     try:
         try:
             while True:
-                cycle()
+                loop()
                 if quit and state.console_state.keyb.buf.is_empty():
                     break
         except error.Exit:
@@ -145,8 +139,12 @@ def loop():
                 # this performs a blocking keystroke read if in pause state
                 events.check_events()
         finally:
+            # close interfaces
             signals.video_queue.put(signals.Event(signals.VIDEO_QUIT))
             signals.message_queue.put(signals.Event(signals.AUDIO_QUIT))
+            # persist unplayed tones in sound queue
+            state.console_state.tone_queue_store = [
+                    signals.save_queue(q) for q in signals.tone_queue]
             state.save()
             try:
                 # close files if we opened any
@@ -161,8 +159,8 @@ def loop():
         # delete state if resetting
         state.delete()
 
-def cycle():
-    """ Read-eval-print loop: run once. """
+def loop():
+    """ Run read-eval-print loop until control returns to user. """
     try:
         while True:
             state.basic_state.last_mode = state.basic_state.execute_mode, state.basic_state.auto_mode
