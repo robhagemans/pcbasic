@@ -23,7 +23,7 @@ import backend
 import scancode
 import eascii
 import clipboard
-import video
+import interface as video
 import video_graphical
 
 
@@ -31,7 +31,7 @@ import video_graphical
 
 def prepare():
     """ Initialise video_pygame module. """
-    video.plugin_dict['pygame'] = VideoPygame
+    video.video_plugin_dict['pygame'] = VideoPygame
 
 
 ###############################################################################

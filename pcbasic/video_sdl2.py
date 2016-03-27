@@ -28,7 +28,7 @@ import backend
 import scancode
 import eascii
 import clipboard
-import video
+import interface as video
 import video_graphical
 
 
@@ -36,7 +36,7 @@ import video_graphical
 
 def prepare():
     """ Initialise video_sdl2 module. """
-    video.plugin_dict['sdl2'] = VideoSDL2
+    video.video_plugin_dict['sdl2'] = VideoSDL2
 
 
 ###############################################################################

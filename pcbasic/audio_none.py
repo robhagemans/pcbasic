@@ -10,11 +10,11 @@ import datetime
 import Queue
 
 import backend
-import audio
+import interface as audio
 
 def prepare():
     """ Initialise audio_eep module. """
-    audio.plugin_dict['none'] = AudioNone
+    audio.audio_plugin_dict['none'] = AudioNone
 
 
 class AudioNone(audio.AudioPlugin):

@@ -125,15 +125,14 @@ def start_basic():
     """ Start an interactive interpreter session. """
     import interpreter
     import error
-    import audio
-    import video
-    init_video_plugin()
-    init_audio_plugin()
+    import interface
+    video_plugin = init_video_plugin()
+    audio_plugin = init_audio_plugin()
     exit_error = ''
     try:
         # start or resume the interpreter thread
         interpreter.launch()
-        event_loop()
+        event_loop(video_plugin, audio_plugin)
     except KeyboardInterrupt:
         if config.get('debug'):
             raise
@@ -145,9 +144,9 @@ def start_basic():
         exit_error = "Unhandled exception\n%s" % traceback.format_exc()
     finally:
         interpreter.close()
-        audio.close()
+        audio_plugin.close()
         # fix the terminal on exit (important for ANSI terminals)
-        video.close()
+        video_plugin.close()
         # show any error messages after closing the video
         # so they will be readable
         if exit_error:
@@ -157,23 +156,22 @@ def start_basic():
 ###############################################################################
 # interface event loop
 
-def event_loop():
+def event_loop(video_plugin, audio_plugin):
     """ Audio message and tone queue consumer thread. """
-    audio.plugin._init_sound()
-    video.plugin._init_thread()
+    audio_plugin._init_sound()
+    video_plugin._init_thread()
     while True:
         # ensure both queues are drained
-        work = video.plugin._drain_video_queue()
-        work = audio.plugin._drain_message_queue() and work
+        work = video_plugin._drain_video_queue()
+        work = audio_plugin._drain_message_queue() and work
         if not work:
             break
-        video.plugin._check_display()
-        video.plugin._check_input()
-        empty = audio.plugin._drain_tone_queue()
-        audio.plugin._play_sound()
+        video_plugin._check_display()
+        video_plugin._check_input()
+        empty = audio_plugin._drain_tone_queue()
+        audio_plugin._play_sound()
         # do not hog cpu
-        if empty and audio.plugin.next_tone == [None, None, None, None]:
-            #self._sleep()
+        if empty and audio_plugin.next_tone == [None, None, None, None]:
             time.sleep(0.024)
 
 
@@ -181,7 +179,6 @@ def event_loop():
 # video plugins
 
 # these are unused but need to be initialised and packaged
-import video
 import video_none
 import video_ansi
 import video_cli
@@ -209,6 +206,7 @@ def init_video_plugin():
     """ Find and initialise video plugin for given interface. """
     import typeface
     import state
+    import interface
     # set state.console_state.codepage
     import unicodepage
     # needed to set console_state.screen state before setting up video plugin
@@ -220,7 +218,7 @@ def init_video_plugin():
         # select interface
         names, fallback = video_backends[interface_name]
         for video_name in names:
-            if video.init(video_name,
+            plugin = interface.get_video_plugin(video_name,
                     force_display_size=config.get('dimensions'),
                     aspect=config.get('aspect'),
                     border_width=config.get('border'),
@@ -236,8 +234,9 @@ def init_video_plugin():
                     pen=config.get('pen'),
                     icon=icon,
                     initial_mode=state.console_state.screen.mode,
-                    codepage=state.console_state.codepage):
-                return interface_name
+                    codepage=state.console_state.codepage)
+            if plugin:
+                return plugin
             else:
                 logging.debug('Could not initialise %s plugin.', video_name)
         if fallback:
@@ -251,7 +250,6 @@ def init_video_plugin():
 ###############################################################################
 # audio plugins
 
-import audio
 import audio_none
 import audio_beep
 import audio_pygame
@@ -271,14 +269,16 @@ audio_backends = {
 
 def init_audio_plugin():
     """ Find and initialise audio plugin for given interface. """
+    import interface
     if config.get('nosound') :
         interface_name = 'none'
     else:
         interface_name = config.get('interface') or 'graphical'
     names = audio_backends[interface_name]
     for audio_name in names:
-        if audio.init(audio_name):
-            return interface_name
+        plugin = interface.get_audio_plugin(audio_name)
+        if plugin:
+            return plugin
         logging.debug('Could not initialise %s plugin.', audio_name)
     logging.error('Null sound plugin malfunction. Could not initialise interface.')
     raise error.Exit()

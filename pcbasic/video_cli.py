@@ -12,7 +12,7 @@ import logging
 import threading
 import Queue
 
-import video
+import interface as video
 import plat
 import backend
 import scancode
@@ -25,7 +25,7 @@ encoding = sys.stdin.encoding or 'utf-8'
 
 def prepare():
     """ Initialise the video_cli module. """
-    video.plugin_dict['cli'] = VideoCLI
+    video.video_plugin_dict['cli'] = VideoCLI
 
 
 ###############################################################################

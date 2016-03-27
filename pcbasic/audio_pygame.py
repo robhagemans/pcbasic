@@ -26,7 +26,7 @@ import logging
 import Queue
 
 import backend
-import audio
+import interface as audio
 
 tick_ms = 24
 # quit sound server after quiet period of quiet_quit ticks
@@ -40,7 +40,7 @@ sample_rate = 44100
 
 def prepare():
     """ Initialise sound module. """
-    audio.plugin_dict['pygame'] = AudioPygame
+    audio.audio_plugin_dict['pygame'] = AudioPygame
     if pygame:
         # must be called before pygame.init()
         if mixer:

@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 
-import video
+import interface as video
 import backend
 import plat
 import redirect
@@ -37,7 +37,7 @@ def prepare():
     # setting termios won't do the trick as it will not trigger read_line, gets too complicated
     if plat.system != 'Windows' and plat.stdin_is_tty:
         lf_to_cr = True
-    video.plugin_dict['none'] = VideoNone
+    video.video_plugin_dict['none'] = VideoNone
 
 
 ##############################################################################

@@ -12,11 +12,11 @@ import subprocess
 import plat
 import backend
 
-import audio
+import interface as audio
 
 def prepare():
     """ Initialise audio_eep module. """
-    audio.plugin_dict['beep'] = AudioBeep
+    audio.audio_plugin_dict['beep'] = AudioBeep
 
 
 class AudioBeep(audio.AudioPlugin):

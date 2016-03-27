@@ -24,7 +24,7 @@ except ImportError:
     numpy = None
 
 import backend
-import audio
+import interface as audio
 
 tick_ms = 24
 
@@ -41,7 +41,7 @@ min_samples_buffer = 2*callback_chunk_length
 
 def prepare():
     """ Initialise sound module. """
-    audio.plugin_dict['sdl2'] = AudioSDL2
+    audio.audio_plugin_dict['sdl2'] = AudioSDL2
 
 
 ##############################################################################

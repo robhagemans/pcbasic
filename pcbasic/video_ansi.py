@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import logging
 
-import video
+import interface as video
 import video_cli
 from video_cli import encoding
 
@@ -24,7 +24,7 @@ import ansi
 
 def prepare():
     """ Initialise the video_curses module. """
-    video.plugin_dict['ansi'] = VideoANSI
+    video.video_plugin_dict['ansi'] = VideoANSI
 
 
 class VideoANSI(video_cli.VideoCLI):

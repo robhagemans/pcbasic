@@ -7,7 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import plat
-import video
+import interface as video
 import backend
 import scancode
 

@@ -1,41 +1,32 @@
 """
-PC-BASIC - video.py
-Base classes for video and input handlers
+PC-BASIC - interface.py
+Base classes for video, input and audio handlers
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
 import Queue
-import time
-
 import backend
 
-plugin_dict = {}
-plugin = None
-
+class InitFailed(Exception):
+    """ Plugin initialisation failed. """
 
 def prepare():
-    """ Initialise video module. """
+    """ Initialise interface module. """
 
-def init(plugin_name, **kwargs):
+
+###############################################################################
+# video plugin
+
+video_plugin_dict = {}
+
+def get_video_plugin(plugin_name, **kwargs):
     """ Start video plugin. """
-    global plugin
-    # initialise video plugin
     try:
-        plugin = plugin_dict[plugin_name](**kwargs)
+        return video_plugin_dict[plugin_name](**kwargs)
     except (KeyError, InitFailed):
-        return False
-    else:
-        return True
-
-def close():
-    """ Close video plugin. """
-    if plugin:
-        plugin.close()
-
-class InitFailed(Exception):
-    """ Video plugin initialisation failed. """
+        return None
 
 
 class VideoPlugin(object):
@@ -58,10 +49,6 @@ class VideoPlugin(object):
 
     def _check_input(self):
         """ Input devices update cycle. """
-
-    def _sleep(self):
-        """ Sleep a tick to avoid hogging the cpu. """
-        time.sleep(0.024)
 
     def _drain_video_queue(self):
         """ Drain signal queue. """
@@ -189,6 +176,49 @@ class VideoPlugin(object):
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
         """ Apply numpy array [y][x] of attribytes to an area. """
+
+###############################################################################
+# audio plugin
+
+audio_plugin_dict = {}
+
+
+def get_audio_plugin(plugin_name):
+    """ Start audio plugin. """
+    try:
+        return audio_plugin_dict[plugin_name]()
+    except (KeyError, InitFailed):
+        return None
+
+
+class AudioPlugin(object):
+    """ Base class for display/input interface plugins. """
+
+    def __init__(self):
+        """ Setup the audio interface and start the event handling thread. """
+        # sound generators for sounds not played yet
+        # if not None, something is playing
+        self.next_tone = [ None, None, None, None ]
+
+    def close(self):
+        """ Close the audio interface. """
+        # drain signal queue (to allow for persistence) and request exit
+        if backend.message_queue:
+            backend.message_queue.join()
+
+    def _init_sound(self):
+        """ Perform any necessary initialisations. """
+
+    def _play_sound(self):
+        """ Play the sounds queued."""
+
+    def _drain_message_queue(self):
+        """ Process sound system messages. """
+        return False
+
+    def _drain_tone_queue(self):
+        """ Process tone events. """
+        return True
 
 
 prepare()
