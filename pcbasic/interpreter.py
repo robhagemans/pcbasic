@@ -35,65 +35,119 @@ import cassette
 import disk
 import var
 
-# interpreter thread
-thread = None
 
-def prepare():
-    """ Initialise interpreter module. """
+class SessionLauncher(object):
+    """ Launches a BASIC session. """
 
-def launch():
-    """ Resume or start the session. """
-    global thread
-    if config.get('resume') and state.load():
-        # resume from saved emulator state (if requested and available)
-        # reload the screen in resumed state
-        if not state.console_state.screen.resume():
-            return False
-        # rebuild the audio queue
-        for q, store in zip(signals.tone_queue, state.console_state.tone_queue_store):
-            signals.load_queue(q, store)
-        # override selected settings from command line
-        cassette.override()
-        disk.override()
-        # suppress double prompt
-        if not state.basic_state.execute_mode:
-            state.basic_state.prompt = False
-    else:
-        # greet, load and start the interpreter
-        run = config.get(0) or config.get('run')
-        prog = run or config.get('load')
-        if prog:
-            # on load, accept capitalised versions and default extension
-            with disk.open_native_or_dos_filename(prog) as progfile:
-                program.load(progfile)
-        init()
-        print_greeting(console)
-        cmd = config.get('exec')
-        if cmd:
-            store_line(cmd)
-        if run:
-            # run command before program
-            if cmd:
-                loop()
-            # position the pointer at start of program and enter execute mode
-            flow.jump(None)
-            state.basic_state.execute_mode = True
-            state.console_state.screen.cursor.reset_visibility()
-    thread = threading.Thread(target=run_session)
-    thread.start()
+    def __init__(self):
+        """ Initialise launch parameters. """
+        self.quit = config.get('quit')
+        self.wait = config.get('wait')
+        self.cmd = config.get('exec')
+        self.prog = config.get(0) or config.get('run') or config.get('load')
+        self.run = (config.get(0) != '') or (config.get('run') != '')
+        self.resume = config.get('resume')
+        # following GW, don't write greeting for redirected input
+        # or command-line filter run
+        self.show_greeting = (not self.run and not self.cmd and
+            not config.get('input') and not config.get('interface') == 'none')
+        if self.resume:
+            self.cmd, self.run = '', False
 
-def join():
-    """ Wait for the interpreter to exit. """
-    if thread and thread.is_alive():
-        # request exit
-        signals.input_queue.put(signals.Event(signals.KEYB_QUIT))
-        # wait for thread to finish
-        thread.join()
+    def __enter__(self):
+        """ Resume or start the session. """
+        if self.resume and state.load():
+            resume_session()
+        else:
+            init_session(greet=self.show_greeting, load=self.prog)
+        self.thread = threading.Thread(target=run_session, args=(
+                            self.cmd, self.run, self.quit, self.wait))
+        self.thread.start()
 
-def run_session():
+    def __exit__(self, dummy_one, dummy_two, dummy_three):
+        """ Wait for the interpreter to exit. """
+        if self.thread and self.thread.is_alive():
+            # request exit
+            signals.input_queue.put(signals.Event(signals.KEYB_QUIT))
+            # wait for thread to finish
+            self.thread.join()
+
+
+###############################################################################
+# interpreter session
+
+greeting = (
+    'PC-BASIC {version}\r'
+    '(C) Copyright 2013--2016 Rob Hagemans.\r'
+    '{free} Bytes free')
+
+
+class ResumeFailed(Exception):
+    """ Failed to resume session. """
+    def __str__(self):
+        return self.__doc__
+
+
+def init_session(greet, load):
+    """ Initialise the interpreter session. """
+    # true if a prompt is needed on next cycle
+    state.basic_state.prompt = True
+    # input mode is AUTO (used by AUTO)
+    state.basic_state.auto_mode = False
+    # interpreter is executing a command
+    state.basic_state.execute_mode = False
+    # interpreter is waiting for INPUT or LINE INPUT
+    state.basic_state.input_mode = False
+    # previous interpreter mode
+    state.basic_state.last_mode = False, False
+    # syntax error prompt and EDIT
+    state.basic_state.edit_prompt = False
+    # initialise the display
+    display.init()
+    # initialise the console
+    console.init_mode()
+    # set up event handlers
+    state.basic_state.events = events.Events()
+    # load initial program
+    if load:
+        # on load, accept capitalised versions and default extension
+        with disk.open_native_or_dos_filename(load) as progfile:
+            program.load(progfile)
+    # set up interpreter and memory model state
+    reset.clear()
+    # greeting and keys
+    if greet:
+        console.clear()
+        console.write_line(greeting.format(version=plat.version, free=var.fre()))
+        console.show_keys(True)
+
+def resume_session():
+    """ Resume an interpreter session. """
+    # resume from saved emulator state (if requested and available)
+    # reload the screen in resumed state
+    if not state.console_state.screen.resume():
+        raise ResumeFailed()
+    # rebuild the audio queue
+    for q, store in zip(signals.tone_queue, state.console_state.tone_queue_store):
+        signals.load_queue(q, store)
+    # override selected settings from command line
+    cassette.override()
+    disk.override()
+    # suppress double prompt
+    if not state.basic_state.execute_mode:
+        state.basic_state.prompt = False
+
+
+def run_session(command, run, quit, wait):
     """ Interactive interpreter session. """
-    quit = config.get('quit')
-    wait = config.get('wait')
+    if command:
+        store_line(command)
+        loop()
+    if run:
+        # position the pointer at start of program and enter execute mode
+        flow.jump(None)
+        state.basic_state.execute_mode = True
+        state.console_state.screen.cursor.reset_visibility()
     try:
         try:
             while True:
@@ -116,48 +170,15 @@ def run_session():
             state.console_state.tone_queue_store = [
                     signals.save_queue(q) for q in signals.tone_queue]
             state.save()
-            try:
-                # close files if we opened any
-                devices.close_files()
-            except (NameError, AttributeError) as e:
-                logging.debug('Error on closing files: %s', e)
-            try:
-                devices.close_devices()
-            except (NameError, AttributeError) as e:
-                logging.debug('Error on closing devices: %s', e)
+            # close files if we opened any
+            devices.close_files()
+            devices.close_devices()
     except error.Reset:
         # delete state if resetting
         state.delete()
 
-
-###############################################################################
-# interpreter
-
-def init():
-    """ Initialise the interpreter. """
-    # true if a prompt is needed on next cycle
-    state.basic_state.prompt = True
-    # input mode is AUTO (used by AUTO)
-    state.basic_state.auto_mode = False
-    # interpreter is executing a command
-    state.basic_state.execute_mode = False
-    # interpreter is waiting for INPUT or LINE INPUT
-    state.basic_state.input_mode = False
-    # previous interpreter mode
-    state.basic_state.last_mode = False, False
-    # syntax error prompt and EDIT
-    state.basic_state.edit_prompt = False
-    # initialise the display
-    display.init()
-    # initialise the console
-    console.init_mode()
-    # set up event handlers
-    state.basic_state.events = events.Events()
-    # set up interpreter and memory model state
-    reset.clear()
-
 def loop():
-    """ Run read-eval-print loop until control returns to user. """
+    """ Run read-eval-print loop until control returns to user after a command. """
     try:
         while True:
             state.basic_state.last_mode = state.basic_state.execute_mode, state.basic_state.auto_mode
@@ -233,23 +254,6 @@ def store_line(line):
         # it is a command, go and execute
         state.basic_state.execute_mode = True
     return not state.basic_state.execute_mode
-
-def print_greeting(console):
-    """ Print the greeting and the KEY row if we're not running a program. """
-    greeting = (
-        'PC-BASIC {version} {note}\r'
-        '(C) Copyright 2013--2016 Rob Hagemans.\r'
-        '{free} Bytes free')
-    # following GW, don't write greeting for redirected input
-    # or command-line filter run
-    if (not config.get('run') and not config.get('exec') and
-             not config.get('input') and not config.get(0) and
-             not config.get('interface') == 'none'):
-        debugstr = ' [DEBUG mode]' if config.get('debug') else ''
-        params = { 'version': plat.version, 'note': debugstr, 'free': var.fre()}
-        console.clear()
-        console.write_line(greeting.format(**params))
-        console.show_keys(True)
 
 def show_prompt():
     """ Show the Ok or EDIT prompt, unless suppressed. """
@@ -354,6 +358,3 @@ def handle_break(e):
     console.write_error_message(e.message, program.get_line_number(pos))
     state.basic_state.execute_mode = False
     state.basic_state.input_mode = False
-
-
-prepare()

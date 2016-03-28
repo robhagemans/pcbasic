@@ -141,19 +141,15 @@ def start_basic():
     import interface
     import interpreter
     try:
-        try:
-            interpreter.launch()
-        except error.RunError as e:
-            # runtime errors that occur on interpreter launch are caught here
-            # e.g. "File not Found" for --load parameter
-            logging.error(e.message)
-        else:
+        with interpreter.SessionLauncher():
             try:
                 interface.run()
             except interface.InitFailed:
                 logging.error('Failed to initialise interface.')
-        finally:
-            interpreter.join()
+    except error.RunError as e:
+        # only runtime errors that occur on interpreter launch are caught here
+        # e.g. "File not Found" for --load parameter
+        logging.error(e.message)
     except Exception:
         logging.error('Unhandled exception\n%s' % traceback.format_exc())
 
