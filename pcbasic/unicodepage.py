@@ -30,7 +30,6 @@ control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e
 
 def prepare():
     """ Initialise unicodepage module. """
-    global current_codepage
     codepage = config.get('codepage')
     if not codepage:
         codepage = '437'
