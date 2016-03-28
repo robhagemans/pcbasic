@@ -16,6 +16,8 @@ from eascii import as_bytes as ea
 from eascii import as_unicode as uea
 import redirect
 import events
+# for timer_milliseconds
+import timedate
 
 
 # bit flags for modifier keys
@@ -446,6 +448,8 @@ class Stick(object):
         self.is_on = False
         self.was_fired = [[False, False], [False, False]]
         self.was_fired_event = [[False, False], [False, False]]
+        # timer for reading game port
+        self.out_time = timedate.timer_milliseconds()
 
     def switch(self, on):
         """ Switch joystick handling on or off. """

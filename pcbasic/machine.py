@@ -67,8 +67,7 @@ def poke(addr, val):
     addr += state.basic_state.segment * 0x10
     set_memory(addr, val)
 
-# timer for reading game port
-joystick_out_time = timedate.timer_milliseconds()
+
 # time delay for port value to drop to 0 on maximum reading.
 #  use 100./255. for 100ms.
 joystick_time_factor = 75. / 255.
@@ -105,7 +104,8 @@ def inp(port):
             (not state.console_state.stick.is_firing[0][1]) * 0x20 +
             (not state.console_state.stick.is_firing[1][0]) * 0x10 +
             (not state.console_state.stick.is_firing[1][1]) * 0x80)
-        decay = (timedate.timer_milliseconds() - joystick_out_time) % 86400000
+        decay = (timedate.timer_milliseconds() -
+                    state.console_state.stick.out_time) % 86400000
         if decay < state.console_state.stick.axis[0][0] * joystick_time_factor:
             value += 0x04
         if decay < state.console_state.stick.axis[0][1] * joystick_time_factor:
@@ -158,10 +158,9 @@ def inp(port):
 
 def out(addr, val):
     """ Send a value to an emulated machine port. """
-    global joystick_out_time
     if addr == 0x201:
         # game port reset
-        joystick_out_time = timedate.timer_milliseconds()
+        state.console_state.stick.out_time = timedate.timer_milliseconds()
     elif addr == 0x3c5:
         # officially, requires OUT &H3C4, 2 first (not implemented)
         state.console_state.screen.mode.set_plane_mask(val)
