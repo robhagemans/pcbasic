@@ -52,13 +52,6 @@ import devices
 import printer
 
 
-# buffer sizes (/c switch in GW-BASIC)
-serial_in_size = 256
-serial_out_size = 128
-
-# maximum record length (-s)
-max_reclen = 128
-
 def prepare():
     # parallel devices - LPT1: must always be defined
     print_trigger = config.get('print-trigger')
@@ -67,11 +60,13 @@ def prepare():
     state.io_state.devices['LPT3:'] = LPTDevice(config.get('lpt3'), None, print_trigger)
     state.io_state.lpt1_file = state.io_state.devices['LPT1:'].device_file
     # serial devices
-    global max_reclen, serial_in_size
+    # maximum record length (-s)
     max_reclen = max(1, min(32767, config.get('max-reclen')))
+    # buffer sizes (/c switch in GW-BASIC)
     serial_in_size = config.get('serial-buffer-size')
     state.io_state.devices['COM1:'] = COMDevice(config.get('com1'), max_reclen, serial_in_size)
     state.io_state.devices['COM2:'] = COMDevice(config.get('com2'), max_reclen, serial_in_size)
+    state.io_state.max_reclen = max_reclen
 
 
 ###############################################################################
@@ -87,6 +82,7 @@ class COMDevice(devices.Device):
         devices.Device.__init__(self)
         addr, val = devices.parse_protocol_string(arg)
         self.stream = None
+        self.serial_in_size = serial_in_size
         try:
             if not addr and not val:
                 pass
@@ -108,7 +104,7 @@ class COMDevice(devices.Device):
             self.stream = None
         if self.stream:
             # NOTE: opening a text file automatically tries to read a byte
-            self.device_file = COMFile(self.stream, linefeed=False)
+            self.device_file = COMFile(self.stream, False, serial_in_size)
 
     def open(self, number, param, filetype, mode, access, lock,
                        reclen, seg, offset, length):
@@ -132,7 +128,7 @@ class COMDevice(devices.Device):
         except Exception:
             self.stream.close()
             raise
-        f = COMFile(self.stream, lf)
+        f = COMFile(self.stream, lf, self.serial_in_size)
         # inherit width settings from device file
         f.width = self.device_file.width
         f.col = self.device_file.col
@@ -214,12 +210,13 @@ class COMDevice(devices.Device):
 class COMFile(devices.CRLFTextFileBase):
     """ COMn: device - serial port. """
 
-    def __init__(self, fhandle, linefeed):
+    def __init__(self, fhandle, linefeed, serial_in_size):
         """ Initialise COMn: file. """
         # note that for random files, fhandle must be a seekable stream.
         devices.CRLFTextFileBase.__init__(self, fhandle, 'D', 'R')
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
         self.field = devices.Field(0)
+        self.serial_in_size = serial_in_size
         self.field.reset(serial_in_size)
         self.in_buffer = bytearray()
         self.linefeed = linefeed
@@ -228,11 +225,11 @@ class COMFile(devices.CRLFTextFileBase):
     def check_read(self, allow_overflow=False):
         """ Fill buffer at most up to buffer size; non blocking. """
         try:
-            self.in_buffer += self.fhandle.read(serial_in_size - len(self.in_buffer))
+            self.in_buffer += self.fhandle.read(self.serial_in_size - len(self.in_buffer))
         except (EnvironmentError, ValueError):
             raise error.RunError(error.DEVICE_IO_ERROR)
         # if more to read, signal an overflow
-        if len(self.in_buffer) >= serial_in_size and self.fhandle.read(1):
+        if len(self.in_buffer) >= self.serial_in_size and self.fhandle.read(1):
             self.overflow = True
             # drop waiting chars that don't fit in buffer
             while self.fhandle.read(1):
@@ -314,7 +311,7 @@ class COMFile(devices.CRLFTextFileBase):
 
     def lof(self):
         """ Returns number of bytes free in buffer. """
-        return serial_in_size - self.loc()
+        return self.serial_in_size - self.loc()
 
 
 class StdIOStream(object):

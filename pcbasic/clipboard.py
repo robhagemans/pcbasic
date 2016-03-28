@@ -10,11 +10,11 @@ import subprocess
 
 import plat
 
+encoding = plat.preferred_encoding
+
 
 def prepare():
     """ Prepare the clipboard module. """
-    global encoding
-    encoding = plat.preferred_encoding
 
 
 class Clipboard(object):

@@ -1005,7 +1005,7 @@ def exec_open(ins):
         raise error.RunError(error.PATH_FILE_ACCESS_ERROR)
     elif mode != 'R' and access and access != default_access_modes[mode]:
         raise error.RunError(error.STX)
-    util.range_check(1, ports.max_reclen, reclen)
+    util.range_check(1, state.io_state.max_reclen, reclen)
     # can't open file 0, or beyond max_files
     util.range_check_err(1, devices.max_files, number, error.BAD_FILE_NUMBER)
     devices.open_file(number, name, 'D', mode, access, lock, reclen)
