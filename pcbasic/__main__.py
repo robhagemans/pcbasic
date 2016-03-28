@@ -143,15 +143,9 @@ def start_basic():
     """ Start an interactive interpreter session. """
     import interface
     import interpreter
+    import state
     exit_error = None
     try:
-        import state
-        # set state.console_state.codepage
-        import unicodepage
-        # needed to set console_state.screen state before setting up video plugin
-        import display
-        initial_mode = state.console_state.screen.mode
-        codepage = state.console_state.codepage
         try:
             interpreter.launch()
         except error.RunError as e:
@@ -159,11 +153,10 @@ def start_basic():
             # e.g. "File not Found" for --load parameter
             exit_error = e.message
         else:
+            mode = state.console_state.screen.mode
+            codepage = state.console_state.codepage
             try:
-                # start or resume the interpreter thread
-                with interface.get_video_plugin(initial_mode, codepage) as vp:
-                    with interface.get_audio_plugin() as ap:
-                        interface.event_loop(vp, ap)
+                interface.run(mode, codepage)
             except interface.InitFailed:
                 exit_error = 'Failed to initialise interface.'
         finally:

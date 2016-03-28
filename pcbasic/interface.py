@@ -28,6 +28,12 @@ def prepare():
 
 delay = 0.024
 
+def run(initial_mode, codepage):
+    """ Start the interface. """
+    with get_video_plugin(initial_mode, codepage) as vp:
+        with get_audio_plugin() as ap:
+            event_loop(vp, ap)
+
 def event_loop(video_plugin, audio_plugin):
     """ Main interface event loop. """
     while True:
