@@ -675,7 +675,7 @@ def get_low_memory(addr):
     elif addr == 127:
         return memory.ram_font_segment // 256
     elif addr == 1040:
-        if display.mono_monitor:
+        if display.monitor == 'mono':
             # mono
             return 48 + 6
         else:

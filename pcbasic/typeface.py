@@ -15,15 +15,12 @@ except ImportError:
     numpy = None
 
 import plat
-import config
 
 
 def prepare():
     """ Prepare the typeface module. """
-    global debug
-    debug = config.get('debug')
 
-def load_fonts(font_families, heights_needed, unicode_needed, substitutes):
+def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=False):
     """ Load font typefaces. """
     fonts = {}
     # load fonts, height-16 first
@@ -31,7 +28,7 @@ def load_fonts(font_families, heights_needed, unicode_needed, substitutes):
         # load a Unifont .hex font and take the codepage subset
         fonts[height] = Font(height).load_hex(
             _font_filenames(font_families, height),
-            unicode_needed, substitutes, warn=debug)
+            unicode_needed, substitutes, warn=warn)
         # fix missing code points font based on 16-line font
         try:
             font_16 = fonts[16]

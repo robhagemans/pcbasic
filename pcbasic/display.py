@@ -33,16 +33,13 @@ carry_row_9_chars = [chr(c) for c in range(0xb0, 0xdf+1)]
 
 def prepare():
     """ Prepare the display. """
-    global egacursor
-    global video_capabilities, composite_monitor, mono_monitor
+    global video_capabilities, monitor
     global fonts
+    global debug
+    debug = config.get('debug')
     video_capabilities = config.get('video')
-    # do all text modes with >8 pixels have an ega-cursor?
-    egacursor = video_capabilities in (
-        'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules')
-    composite_monitor = config.get('monitor') == 'composite'
-    mono_monitor = config.get('monitor') == 'mono'
-    if video_capabilities == 'ega' and mono_monitor:
+    monitor = config.get('monitor')
+    if video_capabilities == 'ega' and monitor == 'mono':
         video_capabilities = 'ega_mono'
     # set initial video mode
     state.console_state.screen = Screen(config.get('text-width'),
@@ -60,7 +57,7 @@ def prepare():
     # break up any grapheme clusters and add components to set of needed glyphs
     chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
     fonts = typeface.load_fonts(config.get('font'), heights_needed,
-                        chars_needed, state.console_state.codepage.substitutes)
+                chars_needed, state.console_state.codepage.substitutes, warn=debug)
     fonts[9] = fonts[8]
 
 def init():
@@ -725,11 +722,11 @@ class Screen(object):
         # - ignored on other screens
         colorburst_capable = video_capabilities in (
                                     'cga', 'cga_old', 'tandy', 'pcjr')
-        if self.mode.name == '320x200x4' and not composite_monitor:
+        if self.mode.name == '320x200x4' and monitor != 'composite':
             # ega ignores colorburst; tandy and pcjr have no mode 5
             self.cga_mode_5 = not on
             self.set_cga4_palette(1)
-        elif not mono_monitor and (on or not composite_monitor):
+        elif monitor != 'mono' and (on or monitor != 'composite'):
             modes.colours16[:] = modes.colours16_colour
         else:
             modes.colours16[:] = modes.colours16_mono
@@ -1265,7 +1262,9 @@ class Cursor(object):
         # Use compatibility algo in higher resolutions
         mode = self.screen.mode
         fx, fy = self.width, self.height
-        if egacursor:
+        # do all text modes with >8 pixels have an ega-cursor?
+        if video_capabilities in (
+            'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules'):
             # odd treatment of cursors on EGA machines,
             # presumably for backward compatibility
             # the following algorithm is based on DOSBox source int10_char.cpp
