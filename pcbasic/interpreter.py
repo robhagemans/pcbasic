@@ -88,10 +88,9 @@ def launch():
 
 def join():
     """ Wait for the interpreter to exit. """
-    # drain signal queue (to allow for persistence) and request exit
-    if signals.input_queue:
-        signals.input_queue.join()
     if thread and thread.is_alive():
+        # request exit
+        signals.input_queue.put(signals.Event(signals.KEYB_QUIT))
         # wait for thread to finish
         thread.join()
 
