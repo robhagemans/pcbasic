@@ -19,7 +19,7 @@ import plat
 import scancode
 from eascii import as_unicode as uea
 import signals
-import video
+import interface as video
 
 # for a few ansi sequences not supported by curses
 # only use these if you clear the screen afterwards,
@@ -31,7 +31,7 @@ import ansi
 def prepare():
     """ Initialise the video_curses module. """
     global encoding
-    video.plugin_dict['curses'] = VideoCurses
+    video.video_plugin_dict['curses'] = VideoCurses
     encoding = plat.preferred_encoding
 
 if curses:
@@ -131,10 +131,9 @@ class VideoCurses(video.VideoPlugin):
             logging.error('No codepage supplied to text-based interface.')
             raise video.InitFailed()
 
-
-    def close(self):
-        """ Close the text interface. """
-        video.VideoPlugin.close(self)
+    def __exit__(self, type, value, traceback):
+        """ Close the curses interface. """
+        video.VideoPlugin.__exit__(self, type, value, traceback)
         if self.curses_init:
             # restore original terminal size
             self._resize(*self.orig_size)
