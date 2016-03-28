@@ -25,8 +25,6 @@ import vartypes
 import events
 import signals
 
-# sound capabilities - '', 'pcjr' or 'tandy'
-pcjr_sound = ''
 
 # base frequency for noise source
 base_freq = 3579545./1024.
@@ -40,16 +38,8 @@ notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6,
 
 def prepare():
     """ Prepare the sound subsystem. """
-    global pcjr_sound
-    # pcjr/tandy sound
-    if config.get('syntax') in ('pcjr', 'tandy'):
-        pcjr_sound = config.get('syntax')
     # initialise sound queue
     state.console_state.sound = Sound()
-    # tandy has SOUND ON by default, pcjr has it OFF
-    state.console_state.sound.sound_on = (pcjr_sound == 'tandy')
-    # pc-speaker on/off; (not implemented; not sure whether should be on)
-    state.console_state.sound.beep_on = True
 
 
 class PlayState(object):
@@ -74,9 +64,15 @@ class Sound(object):
         self.noise_freq = [base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
         self.noise_freq[3] = 0.
         self.noise_freq[7] = 0.
-        # Tandy/PCjr SOUND ON and BEEP ON
-        self.sound_on = False
+        # pc-speaker on/off; (not implemented; not sure whether should be on)
         self.beep_on = True
+        if config.get('syntax') in ('pcjr', 'tandy'):
+            self.capabilities = config.get('syntax')
+        else:
+            self.capabilities = ''
+        # Tandy/PCjr SOUND ON and BEEP ON
+        # tandy has SOUND ON by default, pcjr has it OFF
+        self.sound_on = (self.capabilities == 'tandy')
         self.reset()
 
     def reset(self):
@@ -94,8 +90,8 @@ class Sound(object):
         """ Play a sound on the tone generator. """
         if frequency < 0:
             frequency = 0
-        if ((pcjr_sound == 'tandy' or
-                (pcjr_sound == 'pcjr' and self.sound_on)) and
+        if ((self.capabilities == 'tandy' or
+                (self.capabilities == 'pcjr' and self.sound_on)) and
                 frequency < 110. and frequency != 0):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
@@ -280,8 +276,8 @@ class Sound(object):
                         self.foreground = False
                     else:
                         raise error.RunError(error.IFC)
-                elif c == 'V' and (pcjr_sound == 'tandy' or
-                                    (pcjr_sound == 'pcjr' and self.sound_on)):
+                elif c == 'V' and (self.capabilities == 'tandy' or
+                                    (self.capabilities == 'pcjr' and self.sound_on)):
                     vstate.volume = min(15,
                                     max(0, draw_and_play.ml_parse_number(gmls)))
                 else:
