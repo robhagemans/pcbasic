@@ -17,6 +17,7 @@ except ImportError:
 def prepare():
     """ Prepare the video modes. """
     global video_capabilities, mono_monitor
+    global colours16, colours16_mono, cga4_palettes, mono_tint
     global circle_aspect
     video_capabilities = config.get('video')
     if video_capabilities == 'tandy':
@@ -30,9 +31,24 @@ def prepare():
     # set monochrome tint
     mono_tint = config.get('mono-tint')
     # build colour sets
-    prepare_colours(mono_monitor, mono_tint)
+    colours16_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
+                           for i in intensity16_mono)
+    if mono_monitor:
+        colours16 = list(colours16_mono)
+    else:
+        colours16 = list(colours16_colour)
     # initialise the 4-colour CGA palette
-    prepare_default_palettes(cga_low)
+    # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
+    # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
+    # tandy/pcjr have high-intensity white, but low-intensity colours
+    # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
+    if video_capabilities in ('pcjr', 'tandy'):
+        # pcjr does not have mode 5
+        cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
+    elif cga_low:
+        cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
+    else:
+        cga4_palettes = {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}
 
 
 ###############################################################################
@@ -72,61 +88,17 @@ intensity_ega_mono_1 = (0x00, 0xaa, 0xff, 0x00, 0xaa, 0xff, 0x00, 0xaa, 0xff)
 # MDA text intensities: black, dark green, green, bright green
 intensity_mda_mono = (0x00, 0x40, 0xc0, 0xff)
 
-
-def prepare_colours(mono_monitor, mono_tint):
-    """ Prepare the colour sets. """
-    global colours16, colours16_mono, colours_ega_mono_0, colours_ega_mono_1
-    global colours_mda_mono
-    # initialise tinted monochrome palettes
-    colours16_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
-                           for i in intensity16_mono)
-    colours_ega_mono_0 = tuple(tuple(tint*i//255 for tint in mono_tint)
-                               for i in intensity_ega_mono_0)
-    colours_ega_mono_1 = tuple(tuple(tint*i//255 for tint in mono_tint)
-                               for i in intensity_ega_mono_1)
-    colours_mda_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
-                             for i in intensity_mda_mono)
-    if mono_monitor:
-        colours16 = list(colours16_mono)
-    else:
-        colours16 = list(colours16_colour)
-
-
-###############################################################################
-# CGA default 4-colour palette
-
-def get_cga4_palettes(cga_low):
-    """ Get the default CGA palette according to palette number & mode. """
-    # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
-    # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
-    # tandy/pcjr have high-intensity white, but low-intensity colours
-    # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
-    if video_capabilities in ('pcjr', 'tandy'):
-        # pcjr does not have mode 5
-        return {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
-    elif cga_low:
-        return {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
-    else:
-        return {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}
-
-
-def prepare_default_palettes(cga_low):
-    """ Set the default palettes. """
-    global cga4_palettes
-    global cga16_palette, ega_palette, ega_mono_palette
-    global mda_palette, ega_mono_text_palette
-    cga4_palettes = get_cga4_palettes(cga_low)
-    # default 16-color and ega palettes
-    cga16_palette = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
-    ega_palette = (0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63)
-    ega_mono_palette = (0, 4, 1, 8)
-    # adding dark-green (foreground for some exceptional attributes) as #3
-    mda_palette = (0, 2, 3, 1)
-    #mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
-    # http://qbhlp.uebergeord.net/screen-statement-details-colors.html
-    # underline/intensity/reverse video attributes are slightly different from mda
-    # attributes 1, 9 should have underlining.
-    ega_mono_text_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
+# default 16-color and ega palettes
+cga16_palette = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+ega_palette = (0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63)
+ega_mono_palette = (0, 4, 1, 8)
+# adding dark-green (foreground for some exceptional attributes) as #3
+mda_palette = (0, 2, 3, 1)
+#mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
+# http://qbhlp.uebergeord.net/screen-statement-details-colors.html
+# underline/intensity/reverse video attributes are slightly different from mda
+# attributes 1, 9 should have underlining.
+ega_mono_text_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
 
 
 ###############################################################################
@@ -134,6 +106,13 @@ def prepare_default_palettes(cga_low):
 
 def get_modes(screen, cga4_palette, video_mem_size):
     """ Build lists of allowed graphics modes. """
+    # initialise tinted monochrome palettes
+    colours_ega_mono_0 = tuple(tuple(tint*i//255 for tint in mono_tint)
+                               for i in intensity_ega_mono_0)
+    colours_ega_mono_1 = tuple(tuple(tint*i//255 for tint in mono_tint)
+                               for i in intensity_ega_mono_1)
+    colours_mda_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
+                             for i in intensity_mda_mono)
     # Tandy/PCjr pixel aspect ratio is different from normal
     # suggesting screen aspect ratio is not 4/3.
     # Tandy pixel aspect ratios, experimentally found with CIRCLE:
