@@ -6,6 +6,8 @@ BASIC keyword tokens
 This file is released under the GNU GPL version 3 or later.
 """
 
+import config
+
 # indirect line number references
 T_UINT_PROC = '\x0d'
 T_UINT = '\x0e'
@@ -289,3 +291,15 @@ plus_bytes = {
     T_UINT_PROC:2, T_UINT:2, T_INT:2, T_SINGLE:4, T_DOUBLE:8, '\0':4}
 # two-byte keyword token lead bytes
 twobyte = ('\xff', '\xfe', '\xfd')
+
+
+if config.get('debug'):
+    # NOTE: PC-BASIC only. Not the same command or token as Sperry DEBUG.
+    keyword[DEBUG] = extra_keywords[DEBUG]
+
+if config.get('syntax') in ('pcjr', 'tandy'):
+    # pcjr, tandy; incompatible with Sperry PC.
+    keyword[NOISE] = extra_keywords[NOISE]
+    keyword[TERM] = extra_keywords[TERM]
+
+keyword_to_token = dict((reversed(item) for item in keyword.items()))
