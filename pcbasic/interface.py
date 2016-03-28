@@ -28,9 +28,9 @@ def prepare():
 
 delay = 0.024
 
-def run(initial_mode, codepage):
+def run(codepage):
     """ Start the interface. """
-    with get_video_plugin(initial_mode, codepage) as vp:
+    with get_video_plugin(codepage) as vp:
         with get_audio_plugin() as ap:
             event_loop(vp, ap)
 
@@ -72,7 +72,7 @@ video_plugins = {
     }
 
 
-def get_video_plugin(initial_mode, codepage):
+def get_video_plugin(codepage):
     """ Find and initialise video plugin for given interface. """
     interface_name = config.get('interface') or 'graphical'
     while True:
@@ -95,7 +95,6 @@ def get_video_plugin(initial_mode, codepage):
                     copy_paste=config.get('copy-paste'),
                     pen=config.get('pen'),
                     icon=icon,
-                    initial_mode=initial_mode,
                     codepage=codepage)
             except KeyError:
                 logging.debug('Video plugin "%s" not available.', video_name)

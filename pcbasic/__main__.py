@@ -152,10 +152,9 @@ def start_basic():
             # e.g. "File not Found" for --load parameter
             logging.error(e.message)
         else:
-            mode = state.console_state.screen.mode
             codepage = state.console_state.codepage
             try:
-                interface.run(mode, codepage)
+                interface.run(codepage)
             except interface.InitFailed:
                 logging.error('Failed to initialise interface.')
         finally:

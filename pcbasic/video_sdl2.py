@@ -112,7 +112,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.set_palette([(0,0,0)]*16, None)
         self.move_cursor(1, 1)
         self.set_page(0, 0)
-        self.set_mode(self.kwargs['initial_mode'])
+        # set_mode should be first event on queue
         # support for CGA composite
         self.composite_palette = sdl2.SDL_AllocPalette(256)
         composite_colors = video_graphical.composite_640.get(

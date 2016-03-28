@@ -143,7 +143,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.mousebutton_pen = buttons[kwargs.get('pen', 'right')]
         self.move_cursor(0, 0)
         self.set_page(0, 0)
-        self.set_mode(kwargs['initial_mode'])
+        # set_mode shoul dbe first event on queue
         self.f11_active = False
         self.altgr = kwargs['altgr']
         if not self.altgr:
