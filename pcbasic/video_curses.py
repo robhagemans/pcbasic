@@ -124,12 +124,6 @@ class VideoCurses(video.VideoPlugin):
         self.text = [[[(u' ', bgcolor)]*self.width for _ in range(self.height)]]
         self.f12_active = False
         self.set_border_attr(0)
-        # set codepage
-        try:
-            self.codepage = kwargs['codepage']
-        except KeyError:
-            logging.error('No codepage supplied to text-based interface.')
-            raise video.InitFailed()
 
     def __exit__(self, type, value, traceback):
         """ Close the curses interface. """
@@ -284,6 +278,11 @@ class VideoCurses(video.VideoPlugin):
         if blink:
             cursattr |= curses.A_BLINK
         return cursattr
+
+
+    def set_codepage(self, new_codepage):
+        """ Set codepage used in sending characters. """
+        self.codepage = new_codepage
 
     def set_mode(self, mode_info):
         """ Change screen mode. """

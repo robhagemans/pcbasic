@@ -71,12 +71,6 @@ class VideoCLI(video.VideoPlugin):
             logging.warning('Input device is not a terminal. '
                             'Could not initialise text-based interface.')
             raise video.InitFailed()
-        # set codepage
-        try:
-            self.codepage = kwargs['codepage']
-        except KeyError:
-            logging.error('No codepage supplied to text-based interface.')
-            raise video.InitFailed()
         video.VideoPlugin.__init__(self)
         term_echo(False)
         # start the stdin thread for non-blocking reads
@@ -132,6 +126,11 @@ class VideoCLI(video.VideoPlugin):
                     self.f12_active = False
 
     ###############################################################################
+
+
+    def set_codepage(self, new_codepage):
+        """ Set codepage used in sending characters. """
+        self.codepage = new_codepage
 
     def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
         """ Put a character at a given position. """

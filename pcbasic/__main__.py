@@ -143,7 +143,6 @@ def start_basic():
     """ Start an interactive interpreter session. """
     import interface
     import interpreter
-    import state
     try:
         try:
             interpreter.launch()
@@ -152,9 +151,8 @@ def start_basic():
             # e.g. "File not Found" for --load parameter
             logging.error(e.message)
         else:
-            codepage = state.console_state.codepage
             try:
-                interface.run(codepage)
+                interface.run()
             except interface.InitFailed:
                 logging.error('Failed to initialise interface.')
         finally:

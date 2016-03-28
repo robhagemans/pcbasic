@@ -28,9 +28,9 @@ def prepare():
 
 delay = 0.024
 
-def run(codepage):
+def run():
     """ Start the interface. """
-    with get_video_plugin(codepage) as vp:
+    with get_video_plugin() as vp:
         with get_audio_plugin() as ap:
             event_loop(vp, ap)
 
@@ -72,7 +72,7 @@ video_plugins = {
     }
 
 
-def get_video_plugin(codepage):
+def get_video_plugin():
     """ Find and initialise video plugin for given interface. """
     interface_name = config.get('interface') or 'graphical'
     while True:
@@ -94,8 +94,7 @@ def get_video_plugin(codepage):
                     composite_card=config.get('video'),
                     copy_paste=config.get('copy-paste'),
                     pen=config.get('pen'),
-                    icon=icon,
-                    codepage=codepage)
+                    icon=icon)
             except KeyError:
                 logging.debug('Video plugin "%s" not available.', video_name)
             except InitFailed:
@@ -195,6 +194,8 @@ class VideoPlugin(object):
                 self.set_caption_message(signal.params)
             elif signal.event_type == signals.VIDEO_SET_CLIPBOARD_TEXT:
                 self.set_clipboard_text(*signal.params)
+            elif signal.event_type == signals.VIDEO_SET_CODEPAGE:
+                self.set_codepage(signal.params)
             signals.video_queue.task_done()
 
     # signal handlers
@@ -246,6 +247,9 @@ class VideoPlugin(object):
 
     def build_glyphs(self, new_dict):
         """ Build a dict of glyphs for use in text mode. """
+
+    def set_codepage(self, new_codepage):
+        """ Set codepage used in sending characters. """
 
     def set_cursor_shape(self, width, height, from_line, to_line):
         """ Build a sprite for the cursor. """

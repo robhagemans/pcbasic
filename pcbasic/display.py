@@ -455,6 +455,9 @@ class Screen(object):
         self.mode = self.text_data[initial_width]
         # cursor
         self.cursor = Cursor(self)
+        # set codepage for video plugin
+        signals.video_queue.put(signals.Event(signals.VIDEO_SET_CODEPAGE,
+            state.console_state.codepage))
 
     def prepare_modes(self):
         """ Build lists of allowed graphics modes. """
