@@ -90,17 +90,15 @@ def shell(command):
 
 
 if plat.system == 'Windows':
-    shell_output = ''
 
-    def process_stdout(p, stream):
+    def process_stdout(p, stream, shell_output):
         """ Retrieve SHELL output and write to console. """
-        global shell_output
         while True:
             c = stream.read(1)
             if c != '':
                 # don't access screen in this thread
                 # the other thread already does
-                shell_output += c
+                shell_output.append(c)
             elif p.poll() is not None:
                 break
             else:
@@ -109,22 +107,22 @@ if plat.system == 'Windows':
 
     def spawn_shell(command):
         """ Run a SHELL subprocess. """
-        global shell_output
+        shell_output = []
         cmd = shell_command
         if command:
             cmd += ' /C "' + command + '"'
         p = subprocess.Popen( str(cmd).split(), stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        outp = threading.Thread(target=process_stdout, args=(p, p.stdout))
+        outp = threading.Thread(target=process_stdout, args=(p, p.stdout, shell_output))
         outp.daemon = True
         outp.start()
-        errp = threading.Thread(target=process_stdout, args=(p, p.stderr))
+        errp = threading.Thread(target=process_stdout, args=(p, p.stderr, shell_output))
         errp.daemon = True
         errp.start()
         word = ''
         while p.poll() is None or shell_output:
             if shell_output:
-                lines, shell_output = shell_output.split('\r\n'), ''
+                lines, shell_output[:] = ''.join(shell_output).split('\r\n'), []
                 last = lines.pop()
                 for line in lines:
                     console.write_line(line)
