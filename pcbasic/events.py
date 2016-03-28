@@ -152,16 +152,12 @@ class PlayHandler(EventHandler):
         EventHandler.__init__(self)
         self.last = [0, 0, 0]
         self.trig = 1
-        if config.get('syntax') in ('pcjr', 'tandy'):
-            self.pcjr_sound = config.get('syntax')
-        else:
-            self.pcjr_sound = None
-
+        self.multivoice = config.get('syntax') in ('pcjr', 'tandy')
 
     def check(self):
         """ Check and trigger PLAY (music queue) events. """
         play_now = [state.console_state.sound.queue_length(voice) for voice in range(3)]
-        if self.pcjr_sound:
+        if self.multivoice:
             for voice in range(3):
                 if (play_now[voice] <= self.trig and
                         play_now[voice] > 0 and
