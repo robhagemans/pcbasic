@@ -371,7 +371,7 @@ class VideoCurses(video.VideoPlugin):
             c = u' '
         colour = self._curses_colour(fore, back, blink)
         self.text[pagenum][row-1][col-1] = c, colour
-        if len(c) > 1:
+        if is_fullwidth:
             self.text[pagenum][row-1][col] = u'', colour
         if pagenum == self.vpagenum:
             if colour != self.last_colour:
