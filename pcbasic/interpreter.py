@@ -40,13 +40,6 @@ thread = None
 
 def prepare():
     """ Initialise interpreter module. """
-    global quit, wait, run, prog, cmd
-    quit = config.get('quit')
-    wait = config.get('wait')
-    # load/run program
-    run = config.get(0) or config.get('run')
-    prog = run or config.get('load')
-    cmd = config.get('exec')
 
 def launch():
     """ Resume or start the session. """
@@ -67,12 +60,15 @@ def launch():
             state.basic_state.prompt = False
     else:
         # greet, load and start the interpreter
+        run = config.get(0) or config.get('run')
+        prog = run or config.get('load')
         if prog:
             # on load, accept capitalised versions and default extension
             with disk.open_native_or_dos_filename(prog) as progfile:
                 program.load(progfile)
         init()
         print_greeting(console)
+        cmd = config.get('exec')
         if cmd:
             store_line(cmd)
         if run:
@@ -96,6 +92,8 @@ def join():
 
 def run_session():
     """ Interactive interpreter session. """
+    quit = config.get('quit')
+    wait = config.get('wait')
     try:
         try:
             while True:
