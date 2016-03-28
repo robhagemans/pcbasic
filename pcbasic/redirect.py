@@ -6,6 +6,7 @@ I/O redirection
 This file is released under the GNU GPL version 3 or later.
 """
 
+import sys
 import logging
 from functools import partial
 
@@ -28,6 +29,9 @@ def prepare():
 
 def prepare_redirects():
     """ Initialise i/o redirects. """
+    # filter interface depends on redirection output
+    if config.get('interface') == 'none':
+        set_output(sys.stdout, sys.stdout.encoding or 'utf-8')
     option_input = config.get('input')
     option_output = config.get('output')
     if option_output:

@@ -17,7 +17,6 @@ import redirect
 lf_to_cr = False
 
 encoding = sys.stdin.encoding or 'utf-8'
-output_encoding = sys.stdout.encoding or 'utf-8'
 
 if plat.system == 'Windows':
     from msvcrt import kbhit
@@ -47,8 +46,7 @@ class VideoNone(video.VideoPlugin):
 
     def __init__(self, **kwargs):
         """ Initialise filter interface. """
-        # use redirection echos; these are not kept in state
-        redirect.set_output(sys.stdout, encoding=output_encoding)
+        # sys.stdout output for video=none is set in redirect module
         video.VideoPlugin.__init__(self)
 
     def _check_input(self):
