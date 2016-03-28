@@ -152,20 +152,22 @@ def start_basic():
         import display
         initial_mode = state.console_state.screen.mode
         codepage = state.console_state.codepage
-        # start or resume the interpreter thread
-        with interface.get_video_plugin(initial_mode, codepage) as vp:
-            with interface.get_audio_plugin() as ap:
-                try:
-                    interpreter.launch()
-                    interface.event_loop(vp, ap)
-                except error.RunError as e:
-                    # runtime errors that occur on interpreter launch are caught here
-                    # e.g. "File not Found" for --load parameter
-                    exit_error = e.message
-                finally:
-                    interpreter.join()
-    except interface.InitFailed:
-        exit_error = 'Failed to initialise interface.'
+        try:
+            interpreter.launch()
+        except error.RunError as e:
+            # runtime errors that occur on interpreter launch are caught here
+            # e.g. "File not Found" for --load parameter
+            exit_error = e.message
+        else:
+            try:
+                # start or resume the interpreter thread
+                with interface.get_video_plugin(initial_mode, codepage) as vp:
+                    with interface.get_audio_plugin() as ap:
+                        interface.event_loop(vp, ap)
+            except interface.InitFailed:
+                exit_error = 'Failed to initialise interface.'
+        finally:
+            interpreter.join()
     except KeyboardInterrupt:
         if config.get('debug'):
             raise
