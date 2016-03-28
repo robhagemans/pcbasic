@@ -18,10 +18,6 @@ import redirect
 import events
 
 
-###############################################################################
-# keyboard queue
-
-
 # bit flags for modifier keys
 toggle = {
     scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,
@@ -30,9 +26,56 @@ modifier = {
     scancode.ALT: 0x8, scancode.CTRL: 0x4,
     scancode.LSHIFT: 0x2, scancode.RSHIFT: 0x1}
 
+# user definable key list
+state.console_state.key_replace = [
+    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
+    'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
+# default function key eascii codes for KEY autotext.
+function_key = {
+    ea.F1: 0, ea.F2: 1, ea.F3: 2, ea.F4: 3,
+    ea.F5: 4, ea.F6: 5, ea.F7: 6, ea.F8: 7,
+    ea.F9: 8, ea.F10: 9, ea.F11: 10, ea.F12: 11}
+# switch off macro repacements
+state.basic_state.key_macros_off = False
+
+# F12 emulator home-key
+# also f12+b -> ctrl+break
+home_key_replacements_scancode = {
+    scancode.LEFT: (scancode.KP4, u'4'),
+    scancode.RIGHT: (scancode.KP6, u'6'),
+    scancode.UP: (scancode.KP8, u'8'),
+    scancode.DOWN: (scancode.KP2, u'2'),
+    # catch numbers by scancode, not eACSII
+    # becasue the eASCII for Alt+number is different and that
+    # will break inserting Alt+keypad numbers as Alt+F12+numbers
+    scancode.N0: (scancode.KP0, u'0'),
+    scancode.N1: (scancode.KP1, u'1'),
+    scancode.N2: (scancode.KP2, u'2'),
+    scancode.N3: (scancode.KP3, u'3'),
+    scancode.N4: (scancode.KP4, u'4'),
+    scancode.N5: (scancode.KP5, u'5'),
+    scancode.N6: (scancode.KP6, u'6'),
+    scancode.N7: (scancode.KP7, u'7'),
+    scancode.N8: (scancode.KP8, u'8'),
+    scancode.N9: (scancode.KP9, u'9'),
+}
+
+home_key_replacements_eascii = {
+    u'+': (scancode.KPPLUS, u'+'),
+    u'-': (scancode.KPMINUS, u'-'),
+    u'P': (scancode.BREAK, u''),
+    u'N': (scancode.NUMLOCK, u''),
+    u'S': (scancode.SCROLLOCK, u''),
+    u'C': (scancode.CAPSLOCK, u''),
+}
+
+
+###############################################################################
 
 def prepare():
     """ Prepare input method handling. """
+    state.console_state.pen = Pen()
+    state.console_state.stick = Stick()
     state.console_state.keyb = Keyboard(
             ignore_caps=not config.get('capture-caps'),
             ctrl_c_is_break=config.get('ctrl-c-break'))
@@ -43,6 +86,9 @@ def prepare():
             state.console_state.codepage.str_from_unicode(keystring),
             check_full=False)
 
+
+###############################################################################
+# keyboard queue
 
 class KeyboardBuffer(object):
     """ Quirky emulated ring buffer for keystrokes. """
@@ -318,63 +364,16 @@ class Keyboard(object):
                     scan, mod, check_full)
 
 
-################
-
-# user definable key list
-state.console_state.key_replace = [
-    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
-    'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
-# default function key eascii codes for KEY autotext.
-function_key = {
-    ea.F1: 0, ea.F2: 1, ea.F3: 2, ea.F4: 3,
-    ea.F5: 4, ea.F6: 5, ea.F7: 6, ea.F8: 7,
-    ea.F9: 8, ea.F10: 9, ea.F11: 10, ea.F12: 11}
-# switch off macro repacements
-state.basic_state.key_macros_off = False
-
-
-# F12 emulator home-key
-# also f12+b -> ctrl+break
-home_key_replacements_scancode = {
-    scancode.LEFT: (scancode.KP4, u'4'),
-    scancode.RIGHT: (scancode.KP6, u'6'),
-    scancode.UP: (scancode.KP8, u'8'),
-    scancode.DOWN: (scancode.KP2, u'2'),
-    # catch numbers by scancode, not eACSII
-    # becasue the eASCII for Alt+number is different and that
-    # will break inserting Alt+keypad numbers as Alt+F12+numbers
-    scancode.N0: (scancode.KP0, u'0'),
-    scancode.N1: (scancode.KP1, u'1'),
-    scancode.N2: (scancode.KP2, u'2'),
-    scancode.N3: (scancode.KP3, u'3'),
-    scancode.N4: (scancode.KP4, u'4'),
-    scancode.N5: (scancode.KP5, u'5'),
-    scancode.N6: (scancode.KP6, u'6'),
-    scancode.N7: (scancode.KP7, u'7'),
-    scancode.N8: (scancode.KP8, u'8'),
-    scancode.N9: (scancode.KP9, u'9'),
-}
-
-home_key_replacements_eascii = {
-    u'+': (scancode.KPPLUS, u'+'),
-    u'-': (scancode.KPMINUS, u'-'),
-    u'P': (scancode.BREAK, u''),
-    u'N': (scancode.NUMLOCK, u''),
-    u'S': (scancode.SCROLLOCK, u''),
-    u'C': (scancode.CAPSLOCK, u''),
-}
-
 ###############################################################################
 # light pen
-
-pen_is_down = False
-pen_pos = (0, 0)
 
 class Pen(object):
     """ Light pen support. """
 
     def __init__(self):
         """ Initialise light pen. """
+        self.is_down = False
+        self.pos = 0, 0
         # signal pen has been down for PEN polls in poll()
         self.was_down = False
         # signal pen has been down for event triggers in poll_event()
@@ -383,24 +382,21 @@ class Pen(object):
 
     def down(self, x, y):
         """ Report a pen-down event at graphical x,y """
-        global pen_is_down
         # TRUE until polled
         self.was_down = True
         # TRUE until events checked
         self.was_down_event = True
         # TRUE until pen up
-        pen_is_down = True
+        self.is_down = True
         self.down_pos = x, y
 
     def up(self):
         """ Report a pen-up event at graphical x,y """
-        global pen_is_down
-        pen_is_down = False
+        self.is_down = False
 
     def moved(self, x, y):
         """ Report a pen-move event at graphical x,y """
-        global pen_pos
-        pen_pos = x, y
+        self.pos = x, y
 
     def poll_event(self):
         """ Poll the pen for a pen-down event since last poll. """
@@ -409,7 +405,7 @@ class Pen(object):
 
     def poll(self, fn):
         """ Poll the pen. """
-        posx, posy = pen_pos
+        posx, posy = self.pos
         fw = state.console_state.screen.mode.font_width
         fh = state.console_state.screen.mode.font_height
         if fn == 0:
@@ -420,7 +416,7 @@ class Pen(object):
         elif fn == 2:
             return self.down_pos[1]
         elif fn == 3:
-            return -1 if pen_is_down else 0
+            return -1 if self.is_down else 0
         elif fn == 4:
             return posx
         elif fn == 5:
@@ -434,21 +430,19 @@ class Pen(object):
         elif fn == 9:
             return 1 + posx//fw
 
-state.console_state.pen = Pen()
-
 
 ###############################################################################
 # joysticks
 
-stick_is_firing = [[False, False], [False, False]]
-# axis 0--255; 128 is mid but reports 0, not 128 if no joysticks present
-stick_axis = [[0, 0], [0, 0]]
 
 class Stick(object):
     """ Joystick support. """
 
     def __init__(self):
         """ Initialise joysticks. """
+        self.is_firing = [[False, False], [False, False]]
+        # axis 0--255; 128 is mid but reports 0, not 128 if no joysticks present
+        self.axis = [[0, 0], [0, 0]]
         self.is_on = False
         self.was_fired = [[False, False], [False, False]]
         self.was_fired_event = [[False, False], [False, False]]
@@ -461,7 +455,7 @@ class Stick(object):
         """ Report a joystick button down event. """
         try:
             self.was_fired[joy][button] = True
-            stick_is_firing[joy][button] = True
+            self.is_firing[joy][button] = True
             self.was_fired_event[joy][button] = True
         except IndexError:
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
@@ -470,7 +464,7 @@ class Stick(object):
     def up(self, joy, button):
         """ Report a joystick button up event. """
         try:
-            stick_is_firing[joy][button] = False
+            self.is_firing[joy][button] = False
         except IndexError:
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
@@ -478,7 +472,7 @@ class Stick(object):
     def moved(self, joy, axis, value):
         """ Report a joystick axis move. """
         try:
-            stick_axis[joy][axis] = value
+            self.axis[joy][axis] = value
         except IndexError:
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
@@ -493,7 +487,7 @@ class Stick(object):
         """ Poll the joystick axes. """
         joy, axis = fn // 2, fn % 2
         try:
-            return stick_axis[joy][axis]
+            return self.axis[joy][axis]
         except IndexError:
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
@@ -509,13 +503,10 @@ class Stick(object):
                 return stick_was_trig
             else:
                 # is currently firing
-                return stick_is_firing[joy][trig]
+                return self.is_firing[joy][trig]
         except IndexError:
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
-
-
-state.console_state.stick = Stick()
 
 
 ###############################################################################

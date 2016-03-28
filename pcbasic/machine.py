@@ -11,7 +11,6 @@ import logging
 import config
 import state
 import events
-import inputs
 import display
 import vartypes
 import var
@@ -102,18 +101,18 @@ def inp(port):
     # game port (joystick)
     elif port == 0x201:
         value = (
-            (not inputs.stick_is_firing[0][0]) * 0x40 +
-            (not inputs.stick_is_firing[0][1]) * 0x20 +
-            (not inputs.stick_is_firing[1][0]) * 0x10 +
-            (not inputs.stick_is_firing[1][1]) * 0x80)
+            (not state.console_state.stick.is_firing[0][0]) * 0x40 +
+            (not state.console_state.stick.is_firing[0][1]) * 0x20 +
+            (not state.console_state.stick.is_firing[1][0]) * 0x10 +
+            (not state.console_state.stick.is_firing[1][1]) * 0x80)
         decay = (timedate.timer_milliseconds() - joystick_out_time) % 86400000
-        if decay < inputs.stick_axis[0][0] * joystick_time_factor:
+        if decay < state.console_state.stick.axis[0][0] * joystick_time_factor:
             value += 0x04
-        if decay < inputs.stick_axis[0][1] * joystick_time_factor:
+        if decay < state.console_state.stick.axis[0][1] * joystick_time_factor:
             value += 0x02
-        if decay < inputs.stick_axis[1][0] * joystick_time_factor:
+        if decay < state.console_state.stick.axis[1][0] * joystick_time_factor:
             value += 0x01
-        if decay < inputs.stick_axis[1][1] * joystick_time_factor:
+        if decay < state.console_state.stick.axis[1][1] * joystick_time_factor:
             value += 0x08
         return value
     elif port in (0x379, 0x279):
