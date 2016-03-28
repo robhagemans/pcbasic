@@ -20,7 +20,6 @@ import traceback
 import plat
 import ansipipe
 import config
-import printer
 import error
 
 # video plugins
@@ -57,8 +56,6 @@ def main():
             # otherwise, start an interpreter session
             start_basic()
     finally:
-        # ensure any prints are done before we quit
-        printer.wait()
         # clean up our temp dir if we made one
         if plat.temp_dir:
             shutil.rmtree(plat.temp_dir)
