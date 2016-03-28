@@ -40,8 +40,6 @@ families = sorted(list(set([ x[0] for x in [ c.split(u'_')
 options = {}
 # flag True if we're running from a package
 package = False
-# sys.argv converted to unicode
-uargv = []
 
 # number of positional arguments
 positional = 2
@@ -167,7 +165,7 @@ arguments = {
 
 def prepare():
     """ Initialise config.py """
-    global options, logger, uargv
+    global options, logger
     # convert arguments to unicode using preferred encoding
     uargv = get_unicode_argv()
     # first parse a logfile argument, if any
@@ -186,7 +184,7 @@ def prepare():
             pass
         build_default_config_file(user_config_path)
     # store options in options dictionary
-    options = retrieve_options()
+    options = retrieve_options(uargv)
 
 def get_unicode_argv():
     """ Convert command-line arguments to unicode. """
@@ -211,7 +209,7 @@ def get_unicode_argv():
         # on windows, this would only work if the mbcs CP_ACP includes the characters we need
         return [arg.decode(plat.preferred_encoding) for arg in sys.argv]
 
-def retrieve_options():
+def retrieve_options(uargv):
     """ Retrieve command line and option file options. """
     # convert command line arguments to string dictionary form
     remaining = get_arguments(uargv[1:])
