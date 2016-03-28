@@ -25,26 +25,25 @@ output_echos = []
 
 def prepare():
     """ Initialise redirect module. """
-    pass
 
 def prepare_redirects():
     """ Initialise i/o redirects. """
     # filter interface depends on redirection output
-    if config.get('interface') == 'none':
-        set_output(sys.stdout, sys.stdout.encoding or 'utf-8')
-    option_input = config.get('input')
-    option_output = config.get('output')
+    if config.get(b'interface') == u'none':
+        set_output(sys.stdout, sys.stdout.encoding or b'utf-8')
+    option_input = config.get(b'input')
+    option_output = config.get(b'output')
     if option_output:
-        mode = 'ab' if config.get('append') else 'wb'
+        mode = b'ab' if config.get(b'append') else b'wb'
         try:
             set_output(open(option_output, mode))
         except EnvironmentError as e:
-            logging.warning('Could not open output file %s: %s', option_output, e.strerror)
+            logging.warning(u'Could not open output file %s: %s', option_output, e.strerror)
     if option_input:
         try:
-            set_input(open(option_input, 'rb'))
+            set_input(open(option_input, b'rb'))
         except EnvironmentError as e:
-            logging.warning('Could not open input file %s: %s', option_input, e.strerror)
+            logging.warning(u'Could not open input file %s: %s', option_input, e.strerror)
 
 def set_input(f, encoding=None):
     """ BASIC-style redirected input. """
@@ -52,13 +51,13 @@ def set_input(f, encoding=None):
     # read everything
     all_input = f.read()
     if encoding:
-        all_input = all_input.decode(encoding, 'replace')
+        all_input = all_input.decode(encoding, b'replace')
     else:
         # raw input means it's already in the BASIC codepage
         # but the keyboard functions use unicode
         all_input = state.console_state.codepage.str_to_unicode(
                                             all_input, preserve_control=True)
-    last = ''
+    last = u''
     for c in all_input:
         # replace CRLF with CR
         if not (c == u'\n' and last == u'\r'):
@@ -76,11 +75,11 @@ def set_output(f, encoding=None):
 
 def echo_raw(s, f):
     """ Output redirection echo as raw bytes. """
-    f.write(str(s))
+    f.write(bytes(s))
 
-def echo_encoded(s, f, encoding='utf-8'):
+def echo_encoded(s, f, encoding=b'utf-8'):
     """ Output redirection echo as UTF-8 or other encoding. """
-    f.write(uniconv.to_unicode(str(s)).encode(encoding, 'replace'))
+    f.write(uniconv.to_unicode(bytes(s)).encode(encoding, b'replace'))
 
 def toggle_echo(device):
     """ Toggle copying of all screen I/O to LPT1. """
