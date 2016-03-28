@@ -144,32 +144,24 @@ def start_basic():
     import interface
     import interpreter
     import state
-    exit_error = None
     try:
         try:
             interpreter.launch()
         except error.RunError as e:
             # runtime errors that occur on interpreter launch are caught here
             # e.g. "File not Found" for --load parameter
-            exit_error = e.message
+            logging.error(e.message)
         else:
             mode = state.console_state.screen.mode
             codepage = state.console_state.codepage
             try:
                 interface.run(mode, codepage)
             except interface.InitFailed:
-                exit_error = 'Failed to initialise interface.'
+                logging.error('Failed to initialise interface.')
         finally:
             interpreter.join()
-    except KeyboardInterrupt:
-        if config.get('debug'):
-            raise
     except Exception:
-        exit_error = 'Unhandled exception\n%s' % traceback.format_exc()
-    # show any error messages after closing the video
-    # so they will be readable
-    if exit_error:
-        logging.error(exit_error)
+        logging.error('Unhandled exception\n%s' % traceback.format_exc())
 
 
 if __name__ == "__main__":
