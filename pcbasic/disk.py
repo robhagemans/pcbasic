@@ -99,11 +99,6 @@ os_error = {
     errno.ENOTEMPTY: error.PATH_FILE_ACCESS_ERROR,
 }
 
-# accept CR, LF and CRLF line endings; interpret as CR only if the next line starts with a number
-universal_newline = False
-# interpret "ascii" program files as UTF-8
-utf8_files = False
-
 # allowable drive letters in GW-BASIC are letters or @
 drive_letters = b'@' + string.ascii_uppercase
 
@@ -117,9 +112,6 @@ allowable_chars = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~
 
 def prepare():
     """ Initialise disk devices. """
-    global utf8_files, universal_newline
-    utf8_files = config.get(u'utf8')
-    universal_newline = not config.get(u'strict-newline')
     for letter in drive_letters:
         state.io_state.devices[letter + b':'] = DiskDevice(letter, None, u'')
     current_drive = config.get(u'current-device').upper()
@@ -168,7 +160,7 @@ def reset_fields():
     state.io_state.fields = {}
     # fields are indexed by BASIC file number, hence max_files+1
     # file 0 (program/system file) probably doesn't need a field
-    for i in range(devices.max_files+1):
+    for i in range(state.io_state.max_files+1):
         state.io_state.fields[i+1] = devices.Field(i+1)
 
 
@@ -241,7 +233,9 @@ def create_file_object(fhandle, filetype, mode, name=b'', number=0,
     elif filetype == b'A':
         # ascii program file (UTF8 or universal newline if option given)
         return TextFile(fhandle, filetype, number, name, mode, access, lock,
-                         utf8_files, universal_newline, split_long_lines=False)
+                         utf8=config.get(u'utf8'),
+                         universal=not config.get(u'strict-newline'),
+                         split_long_lines=False)
     elif filetype == b'D':
         if mode in b'IAO':
             # text data

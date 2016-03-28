@@ -1007,7 +1007,7 @@ def exec_open(ins):
         raise error.RunError(error.STX)
     util.range_check(1, state.io_state.max_reclen, reclen)
     # can't open file 0, or beyond max_files
-    util.range_check_err(1, devices.max_files, number, error.BAD_FILE_NUMBER)
+    util.range_check_err(1, state.io_state.max_files, number, error.BAD_FILE_NUMBER)
     devices.open_file(number, name, 'D', mode, access, lock, reclen)
     util.require(ins, tk.end_statement)
 

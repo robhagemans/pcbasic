@@ -265,7 +265,7 @@ def bsave(g, offset, length):
 
 def varptr_file(filenum):
     """ Get address of FCB for a given file number. """
-    if filenum < 1 or filenum > devices.max_files:
+    if filenum < 1 or filenum > state.io_state.max_files:
         raise error.RunError(error.BAD_FILE_NUMBER)
     return memory.field_mem_base + filenum * memory.field_mem_offset + 6
 

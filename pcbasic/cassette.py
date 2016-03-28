@@ -28,15 +28,10 @@ import basictoken as tk
 token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
 type_to_token = dict((reversed(item) for item in token_to_type.items()))
 
-# console to output Found and Skipped messages
-msgstream = None
-
 
 def prepare():
     """ Initialise cassette module. """
-    global msgstream
     state.io_state.devices['CAS1:'] = CASDevice(config.get('cas1'))
-    msgstream = console
 
 def override():
     """ Initialise cassette module settings that override --resume. """
@@ -141,13 +136,13 @@ class CASDevice(object):
                         (not filetypes_req or filetype in filetypes_req)):
                     message = "%s Found." % (trunk + '.' + filetype)
                     if not state.basic_state.run_mode:
-                        msgstream.write_line(message)
+                        console.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
                     return trunk, filetype, seg, offset, length
                 else:
                     message = "%s Skipped." % (trunk + '.' + filetype)
                     if not state.basic_state.run_mode:
-                        msgstream.write_line(message)
+                        console.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
         except EndOfTape:
             # reached end-of-tape without finding appropriate file

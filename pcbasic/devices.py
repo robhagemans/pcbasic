@@ -21,10 +21,6 @@ import display
 # file numbers
 state.io_state.files = {}
 
-# maximum file number = maximum number of open files
-# this is a command line option -f
-max_files = 3
-
 def nullstream():
     return open(os.devnull, 'r+')
 
@@ -46,8 +42,9 @@ device_files = ('AUX', 'CON', 'NUL', 'PRN')
 
 def prepare():
     """ Initialise iolayer module. """
-    global max_files
-    max_files = min(16, config.get('max-files'))
+    # maximum file number = maximum number of open files
+    # this is command line option -f
+    state.io_state.max_files = min(16, config.get('max-files'))
     # console
     state.io_state.devices['SCRN:'] = SCRNDevice()
     state.io_state.devices['KYBD:'] = KYBDDevice()
@@ -60,7 +57,7 @@ def prepare():
 def open_file(number, description, filetype, mode='I', access='R', lock='',
               reclen=128, seg=0, offset=0, length=0):
     """ Open a file on a device specified by description. """
-    if (not description) or (number < 0) or (number > max_files):
+    if (not description) or (number < 0) or (number > state.io_state.max_files):
         # bad file number; also for name='', for some reason
         raise error.RunError(error.BAD_FILE_NUMBER)
     if number in state.io_state.files:
