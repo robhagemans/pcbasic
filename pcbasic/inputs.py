@@ -15,17 +15,11 @@ import scancode
 from eascii import as_bytes as ea
 from eascii import as_unicode as uea
 import redirect
-
 import events
 
 
 ###############################################################################
 # keyboard queue
-
-# let OS handle capslock effects
-ignore_caps = True
-# treat Ctrl-C as Ctrl-Break
-ctrl_c_is_break = False
 
 
 # bit flags for modifier keys
@@ -39,20 +33,15 @@ modifier = {
 
 def prepare():
     """ Prepare input method handling. """
-    global ignore_caps
-    global ctrl_c_is_break
     redirect.prepare_redirects()
+    state.console_state.keyb = Keyboard(
+            ignore_caps=not config.get('capture-caps'),
+            ctrl_c_is_break=config.get('ctrl-c-break'))
     # inserted keystrokes
     keystring = config.get('keys').decode('string_escape').decode('utf-8')
-    state.console_state.keyb = Keyboard()
     state.console_state.keyb.buf.insert(
             state.console_state.codepage.str_from_unicode(keystring),
             check_full=False)
-    # handle caps lock only if requested
-    ignore_caps = not config.get('capture-caps')
-    # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
-    # if true, treat Ctrl+C *exactly* like ctrl+break (unlike GW-BASIC)
-    ctrl_c_is_break = config.get('ctrl-c-break')
 
 
 class KeyboardBuffer(object):
@@ -179,7 +168,7 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """ Keyboard handling. """
 
-    def __init__(self):
+    def __init__(self, ignore_caps, ctrl_c_is_break):
         """ Initilise keyboard state. """
         # key queue (holds bytes)
         self.buf = KeyboardBuffer(15)
@@ -195,6 +184,10 @@ class Keyboard(object):
         self.pause = False
         # F12 is inactive
         self.home_key_active = False
+        # ignore caps lock, let OS handle it
+        self.ignore_caps = ignore_caps
+        # if true, treat Ctrl+C *exactly* like ctrl+break (unlike GW-BASIC)
+        self.ctrl_c_is_break = ctrl_c_is_break
 
     def read_chars(self, num):
         """ Read num keystrokes, blocking. """
@@ -266,7 +259,7 @@ class Keyboard(object):
             except KeyError:
                 pass
         if (self.mod & toggle[scancode.CAPSLOCK]
-                and not ignore_caps and len(c) == 1):
+                and not self.ignore_caps and len(c) == 1):
             c = c.swapcase()
         self.prebuf.append((c, scan, self.mod, check_full))
 
@@ -301,7 +294,7 @@ class Keyboard(object):
                 raise error.Reset()
             elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) and
                     mod & modifier[scancode.CTRL]) or
-                    (ctrl_c_is_break and c == uea.CTRL_c)):
+                    (self.ctrl_c_is_break and c == uea.CTRL_c)):
                 raise error.Break()
             elif (scan == scancode.BREAK or
                     (scan == scancode.NUMLOCK and mod & modifier[scancode.CTRL])):
