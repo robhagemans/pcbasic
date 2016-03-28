@@ -33,10 +33,10 @@ modifier = {
 
 def prepare():
     """ Prepare input method handling. """
-    redirect.prepare_redirects()
     state.console_state.keyb = Keyboard(
             ignore_caps=not config.get('capture-caps'),
             ctrl_c_is_break=config.get('ctrl-c-break'))
+    redirect.prepare_redirects()
     # inserted keystrokes
     keystring = config.get('keys').decode('string_escape').decode('utf-8')
     state.console_state.keyb.buf.insert(
@@ -188,6 +188,8 @@ class Keyboard(object):
         self.ignore_caps = ignore_caps
         # if true, treat Ctrl+C *exactly* like ctrl+break (unlike GW-BASIC)
         self.ctrl_c_is_break = ctrl_c_is_break
+        # input stream has closed
+        self.input_closed = False
 
     def read_chars(self, num):
         """ Read num keystrokes, blocking. """
@@ -203,7 +205,7 @@ class Keyboard(object):
 
     def wait_char(self):
         """ Wait for character, then return it but don't drop from queue. """
-        while self.buf.is_empty() and not redirect.input_closed:
+        while self.buf.is_empty() and not self.input_closed:
             events.wait()
         return self.buf.peek()
 
@@ -281,6 +283,10 @@ class Keyboard(object):
             self.keypad_ascii = ''
         elif scan == scancode.F12:
             self.home_key_active = False
+
+    def close_input(self):
+        """ Signal that input stream has closed. """
+        self.input_closed = True
 
     def drain_event_buffer(self):
         """ Drain prebuffer into key buffer and handle trappable special keys. """

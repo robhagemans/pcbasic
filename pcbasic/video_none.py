@@ -11,7 +11,6 @@ import sys
 import interface as video
 import signals
 import plat
-import redirect
 
 # replace lf with cr
 lf_to_cr = False
@@ -58,7 +57,7 @@ class VideoNone(video.VideoPlugin):
         # only the last byte is erased, not the whole utf-8 sequence
         s = sys.stdin.readline().decode(encoding, errors='ignore')
         if s == '':
-            redirect.input_closed = True
+            signals.input_queue.put(signals.Event(signals.KEYB_CLOSED))
         for c in s:
             # replace LF -> CR if needed
             if c == u'\n' and lf_to_cr:

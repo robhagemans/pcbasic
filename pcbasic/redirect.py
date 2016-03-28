@@ -14,8 +14,6 @@ import config
 import unicodepage
 import state
 
-# input has closed
-input_closed = False
 
 # converter with DBCS lead-byte buffer for utf8 output redirection
 uniconv = state.console_state.codepage.get_converter(preserve_control=True)
@@ -47,7 +45,6 @@ def prepare_redirects():
 
 def set_input(f, encoding=None):
     """ BASIC-style redirected input. """
-    global input_closed
     # read everything
     all_input = f.read()
     if encoding:
@@ -63,7 +60,7 @@ def set_input(f, encoding=None):
         if not (c == u'\n' and last == u'\r'):
             state.console_state.keyb.insert_chars(c, check_full=False)
         last = c
-    input_closed = True
+    state.console_state.keyb.close_input()
 
 def set_output(f, encoding=None):
     """ Redirected output as raw bytes or UTF-8 or other encoding """

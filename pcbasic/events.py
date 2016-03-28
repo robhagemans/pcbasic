@@ -67,6 +67,8 @@ def check_input():
         signals.input_queue.task_done()
         if signal.event_type == signals.KEYB_QUIT:
             raise error.Exit()
+        if signal.event_type == signals.KEYB_CLOSED:
+            state.console_state.keyb.close_input()
         elif signal.event_type == signals.KEYB_CHAR:
             # params is a unicode sequence
             state.console_state.keyb.insert_chars(*signal.params)

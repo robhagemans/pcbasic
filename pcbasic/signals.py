@@ -110,8 +110,10 @@ VIDEO_SET_CLIPBOARD_TEXT = 30
 VIDEO_SET_CODEPAGE = 31
 
 # input queue signals
-# special keys
+# quit interpreter
 KEYB_QUIT = 0
+# input stream closed
+KEYB_CLOSED = 1
 # insert character
 KEYB_CHAR = 4
 # insert keydown
