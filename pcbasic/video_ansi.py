@@ -69,7 +69,7 @@ class VideoANSI(video_cli.VideoCLI):
         sys.stdout.flush()
         # re-enable logger
         self.logger.disabled = False
-        video_cli.term_echo()
+        self._term_echo()
 
     def _check_display(self):
         """ Handle screen and interface events. """

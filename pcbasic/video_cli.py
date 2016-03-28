@@ -41,24 +41,6 @@ elif plat.system != 'Android':
     # Ctrl+D to exit
     eof = uea.CTRL_d
 
-term_echo_on = True
-term_attr = None
-
-def term_echo(on=True):
-    """ Set/unset raw terminal attributes. """
-    global term_attr, term_echo_on
-    # sets raw terminal - no echo, by the character rather than by the line
-    fd = sys.stdin.fileno()
-    if (not on) and term_echo_on:
-        term_attr = termios.tcgetattr(fd)
-        tty.setraw(fd)
-    elif not term_echo_on and term_attr is not None:
-        termios.tcsetattr(fd, termios.TCSADRAIN, term_attr)
-    previous = term_echo_on
-    term_echo_on = on
-    sys.stdout.flush()
-    return previous
-
 
 ###############################################################################
 
@@ -72,7 +54,9 @@ class VideoCLI(video.VideoPlugin):
                             'Could not initialise text-based interface.')
             raise video.InitFailed()
         video.VideoPlugin.__init__(self)
-        term_echo(False)
+        self._term_echo_on = True
+        self._term_attr = None
+        self._term_echo(False)
         # start the stdin thread for non-blocking reads
         self.input_handler = InputHandlerCLI()
         # cursor is visible
@@ -92,7 +76,7 @@ class VideoCLI(video.VideoPlugin):
     def __exit__(self, type, value, traceback):
         """ Close command-line interface. """
         video.VideoPlugin.__exit__(self, type, value, traceback)
-        term_echo()
+        self._term_echo()
         if self.last_col and self.cursor_col != self.last_col:
             sys.stdout.write('\n')
 
@@ -124,6 +108,19 @@ class VideoCLI(video.VideoPlugin):
                     signals.input_queue.put(signals.Event(
                                             signals.KEYB_UP, (scancode.F12,)))
                     self.f12_active = False
+
+    def _term_echo(self, on=True):
+        """ Set/unset raw terminal attributes. """
+        # sets raw terminal - no echo, by the character rather than by the line
+        fd = sys.stdin.fileno()
+        if (not on) and self._term_echo_on:
+            self._term_attr = termios.tcgetattr(fd)
+            tty.setraw(fd)
+        elif not self._term_echo_on and self._term_attr is not None:
+            termios.tcsetattr(fd, termios.TCSADRAIN, self._term_attr)
+        previous, self._term_echo_on = self._term_echo_on, on
+        sys.stdout.flush()
+        return previous
 
     ###############################################################################
 
