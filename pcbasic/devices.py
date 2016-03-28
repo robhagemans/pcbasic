@@ -362,7 +362,7 @@ class TextFileBase(RawFile):
             self.col = 1
         for c in str(s):
             # don't replace CR or LF with CRLF when writing to files
-            if c in ('\n', '\r'):
+            if c in ('\r',):
                 self.fhandle.write(c)
                 self.flush()
                 self.col = 1
