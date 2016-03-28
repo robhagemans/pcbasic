@@ -17,7 +17,7 @@ import events
 # to initialise state.console_state.codepage
 import unicodepage
 import basictoken as tk
-import eascii as ea
+from eascii import as_bytes as ea
 
 # alt+key macros for interactive mode
 # these happen at a higher level than F-key macros

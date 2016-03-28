@@ -12,7 +12,8 @@ import state
 import error
 import unicodepage
 import scancode
-import eascii
+from eascii import as_bytes as ea
+from eascii import as_unicode as uea
 import redirect
 
 import events
@@ -228,9 +229,9 @@ class Keyboard(object):
         """ Insert a key-down event by eascii/unicode, scancode and modifiers. """
         # emulator home-key (f12) replacements
         if self.home_key_active:
-            if c.upper() == 'B':
+            if c.upper() == u'B':
                 # f12+b -> ctrl+break
-                self.prebuf.append(('', scancode.BREAK, modifier[scancode.CTRL], check_full))
+                self.prebuf.append((u'', scancode.BREAK, modifier[scancode.CTRL], check_full))
                 return
             try:
                 scan, c = home_key_replacements_scancode[scan]
@@ -300,7 +301,7 @@ class Keyboard(object):
                 raise error.Reset()
             elif ((scan in (scancode.BREAK, scancode.SCROLLOCK) and
                     mod & modifier[scancode.CTRL]) or
-                    (ctrl_c_is_break and c == eascii.CTRL_c)):
+                    (ctrl_c_is_break and c == uea.CTRL_c)):
                 raise error.Break()
             elif (scan == scancode.BREAK or
                     (scan == scancode.NUMLOCK and mod & modifier[scancode.CTRL])):
@@ -326,9 +327,9 @@ state.console_state.key_replace = [
     'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
 # default function key eascii codes for KEY autotext.
 function_key = {
-    eascii.F1: 0, eascii.F2: 1, eascii.F3: 2, eascii.F4: 3,
-    eascii.F5: 4, eascii.F6: 5, eascii.F7: 6, eascii.F8: 7,
-    eascii.F9: 8, eascii.F10: 9, eascii.F11: 10, eascii.F12: 11}
+    ea.F1: 0, ea.F2: 1, ea.F3: 2, ea.F4: 3,
+    ea.F5: 4, ea.F6: 5, ea.F7: 6, ea.F8: 7,
+    ea.F9: 8, ea.F10: 9, ea.F11: 10, ea.F12: 11}
 # switch off macro repacements
 state.basic_state.key_macros_off = False
 

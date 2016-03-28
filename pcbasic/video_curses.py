@@ -17,7 +17,7 @@ except ImportError:
 # ensure setlocale() has been run to allow unicode input
 import plat
 import scancode
-import eascii
+from eascii import as_unicode as uea
 import signals
 import video
 
@@ -52,19 +52,19 @@ if curses:
         curses.KEY_PRINT: scancode.PRINT, curses.KEY_CANCEL: scancode.ESCAPE,
     }
     curses_to_eascii = {
-        curses.KEY_F1: eascii.F1, curses.KEY_F2: eascii.F2,
-        curses.KEY_F3: eascii.F3, curses.KEY_F4: eascii.F4,
-        curses.KEY_F5: eascii.F5, curses.KEY_F6: eascii.F6,
-        curses.KEY_F7: eascii.F7, curses.KEY_F8: eascii.F8,
-        curses.KEY_F9: eascii.F9, curses.KEY_F10: eascii.F10,
-        curses.KEY_F11: eascii.F11, curses.KEY_F12: eascii.F12,
-        curses.KEY_END: eascii.END, curses.KEY_HOME: eascii.HOME,
-        curses.KEY_UP: eascii.UP, curses.KEY_DOWN: eascii.DOWN,
-        curses.KEY_RIGHT: eascii.RIGHT, curses.KEY_LEFT: eascii.LEFT,
-        curses.KEY_IC: eascii.INSERT, curses.KEY_DC: eascii.DELETE,
-        curses.KEY_PPAGE: eascii.PAGEUP, curses.KEY_NPAGE: eascii.PAGEDOWN,
-        curses.KEY_BACKSPACE: eascii.BACKSPACE,
-        curses.KEY_CANCEL: eascii.ESCAPE,
+        curses.KEY_F1: uea.F1, curses.KEY_F2: uea.F2,
+        curses.KEY_F3: uea.F3, curses.KEY_F4: uea.F4,
+        curses.KEY_F5: uea.F5, curses.KEY_F6: uea.F6,
+        curses.KEY_F7: uea.F7, curses.KEY_F8: uea.F8,
+        curses.KEY_F9: uea.F9, curses.KEY_F10: uea.F10,
+        curses.KEY_F11: uea.F11, curses.KEY_F12: uea.F12,
+        curses.KEY_END: uea.END, curses.KEY_HOME: uea.HOME,
+        curses.KEY_UP: uea.UP, curses.KEY_DOWN: uea.DOWN,
+        curses.KEY_RIGHT: uea.RIGHT, curses.KEY_LEFT: uea.LEFT,
+        curses.KEY_IC: uea.INSERT, curses.KEY_DC: uea.DELETE,
+        curses.KEY_PPAGE: uea.PAGEUP, curses.KEY_NPAGE: uea.PAGEDOWN,
+        curses.KEY_BACKSPACE: uea.BACKSPACE,
+        curses.KEY_CANCEL: uea.ESCAPE,
     }
 
 ###############################################################################

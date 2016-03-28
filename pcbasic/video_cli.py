@@ -16,7 +16,7 @@ import interface as video
 import plat
 import signals
 import scancode
-import eascii
+from eascii import as_unicode as uea
 import ansi
 
 encoding = sys.stdin.encoding or 'utf-8'
@@ -35,11 +35,11 @@ if plat.system == 'Windows':
     tty = ansipipe
     termios = ansipipe
     # Ctrl+Z to exit
-    eof = eascii.CTRL_z
+    eof = uea.CTRL_z
 elif plat.system != 'Android':
     import tty, termios
     # Ctrl+D to exit
-    eof = eascii.CTRL_d
+    eof = uea.CTRL_d
 
 term_echo_on = True
 term_attr = None
@@ -119,7 +119,7 @@ class VideoCLI(video.VideoPlugin):
             elif uc == u'\x7f':
                 # backspace
                 signals.input_queue.put(signals.Event(signals.KEYB_DOWN,
-                                        (eascii.BACKSPACE, scancode.BACKSPACE, [])))
+                                        (uea.BACKSPACE, scancode.BACKSPACE, [])))
             elif sc or uc:
                 # check_full=False to allow pasting chunks of text
                 signals.input_queue.put(signals.Event(
@@ -333,30 +333,30 @@ esc_to_scan = {
     }
 
 esc_to_eascii = {
-    ansi.F1: eascii.F1,
-    ansi.F2: eascii.F2,
-    ansi.F3: eascii.F3,
-    ansi.F4: eascii.F4,
-    ansi.F5: eascii.F5,
-    ansi.F6: eascii.F6,
-    ansi.F7: eascii.F7,
-    ansi.F8: eascii.F8,
-    ansi.F9: eascii.F9,
-    ansi.F10: eascii.F10,
-    ansi.F11: eascii.F11,
-    ansi.F12: eascii.F12,
-    ansi.END: eascii.END,
-    ansi.END2: eascii.END,
-    ansi.HOME: eascii.HOME,
-    ansi.HOME2: eascii.HOME,
-    ansi.UP: eascii.UP,
-    ansi.DOWN: eascii.DOWN,
-    ansi.RIGHT: eascii.RIGHT,
-    ansi.LEFT: eascii.LEFT,
-    ansi.INSERT: eascii.INSERT,
-    ansi.DELETE: eascii.DELETE,
-    ansi.PAGEUP: eascii.PAGEUP,
-    ansi.PAGEDOWN: eascii.PAGEDOWN,
+    ansi.F1: uea.F1,
+    ansi.F2: uea.F2,
+    ansi.F3: uea.F3,
+    ansi.F4: uea.F4,
+    ansi.F5: uea.F5,
+    ansi.F6: uea.F6,
+    ansi.F7: uea.F7,
+    ansi.F8: uea.F8,
+    ansi.F9: uea.F9,
+    ansi.F10: uea.F10,
+    ansi.F11: uea.F11,
+    ansi.F12: uea.F12,
+    ansi.END: uea.END,
+    ansi.END2: uea.END,
+    ansi.HOME: uea.HOME,
+    ansi.HOME2: uea.HOME,
+    ansi.UP: uea.UP,
+    ansi.DOWN: uea.DOWN,
+    ansi.RIGHT: uea.RIGHT,
+    ansi.LEFT: uea.LEFT,
+    ansi.INSERT: uea.INSERT,
+    ansi.DELETE: uea.DELETE,
+    ansi.PAGEUP: uea.PAGEUP,
+    ansi.PAGEDOWN: uea.PAGEDOWN,
     }
 
 
