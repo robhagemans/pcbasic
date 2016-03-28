@@ -145,8 +145,15 @@ def start_basic():
     import interpreter
     exit_error = None
     try:
+        import state
+        # set state.console_state.codepage
+        import unicodepage
+        # needed to set console_state.screen state before setting up video plugin
+        import display
+        initial_mode = state.console_state.screen.mode
+        codepage = state.console_state.codepage
         # start or resume the interpreter thread
-        with interface.get_video_plugin() as vp:
+        with interface.get_video_plugin(initial_mode, codepage) as vp:
             with interface.get_audio_plugin() as ap:
                 try:
                     interpreter.launch()

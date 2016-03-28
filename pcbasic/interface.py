@@ -12,6 +12,9 @@ import time
 
 import config
 import signals
+# for building the icon
+import typeface
+
 
 class InitFailed(Exception):
     """ Initialisation failed. """
@@ -43,6 +46,8 @@ def event_loop(video_plugin, audio_plugin):
 
 # create the window icon
 icon_hex = '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
+icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}
+                            ).build_glyph('icon', 16, 16, False, False)
 
 # plugins will need to register themselves
 video_plugin_dict = {}
@@ -61,16 +66,8 @@ video_plugins = {
     }
 
 
-def get_video_plugin():
+def get_video_plugin(initial_mode, codepage):
     """ Find and initialise video plugin for given interface. """
-    import typeface
-    import state
-    # set state.console_state.codepage
-    import unicodepage
-    # needed to set console_state.screen state before setting up video plugin
-    import display
-    icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}
-                                ).build_glyph('icon', 16, 16, False, False)
     interface_name = config.get('interface') or 'graphical'
     while True:
         # select interface
@@ -92,8 +89,8 @@ def get_video_plugin():
                     copy_paste=config.get('copy-paste'),
                     pen=config.get('pen'),
                     icon=icon,
-                    initial_mode=state.console_state.screen.mode,
-                    codepage=state.console_state.codepage)
+                    initial_mode=initial_mode,
+                    codepage=codepage)
             except KeyError:
                 logging.debug('Video plugin "%s" not available.', video_name)
             except InitFailed:
