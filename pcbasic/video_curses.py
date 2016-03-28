@@ -26,13 +26,15 @@ import interface as video
 # so you don't see gibberish if the terminal doesn't support the sequence.
 import ansi
 
+encoding = plat.preferred_encoding
+
+
 ###############################################################################
 
 def prepare():
     """ Initialise the video_curses module. """
-    global encoding
     video.video_plugin_dict['curses'] = VideoCurses
-    encoding = plat.preferred_encoding
+
 
 if curses:
     # curses keycodes

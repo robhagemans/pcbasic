@@ -12,8 +12,6 @@ import interface as video
 import signals
 import plat
 
-# replace lf with cr
-lf_to_cr = False
 
 encoding = sys.stdin.encoding or 'utf-8'
 
@@ -30,11 +28,6 @@ else:
 
 def prepare():
     """ Initialise video_none module. """
-    global lf_to_cr
-    # on unix ttys, replace input \n with \r
-    # setting termios won't do the trick as it will not trigger read_line, gets too complicated
-    if plat.system != 'Windows' and plat.stdin_is_tty:
-        lf_to_cr = True
     video.video_plugin_dict['none'] = VideoNone
 
 
@@ -47,6 +40,10 @@ class VideoNone(video.VideoPlugin):
         """ Initialise filter interface. """
         # sys.stdout output for video=none is set in redirect module
         video.VideoPlugin.__init__(self)
+        # on unix ttys, replace input \n with \r
+        # setting termios won't do the trick as it will not trigger read_line, gets too complicated
+        if plat.system != 'Windows' and plat.stdin_is_tty:
+            self.lf_to_cr = True
 
     def _check_input(self):
         """ Handle keyboard events. """
@@ -60,7 +57,7 @@ class VideoNone(video.VideoPlugin):
             signals.input_queue.put(signals.Event(signals.KEYB_CLOSED))
         for c in s:
             # replace LF -> CR if needed
-            if c == u'\n' and lf_to_cr:
+            if c == u'\n' and self.lf_to_cr:
                 c = u'\r'
             # check_full=False as all input may come at once
             signals.input_queue.put(signals.Event(signals.KEYB_CHAR, (c, False)))
