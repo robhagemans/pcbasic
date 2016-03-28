@@ -10,9 +10,18 @@ This file is released under the GNU GPL version 3 or later.
 # we don't specify the standard ASCII character values here
 # nor the CTRL+a -> u'\x01' etc. series
 # except where convenient
+
 NUL = u'\0\0'
+
+CTRL_b = u'\x02'
 CTRL_c = u'\x03'
 CTRL_d = u'\x04'
+CTRL_e = u'\x05'
+CTRL_f = u'\x06'
+CTRL_k = u'\x0B'
+CTRL_l = u'\x0C'
+CTRL_n = u'\x0E'
+CTRL_r = u'\x12'
 CTRL_z = u'\x1A'
 
 ESCAPE = u'\x1B'
@@ -34,9 +43,9 @@ SHIFT_RETURN = u'\r'
 CTRL_RETURN = u'\n'
 ALT_RETURN = u'\0\x8F'
 
-SPACE = ' '
-SHIFT_SPACE = ' '
-CTRL_SPACE = ' '
+SPACE = u' '
+SHIFT_SPACE = u' '
+CTRL_SPACE = u' '
 ALT_SPACE = u'\0 '
 
 CTRL_PRINT = u'\0\x72'
@@ -51,8 +60,12 @@ SHIFT_DELETE = u'\0\x53'
 CTRL_2 = u'\0\x03'
 CTRL_6 = u'\x1E'
 CTRL_MINUS = u'\x1F'
-SHIFT_KP5 = '5'
+SHIFT_KP5 = u'5'
 ALT_KP5 = u'\x05'
+
+CTRL_BACKSLASH = u'\x1C'
+# CTRL+]
+CTRL_RIGHTBRACKET = u'\x1D'
 
 # Alt codes
 

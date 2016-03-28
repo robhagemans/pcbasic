@@ -16,18 +16,35 @@ import error
 import events
 # to initialise state.console_state.codepage
 import unicodepage
+import basictoken as tk
+import eascii as ea
 
 # alt+key macros for interactive mode
 # these happen at a higher level than F-key macros
 alt_key_replace = {
-    '\0\x1E': 'AUTO',   '\0\x30': 'BSAVE',  '\0\x2E': 'COLOR',
-    '\0\x20': 'DELETE', '\0\x12': 'ELSE',   '\0\x21': 'FOR',
-    '\0\x22': 'GOTO',   '\0\x23': 'HEX$',   '\0\x17': 'INPUT',
-    '\0\x25': 'KEY',    '\0\x26': 'LOCATE', '\0\x32': 'MOTOR',
-    '\0\x31': 'NEXT',   '\0\x18': 'OPEN',   '\0\x19': 'PRINT',
-    '\0\x13': 'RUN',    '\0\x1F': 'SCREEN', '\0\x14': 'THEN',
-    '\0\x16': 'USING',  '\0\x2F': 'VAL',    '\0\x11': 'WIDTH',
-    '\0\x2D': 'XOR'}
+    ea.ALT_a: tk.keyword[tk.AUTO],
+    ea.ALT_b: tk.keyword[tk.BSAVE],
+    ea.ALT_c: tk.keyword[tk.COLOR],
+    ea.ALT_d: tk.keyword[tk.DELETE],
+    ea.ALT_e: tk.keyword[tk.ELSE],
+    ea.ALT_f: tk.keyword[tk.FOR],
+    ea.ALT_g: tk.keyword[tk.GOTO],
+    ea.ALT_h: tk.keyword[tk.HEX],
+    ea.ALT_i: tk.keyword[tk.INPUT],
+    ea.ALT_k: tk.keyword[tk.KEY],
+    ea.ALT_l: tk.keyword[tk.LOCATE],
+    ea.ALT_m: tk.keyword[tk.MOTOR],
+    ea.ALT_n: tk.keyword[tk.NEXT],
+    ea.ALT_o: tk.keyword[tk.OPEN],
+    ea.ALT_p: tk.keyword[tk.PRINT],
+    ea.ALT_r: tk.keyword[tk.RUN],
+    ea.ALT_s: tk.keyword[tk.SCREEN],
+    ea.ALT_t: tk.keyword[tk.THEN],
+    ea.ALT_u: tk.keyword[tk.USING],
+    ea.ALT_v: tk.keyword[tk.VAL],
+    ea.ALT_w: tk.keyword[tk.WIDTH],
+    ea.ALT_x: tk.keyword[tk.XOR],
+    }
 
 # on the keys line 25, what characters to replace & with which
 keys_line_replace_chars = {
@@ -212,70 +229,60 @@ def wait_interactive(prompt_width):
             if not d:
                 # input stream closed
                 raise error.Exit()
-            if d in ('\0\x48', '\x1e', '\0\x50', '\x1f',  '\0\x4d', '\x1c',
-                      '\0\x4B', '\x1d', '\0\x47', '\x0b', '\0\x4f', '\x0e'):
+            if d in (ea.UP, ea.CTRL_6, ea.DOWN, ea.CTRL_MINUS,  ea.RIGHT, ea.CTRL_BACKSLASH,
+                      ea.LEFT, ea.CTRL_RIGHTBRACKET, ea.HOME, ea.CTRL_k, ea.END, ea.CTRL_n):
                 # arrow keys drop us out of insert mode
                 set_overwrite_mode(True)
-            if d == '\x03':
+            if d == ea.CTRL_c:
                 # CTRL-C -- only caught here, not in wait_char like <CTRL+BREAK>
                 raise error.Break()
-            elif d == '\r':
+            elif d == b'\r':
                 # ENTER, CTRL+M
                 break
-            elif d == '\a':
+            elif d == b'\a':
                 # BEL, CTRL+G
                 state.console_state.sound.beep()
-            elif d == '\b':
+            elif d == b'\b':
                 # BACKSPACE, CTRL+H
                 backspace(start_row, furthest_left)
-            elif d == '\t':
+            elif d == b'\t':
                 # TAB, CTRL+I
                 tab()
-            elif d == '\n':
+            elif d == b'\n':
                 # CTRL+ENTER, CTRL+J
                 line_feed()
-            elif d == '\x1b':
+            elif d == ea.ESCAPE:
                 # ESC, CTRL+[
                 clear_line(row, furthest_left)
-            elif d in ('\0\x75', '\x05'):
-                # CTRL+END, CTRL+E
+            elif d in (ea.CTRL_END, ea.CTRL_e):
                 clear_rest_of_line(row, col)
-            elif d in ('\0\x48', '\x1e'):
-                # UP, CTRL+6
+            elif d in (ea.UP, ea.CTRL_6):
                 set_pos(row - 1, col, scroll_ok=False)
-            elif d in ('\0\x50', '\x1f'):
-                # DOWN, CTRL+-
+            elif d in (ea.DOWN, ea.CTRL_MINUS):
                 set_pos(row + 1, col, scroll_ok=False)
-            elif d in ('\0\x4D', '\x1c'):
+            elif d in (ea.RIGHT, ea.CTRL_BACKSLASH):
                 # RIGHT, CTRL+\
                 # skip dbcs trail byte
                 if state.console_state.screen.apage.row[row-1].double[col-1] == 1:
                     set_pos(row, col + 2, scroll_ok=False)
                 else:
                     set_pos(row, col + 1, scroll_ok=False)
-            elif d in ('\0\x4b', '\x1d'):
+            elif d in (ea.LEFT, ea.CTRL_RIGHTBRACKET):
                 # LEFT, CTRL+]
                 set_pos(row, col - 1, scroll_ok=False)
-            elif d in ('\0\x74', '\x06'):
-                # CTRL+RIGHT, CTRL+F
+            elif d in (ea.CTRL_RIGHT, ea.CTRL_f):
                 skip_word_right()
-            elif d in ('\0\x73', '\x02'):
-                # CTRL+LEFT, CTRL+B
+            elif d in (ea.CTRL_LEFT, ea.CTRL_b):
                 skip_word_left()
-            elif d in ('\0\x52', '\x12'):
-                # INS, CTRL+R
+            elif d in (ea.INSERT, ea.CTRL_r):
                 set_overwrite_mode(not state.console_state.overwrite_mode)
-            elif d in ('\0\x53', '\x7f'):
-                # DEL, CTRL+BACKSPACE
+            elif d in (ea.DELETE, ea.CTRL_BACKSPACE):
                 delete_char(row, col)
-            elif d in ('\0\x47', '\x0b'):
-                # HOME, CTRL+K
+            elif d in (ea.HOME, ea.CTRL_k):
                 set_pos(1, 1)
-            elif d in ('\0\x4f', '\x0e'):
-                # END, CTRL+N
+            elif d in (ea.END, ea.CTRL_n):
                 end()
-            elif d in ('\0\x77', '\x0c'):
-                # CTRL+HOME, CTRL+L
+            elif d in (ea.CTRL_HOME, ea.CTRL_l):
                 clear()
             else:
                 try:
@@ -285,7 +292,7 @@ def wait_interactive(prompt_width):
                     letters = [d]
                 for d in letters:
                     # ignore eascii by this point, but not dbcs
-                    if d[0] not in ('\0', '\r'):
+                    if d[0] not in (b'\0', b'\r'):
                         if not state.console_state.overwrite_mode:
                             for c in d:
                                 insert(row, col, c, state.console_state.screen.attr)
