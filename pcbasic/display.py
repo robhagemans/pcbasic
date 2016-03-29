@@ -1250,7 +1250,7 @@ class Cursor(object):
     def reset_visibility(self):
         """ Set cursor visibility to its default state. """
         # visible if in interactive mode, unless forced visible in text mode.
-        visible = (not state.basic_state.execute_mode)
+        visible = (not state.basic_state.parse_mode)
         # in graphics mode, we can't force the cursor to be visible on execute.
         if self.screen.mode.is_text_mode:
             visible = visible or self.visible_run

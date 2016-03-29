@@ -754,7 +754,7 @@ def exec_edit(ins):
     util.require(ins, tk.end_statement, err=error.IFC)
     # throws back to direct mode
     flow.set_pointer(False)
-    state.basic_state.execute_mode = False
+    state.basic_state.parse_mode = False
     state.console_state.screen.cursor.reset_visibility()
     # request edit prompt
     state.basic_state.edit_prompt = (from_line, None)

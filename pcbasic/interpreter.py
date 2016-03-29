@@ -95,7 +95,7 @@ def init_session(greet, load):
     # input mode is AUTO (used by AUTO)
     state.basic_state.auto_mode = False
     # interpreter is executing a command
-    state.basic_state.execute_mode = False
+    state.basic_state.parse_mode = False
     # interpreter is waiting for INPUT or LINE INPUT
     state.basic_state.input_mode = False
     # previous interpreter mode
@@ -134,7 +134,7 @@ def resume_session():
     cassette.override()
     disk.override()
     # suppress double prompt
-    if not state.basic_state.execute_mode:
+    if not state.basic_state.parse_mode:
         state.basic_state.prompt = False
 
 
@@ -146,7 +146,7 @@ def run_session(command, run, quit, wait):
     if run:
         # position the pointer at start of program and enter execute mode
         flow.jump(None)
-        state.basic_state.execute_mode = True
+        state.basic_state.parse_mode = True
         state.console_state.screen.cursor.reset_visibility()
     try:
         try:
@@ -181,15 +181,15 @@ def loop():
     """ Run read-eval-print loop until control returns to user after a command. """
     try:
         while True:
-            state.basic_state.last_mode = state.basic_state.execute_mode, state.basic_state.auto_mode
-            if state.basic_state.execute_mode:
+            state.basic_state.last_mode = state.basic_state.parse_mode, state.basic_state.auto_mode
+            if state.basic_state.parse_mode:
                 try:
                     # may raise Break
                     events.check_events()
                     handle_basic_events()
                     # returns True if more statements to parse
                     if not statements.parse_statement():
-                        state.basic_state.execute_mode = False
+                        state.basic_state.parse_mode = False
                 except error.RunError as e:
                     trap_error(e)
                 except error.Break as e:
@@ -232,12 +232,12 @@ def loop():
 def switch_mode():
     """ Switch loop mode. """
     last_execute, last_auto = state.basic_state.last_mode
-    if state.basic_state.execute_mode != last_execute:
+    if state.basic_state.parse_mode != last_execute:
         # move pointer to the start of direct line (for both on and off!)
         flow.set_pointer(False, 0)
         state.console_state.screen.cursor.reset_visibility()
     return ((not state.basic_state.auto_mode) and
-            (not state.basic_state.execute_mode) and last_execute)
+            (not state.basic_state.parse_mode) and last_execute)
 
 def store_line(line):
     """ Store a program line or schedule a command line for execution. """
@@ -252,12 +252,12 @@ def store_line(line):
         reset.clear()
     elif c != '':
         # it is a command, go and execute
-        state.basic_state.execute_mode = True
-    return not state.basic_state.execute_mode
+        state.basic_state.parse_mode = True
+    return not state.basic_state.parse_mode
 
 def show_prompt():
     """ Show the Ok or EDIT prompt, unless suppressed. """
-    if state.basic_state.execute_mode:
+    if state.basic_state.parse_mode:
         return
     if state.basic_state.edit_prompt:
         linenum, tell = state.basic_state.edit_prompt
@@ -291,7 +291,7 @@ def auto_step():
         state.basic_state.auto_linenum = scanline + state.basic_state.auto_increment
     elif c != '':
         # it is a command, go and execute
-        state.basic_state.execute_mode = True
+        state.basic_state.parse_mode = True
 
 
 ##############################################################################
@@ -335,7 +335,7 @@ def handle_error(e):
     # not handled by ON ERROR, stop execution
     console.write_error_message(e.message, program.get_line_number(e.pos))
     state.basic_state.error_handle_mode = False
-    state.basic_state.execute_mode = False
+    state.basic_state.parse_mode = False
     state.basic_state.input_mode = False
     # special case: syntax error
     if e.err == error.STX:
@@ -356,5 +356,5 @@ def handle_break(e):
         pos = state.basic_state.bytecode.tell()
         state.basic_state.stop = pos
     console.write_error_message(e.message, program.get_line_number(pos))
-    state.basic_state.execute_mode = False
+    state.basic_state.parse_mode = False
     state.basic_state.input_mode = False
