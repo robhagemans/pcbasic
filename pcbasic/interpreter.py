@@ -132,6 +132,8 @@ class Session(object):
         if not os.path.exists(pcjr_term):
             pcjr_term = ''
         self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
+        state.basic_state.parser = self.parser
+        program.erase_program()
 
     def resume(self):
         """ Resume an interpreter session. """
@@ -157,7 +159,7 @@ class Session(object):
             self.loop()
         if run:
             # position the pointer at start of program and enter execute mode
-            flow.jump(None)
+            self.parser.jump(None)
             state.basic_state.parse_mode = True
             state.console_state.screen.cursor.reset_visibility()
         try:
@@ -246,7 +248,7 @@ class Session(object):
         last_execute, last_auto = self.last_mode
         if state.basic_state.parse_mode != last_execute:
             # move pointer to the start of direct line (for both on and off!)
-            flow.set_pointer(False, 0)
+            self.parser.set_pointer(False, 0)
             state.console_state.screen.cursor.reset_visibility()
         return ((not self.auto_mode) and
                 (not state.basic_state.parse_mode) and last_execute)
@@ -322,7 +324,7 @@ class Session(object):
                 event.stopped = True
                 # execute 'ON ... GOSUB' subroutine;
                 # attach handler to allow un-stopping event on RETURN
-                flow.jump_gosub(event.gosub, event)
+                self.parser.jump_gosub(event.gosub, event)
 
     def trap_error(self, e):
         """ Handle a BASIC error through trapping. """
@@ -336,7 +338,7 @@ class Session(object):
         # don't jump if we're already busy handling an error
         if state.basic_state.on_error is not None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
             state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
-            flow.jump(state.basic_state.on_error)
+            self.parser.jump(state.basic_state.on_error)
             state.basic_state.error_handle_mode = True
             state.basic_state.events.suspend_all = True
         else:

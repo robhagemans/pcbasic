@@ -147,6 +147,15 @@ def pass_int_unpack(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
     return integer_to_int_signed(pass_integer(inp, maxint, err))
 
 
+#D
+def number_unpack(value):
+    """ Unpack a number value. """
+    if value[0] in ('#', '!'):
+        return fp.unpack(value)
+    else:
+        return integer_to_int_signed(value)
+
+
 ###############################################################################
 # convert between BASIC Integer and token bytes
 

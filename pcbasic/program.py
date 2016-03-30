@@ -21,6 +21,7 @@ import logging
 # ensure initialisation of state_console_state.sound
 import sound
 
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -47,7 +48,22 @@ def prepare():
     dont_protect = (not config.get('strict-protect')) or config.get('convert')
     # program memory model; offsets in files (4718 == 0x126e)
     program_memory_start = memory.code_start + 1
-    erase_program()
+
+
+def init_program():
+    """ Initialise the stacks and pointers for a new program. """
+    # stop running if we were
+    state.basic_state.parser.set_pointer(False)
+    # reset loop stacks
+    state.basic_state.gosub_return = []
+    state.basic_state.for_next_stack = []
+    state.basic_state.while_wend_stack = []
+    # reset program pointer
+    state.basic_state.bytecode.seek(0)
+    # reset stop/cont
+    state.basic_state.stop = None
+    # reset data reader
+    flow.restore()
 
 def erase_program():
     """ Erase the program from memory. """
@@ -58,7 +74,7 @@ def erase_program():
     state.basic_state.current_statement = 0
     state.basic_state.last_stored = None
     # reset stacks
-    flow.init_program()
+    init_program()
 
 def truncate_program(rest=''):
     """ Write bytecode and cut the program of beyond the current position. """
@@ -169,7 +185,7 @@ def store_line(linebuf):
     if not empty:
         state.basic_state.line_numbers[scanline] = pos
     # clear all program stacks
-    flow.init_program()
+    init_program()
     state.basic_state.last_stored = scanline
 
 def find_pos_line_dict(fromline, toline):
@@ -201,7 +217,7 @@ def delete(fromline, toline):
     # update line number dict
     update_line_dict(startpos, afterpos, 0, deleteable, beyond)
     # clear all program stacks
-    flow.init_program()
+    init_program()
 
 def edit(from_line, bytepos=None):
     """ Output program line to console and position cursor. """
@@ -287,7 +303,7 @@ def renum(new_line, start_line, step):
         del state.basic_state.line_numbers[old_line]
     state.basic_state.line_numbers.update(new_lines)
     # stop running if we were
-    flow.set_pointer(False)
+    state.basic_state.session.parser.set_pointer(False)
     # reset loop stacks
     state.basic_state.gosub_return = []
     state.basic_state.for_next_stack = []
@@ -345,7 +361,7 @@ def chain(action, g, jumpnum, delete_lines):
     action(g)
     # don't close files!
     # RUN
-    flow.jump(jumpnum, err=error.IFC)
+    state.basic_state.session.parser.jump(jumpnum, err=error.IFC)
 
 def save(g):
     """ Save the program to stream g in (A)scii, (B)ytecode or (P)rotected mode. """
@@ -389,7 +405,7 @@ def list_lines(from_line, to_line):
         state.basic_state.bytecode.seek(pos + 1)
         _, line, _ = tokenise.detokenise_line(state.basic_state.bytecode)
         lines.append(str(line))
-    flow.set_pointer(False)
+    state.basic_state.session.parser.set_pointer(False)
     return lines
 
 prepare()

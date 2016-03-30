@@ -26,6 +26,7 @@ import fp
 import devices
 import machine
 import memory
+import operators as op
 import ports
 import print_and_input
 import program
@@ -54,12 +55,14 @@ class Parser(object):
         self.term = term
         # line number tracing
         self.tron = False
+        # pointer position: False for direct line, True for program
+        state.basic_state.run_mode = False
 
     def parse_statement(self):
         """ Parse one statement at the current pointer in current codestream.
             Return False if stream has ended, True otherwise.
             """
-        self.ins = flow.get_codestream()
+        self.ins = self.get_codestream()
         state.basic_state.current_statement = self.ins.tell()
         c = util.skip_white(self.ins)
         if c == '':
@@ -105,6 +108,105 @@ class Parser(object):
 
 
     #################################################################
+
+    def set_pointer(self, new_runmode, pos=None):
+        """ Set program pointer to the given codestream and position. """
+        state.basic_state.run_mode = new_runmode
+        state.console_state.sound.persist(new_runmode)
+        codestream = self.get_codestream()
+        if pos is not None:
+            # jump to position, if given
+            codestream.seek(pos)
+        else:
+            # position at end - don't execute anything unless we jump
+            codestream.seek(0, 2)
+
+    def get_codestream(self):
+        """ Get the current codestream. """
+        return state.basic_state.bytecode if state.basic_state.run_mode else state.basic_state.direct_line
+
+    def jump(self, jumpnum, err=error.UNDEFINED_LINE_NUMBER):
+        """ Execute jump for a GOTO or RUN instruction. """
+        if jumpnum is None:
+            self.set_pointer(True, 0)
+        else:
+            try:
+                # jump to target
+                self.set_pointer(True, state.basic_state.line_numbers[jumpnum])
+            except KeyError:
+                raise error.RunError(err)
+
+    def jump_gosub(self, jumpnum, handler=None):
+        """ Execute jump for a GOSUB. """
+        # set return position
+        state.basic_state.gosub_return.append((self.get_codestream().tell(), state.basic_state.run_mode, handler))
+        self.jump(jumpnum)
+
+    def jump_return(self, jumpnum):
+        """ Execute jump for a RETURN. """
+        try:
+            pos, orig_runmode, handler = state.basic_state.gosub_return.pop()
+        except IndexError:
+            raise error.RunError(error.RETURN_WITHOUT_GOSUB)
+        # returning from ON (event) GOSUB, re-enable event
+        if handler:
+            # if stopped explicitly using STOP, we wouldn't have got here; it STOP is run  inside the trap, no effect. OFF in trap: event off.
+            handler.stopped = False
+        if jumpnum is None:
+            # go back to position of GOSUB
+            self.set_pointer(orig_runmode, pos)
+        else:
+            # jump to specified line number
+            self.jump(jumpnum)
+
+
+    #################################################################
+
+    def loop_init(self, ins, forpos, nextpos, varname, start, stop, step):
+        """ Initialise a FOR loop. """
+        # set start to start-step, then iterate - slower on init but allows for faster iterate
+        var.set_scalar(varname, op.number_add(start, op.number_neg(step)))
+        # NOTE: all access to varname must be in-place into the bytearray - no assignments!
+        sgn = vartypes.integer_to_int_signed(op.number_sgn(step))
+        state.basic_state.for_next_stack.append(
+            (forpos, nextpos, varname[-1],
+                state.basic_state.variables[varname],
+                vartypes.number_unpack(stop), vartypes.number_unpack(step), sgn))
+        ins.seek(nextpos)
+
+    def number_inc_gt(self, typechar, loopvar, stop, step, sgn):
+        """ Increase number and check if it exceeds a limit. """
+        if sgn == 0:
+            return False
+        if typechar in ('#', '!'):
+            fp_left = fp.from_bytes(loopvar).iadd(step)
+            loopvar[:] = fp_left.to_bytes()
+            return fp_left.gt(stop) if sgn > 0 else stop.gt(fp_left)
+        else:
+            int_left = vartypes.integer_to_int_signed(vartypes.bytes_to_integer(loopvar)) + step
+            loopvar[:] = vartypes.integer_to_bytes(vartypes.int_to_integer_signed(int_left))
+            return int_left > stop if sgn > 0 else stop > int_left
+
+    def loop_iterate(self, ins, pos):
+        """ Iterate a loop (NEXT). """
+        # find the matching NEXT record
+        num = len(state.basic_state.for_next_stack)
+        for depth in range(num):
+            forpos, nextpos, typechar, loopvar, stop, step, sgn = state.basic_state.for_next_stack[-depth-1]
+            if pos == nextpos:
+                # only drop NEXT record if we've found a matching one
+                state.basic_state.for_next_stack = state.basic_state.for_next_stack[:len(state.basic_state.for_next_stack)-depth]
+                break
+        else:
+            raise error.RunError(error.NEXT_WITHOUT_FOR)
+        # increment counter
+        loop_ends = self.number_inc_gt(typechar, loopvar, stop, step, sgn)
+        if loop_ends:
+            state.basic_state.for_next_stack.pop()
+        else:
+            ins.seek(forpos)
+        return not loop_ends
+
     #################################################################
 
     def exec_system(self):
@@ -160,9 +262,9 @@ class Parser(object):
         except EnvironmentError:
             # on Tandy, raises Internal Error
             raise error.RunError(error.INTERNAL_ERROR)
-        flow.init_program()
+        program.init_program()
         reset.clear()
-        flow.jump(None)
+        self.jump(None)
         state.basic_state.error_handle_mode = False
         self.tron = False
 
@@ -750,7 +852,7 @@ class Parser(object):
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         util.require(self.ins, tk.end_statement, err=error.IFC)
         # throws back to direct mode
-        flow.set_pointer(False)
+        self.set_pointer(False)
         state.basic_state.parse_mode = False
         state.console_state.screen.cursor.reset_visibility()
         # request edit prompt
@@ -767,7 +869,7 @@ class Parser(object):
         self.session.auto_linenum = linenum if linenum is not None else 10
         self.session.auto_increment = increment if increment is not None else 10
         # move program pointer to end
-        flow.set_pointer(False)
+        self.set_pointer(False)
         # continue input in AUTO mode
         self.session.auto_mode = True
 
@@ -813,7 +915,7 @@ class Parser(object):
         reset.clear()
         if comma:
             # in ,R mode, don't close files; run the program
-            flow.jump(None)
+            self.jump(None)
         else:
             devices.close_files()
         self.tron = False
@@ -1318,7 +1420,7 @@ class Parser(object):
         util.require(self.ins, tk.end_statement)
         state.basic_state.stop = state.basic_state.bytecode.tell()
         # jump to end of direct line so execution stops
-        flow.set_pointer(False)
+        self.set_pointer(False)
         # avoid NO RESUME
         state.basic_state.error_handle_mode = False
         state.basic_state.error_resume = None
@@ -1334,7 +1436,7 @@ class Parser(object):
         if state.basic_state.stop is None:
             raise error.RunError(error.CANT_CONTINUE)
         else:
-            flow.set_pointer(True, state.basic_state.stop)
+            self.set_pointer(True, state.basic_state.stop)
         # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
         # and there's a STOP in the subroutine.
         # CONT then continues and the rest of the original line is executed, printing x
@@ -1367,7 +1469,7 @@ class Parser(object):
         # find NEXT
         nextpos = self._find_next(varname)
         # apply initial condition and jump to nextpos
-        flow.loop_init(self.ins, endforpos, nextpos, varname, start, stop, step)
+        self.loop_init(self.ins, endforpos, nextpos, varname, start, stop, step)
         self.exec_next()
 
     def _skip_to_next(self, for_char, next_char, allow_comma=False):
@@ -1436,7 +1538,7 @@ class Parser(object):
             if not name:
                 util.require(self.ins, tk.end_statement + (',',))
             # increment counter, check condition
-            if flow.loop_iterate(self.ins, pos):
+            if self.loop_iterate(self.ins, pos):
                 break
             # done if we're not jumping into a comma'ed NEXT
             if not util.skip_white_read_if(self.ins, (',')):
@@ -1447,7 +1549,7 @@ class Parser(object):
     def exec_goto(self):
         """ GOTO: jump to specified line number. """
         # parse line number, ignore rest of line and jump
-        flow.jump(util.parse_jumpnum(self.ins))
+        self.jump(util.parse_jumpnum(self.ins))
 
     def exec_run(self):
         """ RUN: start program execution. """
@@ -1465,9 +1567,9 @@ class Parser(object):
             util.require(self.ins, tk.end_statement)
             with devices.open_file(0, name, filetype='ABP', mode='I') as f:
                 program.load(f)
-        flow.init_program()
+        program.init_program()
         reset.clear(close_files=close_files)
-        flow.jump(jumpnum)
+        self.jump(jumpnum)
         state.basic_state.error_handle_mode = False
 
     def exec_if(self):
@@ -1479,7 +1581,7 @@ class Parser(object):
         if not fp.unpack(val).is_zero():
             # TRUE: continue after THEN. line number or statement is implied GOTO
             if util.skip_white(self.ins) in (tk.T_UINT,):
-                flow.jump(util.parse_jumpnum(self.ins))
+                self.jump(util.parse_jumpnum(self.ins))
             # continue parsing as normal, :ELSE will be ignored anyway
         else:
             # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
@@ -1496,7 +1598,7 @@ class Parser(object):
                         else:
                             # line number: jump
                             if util.skip_white(self.ins) in (tk.T_UINT,):
-                                flow.jump(util.parse_jumpnum(self.ins))
+                                self.jump(util.parse_jumpnum(self.ins))
                             # continue execution from here
                             break
                 else:
@@ -1579,7 +1681,7 @@ class Parser(object):
         elif onvar > 0 and onvar <= len(jumps):
             self.ins.seek(jumps[onvar-1])
             if command == tk.GOTO:
-                flow.jump(util.parse_jumpnum(self.ins))
+                self.jump(util.parse_jumpnum(self.ins))
             elif command == tk.GOSUB:
                 self.exec_gosub()
         util.skip_to(self.ins, tk.end_statement)
@@ -1613,7 +1715,21 @@ class Parser(object):
         else:
             jumpnum = 0
         util.require(self.ins, tk.end_statement)
-        flow.resume(jumpnum)
+        start_statement, runmode = state.basic_state.error_resume
+        state.basic_state.errn = 0
+        state.basic_state.error_handle_mode = False
+        state.basic_state.error_resume = None
+        state.basic_state.events.suspend_all = False
+        if jumpnum == 0:
+            # RESUME or RESUME 0
+            self.set_pointer(runmode, start_statement)
+        elif jumpnum == -1:
+            # RESUME NEXT
+            self.set_pointer(runmode, start_statement)
+            util.skip_to(self.get_codestream(), tk.end_statement, break_on_first_char=False)
+        else:
+            # RESUME n
+            self.jump(jumpnum)
 
     def exec_error(self):
         """ ERRROR: simulate an error condition. """
@@ -1626,7 +1742,7 @@ class Parser(object):
         jumpnum = util.parse_jumpnum(self.ins)
         # ignore rest of statement ('GOSUB 100 LAH' works just fine..); we need to be able to RETURN
         util.skip_to(self.ins, tk.end_statement)
-        flow.jump_gosub(jumpnum)
+        self.jump_gosub(jumpnum)
 
     def exec_return(self):
         """ RETURN: return from a subroutine. """
@@ -1637,7 +1753,7 @@ class Parser(object):
             util.skip_to(self.ins, tk.end_statement)
         else:
             jumpnum = None
-        flow.jump_return(jumpnum)
+        self.jump_return(jumpnum)
 
     ################################################
     # Variable & array statements

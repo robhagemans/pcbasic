@@ -25,7 +25,6 @@ import expressions
 import tokenise
 import program
 import console
-import flow
 
 debug_mode = False
 debug_tron = False
@@ -225,7 +224,7 @@ def bluescreen(e):
     console.write_line('as much information as you can about what you were doing and how this happened.')
     console.write_line('Thank you!')
     state.console_state.screen.set_attr(7)
-    flow.set_pointer(False)
+    state.basic_state.session.set_pointer(False)
 
 
 prepare()
