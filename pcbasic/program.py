@@ -50,20 +50,7 @@ def prepare():
     program_memory_start = memory.code_start + 1
 
 
-def init_program():
-    """ Initialise the stacks and pointers for a new program. """
-    # stop running if we were
-    state.basic_state.parser.set_pointer(False)
-    # reset loop stacks
-    state.basic_state.gosub_return = []
-    state.basic_state.for_next_stack = []
-    state.basic_state.while_wend_stack = []
-    # reset program pointer
-    state.basic_state.bytecode.seek(0)
-    # reset stop/cont
-    state.basic_state.stop = None
-    # reset data reader
-    flow.restore()
+
 
 def erase_program():
     """ Erase the program from memory. """
@@ -74,7 +61,7 @@ def erase_program():
     state.basic_state.current_statement = 0
     state.basic_state.last_stored = None
     # reset stacks
-    init_program()
+    state.basic_state.parser.clear_stacks_and_pointers()
 
 def truncate_program(rest=''):
     """ Write bytecode and cut the program of beyond the current position. """
@@ -185,7 +172,7 @@ def store_line(linebuf):
     if not empty:
         state.basic_state.line_numbers[scanline] = pos
     # clear all program stacks
-    init_program()
+    state.basic_state.parser.clear_stacks_and_pointers()
     state.basic_state.last_stored = scanline
 
 def find_pos_line_dict(fromline, toline):
@@ -217,7 +204,7 @@ def delete(fromline, toline):
     # update line number dict
     update_line_dict(startpos, afterpos, 0, deleteable, beyond)
     # clear all program stacks
-    init_program()
+    state.basic_state.parser.clear_stacks_and_pointers()
 
 def edit(from_line, bytepos=None):
     """ Output program line to console and position cursor. """
@@ -305,9 +292,7 @@ def renum(new_line, start_line, step):
     # stop running if we were
     state.basic_state.session.parser.set_pointer(False)
     # reset loop stacks
-    state.basic_state.gosub_return = []
-    state.basic_state.for_next_stack = []
-    state.basic_state.while_wend_stack = []
+    state.basic_state.parser.clear_stacks()
     # renumber error handler
     if state.basic_state.on_error:
         state.basic_state.on_error = old_to_new[state.basic_state.on_error]

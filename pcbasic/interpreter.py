@@ -118,6 +118,18 @@ class Session(object):
             # on load, accept capitalised versions and default extension
             with disk.open_native_or_dos_filename(load) as progfile:
                 program.load(progfile)
+
+        # find program for PCjr TERM command
+        pcjr_term = config.get('pcjr-term')
+        if pcjr_term and not os.path.exists(pcjr_term):
+            pcjr_term = os.path.join(plat.info_dir, pcjr_term)
+        if not os.path.exists(pcjr_term):
+            pcjr_term = ''
+        # initialise the parser
+        self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
+        state.basic_state.parser = self.parser
+        program.erase_program()
+
         # set up interpreter and memory model state
         reset.clear()
         # greeting and keys
@@ -125,15 +137,7 @@ class Session(object):
             console.clear()
             console.write_line(greeting.format(version=plat.version, free=var.fre()))
             console.show_keys(True)
-        # find program for PCjr TERM command
-        pcjr_term = config.get('pcjr-term')
-        if pcjr_term and not os.path.exists(pcjr_term):
-            pcjr_term = os.path.join(plat.info_dir, pcjr_term)
-        if not os.path.exists(pcjr_term):
-            pcjr_term = ''
-        self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
-        state.basic_state.parser = self.parser
-        program.erase_program()
+
 
     def resume(self):
         """ Resume an interpreter session. """
@@ -368,7 +372,7 @@ class Session(object):
         pos = -1
         if state.basic_state.run_mode:
             pos = state.basic_state.bytecode.tell()
-            state.basic_state.stop = pos
+            self.parser.stop = pos
         console.write_error_message(e.message, program.get_line_number(pos))
         state.basic_state.parse_mode = False
         self.input_mode = False

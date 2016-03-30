@@ -57,6 +57,8 @@ class Parser(object):
         self.tron = False
         # pointer position: False for direct line, True for program
         state.basic_state.run_mode = False
+        # clear stacks
+        #self.clear_stacks_and_pointers()
 
     def parse_statement(self):
         """ Parse one statement at the current pointer in current codestream.
@@ -109,6 +111,32 @@ class Parser(object):
 
     #################################################################
 
+    def clear_stacks_and_pointers(self):
+        """ Initialise the stacks and pointers for a new program. """
+        # stop running if we were
+        self.set_pointer(False)
+        # reset loop stacks
+        self.clear_stacks()
+        # reset program pointer
+        state.basic_state.bytecode.seek(0)
+        # reset stop/cont
+        self.stop = None
+        # reset data reader
+        flow.restore()
+
+    def clear_stacks(self):
+        """ Clear loop and jump stacks. """
+        self.gosub_stack = []
+        self.clear_loop_stacks()
+
+    def clear_loop_stacks(self):
+        """ Clear loop stacks. """
+        self.for_stack = []
+        self.while_stack = []
+
+
+    #################################################################
+
     def set_pointer(self, new_runmode, pos=None):
         """ Set program pointer to the given codestream and position. """
         state.basic_state.run_mode = new_runmode
@@ -139,13 +167,13 @@ class Parser(object):
     def jump_gosub(self, jumpnum, handler=None):
         """ Execute jump for a GOSUB. """
         # set return position
-        state.basic_state.gosub_return.append((self.get_codestream().tell(), state.basic_state.run_mode, handler))
+        self.gosub_stack.append((self.get_codestream().tell(), state.basic_state.run_mode, handler))
         self.jump(jumpnum)
 
     def jump_return(self, jumpnum):
         """ Execute jump for a RETURN. """
         try:
-            pos, orig_runmode, handler = state.basic_state.gosub_return.pop()
+            pos, orig_runmode, handler = self.gosub_stack.pop()
         except IndexError:
             raise error.RunError(error.RETURN_WITHOUT_GOSUB)
         # returning from ON (event) GOSUB, re-enable event
@@ -168,7 +196,7 @@ class Parser(object):
         var.set_scalar(varname, op.number_add(start, op.number_neg(step)))
         # NOTE: all access to varname must be in-place into the bytearray - no assignments!
         sgn = vartypes.integer_to_int_signed(op.number_sgn(step))
-        state.basic_state.for_next_stack.append(
+        self.for_stack.append(
             (forpos, nextpos, varname[-1],
                 state.basic_state.variables[varname],
                 vartypes.number_unpack(stop), vartypes.number_unpack(step), sgn))
@@ -190,19 +218,19 @@ class Parser(object):
     def loop_iterate(self, ins, pos):
         """ Iterate a loop (NEXT). """
         # find the matching NEXT record
-        num = len(state.basic_state.for_next_stack)
+        num = len(self.for_stack)
         for depth in range(num):
-            forpos, nextpos, typechar, loopvar, stop, step, sgn = state.basic_state.for_next_stack[-depth-1]
+            forpos, nextpos, typechar, loopvar, stop, step, sgn = self.for_stack[-depth-1]
             if pos == nextpos:
                 # only drop NEXT record if we've found a matching one
-                state.basic_state.for_next_stack = state.basic_state.for_next_stack[:len(state.basic_state.for_next_stack)-depth]
+                self.for_stack = self.for_stack[:len(self.for_stack)-depth]
                 break
         else:
             raise error.RunError(error.NEXT_WITHOUT_FOR)
         # increment counter
         loop_ends = self.number_inc_gt(typechar, loopvar, stop, step, sgn)
         if loop_ends:
-            state.basic_state.for_next_stack.pop()
+            self.for_stack.pop()
         else:
             ins.seek(forpos)
         return not loop_ends
@@ -262,7 +290,7 @@ class Parser(object):
         except EnvironmentError:
             # on Tandy, raises Internal Error
             raise error.RunError(error.INTERNAL_ERROR)
-        program.init_program()
+        self.clear_stacks_and_pointers()
         reset.clear()
         self.jump(None)
         state.basic_state.error_handle_mode = False
@@ -1418,7 +1446,7 @@ class Parser(object):
     def exec_end(self):
         """ END: end program execution and return to interpreter. """
         util.require(self.ins, tk.end_statement)
-        state.basic_state.stop = state.basic_state.bytecode.tell()
+        self.stop = state.basic_state.bytecode.tell()
         # jump to end of direct line so execution stops
         self.set_pointer(False)
         # avoid NO RESUME
@@ -1433,10 +1461,10 @@ class Parser(object):
 
     def exec_cont(self):
         """ CONT: continue STOPped or ENDed execution. """
-        if state.basic_state.stop is None:
+        if self.stop is None:
             raise error.RunError(error.CANT_CONTINUE)
         else:
-            self.set_pointer(True, state.basic_state.stop)
+            self.set_pointer(True, self.stop)
         # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
         # and there's a STOP in the subroutine.
         # CONT then continues and the rest of the original line is executed, printing x
@@ -1567,7 +1595,7 @@ class Parser(object):
             util.require(self.ins, tk.end_statement)
             with devices.open_file(0, name, filetype='ABP', mode='I') as f:
                 program.load(f)
-        program.init_program()
+        self.clear_stacks_and_pointers()
         reset.clear(close_files=close_files)
         self.jump(jumpnum)
         state.basic_state.error_handle_mode = False
@@ -1621,7 +1649,7 @@ class Parser(object):
         if self.ins.read(1) == tk.WEND:
             util.skip_to(self.ins, tk.end_statement)
             wendpos = self.ins.tell()
-            state.basic_state.while_wend_stack.append((whilepos, wendpos))
+            self.while_stack.append((whilepos, wendpos))
         else:
             # WHILE without WEND
             self.ins.seek(whilepos)
@@ -1639,7 +1667,7 @@ class Parser(object):
             util.require(self.ins, tk.end_statement)
         else:
             # ignore rest of line and jump to WEND
-            _, wendpos = state.basic_state.while_wend_stack.pop()
+            _, wendpos = self.while_stack.pop()
             self.ins.seek(wendpos)
 
     def exec_wend(self):
@@ -1648,14 +1676,14 @@ class Parser(object):
         util.require(self.ins, tk.end_statement)
         pos = self.ins.tell()
         while True:
-            if not state.basic_state.while_wend_stack:
+            if not self.while_stack:
                 # WEND without WHILE
                 raise error.RunError(error.WEND_WITHOUT_WHILE)
-            whilepos, wendpos = state.basic_state.while_wend_stack[-1]
+            whilepos, wendpos = self.while_stack[-1]
             if pos == wendpos:
                 break
             # not the expected WEND, we must have jumped out
-            state.basic_state.while_wend_stack.pop()
+            self.while_stack.pop()
         self._check_while_condition(whilepos)
 
     def exec_on_jump(self):

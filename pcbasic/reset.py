@@ -39,8 +39,7 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     # disable all event trapping (resets PEN to OFF too)
     state.basic_state.events.reset()
     # CLEAR also dumps for_next and while_wend stacks
-    state.basic_state.for_next_stack = []
-    state.basic_state.while_wend_stack = []
+    state.basic_state.parser.clear_loop_stacks()
     # reset sound and PLAY state
     state.console_state.sound.reset()
     # reset DRAW state (angle, scale) and current graphics position
