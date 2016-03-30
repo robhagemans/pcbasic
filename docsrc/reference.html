@@ -254,6 +254,39 @@
         with <code><a href="#CLEAR">CLEAR</a></code> or
         <code><a href="#ERASE">ERASE</a></code>.
     </p>
+
+    <h4 id="conversions">Conversions</h4>
+    <p>
+        PC-BASIC will implicitly convert between the three numerical data types. When a value of
+        one type is assigned to a variable, array element or parameter of another
+        type, it is converted according to the following rules:
+    </p>
+    <ul>
+        <li>
+            Single- and double-precision floats are converted to integer by rounding
+            to the nearest whole number. Halves are rounded away from zero. If the resulting whole
+            number is outside the allowed range for integers, <samp>Overflow</samp> is raised.
+        </li>
+        <li>
+            Double-precision floats are converted to single-precision floats by
+            Gaussian rounding of the mantissa, where the new least significant bit of the
+            mantissa is rounded up if the clipped-off binary fraction is greater than one-half; halves
+            are rounded to even.
+        </li>
+        <li>
+            Integers are converted to their exact representation as single-
+            or double-precision floats.
+        </li>
+        <li>
+            Single-precision floats are converted to their exact representation as
+            double-precision floats.
+        </li>
+        <li>
+            There is no implicit conversion between strings and any of the numeric types.
+            Attempting to assign a string value to a numeric variable, array element or parameter
+            (or vice versa) will raise <samp>Type mismatch</samp>.
+    </ul>
+
 </section>
 <hr />
 
