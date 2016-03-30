@@ -15,8 +15,6 @@ except ImportError:
     from StringIO import StringIO
 import string
 
-import plat
-import config
 import console
 import debug
 import disk
@@ -44,27 +42,16 @@ import var
 import vartypes
 
 
-def prepare():
-    """ Initialise statements module. """
-    global pcjr_syntax, pcjr_term
-    if config.get('syntax') in ('pcjr', 'tandy'):
-        pcjr_syntax = config.get('syntax')
-    else:
-        pcjr_syntax = None
-    # find program for PCjr TERM command
-    pcjr_term = config.get('pcjr-term')
-    if pcjr_term and not os.path.exists(pcjr_term):
-        pcjr_term = os.path.join(plat.info_dir, pcjr_term)
-    if not os.path.exists(pcjr_term):
-        pcjr_term = ''
-
-
 class Parser(object):
     """ Statement parser. """
 
-    def __init__(self, session):
+    def __init__(self, session, syntax, term):
         """ Initialise parser. """
         self.session = session
+        # syntax: advanced, pcjr, tandy
+        self.syntax = syntax
+        # program for TERM command
+        self.term = term
 
     def parse_statement(self):
         """ Parse one statement at the current pointer in current codestream.
@@ -166,7 +153,7 @@ class Parser(object):
         """ TERM: load and run PCjr buitin terminal emulator program. """
         try:
             util.require(self.ins, tk.end_statement)
-            with disk.create_file_object(open(pcjr_term, 'rb'), 'A', 'I', 'TERM') as f:
+            with disk.create_file_object(open(self.term, 'rb'), 'A', 'I', 'TERM') as f:
                 program.load(f)
         except EnvironmentError:
             # on Tandy, raises Internal Error
@@ -374,7 +361,7 @@ class Parser(object):
     def exec_beep(self):
         """ BEEP: produce an alert sound or switch internal speaker on/off. """
         # Tandy/PCjr BEEP ON, OFF
-        if pcjr_syntax and util.skip_white(self.ins) in (tk.ON, tk.OFF):
+        if self.syntax in ('pcjr', 'tandy') and util.skip_white(self.ins) in (tk.ON, tk.OFF):
             state.console_state.beep_on = (self.ins.read(1) == tk.ON)
             util.require(self.ins, tk.end_statement)
             return
@@ -387,7 +374,7 @@ class Parser(object):
     def exec_sound(self):
         """ SOUND: produce an arbitrary sound or switch external speaker on/off. """
         # Tandy/PCjr SOUND ON, OFF
-        if pcjr_syntax and util.skip_white(self.ins) in (tk.ON, tk.OFF):
+        if self.syntax in ('pcjr', 'tandy') and util.skip_white(self.ins) in (tk.ON, tk.OFF):
             state.console_state.sound.sound_on = (self.ins.read(1) == tk.ON)
             util.require(self.ins, tk.end_statement)
             return
@@ -398,8 +385,8 @@ class Parser(object):
             raise error.RunError(error.IFC)
         # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
         if dur.gt(fp.Single.zero):
-            if (util.skip_white_read_if(self.ins, (',',)) and (pcjr_syntax == 'tandy' or
-                    (pcjr_syntax == 'pcjr' and state.console_state.sound.sound_on))):
+            if (util.skip_white_read_if(self.ins, (',',)) and (self.syntax == 'tandy' or
+                    (self.syntax == 'pcjr' and state.console_state.sound.sound_on))):
                 volume = vartypes.pass_int_unpack(expressions.parse_expression(self.ins))
                 util.range_check(0, 15, volume)
                 if util.skip_white_read_if(self.ins, (',',)):
@@ -415,7 +402,7 @@ class Parser(object):
             return
         # Tandy only allows frequencies below 37 (but plays them as 110 Hz)
         if freq != 0:
-            util.range_check(-32768 if pcjr_syntax == 'tandy' else 37, 32767, freq) # 32767 is pause
+            util.range_check(-32768 if self.syntax == 'tandy' else 37, 32767, freq) # 32767 is pause
         # calculate duration in seconds
         one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
         dur_sec = dur.to_value()/18.2
@@ -440,7 +427,7 @@ class Parser(object):
                         expressions.parse_expression(self.ins, allow_empty=True),
                         allow_empty=True))
             mml1, mml2 = '', ''
-            if ((pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and
+            if ((self.syntax == 'tandy' or (self.syntax == 'pcjr' and
                                              state.console_state.sound.sound_on))
                     and util.skip_white_read_if(self.ins, (',',))):
                 with state.basic_state.strings:
@@ -675,7 +662,7 @@ class Parser(object):
             with state.basic_state.strings:
                 cmd = var.copy_str(vartypes.pass_string(expressions.parse_expression(self.ins)))
         # no SHELL on PCjr.
-        if pcjr_syntax == 'pcjr':
+        if self.syntax == 'pcjr':
             raise error.RunError(error.IFC)
         # force cursor visible in all cases
         state.console_state.screen.cursor.show(True)
@@ -765,7 +752,7 @@ class Parser(object):
         state.basic_state.parse_mode = False
         state.console_state.screen.cursor.reset_visibility()
         # request edit prompt
-        state.basic_state.edit_prompt = (from_line, None)
+        self.session.edit_prompt = (from_line, None)
 
     def exec_auto(self):
         """ AUTO: enter automatic line numbering mode. """
@@ -775,12 +762,12 @@ class Parser(object):
             increment = util.parse_jumpnum(self.ins, allow_empty=True)
         util.require(self.ins, tk.end_statement)
         # reset linenum and increment on each call of AUTO (even in AUTO mode)
-        state.basic_state.auto_linenum = linenum if linenum is not None else 10
-        state.basic_state.auto_increment = increment if increment is not None else 10
+        self.session.auto_linenum = linenum if linenum is not None else 10
+        self.session.auto_increment = increment if increment is not None else 10
         # move program pointer to end
         flow.set_pointer(False)
         # continue input in AUTO mode
-        state.basic_state.auto_mode = True
+        self.session.auto_mode = True
 
     def exec_list(self):
         """ LIST: output program lines. """
@@ -1693,7 +1680,7 @@ class Parser(object):
                         #  0 leads to illegal fn call
                         raise error.RunError(error.IFC)
                     memory.set_stack_size(stack_size)
-                if pcjr_syntax and util.skip_white_read_if(self.ins, (',',)):
+                if self.syntax in ('pcjr', 'tandy') and util.skip_white_read_if(self.ins, (',',)):
                     # Tandy/PCjr: select video memory size
                     if not state.console_state.screen.set_video_memory_size(
                         fp.unpack(vartypes.pass_single(
@@ -1918,9 +1905,9 @@ class Parser(object):
             pos = self.ins.tell()
             self.ins.seek(state.basic_state.current_statement)
             # read the input
-            state.basic_state.input_mode = True
+            self.session.input_mode = True
             varlist = print_and_input.input_console(prompt, readvar, newline)
-            state.basic_state.input_mode = False
+            self.session.input_mode = False
             for v in varlist:
                 var.set_variable(*v)
             self.ins.seek(pos)
@@ -1946,10 +1933,10 @@ class Parser(object):
             if line is None:
                 raise error.RunError(error.INPUT_PAST_END)
         else:
-            state.basic_state.input_mode = True
+            self.session.input_mode = True
             console.write(prompt)
             line = console.wait_screenline(write_endl=newline)
-            state.basic_state.input_mode = False
+            self.session.input_mode = False
         var.set_variable(readvar, indices, state.basic_state.strings.store(line))
 
     def exec_restore(self):
@@ -2032,7 +2019,7 @@ class Parser(object):
 
     def exec_cls(self):
         """ CLS: clear the screen. """
-        if (pcjr_syntax == 'pcjr' or
+        if (self.syntax == 'pcjr' or
                         util.skip_white(self.ins) in (',',) + tk.end_statement):
             if state.console_state.screen.drawing.view_is_set():
                 val = 1
@@ -2042,11 +2029,11 @@ class Parser(object):
                 val = 0
         else:
             val = vartypes.pass_int_unpack(expressions.parse_expression(self.ins))
-            if pcjr_syntax == 'tandy':
+            if self.syntax == 'tandy':
                 # tandy gives illegal function call on CLS number
                 raise error.RunError(error.IFC)
         util.range_check(0, 2, val)
-        if pcjr_syntax != 'pcjr':
+        if self.syntax != 'pcjr':
             if util.skip_white_read_if(self.ins, (',',)):
                 # comma is ignored, but a number after means syntax error
                 util.require(self.ins, tk.end_statement)
@@ -2061,7 +2048,7 @@ class Parser(object):
             state.console_state.screen.drawing.reset()
         elif val == 2:
             state.console_state.screen.clear_view()
-        if pcjr_syntax == 'pcjr':
+        if self.syntax == 'pcjr':
             util.require(self.ins, tk.end_statement)
 
     def exec_color(self):
@@ -2264,7 +2251,7 @@ class Parser(object):
             state.console_state.bottom_row_allowed = True
         console.set_pos(row, col, scroll_ok=False)
         if cursor is not None:
-            util.range_check(0, (255 if pcjr_syntax else 1), cursor)
+            util.range_check(0, (255 if self.syntax in ('pcjr', 'tandy') else 1), cursor)
             # set cursor visibility - this should set the flag but have no effect in graphics modes
             state.console_state.screen.cursor.set_visibility(cursor != 0)
         if stop is None:
@@ -2410,7 +2397,7 @@ class Parser(object):
             util.require_read(self.ins, (tk.TO,))
             stop = vartypes.pass_int_unpack(expressions.parse_expression(self.ins))
             util.require(self.ins, tk.end_statement)
-            max_line = 25 if (pcjr_syntax and not state.console_state.keys_visible) else 24
+            max_line = 25 if (self.syntax in ('pcjr', 'tandy') and not state.console_state.keys_visible) else 24
             util.range_check(1, max_line, start, stop)
             state.console_state.screen.set_view(start, stop)
 
@@ -2447,7 +2434,7 @@ class Parser(object):
                     # pare dummy number rows setting
                     num_rows_dummy = expressions.parse_expression(self.ins, allow_empty=True)
                     if num_rows_dummy is not None:
-                        min_num_rows = 0 if pcjr_syntax else 25
+                        min_num_rows = 0 if self.syntax in ('pcjr', 'tandy') else 25
                         util.range_check(min_num_rows, 25, vartypes.pass_int_unpack(num_rows_dummy))
                     # trailing comma is accepted
                     util.skip_white_read_if(self.ins, (',',))
@@ -2470,9 +2457,10 @@ class Parser(object):
                 apagenum = expressions.parse_expression(self.ins, allow_empty=True)
                 apagenum = None if apagenum is None else vartypes.pass_int_unpack(apagenum)
                 if util.skip_white_read_if(self.ins, (',',)):
-                    vpagenum = expressions.parse_expression(self.ins, allow_empty=pcjr_syntax)
+                    vpagenum = expressions.parse_expression(self.ins,
+                                allow_empty=self.syntax in ('pcjr', 'tandy'))
                     vpagenum = None if vpagenum is None else vartypes.pass_int_unpack(vpagenum)
-                    if pcjr_syntax and util.skip_white_read_if(self.ins, (',',)):
+                    if self.syntax in ('pcjr', 'tandy') and util.skip_white_read_if(self.ins, (',',)):
                         erase = vartypes.pass_int_unpack(expressions.parse_expression(self.ins))
         # if any parameter not in [0,255], error 5 without doing anything
         # if the parameters are outside narrow ranges
@@ -2612,6 +2600,3 @@ class Parser(object):
         tk.STRIG: exec_strig,
         tk.DEBUG: exec_debug,
     }
-
-
-prepare()

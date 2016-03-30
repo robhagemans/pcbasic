@@ -96,15 +96,17 @@ class Session(object):
         # true if a prompt is needed on next cycle
         self.prompt = True
         # input mode is AUTO (used by AUTO)
-        state.basic_state.auto_mode = False
+        self.auto_mode = False
+        self.auto_linenum = 10
+        self.auto_increment = 10
         # interpreter is executing a command
         state.basic_state.parse_mode = False
         # interpreter is waiting for INPUT or LINE INPUT
-        state.basic_state.input_mode = False
+        self.input_mode = False
         # previous interpreter mode
         self.last_mode = False, False
         # syntax error prompt and EDIT
-        state.basic_state.edit_prompt = False
+        self.edit_prompt = False
         # initialise the display
         display.init()
         # initialise the console
@@ -123,7 +125,13 @@ class Session(object):
             console.clear()
             console.write_line(greeting.format(version=plat.version, free=var.fre()))
             console.show_keys(True)
-        self.parser = statements.Parser(self)
+        # find program for PCjr TERM command
+        pcjr_term = config.get('pcjr-term')
+        if pcjr_term and not os.path.exists(pcjr_term):
+            pcjr_term = os.path.join(plat.info_dir, pcjr_term)
+        if not os.path.exists(pcjr_term):
+            pcjr_term = ''
+        self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
 
     def resume(self):
         """ Resume an interpreter session. """
@@ -185,7 +193,7 @@ class Session(object):
         """ Run read-eval-print loop until control returns to user after a command. """
         try:
             while True:
-                self.last_mode = state.basic_state.parse_mode, state.basic_state.auto_mode
+                self.last_mode = state.basic_state.parse_mode, self.auto_mode
                 if state.basic_state.parse_mode:
                     try:
                         # may raise Break
@@ -200,14 +208,14 @@ class Session(object):
                         # ctrl-break stops foreground and background sound
                         state.console_state.sound.stop_all_sound()
                         self.handle_break(e)
-                elif state.basic_state.auto_mode:
+                elif self.auto_mode:
                     try:
                         # auto step, checks events
                         self.auto_step()
                     except error.Break:
                         # ctrl+break, ctrl-c both stop background sound
                         state.console_state.sound.stop_all_sound()
-                        state.basic_state.auto_mode = False
+                        self.auto_mode = False
                 else:
                     self.show_prompt()
                     try:
@@ -240,7 +248,7 @@ class Session(object):
             # move pointer to the start of direct line (for both on and off!)
             flow.set_pointer(False, 0)
             state.console_state.screen.cursor.reset_visibility()
-        return ((not state.basic_state.auto_mode) and
+        return ((not self.auto_mode) and
                 (not state.basic_state.parse_mode) and last_execute)
 
     def store_line(self, line):
@@ -263,19 +271,19 @@ class Session(object):
         """ Show the Ok or EDIT prompt, unless suppressed. """
         if state.basic_state.parse_mode:
             return
-        if state.basic_state.edit_prompt:
-            linenum, tell = state.basic_state.edit_prompt
+        if self.edit_prompt:
+            linenum, tell = self.edit_prompt
             program.edit(linenum, tell)
-            state.basic_state.edit_prompt = False
+            self.edit_prompt = False
         elif self.prompt:
             console.start_line()
             console.write_line("Ok\xff")
 
     def auto_step(self):
         """ Generate an AUTO line number and wait for input. """
-        numstr = str(state.basic_state.auto_linenum)
+        numstr = str(self.auto_linenum)
         console.write(numstr)
-        if state.basic_state.auto_linenum in state.basic_state.line_numbers:
+        if self.auto_linenum in state.basic_state.line_numbers:
             console.write('*')
             line = bytearray(console.wait_screenline(from_start=True))
             if line[:len(numstr)+1] == numstr+'*':
@@ -292,7 +300,7 @@ class Session(object):
             if not empty:
                 program.store_line(state.basic_state.direct_line)
                 reset.clear()
-            state.basic_state.auto_linenum = scanline + state.basic_state.auto_increment
+            self.auto_linenum = scanline + self.auto_increment
         elif c != '':
             # it is a command, go and execute
             state.basic_state.parse_mode = True
@@ -340,19 +348,19 @@ class Session(object):
         console.write_error_message(e.message, program.get_line_number(e.pos))
         state.basic_state.error_handle_mode = False
         state.basic_state.parse_mode = False
-        state.basic_state.input_mode = False
+        self.input_mode = False
         # special case: syntax error
         if e.err == error.STX:
             # for some reason, err is reset to zero by GW-BASIC in this case.
             state.basic_state.errn = 0
             if e.pos != -1:
                 # line edit gadget appears
-                state.basic_state.edit_prompt = (program.get_line_number(e.pos), e.pos+1)
+                self.edit_prompt = (program.get_line_number(e.pos), e.pos+1)
 
     def handle_break(self, e):
         """ Handle a Break event. """
         # print ^C at current position
-        if not state.basic_state.input_mode and not e.stop:
+        if not self.input_mode and not e.stop:
             console.write('^C')
         # if we're in a program, save pointer
         pos = -1
@@ -361,4 +369,4 @@ class Session(object):
             state.basic_state.stop = pos
         console.write_error_message(e.message, program.get_line_number(pos))
         state.basic_state.parse_mode = False
-        state.basic_state.input_mode = False
+        self.input_mode = False
