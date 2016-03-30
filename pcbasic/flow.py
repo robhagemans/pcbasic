@@ -17,8 +17,6 @@ import operators as op
 
 # pointer position: False for direct line, True for program
 state.basic_state.run_mode = False
-# line number tracing
-state.basic_state.tron = False
 
 def init_program():
     """ Initialise the stacks and pointers for a new program. """

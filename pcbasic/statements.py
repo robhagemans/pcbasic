@@ -52,6 +52,8 @@ class Parser(object):
         self.syntax = syntax
         # program for TERM command
         self.term = term
+        # line number tracing
+        self.tron = False
 
     def parse_statement(self):
         """ Parse one statement at the current pointer in current codestream.
@@ -78,7 +80,7 @@ class Parser(object):
                     raise error.RunError(error.NO_RESUME, prepos-1)
                 # stream has ended
                 return False
-            if state.basic_state.tron:
+            if self.tron:
                 console.write('[' + ('%i' % linenum) + ']')
             debug.debug_step(linenum)
         elif c == ':':
@@ -113,13 +115,13 @@ class Parser(object):
 
     def exec_tron(self):
         """ TRON: turn on line number tracing. """
-        state.basic_state.tron = True
+        self.tron = True
         # TRON LAH gives error, but TRON has been executed
         util.require(self.ins, tk.end_statement)
 
     def exec_troff(self):
         """ TROFF: turn off line number tracing. """
-        state.basic_state.tron = False
+        self.tron = False
         util.require(self.ins, tk.end_statement)
 
     def exec_rem(self):
@@ -162,7 +164,7 @@ class Parser(object):
         reset.clear()
         flow.jump(None)
         state.basic_state.error_handle_mode = False
-        state.basic_state.tron = False
+        self.tron = False
 
 
     ##########################################################
@@ -814,7 +816,7 @@ class Parser(object):
             flow.jump(None)
         else:
             devices.close_files()
-        state.basic_state.tron = False
+        self.tron = False
 
     def exec_chain(self):
         """ CHAIN: load program and chain execution. """
@@ -895,7 +897,7 @@ class Parser(object):
 
     def exec_new(self):
         """ NEW: clear program from memory. """
-        state.basic_state.tron = False
+        self.tron = False
         # deletes the program currently in memory
         program.erase_program()
         # and clears all variables
