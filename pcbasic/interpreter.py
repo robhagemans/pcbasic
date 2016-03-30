@@ -123,6 +123,7 @@ class Session(object):
             console.clear()
             console.write_line(greeting.format(version=plat.version, free=var.fre()))
             console.show_keys(True)
+        self.parser = statements.Parser(self)
 
     def resume(self):
         """ Resume an interpreter session. """
@@ -191,7 +192,7 @@ class Session(object):
                         events.check_events()
                         self.handle_basic_events()
                         # returns True if more statements to parse
-                        if not statements.parse_statement():
+                        if not self.parser.parse_statement():
                             state.basic_state.parse_mode = False
                     except error.RunError as e:
                         self.trap_error(e)
