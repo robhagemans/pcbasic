@@ -47,7 +47,7 @@ def check_events():
     """ Main event cycle. """
     time.sleep(tick_s)
     check_input()
-    if state.basic_state.run_mode:
+    if state.basic_state.session.parser.run_mode:
         for e in state.basic_state.events.all:
             e.check()
     state.console_state.keyb.drain_event_buffer()

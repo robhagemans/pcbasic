@@ -339,7 +339,7 @@ class Session(object):
 
     def handle_basic_events(self):
         """ Jump to user-defined event subs if events triggered. """
-        if state.basic_state.events.suspend_all or not state.basic_state.run_mode:
+        if state.basic_state.events.suspend_all or not self.parser.run_mode:
             return
         for event in state.basic_state.events.all:
             if (event.enabled and event.triggered
@@ -355,7 +355,7 @@ class Session(object):
     def trap_error(self, e):
         """ Handle a BASIC error through trapping. """
         if e.pos is None:
-            if state.basic_state.run_mode:
+            if self.parser.run_mode:
                 e.pos = state.basic_state.bytecode.tell()-1
             else:
                 e.pos = -1
@@ -363,7 +363,7 @@ class Session(object):
         state.basic_state.errp = e.pos
         # don't jump if we're already busy handling an error
         if state.basic_state.on_error is not None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
-            state.basic_state.error_resume = self.parser.current_statement, state.basic_state.run_mode
+            state.basic_state.error_resume = self.parser.current_statement, self.parser.run_mode
             self.parser.jump(state.basic_state.on_error)
             state.basic_state.error_handle_mode = True
             state.basic_state.events.suspend_all = True
@@ -392,7 +392,7 @@ class Session(object):
             console.write('^C')
         # if we're in a program, save pointer
         pos = -1
-        if state.basic_state.run_mode:
+        if self.parser.run_mode:
             pos = state.basic_state.bytecode.tell()
             self.parser.stop = pos
         console.write_error_message(e.message, self.program.get_line_number(pos))

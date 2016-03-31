@@ -181,7 +181,7 @@ def bluescreen(e):
     state.console_state.screen.set_attr(0x70)
     console.write_line('EXCEPTION')
     state.console_state.screen.set_attr(15)
-    if state.basic_state.run_mode:
+    if state.basic_state.session.parser.run_mode:
         state.basic_state.bytecode.seek(-1, 1)
         state.basic_state.session.program.edit(
             state.basic_state.session.program.get_line_number(

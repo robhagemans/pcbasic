@@ -56,7 +56,7 @@ class Parser(object):
         # line number tracing
         self.tron = False
         # pointer position: False for direct line, True for program
-        state.basic_state.run_mode = False
+        self.run_mode = False
         # clear stacks
         #self.clear_stacks_and_pointers()
         self.current_statement = 0
@@ -140,7 +140,7 @@ class Parser(object):
 
     def set_pointer(self, new_runmode, pos=None):
         """ Set program pointer to the given codestream and position. """
-        state.basic_state.run_mode = new_runmode
+        self.run_mode = new_runmode
         state.console_state.sound.persist(new_runmode)
         codestream = self.get_codestream()
         if pos is not None:
@@ -152,7 +152,7 @@ class Parser(object):
 
     def get_codestream(self):
         """ Get the current codestream. """
-        return state.basic_state.bytecode if state.basic_state.run_mode else self.session.direct_line
+        return state.basic_state.bytecode if self.run_mode else self.session.direct_line
 
     def jump(self, jumpnum, err=error.UNDEFINED_LINE_NUMBER):
         """ Execute jump for a GOTO or RUN instruction. """
@@ -168,7 +168,7 @@ class Parser(object):
     def jump_gosub(self, jumpnum, handler=None):
         """ Execute jump for a GOSUB. """
         # set return position
-        self.gosub_stack.append((self.get_codestream().tell(), state.basic_state.run_mode, handler))
+        self.gosub_stack.append((self.get_codestream().tell(), self.run_mode, handler))
         self.jump(jumpnum)
 
     def jump_return(self, jumpnum):
@@ -605,7 +605,7 @@ class Parser(object):
     def exec_poke(self):
         """ POKE: write to a memory location. Limited implementation. """
         addr = vartypes.pass_int_unpack(expressions.parse_expression(self.ins), maxint=0xffff)
-        if self.session.program.protected and not state.basic_state.run_mode:
+        if self.session.program.protected and not self.run_mode:
             raise error.RunError(error.IFC)
         util.require_read(self.ins, (',',))
         val = vartypes.pass_int_unpack(expressions.parse_expression(self.ins))
@@ -634,7 +634,7 @@ class Parser(object):
 
     def exec_bload(self):
         """ BLOAD: load a file into a memory location. Limited implementation. """
-        if self.session.program.protected and not state.basic_state.run_mode:
+        if self.session.program.protected and not self.run_mode:
             raise error.RunError(error.IFC)
         with state.basic_state.strings:
             name = var.copy_str(vartypes.pass_string(expressions.parse_expression(self.ins)))
@@ -650,7 +650,7 @@ class Parser(object):
 
     def exec_bsave(self):
         """ BSAVE: save a block of memory to a file. Limited implementation. """
-        if self.session.program.protected and not state.basic_state.run_mode:
+        if self.session.program.protected and not self.run_mode:
             raise error.RunError(error.IFC)
         with state.basic_state.strings:
             name = var.copy_str(vartypes.pass_string(expressions.parse_expression(self.ins)))
@@ -2129,7 +2129,7 @@ class Parser(object):
         endloc = self.ins.tell()
         self.ins.seek(startloc)
         fncode = self.ins.read(endloc - startloc)
-        if not state.basic_state.run_mode:
+        if not self.run_mode:
             # GW doesn't allow DEF FN in direct mode, neither do we
             # (for no good reason, works fine)
             raise error.RunError(error.ILLEGAL_DIRECT)

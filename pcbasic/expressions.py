@@ -788,7 +788,7 @@ def value_fre(ins):
 def value_peek(ins):
     """ PEEK: read memory location. """
     addr = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
-    if state.basic_state.session.program.protected and not state.basic_state.run_mode:
+    if state.basic_state.session.program.protected and not state.basic_state.session.parser.run_mode:
         raise error.RunError(error.IFC)
     return vartypes.int_to_integer_signed(machine.peek(addr))
 
