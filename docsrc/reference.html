@@ -168,10 +168,10 @@
         Variable names must start with a letter; all characters of the variable name
         (except the <a href="#typechars">sigil</a>) must be letters <code>A&#8212;Z</code>, figures <code>0&#8212;9</code>, or a dot <code>.</code>
         Only the first 40 characters in the name are significant. A variable name must
-        not be identical to a <a href="#keywords">keyword</a> or a keyword plus sigil.
+        not be identical to a <a href="#reserved-words">reserved word</a> or a reserved word plus sigil.
         Therefore, for example, you cannot name a variable <code>TO!</code> but you can
-        name it <code>AS!</code>. Variable
-        names may <em>contain</em> any keyword. Variable names may also start with a keyword, with the exception of <code><a href="#USR">USR</a></code> and
+        name it <code>AS!</code>. Variable names may <em>contain</em> any reserved word.
+        Variable names may also start with a reserved word, with the exception of <code><a href="#USR">USR</a></code> and
         <code><a href="#FN">FN</a></code>. Thus, <code>FNORD%</code> and <code>USRNME$</code>
         are not legal variable names while <code>FRECKLE%</code> and <code>LUSR$</code> are.
     </p>
@@ -181,7 +181,10 @@
         <code>A%</code>, <code>A!</code> and <code>A#</code> as different variables.
         Which one of those is also known as <code>A</code> depends on the settings in
         <code><a href="#DEFINT">DEFINT</a></code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>.
-        By default, <code>A</code> equals the single-precision <code>A!</code>. The
+        By default, <code>A</code> equals the single-precision <code>A!</code>.
+    </p>
+    <p>
+        Furthermore, the
         <a href="#arrays">arrays</a> <code>A$()</code>, <code>A%()</code>,
         <code>A!()</code>, <code>A#()</code> are separate from the scalar
         variables of the same name.
@@ -234,7 +237,7 @@
         integers as their two's complement.
     </p>
 
-    <h4 id="arrays">Array elements</h4>
+    <h4 id="arrays">Arrays</h4>
     <p>
         Arrays are indexed with round or square
         brackets; even mixing brackets is allowed. The following are all legal array elements: <code>A[0]</code>, <code>A(0)</code>,
@@ -1609,7 +1612,7 @@
             <li>
                 When reading from the keyboard directly or through <code>KYBD:</code>, arrow keys, <kbd>Del</kbd>,
                 <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Pg Up</kbd>, <kbd>Pg Dn</kbd> are passed as <code>NUL</code> characters. Function keys
-                are ignored if they are event-trapped, otherwise keyword replacement is
+                are ignored if they are event-trapped, otherwise function-key macro replacement is
                 active as normal.
             </li>
         </ul>
@@ -3636,8 +3639,9 @@
                 The purpose of <code><var>expr</var></code> is unknown.
             </li>
             <li>
-                If called inside a <code><a href="#FOR">FOR</a></code>&#8212;<code><a href="#NEXT">NEXT</a></code> or <code><a href="#WHILE">WHILE</a></code>&#8212;<code><a href="#WEND">WEND</a></code> loop, an error will be raised at
-                the iteration keyword as the loop stacks are cleared.
+                If called inside a <code><a href="#FOR">FOR</a></code>&#8212;<code><a href="#NEXT">NEXT</a></code> or
+                <code><a href="#WHILE">WHILE</a></code>&#8212;<code><a href="#WEND">WEND</a></code> loop, an error will be raised at
+                the <code>NEXT</code> or <code>WEND</code> statement, since the loop stacks have been cleared.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -7018,7 +7022,9 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>n</var></code> is a numeric expression in <code>[0&#8212;255]</code>. The expression must not start with the <code>STRIG</code>, <code>PEN</code>, <code>PLAY</code> or <code>TIMER</code> function keywords; if you need these functions, the expression must be bracketed.
+                <code><var>n</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+                The expression must not start with the <code>STRIG</code>, <code>PEN</code>, <code>PLAY</code> or <code>TIMER</code>
+                function keywords; if you need these functions, the expression must be bracketed.
             </li>
             <li>
                 <code><var>line_number_0</var>, <var>line_number_1</var>, ...</code> are existing line numbers in the program.
