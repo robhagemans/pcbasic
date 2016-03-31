@@ -447,7 +447,7 @@ def set_code_memory(address, val):
             state.basic_state.bytecode.write(chr(val))
         # restore program pointer
         state.basic_state.bytecode.seek(loc)
-        program.rebuild_line_dict()
+        state.basic_state.session.program.rebuild_line_dict()
 
 def get_data_memory(address):
     """ Retrieve data from data memory. """

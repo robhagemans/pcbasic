@@ -183,8 +183,10 @@ def bluescreen(e):
     state.console_state.screen.set_attr(15)
     if state.basic_state.run_mode:
         state.basic_state.bytecode.seek(-1, 1)
-        program.edit(program.get_line_number(state.basic_state.bytecode.tell()),
-                                         state.basic_state.bytecode.tell())
+        state.basic_state.session.program.edit(
+            state.basic_state.session.program.get_line_number(
+                        state.basic_state.bytecode.tell()),
+                        state.basic_state.bytecode.tell())
         console.write_line('\n')
     else:
         state.basic_state.session.direct_line.seek(0)

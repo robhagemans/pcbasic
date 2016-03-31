@@ -119,9 +119,10 @@ def convert():
             # use StringIO buffer for seekability
             in_buffer = StringIO(sys.stdin.read())
             prog_infile = disk.create_file_object(in_buffer, filetype='ABP', mode='I')
+        prog = program.Program()
         if prog_infile:
             with prog_infile:
-                program.load(prog_infile, rebuild_dict=False)
+                prog.load(prog_infile, rebuild_dict=False)
         prog_outfile = None
         if outfile:
             # on save from command-line, use exact file name
@@ -130,7 +131,7 @@ def convert():
             prog_outfile = disk.create_file_object(sys.stdout, filetype=mode, mode='O')
         if prog_outfile:
             with prog_outfile:
-                program.save(prog_outfile)
+                prog.save(prog_outfile)
     except error.RunError as e:
         logging.error(e.message)
     except EnvironmentError as e:

@@ -25,8 +25,6 @@ import util
 import error
 import var
 import devices
-# for FRE() only
-import program
 import state
 import machine
 import timedate
@@ -743,7 +741,7 @@ def value_erl(ins):
     elif state.basic_state.errp == -1:
         erl = 65535
     else:
-        erl = program.get_line_number(state.basic_state.errp)
+        erl = state.basic_state.session.program.get_line_number(state.basic_state.errp)
     return fp.pack(fp.Single.from_int(erl))
 
 def value_err(ins):

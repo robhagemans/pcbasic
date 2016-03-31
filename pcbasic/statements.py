@@ -112,7 +112,7 @@ class Parser(object):
     #################################################################
 
     def clear_stacks_and_pointers(self):
-        """ Initialise the stacks and pointers for a new program. """
+        """ Initialise the stacks and pointers for a new self.session.program. """
         # stop running if we were
         self.set_pointer(False)
         # reset loop stacks
@@ -282,11 +282,11 @@ class Parser(object):
         debug.debug_exec(debug_cmd)
 
     def exec_term(self):
-        """ TERM: load and run PCjr buitin terminal emulator program. """
+        """ TERM: load and run PCjr buitin terminal emulator self.session.program. """
         try:
             util.require(self.ins, tk.end_statement)
             with disk.create_file_object(open(self.term, 'rb'), 'A', 'I', 'TERM') as f:
-                program.load(f)
+                self.session.program.load(f)
         except EnvironmentError:
             # on Tandy, raises Internal Error
             raise error.RunError(error.INTERNAL_ERROR)
@@ -862,11 +862,11 @@ class Parser(object):
             raise error.RunError(err)
 
     def exec_delete(self):
-        """ DELETE: delete range of lines from program. """
+        """ DELETE: delete range of lines from self.session.program. """
         from_line, to_line = self._parse_line_range()
         util.require(self.ins, tk.end_statement)
         # throws back to direct mode
-        program.delete(from_line, to_line)
+        self.session.program.delete(from_line, to_line)
         # clear all variables
         reset.clear()
 
@@ -912,7 +912,7 @@ class Parser(object):
             # ignore everything after file spec
             util.skip_to(self.ins, tk.end_line)
         util.require(self.ins, tk.end_statement)
-        lines = program.list_lines(from_line, to_line)
+        lines = self.session.program.list_lines(from_line, to_line)
         if out:
             with out:
                 for l in lines:
@@ -926,7 +926,7 @@ class Parser(object):
         """ LLIST: output program lines to LPT1: """
         from_line, to_line = self._parse_line_range()
         util.require(self.ins, tk.end_statement)
-        for l in program.list_lines(from_line, to_line):
+        for l in self.session.program.list_lines(from_line, to_line):
             state.io_state.lpt1_file.write_line(l)
 
     def exec_load(self):
@@ -939,7 +939,7 @@ class Parser(object):
             util.require_read(self.ins, 'R')
         util.require(self.ins, tk.end_statement)
         with devices.open_file(0, name, filetype='ABP', mode='I') as f:
-            program.load(f)
+            self.session.program.load(f)
         reset.clear()
         if comma:
             # in ,R mode, don't close files; run the program
@@ -951,14 +951,14 @@ class Parser(object):
     def exec_chain(self):
         """ CHAIN: load program and chain execution. """
         if util.skip_white_read_if(self.ins, (tk.MERGE,)):
-            action = program.merge
+            action = self.session.program.merge
         else:
-            action = program.load
+            action = self.session.program.load
         with state.basic_state.strings:
             name = var.copy_str(vartypes.pass_string(expressions.parse_expression(self.ins)))
         jumpnum, common_all, delete_lines = None, False, None
         if util.skip_white_read_if(self.ins, (',',)):
-            # check for an expression that indicates a line in the other program. This is not stored as a jumpnum (to avoid RENUM)
+            # check for an expression that indicates a line in the other self.session.program. This is not stored as a jumpnum (to avoid RENUM)
             expr = expressions.parse_expression(self.ins, allow_empty=True)
             if expr is not None:
                 jumpnum = vartypes.pass_int_unpack(expr, maxint=0xffff)
@@ -975,12 +975,12 @@ class Parser(object):
                     # CHAIN "file", , DELETE
                     delete_lines = self._parse_delete_clause()
         util.require(self.ins, tk.end_statement)
-        if state.basic_state.protected and action == program.merge:
+        if state.basic_state.protected and action == self.session.program.merge:
                 raise error.RunError(error.IFC)
         with devices.open_file(0, name, filetype='ABP', mode='I') as f:
-            program.chain(action, f, jumpnum, delete_lines)
+            self.session.program.chain(action, f, jumpnum, delete_lines)
         # preserve DEFtype on MERGE
-        reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==program.merge))
+        reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==self.session.program.merge))
 
     def _parse_delete_clause(self):
         """ Helper function: parse the DELETE clause of a CHAIN statement. """
@@ -1013,23 +1013,23 @@ class Parser(object):
                                 seg=memory.data_segment, offset=memory.code_start,
                                 length=len(state.basic_state.bytecode.getvalue())-1
                                 ) as f:
-            program.save(f)
+            self.session.program.save(f)
         util.require(self.ins, tk.end_statement)
 
     def exec_merge(self):
-        """ MERGE: merge lines from file into current program. """
+        """ MERGE: merge lines from file into current self.session.program. """
         with state.basic_state.strings:
             name = var.copy_str(vartypes.pass_string(expressions.parse_expression(self.ins)))
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         with devices.open_file(0, name, filetype='A', mode='I') as f:
-            program.merge(f)
+            self.session.program.merge(f)
         util.require(self.ins, tk.end_statement)
 
     def exec_new(self):
         """ NEW: clear program from memory. """
         self.tron = False
         # deletes the program currently in memory
-        program.erase_program()
+        self.session.program.erase_program()
         # and clears all variables
         reset.clear()
 
@@ -1045,7 +1045,7 @@ class Parser(object):
         util.require(self.ins, tk.end_statement)
         if step is not None and step < 1:
             raise error.RunError(error.IFC)
-        program.renum(new, old, step)
+        self.session.program.renum(new, old, step)
 
 
     ##########################################################
@@ -1594,7 +1594,7 @@ class Parser(object):
                 close_files = False
             util.require(self.ins, tk.end_statement)
             with devices.open_file(0, name, filetype='ABP', mode='I') as f:
-                program.load(f)
+                self.session.program.load(f)
         self.clear_stacks_and_pointers()
         reset.clear(close_files=close_files)
         self.jump(jumpnum)

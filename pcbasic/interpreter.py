@@ -134,12 +134,12 @@ class Session(object):
         state.basic_state.parser = self.parser
 
         # initialise the program
-        program.erase_program()
+        self.program = program.Program()
         # load initial program
         if load:
             # on load, accept capitalised versions and default extension
             with disk.open_native_or_dos_filename(load) as progfile:
-                program.load(progfile)
+                self.program.load(progfile)
 
         # set up interpreter and memory model state
         reset.clear()
@@ -281,8 +281,8 @@ class Session(object):
         c = util.peek(self.direct_line)
         if c == '\0':
             # check for lines starting with numbers (6553 6) and empty lines
-            program.check_number_start(self.direct_line)
-            program.store_line(self.direct_line)
+            self.program.check_number_start(self.direct_line)
+            self.program.store_line(self.direct_line)
             reset.clear()
         elif c != '':
             # it is a command, go and execute
@@ -295,7 +295,7 @@ class Session(object):
             return
         if self.edit_prompt:
             linenum, tell = self.edit_prompt
-            program.edit(linenum, tell)
+            self.program.edit(linenum, tell)
             self.edit_prompt = False
         elif self.prompt:
             console.start_line()
@@ -318,9 +318,9 @@ class Session(object):
         c = util.peek(self.direct_line)
         if c == '\0':
             # check for lines starting with numbers (6553 6) and empty lines
-            empty, scanline = program.check_number_start(self.direct_line)
+            empty, scanline = self.program.check_number_start(self.direct_line)
             if not empty:
-                program.store_line(self.direct_line)
+                self.program.store_line(self.direct_line)
                 reset.clear()
             self.auto_linenum = scanline + self.auto_increment
         elif c != '':
@@ -367,7 +367,7 @@ class Session(object):
     def handle_error(self, e):
         """ Handle a BASIC error through error message. """
         # not handled by ON ERROR, stop execution
-        console.write_error_message(e.message, program.get_line_number(e.pos))
+        console.write_error_message(e.message, self.program.get_line_number(e.pos))
         state.basic_state.error_handle_mode = False
         self.set_parse_mode(False)
         self.input_mode = False
@@ -377,7 +377,7 @@ class Session(object):
             state.basic_state.errn = 0
             if e.pos != -1:
                 # line edit gadget appears
-                self.edit_prompt = (program.get_line_number(e.pos), e.pos+1)
+                self.edit_prompt = (self.program.get_line_number(e.pos), e.pos+1)
 
     def handle_break(self, e):
         """ Handle a Break event. """
@@ -389,6 +389,6 @@ class Session(object):
         if state.basic_state.run_mode:
             pos = state.basic_state.bytecode.tell()
             self.parser.stop = pos
-        console.write_error_message(e.message, program.get_line_number(pos))
+        console.write_error_message(e.message, self.program.get_line_number(pos))
         self.set_parse_mode(False)
         self.input_mode = False
