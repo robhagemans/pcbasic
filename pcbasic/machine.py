@@ -232,11 +232,9 @@ def out(addr, val):
 
 def wait(addr, ander, xorer):
     """ Wait untial an emulated machine port has a specified value. """
-    store_suspend = state.basic_state.events.suspend_all
-    state.basic_state.events.suspend_all = True
-    while (inp(addr) ^ xorer) & ander == 0:
-        events.wait()
-    state.basic_state.events.suspend_all = store_suspend
+    with state.basic_state.session.parser.events.suspend():
+        while (inp(addr) ^ xorer) & ander == 0:
+            events.wait()
 
 def bload(g, offset):
     """ Load a file into a block of memory. """

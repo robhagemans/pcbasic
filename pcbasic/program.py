@@ -272,12 +272,12 @@ class Program(object):
         # stop running if we were
         state.basic_state.session.parser.set_pointer(False)
         # reset loop stacks
-        state.basic_state.parser.clear_stacks()
+        state.basic_state.session.parser.clear_stacks()
         # renumber error handler
         if state.basic_state.on_error:
             state.basic_state.on_error = old_to_new[state.basic_state.on_error]
         # renumber event traps
-        for handler in state.basic_state.events.all:
+        for handler in state.basic_state.session.parser.events.all:
             if handler.gosub:
                 handler.set_jump(old_to_new[handler.gosub])
 

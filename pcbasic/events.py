@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import time
 import Queue
+from contextlib import contextmanager
 
 import error
 import signals
@@ -48,8 +49,7 @@ def check_events():
     time.sleep(tick_s)
     check_input()
     if state.basic_state.session.parser.run_mode:
-        for e in state.basic_state.events.all:
-            e.check()
+        state.basic_state.session.parser.events.check()
     state.console_state.keyb.drain_event_buffer()
 
 def check_input():
@@ -320,6 +320,18 @@ class Events(object):
             + [self.play] + self.com + [self.pen] + self.strig)
         # set suspension off
         self.suspend_all = False
+
+    def check(self):
+        """ Check events. """
+        for e in self.all:
+            e.check()
+
+    @contextmanager
+    def suspend(self):
+        """ Context guard to suspend events. """
+        self.suspend_all, store = True, self.suspend_all
+        yield
+        self.suspend_all = store
 
 
 ###############################################################################

@@ -57,9 +57,11 @@ class Parser(object):
         self.tron = False
         # pointer position: False for direct line, True for program
         self.run_mode = False
+        self.current_statement = 0
         # clear stacks
         #self.clear_stacks_and_pointers()
-        self.current_statement = 0
+        # set up event handlers
+        self.events = events.Events()
 
     def parse_statement(self):
         """ Parse one statement at the current pointer in current codestream.
@@ -372,7 +374,7 @@ class Parser(object):
 
     def exec_pen(self):
         """ PEN: switch on/off light pen event handling. """
-        if state.basic_state.events.pen.command(util.skip_white(self.ins)):
+        if self.events.pen.command(util.skip_white(self.ins)):
             self.ins.read(1)
         else:
             raise error.RunError(error.STX)
@@ -386,7 +388,7 @@ class Parser(object):
             num = vartypes.pass_int_unpack(expressions.parse_bracket(self.ins))
             if num not in (0,2,4,6):
                 raise error.RunError(error.IFC)
-            if state.basic_state.events.strig[num//2].command(util.skip_white(self.ins)):
+            if self.events.strig[num//2].command(util.skip_white(self.ins)):
                 self.ins.read(1)
             else:
                 raise error.RunError(error.STX)
@@ -405,7 +407,7 @@ class Parser(object):
         util.require(self.ins, ('(',))
         num = vartypes.pass_int_unpack(expressions.parse_bracket(self.ins))
         util.range_check(1, 2, num)
-        if state.basic_state.events.com[num-1].command(util.skip_white(self.ins)):
+        if self.events.com[num-1].command(util.skip_white(self.ins)):
             self.ins.read(1)
         else:
             raise error.RunError(error.STX)
@@ -413,7 +415,7 @@ class Parser(object):
 
     def exec_timer(self):
         """ TIMER: switch on/off timer event handling. """
-        if state.basic_state.events.timer.command(util.skip_white(self.ins)):
+        if self.events.timer.command(util.skip_white(self.ins)):
             self.ins.read(1)
         else:
             raise error.RunError(error.STX)
@@ -426,7 +428,7 @@ class Parser(object):
         d = util.skip_white(self.ins)
         # others are ignored
         if num >= 1 and num <= 20:
-            if state.basic_state.events.key[num-1].command(d):
+            if self.events.key[num-1].command(d):
                 self.ins.read(1)
             else:
                 raise error.RunError(error.STX)
@@ -450,27 +452,27 @@ class Parser(object):
         keynum, jumpnum = self._parse_on_event()
         keynum = vartypes.pass_int_unpack(keynum)
         util.range_check(1, 20, keynum)
-        state.basic_state.events.key[keynum-1].set_jump(jumpnum)
+        self.events.key[keynum-1].set_jump(jumpnum)
 
     def exec_on_timer(self):
         """ ON TIMER: define timer event trapping. """
         timeval, jumpnum = self._parse_on_event()
         timeval = vartypes.pass_single(timeval)
         period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
-        state.basic_state.events.timer.set_trigger(period)
-        state.basic_state.events.timer.set_jump(jumpnum)
+        self.events.timer.set_trigger(period)
+        self.events.timer.set_jump(jumpnum)
 
     def exec_on_play(self):
         """ ON PLAY: define music event trapping. """
         playval, jumpnum = self._parse_on_event()
         playval = vartypes.pass_int_unpack(playval)
-        state.basic_state.events.play.set_trigger(playval)
-        state.basic_state.events.play.set_jump(jumpnum)
+        self.events.play.set_trigger(playval)
+        self.events.play.set_jump(jumpnum)
 
     def exec_on_pen(self):
         """ ON PEN: define light pen event trapping. """
         _, jumpnum = self._parse_on_event(bracket=False)
-        state.basic_state.events.pen.set_jump(jumpnum)
+        self.events.pen.set_jump(jumpnum)
 
     def exec_on_strig(self):
         """ ON STRIG: define fire button event trapping. """
@@ -479,14 +481,14 @@ class Parser(object):
         ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
         if strigval not in (0,2,4,6):
             raise error.RunError(error.IFC)
-        state.basic_state.events.strig[strigval//2].set_jump(jumpnum)
+        self.events.strig[strigval//2].set_jump(jumpnum)
 
     def exec_on_com(self):
         """ ON COM: define serial port event trapping. """
         keynum, jumpnum = self._parse_on_event()
         keynum = vartypes.pass_int_unpack(keynum)
         util.range_check(1, 2, keynum)
-        state.basic_state.events.com[keynum-1].set_jump(jumpnum)
+        self.events.com[keynum-1].set_jump(jumpnum)
 
     ##########################################################
     # sound
@@ -550,7 +552,7 @@ class Parser(object):
     def exec_play(self):
         """ PLAY: play sound sequence defined by a Music Macro Language string. """
         # PLAY: event switch
-        if state.basic_state.events.play.command(util.skip_white(self.ins)):
+        if self.events.play.command(util.skip_white(self.ins)):
             self.ins.read(1)
             util.require(self.ins, tk.end_statement)
         else:
@@ -1749,7 +1751,7 @@ class Parser(object):
         state.basic_state.errn = 0
         state.basic_state.error_handle_mode = False
         state.basic_state.error_resume = None
-        state.basic_state.events.suspend_all = False
+        self.events.suspend_all = False
         if jumpnum == 0:
             # RESUME or RESUME 0
             self.set_pointer(runmode, start_statement)
@@ -2362,7 +2364,7 @@ class Parser(object):
             # in which case it's a key scancode definition
             if len(text) != 2:
                 raise error.RunError(error.IFC)
-            state.basic_state.events.key[keynum-1].set_trigger(str(text))
+            self.events.key[keynum-1].set_trigger(str(text))
 
     def exec_locate(self):
         """ LOCATE: Set cursor position, shape and visibility."""

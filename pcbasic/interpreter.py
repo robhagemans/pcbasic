@@ -116,8 +116,7 @@ class Session(object):
         self.set_parse_mode(False)
         # initialise the console
         console.init_mode()
-        # set up event handlers
-        state.basic_state.events = events.Events()
+
 
         # bytecode buffer is defined in memory.py
         # direct line buffer
@@ -339,9 +338,9 @@ class Session(object):
 
     def handle_basic_events(self):
         """ Jump to user-defined event subs if events triggered. """
-        if state.basic_state.events.suspend_all or not self.parser.run_mode:
+        if self.parser.events.suspend_all or not self.parser.run_mode:
             return
-        for event in state.basic_state.events.all:
+        for event in self.parser.events.all:
             if (event.enabled and event.triggered
                     and not event.stopped and event.gosub is not None):
                 # release trigger
@@ -366,7 +365,7 @@ class Session(object):
             state.basic_state.error_resume = self.parser.current_statement, self.parser.run_mode
             self.parser.jump(state.basic_state.on_error)
             state.basic_state.error_handle_mode = True
-            state.basic_state.events.suspend_all = True
+            self.parser.events.suspend_all = True
         else:
             raise e
 

@@ -37,7 +37,7 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     # Resets STRIG to off
     state.console_state.stick.switch(False)
     # disable all event trapping (resets PEN to OFF too)
-    state.basic_state.events.reset()
+    state.basic_state.parser.events.reset()
     # CLEAR also dumps for_next and while_wend stacks
     state.basic_state.parser.clear_loop_stacks()
     # reset sound and PLAY state
