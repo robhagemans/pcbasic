@@ -635,7 +635,7 @@ def get_basic_memory(addr):
 def set_basic_memory(addr, val):
     """ Change BASIC memory. """
     addr -= memory.data_segment*0x10
-    if addr == protection_flag_addr and not program.dont_protect:
+    if addr == protection_flag_addr and state.basic_state.session.program.allow_protect:
         state.basic_state.protected = (val != 0)
 
 key_buffer_offset = 30

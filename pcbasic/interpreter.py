@@ -133,8 +133,14 @@ class Session(object):
         self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
         state.basic_state.parser = self.parser
 
+        # program parameters
+        if not config.get('strict-hidden-lines'):
+            max_list_line = 65535
+        else:
+            max_list_line = 65530
+        allow_protect = config.get('strict-protect')
         # initialise the program
-        self.program = program.Program()
+        self.program = program.Program(max_list_line, allow_protect)
         # load initial program
         if load:
             # on load, accept capitalised versions and default extension

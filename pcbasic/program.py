@@ -15,28 +15,16 @@ import protect
 import util
 import console
 import state
-import flow
 import memory
 import logging
 # ensure initialisation of state_console_state.sound
 import sound
 
 
-# don't list or save,a beyond this line
-max_list_line = 65530
-# don't protect files
-dont_protect = False
-
 
 def prepare():
     """ Initialise program module. """
-    global max_list_line, dont_protect
     global program_memory_start
-    if (not config.get('strict-hidden-lines')) or config.get('convert'):
-        max_list_line = 65535
-    else:
-        max_list_line = 65530
-    dont_protect = (not config.get('strict-protect')) or config.get('convert')
     # program memory model; offsets in files (4718 == 0x126e)
     program_memory_start = memory.code_start + 1
 
@@ -44,9 +32,11 @@ def prepare():
 class Program(object):
     """ BASIC program. """
 
-    def __init__(self):
+    def __init__(self, max_list_line, allow_protect):
         """ Initialise program. """
         self.erase()
+        self.max_list_line = max_list_line
+        self.allow_protect = not allow_protect
 
     def erase(self):
         """ Erase the program from memory. """
@@ -310,7 +300,7 @@ class Program(object):
         elif g.filetype == 'P':
             # protected file
             state.basic_state.bytecode.seek(1)
-            state.basic_state.protected = not dont_protect
+            state.basic_state.protected = self.allow_protect
             protect.unprotect(g, state.basic_state.bytecode)
         elif g.filetype == 'A':
             # assume ASCII file
@@ -365,7 +355,7 @@ class Program(object):
             # ascii mode
             while True:
                 current_line, output, _ = tokenise.detokenise_line(state.basic_state.bytecode)
-                if current_line == -1 or (current_line > max_list_line):
+                if current_line == -1 or (current_line > self.max_list_line):
                     break
                 g.write_line(str(output))
         state.basic_state.bytecode.seek(current)
@@ -379,7 +369,7 @@ class Program(object):
         # however, 65530-65535 are executed if present in tokenised form.
         # in GW-BASIC, 65530 appears in LIST, 65531 and above are hidden
         if to_line is None:
-            to_line = max_list_line
+            to_line = self.max_list_line
         # sort by positions, not line numbers!
         listable = sorted([ state.basic_state.line_numbers[num]
                                 for num in state.basic_state.line_numbers
