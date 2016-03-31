@@ -21,14 +21,6 @@ import logging
 import sound
 
 
-
-def prepare():
-    """ Initialise program module. """
-    global program_memory_start
-    # program memory model; offsets in files (4718 == 0x126e)
-    program_memory_start = memory.code_start + 1
-
-
 class Program(object):
     """ BASIC program. """
 
@@ -36,7 +28,7 @@ class Program(object):
         """ Initialise program. """
         self.erase()
         self.max_list_line = max_list_line
-        self.allow_protect = not allow_protect
+        self.allow_protect = allow_protect
 
     def erase(self):
         """ Erase the program from memory. """
@@ -87,7 +79,7 @@ class Program(object):
         last = 0
         for pos in offsets:
             state.basic_state.bytecode.read(1)
-            state.basic_state.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(program_memory_start + pos))))
+            state.basic_state.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned((memory.code_start + 1) + pos))))
             state.basic_state.bytecode.read(pos - last - 3)
             last = pos
         # ensure program is properly sealed - last offset must be 00 00. keep, but ignore, anything after.
@@ -97,7 +89,7 @@ class Program(object):
         """ Update line number dictionary after deleting lines. """
         # subtract length of line we replaced
         length -= afterpos - pos
-        addr = program_memory_start + afterpos
+        addr = (memory.code_start + 1) + afterpos
         state.basic_state.bytecode.seek(afterpos + length + 1)  # pass \x00
         while True:
             next_addr = state.basic_state.bytecode.read(2)
@@ -153,7 +145,7 @@ class Program(object):
             state.basic_state.bytecode.write('\0' +
                 str(vartypes.integer_to_bytes(
                     vartypes.int_to_integer_unsigned(
-                        program_memory_start + pos + length))) + linebuf.read())
+                        (memory.code_start + 1) + pos + length))) + linebuf.read())
         # write back the remainder of the program
         self.truncate(rest)
         # update all next offsets by shifting them by the length of the added line
@@ -382,5 +374,3 @@ class Program(object):
         # return to direct mode
         state.basic_state.session.parser.set_pointer(False)
         return lines
-
-prepare()

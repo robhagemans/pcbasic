@@ -71,6 +71,7 @@ def prepare():
     # used by var.py
     field_mem_start = field_mem_base + field_mem_offset + file_header_size
     # data memory model: start of code section
+    # code_start+1: offsets in files (4718 == 0x126e)
     code_start = field_mem_base + (num_files+1) * field_mem_offset
     # BASIC stack (determined by CLEAR)
     # Initially, the stack space should be set to 512 bytes,
