@@ -187,8 +187,8 @@ def bluescreen(e):
                                          state.basic_state.bytecode.tell())
         console.write_line('\n')
     else:
-        state.basic_state.direct_line.seek(0)
-        console.write_line(str(tokenise.detokenise_compound_statement(state.basic_state.direct_line)[0])+'\n')
+        state.basic_state.session.direct_line.seek(0)
+        console.write_line(str(tokenise.detokenise_compound_statement(state.basic_state.session.direct_line)[0])+'\n')
     stack = traceback.extract_tb(exc_traceback)
     for s in stack[-4:]:
         stack_line = '{0}:{1}, {2}'.format(

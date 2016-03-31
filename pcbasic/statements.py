@@ -151,7 +151,7 @@ class Parser(object):
 
     def get_codestream(self):
         """ Get the current codestream. """
-        return state.basic_state.bytecode if state.basic_state.run_mode else state.basic_state.direct_line
+        return state.basic_state.bytecode if state.basic_state.run_mode else self.session.direct_line
 
     def jump(self, jumpnum, err=error.UNDEFINED_LINE_NUMBER):
         """ Execute jump for a GOTO or RUN instruction. """

@@ -13,6 +13,11 @@ import logging
 import time
 import threading
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 import plat
 import error
 import util
@@ -113,11 +118,10 @@ class Session(object):
         console.init_mode()
         # set up event handlers
         state.basic_state.events = events.Events()
-        # load initial program
-        if load:
-            # on load, accept capitalised versions and default extension
-            with disk.open_native_or_dos_filename(load) as progfile:
-                program.load(progfile)
+
+        # bytecode buffer is defined in memory.py
+        # direct line buffer
+        self.direct_line = StringIO()
 
         # find program for PCjr TERM command
         pcjr_term = config.get('pcjr-term')
@@ -128,7 +132,14 @@ class Session(object):
         # initialise the parser
         self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
         state.basic_state.parser = self.parser
+
+        # initialise the program
         program.erase_program()
+        # load initial program
+        if load:
+            # on load, accept capitalised versions and default extension
+            with disk.open_native_or_dos_filename(load) as progfile:
+                program.load(progfile)
 
         # set up interpreter and memory model state
         reset.clear()
@@ -261,12 +272,12 @@ class Session(object):
         """ Store a program line or schedule a command line for execution. """
         if not line:
             return True
-        state.basic_state.direct_line = tokenise.tokenise_line(line)
-        c = util.peek(state.basic_state.direct_line)
+        self.direct_line = tokenise.tokenise_line(line)
+        c = util.peek(self.direct_line)
         if c == '\0':
             # check for lines starting with numbers (6553 6) and empty lines
-            program.check_number_start(state.basic_state.direct_line)
-            program.store_line(state.basic_state.direct_line)
+            program.check_number_start(self.direct_line)
+            program.store_line(self.direct_line)
             reset.clear()
         elif c != '':
             # it is a command, go and execute
@@ -298,13 +309,13 @@ class Session(object):
             console.write(' ')
             line = bytearray(console.wait_screenline(from_start=True))
         # run or store it; don't clear lines or raise undefined line number
-        state.basic_state.direct_line = tokenise.tokenise_line(line)
-        c = util.peek(state.basic_state.direct_line)
+        self.direct_line = tokenise.tokenise_line(line)
+        c = util.peek(self.direct_line)
         if c == '\0':
             # check for lines starting with numbers (6553 6) and empty lines
-            empty, scanline = program.check_number_start(state.basic_state.direct_line)
+            empty, scanline = program.check_number_start(self.direct_line)
             if not empty:
-                program.store_line(state.basic_state.direct_line)
+                program.store_line(self.direct_line)
                 reset.clear()
             self.auto_linenum = scanline + self.auto_increment
         elif c != '':

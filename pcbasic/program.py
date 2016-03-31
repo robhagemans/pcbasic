@@ -22,15 +22,6 @@ import logging
 import sound
 
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
-# bytecode buffer is defined in memory.py
-# direct line buffer
-state.basic_state.direct_line = StringIO()
-
 # don't list or save,a beyond this line
 max_list_line = 65530
 # don't protect files
