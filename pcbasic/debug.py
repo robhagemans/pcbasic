@@ -226,7 +226,7 @@ def bluescreen(e):
     console.write_line('as much information as you can about what you were doing and how this happened.')
     console.write_line('Thank you!')
     state.console_state.screen.set_attr(7)
-    state.basic_state.session.set_pointer(False)
+    state.basic_state.session.parser.set_pointer(False)
 
 
 prepare()

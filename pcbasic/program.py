@@ -323,7 +323,7 @@ class Program(object):
         if delete_lines:
             # delete lines from existing code before merge (without MERGE, this is pointless)
             self.delete(*delete_lines)
-        action(self, g)
+        action(g)
         # don't close files!
         # RUN
         state.basic_state.session.parser.jump(jumpnum, err=error.IFC)
