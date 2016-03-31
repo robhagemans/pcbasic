@@ -220,12 +220,9 @@ class Session(object):
                     try:
                         # may raise Break
                         events.check_events()
-                        self.handle_basic_events()
                         # returns True if more statements to parse
                         if not self.parser.parse_statement():
                             self.parse_mode = False
-                    except error.RunError as e:
-                        self.trap_error(e)
                     except error.Break as e:
                         # ctrl-break stops foreground and background sound
                         state.console_state.sound.stop_all_sound()
@@ -334,46 +331,12 @@ class Session(object):
 
 
     ##############################################################################
-    # event and error handling
-
-    def handle_basic_events(self):
-        """ Jump to user-defined event subs if events triggered. """
-        if self.parser.events.suspend_all or not self.parser.run_mode:
-            return
-        for event in self.parser.events.all:
-            if (event.enabled and event.triggered
-                    and not event.stopped and event.gosub is not None):
-                # release trigger
-                event.triggered = False
-                # stop this event while handling it
-                event.stopped = True
-                # execute 'ON ... GOSUB' subroutine;
-                # attach handler to allow un-stopping event on RETURN
-                self.parser.jump_gosub(event.gosub, event)
-
-    def trap_error(self, e):
-        """ Handle a BASIC error through trapping. """
-        if e.pos is None:
-            if self.parser.run_mode:
-                e.pos = state.basic_state.bytecode.tell()-1
-            else:
-                e.pos = -1
-        state.basic_state.errn = e.err
-        state.basic_state.errp = e.pos
-        # don't jump if we're already busy handling an error
-        if self.parser.on_error is not None and self.parser.on_error != 0 and not self.parser.error_handle_mode:
-            self.parser.error_resume = self.parser.current_statement, self.parser.run_mode
-            self.parser.jump(self.parser.on_error)
-            self.parser.error_handle_mode = True
-            self.parser.events.suspend_all = True
-        else:
-            raise e
+    # error handling
 
     def handle_error(self, e):
         """ Handle a BASIC error through error message. """
         # not handled by ON ERROR, stop execution
         console.write_error_message(e.message, self.program.get_line_number(e.pos))
-        self.parser.error_handle_mode = False
         self.set_parse_mode(False)
         self.input_mode = False
         # special case: syntax error

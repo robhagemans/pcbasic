@@ -77,50 +77,53 @@ class Parser(object):
         """ Parse one statement at the current pointer in current codestream.
             Return False if stream has ended, True otherwise.
             """
-        self.ins = self.get_codestream()
-        self.current_statement = self.ins.tell()
-        c = util.skip_white(self.ins)
-        if c == '':
-            # stream has ended.
-            return False
-        # parse line number or : at start of statement
-        elif c == '\0':
-            # save position for error message
-            prepos = self.ins.tell()
-            self.ins.read(1)
-            # line number marker, new statement
-            linenum = util.parse_line_number(self.ins)
-            if linenum == -1:
-                if self.error_resume:
-                    # unfinished error handler: no RESUME (don't trap this)
-                    self.error_handle_mode = True
-                    # get line number right
-                    raise error.RunError(error.NO_RESUME, prepos-1)
-                # stream has ended
+        try:
+            self.handle_basic_events()
+            self.ins = self.get_codestream()
+            self.current_statement = self.ins.tell()
+            c = util.skip_white(self.ins)
+            if c == '':
+                # stream has ended.
                 return False
-            if self.tron:
-                console.write('[' + ('%i' % linenum) + ']')
-            debug.debug_step(linenum)
-        elif c == ':':
-            self.ins.read(1)
-        c = util.skip_white(self.ins)
-        # empty statement, return to parse next
-        if c in tk.end_statement:
-            return True
-        # implicit LET
-        elif c in string.ascii_letters:
-            self.exec_let()
-        # token
-        else:
-            self.ins.read(1)
-            if c in tk.twobyte:
-                c += self.ins.read(1)
-            # don't use try-block to avoid catching other KeyErrors in statement
-            if c not in self.statements:
-                raise error.RunError(error.STX)
-            self.statements[c](self)
+            # parse line number or : at start of statement
+            elif c == '\0':
+                # save position for error message
+                prepos = self.ins.tell()
+                self.ins.read(1)
+                # line number marker, new statement
+                linenum = util.parse_line_number(self.ins)
+                if linenum == -1:
+                    if self.error_resume:
+                        # unfinished error handler: no RESUME (don't trap this)
+                        self.error_handle_mode = True
+                        # get line number right
+                        raise error.RunError(error.NO_RESUME, prepos-1)
+                    # stream has ended
+                    return False
+                if self.tron:
+                    console.write('[' + ('%i' % linenum) + ']')
+                debug.debug_step(linenum)
+            elif c == ':':
+                self.ins.read(1)
+            c = util.skip_white(self.ins)
+            # empty statement, return to parse next
+            if c in tk.end_statement:
+                return True
+            # implicit LET
+            elif c in string.ascii_letters:
+                self.exec_let()
+            # token
+            else:
+                self.ins.read(1)
+                if c in tk.twobyte:
+                    c += self.ins.read(1)
+                # don't use try-block to avoid catching other KeyErrors in statement
+                if c not in self.statements:
+                    raise error.RunError(error.STX)
+                self.statements[c](self)
+        except error.RunError as e:
+            self.trap_error(e)
         return True
-
 
     #################################################################
 
@@ -147,6 +150,41 @@ class Parser(object):
         self.for_stack = []
         self.while_stack = []
 
+    #################################################################
+
+    def handle_basic_events(self):
+        """ Jump to user-defined event subs if events triggered. """
+        if self.events.suspend_all or not self.run_mode:
+            return
+        for event in self.events.all:
+            if (event.enabled and event.triggered
+                    and not event.stopped and event.gosub is not None):
+                # release trigger
+                event.triggered = False
+                # stop this event while handling it
+                event.stopped = True
+                # execute 'ON ... GOSUB' subroutine;
+                # attach handler to allow un-stopping event on RETURN
+                self.jump_gosub(event.gosub, event)
+
+    def trap_error(self, e):
+        """ Handle a BASIC error through trapping. """
+        if e.pos is None:
+            if self.run_mode:
+                e.pos = state.basic_state.bytecode.tell()-1
+            else:
+                e.pos = -1
+        state.basic_state.errn = e.err
+        state.basic_state.errp = e.pos
+        # don't jump if we're already busy handling an error
+        if self.on_error is not None and self.on_error != 0 and not self.error_handle_mode:
+            self.error_resume = self.current_statement, self.run_mode
+            self.jump(self.on_error)
+            self.error_handle_mode = True
+            self.events.suspend_all = True
+        else:
+            self.error_handle_mode = False
+            raise e
 
     #################################################################
 
