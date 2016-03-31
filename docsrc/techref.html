@@ -98,8 +98,8 @@
         <p>
             The printable ASCII characters in the range <code>20</code>&mdash;<code>7E</code>
             are used for string literals, comments, variable names,
-            and elements of statement syntax that are not keywords.
-            Keywords are represented by their <a href="#keywords">keyword tokens</a> and
+            and elements of statement syntax that are not reserved words.
+            Reserved words are represented by their <a href="#reserved-words">reserved word tokens</a> and
             numeric literals are represented by numeric token sequences.
         </p>
         <h5>Numeric token sequences</h5>
@@ -214,19 +214,26 @@
                 </tr>
             </table>
         </div>
-        <h5 id="keywords">Keyword tokens</h5>
+        <h5 id="reserved-words">Keyword tokens</h5>
         <p>
-            <dfn>Keywords</dfn> in PC-BASIC are reserved words, meaning that a variable or
-            array name cannot be identical to a keyword. Keywords are represented
+            Most keywords in PC-BASIC are <dfn>reserved words</dfn>. Reserved words are represented
             in a tokenised program by a single- or double-byte token. The complete list is below.
         </p>
         <p>
-            All function names and operators are keywords and all statements start with a keyword
+            All function names and operators are reserved words and all statements start with a reserved word
             (which in the case of <code>LET</code> is optional). However, the converse is not true:
-            not all keywords are statements or functions. For example, <code>TO</code> and <code>SPC(</code>
-            only occur as part of a statement syntax.
-            Furthermore, some words that form part of statement syntax are not keywords:
+            not all reserved words are statements, functions, or operators.
+            For example, <code>TO</code> and <code>SPC(</code> only occur as part of a statement syntax.
+            Furthermore, some keywords that form part of statement syntax are not reserved words:
             examples are <code>AS</code>, <code>BASE</code>, and <code>ACCESS</code>.
+        </p>
+        <p>
+            Keywords that are not reserved words are spelt out in full text in the tokenised source.
+        </p>
+        <p>
+            A variable or user-defined function name must not be identical to a reserved word. The list below
+            is an exhaustive list of reserved words that can be used to determine whether a
+            name is legal.
         </p>
         <ul class="compact10">
             <li><code>81</code> <code>END</code></li>
@@ -413,7 +420,7 @@
             <li><code>FFA5</code> <code>LOF</code></li>
         </ul>
         <p>
-            The following additional keywords are activated by the option
+            The following additional reserved words are activated by the option
             <code><a href="#--syntax">syntax</a>={pcjr|tandy}</code>.
         </p>
         <ul class="compact10">
@@ -421,7 +428,7 @@
             <li><code>FEA6</code> <code>TERM</code></li>
         </ul>
         <p>
-            The following additional keyword is activated by the <code><a href="#--debug">debug</a></code> option.
+            The following additional reserved word is activated by the <code><a href="#--debug">debug</a></code> option.
             It is specific to PC-BASIC and not present in GW-BASIC.
         </p>
         <ul class="compact10">
