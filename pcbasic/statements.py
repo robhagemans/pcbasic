@@ -880,8 +880,8 @@ class Parser(object):
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         util.require(self.ins, tk.end_statement, err=error.IFC)
         # throws back to direct mode
+        # jump to end of direct line so execution stops
         self.set_pointer(False)
-        state.basic_state.parse_mode = False
         state.console_state.screen.cursor.reset_visibility()
         # request edit prompt
         self.session.edit_prompt = (from_line, None)

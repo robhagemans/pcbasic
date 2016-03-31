@@ -1215,7 +1215,9 @@ class Cursor(object):
     def __init__(self, screen):
         """ Initialise the cursor. """
         self.screen = screen
-        # cursor visible in execute mode?
+        # are we in parse mode? invisible unless visible_run is True
+        self.default_visible = True
+        # cursor visible in parse mode? user override
         self.visible_run = False
         # cursor shape
         self.from_line = 0
@@ -1250,7 +1252,7 @@ class Cursor(object):
     def reset_visibility(self):
         """ Set cursor visibility to its default state. """
         # visible if in interactive mode, unless forced visible in text mode.
-        visible = (not state.basic_state.parse_mode)
+        visible = self.default_visible
         # in graphics mode, we can't force the cursor to be visible on execute.
         if self.screen.mode.is_text_mode:
             visible = visible or self.visible_run

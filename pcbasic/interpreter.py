@@ -104,8 +104,6 @@ class Session(object):
         self.auto_mode = False
         self.auto_linenum = 10
         self.auto_increment = 10
-        # interpreter is executing a command
-        state.basic_state.parse_mode = False
         # interpreter is waiting for INPUT or LINE INPUT
         self.input_mode = False
         # previous interpreter mode
@@ -114,6 +112,8 @@ class Session(object):
         self.edit_prompt = False
         # initialise the display
         display.init()
+        # interpreter is executing a command
+        self.set_parse_mode(False)
         # initialise the console
         console.init_mode()
         # set up event handlers
@@ -163,7 +163,7 @@ class Session(object):
         cassette.override()
         disk.override()
         # suppress double prompt
-        if not state.basic_state.parse_mode:
+        if not self.parse_mode:
             self.prompt = False
 
 
@@ -175,7 +175,7 @@ class Session(object):
         if run:
             # position the pointer at start of program and enter execute mode
             self.parser.jump(None)
-            state.basic_state.parse_mode = True
+            self.set_parse_mode(True)
             state.console_state.screen.cursor.reset_visibility()
         try:
             try:
@@ -210,15 +210,15 @@ class Session(object):
         """ Run read-eval-print loop until control returns to user after a command. """
         try:
             while True:
-                self.last_mode = state.basic_state.parse_mode, self.auto_mode
-                if state.basic_state.parse_mode:
+                self.last_mode = self.parse_mode, self.auto_mode
+                if self.parse_mode:
                     try:
                         # may raise Break
                         events.check_events()
                         self.handle_basic_events()
                         # returns True if more statements to parse
                         if not self.parser.parse_statement():
-                            state.basic_state.parse_mode = False
+                            self.parse_mode = False
                     except error.RunError as e:
                         self.trap_error(e)
                     except error.Break as e:
@@ -258,15 +258,20 @@ class Session(object):
                 raise
             debug.bluescreen(e)
 
+    def set_parse_mode(self, on):
+        """ Enter or exit parse mode. """
+        self.parse_mode = on
+        state.console_state.screen.cursor.default_visible = not on
+
     def switch_mode(self):
         """ Switch loop mode. """
         last_execute, last_auto = self.last_mode
-        if state.basic_state.parse_mode != last_execute:
+        if self.parse_mode != last_execute:
             # move pointer to the start of direct line (for both on and off!)
             self.parser.set_pointer(False, 0)
             state.console_state.screen.cursor.reset_visibility()
         return ((not self.auto_mode) and
-                (not state.basic_state.parse_mode) and last_execute)
+                (not self.parse_mode) and last_execute)
 
     def store_line(self, line):
         """ Store a program line or schedule a command line for execution. """
@@ -281,12 +286,12 @@ class Session(object):
             reset.clear()
         elif c != '':
             # it is a command, go and execute
-            state.basic_state.parse_mode = True
-        return not state.basic_state.parse_mode
+            self.set_parse_mode(True)
+        return not self.parse_mode
 
     def show_prompt(self):
         """ Show the Ok or EDIT prompt, unless suppressed. """
-        if state.basic_state.parse_mode:
+        if self.parse_mode:
             return
         if self.edit_prompt:
             linenum, tell = self.edit_prompt
@@ -320,7 +325,7 @@ class Session(object):
             self.auto_linenum = scanline + self.auto_increment
         elif c != '':
             # it is a command, go and execute
-            state.basic_state.parse_mode = True
+            self.set_parse_mode(True)
 
 
     ##############################################################################
@@ -364,7 +369,7 @@ class Session(object):
         # not handled by ON ERROR, stop execution
         console.write_error_message(e.message, program.get_line_number(e.pos))
         state.basic_state.error_handle_mode = False
-        state.basic_state.parse_mode = False
+        self.set_parse_mode(False)
         self.input_mode = False
         # special case: syntax error
         if e.err == error.STX:
@@ -385,5 +390,5 @@ class Session(object):
             pos = state.basic_state.bytecode.tell()
             self.parser.stop = pos
         console.write_error_message(e.message, program.get_line_number(pos))
-        state.basic_state.parse_mode = False
+        self.set_parse_mode(False)
         self.input_mode = False
