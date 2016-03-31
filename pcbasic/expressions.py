@@ -208,7 +208,7 @@ def _handle_math_error(e):
         math_error = error.DIVISION_BY_ZERO
     else:
         raise e
-    if state.basic_state.on_error:
+    if state.basic_state.session.parser.on_error:
         # also raises exception in error_handle_mode!
         # in that case, prints a normal error message
         raise error.RunError(math_error)

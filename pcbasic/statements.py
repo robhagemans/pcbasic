@@ -62,6 +62,16 @@ class Parser(object):
         #self.clear_stacks_and_pointers()
         # set up event handlers
         self.events = events.Events()
+        self.init_error_trapping()
+
+    def init_error_trapping(self):
+        """ Initialise error trapping. """
+        # True if error handling in progress
+        self.error_handle_mode = False
+        # statement pointer, run mode of error for RESUME
+        self.error_resume = None
+        # pointer to error trap
+        self.on_error = None
 
     def parse_statement(self):
         """ Parse one statement at the current pointer in current codestream.
@@ -81,9 +91,9 @@ class Parser(object):
             # line number marker, new statement
             linenum = util.parse_line_number(self.ins)
             if linenum == -1:
-                if state.basic_state.error_resume:
+                if self.error_resume:
                     # unfinished error handler: no RESUME (don't trap this)
-                    state.basic_state.error_handle_mode = True
+                    self.error_handle_mode = True
                     # get line number right
                     raise error.RunError(error.NO_RESUME, prepos-1)
                 # stream has ended
@@ -296,7 +306,7 @@ class Parser(object):
         self.clear_stacks_and_pointers()
         reset.clear()
         self.jump(None)
-        state.basic_state.error_handle_mode = False
+        self.error_handle_mode = False
         self.tron = False
 
 
@@ -1454,8 +1464,8 @@ class Parser(object):
         # jump to end of direct line so execution stops
         self.set_pointer(False)
         # avoid NO RESUME
-        state.basic_state.error_handle_mode = False
-        state.basic_state.error_resume = None
+        self.error_handle_mode = False
+        self.error_resume = None
         devices.close_files()
 
     def exec_stop(self):
@@ -1602,7 +1612,7 @@ class Parser(object):
         self.clear_stacks_and_pointers()
         reset.clear(close_files=close_files)
         self.jump(jumpnum)
-        state.basic_state.error_handle_mode = False
+        self.error_handle_mode = False
 
     def exec_if(self):
         """ IF: enter branching statement. """
@@ -1724,9 +1734,9 @@ class Parser(object):
         linenum = util.parse_jumpnum(self.ins)
         if linenum != 0 and linenum not in self.session.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
-        state.basic_state.on_error = linenum
+        self.on_error = linenum
         # ON ERROR GOTO 0 in error handler
-        if state.basic_state.on_error == 0 and state.basic_state.error_handle_mode:
+        if self.on_error == 0 and self.error_handle_mode:
             # re-raise the error so that execution stops
             raise error.RunError(state.basic_state.errn, state.basic_state.errp)
         # this will be caught by the trapping routine just set
@@ -1734,9 +1744,9 @@ class Parser(object):
 
     def exec_resume(self):
         """ RESUME: resume program flow after error-trap. """
-        if state.basic_state.error_resume is None:
+        if self.error_resume is None:
             # unset error handler
-            state.basic_state.on_error = 0
+            self.on_error = 0
             raise error.RunError(error.RESUME_WITHOUT_ERROR)
         c = util.skip_white(self.ins)
         if c == tk.NEXT:
@@ -1747,10 +1757,10 @@ class Parser(object):
         else:
             jumpnum = 0
         util.require(self.ins, tk.end_statement)
-        start_statement, runmode = state.basic_state.error_resume
+        start_statement, runmode = self.error_resume
         state.basic_state.errn = 0
-        state.basic_state.error_handle_mode = False
-        state.basic_state.error_resume = None
+        self.error_handle_mode = False
+        self.error_resume = None
         self.events.suspend_all = False
         if jumpnum == 0:
             # RESUME or RESUME 0

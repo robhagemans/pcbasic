@@ -361,10 +361,10 @@ class Session(object):
         state.basic_state.errn = e.err
         state.basic_state.errp = e.pos
         # don't jump if we're already busy handling an error
-        if state.basic_state.on_error is not None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
-            state.basic_state.error_resume = self.parser.current_statement, self.parser.run_mode
-            self.parser.jump(state.basic_state.on_error)
-            state.basic_state.error_handle_mode = True
+        if self.parser.on_error is not None and self.parser.on_error != 0 and not self.parser.error_handle_mode:
+            self.parser.error_resume = self.parser.current_statement, self.parser.run_mode
+            self.parser.jump(self.parser.on_error)
+            self.parser.error_handle_mode = True
             self.parser.events.suspend_all = True
         else:
             raise e
@@ -373,7 +373,7 @@ class Session(object):
         """ Handle a BASIC error through error message. """
         # not handled by ON ERROR, stop execution
         console.write_error_message(e.message, self.program.get_line_number(e.pos))
-        state.basic_state.error_handle_mode = False
+        self.parser.error_handle_mode = False
         self.set_parse_mode(False)
         self.input_mode = False
         # special case: syntax error

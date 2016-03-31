@@ -29,9 +29,7 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     # clear last error number (ERR) and line number (ERL)
     state.basic_state.errn, state.basic_state.errp = 0, 0
     # disable error trapping
-    state.basic_state.on_error = None
-    state.basic_state.error_resume = None
-    state.basic_state.error_handle_mode = False
+    state.basic_state.parser.init_error_trapping()
     # stop all sound
     state.console_state.sound.stop_all_sound()
     # Resets STRIG to off

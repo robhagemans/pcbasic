@@ -274,8 +274,8 @@ class Program(object):
         # reset loop stacks
         state.basic_state.session.parser.clear_stacks()
         # renumber error handler
-        if state.basic_state.on_error:
-            state.basic_state.on_error = old_to_new[state.basic_state.on_error]
+        if state.basic_state.session.parser.on_error:
+            state.basic_state.session.parser.on_error = old_to_new[state.basic_state.session.parser.on_error]
         # renumber event traps
         for handler in state.basic_state.session.parser.events.all:
             if handler.gosub:
