@@ -34,10 +34,9 @@ class Program(object):
         """ Erase the program from memory. """
         state.basic_state.bytecode.truncate(0)
         state.basic_state.bytecode.write('\0\0\0')
-        state.basic_state.protected = False
-        state.basic_state.line_numbers = { 65536: 0 }
-        state.basic_state.current_statement = 0
-        state.basic_state.last_stored = None
+        self.protected = False
+        self.line_numbers = { 65536: 0 }
+        self.last_stored = None
         # reset stacks
         state.basic_state.parser.clear_stacks_and_pointers()
 
@@ -50,15 +49,15 @@ class Program(object):
     def get_line_number(self, pos):
         """ Get line number for stream position. """
         pre = -1
-        for linum in state.basic_state.line_numbers:
-            linum_pos = state.basic_state.line_numbers[linum]
+        for linum in self.line_numbers:
+            linum_pos = self.line_numbers[linum]
             if linum_pos <= pos and linum > pre:
                 pre = linum
         return pre
 
     def rebuild_line_dict(self):
         """ Preparse to build line number dictionary. """
-        state.basic_state.line_numbers, offsets = {}, []
+        self.line_numbers, offsets = {}, []
         state.basic_state.bytecode.seek(0)
         scanline, scanpos, last = 0, 0, 0
         while True:
@@ -68,12 +67,12 @@ class Program(object):
                 scanline = 65536
                 # if parse_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A
                 break
-            state.basic_state.line_numbers[scanline] = scanpos
+            self.line_numbers[scanline] = scanpos
             last = scanpos
             util.skip_to(state.basic_state.bytecode, tk.end_line)
             scanpos = state.basic_state.bytecode.tell()
             offsets.append(scanpos)
-        state.basic_state.line_numbers[65536] = scanpos
+        self.line_numbers[65536] = scanpos
         # rebuild offsets
         state.basic_state.bytecode.seek(0)
         last = 0
@@ -102,9 +101,9 @@ class Program(object):
             addr = next_addr
         # update line number dict
         for key in deleteable:
-            del state.basic_state.line_numbers[key]
+            del self.line_numbers[key]
         for key in beyond:
-            state.basic_state.line_numbers[key] += length
+            self.line_numbers[key] += length
 
     def check_number_start(self, linebuf):
         """ Check if the given line buffer starts with a line number. """
@@ -121,7 +120,7 @@ class Program(object):
 
     def store_line(self, linebuf):
         """ Store the given line buffer. """
-        if state.basic_state.protected:
+        if self.protected:
             raise error.RunError(error.IFC)
         # get the new line number
         linebuf.seek(1)
@@ -151,27 +150,27 @@ class Program(object):
         # update all next offsets by shifting them by the length of the added line
         self.update_line_dict(pos, afterpos, length, deleteable, beyond)
         if not empty:
-            state.basic_state.line_numbers[scanline] = pos
+            self.line_numbers[scanline] = pos
         # clear all program stacks
         state.basic_state.parser.clear_stacks_and_pointers()
-        state.basic_state.last_stored = scanline
+        self.last_stored = scanline
 
     def find_pos_line_dict(self, fromline, toline):
         """ Find code positions for line range. """
-        deleteable = [ num for num in state.basic_state.line_numbers if num >= fromline and num <= toline ]
-        beyond = [num for num in state.basic_state.line_numbers if num > toline ]
+        deleteable = [ num for num in self.line_numbers if num >= fromline and num <= toline ]
+        beyond = [num for num in self.line_numbers if num > toline ]
         # find lowest number strictly above range
-        afterpos = state.basic_state.line_numbers[min(beyond)]
+        afterpos = self.line_numbers[min(beyond)]
         # find lowest number within range
         try:
-            startpos = state.basic_state.line_numbers[min(deleteable)]
+            startpos = self.line_numbers[min(deleteable)]
         except ValueError:
             startpos = afterpos
         return startpos, afterpos, deleteable, beyond
 
     def delete(self, fromline, toline):
         """ Delete range of lines from stored program. """
-        fromline = fromline if fromline is not None else min(state.basic_state.line_numbers)
+        fromline = fromline if fromline is not None else min(self.line_numbers)
         toline = toline if toline is not None else 65535
         startpos, afterpos, deleteable, beyond = self.find_pos_line_dict(fromline, toline)
         if not deleteable:
@@ -189,11 +188,11 @@ class Program(object):
 
     def edit(self, from_line, bytepos=None):
         """ Output program line to console and position cursor. """
-        if state.basic_state.protected:
+        if self.protected:
             console.write(str(from_line)+'\r')
             raise error.RunError(error.IFC)
         # list line
-        state.basic_state.bytecode.seek(state.basic_state.line_numbers[from_line]+1)
+        state.basic_state.bytecode.seek(self.line_numbers[from_line]+1)
         _, output, textpos = tokenise.detokenise_line(state.basic_state.bytecode, bytepos)
         # no newline to avoid scrolling on line 24
         console.list_line(str(output), newline=False)
@@ -222,7 +221,7 @@ class Program(object):
         start_line = 0 if start_line is None else start_line
         step = 10 if step is None else step
         # get a sorted list of line numbers
-        keys = sorted([ k for k in state.basic_state.line_numbers.keys() if k >= start_line])
+        keys = sorted([ k for k in self.line_numbers.keys() if k >= start_line])
         # assign the new numbers
         old_to_new = {}
         for old_line in keys:
@@ -231,11 +230,11 @@ class Program(object):
             if old_line == 65536:
                 break
             old_to_new[old_line] = new_line
-            state.basic_state.last_stored = new_line
+            self.last_stored = new_line
             new_line += step
         # write the new numbers
         for old_line in old_to_new:
-            state.basic_state.bytecode.seek(state.basic_state.line_numbers[old_line])
+            state.basic_state.bytecode.seek(self.line_numbers[old_line])
             # skip the \x00\xC0\xDE & overwrite line number
             state.basic_state.bytecode.read(3)
             state.basic_state.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(old_to_new[old_line]))))
@@ -258,7 +257,7 @@ class Program(object):
                 newjump = old_to_new[jumpnum]
             except KeyError:
                 # not redefined, exists in program?
-                if jumpnum not in state.basic_state.line_numbers:
+                if jumpnum not in self.line_numbers:
                     linum = self.get_line_number(ins.tell()-1)
                     console.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
                 newjump = jumpnum
@@ -267,9 +266,9 @@ class Program(object):
         # rebuild the line number dictionary
         new_lines = {}
         for old_line in old_to_new:
-            new_lines[old_to_new[old_line]] = state.basic_state.line_numbers[old_line]
-            del state.basic_state.line_numbers[old_line]
-        state.basic_state.line_numbers.update(new_lines)
+            new_lines[old_to_new[old_line]] = self.line_numbers[old_line]
+            del self.line_numbers[old_line]
+        self.line_numbers.update(new_lines)
         # stop running if we were
         state.basic_state.session.parser.set_pointer(False)
         # reset loop stacks
@@ -292,7 +291,7 @@ class Program(object):
         elif g.filetype == 'P':
             # protected file
             state.basic_state.bytecode.seek(1)
-            state.basic_state.protected = self.allow_protect
+            self.protected = self.allow_protect
             protect.unprotect(g, state.basic_state.bytecode)
         elif g.filetype == 'A':
             # assume ASCII file
@@ -332,7 +331,7 @@ class Program(object):
     def save(self, g):
         """ Save the program to stream g in (A)scii, (B)ytecode or (P)rotected mode. """
         mode = g.filetype
-        if state.basic_state.protected and mode != 'P':
+        if self.protected and mode != 'P':
             raise error.RunError(error.IFC)
         current = state.basic_state.bytecode.tell()
         # skip first \x00 in bytecode
@@ -354,7 +353,7 @@ class Program(object):
 
     def list_lines(self, from_line, to_line):
         """ List line range. """
-        if state.basic_state.protected:
+        if self.protected:
             # don't list protected files
             raise error.RunError(error.IFC)
         # 65529 is max insertable line number for GW-BASIC 3.23.
@@ -363,8 +362,8 @@ class Program(object):
         if to_line is None:
             to_line = self.max_list_line
         # sort by positions, not line numbers!
-        listable = sorted([ state.basic_state.line_numbers[num]
-                                for num in state.basic_state.line_numbers
+        listable = sorted([ self.line_numbers[num]
+                                for num in self.line_numbers
                                 if num >= from_line and num <= to_line ])
         lines = []
         for pos in listable:

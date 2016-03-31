@@ -629,14 +629,14 @@ def get_basic_memory(addr):
     elif addr == 0x35D:
         return (state.basic_state.var_current + state.basic_state.array_current) // 256
     elif addr == protection_flag_addr:
-        return state.basic_state.protected * 255
+        return state.basic_state.session.program.protected * 255
     return -1
 
 def set_basic_memory(addr, val):
     """ Change BASIC memory. """
     addr -= memory.data_segment*0x10
     if addr == protection_flag_addr and state.basic_state.session.program.allow_protect:
-        state.basic_state.protected = (val != 0)
+        state.basic_state.session.program.protected = (val != 0)
 
 key_buffer_offset = 30
 blink_enabled = True

@@ -108,7 +108,7 @@ def show_program():
     """ Write a marked-up hex dump of the program to the log. """
     code = state.basic_state.bytecode.getvalue()
     offset_val, p = 0, 0
-    for key in sorted(state.basic_state.line_numbers.keys())[1:]:
+    for key in sorted(state.basic_state.session.program.line_numbers.keys())[1:]:
         offset, linum = code[p+1:p+3], code[p+3:p+5]
         last_offset = offset_val
         offset_val = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(offset)) - (memory.code_start + 1)
@@ -116,9 +116,9 @@ def show_program():
         logging.debug(    (code[p:p+1].encode('hex') + ' ' +
                         offset.encode('hex') + ' (+%03d) ' +
                         code[p+3:p+5].encode('hex') + ' [%05d] ' +
-                        code[p+5:state.basic_state.line_numbers[key]].encode('hex')),
+                        code[p+5:state.basic_state.session.program.line_numbers[key]].encode('hex')),
                      offset_val - last_offset, linum_val )
-        p = state.basic_state.line_numbers[key]
+        p = state.basic_state.session.program.line_numbers[key]
     logging.debug(code[p:p+1].encode('hex') + ' ' +
                 code[p+1:p+3].encode('hex') + ' (ENDS) ' +
                 code[p+3:p+5].encode('hex') + ' ' + code[p+5:].encode('hex'))

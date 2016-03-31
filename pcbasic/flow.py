@@ -16,7 +16,7 @@ import basictoken as tk
 def restore(datanum=-1):
     """ Reset data pointer (RESTORE) """
     try:
-        state.basic_state.data_pos = 0 if datanum == -1 else state.basic_state.line_numbers[datanum]
+        state.basic_state.data_pos = 0 if datanum == -1 else state.basic_state.session.program.line_numbers[datanum]
     except KeyError:
         raise error.RunError(error.UNDEFINED_LINE_NUMBER)
 

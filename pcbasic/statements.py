@@ -59,13 +59,14 @@ class Parser(object):
         state.basic_state.run_mode = False
         # clear stacks
         #self.clear_stacks_and_pointers()
+        self.current_statement = 0
 
     def parse_statement(self):
         """ Parse one statement at the current pointer in current codestream.
             Return False if stream has ended, True otherwise.
             """
         self.ins = self.get_codestream()
-        state.basic_state.current_statement = self.ins.tell()
+        self.current_statement = self.ins.tell()
         c = util.skip_white(self.ins)
         if c == '':
             # stream has ended.
@@ -160,7 +161,7 @@ class Parser(object):
         else:
             try:
                 # jump to target
-                self.set_pointer(True, state.basic_state.line_numbers[jumpnum])
+                self.set_pointer(True, self.session.program.line_numbers[jumpnum])
             except KeyError:
                 raise error.RunError(err)
 
@@ -439,7 +440,7 @@ class Parser(object):
         jumpnum = util.parse_jumpnum(self.ins)
         if jumpnum == 0:
             jumpnum = None
-        elif jumpnum not in state.basic_state.line_numbers:
+        elif jumpnum not in self.session.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         util.require(self.ins, tk.end_statement)
         return num, jumpnum
@@ -604,7 +605,7 @@ class Parser(object):
     def exec_poke(self):
         """ POKE: write to a memory location. Limited implementation. """
         addr = vartypes.pass_int_unpack(expressions.parse_expression(self.ins), maxint=0xffff)
-        if state.basic_state.protected and not state.basic_state.run_mode:
+        if self.session.program.protected and not state.basic_state.run_mode:
             raise error.RunError(error.IFC)
         util.require_read(self.ins, (',',))
         val = vartypes.pass_int_unpack(expressions.parse_expression(self.ins))
@@ -633,7 +634,7 @@ class Parser(object):
 
     def exec_bload(self):
         """ BLOAD: load a file into a memory location. Limited implementation. """
-        if state.basic_state.protected and not state.basic_state.run_mode:
+        if self.session.program.protected and not state.basic_state.run_mode:
             raise error.RunError(error.IFC)
         with state.basic_state.strings:
             name = var.copy_str(vartypes.pass_string(expressions.parse_expression(self.ins)))
@@ -649,7 +650,7 @@ class Parser(object):
 
     def exec_bsave(self):
         """ BSAVE: save a block of memory to a file. Limited implementation. """
-        if state.basic_state.protected and not state.basic_state.run_mode:
+        if self.session.program.protected and not state.basic_state.run_mode:
             raise error.RunError(error.IFC)
         with state.basic_state.strings:
             name = var.copy_str(vartypes.pass_string(expressions.parse_expression(self.ins)))
@@ -854,7 +855,7 @@ class Parser(object):
         if c == tk.T_UINT:
             return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(self.ins.read(2)))
         elif c == '.':
-            return state.basic_state.last_stored
+            return self.session.program.last_stored
         else:
             if allow_empty:
                 self.ins.seek(-len(c), 1)
@@ -876,7 +877,7 @@ class Parser(object):
             # undefined line number
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         from_line = self._parse_jumpnum_or_dot(err=error.IFC)
-        if from_line is None or from_line not in state.basic_state.line_numbers:
+        if from_line is None or from_line not in self.session.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         util.require(self.ins, tk.end_statement, err=error.IFC)
         # throws back to direct mode
@@ -975,7 +976,7 @@ class Parser(object):
                     # CHAIN "file", , DELETE
                     delete_lines = self._parse_delete_clause()
         util.require(self.ins, tk.end_statement)
-        if state.basic_state.protected and action == self.session.program.merge:
+        if self.session.program.protected and action == self.session.program.merge:
                 raise error.RunError(error.IFC)
         with devices.open_file(0, name, filetype='ABP', mode='I') as f:
             self.session.program.chain(action, f, jumpnum, delete_lines)
@@ -992,7 +993,7 @@ class Parser(object):
             else:
                 to_line = from_line
             # to_line must be specified and must be an existing line number
-            if not to_line or to_line not in state.basic_state.line_numbers:
+            if not to_line or to_line not in self.session.program.line_numbers:
                 raise error.RunError(error.IFC)
             delete_lines = (from_line, to_line)
             # ignore rest if preceded by cmma
@@ -1029,9 +1030,10 @@ class Parser(object):
         """ NEW: clear program from memory. """
         self.tron = False
         # deletes the program currently in memory
-        self.session.program.erase_program()
+        self.session.program.erase()
         # and clears all variables
         reset.clear()
+        self.set_pointer(False)
 
     def exec_renum(self):
         """ RENUM: renumber program line numbers. """
@@ -1663,7 +1665,7 @@ class Parser(object):
         # WHILE condition is zero?
         if not fp.unpack(vartypes.pass_double(expressions.parse_expression(self.ins))).is_zero():
             # statement start is before WHILE token
-            state.basic_state.current_statement = whilepos-2
+            self.current_statement = whilepos-2
             util.require(self.ins, tk.end_statement)
         else:
             # ignore rest of line and jump to WEND
@@ -1718,7 +1720,7 @@ class Parser(object):
         """ ON ERROR: define error trapping routine. """
         util.require_read(self.ins, (tk.GOTO,))  # GOTO
         linenum = util.parse_jumpnum(self.ins)
-        if linenum != 0 and linenum not in state.basic_state.line_numbers:
+        if linenum != 0 and linenum not in self.session.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         state.basic_state.on_error = linenum
         # ON ERROR GOTO 0 in error handler
@@ -2049,7 +2051,7 @@ class Parser(object):
             readvar = self._parse_var_list()
             # move the program pointer to the start of the statement to ensure correct behaviour for CONT
             pos = self.ins.tell()
-            self.ins.seek(state.basic_state.current_statement)
+            self.ins.seek(self.current_statement)
             # read the input
             self.session.input_mode = True
             varlist = print_and_input.input_console(prompt, readvar, newline)

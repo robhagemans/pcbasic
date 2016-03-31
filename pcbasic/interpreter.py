@@ -311,7 +311,7 @@ class Session(object):
         """ Generate an AUTO line number and wait for input. """
         numstr = str(self.auto_linenum)
         console.write(numstr)
-        if self.auto_linenum in state.basic_state.line_numbers:
+        if self.auto_linenum in self.program.line_numbers:
             console.write('*')
             line = bytearray(console.wait_screenline(from_start=True))
             if line[:len(numstr)+1] == numstr+'*':
@@ -363,7 +363,7 @@ class Session(object):
         state.basic_state.errp = e.pos
         # don't jump if we're already busy handling an error
         if state.basic_state.on_error is not None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
-            state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
+            state.basic_state.error_resume = self.parser.current_statement, state.basic_state.run_mode
             self.parser.jump(state.basic_state.on_error)
             state.basic_state.error_handle_mode = True
             state.basic_state.events.suspend_all = True
