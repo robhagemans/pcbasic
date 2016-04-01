@@ -290,14 +290,14 @@ class Parser(object):
     def restore(self, datanum=-1):
         """ Reset data pointer (RESTORE) """
         try:
-            state.basic_state.data_pos = 0 if datanum == -1 else state.basic_state.session.program.line_numbers[datanum]
+            self.data_pos = 0 if datanum == -1 else self.session.program.line_numbers[datanum]
         except KeyError:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
 
     def read_entry(self):
         """ READ a unit of DATA. """
         current = state.basic_state.bytecode.tell()
-        state.basic_state.bytecode.seek(state.basic_state.data_pos)
+        state.basic_state.bytecode.seek(self.data_pos)
         if util.peek(state.basic_state.bytecode) in tk.end_statement:
             # initialise - find first DATA
             util.skip_to(state.basic_state.bytecode, ('\x84',))  # DATA
@@ -328,7 +328,7 @@ class Parser(object):
                 if c not in tk.whitespace:
                     vals += word
                     word = ''
-        state.basic_state.data_pos = state.basic_state.bytecode.tell()
+        self.data_pos = state.basic_state.bytecode.tell()
         state.basic_state.bytecode.seek(current)
         return vals
 
@@ -2104,7 +2104,7 @@ class Parser(object):
             entry = self.read_entry()
             if name[-1] == '$':
                 if self.ins == state.basic_state.bytecode:
-                    address = state.basic_state.data_pos + memory.code_start
+                    address = self.data_pos + memory.code_start
                 else:
                     address = None
                 value = state.basic_state.strings.store(entry, address)
@@ -2112,9 +2112,9 @@ class Parser(object):
                 value = representation.str_to_number(entry, allow_nonnum=False)
                 if value is None:
                     # set pointer for EDIT gadget to position in DATA statement
-                    state.basic_state.bytecode.seek(state.basic_state.data_pos)
+                    state.basic_state.bytecode.seek(self.data_pos)
                     # syntax error in DATA line (not type mismatch!) if can't convert to var type
-                    raise error.RunError(error.STX, state.basic_state.data_pos-1)
+                    raise error.RunError(error.STX, self.data_pos-1)
             var.set_variable(name, indices, value=value)
         util.require(self.ins, tk.end_statement)
 
