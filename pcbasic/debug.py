@@ -5,7 +5,6 @@ DEBUG statement and utilities
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
 from StringIO import StringIO
 import sys
 import traceback
@@ -20,6 +19,7 @@ import logging
 import state
 import vartypes
 import var
+
 import representation
 import expressions
 import tokenise
@@ -77,7 +77,7 @@ def debug_handle_exc(e):
 
 def dump_program():
     """ Hex dump the program to the log. """
-    logging.debug(state.basic_state.bytecode.getvalue().encode('hex'))
+    logging.debug(state.basic_state.session.program.bytecode.getvalue().encode('hex'))
 
 def dump_vars():
     """ Dump all variables to the log. """
@@ -106,7 +106,7 @@ def show_screen():
 
 def show_program():
     """ Write a marked-up hex dump of the program to the log. """
-    code = state.basic_state.bytecode.getvalue()
+    code = state.basic_state.session.program.bytecode.getvalue()
     offset_val, p = 0, 0
     for key in sorted(state.basic_state.session.program.line_numbers.keys())[1:]:
         offset, linum = code[p+1:p+3], code[p+3:p+5]
@@ -182,11 +182,11 @@ def bluescreen(e):
     console.write_line('EXCEPTION')
     state.console_state.screen.set_attr(15)
     if state.basic_state.session.parser.run_mode:
-        state.basic_state.bytecode.seek(-1, 1)
+        state.basic_state.session.program.bytecode.seek(-1, 1)
         state.basic_state.session.program.edit(
             state.basic_state.session.program.get_line_number(
-                        state.basic_state.bytecode.tell()),
-                        state.basic_state.bytecode.tell())
+                        state.basic_state.session.program.bytecode.tell()),
+                        state.basic_state.session.program.bytecode.tell())
         console.write_line('\n')
     else:
         state.basic_state.session.direct_line.seek(0)

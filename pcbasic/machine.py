@@ -422,7 +422,7 @@ def get_field_memory(address):
 def get_code_memory(address):
     """ Retrieve data from program code. """
     address -= memory.data_segment * 0x10 + memory.code_start
-    code = state.basic_state.bytecode.getvalue()
+    code = state.basic_state.session.program.bytecode.getvalue()
     try:
         return ord(code[address])
     except IndexError:
@@ -434,17 +434,17 @@ def set_code_memory(address, val):
         logging.warning('Ignored POKE into program code')
     else:
         address -= memory.data_segment * 0x10 + memory.code_start
-        loc = state.basic_state.bytecode.tell()
+        loc = state.basic_state.session.program.bytecode.tell()
         # move pointer to end
-        state.basic_state.bytecode.seek(0, 2)
-        if address > state.basic_state.bytecode.tell():
-            state.basic_state.bytecode.write('\0' *
-                        (address-state.basic_state.bytecode.tell()) + chr(val))
+        state.basic_state.session.program.bytecode.seek(0, 2)
+        if address > state.basic_state.session.program.bytecode.tell():
+            state.basic_state.session.program.bytecode.write('\0' *
+                        (address-state.basic_state.session.program.bytecode.tell()) + chr(val))
         else:
-            state.basic_state.bytecode.seek(address)
-            state.basic_state.bytecode.write(chr(val))
+            state.basic_state.session.program.bytecode.seek(address)
+            state.basic_state.session.program.bytecode.write(chr(val))
         # restore program pointer
-        state.basic_state.bytecode.seek(loc)
+        state.basic_state.session.program.bytecode.seek(loc)
         state.basic_state.session.program.rebuild_line_dict()
 
 def get_data_memory(address):

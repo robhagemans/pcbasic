@@ -6,6 +6,12 @@ Program buffer utilities
 This file is released under the GNU GPL version 3 or later.
 """
 
+import logging
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 import config
 import error
 import vartypes
@@ -16,33 +22,33 @@ import util
 import console
 import state
 import memory
-import logging
 # ensure initialisation of state_console_state.sound
 import sound
-
 
 class Program(object):
     """ BASIC program. """
 
     def __init__(self, max_list_line, allow_protect):
         """ Initialise program. """
+        # program bytecode buffer
+        self.bytecode = StringIO()
         self.erase()
         self.max_list_line = max_list_line
         self.allow_protect = allow_protect
 
     def erase(self):
         """ Erase the program from memory. """
-        state.basic_state.bytecode.truncate(0)
-        state.basic_state.bytecode.write('\0\0\0')
+        self.bytecode.truncate(0)
+        self.bytecode.write('\0\0\0')
         self.protected = False
         self.line_numbers = { 65536: 0 }
         self.last_stored = None
 
     def truncate(self, rest=''):
         """ Write bytecode and cut the program of beyond the current position. """
-        state.basic_state.bytecode.write(rest if rest else '\0\0\0')
+        self.bytecode.write(rest if rest else '\0\0\0')
         # cut off at current position
-        state.basic_state.bytecode.truncate()
+        self.bytecode.truncate()
 
     def get_line_number(self, pos):
         """ Get line number for stream position. """
@@ -56,46 +62,46 @@ class Program(object):
     def rebuild_line_dict(self):
         """ Preparse to build line number dictionary. """
         self.line_numbers, offsets = {}, []
-        state.basic_state.bytecode.seek(0)
+        self.bytecode.seek(0)
         scanline, scanpos, last = 0, 0, 0
         while True:
-            state.basic_state.bytecode.read(1) # pass \x00
-            scanline = util.parse_line_number(state.basic_state.bytecode)
+            self.bytecode.read(1) # pass \x00
+            scanline = util.parse_line_number(self.bytecode)
             if scanline == -1:
                 scanline = 65536
                 # if parse_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A
                 break
             self.line_numbers[scanline] = scanpos
             last = scanpos
-            util.skip_to(state.basic_state.bytecode, tk.end_line)
-            scanpos = state.basic_state.bytecode.tell()
+            util.skip_to(self.bytecode, tk.end_line)
+            scanpos = self.bytecode.tell()
             offsets.append(scanpos)
         self.line_numbers[65536] = scanpos
         # rebuild offsets
-        state.basic_state.bytecode.seek(0)
+        self.bytecode.seek(0)
         last = 0
         for pos in offsets:
-            state.basic_state.bytecode.read(1)
-            state.basic_state.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned((memory.code_start + 1) + pos))))
-            state.basic_state.bytecode.read(pos - last - 3)
+            self.bytecode.read(1)
+            self.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned((memory.code_start + 1) + pos))))
+            self.bytecode.read(pos - last - 3)
             last = pos
         # ensure program is properly sealed - last offset must be 00 00. keep, but ignore, anything after.
-        state.basic_state.bytecode.write('\0\0\0')
+        self.bytecode.write('\0\0\0')
 
     def update_line_dict(self, pos, afterpos, length, deleteable, beyond):
         """ Update line number dictionary after deleting lines. """
         # subtract length of line we replaced
         length -= afterpos - pos
         addr = (memory.code_start + 1) + afterpos
-        state.basic_state.bytecode.seek(afterpos + length + 1)  # pass \x00
+        self.bytecode.seek(afterpos + length + 1)  # pass \x00
         while True:
-            next_addr = state.basic_state.bytecode.read(2)
+            next_addr = self.bytecode.read(2)
             if len(next_addr) < 2 or next_addr == '\0\0':
                 break
             next_addr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(next_addr))
-            state.basic_state.bytecode.seek(-2, 1)
-            state.basic_state.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(next_addr + length))))
-            state.basic_state.bytecode.read(next_addr - addr - 2)
+            self.bytecode.seek(-2, 1)
+            self.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(next_addr + length))))
+            self.bytecode.read(next_addr - addr - 2)
             addr = next_addr
         # update line number dict
         for key in deleteable:
@@ -129,17 +135,17 @@ class Program(object):
         if empty and not deleteable:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         # read the remainder of the program into a buffer to be pasted back after the write
-        state.basic_state.bytecode.seek(afterpos)
-        rest = state.basic_state.bytecode.read()
+        self.bytecode.seek(afterpos)
+        rest = self.bytecode.read()
         # insert
-        state.basic_state.bytecode.seek(pos)
+        self.bytecode.seek(pos)
         # write the line buffer to the program buffer
         length = 0
         if not empty:
             # set offsets
             linebuf.seek(3) # pass \x00\xC0\xDE
             length = len(linebuf.getvalue())
-            state.basic_state.bytecode.write('\0' +
+            self.bytecode.write('\0' +
                 str(vartypes.integer_to_bytes(
                     vartypes.int_to_integer_unsigned(
                         (memory.code_start + 1) + pos + length))) + linebuf.read())
@@ -175,9 +181,9 @@ class Program(object):
             # no lines selected
             raise error.RunError(error.IFC)
         # do the delete
-        state.basic_state.bytecode.seek(afterpos)
-        rest = state.basic_state.bytecode.read()
-        state.basic_state.bytecode.seek(startpos)
+        self.bytecode.seek(afterpos)
+        rest = self.bytecode.read()
+        self.bytecode.seek(startpos)
         self.truncate(rest)
         # update line number dict
         self.update_line_dict(startpos, afterpos, 0, deleteable, beyond)
@@ -190,8 +196,8 @@ class Program(object):
             console.write(str(from_line)+'\r')
             raise error.RunError(error.IFC)
         # list line
-        state.basic_state.bytecode.seek(self.line_numbers[from_line]+1)
-        _, output, textpos = tokenise.detokenise_line(state.basic_state.bytecode, bytepos)
+        self.bytecode.seek(self.line_numbers[from_line]+1)
+        _, output, textpos = tokenise.detokenise_line(self.bytecode, bytepos)
         # no newline to avoid scrolling on line 24
         console.list_line(str(output), newline=False)
         # find row, column position for textpos
@@ -232,12 +238,12 @@ class Program(object):
             new_line += step
         # write the new numbers
         for old_line in old_to_new:
-            state.basic_state.bytecode.seek(self.line_numbers[old_line])
+            self.bytecode.seek(self.line_numbers[old_line])
             # skip the \x00\xC0\xDE & overwrite line number
-            state.basic_state.bytecode.read(3)
-            state.basic_state.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(old_to_new[old_line]))))
+            self.bytecode.read(3)
+            self.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(old_to_new[old_line]))))
         # write the indirect line numbers
-        ins = state.basic_state.bytecode
+        ins = self.bytecode
         ins.seek(0)
         while util.skip_to_read(ins, (tk.T_UINT,)) == tk.T_UINT:
             # get the old g number
@@ -284,13 +290,13 @@ class Program(object):
         self.erase()
         if g.filetype == 'B':
             # bytecode file
-            state.basic_state.bytecode.seek(1)
-            state.basic_state.bytecode.write(g.read())
+            self.bytecode.seek(1)
+            self.bytecode.write(g.read())
         elif g.filetype == 'P':
             # protected file
-            state.basic_state.bytecode.seek(1)
+            self.bytecode.seek(1)
             self.protected = self.allow_protect
-            protect.unprotect(g, state.basic_state.bytecode)
+            protect.unprotect(g, self.bytecode)
         elif g.filetype == 'A':
             # assume ASCII file
             # anything but numbers or whitespace: Direct Statement in File
@@ -331,23 +337,23 @@ class Program(object):
         mode = g.filetype
         if self.protected and mode != 'P':
             raise error.RunError(error.IFC)
-        current = state.basic_state.bytecode.tell()
+        current = self.bytecode.tell()
         # skip first \x00 in bytecode
-        state.basic_state.bytecode.seek(1)
+        self.bytecode.seek(1)
         if mode == 'B':
             # binary bytecode mode
-            g.write(state.basic_state.bytecode.read())
+            g.write(self.bytecode.read())
         elif mode == 'P':
             # protected mode
-            protect.protect(state.basic_state.bytecode, g)
+            protect.protect(self.bytecode, g)
         else:
             # ascii mode
             while True:
-                current_line, output, _ = tokenise.detokenise_line(state.basic_state.bytecode)
+                current_line, output, _ = tokenise.detokenise_line(self.bytecode)
                 if current_line == -1 or (current_line > self.max_list_line):
                     break
                 g.write_line(str(output))
-        state.basic_state.bytecode.seek(current)
+        self.bytecode.seek(current)
 
     def list_lines(self, from_line, to_line):
         """ List line range. """
@@ -365,8 +371,8 @@ class Program(object):
                                 if num >= from_line and num <= to_line ])
         lines = []
         for pos in listable:
-            state.basic_state.bytecode.seek(pos + 1)
-            _, line, _ = tokenise.detokenise_line(state.basic_state.bytecode)
+            self.bytecode.seek(pos + 1)
+            _, line, _ = tokenise.detokenise_line(self.bytecode)
             lines.append(str(line))
         # return to direct mode
         state.basic_state.session.parser.set_pointer(False)

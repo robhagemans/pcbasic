@@ -25,7 +25,6 @@ import vartypes
 import events
 import signals
 
-
 # base frequency for noise source
 base_freq = 3579545./1024.
 

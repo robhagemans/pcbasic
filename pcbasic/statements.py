@@ -55,6 +55,7 @@ class Parser(object):
         self.tron = False
         # pointer position: False for direct line, True for program
         self.run_mode = False
+        self.program_code = None
         self.current_statement = 0
         # clear stacks
         #self.clear_stacks_and_pointers()
@@ -77,6 +78,7 @@ class Parser(object):
             """
         try:
             self.handle_basic_events()
+            self.program_code = self.session.program.bytecode
             self.ins = self.get_codestream()
             self.current_statement = self.ins.tell()
             c = util.skip_white(self.ins)
@@ -132,7 +134,7 @@ class Parser(object):
         # reset loop stacks
         self.clear_stacks()
         # reset program pointer
-        state.basic_state.bytecode.seek(0)
+        self.program_code.seek(0)
         # reset stop/cont
         self.stop = None
         # reset data reader
@@ -169,7 +171,7 @@ class Parser(object):
         """ Handle a BASIC error through trapping. """
         if e.pos is None:
             if self.run_mode:
-                e.pos = state.basic_state.bytecode.tell()-1
+                e.pos = self.program_code.tell()-1
             else:
                 e.pos = -1
         state.basic_state.errn = e.err
@@ -200,7 +202,7 @@ class Parser(object):
 
     def get_codestream(self):
         """ Get the current codestream. """
-        return state.basic_state.bytecode if self.run_mode else self.session.direct_line
+        return self.program_code if self.run_mode else self.session.direct_line
 
     def jump(self, jumpnum, err=error.UNDEFINED_LINE_NUMBER):
         """ Execute jump for a GOTO or RUN instruction. """
@@ -296,30 +298,30 @@ class Parser(object):
 
     def read_entry(self):
         """ READ a unit of DATA. """
-        current = state.basic_state.bytecode.tell()
-        state.basic_state.bytecode.seek(self.data_pos)
-        if util.peek(state.basic_state.bytecode) in tk.end_statement:
+        current = self.program_code.tell()
+        self.program_code.seek(self.data_pos)
+        if util.peek(self.program_code) in tk.end_statement:
             # initialise - find first DATA
-            util.skip_to(state.basic_state.bytecode, ('\x84',))  # DATA
-        if state.basic_state.bytecode.read(1) not in ('\x84', ','):
+            util.skip_to(self.program_code, ('\x84',))  # DATA
+        if self.program_code.read(1) not in ('\x84', ','):
             raise error.RunError(error.OUT_OF_DATA)
         vals, word, literal = '', '', False
         while True:
             # read next char; omit leading whitespace
             if not literal and vals == '':
-                c = util.skip_white(state.basic_state.bytecode)
+                c = util.skip_white(self.program_code)
             else:
-                c = util.peek(state.basic_state.bytecode)
+                c = util.peek(self.program_code)
             # parse char
             if c == '' or (not literal and c == ',') or (c in tk.end_line or (not literal and c in tk.end_statement)):
                 break
             elif c == '"':
-                state.basic_state.bytecode.read(1)
+                self.program_code.read(1)
                 literal = not literal
                 if not literal:
-                    util.require(state.basic_state.bytecode, tk.end_statement + (',',))
+                    util.require(self.program_code, tk.end_statement + (',',))
             else:
-                state.basic_state.bytecode.read(1)
+                self.program_code.read(1)
                 if literal:
                     vals += c
                 else:
@@ -328,8 +330,8 @@ class Parser(object):
                 if c not in tk.whitespace:
                     vals += word
                     word = ''
-        self.data_pos = state.basic_state.bytecode.tell()
-        state.basic_state.bytecode.seek(current)
+        self.data_pos = self.program_code.tell()
+        self.program_code.seek(current)
         return vals
 
 
@@ -1112,7 +1114,7 @@ class Parser(object):
                 raise error.RunError(error.STX)
         with devices.open_file(0, name, filetype=mode, mode='O',
                                 seg=memory.data_segment, offset=memory.code_start,
-                                length=len(state.basic_state.bytecode.getvalue())-1
+                                length=len(self.program_code.getvalue())-1
                                 ) as f:
             self.session.program.save(f)
         util.require(self.ins, tk.end_statement)
@@ -1550,7 +1552,7 @@ class Parser(object):
     def exec_end(self):
         """ END: end program execution and return to interpreter. """
         util.require(self.ins, tk.end_statement)
-        self.stop = state.basic_state.bytecode.tell()
+        self.stop = self.program_code.tell()
         # jump to end of direct line so execution stops
         self.set_pointer(False)
         # avoid NO RESUME
@@ -2103,7 +2105,7 @@ class Parser(object):
         for name, indices in self._parse_var_list():
             entry = self.read_entry()
             if name[-1] == '$':
-                if self.ins == state.basic_state.bytecode:
+                if self.ins == self.program_code:
                     address = self.data_pos + memory.code_start
                 else:
                     address = None
@@ -2112,7 +2114,7 @@ class Parser(object):
                 value = representation.str_to_number(entry, allow_nonnum=False)
                 if value is None:
                     # set pointer for EDIT gadget to position in DATA statement
-                    state.basic_state.bytecode.seek(self.data_pos)
+                    self.program_code.seek(self.data_pos)
                     # syntax error in DATA line (not type mismatch!) if can't convert to var type
                     raise error.RunError(error.STX, self.data_pos-1)
             var.set_variable(name, indices, value=value)

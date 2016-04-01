@@ -14,9 +14,6 @@ import vartypes
 import state
 import memory
 
-def prepare():
-    """ Initialise the var module """
-    clear_variables()
 
 ###############################################################################
 # strings
@@ -462,8 +459,3 @@ def check_free_memory(size, err):
         collect_garbage()
         if fre() <= size:
             raise error.RunError(err)
-
-
-###############################################################################
-
-prepare()

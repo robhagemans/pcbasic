@@ -226,7 +226,7 @@ def parse_literal(ins):
     # string literal
     if d == '"':
         ins.read(1)
-        if ins == state.basic_state.bytecode:
+        if ins == state.basic_state.session.program.bytecode:
             address = ins.tell() + memory.code_start
         else:
             address = None

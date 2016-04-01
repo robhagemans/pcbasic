@@ -128,6 +128,7 @@ class Session(object):
         allow_protect = config.get('strict-protect')
         # initialise the program
         self.program = program.Program(max_list_line, allow_protect)
+        state.basic_state.program = self.program
         # load initial program
         if load:
             # on load, accept capitalised versions and default extension
@@ -353,7 +354,7 @@ class Session(object):
         # if we're in a program, save pointer
         pos = -1
         if self.parser.run_mode:
-            pos = state.basic_state.bytecode.tell()
+            pos = self.program.bytecode.tell()
             self.parser.stop = pos
         console.write_error_message(e.message, self.program.get_line_number(pos))
         self.set_parse_mode(False)

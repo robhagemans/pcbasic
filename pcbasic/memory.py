@@ -6,11 +6,6 @@ Model memory
 This file is released under the GNU GPL version 3 or later.
 """
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
 import config
 import state
 
@@ -49,9 +44,6 @@ ram_font_segment = 0xc000
 
 
 
-# program bytecode buffer
-state.basic_state.bytecode = StringIO()
-state.basic_state.bytecode.write('\0\0\0')
 
 def prepare():
     """ Initialise the memory module """
@@ -87,7 +79,7 @@ def prepare():
 
 def code_size():
     """ Size of code space """
-    return len(state.basic_state.bytecode.getvalue())
+    return len(state.basic_state.program.bytecode.getvalue())
 
 def var_start():
     """ Start of var space """
