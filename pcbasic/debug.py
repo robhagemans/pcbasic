@@ -81,7 +81,7 @@ def dump_program():
 
 def dump_vars():
     """ Dump all variables to the log. """
-    logging.debug(repr(state.basic_state.variables))
+    logging.debug(repr(state.basic_state.session.scalars.variables))
 
 def show_screen():
     """ Copy the screen buffer to the log. """

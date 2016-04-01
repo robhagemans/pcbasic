@@ -634,9 +634,9 @@ def value_fn(ins):
     # save existing vars
     varsave = {}
     for name in varnames:
-        if name in state.basic_state.variables:
+        if name in state.basic_state.session.scalars.variables:
             # copy the *value* - set_var is in-place it's safe for FOR loops
-            varsave[name] = state.basic_state.variables[name][:]
+            varsave[name] = state.basic_state.session.scalars.variables[name][:]
     # read variables
     if util.skip_white_read_if(ins, ('(',)):
         exprs = []
@@ -656,7 +656,7 @@ def value_fn(ins):
     # restore existing vars
     for name in varsave:
         # re-assign the stored value
-        state.basic_state.variables[name][:] = varsave[name]
+        state.basic_state.session.scalars.variables[name][:] = varsave[name]
     state.basic_state.user_function_parsing.remove(fnname)
     return vartypes.pass_type(fnname[-1], value)
 

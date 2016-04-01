@@ -476,7 +476,7 @@ def get_data_memory_var(address):
         offset = address - var_addr
         if offset >= vartypes.byte_size[the_var[-1]]:
             return -1
-        var_rep = state.basic_state.variables[the_var]
+        var_rep = state.basic_state.session.scalars.variables[the_var]
         return var_rep[offset]
     else:
         offset = address - name_addr
@@ -519,10 +519,10 @@ def get_data_memory_string(address):
     # find the variable we're in
     str_nearest = -1
     the_var = None
-    for name in state.basic_state.variables:
+    for name in state.basic_state.session.scalars.variables:
         if name[-1] != '$':
             continue
-        v = state.basic_state.variables[name]
+        v = state.basic_state.session.scalars.variables[name]
         str_try = state.basic_state.strings.address(v)
         if str_try <= address and str_try > str_nearest:
             str_nearest = str_try

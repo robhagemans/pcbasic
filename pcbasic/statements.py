@@ -250,7 +250,7 @@ class Parser(object):
         sgn = vartypes.integer_to_int_signed(op.number_sgn(step))
         self.for_stack.append(
             (forpos, nextpos, varname[-1],
-                state.basic_state.variables[varname],
+                self.session.scalars.variables[varname],
                 vartypes.number_unpack(stop), vartypes.number_unpack(step), sgn))
         ins.seek(nextpos)
 

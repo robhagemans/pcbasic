@@ -175,29 +175,29 @@ class Scalars(object):
             state.basic_state.var_memory[name] = (name_ptr, var_ptr)
         # don't change the value if just checking allocation
         if value is None:
-            if name in state.basic_state.variables:
+            if name in self.variables:
                 return
             else:
                 value = vartypes.null(type_char)
         # copy buffers
         try:
             # in-place copy is crucial for FOR
-            state.basic_state.variables[name][:] = value[1][:]
+            self.variables[name][:] = value[1][:]
         except KeyError:
             # copy into new buffer if not existing
-            state.basic_state.variables[name] = value[1][:]
+            self.variables[name] = value[1][:]
 
     def get(self, name):
         """ Retrieve the value of a scalar variable. """
         name = vartypes.complete_name(name)
         try:
-            return (name[-1], state.basic_state.variables[name])
+            return (name[-1], self.variables[name])
         except KeyError:
             return vartypes.null(name[-1])
 
     def clear(self):
         """ Clear scalar variables. """
-        state.basic_state.variables = {}
+        self.variables = {}
         state.basic_state.var_memory = {}
         state.basic_state.var_current = memory.var_start()
 
@@ -338,9 +338,9 @@ def swap(name1, index1, name2, index2):
     if name1[-1] != name2[-1]:
         # type mismatch
         raise error.RunError(error.TYPE_MISMATCH)
-    elif ((index1 == [] and name1 not in state.basic_state.variables) or
+    elif ((index1 == [] and name1 not in state.basic_state.session.scalars.variables) or
             (index1 != [] and name1 not in state.basic_state.arrays) or
-            (index2 == [] and name2 not in state.basic_state.variables) or
+            (index2 == [] and name2 not in state.basic_state.session.scalars.variables) or
             (index2 != [] and name2 not in state.basic_state.arrays)):
         # illegal function call
         raise error.RunError(error.IFC)
@@ -348,12 +348,12 @@ def swap(name1, index1, name2, index2):
     size = vartypes.byte_size[typechar]
     # get buffers (numeric representation or string pointer)
     if index1 == []:
-        p1, off1 = state.basic_state.variables[name1], 0
+        p1, off1 = state.basic_state.session.scalars.variables[name1], 0
     else:
         dimensions, p1, _ = state.basic_state.arrays[name1]
         off1 = index_array(index1, dimensions)*size
     if index2 == []:
-        p2, off2 = state.basic_state.variables[name2], 0
+        p2, off2 = state.basic_state.session.scalars.variables[name2], 0
     else:
         dimensions, p2, _ = state.basic_state.arrays[name2]
         off2 = index_array(index2, dimensions)*size
@@ -380,7 +380,7 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             common, common_arrays = {}, {}
             for varname in state.basic_state.common_names:
                 try:
-                    common[varname] = state.basic_state.variables[varname]
+                    common[varname] = state.basic_state.session.scalars.variables[varname]
                 except KeyError:
                     pass
             for varname in state.basic_state.common_array_names:
@@ -432,9 +432,9 @@ def collect_garbage():
     """ Collect garbage from string space. Compactify string storage. """
     string_list = []
     # copy all strings that are actually referenced
-    for name in state.basic_state.variables:
+    for name in state.basic_state.session.scalars.variables:
         if name[-1] == '$':
-            v = state.basic_state.variables[name]
+            v = state.basic_state.session.scalars.variables[name]
             try:
                 string_list.append((v, 0,
                         state.basic_state.strings.address(v),
