@@ -166,23 +166,23 @@ class Session(object):
         # release all disk buffers (FIELD)?
         disk.reset_fields()
         # clear last error number (ERR) and line number (ERL)
-        state.basic_state.errn, state.basic_state.errp = 0, 0
+        self.parser.error_num, self.parser.error_pos = 0, 0
         # disable error trapping
-        state.basic_state.parser.init_error_trapping()
+        self.parser.init_error_trapping()
         # stop all sound
         state.console_state.sound.stop_all_sound()
         # Resets STRIG to off
         state.console_state.stick.switch(False)
         # disable all event trapping (resets PEN to OFF too)
-        state.basic_state.parser.events.reset()
+        self.parser.events.reset()
         # CLEAR also dumps for_next and while_wend stacks
-        state.basic_state.parser.clear_loop_stacks()
+        self.parser.clear_loop_stacks()
         # reset sound and PLAY state
         state.console_state.sound.reset()
         # reset DRAW state (angle, scale) and current graphics position
         state.console_state.screen.drawing.reset()
         # reset the DATA pointer
-        state.basic_state.parser.restore()
+        self.parser.restore()
 
     def resume(self):
         """ Resume an interpreter session. """
@@ -371,7 +371,7 @@ class Session(object):
         # special case: syntax error
         if e.err == error.STX:
             # for some reason, err is reset to zero by GW-BASIC in this case.
-            state.basic_state.errn = 0
+            self.parser.error_num = 0
             if e.pos != -1:
                 # line edit gadget appears
                 self.edit_prompt = (self.program.get_line_number(e.pos), e.pos+1)

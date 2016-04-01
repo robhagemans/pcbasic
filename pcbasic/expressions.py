@@ -736,17 +736,17 @@ def value_play(ins):
 
 def value_erl(ins):
     """ ERL: get line number of last error. """
-    if state.basic_state.errp == 0:
+    if state.basic_state.session.parser.error_pos == 0:
         erl = 0
-    elif state.basic_state.errp == -1:
+    elif state.basic_state.session.parser.error_pos == -1:
         erl = 65535
     else:
-        erl = state.basic_state.session.program.get_line_number(state.basic_state.errp)
+        erl = state.basic_state.session.program.get_line_number(state.basic_state.session.parser.error_pos)
     return fp.pack(fp.Single.from_int(erl))
 
 def value_err(ins):
     """ ERR: get error code of last error. """
-    return vartypes.int_to_integer_signed(state.basic_state.errn)
+    return vartypes.int_to_integer_signed(state.basic_state.session.parser.error_num)
 
 #####################################################################
 # pen, stick and strig

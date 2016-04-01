@@ -61,6 +61,8 @@ class Parser(object):
         # set up event handlers
         self.events = events.Events()
         self.init_error_trapping()
+        self.error_num = 0
+        self.error_pos = 0
 
     def init_error_trapping(self):
         """ Initialise error trapping. """
@@ -173,8 +175,8 @@ class Parser(object):
                 e.pos = self.program_code.tell()-1
             else:
                 e.pos = -1
-        state.basic_state.errn = e.err
-        state.basic_state.errp = e.pos
+        self.error_num = e.err
+        self.error_pos = e.pos
         # don't jump if we're already busy handling an error
         if self.on_error is not None and self.on_error != 0 and not self.error_handle_mode:
             self.error_resume = self.current_statement, self.run_mode
@@ -1829,7 +1831,7 @@ class Parser(object):
         # ON ERROR GOTO 0 in error handler
         if self.on_error == 0 and self.error_handle_mode:
             # re-raise the error so that execution stops
-            raise error.RunError(state.basic_state.errn, state.basic_state.errp)
+            raise error.RunError(self.error_num, self.error_pos)
         # this will be caught by the trapping routine just set
         util.require(self.ins, tk.end_statement)
 
@@ -1849,7 +1851,7 @@ class Parser(object):
             jumpnum = 0
         util.require(self.ins, tk.end_statement)
         start_statement, runmode = self.error_resume
-        state.basic_state.errn = 0
+        self.error_num = 0
         self.error_handle_mode = False
         self.error_resume = None
         self.events.suspend_all = False
