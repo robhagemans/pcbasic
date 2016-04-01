@@ -647,7 +647,7 @@ def value_fn(ins):
         if len(exprs) != len(varnames):
             raise error.RunError(error.STX)
         for name, value in zip(varnames, exprs):
-            var.set_scalar(name, value)
+            state.basic_state.session.scalars.set(name, value)
         util.require_read(ins, (')',))
     # execute the code
     fns = StringIO(fncode)

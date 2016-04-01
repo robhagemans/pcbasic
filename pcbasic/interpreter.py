@@ -146,6 +146,9 @@ class Session(object):
         state.basic_state.parser = self.parser
 
         # set up interpreter and memory model state
+        self.scalars = var.Scalars()
+        state.basic_state.scalars = self.scalars
+
         self.clear()
         # greeting and keys
         if greet:

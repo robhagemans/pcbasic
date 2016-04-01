@@ -245,7 +245,7 @@ class Parser(object):
     def loop_init(self, ins, forpos, nextpos, varname, start, stop, step):
         """ Initialise a FOR loop. """
         # set start to start-step, then iterate - slower on init but allows for faster iterate
-        var.set_scalar(varname, op.number_add(start, op.number_neg(step)))
+        self.session.scalars.set(varname, op.number_add(start, op.number_neg(step)))
         # NOTE: all access to varname must be in-place into the bytearray - no assignments!
         sgn = vartypes.integer_to_int_signed(op.number_sgn(step))
         self.for_stack.append(
@@ -2244,10 +2244,10 @@ class Parser(object):
         pointer = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(pointer_loc))
         pointer += '\0'*(vartypes.byte_size[fntype]-2)
         # function name is represented with first char shifted by 128
-        var.set_scalar(chr(128+ord(fnname[0]))+fnname[1:], (fntype, bytearray(pointer)))
+        self.session.scalars.set(chr(128+ord(fnname[0]))+fnname[1:], (fntype, bytearray(pointer)))
         for name in fnvars:
             # allocate but don't set variables
-            var.set_scalar(name)
+            self.session.scalars.set(name)
 
 
     def exec_randomize(self):

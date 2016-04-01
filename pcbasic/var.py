@@ -103,6 +103,7 @@ def copy_str(basic_string):
         length = vartypes.string_length(basic_string)
         return '\0'*length
 
+
 def view_str(basic_string):
     """ Return a writeable view of a string from its string pointer. """
     length = vartypes.string_length(basic_string)
@@ -135,6 +136,7 @@ def set_str(basic_string, in_str, offset=None, num=None):
         view_str(basic_string)[offset:offset+num] = in_str
     return basic_string
 
+
 ###############################################################################
 # scalar variables
 
@@ -145,45 +147,59 @@ def var_size_bytes(name):
     except KeyError:
         raise error.RunError(error.IFC)
 
-def set_scalar(name, value=None):
-    """ Assign a value to a variable. """
-    name = vartypes.complete_name(name)
-    type_char = name[-1]
-    if value is not None:
-        value = vartypes.pass_type(type_char, value)
-    # update memory model
-    # check if garbage needs collecting before allocating memory
-    if name not in state.basic_state.var_memory:
-        # don't add string length, string already stored
-        size = (max(3, len(name)) + 1 + vartypes.byte_size[type_char])
-        check_free_memory(size, error.OUT_OF_MEMORY)
-        # first two bytes: chars of name or 0 if name is one byte long
-        name_ptr = state.basic_state.var_current
-        # byte_size first_letter second_letter_or_nul remaining_length_or_nul
-        var_ptr = name_ptr + max(3, len(name)) + 1
-        state.basic_state.var_current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
-        state.basic_state.var_memory[name] = (name_ptr, var_ptr)
-    # don't change the value if just checking allocation
-    if value is None:
-        if name in state.basic_state.variables:
-            return
-        else:
-            value = vartypes.null(type_char)
-    # copy buffers
-    try:
-        # in-place copy is crucial for FOR
-        state.basic_state.variables[name][:] = value[1][:]
-    except KeyError:
-        # copy into new buffer if not existing
-        state.basic_state.variables[name] = value[1][:]
 
-def get_scalar(name):
-    """ Retrieve the value of a scalar variable. """
-    name = vartypes.complete_name(name)
-    try:
-        return (name[-1], state.basic_state.variables[name])
-    except KeyError:
-        return vartypes.null(name[-1])
+class Scalars(object):
+    """ Scalar variables. """
+
+    def __init__(self):
+        """ Initialise scalars. """
+        self.clear()
+
+    def set(self, name, value=None):
+        """ Assign a value to a variable. """
+        name = vartypes.complete_name(name)
+        type_char = name[-1]
+        if value is not None:
+            value = vartypes.pass_type(type_char, value)
+        # update memory model
+        # check if garbage needs collecting before allocating memory
+        if name not in state.basic_state.var_memory:
+            # don't add string length, string already stored
+            size = (max(3, len(name)) + 1 + vartypes.byte_size[type_char])
+            check_free_memory(size, error.OUT_OF_MEMORY)
+            # first two bytes: chars of name or 0 if name is one byte long
+            name_ptr = state.basic_state.var_current
+            # byte_size first_letter second_letter_or_nul remaining_length_or_nul
+            var_ptr = name_ptr + max(3, len(name)) + 1
+            state.basic_state.var_current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
+            state.basic_state.var_memory[name] = (name_ptr, var_ptr)
+        # don't change the value if just checking allocation
+        if value is None:
+            if name in state.basic_state.variables:
+                return
+            else:
+                value = vartypes.null(type_char)
+        # copy buffers
+        try:
+            # in-place copy is crucial for FOR
+            state.basic_state.variables[name][:] = value[1][:]
+        except KeyError:
+            # copy into new buffer if not existing
+            state.basic_state.variables[name] = value[1][:]
+
+    def get(self, name):
+        """ Retrieve the value of a scalar variable. """
+        name = vartypes.complete_name(name)
+        try:
+            return (name[-1], state.basic_state.variables[name])
+        except KeyError:
+            return vartypes.null(name[-1])
+
+    def clear(self):
+        """ Clear scalar variables. """
+        state.basic_state.variables = {}
+        state.basic_state.var_memory = {}
+        state.basic_state.var_current = memory.var_start()
 
 
 ###############################################################################
@@ -305,7 +321,7 @@ def set_array(name, index, value):
 def get_variable(name, indices):
     """ Retrieve the value of a scalar variable or an array element. """
     if indices == []:
-        return get_scalar(name)
+        return state.basic_state.session.scalars.get(name)
     else:
         # array is allocated if retrieved and nonexistant
         return get_array(name, indices)
@@ -313,7 +329,7 @@ def get_variable(name, indices):
 def set_variable(name, indices, value):
     """ Assign a value to a scalar variable or an array element. """
     if indices == []:
-        set_scalar(name, value)
+        return state.basic_state.session.scalars.set(name, value)
     else:
         set_array(name, indices, value)
 
@@ -382,11 +398,9 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             state.basic_state.common_array_names = []
         # restore only common variables
         # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
-        state.basic_state.variables = {}
+        state.basic_state.scalars.clear()
         state.basic_state.arrays = {}
-        state.basic_state.var_memory = {}
         state.basic_state.array_memory = {}
-        state.basic_state.var_current = memory.var_start()
         # arrays are always kept after all vars
         state.basic_state.array_current = 0
         # functions are cleared except when CHAIN ... ALL is specified
@@ -399,7 +413,7 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             full_var = (v[-1], common[v])
             if v[-1] == '$':
                 full_var = new_strings.store(copy_str(full_var))
-            set_scalar(v, full_var)
+            state.basic_state.scalars.set(v, full_var)
         for a in common_arrays:
             dim_array(a, common_arrays[a][0])
             if a[-1] == '$':

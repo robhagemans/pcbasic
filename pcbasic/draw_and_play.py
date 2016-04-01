@@ -27,7 +27,7 @@ def get_value_for_varptrstr(varptrstr):
     varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
     for name, data in state.basic_state.var_memory.iteritems():
         if data[1] == varptr:
-            return var.get_scalar(name)
+            return state.basic_state.session.scalars.get(name)
     # no scalar found, try arrays
     found_addr = -1
     found_name = None
