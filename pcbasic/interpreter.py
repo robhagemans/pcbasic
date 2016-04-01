@@ -32,7 +32,6 @@ import events
 # prepare input state
 import inputs
 import reset
-import flow
 import debug
 import config
 import devices
@@ -121,17 +120,6 @@ class Session(object):
         # bytecode buffer is defined in memory.py
         # direct line buffer
         self.direct_line = StringIO()
-
-        # find program for PCjr TERM command
-        pcjr_term = config.get('pcjr-term')
-        if pcjr_term and not os.path.exists(pcjr_term):
-            pcjr_term = os.path.join(plat.info_dir, pcjr_term)
-        if not os.path.exists(pcjr_term):
-            pcjr_term = ''
-        # initialise the parser
-        self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
-        state.basic_state.parser = self.parser
-
         # program parameters
         if not config.get('strict-hidden-lines'):
             max_list_line = 65535
@@ -145,6 +133,16 @@ class Session(object):
             # on load, accept capitalised versions and default extension
             with disk.open_native_or_dos_filename(load) as progfile:
                 self.program.load(progfile)
+
+        # find program for PCjr TERM command
+        pcjr_term = config.get('pcjr-term')
+        if pcjr_term and not os.path.exists(pcjr_term):
+            pcjr_term = os.path.join(plat.info_dir, pcjr_term)
+        if not os.path.exists(pcjr_term):
+            pcjr_term = ''
+        # initialise the parser
+        self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
+        state.basic_state.parser = self.parser
 
         # set up interpreter and memory model state
         reset.clear()

@@ -21,7 +21,6 @@ import disk
 import error
 import events
 import expressions
-import flow
 import fp
 import devices
 import machine
@@ -41,7 +40,6 @@ import basictoken as tk
 import util
 import var
 import vartypes
-
 
 class Parser(object):
     """ Statement parser. """
@@ -138,7 +136,7 @@ class Parser(object):
         # reset stop/cont
         self.stop = None
         # reset data reader
-        flow.restore()
+        self.restore()
 
     def clear_stacks(self):
         """ Clear loop and jump stacks. """
@@ -287,6 +285,55 @@ class Parser(object):
         return not loop_ends
 
     #################################################################
+    # DATA utilities
+
+    def restore(self, datanum=-1):
+        """ Reset data pointer (RESTORE) """
+        try:
+            state.basic_state.data_pos = 0 if datanum == -1 else state.basic_state.session.program.line_numbers[datanum]
+        except KeyError:
+            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
+
+    def read_entry(self):
+        """ READ a unit of DATA. """
+        current = state.basic_state.bytecode.tell()
+        state.basic_state.bytecode.seek(state.basic_state.data_pos)
+        if util.peek(state.basic_state.bytecode) in tk.end_statement:
+            # initialise - find first DATA
+            util.skip_to(state.basic_state.bytecode, ('\x84',))  # DATA
+        if state.basic_state.bytecode.read(1) not in ('\x84', ','):
+            raise error.RunError(error.OUT_OF_DATA)
+        vals, word, literal = '', '', False
+        while True:
+            # read next char; omit leading whitespace
+            if not literal and vals == '':
+                c = util.skip_white(state.basic_state.bytecode)
+            else:
+                c = util.peek(state.basic_state.bytecode)
+            # parse char
+            if c == '' or (not literal and c == ',') or (c in tk.end_line or (not literal and c in tk.end_statement)):
+                break
+            elif c == '"':
+                state.basic_state.bytecode.read(1)
+                literal = not literal
+                if not literal:
+                    util.require(state.basic_state.bytecode, tk.end_statement + (',',))
+            else:
+                state.basic_state.bytecode.read(1)
+                if literal:
+                    vals += c
+                else:
+                    word += c
+                # omit trailing whitespace
+                if c not in tk.whitespace:
+                    vals += word
+                    word = ''
+        state.basic_state.data_pos = state.basic_state.bytecode.tell()
+        state.basic_state.bytecode.seek(current)
+        return vals
+
+
+    #################################################################
 
     def exec_system(self):
         """ SYSTEM: exit interpreter. """
@@ -319,7 +366,7 @@ class Parser(object):
 
     def exec_motor(self):
         """ MOTOR: do nothing but check for syntax errors. """
-        self.exec_lcopy(self.ins)
+        self.exec_lcopy()
 
     def exec_debug(self):
         """ DEBUG: execute Python command. """
@@ -991,6 +1038,9 @@ class Parser(object):
         util.require(self.ins, tk.end_statement)
         with devices.open_file(0, name, filetype='ABP', mode='I') as f:
             self.session.program.load(f)
+        # reset stacks
+        self.clear_stacks_and_pointers()
+        # clear variables
         reset.clear()
         if comma:
             # in ,R mode, don't close files; run the program
@@ -1081,6 +1131,8 @@ class Parser(object):
         self.tron = False
         # deletes the program currently in memory
         self.session.program.erase()
+        # reset stacks
+        self.clear_stacks_and_pointers()
         # and clears all variables
         reset.clear()
         self.set_pointer(False)
@@ -2049,7 +2101,7 @@ class Parser(object):
         """ READ: read values from DATA statement. """
         # reading loop
         for name, indices in self._parse_var_list():
-            entry = flow.read_entry()
+            entry = self.read_entry()
             if name[-1] == '$':
                 if self.ins == state.basic_state.bytecode:
                     address = state.basic_state.data_pos + memory.code_start
@@ -2145,7 +2197,7 @@ class Parser(object):
             datanum = -1
         # undefined line number for all syntax errors
         util.require(self.ins, tk.end_statement, err=error.UNDEFINED_LINE_NUMBER)
-        flow.restore(datanum)
+        self.restore(datanum)
 
     def exec_swap(self):
         """ SWAP: swap values of two variables. """

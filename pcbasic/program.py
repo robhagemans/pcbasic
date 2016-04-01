@@ -37,8 +37,6 @@ class Program(object):
         self.protected = False
         self.line_numbers = { 65536: 0 }
         self.last_stored = None
-        # reset stacks
-        state.basic_state.parser.clear_stacks_and_pointers()
 
     def truncate(self, rest=''):
         """ Write bytecode and cut the program of beyond the current position. """
