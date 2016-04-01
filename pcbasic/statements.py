@@ -30,7 +30,6 @@ import ports
 import print_and_input
 import program
 import representation
-import reset
 import rnd
 import shell
 import sound
@@ -391,7 +390,7 @@ class Parser(object):
             # on Tandy, raises Internal Error
             raise error.RunError(error.INTERNAL_ERROR)
         self.clear_stacks_and_pointers()
-        reset.clear()
+        self.session.clear()
         self.jump(None)
         self.error_handle_mode = False
         self.tron = False
@@ -968,7 +967,7 @@ class Parser(object):
         # throws back to direct mode
         self.session.program.delete(from_line, to_line)
         # clear all variables
-        reset.clear()
+        self.session.clear()
 
     def exec_edit(self):
         """ EDIT: output a program line and position cursor for editing. """
@@ -1043,7 +1042,7 @@ class Parser(object):
         # reset stacks
         self.clear_stacks_and_pointers()
         # clear variables
-        reset.clear()
+        self.session.clear()
         if comma:
             # in ,R mode, don't close files; run the program
             self.jump(None)
@@ -1083,7 +1082,7 @@ class Parser(object):
         with devices.open_file(0, name, filetype='ABP', mode='I') as f:
             self.session.program.chain(action, f, jumpnum, delete_lines)
         # preserve DEFtype on MERGE
-        reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==self.session.program.merge))
+        self.session.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==self.session.program.merge))
 
     def _parse_delete_clause(self):
         """ Helper function: parse the DELETE clause of a CHAIN statement. """
@@ -1136,7 +1135,7 @@ class Parser(object):
         # reset stacks
         self.clear_stacks_and_pointers()
         # and clears all variables
-        reset.clear()
+        self.session.clear()
         self.set_pointer(False)
 
     def exec_renum(self):
@@ -1702,7 +1701,7 @@ class Parser(object):
             with devices.open_file(0, name, filetype='ABP', mode='I') as f:
                 self.session.program.load(f)
         self.clear_stacks_and_pointers()
-        reset.clear(close_files=close_files)
+        self.session.clear(close_files=close_files)
         self.jump(jumpnum)
         self.error_handle_mode = False
 
@@ -1943,7 +1942,7 @@ class Parser(object):
                 elif not exp2:
                     raise error.RunError(error.STX)
         util.require(self.ins, tk.end_statement)
-        reset.clear()
+        self.session.clear()
 
     def exec_common(self):
         """ COMMON: define variables to be preserved on CHAIN. """

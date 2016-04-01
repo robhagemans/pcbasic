@@ -31,13 +31,13 @@ import state
 import events
 # prepare input state
 import inputs
-import reset
 import debug
 import config
 import devices
 import cassette
 import disk
 import var
+import rnd
 
 
 class SessionLauncher(object):
@@ -146,13 +146,43 @@ class Session(object):
         state.basic_state.parser = self.parser
 
         # set up interpreter and memory model state
-        reset.clear()
+        self.clear()
         # greeting and keys
         if greet:
             console.clear()
             console.write_line(greeting.format(version=plat.version, free=var.fre()))
             console.show_keys(True)
 
+    def clear(self, close_files=False, preserve_common=False, preserve_all=False, preserve_deftype=False):
+        """ Execute a CLEAR command. """
+        #   Resets the stack and string space
+        #   Clears all COMMON and user variables
+        var.clear_variables(preserve_common, preserve_all, preserve_deftype)
+        # reset random number generator
+        rnd.clear()
+        if close_files:
+            # close all files
+            devices.close_files()
+        # release all disk buffers (FIELD)?
+        disk.reset_fields()
+        # clear last error number (ERR) and line number (ERL)
+        state.basic_state.errn, state.basic_state.errp = 0, 0
+        # disable error trapping
+        state.basic_state.parser.init_error_trapping()
+        # stop all sound
+        state.console_state.sound.stop_all_sound()
+        # Resets STRIG to off
+        state.console_state.stick.switch(False)
+        # disable all event trapping (resets PEN to OFF too)
+        state.basic_state.parser.events.reset()
+        # CLEAR also dumps for_next and while_wend stacks
+        state.basic_state.parser.clear_loop_stacks()
+        # reset sound and PLAY state
+        state.console_state.sound.reset()
+        # reset DRAW state (angle, scale) and current graphics position
+        state.console_state.screen.drawing.reset()
+        # reset the DATA pointer
+        state.basic_state.parser.restore()
 
     def resume(self):
         """ Resume an interpreter session. """
@@ -284,7 +314,7 @@ class Session(object):
             # check for lines starting with numbers (6553 6) and empty lines
             self.program.check_number_start(self.direct_line)
             self.program.store_line(self.direct_line)
-            reset.clear()
+            self.clear()
         elif c != '':
             # it is a command, go and execute
             self.set_parse_mode(True)
@@ -322,7 +352,7 @@ class Session(object):
             empty, scanline = self.program.check_number_start(self.direct_line)
             if not empty:
                 self.program.store_line(self.direct_line)
-                reset.clear()
+                self.clear()
             self.auto_linenum = scanline + self.auto_increment
         elif c != '':
             # it is a command, go and execute
