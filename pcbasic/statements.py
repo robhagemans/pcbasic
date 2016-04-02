@@ -127,8 +127,21 @@ class Parser(object):
 
     #################################################################
 
+    def clear(self):
+        """ Clear all to be cleared for CLEAR statement. """
+        # clear last error number (ERR) and line number (ERL)
+        self.error_num, self.error_pos = 0, 0
+        # disable error trapping
+        self.init_error_trapping()
+        # disable all event trapping (resets PEN to OFF too)
+        self.events.reset()
+        # CLEAR also dumps for_next and while_wend stacks
+        self.clear_loop_stacks()
+        # reset the DATA pointer
+        self.restore()
+
     def clear_stacks_and_pointers(self):
-        """ Initialise the stacks and pointers for a new self.session.program. """
+        """ Initialise the stacks and pointers for a new program. """
         # stop running if we were
         self.set_pointer(False)
         # reset loop stacks

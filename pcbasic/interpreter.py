@@ -181,24 +181,16 @@ class Session(object):
             devices.close_files()
         # release all disk buffers (FIELD)?
         disk.reset_fields()
-        # clear last error number (ERR) and line number (ERL)
-        self.parser.error_num, self.parser.error_pos = 0, 0
-        # disable error trapping
-        self.parser.init_error_trapping()
         # stop all sound
         state.console_state.sound.stop_all_sound()
         # Resets STRIG to off
         state.console_state.stick.switch(False)
-        # disable all event trapping (resets PEN to OFF too)
-        self.parser.events.reset()
-        # CLEAR also dumps for_next and while_wend stacks
-        self.parser.clear_loop_stacks()
         # reset sound and PLAY state
         state.console_state.sound.reset()
         # reset DRAW state (angle, scale) and current graphics position
         state.console_state.screen.drawing.reset()
-        # reset the DATA pointer
-        self.parser.restore()
+        self.parser.clear()
+
 
     def resume(self):
         """ Resume an interpreter session. """
