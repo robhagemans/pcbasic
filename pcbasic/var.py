@@ -232,9 +232,9 @@ class Arrays(object):
         bigindex = 0
         area = 1
         for i in range(len(index)):
-            # dimensions is the *maximum index number*, regardless of state.basic_state.array_base
-            bigindex += area*(index[i]-state.basic_state.array_base)
-            area *= (dimensions[i]+1-state.basic_state.array_base)
+            # dimensions is the *maximum index number*, regardless of self.base_index
+            bigindex += area*(index[i]-self.base_index)
+            area *= (dimensions[i]+1-self.base_index)
         return bigindex
 
     def array_len(self, dimensions):
@@ -251,15 +251,15 @@ class Arrays(object):
 
     def dim(self, name, dimensions):
         """ Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value. """
-        if state.basic_state.array_base is None:
-            state.basic_state.array_base = 0
+        if self.base_index is None:
+            self.base_index = 0
         name = vartypes.complete_name(name)
         if name in self.arrays:
             raise error.RunError(error.DUPLICATE_DEFINITION)
         for d in dimensions:
             if d < 0:
                 raise error.RunError(error.IFC)
-            elif d < state.basic_state.array_base:
+            elif d < self.base_index:
                 raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
         size = self.array_len(dimensions)
         # update memory model
@@ -295,8 +295,8 @@ class Arrays(object):
         for i, d in zip(index, dimensions):
             if i < 0:
                 raise error.RunError(error.IFC)
-            elif i < state.basic_state.array_base or i > d:
-                # dimensions is the *maximum index number*, regardless of state.basic_state.array_base
+            elif i < self.base_index or i > d:
+                # dimensions is the *maximum index number*, regardless of self.base_index
                 raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
         return dimensions, lst
 
@@ -305,10 +305,10 @@ class Arrays(object):
         if base not in (1, 0):
             # syntax error
             raise error.RunError(error.STX)
-        if state.basic_state.array_base is not None and base != state.basic_state.array_base:
+        if self.base_index is not None and base != self.base_index:
             # duplicate definition
             raise error.RunError(error.DUPLICATE_DEFINITION)
-        state.basic_state.array_base = base
+        self.base_index = base
 
     def get(self, name, index):
         """ Retrieve the value of an array element. """
@@ -403,8 +403,8 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
                 except KeyError:
                     pass
         else:
-            # clear option base
-            state.basic_state.array_base = None
+            # clear OPTION BASE
+            state.basic_state.arrays.base_index = None
             common = {}
             common_arrays = {}
             # at least I think these should be cleared by CLEAR?
@@ -412,10 +412,8 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             state.basic_state.common_array_names = []
         # restore only common variables
         # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
-
         state.basic_state.scalars.clear()
         state.basic_state.arrays.clear()
-
         # functions are cleared except when CHAIN ... ALL is specified
         state.basic_state.functions = {}
         # reset string space

@@ -511,7 +511,7 @@ def get_data_memory_array(address):
                 state.basic_state.session.arrays.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)))
             for d in dimensions:
                 data_rep += vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
-                                    d + 1 - state.basic_state.array_base))
+                                    d + 1 - state.basic_state.session.arrays.base_index))
             return data_rep[offset]
 
 def get_data_memory_string(address):
