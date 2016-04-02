@@ -557,7 +557,7 @@ def collect_garbage():
 
 def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
-    return state.basic_state.strings.current - state.basic_state.memory.var_current - state.basic_state.memory.array_current
+    return state.session.strings.current - state.session.memory.var_current - state.session.memory.array_current
 
 def check_free_memory(size, err):
     """ Check if sufficient free memory is avilable, raise error if not. """

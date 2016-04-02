@@ -147,7 +147,6 @@ class Session(object):
         self.scalars = var.Scalars()
         self.arrays = var.Arrays()
         self.strings = var.StringSpace()
-        state.basic_state.strings = self.strings
         self.common_scalars = set()
         self.common_arrays = set()
         self.deftype = ['!']*26
@@ -208,7 +207,6 @@ class Session(object):
             var.clear_variables(self.common_scalars, self.common_arrays, new_strings)
             # reset string space
             self.strings = new_strings
-            state.basic_state.strings = self.strings
             # functions are cleared except when CHAIN ... ALL is specified
             self.user_functions = {}
         if not preserve_deftype:
