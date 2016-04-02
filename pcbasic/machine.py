@@ -37,9 +37,6 @@ protection_flag_addr = 1450
 # base for our low-memory addresses
 low_segment = 0
 
-# data memory model: current segment
-state.basic_state.segment = memory.data_segment
-
 def prepare():
     """ Initialise machine module. """
     global tandy_syntax
@@ -55,14 +52,14 @@ def peek(addr):
     """ Retrieve the value at an emulated memory location. """
     if addr < 0:
         addr += 0x10000
-    addr += state.basic_state.segment*0x10
+    addr += state.session.memory.segment*0x10
     return get_memory(addr)
 
 def poke(addr, val):
     """ Set the value at an emulated memory location. """
     if addr < 0:
         addr += 0x10000
-    addr += state.basic_state.segment * 0x10
+    addr += state.session.memory.segment * 0x10
     set_memory(addr, val)
 
 
@@ -250,11 +247,11 @@ def bload(g, offset):
 
 def bsave(g, offset, length):
     """ Save a block of memory into a file. """
-    addr = state.basic_state.segment * 0x10 + offset
+    addr = state.session.memory.segment * 0x10 + offset
     g.write(str(get_memory_block(addr, length)))
     # Tandys repeat the header at the end of the file
     if tandy_syntax:
-        g.write('\xfd' + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(state.basic_state.segment)) +
+        g.write('\xfd' + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(state.session.memory.segment)) +
                 vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(offset)) +
                 vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(length))))
 

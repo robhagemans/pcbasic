@@ -727,11 +727,11 @@ class Parser(object):
         """ DEF SEG: set the current memory segment. """
         # &hb800: text screen buffer; &h13d: data segment
         if util.skip_white_read_if(self.ins, (tk.O_EQ,)): #=
-            state.basic_state.segment = vartypes.pass_int_unpack(expressions.parse_expression(self.ins, self.session), maxint=0xffff)
+            self.session.memory.segment = vartypes.pass_int_unpack(expressions.parse_expression(self.ins, self.session), maxint=0xffff)
         else:
-            state.basic_state.segment = memory.data_segment
-        if state.basic_state.segment < 0:
-            state.basic_state.segment += 0x10000
+            self.session.memory.segment = memory.data_segment
+        if self.session.memory.segment < 0:
+            self.session.memory.segment += 0x10000
         util.require(self.ins, tk.end_statement)
 
     def exec_def_usr(self):
@@ -775,7 +775,7 @@ class Parser(object):
             length += 0x10000
         util.require(self.ins, tk.end_statement)
         with devices.open_file(0, name, filetype='M', mode='O',
-                                seg=state.basic_state.segment,
+                                seg=self.session.memory.segment,
                                 offset=offset, length=length) as f:
             machine.bsave(f, offset, length)
 
