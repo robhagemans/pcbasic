@@ -484,3 +484,26 @@ def check_free_memory(size, err):
         collect_garbage()
         if fre() <= size:
             raise error.RunError(err)
+
+def get_value_for_varptrstr(varptrstr):
+    """ Get a value given a VARPTR$ representation. """
+    if len(varptrstr) < 3:
+        raise error.RunError(error.IFC)
+    varptrstr = bytearray(varptrstr)
+    varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
+    for name, data in state.basic_state.var_memory.iteritems():
+        if data[1] == varptr:
+            return state.session.scalars.get(name)
+    # no scalar found, try arrays
+    found_addr = -1
+    found_name = None
+    for name, data in state.basic_state.array_memory.iteritems():
+        addr = state.basic_state.var_current + data[1]
+        if addr > found_addr and addr <= varptr:
+            found_addr = addr
+            found_name = name
+    if found_name is None:
+        raise error.RunError(error.IFC)
+    _, lst, _ = state.session.arrays[name]
+    offset = varptr - found_addr
+    return (name[-1], lst[offset : offset+var_size_bytes(name)])
