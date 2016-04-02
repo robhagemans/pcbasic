@@ -59,7 +59,7 @@ def debug_step(linum):
         outstr += (' ' + expr +' = ')
         outs.seek(2)
         try:
-            val = expressions.parse_expression(outs)
+            val = expressions.parse_expression(outs, state.session)
             if val[0] == '$':
                 outstr += '"' + var.copy_str(val) + '"'
             else:
