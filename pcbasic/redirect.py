@@ -21,8 +21,6 @@ uniconv = state.console_state.codepage.get_converter(preserve_control=True)
 # redirect i/o to file or printer
 output_echos = []
 
-def prepare():
-    """ Initialise redirect module. """
 
 def prepare_redirects():
     """ Initialise i/o redirects. """
@@ -84,6 +82,3 @@ def toggle_echo(device):
         output_echos.remove(device.write)
     else:
         output_echos.append(device.write)
-
-
-prepare()

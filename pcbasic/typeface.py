@@ -17,9 +17,6 @@ except ImportError:
 import plat
 
 
-def prepare():
-    """ Prepare the typeface module. """
-
 def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=False):
     """ Load font typefaces. """
     fonts = {}
@@ -221,5 +218,3 @@ class Font(object):
                         glyph[yy][2*xx+1] = glyph[yy][xx]
                         glyph[yy][2*xx] = glyph[yy][xx]
         return glyph
-
-prepare()

@@ -33,11 +33,6 @@ linenum_words = [tk.keyword[token] for token in
     tk.DELETE, tk.RUN, tk.RESUME, tk.AUTO,
     tk.ERL, tk.RESTORE, tk.RETURN)]
 
-#################################################################
-
-def prepare():
-    """ Initialise tokenise module. """
-
 
 #################################################################
 # Detokenise functions
@@ -418,5 +413,3 @@ def tokenise_word(ins, outs):
             outs.write(word)
             break
     return word
-
-prepare()
