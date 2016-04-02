@@ -470,7 +470,7 @@ def varptr(name, indices):
     if indices == []:
         return state.session.scalars.varptr(name)
     else:
-        return state.session.arrays.varptr(name)
+        return state.session.arrays.varptr(name, indices)
 
 def swap(name1, index1, name2, index2):
     """ Swap two variables by reference (Strings) or value (everything else). """

@@ -115,11 +115,9 @@ class Session(object):
         self.set_parse_mode(False)
         # initialise the console
         console.init_mode()
-
-
-        # bytecode buffer is defined in memory.py
         # direct line buffer
         self.direct_line = StringIO()
+
         # program parameters
         if not config.get('strict-hidden-lines'):
             max_list_line = 65535
@@ -158,19 +156,20 @@ class Session(object):
             console.write_line(greeting.format(version=plat.version, free=var.fre()))
             console.show_keys(True)
 
-    def clear(self, close_files=False, preserve_common=False, preserve_all=False, preserve_deftype=False):
+    def clear(self, close_files=False,
+              preserve_common=False, preserve_all=False, preserve_deftype=False):
         """ Execute a CLEAR command. """
         #   Resets the stack and string space
         #   Clears all COMMON and user variables
         if not preserve_all:
             if not preserve_common:
                 # at least I think these should be cleared by CLEAR?
-                state.basic_state.common_names = []
-                state.basic_state.common_array_names = []
-            var.clear_variables(state.basic_state.common_names, state.basic_state.common_array_names)
+                self.common_scalars = set()
+                self.common_arrays = set()
+            var.clear_variables(self.common_scalars, self.common_arrays)
         if not preserve_deftype:
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
-            state.basic_state.deftype = ['!']*26
+            self.deftype = ['!']*26
         # reset random number generator
         rnd.clear()
         if close_files:

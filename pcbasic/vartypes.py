@@ -35,7 +35,7 @@ def null(sigil):
 def complete_name(name):
     """ Add type specifier to a name, if missing. """
     if name and name[-1] not in ('$', '%', '!', '#'):
-        name += state.basic_state.deftype[ord(name[0].upper()) - ord('A')]
+        name += state.session.deftype[ord(name[0].upper()) - ord('A')]
     return name
 
 ###############################################################################

@@ -1973,19 +1973,19 @@ class Parser(object):
 
     def exec_common(self):
         """ COMMON: define variables to be preserved on CHAIN. """
-        varlist, arraylist = [], []
+        common_scalars, common_arrays = set(), set()
         while True:
             name = util.parse_scalar(self.ins)
             # array?
             if util.skip_white_read_if(self.ins, ('[', '(')):
                 util.require_read(self.ins, (']', ')'))
-                arraylist.append(name)
+                common_arrays.add(name)
             else:
-                varlist.append(name)
+                common_scalars.add(name)
             if not util.skip_white_read_if(self.ins, (',',)):
                 break
-        state.basic_state.common_names += varlist
-        state.basic_state.common_array_names += arraylist
+        self.session.common_scalars |= common_scalars
+        self.session.common_arrays |= common_arrays
 
     def exec_data(self):
         """ DATA: data definition; ignore. """
@@ -2019,7 +2019,7 @@ class Parser(object):
                     raise error.RunError(error.STX)
                 else:
                     stop = ord(d.upper()) - ord('A')
-            state.basic_state.deftype[start:stop+1] = [typechar] * (stop-start+1)
+            self.session.deftype[start:stop+1] = [typechar] * (stop-start+1)
             if not util.skip_white_read_if(self.ins, (',',)):
                 break
         util.require(self.ins, tk.end_statement)
