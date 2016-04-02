@@ -507,3 +507,124 @@ def get_value_for_varptrstr(varptrstr):
     _, lst, _ = state.session.arrays[name]
     offset = varptr - found_addr
     return (name[-1], lst[offset : offset+var_size_bytes(name)])
+
+
+def get_data_memory_var(address):
+    """ Retrieve data from data memory: variable space """
+    name_addr = -1
+    var_addr = -1
+    the_var = None
+    for name in state.basic_state.var_memory:
+        name_try, var_try = state.basic_state.var_memory[name]
+        if name_try <= address and name_try > name_addr:
+            name_addr, var_addr = name_try, var_try
+            the_var = name
+    if the_var is None:
+        return -1
+    if address >= var_addr:
+        offset = address - var_addr
+        if offset >= vartypes.byte_size[the_var[-1]]:
+            return -1
+        var_rep = state.session.scalars.variables[the_var]
+        return var_rep[offset]
+    else:
+        offset = address - name_addr
+        return get_name_in_memory(the_var, offset)
+
+def get_data_memory_array(address):
+    """ Retrieve data from data memory: array space """
+    name_addr = -1
+    arr_addr = -1
+    the_arr = None
+    for name in state.basic_state.array_memory:
+        name_try, arr_try = state.basic_state.array_memory[name]
+        if name_try <= address and name_try > name_addr:
+            name_addr, arr_addr = name_try, arr_try
+            the_arr = name
+    if the_arr is None:
+        return -1
+    if address >= state.basic_state.var_current + arr_addr:
+        offset = address - arr_addr - state.basic_state.var_current
+        if offset >= state.session.arrays.array_size_bytes(the_arr):
+            return -1
+        _, byte_array, _ = state.session.arrays.arrays[the_arr]
+        return byte_array[offset]
+    else:
+        offset = address - name_addr - state.basic_state.var_current
+        if offset < max(3, len(the_arr))+1:
+            return get_name_in_memory(the_arr, offset)
+        else:
+            offset -= max(3, len(the_arr))+1
+            dimensions, _, _ = state.session.arrays.arrays[the_arr]
+            data_rep = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
+                state.session.arrays.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)))
+            for d in dimensions:
+                data_rep += vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
+                                    d + 1 - state.session.arrays.base_index))
+            return data_rep[offset]
+
+def get_data_memory_string(address):
+    """ Retrieve data from data memory: string space """
+    # find the variable we're in
+    str_nearest = -1
+    the_var = None
+    for name in state.session.scalars.variables:
+        if name[-1] != '$':
+            continue
+        v = state.session.scalars.variables[name]
+        str_try = state.basic_state.strings.address(v)
+        if str_try <= address and str_try > str_nearest:
+            str_nearest = str_try
+            the_var = v
+    if the_var is None:
+        for name in state.session.arrays.arrays:
+            if name[-1] != '$':
+                continue
+            _, lst, _ = state.session.arrays.arrays[name]
+            for i in range(0, len(lst), 3):
+                str_try = state.basic_state.strings.address(lst[i:i+3])
+                if str_try <= address and str_try > str_nearest:
+                    str_nearest = str_try
+                    the_var = lst[i:i+3]
+    try:
+        return state.basic_state.strings.retrieve(the_var)[address - str_nearest]
+    except (IndexError, AttributeError, KeyError):
+        return -1
+
+def get_name_in_memory(name, offset):
+    """ Memory representation of variable name. """
+    if offset == 0:
+        return vartypes.byte_size[name[-1]]
+    elif offset == 1:
+        return ord(name[0].upper())
+    elif offset == 2:
+        if len(name) > 2:
+            return ord(name[1].upper())
+        else:
+            return 0
+    elif offset == 3:
+        if len(name) > 3:
+            return len(name)-3
+        else:
+            return 0
+    else:
+        # rest of name is encoded such that c1 == 'A'
+        return ord(name[offset-1].upper()) - ord('A') + 0xC1
+
+def varptr(name, indices):
+    """Get address of variable. """
+    name = vartypes.complete_name(name)
+    if indices == []:
+        try:
+            _, var_ptr = state.basic_state.var_memory[name]
+            return var_ptr
+        except KeyError:
+            return -1
+    else:
+        try:
+            dimensions, _, _ = state.session.arrays.arrays[name]
+            _, array_ptr = state.basic_state.array_memory[name]
+            # arrays are kept at the end of the var list
+            return state.basic_state.var_current + array_ptr + var_size_bytes(name) * state.session.arrays.index(indices, dimensions)
+        except KeyError:
+            return -1

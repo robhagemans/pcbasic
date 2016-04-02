@@ -801,7 +801,7 @@ def value_varptr(ins):
         var_ptr = machine.varptr_file(filenum)
     else:
         name, indices = parse_variable(ins)
-        var_ptr = machine.varptr(name, indices)
+        var_ptr = var.varptr(name, indices)
     util.require_read(ins, (')',))
     if var_ptr < 0:
         raise error.RunError(error.IFC)
