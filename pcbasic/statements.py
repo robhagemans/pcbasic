@@ -2274,7 +2274,7 @@ class Parser(object):
             # GW doesn't allow DEF FN in direct mode, neither do we
             # (for no good reason, works fine)
             raise error.RunError(error.ILLEGAL_DIRECT)
-        state.basic_state.functions[fnname] = [fnvars, fncode]
+        self.session.user_functions[fnname] = fnvars, fncode
         # update memory model
         # allocate function pointer
         pointer = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(pointer_loc))

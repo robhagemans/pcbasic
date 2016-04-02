@@ -520,9 +520,6 @@ def clear_variables(preserve_vars, preserve_arrays, new_strings):
     if not(preserve_vars or preserve_arrays):
         # clear OPTION BASE
         state.session.arrays.clear_base()
-    # functions are cleared except when CHAIN ... ALL is specified
-    state.basic_state.functions = {}
-
 
 def collect_garbage():
     """ Collect garbage from string space. Compactify string storage. """

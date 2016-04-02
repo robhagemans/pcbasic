@@ -627,7 +627,7 @@ def value_fn(ins):
         raise error.RunError(error.OUT_OF_MEMORY)
     state.basic_state.user_function_parsing.add(fnname)
     try:
-        varnames, fncode = state.basic_state.functions[fnname]
+        varnames, fncode = state.session.user_functions[fnname]
     except KeyError:
         raise error.RunError(error.UNDEFINED_USER_FUNCTION)
     # save existing vars

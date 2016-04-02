@@ -151,7 +151,7 @@ class Session(object):
         self.common_scalars = set()
         self.common_arrays = set()
         self.deftype = ['!']*26
-        state.basic_state.functions = {}
+        self.user_functions = {}
 
         # initialise random number generator
         self.randomiser = rnd.RandomNumberGenerator()
@@ -190,6 +190,8 @@ class Session(object):
             # reset string space
             self.strings = new_strings
             state.basic_state.strings = self.strings
+            # functions are cleared except when CHAIN ... ALL is specified
+            self.user_functions = {}
         if not preserve_deftype:
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
             self.deftype = ['!']*26
