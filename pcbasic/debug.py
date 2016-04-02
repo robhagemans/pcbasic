@@ -77,11 +77,11 @@ def debug_handle_exc(e):
 
 def dump_program():
     """ Hex dump the program to the log. """
-    logging.debug(state.basic_state.session.program.bytecode.getvalue().encode('hex'))
+    logging.debug(state.session.program.bytecode.getvalue().encode('hex'))
 
 def dump_vars():
     """ Dump all variables to the log. """
-    logging.debug(repr(state.basic_state.session.scalars.variables))
+    logging.debug(repr(state.session.scalars.variables))
 
 def show_screen():
     """ Copy the screen buffer to the log. """
@@ -106,9 +106,9 @@ def show_screen():
 
 def show_program():
     """ Write a marked-up hex dump of the program to the log. """
-    code = state.basic_state.session.program.bytecode.getvalue()
+    code = state.session.program.bytecode.getvalue()
     offset_val, p = 0, 0
-    for key in sorted(state.basic_state.session.program.line_numbers.keys())[1:]:
+    for key in sorted(state.session.program.line_numbers.keys())[1:]:
         offset, linum = code[p+1:p+3], code[p+3:p+5]
         last_offset = offset_val
         offset_val = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(offset)) - (memory.code_start + 1)
@@ -116,9 +116,9 @@ def show_program():
         logging.debug(    (code[p:p+1].encode('hex') + ' ' +
                         offset.encode('hex') + ' (+%03d) ' +
                         code[p+3:p+5].encode('hex') + ' [%05d] ' +
-                        code[p+5:state.basic_state.session.program.line_numbers[key]].encode('hex')),
+                        code[p+5:state.session.program.line_numbers[key]].encode('hex')),
                      offset_val - last_offset, linum_val )
-        p = state.basic_state.session.program.line_numbers[key]
+        p = state.session.program.line_numbers[key]
     logging.debug(code[p:p+1].encode('hex') + ' ' +
                 code[p+1:p+3].encode('hex') + ' (ENDS) ' +
                 code[p+3:p+5].encode('hex') + ' ' + code[p+5:].encode('hex'))
@@ -181,16 +181,16 @@ def bluescreen(e):
     state.console_state.screen.set_attr(0x70)
     console.write_line('EXCEPTION')
     state.console_state.screen.set_attr(15)
-    if state.basic_state.session.parser.run_mode:
-        state.basic_state.session.program.bytecode.seek(-1, 1)
-        state.basic_state.session.program.edit(
-            state.basic_state.session.program.get_line_number(
-                        state.basic_state.session.program.bytecode.tell()),
-                        state.basic_state.session.program.bytecode.tell())
+    if state.session.parser.run_mode:
+        state.session.program.bytecode.seek(-1, 1)
+        state.session.program.edit(
+            state.session.program.get_line_number(
+                        state.session.program.bytecode.tell()),
+                        state.session.program.bytecode.tell())
         console.write_line('\n')
     else:
-        state.basic_state.session.direct_line.seek(0)
-        console.write_line(str(tokenise.detokenise_compound_statement(state.basic_state.session.direct_line)[0])+'\n')
+        state.session.direct_line.seek(0)
+        console.write_line(str(tokenise.detokenise_compound_statement(state.session.direct_line)[0])+'\n')
     stack = traceback.extract_tb(exc_traceback)
     for s in stack[-4:]:
         stack_line = '{0}:{1}, {2}'.format(
@@ -226,7 +226,7 @@ def bluescreen(e):
     console.write_line('as much information as you can about what you were doing and how this happened.')
     console.write_line('Thank you!')
     state.console_state.screen.set_attr(7)
-    state.basic_state.session.parser.set_pointer(False)
+    state.session.parser.set_pointer(False)
 
 
 prepare()

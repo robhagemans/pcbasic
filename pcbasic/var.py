@@ -335,49 +335,49 @@ class Arrays(object):
 def get_variable(name, indices):
     """ Retrieve the value of a scalar variable or an array element. """
     if indices == []:
-        return state.basic_state.session.scalars.get(name)
+        return state.session.scalars.get(name)
     else:
         # array is allocated if retrieved and nonexistant
-        return state.basic_state.session.arrays.get(name, indices)
+        return state.session.arrays.get(name, indices)
 
 def set_variable(name, indices, value):
     """ Assign a value to a scalar variable or an array element. """
     if indices == []:
-        state.basic_state.session.scalars.set(name, value)
+        state.session.scalars.set(name, value)
     else:
-        state.basic_state.session.arrays.set(name, indices, value)
+        state.session.arrays.set(name, indices, value)
 
 def swap(name1, index1, name2, index2):
     """ Swap two variables by reference (Strings) or value (everything else). """
     if name1[-1] != name2[-1]:
         # type mismatch
         raise error.RunError(error.TYPE_MISMATCH)
-    elif ((index1 == [] and name1 not in state.basic_state.session.scalars.variables) or
-            (index1 != [] and name1 not in state.basic_state.session.arrays.arrays) or
-            (index2 == [] and name2 not in state.basic_state.session.scalars.variables) or
-            (index2 != [] and name2 not in state.basic_state.session.arrays.arrays)):
+    elif ((index1 == [] and name1 not in state.session.scalars.variables) or
+            (index1 != [] and name1 not in state.session.arrays.arrays) or
+            (index2 == [] and name2 not in state.session.scalars.variables) or
+            (index2 != [] and name2 not in state.session.arrays.arrays)):
         # illegal function call
         raise error.RunError(error.IFC)
     typechar = name1[-1]
     size = vartypes.byte_size[typechar]
     # get buffers (numeric representation or string pointer)
     if index1 == []:
-        p1, off1 = state.basic_state.session.scalars.variables[name1], 0
+        p1, off1 = state.session.scalars.variables[name1], 0
     else:
-        dimensions, p1, _ = state.basic_state.session.arrays.arrays[name1]
-        off1 = state.basic_state.session.arrays.index(index1, dimensions)*size
+        dimensions, p1, _ = state.session.arrays.arrays[name1]
+        off1 = state.session.arrays.index(index1, dimensions)*size
     if index2 == []:
-        p2, off2 = state.basic_state.session.scalars.variables[name2], 0
+        p2, off2 = state.session.scalars.variables[name2], 0
     else:
-        dimensions, p2, _ = state.basic_state.session.arrays.arrays[name2]
-        off2 = state.basic_state.session.arrays.index(index2, dimensions)*size
+        dimensions, p2, _ = state.session.arrays.arrays[name2]
+        off2 = state.session.arrays.index(index2, dimensions)*size
     # swap the contents
     p1[off1:off1+size], p2[off2:off2+size] =  p2[off2:off2+size], p1[off1:off1+size]
     # inc version
-    if name1 in state.basic_state.session.arrays.arrays:
-        state.basic_state.session.arrays.arrays[name1][2] += 1
-    if name2 in state.basic_state.session.arrays.arrays:
-        state.basic_state.session.arrays.arrays[name2][2] += 1
+    if name1 in state.session.arrays.arrays:
+        state.session.arrays.arrays[name1][2] += 1
+    if name2 in state.session.arrays.arrays:
+        state.session.arrays.arrays[name2][2] += 1
 
 
 ###############################################################################
@@ -394,12 +394,12 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             common, common_arrays = {}, {}
             for varname in state.basic_state.common_names:
                 try:
-                    common[varname] = state.basic_state.session.scalars.variables[varname]
+                    common[varname] = state.session.scalars.variables[varname]
                 except KeyError:
                     pass
             for varname in state.basic_state.common_array_names:
                 try:
-                    common_arrays[varname] = state.basic_state.session.arrays.arrays[varname]
+                    common_arrays[varname] = state.session.arrays.arrays[varname]
                 except KeyError:
                     pass
         else:
@@ -426,16 +426,16 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
                 full_var = new_strings.store(copy_str(full_var))
             state.basic_state.scalars.set(v, full_var)
         for a in common_arrays:
-            state.basic_state.session.arrays.dim(a, common_arrays[a][0])
+            state.session.arrays.dim(a, common_arrays[a][0])
             if a[-1] == '$':
                 s = bytearray()
                 for i in range(0, len(common_arrays[a][1]), vartypes.byte_size['$']):
                     old_ptr = vartypes.bytes_to_string(common_arrays[a][1][i:i+vartypes.byte_size['$']])
                     new_ptr = new_strings.store(copy_str(old_ptr))
                     s += vartypes.string_to_bytes(new_ptr)
-                state.basic_state.session.arrays.arrays[a][1] = s
+                state.session.arrays.arrays[a][1] = s
             else:
-                state.basic_state.session.arrays.arrays[a] = common_arrays[a]
+                state.session.arrays.arrays[a] = common_arrays[a]
         state.basic_state.strings = new_strings
 
 
@@ -443,9 +443,9 @@ def collect_garbage():
     """ Collect garbage from string space. Compactify string storage. """
     string_list = []
     # copy all strings that are actually referenced
-    for name in state.basic_state.session.scalars.variables:
+    for name in state.session.scalars.variables:
         if name[-1] == '$':
-            v = state.basic_state.session.scalars.variables[name]
+            v = state.session.scalars.variables[name]
             try:
                 string_list.append((v, 0,
                         state.basic_state.strings.address(v),
@@ -453,10 +453,10 @@ def collect_garbage():
             except KeyError:
                 # string is not located in memory - FIELD or code
                 pass
-    for name in state.basic_state.session.arrays.arrays:
+    for name in state.session.arrays.arrays:
         if name[-1] == '$':
             # ignore version - we can't put and get into string arrays
-            dimensions, lst, _ = state.basic_state.session.arrays.arrays[name]
+            dimensions, lst, _ = state.session.arrays.arrays[name]
             for i in range(0, len(lst), 3):
                 v = lst[i:i+3]
                 try:

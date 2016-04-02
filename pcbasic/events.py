@@ -48,8 +48,8 @@ def check_events():
     """ Main event cycle. """
     time.sleep(tick_s)
     check_input()
-    if state.basic_state.session.parser.run_mode:
-        state.basic_state.session.parser.events.check()
+    if state.session.parser.run_mode:
+        state.session.parser.events.check()
     state.console_state.keyb.drain_event_buffer()
 
 def check_input():

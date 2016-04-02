@@ -208,7 +208,7 @@ def _handle_math_error(e):
         math_error = error.DIVISION_BY_ZERO
     else:
         raise e
-    if state.basic_state.session.parser.on_error:
+    if state.session.parser.on_error:
         # also raises exception in error_handle_mode!
         # in that case, prints a normal error message
         raise error.RunError(math_error)
@@ -226,7 +226,7 @@ def parse_literal(ins):
     # string literal
     if d == '"':
         ins.read(1)
-        if ins == state.basic_state.session.program.bytecode:
+        if ins == state.session.program.bytecode:
             address = ins.tell() + memory.code_start
         else:
             address = None
@@ -634,9 +634,9 @@ def value_fn(ins):
     # save existing vars
     varsave = {}
     for name in varnames:
-        if name in state.basic_state.session.scalars.variables:
+        if name in state.session.scalars.variables:
             # copy the *value* - set_var is in-place it's safe for FOR loops
-            varsave[name] = state.basic_state.session.scalars.variables[name][:]
+            varsave[name] = state.session.scalars.variables[name][:]
     # read variables
     if util.skip_white_read_if(ins, ('(',)):
         exprs = []
@@ -647,7 +647,7 @@ def value_fn(ins):
         if len(exprs) != len(varnames):
             raise error.RunError(error.STX)
         for name, value in zip(varnames, exprs):
-            state.basic_state.session.scalars.set(name, value)
+            state.session.scalars.set(name, value)
         util.require_read(ins, (')',))
     # execute the code
     fns = StringIO(fncode)
@@ -656,7 +656,7 @@ def value_fn(ins):
     # restore existing vars
     for name in varsave:
         # re-assign the stored value
-        state.basic_state.session.scalars.variables[name][:] = varsave[name]
+        state.session.scalars.variables[name][:] = varsave[name]
     state.basic_state.user_function_parsing.remove(fnname)
     return vartypes.pass_type(fnname[-1], value)
 
@@ -736,17 +736,17 @@ def value_play(ins):
 
 def value_erl(ins):
     """ ERL: get line number of last error. """
-    if state.basic_state.session.parser.error_pos == 0:
+    if state.session.parser.error_pos == 0:
         erl = 0
-    elif state.basic_state.session.parser.error_pos == -1:
+    elif state.session.parser.error_pos == -1:
         erl = 65535
     else:
-        erl = state.basic_state.session.program.get_line_number(state.basic_state.session.parser.error_pos)
+        erl = state.session.program.get_line_number(state.session.parser.error_pos)
     return fp.pack(fp.Single.from_int(erl))
 
 def value_err(ins):
     """ ERR: get error code of last error. """
-    return vartypes.int_to_integer_signed(state.basic_state.session.parser.error_num)
+    return vartypes.int_to_integer_signed(state.session.parser.error_num)
 
 #####################################################################
 # pen, stick and strig
@@ -756,7 +756,7 @@ def value_pen(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 9, fn)
     pen = state.console_state.pen.poll(fn)
-    if pen is None or not state.basic_state.session.parser.events.pen.enabled:
+    if pen is None or not state.session.parser.events.pen.enabled:
         # should return 0 or char pos 1 if PEN not ON
         pen = 1 if fn >= 6 else 0
     return vartypes.int_to_integer_signed(pen)
@@ -788,7 +788,7 @@ def value_fre(ins):
 def value_peek(ins):
     """ PEEK: read memory location. """
     addr = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
-    if state.basic_state.session.program.protected and not state.basic_state.session.parser.run_mode:
+    if state.session.program.protected and not state.session.parser.run_mode:
         raise error.RunError(error.IFC)
     return vartypes.int_to_integer_signed(machine.peek(addr))
 

@@ -61,10 +61,10 @@ class SessionLauncher(object):
     def __enter__(self):
         """ Resume or start the session. """
         if self.resume and state.load():
-            state.basic_state.session.resume()
+            state.session.resume()
         else:
-            state.basic_state.session = Session(self.show_greeting, self.prog)
-        self.thread = threading.Thread(target=state.basic_state.session.run,
+            state.session = Session(self.show_greeting, self.prog)
+        self.thread = threading.Thread(target=state.session.run,
                                 args=(self.cmd, self.run, self.quit, self.wait))
         self.thread.start()
 

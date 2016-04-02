@@ -232,7 +232,7 @@ def out(addr, val):
 
 def wait(addr, ander, xorer):
     """ Wait untial an emulated machine port has a specified value. """
-    with state.basic_state.session.parser.events.suspend():
+    with state.session.parser.events.suspend():
         while (inp(addr) ^ xorer) & ander == 0:
             events.wait()
 
@@ -278,10 +278,10 @@ def varptr(name, indices):
             return -1
     else:
         try:
-            dimensions, _, _ = state.basic_state.session.arrays.arrays[name]
+            dimensions, _, _ = state.session.arrays.arrays[name]
             _, array_ptr = state.basic_state.array_memory[name]
             # arrays are kept at the end of the var list
-            return state.basic_state.var_current + array_ptr + var.var_size_bytes(name) * state.basic_state.session.arrays.index(indices, dimensions)
+            return state.basic_state.var_current + array_ptr + var.var_size_bytes(name) * state.session.arrays.index(indices, dimensions)
         except KeyError:
             return -1
 
@@ -422,7 +422,7 @@ def get_field_memory(address):
 def get_code_memory(address):
     """ Retrieve data from program code. """
     address -= memory.data_segment * 0x10 + memory.code_start
-    code = state.basic_state.session.program.bytecode.getvalue()
+    code = state.session.program.bytecode.getvalue()
     try:
         return ord(code[address])
     except IndexError:
@@ -434,18 +434,18 @@ def set_code_memory(address, val):
         logging.warning('Ignored POKE into program code')
     else:
         address -= memory.data_segment * 0x10 + memory.code_start
-        loc = state.basic_state.session.program.bytecode.tell()
+        loc = state.session.program.bytecode.tell()
         # move pointer to end
-        state.basic_state.session.program.bytecode.seek(0, 2)
-        if address > state.basic_state.session.program.bytecode.tell():
-            state.basic_state.session.program.bytecode.write('\0' *
-                        (address-state.basic_state.session.program.bytecode.tell()) + chr(val))
+        state.session.program.bytecode.seek(0, 2)
+        if address > state.session.program.bytecode.tell():
+            state.session.program.bytecode.write('\0' *
+                        (address-state.session.program.bytecode.tell()) + chr(val))
         else:
-            state.basic_state.session.program.bytecode.seek(address)
-            state.basic_state.session.program.bytecode.write(chr(val))
+            state.session.program.bytecode.seek(address)
+            state.session.program.bytecode.write(chr(val))
         # restore program pointer
-        state.basic_state.session.program.bytecode.seek(loc)
-        state.basic_state.session.program.rebuild_line_dict()
+        state.session.program.bytecode.seek(loc)
+        state.session.program.rebuild_line_dict()
 
 def get_data_memory(address):
     """ Retrieve data from data memory. """
@@ -476,7 +476,7 @@ def get_data_memory_var(address):
         offset = address - var_addr
         if offset >= vartypes.byte_size[the_var[-1]]:
             return -1
-        var_rep = state.basic_state.session.scalars.variables[the_var]
+        var_rep = state.session.scalars.variables[the_var]
         return var_rep[offset]
     else:
         offset = address - name_addr
@@ -496,9 +496,9 @@ def get_data_memory_array(address):
         return -1
     if address >= state.basic_state.var_current + arr_addr:
         offset = address - arr_addr - state.basic_state.var_current
-        if offset >= state.basic_state.session.arrays.array_size_bytes(the_arr):
+        if offset >= state.session.arrays.array_size_bytes(the_arr):
             return -1
-        _, byte_array, _ = state.basic_state.session.arrays.arrays[the_arr]
+        _, byte_array, _ = state.session.arrays.arrays[the_arr]
         return byte_array[offset]
     else:
         offset = address - name_addr - state.basic_state.var_current
@@ -506,12 +506,12 @@ def get_data_memory_array(address):
             return get_name_in_memory(the_arr, offset)
         else:
             offset -= max(3, len(the_arr))+1
-            dimensions, _, _ = state.basic_state.session.arrays.arrays[the_arr]
+            dimensions, _, _ = state.session.arrays.arrays[the_arr]
             data_rep = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
-                state.basic_state.session.arrays.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)))
+                state.session.arrays.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)))
             for d in dimensions:
                 data_rep += vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
-                                    d + 1 - state.basic_state.session.arrays.base_index))
+                                    d + 1 - state.session.arrays.base_index))
             return data_rep[offset]
 
 def get_data_memory_string(address):
@@ -519,19 +519,19 @@ def get_data_memory_string(address):
     # find the variable we're in
     str_nearest = -1
     the_var = None
-    for name in state.basic_state.session.scalars.variables:
+    for name in state.session.scalars.variables:
         if name[-1] != '$':
             continue
-        v = state.basic_state.session.scalars.variables[name]
+        v = state.session.scalars.variables[name]
         str_try = state.basic_state.strings.address(v)
         if str_try <= address and str_try > str_nearest:
             str_nearest = str_try
             the_var = v
     if the_var is None:
-        for name in state.basic_state.session.arrays.arrays:
+        for name in state.session.arrays.arrays:
             if name[-1] != '$':
                 continue
-            _, lst, _ = state.basic_state.session.arrays.arrays[name]
+            _, lst, _ = state.session.arrays.arrays[name]
             for i in range(0, len(lst), 3):
                 str_try = state.basic_state.strings.address(lst[i:i+3])
                 if str_try <= address and str_try > str_nearest:
@@ -627,14 +627,14 @@ def get_basic_memory(addr):
     elif addr == 0x35D:
         return (state.basic_state.var_current + state.basic_state.array_current) // 256
     elif addr == protection_flag_addr:
-        return state.basic_state.session.program.protected * 255
+        return state.session.program.protected * 255
     return -1
 
 def set_basic_memory(addr, val):
     """ Change BASIC memory. """
     addr -= memory.data_segment*0x10
-    if addr == protection_flag_addr and state.basic_state.session.program.allow_protect:
-        state.basic_state.session.program.protected = (val != 0)
+    if addr == protection_flag_addr and state.session.program.allow_protect:
+        state.session.program.protected = (val != 0)
 
 key_buffer_offset = 30
 blink_enabled = True

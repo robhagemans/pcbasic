@@ -274,14 +274,14 @@ class Program(object):
             del self.line_numbers[old_line]
         self.line_numbers.update(new_lines)
         # stop running if we were
-        state.basic_state.session.parser.set_pointer(False)
+        state.session.parser.set_pointer(False)
         # reset loop stacks
-        state.basic_state.session.parser.clear_stacks()
+        state.session.parser.clear_stacks()
         # renumber error handler
-        if state.basic_state.session.parser.on_error:
-            state.basic_state.session.parser.on_error = old_to_new[state.basic_state.session.parser.on_error]
+        if state.session.parser.on_error:
+            state.session.parser.on_error = old_to_new[state.session.parser.on_error]
         # renumber event traps
-        for handler in state.basic_state.session.parser.events.all:
+        for handler in state.session.parser.events.all:
             if handler.gosub:
                 handler.set_jump(old_to_new[handler.gosub])
 
@@ -330,7 +330,7 @@ class Program(object):
         action(g)
         # don't close files!
         # RUN
-        state.basic_state.session.parser.jump(jumpnum, err=error.IFC)
+        state.session.parser.jump(jumpnum, err=error.IFC)
 
     def save(self, g):
         """ Save the program to stream g in (A)scii, (B)ytecode or (P)rotected mode. """
@@ -375,5 +375,5 @@ class Program(object):
             _, line, _ = tokenise.detokenise_line(self.bytecode)
             lines.append(str(line))
         # return to direct mode
-        state.basic_state.session.parser.set_pointer(False)
+        state.session.parser.set_pointer(False)
         return lines

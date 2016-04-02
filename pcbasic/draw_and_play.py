@@ -27,7 +27,7 @@ def get_value_for_varptrstr(varptrstr):
     varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
     for name, data in state.basic_state.var_memory.iteritems():
         if data[1] == varptr:
-            return state.basic_state.session.scalars.get(name)
+            return state.session.scalars.get(name)
     # no scalar found, try arrays
     found_addr = -1
     found_name = None
@@ -38,7 +38,7 @@ def get_value_for_varptrstr(varptrstr):
             found_name = name
     if found_name is None:
         raise error.RunError(error.IFC)
-    _, lst, _ = state.basic_state.session.arrays[name]
+    _, lst, _ = state.session.arrays[name]
     offset = varptr - found_addr
     return (name[-1], lst[offset:offset+var.var_size_bytes(name)])
 

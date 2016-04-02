@@ -77,7 +77,7 @@ def shell(command):
     key_macros_save = state.basic_state.key_macros_off
     state.basic_state.key_macros_off = True
     # no user events
-    with state.basic_state.session.parser.events.suspend():
+    with state.session.parser.events.suspend():
         # run the os-specific shell
         if shell_enabled:
             spawn_shell(command)
