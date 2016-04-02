@@ -73,9 +73,6 @@ def shell(command):
     """ Execute a shell command or enter interactive shell. """
     # sound stops playing and is forgotten
     state.console_state.sound.stop_all_sound()
-    # no key macros
-    key_macros_save = state.basic_state.key_macros_off
-    state.basic_state.key_macros_off = True
     # no user events
     with state.session.parser.events.suspend():
         # run the os-specific shell
@@ -83,8 +80,6 @@ def shell(command):
             spawn_shell(command)
         else:
             logging.warning('SHELL statement disabled.')
-        # re-enable key macros and event handling
-        state.basic_state.key_macros_off = key_macros_save
 
 
 if plat.system == 'Windows':
@@ -129,7 +124,8 @@ if plat.system == 'Windows':
                 # drain output then break
                 continue
             try:
-                c = state.console_state.keyb.get_char()
+                # expand=False suppresses key macros
+                c = state.console_state.keyb.get_char(expand=False)
             except error.Break:
                 pass
             if c in ('\r', '\n'):
@@ -161,7 +157,8 @@ else:
         p = pexpect.spawn(str(cmd))
         while True:
             try:
-                c = state.console_state.keyb.get_char()
+                # expand=False suppresses key macros
+                c = state.console_state.keyb.get_char(expand=False)
             except error.Break:
                 # ignore ctrl+break in SHELL
                 pass

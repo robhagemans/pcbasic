@@ -37,8 +37,6 @@ function_key = {
     ea.F1: 0, ea.F2: 1, ea.F3: 2, ea.F4: 3,
     ea.F5: 4, ea.F6: 5, ea.F7: 6, ea.F8: 7,
     ea.F9: 8, ea.F10: 9, ea.F11: 10, ea.F12: 11}
-# switch off macro repacements
-state.basic_state.key_macros_off = False
 
 # F12 emulator home-key
 # also f12+b -> ctrl+break
@@ -246,10 +244,10 @@ class Keyboard(object):
             word.append(self.get_char_block())
         return word
 
-    def get_char(self):
+    def get_char(self, expand=True):
         """ Read any keystroke, nonblocking. """
         events.wait()
-        return self.buf.getc()
+        return self.buf.getc(expand)
 
     def wait_char(self):
         """ Wait for character, then return it but don't drop from queue. """
