@@ -1091,9 +1091,9 @@ class Parser(object):
             if delete_lines:
                 # delete lines from existing code before merge (without MERGE, this is pointless)
                 self.session.program.delete(*delete_lines)
-                # clear all program stacks
-                self.clear_stacks_and_pointers()
             action(f)
+            # clear all program stacks
+            self.clear_stacks_and_pointers()
             # don't close files!
             # RUN
             self.jump(jumpnum, err=error.IFC)
@@ -1141,6 +1141,8 @@ class Parser(object):
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         with devices.open_file(0, name, filetype='A', mode='I') as f:
             self.session.program.merge(f)
+        # clear all program stacks
+        self.clear_stacks_and_pointers()
         util.require(self.ins, tk.end_statement)
 
     def exec_new(self):

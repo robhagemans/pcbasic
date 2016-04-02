@@ -287,6 +287,8 @@ class Program(object):
             # assume ASCII file
             # anything but numbers or whitespace: Direct Statement in File
             self.merge(g)
+            # clear all program stacks
+            state.basic_state.parser.clear_stacks_and_pointers()
         else:
             logging.debug("Incorrect file type '%s' on LOAD", g.filetype)
         # rebuild line number dict and offsets
@@ -303,8 +305,6 @@ class Program(object):
             if linebuf.read(1) == '\0':
                 # line starts with a number, add to program memory; store_line seeks to 1 first
                 self.store_line(linebuf)
-                # clear all program stacks
-                state.basic_state.parser.clear_stacks_and_pointers()
             else:
                 # we have read the :
                 if util.skip_white(linebuf) not in tk.end_line:
