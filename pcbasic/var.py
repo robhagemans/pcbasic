@@ -163,7 +163,7 @@ class Scalars(object):
             value = vartypes.pass_type(type_char, value)
         # update memory model
         # check if garbage needs collecting before allocating memory
-        if name not in state.basic_state.var_memory:
+        if name not in self.var_memory:
             # don't add string length, string already stored
             size = (max(3, len(name)) + 1 + vartypes.byte_size[type_char])
             check_free_memory(size, error.OUT_OF_MEMORY)
@@ -172,7 +172,7 @@ class Scalars(object):
             # byte_size first_letter second_letter_or_nul remaining_length_or_nul
             var_ptr = name_ptr + max(3, len(name)) + 1
             state.basic_state.var_current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
-            state.basic_state.var_memory[name] = (name_ptr, var_ptr)
+            self.var_memory[name] = (name_ptr, var_ptr)
         # don't change the value if just checking allocation
         if value is None:
             if name in self.variables:
@@ -198,17 +198,39 @@ class Scalars(object):
     def clear(self):
         """ Clear scalar variables. """
         self.variables = {}
-        state.basic_state.var_memory = {}
+        self.var_memory = {}
         state.basic_state.var_current = memory.var_start()
 
     def varptr(self, name):
         """ Retrieve the address of a scalar variable. """
         name = vartypes.complete_name(name)
         try:
-            _, var_ptr = state.basic_state.var_memory[name]
+            _, var_ptr = self.var_memory[name]
             return var_ptr
         except KeyError:
             return -1
+
+    def get_memory(self, address):
+        """ Retrieve data from data memory: variable space """
+        name_addr = -1
+        var_addr = -1
+        the_var = None
+        for name in self.var_memory:
+            name_try, var_try = self.var_memory[name]
+            if name_try <= address and name_try > name_addr:
+                name_addr, var_addr = name_try, var_try
+                the_var = name
+        if the_var is None:
+            return -1
+        if address >= var_addr:
+            offset = address - var_addr
+            if offset >= vartypes.byte_size[the_var[-1]]:
+                return -1
+            var_rep = self.variables[the_var]
+            return var_rep[offset]
+        else:
+            offset = address - name_addr
+            return get_name_in_memory(the_var, offset)
 
 
 ###############################################################################
@@ -518,7 +540,7 @@ def get_value_for_varptrstr(varptrstr):
         raise error.RunError(error.IFC)
     varptrstr = bytearray(varptrstr)
     varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
-    for name, data in state.basic_state.var_memory.iteritems():
+    for name, data in state.session.scalars.var_memory.iteritems():
         if data[1] == varptr:
             return state.session.scalars.get(name)
     # no scalar found, try arrays
@@ -536,27 +558,18 @@ def get_value_for_varptrstr(varptrstr):
     return (name[-1], lst[offset : offset+var_size_bytes(name)])
 
 
-def get_data_memory_var(address):
-    """ Retrieve data from data memory: variable space """
-    name_addr = -1
-    var_addr = -1
-    the_var = None
-    for name in state.basic_state.var_memory:
-        name_try, var_try = state.basic_state.var_memory[name]
-        if name_try <= address and name_try > name_addr:
-            name_addr, var_addr = name_try, var_try
-            the_var = name
-    if the_var is None:
-        return -1
-    if address >= var_addr:
-        offset = address - var_addr
-        if offset >= vartypes.byte_size[the_var[-1]]:
-            return -1
-        var_rep = state.session.scalars.variables[the_var]
-        return var_rep[offset]
+def get_data_memory(address):
+    """ Retrieve data from data memory. """
+    address -= memory.data_segment * 0x10
+    if address < state.basic_state.var_current:
+        return state.session.scalars.get_memory(address)
+    elif address < state.basic_state.var_current + state.basic_state.array_current:
+        return get_data_memory_array(address)
+    elif address > state.basic_state.strings.current:
+        return get_data_memory_string(address)
     else:
-        offset = address - name_addr
-        return get_name_in_memory(the_var, offset)
+        # unallocated var space
+        return -1
 
 def get_data_memory_array(address):
     """ Retrieve data from data memory: array space """

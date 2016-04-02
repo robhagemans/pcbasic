@@ -288,7 +288,7 @@ def get_memory(addr):
             return max(0, get_video_memory(addr))
         elif addr >= memory.data_segment*0x10 + memory.var_start():
             # variable memory
-            return max(0, get_data_memory(addr))
+            return max(0, var.get_data_memory(addr))
         elif addr >= memory.data_segment*0x10 + memory.code_start:
             # code memory
             return max(0, get_code_memory(addr))
@@ -410,18 +410,6 @@ def set_code_memory(address, val):
         state.session.program.bytecode.seek(loc)
         state.session.program.rebuild_line_dict()
 
-def get_data_memory(address):
-    """ Retrieve data from data memory. """
-    address -= memory.data_segment * 0x10
-    if address < state.basic_state.var_current:
-        return var.get_data_memory_var(address)
-    elif address < state.basic_state.var_current + state.basic_state.array_current:
-        return var.get_data_memory_array(address)
-    elif address > state.basic_state.strings.current:
-        return var.get_data_memory_string(address)
-    else:
-        # unallocated var space
-        return -1
 
 ###############################################################
 # video memory model
