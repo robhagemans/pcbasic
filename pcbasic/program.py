@@ -187,8 +187,6 @@ class Program(object):
         self.truncate(rest)
         # update line number dict
         self.update_line_dict(startpos, afterpos, 0, deleteable, beyond)
-        # clear all program stacks
-        state.basic_state.parser.clear_stacks_and_pointers()
 
     def edit(self, from_line, bytepos=None):
         """ Output program line to console and position cursor. """

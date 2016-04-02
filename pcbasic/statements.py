@@ -968,6 +968,8 @@ class Parser(object):
         util.require(self.ins, tk.end_statement)
         # throws back to direct mode
         self.session.program.delete(from_line, to_line)
+        # clear all program stacks
+        self.clear_stacks_and_pointers()
         # clear all variables
         self.session.clear()
 
@@ -1089,6 +1091,8 @@ class Parser(object):
             if delete_lines:
                 # delete lines from existing code before merge (without MERGE, this is pointless)
                 self.session.program.delete(*delete_lines)
+                # clear all program stacks
+                self.clear_stacks_and_pointers()
             action(f)
             # don't close files!
             # RUN
