@@ -471,7 +471,7 @@ class TextFileBase(RawFile):
         # file position is at one past the separator char
         # convert result to requested type, be strict about non-numeric chars
         if typechar == '$':
-            value = state.basic_state.strings.store(word)
+            value = state.session.strings.store(word)
         else:
             value = representation.str_to_number(word, allow_nonnum=False)
         return value, c
@@ -672,7 +672,7 @@ class KYBDFile(TextFileBase):
         # file position is at one past the separator char
         # convert result to requested type, be strict about non-numeric chars
         if typechar == '$':
-            value = state.basic_state.strings.store(word)
+            value = state.session.strings.store(word)
         else:
             value = representation.str_to_number(word, allow_nonnum=False)
         return value, c

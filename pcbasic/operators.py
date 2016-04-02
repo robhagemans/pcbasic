@@ -163,7 +163,7 @@ def number_imp(left, right):
 
 def string_concat(left, right):
     """ Concatenate strings. """
-    return state.basic_state.strings.store(var.copy_str(vartypes.pass_string(left)) + var.copy_str(vartypes.pass_string(right)))
+    return state.session.strings.store(var.copy_str(vartypes.pass_string(left)) + var.copy_str(vartypes.pass_string(right)))
 
 
 ###############################################################################

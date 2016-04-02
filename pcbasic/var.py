@@ -113,7 +113,7 @@ def view_str(basic_string):
     if address >= memory.code_start:
         # string stored in string space
         sequence = vartypes.string_to_bytes(basic_string)
-        return memoryview(state.basic_state.strings.retrieve(sequence))
+        return memoryview(state.session.strings.retrieve(sequence))
     else:
         # string stored in field buffers
         # find the file we're in
@@ -130,7 +130,7 @@ def set_str(basic_string, in_str, offset=None, num=None):
     # if it is a code literal, we now do need to allocate space for a copy
     address = vartypes.string_address(basic_string)
     if address >= memory.code_start and address < memory.var_start():
-        basic_string = state.basic_state.strings.store(copy_str(basic_string))
+        basic_string = state.session.strings.store(copy_str(basic_string))
     if num is None:
         view_str(basic_string)[:] = in_str
     else:
@@ -508,9 +508,8 @@ def swap(name1, index1, name2, index2):
 ###############################################################################
 # variable memory
 
-def clear_variables(preserve_vars, preserve_arrays):
+def clear_variables(preserve_vars, preserve_arrays, new_strings):
     """ Reset and clear variables, arrays, common definitions and functions. """
-    new_strings = StringSpace()
     # preserve COMMON variables
     # this is a re-assignment which is not FOR-safe;
     # but clear_variables is only called in CLEAR which also clears the FOR stack
@@ -523,8 +522,7 @@ def clear_variables(preserve_vars, preserve_arrays):
         state.basic_state.arrays.clear_base()
     # functions are cleared except when CHAIN ... ALL is specified
     state.basic_state.functions = {}
-    # reset string space
-    state.basic_state.strings = new_strings
+
 
 def collect_garbage():
     """ Collect garbage from string space. Compactify string storage. """
@@ -535,8 +533,8 @@ def collect_garbage():
             v = state.session.scalars.variables[name]
             try:
                 string_list.append((v, 0,
-                        state.basic_state.strings.address(v),
-                        state.basic_state.strings.retrieve(v)))
+                        state.session.strings.address(v),
+                        state.session.strings.retrieve(v)))
             except KeyError:
                 # string is not located in memory - FIELD or code
                 pass
@@ -548,18 +546,18 @@ def collect_garbage():
                 v = lst[i:i+3]
                 try:
                     string_list.append((lst, i,
-                            state.basic_state.strings.address(v),
-                            state.basic_state.strings.retrieve(v)))
+                            state.session.strings.address(v),
+                            state.session.strings.retrieve(v)))
                 except KeyError:
                     # string is not located in memory - FIELD or code
                     pass
     # sort by str_ptr, largest first (maintain order of storage)
     string_list.sort(key=itemgetter(2), reverse=True)
     # clear the string buffer and re-store all referenced strings
-    state.basic_state.strings.clear()
+    state.session.strings.clear()
     for item in string_list:
         # re-allocate string space
-        item[0][item[1]:item[1]+3] = state.basic_state.strings.store(item[3])[1]
+        item[0][item[1]:item[1]+3] = state.session.strings.store(item[3])[1]
 
 def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
@@ -603,7 +601,7 @@ def get_data_memory(address):
         return state.session.scalars.get_memory(address)
     elif address < state.basic_state.var_current + state.basic_state.array_current:
         return state.session.arrays.get_memory(address)
-    elif address > state.basic_state.strings.current:
+    elif address > state.session.strings.current:
         return get_data_memory_string(address)
     else:
         # unallocated var space
@@ -618,7 +616,7 @@ def get_data_memory_string(address):
         if name[-1] != '$':
             continue
         v = state.session.scalars.variables[name]
-        str_try = state.basic_state.strings.address(v)
+        str_try = state.session.strings.address(v)
         if str_try <= address and str_try > str_nearest:
             str_nearest = str_try
             the_var = v
@@ -628,12 +626,12 @@ def get_data_memory_string(address):
                 continue
             _, lst, _ = state.session.arrays.arrays[name]
             for i in range(0, len(lst), 3):
-                str_try = state.basic_state.strings.address(lst[i:i+3])
+                str_try = state.session.strings.address(lst[i:i+3])
                 if str_try <= address and str_try > str_nearest:
                     str_nearest = str_try
                     the_var = lst[i:i+3]
     try:
-        return state.basic_state.strings.retrieve(the_var)[address - str_nearest]
+        return state.session.strings.retrieve(the_var)[address - str_nearest]
     except (IndexError, AttributeError, KeyError):
         return -1
 

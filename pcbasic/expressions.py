@@ -241,7 +241,7 @@ def parse_literal(ins):
         if d == '\0':
             ins.seek(-1, 1)
         # store for easy retrieval, but don't reserve space in string memory
-        return state.basic_state.strings.store(output, address)
+        return state.session.strings.store(output, address)
     # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
     # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
     elif d in string.digits:
@@ -327,15 +327,15 @@ def value_cvd(ins):
 
 def value_mki(ins):
     """ MKI$: return the byte representation of an int. """
-    return state.basic_state.strings.store(vartypes.integer_to_bytes(vartypes.pass_integer(parse_bracket(ins))))
+    return state.session.strings.store(vartypes.integer_to_bytes(vartypes.pass_integer(parse_bracket(ins))))
 
 def value_mks(ins):
     """ MKS$: return the byte representation of a single. """
-    return state.basic_state.strings.store(vartypes.pass_single(parse_bracket(ins))[1])
+    return state.session.strings.store(vartypes.pass_single(parse_bracket(ins))[1])
 
 def value_mkd(ins):
     """ MKD$: return the byte representation of a double. """
-    return state.basic_state.strings.store(vartypes.pass_double(parse_bracket(ins))[1])
+    return state.session.strings.store(vartypes.pass_double(parse_bracket(ins))[1])
 
 def value_cint(ins):
     """ CINT: convert a number to integer. """
@@ -352,7 +352,7 @@ def value_cdbl(ins):
 def value_str(ins):
     """ STR$: string representation of a number. """
     s = vartypes.pass_number(parse_bracket(ins))
-    return state.basic_state.strings.store(representation.number_to_str(s, screen=True))
+    return state.session.strings.store(representation.number_to_str(s, screen=True))
 
 def value_val(ins):
     """ VAL: number value of a string. """
@@ -362,19 +362,19 @@ def value_chr(ins):
     """ CHR$: character for ASCII value. """
     val = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 255, val)
-    return state.basic_state.strings.store(chr(val))
+    return state.session.strings.store(chr(val))
 
 def value_oct(ins):
     """ OCT$: octal representation of int. """
     # allow range -32768 to 65535
     val = vartypes.pass_integer(parse_bracket(ins), 0xffff)
-    return state.basic_state.strings.store(representation.integer_to_str_oct(val))
+    return state.session.strings.store(representation.integer_to_str_oct(val))
 
 def value_hex(ins):
     """ HEX$: hexadecimal representation of int. """
     # allow range -32768 to 65535
     val = vartypes.pass_integer(parse_bracket(ins), 0xffff)
-    return state.basic_state.strings.store(representation.integer_to_str_hex(val))
+    return state.session.strings.store(representation.integer_to_str_hex(val))
 
 
 ######################################################################
@@ -435,7 +435,7 @@ def value_mid(ins):
     start -= 1
     stop = start + num
     stop = min(stop, len(s))
-    return state.basic_state.strings.store(s[start:stop])
+    return state.session.strings.store(s[start:stop])
 
 def value_left(ins):
     """ LEFT$: get substring at the start of string. """
@@ -448,7 +448,7 @@ def value_left(ins):
     if stop == 0:
         return vartypes.null('$')
     stop = min(stop, len(s))
-    return state.basic_state.strings.store(s[:stop])
+    return state.session.strings.store(s[:stop])
 
 def value_right(ins):
     """ RIGHT$: get substring at the end of string. """
@@ -461,7 +461,7 @@ def value_right(ins):
     if stop == 0:
         return vartypes.null('$')
     stop = min(stop, len(s))
-    return state.basic_state.strings.store(s[-stop:])
+    return state.session.strings.store(s[-stop:])
 
 def value_string(ins):
     """ STRING$: repeat characters. """
@@ -478,13 +478,13 @@ def value_string(ins):
         j = vartypes.pass_int_unpack(j)
         util.range_check(0, 255, j)
     util.require_read(ins, (')',))
-    return state.basic_state.strings.store(chr(j)*n)
+    return state.session.strings.store(chr(j)*n)
 
 def value_space(ins):
     """ SPACE$: repeat spaces. """
     num = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 255, num)
-    return state.basic_state.strings.store(' '*num)
+    return state.session.strings.store(' '*num)
 
 ######################################################################
 # console functions
@@ -524,11 +524,11 @@ def value_input(ins):
     if len(word) < num:
         # input past end
         raise error.RunError(error.INPUT_PAST_END)
-    return state.basic_state.strings.store(word)
+    return state.session.strings.store(word)
 
 def value_inkey(ins):
     """ INKEY$: get a character from the keyboard. """
-    return state.basic_state.strings.store(state.console_state.keyb.get_char())
+    return state.session.strings.store(state.console_state.keyb.get_char())
 
 def value_csrlin(ins):
     """ CSRLIN: get the current screen row. """
@@ -598,11 +598,11 @@ def value_environ(ins):
     util.require_read(ins, ('$',))
     expr = parse_bracket(ins)
     if expr[0] == '$':
-        return state.basic_state.strings.store(shell.get_env(var.copy_str(expr)))
+        return state.session.strings.store(shell.get_env(var.copy_str(expr)))
     else:
         expr = vartypes.pass_int_unpack(expr)
         util.range_check(1, 255, expr)
-        return state.basic_state.strings.store(shell.get_env_entry(expr))
+        return state.session.strings.store(shell.get_env_entry(expr))
 
 def value_timer(ins):
     """ TIMER: get clock ticks since midnight. """
@@ -611,11 +611,11 @@ def value_timer(ins):
 
 def value_time(ins):
     """ TIME$: get current system time. """
-    return state.basic_state.strings.store(timedate.get_time())
+    return state.session.strings.store(timedate.get_time())
 
 def value_date(ins):
     """ DATE$: get current system date. """
-    return state.basic_state.strings.store(timedate.get_date())
+    return state.session.strings.store(timedate.get_date())
 
 #######################################################
 # user-defined functions
@@ -807,7 +807,7 @@ def value_varptr(ins):
         raise error.RunError(error.IFC)
     var_ptr = vartypes.int_to_integer_unsigned(var_ptr)
     if dollar:
-        return state.basic_state.strings.store(chr(vartypes.byte_size[name[-1]]) + vartypes.integer_to_bytes(var_ptr))
+        return state.session.strings.store(chr(vartypes.byte_size[name[-1]]) + vartypes.integer_to_bytes(var_ptr))
     else:
         return var_ptr
 

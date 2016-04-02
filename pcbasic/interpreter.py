@@ -166,7 +166,11 @@ class Session(object):
                 # at least I think these should be cleared by CLEAR?
                 self.common_scalars = set()
                 self.common_arrays = set()
-            var.clear_variables(self.common_scalars, self.common_arrays)
+            new_strings = var.StringSpace()
+            var.clear_variables(self.common_scalars, self.common_arrays, new_strings)
+            # reset string space
+            self.strings = new_strings
+            state.basic_state.strings = self.strings
         if not preserve_deftype:
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
             self.deftype = ['!']*26
