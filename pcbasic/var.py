@@ -513,13 +513,13 @@ def clear_variables(preserve_vars, preserve_arrays, new_strings):
     # preserve COMMON variables
     # this is a re-assignment which is not FOR-safe;
     # but clear_variables is only called in CLEAR which also clears the FOR stack
-    with state.basic_state.scalars.preserve(preserve_vars, new_strings):
-        state.basic_state.scalars.clear()
-    with state.basic_state.arrays.preserve(preserve_arrays, new_strings):
-        state.basic_state.arrays.clear()
+    with state.session.scalars.preserve(preserve_vars, new_strings):
+        state.session.scalars.clear()
+    with state.session.arrays.preserve(preserve_arrays, new_strings):
+        state.session.arrays.clear()
     if not(preserve_vars or preserve_arrays):
         # clear OPTION BASE
-        state.basic_state.arrays.clear_base()
+        state.session.arrays.clear_base()
     # functions are cleared except when CHAIN ... ALL is specified
     state.basic_state.functions = {}
 

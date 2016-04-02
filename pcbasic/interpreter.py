@@ -141,13 +141,10 @@ class Session(object):
             pcjr_term = ''
         # initialise the parser
         self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
-        state.basic_state.parser = self.parser
 
         # set up variables and memory model state
         self.scalars = var.Scalars()
-        state.basic_state.scalars = self.scalars
         self.arrays = var.Arrays()
-        state.basic_state.arrays = self.arrays
         self.strings = var.StringSpace()
         state.basic_state.strings = self.strings
         self.common_scalars = set()
