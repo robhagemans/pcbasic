@@ -65,7 +65,9 @@ class SessionLauncher(object):
         if self.resume and state.load():
             state.session.resume()
         else:
-            state.session = Session(self.show_greeting, self.prog)
+            state.session = Session(self.prog)
+            if self.show_greeting:
+                state.session.greet()
         self.thread = threading.Thread(target=state.session.run,
                                 args=(self.cmd, self.run, self.quit, self.wait))
         self.thread.start()
@@ -82,12 +84,6 @@ class SessionLauncher(object):
 ###############################################################################
 # interpreter session
 
-greeting = (
-    'PC-BASIC {version}\r'
-    '(C) Copyright 2013--2016 Rob Hagemans.\r'
-    '{free} Bytes free')
-
-
 class ResumeFailed(Exception):
     """ Failed to resume session. """
     def __str__(self):
@@ -97,7 +93,7 @@ class ResumeFailed(Exception):
 class Session(object):
     """ Interpreter session. """
 
-    def __init__(self, greet, load):
+    def __init__(self, load):
         """ Initialise the interpreter session. """
         # true if a prompt is needed on next cycle
         self.prompt = True
@@ -188,12 +184,15 @@ class Session(object):
                 except shell.InitFailed:
                     logging.warning('Pexpect module not found. SHELL statement disabled.')
 
-        # greeting and keys
-        if greet:
-            console.clear()
-            console.write_line(greeting.format(version=plat.version, free=var.fre()))
-            console.show_keys(True)
-
+    def greet(self):
+        """ Show greeting and keys. """
+        greeting = (
+            'PC-BASIC {version}\r'
+            '(C) Copyright 2013--2016 Rob Hagemans.\r'
+            '{free} Bytes free')
+        console.clear()
+        console.write_line(greeting.format(version=plat.version, free=var.fre()))
+        console.show_keys(True)
 
     def clear(self, close_files=False,
               preserve_common=False, preserve_all=False, preserve_deftype=False):
