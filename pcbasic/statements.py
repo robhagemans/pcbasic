@@ -1022,6 +1022,8 @@ class Parser(object):
             for l in lines:
                 # LIST on screen is slightly different from just writing
                 console.list_line(l)
+        # return to direct mode
+        self.set_pointer(False)
 
     def exec_llist(self):
         """ LLIST: output program lines to LPT1: """
@@ -1029,6 +1031,8 @@ class Parser(object):
         util.require(self.ins, tk.end_statement)
         for l in self.session.program.list_lines(from_line, to_line):
             state.io_state.lpt1_file.write_line(l)
+        # return to direct mode
+        self.set_pointer(False)
 
     def exec_load(self):
         """ LOAD: load program from file. """

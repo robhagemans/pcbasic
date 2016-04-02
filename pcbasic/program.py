@@ -354,6 +354,4 @@ class Program(object):
             self.bytecode.seek(pos + 1)
             _, line, _ = tokenise.detokenise_line(self.bytecode)
             lines.append(str(line))
-        # return to direct mode
-        state.session.parser.set_pointer(False)
         return lines
