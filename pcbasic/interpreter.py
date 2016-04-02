@@ -162,7 +162,11 @@ class Session(object):
         """ Execute a CLEAR command. """
         #   Resets the stack and string space
         #   Clears all COMMON and user variables
-        var.clear_variables(preserve_common, preserve_all, preserve_deftype)
+        if not preserve_all:
+            var.clear_variables(preserve_common)
+        if not preserve_deftype:
+            # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
+            state.basic_state.deftype = ['!']*26
         # reset random number generator
         rnd.clear()
         if close_files:

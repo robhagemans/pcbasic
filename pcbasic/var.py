@@ -464,60 +464,58 @@ def swap(name1, index1, name2, index2):
 ###############################################################################
 # variable memory
 
-def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=False):
+
+
+def clear_variables(preserve_common=False):
     """ Reset and clear variables, arrays, common definitions and functions. """
-    if not preserve_deftype:
-        # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
-        state.basic_state.deftype = ['!']*26
-    if not preserve_all:
-        if preserve_common:
-            # preserve COMMON variables (CHAIN does this)
-            common, common_arrays = {}, {}
-            for varname in state.basic_state.common_names:
-                try:
-                    common[varname] = state.session.scalars.variables[varname]
-                except KeyError:
-                    pass
-            for varname in state.basic_state.common_array_names:
-                try:
-                    common_arrays[varname] = state.session.arrays.arrays[varname]
-                except KeyError:
-                    pass
+    if preserve_common:
+        # preserve COMMON variables (CHAIN does this)
+        common, common_arrays = {}, {}
+        for varname in state.basic_state.common_names:
+            try:
+                common[varname] = state.session.scalars.variables[varname]
+            except KeyError:
+                pass
+        for varname in state.basic_state.common_array_names:
+            try:
+                common_arrays[varname] = state.session.arrays.arrays[varname]
+            except KeyError:
+                pass
+    else:
+        # clear OPTION BASE
+        state.basic_state.arrays.base_index = None
+        common = {}
+        common_arrays = {}
+        # at least I think these should be cleared by CLEAR?
+        state.basic_state.common_names = []
+        state.basic_state.common_array_names = []
+    # restore only common variables
+    # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
+    state.basic_state.scalars.clear()
+    state.basic_state.arrays.clear()
+    # functions are cleared except when CHAIN ... ALL is specified
+    state.basic_state.functions = {}
+    # reset string space
+    new_strings = StringSpace()
+    # preserve common variables
+    # use set_scalar and dim_array to rebuild memory model
+    for v in common:
+        full_var = (v[-1], common[v])
+        if v[-1] == '$':
+            full_var = new_strings.store(copy_str(full_var))
+        state.basic_state.scalars.set(v, full_var)
+    for a in common_arrays:
+        state.session.arrays.dim(a, common_arrays[a][0])
+        if a[-1] == '$':
+            s = bytearray()
+            for i in range(0, len(common_arrays[a][1]), vartypes.byte_size['$']):
+                old_ptr = vartypes.bytes_to_string(common_arrays[a][1][i:i+vartypes.byte_size['$']])
+                new_ptr = new_strings.store(copy_str(old_ptr))
+                s += vartypes.string_to_bytes(new_ptr)
+            state.session.arrays.arrays[a][1] = s
         else:
-            # clear OPTION BASE
-            state.basic_state.arrays.base_index = None
-            common = {}
-            common_arrays = {}
-            # at least I think these should be cleared by CLEAR?
-            state.basic_state.common_names = []
-            state.basic_state.common_array_names = []
-        # restore only common variables
-        # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
-        state.basic_state.scalars.clear()
-        state.basic_state.arrays.clear()
-        # functions are cleared except when CHAIN ... ALL is specified
-        state.basic_state.functions = {}
-        # reset string space
-        new_strings = StringSpace()
-        # preserve common variables
-        # use set_scalar and dim_array to rebuild memory model
-        for v in common:
-            full_var = (v[-1], common[v])
-            if v[-1] == '$':
-                full_var = new_strings.store(copy_str(full_var))
-            state.basic_state.scalars.set(v, full_var)
-        for a in common_arrays:
-            state.session.arrays.dim(a, common_arrays[a][0])
-            if a[-1] == '$':
-                s = bytearray()
-                for i in range(0, len(common_arrays[a][1]), vartypes.byte_size['$']):
-                    old_ptr = vartypes.bytes_to_string(common_arrays[a][1][i:i+vartypes.byte_size['$']])
-                    new_ptr = new_strings.store(copy_str(old_ptr))
-                    s += vartypes.string_to_bytes(new_ptr)
-                state.session.arrays.arrays[a][1] = s
-            else:
-                state.session.arrays.arrays[a] = common_arrays[a]
-        state.basic_state.strings = new_strings
+            state.session.arrays.arrays[a] = common_arrays[a]
+    state.basic_state.strings = new_strings
 
 
 def collect_garbage():
