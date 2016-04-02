@@ -245,7 +245,7 @@ class Arrays(object):
     def clear(self):
         """ Clear arrays. """
         self.arrays = {}
-        state.basic_state.array_memory = {}
+        self.array_memory = {}
         # arrays are always kept after all vars
         state.basic_state.array_current = 0
 
@@ -301,7 +301,7 @@ class Arrays(object):
         array_bytes = size*var_size_bytes(name)
         check_free_memory(record_len + array_bytes, error.OUT_OF_MEMORY)
         state.basic_state.array_current += record_len + array_bytes
-        state.basic_state.array_memory[name] = (name_ptr, array_ptr)
+        self.array_memory[name] = (name_ptr, array_ptr)
         try:
             self.arrays[name] = [ dimensions, bytearray(array_bytes), 0 ]
         except OverflowError:
@@ -364,11 +364,43 @@ class Arrays(object):
         name = vartypes.complete_name(name)
         try:
             dimensions, _, _ = self.arrays[name]
-            _, array_ptr = state.basic_state.array_memory[name]
+            _, array_ptr = self.array_memory[name]
             # arrays are kept at the end of the var list
             return state.basic_state.var_current + array_ptr + var_size_bytes(name) * self.index(indices, dimensions)
         except KeyError:
             return -1
+
+    def get_memory(self, address):
+        """ Retrieve data from data memory: array space """
+        name_addr = -1
+        arr_addr = -1
+        the_arr = None
+        for name in self.array_memory:
+            name_try, arr_try = self.array_memory[name]
+            if name_try <= address and name_try > name_addr:
+                name_addr, arr_addr = name_try, arr_try
+                the_arr = name
+        if the_arr is None:
+            return -1
+        if address >= state.basic_state.var_current + arr_addr:
+            offset = address - arr_addr - state.basic_state.var_current
+            if offset >= self.array_size_bytes(the_arr):
+                return -1
+            _, byte_array, _ = self.arrays[the_arr]
+            return byte_array[offset]
+        else:
+            offset = address - name_addr - state.basic_state.var_current
+            if offset < max(3, len(the_arr))+1:
+                return get_name_in_memory(the_arr, offset)
+            else:
+                offset -= max(3, len(the_arr))+1
+                dimensions, _, _ = self.arrays[the_arr]
+                data_rep = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
+                    self.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)))
+                for d in dimensions:
+                    data_rep += vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
+                                        d + 1 - self.base_index))
+                return data_rep[offset]
 
 
 ###############################################################################
@@ -546,7 +578,7 @@ def get_value_for_varptrstr(varptrstr):
     # no scalar found, try arrays
     found_addr = -1
     found_name = None
-    for name, data in state.basic_state.array_memory.iteritems():
+    for name, data in state.session.arrays.array_memory.iteritems():
         addr = state.basic_state.var_current + data[1]
         if addr > found_addr and addr <= varptr:
             found_addr = addr
@@ -564,44 +596,12 @@ def get_data_memory(address):
     if address < state.basic_state.var_current:
         return state.session.scalars.get_memory(address)
     elif address < state.basic_state.var_current + state.basic_state.array_current:
-        return get_data_memory_array(address)
+        return state.session.arrays.get_memory(address)
     elif address > state.basic_state.strings.current:
         return get_data_memory_string(address)
     else:
         # unallocated var space
         return -1
-
-def get_data_memory_array(address):
-    """ Retrieve data from data memory: array space """
-    name_addr = -1
-    arr_addr = -1
-    the_arr = None
-    for name in state.basic_state.array_memory:
-        name_try, arr_try = state.basic_state.array_memory[name]
-        if name_try <= address and name_try > name_addr:
-            name_addr, arr_addr = name_try, arr_try
-            the_arr = name
-    if the_arr is None:
-        return -1
-    if address >= state.basic_state.var_current + arr_addr:
-        offset = address - arr_addr - state.basic_state.var_current
-        if offset >= state.session.arrays.array_size_bytes(the_arr):
-            return -1
-        _, byte_array, _ = state.session.arrays.arrays[the_arr]
-        return byte_array[offset]
-    else:
-        offset = address - name_addr - state.basic_state.var_current
-        if offset < max(3, len(the_arr))+1:
-            return get_name_in_memory(the_arr, offset)
-        else:
-            offset -= max(3, len(the_arr))+1
-            dimensions, _, _ = state.session.arrays.arrays[the_arr]
-            data_rep = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
-                state.session.arrays.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)))
-            for d in dimensions:
-                data_rep += vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
-                                    d + 1 - state.session.arrays.base_index))
-            return data_rep[offset]
 
 def get_data_memory_string(address):
     """ Retrieve data from data memory: string space """
