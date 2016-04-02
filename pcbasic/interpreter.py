@@ -163,7 +163,11 @@ class Session(object):
         #   Resets the stack and string space
         #   Clears all COMMON and user variables
         if not preserve_all:
-            var.clear_variables(preserve_common)
+            if not preserve_common:
+                # at least I think these should be cleared by CLEAR?
+                state.basic_state.common_names = []
+                state.basic_state.common_array_names = []
+            var.clear_variables(state.basic_state.common_names, state.basic_state.common_array_names)
         if not preserve_deftype:
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
             state.basic_state.deftype = ['!']*26

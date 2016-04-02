@@ -466,29 +466,23 @@ def swap(name1, index1, name2, index2):
 
 
 
-def clear_variables(preserve_common=False):
+def clear_variables(preserve_vars, preserve_arrays):
     """ Reset and clear variables, arrays, common definitions and functions. """
-    if preserve_common:
-        # preserve COMMON variables (CHAIN does this)
-        common, common_arrays = {}, {}
-        for varname in state.basic_state.common_names:
-            try:
-                common[varname] = state.session.scalars.variables[varname]
-            except KeyError:
-                pass
-        for varname in state.basic_state.common_array_names:
-            try:
-                common_arrays[varname] = state.session.arrays.arrays[varname]
-            except KeyError:
-                pass
-    else:
+    common, common_arrays = {}, {}
+    if not(preserve_vars or preserve_arrays):
         # clear OPTION BASE
         state.basic_state.arrays.base_index = None
-        common = {}
-        common_arrays = {}
-        # at least I think these should be cleared by CLEAR?
-        state.basic_state.common_names = []
-        state.basic_state.common_array_names = []
+    # preserve COMMON variables
+    for varname in preserve_vars:
+        try:
+            common[varname] = state.session.scalars.variables[varname]
+        except KeyError:
+            pass
+    for varname in preserve_arrays:
+        try:
+            common_arrays[varname] = state.session.arrays.arrays[varname]
+        except KeyError:
+            pass
     # restore only common variables
     # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
     state.basic_state.scalars.clear()
