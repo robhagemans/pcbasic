@@ -201,6 +201,15 @@ class Scalars(object):
         state.basic_state.var_memory = {}
         state.basic_state.var_current = memory.var_start()
 
+    def varptr(self, name):
+        """ Retrieve the address of a scalar variable. """
+        name = vartypes.complete_name(name)
+        try:
+            _, var_ptr = state.basic_state.var_memory[name]
+            return var_ptr
+        except KeyError:
+            return -1
+
 
 ###############################################################################
 # arrays
@@ -328,6 +337,17 @@ class Arrays(object):
         # inc version
         self.arrays[name][2] += 1
 
+    def varptr(self, name, indices):
+        """ Retrieve the address of an array. """
+        name = vartypes.complete_name(name)
+        try:
+            dimensions, _, _ = self.arrays[name]
+            _, array_ptr = state.basic_state.array_memory[name]
+            # arrays are kept at the end of the var list
+            return state.basic_state.var_current + array_ptr + var_size_bytes(name) * self.index(indices, dimensions)
+        except KeyError:
+            return -1
+
 
 ###############################################################################
 # generic variable access
@@ -346,6 +366,13 @@ def set_variable(name, indices, value):
         state.session.scalars.set(name, value)
     else:
         state.session.arrays.set(name, indices, value)
+
+def varptr(name, indices):
+    """Get address of variable. """
+    if indices == []:
+        return state.session.scalars.varptr(name)
+    else:
+        return state.session.arrays.varptr(name)
 
 def swap(name1, index1, name2, index2):
     """ Swap two variables by reference (Strings) or value (everything else). """
@@ -610,21 +637,3 @@ def get_name_in_memory(name, offset):
     else:
         # rest of name is encoded such that c1 == 'A'
         return ord(name[offset-1].upper()) - ord('A') + 0xC1
-
-def varptr(name, indices):
-    """Get address of variable. """
-    name = vartypes.complete_name(name)
-    if indices == []:
-        try:
-            _, var_ptr = state.basic_state.var_memory[name]
-            return var_ptr
-        except KeyError:
-            return -1
-    else:
-        try:
-            dimensions, _, _ = state.session.arrays.arrays[name]
-            _, array_ptr = state.basic_state.array_memory[name]
-            # arrays are kept at the end of the var list
-            return state.basic_state.var_current + array_ptr + var_size_bytes(name) * state.session.arrays.index(indices, dimensions)
-        except KeyError:
-            return -1
