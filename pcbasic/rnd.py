@@ -15,10 +15,6 @@ rnd_period = 2**24
 rnd_a = 214013
 rnd_c = 2531011
 
-def prepare():
-    """ Initialise the rnd module. """
-    clear()
-
 def clear():
     """ Reset the random number generator. """
     state.basic_state.rnd_seed = 5228370 # 0x4fc752
@@ -62,5 +58,3 @@ def get_random_int(n):
 def get_random(mbf):
     """ Get a value from the random number generator (MBF single argument). """
     return get_random_int(-(mbf.man>>8) if mbf.neg else mbf.man>>8)
-
-prepare()

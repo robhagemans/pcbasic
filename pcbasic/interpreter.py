@@ -143,18 +143,37 @@ class Session(object):
         self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
         state.basic_state.parser = self.parser
 
-        # set up interpreter and memory model state
+        # set up variables and memory model state
         self.scalars = var.Scalars()
         state.basic_state.scalars = self.scalars
         self.arrays = var.Arrays()
         state.basic_state.arrays = self.arrays
+        self.strings = var.StringSpace()
+        state.basic_state.strings = self.strings
+        self.common_scalars = set()
+        self.common_arrays = set()
+        self.deftype = ['!']*26
+        state.basic_state.functions = {}
 
-        self.clear()
+        # initialise random number generator
+        rnd.clear()
+
+        # TODO: these may not be necessary
+        # stop all sound
+        state.console_state.sound.stop_all_sound()
+        # Resets STRIG to off
+        state.console_state.stick.switch(False)
+        # reset sound and PLAY state
+        state.console_state.sound.reset()
+        # reset DRAW state (angle, scale) and current graphics position
+        state.console_state.screen.drawing.reset()
+
         # greeting and keys
         if greet:
             console.clear()
             console.write_line(greeting.format(version=plat.version, free=var.fre()))
             console.show_keys(True)
+
 
     def clear(self, close_files=False,
               preserve_common=False, preserve_all=False, preserve_deftype=False):
