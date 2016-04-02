@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 from operator import itemgetter
+from contextlib import contextmanager
 
 import error
 import vartypes
@@ -232,6 +233,22 @@ class Scalars(object):
             offset = address - name_addr
             return get_name_in_memory(the_var, offset)
 
+    @contextmanager
+    def preserve(self, names, string_store):
+        """ Preserve COMMON variables. """
+        common = {}
+        for varname in names:
+            try:
+                common[varname] = self.variables[varname]
+            except KeyError:
+                pass
+        yield
+        for v in common:
+            full_var = (v[-1], common[v])
+            if v[-1] == '$':
+                full_var = string_store.store(copy_str(full_var))
+            self.set(v, full_var)
+
 
 ###############################################################################
 # arrays
@@ -241,6 +258,8 @@ class Arrays(object):
     def __init__(self):
         """ Initialise arrays. """
         self.clear()
+        # OPTION BASE is unset
+        self.base_index = None
 
     def clear(self):
         """ Clear arrays. """
@@ -248,7 +267,6 @@ class Arrays(object):
         self.array_memory = {}
         # arrays are always kept after all vars
         state.basic_state.array_current = 0
-
 
     def erase(self, name):
         """ Remove an array from memory. """
@@ -331,6 +349,10 @@ class Arrays(object):
                 raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
         return dimensions, lst
 
+    def clear_base(self):
+        """ Unset the array base. """
+        self.base_index = None
+
     def base(self, base):
         """ Set the array base to 0 or 1 (OPTION BASE). Raise error if already set. """
         if base not in (1, 0):
@@ -402,6 +424,28 @@ class Arrays(object):
                                         d + 1 - self.base_index))
                 return data_rep[offset]
 
+    @contextmanager
+    def preserve(self, names, string_store):
+        """ Preserve COMMON variables. """
+        common = {}
+        for varname in names:
+            try:
+                common[varname] = self.arrays[varname]
+            except KeyError:
+                pass
+        yield
+        for a in common:
+            self.dim(a, common[a][0])
+            if a[-1] == '$':
+                s = bytearray()
+                for i in range(0, len(common[a][1]), vartypes.byte_size['$']):
+                    old_ptr = vartypes.bytes_to_string(common[a][1][i : i+vartypes.byte_size['$']])
+                    new_ptr = string_store.store(copy_str(old_ptr))
+                    s += vartypes.string_to_bytes(new_ptr)
+                self.arrays[a][1] = s
+            else:
+                self.arrays[a] = common[a]
+
 
 ###############################################################################
 # generic variable access
@@ -464,53 +508,23 @@ def swap(name1, index1, name2, index2):
 ###############################################################################
 # variable memory
 
-
-
 def clear_variables(preserve_vars, preserve_arrays):
     """ Reset and clear variables, arrays, common definitions and functions. """
-    common, common_arrays = {}, {}
+    new_strings = StringSpace()
+    # preserve COMMON variables
+    # this is a re-assignment which is not FOR-safe;
+    # but clear_variables is only called in CLEAR which also clears the FOR stack
+    with state.basic_state.scalars.preserve(preserve_vars, new_strings):
+        state.basic_state.scalars.clear()
+    with state.basic_state.arrays.preserve(preserve_arrays, new_strings):
+        state.basic_state.arrays.clear()
     if not(preserve_vars or preserve_arrays):
         # clear OPTION BASE
-        state.basic_state.arrays.base_index = None
-    # preserve COMMON variables
-    for varname in preserve_vars:
-        try:
-            common[varname] = state.session.scalars.variables[varname]
-        except KeyError:
-            pass
-    for varname in preserve_arrays:
-        try:
-            common_arrays[varname] = state.session.arrays.arrays[varname]
-        except KeyError:
-            pass
-    # restore only common variables
-    # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
-    state.basic_state.scalars.clear()
-    state.basic_state.arrays.clear()
+        state.basic_state.arrays.clear_base()
     # functions are cleared except when CHAIN ... ALL is specified
     state.basic_state.functions = {}
     # reset string space
-    new_strings = StringSpace()
-    # preserve common variables
-    # use set_scalar and dim_array to rebuild memory model
-    for v in common:
-        full_var = (v[-1], common[v])
-        if v[-1] == '$':
-            full_var = new_strings.store(copy_str(full_var))
-        state.basic_state.scalars.set(v, full_var)
-    for a in common_arrays:
-        state.session.arrays.dim(a, common_arrays[a][0])
-        if a[-1] == '$':
-            s = bytearray()
-            for i in range(0, len(common_arrays[a][1]), vartypes.byte_size['$']):
-                old_ptr = vartypes.bytes_to_string(common_arrays[a][1][i:i+vartypes.byte_size['$']])
-                new_ptr = new_strings.store(copy_str(old_ptr))
-                s += vartypes.string_to_bytes(new_ptr)
-            state.session.arrays.arrays[a][1] = s
-        else:
-            state.session.arrays.arrays[a] = common_arrays[a]
     state.basic_state.strings = new_strings
-
 
 def collect_garbage():
     """ Collect garbage from string space. Compactify string storage. """
