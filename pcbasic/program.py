@@ -322,16 +322,6 @@ class Program(object):
                 if util.skip_white(linebuf) not in tk.end_line:
                     raise error.RunError(error.DIRECT_STATEMENT_IN_FILE)
 
-    def chain(self, action, g, jumpnum, delete_lines):
-        """ Chain load the program from g and hand over execution. """
-        if delete_lines:
-            # delete lines from existing code before merge (without MERGE, this is pointless)
-            self.delete(*delete_lines)
-        action(g)
-        # don't close files!
-        # RUN
-        state.session.parser.jump(jumpnum, err=error.IFC)
-
     def save(self, g):
         """ Save the program to stream g in (A)scii, (B)ytecode or (P)rotected mode. """
         mode = g.filetype

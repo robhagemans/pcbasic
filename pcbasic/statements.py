@@ -1082,7 +1082,13 @@ class Parser(object):
         if self.session.program.protected and action == self.session.program.merge:
                 raise error.RunError(error.IFC)
         with devices.open_file(0, name, filetype='ABP', mode='I') as f:
-            self.session.program.chain(action, f, jumpnum, delete_lines)
+            if delete_lines:
+                # delete lines from existing code before merge (without MERGE, this is pointless)
+                self.session.program.delete(*delete_lines)
+            action(f)
+            # don't close files!
+            # RUN
+            self.jump(jumpnum, err=error.IFC)
         # preserve DEFtype on MERGE
         self.session.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==self.session.program.merge))
 
