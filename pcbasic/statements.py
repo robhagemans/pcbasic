@@ -33,7 +33,6 @@ import representation
 import shell
 import sound
 import state
-import timedate
 import basictoken as tk
 import util
 import var
@@ -935,7 +934,7 @@ class Parser(object):
         with self.session.strings:
             timestr = var.copy_str(vartypes.pass_string(expressions.parse_expression(self.ins)))
         util.require(self.ins, tk.end_statement)
-        timedate.set_time(timestr)
+        self.session.timer.set_time(timestr)
 
     def exec_date(self):
         """ DATE$: set date. """
@@ -946,7 +945,7 @@ class Parser(object):
         with self.session.strings:
             datestr = var.copy_str(vartypes.pass_string(expressions.parse_expression(self.ins)))
         util.require(self.ins, tk.end_statement)
-        timedate.set_date(datestr)
+        self.session.timer.set_date(datestr)
 
     ##########################################################
     # code

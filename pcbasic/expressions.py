@@ -26,7 +26,6 @@ import var
 import devices
 import state
 import machine
-import timedate
 import basictoken as tk
 import memory
 import operators as op
@@ -606,15 +605,16 @@ def value_environ(ins):
 def value_timer(ins):
     """ TIMER: get clock ticks since midnight. """
     # precision of GWBASIC TIMER is about 1/20 of a second
-    return fp.pack(fp.div( fp.Single.from_int(timedate.timer_milliseconds()/50), fp.Single.from_int(20)))
+    return fp.pack(fp.div( fp.Single.from_int(
+            state.session.timer.timer_milliseconds()/50), fp.Single.from_int(20)))
 
 def value_time(ins):
     """ TIME$: get current system time. """
-    return state.session.strings.store(timedate.get_time())
+    return state.session.strings.store(state.session.timer.get_time())
 
 def value_date(ins):
     """ DATE$: get current system date. """
-    return state.session.strings.store(timedate.get_date())
+    return state.session.strings.store(state.session.timer.get_date())
 
 #######################################################
 # user-defined functions

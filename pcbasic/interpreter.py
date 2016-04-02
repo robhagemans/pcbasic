@@ -38,6 +38,7 @@ import cassette
 import disk
 import var
 import rnd
+import timedate
 
 
 class SessionLauncher(object):
@@ -154,6 +155,8 @@ class Session(object):
 
         # initialise random number generator
         self.randomiser = rnd.RandomNumberGenerator()
+        # initialise timer
+        self.timer = timedate.Timer()
 
         # TODO: these may not be necessary
         # stop all sound

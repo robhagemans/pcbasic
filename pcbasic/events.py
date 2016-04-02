@@ -15,7 +15,6 @@ import signals
 
 import config
 import state
-import timedate
 import scancode
 
 
@@ -191,7 +190,7 @@ class TimerHandler(EventHandler):
 
     def check(self):
         """ Trigger TIMER events. """
-        mutimer = timedate.timer_milliseconds()
+        mutimer = state.session.timer.timer_milliseconds()
         if mutimer >= self.start + self.period:
             self.start = mutimer
             self.trigger()
