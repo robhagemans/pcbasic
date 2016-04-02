@@ -146,6 +146,8 @@ class Session(object):
         self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
 
         # set up variables and memory model state
+        self.memory = var.Memory()
+        state.basic_state.memory = self.memory
         self.scalars = var.Scalars()
         self.arrays = var.Arrays()
         self.strings = var.StringSpace()

@@ -129,7 +129,7 @@ def set_str(basic_string, in_str, offset=None, num=None):
     """ Assign a new string into an existing buffer. """
     # if it is a code literal, we now do need to allocate space for a copy
     address = vartypes.string_address(basic_string)
-    if address >= memory.code_start and address < memory.var_start():
+    if address >= memory.code_start and address < state.session.memory.var_start():
         basic_string = state.session.strings.store(copy_str(basic_string))
     if num is None:
         view_str(basic_string)[:] = in_str
@@ -200,7 +200,7 @@ class Scalars(object):
         """ Clear scalar variables. """
         self.variables = {}
         self.var_memory = {}
-        state.basic_state.var_current = memory.var_start()
+        state.basic_state.var_current = state.basic_state.memory.var_start()
 
     def varptr(self, name):
         """ Retrieve the address of a scalar variable. """
@@ -651,3 +651,19 @@ def get_name_in_memory(name, offset):
     else:
         # rest of name is encoded such that c1 == 'A'
         return ord(name[offset-1].upper()) - ord('A') + 0xC1
+
+
+class Memory(object):
+    """ Memory model. """
+
+    def __init__(self):
+        """ Initialise memory. """
+        self.segment = memory.data_segment
+
+    def var_start(self):
+        """ Start of variable data. """
+        return memory.code_start + self.code_size()
+
+    def code_size(self):
+        """ Size of code space """
+        return len(state.basic_state.program.bytecode.getvalue())

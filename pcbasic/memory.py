@@ -7,7 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import config
-import state
 
 # data memory model: data segment
 # location depends on which flavour of BASIC we use (this is for GW-BASIC)
@@ -76,14 +75,6 @@ def prepare():
     max_memory = min(max_list) or 65534
     # total size of data segment (set by CLEAR)
     total_memory = max_memory
-
-def code_size():
-    """ Size of code space """
-    return len(state.basic_state.program.bytecode.getvalue())
-
-def var_start():
-    """ Start of var space """
-    return code_start + code_size()
 
 def stack_start():
     """ Top of string space; start of stack space """

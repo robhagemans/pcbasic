@@ -283,7 +283,7 @@ def get_memory(addr):
         elif addr >= memory.video_segment*0x10:
             # graphics and text memory
             return max(0, get_video_memory(addr))
-        elif addr >= memory.data_segment*0x10 + memory.var_start():
+        elif addr >= memory.data_segment*0x10 + state.session.memory.var_start():
             # variable memory
             return max(0, var.get_data_memory(addr))
         elif addr >= memory.data_segment*0x10 + memory.code_start:
@@ -311,7 +311,7 @@ def set_memory(addr, val):
     elif addr >= memory.video_segment*0x10:
         # graphics and text memory
         set_video_memory(addr, val)
-    elif addr >= memory.data_segment*0x10 + memory.var_start():
+    elif addr >= memory.data_segment*0x10 + state.session.memory.var_start():
         # POKING in variables
         not_implemented_poke(addr, val)
     elif addr >= memory.data_segment*0x10 + memory.code_start:
@@ -447,9 +447,9 @@ def get_basic_memory(addr):
         return (memory.code_start+1) // 256
     # DS:358, DS:359: start of variable space
     elif addr == 0x358:
-        return memory.var_start() % 256
+        return state.session.memory.var_start() % 256
     elif addr == 0x359:
-        return memory.var_start() // 256
+        return state.session.memory.var_start() // 256
     # DS:35A, DS:35B: start of array space
     elif addr == 0x35A:
         return state.basic_state.var_current % 256
