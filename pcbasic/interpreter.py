@@ -319,6 +319,8 @@ class Session(object):
             # check for lines starting with numbers (6553 6) and empty lines
             self.program.check_number_start(self.direct_line)
             self.program.store_line(self.direct_line)
+            # clear all program stacks
+            self.parser.clear_stacks_and_pointers()
             self.clear()
         elif c != '':
             # it is a command, go and execute
@@ -357,6 +359,8 @@ class Session(object):
             empty, scanline = self.program.check_number_start(self.direct_line)
             if not empty:
                 self.program.store_line(self.direct_line)
+                # clear all program stacks
+                self.parser.clear_stacks_and_pointers()
                 self.clear()
             self.auto_linenum = scanline + self.auto_increment
         elif c != '':

@@ -155,8 +155,6 @@ class Program(object):
         self.update_line_dict(pos, afterpos, length, deleteable, beyond)
         if not empty:
             self.line_numbers[scanline] = pos
-        # clear all program stacks
-        state.basic_state.parser.clear_stacks_and_pointers()
         self.last_stored = scanline
 
     def find_pos_line_dict(self, fromline, toline):
@@ -305,6 +303,8 @@ class Program(object):
             if linebuf.read(1) == '\0':
                 # line starts with a number, add to program memory; store_line seeks to 1 first
                 self.store_line(linebuf)
+                # clear all program stacks
+                state.basic_state.parser.clear_stacks_and_pointers()
             else:
                 # we have read the :
                 if util.skip_white(linebuf) not in tk.end_line:
