@@ -39,6 +39,7 @@ import disk
 import var
 import rnd
 import timedate
+import shell
 
 
 class SessionLauncher(object):
@@ -167,6 +168,22 @@ class Session(object):
         state.console_state.sound.reset()
         # reset DRAW state (angle, scale) and current graphics position
         state.console_state.screen.drawing.reset()
+
+        # set up the SHELL command
+        option_shell = config.get('shell')
+        self.shell = shell.ShellBase()
+        if option_shell != 'none':
+            if option_shell == 'native':
+                shell_command = None
+            else:
+                shell_command = option_shell
+            if plat.system == 'Windows':
+                self.shell = shell.WindowsShell(shell_command)
+            else:
+                try:
+                    self.shell = shell.Shell(shell_command)
+                except shell.InitFailed:
+                    logging.warning('Pexpect module not found. SHELL statement disabled.')
 
         # greeting and keys
         if greet:

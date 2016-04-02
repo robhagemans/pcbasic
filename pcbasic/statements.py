@@ -30,7 +30,6 @@ import ports
 import print_and_input
 import program
 import representation
-import shell
 import sound
 import state
 import basictoken as tk
@@ -900,9 +899,8 @@ class Parser(object):
     def exec_shell(self):
         """ SHELL: open OS shell and optionally execute command. """
         # parse optional shell command
-        if util.skip_white(self.ins) in tk.end_statement:
-            cmd = ''
-        else:
+        cmd = b''
+        if util.skip_white(self.ins) not in tk.end_statement:
             with self.session.strings:
                 cmd = var.copy_str(vartypes.pass_string(expressions.parse_expression(self.ins, self.session)))
         # no SHELL on PCjr.
@@ -910,8 +908,12 @@ class Parser(object):
             raise error.RunError(error.IFC)
         # force cursor visible in all cases
         state.console_state.screen.cursor.show(True)
-        # execute cms or open interactive shell
-        shell.shell(cmd)
+        # sound stops playing and is forgotten
+        state.console_state.sound.stop_all_sound()
+        # no user events
+        with self.events.suspend():
+            # run the os-specific shell
+            self.session.shell.launch(cmd)
         # reset cursor visibility to its previous state
         state.console_state.screen.cursor.reset_visibility()
         util.require(self.ins, tk.end_statement)
