@@ -30,7 +30,6 @@ import ports
 import print_and_input
 import program
 import representation
-import rnd
 import shell
 import sound
 import state
@@ -2302,7 +2301,7 @@ class Parser(object):
                 # seed entered on prompt is rounded to int
                 val = representation.str_to_number(seed)
             val = vartypes.pass_integer(val)
-        rnd.randomize(val)
+        self.session.randomiser.reseed(val)
         util.require(self.ins, tk.end_statement)
 
     ################################################

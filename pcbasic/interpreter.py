@@ -153,7 +153,7 @@ class Session(object):
         state.basic_state.functions = {}
 
         # initialise random number generator
-        rnd.clear()
+        self.randomiser = rnd.RandomNumberGenerator()
 
         # TODO: these may not be necessary
         # stop all sound
@@ -191,7 +191,7 @@ class Session(object):
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
             self.deftype = ['!']*26
         # reset random number generator
-        rnd.clear()
+        self.randomiser.clear()
         if close_files:
             # close all files
             devices.close_files()

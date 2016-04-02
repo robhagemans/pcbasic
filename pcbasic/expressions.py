@@ -19,7 +19,6 @@ import config
 import fp
 import vartypes
 import representation
-import rnd
 import shell
 import util
 import error
@@ -866,9 +865,9 @@ value_log = partial(value_func, fn=fp.log)
 def value_rnd(ins):
     """ RND: get pseudorandom value. """
     if util.skip_white(ins) == '(':
-        return rnd.get_random(fp.unpack(vartypes.pass_single(parse_bracket(ins))))
+        return state.session.randomiser.get(fp.unpack(vartypes.pass_single(parse_bracket(ins))))
     else:
-        return rnd.get_random_int(1)
+        return state.session.randomiser.get_int(1)
 
 def value_abs(ins):
     """ ABS: get absolute value. """
