@@ -265,8 +265,6 @@ class Arrays(object):
         """ Clear arrays. """
         self.arrays = {}
         self.array_memory = {}
-        # arrays are always kept after all vars
-        state.basic_state.array_current = 0
 
     def erase(self, name):
         """ Remove an array from memory. """
@@ -313,12 +311,12 @@ class Arrays(object):
         size = self.array_len(dimensions)
         # update memory model
         # first two bytes: chars of name or 0 if name is one byte long
-        name_ptr = state.basic_state.array_current
+        name_ptr = state.session.memory.array_current
         record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
         array_ptr = name_ptr + record_len
         array_bytes = size*var_size_bytes(name)
         check_free_memory(record_len + array_bytes, error.OUT_OF_MEMORY)
-        state.basic_state.array_current += record_len + array_bytes
+        state.session.memory.array_current += record_len + array_bytes
         self.array_memory[name] = (name_ptr, array_ptr)
         try:
             self.arrays[name] = [ dimensions, bytearray(array_bytes), 0 ]
@@ -558,7 +556,7 @@ def collect_garbage():
 
 def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
-    return state.basic_state.strings.current - state.basic_state.memory.var_current - state.basic_state.array_current
+    return state.basic_state.strings.current - state.basic_state.memory.var_current - state.basic_state.memory.array_current
 
 def check_free_memory(size, err):
     """ Check if sufficient free memory is avilable, raise error if not. """
@@ -596,7 +594,7 @@ def get_data_memory(address):
     address -= memory.data_segment * 0x10
     if address < state.session.memory.var_current:
         return state.session.scalars.get_memory(address)
-    elif address < state.session.memory.var_current + state.basic_state.array_current:
+    elif address < state.session.memory.var_current + state.session.memory.array_current:
         return state.session.arrays.get_memory(address)
     elif address > state.session.strings.current:
         return get_data_memory_string(address)
@@ -660,6 +658,8 @@ class Memory(object):
         """ Initialise memory. """
         self.segment = memory.data_segment
         self.var_current = self.var_start()
+        # arrays are always kept after all vars
+        self.array_current = 0
 
     def var_start(self):
         """ Start of variable data. """
