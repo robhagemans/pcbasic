@@ -265,6 +265,7 @@ class Arrays(object):
         """ Clear arrays. """
         self.arrays = {}
         self.array_memory = {}
+        state.basic_state.memory.array_current = 0
 
     def erase(self, name):
         """ Remove an array from memory. """
@@ -663,8 +664,8 @@ class Memory(object):
 
     def var_start(self):
         """ Start of variable data. """
-        return memory.code_start + self.code_size()
+        return memory.code_start + self._code_size()
 
-    def code_size(self):
+    def _code_size(self):
         """ Size of code space """
         return len(state.basic_state.program.bytecode.getvalue())
