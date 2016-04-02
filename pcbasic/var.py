@@ -169,10 +169,10 @@ class Scalars(object):
             size = (max(3, len(name)) + 1 + vartypes.byte_size[type_char])
             check_free_memory(size, error.OUT_OF_MEMORY)
             # first two bytes: chars of name or 0 if name is one byte long
-            name_ptr = state.basic_state.var_current
+            name_ptr = state.session.memory.var_current
             # byte_size first_letter second_letter_or_nul remaining_length_or_nul
             var_ptr = name_ptr + max(3, len(name)) + 1
-            state.basic_state.var_current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
+            state.session.memory.var_current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
             self.var_memory[name] = (name_ptr, var_ptr)
         # don't change the value if just checking allocation
         if value is None:
@@ -200,7 +200,7 @@ class Scalars(object):
         """ Clear scalar variables. """
         self.variables = {}
         self.var_memory = {}
-        state.basic_state.var_current = state.basic_state.memory.var_start()
+        state.basic_state.memory.var_current = state.basic_state.memory.var_start()
 
     def varptr(self, name):
         """ Retrieve the address of a scalar variable. """
@@ -388,7 +388,7 @@ class Arrays(object):
             dimensions, _, _ = self.arrays[name]
             _, array_ptr = self.array_memory[name]
             # arrays are kept at the end of the var list
-            return state.basic_state.var_current + array_ptr + var_size_bytes(name) * self.index(indices, dimensions)
+            return state.session.memory.var_current + array_ptr + var_size_bytes(name) * self.index(indices, dimensions)
         except KeyError:
             return -1
 
@@ -404,14 +404,14 @@ class Arrays(object):
                 the_arr = name
         if the_arr is None:
             return -1
-        if address >= state.basic_state.var_current + arr_addr:
-            offset = address - arr_addr - state.basic_state.var_current
+        if address >= state.session.memory.var_current + arr_addr:
+            offset = address - arr_addr - state.session.memory.var_current
             if offset >= self.array_size_bytes(the_arr):
                 return -1
             _, byte_array, _ = self.arrays[the_arr]
             return byte_array[offset]
         else:
-            offset = address - name_addr - state.basic_state.var_current
+            offset = address - name_addr - state.session.memory.var_current
             if offset < max(3, len(the_arr))+1:
                 return get_name_in_memory(the_arr, offset)
             else:
@@ -558,7 +558,7 @@ def collect_garbage():
 
 def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
-    return state.basic_state.strings.current - state.basic_state.var_current - state.basic_state.array_current
+    return state.basic_state.strings.current - state.basic_state.memory.var_current - state.basic_state.array_current
 
 def check_free_memory(size, err):
     """ Check if sufficient free memory is avilable, raise error if not. """
@@ -580,7 +580,7 @@ def get_value_for_varptrstr(varptrstr):
     found_addr = -1
     found_name = None
     for name, data in state.session.arrays.array_memory.iteritems():
-        addr = state.basic_state.var_current + data[1]
+        addr = state.session.memory.var_current + data[1]
         if addr > found_addr and addr <= varptr:
             found_addr = addr
             found_name = name
@@ -594,9 +594,9 @@ def get_value_for_varptrstr(varptrstr):
 def get_data_memory(address):
     """ Retrieve data from data memory. """
     address -= memory.data_segment * 0x10
-    if address < state.basic_state.var_current:
+    if address < state.session.memory.var_current:
         return state.session.scalars.get_memory(address)
-    elif address < state.basic_state.var_current + state.basic_state.array_current:
+    elif address < state.session.memory.var_current + state.basic_state.array_current:
         return state.session.arrays.get_memory(address)
     elif address > state.session.strings.current:
         return get_data_memory_string(address)
@@ -659,6 +659,7 @@ class Memory(object):
     def __init__(self):
         """ Initialise memory. """
         self.segment = memory.data_segment
+        self.var_current = self.var_start()
 
     def var_start(self):
         """ Start of variable data. """
