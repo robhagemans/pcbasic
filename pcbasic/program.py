@@ -287,8 +287,6 @@ class Program(object):
             # assume ASCII file
             # anything but numbers or whitespace: Direct Statement in File
             self.merge(g)
-            # clear all program stacks
-            state.basic_state.parser.clear_stacks_and_pointers()
         else:
             logging.debug("Incorrect file type '%s' on LOAD", g.filetype)
         # rebuild line number dict and offsets

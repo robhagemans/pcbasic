@@ -585,7 +585,7 @@ def get_value_for_varptrstr(varptrstr):
             found_name = name
     if found_name is None:
         raise error.RunError(error.IFC)
-    _, lst, _ = state.session.arrays[name]
+    _, lst, _ = state.session.arrays.arrays[name]
     offset = varptr - found_addr
     return (name[-1], lst[offset : offset+var_size_bytes(name)])
 

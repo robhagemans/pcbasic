@@ -54,10 +54,10 @@ class Parser(object):
         self.tron = False
         # pointer position: False for direct line, True for program
         self.run_mode = False
-        self.program_code = None
+        self.program_code = session.program.bytecode
         self.current_statement = 0
         # clear stacks
-        #self.clear_stacks_and_pointers()
+        self.clear_stacks_and_pointers()
         # set up event handlers
         self.events = events.Events()
         self.init_error_trapping()
@@ -79,7 +79,6 @@ class Parser(object):
             """
         try:
             self.handle_basic_events()
-            self.program_code = self.session.program.bytecode
             self.ins = self.get_codestream()
             self.current_statement = self.ins.tell()
             c = util.skip_white(self.ins)
@@ -1536,7 +1535,7 @@ class Parser(object):
         util.require_read(self.ins, (',',))
         array = util.parse_scalar(self.ins)
         util.require(self.ins, tk.end_statement)
-        if array not in self.session.arrays:
+        if array not in self.session.arrays.arrays:
             raise error.RunError(error.IFC)
         elif array[-1] == '$':
             raise error.RunError(error.TYPE_MISMATCH) # type mismatch
@@ -1557,7 +1556,7 @@ class Parser(object):
                                tk.AND, tk.OR, tk.XOR))
             action = self.ins.read(1)
         util.require(self.ins, tk.end_statement)
-        if array not in self.session.arrays:
+        if array not in self.session.arrays.arrays:
             raise error.RunError(error.IFC)
         elif array[-1] == '$':
             # type mismatch
@@ -2434,7 +2433,7 @@ class Parser(object):
         num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
         array_name, start_indices = expressions.parse_variable(self.ins)
         try:
-            dimensions, lst, _ = self.session.arrays[array_name]
+            dimensions, lst, _ = self.session.arrays.arrays[array_name]
         except KeyError:
             raise error.RunError(error.IFC)
         if array_name[-1] != '%':
