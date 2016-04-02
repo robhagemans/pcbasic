@@ -42,14 +42,13 @@ state.basic_state.segment = memory.data_segment
 
 def prepare():
     """ Initialise machine module. """
-    global allow_code_poke, tandy_syntax
+    global tandy_syntax
     try:
         for a in config.get('peek'):
             seg, addr, val = a.split(':')
             peek_values[int(seg)*0x10 + int(addr)] = int(val)
     except (TypeError, ValueError):
         pass
-    allow_code_poke = config.get('allow-code-poke')
     tandy_syntax = config.get('syntax') == 'tandy'
 
 def peek(addr):
@@ -289,7 +288,7 @@ def get_memory(addr):
             return max(0, var.get_data_memory(addr))
         elif addr >= memory.data_segment*0x10 + memory.code_start:
             # code memory
-            return max(0, get_code_memory(addr))
+            return max(0, state.session.program.get_memory(addr))
         elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
             # file & FIELD memory
             return max(0, get_field_memory(addr))
@@ -314,13 +313,13 @@ def set_memory(addr, val):
         set_video_memory(addr, val)
     elif addr >= memory.data_segment*0x10 + memory.var_start():
         # POKING in variables
-        set_data_memory(addr, val)
+        not_implemented_poke(addr, val)
     elif addr >= memory.data_segment*0x10 + memory.code_start:
         # code memory
-        set_code_memory(addr, val)
+        state.session.program.set_memory(addr, val)
     elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
         # file & FIELD memory
-        set_field_memory(addr, val)
+        not_implemented_poke(addr, val)
     elif addr >= memory.data_segment*0x10:
         set_basic_memory(addr, val)
     elif addr >= low_segment*0x10:
@@ -335,10 +334,6 @@ def not_implemented_poke(addr, val):
 def not_implemented_pass(addr, val):
     """ POKE into not implemented location; ignore. """
     pass
-
-# sections of memory for which POKE is not currently implemented
-set_data_memory = not_implemented_poke
-set_field_memory = not_implemented_poke
 
 def get_memory_block(addr, length):
     """ Retrieve a contiguous block of bytes from memory. """
@@ -379,34 +374,6 @@ def get_field_memory(address):
         return state.io_state.fields[number].buffer[offset]
     except (KeyError, IndexError):
         return -1
-
-def get_code_memory(address):
-    """ Retrieve data from program code. """
-    address -= memory.data_segment * 0x10 + memory.code_start
-    code = state.session.program.bytecode.getvalue()
-    try:
-        return ord(code[address])
-    except IndexError:
-        return -1
-
-def set_code_memory(address, val):
-    """ Change program code. """
-    if not allow_code_poke:
-        logging.warning('Ignored POKE into program code')
-    else:
-        address -= memory.data_segment * 0x10 + memory.code_start
-        loc = state.session.program.bytecode.tell()
-        # move pointer to end
-        state.session.program.bytecode.seek(0, 2)
-        if address > state.session.program.bytecode.tell():
-            state.session.program.bytecode.write('\0' *
-                        (address-state.session.program.bytecode.tell()) + chr(val))
-        else:
-            state.session.program.bytecode.seek(address)
-            state.session.program.bytecode.write(chr(val))
-        # restore program pointer
-        state.session.program.bytecode.seek(loc)
-        state.session.program.rebuild_line_dict()
 
 
 ###############################################################

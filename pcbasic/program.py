@@ -28,13 +28,14 @@ import sound
 class Program(object):
     """ BASIC program. """
 
-    def __init__(self, max_list_line, allow_protect):
+    def __init__(self, max_list_line=65536, allow_protect=False, allow_code_poke=False):
         """ Initialise program. """
         # program bytecode buffer
         self.bytecode = StringIO()
         self.erase()
         self.max_list_line = max_list_line
         self.allow_protect = allow_protect
+        self.allow_code_poke = allow_code_poke
 
     def erase(self):
         """ Erase the program from memory. """
@@ -351,3 +352,31 @@ class Program(object):
             _, line, _ = tokenise.detokenise_line(self.bytecode)
             lines.append(str(line))
         return lines
+
+    def get_memory(self, address):
+        """ Retrieve data from program code. """
+        address -= memory.data_segment * 0x10 + memory.code_start
+        code = self.bytecode.getvalue()
+        try:
+            return ord(code[address])
+        except IndexError:
+            return -1
+
+    def set_memory(self, address, val):
+        """ Change program code. """
+        if not self.allow_code_poke:
+            logging.warning('Ignored POKE into program code')
+        else:
+            address -= memory.data_segment * 0x10 + memory.code_start
+            loc = self.bytecode.tell()
+            # move pointer to end
+            self.bytecode.seek(0, 2)
+            if address > self.bytecode.tell():
+                self.bytecode.write('\0' *
+                            (address-self.bytecode.tell()) + chr(val))
+            else:
+                self.bytecode.seek(address)
+                self.bytecode.write(chr(val))
+            # restore program pointer
+            self.bytecode.seek(loc)
+            self.rebuild_line_dict()

@@ -126,8 +126,9 @@ class Session(object):
         else:
             max_list_line = 65530
         allow_protect = config.get('strict-protect')
+        allow_code_poke = config.get('allow-code-poke')
         # initialise the program
-        self.program = program.Program(max_list_line, allow_protect)
+        self.program = program.Program(max_list_line, allow_protect, allow_code_poke)
         state.basic_state.program = self.program
         # load initial program
         if load:
