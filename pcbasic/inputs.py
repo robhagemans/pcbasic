@@ -6,6 +6,8 @@ Keyboard, pen and joystick handling
 This file is released under the GNU GPL version 3 or later.
 """
 
+import datetime
+
 import plat
 import config
 import state
@@ -16,8 +18,6 @@ from eascii import as_bytes as ea
 from eascii import as_unicode as uea
 import redirect
 import events
-# for timer_milliseconds
-import timedate
 
 
 # bit flags for modifier keys
@@ -449,7 +449,7 @@ class Stick(object):
         self.was_fired = [[False, False], [False, False]]
         self.was_fired_event = [[False, False], [False, False]]
         # timer for reading game port
-        self.out_time = timedate.timer_milliseconds()
+        self.out_time = self._decay_timer()
 
     def switch(self, on):
         """ Switch joystick handling on or off. """
@@ -514,11 +514,16 @@ class Stick(object):
 
     def decay(self):
         """ Return time since last game port reset. """
-        return (timedate.timer_milliseconds() - self.out_time) % 86400000
+        return (self._decay_timer() - self.out_time) % 86400000
 
     def reset_decay(self):
         """ Reset game port. """
-        self.out_time = timedate.timer_milliseconds()
+        self.out_time = self._decay_timer()
+
+    def _decay_timer(self):
+        """ Millisecond timer for game port decay. """
+        now = datetime.datetime.now()
+        return now.second*1000 + now.microsecond/1000
 
 ###############################################################################
 
