@@ -512,6 +512,13 @@ class Stick(object):
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
 
+    def decay(self):
+        """ Return time since last game port reset. """
+        return (timedate.timer_milliseconds() - self.out_time) % 86400000
+
+    def reset_decay(self):
+        """ Reset game port. """
+        self.out_time = timedate.timer_milliseconds()
 
 ###############################################################################
 
