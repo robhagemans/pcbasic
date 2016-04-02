@@ -1158,8 +1158,18 @@ class Parser(object):
         util.require(self.ins, tk.end_statement)
         if step is not None and step < 1:
             raise error.RunError(error.IFC)
-        self.session.program.renum(new, old, step)
-
+        old_to_new = self.session.program.renum(new, old, step)
+        # stop running if we were
+        self.set_pointer(False)
+        # reset loop stacks
+        self.clear_stacks()
+        # renumber error handler
+        if self.on_error:
+            self.on_error = old_to_new[self.on_error]
+        # renumber event traps
+        for handler in self.events.all:
+            if handler.gosub:
+                handler.set_jump(old_to_new[handler.gosub])
 
     ##########################################################
     # file

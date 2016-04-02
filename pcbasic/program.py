@@ -273,17 +273,7 @@ class Program(object):
             new_lines[old_to_new[old_line]] = self.line_numbers[old_line]
             del self.line_numbers[old_line]
         self.line_numbers.update(new_lines)
-        # stop running if we were
-        state.session.parser.set_pointer(False)
-        # reset loop stacks
-        state.session.parser.clear_stacks()
-        # renumber error handler
-        if state.session.parser.on_error:
-            state.session.parser.on_error = old_to_new[state.session.parser.on_error]
-        # renumber event traps
-        for handler in state.session.parser.events.all:
-            if handler.gosub:
-                handler.set_jump(old_to_new[handler.gosub])
+        return old_to_new
 
     def load(self, g, rebuild_dict=True):
         """ Load program from ascii, bytecode or protected stream. """
