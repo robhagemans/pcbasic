@@ -33,9 +33,6 @@ import operators as op
 import console
 
 
-# enable pcjr/tandy syntax extensions
-is_pcjr_syntax = False
-
 # operators and precedence
 # key is tuple (token, nargs)
 operators = {
@@ -97,10 +94,6 @@ binary = {
     tk.IMP: op.number_imp,
 }
 
-def prepare():
-    """ Initialise expressions module. """
-    global is_pcjr_syntax
-    is_pcjr_syntax = config.get('syntax') in ('pcjr', 'tandy')
 
 def parse_expression(ins, session, allow_empty=False):
     """ Compute the value of the expression at a given code pointer. """
@@ -742,7 +735,7 @@ class Evaluator(object):
         """ PLAY: get length of music queue. """
         voice = vartypes.pass_int_unpack(parse_bracket(self.ins, self.session))
         util.range_check(0, 255, voice)
-        if not(is_pcjr_syntax and voice in (1, 2)):
+        if not(self.session.parser.syntax in ('pcjr', 'tandy') and voice in (1, 2)):
             voice = 0
         return vartypes.int_to_integer_signed(state.console_state.sound.queue_length(voice))
 
@@ -982,5 +975,3 @@ class Evaluator(object):
         tk.LOC: value_loc,
         tk.LOF: value_lof,
     }
-
-prepare()
