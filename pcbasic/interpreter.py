@@ -148,6 +148,8 @@ class Session(object):
         # set up interpreter and memory model state
         self.scalars = var.Scalars()
         state.basic_state.scalars = self.scalars
+        self.arrays = var.Arrays()
+        state.basic_state.arrays = self.arrays
 
         self.clear()
         # greeting and keys

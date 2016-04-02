@@ -629,7 +629,7 @@ class Drawing(object):
         x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
         self.last_point = x0, y0
         try:
-            _, byte_array, a_version = state.basic_state.arrays[array_name]
+            _, byte_array, a_version = state.basic_state.session.arrays.arrays[array_name]
         except KeyError:
             byte_array = bytearray()
         try:
@@ -661,7 +661,7 @@ class Drawing(object):
         x1, y1 = self.view_coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
         try:
-            _, byte_array, version = state.basic_state.arrays[array_name]
+            _, byte_array, version = state.basic_state.session.arrays.arrays[array_name]
         except KeyError:
             raise error.RunError(error.IFC)
         dx, dy = x1-x0+1, y1-y0+1

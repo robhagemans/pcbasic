@@ -205,114 +205,128 @@ class Scalars(object):
 ###############################################################################
 # arrays
 
-def erase_array(name):
-    """ Remove an array from memory. """
-    try:
-        del state.basic_state.arrays[name]
-    except KeyError:
-        # illegal fn call
-        raise error.RunError(error.IFC)
+class Arrays(object):
 
-def index_array(index, dimensions):
-    """ Return the flat index for a given dimensioned index. """
-    bigindex = 0
-    area = 1
-    for i in range(len(index)):
-        # dimensions is the *maximum index number*, regardless of state.basic_state.array_base
-        bigindex += area*(index[i]-state.basic_state.array_base)
-        area *= (dimensions[i]+1-state.basic_state.array_base)
-    return bigindex
+    def __init__(self):
+        """ Initialise arrays. """
+        self.clear()
 
-def array_len(dimensions):
-    """ Return the flat length for given dimensioned size. """
-    return index_array(dimensions, dimensions) + 1
+    def clear(self):
+        """ Clear arrays. """
+        self.arrays = {}
+        state.basic_state.array_memory = {}
+        # arrays are always kept after all vars
+        state.basic_state.array_current = 0
 
-def array_size_bytes(name):
-    """ Return the byte size of an array, if it exists. Return 0 otherwise. """
-    try:
-        dimensions, _, _ = state.basic_state.arrays[name]
-    except KeyError:
-        return 0
-    return array_len(dimensions) * var_size_bytes(name)
 
-def dim_array(name, dimensions):
-    """ Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value. """
-    if state.basic_state.array_base is None:
-        state.basic_state.array_base = 0
-    name = vartypes.complete_name(name)
-    if name in state.basic_state.arrays:
-        raise error.RunError(error.DUPLICATE_DEFINITION)
-    for d in dimensions:
-        if d < 0:
+    def erase(self, name):
+        """ Remove an array from memory. """
+        try:
+            del self.arrays[name]
+        except KeyError:
+            # illegal fn call
             raise error.RunError(error.IFC)
-        elif d < state.basic_state.array_base:
-            raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
-    size = array_len(dimensions)
-    # update memory model
-    # first two bytes: chars of name or 0 if name is one byte long
-    name_ptr = state.basic_state.array_current
-    record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
-    array_ptr = name_ptr + record_len
-    array_bytes = size*var_size_bytes(name)
-    check_free_memory(record_len + array_bytes, error.OUT_OF_MEMORY)
-    state.basic_state.array_current += record_len + array_bytes
-    state.basic_state.array_memory[name] = (name_ptr, array_ptr)
-    try:
-        state.basic_state.arrays[name] = [ dimensions, bytearray(array_bytes), 0 ]
-    except OverflowError:
-        # out of memory
-        raise error.RunError(error.OUT_OF_MEMORY)
-    except MemoryError:
-        # out of memory
-        raise error.RunError(error.OUT_OF_MEMORY)
 
-def check_dim_array(name, index):
-    """ Check if an array has been allocated. If not, auto-allocate if indices are <= 10; raise error otherwise. """
-    try:
-        dimensions, lst, _ = state.basic_state.arrays[name]
-    except KeyError:
-        # auto-dimension - 0..10 or 1..10
-        # this even fixes the dimensions if the index turns out to be out of range
-        dimensions = [10] * len(index)
-        dim_array(name, dimensions)
-        dimensions, lst, _ = state.basic_state.arrays[name]
-    if len(index) != len(dimensions):
-        raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
-    for i, d in zip(index, dimensions):
-        if i < 0:
-            raise error.RunError(error.IFC)
-        elif i < state.basic_state.array_base or i > d:
+    def index(self, index, dimensions):
+        """ Return the flat index for a given dimensioned index. """
+        bigindex = 0
+        area = 1
+        for i in range(len(index)):
             # dimensions is the *maximum index number*, regardless of state.basic_state.array_base
+            bigindex += area*(index[i]-state.basic_state.array_base)
+            area *= (dimensions[i]+1-state.basic_state.array_base)
+        return bigindex
+
+    def array_len(self, dimensions):
+        """ Return the flat length for given dimensioned size. """
+        return self.index(dimensions, dimensions) + 1
+
+    def array_size_bytes(self, name):
+        """ Return the byte size of an array, if it exists. Return 0 otherwise. """
+        try:
+            dimensions, _, _ = self.arrays[name]
+        except KeyError:
+            return 0
+        return self.array_len(dimensions) * var_size_bytes(name)
+
+    def dim(self, name, dimensions):
+        """ Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value. """
+        if state.basic_state.array_base is None:
+            state.basic_state.array_base = 0
+        name = vartypes.complete_name(name)
+        if name in self.arrays:
+            raise error.RunError(error.DUPLICATE_DEFINITION)
+        for d in dimensions:
+            if d < 0:
+                raise error.RunError(error.IFC)
+            elif d < state.basic_state.array_base:
+                raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
+        size = self.array_len(dimensions)
+        # update memory model
+        # first two bytes: chars of name or 0 if name is one byte long
+        name_ptr = state.basic_state.array_current
+        record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
+        array_ptr = name_ptr + record_len
+        array_bytes = size*var_size_bytes(name)
+        check_free_memory(record_len + array_bytes, error.OUT_OF_MEMORY)
+        state.basic_state.array_current += record_len + array_bytes
+        state.basic_state.array_memory[name] = (name_ptr, array_ptr)
+        try:
+            self.arrays[name] = [ dimensions, bytearray(array_bytes), 0 ]
+        except OverflowError:
+            # out of memory
+            raise error.RunError(error.OUT_OF_MEMORY)
+        except MemoryError:
+            # out of memory
+            raise error.RunError(error.OUT_OF_MEMORY)
+
+    def check_dim(self, name, index):
+        """ Check if an array has been allocated. If not, auto-allocate if indices are <= 10; raise error otherwise. """
+        try:
+            dimensions, lst, _ = self.arrays[name]
+        except KeyError:
+            # auto-dimension - 0..10 or 1..10
+            # this even fixes the dimensions if the index turns out to be out of range
+            dimensions = [10] * len(index)
+            self.dim(name, dimensions)
+            dimensions, lst, _ = self.arrays[name]
+        if len(index) != len(dimensions):
             raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
-    return dimensions, lst
+        for i, d in zip(index, dimensions):
+            if i < 0:
+                raise error.RunError(error.IFC)
+            elif i < state.basic_state.array_base or i > d:
+                # dimensions is the *maximum index number*, regardless of state.basic_state.array_base
+                raise error.RunError(error.SUBSCRIPT_OUT_OF_RANGE)
+        return dimensions, lst
 
-def base_array(base):
-    """ Set the array base to 0 or 1 (OPTION BASE). Raise error if already set. """
-    if base not in (1, 0):
-        # syntax error
-        raise error.RunError(error.STX)
-    if state.basic_state.array_base is not None and base != state.basic_state.array_base:
-        # duplicate definition
-        raise error.RunError(error.DUPLICATE_DEFINITION)
-    state.basic_state.array_base = base
+    def base(self, base):
+        """ Set the array base to 0 or 1 (OPTION BASE). Raise error if already set. """
+        if base not in (1, 0):
+            # syntax error
+            raise error.RunError(error.STX)
+        if state.basic_state.array_base is not None and base != state.basic_state.array_base:
+            # duplicate definition
+            raise error.RunError(error.DUPLICATE_DEFINITION)
+        state.basic_state.array_base = base
 
-def get_array(name, index):
-    """ Retrieve the value of an array element. """
-    dimensions, lst = check_dim_array(name, index)
-    bigindex = index_array(index, dimensions)
-    value = lst[bigindex*var_size_bytes(name):(bigindex+1)*var_size_bytes(name)]
-    return (name[-1], value)
+    def get(self, name, index):
+        """ Retrieve the value of an array element. """
+        dimensions, lst = self.check_dim(name, index)
+        bigindex = self.index(index, dimensions)
+        value = lst[bigindex*var_size_bytes(name):(bigindex+1)*var_size_bytes(name)]
+        return (name[-1], value)
 
-def set_array(name, index, value):
-    """ Assign a value to an array element. """
-    dimensions, lst = check_dim_array(name, index)
-    bigindex = index_array(index, dimensions)
-    # make a copy of the value, we don't want them to be linked
-    value = (vartypes.pass_type(name[-1], value)[1])[:]
-    bytesize = var_size_bytes(name)
-    lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
-    # inc version
-    state.basic_state.arrays[name][2] += 1
+    def set(self, name, index, value):
+        """ Assign a value to an array element. """
+        dimensions, lst = self.check_dim(name, index)
+        bigindex = self.index(index, dimensions)
+        # make a copy of the value, we don't want them to be linked
+        value = (vartypes.pass_type(name[-1], value)[1])[:]
+        bytesize = var_size_bytes(name)
+        lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
+        # inc version
+        self.arrays[name][2] += 1
 
 
 ###############################################################################
@@ -324,14 +338,14 @@ def get_variable(name, indices):
         return state.basic_state.session.scalars.get(name)
     else:
         # array is allocated if retrieved and nonexistant
-        return get_array(name, indices)
+        return state.basic_state.session.arrays.get(name, indices)
 
 def set_variable(name, indices, value):
     """ Assign a value to a scalar variable or an array element. """
     if indices == []:
-        return state.basic_state.session.scalars.set(name, value)
+        state.basic_state.session.scalars.set(name, value)
     else:
-        set_array(name, indices, value)
+        state.basic_state.session.arrays.set(name, indices, value)
 
 def swap(name1, index1, name2, index2):
     """ Swap two variables by reference (Strings) or value (everything else). """
@@ -339,9 +353,9 @@ def swap(name1, index1, name2, index2):
         # type mismatch
         raise error.RunError(error.TYPE_MISMATCH)
     elif ((index1 == [] and name1 not in state.basic_state.session.scalars.variables) or
-            (index1 != [] and name1 not in state.basic_state.arrays) or
+            (index1 != [] and name1 not in state.basic_state.session.arrays.arrays) or
             (index2 == [] and name2 not in state.basic_state.session.scalars.variables) or
-            (index2 != [] and name2 not in state.basic_state.arrays)):
+            (index2 != [] and name2 not in state.basic_state.session.arrays.arrays)):
         # illegal function call
         raise error.RunError(error.IFC)
     typechar = name1[-1]
@@ -350,20 +364,20 @@ def swap(name1, index1, name2, index2):
     if index1 == []:
         p1, off1 = state.basic_state.session.scalars.variables[name1], 0
     else:
-        dimensions, p1, _ = state.basic_state.arrays[name1]
-        off1 = index_array(index1, dimensions)*size
+        dimensions, p1, _ = state.basic_state.session.arrays.arrays[name1]
+        off1 = state.basic_state.session.arrays.index(index1, dimensions)*size
     if index2 == []:
         p2, off2 = state.basic_state.session.scalars.variables[name2], 0
     else:
-        dimensions, p2, _ = state.basic_state.arrays[name2]
-        off2 = index_array(index2, dimensions)*size
+        dimensions, p2, _ = state.basic_state.session.arrays.arrays[name2]
+        off2 = state.basic_state.session.arrays.index(index2, dimensions)*size
     # swap the contents
     p1[off1:off1+size], p2[off2:off2+size] =  p2[off2:off2+size], p1[off1:off1+size]
     # inc version
-    if name1 in state.basic_state.arrays:
-        state.basic_state.arrays[name1][2] += 1
-    if name2 in state.basic_state.arrays:
-        state.basic_state.arrays[name2][2] += 1
+    if name1 in state.basic_state.session.arrays.arrays:
+        state.basic_state.session.arrays.arrays[name1][2] += 1
+    if name2 in state.basic_state.session.arrays.arrays:
+        state.basic_state.session.arrays.arrays[name2][2] += 1
 
 
 ###############################################################################
@@ -385,7 +399,7 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
                     pass
             for varname in state.basic_state.common_array_names:
                 try:
-                    common_arrays[varname] = state.basic_state.arrays[varname]
+                    common_arrays[varname] = state.basic_state.session.arrays.arrays[varname]
                 except KeyError:
                     pass
         else:
@@ -398,11 +412,10 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             state.basic_state.common_array_names = []
         # restore only common variables
         # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
+
         state.basic_state.scalars.clear()
-        state.basic_state.arrays = {}
-        state.basic_state.array_memory = {}
-        # arrays are always kept after all vars
-        state.basic_state.array_current = 0
+        state.basic_state.arrays.clear()
+
         # functions are cleared except when CHAIN ... ALL is specified
         state.basic_state.functions = {}
         # reset string space
@@ -415,16 +428,16 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
                 full_var = new_strings.store(copy_str(full_var))
             state.basic_state.scalars.set(v, full_var)
         for a in common_arrays:
-            dim_array(a, common_arrays[a][0])
+            state.basic_state.session.arrays.dim(a, common_arrays[a][0])
             if a[-1] == '$':
                 s = bytearray()
                 for i in range(0, len(common_arrays[a][1]), vartypes.byte_size['$']):
                     old_ptr = vartypes.bytes_to_string(common_arrays[a][1][i:i+vartypes.byte_size['$']])
                     new_ptr = new_strings.store(copy_str(old_ptr))
                     s += vartypes.string_to_bytes(new_ptr)
-                state.basic_state.arrays[a][1] = s
+                state.basic_state.session.arrays.arrays[a][1] = s
             else:
-                state.basic_state.arrays[a] = common_arrays[a]
+                state.basic_state.session.arrays.arrays[a] = common_arrays[a]
         state.basic_state.strings = new_strings
 
 
@@ -442,10 +455,10 @@ def collect_garbage():
             except KeyError:
                 # string is not located in memory - FIELD or code
                 pass
-    for name in state.basic_state.arrays:
+    for name in state.basic_state.session.arrays.arrays:
         if name[-1] == '$':
             # ignore version - we can't put and get into string arrays
-            dimensions, lst, _ = state.basic_state.arrays[name]
+            dimensions, lst, _ = state.basic_state.session.arrays.arrays[name]
             for i in range(0, len(lst), 3):
                 v = lst[i:i+3]
                 try:

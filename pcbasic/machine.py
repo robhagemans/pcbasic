@@ -278,10 +278,10 @@ def varptr(name, indices):
             return -1
     else:
         try:
-            dimensions, _, _ = state.basic_state.arrays[name]
+            dimensions, _, _ = state.basic_state.session.arrays.arrays[name]
             _, array_ptr = state.basic_state.array_memory[name]
             # arrays are kept at the end of the var list
-            return state.basic_state.var_current + array_ptr + var.var_size_bytes(name) * var.index_array(indices, dimensions)
+            return state.basic_state.var_current + array_ptr + var.var_size_bytes(name) * state.basic_state.session.arrays.index(indices, dimensions)
         except KeyError:
             return -1
 
@@ -496,9 +496,9 @@ def get_data_memory_array(address):
         return -1
     if address >= state.basic_state.var_current + arr_addr:
         offset = address - arr_addr - state.basic_state.var_current
-        if offset >= var.array_size_bytes(the_arr):
+        if offset >= state.basic_state.session.arrays.array_size_bytes(the_arr):
             return -1
-        _, byte_array, _ = state.basic_state.arrays[the_arr]
+        _, byte_array, _ = state.basic_state.session.arrays.arrays[the_arr]
         return byte_array[offset]
     else:
         offset = address - name_addr - state.basic_state.var_current
@@ -506,9 +506,9 @@ def get_data_memory_array(address):
             return get_name_in_memory(the_arr, offset)
         else:
             offset -= max(3, len(the_arr))+1
-            dimensions, _, _ = state.basic_state.arrays[the_arr]
+            dimensions, _, _ = state.basic_state.session.arrays.arrays[the_arr]
             data_rep = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
-                var.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)))
+                state.basic_state.session.arrays.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)))
             for d in dimensions:
                 data_rep += vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
                                     d + 1 - state.basic_state.array_base))
@@ -528,10 +528,10 @@ def get_data_memory_string(address):
             str_nearest = str_try
             the_var = v
     if the_var is None:
-        for name in state.basic_state.arrays:
+        for name in state.basic_state.session.arrays.arrays:
             if name[-1] != '$':
                 continue
-            _, lst, _ = state.basic_state.arrays[name]
+            _, lst, _ = state.basic_state.session.arrays.arrays[name]
             for i in range(0, len(lst), 3):
                 str_try = state.basic_state.strings.address(lst[i:i+3])
                 if str_try <= address and str_try > str_nearest:

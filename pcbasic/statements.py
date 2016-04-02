@@ -1510,7 +1510,7 @@ class Parser(object):
         util.require_read(self.ins, (',',))
         array = util.parse_scalar(self.ins)
         util.require(self.ins, tk.end_statement)
-        if array not in state.basic_state.arrays:
+        if array not in self.session.arrays:
             raise error.RunError(error.IFC)
         elif array[-1] == '$':
             raise error.RunError(error.TYPE_MISMATCH) # type mismatch
@@ -1531,7 +1531,7 @@ class Parser(object):
                                tk.AND, tk.OR, tk.XOR))
             action = self.ins.read(1)
         util.require(self.ins, tk.end_statement)
-        if array not in state.basic_state.arrays:
+        if array not in self.session.arrays:
             raise error.RunError(error.IFC)
         elif array[-1] == '$':
             # type mismatch
@@ -1973,7 +1973,7 @@ class Parser(object):
             name, dimensions = expressions.parse_variable(self.ins)
             if not dimensions:
                 dimensions = [10]
-            var.dim_array(name, dimensions)
+            self.session.arrays.dim(name, dimensions)
             if not util.skip_white_read_if(self.ins, (',',)):
                 break
         util.require(self.ins, tk.end_statement)
@@ -2007,7 +2007,7 @@ class Parser(object):
     def exec_erase(self):
         """ ERASE: erase an array. """
         while True:
-            var.erase_array(util.parse_scalar(self.ins))
+            self.session.arrays.erase(util.parse_scalar(self.ins))
             if not util.skip_white_read_if(self.ins, (',',)):
                 break
         util.require(self.ins, tk.end_statement)
@@ -2018,7 +2018,7 @@ class Parser(object):
         if indices != []:
             # pre-dim even if this is not a legal statement!
             # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out fo range afterwards
-            var.check_dim_array(name, indices)
+            self.session.arrays.check_dim(name, indices)
         util.require_read(self.ins, (tk.O_EQ,))
         var.set_variable(name, indices, expressions.parse_expression(self.ins))
         util.require(self.ins, tk.end_statement)
@@ -2031,7 +2031,7 @@ class Parser(object):
         name, indices = expressions.parse_variable(self.ins)
         if indices != []:
             # pre-dim even if this is not a legal statement!
-            var.check_dim_array(name, indices)
+            self.session.arrays.check_dim(name, indices)
         util.require_read(self.ins, (',',))
         start = vartypes.pass_int_unpack(expressions.parse_expression(self.ins))
         num = 255
@@ -2091,9 +2091,9 @@ class Parser(object):
             # MUST be followed by ASCII '1' or '0', num constants or expressions are an error!
             d = util.skip_white_read(self.ins)
             if d == '0':
-                var.base_array(0)
+                self.session.arrays.base(0)
             elif d == '1':
-                var.base_array(1)
+                self.session.arrays.base(1)
             else:
                 raise error.RunError(error.STX)
         else:
@@ -2408,13 +2408,13 @@ class Parser(object):
         num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
         array_name, start_indices = expressions.parse_variable(self.ins)
         try:
-            dimensions, lst, _ = state.basic_state.arrays[array_name]
+            dimensions, lst, _ = self.session.arrays[array_name]
         except KeyError:
             raise error.RunError(error.IFC)
         if array_name[-1] != '%':
             raise error.RunError(error.TYPE_MISMATCH)
-        start = var.index_array(start_indices, dimensions)
-        if var.array_len(dimensions) - start < num_palette_entries:
+        start = self.session.arrays.index(start_indices, dimensions)
+        if self.session.arrays.array_len(dimensions) - start < num_palette_entries:
             raise error.RunError(error.IFC)
         new_palette = []
         for i in range(num_palette_entries):
