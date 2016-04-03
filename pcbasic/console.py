@@ -666,7 +666,7 @@ def list_line(line, newline=True):
     """ Print a line from a program listing or EDIT prompt. """
     # no wrap if 80-column line, clear row before printing.
     # flow of listing is visible on screen
-    events.check_events()
+    state.session.check_events()
     # replace LF CR with LF
     line = line.replace('\n\r', '\n')
     cuts = line.split('\n')

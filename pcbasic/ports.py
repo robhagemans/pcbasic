@@ -256,7 +256,7 @@ class COMFile(devices.CRLFTextFileBase):
                 del self.in_buffer[:to_read]
                 # allow for break & screen updates
                 # this also allows triggering BASIC events
-                events.wait()
+                state.session.wait()
         return out
 
     def read_line(self):
@@ -422,7 +422,7 @@ class SerialStream(object):
             have_dsr = have_dsr and self._serial.getDSR()
             have_cts = have_cd and self._serial.getCD()
             # give CPU some time off
-            events.wait(suppress_events=True)
+            state.session.wait(suppress_events=True)
         # only check for status if timeouts are set > 0
         # http://www.electro-tech-online.com/threads/qbasic-serial-port-control.19286/
         # https://measurementsensors.honeywell.com/ProductDocuments/Instruments/008-0385-00.pdf

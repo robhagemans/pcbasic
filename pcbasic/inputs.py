@@ -246,13 +246,13 @@ class Keyboard(object):
 
     def get_char(self, expand=True):
         """ Read any keystroke, nonblocking. """
-        events.wait()
+        state.session.wait()
         return self.buf.getc(expand)
 
     def wait_char(self):
         """ Wait for character, then return it but don't drop from queue. """
         while self.buf.is_empty() and not self.input_closed:
-            events.wait()
+            state.session.wait()
         return self.buf.peek()
 
     def get_char_block(self):

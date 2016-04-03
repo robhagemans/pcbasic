@@ -6,13 +6,9 @@ Input event loop and handlers for BASIC events
 This file is released under the GNU GPL version 3 or later.
 """
 
-import time
-import Queue
 from contextlib import contextmanager
 
 import error
-import signals
-
 import config
 import state
 import scancode
@@ -21,87 +17,18 @@ import scancode
 ###############################################################################
 # initialisation
 
+# 12 definable function keys for Tandy
+num_fn_keys = 10
+
 def prepare():
     """ Initialise events module. """
     global num_fn_keys
     if config.get('syntax') == 'tandy':
         num_fn_keys = 12
-    else:
-        num_fn_keys = 10
-
-
-###############################################################################
-# main event checker
-
-tick_s = 0.0001
-longtick_s = 0.006 - tick_s
-
-
-def wait(suppress_events=False):
-    """ Wait and check events. """
-    time.sleep(longtick_s)
-    if not suppress_events:
-        check_events()
-
-def check_events():
-    """ Main event cycle. """
-    time.sleep(tick_s)
-    check_input()
-    if state.session.parser.run_mode:
-        state.session.parser.events.check()
-    state.console_state.keyb.drain_event_buffer()
-
-def check_input():
-    """ Handle input events. """
-    while True:
-        try:
-            signal = signals.input_queue.get(False)
-        except Queue.Empty:
-            if not state.console_state.keyb.pause:
-                break
-            else:
-                time.sleep(tick_s)
-                continue
-        # we're on it
-        signals.input_queue.task_done()
-        if signal.event_type == signals.KEYB_QUIT:
-            raise error.Exit()
-        if signal.event_type == signals.KEYB_CLOSED:
-            state.console_state.keyb.close_input()
-        elif signal.event_type == signals.KEYB_CHAR:
-            # params is a unicode sequence
-            state.console_state.keyb.insert_chars(*signal.params)
-        elif signal.event_type == signals.KEYB_DOWN:
-            # params is e-ASCII/unicode character sequence, scancode, modifier
-            state.console_state.keyb.key_down(*signal.params)
-        elif signal.event_type == signals.KEYB_UP:
-            state.console_state.keyb.key_up(*signal.params)
-        elif signal.event_type == signals.PEN_DOWN:
-            state.console_state.pen.down(*signal.params)
-        elif signal.event_type == signals.PEN_UP:
-            state.console_state.pen.up()
-        elif signal.event_type == signals.PEN_MOVED:
-            state.console_state.pen.moved(*signal.params)
-        elif signal.event_type == signals.STICK_DOWN:
-            state.console_state.stick.down(*signal.params)
-        elif signal.event_type == signals.STICK_UP:
-            state.console_state.stick.up(*signal.params)
-        elif signal.event_type == signals.STICK_MOVED:
-            state.console_state.stick.moved(*signal.params)
-        elif signal.event_type == signals.CLIP_PASTE:
-            state.console_state.keyb.insert_chars(*signal.params, check_full=False)
-        elif signal.event_type == signals.CLIP_COPY:
-            text = state.console_state.screen.get_text(*(signal.params[:4]))
-            signals.video_queue.put(signals.Event(
-                    signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
 
 
 ###############################################################################
 # BASIC event triggers
-
-# 12 definable function keys for Tandy
-num_fn_keys = 10
-
 
 class EventHandler(object):
     """ Manage event triggers. """

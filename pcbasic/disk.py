@@ -697,7 +697,7 @@ class DiskDevice(object):
             output = output[num:]
             console.write_line(line)
             # allow to break during dir listing & show names flowing on screen
-            events.check_events()
+            state.session.check_events()
         console.write_line(b' %d Bytes free' % self.get_free())
 
     def get_free(self):

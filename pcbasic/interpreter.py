@@ -12,6 +12,7 @@ import traceback
 import logging
 import time
 import threading
+import Queue
 
 try:
     from cStringIO import StringIO
@@ -28,7 +29,6 @@ import statements
 import display
 import console
 import state
-import events
 # prepare input state
 import inputs
 import debug
@@ -41,6 +41,7 @@ import rnd
 import timedate
 import shell
 import memory
+
 
 class SessionLauncher(object):
     """ Launches a BASIC session. """
@@ -87,6 +88,10 @@ class SessionLauncher(object):
 
 ###############################################################################
 # interpreter session
+
+tick_s = 0.0001
+longtick_s = 0.006 - tick_s
+
 
 class ResumeFailed(Exception):
     """ Failed to resume session. """
@@ -251,7 +256,6 @@ class Session(object):
         state.console_state.screen.drawing.reset()
         self.parser.clear()
 
-
     def resume(self):
         """ Resume an interpreter session. """
         # resume from saved emulator state (if requested and available)
@@ -294,7 +298,7 @@ class Session(object):
                     signals.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
                     state.console_state.keyb.pause = True
                     # this performs a blocking keystroke read if in pause state
-                    events.check_events()
+                    self.check_events()
             finally:
                 # close interfaces
                 signals.video_queue.put(signals.Event(signals.VIDEO_QUIT))
@@ -318,7 +322,7 @@ class Session(object):
                 if self.parse_mode:
                     try:
                         # may raise Break
-                        events.check_events()
+                        self.check_events()
                         # returns True if more statements to parse
                         if not self.parser.parse_statement():
                             self.parse_mode = False
@@ -463,3 +467,64 @@ class Session(object):
         console.write_error_message(e.message, self.program.get_line_number(pos))
         self.set_parse_mode(False)
         self.input_mode = False
+
+    ##########################################################################
+    # main event checker
+
+    def wait(self, suppress_events=False):
+        """ Wait and check events. """
+        time.sleep(longtick_s)
+        if not suppress_events:
+            self.check_events()
+
+    def check_events(self):
+        """ Main event cycle. """
+        time.sleep(tick_s)
+        self._check_input()
+        if self.parser.run_mode:
+            self.parser.events.check()
+        state.console_state.keyb.drain_event_buffer()
+
+    def _check_input(self):
+        """ Handle input events. """
+        while True:
+            try:
+                signal = signals.input_queue.get(False)
+            except Queue.Empty:
+                if not state.console_state.keyb.pause:
+                    break
+                else:
+                    time.sleep(tick_s)
+                    continue
+            # we're on it
+            signals.input_queue.task_done()
+            if signal.event_type == signals.KEYB_QUIT:
+                raise error.Exit()
+            if signal.event_type == signals.KEYB_CLOSED:
+                state.console_state.keyb.close_input()
+            elif signal.event_type == signals.KEYB_CHAR:
+                # params is a unicode sequence
+                state.console_state.keyb.insert_chars(*signal.params)
+            elif signal.event_type == signals.KEYB_DOWN:
+                # params is e-ASCII/unicode character sequence, scancode, modifier
+                state.console_state.keyb.key_down(*signal.params)
+            elif signal.event_type == signals.KEYB_UP:
+                state.console_state.keyb.key_up(*signal.params)
+            elif signal.event_type == signals.PEN_DOWN:
+                state.console_state.pen.down(*signal.params)
+            elif signal.event_type == signals.PEN_UP:
+                state.console_state.pen.up()
+            elif signal.event_type == signals.PEN_MOVED:
+                state.console_state.pen.moved(*signal.params)
+            elif signal.event_type == signals.STICK_DOWN:
+                state.console_state.stick.down(*signal.params)
+            elif signal.event_type == signals.STICK_UP:
+                state.console_state.stick.up(*signal.params)
+            elif signal.event_type == signals.STICK_MOVED:
+                state.console_state.stick.moved(*signal.params)
+            elif signal.event_type == signals.CLIP_PASTE:
+                state.console_state.keyb.insert_chars(*signal.params, check_full=False)
+            elif signal.event_type == signals.CLIP_COPY:
+                text = state.console_state.screen.get_text(*(signal.params[:4]))
+                signals.video_queue.put(signals.Event(
+                        signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))

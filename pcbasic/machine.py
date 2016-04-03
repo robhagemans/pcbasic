@@ -90,7 +90,7 @@ def inp(port):
     """ Get the value in an emulated machine port. """
     # keyboard
     if port == 0x60:
-        events.wait()
+        state.session.wait()
         return state.console_state.keyb.last_scancode
     # game port (joystick)
     elif port == 0x201:
@@ -228,7 +228,7 @@ def wait(addr, ander, xorer):
     """ Wait untial an emulated machine port has a specified value. """
     with state.session.parser.events.suspend():
         while (inp(addr) ^ xorer) & ander == 0:
-            events.wait()
+            state.session.wait()
 
 def bload(g, offset):
     """ Load a file into a block of memory. """
@@ -490,7 +490,7 @@ def get_low_memory(addr):
     # &H20 - NumLock key is depressed
     # &H10 - ScrollLock key is depressed
     # &H08 - Suspend key has been toggled
-    events.wait()
+    state.session.wait()
     # 108-115 control Ctrl-break capture; not implemented (see PC Mag POKEs)
     # 1040 monitor type
     if addr == 124:

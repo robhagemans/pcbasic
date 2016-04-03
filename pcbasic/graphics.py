@@ -587,7 +587,7 @@ class Drawing(object):
                 self.screen.put_interval(self.screen.apagenum, x_left, y, interval)
             # allow interrupting the paint
             if y%4 == 0:
-                events.check_events()
+                state.session.check_events()
         self.last_attr = c
 
     def check_scanline(self, line_seed, x_start, x_stop, y,
