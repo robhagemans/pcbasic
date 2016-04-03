@@ -24,18 +24,6 @@ import console
 # ensure state.io_state.devices is populated with com ports
 import ports
 
-# pre-defined PEEK outputs
-peek_values = {}
-
-# where to find the rom font (chars 0-127)
-rom_font_addr = 0xfa6e
-# where to find the ram font (chars 128-254)
-ram_font_addr = 0x500
-# protection flag
-protection_flag_addr = 1450
-
-# base for our low-memory addresses
-low_segment = 0
 
 def prepare():
     """ Initialise machine module. """
@@ -48,20 +36,9 @@ def prepare():
         pass
     tandy_syntax = config.get('syntax') == 'tandy'
 
-def peek(addr):
-    """ Retrieve the value at an emulated memory location. """
-    if addr < 0:
-        addr += 0x10000
-    addr += state.session.memory.segment*0x10
-    return get_memory(addr)
 
-def poke(addr, val):
-    """ Set the value at an emulated memory location. """
-    if addr < 0:
-        addr += 0x10000
-    addr += state.session.memory.segment * 0x10
-    set_memory(addr, val)
-
+###############################################################################
+# Machine ports
 
 # time delay for port value to drop to 0 on maximum reading.
 #  use 100./255. for 100ms.
@@ -229,6 +206,42 @@ def wait(addr, ander, xorer):
     with state.session.parser.events.suspend():
         while (inp(addr) ^ xorer) & ander == 0:
             state.session.wait()
+
+
+
+###############################################################################
+# Memory
+
+
+
+
+# pre-defined PEEK outputs
+peek_values = {}
+
+# where to find the rom font (chars 0-127)
+rom_font_addr = 0xfa6e
+# where to find the ram font (chars 128-254)
+ram_font_addr = 0x500
+# protection flag
+protection_flag_addr = 1450
+
+# base for our low-memory addresses
+low_segment = 0
+
+
+def peek(addr):
+    """ Retrieve the value at an emulated memory location. """
+    if addr < 0:
+        addr += 0x10000
+    addr += state.session.memory.segment*0x10
+    return get_memory(addr)
+
+def poke(addr, val):
+    """ Set the value at an emulated memory location. """
+    if addr < 0:
+        addr += 0x10000
+    addr += state.session.memory.segment * 0x10
+    set_memory(addr, val)
 
 def bload(g, offset):
     """ Load a file into a block of memory. """

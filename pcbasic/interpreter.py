@@ -140,15 +140,13 @@ class Session(object):
         # first field buffer address (workspace size; 3429 for gw-basic)
         reserved_memory = config.get('reserved-memory')
         # initialise the data segment
-        self.memory = memory.Memory(self.bytecode, max_memory, reserved_memory,
-                                        max_reclen, max_files)
+        self.memory = memory.DataSegment(self.bytecode, max_memory,
+                                        reserved_memory, max_reclen, max_files)
         #D
         self.scalars = self.memory.scalars
-        #D
         self.arrays = self.memory.arrays
-        #D
         self.strings = self.memory.strings
-
+        #MOVE into DataSegment?
         self.common_scalars = set()
         self.common_arrays = set()
         self.deftype = ['!']*26

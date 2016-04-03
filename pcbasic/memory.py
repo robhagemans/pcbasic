@@ -45,12 +45,14 @@ ram_font_segment = 0xc000
 # 65534                 total size (determined by CLEAR)
 
 
-class Memory(object):
+class DataSegment(object):
     """ Memory model. """
 
     def __init__(self, bytecode, total_memory, reserved_memory, max_reclen, max_files):
         """ Initialise memory. """
+        #MOVE to Memory
         self.segment = data_segment
+
         # program buffer is initialised elsewhere
         self.bytecode = bytecode
         # BASIC stack (determined by CLEAR)
