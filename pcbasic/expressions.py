@@ -128,7 +128,7 @@ def parse_literal(ins, session):
         if d == '\0':
             ins.seek(-1, 1)
         # store for easy retrieval, but don't reserve space in string memory
-        return state.session.strings.store(output, address)
+        return session.strings.store(output, address)
     # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
     # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
     elif d in string.digits:
@@ -296,7 +296,7 @@ class Evaluator(object):
             math_error = error.DIVISION_BY_ZERO
         else:
             raise e
-        if state.session.parser.on_error:
+        if self.session.parser.on_error:
             # also raises exception in error_handle_mode!
             # in that case, prints a normal error message
             raise error.RunError(math_error)
@@ -334,15 +334,15 @@ class Evaluator(object):
 
     def value_mki(self):
         """ MKI$: return the byte representation of an int. """
-        return state.session.strings.store(vartypes.integer_to_bytes(vartypes.pass_integer(parse_bracket(self.ins, self.session))))
+        return self.session.strings.store(vartypes.integer_to_bytes(vartypes.pass_integer(parse_bracket(self.ins, self.session))))
 
     def value_mks(self):
         """ MKS$: return the byte representation of a single. """
-        return state.session.strings.store(vartypes.pass_single(parse_bracket(self.ins, self.session))[1])
+        return self.session.strings.store(vartypes.pass_single(parse_bracket(self.ins, self.session))[1])
 
     def value_mkd(self):
         """ MKD$: return the byte representation of a double. """
-        return state.session.strings.store(vartypes.pass_double(parse_bracket(self.ins, self.session))[1])
+        return self.session.strings.store(vartypes.pass_double(parse_bracket(self.ins, self.session))[1])
 
     def value_cint(self):
         """ CINT: convert a number to integer. """
@@ -359,7 +359,7 @@ class Evaluator(object):
     def value_str(self):
         """ STR$: string representation of a number. """
         s = vartypes.pass_number(parse_bracket(self.ins, self.session))
-        return state.session.strings.store(representation.number_to_str(s, screen=True))
+        return self.session.strings.store(representation.number_to_str(s, screen=True))
 
     def value_val(self):
         """ VAL: number value of a string. """
@@ -369,19 +369,19 @@ class Evaluator(object):
         """ CHR$: character for ASCII value. """
         val = vartypes.pass_int_unpack(parse_bracket(self.ins, self.session))
         util.range_check(0, 255, val)
-        return state.session.strings.store(chr(val))
+        return self.session.strings.store(chr(val))
 
     def value_oct(self):
         """ OCT$: octal representation of int. """
         # allow range -32768 to 65535
         val = vartypes.pass_integer(parse_bracket(self.ins, self.session), 0xffff)
-        return state.session.strings.store(representation.integer_to_str_oct(val))
+        return self.session.strings.store(representation.integer_to_str_oct(val))
 
     def value_hex(self):
         """ HEX$: hexadecimal representation of int. """
         # allow range -32768 to 65535
         val = vartypes.pass_integer(parse_bracket(self.ins, self.session), 0xffff)
-        return state.session.strings.store(representation.integer_to_str_hex(val))
+        return self.session.strings.store(representation.integer_to_str_hex(val))
 
 
     ######################################################################
@@ -442,7 +442,7 @@ class Evaluator(object):
         start -= 1
         stop = start + num
         stop = min(stop, len(s))
-        return state.session.strings.store(s[start:stop])
+        return self.session.strings.store(s[start:stop])
 
     def value_left(self):
         """ LEFT$: get substring at the start of string. """
@@ -455,7 +455,7 @@ class Evaluator(object):
         if stop == 0:
             return vartypes.null('$')
         stop = min(stop, len(s))
-        return state.session.strings.store(s[:stop])
+        return self.session.strings.store(s[:stop])
 
     def value_right(self):
         """ RIGHT$: get substring at the end of string. """
@@ -468,7 +468,7 @@ class Evaluator(object):
         if stop == 0:
             return vartypes.null('$')
         stop = min(stop, len(s))
-        return state.session.strings.store(s[-stop:])
+        return self.session.strings.store(s[-stop:])
 
     def value_string(self):
         """ STRING$: repeat characters. """
@@ -485,13 +485,13 @@ class Evaluator(object):
             j = vartypes.pass_int_unpack(j)
             util.range_check(0, 255, j)
         util.require_read(self.ins, (')',))
-        return state.session.strings.store(chr(j)*n)
+        return self.session.strings.store(chr(j)*n)
 
     def value_space(self):
         """ SPACE$: repeat spaces. """
         num = vartypes.pass_int_unpack(parse_bracket(self.ins, self.session))
         util.range_check(0, 255, num)
-        return state.session.strings.store(' '*num)
+        return self.session.strings.store(' '*num)
 
     ######################################################################
     # console functions
@@ -531,11 +531,11 @@ class Evaluator(object):
         if len(word) < num:
             # input past end
             raise error.RunError(error.INPUT_PAST_END)
-        return state.session.strings.store(word)
+        return self.session.strings.store(word)
 
     def value_inkey(self):
         """ INKEY$: get a character from the keyboard. """
-        return state.session.strings.store(state.console_state.keyb.get_char())
+        return self.session.strings.store(state.console_state.keyb.get_char())
 
     def value_csrlin(self):
         """ CSRLIN: get the current screen row. """
@@ -605,25 +605,25 @@ class Evaluator(object):
         util.require_read(self.ins, ('$',))
         expr = parse_bracket(self.ins, self.session)
         if expr[0] == '$':
-            return state.session.strings.store(shell.get_env(var.copy_str(expr)))
+            return self.session.strings.store(shell.get_env(var.copy_str(expr)))
         else:
             expr = vartypes.pass_int_unpack(expr)
             util.range_check(1, 255, expr)
-            return state.session.strings.store(shell.get_env_entry(expr))
+            return self.session.strings.store(shell.get_env_entry(expr))
 
     def value_timer(self):
         """ TIMER: get clock ticks since midnight. """
         # precision of GWBASIC TIMER is about 1/20 of a second
         return fp.pack(fp.div( fp.Single.from_int(
-                state.session.timer.timer_milliseconds()/50), fp.Single.from_int(20)))
+                self.session.timer.timer_milliseconds()/50), fp.Single.from_int(20)))
 
     def value_time(self):
         """ TIME$: get current system time. """
-        return state.session.strings.store(state.session.timer.get_time())
+        return self.session.strings.store(self.session.timer.get_time())
 
     def value_date(self):
         """ DATE$: get current system date. """
-        return state.session.strings.store(state.session.timer.get_date())
+        return self.session.strings.store(self.session.timer.get_date())
 
     #######################################################
     # user-defined functions
@@ -635,15 +635,15 @@ class Evaluator(object):
         if fnname in self.user_function_parsing:
             raise error.RunError(error.OUT_OF_MEMORY)
         try:
-            varnames, fncode = state.session.user_functions[fnname]
+            varnames, fncode = self.session.user_functions[fnname]
         except KeyError:
             raise error.RunError(error.UNDEFINED_USER_FUNCTION)
         # save existing vars
         varsave = {}
         for name in varnames:
-            if name in state.session.scalars.variables:
+            if name in self.session.scalars.variables:
                 # copy the *value* - set_var is in-place it's safe for FOR loops
-                varsave[name] = state.session.scalars.variables[name][:]
+                varsave[name] = self.session.scalars.variables[name][:]
         # read variables
         if util.skip_white_read_if(self.ins, ('(',)):
             exprs = []
@@ -654,7 +654,7 @@ class Evaluator(object):
             if len(exprs) != len(varnames):
                 raise error.RunError(error.STX)
             for name, value in zip(varnames, exprs):
-                state.session.scalars.set(name, value)
+                self.session.scalars.set(name, value)
             util.require_read(self.ins, (')',))
         # execute the code
         fns = StringIO(fncode)
@@ -665,7 +665,7 @@ class Evaluator(object):
         # restore existing vars
         for name in varsave:
             # re-assign the stored value
-            state.session.scalars.variables[name][:] = varsave[name]
+            self.session.scalars.variables[name][:] = varsave[name]
         return vartypes.pass_type(fnname[-1], value)
 
     ###############################################################
@@ -744,17 +744,17 @@ class Evaluator(object):
 
     def value_erl(self):
         """ ERL: get line number of last error. """
-        if state.session.parser.error_pos == 0:
+        if self.session.parser.error_pos == 0:
             erl = 0
-        elif state.session.parser.error_pos == -1:
+        elif self.session.parser.error_pos == -1:
             erl = 65535
         else:
-            erl = state.session.program.get_line_number(state.session.parser.error_pos)
+            erl = self.session.program.get_line_number(self.session.parser.error_pos)
         return fp.pack(fp.Single.from_int(erl))
 
     def value_err(self):
         """ ERR: get error code of last error. """
-        return vartypes.int_to_integer_signed(state.session.parser.error_num)
+        return vartypes.int_to_integer_signed(self.session.parser.error_num)
 
     #####################################################################
     # pen, stick and strig
@@ -764,7 +764,7 @@ class Evaluator(object):
         fn = vartypes.pass_int_unpack(parse_bracket(self.ins, self.session))
         util.range_check(0, 9, fn)
         pen = state.console_state.pen.poll(fn)
-        if pen is None or not state.session.parser.events.pen.enabled:
+        if pen is None or not self.session.parser.events.pen.enabled:
             # should return 0 or char pos 1 if PEN not ON
             pen = 1 if fn >= 6 else 0
         return vartypes.int_to_integer_signed(pen)
@@ -796,7 +796,7 @@ class Evaluator(object):
     def value_peek(self):
         """ PEEK: read memory location. """
         addr = vartypes.pass_int_unpack(parse_bracket(self.ins, self.session), maxint=0xffff)
-        if state.session.program.protected and not state.session.parser.run_mode:
+        if self.session.program.protected and not self.session.parser.run_mode:
             raise error.RunError(error.IFC)
         return vartypes.int_to_integer_signed(machine.peek(addr))
 
@@ -815,7 +815,7 @@ class Evaluator(object):
             raise error.RunError(error.IFC)
         var_ptr = vartypes.int_to_integer_unsigned(var_ptr)
         if dollar:
-            return state.session.strings.store(chr(vartypes.byte_size[name[-1]]) + vartypes.integer_to_bytes(var_ptr))
+            return self.session.strings.store(chr(vartypes.byte_size[name[-1]]) + vartypes.integer_to_bytes(var_ptr))
         else:
             return var_ptr
 
@@ -874,9 +874,9 @@ class Evaluator(object):
     def value_rnd(self):
         """ RND: get pseudorandom value. """
         if util.skip_white(self.ins) == '(':
-            return state.session.randomiser.get(fp.unpack(vartypes.pass_single(parse_bracket(self.ins, self.session))))
+            return self.session.randomiser.get(fp.unpack(vartypes.pass_single(parse_bracket(self.ins, self.session))))
         else:
-            return state.session.randomiser.get_int(1)
+            return self.session.randomiser.get_int(1)
 
     def value_abs(self):
         """ ABS: get absolute value. """
