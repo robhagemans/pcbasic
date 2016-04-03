@@ -87,12 +87,10 @@ class Memory(object):
         self.stack_size = 512
         # total size of data segment (set by CLEAR)
         self.total_memory = max_memory
-        # current variable pointer
-        self.var_current = self.var_start()
 
     def get_free(self):
         """ Return the amount of memory available to variables, arrays, strings and code. """
-        return state.session.strings.current - self.var_current - state.session.arrays.current
+        return state.session.strings.current - self.var_current() - state.session.arrays.current
 
     def collect_garbage(self):
         """ Collect garbage from string space. Compactify string storage. """
@@ -110,6 +108,10 @@ class Memory(object):
     def var_start(self):
         """ Start of variable data. """
         return code_start + self._code_size()
+
+    def var_current(self):
+        """ Current variable pointer."""
+        return self.var_start() + state.session.scalars.current
 
     def _code_size(self):
         """ Size of code space """
@@ -135,9 +137,9 @@ class Memory(object):
     def get(self, address):
         """ Retrieve data from data memory. """
         address -= data_segment * 0x10
-        if address < self.var_current:
+        if address < self.var_current():
             return state.session.scalars.get_memory(address)
-        elif address < self.var_current + state.session.arrays.current:
+        elif address < self.var_current() + state.session.arrays.current:
             return state.session.arrays.get_memory(address)
         elif address > state.session.strings.current:
             return state.session.strings.get_memory(address)

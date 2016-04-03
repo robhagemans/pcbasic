@@ -182,6 +182,12 @@ class Scalars(object):
         self.memory = memory
         self.clear()
 
+    def clear(self):
+        """ Clear scalar variables. """
+        self.variables = {}
+        self.var_memory = {}
+        self.current = 0
+
     def set(self, name, value=None):
         """ Assign a value to a variable. """
         name = vartypes.complete_name(name)
@@ -195,10 +201,10 @@ class Scalars(object):
             size = (max(3, len(name)) + 1 + vartypes.byte_size[type_char])
             self.memory.check_free(size, error.OUT_OF_MEMORY)
             # first two bytes: chars of name or 0 if name is one byte long
-            name_ptr = self.memory.var_current
+            name_ptr = self.memory.var_current()
             # byte_size first_letter second_letter_or_nul remaining_length_or_nul
             var_ptr = name_ptr + max(3, len(name)) + 1
-            self.memory.var_current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
+            self.current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
             self.var_memory[name] = (name_ptr, var_ptr)
         # don't change the value if just checking allocation
         if value is None:
@@ -221,12 +227,6 @@ class Scalars(object):
             return (name[-1], self.variables[name])
         except KeyError:
             return vartypes.null(name[-1])
-
-    def clear(self):
-        """ Clear scalar variables. """
-        self.variables = {}
-        self.var_memory = {}
-        self.memory.var_current = self.memory.var_start()
 
     def varptr(self, name):
         """ Retrieve the address of a scalar variable. """
@@ -425,7 +425,7 @@ class Arrays(object):
             dimensions, _, _ = self.arrays[name]
             _, array_ptr = self.array_memory[name]
             # arrays are kept at the end of the var list
-            return self.memory.var_current + array_ptr + var_size_bytes(name) * self.index(indices, dimensions)
+            return self.memory.var_current() + array_ptr + var_size_bytes(name) * self.index(indices, dimensions)
         except KeyError:
             return -1
 
@@ -434,7 +434,7 @@ class Arrays(object):
         found_addr = -1
         found_name = None
         for name, data in self.array_memory.iteritems():
-            addr = self.memory.var_current + data[1]
+            addr = self.memory.var_current() + data[1]
             if addr > found_addr and addr <= address:
                 found_addr = addr
                 found_name = name
@@ -456,14 +456,15 @@ class Arrays(object):
                 the_arr = name
         if the_arr is None:
             return -1
-        if address >= self.memory.var_current + arr_addr:
-            offset = address - arr_addr - self.memory.var_current
+        var_current = self.memory.var_current()
+        if address >= var_current + arr_addr:
+            offset = address - arr_addr - var_current
             if offset >= self.array_size_bytes(the_arr):
                 return -1
             _, byte_array, _ = self.arrays[the_arr]
             return byte_array[offset]
         else:
-            offset = address - name_addr - self.memory.var_current
+            offset = address - name_addr - var_current
             if offset < max(3, len(the_arr))+1:
                 return get_name_in_memory(the_arr, offset)
             else:
