@@ -212,6 +212,13 @@ class Scalars(object):
         except KeyError:
             return -1
 
+    def dereference(self, address):
+        """ Get a value for a scalar given its pointer address. """
+        for name, data in self.var_memory.iteritems():
+            if data[1] == address:
+                return self.get(name)
+        return None
+
     def get_memory(self, address):
         """ Retrieve data from data memory: variable space """
         name_addr = -1
@@ -392,6 +399,21 @@ class Arrays(object):
             return self.memory.var_current + array_ptr + var_size_bytes(name) * self.index(indices, dimensions)
         except KeyError:
             return -1
+
+    def dereference(self, address):
+        """ Get a value for an array given its pointer address. """
+        found_addr = -1
+        found_name = None
+        for name, data in self.array_memory.iteritems():
+            addr = self.memory.var_current + data[1]
+            if addr > found_addr and addr <= address:
+                found_addr = addr
+                found_name = name
+        if not found_name:
+            return None
+        _, lst, _ = self.arrays[name]
+        offset = address - found_addr
+        return (name[-1], lst[offset : offset+var_size_bytes(name)])
 
     def get_memory(self, address):
         """ Retrieve data from data memory: array space """
@@ -578,36 +600,14 @@ def get_value_for_varptrstr(varptrstr):
 
 def dereference(address):
     """ Get a value for a variable given its pointer address. """
-    found = scalar_dereference(address)
+    found = state.session.scalars.dereference(address)
     if found is not None:
         return found
     # no scalar found, try arrays
-    found = array_dereference(address)
+    found = state.session.arrays.dereference(address)
     if found is not None:
         return found
     raise error.RunError(error.IFC)
-
-def scalar_dereference(address):
-    """ Get a value for a scalar given its pointer address. """
-    for name, data in state.session.scalars.var_memory.iteritems():
-        if data[1] == address:
-            return state.session.scalars.get(name)
-    return None
-
-def array_dereference(address):
-    """ Get a value for an array given its pointer address. """
-    found_addr = -1
-    found_name = None
-    for name, data in state.session.arrays.array_memory.iteritems():
-        addr = state.session.memory.var_current + data[1]
-        if addr > found_addr and addr <= address:
-            found_addr = addr
-            found_name = name
-    if not found_name:
-        return None
-    _, lst, _ = state.session.arrays.arrays[name]
-    offset = address - found_addr
-    return (name[-1], lst[offset : offset+var_size_bytes(name)])
 
 def get_data_memory(address):
     """ Retrieve data from data memory. """
