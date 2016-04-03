@@ -313,21 +313,21 @@ class Evaluator(object):
 
     def value_cvi(self):
         """ CVI: return the int value of a byte representation. """
-        cstr = var.copy_str(vartypes.pass_string(parse_bracket(self.ins, self.session)))
+        cstr = self.session.strings.copy(vartypes.pass_string(parse_bracket(self.ins, self.session)))
         if len(cstr) < 2:
             raise error.RunError(error.IFC)
         return vartypes.bytes_to_integer(cstr[:2])
 
     def value_cvs(self):
         """ CVS: return the single-precision value of a byte representation. """
-        cstr = var.copy_str(vartypes.pass_string(parse_bracket(self.ins, self.session)))
+        cstr = self.session.strings.copy(vartypes.pass_string(parse_bracket(self.ins, self.session)))
         if len(cstr) < 4:
             raise error.RunError(error.IFC)
         return ('!', bytearray(cstr[:4]))
 
     def value_cvd(self):
         """ CVD: return the double-precision value of a byte representation. """
-        cstr = var.copy_str(vartypes.pass_string(parse_bracket(self.ins, self.session)))
+        cstr = self.session.strings.copy(vartypes.pass_string(parse_bracket(self.ins, self.session)))
         if len(cstr) < 8:
             raise error.RunError(error.IFC)
         return ('#', bytearray(cstr[:8]))
@@ -363,7 +363,7 @@ class Evaluator(object):
 
     def value_val(self):
         """ VAL: number value of a string. """
-        return representation.str_to_number(var.copy_str(vartypes.pass_string(parse_bracket(self.ins, self.session))))
+        return representation.str_to_number(self.session.strings.copy(vartypes.pass_string(parse_bracket(self.ins, self.session))))
 
     def value_chr(self):
         """ CHR$: character for ASCII value. """
@@ -394,7 +394,7 @@ class Evaluator(object):
 
     def value_asc(self):
         """ ASC: ordinal ASCII value of a character. """
-        s = var.copy_str(vartypes.pass_string(parse_bracket(self.ins, self.session)))
+        s = self.session.strings.copy(vartypes.pass_string(parse_bracket(self.ins, self.session)))
         if not s:
             raise error.RunError(error.IFC)
         return vartypes.int_to_integer_signed(ord(s[0]))
@@ -415,7 +415,7 @@ class Evaluator(object):
         util.require_read(self.ins, (',',))
         small = vartypes.pass_string(parse_expression(self.ins, self.session, allow_empty=True))
         util.require_read(self.ins, (')',))
-        big, small = var.copy_str(big), var.copy_str(small)
+        big, small = self.session.strings.copy(big), self.session.strings.copy(small)
         if big == '' or n > len(big):
             return vartypes.null('%')
         # BASIC counts string positions from 1
@@ -427,7 +427,7 @@ class Evaluator(object):
     def value_mid(self):
         """ MID$: get substring. """
         util.require_read(self.ins, ('(',))
-        s = var.copy_str(vartypes.pass_string(parse_expression(self.ins, self.session)))
+        s = self.session.strings.copy(vartypes.pass_string(parse_expression(self.ins, self.session)))
         util.require_read(self.ins, (',',))
         start = vartypes.pass_int_unpack(parse_expression(self.ins, self.session))
         if util.skip_white_read_if(self.ins, (',',)):
@@ -447,7 +447,7 @@ class Evaluator(object):
     def value_left(self):
         """ LEFT$: get substring at the start of string. """
         util.require_read(self.ins, ('(',))
-        s = var.copy_str(vartypes.pass_string(parse_expression(self.ins, self.session)))
+        s = self.session.strings.copy(vartypes.pass_string(parse_expression(self.ins, self.session)))
         util.require_read(self.ins, (',',))
         stop = vartypes.pass_int_unpack(parse_expression(self.ins, self.session))
         util.require_read(self.ins, (')',))
@@ -460,7 +460,7 @@ class Evaluator(object):
     def value_right(self):
         """ RIGHT$: get substring at the end of string. """
         util.require_read(self.ins, ('(',))
-        s = var.copy_str(vartypes.pass_string(parse_expression(self.ins, self.session)))
+        s = self.session.strings.copy(vartypes.pass_string(parse_expression(self.ins, self.session)))
         util.require_read(self.ins, (',',))
         stop = vartypes.pass_int_unpack(parse_expression(self.ins, self.session))
         util.require_read(self.ins, (')',))
@@ -478,7 +478,7 @@ class Evaluator(object):
         util.require_read(self.ins, (',',))
         j = parse_expression(self.ins, self.session)
         if j[0] == '$':
-            j = var.copy_str(j)
+            j = self.session.strings.copy(j)
             util.range_check(1, 255, len(j))
             j = ord(j[0])
         else:
@@ -605,7 +605,7 @@ class Evaluator(object):
         util.require_read(self.ins, ('$',))
         expr = parse_bracket(self.ins, self.session)
         if expr[0] == '$':
-            return self.session.strings.store(shell.get_env(var.copy_str(expr)))
+            return self.session.strings.store(shell.get_env(self.session.strings.copy(expr)))
         else:
             expr = vartypes.pass_int_unpack(expr)
             util.range_check(1, 255, expr)

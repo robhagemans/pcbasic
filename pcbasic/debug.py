@@ -61,7 +61,7 @@ def debug_step(linum):
         try:
             val = expressions.parse_expression(outs, state.session)
             if val[0] == '$':
-                outstr += '"' + var.copy_str(val) + '"'
+                outstr += '"' + state.session.strings.copy(val) + '"'
             else:
                 outstr += representation.number_to_str(val, screen=False)
         except Exception as e:

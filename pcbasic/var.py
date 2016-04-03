@@ -32,7 +32,7 @@ class StringSpace(object):
         # strings are placed at the top of string memory, just below the stack
         self.current = memory.stack_start()
 
-    def retrieve(self, key):
+    def _retrieve(self, key):
         """ Retrieve a string by its 3-byte sequence. 2-byte keys allowed, but will return longer string for empty string. """
         key = str(key)
         if len(key) == 2:
@@ -43,9 +43,46 @@ class StringSpace(object):
         else:
             raise KeyError('String key %s has wrong length.' % repr(key))
 
-    def copy(self, key):
-        """ Return a copy of the string by its 2-byte key or 3-byte sequence. """
-        return str(self.retrieve(key))
+    def _view(self, basic_string):
+        """ Return a writeable view of a string from its string pointer. """
+        length = vartypes.string_length(basic_string)
+        address = vartypes.string_address(basic_string)
+        # address >= memory.var_start(): if we no longer double-store code strings in string space object
+        if address >= memory.code_start:
+            # string stored in string space
+            sequence = vartypes.string_to_bytes(basic_string)
+            return memoryview(self._retrieve(sequence))
+        else:
+            # string stored in field buffers
+            # find the file we're in
+            start = address - memory.field_mem_start
+            number = 1 + start // memory.field_mem_offset
+            offset = start % memory.field_mem_offset
+            if (number not in state.io_state.fields) or (start < 0):
+                raise KeyError('Not a field string')
+            # memoryview slice continues to point to buffer, does not copy
+            return memoryview(state.io_state.fields[number].buffer)[offset:offset+length]
+
+    def copy(self, basic_string):
+        """ Return a copy of a string from its string pointer. """
+        try:
+            return str(bytearray(self._view(basic_string)))
+        except KeyError:
+            # 'Not a field string'
+            length = vartypes.string_length(basic_string)
+            return '\0'*length
+
+    def modify(self, basic_string, in_str, offset=None, num=None):
+        """ Assign a new string into an existing buffer. """
+        # if it is a code literal, we now do need to allocate space for a copy
+        address = vartypes.string_address(basic_string)
+        if address >= memory.code_start and address < state.session.memory.var_start():
+            basic_string = self.store(self.copy(basic_string))
+        if num is None:
+            self._view(basic_string)[:] = in_str
+        else:
+            self._view(basic_string)[offset:offset+num] = in_str
+        return basic_string
 
     def store(self, in_str, address=None):
         """ Store a new string and return the string pointer. """
@@ -95,49 +132,6 @@ class StringSpace(object):
             self.delete_last()
 
 
-def copy_str(basic_string):
-    """ Return a copy of a string from its string pointer. """
-    try:
-        return str(bytearray(view_str(basic_string)))
-    except KeyError:
-        # 'Not a field string'
-        length = vartypes.string_length(basic_string)
-        return '\0'*length
-
-
-def view_str(basic_string):
-    """ Return a writeable view of a string from its string pointer. """
-    length = vartypes.string_length(basic_string)
-    address = vartypes.string_address(basic_string)
-    # address >= memory.var_start(): if we no longer double-store code strings in string space object
-    if address >= memory.code_start:
-        # string stored in string space
-        sequence = vartypes.string_to_bytes(basic_string)
-        return memoryview(state.session.strings.retrieve(sequence))
-    else:
-        # string stored in field buffers
-        # find the file we're in
-        start = address - memory.field_mem_start
-        number = 1 + start // memory.field_mem_offset
-        offset = start % memory.field_mem_offset
-        if (number not in state.io_state.fields) or (start < 0):
-            raise KeyError('Not a field string')
-        # memoryview slice continues to point to buffer, does not copy
-        return memoryview(state.io_state.fields[number].buffer)[offset:offset+length]
-
-def set_str(basic_string, in_str, offset=None, num=None):
-    """ Assign a new string into an existing buffer. """
-    # if it is a code literal, we now do need to allocate space for a copy
-    address = vartypes.string_address(basic_string)
-    if address >= memory.code_start and address < state.session.memory.var_start():
-        basic_string = state.session.strings.store(copy_str(basic_string))
-    if num is None:
-        view_str(basic_string)[:] = in_str
-    else:
-        view_str(basic_string)[offset:offset+num] = in_str
-    return basic_string
-
-
 def collect_garbage():
     """ Collect garbage from string space. Compactify string storage. """
     # copy all strings that are actually referenced
@@ -159,7 +153,7 @@ def _scalar_gather_strings():
             try:
                 string_list.append((v, 0,
                         state.session.strings.address(v),
-                        state.session.strings.retrieve(v)))
+                        state.session.strings._retrieve(v)))
             except KeyError:
                 # string is not located in memory - FIELD or code
                 pass
@@ -177,11 +171,53 @@ def _array_gather_strings():
                 try:
                     string_list.append((lst, i,
                             state.session.strings.address(v),
-                            state.session.strings.retrieve(v)))
+                            state.session.strings._retrieve(v)))
                 except KeyError:
                     # string is not located in memory - FIELD or code
                     pass
     return string_list
+
+
+def get_data_memory_string(address):
+    """ Retrieve data from data memory: string space """
+    # find the variable we're in
+    str_nearest, the_var = _scalar_get_data_memory_string(address)
+    if the_var is None:
+        str_nearest, the_var = _array_get_data_memory_string(address)
+    try:
+        return state.session.strings._retrieve(the_var)[address - str_nearest]
+    except (IndexError, AttributeError, KeyError):
+        return -1
+
+def _scalar_get_data_memory_string(address):
+    """ Retrieve data from data memory: string space (scalars) """
+    str_nearest = -1
+    the_var = None
+    for name in state.session.scalars.variables:
+        if name[-1] != '$':
+            continue
+        v = state.session.scalars.variables[name]
+        str_try = state.session.strings.address(v)
+        if str_try <= address and str_try > str_nearest:
+            str_nearest = str_try
+            the_var = v
+    return str_nearest, the_var
+
+def _array_get_data_memory_string(address):
+    """ Retrieve data from data memory: string space (arrays) """
+    str_nearest = -1
+    the_var = None
+    for name in state.session.arrays.arrays:
+        if name[-1] != '$':
+            continue
+        _, lst, _ = state.session.arrays.arrays[name]
+        for i in range(0, len(lst), 3):
+            str_try = state.session.strings.address(lst[i:i+3])
+            if str_try <= address and str_try > str_nearest:
+                str_nearest = str_try
+                the_var = lst[i:i+3]
+    return str_nearest, the_var
+
 
 ###############################################################################
 # scalar variables
@@ -299,7 +335,7 @@ class Scalars(object):
         for v in common:
             full_var = (v[-1], common[v])
             if v[-1] == '$':
-                full_var = string_store.store(copy_str(full_var))
+                full_var = string_store.store(state.session.strings.copy(full_var))
             self.set(v, full_var)
 
 
@@ -508,7 +544,7 @@ class Arrays(object):
                 s = bytearray()
                 for i in range(0, len(common[a][1]), vartypes.byte_size['$']):
                     old_ptr = vartypes.bytes_to_string(common[a][1][i : i+vartypes.byte_size['$']])
-                    new_ptr = string_store.store(copy_str(old_ptr))
+                    new_ptr = string_store.store(state.session.strings.copy(old_ptr))
                     s += vartypes.string_to_bytes(new_ptr)
                 self.arrays[a][1] = s
             else:
@@ -632,46 +668,6 @@ def get_data_memory(address):
     else:
         # unallocated var space
         return -1
-
-def get_data_memory_string(address):
-    """ Retrieve data from data memory: string space """
-    # find the variable we're in
-    str_nearest, the_var = _scalar_get_data_memory_string(address)
-    if the_var is None:
-        str_nearest, the_var = _array_get_data_memory_string(address)
-    try:
-        return state.session.strings.retrieve(the_var)[address - str_nearest]
-    except (IndexError, AttributeError, KeyError):
-        return -1
-
-def _scalar_get_data_memory_string(address):
-    """ Retrieve data from data memory: string space (scalars) """
-    str_nearest = -1
-    the_var = None
-    for name in state.session.scalars.variables:
-        if name[-1] != '$':
-            continue
-        v = state.session.scalars.variables[name]
-        str_try = state.session.strings.address(v)
-        if str_try <= address and str_try > str_nearest:
-            str_nearest = str_try
-            the_var = v
-    return str_nearest, the_var
-
-def _array_get_data_memory_string(address):
-    """ Retrieve data from data memory: string space (arrays) """
-    str_nearest = -1
-    the_var = None
-    for name in state.session.arrays.arrays:
-        if name[-1] != '$':
-            continue
-        _, lst, _ = state.session.arrays.arrays[name]
-        for i in range(0, len(lst), 3):
-            str_try = state.session.strings.address(lst[i:i+3])
-            if str_try <= address and str_try > str_nearest:
-                str_nearest = str_try
-                the_var = lst[i:i+3]
-    return str_nearest, the_var
 
 
 def get_name_in_memory(name, offset):

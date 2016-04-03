@@ -163,7 +163,9 @@ def number_imp(left, right):
 
 def string_concat(left, right):
     """ Concatenate strings. """
-    return state.session.strings.store(var.copy_str(vartypes.pass_string(left)) + var.copy_str(vartypes.pass_string(right)))
+    return state.session.strings.store(
+        state.session.strings.copy(vartypes.pass_string(left)) +
+        state.session.strings.copy(vartypes.pass_string(right)))
 
 
 ###############################################################################
@@ -172,7 +174,8 @@ def string_concat(left, right):
 def _bool_eq(left, right):
     """ Return true if left == right, false otherwise. """
     if left[0] == '$':
-        return var.copy_str(vartypes.pass_string(left)) == var.copy_str(vartypes.pass_string(right))
+        return (state.session.strings.copy(vartypes.pass_string(left)) ==
+                    state.session.strings.copy(vartypes.pass_string(right)))
     else:
         left, right = vartypes.pass_most_precise(left, right)
         if left[0] in ('#', '!'):
@@ -183,7 +186,8 @@ def _bool_eq(left, right):
 def _bool_gt(left, right):
     """ Ordering: return -1 if left > right, 0 otherwise. """
     if left[0] == '$':
-        left, right = var.copy_str(vartypes.pass_string(left)), var.copy_str(vartypes.pass_string(right))
+        left = state.session.strings.copy(vartypes.pass_string(left)) 
+        right = state.session.strings.copy(vartypes.pass_string(right))
         shortest = min(len(left), len(right))
         for i in range(shortest):
             if left[i] > right[i]:

@@ -82,10 +82,10 @@ def ml_parse_string(gmls):
         indices = ml_parse_indices(gmls)
         sub = var.get_variable(name, indices)
         util.require_read(gmls, (';',), err=error.IFC)
-        return var.copy_str(vartypes.pass_string(sub, err=error.IFC))
+        return state.session.strings.copy(vartypes.pass_string(sub, err=error.IFC))
     else:
         # varptr$
-        return var.copy_str(
+        return state.session.strings.copy(
                 vartypes.pass_string(var.get_value_for_varptrstr(gmls.read(3))))
 
 def ml_parse_indices(gmls):
