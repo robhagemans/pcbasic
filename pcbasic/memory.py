@@ -49,7 +49,7 @@ ram_font_segment = 0xc000
 def prepare():
     """ Initialise the memory module """
     global field_mem_base, field_mem_start, field_mem_offset
-    global code_start, stack_size, max_memory, total_memory
+    global code_start, max_memory
     # length of field record (by default 128)
     file_rec_len = config.get('max-reclen')
     # file header (at head of field memory)
@@ -66,37 +66,11 @@ def prepare():
     # data memory model: start of code section
     # code_start+1: offsets in files (4718 == 0x126e)
     code_start = field_mem_base + (num_files+1) * field_mem_offset
-    # BASIC stack (determined by CLEAR)
-    # Initially, the stack space should be set to 512 bytes,
-    # or one-eighth of the available memory, whichever is smaller.
-    stack_size = 512
     # max available memory to BASIC (set by /m)
     max_list = config.get('max-memory')
     max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
     max_list[0] = max_list[0] or max_list[1]
     max_memory = min(max_list) or 65534
-    # total size of data segment (set by CLEAR)
-    total_memory = max_memory
-
-def stack_start():
-    """ Top of string space; start of stack space """
-    return total_memory - stack_size - 2
-
-def set_stack_size(new_stack_size):
-    """ Set the stack size (on CLEAR) """
-    global stack_size
-    stack_size = new_stack_size
-
-def set_basic_memory_size(new_size):
-    """ Set the data memory size (on CLEAR) """
-    global total_memory
-    if new_size < 0:
-        new_size += 0x10000
-    if new_size > max_memory:
-        return False
-    total_memory = new_size
-    return True
-
 
 
 class Memory(object):
@@ -107,6 +81,13 @@ class Memory(object):
         self.segment = data_segment
         # program buffer is initialised elsewhere
         self.program = program
+        # BASIC stack (determined by CLEAR)
+        # Initially, the stack space should be set to 512 bytes,
+        # or one-eighth of the available memory, whichever is smaller.
+        self.stack_size = 512
+        # total size of data segment (set by CLEAR)
+        self.total_memory = max_memory
+        # current variable pointer
         self.var_current = self.var_start()
         # arrays are always kept after all vars
         self.array_current = 0
@@ -135,6 +116,23 @@ class Memory(object):
     def _code_size(self):
         """ Size of code space """
         return len(self.program.bytecode.getvalue())
+
+    def stack_start(self):
+        """ Top of string space; start of stack space """
+        return self.total_memory - self.stack_size - 2
+
+    def set_stack_size(self, new_stack_size):
+        """ Set the stack size (on CLEAR) """
+        self.stack_size = new_stack_size
+
+    def set_basic_memory_size(self, new_size):
+        """ Set the data memory size (on CLEAR) """
+        if new_size < 0:
+            new_size += 0x10000
+        if new_size > max_memory:
+            return False
+        self.total_memory = new_size
+        return True
 
     def get(self, address):
         """ Retrieve data from data memory. """

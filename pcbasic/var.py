@@ -22,15 +22,16 @@ import memory
 class StringSpace(object):
     """ String space is a table of strings accessible by their 2-byte pointers. """
 
-    def __init__(self):
+    def __init__(self, memory):
         """ Initialise empty string space. """
+        self.memory = memory
         self.clear()
 
     def clear(self):
         """ Empty string space. """
         self.strings = {}
         # strings are placed at the top of string memory, just below the stack
-        self.current = memory.stack_start()
+        self.current = self.memory.stack_start()
 
     def _retrieve(self, key):
         """ Retrieve a string by its 3-byte sequence. 2-byte keys allowed, but will return longer string for empty string. """
@@ -92,7 +93,7 @@ class StringSpace(object):
             raise error.RunError(error.STRING_TOO_LONG)
         if address is None:
             # reserve string space; collect garbage if necessary
-            state.session.memory.check_free(size, error.OUT_OF_STRING_SPACE)
+            self.memory.check_free(size, error.OUT_OF_STRING_SPACE)
             # find new string address
             self.current -= size
             address = self.current + 1

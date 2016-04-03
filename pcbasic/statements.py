@@ -1958,7 +1958,7 @@ class Parser(object):
                     #  0 leads to illegal fn call
                     raise error.RunError(error.IFC)
                 else:
-                    if not memory.set_basic_memory_size(mem_size):
+                    if not self.session.memory.set_basic_memory_size(mem_size):
                         raise error.RunError(error.OUT_OF_MEMORY)
             if util.skip_white_read_if(self.ins, (',',)):
                 # set aside stack space for GW-BASIC. The default is the previous stack space size.
@@ -1971,7 +1971,7 @@ class Parser(object):
                     if stack_size == 0:
                         #  0 leads to illegal fn call
                         raise error.RunError(error.IFC)
-                    memory.set_stack_size(stack_size)
+                    self.session.memory.set_stack_size(stack_size)
                 if self.syntax in ('pcjr', 'tandy') and util.skip_white_read_if(self.ins, (',',)):
                     # Tandy/PCjr: select video memory size
                     if not state.console_state.screen.set_video_memory_size(

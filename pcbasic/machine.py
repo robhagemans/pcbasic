@@ -434,9 +434,9 @@ def get_basic_memory(addr):
         return (0, 0, 0x10, 0x82)[addr]
     # DS:2c, DS:2d  end of memory available to BASIC
     elif addr == 0x2C:
-        return memory.total_memory % 256
+        return state.session.memory.total_memory % 256
     elif addr == 0x2D:
-        return memory.total_memory // 256
+        return state.session.memory.total_memory // 256
     # DS:30, DS:31: pointer to start of program, excluding initial \0
     elif addr == 0x30:
         return (memory.code_start+1) % 256

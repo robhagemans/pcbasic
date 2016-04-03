@@ -145,7 +145,7 @@ class Session(object):
         self.memory = memory.Memory(self.program)
         self.scalars = var.Scalars(self.memory)
         self.arrays = var.Arrays(self.memory)
-        self.strings = var.StringSpace()
+        self.strings = var.StringSpace(self.memory)
         self.common_scalars = set()
         self.common_arrays = set()
         self.deftype = ['!']*26
@@ -204,7 +204,7 @@ class Session(object):
                 # at least I think these should be cleared by CLEAR?
                 self.common_scalars = set()
                 self.common_arrays = set()
-            new_strings = var.StringSpace()
+            new_strings = var.StringSpace(self.memory)
             var.clear_variables(self.common_scalars, self.common_arrays, new_strings)
             # reset string space
             self.strings = new_strings
