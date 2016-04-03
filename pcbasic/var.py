@@ -49,16 +49,16 @@ class StringSpace(object):
         length = vartypes.string_length(basic_string)
         address = vartypes.string_address(basic_string)
         # address >= self.memory.var_start(): if we no longer double-store code strings in string space object
-        if address >= memory.code_start:
+        if address >= self.memory.code_start:
             # string stored in string space
             sequence = vartypes.string_to_bytes(basic_string)
             return memoryview(self._retrieve(sequence))
         else:
             # string stored in field buffers
             # find the file we're in
-            start = address - memory.field_mem_start
-            number = 1 + start // memory.field_mem_offset
-            offset = start % memory.field_mem_offset
+            start = address - self.memory.field_mem_start
+            number = 1 + start // self.memory.field_mem_offset
+            offset = start % self.memory.field_mem_offset
             if (number not in state.io_state.fields) or (start < 0):
                 raise KeyError('Not a field string')
             # memoryview slice continues to point to buffer, does not copy
@@ -77,7 +77,7 @@ class StringSpace(object):
         """ Assign a new string into an existing buffer. """
         # if it is a code literal, we now do need to allocate space for a copy
         address = vartypes.string_address(basic_string)
-        if address >= memory.code_start and address < state.session.memory.var_start():
+        if address >= self.memory.code_start and address < self.memory.var_start():
             basic_string = self.store(self.copy(basic_string))
         if num is None:
             self._view(basic_string)[:] = in_str

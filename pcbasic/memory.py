@@ -6,7 +6,6 @@ Model memory
 This file is released under the GNU GPL version 3 or later.
 """
 
-import config
 import state
 import error
 
@@ -19,6 +18,7 @@ video_segment = 0xa000
 rom_segment = 0xf000
 # segment that holds ram font
 ram_font_segment = 0xc000
+
 
 # Data Segment Map - default situation
 # addr      size
@@ -44,35 +44,10 @@ ram_font_segment = 0xc000
 # 65534                 total size (determined by CLEAR)
 
 
-
-
-def prepare():
-    """ Initialise the memory module """
-    global field_mem_base, field_mem_start, field_mem_offset
-    global code_start
-    # length of field record (by default 128)
-    file_rec_len = config.get('max-reclen')
-    # file header (at head of field memory)
-    file_header_size = 194
-    # number of file records
-    num_files = config.get('max-files')
-    # first field buffer address (workspace size; 3429 for gw-basic)
-    field_mem_base = config.get('reserved-memory')
-    # bytes distance between field buffers
-    field_mem_offset = file_header_size + file_rec_len
-    # start of 1st field =3945, includes FCB & header header of 1st field
-    # used by var.py
-    field_mem_start = field_mem_base + field_mem_offset + file_header_size
-    # data memory model: start of code section
-    # code_start+1: offsets in files (4718 == 0x126e)
-    code_start = field_mem_base + (num_files+1) * field_mem_offset
-
-
-
 class Memory(object):
     """ Memory model. """
 
-    def __init__(self, program, max_memory):
+    def __init__(self, program, total_memory, reserved_memory, max_reclen, max_files):
         """ Initialise memory. """
         self.segment = data_segment
         # program buffer is initialised elsewhere
@@ -82,7 +57,19 @@ class Memory(object):
         # or one-eighth of the available memory, whichever is smaller.
         self.stack_size = 512
         # total size of data segment (set by CLEAR)
-        self.total_memory = max_memory
+        self.total_memory = total_memory
+        # first field buffer address (workspace size; 3429 for gw-basic)
+        self.field_mem_base = reserved_memory
+        # file header (at head of field memory)
+        file_header_size = 194
+        # bytes distance between field buffers
+        self.field_mem_offset = file_header_size + max_reclen
+        # start of 1st field =3945, includes FCB & header header of 1st field
+        # used by var.py
+        self.field_mem_start = self.field_mem_base + self.field_mem_offset + file_header_size
+        # data memory model: start of code section
+        # code_start+1: offsets in files (4718 == 0x126e)
+        self.code_start = self.field_mem_base + (max_files+1) * self.field_mem_offset
 
     def get_free(self):
         """ Return the amount of memory available to variables, arrays, strings and code. """
@@ -103,7 +90,7 @@ class Memory(object):
 
     def var_start(self):
         """ Start of variable data. """
-        return code_start + self._code_size()
+        return self.code_start + self._code_size()
 
     def var_current(self):
         """ Current variable pointer."""
@@ -142,6 +129,3 @@ class Memory(object):
         else:
             # unallocated var space
             return -1
-
-
-prepare()

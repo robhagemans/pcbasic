@@ -119,7 +119,7 @@ def convert():
             # use StringIO buffer for seekability
             in_buffer = StringIO(sys.stdin.read())
             prog_infile = disk.create_file_object(in_buffer, filetype='ABP', mode='I')
-        prog = program.Program()
+        prog = program.Program(4717)
         if prog_infile:
             with prog_infile:
                 prog.load(prog_infile, rebuild_dict=False)

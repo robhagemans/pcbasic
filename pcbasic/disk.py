@@ -35,7 +35,6 @@ import unicodepage
 # to be abled to set current-device to CAS1
 import cassette
 
-
 # GW-BASIC FILE CONTROL BLOCK structure:
 # source: IBM Basic reference 1982 (for BASIC-C, BASIC-D, BASIC-A) appendix I-5
 # byte  length  description
@@ -121,7 +120,6 @@ def prepare():
         state.io_state.devices[b'Z:'] = DiskDevice(b'Z', os.getcwdu(), u'')
     _mount_drives(config.get(u'mount'))
     _set_current_device(current_drive + b':')
-    reset_fields()
 
 def override():
     """ Initialise module settings that override --resume. """
@@ -155,14 +153,13 @@ def _set_current_device(current_drive, default=b'Z:'):
         logging.warning(u'Could not set current device to %s', current_drive)
         state.io_state.current_device = state.io_state.devices[default]
 
-def reset_fields():
+def reset_fields(memory):
     """ Initialise FIELD buffers. """
     state.io_state.fields = {}
     # fields are indexed by BASIC file number, hence max_files+1
     # file 0 (program/system file) probably doesn't need a field
     for i in range(state.io_state.max_files+1):
-        state.io_state.fields[i+1] = devices.Field(i+1)
-
+        state.io_state.fields[i+1] = devices.Field(i+1, memory)
 
 if plat.system == b'Windows':
     def _map_drives():

@@ -520,7 +520,7 @@ class CRLFTextFileBase(TextFileBase):
 class Field(object):
     """ Buffer for FIELD access. """
 
-    def __init__(self, number):
+    def __init__(self, number, memory):
         """ Set up empty FIELD buffer. """
         if number > 0:
             self.address = memory.field_mem_start + (number-1)*memory.field_mem_offset

@@ -215,7 +215,7 @@ class COMFile(devices.CRLFTextFileBase):
         # note that for random files, fhandle must be a seekable stream.
         devices.CRLFTextFileBase.__init__(self, fhandle, 'D', 'R')
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
-        self.field = devices.Field(0)
+        self.field = devices.Field(0, state.session.memory)
         self.serial_in_size = serial_in_size
         self.field.reset(serial_in_size)
         self.in_buffer = bytearray()

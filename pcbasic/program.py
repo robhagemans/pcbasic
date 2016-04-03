@@ -28,7 +28,7 @@ import sound
 class Program(object):
     """ BASIC program. """
 
-    def __init__(self, max_list_line=65536, allow_protect=False, allow_code_poke=False):
+    def __init__(self, code_start, max_list_line=65536, allow_protect=False, allow_code_poke=False):
         """ Initialise program. """
         # program bytecode buffer
         self.bytecode = StringIO()
@@ -36,6 +36,7 @@ class Program(object):
         self.max_list_line = max_list_line
         self.allow_protect = allow_protect
         self.allow_code_poke = allow_code_poke
+        self.code_start = code_start
 
     def erase(self):
         """ Erase the program from memory. """
@@ -83,7 +84,7 @@ class Program(object):
         last = 0
         for pos in offsets:
             self.bytecode.read(1)
-            self.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned((memory.code_start + 1) + pos))))
+            self.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned((self.code_start + 1) + pos))))
             self.bytecode.read(pos - last - 3)
             last = pos
         # ensure program is properly sealed - last offset must be 00 00. keep, but ignore, anything after.
@@ -93,7 +94,7 @@ class Program(object):
         """ Update line number dictionary after deleting lines. """
         # subtract length of line we replaced
         length -= afterpos - pos
-        addr = (memory.code_start + 1) + afterpos
+        addr = (self.code_start + 1) + afterpos
         self.bytecode.seek(afterpos + length + 1)  # pass \x00
         while True:
             next_addr = self.bytecode.read(2)
@@ -149,7 +150,7 @@ class Program(object):
             self.bytecode.write('\0' +
                 str(vartypes.integer_to_bytes(
                     vartypes.int_to_integer_unsigned(
-                        (memory.code_start + 1) + pos + length))) + linebuf.read())
+                        (self.code_start + 1) + pos + length))) + linebuf.read())
         # write back the remainder of the program
         self.truncate(rest)
         # update all next offsets by shifting them by the length of the added line
@@ -355,7 +356,7 @@ class Program(object):
 
     def get_memory(self, address):
         """ Retrieve data from program code. """
-        address -= memory.data_segment * 0x10 + memory.code_start
+        address -= memory.data_segment * 0x10 + self.code_start
         code = self.bytecode.getvalue()
         try:
             return ord(code[address])
@@ -367,7 +368,7 @@ class Program(object):
         if not self.allow_code_poke:
             logging.warning('Ignored POKE into program code')
         else:
-            address -= memory.data_segment * 0x10 + memory.code_start
+            address -= memory.data_segment * 0x10 + self.code_start
             loc = self.bytecode.tell()
             # move pointer to end
             self.bytecode.seek(0, 2)

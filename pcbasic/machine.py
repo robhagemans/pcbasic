@@ -259,7 +259,7 @@ def varptr_file(filenum):
     """ Get address of FCB for a given file number. """
     if filenum < 1 or filenum > state.io_state.max_files:
         raise error.RunError(error.BAD_FILE_NUMBER)
-    return memory.field_mem_base + filenum * memory.field_mem_offset + 6
+    return state.session.memory.field_mem_base + filenum * state.session.memory.field_mem_offset + 6
 
 
 ###############################################################################
@@ -283,10 +283,10 @@ def get_memory(addr):
         elif addr >= memory.data_segment*0x10 + state.session.memory.var_start():
             # variable memory
             return max(0, state.session.memory.get(addr))
-        elif addr >= memory.data_segment*0x10 + memory.code_start:
+        elif addr >= memory.data_segment*0x10 + state.session.memory.code_start:
             # code memory
             return max(0, state.session.program.get_memory(addr))
-        elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
+        elif addr >= memory.data_segment*0x10 + state.session.memory.field_mem_start:
             # file & FIELD memory
             return max(0, get_field_memory(addr))
         elif addr >= memory.data_segment*0x10:
@@ -311,10 +311,10 @@ def set_memory(addr, val):
     elif addr >= memory.data_segment*0x10 + state.session.memory.var_start():
         # POKING in variables
         not_implemented_poke(addr, val)
-    elif addr >= memory.data_segment*0x10 + memory.code_start:
+    elif addr >= memory.data_segment*0x10 + state.session.memory.code_start:
         # code memory
         state.session.program.set_memory(addr, val)
-    elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
+    elif addr >= memory.data_segment*0x10 + state.session.memory.field_mem_start:
         # file & FIELD memory
         not_implemented_poke(addr, val)
     elif addr >= memory.data_segment*0x10:
@@ -361,12 +361,12 @@ def set_memory_block(addr, buf):
 def get_field_memory(address):
     """ Retrieve data from FIELD buffer. """
     address -= memory.data_segment * 0x10
-    if address < memory.field_mem_start:
+    if address < state.session.memory.field_mem_start:
         return -1
     # find the file we're in
-    start = address - memory.field_mem_start
-    number = 1 + start // memory.field_mem_offset
-    offset = start % memory.field_mem_offset
+    start = address - state.session.memory.field_mem_start
+    number = 1 + start // state.session.memory.field_mem_offset
+    offset = start % state.session.memory.field_mem_offset
     try:
         return state.io_state.fields[number].buffer[offset]
     except (KeyError, IndexError):
@@ -439,9 +439,9 @@ def get_basic_memory(addr):
         return state.session.memory.total_memory // 256
     # DS:30, DS:31: pointer to start of program, excluding initial \0
     elif addr == 0x30:
-        return (memory.code_start+1) % 256
+        return (state.session.memory.code_start+1) % 256
     elif addr == 0x31:
-        return (memory.code_start+1) // 256
+        return (state.session.memory.code_start+1) // 256
     # DS:358, DS:359: start of variable space
     elif addr == 0x358:
         return state.session.memory.var_start() % 256

@@ -1141,7 +1141,7 @@ class Parser(object):
             if mode not in ('A', 'P'):
                 raise error.RunError(error.STX)
         with devices.open_file(0, name, filetype=mode, mode='O',
-                                seg=memory.data_segment, offset=memory.code_start,
+                                seg=memory.data_segment, offset=self.session.memory.code_start,
                                 length=len(self.program_code.getvalue())-1
                                 ) as f:
             self.session.program.save(f)
@@ -2147,7 +2147,7 @@ class Parser(object):
             entry = self.read_entry()
             if name[-1] == '$':
                 if self.ins == self.program_code:
-                    address = self.data_pos + memory.code_start
+                    address = self.data_pos + self.session.memory.code_start
                 else:
                     address = None
                 value = self.session.strings.store(entry, address)
@@ -2258,7 +2258,7 @@ class Parser(object):
         # read parameters
         fnvars = []
         util.skip_white(self.ins)
-        pointer_loc = memory.code_start + self.ins.tell()
+        pointer_loc = self.session.memory.code_start + self.ins.tell()
         if util.skip_white_read_if(self.ins, ('(',)):
             while True:
                 fnvars.append(util.parse_scalar(self.ins))

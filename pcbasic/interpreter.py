@@ -42,7 +42,6 @@ import timedate
 import shell
 import memory
 
-
 class SessionLauncher(object):
     """ Launches a BASIC session. """
 
@@ -117,6 +116,21 @@ class Session(object):
         # direct line buffer
         self.direct_line = StringIO()
 
+        # set up variables and memory model state
+        # max available memory to BASIC (set by /m)
+        max_list = config.get('max-memory')
+        max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
+        max_list[0] = max_list[0] or max_list[1]
+        max_memory = min(max_list) or 65534
+        # length of field record (by default 128)
+        max_reclen = config.get('max-reclen')
+        # number of file records
+        max_files = config.get('max-files')
+        # first field buffer address (workspace size; 3429 for gw-basic)
+        reserved_memory = config.get('reserved-memory')
+
+        self.memory = memory.Memory(None, max_memory, reserved_memory, max_reclen, max_files)
+
         # program parameters
         if not config.get('strict-hidden-lines'):
             max_list_line = 65535
@@ -125,12 +139,10 @@ class Session(object):
         allow_protect = config.get('strict-protect')
         allow_code_poke = config.get('allow-code-poke')
         # initialise the program
-        self.program = program.Program(max_list_line, allow_protect, allow_code_poke)
-        # load initial program
-        if load:
-            # on load, accept capitalised versions and default extension
-            with disk.open_native_or_dos_filename(load) as progfile:
-                self.program.load(progfile)
+        self.program = program.Program(self.memory.code_start, max_list_line, allow_protect, allow_code_poke)
+
+        # kludge
+        self.memory.program = self.program
 
         # find program for PCjr TERM command
         pcjr_term = config.get('pcjr-term')
@@ -141,13 +153,7 @@ class Session(object):
         # initialise the parser
         self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
 
-        # set up variables and memory model state
-        # max available memory to BASIC (set by /m)
-        max_list = config.get('max-memory')
-        max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
-        max_list[0] = max_list[0] or max_list[1]
-        max_memory = min(max_list) or 65534
-        self.memory = memory.Memory(self.program, max_memory)
+
         self.scalars = var.Scalars(self.memory)
         self.arrays = var.Arrays(self.memory)
         self.strings = var.StringSpace(self.memory)
@@ -160,6 +166,15 @@ class Session(object):
         self.randomiser = rnd.RandomNumberGenerator()
         # initialise timer
         self.timer = timedate.Timer()
+
+        # initialise FIELD buffers
+        disk.reset_fields(self.memory)
+
+        # load initial program
+        if load:
+            # on load, accept capitalised versions and default extension
+            with disk.open_native_or_dos_filename(load) as progfile:
+                self.program.load(progfile)
 
         # TODO: these may not be necessary
         # stop all sound
@@ -224,7 +239,7 @@ class Session(object):
             # close all files
             devices.close_files()
         # release all disk buffers (FIELD)?
-        disk.reset_fields()
+        disk.reset_fields(self.memory)
         # stop all sound
         state.console_state.sound.stop_all_sound()
         # Resets STRIG to off
@@ -252,6 +267,8 @@ class Session(object):
         if not self.parse_mode:
             self.prompt = False
 
+
+    ###########################################################################
 
     def run(self, command, run, quit, wait):
         """ Interactive interpreter session. """

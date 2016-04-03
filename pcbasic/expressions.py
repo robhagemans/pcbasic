@@ -114,7 +114,7 @@ def parse_literal(ins, session):
     if d == '"':
         ins.read(1)
         if ins == session.program.bytecode:
-            address = ins.tell() + memory.code_start
+            address = ins.tell() + session.memory.code_start
         else:
             address = None
         output = bytearray()
