@@ -6,8 +6,8 @@ Model memory
 This file is released under the GNU GPL version 3 or later.
 """
 
-import state
 import error
+import var
 
 # data memory model: data segment
 # location depends on which flavour of BASIC we use (this is for GW-BASIC)
@@ -70,16 +70,35 @@ class Memory(object):
         # data memory model: start of code section
         # code_start+1: offsets in files (4718 == 0x126e)
         self.code_start = self.field_mem_base + (max_files+1) * self.field_mem_offset
+        # scalar space
+        self.scalars = var.Scalars(self)
+        # array space
+        self.arrays = var.Arrays(self)
+        # string space
+        self.strings = var.StringSpace(self)
+
+    def clear_variables(self, preserve_vars, preserve_arrays, new_strings):
+        """ Reset and clear variables, arrays, common definitions and functions. """
+        # preserve COMMON variables
+        # this is a re-assignment which is not FOR-safe;
+        # but clear_variables is only called in CLEAR which also clears the FOR stack
+        with self.scalars.preserve(preserve_vars, new_strings):
+            self.scalars.clear()
+        with self.arrays.preserve(preserve_arrays, new_strings):
+            self.arrays.clear()
+        if not(preserve_vars or preserve_arrays):
+            # clear OPTION BASE
+            self.arrays.clear_base()
 
     def get_free(self):
         """ Return the amount of memory available to variables, arrays, strings and code. """
-        return state.session.strings.current - self.var_current() - state.session.arrays.current
+        return self.strings.current - self.var_current() - self.arrays.current
 
     def collect_garbage(self):
         """ Collect garbage from string space. Compactify string storage. """
         # find all strings that are actually referenced
-        string_ptrs = state.session.scalars.get_strings() + state.session.arrays.get_strings()
-        state.session.strings.collect_garbage(string_ptrs)
+        string_ptrs = self.scalars.get_strings() + self.arrays.get_strings()
+        self.strings.collect_garbage(string_ptrs)
 
     def check_free(self, size, err):
         """ Check if sufficient free memory is avilable, raise error if not. """
@@ -94,7 +113,7 @@ class Memory(object):
 
     def var_current(self):
         """ Current variable pointer."""
-        return self.var_start() + state.session.scalars.current
+        return self.var_start() + self.scalars.current
 
     def _code_size(self):
         """ Size of code space """
@@ -121,11 +140,11 @@ class Memory(object):
         """ Retrieve data from data memory. """
         address -= data_segment * 0x10
         if address < self.var_current():
-            return state.session.scalars.get_memory(address)
-        elif address < self.var_current() + state.session.arrays.current:
-            return state.session.arrays.get_memory(address)
-        elif address > state.session.strings.current:
-            return state.session.strings.get_memory(address)
+            return self.scalars.get_memory(address)
+        elif address < self.var_current() + self.arrays.current:
+            return self.arrays.get_memory(address)
+        elif address > self.strings.current:
+            return self.strings.get_memory(address)
         else:
             # unallocated var space
             return -1

@@ -13,7 +13,6 @@ from contextlib import contextmanager
 import error
 import vartypes
 import state
-import memory
 
 
 ###############################################################################
@@ -503,18 +502,6 @@ class Arrays(object):
 ###############################################################################
 # generic variable access
 
-def clear_variables(preserve_vars, preserve_arrays, new_strings):
-    """ Reset and clear variables, arrays, common definitions and functions. """
-    # preserve COMMON variables
-    # this is a re-assignment which is not FOR-safe;
-    # but clear_variables is only called in CLEAR which also clears the FOR stack
-    with state.session.scalars.preserve(preserve_vars, new_strings):
-        state.session.scalars.clear()
-    with state.session.arrays.preserve(preserve_arrays, new_strings):
-        state.session.arrays.clear()
-    if not(preserve_vars or preserve_arrays):
-        # clear OPTION BASE
-        state.session.arrays.clear_base()
 
 def get_variable(name, indices):
     """ Retrieve the value of a scalar variable or an array element. """

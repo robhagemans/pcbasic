@@ -153,10 +153,13 @@ class Session(object):
         # initialise the parser
         self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
 
+        #D
+        self.scalars = self.memory.scalars
+        #D
+        self.arrays = self.memory.arrays
+        #D
+        self.strings = self.memory.strings
 
-        self.scalars = var.Scalars(self.memory)
-        self.arrays = var.Arrays(self.memory)
-        self.strings = var.StringSpace(self.memory)
         self.common_scalars = set()
         self.common_arrays = set()
         self.deftype = ['!']*26
@@ -225,7 +228,7 @@ class Session(object):
                 self.common_scalars = set()
                 self.common_arrays = set()
             new_strings = var.StringSpace(self.memory)
-            var.clear_variables(self.common_scalars, self.common_arrays, new_strings)
+            self.memory.clear_variables(self.common_scalars, self.common_arrays, new_strings)
             # reset string space
             self.strings = new_strings
             # functions are cleared except when CHAIN ... ALL is specified
