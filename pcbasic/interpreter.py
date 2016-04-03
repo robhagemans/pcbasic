@@ -40,6 +40,7 @@ import var
 import rnd
 import timedate
 import shell
+import memory
 
 
 class SessionLauncher(object):
@@ -141,7 +142,7 @@ class Session(object):
         self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
 
         # set up variables and memory model state
-        self.memory = var.Memory(self.program)
+        self.memory = memory.Memory(self.program)
         self.scalars = var.Scalars(self.memory)
         self.arrays = var.Arrays(self.memory)
         self.strings = var.StringSpace()

@@ -473,6 +473,19 @@ class Arrays(object):
 ###############################################################################
 # generic variable access
 
+def clear_variables(preserve_vars, preserve_arrays, new_strings):
+    """ Reset and clear variables, arrays, common definitions and functions. """
+    # preserve COMMON variables
+    # this is a re-assignment which is not FOR-safe;
+    # but clear_variables is only called in CLEAR which also clears the FOR stack
+    with state.session.scalars.preserve(preserve_vars, new_strings):
+        state.session.scalars.clear()
+    with state.session.arrays.preserve(preserve_arrays, new_strings):
+        state.session.arrays.clear()
+    if not(preserve_vars or preserve_arrays):
+        # clear OPTION BASE
+        state.session.arrays.clear_base()
+
 def get_variable(name, indices):
     """ Retrieve the value of a scalar variable or an array element. """
     if indices == []:
@@ -494,6 +507,25 @@ def varptr(name, indices):
         return state.session.scalars.varptr(name)
     else:
         return state.session.arrays.varptr(name, indices)
+
+def dereference(address):
+    """ Get a value for a variable given its pointer address. """
+    found = state.session.scalars.dereference(address)
+    if found is not None:
+        return found
+    # no scalar found, try arrays
+    found = state.session.arrays.dereference(address)
+    if found is not None:
+        return found
+    raise error.RunError(error.IFC)
+
+def get_value_for_varptrstr(varptrstr):
+    """ Get a value given a VARPTR$ representation. """
+    if len(varptrstr) < 3:
+        raise error.RunError(error.IFC)
+    varptrstr = bytearray(varptrstr)
+    varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
+    return dereference(varptr)
 
 def swap(name1, index1, name2, index2):
     """ Swap two variables by reference (Strings) or value (everything else). """
@@ -530,19 +562,6 @@ def swap(name1, index1, name2, index2):
 
 ###############################################################################
 # variable memory
-
-def clear_variables(preserve_vars, preserve_arrays, new_strings):
-    """ Reset and clear variables, arrays, common definitions and functions. """
-    # preserve COMMON variables
-    # this is a re-assignment which is not FOR-safe;
-    # but clear_variables is only called in CLEAR which also clears the FOR stack
-    with state.session.scalars.preserve(preserve_vars, new_strings):
-        state.session.scalars.clear()
-    with state.session.arrays.preserve(preserve_arrays, new_strings):
-        state.session.arrays.clear()
-    if not(preserve_vars or preserve_arrays):
-        # clear OPTION BASE
-        state.session.arrays.clear_base()
 
 def collect_garbage():
     """ Collect garbage from string space. Compactify string storage. """
@@ -590,24 +609,6 @@ def check_free_memory(size, err):
         if fre() <= size:
             raise error.RunError(err)
 
-def get_value_for_varptrstr(varptrstr):
-    """ Get a value given a VARPTR$ representation. """
-    if len(varptrstr) < 3:
-        raise error.RunError(error.IFC)
-    varptrstr = bytearray(varptrstr)
-    varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
-    return dereference(varptr)
-
-def dereference(address):
-    """ Get a value for a variable given its pointer address. """
-    found = state.session.scalars.dereference(address)
-    if found is not None:
-        return found
-    # no scalar found, try arrays
-    found = state.session.arrays.dereference(address)
-    if found is not None:
-        return found
-    raise error.RunError(error.IFC)
 
 def get_data_memory(address):
     """ Retrieve data from data memory. """
@@ -669,24 +670,3 @@ def get_name_in_memory(name, offset):
     else:
         # rest of name is encoded such that c1 == 'A'
         return ord(name[offset-1].upper()) - ord('A') + 0xC1
-
-
-class Memory(object):
-    """ Memory model. """
-
-    def __init__(self, program):
-        """ Initialise memory. """
-        self.segment = memory.data_segment
-        # program buffer is initialised elsewhere
-        self.program = program
-        self.var_current = self.var_start()
-        # arrays are always kept after all vars
-        self.array_current = 0
-
-    def var_start(self):
-        """ Start of variable data. """
-        return memory.code_start + self._code_size()
-
-    def _code_size(self):
-        """ Size of code space """
-        return len(self.program.bytecode.getvalue())

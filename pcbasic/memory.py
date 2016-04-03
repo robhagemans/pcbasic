@@ -96,5 +96,25 @@ def set_basic_memory_size(new_size):
     return True
 
 
+class Memory(object):
+    """ Memory model. """
+
+    def __init__(self, program):
+        """ Initialise memory. """
+        self.segment = data_segment
+        # program buffer is initialised elsewhere
+        self.program = program
+        self.var_current = self.var_start()
+        # arrays are always kept after all vars
+        self.array_current = 0
+
+    def var_start(self):
+        """ Start of variable data. """
+        return code_start + self._code_size()
+
+    def _code_size(self):
+        """ Size of code space """
+        return len(self.program.bytecode.getvalue())
+
 
 prepare()
