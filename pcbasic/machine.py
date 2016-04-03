@@ -28,12 +28,6 @@ import ports
 def prepare():
     """ Initialise machine module. """
     global tandy_syntax
-    try:
-        for a in config.get('peek'):
-            seg, addr, val = a.split(':')
-            peek_values[int(seg)*0x10 + int(addr)] = int(val)
-    except (TypeError, ValueError):
-        pass
     tandy_syntax = config.get('syntax') == 'tandy'
 
 
@@ -212,449 +206,450 @@ def wait(addr, ander, xorer):
 ###############################################################################
 # Memory
 
+class Memory(object):
+    """ Memory model. """
+
+    # where to find the rom font (chars 0-127)
+    rom_font_addr = 0xfa6e
+    # where to find the ram font (chars 128-254)
+    ram_font_addr = 0x500
+    # protection flag
+    protection_flag_addr = 1450
+
+    def __init__(self, peek_values, data_segment):
+        """ Initialise memory. """
+        # data segment initialised elsewhere
+        self.data = data_segment
+        # pre-defined PEEK outputs
+        self._peek_values = {}
+
+    def peek(self, addr):
+        """ Retrieve the value at an emulated memory location. """
+        if addr < 0:
+            addr += 0x10000
+        addr += state.session.memory.segment*0x10
+        return self._get_memory(addr)
+
+    def poke(self, addr, val):
+        """ Set the value at an emulated memory location. """
+        if addr < 0:
+            addr += 0x10000
+        addr += state.session.memory.segment * 0x10
+        self._set_memory(addr, val)
+
+    def bload(self, g, offset):
+        """ Load a file into a block of memory. """
+        # size gets ignored; even the \x1a at the end gets dumped onto the screen.
+        seg = g.seg
+        if offset is None:
+            offset = g.offset
+        buf = bytearray(g.read())
+        # remove any EOF marker at end
+        if buf and buf[-1] == 0x1a:
+            buf = buf[:-1]
+        if tandy_syntax:
+            buf = buf[:-7]
+        addr = seg * 0x10 + offset
+        self._set_memory_block(addr, buf)
+
+    def bsave(self, g, offset, length):
+        """ Save a block of memory into a file. """
+        addr = state.session.memory.segment * 0x10 + offset
+        g.write(str(self._get_memory_block(addr, length)))
+        # Tandys repeat the header at the end of the file
+        if tandy_syntax:
+            g.write('\xfd' + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(state.session.memory.segment)) +
+                    vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(offset)) +
+                    vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(length))))
+
+    #MOVE to DataSegment
+    def varptr_file(self, filenum):
+        """ Get address of FCB for a given file number. """
+        if filenum < 1 or filenum > state.io_state.max_files:
+            raise error.RunError(error.BAD_FILE_NUMBER)
+        return self.data.field_mem_base + filenum * self.data.field_mem_offset + 6
 
 
+    ###########################################################################
+    # IMPLEMENTATION
 
-# pre-defined PEEK outputs
-peek_values = {}
+    def _get_memory(self, addr):
+        """ Retrieve the value at an emulated memory location. """
+        try:
+            # try if there's a preset value
+            return self._peek_values[addr]
+        except KeyError:
+            if addr >= memory.rom_segment*0x10:
+                # ROM font
+                return max(0, self._get_rom_memory(addr))
+            elif addr >= memory.ram_font_segment*0x10:
+                # RAM font
+                return max(0, self._get_font_memory(addr))
+            elif addr >= memory.video_segment*0x10:
+                # graphics and text memory
+                return max(0, self._get_video_memory(addr))
+            elif addr >= memory.data_segment*0x10 + self.data.var_start():
+                # variable memory
+                return max(0, self.data.get(addr))
+            elif addr >= memory.data_segment*0x10 + self.data.code_start:
+                # code memory
+                return max(0, state.session.program.get_memory(addr))
+            elif addr >= memory.data_segment*0x10 + self.data.field_mem_start:
+                # file & FIELD memory
+                return max(0, self._get_field_memory(addr))
+            elif addr >= memory.data_segment*0x10:
+                # other BASIC data memory
+                return max(0, self._get_basic_memory(addr))
+            elif addr >= 0:
+                return max(0, self._get_low_memory(addr))
+            else:
+                return 0
 
-# where to find the rom font (chars 0-127)
-rom_font_addr = 0xfa6e
-# where to find the ram font (chars 128-254)
-ram_font_addr = 0x500
-# protection flag
-protection_flag_addr = 1450
-
-# base for our low-memory addresses
-low_segment = 0
-
-
-def peek(addr):
-    """ Retrieve the value at an emulated memory location. """
-    if addr < 0:
-        addr += 0x10000
-    addr += state.session.memory.segment*0x10
-    return get_memory(addr)
-
-def poke(addr, val):
-    """ Set the value at an emulated memory location. """
-    if addr < 0:
-        addr += 0x10000
-    addr += state.session.memory.segment * 0x10
-    set_memory(addr, val)
-
-def bload(g, offset):
-    """ Load a file into a block of memory. """
-    # size gets ignored; even the \x1a at the end gets dumped onto the screen.
-    seg = g.seg
-    if offset is None:
-        offset = g.offset
-    buf = bytearray(g.read())
-    # remove any EOF marker at end
-    if buf and buf[-1] == 0x1a:
-        buf = buf[:-1]
-    if tandy_syntax:
-        buf = buf[:-7]
-    addr = seg * 0x10 + offset
-    set_memory_block(addr, buf)
-
-def bsave(g, offset, length):
-    """ Save a block of memory into a file. """
-    addr = state.session.memory.segment * 0x10 + offset
-    g.write(str(get_memory_block(addr, length)))
-    # Tandys repeat the header at the end of the file
-    if tandy_syntax:
-        g.write('\xfd' + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(state.session.memory.segment)) +
-                vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(offset)) +
-                vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(length))))
-
-def varptr_file(filenum):
-    """ Get address of FCB for a given file number. """
-    if filenum < 1 or filenum > state.io_state.max_files:
-        raise error.RunError(error.BAD_FILE_NUMBER)
-    return state.session.memory.field_mem_base + filenum * state.session.memory.field_mem_offset + 6
-
-
-###############################################################################
-# IMPLEMENTATION
-
-def get_memory(addr):
-    """ Retrieve the value at an emulated memory location. """
-    try:
-        # try if there's a preset value
-        return peek_values[addr]
-    except KeyError:
+    def _set_memory(self, addr, val):
+        """ Set the value at an emulated memory location. """
         if addr >= memory.rom_segment*0x10:
-            # ROM font
-            return max(0, get_rom_memory(addr))
+            # ROM includes font memory
+            pass
         elif addr >= memory.ram_font_segment*0x10:
-            # RAM font
-            return max(0, get_font_memory(addr))
+            # RAM font memory
+            self._set_font_memory(addr, val)
         elif addr >= memory.video_segment*0x10:
             # graphics and text memory
-            return max(0, get_video_memory(addr))
-        elif addr >= memory.data_segment*0x10 + state.session.memory.var_start():
-            # variable memory
-            return max(0, state.session.memory.get(addr))
-        elif addr >= memory.data_segment*0x10 + state.session.memory.code_start:
+            self._set_video_memory(addr, val)
+        elif addr >= memory.data_segment*0x10 + self.data.var_start():
+            # POKING in variables
+            self._not_implemented_poke(addr, val)
+        elif addr >= memory.data_segment*0x10 + self.data.code_start:
             # code memory
-            return max(0, state.session.program.get_memory(addr))
-        elif addr >= memory.data_segment*0x10 + state.session.memory.field_mem_start:
+            state.session.program.set_memory(addr, val)
+        elif addr >= memory.data_segment*0x10 + self.data.field_mem_start:
             # file & FIELD memory
-            return max(0, get_field_memory(addr))
+            self._not_implemented_poke(addr, val)
         elif addr >= memory.data_segment*0x10:
-            # other BASIC data memory
-            return max(0, get_basic_memory(addr))
-        elif addr >= low_segment*0x10:
-            return max(0, get_low_memory(addr))
-        else:
+            self._set_basic_memory(addr, val)
+        elif addr >= 0:
+            self._set_low_memory(addr, val)
+
+    def _not_implemented_poke(self, addr, val):
+        """ POKE into not implemented location; retain value. """
+        self._peek_values[addr] = val
+
+    def _not_implemented_pass(self, addr, val):
+        """ POKE into not implemented location; ignore. """
+
+    def _get_memory_block(self, addr, length):
+        """ Retrieve a contiguous block of bytes from memory. """
+        block = bytearray()
+        if addr >= memory.video_segment*0x10:
+            video_len = 0x20000 - (addr - memory.video_segment*0x10)
+            # graphics and text memory - specialised call
+            block += self._get_video_memory_block(addr, min(length, video_len))
+            addr += video_len
+            length -= video_len
+        for a in range(addr, addr+length):
+            block += chr(max(0, self._get_memory(a)))
+        return block
+
+    def _set_memory_block(self, addr, buf):
+        """ Set a contiguous block of bytes in memory. """
+        if addr >= memory.video_segment*0x10:
+            video_len = 0x20000 - (addr - memory.video_segment*0x10)
+            # graphics and text memory - specialised call
+            self._set_video_memory_block(addr, buf[:video_len])
+            addr += video_len
+            buf = buf[video_len:]
+        for a in range(len(buf)):
+            self._set_memory(addr + a, buf[a])
+
+    ###############################################################################
+
+    #MOVE to DataSegment
+    def _get_field_memory(self, address):
+        """ Retrieve data from FIELD buffer. """
+        address -= memory.data_segment * 0x10
+        if address < self.data.field_mem_start:
+            return -1
+        # find the file we're in
+        start = address - self.data.field_mem_start
+        number = 1 + start // self.data.field_mem_offset
+        offset = start % self.data.field_mem_offset
+        try:
+            return state.io_state.fields[number].buffer[offset]
+        except (KeyError, IndexError):
+            return -1
+
+
+    ###############################################################
+    # video memory model
+
+    def _get_video_memory(self, addr):
+        """ Retrieve a byte from video memory. """
+        return state.console_state.screen.mode.get_memory(addr, 1)[0]
+
+    def _set_video_memory(self, addr, val):
+        """ Set a byte in video memory. """
+        return state.console_state.screen.mode.set_memory(addr, [val])
+
+    def _get_video_memory_block(self, addr, length):
+        """ Retrieve a contiguous block of bytes from video memory. """
+        return bytearray(state.console_state.screen.mode.get_memory(addr, length))
+
+    def _set_video_memory_block(self, addr, some_bytes):
+        """ Set a contiguous block of bytes in video memory. """
+        state.console_state.screen.mode.set_memory(addr, some_bytes)
+
+    ###############################################################################
+
+    def _get_rom_memory(self, addr):
+        """ Retrieve data from ROM. """
+        addr -= memory.rom_segment*0x10 + self.rom_font_addr
+        char = addr // 8
+        if char > 127 or char<0:
+            return -1
+        return ord(display.fonts[8].fontdict[
+                state.console_state.codepage.to_unicode(chr(char), u'\0')][addr%8])
+
+    def _get_font_memory(self, addr):
+        """ Retrieve RAM font data. """
+        addr -= memory.ram_font_segment*0x10 + self.ram_font_addr
+        char = addr // 8 + 128
+        if char < 128 or char > 254:
+            return -1
+        return ord(display.fonts[8].fontdict[
+                state.console_state.codepage.to_unicode(chr(char), u'\0')][addr%8])
+
+    def _set_font_memory(self, addr, value):
+        """ Retrieve RAM font data. """
+        addr -= memory.ram_font_segment*0x10 + self.ram_font_addr
+        char = addr // 8 + 128
+        if char < 128 or char > 254:
+            return
+        uc = state.console_state.codepage.to_unicode(chr(char))
+        if uc:
+            old = display.fonts[8].fontdict[uc]
+            display.fonts[8].fontdict[uc] = old[:addr%8]+chr(value)+old[addr%8+1:]
+            state.console_state.screen.rebuild_glyph(char)
+
+    #################################################################################
+
+    #MOVE to DataSegment
+    def _get_basic_memory(self, addr):
+        """ Retrieve data from BASIC memory. """
+        addr -= memory.data_segment*0x10
+        if addr < 4:
+            # sentinel value, used by some programs to identify GW-BASIC
+            return (0, 0, 0x10, 0x82)[addr]
+        # DS:2c, DS:2d  end of memory available to BASIC
+        elif addr == 0x2C:
+            return self.data.total_memory % 256
+        elif addr == 0x2D:
+            return self.data.total_memory // 256
+        # DS:30, DS:31: pointer to start of program, excluding initial \0
+        elif addr == 0x30:
+            return (self.data.code_start+1) % 256
+        elif addr == 0x31:
+            return (self.data.code_start+1) // 256
+        # DS:358, DS:359: start of variable space
+        elif addr == 0x358:
+            return self.data.var_start() % 256
+        elif addr == 0x359:
+            return self.data.var_start() // 256
+        # DS:35A, DS:35B: start of array space
+        elif addr == 0x35A:
+            return self.data.var_current() % 256
+        elif addr == 0x35B:
+            return self.data.var_current() // 256
+        # DS:35C, DS:35D: end of array space
+        elif addr == 0x35C:
+            return (self.data.var_current() + state.session.arrays.current) % 256
+        elif addr == 0x35D:
+            return (self.data.var_current() + state.session.arrays.current) // 256
+        elif addr == self.protection_flag_addr:
+            return state.session.program.protected * 255
+        return -1
+
+    #MOVE to DataSegment
+    def _set_basic_memory(self, addr, val):
+        """ Change BASIC memory. """
+        addr -= memory.data_segment*0x10
+        if addr == self.protection_flag_addr and state.session.program.allow_protect:
+            state.session.program.protected = (val != 0)
+
+    key_buffer_offset = 30
+    blink_enabled = True
+
+    def _get_low_memory(self, addr):
+        """ Retrieve data from low memory. """
+        addr -= 0
+        # from MEMORY.ABC: PEEKs and POKEs (Don Watkins)
+        # http://www.qbasicnews.com/abc/showsnippet.php?filename=MEMORY.ABC&snippet=6
+        # &h40:&h17 keyboard flag
+        # &H80 - Insert state active
+        # &H40 - CapsLock state has been toggled
+        # &H20 - NumLock state has been toggled
+        # &H10 - ScrollLock state has been toggled
+        # &H08 - Alternate key depressed
+        # &H04 - Control key depressed
+        # &H02 - Left shift key depressed
+        # &H01 - Right shift key depressed
+        # &h40:&h18 keyboard flag
+        # &H80 - Insert key is depressed
+        # &H40 - CapsLock key is depressed
+        # &H20 - NumLock key is depressed
+        # &H10 - ScrollLock key is depressed
+        # &H08 - Suspend key has been toggled
+        state.session.wait()
+        # 108-115 control Ctrl-break capture; not implemented (see PC Mag POKEs)
+        # 1040 monitor type
+        if addr == 124:
+            return self.ram_font_addr % 256
+        elif addr == 125:
+            return self.ram_font_addr // 256
+        elif addr == 126:
+            return memory.ram_font_segment % 256
+        elif addr == 127:
+            return memory.ram_font_segment // 256
+        elif addr == 1040:
+            if display.monitor == 'mono':
+                # mono
+                return 48 + 6
+            else:
+                # 80x25 graphics
+                return 32 + 6
+        # http://textfiles.com/programming/peekpoke.txt
+        #   "(PEEK (1041) AND 14)/2" WILL PROVIDE NUMBER OF RS232 PORTS INSTALLED.
+        #   "(PEEK (1041) AND 16)/16" WILL PROVIDE NUMBER OF GAME PORTS INSTALLED.
+        #   "(PEEK (1041) AND 192)/64" WILL PROVIDE NUMBER OF PRINTERS INSTALLED.
+        elif addr == 1041:
+            return (2 * ((state.io_state.devices['COM1:'].stream is not None) +
+                        (state.io_state.devices['COM2:'].stream is not None)) +
+                    16 +
+                    64 * ((state.io_state.devices['LPT1:'].stream is not None) +
+                        (state.io_state.devices['LPT2:'].stream is not None) +
+                        (state.io_state.devices['LPT3:'].stream is not None)))
+        elif addr == 1047:
+            return state.console_state.keyb.mod
+        # not implemented: peek(1048)==4 if sysrq pressed, 0 otherwise
+        elif addr == 1048:
             return 0
-
-def set_memory(addr, val):
-    """ Set the value at an emulated memory location. """
-    if addr >= memory.rom_segment*0x10:
-        # ROM includes font memory
-        pass
-    elif addr >= memory.ram_font_segment*0x10:
-        # RAM font memory
-        set_font_memory(addr, val)
-    elif addr >= memory.video_segment*0x10:
-        # graphics and text memory
-        set_video_memory(addr, val)
-    elif addr >= memory.data_segment*0x10 + state.session.memory.var_start():
-        # POKING in variables
-        not_implemented_poke(addr, val)
-    elif addr >= memory.data_segment*0x10 + state.session.memory.code_start:
-        # code memory
-        state.session.program.set_memory(addr, val)
-    elif addr >= memory.data_segment*0x10 + state.session.memory.field_mem_start:
-        # file & FIELD memory
-        not_implemented_poke(addr, val)
-    elif addr >= memory.data_segment*0x10:
-        set_basic_memory(addr, val)
-    elif addr >= low_segment*0x10:
-        set_low_memory(addr, val)
-    else:
-        pass
-
-def not_implemented_poke(addr, val):
-    """ POKE into not implemented location; retain value. """
-    peek_values[addr] = val
-
-def not_implemented_pass(addr, val):
-    """ POKE into not implemented location; ignore. """
-    pass
-
-def get_memory_block(addr, length):
-    """ Retrieve a contiguous block of bytes from memory. """
-    block = bytearray()
-    if addr >= memory.video_segment*0x10:
-        video_len = 0x20000 - (addr - memory.video_segment*0x10)
-        # graphics and text memory - specialised call
-        block += get_video_memory_block(addr, min(length, video_len))
-        addr += video_len
-        length -= video_len
-    for a in range(addr, addr+length):
-        block += chr(max(0, get_memory(a)))
-    return block
-
-def set_memory_block(addr, buf):
-    """ Set a contiguous block of bytes in memory. """
-    if addr >= memory.video_segment*0x10:
-        video_len = 0x20000 - (addr - memory.video_segment*0x10)
-        # graphics and text memory - specialised call
-        set_video_memory_block(addr, buf[:video_len])
-        addr += video_len
-        buf = buf[video_len:]
-    for a in range(len(buf)):
-        set_memory(addr + a, buf[a])
-
-###############################################################################
-
-def get_field_memory(address):
-    """ Retrieve data from FIELD buffer. """
-    address -= memory.data_segment * 0x10
-    if address < state.session.memory.field_mem_start:
+        elif addr == 1049:
+            return int(state.console_state.keyb.keypad_ascii or 0)%256
+        elif addr == 1050:
+            # keyboard ring buffer starts at n+1024; lowest 1054
+            return (state.console_state.keyb.buf.start*2 + self.key_buffer_offset) % 256
+        elif addr == 1051:
+            return (state.console_state.keyb.buf.start*2 + self.key_buffer_offset) // 256
+        elif addr == 1052:
+            # ring buffer ends at n + 1023
+            return (state.console_state.keyb.buf.stop()*2 + self.key_buffer_offset) % 256
+        elif addr == 1053:
+            return (state.console_state.keyb.buf.stop()*2 + self.key_buffer_offset) // 256
+        elif addr in range(1024+self.key_buffer_offset, 1024+self.key_buffer_offset+32):
+            index = (addr-1024-self.key_buffer_offset)//2
+            odd = (addr-1024-self.key_buffer_offset)%2
+            c, scan = state.console_state.keyb.buf.ring_read(index)
+            if odd:
+                return scan
+            elif c == '':
+                return 0
+            else:
+                # however, arrow keys (all extended scancodes?) give 0xe0 instead of 0
+                return ord(c[0])
+        # 1097 screen mode number
+        elif addr == 1097:
+            # these are the low-level mode numbers used by mode switching interrupt
+            cval = state.console_state.screen.colorswitch % 2
+            if state.console_state.screen.mode.is_text_mode:
+                if (display.video_capabilities in ('mda', 'ega_mono') and
+                        state.console_state.screen.mode.width == 80):
+                    return 7
+                return (state.console_state.screen.mode.width == 40)*2 + cval
+            elif state.console_state.screen.mode.name == '320x200x4':
+                return 4 + cval
+            else:
+                mode_num = {'640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
+                    '640x200x4': 10, '320x200x16': 13, '640x200x16': 14,
+                    '640x350x4': 15, '640x350x16': 16, '640x400x2': 0x40,
+                    '320x200x4pcjr': 4 }
+                    # '720x348x2': ? # hercules - unknown
+                try:
+                    return mode_num[state.console_state.screen.mode.name]
+                except KeyError:
+                    return 0xff
+        # 1098, 1099 screen width
+        elif addr == 1098:
+            return state.console_state.screen.mode.width % 256
+        elif addr == 1099:
+            return state.console_state.screen.mode.width // 256
+        # 1100, 1101 graphics page buffer size (32k for screen 9, 4k for screen 0)
+        # 1102, 1103 zero (PCmag says graphics page buffer offset)
+        elif addr == 1100:
+            return state.console_state.screen.mode.page_size % 256
+        elif addr == 1101:
+            return state.console_state.screen.mode.page_size // 256
+        # 1104 + 2*n (cursor column of page n) - 1
+        # 1105 + 2*n (cursor row of page n) - 1
+        # we only keep track of one row,col position
+        elif addr in range(1104, 1120, 2):
+            return state.console_state.col - 1
+        elif addr in range(1105, 1120, 2):
+            return state.console_state.row - 1
+        # 1120, 1121 cursor shape
+        elif addr == 1120:
+            return state.console_state.screen.cursor.to_line
+        elif addr == 1121:
+            return state.console_state.screen.cursor.from_line
+        # 1122 visual page number
+        elif addr == 1122:
+            return state.console_state.screen.vpagenum
+        # 1125 screen mode info
+        elif addr == 1125:
+            # bit 0: only in text mode?
+            # bit 2: should this be colorswitch or colorburst_is_enabled?
+            return ((state.console_state.screen.mode.width == 80) * 1 +
+                    (not state.console_state.screen.mode.is_text_mode) * 2 +
+                     state.console_state.screen.colorswitch * 4 + 8 +
+                     (state.console_state.screen.mode.name == '640x200x2') * 16 +
+                     self.blink_enabled * 32)
+        # 1126 color
+        elif addr == 1126:
+            if state.console_state.screen.mode.name == '320x200x4':
+                return (state.console_state.screen.palette.get_entry(0)
+                        + 32 * state.console_state.screen.cga4_palette_num)
+            elif state.console_state.screen.mode.is_text_mode:
+                return state.console_state.screen.border_attr % 16
+                # not implemented: + 16 "if current color specified through
+                # COLOR f,b with f in [0,15] and b > 7
+        # 1296, 1297: zero (PCmag says data segment address)
         return -1
-    # find the file we're in
-    start = address - state.session.memory.field_mem_start
-    number = 1 + start // state.session.memory.field_mem_offset
-    offset = start % state.session.memory.field_mem_offset
-    try:
-        return state.io_state.fields[number].buffer[offset]
-    except (KeyError, IndexError):
-        return -1
 
-
-###############################################################
-# video memory model
-
-def get_video_memory(addr):
-    """ Retrieve a byte from video memory. """
-    return state.console_state.screen.mode.get_memory(addr, 1)[0]
-
-def set_video_memory(addr, val):
-    """ Set a byte in video memory. """
-    return state.console_state.screen.mode.set_memory(addr, [val])
-
-def get_video_memory_block(addr, length):
-    """ Retrieve a contiguous block of bytes from video memory. """
-    return bytearray(state.console_state.screen.mode.get_memory(addr, length))
-
-def set_video_memory_block(addr, some_bytes):
-    """ Set a contiguous block of bytes in video memory. """
-    state.console_state.screen.mode.set_memory(addr, some_bytes)
-
-###############################################################################
-
-def get_rom_memory(addr):
-    """ Retrieve data from ROM. """
-    addr -= memory.rom_segment*0x10 + rom_font_addr
-    char = addr // 8
-    if char > 127 or char<0:
-        return -1
-    return ord(display.fonts[8].fontdict[
-            state.console_state.codepage.to_unicode(chr(char), u'\0')][addr%8])
-
-def get_font_memory(addr):
-    """ Retrieve RAM font data. """
-    addr -= memory.ram_font_segment*0x10 + ram_font_addr
-    char = addr // 8 + 128
-    if char < 128 or char > 254:
-        return -1
-    return ord(display.fonts[8].fontdict[
-            state.console_state.codepage.to_unicode(chr(char), u'\0')][addr%8])
-
-def set_font_memory(addr, value):
-    """ Retrieve RAM font data. """
-    addr -= memory.ram_font_segment*0x10 + ram_font_addr
-    char = addr // 8 + 128
-    if char < 128 or char > 254:
-        return
-    uc = state.console_state.codepage.to_unicode(chr(char))
-    if uc:
-        old = display.fonts[8].fontdict[uc]
-        display.fonts[8].fontdict[uc] = old[:addr%8]+chr(value)+old[addr%8+1:]
-        state.console_state.screen.rebuild_glyph(char)
-
-#################################################################################
-
-def get_basic_memory(addr):
-    """ Retrieve data from BASIC memory. """
-    addr -= memory.data_segment*0x10
-    if addr < 4:
-        # sentinel value, used by some programs to identify GW-BASIC
-        return (0, 0, 0x10, 0x82)[addr]
-    # DS:2c, DS:2d  end of memory available to BASIC
-    elif addr == 0x2C:
-        return state.session.memory.total_memory % 256
-    elif addr == 0x2D:
-        return state.session.memory.total_memory // 256
-    # DS:30, DS:31: pointer to start of program, excluding initial \0
-    elif addr == 0x30:
-        return (state.session.memory.code_start+1) % 256
-    elif addr == 0x31:
-        return (state.session.memory.code_start+1) // 256
-    # DS:358, DS:359: start of variable space
-    elif addr == 0x358:
-        return state.session.memory.var_start() % 256
-    elif addr == 0x359:
-        return state.session.memory.var_start() // 256
-    # DS:35A, DS:35B: start of array space
-    elif addr == 0x35A:
-        return state.session.memory.var_current() % 256
-    elif addr == 0x35B:
-        return state.session.memory.var_current() // 256
-    # DS:35C, DS:35D: end of array space
-    elif addr == 0x35C:
-        return (state.session.memory.var_current() + state.session.arrays.current) % 256
-    elif addr == 0x35D:
-        return (state.session.memory.var_current() + state.session.arrays.current) // 256
-    elif addr == protection_flag_addr:
-        return state.session.program.protected * 255
-    return -1
-
-def set_basic_memory(addr, val):
-    """ Change BASIC memory. """
-    addr -= memory.data_segment*0x10
-    if addr == protection_flag_addr and state.session.program.allow_protect:
-        state.session.program.protected = (val != 0)
-
-key_buffer_offset = 30
-blink_enabled = True
-
-def get_low_memory(addr):
-    """ Retrieve data from low memory. """
-    addr -= low_segment*0x10
-    # from MEMORY.ABC: PEEKs and POKEs (Don Watkins)
-    # http://www.qbasicnews.com/abc/showsnippet.php?filename=MEMORY.ABC&snippet=6
-    # &h40:&h17 keyboard flag
-    # &H80 - Insert state active
-    # &H40 - CapsLock state has been toggled
-    # &H20 - NumLock state has been toggled
-    # &H10 - ScrollLock state has been toggled
-    # &H08 - Alternate key depressed
-    # &H04 - Control key depressed
-    # &H02 - Left shift key depressed
-    # &H01 - Right shift key depressed
-    # &h40:&h18 keyboard flag
-    # &H80 - Insert key is depressed
-    # &H40 - CapsLock key is depressed
-    # &H20 - NumLock key is depressed
-    # &H10 - ScrollLock key is depressed
-    # &H08 - Suspend key has been toggled
-    state.session.wait()
-    # 108-115 control Ctrl-break capture; not implemented (see PC Mag POKEs)
-    # 1040 monitor type
-    if addr == 124:
-        return ram_font_addr % 256
-    elif addr == 125:
-        return ram_font_addr // 256
-    elif addr == 126:
-        return memory.ram_font_segment % 256
-    elif addr == 127:
-        return memory.ram_font_segment // 256
-    elif addr == 1040:
-        if display.monitor == 'mono':
-            # mono
-            return 48 + 6
-        else:
-            # 80x25 graphics
-            return 32 + 6
-    # http://textfiles.com/programming/peekpoke.txt
-    #   "(PEEK (1041) AND 14)/2" WILL PROVIDE NUMBER OF RS232 PORTS INSTALLED.
-    #   "(PEEK (1041) AND 16)/16" WILL PROVIDE NUMBER OF GAME PORTS INSTALLED.
-    #   "(PEEK (1041) AND 192)/64" WILL PROVIDE NUMBER OF PRINTERS INSTALLED.
-    elif addr == 1041:
-        return (2 * ((state.io_state.devices['COM1:'].stream is not None) +
-                    (state.io_state.devices['COM2:'].stream is not None)) +
-                16 +
-                64 * ((state.io_state.devices['LPT1:'].stream is not None) +
-                    (state.io_state.devices['LPT2:'].stream is not None) +
-                    (state.io_state.devices['LPT3:'].stream is not None)))
-    elif addr == 1047:
-        return state.console_state.keyb.mod
-    # not implemented: peek(1048)==4 if sysrq pressed, 0 otherwise
-    elif addr == 1048:
-        return 0
-    elif addr == 1049:
-        return int(state.console_state.keyb.keypad_ascii or 0)%256
-    elif addr == 1050:
-        # keyboard ring buffer starts at n+1024; lowest 1054
-        return (state.console_state.keyb.buf.start*2 + key_buffer_offset) % 256
-    elif addr == 1051:
-        return (state.console_state.keyb.buf.start*2 + key_buffer_offset) // 256
-    elif addr == 1052:
-        # ring buffer ends at n + 1023
-        return (state.console_state.keyb.buf.stop()*2 + key_buffer_offset) % 256
-    elif addr == 1053:
-        return (state.console_state.keyb.buf.stop()*2 + key_buffer_offset) // 256
-    elif addr in range(1024+key_buffer_offset, 1024+key_buffer_offset+32):
-        index = (addr-1024-key_buffer_offset)//2
-        odd = (addr-1024-key_buffer_offset)%2
-        c, scan = state.console_state.keyb.buf.ring_read(index)
-        if odd:
-            return scan
-        elif c == '':
-            return 0
-        else:
-            # however, arrow keys (all extended scancodes?) give 0xe0 instead of 0
-            return ord(c[0])
-    # 1097 screen mode number
-    elif addr == 1097:
-        # these are the low-level mode numbers used by mode switching interrupt
-        cval = state.console_state.screen.colorswitch % 2
-        if state.console_state.screen.mode.is_text_mode:
-            if (display.video_capabilities in ('mda', 'ega_mono') and
-                    state.console_state.screen.mode.width == 80):
-                return 7
-            return (state.console_state.screen.mode.width == 40)*2 + cval
-        elif state.console_state.screen.mode.name == '320x200x4':
-            return 4 + cval
-        else:
-            mode_num = {'640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
-                '640x200x4': 10, '320x200x16': 13, '640x200x16': 14,
-                '640x350x4': 15, '640x350x16': 16, '640x400x2': 0x40,
-                '320x200x4pcjr': 4 }
-                # '720x348x2': ? # hercules - unknown
-            try:
-                return mode_num[state.console_state.screen.mode.name]
-            except KeyError:
-                return 0xff
-    # 1098, 1099 screen width
-    elif addr == 1098:
-        return state.console_state.screen.mode.width % 256
-    elif addr == 1099:
-        return state.console_state.screen.mode.width // 256
-    # 1100, 1101 graphics page buffer size (32k for screen 9, 4k for screen 0)
-    # 1102, 1103 zero (PCmag says graphics page buffer offset)
-    elif addr == 1100:
-        return state.console_state.screen.mode.page_size % 256
-    elif addr == 1101:
-        return state.console_state.screen.mode.page_size // 256
-    # 1104 + 2*n (cursor column of page n) - 1
-    # 1105 + 2*n (cursor row of page n) - 1
-    # we only keep track of one row,col position
-    elif addr in range(1104, 1120, 2):
-        return state.console_state.col - 1
-    elif addr in range(1105, 1120, 2):
-        return state.console_state.row - 1
-    # 1120, 1121 cursor shape
-    elif addr == 1120:
-        return state.console_state.screen.cursor.to_line
-    elif addr == 1121:
-        return state.console_state.screen.cursor.from_line
-    # 1122 visual page number
-    elif addr == 1122:
-        return state.console_state.screen.vpagenum
-    # 1125 screen mode info
-    elif addr == 1125:
-        # bit 0: only in text mode?
-        # bit 2: should this be colorswitch or colorburst_is_enabled?
-        return ((state.console_state.screen.mode.width == 80) * 1 +
-                (not state.console_state.screen.mode.is_text_mode) * 2 +
-                 state.console_state.screen.colorswitch * 4 + 8 +
-                 (state.console_state.screen.mode.name == '640x200x2') * 16 +
-                 blink_enabled * 32)
-    # 1126 color
-    elif addr == 1126:
-        if state.console_state.screen.mode.name == '320x200x4':
-            return (state.console_state.screen.palette.get_entry(0)
-                    + 32 * state.console_state.screen.cga4_palette_num)
-        elif state.console_state.screen.mode.is_text_mode:
-            return state.console_state.screen.border_attr % 16
-            # not implemented: + 16 "if current color specified through
-            # COLOR f,b with f in [0,15] and b > 7
-    # 1296, 1297: zero (PCmag says data segment address)
-    return -1
-
-def set_low_memory(addr, value):
-    """ Set data in low memory. """
-    addr -= low_segment*0x10
-    if addr == 1047:
-        state.console_state.keyb.mod = value
-    # from basic_ref_3.pdf: the keyboard buffer may be cleared with
-    # DEF SEG=0: POKE 1050, PEEK(1052)
-    elif addr == 1050:
-        # keyboard ring buffer starts at n+1024; lowest 1054
-        state.console_state.keyb.buf.ring_set_boundaries(
-                (value - key_buffer_offset) // 2,
-                state.console_state.keyb.buf.stop())
-    elif addr == 1052:
-        # ring buffer ends at n + 1023
-        state.console_state.keyb.buf.ring_set_boundaries(
-                state.console_state.keyb.buf.start,
-                (value - key_buffer_offset) // 2)
-    elif addr in range(1024+key_buffer_offset, 1024+key_buffer_offset+32):
-        index = (addr-1024-key_buffer_offset)//2
-        odd = (addr-1024-key_buffer_offset)%2
-        c, scan = state.console_state.keyb.buf.ring_read(index)
-        if odd:
-            scan = value
-        elif value in (0, 0xe0):
-            c = ''
-        else:
-            c = chr(value)
-        state.console_state.keyb.buf.ring_write(index, c, scan)
+    def _set_low_memory(self, addr, value):
+        """ Set data in low memory. """
+        addr -= 0
+        if addr == 1047:
+            state.console_state.keyb.mod = value
+        # from basic_ref_3.pdf: the keyboard buffer may be cleared with
+        # DEF SEG=0: POKE 1050, PEEK(1052)
+        elif addr == 1050:
+            # keyboard ring buffer starts at n+1024; lowest 1054
+            state.console_state.keyb.buf.ring_set_boundaries(
+                    (value - self.key_buffer_offset) // 2,
+                    state.console_state.keyb.buf.stop())
+        elif addr == 1052:
+            # ring buffer ends at n + 1023
+            state.console_state.keyb.buf.ring_set_boundaries(
+                    state.console_state.keyb.buf.start,
+                    (value - self.key_buffer_offset) // 2)
+        elif addr in range(1024+self.key_buffer_offset, 1024+self.key_buffer_offset+32):
+            index = (addr-1024-self.key_buffer_offset)//2
+            odd = (addr-1024-self.key_buffer_offset)%2
+            c, scan = state.console_state.keyb.buf.ring_read(index)
+            if odd:
+                scan = value
+            elif value in (0, 0xe0):
+                c = ''
+            else:
+                c = chr(value)
+            state.console_state.keyb.buf.ring_write(index, c, scan)
 
 prepare()

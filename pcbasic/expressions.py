@@ -798,7 +798,7 @@ class Evaluator(object):
         addr = vartypes.pass_int_unpack(parse_bracket(self.ins, self.session), maxint=0xffff)
         if self.session.program.protected and not self.session.parser.run_mode:
             raise error.RunError(error.IFC)
-        return vartypes.int_to_integer_signed(machine.peek(addr))
+        return vartypes.int_to_integer_signed(self.session.all_memory.peek(addr))
 
     def value_varptr(self):
         """ VARPTR, VARPTR$: get memory address for variable or FCB. """
@@ -806,7 +806,7 @@ class Evaluator(object):
         util.require_read(self.ins, ('(',))
         if (not dollar) and util.skip_white(self.ins) == '#':
             filenum = parse_file_number_opthash(self.ins, self.session)
-            var_ptr = machine.varptr_file(filenum)
+            var_ptr = self.session.all_memory.varptr_file(filenum)
         else:
             name, indices = parse_variable(self.ins, self.session)
             var_ptr = self.session.memory.varptr(name, indices)

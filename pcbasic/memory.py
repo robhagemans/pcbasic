@@ -10,6 +10,8 @@ import error
 import var
 import vartypes
 
+#MOVE to Memory
+
 # data memory model: data segment
 # location depends on which flavour of BASIC we use (this is for GW-BASIC)
 data_segment = 0x13ad

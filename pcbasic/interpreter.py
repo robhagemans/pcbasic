@@ -41,6 +41,7 @@ import rnd
 import timedate
 import shell
 import memory
+import machine
 
 
 class SessionLauncher(object):
@@ -151,6 +152,17 @@ class Session(object):
         self.common_arrays = set()
         self.deftype = ['!']*26
         self.user_functions = {}
+
+
+        # set up rest of memory model
+        peek_values = {}
+        try:
+            for a in config.get('peek'):
+                seg, addr, val = a.split(':')
+                peek_values[int(seg)*0x10 + int(addr)] = int(val)
+        except (TypeError, ValueError):
+            pass
+        self.all_memory = machine.Memory(peek_values, self.memory)
 
         # program parameters
         if not config.get('strict-hidden-lines'):

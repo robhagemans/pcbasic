@@ -720,7 +720,7 @@ class Parser(object):
         util.require_read(self.ins, (',',))
         val = vartypes.pass_int_unpack(expressions.parse_expression(self.ins, self.session))
         util.range_check(0, 255, val)
-        machine.poke(addr, val)
+        self.session.all_memory.poke(addr, val)
         util.require(self.ins, tk.end_statement)
 
     def exec_def_seg(self):
@@ -756,7 +756,7 @@ class Parser(object):
                 offset += 0x10000
         util.require(self.ins, tk.end_statement)
         with devices.open_file(0, name, filetype='M', mode='I') as f:
-            machine.bload(f, offset)
+            self.session.all_memory.bload(f, offset)
 
     def exec_bsave(self):
         """ BSAVE: save a block of memory to a file. Limited implementation. """
@@ -777,7 +777,7 @@ class Parser(object):
         with devices.open_file(0, name, filetype='M', mode='O',
                                 seg=self.session.memory.segment,
                                 offset=offset, length=length) as f:
-            machine.bsave(f, offset, length)
+            self.session.all_memory.bsave(f, offset, length)
 
     def exec_call(self):
         """ CALL: call an external procedure. Not implemented. """
