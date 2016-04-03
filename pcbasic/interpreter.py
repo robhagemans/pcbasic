@@ -142,9 +142,8 @@ class Session(object):
 
         # set up variables and memory model state
         self.memory = var.Memory(self.program)
-        state.basic_state.memory = self.memory
-        self.scalars = var.Scalars()
-        self.arrays = var.Arrays()
+        self.scalars = var.Scalars(self.memory)
+        self.arrays = var.Arrays(self.memory)
         self.strings = var.StringSpace()
         self.common_scalars = set()
         self.common_arrays = set()

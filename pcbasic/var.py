@@ -152,8 +152,9 @@ def var_size_bytes(name):
 class Scalars(object):
     """ Scalar variables. """
 
-    def __init__(self):
+    def __init__(self, memory):
         """ Initialise scalars. """
+        self.memory = memory
         self.clear()
 
     def set(self, name, value=None):
@@ -200,7 +201,7 @@ class Scalars(object):
         """ Clear scalar variables. """
         self.variables = {}
         self.var_memory = {}
-        state.basic_state.memory.var_current = state.basic_state.memory.var_start()
+        self.memory.var_current = self.memory.var_start()
 
     def varptr(self, name):
         """ Retrieve the address of a scalar variable. """
@@ -255,8 +256,9 @@ class Scalars(object):
 
 class Arrays(object):
 
-    def __init__(self):
+    def __init__(self, memory):
         """ Initialise arrays. """
+        self.memory = memory
         self.clear()
         # OPTION BASE is unset
         self.base_index = None
@@ -265,7 +267,7 @@ class Arrays(object):
         """ Clear arrays. """
         self.arrays = {}
         self.array_memory = {}
-        state.basic_state.memory.array_current = 0
+        self.memory.array_current = 0
 
     def erase(self, name):
         """ Remove an array from memory. """
@@ -312,12 +314,12 @@ class Arrays(object):
         size = self.array_len(dimensions)
         # update memory model
         # first two bytes: chars of name or 0 if name is one byte long
-        name_ptr = state.session.memory.array_current
+        name_ptr = self.memory.array_current
         record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
         array_ptr = name_ptr + record_len
         array_bytes = size*var_size_bytes(name)
         check_free_memory(record_len + array_bytes, error.OUT_OF_MEMORY)
-        state.session.memory.array_current += record_len + array_bytes
+        self.memory.array_current += record_len + array_bytes
         self.array_memory[name] = (name_ptr, array_ptr)
         try:
             self.arrays[name] = [ dimensions, bytearray(array_bytes), 0 ]
@@ -387,7 +389,7 @@ class Arrays(object):
             dimensions, _, _ = self.arrays[name]
             _, array_ptr = self.array_memory[name]
             # arrays are kept at the end of the var list
-            return state.session.memory.var_current + array_ptr + var_size_bytes(name) * self.index(indices, dimensions)
+            return self.memory.var_current + array_ptr + var_size_bytes(name) * self.index(indices, dimensions)
         except KeyError:
             return -1
 
@@ -403,14 +405,14 @@ class Arrays(object):
                 the_arr = name
         if the_arr is None:
             return -1
-        if address >= state.session.memory.var_current + arr_addr:
-            offset = address - arr_addr - state.session.memory.var_current
+        if address >= self.memory.var_current + arr_addr:
+            offset = address - arr_addr - self.memory.var_current
             if offset >= self.array_size_bytes(the_arr):
                 return -1
             _, byte_array, _ = self.arrays[the_arr]
             return byte_array[offset]
         else:
-            offset = address - name_addr - state.session.memory.var_current
+            offset = address - name_addr - self.memory.var_current
             if offset < max(3, len(the_arr))+1:
                 return get_name_in_memory(the_arr, offset)
             else:
