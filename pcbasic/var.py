@@ -138,6 +138,51 @@ def set_str(basic_string, in_str, offset=None, num=None):
     return basic_string
 
 
+def collect_garbage():
+    """ Collect garbage from string space. Compactify string storage. """
+    # copy all strings that are actually referenced
+    string_list = _scalar_gather_strings() + _array_gather_strings()
+    # sort by str_ptr, largest first (maintain order of storage)
+    string_list.sort(key=itemgetter(2), reverse=True)
+    # clear the string buffer and re-store all referenced strings
+    state.session.strings.clear()
+    for item in string_list:
+        # re-allocate string space
+        item[0][item[1]:item[1]+3] = state.session.strings.store(item[3])[1]
+
+def _scalar_gather_strings():
+    """ Collect garbage from string space.  """
+    string_list = []
+    for name in state.session.scalars.variables:
+        if name[-1] == '$':
+            v = state.session.scalars.variables[name]
+            try:
+                string_list.append((v, 0,
+                        state.session.strings.address(v),
+                        state.session.strings.retrieve(v)))
+            except KeyError:
+                # string is not located in memory - FIELD or code
+                pass
+    return string_list
+
+def _array_gather_strings():
+    """ Collect garbage from string space.  """
+    string_list = []
+    for name in state.session.arrays.arrays:
+        if name[-1] == '$':
+            # ignore version - we can't put and get into string arrays
+            dimensions, lst, _ = state.session.arrays.arrays[name]
+            for i in range(0, len(lst), 3):
+                v = lst[i:i+3]
+                try:
+                    string_list.append((lst, i,
+                            state.session.strings.address(v),
+                            state.session.strings.retrieve(v)))
+                except KeyError:
+                    # string is not located in memory - FIELD or code
+                    pass
+    return string_list
+
 ###############################################################################
 # scalar variables
 
@@ -563,40 +608,6 @@ def swap(name1, index1, name2, index2):
 ###############################################################################
 # variable memory
 
-def collect_garbage():
-    """ Collect garbage from string space. Compactify string storage. """
-    string_list = []
-    # copy all strings that are actually referenced
-    for name in state.session.scalars.variables:
-        if name[-1] == '$':
-            v = state.session.scalars.variables[name]
-            try:
-                string_list.append((v, 0,
-                        state.session.strings.address(v),
-                        state.session.strings.retrieve(v)))
-            except KeyError:
-                # string is not located in memory - FIELD or code
-                pass
-    for name in state.session.arrays.arrays:
-        if name[-1] == '$':
-            # ignore version - we can't put and get into string arrays
-            dimensions, lst, _ = state.session.arrays.arrays[name]
-            for i in range(0, len(lst), 3):
-                v = lst[i:i+3]
-                try:
-                    string_list.append((lst, i,
-                            state.session.strings.address(v),
-                            state.session.strings.retrieve(v)))
-                except KeyError:
-                    # string is not located in memory - FIELD or code
-                    pass
-    # sort by str_ptr, largest first (maintain order of storage)
-    string_list.sort(key=itemgetter(2), reverse=True)
-    # clear the string buffer and re-store all referenced strings
-    state.session.strings.clear()
-    for item in string_list:
-        # re-allocate string space
-        item[0][item[1]:item[1]+3] = state.session.strings.store(item[3])[1]
 
 def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
@@ -608,7 +619,6 @@ def check_free_memory(size, err):
         collect_garbage()
         if fre() <= size:
             raise error.RunError(err)
-
 
 def get_data_memory(address):
     """ Retrieve data from data memory. """
