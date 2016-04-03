@@ -49,7 +49,7 @@ ram_font_segment = 0xc000
 def prepare():
     """ Initialise the memory module """
     global field_mem_base, field_mem_start, field_mem_offset
-    global code_start, max_memory
+    global code_start
     # length of field record (by default 128)
     file_rec_len = config.get('max-reclen')
     # file header (at head of field memory)
@@ -66,17 +66,13 @@ def prepare():
     # data memory model: start of code section
     # code_start+1: offsets in files (4718 == 0x126e)
     code_start = field_mem_base + (num_files+1) * field_mem_offset
-    # max available memory to BASIC (set by /m)
-    max_list = config.get('max-memory')
-    max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
-    max_list[0] = max_list[0] or max_list[1]
-    max_memory = min(max_list) or 65534
+
 
 
 class Memory(object):
     """ Memory model. """
 
-    def __init__(self, program):
+    def __init__(self, program, max_memory):
         """ Initialise memory. """
         self.segment = data_segment
         # program buffer is initialised elsewhere
@@ -129,7 +125,7 @@ class Memory(object):
         """ Set the data memory size (on CLEAR) """
         if new_size < 0:
             new_size += 0x10000
-        if new_size > max_memory:
+        if new_size > self.total_memory:
             return False
         self.total_memory = new_size
         return True

@@ -48,7 +48,7 @@ class StringSpace(object):
         """ Return a writeable view of a string from its string pointer. """
         length = vartypes.string_length(basic_string)
         address = vartypes.string_address(basic_string)
-        # address >= memory.var_start(): if we no longer double-store code strings in string space object
+        # address >= self.memory.var_start(): if we no longer double-store code strings in string space object
         if address >= memory.code_start:
             # string stored in string space
             sequence = vartypes.string_to_bytes(basic_string)
@@ -165,13 +165,6 @@ class StringSpace(object):
 
 ###############################################################################
 # scalar variables
-
-def var_size_bytes(name):
-    """ Return the size of a variable, if it exists. Raise ILLEGAL FUNCTION CALL otherwise. """
-    try:
-        return vartypes.byte_size[name[-1]]
-    except KeyError:
-        raise error.RunError(error.IFC)
 
 
 class Scalars(object):
@@ -601,7 +594,12 @@ def swap(name1, index1, name2, index2):
 # variable memory
 
 
-
+def var_size_bytes(name):
+    """ Return the size of a variable, if it exists. Raise ILLEGAL FUNCTION CALL otherwise. """
+    try:
+        return vartypes.byte_size[name[-1]]
+    except KeyError:
+        raise error.RunError(error.IFC)
 
 def get_name_in_memory(name, offset):
     """ Memory representation of variable name. """

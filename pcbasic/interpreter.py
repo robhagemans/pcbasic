@@ -142,7 +142,12 @@ class Session(object):
         self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
 
         # set up variables and memory model state
-        self.memory = memory.Memory(self.program)
+        # max available memory to BASIC (set by /m)
+        max_list = config.get('max-memory')
+        max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
+        max_list[0] = max_list[0] or max_list[1]
+        max_memory = min(max_list) or 65534
+        self.memory = memory.Memory(self.program, max_memory)
         self.scalars = var.Scalars(self.memory)
         self.arrays = var.Arrays(self.memory)
         self.strings = var.StringSpace(self.memory)
