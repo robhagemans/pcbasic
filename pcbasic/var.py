@@ -636,6 +636,16 @@ def get_data_memory(address):
 def get_data_memory_string(address):
     """ Retrieve data from data memory: string space """
     # find the variable we're in
+    str_nearest, the_var = _scalar_get_data_memory_string(address)
+    if the_var is None:
+        str_nearest, the_var = _array_get_data_memory_string(address)
+    try:
+        return state.session.strings.retrieve(the_var)[address - str_nearest]
+    except (IndexError, AttributeError, KeyError):
+        return -1
+
+def _scalar_get_data_memory_string(address):
+    """ Retrieve data from data memory: string space (scalars) """
     str_nearest = -1
     the_var = None
     for name in state.session.scalars.variables:
@@ -646,20 +656,23 @@ def get_data_memory_string(address):
         if str_try <= address and str_try > str_nearest:
             str_nearest = str_try
             the_var = v
-    if the_var is None:
-        for name in state.session.arrays.arrays:
-            if name[-1] != '$':
-                continue
-            _, lst, _ = state.session.arrays.arrays[name]
-            for i in range(0, len(lst), 3):
-                str_try = state.session.strings.address(lst[i:i+3])
-                if str_try <= address and str_try > str_nearest:
-                    str_nearest = str_try
-                    the_var = lst[i:i+3]
-    try:
-        return state.session.strings.retrieve(the_var)[address - str_nearest]
-    except (IndexError, AttributeError, KeyError):
-        return -1
+    return str_nearest, the_var
+
+def _array_get_data_memory_string(address):
+    """ Retrieve data from data memory: string space (arrays) """
+    str_nearest = -1
+    the_var = None
+    for name in state.session.arrays.arrays:
+        if name[-1] != '$':
+            continue
+        _, lst, _ = state.session.arrays.arrays[name]
+        for i in range(0, len(lst), 3):
+            str_try = state.session.strings.address(lst[i:i+3])
+            if str_try <= address and str_try > str_nearest:
+                str_nearest = str_try
+                the_var = lst[i:i+3]
+    return str_nearest, the_var
+
 
 def get_name_in_memory(name, offset):
     """ Memory representation of variable name. """
