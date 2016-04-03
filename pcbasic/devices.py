@@ -527,6 +527,7 @@ class Field(object):
         else:
             self.address = -1
         self.buffer = bytearray()
+        self.memory = memory
 
     def attach_var(self, name, indices, offset, length):
         """ Attach a FIELD variable. """
@@ -541,7 +542,7 @@ class Field(object):
         str_sequence = chr(length) + vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(str_addr))
         # assign the string ptr to the variable name
         # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
-        var.set_variable(name, indices, vartypes.bytes_to_string(str_sequence))
+        self.memory.set_variable(name, indices, vartypes.bytes_to_string(str_sequence))
 
     def reset(self, reclen):
         """ Initialise FIELD buffer to reclen NULs. """

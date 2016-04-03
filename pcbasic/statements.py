@@ -2059,7 +2059,7 @@ class Parser(object):
             # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out fo range afterwards
             self.session.arrays.check_dim(name, indices)
         util.require_read(self.ins, (tk.O_EQ,))
-        var.set_variable(name, indices, expressions.parse_expression(self.ins, self.session))
+        self.session.memory.set_variable(name, indices, expressions.parse_expression(self.ins, self.session))
         util.require(self.ins, tk.end_statement)
 
     def exec_mid(self):
@@ -2078,7 +2078,7 @@ class Parser(object):
             num = vartypes.pass_int_unpack(expressions.parse_expression(self.ins, self.session))
         util.require_read(self.ins, (')',))
         with self.session.strings:
-            s = self.session.strings.copy(vartypes.pass_string(var.get_variable(name, indices)))
+            s = self.session.strings.copy(vartypes.pass_string(self.session.memory.get_variable(name, indices)))
         util.range_check(0, 255, num)
         if num > 0:
             util.range_check(1, len(s), start)
@@ -2090,7 +2090,7 @@ class Parser(object):
         offset = start-1
         # don't overwrite more of the old string than the length of the new string
         num = min(num, len(val))
-        basic_str = var.get_variable(name, indices)
+        basic_str = self.session.memory.get_variable(name, indices)
         # ensure the length of source string matches target
         length = vartypes.string_length(basic_str)
         if offset + num > length:
@@ -2100,13 +2100,13 @@ class Parser(object):
         # cut new string to size if too long
         val = val[:num]
         # copy new value into existing buffer if possible
-        var.set_variable(name, indices,
+        self.session.memory.set_variable(name, indices,
                 self.session.strings.modify(basic_str, val, offset, num))
 
     def exec_lset(self, justify_right=False):
         """ LSET: assign string value in-place; left justified. """
         name, index = expressions.parse_variable(self.ins, self.session)
-        v = vartypes.pass_string(var.get_variable(name, index))
+        v = vartypes.pass_string(self.session.memory.get_variable(name, index))
         util.require_read(self.ins, (tk.O_EQ,))
         with self.session.strings:
             s = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(self.ins, self.session)))
@@ -2119,7 +2119,7 @@ class Parser(object):
         else:
             s += ' '*(length-len(s))
         # copy new value into existing buffer if possible
-        var.set_variable(name, index, self.session.strings.modify(v, s))
+        self.session.memory.set_variable(name, index, self.session.strings.modify(v, s))
 
     def exec_rset(self):
         """ RSET: assign string value in-place; right justified. """
@@ -2158,7 +2158,7 @@ class Parser(object):
                     self.program_code.seek(self.data_pos)
                     # syntax error in DATA line (not type mismatch!) if can't convert to var type
                     raise error.RunError(error.STX, self.data_pos-1)
-            var.set_variable(name, indices, value=value)
+            self.session.memory.set_variable(name, indices, value=value)
         util.require(self.ins, tk.end_statement)
 
     def _parse_prompt(self, question_mark):
@@ -2188,7 +2188,7 @@ class Parser(object):
         if finp is not None:
             for v in self._parse_var_list():
                 value, _ = finp.read_var(v)
-                var.set_variable(v[0], v[1], value)
+                self.session.memory.set_variable(v[0], v[1], value)
         else:
             # ; to avoid echoing newline
             newline = not util.skip_white_read_if(self.ins, (';',))
@@ -2202,7 +2202,7 @@ class Parser(object):
             varlist = print_and_input.input_console(prompt, readvar, newline)
             self.session.input_mode = False
             for v in varlist:
-                var.set_variable(*v)
+                self.session.memory.set_variable(*v)
             self.ins.seek(pos)
         util.require(self.ins, tk.end_statement)
 
@@ -2230,7 +2230,7 @@ class Parser(object):
             console.write(prompt)
             line = console.wait_screenline(write_endl=newline)
             self.session.input_mode = False
-        var.set_variable(readvar, indices, self.session.strings.store(line))
+        self.session.memory.set_variable(readvar, indices, self.session.strings.store(line))
 
     def exec_restore(self):
         """ RESTORE: reset DATA pointer. """
@@ -2247,7 +2247,7 @@ class Parser(object):
         name1, index1 = expressions.parse_variable(self.ins, self.session)
         util.require_read(self.ins, (',',))
         name2, index2 = expressions.parse_variable(self.ins, self.session)
-        var.swap(name1, index1, name2, index2)
+        self.session.memory.swap(name1, index1, name2, index2)
         # if syntax error. the swap has happened
         util.require(self.ins, tk.end_statement)
 

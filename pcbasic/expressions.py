@@ -238,7 +238,7 @@ class Evaluator(object):
             elif d and d in string.ascii_letters:
                 # variable name
                 name, indices = parse_variable(self.ins, self.session)
-                units.append(var.get_variable(name, indices))
+                units.append(self.session.memory.get_variable(name, indices))
             elif d in self.functions:
                 # apply functions
                 self.ins.read(len(d))
@@ -809,7 +809,7 @@ class Evaluator(object):
             var_ptr = machine.varptr_file(filenum)
         else:
             name, indices = parse_variable(self.ins, self.session)
-            var_ptr = var.varptr(name, indices)
+            var_ptr = self.session.memory.varptr(name, indices)
         util.require_read(self.ins, (')',))
         if var_ptr < 0:
             raise error.RunError(error.IFC)

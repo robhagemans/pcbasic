@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import error
 import var
+import vartypes
 
 # data memory model: data segment
 # location depends on which flavour of BASIC we use (this is for GW-BASIC)
@@ -148,3 +149,80 @@ class Memory(object):
         else:
             # unallocated var space
             return -1
+
+
+    ###############################################################################
+    # generic variable access
+
+    def get_variable(self, name, indices):
+        """ Retrieve the value of a scalar variable or an array element. """
+        if indices == []:
+            return self.scalars.get(name)
+        else:
+            # array is allocated if retrieved and nonexistant
+            return self.arrays.get(name, indices)
+
+    def set_variable(self, name, indices, value):
+        """ Assign a value to a scalar variable or an array element. """
+        if indices == []:
+            self.scalars.set(name, value)
+        else:
+            self.arrays.set(name, indices, value)
+
+    def varptr(self, name, indices):
+        """ Get address of variable. """
+        if indices == []:
+            return self.scalars.varptr(name)
+        else:
+            return self.arrays.varptr(name, indices)
+
+    def dereference(self, address):
+        """ Get a value for a variable given its pointer address. """
+        found = self.scalars.dereference(address)
+        if found is not None:
+            return found
+        # no scalar found, try arrays
+        found = self.arrays.dereference(address)
+        if found is not None:
+            return found
+        raise error.RunError(error.IFC)
+
+    def get_value_for_varptrstr(self, varptrstr):
+        """ Get a value given a VARPTR$ representation. """
+        if len(varptrstr) < 3:
+            raise error.RunError(error.IFC)
+        varptrstr = bytearray(varptrstr)
+        varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
+        return self.dereference(varptr)
+
+    def swap(self, name1, index1, name2, index2):
+        """ Swap two variables. """
+        if name1[-1] != name2[-1]:
+            # type mismatch
+            raise error.RunError(error.TYPE_MISMATCH)
+        elif ((index1 == [] and name1 not in self.scalars.variables) or
+                (index1 != [] and name1 not in self.arrays.arrays) or
+                (index2 == [] and name2 not in self.scalars.variables) or
+                (index2 != [] and name2 not in self.arrays.arrays)):
+            # illegal function call
+            raise error.RunError(error.IFC)
+        typechar = name1[-1]
+        size = vartypes.byte_size[typechar]
+        # get buffers (numeric representation or string pointer)
+        if index1 == []:
+            p1, off1 = self.scalars.variables[name1], 0
+        else:
+            dimensions, p1, _ = self.arrays.arrays[name1]
+            off1 = self.arrays.index(index1, dimensions)*size
+        if index2 == []:
+            p2, off2 = self.scalars.variables[name2], 0
+        else:
+            dimensions, p2, _ = self.arrays.arrays[name2]
+            off2 = self.arrays.index(index2, dimensions)*size
+        # swap the contents
+        p1[off1:off1+size], p2[off2:off2+size] =  p2[off2:off2+size], p1[off1:off1+size]
+        # inc version
+        if name1 in self.arrays.arrays:
+            self.arrays.arrays[name1][2] += 1
+        if name2 in self.arrays.arrays:
+            self.arrays.arrays[name2][2] += 1
