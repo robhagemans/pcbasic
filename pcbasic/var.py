@@ -142,19 +142,15 @@ class StringSpace(object):
             # re-allocate string space
             item[0][:] = vartypes.string_to_bytes(self.store(item[2]))
 
-    def get_memory(self, string_ptrs, address):
+    def get_memory(self, address):
         """ Retrieve data from data memory: string space """
         # find the variable we're in
-        str_nearest, the_var = -1, None
-        for value in string_ptrs:
-            str_try = self.address(bytes(bytearray(value)))
-            if str_try <= address and str_try > str_nearest:
-                str_nearest = str_try
-                the_var = value
-        try:
-            return self._retrieve(the_var)[address - str_nearest]
-        except (IndexError, AttributeError, KeyError):
-            return -1
+        for key, value in self.strings.iteritems():
+            try_address = self.address(key)
+            length = len(value)
+            if try_address <= address < try_address + length:
+                return value[address - try_address]
+        return -1
 
     def __enter__(self):
         """ Enter temp-string context guard. """
@@ -164,17 +160,6 @@ class StringSpace(object):
         """ Exit temp-string context guard. """
         if self.temp != self.current:
             self.delete_last()
-
-def collect_garbage():
-    """ Collect garbage from string space. Compactify string storage. """
-    # find all strings that are actually referenced
-    string_ptrs = state.session.scalars.get_strings() + state.session.arrays.get_strings()
-    state.session.strings.collect_garbage(string_ptrs)
-
-def get_data_memory_string(address):
-    """ Retrieve data from data memory: string space """
-    string_ptrs = state.session.scalars.get_strings() + state.session.arrays.get_strings()
-    return state.session.strings.get_memory(string_ptrs, address)
 
 
 ###############################################################################
@@ -614,6 +599,13 @@ def swap(name1, index1, name2, index2):
 # variable memory
 
 
+def collect_garbage():
+    """ Collect garbage from string space. Compactify string storage. """
+    # find all strings that are actually referenced
+    string_ptrs = state.session.scalars.get_strings() + state.session.arrays.get_strings()
+    state.session.strings.collect_garbage(string_ptrs)
+
+
 def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
     return state.session.strings.current - state.session.memory.var_current - state.session.memory.array_current
@@ -633,7 +625,7 @@ def get_data_memory(address):
     elif address < state.session.memory.var_current + state.session.memory.array_current:
         return state.session.arrays.get_memory(address)
     elif address > state.session.strings.current:
-        return get_data_memory_string(address)
+        return state.session.strings.get_memory(address)
     else:
         # unallocated var space
         return -1
