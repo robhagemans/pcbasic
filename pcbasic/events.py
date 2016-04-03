@@ -105,11 +105,12 @@ class PlayHandler(EventHandler):
 class TimerHandler(EventHandler):
     """ Manage TIMER events. """
 
-    def __init__(self):
+    def __init__(self, timer):
         """ Initialise TIMER trigger. """
         EventHandler.__init__(self)
         self.period = 0
         self.start = 0
+        self.timer = timer
 
     def set_trigger(self, n):
         """ Set TIMER trigger to n milliseconds. """
@@ -117,7 +118,7 @@ class TimerHandler(EventHandler):
 
     def check(self):
         """ Trigger TIMER events. """
-        mutimer = state.session.timer.timer_milliseconds()
+        mutimer = self.timer.timer_milliseconds()
         if mutimer >= self.start + self.period:
             self.start = mutimer
             self.trigger()
@@ -215,8 +216,9 @@ class StrigHandler(EventHandler):
 class Events(object):
     """ Event management. """
 
-    def __init__(self):
+    def __init__(self, session):
         """ Initialise event triggers. """
+        self.session = session
         self.reset()
 
     def reset(self):
@@ -232,7 +234,7 @@ class Events(object):
         keys += [None] * (20 - num_fn_keys - 4)
         self.key = [KeyHandler(sc) for sc in keys]
         # other events
-        self.timer = TimerHandler()
+        self.timer = TimerHandler(self.session.timer)
         self.play = PlayHandler()
         self.com = [ComHandler(0), ComHandler(1)]
         self.pen = PenHandler()

@@ -165,6 +165,9 @@ class Session(object):
         self.program = program.Program(self.bytecode, self.memory.code_start,
                                 max_list_line, allow_protect, allow_code_poke)
 
+        # initialise timer
+        self.timer = timedate.Timer()
+
         # find program for PCjr TERM command
         pcjr_term = config.get('pcjr-term')
         if pcjr_term and not os.path.exists(pcjr_term):
@@ -176,9 +179,6 @@ class Session(object):
 
         # initialise random number generator
         self.randomiser = rnd.RandomNumberGenerator()
-        # initialise timer
-        self.timer = timedate.Timer()
-
         # initialise FIELD buffers
         disk.reset_fields(self.memory)
 

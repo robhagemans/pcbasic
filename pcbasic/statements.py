@@ -56,7 +56,7 @@ class Parser(object):
         # clear stacks
         self.clear_stacks_and_pointers()
         # set up event handlers
-        self.events = events.Events()
+        self.events = events.Events(self.session)
         self.init_error_trapping()
         self.error_num = 0
         self.error_pos = 0
