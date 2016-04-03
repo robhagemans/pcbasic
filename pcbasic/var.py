@@ -131,11 +131,21 @@ class StringSpace(object):
         if self.temp != self.current:
             self.delete_last()
 
-
 def collect_garbage():
     """ Collect garbage from string space. Compactify string storage. """
+    string_ptrs = state.session.scalars.get_strings() + state.session.arrays.get_strings()
     # copy all strings that are actually referenced
-    string_list = _scalar_gather_strings() + _array_gather_strings()
+    string_list = []
+    for value in string_ptrs:
+        for i in range(0, len(value), 3):
+            v = value[i:i+3]
+            try:
+                string_list.append((value, i,
+                        state.session.strings.address(v),
+                        state.session.strings._retrieve(v)))
+            except KeyError:
+                # string is not located in memory - FIELD or code
+                pass
     # sort by str_ptr, largest first (maintain order of storage)
     string_list.sort(key=itemgetter(2), reverse=True)
     # clear the string buffer and re-store all referenced strings
@@ -144,79 +154,21 @@ def collect_garbage():
         # re-allocate string space
         item[0][item[1]:item[1]+3] = state.session.strings.store(item[3])[1]
 
-def _scalar_gather_strings():
-    """ Collect garbage from string space.  """
-    string_list = []
-    for name in state.session.scalars.variables:
-        if name[-1] == '$':
-            v = state.session.scalars.variables[name]
-            try:
-                string_list.append((v, 0,
-                        state.session.strings.address(v),
-                        state.session.strings._retrieve(v)))
-            except KeyError:
-                # string is not located in memory - FIELD or code
-                pass
-    return string_list
-
-def _array_gather_strings():
-    """ Collect garbage from string space.  """
-    string_list = []
-    for name in state.session.arrays.arrays:
-        if name[-1] == '$':
-            # ignore version - we can't put and get into string arrays
-            dimensions, lst, _ = state.session.arrays.arrays[name]
-            for i in range(0, len(lst), 3):
-                v = lst[i:i+3]
-                try:
-                    string_list.append((lst, i,
-                            state.session.strings.address(v),
-                            state.session.strings._retrieve(v)))
-                except KeyError:
-                    # string is not located in memory - FIELD or code
-                    pass
-    return string_list
-
-
 def get_data_memory_string(address):
     """ Retrieve data from data memory: string space """
+    string_ptrs = state.session.scalars.get_strings() + state.session.arrays.get_strings()
     # find the variable we're in
-    str_nearest, the_var = _scalar_get_data_memory_string(address)
-    if the_var is None:
-        str_nearest, the_var = _array_get_data_memory_string(address)
+    str_nearest, the_var = -1, None
+    for value in string_ptrs:
+        for i in range(0, len(value), 3):
+            str_try = state.session.strings.address(value[i:i+3])
+            if str_try <= address and str_try > str_nearest:
+                str_nearest = str_try
+                the_var = value[i:i+3]
     try:
         return state.session.strings._retrieve(the_var)[address - str_nearest]
     except (IndexError, AttributeError, KeyError):
         return -1
-
-def _scalar_get_data_memory_string(address):
-    """ Retrieve data from data memory: string space (scalars) """
-    str_nearest = -1
-    the_var = None
-    for name in state.session.scalars.variables:
-        if name[-1] != '$':
-            continue
-        v = state.session.scalars.variables[name]
-        str_try = state.session.strings.address(v)
-        if str_try <= address and str_try > str_nearest:
-            str_nearest = str_try
-            the_var = v
-    return str_nearest, the_var
-
-def _array_get_data_memory_string(address):
-    """ Retrieve data from data memory: string space (arrays) """
-    str_nearest = -1
-    the_var = None
-    for name in state.session.arrays.arrays:
-        if name[-1] != '$':
-            continue
-        _, lst, _ = state.session.arrays.arrays[name]
-        for i in range(0, len(lst), 3):
-            str_try = state.session.strings.address(lst[i:i+3])
-            if str_try <= address and str_try > str_nearest:
-                str_nearest = str_try
-                the_var = lst[i:i+3]
-    return str_nearest, the_var
 
 
 ###############################################################################
@@ -321,6 +273,10 @@ class Scalars(object):
         else:
             offset = address - name_addr
             return get_name_in_memory(the_var, offset)
+
+    def get_strings(self):
+        """ Return a list of string scalars. """
+        return [value for name, value in self.variables.iteritems() if name[-1] == '$']
 
     @contextmanager
     def preserve(self, names, string_store):
@@ -527,6 +483,10 @@ class Arrays(object):
                     data_rep += vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
                                         d + 1 - self.base_index))
                 return data_rep[offset]
+
+    def get_strings(self):
+        """ Return a dict of string arrays. """
+        return [value[1] for name, value in self.arrays.iteritems() if name[-1] == '$']
 
     @contextmanager
     def preserve(self, names, string_store):
