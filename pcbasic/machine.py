@@ -282,7 +282,7 @@ def get_memory(addr):
             return max(0, get_video_memory(addr))
         elif addr >= memory.data_segment*0x10 + state.session.memory.var_start():
             # variable memory
-            return max(0, var.get_data_memory(addr))
+            return max(0, state.session.memory.get(addr))
         elif addr >= memory.data_segment*0x10 + memory.code_start:
             # code memory
             return max(0, state.session.program.get_memory(addr))

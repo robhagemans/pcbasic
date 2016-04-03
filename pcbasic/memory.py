@@ -7,6 +7,8 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import config
+import state
+import error
 
 # data memory model: data segment
 # location depends on which flavour of BASIC we use (this is for GW-BASIC)
@@ -96,6 +98,7 @@ def set_basic_memory_size(new_size):
     return True
 
 
+
 class Memory(object):
     """ Memory model. """
 
@@ -108,6 +111,23 @@ class Memory(object):
         # arrays are always kept after all vars
         self.array_current = 0
 
+    def get_free(self):
+        """ Return the amount of memory available to variables, arrays, strings and code. """
+        return state.session.strings.current - self.var_current - self.array_current
+
+    def collect_garbage(self):
+        """ Collect garbage from string space. Compactify string storage. """
+        # find all strings that are actually referenced
+        string_ptrs = state.session.scalars.get_strings() + state.session.arrays.get_strings()
+        state.session.strings.collect_garbage(string_ptrs)
+
+    def check_free(self, size, err):
+        """ Check if sufficient free memory is avilable, raise error if not. """
+        if self.get_free() <= size:
+            self.collect_garbage()
+            if self.get_free() <= size:
+                raise error.RunError(err)
+
     def var_start(self):
         """ Start of variable data. """
         return code_start + self._code_size()
@@ -115,6 +135,19 @@ class Memory(object):
     def _code_size(self):
         """ Size of code space """
         return len(self.program.bytecode.getvalue())
+
+    def get(self, address):
+        """ Retrieve data from data memory. """
+        address -= data_segment * 0x10
+        if address < self.var_current:
+            return state.session.scalars.get_memory(address)
+        elif address < self.var_current + self.array_current:
+            return state.session.arrays.get_memory(address)
+        elif address > state.session.strings.current:
+            return state.session.strings.get_memory(address)
+        else:
+            # unallocated var space
+            return -1
 
 
 prepare()

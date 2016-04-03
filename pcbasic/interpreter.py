@@ -189,7 +189,9 @@ class Session(object):
             '(C) Copyright 2013--2016 Rob Hagemans.\r'
             '{free} Bytes free')
         console.clear()
-        console.write_line(greeting.format(version=plat.version, free=var.fre()))
+        console.write_line(greeting.format(
+                version=plat.version,
+                free=self.memory.get_free()))
         console.show_keys(True)
 
     def clear(self, close_files=False,

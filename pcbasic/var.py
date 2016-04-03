@@ -92,7 +92,7 @@ class StringSpace(object):
             raise error.RunError(error.STRING_TOO_LONG)
         if address is None:
             # reserve string space; collect garbage if necessary
-            check_free_memory(size, error.OUT_OF_STRING_SPACE)
+            state.session.memory.check_free(size, error.OUT_OF_STRING_SPACE)
             # find new string address
             self.current -= size
             address = self.current + 1
@@ -192,7 +192,7 @@ class Scalars(object):
         if name not in self.var_memory:
             # don't add string length, string already stored
             size = (max(3, len(name)) + 1 + vartypes.byte_size[type_char])
-            check_free_memory(size, error.OUT_OF_MEMORY)
+            self.memory.check_free(size, error.OUT_OF_MEMORY)
             # first two bytes: chars of name or 0 if name is one byte long
             name_ptr = self.memory.var_current
             # byte_size first_letter second_letter_or_nul remaining_length_or_nul
@@ -353,7 +353,7 @@ class Arrays(object):
         record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
         array_ptr = name_ptr + record_len
         array_bytes = size*var_size_bytes(name)
-        check_free_memory(record_len + array_bytes, error.OUT_OF_MEMORY)
+        self.memory.check_free(record_len + array_bytes, error.OUT_OF_MEMORY)
         self.memory.array_current += record_len + array_bytes
         self.array_memory[name] = (name_ptr, array_ptr)
         try:
@@ -599,36 +599,6 @@ def swap(name1, index1, name2, index2):
 # variable memory
 
 
-def collect_garbage():
-    """ Collect garbage from string space. Compactify string storage. """
-    # find all strings that are actually referenced
-    string_ptrs = state.session.scalars.get_strings() + state.session.arrays.get_strings()
-    state.session.strings.collect_garbage(string_ptrs)
-
-
-def fre():
-    """ Return the amount of memory available to variables, arrays, strings and code. """
-    return state.session.strings.current - state.session.memory.var_current - state.session.memory.array_current
-
-def check_free_memory(size, err):
-    """ Check if sufficient free memory is avilable, raise error if not. """
-    if fre() <= size:
-        collect_garbage()
-        if fre() <= size:
-            raise error.RunError(err)
-
-def get_data_memory(address):
-    """ Retrieve data from data memory. """
-    address -= memory.data_segment * 0x10
-    if address < state.session.memory.var_current:
-        return state.session.scalars.get_memory(address)
-    elif address < state.session.memory.var_current + state.session.memory.array_current:
-        return state.session.arrays.get_memory(address)
-    elif address > state.session.strings.current:
-        return state.session.strings.get_memory(address)
-    else:
-        # unallocated var space
-        return -1
 
 
 def get_name_in_memory(name, offset):

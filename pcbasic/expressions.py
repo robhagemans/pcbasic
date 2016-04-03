@@ -790,8 +790,8 @@ class Evaluator(object):
         val = parse_bracket(self.ins, self.session)
         if val[0] == '$':
             # grabge collection if a string-valued argument is specified.
-            var.collect_garbage()
-        return fp.pack(fp.Single.from_int(var.fre()))
+            self.session.memory.collect_garbage()
+        return fp.pack(fp.Single.from_int(self.session.memory.get_free()))
 
     def value_peek(self):
         """ PEEK: read memory location. """
