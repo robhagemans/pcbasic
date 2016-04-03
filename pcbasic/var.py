@@ -170,10 +170,10 @@ class Scalars(object):
             size = (max(3, len(name)) + 1 + vartypes.byte_size[type_char])
             check_free_memory(size, error.OUT_OF_MEMORY)
             # first two bytes: chars of name or 0 if name is one byte long
-            name_ptr = state.session.memory.var_current
+            name_ptr = self.memory.var_current
             # byte_size first_letter second_letter_or_nul remaining_length_or_nul
             var_ptr = name_ptr + max(3, len(name)) + 1
-            state.session.memory.var_current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
+            self.memory.var_current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
             self.var_memory[name] = (name_ptr, var_ptr)
         # don't change the value if just checking allocation
         if value is None:
@@ -574,23 +574,40 @@ def get_value_for_varptrstr(varptrstr):
         raise error.RunError(error.IFC)
     varptrstr = bytearray(varptrstr)
     varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
-    for name, data in state.session.scalars.var_memory.iteritems():
-        if data[1] == varptr:
-            return state.session.scalars.get(name)
+    return dereference(varptr)
+
+def dereference(address):
+    """ Get a value for a variable given its pointer address. """
+    found = scalar_dereference(address)
+    if found is not None:
+        return found
     # no scalar found, try arrays
+    found = array_dereference(address)
+    if found is not None:
+        return found
+    raise error.RunError(error.IFC)
+
+def scalar_dereference(address):
+    """ Get a value for a scalar given its pointer address. """
+    for name, data in state.session.scalars.var_memory.iteritems():
+        if data[1] == address:
+            return state.session.scalars.get(name)
+    return None
+
+def array_dereference(address):
+    """ Get a value for an array given its pointer address. """
     found_addr = -1
     found_name = None
     for name, data in state.session.arrays.array_memory.iteritems():
         addr = state.session.memory.var_current + data[1]
-        if addr > found_addr and addr <= varptr:
+        if addr > found_addr and addr <= address:
             found_addr = addr
             found_name = name
-    if found_name is None:
-        raise error.RunError(error.IFC)
+    if not found_name:
+        return None
     _, lst, _ = state.session.arrays.arrays[name]
-    offset = varptr - found_addr
+    offset = address - found_addr
     return (name[-1], lst[offset : offset+var_size_bytes(name)])
-
 
 def get_data_memory(address):
     """ Retrieve data from data memory. """
