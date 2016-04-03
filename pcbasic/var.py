@@ -655,9 +655,11 @@ def get_name_in_memory(name, offset):
 class Memory(object):
     """ Memory model. """
 
-    def __init__(self):
+    def __init__(self, program):
         """ Initialise memory. """
         self.segment = memory.data_segment
+        # program buffer is initialised elsewhere
+        self.program = program
         self.var_current = self.var_start()
         # arrays are always kept after all vars
         self.array_current = 0
@@ -668,4 +670,4 @@ class Memory(object):
 
     def _code_size(self):
         """ Size of code space """
-        return len(state.basic_state.program.bytecode.getvalue())
+        return len(self.program.bytecode.getvalue())

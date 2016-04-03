@@ -125,7 +125,6 @@ class Session(object):
         allow_code_poke = config.get('allow-code-poke')
         # initialise the program
         self.program = program.Program(max_list_line, allow_protect, allow_code_poke)
-        state.basic_state.program = self.program
         # load initial program
         if load:
             # on load, accept capitalised versions and default extension
@@ -142,7 +141,7 @@ class Session(object):
         self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
 
         # set up variables and memory model state
-        self.memory = var.Memory()
+        self.memory = var.Memory(self.program)
         state.basic_state.memory = self.memory
         self.scalars = var.Scalars()
         self.arrays = var.Arrays()
