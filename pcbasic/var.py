@@ -122,6 +122,40 @@ class StringSpace(object):
         """ Return the address of a given key. """
         return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(key[-2:]))
 
+    def collect_garbage(self, string_ptrs):
+        """ Re-store the strings refrerenced in string_ptrs, delete the rest. """
+        # retrieve addresses and copy strings
+        string_list = []
+        for value in string_ptrs:
+            try:
+                string_list.append((value,
+                        self.address(bytes(bytearray(value))),
+                        self._retrieve(bytes(bytearray(value)))))
+            except KeyError:
+                # string is not located in memory - FIELD or code
+                pass
+        # sort by str_ptr, largest first (maintain order of storage)
+        string_list.sort(key=itemgetter(1), reverse=True)
+        # clear the string buffer and re-store all referenced strings
+        self.clear()
+        for item in string_list:
+            # re-allocate string space
+            item[0][:] = vartypes.string_to_bytes(self.store(item[2]))
+
+    def get_memory(self, string_ptrs, address):
+        """ Retrieve data from data memory: string space """
+        # find the variable we're in
+        str_nearest, the_var = -1, None
+        for value in string_ptrs:
+            str_try = self.address(bytes(bytearray(value)))
+            if str_try <= address and str_try > str_nearest:
+                str_nearest = str_try
+                the_var = value
+        try:
+            return self._retrieve(the_var)[address - str_nearest]
+        except (IndexError, AttributeError, KeyError):
+            return -1
+
     def __enter__(self):
         """ Enter temp-string context guard. """
         self.temp = self.current
@@ -135,38 +169,12 @@ def collect_garbage():
     """ Collect garbage from string space. Compactify string storage. """
     # find all strings that are actually referenced
     string_ptrs = state.session.scalars.get_strings() + state.session.arrays.get_strings()
-    # retrieve addresses and copy strings
-    string_list = []
-    for value in string_ptrs:
-        try:
-            string_list.append((value,
-                    state.session.strings.address(bytes(bytearray(value))),
-                    state.session.strings._retrieve(bytes(bytearray(value)))))
-        except KeyError:
-            # string is not located in memory - FIELD or code
-            pass
-    # sort by str_ptr, largest first (maintain order of storage)
-    string_list.sort(key=itemgetter(1), reverse=True)
-    # clear the string buffer and re-store all referenced strings
-    state.session.strings.clear()
-    for item in string_list:
-        # re-allocate string space
-        item[0][:] = vartypes.string_to_bytes(state.session.strings.store(item[2]))
+    state.session.strings.collect_garbage(string_ptrs)
 
 def get_data_memory_string(address):
     """ Retrieve data from data memory: string space """
     string_ptrs = state.session.scalars.get_strings() + state.session.arrays.get_strings()
-    # find the variable we're in
-    str_nearest, the_var = -1, None
-    for value in string_ptrs:
-        str_try = state.session.strings.address(bytes(bytearray(value)))
-        if str_try <= address and str_try > str_nearest:
-            str_nearest = str_try
-            the_var = value
-    try:
-        return state.session.strings._retrieve(the_var)[address - str_nearest]
-    except (IndexError, AttributeError, KeyError):
-        return -1
+    return state.session.strings.get_memory(string_ptrs, address)
 
 
 ###############################################################################
