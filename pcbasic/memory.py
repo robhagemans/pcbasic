@@ -89,12 +89,10 @@ class Memory(object):
         self.total_memory = max_memory
         # current variable pointer
         self.var_current = self.var_start()
-        # arrays are always kept after all vars
-        self.array_current = 0
 
     def get_free(self):
         """ Return the amount of memory available to variables, arrays, strings and code. """
-        return state.session.strings.current - self.var_current - self.array_current
+        return state.session.strings.current - self.var_current - state.session.arrays.current
 
     def collect_garbage(self):
         """ Collect garbage from string space. Compactify string storage. """
@@ -139,7 +137,7 @@ class Memory(object):
         address -= data_segment * 0x10
         if address < self.var_current:
             return state.session.scalars.get_memory(address)
-        elif address < self.var_current + self.array_current:
+        elif address < self.var_current + state.session.arrays.current:
             return state.session.arrays.get_memory(address)
         elif address > state.session.strings.current:
             return state.session.strings.get_memory(address)

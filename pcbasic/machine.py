@@ -454,9 +454,9 @@ def get_basic_memory(addr):
         return state.session.memory.var_current // 256
     # DS:35C, DS:35D: end of array space
     elif addr == 0x35C:
-        return (state.session.memory.var_current + state.session.memory.array_current) % 256
+        return (state.session.memory.var_current + state.session.arrays.current) % 256
     elif addr == 0x35D:
-        return (state.session.memory.var_current + state.session.memory.array_current) // 256
+        return (state.session.memory.var_current + state.session.arrays.current) // 256
     elif addr == protection_flag_addr:
         return state.session.program.protected * 255
     return -1

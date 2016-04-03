@@ -303,7 +303,7 @@ class Arrays(object):
         """ Clear arrays. """
         self.arrays = {}
         self.array_memory = {}
-        self.memory.array_current = 0
+        self.current = 0
 
     def erase(self, name):
         """ Remove an array from memory. """
@@ -350,12 +350,12 @@ class Arrays(object):
         size = self.array_len(dimensions)
         # update memory model
         # first two bytes: chars of name or 0 if name is one byte long
-        name_ptr = self.memory.array_current
+        name_ptr = self.current
         record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
         array_ptr = name_ptr + record_len
         array_bytes = size*var_size_bytes(name)
         self.memory.check_free(record_len + array_bytes, error.OUT_OF_MEMORY)
-        self.memory.array_current += record_len + array_bytes
+        self.current += record_len + array_bytes
         self.array_memory[name] = (name_ptr, array_ptr)
         try:
             self.arrays[name] = [ dimensions, bytearray(array_bytes), 0 ]
