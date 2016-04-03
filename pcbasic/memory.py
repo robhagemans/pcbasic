@@ -48,11 +48,11 @@ ram_font_segment = 0xc000
 class Memory(object):
     """ Memory model. """
 
-    def __init__(self, program, total_memory, reserved_memory, max_reclen, max_files):
+    def __init__(self, bytecode, total_memory, reserved_memory, max_reclen, max_files):
         """ Initialise memory. """
         self.segment = data_segment
         # program buffer is initialised elsewhere
-        self.program = program
+        self.bytecode = bytecode
         # BASIC stack (determined by CLEAR)
         # Initially, the stack space should be set to 512 bytes,
         # or one-eighth of the available memory, whichever is smaller.
@@ -118,7 +118,7 @@ class Memory(object):
 
     def _code_size(self):
         """ Size of code space """
-        return len(self.program.bytecode.getvalue())
+        return len(self.bytecode.getvalue())
 
     def stack_start(self):
         """ Top of string space; start of stack space """

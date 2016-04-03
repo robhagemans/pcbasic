@@ -65,7 +65,11 @@ class SessionLauncher(object):
         if self.resume and state.load():
             state.session.resume()
         else:
-            state.session = Session(self.prog)
+            state.session = Session()
+            # load initial program
+            if self.prog:
+                with disk.open_native_or_dos_filename(self.prog) as progfile:
+                    state.session.program.load(progfile)
             if self.show_greeting:
                 state.session.greet()
         self.thread = threading.Thread(target=state.session.run,
@@ -93,7 +97,7 @@ class ResumeFailed(Exception):
 class Session(object):
     """ Interpreter session. """
 
-    def __init__(self, load):
+    def __init__(self):
         """ Initialise the interpreter session. """
         # true if a prompt is needed on next cycle
         self.prompt = True
@@ -115,6 +119,8 @@ class Session(object):
         console.init_mode()
         # direct line buffer
         self.direct_line = StringIO()
+        # program buffer
+        self.bytecode = StringIO()
 
         # set up variables and memory model state
         # max available memory to BASIC (set by /m)
@@ -128,31 +134,9 @@ class Session(object):
         max_files = config.get('max-files')
         # first field buffer address (workspace size; 3429 for gw-basic)
         reserved_memory = config.get('reserved-memory')
-
-        self.memory = memory.Memory(None, max_memory, reserved_memory, max_reclen, max_files)
-
-        # program parameters
-        if not config.get('strict-hidden-lines'):
-            max_list_line = 65535
-        else:
-            max_list_line = 65530
-        allow_protect = config.get('strict-protect')
-        allow_code_poke = config.get('allow-code-poke')
-        # initialise the program
-        self.program = program.Program(self.memory.code_start, max_list_line, allow_protect, allow_code_poke)
-
-        # kludge
-        self.memory.program = self.program
-
-        # find program for PCjr TERM command
-        pcjr_term = config.get('pcjr-term')
-        if pcjr_term and not os.path.exists(pcjr_term):
-            pcjr_term = os.path.join(plat.info_dir, pcjr_term)
-        if not os.path.exists(pcjr_term):
-            pcjr_term = ''
-        # initialise the parser
-        self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
-
+        # initialise the data segment
+        self.memory = memory.Memory(self.bytecode, max_memory, reserved_memory,
+                                        max_reclen, max_files)
         #D
         self.scalars = self.memory.scalars
         #D
@@ -165,6 +149,26 @@ class Session(object):
         self.deftype = ['!']*26
         self.user_functions = {}
 
+        # program parameters
+        if not config.get('strict-hidden-lines'):
+            max_list_line = 65535
+        else:
+            max_list_line = 65530
+        allow_protect = config.get('strict-protect')
+        allow_code_poke = config.get('allow-code-poke')
+        # initialise the program
+        self.program = program.Program(self.bytecode, self.memory.code_start,
+                                max_list_line, allow_protect, allow_code_poke)
+
+        # find program for PCjr TERM command
+        pcjr_term = config.get('pcjr-term')
+        if pcjr_term and not os.path.exists(pcjr_term):
+            pcjr_term = os.path.join(plat.info_dir, pcjr_term)
+        if not os.path.exists(pcjr_term):
+            pcjr_term = ''
+        # initialise the parser
+        self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
+
         # initialise random number generator
         self.randomiser = rnd.RandomNumberGenerator()
         # initialise timer
@@ -172,12 +176,6 @@ class Session(object):
 
         # initialise FIELD buffers
         disk.reset_fields(self.memory)
-
-        # load initial program
-        if load:
-            # on load, accept capitalised versions and default extension
-            with disk.open_native_or_dos_filename(load) as progfile:
-                self.program.load(progfile)
 
         # TODO: these may not be necessary
         # stop all sound

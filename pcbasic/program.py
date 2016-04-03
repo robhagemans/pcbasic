@@ -7,10 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 import config
 import error
@@ -28,10 +24,10 @@ import sound
 class Program(object):
     """ BASIC program. """
 
-    def __init__(self, code_start, max_list_line=65536, allow_protect=False, allow_code_poke=False):
+    def __init__(self, bytecode, code_start, max_list_line=65536, allow_protect=False, allow_code_poke=False):
         """ Initialise program. """
         # program bytecode buffer
-        self.bytecode = StringIO()
+        self.bytecode = bytecode
         self.erase()
         self.max_list_line = max_list_line
         self.allow_protect = allow_protect
