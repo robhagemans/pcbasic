@@ -218,6 +218,8 @@ class Memory(object):
 
     def __init__(self, peek_values, data_segment):
         """ Initialise memory. """
+        # initial DEF SEG
+        self.segment = memory.data_segment
         # data segment initialised elsewhere
         self.data = data_segment
         # pre-defined PEEK outputs
@@ -227,14 +229,14 @@ class Memory(object):
         """ Retrieve the value at an emulated memory location. """
         if addr < 0:
             addr += 0x10000
-        addr += state.session.memory.segment*0x10
+        addr += self.segment*0x10
         return self._get_memory(addr)
 
     def poke(self, addr, val):
         """ Set the value at an emulated memory location. """
         if addr < 0:
             addr += 0x10000
-        addr += state.session.memory.segment * 0x10
+        addr += self.segment * 0x10
         self._set_memory(addr, val)
 
     def bload(self, g, offset):
@@ -254,11 +256,11 @@ class Memory(object):
 
     def bsave(self, g, offset, length):
         """ Save a block of memory into a file. """
-        addr = state.session.memory.segment * 0x10 + offset
+        addr = self.segment * 0x10 + offset
         g.write(str(self._get_memory_block(addr, length)))
         # Tandys repeat the header at the end of the file
         if tandy_syntax:
-            g.write('\xfd' + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(state.session.memory.segment)) +
+            g.write('\xfd' + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(self.segment)) +
                     vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(offset)) +
                     vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(length))))
 
@@ -268,6 +270,12 @@ class Memory(object):
         if filenum < 1 or filenum > state.io_state.max_files:
             raise error.RunError(error.BAD_FILE_NUMBER)
         return self.data.field_mem_base + filenum * self.data.field_mem_offset + 6
+
+    def def_seg(self, segment):
+        """ Set segment. """
+        self.segment = segment
+        if self.segment < 0:
+            self.segment += 0x10000
 
 
     ###########################################################################

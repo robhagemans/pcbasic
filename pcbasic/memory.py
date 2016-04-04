@@ -52,9 +52,6 @@ class DataSegment(object):
 
     def __init__(self, bytecode, total_memory, reserved_memory, max_reclen, max_files):
         """ Initialise memory. """
-        #MOVE to Memory
-        self.segment = data_segment
-
         # program buffer is initialised elsewhere
         self.bytecode = bytecode
         # BASIC stack (determined by CLEAR)
