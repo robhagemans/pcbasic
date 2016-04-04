@@ -216,6 +216,9 @@ class Memory(object):
     # protection flag
     protection_flag_addr = 1450
 
+    key_buffer_offset = 30
+    blink_enabled = True
+
     def __init__(self, peek_values, data_segment):
         """ Initialise memory. """
         # initial DEF SEG
@@ -264,13 +267,6 @@ class Memory(object):
                     vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(offset)) +
                     vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(length))))
 
-    #MOVE to DataSegment
-    def varptr_file(self, filenum):
-        """ Get address of FCB for a given file number. """
-        if filenum < 1 or filenum > state.io_state.max_files:
-            raise error.RunError(error.BAD_FILE_NUMBER)
-        return self.data.field_mem_base + filenum * self.data.field_mem_offset + 6
-
     def def_seg(self, segment):
         """ Set segment. """
         self.segment = segment
@@ -304,7 +300,7 @@ class Memory(object):
                 return max(0, state.session.program.get_memory(addr))
             elif addr >= memory.data_segment*0x10 + self.data.field_mem_start:
                 # file & FIELD memory
-                return max(0, self._get_field_memory(addr))
+                return max(0, self.data._get_field_memory(addr))
             elif addr >= memory.data_segment*0x10:
                 # other BASIC data memory
                 return max(0, self._get_basic_memory(addr))
@@ -368,23 +364,6 @@ class Memory(object):
             buf = buf[video_len:]
         for a in range(len(buf)):
             self._set_memory(addr + a, buf[a])
-
-    ###############################################################################
-
-    #MOVE to DataSegment
-    def _get_field_memory(self, address):
-        """ Retrieve data from FIELD buffer. """
-        address -= memory.data_segment * 0x10
-        if address < self.data.field_mem_start:
-            return -1
-        # find the file we're in
-        start = address - self.data.field_mem_start
-        number = 1 + start // self.data.field_mem_offset
-        offset = start % self.data.field_mem_offset
-        try:
-            return state.io_state.fields[number].buffer[offset]
-        except (KeyError, IndexError):
-            return -1
 
 
     ###############################################################
@@ -483,8 +462,6 @@ class Memory(object):
         if addr == self.protection_flag_addr and state.session.program.allow_protect:
             state.session.program.protected = (val != 0)
 
-    key_buffer_offset = 30
-    blink_enabled = True
 
     def _get_low_memory(self, addr):
         """ Retrieve data from low memory. """

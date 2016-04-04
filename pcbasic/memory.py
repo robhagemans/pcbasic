@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import error
 import var
 import vartypes
+import state
 
 #MOVE to Memory
 
@@ -149,6 +150,29 @@ class DataSegment(object):
             return self.strings.get_memory(address)
         else:
             # unallocated var space
+            return -1
+
+    ###############################################################################
+    # File buffer access
+
+    def varptr_file(self, filenum):
+        """ Get address of FCB for a given file number. """
+        if filenum < 1 or filenum > state.io_state.max_files:
+            raise error.RunError(error.BAD_FILE_NUMBER)
+        return self.field_mem_base + filenum * self.field_mem_offset + 6
+
+    def _get_field_memory(self, address):
+        """ Retrieve data from FIELD buffer. """
+        address -= data_segment * 0x10
+        if address < self.field_mem_start:
+            return -1
+        # find the file we're in
+        start = address - self.field_mem_start
+        number = 1 + start // self.field_mem_offset
+        offset = start % self.field_mem_offset
+        try:
+            return state.io_state.fields[number].buffer[offset]
+        except (KeyError, IndexError):
             return -1
 
 

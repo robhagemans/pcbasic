@@ -806,7 +806,7 @@ class Evaluator(object):
         util.require_read(self.ins, ('(',))
         if (not dollar) and util.skip_white(self.ins) == '#':
             filenum = parse_file_number_opthash(self.ins, self.session)
-            var_ptr = self.session.all_memory.varptr_file(filenum)
+            var_ptr = self.session.memory.varptr_file(filenum)
         else:
             name, indices = parse_variable(self.ins, self.session)
             var_ptr = self.session.memory.varptr(name, indices)
