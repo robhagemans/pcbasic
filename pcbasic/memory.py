@@ -202,9 +202,9 @@ class DataSegment(object):
             return self.var_current() // 256
         # DS:35C, DS:35D: end of array space
         elif addr == 0x35C:
-            return (self.var_current() + state.session.arrays.current) % 256
+            return (self.var_current() + self.arrays.current) % 256
         elif addr == 0x35D:
-            return (self.var_current() + state.session.arrays.current) // 256
+            return (self.var_current() + self.arrays.current) // 256
         elif addr == self.protection_flag_addr:
             return state.session.program.protected * 255
         return -1
