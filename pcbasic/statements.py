@@ -99,7 +99,7 @@ class Parser(object):
                     return False
                 if self.tron:
                     console.write('[' + ('%i' % linenum) + ']')
-                debug.debug_step(linenum)
+                self.session.debugger.debug_step(linenum)
             elif c == ':':
                 self.ins.read(1)
             c = util.skip_white(self.ins)
@@ -390,7 +390,7 @@ class Parser(object):
         debug_cmd = ''
         while util.peek(self.ins) not in tk.end_line:
             debug_cmd += self.ins.read(1)
-        debug.debug_exec(debug_cmd)
+        self.session.debugger.debug_exec(debug_cmd)
 
     def exec_term(self):
         """ TERM: load and run PCjr buitin terminal emulator self.session.program. """

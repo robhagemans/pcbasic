@@ -202,6 +202,12 @@ class Session(object):
         # reset DRAW state (angle, scale) and current graphics position
         state.console_state.screen.drawing.reset()
 
+        # set up debugger
+        if config.get('debug'):
+            self.debugger = debug.Debugger(self)
+        else:
+            self.debugger = debug.BaseDebugger(self)
+
         # set up the SHELL command
         option_shell = config.get('shell')
         self.shell = shell.ShellBase()
@@ -369,9 +375,7 @@ class Session(object):
         except error.Reset:
             raise
         except Exception as e:
-            if debug.debug_mode:
-                raise
-            debug.bluescreen(e)
+            self.debugger.bluescreen(e)
 
     def set_parse_mode(self, on):
         """ Enter or exit parse mode. """

@@ -35,8 +35,6 @@ def prepare():
     """ Prepare the display. """
     global video_capabilities, monitor
     global fonts
-    global debug
-    debug = config.get('debug')
     video_capabilities = config.get('video')
     monitor = config.get('monitor')
     if video_capabilities == 'ega' and monitor == 'mono':
@@ -57,7 +55,7 @@ def prepare():
     # break up any grapheme clusters and add components to set of needed glyphs
     chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
     fonts = typeface.load_fonts(config.get('font'), heights_needed,
-                chars_needed, state.console_state.codepage.substitutes, warn=debug)
+                chars_needed, state.console_state.codepage.substitutes, warn=config.get('debug'))
     fonts[9] = fonts[8]
 
 def init():
