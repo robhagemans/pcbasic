@@ -213,8 +213,6 @@ class Memory(object):
     rom_font_addr = 0xfa6e
     # where to find the ram font (chars 128-254)
     ram_font_addr = 0x500
-    # protection flag
-    protection_flag_addr = 1450
 
     key_buffer_offset = 30
     blink_enabled = True
@@ -303,7 +301,7 @@ class Memory(object):
                 return max(0, self.data._get_field_memory(addr))
             elif addr >= memory.data_segment*0x10:
                 # other BASIC data memory
-                return max(0, self._get_basic_memory(addr))
+                return max(0, self.data._get_basic_memory(addr))
             elif addr >= 0:
                 return max(0, self._get_low_memory(addr))
             else:
@@ -330,7 +328,7 @@ class Memory(object):
             # file & FIELD memory
             self._not_implemented_poke(addr, val)
         elif addr >= memory.data_segment*0x10:
-            self._set_basic_memory(addr, val)
+            self.data._set_basic_memory(addr, val)
         elif addr >= 0:
             self._set_low_memory(addr, val)
 
@@ -418,49 +416,6 @@ class Memory(object):
             state.console_state.screen.rebuild_glyph(char)
 
     #################################################################################
-
-    #MOVE to DataSegment
-    def _get_basic_memory(self, addr):
-        """ Retrieve data from BASIC memory. """
-        addr -= memory.data_segment*0x10
-        if addr < 4:
-            # sentinel value, used by some programs to identify GW-BASIC
-            return (0, 0, 0x10, 0x82)[addr]
-        # DS:2c, DS:2d  end of memory available to BASIC
-        elif addr == 0x2C:
-            return self.data.total_memory % 256
-        elif addr == 0x2D:
-            return self.data.total_memory // 256
-        # DS:30, DS:31: pointer to start of program, excluding initial \0
-        elif addr == 0x30:
-            return (self.data.code_start+1) % 256
-        elif addr == 0x31:
-            return (self.data.code_start+1) // 256
-        # DS:358, DS:359: start of variable space
-        elif addr == 0x358:
-            return self.data.var_start() % 256
-        elif addr == 0x359:
-            return self.data.var_start() // 256
-        # DS:35A, DS:35B: start of array space
-        elif addr == 0x35A:
-            return self.data.var_current() % 256
-        elif addr == 0x35B:
-            return self.data.var_current() // 256
-        # DS:35C, DS:35D: end of array space
-        elif addr == 0x35C:
-            return (self.data.var_current() + state.session.arrays.current) % 256
-        elif addr == 0x35D:
-            return (self.data.var_current() + state.session.arrays.current) // 256
-        elif addr == self.protection_flag_addr:
-            return state.session.program.protected * 255
-        return -1
-
-    #MOVE to DataSegment
-    def _set_basic_memory(self, addr, val):
-        """ Change BASIC memory. """
-        addr -= memory.data_segment*0x10
-        if addr == self.protection_flag_addr and state.session.program.allow_protect:
-            state.session.program.protected = (val != 0)
 
 
     def _get_low_memory(self, addr):

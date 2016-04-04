@@ -11,8 +11,6 @@ import var
 import vartypes
 import state
 
-#MOVE to Memory
-
 # data memory model: data segment
 # location depends on which flavour of BASIC we use (this is for GW-BASIC)
 data_segment = 0x13ad
@@ -50,6 +48,9 @@ ram_font_segment = 0xc000
 
 class DataSegment(object):
     """ Memory model. """
+
+    # protection flag
+    protection_flag_addr = 1450
 
     def __init__(self, bytecode, total_memory, reserved_memory, max_reclen, max_files):
         """ Initialise memory. """
@@ -174,6 +175,50 @@ class DataSegment(object):
             return state.io_state.fields[number].buffer[offset]
         except (KeyError, IndexError):
             return -1
+
+    ###########################################################################
+    # other memory access
+
+    def _get_basic_memory(self, addr):
+        """ Retrieve data from BASIC memory. """
+        addr -= data_segment*0x10
+        if addr < 4:
+            # sentinel value, used by some programs to identify GW-BASIC
+            return (0, 0, 0x10, 0x82)[addr]
+        # DS:2c, DS:2d  end of memory available to BASIC
+        elif addr == 0x2C:
+            return self.total_memory % 256
+        elif addr == 0x2D:
+            return self.total_memory // 256
+        # DS:30, DS:31: pointer to start of program, excluding initial \0
+        elif addr == 0x30:
+            return (self.code_start+1) % 256
+        elif addr == 0x31:
+            return (self.code_start+1) // 256
+        # DS:358, DS:359: start of variable space
+        elif addr == 0x358:
+            return self.var_start() % 256
+        elif addr == 0x359:
+            return self.var_start() // 256
+        # DS:35A, DS:35B: start of array space
+        elif addr == 0x35A:
+            return self.var_current() % 256
+        elif addr == 0x35B:
+            return self.var_current() // 256
+        # DS:35C, DS:35D: end of array space
+        elif addr == 0x35C:
+            return (self.var_current() + state.session.arrays.current) % 256
+        elif addr == 0x35D:
+            return (self.var_current() + state.session.arrays.current) // 256
+        elif addr == self.protection_flag_addr:
+            return state.session.program.protected * 255
+        return -1
+
+    def _set_basic_memory(self, addr, val):
+        """ Change BASIC memory. """
+        addr -= data_segment*0x10
+        if addr == self.protection_flag_addr and state.session.program.allow_protect:
+            state.session.program.protected = (val != 0)
 
 
     ###############################################################################
