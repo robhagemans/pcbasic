@@ -659,7 +659,7 @@ class Screen(object):
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics characteristics
-        self.drawing = graphics.Drawing(self)
+        self.drawing = graphics.Drawing(self, state.session)
         # cursor width starts out as single char
         self.cursor.init_mode(self.mode)
         self.palette = Palette(self.mode)

@@ -31,8 +31,9 @@ deg_to_rad = fp.div(fp.Single.twopi, fp.Single.from_int(360))
 class Drawing(object):
     """ Manage graphics drawing. """
 
-    def __init__(self, screen):
+    def __init__(self, screen, session):
         self.screen = screen
+        self.session = session
         self.unset_window()
         self.unset_view()
         self.reset()
@@ -587,7 +588,7 @@ class Drawing(object):
                 self.screen.put_interval(self.screen.apagenum, x_left, y, interval)
             # allow interrupting the paint
             if y%4 == 0:
-                state.session.check_events()
+                self.session.check_events()
         self.last_attr = c
 
     def check_scanline(self, line_seed, x_start, x_stop, y,
@@ -629,7 +630,7 @@ class Drawing(object):
         x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
         self.last_point = x0, y0
         try:
-            _, byte_array, a_version = state.session.arrays.arrays[array_name]
+            _, byte_array, a_version = self.session.arrays.arrays[array_name]
         except KeyError:
             byte_array = bytearray()
         try:
@@ -661,7 +662,7 @@ class Drawing(object):
         x1, y1 = self.view_coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
         try:
-            _, byte_array, version = state.session.arrays.arrays[array_name]
+            _, byte_array, version = self.session.arrays.arrays[array_name]
         except KeyError:
             raise error.RunError(error.IFC)
         dx, dy = x1-x0+1, y1-y0+1
@@ -690,7 +691,7 @@ class Drawing(object):
         """ DRAW: Execute a Graphics Macro Language string. """
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = StringIO(gml)
-        ml_parser = draw_and_play.MLParser(gmls, state.session.memory)
+        ml_parser = draw_and_play.MLParser(gmls, self.session.memory)
         plot, goback = True, False
         while True:
             c = util.skip_read(gmls, ml_parser.whitepace).upper()
