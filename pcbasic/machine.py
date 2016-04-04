@@ -209,6 +209,13 @@ def wait(addr, ander, xorer):
 class Memory(object):
     """ Memory model. """
 
+    # lowest (EGA) video memory address; max 128k reserved for video
+    video_segment = 0xa000
+    # read only memory
+    rom_segment = 0xf000
+    # segment that holds ram font
+    ram_font_segment = 0xc000
+
     # where to find the rom font (chars 0-127)
     rom_font_addr = 0xfa6e
     # where to find the ram font (chars 128-254)
@@ -217,12 +224,12 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, peek_values, data_segment):
+    def __init__(self, peek_values, data_memory):
         """ Initialise memory. """
-        # initial DEF SEG
-        self.segment = memory.data_segment
         # data segment initialised elsewhere
-        self.data = data_segment
+        self.data = data_memory
+        # initial DEF SEG
+        self.segment = self.data.data_segment
         # pre-defined PEEK outputs
         self._peek_values = {}
 
@@ -281,25 +288,25 @@ class Memory(object):
             # try if there's a preset value
             return self._peek_values[addr]
         except KeyError:
-            if addr >= memory.rom_segment*0x10:
+            if addr >= self.rom_segment*0x10:
                 # ROM font
                 return max(0, self._get_rom_memory(addr))
-            elif addr >= memory.ram_font_segment*0x10:
+            elif addr >= self.ram_font_segment*0x10:
                 # RAM font
                 return max(0, self._get_font_memory(addr))
-            elif addr >= memory.video_segment*0x10:
+            elif addr >= self.video_segment*0x10:
                 # graphics and text memory
                 return max(0, self._get_video_memory(addr))
-            elif addr >= memory.data_segment*0x10 + self.data.var_start():
+            elif addr >= self.data.data_segment*0x10 + self.data.var_start():
                 # variable memory
                 return max(0, self.data.get(addr))
-            elif addr >= memory.data_segment*0x10 + self.data.code_start:
+            elif addr >= self.data.data_segment*0x10 + self.data.code_start:
                 # code memory
                 return max(0, state.session.program.get_memory(addr))
-            elif addr >= memory.data_segment*0x10 + self.data.field_mem_start:
+            elif addr >= self.data.data_segment*0x10 + self.data.field_mem_start:
                 # file & FIELD memory
                 return max(0, self.data._get_field_memory(addr))
-            elif addr >= memory.data_segment*0x10:
+            elif addr >= self.data.data_segment*0x10:
                 # other BASIC data memory
                 return max(0, self.data._get_basic_memory(addr))
             elif addr >= 0:
@@ -309,25 +316,25 @@ class Memory(object):
 
     def _set_memory(self, addr, val):
         """ Set the value at an emulated memory location. """
-        if addr >= memory.rom_segment*0x10:
+        if addr >= self.rom_segment*0x10:
             # ROM includes font memory
             pass
-        elif addr >= memory.ram_font_segment*0x10:
+        elif addr >= self.ram_font_segment*0x10:
             # RAM font memory
             self._set_font_memory(addr, val)
-        elif addr >= memory.video_segment*0x10:
+        elif addr >= self.video_segment*0x10:
             # graphics and text memory
             self._set_video_memory(addr, val)
-        elif addr >= memory.data_segment*0x10 + self.data.var_start():
+        elif addr >= self.data.data_segment*0x10 + self.data.var_start():
             # POKING in variables
             self._not_implemented_poke(addr, val)
-        elif addr >= memory.data_segment*0x10 + self.data.code_start:
+        elif addr >= self.data.data_segment*0x10 + self.data.code_start:
             # code memory
             state.session.program.set_memory(addr, val)
-        elif addr >= memory.data_segment*0x10 + self.data.field_mem_start:
+        elif addr >= self.data.data_segment*0x10 + self.data.field_mem_start:
             # file & FIELD memory
             self._not_implemented_poke(addr, val)
-        elif addr >= memory.data_segment*0x10:
+        elif addr >= self.data.data_segment*0x10:
             self.data._set_basic_memory(addr, val)
         elif addr >= 0:
             self._set_low_memory(addr, val)
@@ -342,8 +349,8 @@ class Memory(object):
     def _get_memory_block(self, addr, length):
         """ Retrieve a contiguous block of bytes from memory. """
         block = bytearray()
-        if addr >= memory.video_segment*0x10:
-            video_len = 0x20000 - (addr - memory.video_segment*0x10)
+        if addr >= self.video_segment*0x10:
+            video_len = 0x20000 - (addr - self.video_segment*0x10)
             # graphics and text memory - specialised call
             block += self._get_video_memory_block(addr, min(length, video_len))
             addr += video_len
@@ -354,8 +361,8 @@ class Memory(object):
 
     def _set_memory_block(self, addr, buf):
         """ Set a contiguous block of bytes in memory. """
-        if addr >= memory.video_segment*0x10:
-            video_len = 0x20000 - (addr - memory.video_segment*0x10)
+        if addr >= self.video_segment*0x10:
+            video_len = 0x20000 - (addr - self.video_segment*0x10)
             # graphics and text memory - specialised call
             self._set_video_memory_block(addr, buf[:video_len])
             addr += video_len
@@ -387,7 +394,7 @@ class Memory(object):
 
     def _get_rom_memory(self, addr):
         """ Retrieve data from ROM. """
-        addr -= memory.rom_segment*0x10 + self.rom_font_addr
+        addr -= self.rom_segment*0x10 + self.rom_font_addr
         char = addr // 8
         if char > 127 or char<0:
             return -1
@@ -396,7 +403,7 @@ class Memory(object):
 
     def _get_font_memory(self, addr):
         """ Retrieve RAM font data. """
-        addr -= memory.ram_font_segment*0x10 + self.ram_font_addr
+        addr -= self.ram_font_segment*0x10 + self.ram_font_addr
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return -1
@@ -405,7 +412,7 @@ class Memory(object):
 
     def _set_font_memory(self, addr, value):
         """ Retrieve RAM font data. """
-        addr -= memory.ram_font_segment*0x10 + self.ram_font_addr
+        addr -= self.ram_font_segment*0x10 + self.ram_font_addr
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return
@@ -446,9 +453,9 @@ class Memory(object):
         elif addr == 125:
             return self.ram_font_addr // 256
         elif addr == 126:
-            return memory.ram_font_segment % 256
+            return self.ram_font_segment % 256
         elif addr == 127:
-            return memory.ram_font_segment // 256
+            return self.ram_font_segment // 256
         elif addr == 1040:
             if display.monitor == 'mono':
                 # mono

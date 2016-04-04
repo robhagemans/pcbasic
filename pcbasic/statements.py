@@ -730,7 +730,7 @@ class Parser(object):
             # def_seg() accepts signed values
             self.session.all_memory.def_seg(vartypes.pass_int_unpack(expressions.parse_expression(self.ins, self.session), maxint=0xffff))
         else:
-            self.session.all_memory.def_seg(memory.data_segment)
+            self.session.all_memory.def_seg(self.session.memory.data_segment)
         util.require(self.ins, tk.end_statement)
 
     def exec_def_usr(self):
@@ -1140,7 +1140,7 @@ class Parser(object):
             if mode not in ('A', 'P'):
                 raise error.RunError(error.STX)
         with devices.open_file(0, name, filetype=mode, mode='O',
-                                seg=memory.data_segment, offset=self.session.memory.code_start,
+                                seg=self.session.memory.data_segment, offset=self.session.memory.code_start,
                                 length=len(self.program_code.getvalue())-1
                                 ) as f:
             self.session.program.save(f)

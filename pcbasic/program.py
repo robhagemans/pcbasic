@@ -352,7 +352,7 @@ class Program(object):
 
     def get_memory(self, address):
         """ Retrieve data from program code. """
-        address -= memory.data_segment * 0x10 + self.code_start
+        address -= state.session.memory.data_segment * 0x10 + self.code_start
         code = self.bytecode.getvalue()
         try:
             return ord(code[address])
@@ -364,7 +364,7 @@ class Program(object):
         if not self.allow_code_poke:
             logging.warning('Ignored POKE into program code')
         else:
-            address -= memory.data_segment * 0x10 + self.code_start
+            address -= state.session.memory.data_segment * 0x10 + self.code_start
             loc = self.bytecode.tell()
             # move pointer to end
             self.bytecode.seek(0, 2)

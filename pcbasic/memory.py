@@ -11,15 +11,6 @@ import var
 import vartypes
 import state
 
-# data memory model: data segment
-# location depends on which flavour of BASIC we use (this is for GW-BASIC)
-data_segment = 0x13ad
-# lowest (EGA) video memory address; max 128k reserved for video
-video_segment = 0xa000
-# read only memory
-rom_segment = 0xf000
-# segment that holds ram font
-ram_font_segment = 0xc000
 
 
 # Data Segment Map - default situation
@@ -48,6 +39,10 @@ ram_font_segment = 0xc000
 
 class DataSegment(object):
     """ Memory model. """
+
+    # data memory model: data segment
+    # location depends on which flavour of BASIC we use (this is for GW-BASIC)
+    data_segment = 0x13ad
 
     # protection flag
     protection_flag_addr = 1450
@@ -142,7 +137,7 @@ class DataSegment(object):
 
     def get(self, address):
         """ Retrieve data from data memory. """
-        address -= data_segment * 0x10
+        address -= self.data_segment * 0x10
         if address < self.var_current():
             return self.scalars.get_memory(address)
         elif address < self.var_current() + self.arrays.current:
@@ -164,7 +159,7 @@ class DataSegment(object):
 
     def _get_field_memory(self, address):
         """ Retrieve data from FIELD buffer. """
-        address -= data_segment * 0x10
+        address -= self.data_segment * 0x10
         if address < self.field_mem_start:
             return -1
         # find the file we're in
@@ -181,7 +176,7 @@ class DataSegment(object):
 
     def _get_basic_memory(self, addr):
         """ Retrieve data from BASIC memory. """
-        addr -= data_segment*0x10
+        addr -= self.data_segment*0x10
         if addr < 4:
             # sentinel value, used by some programs to identify GW-BASIC
             return (0, 0, 0x10, 0x82)[addr]
@@ -216,7 +211,7 @@ class DataSegment(object):
 
     def _set_basic_memory(self, addr, val):
         """ Change BASIC memory. """
-        addr -= data_segment*0x10
+        addr -= self.data_segment*0x10
         if addr == self.protection_flag_addr and state.session.program.allow_protect:
             state.session.program.protected = (val != 0)
 
