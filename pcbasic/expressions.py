@@ -32,67 +32,8 @@ import operators as op
 # math error output
 import console
 
-
-# operators and precedence
-# key is tuple (token, nargs)
-operators = {
-    tk.O_CARET: 12,
-    tk.O_TIMES: 11,
-    tk.O_DIV: 11,
-    tk.O_INTDIV: 10,
-    tk.MOD: 9,
-    tk.O_PLUS: 8,
-    tk.O_MINUS: 8,
-    tk.O_GT: 7,
-    tk.O_EQ: 7,
-    tk.O_LT: 7,
-    tk.O_GT + tk.O_EQ: 7,
-    tk.O_EQ + tk.O_GT: 7,
-    tk.O_LT + tk.O_EQ: 7,
-    tk.O_EQ + tk.O_LT: 7,
-    tk.O_LT + tk.O_GT: 7,
-    tk.O_GT + tk.O_LT: 7,
-    tk.NOT: 6,
-    tk.AND: 5,
-    tk.OR: 4,
-    tk.XOR: 3,
-    tk.EQV: 2,
-    tk.IMP: 1,
-}
 # can be combined like <> >=
 combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
-
-# unary operators
-unary = {
-    tk.O_MINUS: op.neg,
-    tk.O_PLUS: lambda x: x,
-    tk.NOT: op.number_not,
-}
-
-# binary operators
-binary = {
-    tk.O_CARET: op.number_power,
-    tk.O_TIMES: op.number_multiply,
-    tk.O_DIV: op.number_divide,
-    tk.O_INTDIV: op.number_intdiv,
-    tk.MOD: op.number_modulo,
-    tk.O_PLUS: op.plus,
-    tk.O_MINUS: op.number_subtract,
-    tk.O_GT: op.gt,
-    tk.O_EQ: op.equals,
-    tk.O_LT: op.lt,
-    tk.O_GT + tk.O_EQ: op.gte,
-    tk.O_EQ + tk.O_GT: op.gte,
-    tk.O_LT + tk.O_EQ: op.lte,
-    tk.O_EQ + tk.O_LT: op.lte,
-    tk.O_LT + tk.O_GT: op.not_equals,
-    tk.O_GT + tk.O_LT: op.not_equals,
-    tk.AND: op.number_and,
-    tk.OR: op.number_or,
-    tk.XOR: op.number_xor,
-    tk.EQV: op.number_eqv,
-    tk.IMP: op.number_imp,
-}
 
 
 def parse_expression(ins, session, allow_empty=False):
@@ -189,6 +130,7 @@ class Evaluator(object):
         """ Initialise evaluator. """
         self.ins = codestream
         self.session = session
+        self.operators = op.Operators(session.strings)
         # state variable for detecting recursion
         if user_fn_parsing:
             self.user_function_parsing = user_fn_parsing
@@ -208,28 +150,28 @@ class Evaluator(object):
             # two-byte function tokens
             if d in tk.twobyte:
                 d = util.peek(self.ins, n=2)
-            if d == tk.NOT and not (last in operators or last == ''):
+            if d == tk.NOT and not (last in op.operators or last == ''):
                 # unary NOT ends expression except after another operator or at start
                 break
-            elif d in operators:
+            elif d in op.operators:
                 self.ins.read(len(d))
                 # get combined operators such as >=
                 if d in combinable:
                     nxt = util.skip_white(self.ins)
                     if nxt in combinable:
                         d += self.ins.read(len(nxt))
-                if last in operators or last == '' or d == tk.NOT:
+                if last in op.operators or last == '' or d == tk.NOT:
                     # also if last is ( but that leads to recursive call and last == ''
                     nargs = 1
                     # zero operands for a binary operator is always syntax error
                     # because it will be seen as an illegal unary
-                    if d not in unary:
+                    if d not in self.operators.unary:
                         raise error.RunError(error.STX)
                 else:
                     nargs = 2
-                    self._evaluate_stack(stack, units, operators[d], error.STX)
+                    self._evaluate_stack(stack, units, op.precedence[d], error.STX)
                 stack.append((d, nargs))
-            elif not (last in operators or last == ''):
+            elif not (last in op.operators or last == ''):
                 # repeated unit ends expression
                 # repeated literals or variables or non-keywords like 'AS'
                 break
@@ -269,16 +211,16 @@ class Evaluator(object):
     def _evaluate_stack(self, stack, units, precedence, missing_err):
         """ Drain evaluation stack until an operator of low precedence on top. """
         while stack:
-            if precedence > operators[stack[-1][0]]:
+            if precedence > op.precedence[stack[-1][0]]:
                 break
-            op, narity = stack.pop()
+            oper, narity = stack.pop()
             try:
                 right = units.pop()
                 if narity == 1:
-                    units.append(unary[op](right))
+                    units.append(self.operators.unary[oper](right))
                 else:
                     left = units.pop()
-                    units.append(binary[op](left, right))
+                    units.append(self.operators.binary[oper](left, right))
             except IndexError:
                 # insufficient operators, error depends on context
                 raise error.RunError(missing_err)
@@ -881,7 +823,7 @@ class Evaluator(object):
     def value_abs(self):
         """ ABS: get absolute value. """
         inp = parse_bracket(self.ins, self.session)
-        return inp if inp[0] == '$' else op.number_abs(inp)
+        return inp if inp[0] == '$' else self.operators.number_abs(inp)
 
     def value_int(self):
         """ INT: get floor value. """

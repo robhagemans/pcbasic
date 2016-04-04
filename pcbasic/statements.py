@@ -25,7 +25,7 @@ import fp
 import devices
 import machine
 import memory
-import operators as op
+from operators import Operators as op
 import ports
 import print_and_input
 import program
