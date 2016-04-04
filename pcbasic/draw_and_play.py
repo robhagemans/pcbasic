@@ -20,7 +20,7 @@ import state
 # generic for both macro languages
 ml_whitepace = ' '
 
-def ml_parse_value(gmls, default=None):
+def ml_parse_value(gmls, default):
     """ Parse a value in a macro-language string. """
     c = util.skip(gmls, ml_whitepace)
     sgn = -1 if c == '-' else 1
@@ -36,14 +36,14 @@ def ml_parse_value(gmls, default=None):
             raise error.RunError(error.IFC)
         elif ord(c) > 8:
             name = util.parse_scalar(gmls)
-            indices = ml_parse_indices(gmls)
+            indices = _ml_parse_indices(gmls)
             step = state.session.memory.get_variable(name, indices)
             util.require_read(gmls, (';',), err=error.IFC)
         else:
             # varptr$
             step = state.session.memory.get_value_for_varptrstr(gmls.read(3))
     elif c and c in string.digits:
-        step = ml_parse_const(gmls)
+        step = _ml_parse_const(gmls)
     elif default is not None:
         step = default
     else:
@@ -56,7 +56,24 @@ def ml_parse_number(gmls, default=None):
     """ Parse and return a number value in a macro-language string. """
     return vartypes.pass_int_unpack(ml_parse_value(gmls, default), err=error.IFC)
 
-def ml_parse_const(gmls):
+def ml_parse_string(gmls):
+    """ Parse a string value in a macro-language string. """
+    c = util.skip(gmls, ml_whitepace)
+    if len(c) == 0:
+        raise error.RunError(error.IFC)
+    elif ord(c) > 8:
+        name = util.parse_scalar(gmls, err=error.IFC)
+        indices = _ml_parse_indices(gmls)
+        sub = state.session.memory.get_variable(name, indices)
+        util.require_read(gmls, (';',), err=error.IFC)
+        return state.session.strings.copy(vartypes.pass_string(sub, err=error.IFC))
+    else:
+        # varptr$
+        return state.session.strings.copy(
+                vartypes.pass_string(
+                    state.session.memory.get_value_for_varptrstr(gmls.read(3))))
+
+def _ml_parse_const(gmls):
     """ Parse and return a constant value in a macro-language string. """
     c = util.skip(gmls, ml_whitepace)
     if c and c in string.digits:
@@ -69,35 +86,18 @@ def ml_parse_const(gmls):
     else:
         raise error.RunError(error.IFC)
 
-def ml_parse_const_int(gmls):
+def _ml_parse_const_int(gmls):
     """ Parse a constant value in a macro-language string, return Python int. """
-    return vartypes.pass_int_unpack(ml_parse_const(gmls), err=error.IFC)
+    return vartypes.pass_int_unpack(_ml_parse_const(gmls), err=error.IFC)
 
-def ml_parse_string(gmls):
-    """ Parse a string value in a macro-language string. """
-    c = util.skip(gmls, ml_whitepace)
-    if len(c) == 0:
-        raise error.RunError(error.IFC)
-    elif ord(c) > 8:
-        name = util.parse_scalar(gmls, err=error.IFC)
-        indices = ml_parse_indices(gmls)
-        sub = state.session.memory.get_variable(name, indices)
-        util.require_read(gmls, (';',), err=error.IFC)
-        return state.session.strings.copy(vartypes.pass_string(sub, err=error.IFC))
-    else:
-        # varptr$
-        return state.session.strings.copy(
-                vartypes.pass_string(
-                    state.session.memory.get_value_for_varptrstr(gmls.read(3))))
-
-def ml_parse_indices(gmls):
+def _ml_parse_indices(gmls):
     """ Parse constant array indices. """
     indices = []
     c = util.skip(gmls, ml_whitepace)
     if c in ('[', '('):
         gmls.read(1)
         while True:
-            indices.append(ml_parse_const_int(gmls))
+            indices.append(_ml_parse_const_int(gmls))
             c = util.skip(gmls, ml_whitepace)
             if c == ',':
                 gmls.read(1)
