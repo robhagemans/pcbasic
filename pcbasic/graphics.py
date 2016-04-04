@@ -690,9 +690,10 @@ class Drawing(object):
         """ DRAW: Execute a Graphics Macro Language string. """
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = StringIO(gml)
+        ml_parser = draw_and_play.MLParser(gmls, state.session.memory)
         plot, goback = True, False
         while True:
-            c = util.skip_read(gmls, draw_and_play.ml_whitepace).upper()
+            c = util.skip_read(gmls, ml_parser.whitepace).upper()
             if c == '':
                 break
             elif c == ';':
@@ -705,37 +706,37 @@ class Drawing(object):
                 goback = True
             elif c == 'X':
                 # execute substring
-                sub = draw_and_play.ml_parse_string(gmls)
+                sub = ml_parser.parse_string()
                 self.draw(str(sub))
             elif c == 'C':
                 # set foreground colour
                 # allow empty spec (default 0), but only if followed by a semicolon
-                if util.skip(gmls, draw_and_play.ml_whitepace) == ';':
+                if util.skip(gmls, ml_parser.whitepace) == ';':
                     self.last_attr = 0
                 else:
-                    self.last_attr = draw_and_play.ml_parse_number(gmls)
+                    self.last_attr = ml_parser.parse_number()
             elif c == 'S':
                 # set scale
-                self.draw_scale = draw_and_play.ml_parse_number(gmls)
+                self.draw_scale = ml_parser.parse_number()
             elif c == 'A':
                 # set angle
                 # allow empty spec (default 0), but only if followed by a semicolon
-                if util.skip(gmls, draw_and_play.ml_whitepace) == ';':
+                if util.skip(gmls, ml_parser.whitepace) == ';':
                     self.draw_angle = 0
                 else:
-                    self.draw_angle = 90 * draw_and_play.ml_parse_number(gmls)
+                    self.draw_angle = 90 * ml_parser.parse_number()
             elif c == 'T':
                 # 'turn angle' - set (don't turn) the angle to any value
                 if gmls.read(1).upper() != 'A':
                     raise error.RunError(error.IFC)
                 # allow empty spec (default 0), but only if followed by a semicolon
-                if util.skip(gmls, draw_and_play.ml_whitepace) == ';':
+                if util.skip(gmls, ml_parser.whitepace) == ';':
                     self.draw_angle = 0
                 else:
-                    self.draw_angle = draw_and_play.ml_parse_number(gmls)
+                    self.draw_angle = ml_parser.parse_number()
             # one-variable movement commands:
             elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
-                step = draw_and_play.ml_parse_number(gmls, default=vartypes.int_to_integer_signed(1))
+                step = ml_parser.parse_number(default=vartypes.int_to_integer_signed(1))
                 x0, y0 = self.last_point
                 x1, y1 = 0, 0
                 if c in ('U', 'E', 'H'):
@@ -751,13 +752,13 @@ class Drawing(object):
                 goback = False
             # two-variable movement command
             elif c == 'M':
-                relative =  util.skip(gmls, draw_and_play.ml_whitepace) in ('+','-')
-                x = draw_and_play.ml_parse_number(gmls)
-                if util.skip(gmls, draw_and_play.ml_whitepace) != ',':
+                relative =  util.skip(gmls, ml_parser.whitepace) in ('+','-')
+                x = ml_parser.parse_number()
+                if util.skip(gmls, ml_parser.whitepace) != ',':
                     raise error.RunError(error.IFC)
                 else:
                     gmls.read(1)
-                y = draw_and_play.ml_parse_number(gmls)
+                y = ml_parser.parse_number()
                 x0, y0 = self.last_point
                 if relative:
                     self.draw_step(x0, y0, x, y,  plot, goback)
@@ -771,10 +772,10 @@ class Drawing(object):
                 goback = False
             elif c =='P':
                 # paint - flood fill
-                colour = draw_and_play.ml_parse_number(gmls)
-                if util.skip_read(gmls, draw_and_play.ml_whitepace) != ',':
+                colour = ml_parser.parse_number()
+                if util.skip_read(gmls, ml_parser.whitepace) != ',':
                     raise error.RunError(error.IFC)
-                bound = draw_and_play.ml_parse_number(gmls)
+                bound = ml_parser.parse_number()
                 x, y = self.get_window_logical(*self.last_point)
                 self.paint((x, y, False), None, colour, bound, None)
 

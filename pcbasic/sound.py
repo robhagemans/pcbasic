@@ -166,6 +166,7 @@ class Sound(object):
             gmls.write(str(mml))
             gmls.seek(0)
             gmls_list.append(gmls)
+        ml_parser_list = [draw_and_play.MLParser(gmls, state.session.memory) for gmls in gmls_list]
         next_oct = 0
         total_time = [0, 0, 0, 0]
         voices = range(3)
@@ -175,7 +176,8 @@ class Sound(object):
             for voice in voices:
                 vstate = self.play_state[voice]
                 gmls = gmls_list[voice]
-                c = util.skip_read(gmls, draw_and_play.ml_whitepace).upper()
+                ml_parser = ml_parser_list[voice]
+                c = util.skip_read(gmls, ml_parser.whitepace).upper()
                 if c == '':
                     voices.remove(voice)
                     continue
@@ -183,7 +185,7 @@ class Sound(object):
                     continue
                 elif c == 'X':
                     # execute substring
-                    sub = draw_and_play.ml_parse_string(gmls)
+                    sub = ml_parser.parse_string()
                     pos = gmls.tell()
                     rest = gmls.read()
                     gmls.truncate(pos)
@@ -191,9 +193,9 @@ class Sound(object):
                     gmls.write(rest)
                     gmls.seek(pos)
                 elif c == 'N':
-                    note = draw_and_play.ml_parse_number(gmls)
+                    note = ml_parser.ml_parse_number()
                     dur = vstate.length
-                    c = util.skip(gmls, draw_and_play.ml_whitepace).upper()
+                    c = util.skip(gmls, ml_parser.whitepace).upper()
                     if c == '.':
                         gmls.read(1)
                         dur *= 1.5
@@ -207,11 +209,11 @@ class Sound(object):
                                         volume=0, voice=voice)
                         total_time[voice] += dur*vstate.tempo
                 elif c == 'L':
-                    vstate.length = 1./draw_and_play.ml_parse_number(gmls)
+                    vstate.length = 1./ml_parser.parse_number()
                 elif c == 'T':
-                    vstate.tempo = 240./draw_and_play.ml_parse_number(gmls)
+                    vstate.tempo = 240./ml_parser.parse_number()
                 elif c == 'O':
-                    vstate.octave = min(6, max(0, draw_and_play.ml_parse_number(gmls)))
+                    vstate.octave = min(6, max(0, ml_parser.parse_number()))
                 elif c == '>':
                     vstate.octave += 1
                     if vstate.octave > 6:
@@ -224,7 +226,7 @@ class Sound(object):
                     note = c
                     dur = vstate.length
                     while True:
-                        c = util.skip(gmls, draw_and_play.ml_whitepace).upper()
+                        c = util.skip(gmls, ml_parser.whitepace).upper()
                         if not c:
                             break
                         elif c == '.':
@@ -235,7 +237,7 @@ class Sound(object):
                             while c and c in string.digits:
                                 gmls.read(1)
                                 numstr += c
-                                c = util.skip(gmls, draw_and_play.ml_whitepace)
+                                c = util.skip(gmls, ml_parser.whitepace)
                             # NOT ml_parse_number, only literals allowed here!
                             length = int(numstr)
                             dur = 1. / float(length)
@@ -262,7 +264,7 @@ class Sound(object):
                             raise error.RunError(error.IFC)
                     next_oct = 0
                 elif c == 'M':
-                    c = util.skip_read(gmls, draw_and_play.ml_whitepace).upper()
+                    c = util.skip_read(gmls, ml_parser.whitepace).upper()
                     if c == 'N':
                         vstate.speed = 7./8.
                     elif c == 'L':
@@ -278,7 +280,7 @@ class Sound(object):
                 elif c == 'V' and (self.capabilities == 'tandy' or
                                     (self.capabilities == 'pcjr' and self.sound_on)):
                     vstate.volume = min(15,
-                                    max(0, draw_and_play.ml_parse_number(gmls)))
+                                    max(0, ml_parser.parse_number()))
                 else:
                     raise error.RunError(error.IFC)
         max_time = max(total_time)
