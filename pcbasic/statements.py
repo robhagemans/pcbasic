@@ -56,7 +56,7 @@ class Parser(object):
         # clear stacks
         self.clear_stacks_and_pointers()
         # set up event handlers
-        self.events = events.Events(self.session)
+        self.events = events.Events(self.session, syntax)
         self.init_error_trapping()
         self.error_num = 0
         self.error_pos = 0
@@ -2494,7 +2494,7 @@ class Parser(object):
         util.require_read(self.ins, (',',), err=error.IFC)
         with self.session.strings:
             text = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(self.ins, self.session)))
-        if keynum <= events.num_fn_keys:
+        if keynum <= self.events.num_fn_keys:
             # macro starting with NUL is empty macro
             if text and str(text)[0] == '\0':
                 text = ''

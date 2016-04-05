@@ -9,22 +9,8 @@ This file is released under the GNU GPL version 3 or later.
 from contextlib import contextmanager
 
 import error
-import config
 import state
 import scancode
-
-
-###############################################################################
-# initialisation
-
-# 12 definable function keys for Tandy
-num_fn_keys = 10
-
-def prepare():
-    """ Initialise events module. """
-    global num_fn_keys
-    if config.get('syntax') == 'tandy':
-        num_fn_keys = 12
 
 
 ###############################################################################
@@ -75,12 +61,12 @@ class EventHandler(object):
 class PlayHandler(EventHandler):
     """ Manage PLAY (music queue) events. """
 
-    def __init__(self):
+    def __init__(self, multivoice):
         """ Initialise PLAY trigger. """
         EventHandler.__init__(self)
         self.last = [0, 0, 0]
         self.trig = 1
-        self.multivoice = config.get('syntax') in ('pcjr', 'tandy')
+        self.multivoice = multivoice
 
     def check(self):
         """ Check and trigger PLAY (music queue) events. """
@@ -216,9 +202,16 @@ class StrigHandler(EventHandler):
 class Events(object):
     """ Event management. """
 
-    def __init__(self, session):
+    def __init__(self, session, syntax):
         """ Initialise event triggers. """
         self.session = session
+        # 12 definable function keys for Tandy, 10 otherwise
+        if syntax == 'tandy':
+            self.num_fn_keys = 12
+        else:
+            self.num_fn_keys = 10
+        # tandy and pcjr have multi-voice sound
+        self.multivoice = syntax in ('pcjr', 'tandy')
         self.reset()
 
     def reset(self):
@@ -227,15 +220,15 @@ class Events(object):
         keys = [
             scancode.F1, scancode.F2, scancode.F3, scancode.F4, scancode.F5,
             scancode.F6, scancode.F7, scancode.F8, scancode.F9, scancode.F10]
-        if num_fn_keys == 12:
+        if self.num_fn_keys == 12:
             # Tandy only
             keys += [scancode.F11, scancode.F12]
         keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
-        keys += [None] * (20 - num_fn_keys - 4)
+        keys += [None] * (20 - self.num_fn_keys - 4)
         self.key = [KeyHandler(sc) for sc in keys]
         # other events
         self.timer = TimerHandler(self.session.timer)
-        self.play = PlayHandler()
+        self.play = PlayHandler(self.multivoice)
         self.com = [ComHandler(0), ComHandler(1)]
         self.pen = PenHandler()
         # joy*2 + button
@@ -260,8 +253,3 @@ class Events(object):
         self.suspend_all, store = True, self.suspend_all
         yield
         self.suspend_all = store
-
-
-###############################################################################
-
-prepare()
