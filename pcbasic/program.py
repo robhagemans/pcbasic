@@ -8,6 +8,11 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 import config
 import error
 import vartypes
@@ -24,15 +29,25 @@ import sound
 class Program(object):
     """ BASIC program. """
 
-    def __init__(self, bytecode, code_start, max_list_line=65536, allow_protect=False, allow_code_poke=False):
+    def __init__(self, max_list_line=65536,
+                allow_protect=False, allow_code_poke=False, address=0):
         """ Initialise program. """
         # program bytecode buffer
-        self.bytecode = bytecode
+        self.bytecode = StringIO()
         self.erase()
         self.max_list_line = max_list_line
         self.allow_protect = allow_protect
         self.allow_code_poke = allow_code_poke
+        # to be set when file memory is initialised
+        self.code_start = address
+
+    def set_address(self, code_start):
+        """ Memory location of program. """
         self.code_start = code_start
+
+    def size(self):
+        """ Size of code space """
+        return len(self.bytecode.getvalue())
 
     def erase(self):
         """ Erase the program from memory. """

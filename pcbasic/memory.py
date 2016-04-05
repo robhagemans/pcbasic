@@ -47,10 +47,10 @@ class DataSegment(object):
     # protection flag
     protection_flag_addr = 1450
 
-    def __init__(self, bytecode, total_memory, reserved_memory, max_reclen, max_files):
+    def __init__(self, program, total_memory, reserved_memory, max_reclen, max_files):
         """ Initialise memory. """
         # program buffer is initialised elsewhere
-        self.bytecode = bytecode
+        self.program = program
         # BASIC stack (determined by CLEAR)
         # Initially, the stack space should be set to 512 bytes,
         # or one-eighth of the available memory, whichever is smaller.
@@ -108,15 +108,11 @@ class DataSegment(object):
 
     def var_start(self):
         """ Start of variable data. """
-        return self.code_start + self._code_size()
+        return self.code_start + self.program.size()
 
     def var_current(self):
         """ Current variable pointer."""
         return self.var_start() + self.scalars.current
-
-    def _code_size(self):
-        """ Size of code space """
-        return len(self.bytecode.getvalue())
 
     def stack_start(self):
         """ Top of string space; start of stack space """
@@ -143,7 +139,7 @@ class DataSegment(object):
             return max(0, self._get_var_memory(addr))
         elif addr >= self.code_start:
             # code memory
-            return max(0, state.session.program.get_memory(addr))
+            return max(0, self.program.get_memory(addr))
         elif addr >= self.field_mem_start:
             # file & FIELD memory
             return max(0, self._get_field_memory(addr))
@@ -159,7 +155,7 @@ class DataSegment(object):
             self._not_implemented_pass(addr, val)
         elif addr >= self.code_start:
             # code memory
-            state.session.program.set_memory(addr, val)
+            self.program.set_memory(addr, val)
         elif addr >= self.field_mem_start:
             # file & FIELD memory
             self._not_implemented_pass(addr, val)
@@ -234,7 +230,7 @@ class DataSegment(object):
         elif addr == 0x35D:
             return (self.var_current() + self.arrays.current) // 256
         elif addr == self.protection_flag_addr:
-            return state.session.program.protected * 255
+            return self.program.protected * 255
         return -1
 
     def _not_implemented_pass(self, addr, val):
@@ -242,8 +238,8 @@ class DataSegment(object):
 
     def _set_basic_memory(self, addr, val):
         """ Change BASIC memory. """
-        if addr == self.protection_flag_addr and state.session.program.allow_protect:
-            state.session.program.protected = (val != 0)
+        if addr == self.protection_flag_addr and self.program.allow_protect:
+            self.program.protected = (val != 0)
 
 
     ###############################################################################

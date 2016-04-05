@@ -125,8 +125,16 @@ class Session(object):
         console.init_mode()
         # direct line buffer
         self.direct_line = StringIO()
-        # program buffer
-        self.bytecode = StringIO()
+
+        # program parameters
+        if not config.get('strict-hidden-lines'):
+            max_list_line = 65535
+        else:
+            max_list_line = 65530
+        allow_protect = config.get('strict-protect')
+        allow_code_poke = config.get('allow-code-poke')
+        # initialise the program
+        self.program = program.Program(max_list_line, allow_protect, allow_code_poke)
 
         # set up variables and memory model state
         # max available memory to BASIC (set by /m)
@@ -141,8 +149,9 @@ class Session(object):
         # first field buffer address (workspace size; 3429 for gw-basic)
         reserved_memory = config.get('reserved-memory')
         # initialise the data segment
-        self.memory = memory.DataSegment(self.bytecode, max_memory,
+        self.memory = memory.DataSegment(self.program, max_memory,
                                         reserved_memory, max_reclen, max_files)
+        self.program.set_address(self.memory.code_start)
         #D
         self.scalars = self.memory.scalars
         self.arrays = self.memory.arrays
@@ -153,7 +162,6 @@ class Session(object):
         self.deftype = ['!']*26
         self.user_functions = {}
 
-
         # set up rest of memory model
         peek_values = {}
         try:
@@ -163,17 +171,6 @@ class Session(object):
         except (TypeError, ValueError):
             pass
         self.all_memory = machine.Memory(peek_values, self.memory, config.get('syntax'))
-
-        # program parameters
-        if not config.get('strict-hidden-lines'):
-            max_list_line = 65535
-        else:
-            max_list_line = 65530
-        allow_protect = config.get('strict-protect')
-        allow_code_poke = config.get('allow-code-poke')
-        # initialise the program
-        self.program = program.Program(self.bytecode, self.memory.code_start,
-                                max_list_line, allow_protect, allow_code_poke)
 
         # initialise timer
         self.timer = timedate.Timer()
