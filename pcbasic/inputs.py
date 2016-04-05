@@ -246,7 +246,6 @@ class Keyboard(object):
 
     def get_char(self, expand=True):
         """ Read any keystroke, nonblocking. """
-        state.session.wait()
         return self.buf.getc(expand)
 
     def wait_char(self):

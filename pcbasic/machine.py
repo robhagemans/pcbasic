@@ -54,7 +54,6 @@ def inp(port):
     """ Get the value in an emulated machine port. """
     # keyboard
     if port == 0x60:
-        state.session.wait()
         return state.console_state.keyb.last_scancode
     # game port (joystick)
     elif port == 0x201:
@@ -399,24 +398,7 @@ class Memory(object):
         addr -= 0
         # from MEMORY.ABC: PEEKs and POKEs (Don Watkins)
         # http://www.qbasicnews.com/abc/showsnippet.php?filename=MEMORY.ABC&snippet=6
-        # &h40:&h17 keyboard flag
-        # &H80 - Insert state active
-        # &H40 - CapsLock state has been toggled
-        # &H20 - NumLock state has been toggled
-        # &H10 - ScrollLock state has been toggled
-        # &H08 - Alternate key depressed
-        # &H04 - Control key depressed
-        # &H02 - Left shift key depressed
-        # &H01 - Right shift key depressed
-        # &h40:&h18 keyboard flag
-        # &H80 - Insert key is depressed
-        # &H40 - CapsLock key is depressed
-        # &H20 - NumLock key is depressed
-        # &H10 - ScrollLock key is depressed
-        # &H08 - Suspend key has been toggled
-        state.session.wait()
         # 108-115 control Ctrl-break capture; not implemented (see PC Mag POKEs)
-        # 1040 monitor type
         if addr == 124:
             return self.ram_font_addr % 256
         elif addr == 125:
@@ -425,6 +407,7 @@ class Memory(object):
             return self.ram_font_segment % 256
         elif addr == 127:
             return self.ram_font_segment // 256
+        # 1040 monitor type
         elif addr == 1040:
             if display.monitor == 'mono':
                 # mono
@@ -443,8 +426,23 @@ class Memory(object):
                     64 * ((state.io_state.devices['LPT1:'].stream is not None) +
                         (state.io_state.devices['LPT2:'].stream is not None) +
                         (state.io_state.devices['LPT3:'].stream is not None)))
+        # &h40:&h17 keyboard flag
+        # &H80 - Insert state active
+        # &H40 - CapsLock state has been toggled
+        # &H20 - NumLock state has been toggled
+        # &H10 - ScrollLock state has been toggled
+        # &H08 - Alternate key depressed
+        # &H04 - Control key depressed
+        # &H02 - Left shift key depressed
+        # &H01 - Right shift key depressed
         elif addr == 1047:
             return state.console_state.keyb.mod
+        # &h40:&h18 keyboard flag
+        # &H80 - Insert key is depressed
+        # &H40 - CapsLock key is depressed
+        # &H20 - NumLock key is depressed
+        # &H10 - ScrollLock key is depressed
+        # &H08 - Suspend key has been toggled
         # not implemented: peek(1048)==4 if sysrq pressed, 0 otherwise
         elif addr == 1048:
             return 0
