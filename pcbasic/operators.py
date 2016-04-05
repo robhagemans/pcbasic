@@ -46,9 +46,11 @@ operators = set(precedence)
 class Operators(object):
     """ Context for numeric and string operations. """
 
-    def __init__(self, string_space):
+    def __init__(self, string_space, double_math):
         """ Initialise context. """
         self.strings = string_space
+        # double-precision power operator
+        self.double_math = double_math
         # unary operators
         self.unary = {
             tk.O_MINUS: self.neg,
@@ -147,10 +149,9 @@ class Operators(object):
         # pass strings on, let error happen somewhere else.
         return inp
 
-    @staticmethod
-    def number_power(left, right):
+    def number_power(self, left, right):
         """ Left^right. """
-        if (left[0] == '#' or right[0] == '#') and vartypes.option_double:
+        if (left[0] == '#' or right[0] == '#') and self.double_math:
             return fp.pack( fp.power(fp.unpack(vartypes.pass_double(left)), fp.unpack(vartypes.pass_double(right))) )
         else:
             if right[0] == '%':

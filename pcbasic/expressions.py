@@ -35,6 +35,10 @@ import console
 # can be combined like <> >=
 combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
 
+# command line option /d
+# allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
+double_math = config.get('double')
+
 
 def parse_expression(ins, session, allow_empty=False):
     """ Compute the value of the expression at a given code pointer. """
@@ -130,7 +134,7 @@ class Evaluator(object):
         """ Initialise evaluator. """
         self.ins = codestream
         self.session = session
-        self.operators = op.Operators(session.strings)
+        self.operators = op.Operators(session.strings, double_math)
         # state variable for detecting recursion
         if user_fn_parsing:
             self.user_function_parsing = user_fn_parsing
@@ -799,11 +803,11 @@ class Evaluator(object):
         raise error.RunError(error.IFC)
 
     ###########################################################
-    # option_double regulated single & double precision math
+    # double_math regulated single & double precision math
 
     def value_func(self, fn):
         """ Return value of unary math function. """
-        return fp.pack(fn(fp.unpack(vartypes.pass_float(parse_bracket(self.ins, self.session), vartypes.option_double))))
+        return fp.pack(fn(fp.unpack(vartypes.pass_float(parse_bracket(self.ins, self.session), double_math))))
 
     value_sqr = partial(value_func, fn=fp.sqrt)
     value_exp = partial(value_func, fn=fp.exp)

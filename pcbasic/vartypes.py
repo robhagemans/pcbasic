@@ -19,15 +19,6 @@ import config
 
 byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
 
-# command line option /d
-# allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
-option_double = False
-
-def prepare():
-    """ Initialise expressions module. """
-    global option_double
-    option_double = config.get('double')
-
 def null(sigil):
     """ Return null value for the given type. """
     return (sigil, bytearray(byte_size[sigil]))
@@ -233,6 +224,3 @@ def bool_to_integer(boo):
 def integer_to_bool(in_integer):
     """ Convert Integer to Python boolean. """
     return (in_integer[1][0] != 0 or in_integer[1][1] != 0)
-
-
-prepare()
