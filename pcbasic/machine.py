@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 
-import config
 import state
 import events
 import display
@@ -23,12 +22,6 @@ import unicodepage
 import console
 # ensure state.io_state.devices is populated with com ports
 import ports
-
-
-def prepare():
-    """ Initialise machine module. """
-    global tandy_syntax
-    tandy_syntax = config.get('syntax') == 'tandy'
 
 
 ###############################################################################
@@ -224,7 +217,7 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, peek_values, data_memory):
+    def __init__(self, peek_values, data_memory, syntax):
         """ Initialise memory. """
         # data segment initialised elsewhere
         self.data = data_memory
@@ -232,6 +225,8 @@ class Memory(object):
         self.segment = self.data.data_segment
         # pre-defined PEEK outputs
         self._peek_values = {}
+        # tandy syntax
+        self.tandy_syntax = syntax == 'tandy'
 
     def peek(self, addr):
         """ Retrieve the value at an emulated memory location. """
@@ -257,7 +252,7 @@ class Memory(object):
         # remove any EOF marker at end
         if buf and buf[-1] == 0x1a:
             buf = buf[:-1]
-        if tandy_syntax:
+        if self.tandy_syntax:
             buf = buf[:-7]
         addr = seg * 0x10 + offset
         self._set_memory_block(addr, buf)
@@ -267,7 +262,7 @@ class Memory(object):
         addr = self.segment * 0x10 + offset
         g.write(str(self._get_memory_block(addr, length)))
         # Tandys repeat the header at the end of the file
-        if tandy_syntax:
+        if self.tandy_syntax:
             g.write('\xfd' + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(self.segment)) +
                     vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(offset)) +
                     vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(length))))
@@ -598,5 +593,3 @@ class Memory(object):
             else:
                 c = chr(value)
             state.console_state.keyb.buf.ring_write(index, c, scan)
-
-prepare()

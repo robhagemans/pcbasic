@@ -162,7 +162,7 @@ class Session(object):
                 peek_values[int(seg)*0x10 + int(addr)] = int(val)
         except (TypeError, ValueError):
             pass
-        self.all_memory = machine.Memory(peek_values, self.memory)
+        self.all_memory = machine.Memory(peek_values, self.memory, config.get('syntax'))
 
         # program parameters
         if not config.get('strict-hidden-lines'):
