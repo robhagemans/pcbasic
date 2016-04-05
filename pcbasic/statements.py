@@ -780,7 +780,7 @@ class Parser(object):
 
     def exec_call(self):
         """ CALL: call an external procedure. Not implemented. """
-        addr_var = util.parse_scalar(self.ins)
+        addr_var = expressions.parse_scalar(self.ins)
         if addr_var[-1] == '$':
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
@@ -1546,7 +1546,7 @@ class Parser(object):
         util.require_read(self.ins, (tk.O_MINUS,))
         coord1 = self._parse_coord_step()
         util.require_read(self.ins, (',',))
-        array = util.parse_scalar(self.ins)
+        array = expressions.parse_scalar(self.ins)
         util.require(self.ins, tk.end_statement)
         if array not in self.session.arrays.arrays:
             raise error.RunError(error.IFC)
@@ -1562,7 +1562,7 @@ class Parser(object):
         util.require(self.ins, ('('))
         coord = self._parse_coord_step()
         util.require_read(self.ins, (',',))
-        array = util.parse_scalar(self.ins)
+        array = expressions.parse_scalar(self.ins)
         action = tk.XOR
         if util.skip_white_read_if(self.ins, (',',)):
             util.require(self.ins, (tk.PSET, tk.PRESET,
@@ -1623,7 +1623,7 @@ class Parser(object):
     def exec_for(self):
         """ FOR: enter for-loop. """
         # read variable
-        varname = util.parse_scalar(self.ins)
+        varname = expressions.parse_scalar(self.ins)
         vartype = varname[-1]
         if vartype in ('$', '#'):
             raise error.RunError(error.TYPE_MISMATCH)
@@ -1689,7 +1689,7 @@ class Parser(object):
         # get position and line number just after the NEXT
         nextpos = self.ins.tell()
         # check var name for NEXT
-        varname2 = util.parse_scalar(self.ins, allow_empty=True)
+        varname2 = expressions.parse_scalar(self.ins, allow_empty=True)
         # no-var only allowed in standalone NEXT
         if not varname2:
             util.require(self.ins, tk.end_statement)
@@ -1705,7 +1705,7 @@ class Parser(object):
             # record the NEXT (or comma) location
             pos = self.ins.tell()
             # optional variable - errors in this are checked at the scan during FOR
-            name = util.parse_scalar(self.ins, allow_empty=True)
+            name = expressions.parse_scalar(self.ins, allow_empty=True)
             # if we haven't read a variable, we shouldn't find something else here
             # but if we have and we iterate, the rest of the line is ignored
             if not name:
@@ -1988,7 +1988,7 @@ class Parser(object):
         """ COMMON: define variables to be preserved on CHAIN. """
         common_scalars, common_arrays = set(), set()
         while True:
-            name = util.parse_scalar(self.ins)
+            name = expressions.parse_scalar(self.ins)
             # array?
             if util.skip_white_read_if(self.ins, ('[', '(')):
                 util.require_read(self.ins, (']', ')'))
@@ -2045,7 +2045,7 @@ class Parser(object):
     def exec_erase(self):
         """ ERASE: erase an array. """
         while True:
-            self.session.arrays.erase(util.parse_scalar(self.ins))
+            self.session.arrays.erase(expressions.parse_scalar(self.ins))
             if not util.skip_white_read_if(self.ins, (',',)):
                 break
         util.require(self.ins, tk.end_statement)
@@ -2252,7 +2252,7 @@ class Parser(object):
 
     def exec_def_fn(self):
         """ DEF FN: define a function. """
-        fnname = util.parse_scalar(self.ins)
+        fnname = expressions.parse_scalar(self.ins)
         fntype = fnname[-1]
         # read parameters
         fnvars = []
@@ -2260,7 +2260,7 @@ class Parser(object):
         pointer_loc = self.session.memory.code_start + self.ins.tell()
         if util.skip_white_read_if(self.ins, ('(',)):
             while True:
-                fnvars.append(util.parse_scalar(self.ins))
+                fnvars.append(expressions.parse_scalar(self.ins))
                 if util.skip_white(self.ins) in tk.end_statement + (')',):
                     break
                 util.require_read(self.ins, (',',))

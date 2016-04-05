@@ -10,6 +10,7 @@ import string
 
 import error
 import vartypes
+import expressions
 from operators import Operators as op
 import util
 
@@ -40,7 +41,7 @@ class MLParser(object):
             if len(c) == 0:
                 raise error.RunError(error.IFC)
             elif ord(c) > 8:
-                name = util.parse_scalar(self.gmls)
+                name = expressions.parse_scalar(self.gmls)
                 indices = self._parse_indices()
                 step = self.memory.get_variable(name, indices)
                 util.require_read(self.gmls, (';',), err=error.IFC)
@@ -67,7 +68,7 @@ class MLParser(object):
         if len(c) == 0:
             raise error.RunError(error.IFC)
         elif ord(c) > 8:
-            name = util.parse_scalar(self.gmls, err=error.IFC)
+            name = expressions.parse_scalar(self.gmls, err=error.IFC)
             indices = self._parse_indices()
             sub = self.memory.get_variable(name, indices)
             util.require_read(self.gmls, (';',), err=error.IFC)

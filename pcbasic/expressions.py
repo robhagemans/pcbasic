@@ -92,7 +92,7 @@ def parse_literal(ins, session):
 
 def parse_variable(ins, session):
     """ Helper function: parse a variable or array element. """
-    name = util.parse_scalar(ins)
+    name = parse_scalar(ins)
     indices = []
     if util.skip_white_read_if(ins, ('[', '(')):
         # it's an array, read indices
@@ -102,6 +102,32 @@ def parse_variable(ins, session):
                 break
         util.require_read(ins, (']', ')'))
     return name, indices
+
+def parse_scalar(ins, allow_empty=False, err=error.STX):
+    """ Get variable name from token stream. """
+    name = ''
+    d = util.skip_white_read(ins)
+    if not d:
+        pass
+    elif d not in string.ascii_letters:
+        # variable name must start with a letter
+        ins.seek(-len(d), 1)
+    else:
+        while d and d in tk.name_chars:
+            name += d
+            d = ins.read(1)
+        if d in '$%!#':
+            name += d
+        else:
+            ins.seek(-len(d), 1)
+    if not name and not allow_empty:
+        raise error.RunError(err)
+    # append type specifier
+    name = var.complete_name(name)
+    # only the first 40 chars are relevant in GW-BASIC, rest is discarded
+    if len(name) > 41:
+        name = name[:40]+name[-1]
+    return name.upper()
 
 
 ######################################################################
@@ -576,7 +602,7 @@ class Evaluator(object):
 
     def value_fn(self):
         """ FN: get value of user-defined function. """
-        fnname = util.parse_scalar(self.ins)
+        fnname = parse_scalar(self.ins)
         # recursion is not allowed as there's no way to terminate it
         if fnname in self.user_function_parsing:
             raise error.RunError(error.OUT_OF_MEMORY)
