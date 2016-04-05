@@ -25,173 +25,177 @@ import ports
 
 
 ###############################################################################
-# Machine ports
 
-# time delay for port value to drop to 0 on maximum reading.
-#  use 100./255. for 100ms.
-joystick_time_factor = 75. / 255.
+class MachinePorts(object):
+    """ Machine ports. """
 
-# serial port base address:
-# http://www.petesqbsite.com/sections/tutorials/zines/qbnews/9-com_ports.txt
-#            COM1             &H3F8
-#            COM2             &H2F8
-#            COM3             &H3E8 (not implemented)
-#            COM4             &H2E8 (not implemented)
-com_base = {0x3f8: 0, 0x2f8: 1}
-com_device = [state.io_state.devices['COM1:'], state.io_state.devices['COM2:']]
-com_enable_baud_write = [False, False]
-com_baud_divisor = [0, 0]
-com_break = [False, False]
+    # time delay for port value to drop to 0 on maximum reading.
+    #  use 100./255. for 100ms.
+    joystick_time_factor = 75. / 255.
 
-# parallel port base address:
-# http://retired.beyondlogic.org/spp/parallel.htm
-# 3BCh - 3BFh  Used for Parallel Ports which were incorporated on to Video Cards - Doesn't support ECP addresses
-# 378h - 37Fh  Usual Address For LPT 1
-# 278h - 27Fh  Usual Address For LPT 2
-lpt_device = [state.io_state.devices['LPT1:'], state.io_state.devices['LPT2:']]
-
-def inp(port):
-    """ Get the value in an emulated machine port. """
-    # keyboard
-    if port == 0x60:
-        return state.console_state.keyb.last_scancode
-    # game port (joystick)
-    elif port == 0x201:
-        value = (
-            (not state.console_state.stick.is_firing[0][0]) * 0x40 +
-            (not state.console_state.stick.is_firing[0][1]) * 0x20 +
-            (not state.console_state.stick.is_firing[1][0]) * 0x10 +
-            (not state.console_state.stick.is_firing[1][1]) * 0x80)
-        decay = state.console_state.stick.decay()
-        if decay < state.console_state.stick.axis[0][0] * joystick_time_factor:
-            value += 0x04
-        if decay < state.console_state.stick.axis[0][1] * joystick_time_factor:
-            value += 0x02
-        if decay < state.console_state.stick.axis[1][0] * joystick_time_factor:
-            value += 0x01
-        if decay < state.console_state.stick.axis[1][1] * joystick_time_factor:
-            value += 0x08
-        return value
-    elif port in (0x379, 0x279):
-        # parallel port input ports
-        # http://www.aaroncake.net/electronics/qblpt.htm
+    def __init__(self, session):
+        """ Initialise machine ports. """
+        self.session = session
+        # parallel port base address:
         # http://retired.beyondlogic.org/spp/parallel.htm
-        lpt_port_nr = 0 if port >= 0x378 else 1
-        base_addr = {0: 0x378, 1: 0x278}
-        if lpt_device[lpt_port_nr].stream is None:
-            return 0
-        # get status port
-        busy, ack, paper, select, err = lpt_device[lpt_port_nr].stream.get_status()
-        return busy * 0x80 | ack * 0x40 | paper * 0x20 | select * 0x10 | err * 0x8
-    else:
-        # serial port machine ports
-        # http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers
-        # http://control.com/thread/1026221083
-        for base_addr, com_port_nr in com_base.iteritems():
-            com_port = com_device[com_port_nr]
-            if com_port.stream is None:
-                continue
-            # Line Control Register: base_address + 3 (r/w)
-            if port == base_addr + 3:
-                _, parity, bytesize, stopbits = com_port.stream.get_params()
-                value = com_enable_baud_write[com_port_nr] * 0x80
-                value += com_break[com_port_nr] * 0x40
-                value += {'S': 0x38, 'M': 0x28, 'E': 0x18, 'O': 0x8, 'N': 0}[parity]
-                if stopbits > 1:
-                    value += 0x4
-                value += bytesize - 5
-                return value
-            # Line Status Register: base_address + 5 (read only)
-            elif port == base_addr + 5:
-                # not implemented
+        # 3BCh - 3BFh  Used for Parallel Ports which were incorporated on to Video Cards - Doesn't support ECP addresses
+        # 378h - 37Fh  Usual Address For LPT 1
+        # 278h - 27Fh  Usual Address For LPT 2
+        self.lpt_device = [state.io_state.devices['LPT1:'], state.io_state.devices['LPT2:']]
+        # serial port base address:
+        # http://www.petesqbsite.com/sections/tutorials/zines/qbnews/9-com_ports.txt
+        #            COM1             &H3F8
+        #            COM2             &H2F8
+        #            COM3             &H3E8 (not implemented)
+        #            COM4             &H2E8 (not implemented)
+        self.com_base = {0x3f8: 0, 0x2f8: 1}
+        self.com_device = [state.io_state.devices['COM1:'], state.io_state.devices['COM2:']]
+        self.com_enable_baud_write = [False, False]
+        self.com_baud_divisor = [0, 0]
+        self.com_break = [False, False]
+
+    def inp(self, port):
+        """ Get the value in an emulated machine port. """
+        # keyboard
+        if port == 0x60:
+            return state.console_state.keyb.last_scancode
+        # game port (joystick)
+        elif port == 0x201:
+            value = (
+                (not state.console_state.stick.is_firing[0][0]) * 0x40 +
+                (not state.console_state.stick.is_firing[0][1]) * 0x20 +
+                (not state.console_state.stick.is_firing[1][0]) * 0x10 +
+                (not state.console_state.stick.is_firing[1][1]) * 0x80)
+            decay = state.console_state.stick.decay()
+            if decay < state.console_state.stick.axis[0][0] * self.joystick_time_factor:
+                value += 0x04
+            if decay < state.console_state.stick.axis[0][1] * self.joystick_time_factor:
+                value += 0x02
+            if decay < state.console_state.stick.axis[1][0] * self.joystick_time_factor:
+                value += 0x01
+            if decay < state.console_state.stick.axis[1][1] * self.joystick_time_factor:
+                value += 0x08
+            return value
+        elif port in (0x379, 0x279):
+            # parallel port input ports
+            # http://www.aaroncake.net/electronics/qblpt.htm
+            # http://retired.beyondlogic.org/spp/parallel.htm
+            lpt_port_nr = 0 if port >= 0x378 else 1
+            base_addr = {0: 0x378, 1: 0x278}
+            if self.lpt_device[lpt_port_nr].stream is None:
                 return 0
-            # Modem Status Register: base_address + 6 (read only)
-            elif port == base_addr + 6:
-                cd, ri, dsr, cts = com_port.stream.get_pins()
-                # delta bits not implemented
-                return (cd*0x80 + ri*0x40 + dsr*0x20 + cts*0x10)
-        # addr isn't one of the covered ports
-        return 0
-
-def out(addr, val):
-    """ Send a value to an emulated machine port. """
-    if addr == 0x201:
-        # game port reset
-        state.console_state.stick.reset_decay()
-    elif addr == 0x3c5:
-        # officially, requires OUT &H3C4, 2 first (not implemented)
-        state.console_state.screen.mode.set_plane_mask(val)
-    elif addr == 0x3cf:
-        # officially, requires OUT &H3CE, 4 first (not implemented)
-        state.console_state.screen.mode.set_plane(val)
-    elif addr == 0x3d8:
-        #OUT &H3D8,&H1A: REM enable color burst
-        #OUT &H3D8,&H1E: REM disable color burst
-        # 0x1a == 0001 1010     0x1e == 0001 1110
-        state.console_state.screen.set_colorburst(val & 4 == 0)
-    elif addr in (0x378, 0x37A, 0x278, 0x27A):
-        # parallel port output ports
-        # http://www.aaroncake.net/electronics/qblpt.htm
-        # http://retired.beyondlogic.org/spp/parallel.htm
-        lpt_port_nr = 0 if addr >= 0x378 else 1
-        base_addr = {0: 0x378, 1: 0x278}
-        if lpt_device[lpt_port_nr].stream is None:
-            return
-        if addr - base_addr[lpt_port_nr] == 0:
-            # set data port
-            lpt_device[lpt_port_nr].stream.write(chr(val))
+            # get status port
+            busy, ack, paper, select, err = self.lpt_device[lpt_port_nr].stream.get_status()
+            return busy * 0x80 | ack * 0x40 | paper * 0x20 | select * 0x10 | err * 0x8
         else:
-            # set control port
-            lpt_device[lpt_port_nr].stream.set_control(
-                select=val & 0x8, init=val&0x4, lf=val&0x2, strobe=val&0x1)
-    else:
-        # serial port machine ports
-        # http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers
-        # http://control.com/thread/1026221083
-        for base_addr, com_port_nr in com_base.iteritems():
-            com_port = com_device[com_port_nr]
-            if com_port.stream is None:
-                continue
-            # ports at base addr and the next one are used for writing baud rate
-            # (among other things that aren't implemented)
-            if addr in (base_addr, base_addr+1) and com_enable_baud_write[com_port_nr]:
-                if addr == base_addr:
-                    com_baud_divisor[com_port_nr] = (com_baud_divisor[com_port_nr] & 0xff00) + val
-                elif addr == base_addr + 1:
-                    com_baud_divisor[com_port_nr] = val*0x100 + (com_baud_divisor[com_port_nr] & 0xff)
-                if com_baud_divisor[com_port_nr]:
-                    baudrate, parity, bytesize, stopbits = com_port.stream.get_params()
-                    baudrate = 115200 // com_baud_divisor[com_port_nr]
-                    com_port.stream.set_params(baudrate, parity, bytesize, stopbits)
-            # Line Control Register: base_address + 3 (r/w)
-            elif addr == base_addr + 3:
-                baudrate, parity, bytesize, stopbits = com_port.stream.get_params()
-                if val & 0x80:
-                    com_enable_baud_write[com_port_nr] = True
-                # break condition
-                com_break[com_port_nr] = (val & 0x40) != 0
-                # parity
-                parity = {0x38:'S', 0x28:'M', 0x18:'E', 0x8:'O', 0:'N'}[val&0x38]
-                # stopbits
-                if val & 0x4:
-                    # 2 or 1.5 stop bits
-                    stopbits = 2
-                else:
-                    # 1 stop bit
-                    stopbits = 1
-                # set byte size to 5, 6, 7, 8
-                bytesize = (val & 0x3) + 5
-                com_port.stream.set_params(baudrate, parity, bytesize, stopbits)
-                com_port.stream.set_pins(brk=com_break[com_port_nr])
-            # Modem Control Register: base_address + 4 (r/w)
-            elif addr == base_addr + 4:
-                com_port.stream.set_pins(rts=val & 0x2, dtr=val & 0x1)
+            # serial port machine ports
+            # http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers
+            # http://control.com/thread/1026221083
+            for base_addr, com_port_nr in self.com_base.iteritems():
+                com_port = self.com_device[com_port_nr]
+                if com_port.stream is None:
+                    continue
+                # Line Control Register: base_address + 3 (r/w)
+                if port == base_addr + 3:
+                    _, parity, bytesize, stopbits = com_port.stream.get_params()
+                    value = self.com_enable_baud_write[com_port_nr] * 0x80
+                    value += self.com_break[com_port_nr] * 0x40
+                    value += {'S': 0x38, 'M': 0x28, 'E': 0x18, 'O': 0x8, 'N': 0}[parity]
+                    if stopbits > 1:
+                        value += 0x4
+                    value += bytesize - 5
+                    return value
+                # Line Status Register: base_address + 5 (read only)
+                elif port == base_addr + 5:
+                    # not implemented
+                    return 0
+                # Modem Status Register: base_address + 6 (read only)
+                elif port == base_addr + 6:
+                    cd, ri, dsr, cts = com_port.stream.get_pins()
+                    # delta bits not implemented
+                    return (cd*0x80 + ri*0x40 + dsr*0x20 + cts*0x10)
+            # addr isn't one of the covered ports
+            return 0
 
-def wait(addr, ander, xorer):
-    """ Wait untial an emulated machine port has a specified value. """
-    with state.session.parser.events.suspend():
-        while (inp(addr) ^ xorer) & ander == 0:
-            state.session.wait()
+    def out(self, addr, val):
+        """ Send a value to an emulated machine port. """
+        if addr == 0x201:
+            # game port reset
+            state.console_state.stick.reset_decay()
+        elif addr == 0x3c5:
+            # officially, requires OUT &H3C4, 2 first (not implemented)
+            state.console_state.screen.mode.set_plane_mask(val)
+        elif addr == 0x3cf:
+            # officially, requires OUT &H3CE, 4 first (not implemented)
+            state.console_state.screen.mode.set_plane(val)
+        elif addr == 0x3d8:
+            #OUT &H3D8,&H1A: REM enable color burst
+            #OUT &H3D8,&H1E: REM disable color burst
+            # 0x1a == 0001 1010     0x1e == 0001 1110
+            state.console_state.screen.set_colorburst(val & 4 == 0)
+        elif addr in (0x378, 0x37A, 0x278, 0x27A):
+            # parallel port output ports
+            # http://www.aaroncake.net/electronics/qblpt.htm
+            # http://retired.beyondlogic.org/spp/parallel.htm
+            lpt_port_nr = 0 if addr >= 0x378 else 1
+            base_addr = {0: 0x378, 1: 0x278}
+            if self.lpt_device[lpt_port_nr].stream is None:
+                return
+            if addr - base_addr[lpt_port_nr] == 0:
+                # set data port
+                self.lpt_device[lpt_port_nr].stream.write(chr(val))
+            else:
+                # set control port
+                self.lpt_device[lpt_port_nr].stream.set_control(
+                    select=val & 0x8, init=val&0x4, lf=val&0x2, strobe=val&0x1)
+        else:
+            # serial port machine ports
+            # http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers
+            # http://control.com/thread/1026221083
+            for base_addr, com_port_nr in self.com_base.iteritems():
+                com_port = self.com_device[com_port_nr]
+                if com_port.stream is None:
+                    continue
+                # ports at base addr and the next one are used for writing baud rate
+                # (among other things that aren't implemented)
+                if addr in (base_addr, base_addr+1) and self.com_enable_baud_write[com_port_nr]:
+                    if addr == base_addr:
+                        self.com_baud_divisor[com_port_nr] = (self.com_baud_divisor[com_port_nr] & 0xff00) + val
+                    elif addr == base_addr + 1:
+                        self.com_baud_divisor[com_port_nr] = val*0x100 + (self.com_baud_divisor[com_port_nr] & 0xff)
+                    if self.com_baud_divisor[com_port_nr]:
+                        baudrate, parity, bytesize, stopbits = com_port.stream.get_params()
+                        baudrate = 115200 // self.com_baud_divisor[com_port_nr]
+                        com_port.stream.set_params(baudrate, parity, bytesize, stopbits)
+                # Line Control Register: base_address + 3 (r/w)
+                elif addr == base_addr + 3:
+                    baudrate, parity, bytesize, stopbits = com_port.stream.get_params()
+                    if val & 0x80:
+                        self.com_enable_baud_write[com_port_nr] = True
+                    # break condition
+                    self.com_break[com_port_nr] = (val & 0x40) != 0
+                    # parity
+                    parity = {0x38:'S', 0x28:'M', 0x18:'E', 0x8:'O', 0:'N'}[val&0x38]
+                    # stopbits
+                    if val & 0x4:
+                        # 2 or 1.5 stop bits
+                        stopbits = 2
+                    else:
+                        # 1 stop bit
+                        stopbits = 1
+                    # set byte size to 5, 6, 7, 8
+                    bytesize = (val & 0x3) + 5
+                    com_port.stream.set_params(baudrate, parity, bytesize, stopbits)
+                    com_port.stream.set_pins(brk=self.com_break[com_port_nr])
+                # Modem Control Register: base_address + 4 (r/w)
+                elif addr == base_addr + 4:
+                    com_port.stream.set_pins(rts=val & 0x2, dtr=val & 0x1)
+
+    def wait(self, addr, ander, xorer):
+        """ Wait untial an emulated machine port has a specified value. """
+        with self.session.parser.events.suspend():
+            while (self.inp(addr) ^ xorer) & ander == 0:
+                self.session.wait()
 
 
 

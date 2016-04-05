@@ -23,7 +23,6 @@ import events
 import expressions
 import fp
 import devices
-import machine
 import memory
 from operators import Operators as op
 import ports
@@ -806,7 +805,7 @@ class Parser(object):
         util.require_read(self.ins, (',',))
         val = vartypes.pass_int_unpack(expressions.parse_expression(self.ins, self.session))
         util.range_check(0, 255, val)
-        machine.out(addr, val)
+        self.session.machine.out(addr, val)
         util.require(self.ins, tk.end_statement)
 
     def exec_wait(self):
@@ -820,7 +819,7 @@ class Parser(object):
             xorer = vartypes.pass_int_unpack(expressions.parse_expression(self.ins, self.session))
         util.range_check(0, 255, xorer)
         util.require(self.ins, tk.end_statement)
-        machine.wait(addr, ander, xorer)
+        self.session.machine.wait(addr, ander, xorer)
 
 
     ##########################################################

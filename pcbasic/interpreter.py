@@ -188,6 +188,8 @@ class Session(object):
         self.randomiser = rnd.RandomNumberGenerator()
         # initialise FIELD buffers
         disk.reset_fields(self.memory)
+        # initialise machine ports
+        self.machine = machine.MachinePorts(self)
 
         # TODO: these may not be necessary
         # stop all sound

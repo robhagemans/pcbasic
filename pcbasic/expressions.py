@@ -25,7 +25,6 @@ import error
 import var
 import devices
 import state
-import machine
 import basictoken as tk
 import memory
 import operators as op
@@ -801,7 +800,7 @@ class Evaluator(object):
     def value_inp(self):
         """ INP: get value from machine port. """
         port = vartypes.pass_int_unpack(parse_bracket(self.ins, self.session), maxint=0xffff)
-        return vartypes.int_to_integer_signed(machine.inp(port))
+        return vartypes.int_to_integer_signed(self.session.machine.inp(port))
 
     def value_erdev(self):
         """ ERDEV$: device error string; not implemented. """
