@@ -350,29 +350,29 @@ class Program(object):
             lines.append(str(line))
         return lines
 
-    def get_memory(self, address):
+    def get_memory(self, offset):
         """ Retrieve data from program code. """
-        address -= state.session.memory.data_segment * 0x10 + self.code_start
+        offset -= self.code_start
         code = self.bytecode.getvalue()
         try:
-            return ord(code[address])
+            return ord(code[offset])
         except IndexError:
             return -1
 
-    def set_memory(self, address, val):
+    def set_memory(self, offset, val):
         """ Change program code. """
         if not self.allow_code_poke:
             logging.warning('Ignored POKE into program code')
         else:
-            address -= state.session.memory.data_segment * 0x10 + self.code_start
+            offset -= self.code_start
             loc = self.bytecode.tell()
             # move pointer to end
             self.bytecode.seek(0, 2)
-            if address > self.bytecode.tell():
+            if offset > self.bytecode.tell():
                 self.bytecode.write('\0' *
-                            (address-self.bytecode.tell()) + chr(val))
+                            (offset-self.bytecode.tell()) + chr(val))
             else:
-                self.bytecode.seek(address)
+                self.bytecode.seek(offset)
                 self.bytecode.write(chr(val))
             # restore program pointer
             self.bytecode.seek(loc)
