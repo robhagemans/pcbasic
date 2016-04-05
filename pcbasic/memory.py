@@ -135,18 +135,36 @@ class DataSegment(object):
         self.total_memory = new_size
         return True
 
-    def get(self, address):
+    def get_memory(self, addr):
         """ Retrieve data from data memory. """
-        address -= self.data_segment * 0x10
-        if address < self.var_current():
-            return self.scalars.get_memory(address)
-        elif address < self.var_current() + self.arrays.current:
-            return self.arrays.get_memory(address)
-        elif address > self.strings.current:
-            return self.strings.get_memory(address)
+        addr -= self.data_segment*0x10
+        if addr >= self.var_start():
+            # variable memory
+            return max(0, self._get_var_memory(addr))
+        elif addr >= self.code_start:
+            # code memory
+            return max(0, state.session.program.get_memory(addr))
+        elif addr >= self.field_mem_start:
+            # file & FIELD memory
+            return max(0, self._get_field_memory(addr))
         else:
-            # unallocated var space
-            return -1
+            # other BASIC data memory
+            return max(0, self._get_basic_memory(addr))
+
+    def set_memory(self, addr, val):
+        """ Set datat in data memory. """
+        addr -= self.data_segment*0x10
+        if addr >= self.var_start():
+            # POKING in variables
+            self._not_implemented_pass(addr, val)
+        elif addr >= self.code_start:
+            # code memory
+            state.session.program.set_memory(addr, val)
+        elif addr >= self.field_mem_start:
+            # file & FIELD memory
+            self._not_implemented_pass(addr, val)
+        elif addr >= 0:
+            self._set_basic_memory(addr, val)
 
     ###############################################################################
     # File buffer access
@@ -159,7 +177,6 @@ class DataSegment(object):
 
     def _get_field_memory(self, address):
         """ Retrieve data from FIELD buffer. """
-        address -= self.data_segment * 0x10
         if address < self.field_mem_start:
             return -1
         # find the file we're in
@@ -174,9 +191,20 @@ class DataSegment(object):
     ###########################################################################
     # other memory access
 
+    def _get_var_memory(self, address):
+        """ Retrieve data from data memory. """
+        if address < self.var_current():
+            return self.scalars.get_memory(address)
+        elif address < self.var_current() + self.arrays.current:
+            return self.arrays.get_memory(address)
+        elif address > self.strings.current:
+            return self.strings.get_memory(address)
+        else:
+            # unallocated var space
+            return -1
+
     def _get_basic_memory(self, addr):
         """ Retrieve data from BASIC memory. """
-        addr -= self.data_segment*0x10
         if addr < 4:
             # sentinel value, used by some programs to identify GW-BASIC
             return (0, 0, 0x10, 0x82)[addr]
@@ -209,9 +237,11 @@ class DataSegment(object):
             return state.session.program.protected * 255
         return -1
 
+    def _not_implemented_pass(self, addr, val):
+        """ POKE into not implemented location; ignore. """
+
     def _set_basic_memory(self, addr, val):
         """ Change BASIC memory. """
-        addr -= self.data_segment*0x10
         if addr == self.protection_flag_addr and state.session.program.allow_protect:
             state.session.program.protected = (val != 0)
 

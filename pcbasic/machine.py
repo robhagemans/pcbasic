@@ -232,7 +232,7 @@ class Memory(object):
         """ Retrieve the value at an emulated memory location. """
         if addr < 0:
             addr += 0x10000
-        addr += self.segment*0x10
+        addr += self.segment * 0x10
         return self._get_memory(addr)
 
     def poke(self, addr, val):
@@ -292,18 +292,8 @@ class Memory(object):
             elif addr >= self.video_segment*0x10:
                 # graphics and text memory
                 return max(0, self._get_video_memory(addr))
-            elif addr >= self.data.data_segment*0x10 + self.data.var_start():
-                # variable memory
-                return max(0, self.data.get(addr))
-            elif addr >= self.data.data_segment*0x10 + self.data.code_start:
-                # code memory
-                return max(0, state.session.program.get_memory(addr))
-            elif addr >= self.data.data_segment*0x10 + self.data.field_mem_start:
-                # file & FIELD memory
-                return max(0, self.data._get_field_memory(addr))
             elif addr >= self.data.data_segment*0x10:
-                # other BASIC data memory
-                return max(0, self.data._get_basic_memory(addr))
+                return max(0, self.data.get_memory(addr))
             elif addr >= 0:
                 return max(0, self._get_low_memory(addr))
             else:
@@ -320,26 +310,10 @@ class Memory(object):
         elif addr >= self.video_segment*0x10:
             # graphics and text memory
             self._set_video_memory(addr, val)
-        elif addr >= self.data.data_segment*0x10 + self.data.var_start():
-            # POKING in variables
-            self._not_implemented_poke(addr, val)
-        elif addr >= self.data.data_segment*0x10 + self.data.code_start:
-            # code memory
-            state.session.program.set_memory(addr, val)
-        elif addr >= self.data.data_segment*0x10 + self.data.field_mem_start:
-            # file & FIELD memory
-            self._not_implemented_poke(addr, val)
         elif addr >= self.data.data_segment*0x10:
-            self.data._set_basic_memory(addr, val)
+            self.data.set_memory(addr, val)
         elif addr >= 0:
             self._set_low_memory(addr, val)
-
-    def _not_implemented_poke(self, addr, val):
-        """ POKE into not implemented location; retain value. """
-        self._peek_values[addr] = val
-
-    def _not_implemented_pass(self, addr, val):
-        """ POKE into not implemented location; ignore. """
 
     def _get_memory_block(self, addr, length):
         """ Retrieve a contiguous block of bytes from memory. """
