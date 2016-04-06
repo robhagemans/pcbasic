@@ -20,7 +20,6 @@ import debug
 import disk
 import error
 import events
-import expressions
 import fp
 import devices
 import memory
@@ -41,12 +40,12 @@ class Statements(object):
     """ BASIC statements. """
 
     def __init__(self, parser):
-        """ Initialise statements. """
+        """ Initialise statement context. """
         self.parser = parser
         self.session = parser.session
-        self.init_statements()
+        self._init_statements()
 
-    def init_statements(self):
+    def _init_statements(self):
         """ Initialise statements. """
         self.statements = {
             tk.END: self.exec_end,
@@ -169,7 +168,7 @@ class Statements(object):
     def __setstate__(self, pickle_dict):
         """ Unpickle. """
         self.__dict__.update(pickle_dict)
-        self.init_statements()
+        self._init_statements()
 
 
     def exec_system(self, ins):
@@ -199,7 +198,7 @@ class Statements(object):
         # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
         if util.skip_white(ins) not in tk.end_statement:
             util.range_check(0, 255, vartypes.pass_int_unpack(
-                    expressions.parse_expression(ins, self.session)))
+                    self.parser.parse_expression(ins, self.session)))
             util.require(ins, tk.end_statement)
 
     def exec_motor(self, ins):
@@ -318,7 +317,7 @@ class Statements(object):
         d = util.skip_white(ins)
         if d == '(':
             # strig (n)
-            num = vartypes.pass_int_unpack(expressions.parse_bracket(ins, self.session))
+            num = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
             if num not in (0,2,4,6):
                 raise error.RunError(error.IFC)
             if self.parser.events.strig[num//2].command(util.skip_white(ins)):
@@ -338,7 +337,7 @@ class Statements(object):
     def exec_com(self, ins):
         """ COM: switch on/off serial port event handling. """
         util.require(ins, ('(',))
-        num = vartypes.pass_int_unpack(expressions.parse_bracket(ins, self.session))
+        num = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
         util.range_check(1, 2, num)
         if self.parser.events.com[num-1].command(util.skip_white(ins)):
             ins.read(1)
@@ -356,7 +355,7 @@ class Statements(object):
 
     def exec_key_events(self, ins):
         """ KEY: switch on/off keyboard events. """
-        num = vartypes.pass_int_unpack(expressions.parse_bracket(ins, self.session))
+        num = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
         util.range_check(0, 255, num)
         d = util.skip_white(ins)
         # others are ignored
@@ -370,7 +369,7 @@ class Statements(object):
         """ Helper function for ON event trap definitions. """
         num = None
         if bracket:
-            num = expressions.parse_bracket(ins, self.session)
+            num = self.parser.parse_bracket(ins, self.session)
         util.require_read(ins, (tk.GOSUB,))
         jumpnum = util.parse_jumpnum(ins)
         if jumpnum == 0:
@@ -446,19 +445,19 @@ class Statements(object):
             state.console_state.sound.sound_on = (ins.read(1) == tk.ON)
             util.require(ins, tk.end_statement)
             return
-        freq = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+        freq = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (',',))
-        dur = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins, self.session)))
+        dur = fp.unpack(vartypes.pass_single(self.parser.parse_expression(ins, self.session)))
         if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
             raise error.RunError(error.IFC)
         # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
         if dur.gt(fp.Single.zero):
             if (util.skip_white_read_if(ins, (',',)) and (self.parser.syntax == 'tandy' or
                     (self.parser.syntax == 'pcjr' and state.console_state.sound.sound_on))):
-                volume = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+                volume = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
                 util.range_check(0, 15, volume)
                 if util.skip_white_read_if(ins, (',',)):
-                    voice = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+                    voice = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
                     util.range_check(0, 2, voice) # can't address noise channel here
                 else:
                     voice = 0
@@ -492,7 +491,7 @@ class Statements(object):
             # retrieve Music Macro Language string
             with self.session.strings:
                 mml0 = self.session.strings.copy(vartypes.pass_string(
-                        expressions.parse_expression(ins, self.session, allow_empty=True),
+                        self.parser.parse_expression(ins, self.session, allow_empty=True),
                         allow_empty=True))
             mml1, mml2 = '', ''
             if ((self.parser.syntax == 'tandy' or (self.parser.syntax == 'pcjr' and
@@ -500,12 +499,12 @@ class Statements(object):
                     and util.skip_white_read_if(ins, (',',))):
                 with self.session.strings:
                     mml1 = self.session.strings.copy(vartypes.pass_string(
-                            expressions.parse_expression(ins, self.session, allow_empty=True),
+                            self.parser.parse_expression(ins, self.session, allow_empty=True),
                             allow_empty=True))
                 if util.skip_white_read_if(ins, (',',)):
                     with self.session.strings:
                         mml2 = self.session.strings.copy(vartypes.pass_string(
-                                expressions.parse_expression(ins, self.session, allow_empty=True),
+                                self.parser.parse_expression(ins, self.session, allow_empty=True),
                                 allow_empty=True))
             util.require(ins, tk.end_statement)
             if not (mml0 or mml1 or mml2):
@@ -516,13 +515,13 @@ class Statements(object):
         """ NOISE: produce sound on the noise generator (Tandy/PCjr). """
         if not state.console_state.sound.sound_on:
             raise error.RunError(error.IFC)
-        source = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+        source = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (',',))
-        volume = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+        volume = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (',',))
         util.range_check(0, 7, source)
         util.range_check(0, 15, volume)
-        dur = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins, self.session)))
+        dur = fp.unpack(vartypes.pass_single(self.parser.parse_expression(ins, self.session)))
         if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
             raise error.RunError(error.IFC)
         util.require(ins, tk.end_statement)
@@ -539,11 +538,11 @@ class Statements(object):
 
     def exec_poke(self, ins):
         """ POKE: write to a memory location. Limited implementation. """
-        addr = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session), maxint=0xffff)
+        addr = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session), maxint=0xffff)
         if self.session.program.protected and not self.parser.run_mode:
             raise error.RunError(error.IFC)
         util.require_read(ins, (',',))
-        val = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+        val = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(0, 255, val)
         self.session.all_memory.poke(addr, val)
         util.require(ins, tk.end_statement)
@@ -553,7 +552,7 @@ class Statements(object):
         # &hb800: text screen buffer; &h13d: data segment
         if util.skip_white_read_if(ins, (tk.O_EQ,)):
             # def_seg() accepts signed values
-            self.session.all_memory.def_seg(vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session), maxint=0xffff))
+            self.session.all_memory.def_seg(vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session), maxint=0xffff))
         else:
             self.session.all_memory.def_seg(self.session.memory.data_segment)
         util.require(ins, tk.end_statement)
@@ -562,7 +561,7 @@ class Statements(object):
         """ DEF USR: Define a machine language function. Not implemented. """
         util.require_read(ins, tk.digit)
         util.require_read(ins, (tk.O_EQ,))
-        vartypes.pass_integer(expressions.parse_expression(ins, self.session), maxint=0xffff)
+        vartypes.pass_integer(self.parser.parse_expression(ins, self.session), maxint=0xffff)
         util.require(ins, tk.end_statement)
         logging.warning("DEF USR statement not implemented")
 
@@ -571,11 +570,11 @@ class Statements(object):
         if self.session.program.protected and not self.parser.run_mode:
             raise error.RunError(error.IFC)
         with self.session.strings:
-            name = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         offset = None
         if util.skip_white_read_if(ins, (',',)):
-            offset = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session), maxint=0xffff)
+            offset = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session), maxint=0xffff)
             if offset < 0:
                 offset += 0x10000
         util.require(ins, tk.end_statement)
@@ -587,14 +586,14 @@ class Statements(object):
         if self.session.program.protected and not self.parser.run_mode:
             raise error.RunError(error.IFC)
         with self.session.strings:
-            name = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         util.require_read(ins, (',',))
-        offset = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session), maxint = 0xffff)
+        offset = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session), maxint = 0xffff)
         if offset < 0:
             offset += 0x10000
         util.require_read(ins, (',',))
-        length = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session), maxint = 0xffff)
+        length = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session), maxint = 0xffff)
         if length < 0:
             length += 0x10000
         util.require(ins, tk.end_statement)
@@ -605,7 +604,7 @@ class Statements(object):
 
     def exec_call(self, ins):
         """ CALL: call an external procedure. Not implemented. """
-        addr_var = expressions.parse_scalar(ins)
+        addr_var = self.parser.parse_scalar(ins)
         if addr_var[-1] == '$':
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
@@ -613,7 +612,7 @@ class Statements(object):
             while True:
                 # if we wanted to call a function, we should distinguish varnames
                 # (passed by ref) from constants (passed by value) here.
-                expressions.parse_expression(ins, self.session)
+                self.parser.parse_expression(ins, self.session)
                 if not util.skip_white_read_if(ins, (',',)):
                     break
             util.require_read(ins, (')',))
@@ -627,22 +626,22 @@ class Statements(object):
 
     def exec_out(self, ins):
         """ OUT: send a byte to a machine port. Limited implementation. """
-        addr = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session), maxint=0xffff)
+        addr = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session), maxint=0xffff)
         util.require_read(ins, (',',))
-        val = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+        val = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(0, 255, val)
         self.session.machine.out(addr, val)
         util.require(ins, tk.end_statement)
 
     def exec_wait(self, ins):
         """ WAIT: wait for a machine port. Limited implementation. """
-        addr = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session), maxint=0xffff)
+        addr = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session), maxint=0xffff)
         util.require_read(ins, (',',))
-        ander = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+        ander = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(0, 255, ander)
         xorer = 0
         if util.skip_white_read_if(ins, (',',)):
-            xorer = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+            xorer = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(0, 255, xorer)
         util.require(ins, tk.end_statement)
         self.session.machine.wait(addr, ander, xorer)
@@ -655,7 +654,7 @@ class Statements(object):
         """ CHDIR: change working directory. """
         with self.session.strings:
             dev, path = disk.get_diskdevice_and_path(
-                self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session))))
+                self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session))))
         dev.chdir(path)
         util.require(ins, tk.end_statement)
 
@@ -663,7 +662,7 @@ class Statements(object):
         """ MKDIR: create directory. """
         with self.session.strings:
             dev, path = disk.get_diskdevice_and_path(
-                self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session))))
+                self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session))))
         dev.mkdir(path)
         util.require(ins, tk.end_statement)
 
@@ -671,20 +670,20 @@ class Statements(object):
         """ RMDIR: remove directory. """
         with self.session.strings:
             dev, path = disk.get_diskdevice_and_path(
-                self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session))))
+                self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session))))
         dev.rmdir(path)
         util.require(ins, tk.end_statement)
 
     def exec_name(self, ins):
         """ NAME: rename file or directory. """
         with self.session.strings:
-            oldname = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            oldname = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # AS is not a tokenised word
         word = util.skip_white_read(ins) + ins.read(1)
         if word.upper() != 'AS':
             raise error.RunError(error.STX)
         with self.session.strings:
-            newname = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            newname = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         dev, oldpath = disk.get_diskdevice_and_path(oldname)
         newdev, newpath = disk.get_diskdevice_and_path(newname)
         # don't rename open files
@@ -697,7 +696,7 @@ class Statements(object):
     def exec_kill(self, ins):
         """ KILL: remove file. """
         with self.session.strings:
-            name = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # don't delete open files
         dev, path = disk.get_diskdevice_and_path(name)
         dev.check_file_not_open(path)
@@ -709,7 +708,7 @@ class Statements(object):
         pathmask = ''
         if util.skip_white(ins) not in tk.end_statement:
             with self.session.strings:
-                pathmask = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+                pathmask = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
             if not pathmask:
                 raise error.RunError(error.BAD_FILE_NAME)
         dev, path = disk.get_diskdevice_and_path(pathmask)
@@ -726,7 +725,7 @@ class Statements(object):
         cmd = b''
         if util.skip_white(ins) not in tk.end_statement:
             with self.session.strings:
-                cmd = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+                cmd = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # no SHELL on PCjr.
         if self.parser.syntax == 'pcjr':
             raise error.RunError(error.IFC)
@@ -745,7 +744,7 @@ class Statements(object):
     def exec_environ(self, ins):
         """ ENVIRON: set environment string. """
         with self.session.strings:
-            envstr = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            envstr = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         eqs = envstr.find('=')
         if eqs <= 0:
             raise error.RunError(error.IFC)
@@ -759,7 +758,7 @@ class Statements(object):
         util.require_read(ins, (tk.O_EQ,)) #time$=
         # allowed formats:  hh   hh:mm   hh:mm:ss  where hh 0-23, mm 0-59, ss 0-59
         with self.session.strings:
-            timestr = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            timestr = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         util.require(ins, tk.end_statement)
         self.session.timer.set_time(timestr)
 
@@ -770,7 +769,7 @@ class Statements(object):
         # mm/dd/yy  or mm-dd-yy  mm 0--12 dd 0--31 yy 80--00--77
         # mm/dd/yyyy  or mm-dd-yyyy  yyyy 1980--2099
         with self.session.strings:
-            datestr = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            datestr = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         util.require(ins, tk.end_statement)
         self.session.timer.set_date(datestr)
 
@@ -847,7 +846,7 @@ class Statements(object):
         out = None
         if util.skip_white_read_if(ins, (',',)):
             with self.session.strings:
-                outname = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+                outname = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
             out = devices.open_file(0, outname, filetype='A', mode='O')
             # ignore everything after file spec
             util.skip_to(ins, tk.end_line)
@@ -876,7 +875,7 @@ class Statements(object):
     def exec_load(self, ins):
         """ LOAD: load program from file. """
         with self.session.strings:
-            name = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         comma = util.skip_white_read_if(ins, (',',))
         if comma:
@@ -902,11 +901,11 @@ class Statements(object):
         else:
             action = self.session.program.load
         with self.session.strings:
-            name = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         jumpnum, common_all, delete_lines = None, False, None
         if util.skip_white_read_if(ins, (',',)):
             # check for an expression that indicates a line in the other self.session.program. This is not stored as a jumpnum (to avoid RENUM)
-            expr = expressions.parse_expression(ins, self.session, allow_empty=True)
+            expr = self.parser.parse_expression(ins, self.session, allow_empty=True)
             if expr is not None:
                 jumpnum = vartypes.pass_int_unpack(expr, maxint=0xffff)
                 # negative numbers will be two's complemented into a line number
@@ -958,7 +957,7 @@ class Statements(object):
     def exec_save(self, ins):
         """ SAVE: save program to a file. """
         with self.session.strings:
-            name = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         mode = 'B'
         if util.skip_white_read_if(ins, (',',)):
             mode = util.skip_white_read(ins).upper()
@@ -974,7 +973,7 @@ class Statements(object):
     def exec_merge(self, ins):
         """ MERGE: merge lines from file into current program. """
         with self.session.strings:
-            name = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         with devices.open_file(0, name, filetype='A', mode='I') as f:
             self.session.program.merge(f)
@@ -1043,7 +1042,7 @@ class Statements(object):
         long_modes = {tk.INPUT:'I', 'OUTPUT':'O', 'RANDOM':'R', 'APPEND':'A'}
         default_access_modes = {'I':'R', 'O':'W', 'A':'RW', 'R':'RW'}
         with self.session.strings:
-            first_expr = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            first_expr = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         mode, access, lock, reclen = 'R', 'RW', '', 128
         if util.skip_white_read_if(ins, (',',)):
             # first syntax
@@ -1052,12 +1051,12 @@ class Statements(object):
                 access = default_access_modes[mode]
             except (IndexError, KeyError):
                 raise error.RunError(error.BAD_FILE_MODE)
-            number = expressions.parse_file_number_opthash(ins, self.session)
+            number = self.parser.parse_file_number_opthash(ins, self.session)
             util.require_read(ins, (',',))
             with self.session.strings:
-                name = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+                name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
             if util.skip_white_read_if(ins, (',',)):
-                reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+                reclen = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         else:
             # second syntax
             name = first_expr
@@ -1090,11 +1089,11 @@ class Statements(object):
             # AS file number clause
             if not util.skip_white_read_if(ins, ('AS',)):
                 raise error.RunError(error.STX)
-            number = expressions.parse_file_number_opthash(ins, self.session)
+            number = self.parser.parse_file_number_opthash(ins, self.session)
             # LEN clause
             if util.skip_white_read_if(ins, (tk.LEN,)):
                 util.require_read(ins, tk.O_EQ)
-                reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+                reclen = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         # mode and access must match if not a RANDOM file
         # If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR
         # If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
@@ -1115,7 +1114,7 @@ class Statements(object):
             devices.close_files()
         else:
             while True:
-                number = expressions.parse_file_number_opthash(ins, self.session)
+                number = self.parser.parse_file_number_opthash(ins, self.session)
                 try:
                     devices.close_file(number)
                 except KeyError:
@@ -1126,14 +1125,14 @@ class Statements(object):
 
     def exec_field(self, ins):
         """ FIELD: link a string variable to record buffer. """
-        the_file = devices.get_file(expressions.parse_file_number_opthash(ins, self.session), 'R')
+        the_file = devices.get_file(self.parser.parse_file_number_opthash(ins, self.session), 'R')
         if util.skip_white_read_if(ins, (',',)):
             offset = 0
             while True:
-                width = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+                width = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
                 util.range_check(0, 255, width)
                 util.require_read(ins, ('AS',), err=error.IFC)
-                name, index = expressions.parse_variable(ins, self.session)
+                name, index = self.parser.parse_variable(ins, self.session)
                 the_file.field.attach_var(name, index, offset, width)
                 offset += width
                 if not util.skip_white_read_if(ins, (',',)):
@@ -1142,11 +1141,11 @@ class Statements(object):
 
     def _parse_get_or_put_file(self, ins):
         """ Helper function: PUT and GET syntax. """
-        the_file = devices.get_file(expressions.parse_file_number_opthash(ins, self.session), 'R')
+        the_file = devices.get_file(self.parser.parse_file_number_opthash(ins, self.session), 'R')
         # for COM files
         num_bytes = the_file.reclen
         if util.skip_white_read_if(ins, (',',)):
-            pos = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins, self.session))).round_to_int()
+            pos = fp.unpack(vartypes.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
             # not 2^32-1 as the manual boasts!
             # pos-1 needs to fit in a single-precision mantissa
             util.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
@@ -1170,13 +1169,13 @@ class Statements(object):
 
     def exec_lock_or_unlock(self, ins, action):
         """ LOCK or UNLOCK: set file or record locks. """
-        thefile = devices.get_file(expressions.parse_file_number_opthash(ins, self.session))
+        thefile = devices.get_file(self.parser.parse_file_number_opthash(ins, self.session))
         lock_start_rec = 1
         if util.skip_white_read_if(ins, (',',)):
-            lock_start_rec = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins, self.session))).round_to_int()
+            lock_start_rec = fp.unpack(vartypes.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
         lock_stop_rec = lock_start_rec
         if util.skip_white_read_if(ins, (tk.TO,)):
-            lock_stop_rec = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins, self.session))).round_to_int()
+            lock_stop_rec = fp.unpack(vartypes.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
         if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
             raise error.RunError(error.BAD_RECORD_NUMBER)
         try:
@@ -1191,7 +1190,7 @@ class Statements(object):
 
     def exec_ioctl(self, ins):
         """ IOCTL: send control string to I/O device. Not implemented. """
-        devices.get_file(expressions.parse_file_number_opthash(ins, self.session))
+        devices.get_file(self.parser.parse_file_number_opthash(ins, self.session))
         logging.warning("IOCTL statement not implemented.")
         raise error.RunError(error.IFC)
 
@@ -1201,9 +1200,9 @@ class Statements(object):
     def _parse_coord_bare(self, ins):
         """ Helper function: parse coordinate pair. """
         util.require_read(ins, ('(',))
-        x = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins, self.session)))
+        x = fp.unpack(vartypes.pass_single(self.parser.parse_expression(ins, self.session)))
         util.require_read(ins, (',',))
-        y = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins, self.session)))
+        y = fp.unpack(vartypes.pass_single(self.parser.parse_expression(ins, self.session)))
         util.require_read(ins, (')',))
         return x, y
 
@@ -1219,7 +1218,7 @@ class Statements(object):
             raise error.RunError(error.IFC)
         lcoord = self._parse_coord_step(ins)
         if util.skip_white_read_if(ins, (',',)):
-            c = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+            c = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(-1, 255, c)
         util.require(ins, tk.end_statement)
         state.console_state.screen.drawing.pset(lcoord, c)
@@ -1240,7 +1239,7 @@ class Statements(object):
         coord1 = self._parse_coord_step(ins)
         c, mode, pattern = -1, '', 0xffff
         if util.skip_white_read_if(ins, (',',)):
-            expr = expressions.parse_expression(ins, self.session, allow_empty=True)
+            expr = self.parser.parse_expression(ins, self.session, allow_empty=True)
             if expr:
                 c = vartypes.pass_int_unpack(expr)
             if util.skip_white_read_if(ins, (',',)):
@@ -1250,7 +1249,7 @@ class Statements(object):
                     util.require(ins, (',',))
                 if util.skip_white_read_if(ins, (',',)):
                     pattern = vartypes.pass_int_unpack(
-                                expressions.parse_expression(ins, self.session), maxint=0x7fff)
+                                self.parser.parse_expression(ins, self.session), maxint=0x7fff)
             elif not expr:
                 raise error.RunError(error.MISSING_OPERAND)
         util.require(ins, tk.end_statement)
@@ -1271,9 +1270,9 @@ class Statements(object):
             util.range_check(0, state.console_state.screen.mode.pixel_height-1, y0, y1)
             fill, border = None, None
             if util.skip_white_read_if(ins, (',',)):
-                fill = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+                fill = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
                 util.require_read(ins, (',',))
-                border = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+                border = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             state.console_state.screen.drawing.set_view(x0, y0, x1, y1, absolute, fill, border)
         else:
             state.console_state.screen.drawing.unset_view()
@@ -1301,19 +1300,19 @@ class Statements(object):
             raise error.RunError(error.IFC)
         centre = self._parse_coord_step(ins)
         util.require_read(ins, (',',))
-        r = fp.unpack(vartypes.pass_single(expressions.parse_expression(ins, self.session)))
+        r = fp.unpack(vartypes.pass_single(self.parser.parse_expression(ins, self.session)))
         start, stop, c, aspect = None, None, -1, None
         if util.skip_white_read_if(ins, (',',)):
-            cval = expressions.parse_expression(ins, self.session, allow_empty=True)
+            cval = self.parser.parse_expression(ins, self.session, allow_empty=True)
             if cval:
                 c = vartypes.pass_int_unpack(cval)
             if util.skip_white_read_if(ins, (',',)):
-                start = expressions.parse_expression(ins, self.session, allow_empty=True)
+                start = self.parser.parse_expression(ins, self.session, allow_empty=True)
                 if util.skip_white_read_if(ins, (',',)):
-                    stop = expressions.parse_expression(ins, self.session, allow_empty=True)
+                    stop = self.parser.parse_expression(ins, self.session, allow_empty=True)
                     if util.skip_white_read_if(ins, (',',)):
                         aspect = fp.unpack(vartypes.pass_single(
-                                                expressions.parse_expression(ins, self.session)))
+                                                self.parser.parse_expression(ins, self.session)))
                     elif stop is None:
                         # missing operand
                         raise error.RunError(error.MISSING_OPERAND)
@@ -1333,7 +1332,7 @@ class Statements(object):
         coord = self._parse_coord_step(ins)
         pattern, c, border, background_pattern = None, -1, -1, None
         if util.skip_white_read_if(ins, (',',)):
-            cval = expressions.parse_expression(ins, self.session, allow_empty=True)
+            cval = self.parser.parse_expression(ins, self.session, allow_empty=True)
             if not cval:
                 pass
             elif cval[0] == '$':
@@ -1348,12 +1347,12 @@ class Statements(object):
                 c = vartypes.pass_int_unpack(cval)
             border = c
             if util.skip_white_read_if(ins, (',',)):
-                bval = expressions.parse_expression(ins, self.session, allow_empty=True)
+                bval = self.parser.parse_expression(ins, self.session, allow_empty=True)
                 if bval:
                     border = vartypes.pass_int_unpack(bval)
                 if util.skip_white_read_if(ins, (',',)):
                     with self.session.strings:
-                        background_pattern = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session), err=error.IFC))
+                        background_pattern = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session), err=error.IFC))
                     # only in screen 7,8,9 is this an error (use ega memory as a check)
                     if (pattern and background_pattern[:len(pattern)] == pattern and
                             state.console_state.screen.mode.mem_start == 0xa000):
@@ -1371,7 +1370,7 @@ class Statements(object):
         util.require_read(ins, (tk.O_MINUS,))
         coord1 = self._parse_coord_step(ins)
         util.require_read(ins, (',',))
-        array = expressions.parse_scalar(ins)
+        array = self.parser.parse_scalar(ins)
         util.require(ins, tk.end_statement)
         if array not in self.session.arrays.arrays:
             raise error.RunError(error.IFC)
@@ -1387,7 +1386,7 @@ class Statements(object):
         util.require(ins, ('('))
         coord = self._parse_coord_step(ins)
         util.require_read(ins, (',',))
-        array = expressions.parse_scalar(ins)
+        array = self.parser.parse_scalar(ins)
         action = tk.XOR
         if util.skip_white_read_if(ins, (',',)):
             util.require(ins, (tk.PSET, tk.PRESET,
@@ -1406,7 +1405,7 @@ class Statements(object):
         if state.console_state.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         with self.session.strings:
-            gml = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            gml = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         util.require(ins, tk.end_statement)
         state.console_state.screen.drawing.draw(gml)
 
@@ -1448,16 +1447,16 @@ class Statements(object):
     def exec_for(self, ins):
         """ FOR: enter for-loop. """
         # read variable
-        varname = expressions.parse_scalar(ins)
+        varname = self.parser.parse_scalar(ins)
         vartype = varname[-1]
         if vartype in ('$', '#'):
             raise error.RunError(error.TYPE_MISMATCH)
         util.require_read(ins, (tk.O_EQ,))
-        start = vartypes.pass_type(vartype, expressions.parse_expression(ins, self.session))
+        start = vartypes.pass_type(vartype, self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (tk.TO,))
-        stop = vartypes.pass_type(vartype, expressions.parse_expression(ins, self.session))
+        stop = vartypes.pass_type(vartype, self.parser.parse_expression(ins, self.session))
         if util.skip_white_read_if(ins, (tk.STEP,)):
-            step = expressions.parse_expression(ins, self.session)
+            step = self.parser.parse_expression(ins, self.session)
         else:
             # convert 1 to vartype
             step = vartypes.int_to_integer_signed(1)
@@ -1514,7 +1513,7 @@ class Statements(object):
         # get position and line number just after the NEXT
         nextpos = ins.tell()
         # check var name for NEXT
-        varname2 = expressions.parse_scalar(ins, allow_empty=True)
+        varname2 = self.parser.parse_scalar(ins, allow_empty=True)
         # no-var only allowed in standalone NEXT
         if not varname2:
             util.require(ins, tk.end_statement)
@@ -1530,7 +1529,7 @@ class Statements(object):
             # record the NEXT (or comma) location
             pos = ins.tell()
             # optional variable - errors in this are checked at the scan during FOR
-            name = expressions.parse_scalar(ins, allow_empty=True)
+            name = self.parser.parse_scalar(ins, allow_empty=True)
             # if we haven't read a variable, we shouldn't find something else here
             # but if we have and we iterate, the rest of the line is ignored
             if not name:
@@ -1558,7 +1557,7 @@ class Statements(object):
             jumpnum = util.parse_jumpnum(ins)
         elif c not in tk.end_statement:
             with self.session.strings:
-                name = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+                name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
             if util.skip_white_read_if(ins, (',',)):
                 util.require_read(ins, 'R')
                 close_files = False
@@ -1573,7 +1572,7 @@ class Statements(object):
     def exec_if(self, ins):
         """ IF: enter branching statement. """
         # avoid overflow: don't use bools.
-        val = vartypes.pass_single(expressions.parse_expression(ins, self.session))
+        val = vartypes.pass_single(self.parser.parse_expression(ins, self.session))
         util.skip_white_read_if(ins, (',',)) # optional comma
         util.require_read(ins, (tk.THEN, tk.GOTO))
         if not fp.unpack(val).is_zero():
@@ -1631,7 +1630,7 @@ class Statements(object):
         """ Check condition of while-loop. """
         ins.seek(whilepos)
         # WHILE condition is zero?
-        if not fp.unpack(vartypes.pass_double(expressions.parse_expression(ins, self.session))).is_zero():
+        if not fp.unpack(vartypes.pass_double(self.parser.parse_expression(ins, self.session))).is_zero():
             # statement start is before WHILE token
             self.parser.current_statement = whilepos-2
             util.require(ins, tk.end_statement)
@@ -1658,7 +1657,7 @@ class Statements(object):
 
     def exec_on_jump(self, ins):
         """ ON: calculated jump. """
-        onvar = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+        onvar = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(0, 255, onvar)
         command = util.skip_white_read(ins)
         jumps = []
@@ -1731,7 +1730,7 @@ class Statements(object):
 
     def exec_error(self, ins):
         """ ERRROR: simulate an error condition. """
-        errn = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+        errn = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(1, 255, errn)
         raise error.RunError(errn)
 
@@ -1760,7 +1759,7 @@ class Statements(object):
         """ Helper function: parse variable list.  """
         readvar = []
         while True:
-            readvar.append(list(expressions.parse_variable(ins, self.session)))
+            readvar.append(list(self.parser.parse_variable(ins, self.session)))
             if not util.skip_white_read_if(ins, (',',)):
                 break
         return readvar
@@ -1768,13 +1767,13 @@ class Statements(object):
     def exec_clear(self, ins):
         """ CLEAR: clear memory and redefine memory limits. """
         # integer expression allowed but ignored
-        intexp = expressions.parse_expression(ins, self.session, allow_empty=True)
+        intexp = self.parser.parse_expression(ins, self.session, allow_empty=True)
         if intexp:
             expr = vartypes.pass_int_unpack(intexp)
             if expr < 0:
                 raise error.RunError(error.IFC)
         if util.skip_white_read_if(ins, (',',)):
-            exp1 = expressions.parse_expression(ins, self.session, allow_empty=True)
+            exp1 = self.parser.parse_expression(ins, self.session, allow_empty=True)
             if exp1:
                 # this produces a *signed* int
                 mem_size = vartypes.pass_int_unpack(exp1, maxint=0xffff)
@@ -1786,7 +1785,7 @@ class Statements(object):
                         raise error.RunError(error.OUT_OF_MEMORY)
             if util.skip_white_read_if(ins, (',',)):
                 # set aside stack space for GW-BASIC. The default is the previous stack space size.
-                exp2 = expressions.parse_expression(ins, self.session, allow_empty=True)
+                exp2 = self.parser.parse_expression(ins, self.session, allow_empty=True)
                 if exp2:
                     stack_size = vartypes.pass_int_unpack(exp2, maxint=0xffff)
                     # this should be an unsigned int
@@ -1800,7 +1799,7 @@ class Statements(object):
                     # Tandy/PCjr: select video memory size
                     if not state.console_state.screen.set_video_memory_size(
                         fp.unpack(vartypes.pass_single(
-                                     expressions.parse_expression(ins, self.session)
+                                     self.parser.parse_expression(ins, self.session)
                                  )).round_to_int()):
                         state.console_state.screen.screen(0, 0, 0, 0)
                         console.init_mode()
@@ -1813,7 +1812,7 @@ class Statements(object):
         """ COMMON: define variables to be preserved on CHAIN. """
         common_scalars, common_arrays = set(), set()
         while True:
-            name = expressions.parse_scalar(ins)
+            name = self.parser.parse_scalar(ins)
             # array?
             if util.skip_white_read_if(ins, ('[', '(')):
                 util.require_read(ins, (']', ')'))
@@ -1833,7 +1832,7 @@ class Statements(object):
     def exec_dim(self, ins):
         """ DIM: dimension arrays. """
         while True:
-            name, dimensions = expressions.parse_variable(ins, self.session)
+            name, dimensions = self.parser.parse_variable(ins, self.session)
             if not dimensions:
                 dimensions = [10]
             self.session.arrays.dim(name, dimensions)
@@ -1860,20 +1859,20 @@ class Statements(object):
     def exec_erase(self, ins):
         """ ERASE: erase an array. """
         while True:
-            self.session.arrays.erase(expressions.parse_scalar(ins))
+            self.session.arrays.erase(self.parser.parse_scalar(ins))
             if not util.skip_white_read_if(ins, (',',)):
                 break
         util.require(ins, tk.end_statement)
 
     def exec_let(self, ins):
         """ LET: assign value to variable or array. """
-        name, indices = expressions.parse_variable(ins, self.session)
+        name, indices = self.parser.parse_variable(ins, self.session)
         if indices != []:
             # pre-dim even if this is not a legal statement!
             # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out fo range afterwards
             self.session.arrays.check_dim(name, indices)
         util.require_read(ins, (tk.O_EQ,))
-        self.session.memory.set_variable(name, indices, expressions.parse_expression(ins, self.session))
+        self.session.memory.set_variable(name, indices, self.parser.parse_expression(ins, self.session))
         util.require(ins, tk.end_statement)
 
     def exec_mid(self, ins):
@@ -1881,15 +1880,15 @@ class Statements(object):
         # do not use require_read as we don't allow whitespace here
         if ins.read(1) != '(':
             raise error.RunError(error.STX)
-        name, indices = expressions.parse_variable(ins, self.session)
+        name, indices = self.parser.parse_variable(ins, self.session)
         if indices != []:
             # pre-dim even if this is not a legal statement!
             self.session.arrays.check_dim(name, indices)
         util.require_read(ins, (',',))
-        start = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+        start = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         num = 255
         if util.skip_white_read_if(ins, (',',)):
-            num = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+            num = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (')',))
         with self.session.strings:
             s = self.session.strings.copy(vartypes.pass_string(self.session.memory.get_variable(name, indices)))
@@ -1898,7 +1897,7 @@ class Statements(object):
             util.range_check(1, len(s), start)
         util.require_read(ins, (tk.O_EQ,))
         with self.session.strings:
-            val = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            val = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         util.require(ins, tk.end_statement)
         # we need to decrement basic offset by 1 to get python offset
         offset = start-1
@@ -1919,11 +1918,11 @@ class Statements(object):
 
     def exec_lset(self, ins, justify_right=False):
         """ LSET: assign string value in-place; left justified. """
-        name, index = expressions.parse_variable(ins, self.session)
+        name, index = self.parser.parse_variable(ins, self.session)
         v = vartypes.pass_string(self.session.memory.get_variable(name, index))
         util.require_read(ins, (tk.O_EQ,))
         with self.session.strings:
-            s = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            s = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # v is empty string if variable does not exist
         # trim and pad to size of target buffer
         length = vartypes.string_length(v)
@@ -1998,7 +1997,7 @@ class Statements(object):
 
     def exec_input(self, ins):
         """ INPUT: request input from user. """
-        finp = expressions.parse_file_number(ins, self.session, 'IR')
+        finp = self.parser.parse_file_number(ins, self.session, 'IR')
         if finp is not None:
             for v in self._parse_var_list(ins):
                 value, _ = finp.read_var(v)
@@ -2022,14 +2021,14 @@ class Statements(object):
 
     def exec_line_input(self, ins):
         """ LINE INPUT: request input from user. """
-        finp = expressions.parse_file_number(ins, self.session, 'IR')
+        finp = self.parser.parse_file_number(ins, self.session, 'IR')
         if not finp:
             # ; to avoid echoing newline
             newline = not util.skip_white_read_if(ins, (';',))
             # get prompt
             prompt = self._parse_prompt(ins, '')
         # get string variable
-        readvar, indices = expressions.parse_variable(ins, self.session)
+        readvar, indices = self.parser.parse_variable(ins, self.session)
         if not readvar or readvar[0] == '':
             raise error.RunError(error.STX)
         elif readvar[-1] != '$':
@@ -2058,16 +2057,16 @@ class Statements(object):
 
     def exec_swap(self, ins):
         """ SWAP: swap values of two variables. """
-        name1, index1 = expressions.parse_variable(ins, self.session)
+        name1, index1 = self.parser.parse_variable(ins, self.session)
         util.require_read(ins, (',',))
-        name2, index2 = expressions.parse_variable(ins, self.session)
+        name2, index2 = self.parser.parse_variable(ins, self.session)
         self.session.memory.swap(name1, index1, name2, index2)
         # if syntax error. the swap has happened
         util.require(ins, tk.end_statement)
 
     def exec_def_fn(self, ins):
         """ DEF FN: define a function. """
-        fnname = expressions.parse_scalar(ins)
+        fnname = self.parser.parse_scalar(ins)
         fntype = fnname[-1]
         # read parameters
         fnvars = []
@@ -2075,7 +2074,7 @@ class Statements(object):
         pointer_loc = self.session.memory.code_start + ins.tell()
         if util.skip_white_read_if(ins, ('(',)):
             while True:
-                fnvars.append(expressions.parse_scalar(ins))
+                fnvars.append(self.parser.parse_scalar(ins))
                 if util.skip_white(ins) in tk.end_statement + (')',):
                     break
                 util.require_read(ins, (',',))
@@ -2106,7 +2105,7 @@ class Statements(object):
 
     def exec_randomize(self, ins):
         """ RANDOMIZE: set random number generator seed. """
-        val = expressions.parse_expression(ins, self.session, allow_empty=True)
+        val = self.parser.parse_expression(ins, self.session, allow_empty=True)
         if val:
             # don't convert to int if provided in the code
             val = vartypes.pass_number(val)
@@ -2135,7 +2134,7 @@ class Statements(object):
             else:
                 val = 0
         else:
-            val = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+            val = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             if self.parser.syntax == 'tandy':
                 # tandy gives illegal function call on CLS number
                 raise error.RunError(error.IFC)
@@ -2162,17 +2161,17 @@ class Statements(object):
         """ COLOR: set colour attributes. """
         screen = state.console_state.screen
         mode = screen.mode
-        fore = expressions.parse_expression(ins, self.session, allow_empty=True)
+        fore = self.parser.parse_expression(ins, self.session, allow_empty=True)
         if fore is None:
             fore = (screen.attr>>7)*0x10 + (screen.attr&0xf)
         else:
             fore = vartypes.pass_int_unpack(fore)
         back, bord = None, 0
         if util.skip_white_read_if(ins, (',')):
-            back = expressions.parse_expression(ins, self.session, allow_empty=True)
+            back = self.parser.parse_expression(ins, self.session, allow_empty=True)
             back = None if back is None else vartypes.pass_int_unpack(back)
             if util.skip_white_read_if(ins, (',')):
-                bord = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+                bord = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         if back is None:
             # graphics mode bg is always 0; sets palette instead
             if mode.is_text_mode:
@@ -2244,9 +2243,9 @@ class Statements(object):
             # can't set blinking colours separately
             mode = state.console_state.screen.mode
             num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
-            attrib = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+            attrib = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             util.require_read(ins, (',',))
-            colour = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+            colour = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             if attrib is None or colour is None:
                 raise error.RunError(error.STX)
             util.range_check(0, num_palette_entries-1, attrib)
@@ -2260,7 +2259,7 @@ class Statements(object):
         screen = state.console_state.screen
         mode = screen.mode
         num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
-        array_name, start_indices = expressions.parse_variable(ins, self.session)
+        array_name, start_indices = self.parser.parse_variable(ins, self.session)
         try:
             dimensions, lst, _ = self.session.arrays.arrays[array_name]
         except KeyError:
@@ -2304,11 +2303,11 @@ class Statements(object):
 
     def exec_key_define(self, ins):
         """ KEY: define function-key shortcut or scancode for event trapping. """
-        keynum = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+        keynum = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(1, 255, keynum)
         util.require_read(ins, (',',), err=error.IFC)
         with self.session.strings:
-            text = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            text = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         if keynum <= self.parser.events.num_fn_keys:
             # macro starting with NUL is empty macro
             if text and str(text)[0] == '\0':
@@ -2326,20 +2325,20 @@ class Statements(object):
     def exec_locate(self, ins):
         """ LOCATE: Set cursor position, shape and visibility."""
         cmode = state.console_state.screen.mode
-        row = expressions.parse_expression(ins, self.session, allow_empty=True)
+        row = self.parser.parse_expression(ins, self.session, allow_empty=True)
         row = None if row is None else vartypes.pass_int_unpack(row)
         col, cursor, start, stop = None, None, None, None
         if util.skip_white_read_if(ins, (',',)):
-            col = expressions.parse_expression(ins, self.session, allow_empty=True)
+            col = self.parser.parse_expression(ins, self.session, allow_empty=True)
             col = None if col is None else vartypes.pass_int_unpack(col)
             if util.skip_white_read_if(ins, (',',)):
-                cursor = expressions.parse_expression(ins, self.session, allow_empty=True)
+                cursor = self.parser.parse_expression(ins, self.session, allow_empty=True)
                 cursor = None if cursor is None else vartypes.pass_int_unpack(cursor)
                 if util.skip_white_read_if(ins, (',',)):
-                    start = expressions.parse_expression(ins, self.session, allow_empty=True)
+                    start = self.parser.parse_expression(ins, self.session, allow_empty=True)
                     start = None if start is None else vartypes.pass_int_unpack(start)
                     if util.skip_white_read_if(ins, (',',)):
-                        stop = expressions.parse_expression(ins, self.session, allow_empty=True)
+                        stop = self.parser.parse_expression(ins, self.session, allow_empty=True)
                         stop = None if stop is None else vartypes.pass_int_unpack(stop)
                         if util.skip_white_read_if(ins, (',',)):
                             # can end on a 5th comma but no stuff allowed after it
@@ -2372,9 +2371,9 @@ class Statements(object):
 
     def exec_write(self, ins, output=None):
         """ WRITE: Output machine-readable expressions to the screen or a file. """
-        output = expressions.parse_file_number(ins, self.session, 'OAR')
+        output = self.parser.parse_file_number(ins, self.session, 'OAR')
         output = state.io_state.scrn_file if output is None else output
-        expr = expressions.parse_expression(ins, self.session, allow_empty=True)
+        expr = self.parser.parse_expression(ins, self.session, allow_empty=True)
         outstr = ''
         if expr:
             while True:
@@ -2387,7 +2386,7 @@ class Statements(object):
                     outstr += ','
                 else:
                     break
-                expr = expressions.parse_expression(ins, self.session)
+                expr = self.parser.parse_expression(ins, self.session)
         util.require(ins, tk.end_statement)
         # write the whole thing as one thing (this affects line breaks)
         output.write_line(outstr)
@@ -2395,7 +2394,7 @@ class Statements(object):
     def exec_print(self, ins, output=None):
         """ PRINT: Write expressions to the screen or a file. """
         if output is None:
-            output = expressions.parse_file_number(ins, self.session, 'OAR')
+            output = self.parser.parse_file_number(ins, self.session, 'OAR')
             output = state.io_state.scrn_file if output is None else output
         number_zones = max(1, int(output.width/14))
         newline = True
@@ -2413,11 +2412,11 @@ class Statements(object):
                     else:
                         output.write(' '*(1+14*next_zone-output.col))
                 elif d == tk.SPC:
-                    numspaces = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session), 0xffff)) % output.width
+                    numspaces = max(0, vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session), 0xffff)) % output.width
                     util.require_read(ins, (')',))
                     output.write(' ' * numspaces)
                 elif d == tk.TAB:
-                    pos = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session), 0xffff) - 1) % output.width + 1
+                    pos = max(0, vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session), 0xffff) - 1) % output.width + 1
                     util.require_read(ins, (')',))
                     if pos < output.col:
                         output.write_line()
@@ -2427,7 +2426,7 @@ class Statements(object):
             else:
                 newline = True
                 with self.session.strings:
-                    expr = expressions.parse_expression(ins, self.session)
+                    expr = self.parser.parse_expression(ins, self.session)
                     # numbers always followed by a space
                     if expr[0] in ('%', '!', '#'):
                         word = representation.number_to_str(expr, screen=True) + ' '
@@ -2446,7 +2445,7 @@ class Statements(object):
     def exec_print_using(self, ins, output):
         """ PRINT USING: Write expressions to screen or file using a formatting string. """
         with self.session.strings:
-            format_expr = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+            format_expr = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         if format_expr == '':
             raise error.RunError(error.IFC)
         util.require_read(ins, (';',))
@@ -2471,7 +2470,7 @@ class Statements(object):
                 if string_field:
                     if not data_ends:
                         with self.session.strings:
-                            s = self.session.strings.copy(vartypes.pass_string(expressions.parse_expression(ins, self.session)))
+                            s = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
                         if string_field == '&':
                             output.write(s)
                         else:
@@ -2480,7 +2479,7 @@ class Statements(object):
                     number_field, digits_before, decimals = print_and_input.get_number_tokens(fors)
                     if number_field:
                         if not data_ends:
-                            num = vartypes.pass_float(expressions.parse_expression(ins, self.session))
+                            num = vartypes.pass_float(self.parser.parse_expression(ins, self.session))
                             output.write(representation.format_number(num, number_field, digits_before, decimals))
                     else:
                         output.write(fors.read(1))
@@ -2500,9 +2499,9 @@ class Statements(object):
         if util.skip_white(ins) in tk.end_statement:
             state.console_state.screen.unset_view()
         else:
-            start = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+            start = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             util.require_read(ins, (tk.TO,))
-            stop = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+            stop = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             util.require(ins, tk.end_statement)
             max_line = 25 if (self.parser.syntax in ('pcjr', 'tandy') and not state.console_state.keys_visible) else 24
             util.range_check(1, max_line, start, stop)
@@ -2512,18 +2511,18 @@ class Statements(object):
         """ WIDTH: set width of screen or device. """
         d = util.skip_white(ins)
         if d == '#':
-            dev = expressions.parse_file_number(ins, self.session)
-            w = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+            dev = self.parser.parse_file_number(ins, self.session)
+            w = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         elif d == tk.LPRINT:
             ins.read(1)
             dev = state.io_state.lpt1_file
-            w = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+            w = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         else:
             # we can do calculations, but they must be bracketed...
             if d in tk.number:
-                expr = expressions.parse_literal(ins, self.session)
+                expr = self.parser.parse_literal(ins, self.session)
             else:
-                expr = expressions.parse_expression(ins, self.session)
+                expr = self.parser.parse_expression(ins, self.session)
             if expr[0] == '$':
                 with self.session.strings:
                     devname = self.session.strings.copy(vartypes.pass_string(expr)).upper()
@@ -2533,13 +2532,13 @@ class Statements(object):
                     # bad file name
                     raise error.RunError(error.BAD_FILE_NAME)
                 util.require_read(ins, (',',))
-                w = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+                w = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             else:
                 dev = state.io_state.scrn_file
                 w = vartypes.pass_int_unpack(expr)
                 if util.skip_white_read_if(ins, (',',)):
                     # pare dummy number rows setting
-                    num_rows_dummy = expressions.parse_expression(ins, self.session, allow_empty=True)
+                    num_rows_dummy = self.parser.parse_expression(ins, self.session, allow_empty=True)
                     if num_rows_dummy is not None:
                         min_num_rows = 0 if self.parser.syntax in ('pcjr', 'tandy') else 25
                         util.range_check(min_num_rows, 25, vartypes.pass_int_unpack(num_rows_dummy))
@@ -2554,21 +2553,21 @@ class Statements(object):
         """ SCREEN: change video mode or page. """
         # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
         # this raises error before
-        mode = expressions.parse_expression(ins, self.session, allow_empty=True)
+        mode = self.parser.parse_expression(ins, self.session, allow_empty=True)
         mode = None if mode is None else vartypes.pass_int_unpack(mode)
         color, apagenum, vpagenum, erase = None, None, None, 1
         if util.skip_white_read_if(ins, (',',)):
-            color = expressions.parse_expression(ins, self.session, allow_empty=True)
+            color = self.parser.parse_expression(ins, self.session, allow_empty=True)
             color = None if color is None else vartypes.pass_int_unpack(color)
             if util.skip_white_read_if(ins, (',',)):
-                apagenum = expressions.parse_expression(ins, self.session, allow_empty=True)
+                apagenum = self.parser.parse_expression(ins, self.session, allow_empty=True)
                 apagenum = None if apagenum is None else vartypes.pass_int_unpack(apagenum)
                 if util.skip_white_read_if(ins, (',',)):
-                    vpagenum = expressions.parse_expression(ins, self.session,
+                    vpagenum = self.parser.parse_expression(ins, self.session,
                                 allow_empty=self.parser.syntax in ('pcjr', 'tandy'))
                     vpagenum = None if vpagenum is None else vartypes.pass_int_unpack(vpagenum)
                     if self.parser.syntax in ('pcjr', 'tandy') and util.skip_white_read_if(ins, (',',)):
-                        erase = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+                        erase = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         # if any parameter not in [0,255], error 5 without doing anything
         # if the parameters are outside narrow ranges
         # (e.g. not implemented screen mode, pagenum beyond max)
@@ -2589,10 +2588,10 @@ class Statements(object):
 
     def exec_pcopy(self, ins):
         """ PCOPY: copy video pages. """
-        src = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+        src = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(0, state.console_state.screen.mode.num_pages-1, src)
         util.require_read(ins, (',',))
-        dst = vartypes.pass_int_unpack(expressions.parse_expression(ins, self.session))
+        dst = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require(ins, tk.end_statement)
         util.range_check(0, state.console_state.screen.mode.num_pages-1, dst)
         state.console_state.screen.copy_page(src, dst)

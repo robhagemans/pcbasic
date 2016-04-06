@@ -42,6 +42,9 @@ precedence = {
 }
 operators = set(precedence)
 
+# can be combined like <> >=
+combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
+
 
 class Operators(object):
     """ Context for numeric and string operations. """
@@ -51,6 +54,10 @@ class Operators(object):
         self.strings = string_space
         # double-precision power operator
         self.double_math = double_math
+        self._init_operators()
+
+    def _init_operators(self):
+        """ Initialise operators. """
         # unary operators
         self.unary = {
             tk.O_MINUS: self.neg,
@@ -81,6 +88,21 @@ class Operators(object):
             tk.EQV: self.number_eqv,
             tk.IMP: self.number_imp,
         }
+
+
+    def __getstate__(self):
+        """ Pickle. """
+        pickle_dict = self.__dict__.copy()
+        # can't be pickled
+        pickle_dict['unary'] = None
+        pickle_dict['binary'] = None
+        return pickle_dict
+
+    def __setstate__(self, pickle_dict):
+        """ Unpickle. """
+        self.__dict__.update(pickle_dict)
+        self._init_operators()
+
 
 
     ###############################################################################

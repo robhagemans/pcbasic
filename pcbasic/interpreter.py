@@ -182,7 +182,8 @@ class Session(object):
         if not os.path.exists(pcjr_term):
             pcjr_term = ''
         # initialise the parser
-        self.parser = parser.Parser(self, config.get('syntax'), pcjr_term)
+        self.parser = parser.Parser(self, config.get('syntax'),
+                                    pcjr_term, config.get('double'))
 
         # initialise random number generator
         self.randomiser = rnd.RandomNumberGenerator()

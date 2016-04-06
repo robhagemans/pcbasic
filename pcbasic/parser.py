@@ -14,6 +14,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 import string
+from collections import deque
 
 import console
 import debug
@@ -24,7 +25,6 @@ import expressions
 import fp
 import devices
 import memory
-from operators import Operators as op
 import ports
 import print_and_input
 import program
@@ -36,12 +36,14 @@ import util
 import var
 import vartypes
 import statements
+import operators as op
+import functions
 
 
 class Parser(object):
     """ Statement parser. """
 
-    def __init__(self, session, syntax, term):
+    def __init__(self, session, syntax, term, double_math):
         """ Initialise parser. """
         self.session = session
         # syntax: advanced, pcjr, tandy
@@ -61,7 +63,11 @@ class Parser(object):
         self.init_error_trapping()
         self.error_num = 0
         self.error_pos = 0
+        self.double_math = double_math
         self.statements = statements.Statements(self)
+        self.operators = op.Operators(session.strings, double_math)
+        self.functions = functions.Functions(self, double_math)
+
 
     def init_error_trapping(self):
         """ Initialise error trapping. """
@@ -78,19 +84,19 @@ class Parser(object):
             """
         try:
             self.handle_basic_events()
-            self.ins = self.get_codestream()
-            self.current_statement = self.ins.tell()
-            c = util.skip_white(self.ins)
+            ins = self.get_codestream()
+            self.current_statement = ins.tell()
+            c = util.skip_white(ins)
             if c == '':
                 # stream has ended.
                 return False
             # parse line number or : at start of statement
             elif c == '\0':
                 # save position for error message
-                prepos = self.ins.tell()
-                self.ins.read(1)
+                prepos = ins.tell()
+                ins.read(1)
                 # line number marker, new statement
-                linenum = util.parse_line_number(self.ins)
+                linenum = util.parse_line_number(ins)
                 if linenum == -1:
                     if self.error_resume:
                         # unfinished error handler: no RESUME (don't trap this)
@@ -103,23 +109,23 @@ class Parser(object):
                     console.write('[' + ('%i' % linenum) + ']')
                 self.session.debugger.debug_step(linenum)
             elif c == ':':
-                self.ins.read(1)
-            c = util.skip_white(self.ins)
+                ins.read(1)
+            c = util.skip_white(ins)
             # empty statement, return to parse next
             if c in tk.end_statement:
                 return True
             # implicit LET
             elif c in string.ascii_letters:
-                self.statements.exec_let(self.ins)
+                self.statements.exec_let(ins)
             # token
             else:
-                self.ins.read(1)
+                ins.read(1)
                 if c in tk.twobyte:
-                    c += self.ins.read(1)
+                    c += ins.read(1)
                 # don't use try-block to avoid catching other KeyErrors in statement
                 if c not in self.statements.statements:
                     raise error.RunError(error.STX)
-                self.statements.statements[c](self.ins)
+                self.statements.statements[c](ins)
         except error.RunError as e:
             self.trap_error(e)
         return True
@@ -256,9 +262,9 @@ class Parser(object):
     def loop_init(self, ins, forpos, nextpos, varname, start, stop, step):
         """ Initialise a FOR loop. """
         # set start to start-step, then iterate - slower on init but allows for faster iterate
-        self.session.scalars.set(varname, op.number_add(start, op.number_neg(step)))
+        self.session.scalars.set(varname, op.Operators.number_add(start, op.Operators.number_neg(step)))
         # NOTE: all access to varname must be in-place into the bytearray - no assignments!
-        sgn = vartypes.integer_to_int_signed(op.number_sgn(step))
+        sgn = vartypes.integer_to_int_signed(op.Operators.number_sgn(step))
         self.for_stack.append(
             (forpos, nextpos, varname[-1],
                 self.session.scalars.variables[varname],
@@ -345,3 +351,221 @@ class Parser(object):
         self.data_pos = self.program_code.tell()
         self.program_code.seek(current)
         return vals
+
+    ###########################################################################
+    # expression parser
+
+    def parse_bracket(self, ins, session):
+        """ Compute the value of the bracketed expression. """
+        util.require_read(ins, ('(',))
+        # we'll get a Syntax error, not a Missing operand, if we close with )
+        val = self.parse_expression(ins, session)
+        util.require_read(ins, (')',))
+        return val
+
+    def parse_literal(self, ins, session):
+        """ Compute the value of the literal at the current code pointer. """
+        d = util.skip_white(ins)
+        # string literal
+        if d == '"':
+            ins.read(1)
+            if ins == session.program.bytecode:
+                address = ins.tell() + session.memory.code_start
+            else:
+                address = None
+            output = bytearray()
+            # while tokenised numbers inside a string literal will be printed as tokenised numbers, they don't actually execute as such:
+            # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a
+            # line number afterwards, etc. We follow this.
+            d = ins.read(1)
+            while d not in tk.end_line + ('"',):
+                output += d
+                d = ins.read(1)
+            if d == '\0':
+                ins.seek(-1, 1)
+            # store for easy retrieval, but don't reserve space in string memory
+            return session.strings.store(output, address)
+        # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
+        # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
+        elif d in string.digits:
+            outs = StringIO()
+            representation.tokenise_number(ins, outs)
+            outs.seek(0)
+            return representation.parse_value(outs)
+        # number literals
+        elif d in tk.number:
+            return representation.parse_value(ins)
+        # gw-basic allows adding line numbers to numbers
+        elif d == tk.T_UINT:
+            return vartypes.int_to_integer_unsigned(util.parse_jumpnum(ins))
+        else:
+            raise error.RunError(error.STX)
+
+    def parse_variable(self, ins, session):
+        """ Helper function: parse a variable or array element. """
+        name = self.parse_scalar(ins)
+        indices = []
+        if util.skip_white_read_if(ins, ('[', '(')):
+            # it's an array, read indices
+            while True:
+                indices.append(vartypes.pass_int_unpack(self.parse_expression(ins, session)))
+                if not util.skip_white_read_if(ins, (',',)):
+                    break
+            util.require_read(ins, (']', ')'))
+        return name, indices
+
+    def parse_scalar(self, ins, allow_empty=False, err=error.STX):
+        """ Get variable name from token stream. """
+        name = ''
+        d = util.skip_white_read(ins)
+        if not d:
+            pass
+        elif d not in string.ascii_letters:
+            # variable name must start with a letter
+            ins.seek(-len(d), 1)
+        else:
+            while d and d in tk.name_chars:
+                name += d
+                d = ins.read(1)
+            if d in vartypes.sigils:
+                name += d
+            else:
+                ins.seek(-len(d), 1)
+        if not name and not allow_empty:
+            raise error.RunError(err)
+        # append type specifier
+        name = self.session.memory.complete_name(name)
+        # only the first 40 chars are relevant in GW-BASIC, rest is discarded
+        if len(name) > 41:
+            name = name[:40]+name[-1]
+        return name.upper()
+
+    def parse_file_number(self, ins, session, file_mode='IOAR'):
+        """ Helper function: parse a file number and retrieve the file object. """
+        screen = None
+        if util.skip_white_read_if(ins, ('#',)):
+            number = vartypes.pass_int_unpack(self.parse_expression(ins, session))
+            util.range_check(0, 255, number)
+            screen = devices.get_file(number, file_mode)
+            util.require_read(ins, (',',))
+        return screen
+
+    def parse_file_number_opthash(self, ins, session):
+        """ Helper function: parse a file number, with optional hash. """
+        util.skip_white_read_if(ins, ('#',))
+        number = vartypes.pass_int_unpack(self.parse_expression(ins, session))
+        util.range_check(0, 255, number)
+        return number
+
+    def parse_expression(self, ins, session, allow_empty=False):
+        """ Compute the value of the expression at the current code pointer. """
+        stack = deque()
+        units = deque()
+        d = ''
+        missing_error = error.MISSING_OPERAND
+        # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
+        while True:
+            last = d
+            d = util.skip_white(ins)
+            # two-byte function tokens
+            if d in tk.twobyte:
+                d = util.peek(ins, n=2)
+            if d == tk.NOT and not (last in op.operators or last == ''):
+                # unary NOT ends expression except after another operator or at start
+                break
+            elif d in op.operators:
+                ins.read(len(d))
+                # get combined operators such as >=
+                if d in op.combinable:
+                    nxt = util.skip_white(ins)
+                    if nxt in op.combinable:
+                        d += ins.read(len(nxt))
+                if last in op.operators or last == '' or d == tk.NOT:
+                    # also if last is ( but that leads to recursive call and last == ''
+                    nargs = 1
+                    # zero operands for a binary operator is always syntax error
+                    # because it will be seen as an illegal unary
+                    if d not in self.operators.unary:
+                        raise error.RunError(error.STX)
+                else:
+                    nargs = 2
+                    self._evaluate_stack(stack, units, op.precedence[d], error.STX)
+                stack.append((d, nargs))
+            elif not (last in op.operators or last == ''):
+                # repeated unit ends expression
+                # repeated literals or variables or non-keywords like 'AS'
+                break
+            elif d == '(':
+                units.append(self.parse_bracket(ins, session))
+            elif d and d in string.ascii_letters:
+                # variable name
+                name, indices = self.parse_variable(ins, session)
+                units.append(self.session.memory.get_variable(name, indices))
+            elif d in self.functions.functions:
+                # apply functions
+                ins.read(len(d))
+                try:
+                    units.append(self.functions.functions[d](ins))
+                except (ValueError, ArithmeticError) as e:
+                    units.append(self._handle_math_error(e))
+            elif d in tk.end_statement:
+                break
+            elif d in tk.end_expression or d in tk.keyword:
+                # missing operand inside brackets or before comma is syntax error
+                missing_error = error.STX
+                break
+            else:
+                # literal
+                units.append(self.parse_literal(ins, session))
+        # empty expression is a syntax error (inside brackets)
+        # or Missing Operand (in an assignment)
+        # or not an error (in print and many functions)
+        if units or stack:
+            self._evaluate_stack(stack, units, 0, missing_error)
+            return units[0]
+        elif allow_empty:
+            return None
+        else:
+            raise error.RunError(missing_error)
+
+    def _evaluate_stack(self, stack, units, precedence, missing_err):
+        """ Drain evaluation stack until an operator of low precedence on top. """
+        while stack:
+            if precedence > op.precedence[stack[-1][0]]:
+                break
+            oper, narity = stack.pop()
+            try:
+                right = units.pop()
+                if narity == 1:
+                    units.append(self.operators.unary[oper](right))
+                else:
+                    left = units.pop()
+                    units.append(self.operators.binary[oper](left, right))
+            except IndexError:
+                # insufficient operators, error depends on context
+                raise error.RunError(missing_err)
+            except (ValueError, ArithmeticError) as e:
+                units.append(self._handle_math_error(e))
+
+    def _handle_math_error(self, e):
+        """ Handle Overflow or Division by Zero. """
+        if isinstance(e, ValueError):
+            # math domain errors such as SQR(-1)
+            raise error.RunError(error.IFC)
+        elif isinstance(e, OverflowError):
+            math_error = error.OVERFLOW
+        elif isinstance(e, ZeroDivisionError):
+            math_error = error.DIVISION_BY_ZERO
+        else:
+            raise e
+        if self.session.parser.on_error:
+            # also raises exception in error_handle_mode!
+            # in that case, prints a normal error message
+            raise error.RunError(math_error)
+        else:
+            # write a message & continue as normal
+            console.write_line(error.RunError(math_error).message)
+        # return max value for the appropriate float type
+        if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
+            return fp.pack(e.args[0])
+        return fp.pack(fp.Single.max.copy())
