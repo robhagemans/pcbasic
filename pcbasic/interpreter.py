@@ -42,6 +42,7 @@ import timedate
 import shell
 import memory
 import machine
+import parser
 
 
 class SessionLauncher(object):
@@ -181,7 +182,7 @@ class Session(object):
         if not os.path.exists(pcjr_term):
             pcjr_term = ''
         # initialise the parser
-        self.parser = statements.Parser(self, config.get('syntax'), pcjr_term)
+        self.parser = parser.Parser(self, config.get('syntax'), pcjr_term)
 
         # initialise random number generator
         self.randomiser = rnd.RandomNumberGenerator()
