@@ -6,11 +6,12 @@ Model memory
 This file is released under the GNU GPL version 3 or later.
 """
 
+from contextlib import contextmanager
+
 import error
 import var
 import vartypes
 import state
-
 
 
 # Data Segment Map - default situation
@@ -76,18 +77,46 @@ class DataSegment(object):
         # string space
         self.strings = var.StringSpace(self)
 
-    def clear_variables(self, preserve_vars, preserve_arrays, new_strings):
+    def clear_variables(self, preserve_sc, preserve_ar, new_strings):
         """ Reset and clear variables, arrays, common definitions and functions. """
         # preserve COMMON variables
         # this is a re-assignment which is not FOR-safe;
         # but clear_variables is only called in CLEAR which also clears the FOR stack
-        with self.scalars.preserve(preserve_vars, new_strings):
+        with self._preserve_scalars(preserve_sc, new_strings):
             self.scalars.clear()
-        with self.arrays.preserve(preserve_arrays, new_strings):
+        with self._preserve_arrays(preserve_ar, new_strings):
             self.arrays.clear()
-        if not(preserve_vars or preserve_arrays):
+        if not(preserve_sc or preserve_ar):
             # clear OPTION BASE
             self.arrays.clear_base()
+
+    @contextmanager
+    def _preserve_arrays(self, names, string_store):
+        """ Preserve COMMON variables. """
+        common = {name:value for name, value in self.arrays.arrays.iteritems() if name in names}
+        yield
+        for a in common:
+            self.arrays.dim(a, common[a][0])
+            if a[-1] == '$':
+                s = bytearray()
+                for i in range(0, len(common[a][1]), vartypes.byte_size['$']):
+                    old_ptr = vartypes.bytes_to_string(common[a][1][i : i+vartypes.byte_size['$']])
+                    new_ptr = string_store.store(self.strings.copy(old_ptr))
+                    s += vartypes.string_to_bytes(new_ptr)
+                self.arrays.arrays[a][1] = s
+            else:
+                self.arrays.arrays[a] = common[a]
+
+    @contextmanager
+    def _preserve_scalars(self, names, string_store):
+        """ Preserve COMMON variables. """
+        common = {name:value for name, value in self.scalars.variables.iteritems() if name in names}
+        yield
+        for v in common:
+            full_var = (v[-1], common[v])
+            if v[-1] == '$':
+                full_var = string_store.store(self.strings.copy(full_var))
+            self.scalars.set(v, full_var)
 
     def get_free(self):
         """ Return the amount of memory available to variables, arrays, strings and code. """

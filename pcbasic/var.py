@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 from operator import itemgetter
-from contextlib import contextmanager
 
 import error
 import vartypes
@@ -268,22 +267,6 @@ class Scalars(object):
         """ Return a list of views of string scalars. """
         return [memoryview(value) for name, value in self.variables.iteritems() if name[-1] == '$']
 
-    @contextmanager
-    def preserve(self, names, string_store):
-        """ Preserve COMMON variables. """
-        common = {}
-        for varname in names:
-            try:
-                common[varname] = self.variables[varname]
-            except KeyError:
-                pass
-        yield
-        for v in common:
-            full_var = (v[-1], common[v])
-            if v[-1] == '$':
-                full_var = string_store.store(state.session.strings.copy(full_var))
-            self.set(v, full_var)
-
 
 ###############################################################################
 # arrays
@@ -481,28 +464,6 @@ class Arrays(object):
                     for name, record in self.arrays.iteritems()
                         if name[-1] == '$'
                             for i in range(0, len(record[1]), 3)]
-
-    @contextmanager
-    def preserve(self, names, string_store):
-        """ Preserve COMMON variables. """
-        common = {}
-        for varname in names:
-            try:
-                common[varname] = self.arrays[varname]
-            except KeyError:
-                pass
-        yield
-        for a in common:
-            self.dim(a, common[a][0])
-            if a[-1] == '$':
-                s = bytearray()
-                for i in range(0, len(common[a][1]), vartypes.byte_size['$']):
-                    old_ptr = vartypes.bytes_to_string(common[a][1][i : i+vartypes.byte_size['$']])
-                    new_ptr = string_store.store(state.session.strings.copy(old_ptr))
-                    s += vartypes.string_to_bytes(new_ptr)
-                self.arrays[a][1] = s
-            else:
-                self.arrays[a] = common[a]
 
 
 
