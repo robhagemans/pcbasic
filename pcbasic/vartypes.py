@@ -18,6 +18,7 @@ import config
 # String ($) - stored as 1-byte length plus 2-byte pointer to string space
 
 byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
+sigils = set(byte_size)
 
 def null(sigil):
     """ Return null value for the given type. """

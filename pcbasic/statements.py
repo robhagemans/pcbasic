@@ -2017,21 +2017,16 @@ class Parser(object):
 
     def exec_deftype(self, typechar):
         """ DEFSTR/DEFINT/DEFSNG/DEFDBL: set type defaults for variables. """
-        start, stop = -1, -1
         while True:
-            d = util.skip_white_read(self.ins)
-            if d not in string.ascii_letters:
+            start = util.skip_white_read(self.ins)
+            if start not in string.ascii_letters:
                 raise error.RunError(error.STX)
-            else:
-                start = ord(d.upper()) - ord('A')
-                stop = start
+            stop = start
             if util.skip_white_read_if(self.ins, (tk.O_MINUS,)):
-                d = util.skip_white_read(self.ins)
-                if d not in string.ascii_letters:
+                stop = util.skip_white_read(self.ins)
+                if stop not in string.ascii_letters:
                     raise error.RunError(error.STX)
-                else:
-                    stop = ord(d.upper()) - ord('A')
-            self.session.deftype[start:stop+1] = [typechar] * (stop-start+1)
+            self.session.memory.set_deftype(start, stop, typechar)
             if not util.skip_white_read_if(self.ins, (',',)):
                 break
         util.require(self.ins, tk.end_statement)

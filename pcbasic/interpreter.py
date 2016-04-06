@@ -159,7 +159,6 @@ class Session(object):
         #MOVE into DataSegment?
         self.common_scalars = set()
         self.common_arrays = set()
-        self.deftype = ['!']*26
         self.user_functions = {}
 
         # set up rest of memory model
@@ -253,7 +252,7 @@ class Session(object):
             self.user_functions = {}
         if not preserve_deftype:
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
-            self.deftype = ['!']*26
+            self.memory.clear_deftype()
         # reset random number generator
         self.randomiser.clear()
         if close_files:

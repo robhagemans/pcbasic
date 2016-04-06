@@ -122,7 +122,7 @@ def parse_scalar(ins, allow_empty=False, err=error.STX):
     if not name and not allow_empty:
         raise error.RunError(err)
     # append type specifier
-    name = var.complete_name(name)
+    name = state.session.memory.complete_name(name)
     # only the first 40 chars are relevant in GW-BASIC, rest is discarded
     if len(name) > 41:
         name = name[:40]+name[-1]

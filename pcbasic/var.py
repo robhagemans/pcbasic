@@ -13,12 +13,6 @@ import error
 import vartypes
 import state
 
-def complete_name(name):
-    """ Add type specifier to a name, if missing. """
-    if name and name[-1] not in ('$', '%', '!', '#'):
-        name += state.session.deftype[ord(name[0].upper()) - ord('A')]
-    return name
-
 
 ###############################################################################
 # strings
@@ -187,7 +181,7 @@ class Scalars(object):
 
     def set(self, name, value=None):
         """ Assign a value to a variable. """
-        name = complete_name(name)
+        name = self.memory.complete_name(name)
         type_char = name[-1]
         if value is not None:
             value = vartypes.pass_type(type_char, value)
@@ -219,7 +213,7 @@ class Scalars(object):
 
     def get(self, name):
         """ Retrieve the value of a scalar variable. """
-        name = complete_name(name)
+        name = self.memory.complete_name(name)
         try:
             return (name[-1], self.variables[name])
         except KeyError:
@@ -227,7 +221,7 @@ class Scalars(object):
 
     def varptr(self, name):
         """ Retrieve the address of a scalar variable. """
-        name = complete_name(name)
+        name = self.memory.complete_name(name)
         try:
             _, var_ptr = self.var_memory[name]
             return var_ptr
@@ -320,7 +314,7 @@ class Arrays(object):
         """ Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value. """
         if self.base_index is None:
             self.base_index = 0
-        name = complete_name(name)
+        name = self.memory.complete_name(name)
         if name in self.arrays:
             raise error.RunError(error.DUPLICATE_DEFINITION)
         for d in dimensions:
@@ -401,7 +395,7 @@ class Arrays(object):
 
     def varptr(self, name, indices):
         """ Retrieve the address of an array. """
-        name = complete_name(name)
+        name = self.memory.complete_name(name)
         try:
             dimensions, _, _ = self.arrays[name]
             _, array_ptr = self.array_memory[name]

@@ -76,6 +76,18 @@ class DataSegment(object):
         self.arrays = var.Arrays(self)
         # string space
         self.strings = var.StringSpace(self)
+        # default sigils for names
+        self.deftype = ['!']*26
+
+    def clear_deftype(self):
+        """ Reset default sigils. """
+        self.deftype = ['!']*26
+
+    def set_deftype(self, start, stop, sigil):
+        """ Set default sigils. """
+        start = ord(start.upper()) - ord('A')
+        stop = ord(stop.upper()) - ord('A')
+        self.deftype[start:stop+1] = [sigil] * (stop-start+1)
 
     def clear_variables(self, preserve_sc, preserve_ar, new_strings):
         """ Reset and clear variables, arrays, common definitions and functions. """
@@ -273,6 +285,12 @@ class DataSegment(object):
 
     ###############################################################################
     # generic variable access
+
+    def complete_name(self, name):
+        """ Add default sigil to a name, if missing. """
+        if name and name[-1] not in vartypes.sigils:
+            name += self.deftype[ord(name[0].upper()) - ord('A')]
+        return name
 
     def get_variable(self, name, indices):
         """ Retrieve the value of a scalar variable or an array element. """
