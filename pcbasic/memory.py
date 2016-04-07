@@ -89,8 +89,9 @@ class DataSegment(object):
         stop = ord(stop.upper()) - ord('A')
         self.deftype[start:stop+1] = [sigil] * (stop-start+1)
 
-    def clear_variables(self, preserve_sc, preserve_ar, new_strings):
+    def clear_variables(self, preserve_sc, preserve_ar):
         """ Reset and clear variables, arrays, common definitions and functions. """
+        new_strings = var.StringSpace(self)
         # preserve COMMON variables
         # this is a re-assignment which is not FOR-safe;
         # but clear_variables is only called in CLEAR which also clears the FOR stack
@@ -98,6 +99,9 @@ class DataSegment(object):
             self.scalars.clear()
         with self._preserve_arrays(preserve_ar, new_strings):
             self.arrays.clear()
+        # clear old dict and copy into
+        self.strings.clear()
+        self.strings.strings.update(new_strings.strings)
         if not(preserve_sc or preserve_ar):
             # clear OPTION BASE
             self.arrays.clear_base()

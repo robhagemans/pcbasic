@@ -154,6 +154,7 @@ class Session(object):
                                         reserved_memory, max_reclen, max_files)
         self.program.set_address(self.memory.code_start)
         #D
+        # these should not be reassigned by DataSegment
         self.scalars = self.memory.scalars
         self.arrays = self.memory.arrays
         self.strings = self.memory.strings
@@ -246,10 +247,7 @@ class Session(object):
                 # at least I think these should be cleared by CLEAR?
                 self.common_scalars = set()
                 self.common_arrays = set()
-            new_strings = var.StringSpace(self.memory)
-            self.memory.clear_variables(self.common_scalars, self.common_arrays, new_strings)
-            # reset string space
-            self.strings = new_strings
+            self.memory.clear_variables(self.common_scalars, self.common_arrays)
             # functions are cleared except when CHAIN ... ALL is specified
             self.user_functions = {}
         if not preserve_deftype:
