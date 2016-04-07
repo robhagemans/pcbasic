@@ -23,11 +23,12 @@ class StringSpace(object):
     def __init__(self, memory):
         """ Initialise empty string space. """
         self.memory = memory
+        self.strings = {}
         self.clear()
 
     def clear(self):
         """ Empty string space. """
-        self.strings = {}
+        self.strings.clear()
         # strings are placed at the top of string memory, just below the stack
         self.current = self.memory.stack_start()
 
@@ -64,12 +65,7 @@ class StringSpace(object):
 
     def copy(self, basic_string):
         """ Return a copy of a string from its string pointer. """
-        try:
-            return str(bytearray(self._view(basic_string)))
-        except KeyError:
-            # 'Not a field string'
-            length = vartypes.string_length(basic_string)
-            return '\0'*length
+        return str(bytearray(self._view(basic_string)))
 
     def modify(self, basic_string, in_str, offset=None, num=None):
         """ Assign a new string into an existing buffer. """
