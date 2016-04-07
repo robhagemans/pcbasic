@@ -11,13 +11,9 @@ import traceback
 import logging
 import os
 
-import plat
-import config
-import logging
 import state
 import vartypes
 import var
-
 import representation
 import tokenise
 import console

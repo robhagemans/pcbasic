@@ -8,8 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import fp
 import error
-import state
-import config
 
 # BASIC types:
 # Integer (%) - stored as two's complement, little-endian
