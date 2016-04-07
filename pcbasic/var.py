@@ -46,6 +46,9 @@ class StringSpace(object):
     def _view(self, basic_string):
         """ Return a writeable view of a string from its string pointer. """
         length = vartypes.string_length(basic_string)
+        # empty string pointers can point anywhere
+        if length == 0:
+            return bytearray()
         address = vartypes.string_address(basic_string)
         # address >= self.memory.var_start(): if we no longer double-store code strings in string space object
         if address >= self.memory.code_start:
@@ -59,7 +62,7 @@ class StringSpace(object):
             number = 1 + start // self.memory.field_mem_offset
             offset = start % self.memory.field_mem_offset
             if (number not in state.io_state.fields) or (start < 0):
-                raise KeyError('Not a field string')
+                raise KeyError('Invalid string pointer')
             # memoryview slice continues to point to buffer, does not copy
             return memoryview(state.io_state.fields[number].buffer)[offset:offset+length]
 

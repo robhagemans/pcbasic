@@ -111,28 +111,31 @@ class DataSegment(object):
         """ Preserve COMMON variables. """
         common = {name:value for name, value in self.arrays.arrays.iteritems() if name in names}
         yield
-        for a in common:
-            self.arrays.dim(a, common[a][0])
-            if a[-1] == '$':
+        for name, value in common.iteritems():
+            dimensions, buf, _ = value
+            self.arrays.dim(name, dimensions)
+            if name[-1] == '$':
                 s = bytearray()
-                for i in range(0, len(common[a][1]), vartypes.byte_size['$']):
-                    old_ptr = vartypes.bytes_to_string(common[a][1][i : i+vartypes.byte_size['$']])
-                    new_ptr = string_store.store(self.strings.copy(old_ptr))
-                    s += vartypes.string_to_bytes(new_ptr)
-                self.arrays.arrays[a][1] = s
+                for i in range(0, len(buf), 3):
+                    ptr = vartypes.bytes_to_string(buf[i:i+3])
+                    # if the string array is not full, pointers are zero
+                    # but address is ignored for zero length
+                    ptr = string_store.store(self.strings.copy(ptr))
+                    s += vartypes.string_to_bytes(ptr)
+                self.arrays.arrays[name][1] = s
             else:
-                self.arrays.arrays[a] = common[a]
+                self.arrays.arrays[name] = value
 
     @contextmanager
     def _preserve_scalars(self, names, string_store):
         """ Preserve COMMON variables. """
         common = {name:value for name, value in self.scalars.variables.iteritems() if name in names}
         yield
-        for v in common:
-            full_var = (v[-1], common[v])
-            if v[-1] == '$':
+        for name, value in common.iteritems():
+            full_var = (name[-1], value)
+            if name[-1] == '$':
                 full_var = string_store.store(self.strings.copy(full_var))
-            self.scalars.set(v, full_var)
+            self.scalars.set(name, full_var)
 
     def get_free(self):
         """ Return the amount of memory available to variables, arrays, strings and code. """
