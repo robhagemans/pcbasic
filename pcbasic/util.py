@@ -137,6 +137,27 @@ def parse_jumpnum(ins, allow_empty=False, err=error.STX):
         # Syntax error
         raise error.RunError(err)
 
+def read_name(ins, allow_empty=False, err=error.STX):
+    """ Read a variable name """
+    name = ''
+    d = skip_white_read(ins)
+    if not d:
+        pass
+    elif d not in string.ascii_letters:
+        # variable name must start with a letter
+        ins.seek(-len(d), 1)
+    else:
+        while d and d in tk.name_chars:
+            name += d
+            d = ins.read(1)
+        if d in vartypes.sigils:
+            name += d
+        else:
+            ins.seek(-len(d), 1)
+    if not name and not allow_empty:
+        raise error.RunError(err)
+    return name
+
 def range_check(lower, upper, *allvars):
     """ Check if all variables in list are within the given inclusive range. """
     for v in allvars:

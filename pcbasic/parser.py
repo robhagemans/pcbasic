@@ -6,9 +6,6 @@ BASIC code parser
 This file is released under the GNU GPL version 3 or later.
 """
 
-import os
-from functools import partial
-import logging
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -17,23 +14,17 @@ import string
 from collections import deque
 
 import console
-import debug
 import disk
 import error
 import events
-import expressions
 import fp
 import devices
-import memory
 import ports
-import print_and_input
-import program
 import representation
 import sound
 import state
 import basictoken as tk
 import util
-import var
 import vartypes
 import statements
 import operators as op
@@ -416,25 +407,8 @@ class Parser(object):
 
     def parse_scalar(self, ins, allow_empty=False, err=error.STX):
         """ Get variable name from token stream. """
-        name = ''
-        d = util.skip_white_read(ins)
-        if not d:
-            pass
-        elif d not in string.ascii_letters:
-            # variable name must start with a letter
-            ins.seek(-len(d), 1)
-        else:
-            while d and d in tk.name_chars:
-                name += d
-                d = ins.read(1)
-            if d in vartypes.sigils:
-                name += d
-            else:
-                ins.seek(-len(d), 1)
-        if not name and not allow_empty:
-            raise error.RunError(err)
         # append type specifier
-        name = self.session.memory.complete_name(name)
+        name = self.session.memory.complete_name(util.read_name(ins, allow_empty, err))
         # only the first 40 chars are relevant in GW-BASIC, rest is discarded
         if len(name) > 41:
             name = name[:40]+name[-1]

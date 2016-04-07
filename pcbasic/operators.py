@@ -6,10 +6,8 @@ Numeric and string operators
 This file is released under the GNU GPL version 3 or later.
 """
 
-import state
 import fp
 import vartypes
-import var
 
 import basictoken as tk
 

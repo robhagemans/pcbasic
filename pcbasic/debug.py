@@ -19,7 +19,6 @@ import vartypes
 import var
 
 import representation
-import expressions
 import tokenise
 import console
 import memory
@@ -121,7 +120,7 @@ class Debugger(BaseDebugger):
             outstr += (' ' + expr +' = ')
             outs.seek(2)
             try:
-                val = expressions.parse_expression(outs, self.session)
+                val = self.session.parser.parse_expression(outs, self.session)
                 if val[0] == '$':
                     outstr += '"' + self.session.strings.copy(val) + '"'
                 else:

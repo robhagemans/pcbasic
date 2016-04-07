@@ -7,8 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
-import sys
-import traceback
 import logging
 import time
 import threading
@@ -25,7 +23,6 @@ import util
 import tokenise
 import program
 import signals
-import statements
 import display
 import console
 import state
@@ -36,7 +33,6 @@ import config
 import devices
 import cassette
 import disk
-import var
 import rnd
 import timedate
 import shell

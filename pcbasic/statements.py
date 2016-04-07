@@ -16,23 +16,16 @@ except ImportError:
 import string
 
 import console
-import debug
 import disk
 import error
-import events
 import fp
 import devices
-import memory
-from operators import Operators as op
 import ports
 import print_and_input
-import program
 import representation
-import sound
 import state
 import basictoken as tk
 import util
-import var
 import vartypes
 
 

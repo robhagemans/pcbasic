@@ -12,21 +12,16 @@ except ImportError:
     from StringIO import StringIO
 from functools import partial
 import logging
-import string
 
-import config
 import fp
 import vartypes
 import representation
 import shell
 import util
 import error
-import var
 import devices
 import state
 import basictoken as tk
-import memory
-import operators as op
 import console
 
 
