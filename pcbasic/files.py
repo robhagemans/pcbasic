@@ -185,6 +185,15 @@ class Devices(object):
         self._mount_drives(config.get(u'mount'))
         self._set_current_device(current_drive + b':')
 
+    def resume(self):
+        """ Override settings after resume. """
+        override_cas1 = config.get('cas1', False)
+        if override_cas1:
+            self.devices['CAS1:'] = cassette.CASDevice(override_cas1)
+        self._mount_drives(config.get(u'mount', False))
+        # we always need to reset this or it may be a reference to an old device
+        self._set_current_device(config.get(u'current-device', True).upper() + b':')
+
     def close(self):
         """ Close device master files. """
         for d in self.devices.values():

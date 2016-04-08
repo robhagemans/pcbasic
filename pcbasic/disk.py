@@ -101,14 +101,6 @@ os_error = {
 # this is complex and leads to unpredictable results depending on host platform.
 allowable_chars = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~")
 
-#####################
-
-def override():
-    """ Initialise module settings that override --resume. """
-    state.session.devices._mount_drives(config.get(u'mount', False))
-    # we always need to reset this or it may be a reference to an old device
-    state.session.devices._set_current_device(config.get(u'current-device', True).upper() + b':')
-
 
 ##############################################################################
 # Disk file object wrapper

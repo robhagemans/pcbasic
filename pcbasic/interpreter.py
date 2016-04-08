@@ -280,8 +280,7 @@ class Session(object):
         for q, store in zip(signals.tone_queue, state.console_state.tone_queue_store):
             signals.load_queue(q, store)
         # override selected settings from command line
-        cassette.override()
-        disk.override()
+        self.devices.resume()
         # suppress double prompt
         if not self.parse_mode:
             self.prompt = False

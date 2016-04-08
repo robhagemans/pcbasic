@@ -29,13 +29,6 @@ token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
 type_to_token = dict((reversed(item) for item in token_to_type.items()))
 
 
-def override():
-    """ Initialise cassette module settings that override --resume. """
-    override_cas1 = config.get('cas1', False)
-    if override_cas1:
-        state.session.devices.devices['CAS1:'] = CASDevice(override_cas1)
-
-
 #################################################################################
 # Exceptions
 
