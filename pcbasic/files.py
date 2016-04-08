@@ -59,7 +59,7 @@ class Files(object):
                 # bad file number, for some reason
                 raise error.RunError(error.BAD_FILE_NUMBER)
         else:
-            device = state.io_state.current_device
+            device = self.devices.current_device
             # MS-DOS device aliases - these can't be names of disk files
             if device != self.devices.devices['CAS1:'] and name in device_files:
                 if name == 'AUX':
@@ -150,6 +150,7 @@ class Devices(object):
         self._set_current_device(current_drive + b':')
 
 
+
     def _mount_drives(self, mount_list):
         """ Mount disk drives """
         if not mount_list:
@@ -171,10 +172,10 @@ class Devices(object):
     def _set_current_device(self, current_drive, default=b'Z:'):
         """ Set the current device. """
         try:
-            state.io_state.current_device = self.devices[current_drive]
+            self.current_device = self.devices[current_drive]
         except KeyError:
             logging.warning(u'Could not set current device to %s', current_drive)
-            state.io_state.current_device = self.devices[default]
+            self.current_device = self.devices[default]
 
 
     if plat.system == b'Windows':
@@ -218,6 +219,23 @@ class Devices(object):
                 self.devices[b'H:'] = disk.DiskDevice(b'H', home, u'')
             # default durrent drive
             return b'Z'
+
+    def get_diskdevice_and_path(self, path):
+        """ Return the disk device and remaining path for given file spec. """
+        # careful - do not convert path to uppercase, we still need to match
+        splits = bytes(path).split(b':', 1)
+        if len(splits) == 0:
+            return self.current_device, b''
+        elif len(splits) == 1:
+            return self.current_device, splits[0]
+        else:
+            # must be a disk device
+            if len(splits[0]) > 1:
+                raise error.RunError(error.DEVICE_UNAVAILABLE)
+            try:
+                return self.devices[splits[0].upper() + b':'], splits[1]
+            except KeyError:
+                raise error.RunError(error.DEVICE_UNAVAILABLE)
 
     def close(self):
         """ Close device master files. """

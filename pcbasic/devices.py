@@ -21,8 +21,6 @@ import display
 def nullstream():
     return open(os.devnull, 'r+')
 
-# set by disk.py
-state.io_state.current_device = None
 
 # magic chars used by some devices to indicate file type
 type_to_magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd' }

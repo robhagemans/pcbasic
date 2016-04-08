@@ -645,7 +645,7 @@ class Statements(object):
     def exec_chdir(self, ins):
         """ CHDIR: change working directory. """
         with self.session.strings:
-            dev, path = disk.get_diskdevice_and_path(
+            dev, path = self.session.devices.get_diskdevice_and_path(
                 self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session))))
         dev.chdir(path)
         util.require(ins, tk.end_statement)
@@ -653,7 +653,7 @@ class Statements(object):
     def exec_mkdir(self, ins):
         """ MKDIR: create directory. """
         with self.session.strings:
-            dev, path = disk.get_diskdevice_and_path(
+            dev, path = self.session.devices.get_diskdevice_and_path(
                 self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session))))
         dev.mkdir(path)
         util.require(ins, tk.end_statement)
@@ -661,7 +661,7 @@ class Statements(object):
     def exec_rmdir(self, ins):
         """ RMDIR: remove directory. """
         with self.session.strings:
-            dev, path = disk.get_diskdevice_and_path(
+            dev, path = self.session.devices.get_diskdevice_and_path(
                 self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session))))
         dev.rmdir(path)
         util.require(ins, tk.end_statement)
@@ -676,8 +676,8 @@ class Statements(object):
             raise error.RunError(error.STX)
         with self.session.strings:
             newname = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
-        dev, oldpath = disk.get_diskdevice_and_path(oldname)
-        newdev, newpath = disk.get_diskdevice_and_path(newname)
+        dev, oldpath = self.session.devices.get_diskdevice_and_path(oldname)
+        newdev, newpath = self.session.devices.get_diskdevice_and_path(newname)
         # don't rename open files
         dev.check_file_not_open(oldpath)
         if dev != newdev:
@@ -690,7 +690,7 @@ class Statements(object):
         with self.session.strings:
             name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # don't delete open files
-        dev, path = disk.get_diskdevice_and_path(name)
+        dev, path = self.session.devices.get_diskdevice_and_path(name)
         dev.check_file_not_open(path)
         dev.kill(path)
         util.require(ins, tk.end_statement)
@@ -703,7 +703,7 @@ class Statements(object):
                 pathmask = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
             if not pathmask:
                 raise error.RunError(error.BAD_FILE_NAME)
-        dev, path = disk.get_diskdevice_and_path(pathmask)
+        dev, path = self.session.devices.get_diskdevice_and_path(pathmask)
         dev.files(path)
         util.require(ins, tk.end_statement)
 

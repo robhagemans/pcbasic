@@ -216,23 +216,6 @@ def handle_oserror(e):
         basic_err = error.DEVICE_IO_ERROR
     raise error.RunError(basic_err)
 
-def get_diskdevice_and_path(path):
-    """ Return the disk device and remaining path for given BASIC path. """
-    # careful - do not convert path to uppercase, we still need to match
-    splits = bytes(path).split(b':', 1)
-    if len(splits) == 0:
-        return state.io_state.current_device, b''
-    elif len(splits) == 1:
-        return state.io_state.current_device, splits[0]
-    else:
-        # must be a disk device
-        if len(splits[0]) > 1:
-            raise error.RunError(error.DEVICE_UNAVAILABLE)
-        try:
-            return state.session.devices.devices[splits[0].upper() + b':'], splits[1]
-        except KeyError:
-            raise error.RunError(error.DEVICE_UNAVAILABLE)
-
 
 ##############################################################################
 # DOS name translation
@@ -536,9 +519,6 @@ class DiskDevice(object):
         dpath, rpath, _ = self._native_path_elements(name, path_err=error.PATH_NOT_FOUND, join_name=True)
         # set cwd for the specified drive
         self.cwd = rpath
-        # set the cwd in the underlying os (really only useful for SHELL)
-        if self == state.io_state.current_device:
-            safe(os.chdir, os.path.join(dpath, rpath))
 
     def mkdir(self, name):
         """ Create directory at given BASIC path. """
