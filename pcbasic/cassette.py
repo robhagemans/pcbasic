@@ -29,15 +29,11 @@ token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
 type_to_token = dict((reversed(item) for item in token_to_type.items()))
 
 
-def prepare():
-    """ Initialise cassette module. """
-    state.io_state.devices['CAS1:'] = CASDevice(config.get('cas1'))
-
 def override():
     """ Initialise cassette module settings that override --resume. """
     override_cas1 = config.get('cas1', False)
     if override_cas1:
-        state.io_state.devices['CAS1:'] = CASDevice(override_cas1)
+        state.session.devices.devices['CAS1:'] = CASDevice(override_cas1)
 
 
 #################################################################################
@@ -1338,5 +1334,3 @@ def butterband_sox(sample_rate, f0, width):
         y = y[-2:] + [0]*len(inp)
         for i in range(2, len(x)):
             y[i] = b0a*x[i] + b2a*x[i-2] - a1a*y[i-1] - a2a*y[i-2]
-
-prepare()

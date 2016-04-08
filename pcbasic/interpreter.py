@@ -172,7 +172,8 @@ class Session(object):
         self.all_memory = machine.Memory(peek_values, self.memory, config.get('syntax'))
 
         # intialise files
-        self.files = files.Files(max_files)
+        self.devices = files.Devices()
+        self.files = files.Files(self.devices, max_files)
 
         # initialise timer
         self.timer = timedate.Timer()
@@ -322,7 +323,7 @@ class Session(object):
                 state.save()
                 # close files if we opened any
                 self.files.close_all()
-                devices.close_devices()
+                self.devices.close()
         except error.Reset:
             # delete state if resetting
             state.delete()

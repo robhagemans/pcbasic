@@ -19,7 +19,6 @@ import console
 import disk
 import error
 import fp
-import devices
 import ports
 import print_and_input
 import representation
@@ -2520,7 +2519,7 @@ class Statements(object):
                 with self.session.strings:
                     devname = self.session.strings.copy(vartypes.pass_string(expr)).upper()
                 try:
-                    dev = state.io_state.devices[devname].device_file
+                    dev = self.session.devices.devices[devname].device_file
                 except (KeyError, AttributeError):
                     # bad file name
                     raise error.RunError(error.BAD_FILE_NAME)

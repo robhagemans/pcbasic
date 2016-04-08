@@ -19,7 +19,6 @@ import representation
 import shell
 import util
 import error
-import devices
 import state
 import basictoken as tk
 import console
@@ -374,7 +373,7 @@ class Functions(object):
         """ LPOS: get the current printer column. """
         num = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
         util.range_check(0, 3, num)
-        printer = state.io_state.devices['LPT' + max(1, num) + ':']
+        printer = self.session.devices.devices['LPT' + max(1, num) + ':']
         if printer.device_file:
             return vartypes.int_to_integer_signed(printer.device_file.col)
         else:

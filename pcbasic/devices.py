@@ -22,7 +22,7 @@ def nullstream():
     return open(os.devnull, 'r+')
 
 # devices - SCRN: KYBD: LPT1: etc.
-state.io_state.devices = {}
+
 state.io_state.scrn_file = None
 state.io_state.kybd_file = None
 state.io_state.lpt1_file = None
@@ -34,18 +34,6 @@ state.io_state.current_device = None
 type_to_magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd' }
 magic_to_type = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
 
-def prepare():
-    """ Initialise iolayer module. """
-    # console
-    state.io_state.devices['SCRN:'] = SCRNDevice()
-    state.io_state.devices['KYBD:'] = KYBDDevice()
-    state.io_state.scrn_file = state.io_state.devices['SCRN:'].device_file
-    state.io_state.kybd_file = state.io_state.devices['KYBD:'].device_file
-
-def close_devices():
-    """ Close device master files. """
-    for d in state.io_state.devices.values():
-        d.close()
 
 
 ############################################################################
@@ -699,6 +687,3 @@ class SCRNFile(RawFile):
     def eof(self):
         """ EOF: bad file mode. """
         raise error.RunError(error.BAD_FILE_MODE)
-
-
-prepare()

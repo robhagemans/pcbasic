@@ -15,13 +15,10 @@ import vartypes
 import var
 import error
 import memory
-import devices
 import program
 import unicodepage
 # for state.console_state globals
 import console
-# ensure state.io_state.devices is populated with com ports
-import ports
 
 
 ###############################################################################
@@ -41,7 +38,8 @@ class MachinePorts(object):
         # 3BCh - 3BFh  Used for Parallel Ports which were incorporated on to Video Cards - Doesn't support ECP addresses
         # 378h - 37Fh  Usual Address For LPT 1
         # 278h - 27Fh  Usual Address For LPT 2
-        self.lpt_device = [state.io_state.devices['LPT1:'], state.io_state.devices['LPT2:']]
+        dev = self.session.devices
+        self.lpt_device = [dev.devices['LPT1:'], dev.devices['LPT2:']]
         # serial port base address:
         # http://www.petesqbsite.com/sections/tutorials/zines/qbnews/9-com_ports.txt
         #            COM1             &H3F8
@@ -49,7 +47,7 @@ class MachinePorts(object):
         #            COM3             &H3E8 (not implemented)
         #            COM4             &H2E8 (not implemented)
         self.com_base = {0x3f8: 0, 0x2f8: 1}
-        self.com_device = [state.io_state.devices['COM1:'], state.io_state.devices['COM2:']]
+        self.com_device = [dev.devices['COM1:'], dev.devices['COM2:']]
         self.com_enable_baud_write = [False, False]
         self.com_baud_divisor = [0, 0]
         self.com_break = [False, False]
@@ -424,12 +422,12 @@ class Memory(object):
         #   "(PEEK (1041) AND 16)/16" WILL PROVIDE NUMBER OF GAME PORTS INSTALLED.
         #   "(PEEK (1041) AND 192)/64" WILL PROVIDE NUMBER OF PRINTERS INSTALLED.
         elif addr == 1041:
-            return (2 * ((state.io_state.devices['COM1:'].stream is not None) +
-                        (state.io_state.devices['COM2:'].stream is not None)) +
+            return (2 * ((state.session.devices.devices['COM1:'].stream is not None) +
+                        (state.session.devices.devices['COM2:'].stream is not None)) +
                     16 +
-                    64 * ((state.io_state.devices['LPT1:'].stream is not None) +
-                        (state.io_state.devices['LPT2:'].stream is not None) +
-                        (state.io_state.devices['LPT3:'].stream is not None)))
+                    64 * ((state.session.devices.devices['LPT1:'].stream is not None) +
+                        (state.session.devices.devices['LPT2:'].stream is not None) +
+                        (state.session.devices.devices['LPT3:'].stream is not None)))
         # &h40:&h17 keyboard flag
         # &H80 - Insert state active
         # &H40 - CapsLock state has been toggled

@@ -52,20 +52,6 @@ import devices
 import printer
 
 
-def prepare():
-    # parallel devices - LPT1: must always be defined
-    print_trigger = config.get('print-trigger')
-    state.io_state.devices['LPT1:'] = LPTDevice(config.get('lpt1'), devices.nullstream(), print_trigger)
-    state.io_state.devices['LPT2:'] = LPTDevice(config.get('lpt2'), None, print_trigger)
-    state.io_state.devices['LPT3:'] = LPTDevice(config.get('lpt3'), None, print_trigger)
-    state.io_state.lpt1_file = state.io_state.devices['LPT1:'].device_file
-    # serial devices
-    # buffer sizes (/c switch in GW-BASIC)
-    serial_in_size = config.get('serial-buffer-size')
-    state.io_state.devices['COM1:'] = COMDevice(config.get('com1'), serial_in_size)
-    state.io_state.devices['COM2:'] = COMDevice(config.get('com2'), serial_in_size)
-
-
 ###############################################################################
 # COM ports
 
@@ -688,5 +674,3 @@ class ParallelStream(object):
     def close(self):
         """ Close the stream. """
         pass
-
-prepare()

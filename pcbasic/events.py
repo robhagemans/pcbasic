@@ -121,8 +121,8 @@ class ComHandler(EventHandler):
 
     def check(self):
         """ Trigger COM-port events. """
-        if (state.io_state.devices[self.portname] and
-                    state.io_state.devices[self.portname].char_waiting()):
+        if (state.session.devices.devices[self.portname] and
+                    state.session.devices.devices[self.portname].char_waiting()):
             self.trigger()
 
 
