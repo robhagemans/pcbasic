@@ -865,7 +865,7 @@ class Screen(object):
             line = ''
             for c, _ in self.vpage.row[crow-1].buf:
                 line += c
-            state.io_state.lpt1_file.write_line(line)
+            state.session.devices.lpt1_file.write_line(line)
 
     def clear_text_at(self, x, y):
         """ Remove the character covering a single pixel. """

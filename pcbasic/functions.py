@@ -335,7 +335,7 @@ class Functions(object):
         util.require_read(ins, ('(',))
         num = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(1, 255, num)
-        infile = state.io_state.kybd_file
+        infile = self.session.devices.kybd_file
         if util.skip_white_read_if(ins, (',',)):
             infile = self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session))
         util.require_read(ins, (')',))

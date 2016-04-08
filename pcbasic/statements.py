@@ -860,7 +860,7 @@ class Statements(object):
         from_line, to_line = self._parse_line_range(ins)
         util.require(ins, tk.end_statement)
         for l in self.session.program.list_lines(from_line, to_line):
-            state.io_state.lpt1_file.write_line(l)
+            self.session.devices.lpt1_file.write_line(l)
         # return to direct mode
         self.parser.set_pointer(False)
 
@@ -2364,7 +2364,7 @@ class Statements(object):
     def exec_write(self, ins, output=None):
         """ WRITE: Output machine-readable expressions to the screen or a file. """
         output = self.parser.parse_file_number(ins, self.session, 'OAR')
-        output = state.io_state.scrn_file if output is None else output
+        output = self.session.devices.scrn_file if output is None else output
         expr = self.parser.parse_expression(ins, self.session, allow_empty=True)
         outstr = ''
         if expr:
@@ -2387,7 +2387,7 @@ class Statements(object):
         """ PRINT: Write expressions to the screen or a file. """
         if output is None:
             output = self.parser.parse_file_number(ins, self.session, 'OAR')
-            output = state.io_state.scrn_file if output is None else output
+            output = self.session.devices.scrn_file if output is None else output
         number_zones = max(1, int(output.width/14))
         newline = True
         while True:
@@ -2429,7 +2429,7 @@ class Statements(object):
         if util.skip_white_read_if(ins, (tk.USING,)):
             return self.exec_print_using(ins, output)
         if newline:
-            if output == state.io_state.scrn_file and state.console_state.overflow:
+            if output == self.session.devices.scrn_file and state.console_state.overflow:
                 output.write_line()
             output.write_line()
         util.require(ins, tk.end_statement)
@@ -2484,7 +2484,7 @@ class Statements(object):
 
     def exec_lprint(self, ins):
         """ LPRINT: Write expressions to printer LPT1. """
-        self.exec_print(ins, state.io_state.lpt1_file)
+        self.exec_print(ins, self.session.devices.lpt1_file)
 
     def exec_view_print(self, ins):
         """ VIEW PRINT: set scroll region. """
@@ -2507,7 +2507,7 @@ class Statements(object):
             w = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         elif d == tk.LPRINT:
             ins.read(1)
-            dev = state.io_state.lpt1_file
+            dev = self.session.devices.lpt1_file
             w = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         else:
             # we can do calculations, but they must be bracketed...
@@ -2526,7 +2526,7 @@ class Statements(object):
                 util.require_read(ins, (',',))
                 w = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             else:
-                dev = state.io_state.scrn_file
+                dev = self.session.devices.scrn_file
                 w = vartypes.pass_int_unpack(expr)
                 if util.skip_white_read_if(ins, (',',)):
                     # pare dummy number rows setting

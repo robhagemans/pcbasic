@@ -21,12 +21,6 @@ import display
 def nullstream():
     return open(os.devnull, 'r+')
 
-# devices - SCRN: KYBD: LPT1: etc.
-
-state.io_state.scrn_file = None
-state.io_state.kybd_file = None
-state.io_state.lpt1_file = None
-
 # set by disk.py
 state.io_state.current_device = None
 

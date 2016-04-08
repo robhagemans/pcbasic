@@ -122,15 +122,15 @@ class Devices(object):
         # console
         self.devices['SCRN:'] = devices.SCRNDevice()
         self.devices['KYBD:'] = devices.KYBDDevice()
-        state.io_state.scrn_file = self.devices['SCRN:'].device_file
-        state.io_state.kybd_file = self.devices['KYBD:'].device_file
+        self.scrn_file = self.devices['SCRN:'].device_file
+        self.kybd_file = self.devices['KYBD:'].device_file
         # ports
         # parallel devices - LPT1: must always be defined
         print_trigger = config.get('print-trigger')
         self.devices['LPT1:'] = ports.LPTDevice(config.get('lpt1'), devices.nullstream(), print_trigger)
         self.devices['LPT2:'] = ports.LPTDevice(config.get('lpt2'), None, print_trigger)
         self.devices['LPT3:'] = ports.LPTDevice(config.get('lpt3'), None, print_trigger)
-        state.io_state.lpt1_file = self.devices['LPT1:'].device_file
+        self.lpt1_file = self.devices['LPT1:'].device_file
         # serial devices
         # buffer sizes (/c switch in GW-BASIC)
         serial_in_size = config.get('serial-buffer-size')

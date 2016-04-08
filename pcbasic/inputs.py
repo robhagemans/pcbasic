@@ -357,7 +357,7 @@ class Keyboard(object):
                     state.console_state.screen.print_screen()
                 elif mod & modifier[scancode.CTRL]:
                     # ctrl + printscreen
-                    redirect.toggle_echo(state.io_state.lpt1_file)
+                    redirect.toggle_echo(state.session.devices.lpt1_file)
             self.buf.insert_keypress(
                     state.console_state.codepage.from_unicode(c),
                     scan, mod, check_full)
