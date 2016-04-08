@@ -37,6 +37,21 @@ class Files(object):
         self.files = {}
         self.max_files = max_files
         self.devices = devices
+        self.locks = {}
+
+    def close(self, num):
+        """ Close a numbered file. """
+        try:
+            self.files[num].close()
+            del self.files[num]
+        except KeyError:
+            pass
+
+    def close_all(self):
+        """ Close all files. """
+        for f in self.files.values():
+            f.close()
+        self.files = {}
 
     def open(self, number, description, filetype, mode='I', access='R', lock='',
                   reclen=128, seg=0, offset=0, length=0):
@@ -92,19 +107,41 @@ class Files(object):
             raise error.RunError(error.BAD_FILE_MODE)
         return the_file
 
-    def close(self, num):
-        """ Close a numbered file. """
+
+    ###########################################################################
+    # Locks
+
+    def _list_locks(self, name):
+        """ Retrieve a list of files open to the same disk stream. """
+        return [ self.files[fnum]
+                       for (fnum, fname) in self.locks.iteritems()
+                       if fname == name ]
+
+    def _acquire_lock(self, name, number, lock_type, access):
+        """ Try to lock a file. """
+        if not number:
+            return
+        already_open = self._list_locks(name)
+        for f in already_open:
+            if (
+                    # default mode: don't accept if SHARED/LOCK present
+                    ((not lock_type) and f.lock_type) or
+                    # LOCK READ WRITE: don't accept if already open
+                    (lock_type == b'RW') or
+                    # SHARED: don't accept if open in default mode
+                    (lock_type == b'S' and not f.lock_type) or
+                    # LOCK READ or LOCK WRITE: accept base on ACCESS of open file
+                    (lock_type in f.access) or (f.lock_type in access)):
+                raise error.RunError(error.PERMISSION_DENIED)
+        self.locks[number] = name
+
+    def _release_lock(self, number):
+        """ Release the lock on a file before closing. """
         try:
-            self.files[num].close()
-            del self.files[num]
+            del self.locks[number]
         except KeyError:
             pass
 
-    def close_all(self):
-        """ Close all files. """
-        for f in self.files.values():
-            f.close()
-        self.files = {}
 
 
 ###############################################################################
@@ -149,7 +186,10 @@ class Devices(object):
         self._mount_drives(config.get(u'mount'))
         self._set_current_device(current_drive + b':')
 
-
+    def close(self):
+        """ Close device master files. """
+        for d in self.devices.values():
+            d.close()
 
     def _mount_drives(self, mount_list):
         """ Mount disk drives """
@@ -236,8 +276,3 @@ class Devices(object):
                 return self.devices[splits[0].upper() + b':'], splits[1]
             except KeyError:
                 raise error.RunError(error.DEVICE_UNAVAILABLE)
-
-    def close(self):
-        """ Close device master files. """
-        for d in self.devices.values():
-            d.close()
