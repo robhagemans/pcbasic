@@ -71,9 +71,6 @@ import cassette
 # 188   n       FIELD buffer, default length 128 (given by /s:n)
 
 
-# fields are preserved on file close, so have a separate store
-state.io_state.fields = {}
-
 # translate os error codes to BASIC error codes
 os_error = {
     # file not found
@@ -153,13 +150,6 @@ def _set_current_device(current_drive, default=b'Z:'):
         logging.warning(u'Could not set current device to %s', current_drive)
         state.io_state.current_device = state.io_state.devices[default]
 
-def reset_fields(memory):
-    """ Initialise FIELD buffers. """
-    state.io_state.fields = {}
-    # fields are indexed by BASIC file number, hence max_files+1
-    # file 0 (program/system file) probably doesn't need a field
-    for i in range(state.io_state.max_files+1):
-        state.io_state.fields[i+1] = devices.Field(i+1, memory)
 
 if plat.system == b'Windows':
     def _map_drives():
@@ -765,7 +755,7 @@ class RandomFile(devices.CRLFTextFileBase):
         # touched until PUT or GET.
         self.reclen = reclen
         # replace with empty field if already exists
-        self.field = state.io_state.fields[number]
+        self.field = state.session.memory.fields[number]
         self.field.reset(self.reclen)
         devices.CRLFTextFileBase.__init__(self, ByteStream(self.field.buffer), b'D', b'R')
         self.operating_mode = b'I'

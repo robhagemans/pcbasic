@@ -11,7 +11,6 @@ from operator import itemgetter
 
 import error
 import vartypes
-import state
 
 
 ###############################################################################
@@ -61,10 +60,10 @@ class StringSpace(object):
             start = address - self.memory.field_mem_start
             number = 1 + start // self.memory.field_mem_offset
             offset = start % self.memory.field_mem_offset
-            if (number not in state.io_state.fields) or (start < 0):
+            if (number not in self.memory.fields) or (start < 0):
                 raise KeyError('Invalid string pointer')
             # memoryview slice continues to point to buffer, does not copy
-            return memoryview(state.io_state.fields[number].buffer)[offset:offset+length]
+            return memoryview(self.memory.fields[number].buffer)[offset:offset+length]
 
     def copy(self, basic_string):
         """ Return a copy of a string from its string pointer. """

@@ -11,7 +11,7 @@ from contextlib import contextmanager
 import error
 import var
 import vartypes
-import state
+import devices
 
 
 # Data Segment Map - default situation
@@ -36,6 +36,7 @@ import state
 # 65022     512         BASIC stack (size determined by CLEAR)
 # NOTE - the last two sections may be the other way around (2 bytes at end)
 # 65534                 total size (determined by CLEAR)
+
 
 
 class DataSegment(object):
@@ -78,6 +79,17 @@ class DataSegment(object):
         self.strings = var.StringSpace(self)
         # default sigils for names
         self.deftype = ['!']*26
+        # FIELD buffers
+        self.max_files = max_files
+        self.reset_fields()
+
+    def reset_fields(self):
+        """ Initialise FIELD buffers. """
+        self.fields = {}
+        # fields are indexed by BASIC file number, hence max_files+1
+        # file 0 (program/system file) probably doesn't need a field
+        for i in range(self.max_files+1):
+            self.fields[i+1] = devices.Field(i+1, self)
 
     def clear_deftype(self):
         """ Reset default sigils. """
@@ -215,7 +227,7 @@ class DataSegment(object):
 
     def varptr_file(self, filenum):
         """ Get address of FCB for a given file number. """
-        if filenum < 1 or filenum > state.io_state.max_files:
+        if filenum < 1 or filenum > self.max_files:
             raise error.RunError(error.BAD_FILE_NUMBER)
         return self.field_mem_base + filenum * self.field_mem_offset + 6
 
@@ -228,7 +240,7 @@ class DataSegment(object):
         number = 1 + start // self.field_mem_offset
         offset = start % self.field_mem_offset
         try:
-            return state.io_state.fields[number].buffer[offset]
+            return self.fields[number].buffer[offset]
         except (KeyError, IndexError):
             return -1
 

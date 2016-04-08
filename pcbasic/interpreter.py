@@ -184,8 +184,6 @@ class Session(object):
 
         # initialise random number generator
         self.randomiser = rnd.RandomNumberGenerator()
-        # initialise FIELD buffers
-        disk.reset_fields(self.memory)
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
 
@@ -255,7 +253,7 @@ class Session(object):
             # close all files
             devices.close_files()
         # release all disk buffers (FIELD)?
-        disk.reset_fields(self.memory)
+        self.memory.reset_fields()
         # stop all sound
         state.console_state.sound.stop_all_sound()
         # Resets STRIG to off
