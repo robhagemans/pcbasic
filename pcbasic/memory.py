@@ -81,6 +81,7 @@ class DataSegment(object):
         self.deftype = ['!']*26
         # FIELD buffers
         self.max_files = max_files
+        self.max_reclen = max_reclen
         self.reset_fields()
 
     def reset_fields(self):

@@ -140,7 +140,8 @@ class Session(object):
         max_list[0] = max_list[0] or max_list[1]
         max_memory = min(max_list) or 65534
         # length of field record (by default 128)
-        max_reclen = config.get('max-reclen')
+        # maximum record length (-s)
+        max_reclen = max(1, min(32767, config.get('max-reclen')))
         # number of file records
         max_files = config.get('max-files')
         # first field buffer address (workspace size; 3429 for gw-basic)

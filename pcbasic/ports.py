@@ -60,13 +60,10 @@ def prepare():
     state.io_state.devices['LPT3:'] = LPTDevice(config.get('lpt3'), None, print_trigger)
     state.io_state.lpt1_file = state.io_state.devices['LPT1:'].device_file
     # serial devices
-    # maximum record length (-s)
-    max_reclen = max(1, min(32767, config.get('max-reclen')))
     # buffer sizes (/c switch in GW-BASIC)
     serial_in_size = config.get('serial-buffer-size')
-    state.io_state.devices['COM1:'] = COMDevice(config.get('com1'), max_reclen, serial_in_size)
-    state.io_state.devices['COM2:'] = COMDevice(config.get('com2'), max_reclen, serial_in_size)
-    state.io_state.max_reclen = max_reclen
+    state.io_state.devices['COM1:'] = COMDevice(config.get('com1'), serial_in_size)
+    state.io_state.devices['COM2:'] = COMDevice(config.get('com2'), serial_in_size)
 
 
 ###############################################################################
@@ -77,7 +74,7 @@ class COMDevice(devices.Device):
 
     allowed_modes = 'IOAR'
 
-    def __init__(self, arg, max_reclen, serial_in_size):
+    def __init__(self, arg, serial_in_size):
         """ Initialise COMn: device. """
         devices.Device.__init__(self)
         addr, val = devices.parse_protocol_string(arg)
