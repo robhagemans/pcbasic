@@ -39,6 +39,7 @@ import shell
 import memory
 import machine
 import parser
+import files
 
 
 class SessionLauncher(object):
@@ -170,6 +171,9 @@ class Session(object):
             pass
         self.all_memory = machine.Memory(peek_values, self.memory, config.get('syntax'))
 
+        # intialise files
+        self.files = files.Files(max_files)
+
         # initialise timer
         self.timer = timedate.Timer()
 
@@ -252,7 +256,7 @@ class Session(object):
         self.randomiser.clear()
         if close_files:
             # close all files
-            devices.close_files()
+            self.files.close_all()
         # release all disk buffers (FIELD)?
         self.memory.reset_fields()
         # stop all sound
@@ -317,7 +321,7 @@ class Session(object):
                         signals.save_queue(q) for q in signals.tone_queue]
                 state.save()
                 # close files if we opened any
-                devices.close_files()
+                self.files.close_all()
                 devices.close_devices()
         except error.Reset:
             # delete state if resetting

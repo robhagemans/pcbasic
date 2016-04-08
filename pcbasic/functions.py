@@ -338,7 +338,7 @@ class Functions(object):
         util.range_check(1, 255, num)
         infile = state.io_state.kybd_file
         if util.skip_white_read_if(ins, (',',)):
-            infile = devices.get_file(self.parser.parse_file_number_opthash(ins, self.session))
+            infile = self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session))
         util.require_read(ins, (')',))
         word = bytearray(infile.read_raw(num))
         if len(word) < num:
@@ -388,7 +388,7 @@ class Functions(object):
         util.skip_white(ins)
         num = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session), maxint=0xffff)
         util.range_check(0, 255, num)
-        the_file = devices.get_file(num)
+        the_file = self.session.files.get(num)
         return fp.pack(fp.Single.from_int(the_file.loc()))
 
     def value_eof(self, ins):
@@ -398,7 +398,7 @@ class Functions(object):
         if num == 0:
             return vartypes.null('%')
         util.range_check(0, 255, num)
-        the_file = devices.get_file(num, 'IR')
+        the_file = self.session.files.get(num, 'IR')
         return vartypes.bool_to_integer(the_file.eof())
 
     def value_lof(self, ins):
@@ -406,7 +406,7 @@ class Functions(object):
         util.skip_white(ins)
         num = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session), maxint=0xffff)
         util.range_check(0, 255, num)
-        the_file = devices.get_file(num)
+        the_file = self.session.files.get(num)
         return fp.pack(fp.Single.from_int(the_file.lof()))
 
 
@@ -665,7 +665,7 @@ class Functions(object):
         util.require_read(ins, ('(',))
         num = self.parser.parse_file_number_opthash(ins, self.session)
         util.require_read(ins, (')',))
-        devices.get_file(num)
+        self.session.files.get(num)
         logging.warning("IOCTL$() function not implemented.")
         raise error.RunError(error.IFC)
 

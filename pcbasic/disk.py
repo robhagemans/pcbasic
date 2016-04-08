@@ -241,7 +241,7 @@ def open_native_or_dos_filename(infile):
         return create_file_object(open(os.path.expandvars(os.path.expanduser(infile)), 'rb'), filetype='BPA', mode='I')
     except EnvironmentError as e:
         # otherwise, accept capitalised versions and default extension
-        return devices.open_file(0, infile, filetype='BPA', mode='I')
+        return state.session.files.open(0, infile, filetype='BPA', mode='I')
 
 ##############################################################################
 # Locks
@@ -251,7 +251,7 @@ state.io_state.locks = {}
 
 def _list_locks(name):
     """ Retrieve a list of files open to the same disk stream. """
-    return [ state.io_state.files[fnum]
+    return [ state.session.files.files[fnum]
                    for (fnum, fname) in state.io_state.locks.iteritems()
                    if fname == name ]
 
@@ -545,9 +545,9 @@ class DiskDevice(object):
 
     def check_file_not_open(self, path):
         """ Raise an error if the file is open. """
-        for f in state.io_state.files:
+        for f in state.session.files.files:
             try:
-                if self._native_path(path, name_err=None) == state.io_state.files[f].name:
+                if self._native_path(path, name_err=None) == state.session.files.files[f].name:
                     raise error.RunError(error.FILE_ALREADY_OPEN)
             except AttributeError:
                 # only disk files have a name, so ignore

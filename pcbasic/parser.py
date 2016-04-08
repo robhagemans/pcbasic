@@ -420,7 +420,7 @@ class Parser(object):
         if util.skip_white_read_if(ins, ('#',)):
             number = vartypes.pass_int_unpack(self.parse_expression(ins, session))
             util.range_check(0, 255, number)
-            screen = devices.get_file(number, file_mode)
+            screen = self.session.files.get(number, file_mode)
             util.require_read(ins, (',',))
         return screen
 

@@ -18,9 +18,6 @@ import var
 # unused import, needed to initialise state.console_state.screen
 import display
 
-# file numbers
-state.io_state.files = {}
-
 def nullstream():
     return open(os.devnull, 'r+')
 
@@ -37,9 +34,6 @@ state.io_state.current_device = None
 type_to_magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd' }
 magic_to_type = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
 
-# MS-DOS device files
-device_files = ('AUX', 'CON', 'NUL', 'PRN')
-
 def prepare():
     """ Initialise iolayer module. """
     # console
@@ -48,82 +42,10 @@ def prepare():
     state.io_state.scrn_file = state.io_state.devices['SCRN:'].device_file
     state.io_state.kybd_file = state.io_state.devices['KYBD:'].device_file
 
-############################################################################
-# General file manipulation
-
-def open_file(number, description, filetype, mode='I', access='R', lock='',
-              reclen=128, seg=0, offset=0, length=0):
-    """ Open a file on a device specified by description. """
-    if (not description) or (number < 0) or (number > state.session.memory.max_files):
-        # bad file number; also for name='', for some reason
-        raise error.RunError(error.BAD_FILE_NUMBER)
-    if number in state.io_state.files:
-        raise error.RunError(error.FILE_ALREADY_OPEN)
-    name, mode = str(description), mode.upper()
-    inst = None
-    split_colon = name.split(':')
-    if len(split_colon) > 1: # : found
-        dev_name = split_colon[0].upper() + ':'
-        dev_param = ''.join(split_colon[1:])
-        try:
-            device = state.io_state.devices[dev_name]
-        except KeyError:
-            # not an allowable device or drive name
-            # bad file number, for some reason
-            raise error.RunError(error.BAD_FILE_NUMBER)
-    else:
-        device = state.io_state.current_device
-        # MS-DOS device aliases - these can't be names of disk files
-        if device != state.io_state.devices['CAS1:'] and name in device_files:
-            if name == 'AUX':
-                device, dev_param = state.io_state.devices['COM1:'], ''
-            elif name == 'CON' and mode == 'I':
-                device, dev_param = state.io_state.devices['KYBD:'], ''
-            elif name == 'CON' and mode == 'O':
-                device, dev_param = state.io_state.devices['SCRN:'], ''
-            elif name == 'PRN':
-                device, dev_param = state.io_state.devices['LPT1:'], ''
-            elif name == 'NUL':
-                device, dev_param = NullDevice(), ''
-        else:
-            # open file on default device
-            dev_param = name
-    # open the file on the device
-    new_file = device.open(number, dev_param, filetype, mode, access, lock,
-                           reclen, seg, offset, length)
-    if number:
-        state.io_state.files[number] = new_file
-    return new_file
-
-def get_file(num, mode='IOAR'):
-    """ Get the file object for a file number and check allowed mode. """
-    try:
-        the_file = state.io_state.files[num]
-    except KeyError:
-        raise error.RunError(error.BAD_FILE_NUMBER)
-    if the_file.mode.upper() not in mode:
-        raise error.RunError(error.BAD_FILE_MODE)
-    return the_file
-
-def close_file(num):
-    """ Close a numbered file. """
-    try:
-        state.io_state.files[num].close()
-        del state.io_state.files[num]
-    except KeyError:
-        pass
-
-def close_files():
-    """ Close all files. """
-    for f in state.io_state.files.values():
-        f.close()
-    state.io_state.files = {}
-
 def close_devices():
     """ Close device master files. """
     for d in state.io_state.devices.values():
         d.close()
-
 
 
 ############################################################################

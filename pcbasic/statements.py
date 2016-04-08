@@ -571,7 +571,7 @@ class Statements(object):
             if offset < 0:
                 offset += 0x10000
         util.require(ins, tk.end_statement)
-        with devices.open_file(0, name, filetype='M', mode='I') as f:
+        with self.session.files.open(0, name, filetype='M', mode='I') as f:
             self.session.all_memory.bload(f, offset)
 
     def exec_bsave(self, ins):
@@ -590,7 +590,7 @@ class Statements(object):
         if length < 0:
             length += 0x10000
         util.require(ins, tk.end_statement)
-        with devices.open_file(0, name, filetype='M', mode='O',
+        with self.session.files.open(0, name, filetype='M', mode='O',
                                 seg=self.session.all_memory.segment,
                                 offset=offset, length=length) as f:
             self.session.all_memory.bsave(f, offset, length)
@@ -840,7 +840,7 @@ class Statements(object):
         if util.skip_white_read_if(ins, (',',)):
             with self.session.strings:
                 outname = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
-            out = devices.open_file(0, outname, filetype='A', mode='O')
+            out = self.session.files.open(0, outname, filetype='A', mode='O')
             # ignore everything after file spec
             util.skip_to(ins, tk.end_line)
         util.require(ins, tk.end_statement)
@@ -874,7 +874,7 @@ class Statements(object):
         if comma:
             util.require_read(ins, 'R')
         util.require(ins, tk.end_statement)
-        with devices.open_file(0, name, filetype='ABP', mode='I') as f:
+        with self.session.files.open(0, name, filetype='ABP', mode='I') as f:
             self.session.program.load(f)
         # reset stacks
         self.parser.clear_stacks_and_pointers()
@@ -884,7 +884,7 @@ class Statements(object):
             # in ,R mode, don't close files; run the program
             self.parser.jump(None)
         else:
-            devices.close_files()
+            self.session.files.close_all()
         self.parser.tron = False
 
     def exec_chain(self, ins):
@@ -916,7 +916,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
         if self.session.program.protected and action == self.session.program.merge:
                 raise error.RunError(error.IFC)
-        with devices.open_file(0, name, filetype='ABP', mode='I') as f:
+        with self.session.files.open(0, name, filetype='ABP', mode='I') as f:
             if delete_lines:
                 # delete lines from existing code before merge (without MERGE, this is pointless)
                 self.session.program.delete(*delete_lines)
@@ -956,7 +956,7 @@ class Statements(object):
             mode = util.skip_white_read(ins).upper()
             if mode not in ('A', 'P'):
                 raise error.RunError(error.STX)
-        with devices.open_file(0, name, filetype=mode, mode='O',
+        with self.session.files.open(0, name, filetype=mode, mode='O',
                                 seg=self.session.memory.data_segment, offset=self.session.memory.code_start,
                                 length=len(self.parser.program_code.getvalue())-1
                                 ) as f:
@@ -968,7 +968,7 @@ class Statements(object):
         with self.session.strings:
             name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
-        with devices.open_file(0, name, filetype='A', mode='I') as f:
+        with self.session.files.open(0, name, filetype='A', mode='I') as f:
             self.session.program.merge(f)
         # clear all program stacks
         self.parser.clear_stacks_and_pointers()
@@ -1015,7 +1015,7 @@ class Statements(object):
 
     def exec_reset(self, ins):
         """ RESET: close all files. """
-        devices.close_files()
+        self.session.files.close_all()
         util.require(ins, tk.end_statement)
 
     def _parse_read_write(self, ins):
@@ -1097,19 +1097,19 @@ class Statements(object):
         util.range_check(1, self.session.memory.max_reclen, reclen)
         # can't open file 0, or beyond max_files
         util.range_check_err(1, self.session.memory.max_files, number, error.BAD_FILE_NUMBER)
-        devices.open_file(number, name, 'D', mode, access, lock, reclen)
+        self.session.files.open(number, name, 'D', mode, access, lock, reclen)
         util.require(ins, tk.end_statement)
 
     def exec_close(self, ins):
         """ CLOSE: close a file. """
         if util.skip_white(ins) in tk.end_statement:
             # allow empty CLOSE; close all open files
-            devices.close_files()
+            self.session.files.close_all()
         else:
             while True:
                 number = self.parser.parse_file_number_opthash(ins, self.session)
                 try:
-                    devices.close_file(number)
+                    self.session.files.close(number)
                 except KeyError:
                     pass
                 if not util.skip_white_read_if(ins, (',',)):
@@ -1118,7 +1118,7 @@ class Statements(object):
 
     def exec_field(self, ins):
         """ FIELD: link a string variable to record buffer. """
-        the_file = devices.get_file(self.parser.parse_file_number_opthash(ins, self.session), 'R')
+        the_file = self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session), 'R')
         if util.skip_white_read_if(ins, (',',)):
             offset = 0
             while True:
@@ -1134,7 +1134,7 @@ class Statements(object):
 
     def _parse_get_or_put_file(self, ins):
         """ Helper function: PUT and GET syntax. """
-        the_file = devices.get_file(self.parser.parse_file_number_opthash(ins, self.session), 'R')
+        the_file = self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session), 'R')
         # for COM files
         num_bytes = the_file.reclen
         if util.skip_white_read_if(ins, (',',)):
@@ -1162,7 +1162,7 @@ class Statements(object):
 
     def exec_lock_or_unlock(self, ins, action):
         """ LOCK or UNLOCK: set file or record locks. """
-        thefile = devices.get_file(self.parser.parse_file_number_opthash(ins, self.session))
+        thefile = self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session))
         lock_start_rec = 1
         if util.skip_white_read_if(ins, (',',)):
             lock_start_rec = fp.unpack(vartypes.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
@@ -1183,7 +1183,7 @@ class Statements(object):
 
     def exec_ioctl(self, ins):
         """ IOCTL: send control string to I/O device. Not implemented. """
-        devices.get_file(self.parser.parse_file_number_opthash(ins, self.session))
+        self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session))
         logging.warning("IOCTL statement not implemented.")
         raise error.RunError(error.IFC)
 
@@ -1414,7 +1414,7 @@ class Statements(object):
         # avoid NO RESUME
         self.parser.error_handle_mode = False
         self.parser.error_resume = None
-        devices.close_files()
+        self.session.files.close_all()
 
     def exec_stop(self, ins):
         """ STOP: break program execution and return to interpreter. """
@@ -1555,7 +1555,7 @@ class Statements(object):
                 util.require_read(ins, 'R')
                 close_files = False
             util.require(ins, tk.end_statement)
-            with devices.open_file(0, name, filetype='ABP', mode='I') as f:
+            with self.session.files.open(0, name, filetype='ABP', mode='I') as f:
                 self.session.program.load(f)
         self.parser.clear_stacks_and_pointers()
         self.session.clear(close_files=close_files)
