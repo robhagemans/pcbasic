@@ -16,7 +16,6 @@ import cassette
 import disk
 import ports
 
-import state
 import config
 
 import plat
