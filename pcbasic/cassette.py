@@ -20,7 +20,6 @@ except ImportError:
 
 import state
 import error
-import config
 import devices
 import console
 import basictoken as tk

@@ -9,7 +9,6 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import copy
 
-import config
 import error
 import console
 import state

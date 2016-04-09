@@ -43,7 +43,6 @@ try:
 except Exception:
     parallel = None
 
-import config
 import state
 import error
 # for wait() during port read
