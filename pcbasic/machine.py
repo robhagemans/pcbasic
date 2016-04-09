@@ -218,10 +218,12 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, peek_values, data_memory, syntax):
+    def __init__(self, data_memory, devices, peek_values, syntax):
         """ Initialise memory. """
         # data segment initialised elsewhere
         self.data = data_memory
+        # device access needed for COM and LPT ports
+        self.devices = devices
         # initial DEF SEG
         self.segment = self.data.data_segment
         # pre-defined PEEK outputs
@@ -422,12 +424,12 @@ class Memory(object):
         #   "(PEEK (1041) AND 16)/16" WILL PROVIDE NUMBER OF GAME PORTS INSTALLED.
         #   "(PEEK (1041) AND 192)/64" WILL PROVIDE NUMBER OF PRINTERS INSTALLED.
         elif addr == 1041:
-            return (2 * ((state.session.devices.devices['COM1:'].stream is not None) +
-                        (state.session.devices.devices['COM2:'].stream is not None)) +
+            return (2 * ((self.devices.devices['COM1:'].stream is not None) +
+                        (self.devices.devices['COM2:'].stream is not None)) +
                     16 +
-                    64 * ((state.session.devices.devices['LPT1:'].stream is not None) +
-                        (state.session.devices.devices['LPT2:'].stream is not None) +
-                        (state.session.devices.devices['LPT3:'].stream is not None)))
+                    64 * ((self.devices.devices['LPT1:'].stream is not None) +
+                        (self.devices.devices['LPT2:'].stream is not None) +
+                        (self.devices.devices['LPT3:'].stream is not None)))
         # &h40:&h17 keyboard flag
         # &H80 - Insert state active
         # &H40 - CapsLock state has been toggled

@@ -161,6 +161,10 @@ class Session(object):
         self.common_arrays = set()
         self.user_functions = {}
 
+        # intialise files
+        self.devices = files.Devices()
+        self.files = files.Files(self.devices, max_files)
+
         # set up rest of memory model
         peek_values = {}
         try:
@@ -169,11 +173,8 @@ class Session(object):
                 peek_values[int(seg)*0x10 + int(addr)] = int(val)
         except (TypeError, ValueError):
             pass
-        self.all_memory = machine.Memory(peek_values, self.memory, config.get('syntax'))
-
-        # intialise files
-        self.devices = files.Devices()
-        self.files = files.Files(self.devices, max_files)
+        self.all_memory = machine.Memory(self.memory, self.devices,
+                                        peek_values, config.get('syntax'))
 
         # initialise timer
         self.timer = timedate.Timer()
