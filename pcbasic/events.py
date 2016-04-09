@@ -113,16 +113,14 @@ class TimerHandler(EventHandler):
 class ComHandler(EventHandler):
     """ Manage COM-port events. """
 
-    def __init__(self, port):
+    def __init__(self, com_device):
         """ Initialise COM trigger. """
         EventHandler.__init__(self)
-        # devices aren't initialised at this time so just keep the name
-        self.portname = ('COM1:', 'COM2:')[port]
+        self.device = com_device
 
     def check(self):
         """ Trigger COM-port events. """
-        if (state.session.devices.devices[self.portname] and
-                    state.session.devices.devices[self.portname].char_waiting()):
+        if (self.device and self.device.char_waiting()):
             self.trigger()
 
 
@@ -229,7 +227,9 @@ class Events(object):
         # other events
         self.timer = TimerHandler(self.session.timer)
         self.play = PlayHandler(self.multivoice)
-        self.com = [ComHandler(0), ComHandler(1)]
+        self.com = [
+            ComHandler(self.session.devices.devices['COM1:']),
+            ComHandler(self.session.devices.devices['COM2:'])]
         self.pen = PenHandler()
         # joy*2 + button
         self.strig = [StrigHandler(joy, button)
