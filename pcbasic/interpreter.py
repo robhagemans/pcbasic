@@ -161,8 +161,10 @@ class Session(object):
         self.common_arrays = set()
         self.user_functions = {}
 
-        # intialise files
-        self.devices = files.Devices()
+        # intialise devices and files
+        # DataSegment needed for COMn and disk FIELD buffers
+        # Session needed for wait()
+        self.devices = files.Devices(self, self.memory)
         self.files = files.Files(self.devices, max_files)
 
         # set up rest of memory model

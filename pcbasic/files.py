@@ -152,7 +152,7 @@ class Devices(object):
     # allowable drive letters in GW-BASIC are letters or @
     drive_letters = b'@' + string.ascii_uppercase
 
-    def __init__(self):
+    def __init__(self, session, memory):
         """ Initialise devices. """
         self.devices = {}
         # console
@@ -170,8 +170,8 @@ class Devices(object):
         # serial devices
         # buffer sizes (/c switch in GW-BASIC)
         serial_in_size = config.get('serial-buffer-size')
-        self.devices['COM1:'] = ports.COMDevice(config.get('com1'), serial_in_size)
-        self.devices['COM2:'] = ports.COMDevice(config.get('com2'), serial_in_size)
+        self.devices['COM1:'] = ports.COMDevice(config.get('com1'), session, devices.Field(0, memory), serial_in_size)
+        self.devices['COM2:'] = ports.COMDevice(config.get('com2'), session, devices.Field(0, memory), serial_in_size)
         # cassette
         self.devices['CAS1:'] = cassette.CASDevice(config.get('cas1'))
         # disk devices
