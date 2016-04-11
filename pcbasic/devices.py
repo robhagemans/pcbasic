@@ -417,7 +417,7 @@ class CRLFTextFileBase(TextFileBase):
 class Field(object):
     """ Buffer for FIELD access. """
 
-    def __init__(self, number, memory):
+    def __init__(self, number=0, memory=None):
         """ Set up empty FIELD buffer. """
         if number > 0:
             self.address = memory.field_mem_start + (number-1)*memory.field_mem_offset
@@ -428,6 +428,8 @@ class Field(object):
 
     def attach_var(self, name, indices, offset, length):
         """ Attach a FIELD variable. """
+        if self.address < 0 or self.memory == None:
+            raise AttributeError("Can't attach variable to non-memory-mapped field.")
         if name[-1] != '$':
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
