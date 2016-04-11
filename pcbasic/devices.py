@@ -12,7 +12,6 @@ import copy
 import error
 import console
 import state
-import memory
 import var
 # unused import, needed to initialise state.console_state.screen
 import display

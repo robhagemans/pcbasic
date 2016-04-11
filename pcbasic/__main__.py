@@ -90,7 +90,13 @@ def prepare_logging():
 def convert():
     """ Perform file format conversion. """
     import program
+    import files
     import disk
+
+    class SessionShim():
+        def wait(self, suppress_events=False):
+            """ No-op shim for wait() call in Devices """
+
     # set conversion output
     # first arg, if given, is mode; second arg, if given, is outfile
     mode = config.get('convert')
@@ -100,10 +106,15 @@ def convert():
     # keep uppercase first letter
     mode = mode[0].upper() if mode else 'A'
     # load & save in different format
+    # FIXME - need to remove Session dependence from Devices, replace with class to hold main event loop only
+    # FIXME - memory is *only* used to construct a Field for COM files, which doesn't actually need a memory due to file number 0
+    devices = files.Devices(SessionShim(), memory=None)
+    # max_files affects memory layout, thus program address in binary files
+    files = files.Files(devices, config.get('max-files'))
     try:
         prog_infile = None
         if infile:
-            prog_infile = disk.open_native_or_dos_filename(infile)
+            prog_infile = files.open_native_or_basic(infile)
         elif plat.has_stdin:
             # use StringIO buffer for seekability
             in_buffer = StringIO(sys.stdin.read())

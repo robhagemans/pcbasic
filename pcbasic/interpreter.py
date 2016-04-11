@@ -66,9 +66,9 @@ class SessionLauncher(object):
             state.session.resume()
         else:
             state.session = Session()
-            # load initial program
+            # load initial program, allowing native-os filenames or BASIC specs
             if self.prog:
-                with disk.open_native_or_dos_filename(self.prog) as progfile:
+                with state.session.files.open_native_or_basic(self.prog) as progfile:
                     state.session.program.load(progfile)
             if self.show_greeting:
                 state.session.greet()

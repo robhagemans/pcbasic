@@ -96,6 +96,15 @@ class Files(object):
             self.files[number] = new_file
         return new_file
 
+    def open_native_or_basic(self, infile):
+        """ If the specified file exists, open it; if not, try as BASIC file spec. Do not register in files dict. """
+        try:
+            # first try exact file name
+            return disk.create_file_object(open(os.path.expandvars(os.path.expanduser(infile)), 'rb'), filetype='BPA', mode='I')
+        except EnvironmentError as e:
+            # otherwise, accept capitalised versions and default extension
+            return self.open(0, infile, filetype='BPA', mode='I')
+
     def get(self, num, mode='IOAR'):
         """ Get the file object for a file number and check allowed mode. """
         try:
