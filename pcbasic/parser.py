@@ -201,6 +201,8 @@ class Parser(object):
         """ Set program pointer to the given codestream and position. """
         self.run_mode = new_runmode
         state.console_state.sound.persist(new_runmode)
+        # suppress cassette messages in run mode
+        self.session.devices.devices['CAS1:'].quiet(new_runmode)
         codestream = self.get_codestream()
         if pos is not None:
             # jump to position, if given

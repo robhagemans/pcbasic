@@ -18,7 +18,6 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-import state
 import error
 import devices
 import console
@@ -68,6 +67,8 @@ class CASDevice(object):
         # we use a dummy device_file
         # this means WIDTH and LOC on CAS1: directly are ignored
         self.device_file = DummyDeviceFile()
+        # by default, show messages
+        self.is_quiet = False
         try:
             if not val:
                 self.tapestream = None
@@ -123,18 +124,22 @@ class CASDevice(object):
                 if ((not trunk_req or trunk.rstrip() == trunk_req.rstrip()) and
                         (not filetypes_req or filetype in filetypes_req)):
                     message = "%s Found." % (trunk + '.' + filetype)
-                    if not state.session.parser.run_mode:
+                    if not self.is_quiet:
                         console.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
                     return trunk, filetype, seg, offset, length
                 else:
                     message = "%s Skipped." % (trunk + '.' + filetype)
-                    if not state.session.parser.run_mode:
+                    if not self.is_quiet:
                         console.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
         except EndOfTape:
             # reached end-of-tape without finding appropriate file
             raise error.RunError(error.DEVICE_TIMEOUT)
+
+    def quiet(self, is_quiet):
+        """ Suppress Skipped and Found messages. """
+        self.is_quiet = is_quiet
 
 #################################################################################
 # Cassette files
