@@ -107,7 +107,7 @@ allowable_chars = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~
 
 def create_file_object(fhandle, filetype, mode, name=b'', number=0,
                        access=b'RW', lock=b'', reclen=128,
-                       seg=0, offset=0, length=0):
+                       seg=0, offset=0, length=0, locks=None):
     """ Create disk file object of requested type. """
     # determine file type if needed
     if len(filetype) > 1 and mode == b'I':
@@ -134,9 +134,9 @@ def create_file_object(fhandle, filetype, mode, name=b'', number=0,
     elif filetype == b'D':
         if mode in b'IAO':
             # text data
-            return TextFile(fhandle, filetype, number, name, mode, access, lock)
+            return TextFile(fhandle, filetype, number, name, mode, access, lock, locks=locks)
         else:
-            return RandomFile(fhandle, number, name, access, lock, reclen)
+            return RandomFile(fhandle, number, name, access, lock, reclen, locks=locks)
     else:
         # incorrect file type requested
         msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
@@ -308,7 +308,7 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     _access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
-    def __init__(self, letter, path, cwd=u''):
+    def __init__(self, letter, path, cwd, locks):
         """ Initialise a disk device. """
         self.letter = letter
         # mount root
@@ -318,8 +318,7 @@ class DiskDevice(object):
         # this is a DOS relative path, no drive letter; including leading \\
         # stored with os.sep but given using backslash separators
         self.cwd = os.path.join(*cwd.split(u'\\'))
-        # dict of native file names by number, for locking
-        self.locks = {}
+        self.locks = locks
 
     def close(self):
         """ Close disk device. """
@@ -347,15 +346,18 @@ class DiskDevice(object):
         if mode in (b'O', b'A'):
             self.check_file_not_open(param)
         # obtain a lock
-        state.session.files._acquire_lock(name, number, lock, access)
+        if filetype == 'D':
+            self.locks.acquire(name, number, lock, access)
         try:
             # open the underlying stream
             fhandle = self._open_stream(name, mode, access)
             # apply the BASIC file wrapper
             return create_file_object(fhandle, filetype, mode, name, number,
-                                      access, lock, reclen, seg, offset, length)
+                                      access, lock, reclen, seg, offset, length,
+                                      locks=self.locks)
         except Exception:
-            state.session.files._release_lock(number)
+            if filetype == 'D':
+                self.locks.release(number)
             raise
 
     def _open_stream(self, native_name, mode, access):
@@ -548,6 +550,51 @@ class DiskDevice(object):
             return st.f_bavail * st.f_frsize
 
 
+###############################################################################
+# Locks
+
+class Locks(object):
+    """ Lock management. """
+
+    def __init__(self):
+        """ Initialise locks. """
+        # dict of native file names by number, for locking
+        self._locks = {}
+
+    def list(self, name):
+        """ Retrieve a list of files open to the same disk stream. """
+        return [ state.session.files.files[fnum]
+                       for (fnum, fname) in self._locks.iteritems()
+                       if fname == name ]
+
+    def acquire(self, name, number, lock_type, access):
+        """ Try to lock a file. """
+        if not number:
+            return
+        already_open = self.list(name)
+        for f in already_open:
+            if (
+                    # default mode: don't accept if SHARED/LOCK present
+                    ((not lock_type) and f.lock_type) or
+                    # LOCK READ WRITE: don't accept if already open
+                    (lock_type == b'RW') or
+                    # SHARED: don't accept if open in default mode
+                    (lock_type == b'S' and not f.lock_type) or
+                    # LOCK READ or LOCK WRITE: accept base on ACCESS of open file
+                    (lock_type in f.access) or (f.lock_type in access)):
+                raise error.RunError(error.PERMISSION_DENIED)
+        self._locks[number] = name
+
+    def release(self, number):
+        """ Release the lock on a file before closing. """
+        try:
+            del self._locks[number]
+        except KeyError:
+            pass
+
+
+
+
 
 #################################################################################
 # Disk files
@@ -585,14 +632,13 @@ class BinaryFile(devices.RawFile):
         if self.mode == b'O':
             self.write(b'\x1a')
         devices.RawFile.close(self)
-        state.session.files._release_lock(self.number)
 
 
 class RandomFile(devices.CRLFTextFileBase):
     """ Random-access file on disk device. """
 
     def __init__(self, output_stream, number, name,
-                        access, lock, reclen=128):
+                        access, lock, reclen=128, locks=None):
         """ Initialise random-access file. """
         # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
         # actually work on the FIELD buffer; the file stream itself is not
@@ -608,6 +654,7 @@ class RandomFile(devices.CRLFTextFileBase):
         self.lock_type = lock
         self.access = access
         self.lock_list = set()
+        self.locks = locks
         self.number = number
         self.name = name
         # position at start of file
@@ -645,7 +692,8 @@ class RandomFile(devices.CRLFTextFileBase):
         """ Close random-access file. """
         devices.CRLFTextFileBase.close(self)
         self.output_stream.close()
-        state.session.files._release_lock(self.number)
+        if self.locks is not None:
+            self.locks.release(self.number)
 
     def get(self, dummy=None):
         """ Read a record. """
@@ -694,7 +742,7 @@ class RandomFile(devices.CRLFTextFileBase):
     def lock(self, start, stop, lock_list):
         """ Lock range of records. """
         bstart, bstop = (start-1) * self.reclen, stop*self.reclen - 1
-        other_lock_list = set.union(f.lock_list for f in state.session.files._list_locks(self.name))
+        other_lock_list = set.union(f.lock_list for f in self.locks.list(self.name))
         for start_1, stop_1 in other_lock_list:
             if (stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1)
                              or (bstop >= start_1 and bstop <= stop_1)):
@@ -716,12 +764,13 @@ class TextFile(devices.CRLFTextFileBase):
 
     def __init__(self, fhandle, filetype, number, name,
                  mode=b'A', access=b'RW', lock=b'',
-                 utf8=False, universal=False, split_long_lines=True):
+                 utf8=False, universal=False, split_long_lines=True, locks=None):
         """ Initialise text file object. """
         devices.CRLFTextFileBase.__init__(self, fhandle, filetype, mode,
                                           b'', split_long_lines)
         self.lock_list = set()
         self.lock_type = lock
+        self.locks = locks
         self.access = access
         self.number = number
         self.name = name
@@ -740,7 +789,8 @@ class TextFile(devices.CRLFTextFileBase):
             # write EOF char
             self.fhandle.write(b'\x1a')
         devices.CRLFTextFileBase.close(self)
-        state.session.files._release_lock(self.number)
+        if self.locks is not None:
+            self.locks.release(self.number)
 
     def loc(self):
         """ Get file pointer LOC """
@@ -810,7 +860,7 @@ class TextFile(devices.CRLFTextFileBase):
 
     def lock(self, start, stop, lock_list):
         """ Lock the file. """
-        if set.union(f.lock_list for f in state.session.files._list_locks(self.name)):
+        if set.union(f.lock_list for f in self.locks.list(self.name)):
             raise error.RunError(error.PERMISSION_DENIED)
         self.lock_list.add((0, -1))
 
