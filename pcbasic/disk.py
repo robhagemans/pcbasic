@@ -308,7 +308,7 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     _access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
-    def __init__(self, letter, path, cwd, fields, locks):
+    def __init__(self, letter, path, cwd, fields, locks, session):
         """ Initialise a disk device. """
         self.letter = letter
         # mount root
@@ -320,6 +320,8 @@ class DiskDevice(object):
         self.cwd = os.path.join(*cwd.split(u'\\'))
         self.fields = fields
         self.locks = locks
+        # for check_events() during FILES
+        self.session = session
 
     def close(self):
         """ Close disk device. """
@@ -529,7 +531,7 @@ class DiskDevice(object):
             output = output[num:]
             console.write_line(line)
             # allow to break during dir listing & show names flowing on screen
-            state.session.check_events()
+            self.session.check_events()
         console.write_line(b' %d Bytes free' % self.get_free())
 
     def get_free(self):
