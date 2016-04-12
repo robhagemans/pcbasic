@@ -124,7 +124,7 @@ class Devices(object):
     # allowable drive letters in GW-BASIC are letters or @
     drive_letters = b'@' + string.ascii_uppercase
 
-    def __init__(self, session):
+    def __init__(self, session, fields):
         """ Initialise devices. """
         self.devices = {}
         # console
@@ -148,14 +148,16 @@ class Devices(object):
         self.devices['CAS1:'] = cassette.CASDevice(config.get('cas1'))
         # disk file locks
         self.locks = disk.Locks()
+        # field buffers
+        self.fields = fields
         # disk devices
         for letter in self.drive_letters:
-            self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'', self.locks)
+            self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'', self.fields, self.locks)
         current_drive = config.get(u'current-device').upper()
         if config.get(u'map-drives'):
             current_drive = self._map_drives()
         else:
-            self.devices[b'Z:'] = disk.DiskDevice(b'Z', os.getcwdu(), u'', self.locks)
+            self.devices[b'Z:'] = disk.DiskDevice(b'Z', os.getcwdu(), u'', self.fields, self.locks)
         self._mount_drives(config.get(u'mount'))
         self._set_current_device(current_drive + b':')
 
@@ -186,7 +188,7 @@ class Devices(object):
                 if not os.path.isdir(path):
                     logging.warning(u'Could not mount %s', a)
                 else:
-                    self.devices[letter + b':'] = disk.DiskDevice(letter, path, u'', self.locks)
+                    self.devices[letter + b':'] = disk.DiskDevice(letter, path, u'', self.fields, self.locks)
             except (TypeError, ValueError) as e:
                 logging.warning(u'Could not mount %s: %s', a, unicode(e))
 
@@ -221,7 +223,7 @@ class Devices(object):
                     # must not start with \\
                     path, cwd = cwd[:3], cwd[3:]
                     bletter = letter.encode(b'ascii')
-                    self.devices[bletter + b':'] = disk.DiskDevice(bletter, path, cwd, self.locks)
+                    self.devices[bletter + b':'] = disk.DiskDevice(bletter, path, cwd, self.fields, self.locks)
             os.chdir(save_current)
             return current_drive
     else:
@@ -229,16 +231,16 @@ class Devices(object):
             """ Map useful Unix directories to PC-BASIC disk devices. """
             cwd = os.getcwdu()
             # map C to root
-            self.devices[b'C:'] = disk.DiskDevice(b'C', u'/', cwd[1:], self.locks)
+            self.devices[b'C:'] = disk.DiskDevice(b'C', u'/', cwd[1:], self.fields, self.locks)
             # map Z to cwd
-            self.devices[b'Z:'] = disk.DiskDevice(b'Z', cwd, u'', self.locks)
+            self.devices[b'Z:'] = disk.DiskDevice(b'Z', cwd, u'', self.fields, self.locks)
             # map H to home
             home = os.path.expanduser(u'~')
             # if cwd is in home tree, set it also on H:
             if cwd[:len(home)] == home:
-                self.devices[b'H:'] = disk.DiskDevice(b'H', home, cwd[len(home)+1:], self.locks)
+                self.devices[b'H:'] = disk.DiskDevice(b'H', home, cwd[len(home)+1:], self.fields, self.locks)
             else:
-                self.devices[b'H:'] = disk.DiskDevice(b'H', home, u'', self.locks)
+                self.devices[b'H:'] = disk.DiskDevice(b'H', home, u'', self.fields, self.locks)
             # default durrent drive
             return b'Z'
 

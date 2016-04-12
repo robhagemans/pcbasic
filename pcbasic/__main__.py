@@ -107,7 +107,7 @@ def convert():
     mode = mode[0].upper() if mode else 'A'
     # load & save in different format
     # FIXME - need to remove Session dependence from Devices, replace with class to hold main event loop only
-    devices = files.Devices(SessionShim())
+    devices = files.Devices(SessionShim(), fields=None)
     files = files.Files(devices, max_files=3)
     try:
         prog_infile = None

@@ -106,7 +106,7 @@ allowable_chars = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~
 # Disk file object wrapper
 
 def create_file_object(fhandle, filetype, mode, name=b'', number=0,
-                       access=b'RW', lock=b'', reclen=128,
+                       access=b'RW', lock=b'', field=None, reclen=128,
                        seg=0, offset=0, length=0, locks=None):
     """ Create disk file object of requested type. """
     # determine file type if needed
@@ -136,7 +136,7 @@ def create_file_object(fhandle, filetype, mode, name=b'', number=0,
             # text data
             return TextFile(fhandle, filetype, number, name, mode, access, lock, locks=locks)
         else:
-            return RandomFile(fhandle, number, name, access, lock, reclen, locks=locks)
+            return RandomFile(fhandle, number, name, access, lock, field, reclen, locks=locks)
     else:
         # incorrect file type requested
         msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
@@ -308,7 +308,7 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     _access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
-    def __init__(self, letter, path, cwd, locks):
+    def __init__(self, letter, path, cwd, fields, locks):
         """ Initialise a disk device. """
         self.letter = letter
         # mount root
@@ -318,6 +318,7 @@ class DiskDevice(object):
         # this is a DOS relative path, no drive letter; including leading \\
         # stored with os.sep but given using backslash separators
         self.cwd = os.path.join(*cwd.split(u'\\'))
+        self.fields = fields
         self.locks = locks
 
     def close(self):
@@ -351,11 +352,12 @@ class DiskDevice(object):
         try:
             # open the underlying stream
             fhandle = self._open_stream(name, mode, access)
-            # register file as open
             # apply the BASIC file wrapper
+            field = self.fields[number] if number else None
             f = create_file_object(fhandle, filetype, mode, name, number,
-                    access, lock, reclen, seg, offset, length,
-                    locks=self.locks)
+                    access, lock, field, reclen,
+                    seg, offset, length, locks=self.locks)
+            # register file as open
             self.locks.open_file(number, f)
             return f
         except Exception:
@@ -656,14 +658,14 @@ class RandomFile(devices.CRLFTextFileBase):
     """ Random-access file on disk device. """
 
     def __init__(self, output_stream, number, name,
-                        access, lock, reclen=128, locks=None):
+                        access, lock, field, reclen=128, locks=None):
         """ Initialise random-access file. """
         # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
         # actually work on the FIELD buffer; the file stream itself is not
         # touched until PUT or GET.
         self.reclen = reclen
         # replace with empty field if already exists
-        self.field = state.session.memory.fields[number]
+        self.field = field
         self.field.reset(self.reclen)
         devices.CRLFTextFileBase.__init__(self, ByteStream(self.field.buffer), b'D', b'R')
         self.operating_mode = b'I'
