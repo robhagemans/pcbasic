@@ -16,6 +16,7 @@ import console
 import devices
 import vartypes
 
+import state
 
 class InputTextFile(devices.TextFileBase):
     """ Handle INPUT from console. """
@@ -37,9 +38,12 @@ def input_console(prompt, readvar, newline):
         line = console.wait_screenline(write_endl=newline)
         inputstream = InputTextFile(line)
         # read the values and group them and the separators
-        values, seps = zip(*[
-            inputstream.input_entry(v[0][-1], allow_past_end=True)
-            for v in readvar])
+        values, seps = [], []
+        for v in readvar:
+            word, sep = inputstream.input_entry(v[0][-1], allow_past_end=True)
+            value = state.session.strings.str_to_type(v[0][-1], word)
+            values.append(value)
+            seps.append(sep)
         # last separator not empty: there were too many values or commas
         # earlier separators empty: there were too few values
         # empty values will be converted to zero by string_to_number

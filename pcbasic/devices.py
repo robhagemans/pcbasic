@@ -358,12 +358,9 @@ class TextFileBase(RawFile):
             if (self.next_char in ',\r'):
                 c = self.read(1)
         # file position is at one past the separator char
-        # convert result to requested type, be strict about non-numeric chars
-        if typechar == '$':
-            value = state.session.strings.store(word)
-        else:
-            value = representation.str_to_number(word, allow_nonnum=False)
-        return value, c
+        return word, c
+
+
 
 class CRLFTextFileBase(TextFileBase):
     """ Text file with CRLF line endings, on disk device or field buffer. """
@@ -562,12 +559,7 @@ class KYBDFile(TextFileBase):
                     break
             parsing_trail = parsing_trail or (typechar != '$' and c == ' ')
         # file position is at one past the separator char
-        # convert result to requested type, be strict about non-numeric chars
-        if typechar == '$':
-            value = state.session.strings.store(word)
-        else:
-            value = representation.str_to_number(word, allow_nonnum=False)
-        return value, c
+        return word, c
 
 
 class SCRNFile(RawFile):

@@ -1993,7 +1993,8 @@ class Statements(object):
         if finp is not None:
             for v in self._parse_var_list(ins):
                 name, indices = v
-                value, _ = finp.input_entry(name[-1], allow_past_end=False)
+                word, _ = finp.input_entry(name[-1], allow_past_end=False)
+                value = self.session.strings.str_to_type(name[-1], word)
                 if value is None:
                     value = vartypes.null(name[-1])
                 self.session.memory.set_variable(name, indices, value)

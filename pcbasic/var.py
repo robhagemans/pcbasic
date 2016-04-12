@@ -11,6 +11,7 @@ from operator import itemgetter
 
 import error
 import vartypes
+import representation
 
 
 ###############################################################################
@@ -157,6 +158,13 @@ class StringSpace(object):
         """ Exit temp-string context guard. """
         if self.temp != self.current:
             self.delete_last()
+
+    def str_to_type(self, typechar, word):
+        """ convert result to requested type, be strict about non-numeric chars """
+        if typechar == '$':
+            return self.store(word)
+        else:
+            return representation.str_to_number(word, allow_nonnum=False)
 
 
 ###############################################################################
