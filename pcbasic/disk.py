@@ -124,13 +124,13 @@ def create_file_object(fhandle, filetype, mode, name=b'', number=0,
     if filetype in b'BPM':
         # binary [B]LOAD, [B]SAVE
         return BinaryFile(fhandle, filetype, number, name, mode,
-                           seg, offset, length)
+                           seg, offset, length, locks=locks)
     elif filetype == b'A':
         # ascii program file (UTF8 or universal newline if option given)
         return TextFile(fhandle, filetype, number, name, mode, access, lock,
                          utf8=config.get(u'utf8'),
                          universal=not config.get(u'strict-newline'),
-                         split_long_lines=False)
+                         split_long_lines=False, locks=locks)
     elif filetype == b'D':
         if mode in b'IAO':
             # text data
@@ -351,13 +351,17 @@ class DiskDevice(object):
         try:
             # open the underlying stream
             fhandle = self._open_stream(name, mode, access)
+            # register file as open
             # apply the BASIC file wrapper
-            return create_file_object(fhandle, filetype, mode, name, number,
-                                      access, lock, reclen, seg, offset, length,
-                                      locks=self.locks)
+            f = create_file_object(fhandle, filetype, mode, name, number,
+                    access, lock, reclen, seg, offset, length,
+                    locks=self.locks)
+            self.locks.open_file(number, f)
+            return f
         except Exception:
             if filetype == 'D':
                 self.locks.release(number)
+            self.locks.close_file(number)
             raise
 
     def _open_stream(self, native_name, mode, access):
@@ -391,16 +395,6 @@ class DiskDevice(object):
         except TypeError:
             # bad file number, which is what GW throws for open chr$(0)
             raise error.RunError(error.BAD_FILE_NUMBER)
-
-    def check_file_not_open(self, path):
-        """ Raise an error if the file is open. """
-        for f in state.session.files.files:
-            try:
-                if self._native_path(path, name_err=None) == state.session.files.files[f].name:
-                    raise error.RunError(error.FILE_ALREADY_OPEN)
-            except AttributeError:
-                # only disk files have a name, so ignore
-                pass
 
     def _native_path_elements(self, path_without_drive, path_err, join_name=False):
         """ Return elements of the native path for a given BASIC path. """
@@ -549,6 +543,15 @@ class DiskDevice(object):
             st = os.statvfs(self.path.encode(plat.preferred_encoding))
             return st.f_bavail * st.f_frsize
 
+    def check_file_not_open(self, path):
+        """ Raise an error if the file is open. """
+        for f in self.locks._files.values():
+            try:
+                if self._native_path(path, name_err=None) == f.name:
+                    raise error.RunError(error.FILE_ALREADY_OPEN)
+            except AttributeError:
+                # only disk files have a name, so ignore
+                pass
 
 ###############################################################################
 # Locks
@@ -560,10 +563,12 @@ class Locks(object):
         """ Initialise locks. """
         # dict of native file names by number, for locking
         self._locks = {}
+        # dict of disk files
+        self._files = {}
 
     def list(self, name):
         """ Retrieve a list of files open to the same disk stream. """
-        return [ state.session.files.files[fnum]
+        return [ self._files[fnum]
                        for (fnum, fname) in self._locks.iteritems()
                        if fname == name ]
 
@@ -592,8 +597,16 @@ class Locks(object):
         except KeyError:
             pass
 
+    def open_file(self, number, f):
+        """ Register disk file as open. """
+        self._files[number] = f
 
-
+    def close_file(self, number):
+        """ Deregister disk file. """
+        try:
+            del self._files[number]
+        except KeyError:
+            pass
 
 
 #################################################################################
@@ -603,12 +616,14 @@ class BinaryFile(devices.RawFile):
     """ File class for binary (B, P, M) files on disk device. """
 
     def __init__(self, fhandle, filetype, number, name, mode,
-                       seg, offset, length):
+                       seg, offset, length, locks=None):
         """ Initialise program file object and write header. """
         devices.RawFile.__init__(self, fhandle, filetype, mode)
         self.number = number
         # don't lock binary files
         self.lock = b''
+        # we need the Locks object to register file as open
+        self.locks = locks
         self.access = b'RW'
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == b'O':
@@ -632,6 +647,9 @@ class BinaryFile(devices.RawFile):
         if self.mode == b'O':
             self.write(b'\x1a')
         devices.RawFile.close(self)
+        if self.locks is not None:
+            # no locking for binary files, but we do need to register it closed
+            self.locks.close_file(self.number)
 
 
 class RandomFile(devices.CRLFTextFileBase):
@@ -694,6 +712,7 @@ class RandomFile(devices.CRLFTextFileBase):
         self.output_stream.close()
         if self.locks is not None:
             self.locks.release(self.number)
+            self.locks.close_file(self.number)
 
     def get(self, dummy=None):
         """ Read a record. """
@@ -791,6 +810,7 @@ class TextFile(devices.CRLFTextFileBase):
         devices.CRLFTextFileBase.close(self)
         if self.locks is not None:
             self.locks.release(self.number)
+            self.locks.close_file(self.number)
 
     def loc(self):
         """ Get file pointer LOC """
