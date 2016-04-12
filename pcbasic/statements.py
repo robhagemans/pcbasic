@@ -851,7 +851,7 @@ class Statements(object):
         else:
             for l in lines:
                 # LIST on screen is slightly different from just writing
-                console.list_line(l)
+                self.session.console.list_line(l)
         # return to direct mode
         self.parser.set_pointer(False)
 
@@ -1794,7 +1794,7 @@ class Statements(object):
                                      self.parser.parse_expression(ins, self.session)
                                  )).round_to_int()):
                         state.console_state.screen.screen(0, 0, 0, 0)
-                        console.init_mode()
+                        self.session.console.init_mode()
                 elif not exp2:
                     raise error.RunError(error.STX)
         util.require(ins, tk.end_statement)
@@ -2036,8 +2036,8 @@ class Statements(object):
                 raise error.RunError(error.INPUT_PAST_END)
         else:
             self.session.input_mode = True
-            console.write(prompt)
-            line = console.wait_screenline(write_endl=newline)
+            self.session.console.write(prompt)
+            line = self.session.console.wait_screenline(write_endl=newline)
             self.session.input_mode = False
         self.session.memory.set_variable(readvar, indices, self.session.strings.store(line))
 
@@ -2108,8 +2108,8 @@ class Statements(object):
         else:
             # prompt for random seed if not specified
             while not val:
-                console.write("Random number seed (-32768 to 32767)? ")
-                seed = console.wait_screenline()
+                self.session.console.write("Random number seed (-32768 to 32767)? ")
+                seed = self.session.console.wait_screenline()
                 # seed entered on prompt is rounded to int
                 val = representation.str_to_number(seed)
             val = vartypes.pass_integer(val)
@@ -2143,7 +2143,7 @@ class Statements(object):
                 util.require(ins, tk.end_statement, err=error.IFC)
         # cls is only executed if no errors have occurred
         if val == 0:
-            console.clear()
+            self.session.console.clear()
             state.console_state.screen.drawing.reset()
         elif val == 1:
             state.console_state.screen.drawing.clear_view()
@@ -2280,13 +2280,13 @@ class Statements(object):
             # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
             if state.console_state.scroll_height == 25:
                 raise error.RunError(error.IFC)
-            if not state.console_state.keys_visible:
-                console.show_keys(True)
+            if not self.session.console.keys_visible:
+                self.session.console.show_keys(True)
         elif d == tk.OFF:
-            if state.console_state.keys_visible:
-                console.show_keys(False)
+            if self.session.console.keys_visible:
+                self.session.console.show_keys(False)
         elif d == tk.LIST:
-            console.list_keys()
+            self.session.console.list_keys()
         elif d == '(':
             # key (n)
             ins.seek(-1, 1)
@@ -2309,8 +2309,8 @@ class Statements(object):
             if text and str(text)[0] == '\0':
                 text = ''
             state.console_state.key_replace[keynum-1] = str(text)
-            if state.console_state.keys_visible:
-                console.show_keys(True)
+            if self.session.console.keys_visible:
+                self.session.console.show_keys(True)
         else:
             # only length-2 expressions can be assigned to KEYs over 10
             # in which case it's a key scancode definition
@@ -2341,7 +2341,7 @@ class Statements(object):
                             pass
         row = state.console_state.row if row is None else row
         col = state.console_state.col if col is None else col
-        if row == cmode.height and state.console_state.keys_visible:
+        if row == cmode.height and self.session.console.keys_visible:
             raise error.RunError(error.IFC)
         elif state.console_state.view_set:
             util.range_check(state.console_state.view_start, state.console_state.scroll_height, row)
@@ -2351,7 +2351,7 @@ class Statements(object):
         if row == cmode.height:
             # temporarily allow writing on last row
             state.console_state.bottom_row_allowed = True
-        console.set_pos(row, col, scroll_ok=False)
+        self.session.console.set_pos(row, col, scroll_ok=False)
         if cursor is not None:
             util.range_check(0, (255 if self.parser.syntax in ('pcjr', 'tandy') else 1), cursor)
             # set cursor visibility - this should set the flag but have no effect in graphics modes
@@ -2499,7 +2499,7 @@ class Statements(object):
             util.require_read(ins, (tk.TO,))
             stop = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             util.require(ins, tk.end_statement)
-            max_line = 25 if (self.parser.syntax in ('pcjr', 'tandy') and not state.console_state.keys_visible) else 24
+            max_line = 25 if (self.parser.syntax in ('pcjr', 'tandy') and not self.session.console.keys_visible) else 24
             util.range_check(1, max_line, start, stop)
             state.console_state.screen.set_view(start, stop)
 
@@ -2580,7 +2580,7 @@ class Statements(object):
                 (screen.mode.width != oldmode.width) or
                 (screen.colorswitch != oldcolor)):
             # rebuild the console if we've switched modes or colorswitch
-            console.init_mode()
+            self.session.console.init_mode()
 
     def exec_pcopy(self, ins):
         """ PCOPY: copy video pages. """

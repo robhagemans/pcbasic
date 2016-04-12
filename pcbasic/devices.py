@@ -504,7 +504,7 @@ class KYBDFile(TextFileBase):
     def set_width(self, new_width=255):
         """ Setting width on KYBD device (not files) changes screen width. """
         if self.is_master:
-            console.set_width(new_width)
+            state.session.console.set_width(new_width)
 
     def input_entry(self, typechar, allow_past_end):
         """ Read a number or string entry from KYBD: for INPUT# """
@@ -610,15 +610,15 @@ class SCRNFile(RawFile):
                 s_width += 1
         if (self.width != 255 and state.console_state.row != state.console_state.screen.mode.height
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
-            console.write_line(do_echo=do_echo)
+            state.session.console.write_line(do_echo=do_echo)
             self._col = 1
         cwidth = state.console_state.screen.mode.width
         for c in str(s):
             if self.width <= cwidth and self.col > self.width:
-                console.write_line(do_echo=do_echo)
+                state.session.console.write_line(do_echo=do_echo)
                 self._col = 1
             if self.col <= cwidth or self.width <= cwidth:
-                console.write(c, do_echo=do_echo)
+                state.session.console.write(c, do_echo=do_echo)
             if c in ('\n', '\r'):
                 self._col = 1
             else:
@@ -627,7 +627,7 @@ class SCRNFile(RawFile):
     def write_line(self, inp=''):
         """ Write a string to the screen and follow by CR. """
         self.write(inp)
-        console.write_line(do_echo=self.is_master)
+        state.session.console.write_line(do_echo=self.is_master)
 
     @property
     def col(self):
@@ -648,7 +648,7 @@ class SCRNFile(RawFile):
     def set_width(self, new_width=255):
         """ Set (virtual) screen width. """
         if self.is_master:
-            console.set_width(new_width)
+            state.session.console.set_width(new_width)
         else:
             self._width = new_width
 

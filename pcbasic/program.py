@@ -19,7 +19,6 @@ import basictoken as tk
 import tokenise
 import protect
 import util
-import console
 import state
 import memory
 # ensure initialisation of state_console_state.sound
@@ -201,13 +200,13 @@ class Program(object):
     def edit(self, from_line, bytepos=None):
         """ Output program line to console and position cursor. """
         if self.protected:
-            console.write(str(from_line)+'\r')
+            state.session.console.write(str(from_line)+'\r')
             raise error.RunError(error.IFC)
         # list line
         self.bytecode.seek(self.line_numbers[from_line]+1)
         _, output, textpos = tokenise.detokenise_line(self.bytecode, bytepos)
         # no newline to avoid scrolling on line 24
-        console.list_line(str(output), newline=False)
+        state.session.console.list_line(str(output), newline=False)
         # find row, column position for textpos
         newlines, c = 0, 0
         pos_row, pos_col = 0, 0
@@ -223,9 +222,9 @@ class Program(object):
         if textpos > i:
             pos_row, pos_col = newlines, c + 1
         if bytepos:
-            console.set_pos(state.console_state.row-newlines+pos_row, pos_col)
+            state.session.console.set_pos(state.console_state.row-newlines+pos_row, pos_col)
         else:
-            console.set_pos(state.console_state.row-newlines, 1)
+            state.session.console.set_pos(state.console_state.row-newlines, 1)
 
     def renum(self, new_line, start_line, step):
         """ Renumber stored program. """
@@ -271,7 +270,7 @@ class Program(object):
                 # not redefined, exists in program?
                 if jumpnum not in self.line_numbers:
                     linum = self.get_line_number(ins.tell()-1)
-                    console.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
+                    state.session.console.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
                 newjump = jumpnum
             ins.seek(-2, 1)
             ins.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(newjump))))

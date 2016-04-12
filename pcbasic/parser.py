@@ -13,7 +13,6 @@ except ImportError:
 import string
 from collections import deque
 
-import console
 import disk
 import error
 import events
@@ -97,7 +96,7 @@ class Parser(object):
                     # stream has ended
                     return False
                 if self.tron:
-                    console.write('[' + ('%i' % linenum) + ']')
+                    self.session.console.write('[' + ('%i' % linenum) + ']')
                 self.session.debugger.debug_step(linenum)
             elif c == ':':
                 ins.read(1)
@@ -540,7 +539,7 @@ class Parser(object):
             raise error.RunError(math_error)
         else:
             # write a message & continue as normal
-            console.write_line(error.RunError(math_error).message)
+            self.session.console.write_line(error.RunError(math_error).message)
         # return max value for the appropriate float type
         if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
             return fp.pack(e.args[0])

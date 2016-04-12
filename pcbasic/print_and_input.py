@@ -12,7 +12,6 @@ except ImportError:
     from StringIO import StringIO
 
 import util
-import console
 import devices
 import vartypes
 
@@ -34,8 +33,8 @@ def input_console(prompt, readvar, newline):
     # readvar is a list of (name, indices) tuples
     # we return a list of (name, indices, values) tuples
     while True:
-        console.write(prompt)
-        line = console.wait_screenline(write_endl=newline)
+        state.session.console.write(prompt)
+        line = state.session.console.wait_screenline(write_endl=newline)
         inputstream = InputTextFile(line)
         # read the values and group them and the separators
         values, seps = [], []
@@ -50,7 +49,7 @@ def input_console(prompt, readvar, newline):
         # None means a conversion error occurred
         if (seps[-1] or '' in seps[:-1] or None in values):
             # good old Redo!
-            console.write_line('?Redo from start')
+            state.session.console.write_line('?Redo from start')
         else:
             return [r + [v] for r, v in zip(readvar, values)]
 

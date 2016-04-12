@@ -19,7 +19,6 @@ except ImportError:
 
 import state
 import error
-import console
 import plat
 
 
@@ -102,8 +101,8 @@ class WindowsShell(ShellBase):
                 lines, shell_output[:] = b''.join(shell_output).split('\r\n'), []
                 last = lines.pop()
                 for line in lines:
-                    console.write_line(state.console_state.codepage.str_from_unicode(line.decode(plat.preferred_encoding)))
-                console.write(state.console_state.codepage.str_from_unicode(last.decode(plat.preferred_encoding)))
+                    state.session.console.write_line(state.console_state.codepage.str_from_unicode(line.decode(plat.preferred_encoding)))
+                state.session.console.write(state.console_state.codepage.str_from_unicode(last.decode(plat.preferred_encoding)))
             if p.poll() is not None:
                 # drain output then break
                 continue
@@ -116,19 +115,19 @@ class WindowsShell(ShellBase):
                 # shift the cursor left so that CMD.EXE's echo can overwrite
                 # the command that's already there. Note that Wine's CMD.EXE
                 # doesn't echo the command, so it's overwritten by the output...
-                console.write(b'\x1D' * len(word))
+                state.session.console.write(b'\x1D' * len(word))
                 p.stdin.write(state.console_state.codepage.str_to_unicode(word + b'\r\n', preserve_control=True).encode(plat.preferred_encoding))
                 word = b''
             elif c == b'\b':
                 # handle backspace
                 if word:
                     word = word[:-1]
-                    console.write(b'\x1D \x1D')
+                    state.session.console.write(b'\x1D \x1D')
             elif c != b'':
                 # only send to pipe when enter is pressed
                 # needed for Wine and to handle backspace properly
                 word += c
-                console.write(c)
+                state.session.console.write(c)
         outp.join()
         errp.join()
 
@@ -172,12 +171,12 @@ class Shell(ShellBase):
                 if c == u'' or c == u'\n':
                     break
                 elif c == u'\r':
-                    console.write_line()
+                    state.session.console.write_line()
                 elif c == u'\b':
                     if state.console_state.col != 1:
-                        console.set_pos(state.console_state.row,
+                        state.session.console.set_pos(state.console_state.row,
                                         state.console_state.col-1)
                 else:
-                    console.write(state.console_state.codepage.from_unicode(c))
+                    state.session.console.write(state.console_state.codepage.from_unicode(c))
             if c == u'' and not p.isalive():
                 return

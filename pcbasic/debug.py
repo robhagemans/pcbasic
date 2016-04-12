@@ -32,15 +32,15 @@ class BaseDebugger(object):
     def bluescreen(self, e):
         """ Display a modal exception message. """
         state.console_state.screen.screen(0, 0, 0, 0, new_width=80)
-        console.clear()
-        console.init_mode()
+        self.session.console.clear()
+        self.session.console.init_mode()
         exc_type, exc_value, exc_traceback = sys.exc_info()
         # log the standard python error
         logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         # format the error more readably on the screen
         state.console_state.screen.set_border(4)
         state.console_state.screen.set_attr(0x70)
-        console.write_line('EXCEPTION')
+        self.session.console.write_line('EXCEPTION')
         state.console_state.screen.set_attr(15)
         if self.session.parser.run_mode:
             self.session.program.bytecode.seek(-1, 1)
@@ -48,44 +48,44 @@ class BaseDebugger(object):
                 self.session.program.get_line_number(
                             self.session.program.bytecode.tell()),
                             self.session.program.bytecode.tell())
-            console.write_line('\n')
+            self.session.console.write_line('\n')
         else:
             self.session.direct_line.seek(0)
-            console.write_line(str(tokenise.detokenise_compound_statement(self.session.direct_line)[0])+'\n')
+            self.session.console.write_line(str(tokenise.detokenise_compound_statement(self.session.direct_line)[0])+'\n')
         stack = traceback.extract_tb(exc_traceback)
         for s in stack[-4:]:
             stack_line = '{0}:{1}, {2}'.format(
                 os.path.split(s[0])[-1], s[1], s[2])
             stack_line_2 = '    {0}'.format(s[3])
             state.console_state.screen.set_attr(15)
-            console.write_line(stack_line)
+            self.session.console.write_line(stack_line)
             state.console_state.screen.set_attr(7)
-            console.write_line(stack_line_2)
+            self.session.console.write_line(stack_line_2)
         exc_message = traceback.format_exception_only(exc_type, exc_value)[0]
         state.console_state.screen.set_attr(15)
-        console.write('{0}:'.format(exc_type.__name__))
+        self.session.console.write('{0}:'.format(exc_type.__name__))
         state.console_state.screen.set_attr(7)
-        console.write_line(' {0}'.format(str(exc_value)))
+        self.session.console.write_line(' {0}'.format(str(exc_value)))
         state.console_state.screen.set_attr(0x70)
-        console.write_line(
+        self.session.console.write_line(
             '\nThis is a bug in PC-BASIC.')
         state.console_state.screen.set_attr(7)
-        console.write(
+        self.session.console.write(
             'Sorry about that. Please send the above messages to the bugs forum\nby e-mail to ')
         state.console_state.screen.set_attr(15)
-        console.write(
+        self.session.console.write(
             'bugs@discussion.pcbasic.p.re.sf.net')
         state.console_state.screen.set_attr(7)
-        console.write(
+        self.session.console.write(
             ' or by filing a bug\nreport at ')
         state.console_state.screen.set_attr(15)
-        console.write(
+        self.session.console.write(
             'https://github.com/robhagemans/pcbasic/issues')
         state.console_state.screen.set_attr(7)
-        console.write_line(
+        self.session.console.write_line(
             '. Please include')
-        console.write_line('as much information as you can about what you were doing and how this happened.')
-        console.write_line('Thank you!')
+        self.session.console.write_line('as much information as you can about what you were doing and how this happened.')
+        self.session.console.write_line('Thank you!')
         state.console_state.screen.set_attr(7)
         self.session.parser.set_pointer(False)
 

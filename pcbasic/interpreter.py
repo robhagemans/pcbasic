@@ -120,7 +120,7 @@ class Session(object):
         # interpreter is executing a command
         self.set_parse_mode(False)
         # initialise the console
-        console.init_mode()
+        self.console = console.Console()
         # direct line buffer
         self.direct_line = StringIO()
 
@@ -196,6 +196,7 @@ class Session(object):
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
 
+
         # TODO: these may not be necessary
         # stop all sound
         state.console_state.sound.stop_all_sound()
@@ -234,11 +235,11 @@ class Session(object):
             'PC-BASIC {version}\r'
             '(C) Copyright 2013--2016 Rob Hagemans.\r'
             '{free} Bytes free')
-        console.clear()
-        console.write_line(greeting.format(
+        self.console.clear()
+        self.console.write_line(greeting.format(
                 version=plat.version,
                 free=self.memory.get_free()))
-        console.show_keys(True)
+        self.console.show_keys(True)
 
     def clear(self, close_files=False,
               preserve_common=False, preserve_all=False, preserve_deftype=False):
@@ -358,7 +359,7 @@ class Session(object):
                     self.show_prompt()
                     try:
                         # input loop, checks events
-                        line = console.wait_screenline(from_start=True)
+                        line = self.console.wait_screenline(from_start=True)
                         self.prompt = not self.store_line(line)
                     except error.Break:
                         state.console_state.sound.stop_all_sound()
@@ -419,21 +420,21 @@ class Session(object):
             self.program.edit(linenum, tell)
             self.edit_prompt = False
         elif self.prompt:
-            console.start_line()
-            console.write_line("Ok\xff")
+            self.console.start_line()
+            self.console.write_line("Ok\xff")
 
     def auto_step(self):
         """ Generate an AUTO line number and wait for input. """
         numstr = str(self.auto_linenum)
-        console.write(numstr)
+        self.console.write(numstr)
         if self.auto_linenum in self.program.line_numbers:
-            console.write('*')
-            line = bytearray(console.wait_screenline(from_start=True))
+            self.console.write('*')
+            line = bytearray(self.console.wait_screenline(from_start=True))
             if line[:len(numstr)+1] == numstr+'*':
                 line[len(numstr)] = ' '
         else:
-            console.write(' ')
-            line = bytearray(console.wait_screenline(from_start=True))
+            self.console.write(' ')
+            line = bytearray(self.console.wait_screenline(from_start=True))
         # run or store it; don't clear lines or raise undefined line number
         self.direct_line = tokenise.tokenise_line(line)
         c = util.peek(self.direct_line)
@@ -457,7 +458,7 @@ class Session(object):
     def handle_error(self, e):
         """ Handle a BASIC error through error message. """
         # not handled by ON ERROR, stop execution
-        console.write_error_message(e.message, self.program.get_line_number(e.pos))
+        self.console.write_error_message(e.message, self.program.get_line_number(e.pos))
         self.set_parse_mode(False)
         self.input_mode = False
         # special case: syntax error
@@ -472,13 +473,13 @@ class Session(object):
         """ Handle a Break event. """
         # print ^C at current position
         if not self.input_mode and not e.stop:
-            console.write('^C')
+            self.console.write('^C')
         # if we're in a program, save pointer
         pos = -1
         if self.parser.run_mode:
             pos = self.program.bytecode.tell()
             self.parser.stop = pos
-        console.write_error_message(e.message, self.program.get_line_number(pos))
+        self.console.write_error_message(e.message, self.program.get_line_number(pos))
         self.set_parse_mode(False)
         self.input_mode = False
 

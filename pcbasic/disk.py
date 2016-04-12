@@ -506,7 +506,7 @@ class DiskDevice(object):
         # output working dir in DOS format
         # NOTE: this is always the current dir, not the one being listed
         dir_elems = [join_dosname(*short_name(path, e)) for e in self.cwd.split(os.sep)]
-        console.write_line(self.letter + b':\\' + b'\\'.join(dir_elems))
+        state.session.console.write_line(self.letter + b':\\' + b'\\'.join(dir_elems))
         fils = []
         if mask == b'.':
             dirs = [split_dosname((os.sep+relpath).split(os.sep)[-1:][0])]
@@ -529,10 +529,10 @@ class DiskDevice(object):
         while len(output) > 0:
             line = b' '.join(output[:num])
             output = output[num:]
-            console.write_line(line)
+            state.session.console.write_line(line)
             # allow to break during dir listing & show names flowing on screen
             self.session.check_events()
-        console.write_line(b' %d Bytes free' % self.get_free())
+        state.session.console.write_line(b' %d Bytes free' % self.get_free())
 
     def get_free(self):
         """ Return the number of free bytes on the drive. """
