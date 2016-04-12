@@ -27,11 +27,6 @@ class InputTextFile(devices.TextFileBase):
         """ Initialise InputStream. """
         devices.TextFileBase.__init__(self, StringIO(line), 'D', 'I')
 
-    def read_var(self, v):
-        """ Read a variable for INPUT from the console. """
-        # we return a tuple (value, separator)
-        return self._input_entry(v[0][-1], allow_past_end=True)
-
 
 def input_console(prompt, readvar, newline):
     """ Read a list of variables for INPUT. """
@@ -42,7 +37,9 @@ def input_console(prompt, readvar, newline):
         line = console.wait_screenline(write_endl=newline)
         inputstream = InputTextFile(line)
         # read the values and group them and the separators
-        values, seps = zip(*[inputstream.read_var(v) for v in readvar])
+        values, seps = zip(*[
+            inputstream.input_entry(v[0][-1], allow_past_end=True)
+            for v in readvar])
         # last separator not empty: there were too many values or commas
         # earlier separators empty: there were too few values
         # empty values will be converted to zero by string_to_number

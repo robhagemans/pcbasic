@@ -1992,8 +1992,11 @@ class Statements(object):
         finp = self.parser.parse_file_number(ins, self.session, 'IR')
         if finp is not None:
             for v in self._parse_var_list(ins):
-                value, _ = finp.read_var(v)
-                self.session.memory.set_variable(v[0], v[1], value)
+                name, indices = v
+                value, _ = finp.input_entry(name[-1], allow_past_end=False)
+                if value is None:
+                    value = vartypes.null(name[-1])
+                self.session.memory.set_variable(name, indices, value)
         else:
             # ; to avoid echoing newline
             newline = not util.skip_white_read_if(ins, (';',))

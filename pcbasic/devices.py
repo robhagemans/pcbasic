@@ -294,14 +294,6 @@ class TextFileBase(RawFile):
     # numbers read from file can be separated by spaces too
     soft_sep = ' '
 
-    def read_var(self, name):
-        """ Read the value for a variable from a file (INPUT#). """
-        typechar = name[0][-1]
-        value, sep = self._input_entry(typechar, allow_past_end=False)
-        if value is None:
-            value = vartypes.null(typechar)
-        return value, sep
-
     def _skip_whitespace(self, whitespace):
         """ Skip spaces and line feeds and NUL; return last whitespace char """
         c = ''
@@ -314,7 +306,7 @@ class TextFileBase(RawFile):
                 self.read(1)
         return c
 
-    def _input_entry(self, typechar, allow_past_end):
+    def input_entry(self, typechar, allow_past_end):
         """ Read a number or string entry for INPUT """
         word, blanks = '', ''
         last = self._skip_whitespace(self.whitespace_input)
@@ -517,7 +509,7 @@ class KYBDFile(TextFileBase):
         if self.is_master:
             console.set_width(new_width)
 
-    def _input_entry(self, typechar, allow_past_end):
+    def input_entry(self, typechar, allow_past_end):
         """ Read a number or string entry from KYBD: for INPUT# """
         word, blanks = '', ''
         if self.input_last:
