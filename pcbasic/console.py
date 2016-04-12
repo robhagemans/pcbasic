@@ -53,7 +53,7 @@ keys_line_replace_chars = {
         '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19'}
 
 
-
+#MOVE to Screen
 # viewport parameters
 state.console_state.view_start = 1
 state.console_state.scroll_height = 24
@@ -67,9 +67,6 @@ state.console_state.col = 1
 # true if we're on 80 but should be on 81
 state.console_state.overflow = False
 
-# overwrite mode (instead of insert)
-state.console_state.overwrite_mode = True
-
 
 
 class Console(object):
@@ -77,7 +74,10 @@ class Console(object):
 
     def __init__(self):
         """ Initialise console. """
+        # function key legend is visible
         self.keys_visible = False
+        # overwrite mode (instead of insert)
+        self._overwrite_mode = True
         self.init_mode()
 
     def init_mode(self):
@@ -88,7 +88,7 @@ class Console(object):
         # rebuild build the cursor;
         # first move to home in case the screen has shrunk
         self.set_pos(1, 1)
-        state.console_state.screen.cursor.set_default_shape(state.console_state.overwrite_mode)
+        state.console_state.screen.cursor.set_default_shape(self._overwrite_mode)
         state.console_state.screen.cursor.reset_visibility()
         # there is only one VIEW PRINT setting across all pages.
         if state.console_state.scroll_height == 25:
@@ -277,7 +277,7 @@ class Console(object):
                 elif d in (ea.CTRL_LEFT, ea.CTRL_b):
                     self.skip_word_left()
                 elif d in (ea.INSERT, ea.CTRL_r):
-                    self.set_overwrite_mode(not state.console_state.overwrite_mode)
+                    self.set_overwrite_mode(not self._overwrite_mode)
                 elif d in (ea.DELETE, ea.CTRL_BACKSPACE):
                     self.delete_char(row, col)
                 elif d in (ea.HOME, ea.CTRL_k):
@@ -295,7 +295,7 @@ class Console(object):
                     for d in letters:
                         # ignore eascii by this point, but not dbcs
                         if d[0] not in (b'\0', b'\r'):
-                            if not state.console_state.overwrite_mode:
+                            if not self._overwrite_mode:
                                 for c in d:
                                     self.insert(row, col, c, state.console_state.screen.attr)
                                     # row and col have changed
@@ -325,8 +325,8 @@ class Console(object):
 
     def set_overwrite_mode(self, new_overwrite=True):
         """ Set or unset the overwrite mode (INS). """
-        if new_overwrite != state.console_state.overwrite_mode:
-            state.console_state.overwrite_mode = new_overwrite
+        if new_overwrite != self._overwrite_mode:
+            self._overwrite_mode = new_overwrite
             state.console_state.screen.cursor.set_default_shape(new_overwrite)
 
     def insert(self, crow, ccol, c, cattr):
@@ -486,7 +486,7 @@ class Console(object):
         """ Jump to next 8-position tab stop (TAB). """
         row, col = state.console_state.row, state.console_state.col
         newcol = 9 + 8 * int((col-1) / 8)
-        if state.console_state.overwrite_mode:
+        if self._overwrite_mode:
             self.set_pos(row, newcol, scroll_ok=False)
         else:
             for _ in range(8):
