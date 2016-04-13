@@ -34,7 +34,6 @@ carry_row_9_chars = [chr(c) for c in range(0xb0, 0xdf+1)]
 def prepare():
     """ Prepare the display. """
     global video_capabilities, monitor
-    global fonts
     video_capabilities = config.get('video')
     monitor = config.get('monitor')
     if video_capabilities == 'ega' and monitor == 'mono':
@@ -47,16 +46,13 @@ def prepare():
         heights_needed.add(mode.font_height)
     for mode in state.console_state.screen.mode_data.values():
         heights_needed.add(mode.font_height)
-    # 9-pixel font is same as 8-pixel font
-    heights_needed -= set([9])
     # load the graphics fonts, including the 8-pixel RAM font
     # use set() for speed - lookup is O(1) rather than O(n) for list
     chars_needed = set(state.console_state.codepage.cp_to_unicode.values())
     # break up any grapheme clusters and add components to set of needed glyphs
     chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
-    fonts = typeface.load_fonts(config.get('font'), heights_needed,
+    state.console_state.fonts = typeface.load_fonts(config.get('font'), heights_needed,
                 chars_needed, state.console_state.codepage.substitutes, warn=config.get('debug'))
-    fonts[9] = fonts[8]
 
 def init():
     """ Initialise the display. """
@@ -618,7 +614,7 @@ class Screen(object):
         # preload SBCS glyphs
         try:
             self.glyphs = {
-                chr(c): fonts[mode_info.font_height].build_glyph(state.console_state.codepage.to_unicode(chr(c), u'\0'),
+                chr(c): state.console_state.fonts[mode_info.font_height].build_glyph(state.console_state.codepage.to_unicode(chr(c), u'\0'),
                                 mode_info.font_width, mode_info.font_height,
                                 chr(c) in carry_col_9_chars, chr(c) in carry_row_9_chars)
                 for c in range(256) }
@@ -1096,7 +1092,7 @@ class Screen(object):
             uc = state.console_state.codepage.to_unicode(c, u'\0')
             carry_col_9 = c in carry_col_9_chars
             carry_row_9 = c in carry_row_9_chars
-            mask = fonts[self.mode.font_height].build_glyph(uc,
+            mask = state.console_state.fonts[self.mode.font_height].build_glyph(uc,
                                 self.mode.font_width*2, self.mode.font_height,
                                 carry_col_9, carry_row_9)
             self.glyphs[c] = mask
