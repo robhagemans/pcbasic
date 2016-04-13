@@ -38,27 +38,6 @@ def prepare():
     monitor = config.get('monitor')
     if video_capabilities == 'ega' and monitor == 'mono':
         video_capabilities = 'ega_mono'
-    # set initial video mode
-    state.console_state.screen = Screen(config.get('text-width'),
-                                        config.get('video-memory'))
-    heights_needed = set([8])
-    for mode in state.console_state.screen.text_data.values():
-        heights_needed.add(mode.font_height)
-    for mode in state.console_state.screen.mode_data.values():
-        heights_needed.add(mode.font_height)
-    # load the graphics fonts, including the 8-pixel RAM font
-    # use set() for speed - lookup is O(1) rather than O(n) for list
-    chars_needed = set(state.console_state.codepage.cp_to_unicode.values())
-    # break up any grapheme clusters and add components to set of needed glyphs
-    chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
-    state.console_state.fonts = typeface.load_fonts(config.get('font'), heights_needed,
-                chars_needed, state.console_state.codepage.substitutes, warn=config.get('debug'))
-
-def init():
-    """ Initialise the display. """
-    # initialise a fresh textmode screen
-    info = state.console_state.screen.mode
-    state.console_state.screen.set_mode(info, 0, 1, 0, 0)
 
 
 ###############################################################################
