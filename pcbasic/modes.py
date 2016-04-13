@@ -17,7 +17,7 @@ except ImportError:
 def prepare():
     """ Prepare the video modes. """
     global video_capabilities, mono_monitor
-    global colours16, colours16_mono, cga4_palettes, mono_tint
+    global colours16, colours16_mono, mono_tint
     global circle_aspect
     video_capabilities = config.get('video')
     if video_capabilities == 'tandy':
@@ -37,18 +37,6 @@ def prepare():
         colours16 = list(colours16_mono)
     else:
         colours16 = list(colours16_colour)
-    # initialise the 4-colour CGA palette
-    # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
-    # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
-    # tandy/pcjr have high-intensity white, but low-intensity colours
-    # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
-    if video_capabilities in ('pcjr', 'tandy'):
-        # pcjr does not have mode 5
-        cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
-    elif cga_low:
-        cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
-    else:
-        cga4_palettes = {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}
 
 
 ###############################################################################

@@ -396,11 +396,23 @@ class PixelPage(object):
 class Screen(object):
     """ Screen manipulation operations. """
 
-    def __init__(self, initial_width, video_mem_size, capabilities, monitor):
+    def __init__(self, initial_width, video_mem_size, capabilities, monitor, cga_low):
         """ Minimal initialisiation of the screen. """
         # emulated video card - cga, ega, etc
         if capabilities == 'ega' and monitor == 'mono':
             capabilities = 'ega_mono'
+        # initialise the 4-colour CGA palette
+        # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
+        # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
+        # tandy/pcjr have high-intensity white, but low-intensity colours
+        # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
+        if capabilities in ('pcjr', 'tandy'):
+            # pcjr does not have mode 5
+            self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
+        elif cga_low:
+            self.cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
+        else:
+            self.cga4_palettes = {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}
         self.capabilities = capabilities
         # emulated monitor type - rgb, composite, mono
         self.monitor = monitor
@@ -415,7 +427,7 @@ class Screen(object):
         self.video_mem_size = video_mem_size
         # prepare video modes
         self.cga_mode_5 = False
-        self.cga4_palette = list(modes.cga4_palettes[1])
+        self.cga4_palette = list(self.cga4_palettes[1])
         self.prepare_modes()
         self.mode = self.text_data[initial_width]
         # cursor
@@ -708,9 +720,9 @@ class Screen(object):
         self.cga4_palette_num = num
         # we need to copy into cga4_palette as it's referenced by mode.palette
         if self.cga_mode_5 and self.capabilities in ('cga', 'cga_old'):
-            self.cga4_palette[:] = modes.cga4_palettes[5]
+            self.cga4_palette[:] = self.cga4_palettes[5]
         else:
-            self.cga4_palette[:] = modes.cga4_palettes[num]
+            self.cga4_palette[:] = self.cga4_palettes[num]
 
     def set_video_memory_size(self, new_size):
         """ Change the amount of memory available to the video card. """
