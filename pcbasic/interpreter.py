@@ -21,7 +21,6 @@ import error
 import util
 import tokenise
 
-
 import program
 import signals
 import display
@@ -44,6 +43,7 @@ import files
 import typeface
 import sound
 import redirect
+import unicodepage
 
 class SessionLauncher(object):
     """ Launches a BASIC session. """
@@ -119,6 +119,11 @@ class Session(object):
         self.last_mode = False, False
         # syntax error prompt and EDIT
         self.edit_prompt = False
+
+        # prepare codepage
+        codepage = config.get('codepage') or '437'
+        state.console_state.codepage = unicodepage.Codepage(
+                                codepage, box_protect=not config.get('nobox'))
 
         # prepare input methods
         state.console_state.pen = inputs.Pen()
