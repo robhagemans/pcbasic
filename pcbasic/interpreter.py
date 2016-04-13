@@ -143,7 +143,7 @@ class Session(object):
         video_capabilities = config.get('video')
         state.console_state.screen = display.Screen(config.get('text-width'),
                 config.get('video-memory'), video_capabilities, monitor,
-                config.get('cga-low'))
+                config.get('cga-low'), config.get('mono-tint'))
         heights_needed = set([8])
         for mode in state.console_state.screen.text_data.values():
             heights_needed.add(mode.font_height)

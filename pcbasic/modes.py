@@ -16,22 +16,17 @@ except ImportError:
 
 def prepare():
     """ Prepare the video modes. """
-    global video_capabilities, mono_monitor
-    global colours16, colours16_mono, mono_tint
+    global mono_monitor
+    global colours16, colours16_mono
     global circle_aspect
-    video_capabilities = config.get('video')
-    if video_capabilities == 'tandy':
+    if config.get('video') == 'tandy':
         circle_aspect = (3072, 2000)
     else:
         circle_aspect = (4, 3)
     mono_monitor = config.get('monitor') == 'mono'
-    if video_capabilities == 'ega' and mono_monitor:
-        video_capabilities = 'ega_mono'
     cga_low = config.get('cga-low')
-    # set monochrome tint
-    mono_tint = config.get('mono-tint')
-    # build colour sets
-    colours16_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
+    # build monochrome colour sets
+    colours16_mono = tuple(tuple(tint*i//255 for tint in config.get('mono-tint'))
                            for i in intensity16_mono)
     if mono_monitor:
         colours16 = list(colours16_mono)
@@ -92,7 +87,7 @@ ega_mono_text_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
 ###############################################################################
 # video modes
 
-def get_modes(screen, cga4_palette, video_mem_size):
+def get_modes(screen, cga4_palette, video_mem_size, video_capabilities, mono_tint):
     """ Build lists of allowed graphics modes. """
     # initialise tinted monochrome palettes
     colours_ega_mono_0 = tuple(tuple(tint*i//255 for tint in mono_tint)

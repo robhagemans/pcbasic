@@ -396,7 +396,7 @@ class PixelPage(object):
 class Screen(object):
     """ Screen manipulation operations. """
 
-    def __init__(self, initial_width, video_mem_size, capabilities, monitor, cga_low):
+    def __init__(self, initial_width, video_mem_size, capabilities, monitor, cga_low, mono_tint):
         """ Minimal initialisiation of the screen. """
         # emulated video card - cga, ega, etc
         if capabilities == 'ega' and monitor == 'mono':
@@ -428,6 +428,7 @@ class Screen(object):
         # prepare video modes
         self.cga_mode_5 = False
         self.cga4_palette = list(self.cga4_palettes[1])
+        self.mono_tint = mono_tint
         self.prepare_modes()
         self.mode = self.text_data[initial_width]
         # cursor
@@ -439,7 +440,8 @@ class Screen(object):
     def prepare_modes(self):
         """ Build lists of allowed graphics modes. """
         self.text_data, self.mode_data = modes.get_modes(self,
-                                    self.cga4_palette, self.video_mem_size)
+                    self.cga4_palette, self.video_mem_size,
+                    self.capabilities, self.mono_tint)
 
     def resume(self):
         """ Load a video mode from storage and initialise. """
