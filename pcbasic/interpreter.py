@@ -118,8 +118,10 @@ class Session(object):
         self.edit_prompt = False
 
         # set initial video mode
+        monitor = config.get('monitor')
+        video_capabilities = config.get('video')
         state.console_state.screen = display.Screen(config.get('text-width'),
-                                            config.get('video-memory'))
+                config.get('video-memory'), video_capabilities, monitor)
         heights_needed = set([8])
         for mode in state.console_state.screen.text_data.values():
             heights_needed.add(mode.font_height)

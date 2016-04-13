@@ -10,7 +10,6 @@ import logging
 
 import state
 import events
-import display
 import vartypes
 import var
 import error
@@ -413,7 +412,7 @@ class Memory(object):
             return self.ram_font_segment // 256
         # 1040 monitor type
         elif addr == 1040:
-            if display.monitor == 'mono':
+            if state.console_state.screen.monitor == 'mono':
                 # mono
                 return 48 + 6
             else:
@@ -478,7 +477,7 @@ class Memory(object):
             # these are the low-level mode numbers used by mode switching interrupt
             cval = state.console_state.screen.colorswitch % 2
             if state.console_state.screen.mode.is_text_mode:
-                if (display.video_capabilities in ('mda', 'ega_mono') and
+                if (state.console_state.screen.capabilities in ('mda', 'ega_mono') and
                         state.console_state.screen.mode.width == 80):
                     return 7
                 return (state.console_state.screen.mode.width == 40)*2 + cval

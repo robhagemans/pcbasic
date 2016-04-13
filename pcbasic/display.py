@@ -13,11 +13,9 @@ try:
 except ImportError:
     numpy = None
 
-import config
 import signals
 import state
 import error
-import typeface
 import modes
 import graphics
 import unicodepage
@@ -30,14 +28,6 @@ import basictoken as tk
 carry_col_9_chars = [chr(c) for c in range(0xb0, 0xdf+1)]
 # ascii codepoints for which to repeat row 8 in row 9 (box drawing)
 carry_row_9_chars = [chr(c) for c in range(0xb0, 0xdf+1)]
-
-def prepare():
-    """ Prepare the display. """
-    global video_capabilities, monitor
-    video_capabilities = config.get('video')
-    monitor = config.get('monitor')
-    if video_capabilities == 'ega' and monitor == 'mono':
-        video_capabilities = 'ega_mono'
 
 
 ###############################################################################
@@ -407,8 +397,14 @@ class PixelPage(object):
 class Screen(object):
     """ Screen manipulation operations. """
 
-    def __init__(self, initial_width, video_mem_size):
+    def __init__(self, initial_width, video_mem_size, capabilities, monitor):
         """ Minimal initialisiation of the screen. """
+        # emulated video card - cga, ega, etc
+        if capabilities == 'ega' and monitor == 'mono':
+            capabilities = 'ega_mono'
+        self.capabilities = capabilities
+        # emulated monitor type - rgb, composite, mono
+        self.monitor = monitor
         self.screen_mode = 0
         self.colorswitch = 1
         self.apagenum = 0
@@ -457,7 +453,7 @@ class Screen(object):
                                        mode_info.font_height) // cmode.font_height
             self.cursor.to_line = (self.cursor.to_line *
                                      mode_info.font_height) // cmode.font_height
-            self.palette = Palette(self.mode)
+            self.palette = Palette(self.mode, self.capabilities)
         # set the screen mode
         signals.video_queue.put(signals.Event(signals.VIDEO_SET_MODE, mode_info))
         if mode_info.is_text_mode:
@@ -502,7 +498,7 @@ class Screen(object):
                erase=1, new_width=None):
         """ SCREEN: change the video mode, colourburst, visible or active page. """
         # reset palette happens even if the SCREEN call fails
-        self.palette = Palette(self.mode)
+        self.palette = Palette(self.mode, self.capabilities)
         # set default arguments
         if new_mode is None:
             new_mode = self.screen_mode
@@ -519,9 +515,9 @@ class Screen(object):
         # colorswitch is NOT preserved between screens when unspecified
         # colorswitch is NOT the same as colorburst (opposite on screen 1)
         if new_colorswitch is None:
-            if video_capabilities == 'pcjr':
+            if self.capabilities == 'pcjr':
                 new_colorswitch = 0
-            elif video_capabilities == 'tandy':
+            elif self.capabilities == 'tandy':
                 new_colorswitch = not new_mode
             else:
                 new_colorswitch = 1
@@ -545,12 +541,12 @@ class Screen(object):
         # on pcjr only, reset page to zero if current page number would be too high.
         if new_vpagenum is None:
             new_vpagenum = self.vpagenum
-            if (video_capabilities == 'pcjr' and info and
+            if (self.capabilities == 'pcjr' and info and
                     new_vpagenum >= info.num_pages):
                 new_vpagenum = 0
         if new_apagenum is None:
             new_apagenum = self.apagenum
-            if (video_capabilities == 'pcjr' and info and
+            if (self.capabilities == 'pcjr' and info and
                     new_apagenum >= info.num_pages):
                 new_apagenum = 0
         if ((not info.is_text_mode and info.name != self.mode.name) or
@@ -637,7 +633,7 @@ class Screen(object):
         self.drawing = graphics.Drawing(self, state.session)
         # cursor width starts out as single char
         self.cursor.init_mode(self.mode)
-        self.palette = Palette(self.mode)
+        self.palette = Palette(self.mode, self.capabilities)
         # set the attribute
         if not self.mode.is_text_mode:
             fore, _, _, _ = self.split_attr(self.mode.cursor_index or self.attr)
@@ -653,7 +649,7 @@ class Screen(object):
     def set_width(self, to_width):
         """ Set the character width of the screen, reset pages and change modes. """
         if to_width == 20:
-            if video_capabilities in ('pcjr', 'tandy'):
+            if self.capabilities in ('pcjr', 'tandy'):
                 self.screen(3, None, 0, 0)
             else:
                 raise error.RunError(error.IFC)
@@ -693,18 +689,18 @@ class Screen(object):
         # On an RGB monitor:
         # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
         # - ignored on other screens
-        colorburst_capable = video_capabilities in (
+        colorburst_capable = self.capabilities in (
                                     'cga', 'cga_old', 'tandy', 'pcjr')
-        if self.mode.name == '320x200x4' and monitor != 'composite':
+        if self.mode.name == '320x200x4' and self.monitor != 'composite':
             # ega ignores colorburst; tandy and pcjr have no mode 5
             self.cga_mode_5 = not on
             self.set_cga4_palette(1)
-        elif monitor != 'mono' and (on or monitor != 'composite'):
+        elif self.monitor != 'mono' and (on or self.monitor != 'composite'):
             modes.colours16[:] = modes.colours16_colour
         else:
             modes.colours16[:] = modes.colours16_mono
         # reset the palette to reflect the new mono or mode-5 situation
-        self.palette = Palette(self.mode)
+        self.palette = Palette(self.mode, self.capabilities)
         signals.video_queue.put(signals.Event(signals.VIDEO_SET_COLORBURST, (on and colorburst_capable,
                             self.palette.rgb_palette, self.palette.rgb_palette1)))
 
@@ -712,7 +708,7 @@ class Screen(object):
         """ set the default 4-colour CGA palette. """
         self.cga4_palette_num = num
         # we need to copy into cga4_palette as it's referenced by mode.palette
-        if self.cga_mode_5 and video_capabilities in ('cga', 'cga_old'):
+        if self.cga_mode_5 and self.capabilities in ('cga', 'cga_old'):
             self.cga4_palette[:] = modes.cga4_palettes[5]
         else:
             self.cga4_palette[:] = modes.cga4_palettes[num]
@@ -917,7 +913,7 @@ class Screen(object):
 
     def clear_view(self):
         """ Clear the scroll area. """
-        if video_capabilities in ('vga', 'ega', 'cga', 'cga_old'):
+        if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
             # keep background, set foreground to 7
             attr_save = self.attr
             self.set_attr(attr_save & 0x70 | 0x7)
@@ -934,7 +930,7 @@ class Screen(object):
         self.clear_rows(state.console_state.view_start, last_row)
         # ensure the cursor is show in the right position
         self.move_cursor(state.console_state.row, state.console_state.col)
-        if video_capabilities in ('vga', 'ega', 'cga', 'cga_old'):
+        if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
             # restore attr
             self.set_attr(attr_save)
 
@@ -1135,8 +1131,9 @@ class Screen(object):
 class Palette(object):
     """ Colour palette. """
 
-    def __init__(self, mode):
+    def __init__(self, mode, capabilities):
         """ Initialise palette. """
+        self.capabilities = capabilities
         self.set_all(mode.palette, check_mode=False)
 
     def set_entry(self, index, colour, check_mode=True):
@@ -1170,10 +1167,10 @@ class Palette(object):
     def mode_allows_palette(self, mode):
         """ Check if the video mode allows palette change. """
         # effective palette change is an error in CGA
-        if video_capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
+        if self.capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
             raise error.RunError(error.IFC)
         # ignore palette changes in Tandy/PCjr SCREEN 0
-        elif video_capabilities in ('tandy', 'pcjr') and mode.is_text_mode:
+        elif self.capabilities in ('tandy', 'pcjr') and mode.is_text_mode:
             return False
         else:
             return True
@@ -1238,7 +1235,7 @@ class Cursor(object):
         mode = self.screen.mode
         fx, fy = self.width, self.height
         # do all text modes with >8 pixels have an ega-cursor?
-        if video_capabilities in (
+        if self.screen.capabilities in (
             'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules'):
             # odd treatment of cursors on EGA machines,
             # presumably for backward compatibility
@@ -1277,7 +1274,7 @@ class Cursor(object):
             if not self.screen.mode.is_text_mode:
                 # always a block cursor in graphics mode
                 self.set_shape(0, self.height-1)
-            elif video_capabilities == 'ega':
+            elif self.screen.capabilities == 'ega':
                 # EGA cursor is on second last line
                 self.set_shape(self.height-2, self.height-2)
             elif self.height == 9:
@@ -1299,8 +1296,3 @@ class Cursor(object):
             signals.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
                     (self.width, self.height, self.from_line, self.to_line)))
             self.reset_attr()
-
-
-###############################################################################
-
-prepare()
