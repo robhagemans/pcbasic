@@ -20,6 +20,8 @@ import plat
 import error
 import util
 import tokenise
+
+
 import program
 import signals
 import display
@@ -40,6 +42,7 @@ import machine
 import parser
 import files
 import typeface
+import sound
 
 
 class SessionLauncher(object):
@@ -200,6 +203,8 @@ class Session(object):
 
         # initialise timer
         self.timer = timedate.Timer()
+        # initialise sound queue
+        state.console_state.sound = sound.Sound()
 
         # find program for PCjr TERM command
         pcjr_term = config.get('pcjr-term')

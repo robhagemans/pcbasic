@@ -35,12 +35,6 @@ notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6,
             'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
 
 
-def prepare():
-    """ Prepare the sound subsystem. """
-    # initialise sound queue
-    state.console_state.sound = Sound()
-
-
 class PlayState(object):
     """ State variables of the PLAY command. """
 
@@ -289,9 +283,3 @@ class Sound(object):
                 self.play_sound(0, max_time - total_time[voice], 1, 0, voice)
         if self.foreground:
             self.wait_all_music()
-
-
-
-###############################################################################
-
-prepare()

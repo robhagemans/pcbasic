@@ -24,14 +24,6 @@ import ansipipe
 import config
 import error
 
-import state
-import unicodepage
-codepage = config.get('codepage')
-if not codepage:
-    codepage = '437'
-state.console_state.codepage = unicodepage.Codepage(
-                        codepage, box_protect=not config.get('nobox'))
-
 # video plugins
 # these are unused but need to be initialised and packaged
 import video_none
@@ -46,6 +38,14 @@ import audio_none
 import audio_beep
 import audio_pygame
 import audio_sdl2
+
+import state
+import unicodepage
+codepage = config.get('codepage')
+if not codepage:
+    codepage = '437'
+state.console_state.codepage = unicodepage.Codepage(
+                        codepage, box_protect=not config.get('nobox'))
 
 
 def main():
@@ -113,10 +113,10 @@ def convert():
     outfile = config.get(1)
     # keep uppercase first letter
     mode = mode[0].upper() if mode else 'A'
-    # load & save in different format
     # FIXME - need to remove Session dependence from Devices, replace with class to hold main event loop only
     devices = files.Devices(SessionShim(), fields=None)
     files = files.Files(devices, max_files=3)
+    # load & save in different format
     try:
         prog_infile = None
         if infile:
