@@ -26,18 +26,6 @@ control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e
 
 
 ###############################################################################
-# initialisation
-
-def prepare():
-    """ Initialise unicodepage module. """
-    codepage = config.get('codepage')
-    if not codepage:
-        codepage = '437'
-    state.console_state.codepage = Codepage(
-                            codepage, box_protect=not config.get('nobox'))
-
-
-###############################################################################
 # codepages
 
 class Codepage(object):
@@ -751,6 +739,3 @@ def split_graphemes(ucs):
         current_grapheme += after
     # return all except first element, which is always empty string
     return grapheme_list[1:]
-
-
-prepare()

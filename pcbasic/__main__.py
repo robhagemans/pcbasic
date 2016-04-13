@@ -24,6 +24,14 @@ import ansipipe
 import config
 import error
 
+import state
+import unicodepage
+codepage = config.get('codepage')
+if not codepage:
+    codepage = '437'
+state.console_state.codepage = unicodepage.Codepage(
+                        codepage, box_protect=not config.get('nobox'))
+
 # video plugins
 # these are unused but need to be initialised and packaged
 import video_none

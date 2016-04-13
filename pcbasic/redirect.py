@@ -14,16 +14,15 @@ import config
 import unicodepage
 import state
 
-
-# converter with DBCS lead-byte buffer for utf8 output redirection
-uniconv = state.console_state.codepage.get_converter(preserve_control=True)
-
 # redirect i/o to file or printer
 output_echos = []
 
 
 def prepare_redirects():
     """ Initialise i/o redirects. """
+    global uniconv
+    # converter with DBCS lead-byte buffer for utf8 output redirection
+    uniconv = state.console_state.codepage.get_converter(preserve_control=True)
     # filter interface depends on redirection output
     if config.get(b'interface') == u'none':
         set_output(sys.stdout, sys.stdout.encoding or b'utf-8')
