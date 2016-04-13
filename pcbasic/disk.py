@@ -547,7 +547,7 @@ class DiskDevice(object):
 
     def check_file_not_open(self, path):
         """ Raise an error if the file is open. """
-        for f in self.locks._files.values():
+        for f in self.locks.open_files.values():
             try:
                 if self._native_path(path, name_err=None) == f.name:
                     raise error.RunError(error.FILE_ALREADY_OPEN)
@@ -566,11 +566,11 @@ class Locks(object):
         # dict of native file names by number, for locking
         self._locks = {}
         # dict of disk files
-        self._files = {}
+        self.open_files = {}
 
     def list(self, name):
         """ Retrieve a list of files open to the same disk stream. """
-        return [ self._files[fnum]
+        return [ self.open_files[fnum]
                        for (fnum, fname) in self._locks.iteritems()
                        if fname == name ]
 
@@ -601,12 +601,12 @@ class Locks(object):
 
     def open_file(self, number, f):
         """ Register disk file as open. """
-        self._files[number] = f
+        self.open_files[number] = f
 
     def close_file(self, number):
         """ Deregister disk file. """
         try:
-            del self._files[number]
+            del self.open_files[number]
         except KeyError:
             pass
 
