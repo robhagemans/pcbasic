@@ -16,19 +16,17 @@ except ImportError:
 
 def prepare():
     """ Prepare the video modes. """
-    global mono_monitor
     global colours16, colours16_mono
     global circle_aspect
     if config.get('video') == 'tandy':
         circle_aspect = (3072, 2000)
     else:
         circle_aspect = (4, 3)
-    mono_monitor = config.get('monitor') == 'mono'
     cga_low = config.get('cga-low')
     # build monochrome colour sets
     colours16_mono = tuple(tuple(tint*i//255 for tint in config.get('mono-tint'))
                            for i in intensity16_mono)
-    if mono_monitor:
+    if config.get('monitor') == 'mono':
         colours16 = list(colours16_mono)
     else:
         colours16 = list(colours16_colour)
