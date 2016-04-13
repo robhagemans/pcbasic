@@ -141,9 +141,13 @@ class Session(object):
         # set initial video mode
         monitor = config.get('monitor')
         video_capabilities = config.get('video')
+        if config.get('video') == 'tandy':
+            screen_aspect = (3072, 2000)
+        else:
+            screen_aspect = (4, 3)
         state.console_state.screen = display.Screen(config.get('text-width'),
                 config.get('video-memory'), video_capabilities, monitor,
-                config.get('cga-low'), config.get('mono-tint'))
+                config.get('cga-low'), config.get('mono-tint'), screen_aspect)
         heights_needed = set([8])
         for mode in state.console_state.screen.text_data.values():
             heights_needed.add(mode.font_height)
