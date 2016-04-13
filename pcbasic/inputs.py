@@ -70,23 +70,6 @@ home_key_replacements_eascii = {
 
 
 ###############################################################################
-
-def prepare():
-    """ Prepare input method handling. """
-    state.console_state.pen = Pen()
-    state.console_state.stick = Stick()
-    state.console_state.keyb = Keyboard(
-            ignore_caps=not config.get('capture-caps'),
-            ctrl_c_is_break=config.get('ctrl-c-break'))
-    redirect.prepare_redirects()
-    # inserted keystrokes
-    keystring = config.get('keys').decode('string_escape').decode('utf-8')
-    state.console_state.keyb.buf.insert(
-            state.console_state.codepage.str_from_unicode(keystring),
-            check_full=False)
-
-
-###############################################################################
 # keyboard queue
 
 class KeyboardBuffer(object):
@@ -520,7 +503,3 @@ class Stick(object):
         """ Millisecond timer for game port decay. """
         now = datetime.datetime.now()
         return now.second*1000 + now.microsecond/1000
-
-###############################################################################
-
-prepare()

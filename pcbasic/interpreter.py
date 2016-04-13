@@ -43,7 +43,7 @@ import parser
 import files
 import typeface
 import sound
-
+import redirect
 
 class SessionLauncher(object):
     """ Launches a BASIC session. """
@@ -119,6 +119,19 @@ class Session(object):
         self.last_mode = False, False
         # syntax error prompt and EDIT
         self.edit_prompt = False
+
+        # prepare input methods
+        state.console_state.pen = inputs.Pen()
+        state.console_state.stick = inputs.Stick()
+        state.console_state.keyb = inputs.Keyboard(
+                ignore_caps=not config.get('capture-caps'),
+                ctrl_c_is_break=config.get('ctrl-c-break'))
+        redirect.prepare_redirects()
+        # inserted keystrokes
+        keystring = config.get('keys').decode('string_escape').decode('utf-8')
+        state.console_state.keyb.buf.insert(
+                state.console_state.codepage.str_from_unicode(keystring),
+                check_full=False)
 
         # set initial video mode
         monitor = config.get('monitor')
