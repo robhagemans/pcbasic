@@ -30,8 +30,6 @@ import events
 import console
 import vartypes
 import devices
-# to initialise state.console_state.codepage
-import unicodepage
 # to be abled to set current-device to CAS1
 import cassette
 

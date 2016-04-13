@@ -12,7 +12,6 @@ import plat
 import config
 import state
 import error
-import unicodepage
 import scancode
 from eascii import as_bytes as ea
 from eascii import as_unicode as uea

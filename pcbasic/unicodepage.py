@@ -7,11 +7,9 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import unicodedata
-
-import config
-import state
 import logging
 import os
+
 import plat
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined

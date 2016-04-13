@@ -15,7 +15,6 @@ import var
 import error
 import memory
 import program
-import unicodepage
 # for state.console_state globals
 import console
 

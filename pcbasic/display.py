@@ -18,7 +18,6 @@ import state
 import error
 import modes
 import graphics
-import unicodepage
 import basictoken as tk
 
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)

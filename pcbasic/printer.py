@@ -11,7 +11,6 @@ import subprocess
 import logging
 
 import state
-import unicodepage
 import plat
 
 

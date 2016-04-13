@@ -11,7 +11,6 @@ import logging
 from functools import partial
 
 import config
-import unicodepage
 import state
 
 # redirect i/o to file or printer

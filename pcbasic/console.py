@@ -14,8 +14,6 @@ import redirect
 import error
 # for num_fn_keys
 import events
-# to initialise state.console_state.codepage
-import unicodepage
 import basictoken as tk
 from eascii import as_bytes as ea
 
