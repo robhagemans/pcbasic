@@ -98,63 +98,70 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
     if not preserve_deftype:
         # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
         state.basic_state.deftype = ['!']*26
-    if not preserve_all:
-        if preserve_common:
-            # preserve COMMON variables (CHAIN does this)
-            common, common_arrays, common_strings = {}, {}, {}
-            for varname in state.basic_state.common_names:
-                try:
-                    common[varname] = state.basic_state.variables[varname]
-                except KeyError:
-                    pass
-            for varname in state.basic_state.common_array_names:
-                try:
-                    common_arrays[varname] = state.basic_state.arrays[varname]
-                except KeyError:
-                    pass
-        else:
-            # clear option base
-            state.basic_state.array_base = None
-            common = {}
-            common_arrays = {}
-            # at least I think these should be cleared by CLEAR?
-            state.basic_state.common_names = []
-            state.basic_state.common_array_names = []
-        # restore only common variables
-        # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
-        state.basic_state.variables = {}
-        state.basic_state.arrays = {}
-        state.basic_state.var_memory = {}
-        state.basic_state.array_memory = {}
-        state.basic_state.var_current = memory.var_start()
-        # arrays are always kept after all vars
-        state.basic_state.array_current = 0
+    common, common_arrays = {}, {}
+    if preserve_all:
+        common = {k: v for k, v in state.basic_state.variables.iteritems()}
+        common_arrays = {k: v for k, v in state.basic_state.arrays.iteritems()}
+    elif preserve_common:
+        # preserve COMMON variables (CHAIN does this)
+        for varname in state.basic_state.common_names:
+            try:
+                common[varname] = state.basic_state.variables[varname]
+            except KeyError:
+                pass
+        for varname in state.basic_state.common_array_names:
+            try:
+                common_arrays[varname] = state.basic_state.arrays[varname]
+            except KeyError:
+                pass
         # functions are cleared except when CHAIN ... ALL is specified
         state.basic_state.functions = {}
-        # reset string space
-        new_strings = StringSpace()
-        # preserve common variables
-        # use set_var and dim_array to rebuild memory model
-        for v in common:
-            if v[-1] == '$':
-                state.basic_state.variables[v] = (
-                    new_strings.store(bytearray(vartypes.unpack_string(
-                        get_string_copy_packed(common[v])
-                    ))))
-            else:
-                set_var(v, (v[-1], common[v]))
-        for a in common_arrays:
-            dim_array(a, common_arrays[a][0])
-            if a[-1] == '$':
-                s = bytearray()
-                for i in range(0, len(common_arrays[a][1]), byte_size['$']):
-                    s += (new_strings.store(bytearray(vartypes.unpack_string(
-                        get_string_copy_packed(common_arrays[a][1][i+1:i+byte_size['$']])
-                    ))))
-                state.basic_state.arrays[a][1] = s
-            else:
-                state.basic_state.arrays[a] = common_arrays[a]
-        state.basic_state.strings = new_strings
+    else:
+        # clear option base
+        state.basic_state.array_base = None
+        # at least I think these should be cleared by CLEAR?
+        state.basic_state.common_names = []
+        state.basic_state.common_array_names = []
+        # functions are cleared except when CHAIN ... ALL is specified
+        state.basic_state.functions = {}
+    if common:
+        # collect garbage before copying strings
+        # this is to avoid garbage collection triggered by set_var
+        # messing up string space during the copy
+        collect_garbage()
+    # restore only common variables
+    # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
+    state.basic_state.variables = {}
+    state.basic_state.arrays = {}
+    state.basic_state.var_memory = {}
+    state.basic_state.array_memory = {}
+    state.basic_state.var_current = memory.var_start()
+    # arrays are always kept after all vars
+    state.basic_state.array_current = 0
+    # reset string space
+    new_strings = StringSpace()
+    # preserve common variables
+    # use set_var and dim_array to rebuild memory model
+    for v in common:
+        if v[-1] == '$':
+            state.basic_state.variables[v] = (
+                new_strings.store(bytearray(vartypes.unpack_string(
+                    get_string_copy_packed(common[v])
+                ))))
+        else:
+            set_var(v, (v[-1], common[v]))
+    for a in common_arrays:
+        dim_array(a, common_arrays[a][0])
+        if a[-1] == '$':
+            s = bytearray()
+            for i in range(0, len(common_arrays[a][1]), byte_size['$']):
+                s += (new_strings.store(bytearray(vartypes.unpack_string(
+                    get_string_copy_packed(common_arrays[a][1][i+1:i+byte_size['$']])
+                ))))
+            state.basic_state.arrays[a][1] = s
+        else:
+            state.basic_state.arrays[a] = common_arrays[a]
+    state.basic_state.strings = new_strings
 
 def set_var(name, value):
     """ Assign a value to a variable. """
