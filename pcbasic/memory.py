@@ -90,7 +90,7 @@ class DataSegment(object):
         # fields are indexed by BASIC file number, hence max_files+1
         # file 0 (program/system file) probably doesn't need a field
         for i in range(self.max_files+1):
-            self.fields[i+1] = devices.Field(i+1, self)
+            self.fields[i+1] = devices.Field(self.max_reclen, i+1, self)
 
     def clear_deftype(self):
         """ Reset default sigils. """

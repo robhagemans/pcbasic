@@ -202,7 +202,6 @@ class COMFile(devices.CRLFTextFileBase):
         # for wait()
         self.session = session
         self.serial_in_size = serial_in_size
-        self.field.reset(serial_in_size)
         self.in_buffer = bytearray()
         self.linefeed = linefeed
         self.overflow = False

@@ -406,13 +406,13 @@ class CRLFTextFileBase(TextFileBase):
 class Field(object):
     """ Buffer for FIELD access. """
 
-    def __init__(self, number=0, memory=None):
+    def __init__(self, reclen, number=0, memory=None):
         """ Set up empty FIELD buffer. """
         if number > 0:
             self.address = memory.field_mem_start + (number-1)*memory.field_mem_offset
         else:
             self.address = -1
-        self.buffer = bytearray()
+        self.buffer = bytearray(reclen)
         self.memory = memory
 
     def attach_var(self, name, indices, offset, length):
@@ -431,10 +431,6 @@ class Field(object):
         # assign the string ptr to the variable name
         # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
         self.memory.set_variable(name, indices, vartypes.bytes_to_string(str_sequence))
-
-    def reset(self, reclen):
-        """ Initialise FIELD buffer to reclen NULs. """
-        self.buffer = bytearray(reclen)
 
 
 #################################################################################

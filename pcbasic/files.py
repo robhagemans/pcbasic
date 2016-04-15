@@ -142,8 +142,8 @@ class Devices(object):
         # serial devices
         # buffer sizes (/c switch in GW-BASIC)
         serial_in_size = config.get('serial-buffer-size')
-        self.devices['COM1:'] = ports.COMDevice(config.get('com1'), session, devices.Field(), serial_in_size)
-        self.devices['COM2:'] = ports.COMDevice(config.get('com2'), session, devices.Field(), serial_in_size)
+        self.devices['COM1:'] = ports.COMDevice(config.get('com1'), session, devices.Field(serial_in_size), serial_in_size)
+        self.devices['COM2:'] = ports.COMDevice(config.get('com2'), session, devices.Field(serial_in_size), serial_in_size)
         # cassette
         self.devices['CAS1:'] = cassette.CASDevice(config.get('cas1'))
         # disk file locks

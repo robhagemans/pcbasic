@@ -666,7 +666,6 @@ class RandomFile(devices.CRLFTextFileBase):
         self.reclen = reclen
         # replace with empty field if already exists
         self.field = field
-        self.field.reset(self.reclen)
         devices.CRLFTextFileBase.__init__(self, ByteStream(self.field.buffer), b'D', b'R')
         self.operating_mode = b'I'
         # note that for random files, output_stream must be a seekable stream.
