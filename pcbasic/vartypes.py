@@ -8,8 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import fp
 import error
-import state
-import config
 
 # BASIC types:
 # Integer (%) - stored as two's complement, little-endian
@@ -18,25 +16,11 @@ import config
 # String ($) - stored as 1-byte length plus 2-byte pointer to string space
 
 byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
-
-# command line option /d
-# allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
-option_double = False
-
-def prepare():
-    """ Initialise expressions module. """
-    global option_double
-    option_double = config.get('double')
+sigils = set(byte_size)
 
 def null(sigil):
     """ Return null value for the given type. """
     return (sigil, bytearray(byte_size[sigil]))
-
-def complete_name(name):
-    """ Add type specifier to a name, if missing. """
-    if name and name[-1] not in ('$', '%', '!', '#'):
-        name += state.basic_state.deftype[ord(name[0].upper()) - ord('A')]
-    return name
 
 ###############################################################################
 # type checks
@@ -147,6 +131,15 @@ def pass_int_unpack(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
     return integer_to_int_signed(pass_integer(inp, maxint, err))
 
 
+#D
+def number_unpack(value):
+    """ Unpack a number value. """
+    if value[0] in ('#', '!'):
+        return fp.unpack(value)
+    else:
+        return integer_to_int_signed(value)
+
+
 ###############################################################################
 # convert between BASIC Integer and token bytes
 
@@ -224,6 +217,3 @@ def bool_to_integer(boo):
 def integer_to_bool(in_integer):
     """ Convert Integer to Python boolean. """
     return (in_integer[1][0] != 0 or in_integer[1][1] != 0)
-
-
-prepare()

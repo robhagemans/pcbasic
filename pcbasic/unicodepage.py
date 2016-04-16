@@ -7,11 +7,9 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import unicodedata
-
-import config
-import state
 import logging
 import os
+
 import plat
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
@@ -23,18 +21,6 @@ printable_ascii = map(chr, range(0x20, 0x7F))
 # on the terminal, these values are not shown as special graphic chars but as their normal effect
 # BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
 control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
-
-
-###############################################################################
-# initialisation
-
-def prepare():
-    """ Initialise unicodepage module. """
-    codepage = config.get('codepage')
-    if not codepage:
-        codepage = '437'
-    state.console_state.codepage = Codepage(
-                            codepage, box_protect=not config.get('nobox'))
 
 
 ###############################################################################
@@ -751,6 +737,3 @@ def split_graphemes(ucs):
         current_grapheme += after
     # return all except first element, which is always empty string
     return grapheme_list[1:]
-
-
-prepare()

@@ -9,123 +9,20 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import copy
 
-import config
 import error
 import console
 import state
-import memory
 import var
 # unused import, needed to initialise state.console_state.screen
 import display
 
-# file numbers
-state.io_state.files = {}
-
 def nullstream():
     return open(os.devnull, 'r+')
 
-# devices - SCRN: KYBD: LPT1: etc.
-state.io_state.devices = {}
-state.io_state.scrn_file = None
-state.io_state.kybd_file = None
-state.io_state.lpt1_file = None
-
-# set by disk.py
-state.io_state.current_device = None
 
 # magic chars used by some devices to indicate file type
 type_to_magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd' }
 magic_to_type = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
-
-# MS-DOS device files
-device_files = ('AUX', 'CON', 'NUL', 'PRN')
-
-def prepare():
-    """ Initialise iolayer module. """
-    # maximum file number = maximum number of open files
-    # this is command line option -f
-    state.io_state.max_files = min(16, config.get('max-files'))
-    # console
-    state.io_state.devices['SCRN:'] = SCRNDevice()
-    state.io_state.devices['KYBD:'] = KYBDDevice()
-    state.io_state.scrn_file = state.io_state.devices['SCRN:'].device_file
-    state.io_state.kybd_file = state.io_state.devices['KYBD:'].device_file
-
-############################################################################
-# General file manipulation
-
-def open_file(number, description, filetype, mode='I', access='R', lock='',
-              reclen=128, seg=0, offset=0, length=0):
-    """ Open a file on a device specified by description. """
-    if (not description) or (number < 0) or (number > state.io_state.max_files):
-        # bad file number; also for name='', for some reason
-        raise error.RunError(error.BAD_FILE_NUMBER)
-    if number in state.io_state.files:
-        raise error.RunError(error.FILE_ALREADY_OPEN)
-    name, mode = str(description), mode.upper()
-    inst = None
-    split_colon = name.split(':')
-    if len(split_colon) > 1: # : found
-        dev_name = split_colon[0].upper() + ':'
-        dev_param = ''.join(split_colon[1:])
-        try:
-            device = state.io_state.devices[dev_name]
-        except KeyError:
-            # not an allowable device or drive name
-            # bad file number, for some reason
-            raise error.RunError(error.BAD_FILE_NUMBER)
-    else:
-        device = state.io_state.current_device
-        # MS-DOS device aliases - these can't be names of disk files
-        if device != state.io_state.devices['CAS1:'] and name in device_files:
-            if name == 'AUX':
-                device, dev_param = state.io_state.devices['COM1:'], ''
-            elif name == 'CON' and mode == 'I':
-                device, dev_param = state.io_state.devices['KYBD:'], ''
-            elif name == 'CON' and mode == 'O':
-                device, dev_param = state.io_state.devices['SCRN:'], ''
-            elif name == 'PRN':
-                device, dev_param = state.io_state.devices['LPT1:'], ''
-            elif name == 'NUL':
-                device, dev_param = NullDevice(), ''
-        else:
-            # open file on default device
-            dev_param = name
-    # open the file on the device
-    new_file = device.open(number, dev_param, filetype, mode, access, lock,
-                           reclen, seg, offset, length)
-    if number:
-        state.io_state.files[number] = new_file
-    return new_file
-
-def get_file(num, mode='IOAR'):
-    """ Get the file object for a file number and check allowed mode. """
-    try:
-        the_file = state.io_state.files[num]
-    except KeyError:
-        raise error.RunError(error.BAD_FILE_NUMBER)
-    if the_file.mode.upper() not in mode:
-        raise error.RunError(error.BAD_FILE_MODE)
-    return the_file
-
-def close_file(num):
-    """ Close a numbered file. """
-    try:
-        state.io_state.files[num].close()
-        del state.io_state.files[num]
-    except KeyError:
-        pass
-
-def close_files():
-    """ Close all files. """
-    for f in state.io_state.files.values():
-        f.close()
-    state.io_state.files = {}
-
-def close_devices():
-    """ Close device master files. """
-    for d in state.io_state.devices.values():
-        d.close()
 
 
 
@@ -397,14 +294,6 @@ class TextFileBase(RawFile):
     # numbers read from file can be separated by spaces too
     soft_sep = ' '
 
-    def read_var(self, name):
-        """ Read the value for a variable from a file (INPUT#). """
-        typechar = name[0][-1]
-        value, sep = self._input_entry(typechar, allow_past_end=False)
-        if value is None:
-            value = vartypes.null(typechar)
-        return value, sep
-
     def _skip_whitespace(self, whitespace):
         """ Skip spaces and line feeds and NUL; return last whitespace char """
         c = ''
@@ -417,7 +306,7 @@ class TextFileBase(RawFile):
                 self.read(1)
         return c
 
-    def _input_entry(self, typechar, allow_past_end):
+    def input_entry(self, typechar, allow_past_end):
         """ Read a number or string entry for INPUT """
         word, blanks = '', ''
         last = self._skip_whitespace(self.whitespace_input)
@@ -469,12 +358,9 @@ class TextFileBase(RawFile):
             if (self.next_char in ',\r'):
                 c = self.read(1)
         # file position is at one past the separator char
-        # convert result to requested type, be strict about non-numeric chars
-        if typechar == '$':
-            value = state.basic_state.strings.store(word)
-        else:
-            value = representation.str_to_number(word, allow_nonnum=False)
-        return value, c
+        return word, c
+
+
 
 class CRLFTextFileBase(TextFileBase):
     """ Text file with CRLF line endings, on disk device or field buffer. """
@@ -520,16 +406,19 @@ class CRLFTextFileBase(TextFileBase):
 class Field(object):
     """ Buffer for FIELD access. """
 
-    def __init__(self, number):
+    def __init__(self, reclen, number=0, memory=None):
         """ Set up empty FIELD buffer. """
         if number > 0:
             self.address = memory.field_mem_start + (number-1)*memory.field_mem_offset
         else:
             self.address = -1
-        self.buffer = bytearray()
+        self.buffer = bytearray(reclen)
+        self.memory = memory
 
     def attach_var(self, name, indices, offset, length):
         """ Attach a FIELD variable. """
+        if self.address < 0 or self.memory == None:
+            raise AttributeError("Can't attach variable to non-memory-mapped field.")
         if name[-1] != '$':
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
@@ -541,11 +430,7 @@ class Field(object):
         str_sequence = chr(length) + vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(str_addr))
         # assign the string ptr to the variable name
         # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
-        var.set_variable(name, indices, vartypes.bytes_to_string(str_sequence))
-
-    def reset(self, reclen):
-        """ Initialise FIELD buffer to reclen NULs. """
-        self.buffer = bytearray(reclen)
+        self.memory.set_variable(name, indices, vartypes.bytes_to_string(str_sequence))
 
 
 #################################################################################
@@ -615,9 +500,9 @@ class KYBDFile(TextFileBase):
     def set_width(self, new_width=255):
         """ Setting width on KYBD device (not files) changes screen width. """
         if self.is_master:
-            console.set_width(new_width)
+            state.session.console.set_width(new_width)
 
-    def _input_entry(self, typechar, allow_past_end):
+    def input_entry(self, typechar, allow_past_end):
         """ Read a number or string entry from KYBD: for INPUT# """
         word, blanks = '', ''
         if self.input_last:
@@ -670,12 +555,7 @@ class KYBDFile(TextFileBase):
                     break
             parsing_trail = parsing_trail or (typechar != '$' and c == ' ')
         # file position is at one past the separator char
-        # convert result to requested type, be strict about non-numeric chars
-        if typechar == '$':
-            value = state.basic_state.strings.store(word)
-        else:
-            value = representation.str_to_number(word, allow_nonnum=False)
-        return value, c
+        return word, c
 
 
 class SCRNFile(RawFile):
@@ -726,15 +606,15 @@ class SCRNFile(RawFile):
                 s_width += 1
         if (self.width != 255 and state.console_state.row != state.console_state.screen.mode.height
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
-            console.write_line(do_echo=do_echo)
+            state.session.console.write_line(do_echo=do_echo)
             self._col = 1
         cwidth = state.console_state.screen.mode.width
         for c in str(s):
             if self.width <= cwidth and self.col > self.width:
-                console.write_line(do_echo=do_echo)
+                state.session.console.write_line(do_echo=do_echo)
                 self._col = 1
             if self.col <= cwidth or self.width <= cwidth:
-                console.write(c, do_echo=do_echo)
+                state.session.console.write(c, do_echo=do_echo)
             if c in ('\n', '\r'):
                 self._col = 1
             else:
@@ -743,7 +623,7 @@ class SCRNFile(RawFile):
     def write_line(self, inp=''):
         """ Write a string to the screen and follow by CR. """
         self.write(inp)
-        console.write_line(do_echo=self.is_master)
+        state.session.console.write_line(do_echo=self.is_master)
 
     @property
     def col(self):
@@ -764,7 +644,7 @@ class SCRNFile(RawFile):
     def set_width(self, new_width=255):
         """ Set (virtual) screen width. """
         if self.is_master:
-            console.set_width(new_width)
+            state.session.console.set_width(new_width)
         else:
             self._width = new_width
 
@@ -779,6 +659,3 @@ class SCRNFile(RawFile):
     def eof(self):
         """ EOF: bad file mode. """
         raise error.RunError(error.BAD_FILE_MODE)
-
-
-prepare()

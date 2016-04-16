@@ -18,26 +18,15 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-import state
 import error
-import config
 import devices
 import console
 import basictoken as tk
 
+import state
+
 token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
 type_to_token = dict((reversed(item) for item in token_to_type.items()))
-
-
-def prepare():
-    """ Initialise cassette module. """
-    state.io_state.devices['CAS1:'] = CASDevice(config.get('cas1'))
-
-def override():
-    """ Initialise cassette module settings that override --resume. """
-    override_cas1 = config.get('cas1', False)
-    if override_cas1:
-        state.io_state.devices['CAS1:'] = CASDevice(override_cas1)
 
 
 #################################################################################
@@ -80,6 +69,8 @@ class CASDevice(object):
         # we use a dummy device_file
         # this means WIDTH and LOC on CAS1: directly are ignored
         self.device_file = DummyDeviceFile()
+        # by default, show messages
+        self.is_quiet = False
         try:
             if not val:
                 self.tapestream = None
@@ -135,18 +126,22 @@ class CASDevice(object):
                 if ((not trunk_req or trunk.rstrip() == trunk_req.rstrip()) and
                         (not filetypes_req or filetype in filetypes_req)):
                     message = "%s Found." % (trunk + '.' + filetype)
-                    if not state.basic_state.run_mode:
-                        console.write_line(message)
+                    if not self.is_quiet:
+                        state.session.console.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
                     return trunk, filetype, seg, offset, length
                 else:
                     message = "%s Skipped." % (trunk + '.' + filetype)
-                    if not state.basic_state.run_mode:
-                        console.write_line(message)
+                    if not self.is_quiet:
+                        state.session.console.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
         except EndOfTape:
             # reached end-of-tape without finding appropriate file
             raise error.RunError(error.DEVICE_TIMEOUT)
+
+    def quiet(self, is_quiet):
+        """ Suppress Skipped and Found messages. """
+        self.is_quiet = is_quiet
 
 #################################################################################
 # Cassette files
@@ -1338,5 +1333,3 @@ def butterband_sox(sample_rate, f0, width):
         y = y[-2:] + [0]*len(inp)
         for i in range(2, len(x)):
             y[i] = b0a*x[i] + b2a*x[i-2] - a1a*y[i-1] - a2a*y[i-2]
-
-prepare()

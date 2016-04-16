@@ -21,8 +21,6 @@ import vartypes
 
 # newline is considered whitespace: ' ', '\t', '\n'
 ascii_whitespace = ' \t\n'
-# accepted characters for variable names
-from util import name_chars
 
 ascii_operators = '+-=/\\^*<>'
 
@@ -32,11 +30,6 @@ linenum_words = [tk.keyword[token] for token in
     tk.LIST, tk.RENUM, tk.EDIT, tk.LLIST,
     tk.DELETE, tk.RUN, tk.RESUME, tk.AUTO,
     tk.ERL, tk.RESTORE, tk.RETURN)]
-
-#################################################################
-
-def prepare():
-    """ Initialise tokenise module. """
 
 
 #################################################################
@@ -389,14 +382,14 @@ def tokenise_word(ins, outs):
                     ins.seek(pos)
             if word in ('GOTO', 'GOSUB'):
                 nxt = util.peek(ins)
-                if nxt and nxt in name_chars:
+                if nxt and nxt in tk.name_chars:
                     ins.seek(pos)
                     word = 'GO'
         if word in tk.keyword_to_token:
             # ignore if part of a longer name, except FN, SPC(, TAB(, USR
             if word not in ('FN', 'SPC(', 'TAB(', 'USR'):
                 nxt = util.peek(ins)
-                if nxt and nxt in name_chars:
+                if nxt and nxt in tk.name_chars:
                     continue
             token = tk.keyword_to_token[word]
             # handle special case ELSE -> :ELSE
@@ -412,11 +405,9 @@ def tokenise_word(ins, outs):
         elif not c:
             outs.write(word)
             break
-        elif c not in name_chars:
+        elif c not in tk.name_chars:
             word = word[:-1]
             ins.seek(-1, 1)
             outs.write(word)
             break
     return word
-
-prepare()

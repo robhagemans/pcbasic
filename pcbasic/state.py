@@ -27,9 +27,8 @@ class State(object):
     """ Base class for state """
     pass
 
-basic_state = State()
-io_state = State()
 console_state = State()
+session = None
 
 # name of state file
 state_name = 'PCBASIC.SAV'
@@ -96,7 +95,8 @@ def save():
         return
     # prepare pickling object
     to_pickle = State()
-    to_pickle.basic, to_pickle.io, to_pickle.console = basic_state, io_state, console_state
+    to_pickle.console = console_state
+    to_pickle.session = session
     # pickle and compress
     s = zlib.compress(pickle.dumps(to_pickle, 2))
     try:
@@ -107,7 +107,7 @@ def save():
 
 def load():
     """ Load emulator state from file. """
-    global console_state, io_state, basic_state
+    global console_state, session
     if not state_file:
         return False
     # decompress and unpickle
@@ -119,7 +119,8 @@ def load():
         logging.warning("Could not read state file %s. Emulator state not loaded.", state_file)
         return False
     # unpack pickling object
-    io_state, basic_state, console_state = from_pickle.io, from_pickle.basic, from_pickle.console
+    console_state = from_pickle.console
+    session = from_pickle.session
     return True
 
 def delete():

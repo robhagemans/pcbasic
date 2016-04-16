@@ -16,39 +16,14 @@ except ImportError:
 
 def prepare():
     """ Prepare the video modes. """
-    global video_capabilities, mono_monitor
-    global colours16, colours16_mono, cga4_palettes, mono_tint
-    global circle_aspect
-    video_capabilities = config.get('video')
-    if video_capabilities == 'tandy':
-        circle_aspect = (3072, 2000)
-    else:
-        circle_aspect = (4, 3)
-    mono_monitor = config.get('monitor') == 'mono'
-    if video_capabilities == 'ega' and mono_monitor:
-        video_capabilities = 'ega_mono'
-    cga_low = config.get('cga-low')
-    # set monochrome tint
-    mono_tint = config.get('mono-tint')
-    # build colour sets
-    colours16_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
+    global colours16, colours16_mono
+    # build monochrome colour sets
+    colours16_mono = tuple(tuple(tint*i//255 for tint in config.get('mono-tint'))
                            for i in intensity16_mono)
-    if mono_monitor:
+    if config.get('monitor') == 'mono':
         colours16 = list(colours16_mono)
     else:
         colours16 = list(colours16_colour)
-    # initialise the 4-colour CGA palette
-    # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
-    # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
-    # tandy/pcjr have high-intensity white, but low-intensity colours
-    # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
-    if video_capabilities in ('pcjr', 'tandy'):
-        # pcjr does not have mode 5
-        cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
-    elif cga_low:
-        cga4_palettes = {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
-    else:
-        cga4_palettes = {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}
 
 
 ###############################################################################
@@ -104,7 +79,7 @@ ega_mono_text_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
 ###############################################################################
 # video modes
 
-def get_modes(screen, cga4_palette, video_mem_size):
+def get_modes(screen, cga4_palette, video_mem_size, video_capabilities, mono_tint, screen_aspect):
     """ Build lists of allowed graphics modes. """
     # initialise tinted monochrome palettes
     colours_ega_mono_0 = tuple(tuple(tint*i//255 for tint in mono_tint)
@@ -127,6 +102,7 @@ def get_modes(screen, cga4_palette, video_mem_size):
             CGAMode(screen, '320x200x4', 320, 200, 25, 40, 3,
                     cga4_palette, colours16, bitsperpixel=2,
                     interleave_times=2, bank_size=0x2000,
+                    screen_aspect=screen_aspect,
                     num_pages=(
                         video_mem_size // (2*0x2000)
                         if video_capabilities in ('pcjr', 'tandy')
@@ -136,6 +112,7 @@ def get_modes(screen, cga4_palette, video_mem_size):
             CGAMode(screen, '640x200x2', 640, 200, 25, 80, 1,
                     palette=(0, 15), colours=colours16, bitsperpixel=1,
                     interleave_times=2, bank_size=0x2000, num_pages=1,
+                    screen_aspect=screen_aspect,
                     supports_artifacts=True),
         # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
         '160x200x16':
@@ -150,6 +127,7 @@ def get_modes(screen, cga4_palette, video_mem_size):
                     cga4_palette, colours16, bitsperpixel=2,
                     interleave_times=2, bank_size=0x2000,
                     num_pages=video_mem_size//(2*0x2000),
+                    screen_aspect=screen_aspect,
                     cursor_index=3),
         # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
         '320x200x16pcjr':
@@ -157,6 +135,7 @@ def get_modes(screen, cga4_palette, video_mem_size):
                     cga16_palette, colours16, bitsperpixel=4,
                     interleave_times=4, bank_size=0x2000,
                     num_pages=video_mem_size//(4*0x2000),
+                    screen_aspect=screen_aspect,
                     cursor_index=3),
         # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
         '640x200x4':
@@ -164,24 +143,28 @@ def get_modes(screen, cga4_palette, video_mem_size):
                         cga4_palette, colours16, bitsperpixel=2,
                         interleave_times=4, bank_size=0x2000,
                         num_pages=video_mem_size//(4*0x2000),
+                        screen_aspect=screen_aspect,
                         cursor_index=3),
         # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
         '320x200x16':
             EGAMode(screen, '320x200x16', 320, 200, 25, 40, 15,
                     cga16_palette, colours16, bitsperpixel=4,
                     num_pages=video_mem_size//(4*0x2000),
+                    screen_aspect=screen_aspect,
                     interleave_times=1, bank_size=0x2000),
         # 0Eh 640x200x16    EGA screen 8
         '640x200x16':
             EGAMode(screen, '640x200x16', 640, 200, 25, 80, 15,
                     cga16_palette, colours16, bitsperpixel=4,
                     num_pages=video_mem_size//(4*0x4000),
+                    screen_aspect=screen_aspect,
                     interleave_times=1, bank_size=0x4000),
         # 10h 640x350x16    EGA screen 9
         '640x350x16':
             EGAMode(screen, '640x350x16', 640, 350, 25, 80, 15,
                     ega_palette, colours64, bitsperpixel=4,
                     num_pages=video_mem_size//(4*0x8000),
+                    screen_aspect=screen_aspect,
                     interleave_times=1, bank_size=0x8000),
         # 0Fh 640x350x4     EGA monochrome screen 10
         '640x350x4':
@@ -189,6 +172,7 @@ def get_modes(screen, cga4_palette, video_mem_size):
                     ega_mono_palette, colours_ega_mono_0, bitsperpixel=2,
                     interleave_times=1, bank_size=0x8000,
                     num_pages=video_mem_size//(2*0x8000),
+                    screen_aspect=screen_aspect,
                     colours1=colours_ega_mono_1, has_blink=True,
                     planes_used=(1, 3)),
         # 40h 640x400x2   1bpp  olivetti screen 3
@@ -197,6 +181,7 @@ def get_modes(screen, cga4_palette, video_mem_size):
                     palette=(0, 15), colours=colours16, bitsperpixel=1,
                     interleave_times=4, bank_size=0x2000,
                     num_pages=1,
+                    screen_aspect=screen_aspect,
                     has_blink=True),
         # hercules screen 3
         '720x348x2':
@@ -206,6 +191,7 @@ def get_modes(screen, cga4_palette, video_mem_size):
                     palette=(0, 15), colours=colours16_mono, bitsperpixel=1,
                     interleave_times=4, bank_size=0x2000,
                     num_pages=2,
+                    screen_aspect=screen_aspect,
                     has_blink=True),
         }
     if video_capabilities == 'vga':
@@ -595,7 +581,7 @@ class GraphicsMode(VideoMode):
                   has_blink=False,
                   supports_artifacts=False,
                   cursor_index=None,
-                  pixel_aspect=None,
+                  pixel_aspect=None, screen_aspect=None,
                   video_segment=0xb800,
                   ):
         """ Initialise video mode settings. """
@@ -619,8 +605,8 @@ class GraphicsMode(VideoMode):
         if pixel_aspect:
             self.pixel_aspect = pixel_aspect
         else:
-            self.pixel_aspect = (self.pixel_height * circle_aspect[0],
-                                 self.pixel_width * circle_aspect[1])
+            self.pixel_aspect = (self.pixel_height * screen_aspect[0],
+                                 self.pixel_width * screen_aspect[1])
 
     def coord_ok(self, page, x, y):
         """ Check if a page and coordinates are within limits. """
@@ -718,13 +704,14 @@ class EGAMode(GraphicsMode):
                   attr, palette, colours, bitsperpixel,
                   interleave_times, bank_size, num_pages,
                   colours1=None, has_blink=False, planes_used=range(4),
+                  screen_aspect=None
                   ):
         """ Initialise video mode settings. """
         GraphicsMode.__init__(self, screen, name, pixel_width, pixel_height,
                   text_height, text_width,
                   attr, palette, colours, bitsperpixel,
                   interleave_times, bank_size,
-                  num_pages, has_blink)
+                  num_pages, has_blink, screen_aspect=screen_aspect)
         # EGA uses colour planes, 1 bpp for each plane
         self.ppb = 8
         self.bytes_per_row = pixel_width // 8

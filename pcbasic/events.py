@@ -6,103 +6,15 @@ Input event loop and handlers for BASIC events
 This file is released under the GNU GPL version 3 or later.
 """
 
-import time
-import Queue
+from contextlib import contextmanager
 
 import error
-import signals
-
-import config
 import state
-import timedate
 import scancode
 
 
 ###############################################################################
-# initialisation
-
-def prepare():
-    """ Initialise events module. """
-    global num_fn_keys
-    if config.get('syntax') == 'tandy':
-        num_fn_keys = 12
-    else:
-        num_fn_keys = 10
-
-
-###############################################################################
-# main event checker
-
-tick_s = 0.0001
-longtick_s = 0.006 - tick_s
-
-
-def wait(suppress_events=False):
-    """ Wait and check events. """
-    time.sleep(longtick_s)
-    if not suppress_events:
-        check_events()
-
-def check_events():
-    """ Main event cycle. """
-    time.sleep(tick_s)
-    check_input()
-    if state.basic_state.run_mode:
-        for e in state.basic_state.events.all:
-            e.check()
-    state.console_state.keyb.drain_event_buffer()
-
-def check_input():
-    """ Handle input events. """
-    while True:
-        try:
-            signal = signals.input_queue.get(False)
-        except Queue.Empty:
-            if not state.console_state.keyb.pause:
-                break
-            else:
-                time.sleep(tick_s)
-                continue
-        # we're on it
-        signals.input_queue.task_done()
-        if signal.event_type == signals.KEYB_QUIT:
-            raise error.Exit()
-        if signal.event_type == signals.KEYB_CLOSED:
-            state.console_state.keyb.close_input()
-        elif signal.event_type == signals.KEYB_CHAR:
-            # params is a unicode sequence
-            state.console_state.keyb.insert_chars(*signal.params)
-        elif signal.event_type == signals.KEYB_DOWN:
-            # params is e-ASCII/unicode character sequence, scancode, modifier
-            state.console_state.keyb.key_down(*signal.params)
-        elif signal.event_type == signals.KEYB_UP:
-            state.console_state.keyb.key_up(*signal.params)
-        elif signal.event_type == signals.PEN_DOWN:
-            state.console_state.pen.down(*signal.params)
-        elif signal.event_type == signals.PEN_UP:
-            state.console_state.pen.up()
-        elif signal.event_type == signals.PEN_MOVED:
-            state.console_state.pen.moved(*signal.params)
-        elif signal.event_type == signals.STICK_DOWN:
-            state.console_state.stick.down(*signal.params)
-        elif signal.event_type == signals.STICK_UP:
-            state.console_state.stick.up(*signal.params)
-        elif signal.event_type == signals.STICK_MOVED:
-            state.console_state.stick.moved(*signal.params)
-        elif signal.event_type == signals.CLIP_PASTE:
-            state.console_state.keyb.insert_chars(*signal.params, check_full=False)
-        elif signal.event_type == signals.CLIP_COPY:
-            text = state.console_state.screen.get_text(*(signal.params[:4]))
-            signals.video_queue.put(signals.Event(
-                    signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
-
-
-###############################################################################
 # BASIC event triggers
-
-# 12 definable function keys for Tandy
-num_fn_keys = 10
-
 
 class EventHandler(object):
     """ Manage event triggers. """
@@ -149,12 +61,12 @@ class EventHandler(object):
 class PlayHandler(EventHandler):
     """ Manage PLAY (music queue) events. """
 
-    def __init__(self):
+    def __init__(self, multivoice):
         """ Initialise PLAY trigger. """
         EventHandler.__init__(self)
         self.last = [0, 0, 0]
         self.trig = 1
-        self.multivoice = config.get('syntax') in ('pcjr', 'tandy')
+        self.multivoice = multivoice
 
     def check(self):
         """ Check and trigger PLAY (music queue) events. """
@@ -179,11 +91,12 @@ class PlayHandler(EventHandler):
 class TimerHandler(EventHandler):
     """ Manage TIMER events. """
 
-    def __init__(self):
+    def __init__(self, timer):
         """ Initialise TIMER trigger. """
         EventHandler.__init__(self)
         self.period = 0
         self.start = 0
+        self.timer = timer
 
     def set_trigger(self, n):
         """ Set TIMER trigger to n milliseconds. """
@@ -191,7 +104,7 @@ class TimerHandler(EventHandler):
 
     def check(self):
         """ Trigger TIMER events. """
-        mutimer = timedate.timer_milliseconds()
+        mutimer = self.timer.timer_milliseconds()
         if mutimer >= self.start + self.period:
             self.start = mutimer
             self.trigger()
@@ -200,16 +113,14 @@ class TimerHandler(EventHandler):
 class ComHandler(EventHandler):
     """ Manage COM-port events. """
 
-    def __init__(self, port):
+    def __init__(self, com_device):
         """ Initialise COM trigger. """
         EventHandler.__init__(self)
-        # devices aren't initialised at this time so just keep the name
-        self.portname = ('COM1:', 'COM2:')[port]
+        self.device = com_device
 
     def check(self):
         """ Trigger COM-port events. """
-        if (state.io_state.devices[self.portname] and
-                    state.io_state.devices[self.portname].char_waiting()):
+        if (self.device and self.device.char_waiting()):
             self.trigger()
 
 
@@ -289,8 +200,16 @@ class StrigHandler(EventHandler):
 class Events(object):
     """ Event management. """
 
-    def __init__(self):
+    def __init__(self, session, syntax):
         """ Initialise event triggers. """
+        self.session = session
+        # 12 definable function keys for Tandy, 10 otherwise
+        if syntax == 'tandy':
+            self.num_fn_keys = 12
+        else:
+            self.num_fn_keys = 10
+        # tandy and pcjr have multi-voice sound
+        self.multivoice = syntax in ('pcjr', 'tandy')
         self.reset()
 
     def reset(self):
@@ -299,16 +218,18 @@ class Events(object):
         keys = [
             scancode.F1, scancode.F2, scancode.F3, scancode.F4, scancode.F5,
             scancode.F6, scancode.F7, scancode.F8, scancode.F9, scancode.F10]
-        if num_fn_keys == 12:
+        if self.num_fn_keys == 12:
             # Tandy only
             keys += [scancode.F11, scancode.F12]
         keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
-        keys += [None] * (20 - num_fn_keys - 4)
+        keys += [None] * (20 - self.num_fn_keys - 4)
         self.key = [KeyHandler(sc) for sc in keys]
         # other events
-        self.timer = TimerHandler()
-        self.play = PlayHandler()
-        self.com = [ComHandler(0), ComHandler(1)]
+        self.timer = TimerHandler(self.session.timer)
+        self.play = PlayHandler(self.multivoice)
+        self.com = [
+            ComHandler(self.session.devices.devices['COM1:']),
+            ComHandler(self.session.devices.devices['COM2:'])]
         self.pen = PenHandler()
         # joy*2 + button
         self.strig = [StrigHandler(joy, button)
@@ -321,7 +242,14 @@ class Events(object):
         # set suspension off
         self.suspend_all = False
 
+    def check(self):
+        """ Check events. """
+        for e in self.all:
+            e.check()
 
-###############################################################################
-
-prepare()
+    @contextmanager
+    def suspend(self):
+        """ Context guard to suspend events. """
+        self.suspend_all, store = True, self.suspend_all
+        yield
+        self.suspend_all = store

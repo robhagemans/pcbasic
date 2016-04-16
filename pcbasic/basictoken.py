@@ -6,6 +6,10 @@ BASIC keyword tokens
 This file is released under the GNU GPL version 3 or later.
 """
 
+import string
+# allowable as chars 2.. in a variable name (first char must be a letter)
+name_chars = string.ascii_letters + string.digits + '.'
+
 import config
 
 # indirect line number references

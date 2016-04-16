@@ -12,10 +12,10 @@ except ImportError:
     from StringIO import StringIO
 
 import util
-import console
 import devices
 import vartypes
 
+import state
 
 class InputTextFile(devices.TextFileBase):
     """ Handle INPUT from console. """
@@ -27,29 +27,29 @@ class InputTextFile(devices.TextFileBase):
         """ Initialise InputStream. """
         devices.TextFileBase.__init__(self, StringIO(line), 'D', 'I')
 
-    def read_var(self, v):
-        """ Read a variable for INPUT from the console. """
-        # we return a tuple (value, separator)
-        return self._input_entry(v[0][-1], allow_past_end=True)
-
 
 def input_console(prompt, readvar, newline):
     """ Read a list of variables for INPUT. """
     # readvar is a list of (name, indices) tuples
     # we return a list of (name, indices, values) tuples
     while True:
-        console.write(prompt)
-        line = console.wait_screenline(write_endl=newline)
+        state.session.console.write(prompt)
+        line = state.session.console.wait_screenline(write_endl=newline)
         inputstream = InputTextFile(line)
         # read the values and group them and the separators
-        values, seps = zip(*[inputstream.read_var(v) for v in readvar])
+        values, seps = [], []
+        for v in readvar:
+            word, sep = inputstream.input_entry(v[0][-1], allow_past_end=True)
+            value = state.session.strings.str_to_type(v[0][-1], word)
+            values.append(value)
+            seps.append(sep)
         # last separator not empty: there were too many values or commas
         # earlier separators empty: there were too few values
         # empty values will be converted to zero by string_to_number
         # None means a conversion error occurred
         if (seps[-1] or '' in seps[:-1] or None in values):
             # good old Redo!
-            console.write_line('?Redo from start')
+            state.session.console.write_line('?Redo from start')
         else:
             return [r + [v] for r, v in zip(readvar, values)]
 

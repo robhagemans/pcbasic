@@ -6,18 +6,17 @@ Keyboard, pen and joystick handling
 This file is released under the GNU GPL version 3 or later.
 """
 
+import datetime
+
 import plat
 import config
 import state
 import error
-import unicodepage
 import scancode
 from eascii import as_bytes as ea
 from eascii import as_unicode as uea
 import redirect
 import events
-# for timer_milliseconds
-import timedate
 
 
 # bit flags for modifier keys
@@ -37,8 +36,6 @@ function_key = {
     ea.F1: 0, ea.F2: 1, ea.F3: 2, ea.F4: 3,
     ea.F5: 4, ea.F6: 5, ea.F7: 6, ea.F8: 7,
     ea.F9: 8, ea.F10: 9, ea.F11: 10, ea.F12: 11}
-# switch off macro repacements
-state.basic_state.key_macros_off = False
 
 # F12 emulator home-key
 # also f12+b -> ctrl+break
@@ -70,23 +67,6 @@ home_key_replacements_eascii = {
     u'S': (scancode.SCROLLOCK, u''),
     u'C': (scancode.CAPSLOCK, u''),
 }
-
-
-###############################################################################
-
-def prepare():
-    """ Prepare input method handling. """
-    state.console_state.pen = Pen()
-    state.console_state.stick = Stick()
-    state.console_state.keyb = Keyboard(
-            ignore_caps=not config.get('capture-caps'),
-            ctrl_c_is_break=config.get('ctrl-c-break'))
-    redirect.prepare_redirects()
-    # inserted keystrokes
-    keystring = config.get('keys').decode('string_escape').decode('utf-8')
-    state.console_state.keyb.buf.insert(
-            state.console_state.codepage.str_from_unicode(keystring),
-            check_full=False)
 
 
 ###############################################################################
@@ -246,15 +226,14 @@ class Keyboard(object):
             word.append(self.get_char_block())
         return word
 
-    def get_char(self):
+    def get_char(self, expand=True):
         """ Read any keystroke, nonblocking. """
-        events.wait()
-        return self.buf.getc()
+        return self.buf.getc(expand)
 
     def wait_char(self):
         """ Wait for character, then return it but don't drop from queue. """
         while self.buf.is_empty() and not self.input_closed:
-            events.wait()
+            state.session.wait()
         return self.buf.peek()
 
     def get_char_block(self):
@@ -360,7 +339,7 @@ class Keyboard(object):
                     state.console_state.screen.print_screen()
                 elif mod & modifier[scancode.CTRL]:
                     # ctrl + printscreen
-                    redirect.toggle_echo(state.io_state.lpt1_file)
+                    redirect.toggle_echo(state.session.devices.lpt1_file)
             self.buf.insert_keypress(
                     state.console_state.codepage.from_unicode(c),
                     scan, mod, check_full)
@@ -449,7 +428,7 @@ class Stick(object):
         self.was_fired = [[False, False], [False, False]]
         self.was_fired_event = [[False, False], [False, False]]
         # timer for reading game port
-        self.out_time = timedate.timer_milliseconds()
+        self.out_time = self._decay_timer()
 
     def switch(self, on):
         """ Switch joystick handling on or off. """
@@ -512,7 +491,15 @@ class Stick(object):
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
 
+    def decay(self):
+        """ Return time since last game port reset. """
+        return (self._decay_timer() - self.out_time) % 86400000
 
-###############################################################################
+    def reset_decay(self):
+        """ Reset game port. """
+        self.out_time = self._decay_timer()
 
-prepare()
+    def _decay_timer(self):
+        """ Millisecond timer for game port decay. """
+        now = datetime.datetime.now()
+        return now.second*1000 + now.microsecond/1000

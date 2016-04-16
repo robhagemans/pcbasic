@@ -19,9 +19,6 @@ import typeface
 class InitFailed(Exception):
     """ Initialisation failed. """
 
-def prepare():
-    """ Initialise interface module. """
-
 
 ###############################################################################
 # interface event loop
@@ -344,6 +341,3 @@ class AudioPlugin(object):
     def _drain_tone_queue(self):
         """ Process tone events. """
         return True
-
-
-prepare()

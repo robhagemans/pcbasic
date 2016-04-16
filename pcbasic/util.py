@@ -13,10 +13,6 @@ import error
 import vartypes
 import basictoken as tk
 
-
-# allowable as chars 2.. in a variable name (first char must be a letter)
-name_chars = string.ascii_letters + string.digits + '.'
-
 ###############################################################################
 # stream utilities
 
@@ -141,8 +137,8 @@ def parse_jumpnum(ins, allow_empty=False, err=error.STX):
         # Syntax error
         raise error.RunError(err)
 
-def parse_scalar(ins, allow_empty=False, err=error.STX):
-    """ Get variable name from token stream. """
+def read_name(ins, allow_empty=False, err=error.STX):
+    """ Read a variable name """
     name = ''
     d = skip_white_read(ins)
     if not d:
@@ -151,21 +147,16 @@ def parse_scalar(ins, allow_empty=False, err=error.STX):
         # variable name must start with a letter
         ins.seek(-len(d), 1)
     else:
-        while d and d in name_chars:
+        while d and d in tk.name_chars:
             name += d
             d = ins.read(1)
-        if d in '$%!#':
+        if d in vartypes.sigils:
             name += d
         else:
             ins.seek(-len(d), 1)
     if not name and not allow_empty:
         raise error.RunError(err)
-    # append type specifier
-    name = vartypes.complete_name(name)
-    # only the first 40 chars are relevant in GW-BASIC, rest is discarded
-    if len(name) > 41:
-        name = name[:40]+name[-1]
-    return name.upper()
+    return name
 
 def range_check(lower, upper, *allvars):
     """ Check if all variables in list are within the given inclusive range. """

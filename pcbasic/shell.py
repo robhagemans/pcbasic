@@ -9,44 +9,22 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import subprocess
 import logging
+import threading
+import time
 
-import plat
-import config
+try:
+    import pexpect
+except ImportError:
+    pexpect = None
+
 import state
 import error
-import console
-
-if plat.system == 'Windows':
-    import threading
-    import time
-else:
-    try:
-        import pexpect
-    except ImportError:
-        pexpect = None
+import plat
 
 
-shell_enabled = False
+class InitFailed(Exception):
+    """ Shell object initialisation failed. """
 
-native_shell = {
-    'Windows': 'CMD.EXE',
-    'OSX': '/bin/sh',
-    'Linux': '/bin/sh',
-    'Unknown_OS': '/bin/sh' }
-
-def prepare():
-    """ Initialise shell module. """
-    global shell_enabled, shell_command
-    option_shell = config.get('shell')
-    if option_shell != 'none':
-        if (plat.system == 'Windows' or pexpect):
-            shell_enabled = True
-            if option_shell == 'native':
-                shell_command = native_shell[plat.system]
-            else:
-                shell_command = option_shell
-        else:
-            logging.warning('Pexpect module not found. SHELL command disabled.')
 
 #########################################
 # calling shell environment
@@ -55,7 +33,7 @@ def get_env(parm):
     """ Retrieve environment string by name. """
     if not parm:
         raise error.RunError(error.IFC)
-    return bytearray(os.getenv(str(parm)) or '')
+    return bytearray(os.getenv(bytes(parm)) or b'')
 
 def get_env_entry(expr):
     """ Retrieve environment string by number. """
@@ -63,39 +41,37 @@ def get_env_entry(expr):
     if expr > len(envlist):
         return bytearray()
     else:
-        return bytearray(envlist[expr-1] + '=' + os.getenv(envlist[expr-1]))
+        return bytearray(envlist[expr-1] + b'=' + os.getenv(envlist[expr-1]))
 
 
 #########################################
 # shell
 
-def shell(command):
-    """ Execute a shell command or enter interactive shell. """
-    # sound stops playing and is forgotten
-    state.console_state.sound.stop_all_sound()
-    # no key macros
-    key_macros_save = state.basic_state.key_macros_off
-    state.basic_state.key_macros_off = True
-    # no user events
-    suspend_event_save = state.basic_state.events.suspend_all
-    state.basic_state.events.suspend_all = True
-    # run the os-specific shell
-    if shell_enabled:
-        spawn_shell(command)
-    else:
-        logging.warning('SHELL statement disabled.')
-    # re-enable key macros and event handling
-    state.basic_state.key_macros_off = key_macros_save
-    state.basic_state.events.suspend_all = suspend_event_save
+class ShellBase(object):
+    """ Launcher for command shell. """
+
+    def __init__(self, shell_command=None):
+        """ Initialise the shell. """
+
+    def launch(self, command):
+        """ Launch the shell. """
+        logging.warning(b'SHELL statement disabled.')
 
 
-if plat.system == 'Windows':
+class WindowsShell(ShellBase):
+    """ Launcher for Windows CMD shell. """
 
-    def process_stdout(p, stream, shell_output):
+    def __init__(self, shell_command):
+        """ Initialise the shell. """
+        self.command = shell_command
+        if shell_command is None:
+            self.command = u'CMD.EXE'
+
+    def _process_stdout(self, p, stream, shell_output):
         """ Retrieve SHELL output and write to console. """
         while True:
             c = stream.read(1)
-            if c != '':
+            if c != b'':
                 # don't access screen in this thread
                 # the other thread already does
                 shell_output.append(c)
@@ -105,88 +81,102 @@ if plat.system == 'Windows':
                 # don't hog cpu, sleep 1 ms
                 time.sleep(0.001)
 
-    def spawn_shell(command):
+    def launch(self, command):
         """ Run a SHELL subprocess. """
         shell_output = []
-        cmd = shell_command
+        cmd = self.command
         if command:
-            cmd += ' /C "' + command + '"'
-        p = subprocess.Popen( str(cmd).split(), stdin=subprocess.PIPE,
+            cmd += u' /C ' + state.console_state.codepage.str_to_unicode(command)
+        p = subprocess.Popen(cmd.encode(plat.preferred_encoding).split(), stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        outp = threading.Thread(target=process_stdout, args=(p, p.stdout, shell_output))
+        outp = threading.Thread(target=self._process_stdout, args=(p, p.stdout, shell_output))
         outp.daemon = True
         outp.start()
-        errp = threading.Thread(target=process_stdout, args=(p, p.stderr, shell_output))
+        errp = threading.Thread(target=self._process_stdout, args=(p, p.stderr, shell_output))
         errp.daemon = True
         errp.start()
-        word = ''
+        word = b''
         while p.poll() is None or shell_output:
             if shell_output:
-                lines, shell_output[:] = ''.join(shell_output).split('\r\n'), []
+                lines, shell_output[:] = b''.join(shell_output).split('\r\n'), []
                 last = lines.pop()
                 for line in lines:
-                    console.write_line(line)
-                console.write(last)
+                    state.session.console.write_line(state.console_state.codepage.str_from_unicode(line.decode(plat.preferred_encoding)))
+                state.session.console.write(state.console_state.codepage.str_from_unicode(last.decode(plat.preferred_encoding)))
             if p.poll() is not None:
                 # drain output then break
                 continue
             try:
-                c = state.console_state.keyb.get_char()
+                # expand=False suppresses key macros
+                c = state.console_state.keyb.get_char(expand=False)
             except error.Break:
                 pass
-            if c in ('\r', '\n'):
+            if c in (b'\r', b'\n'):
                 # shift the cursor left so that CMD.EXE's echo can overwrite
                 # the command that's already there. Note that Wine's CMD.EXE
                 # doesn't echo the command, so it's overwritten by the output...
-                console.write('\x1D' * len(word))
-                p.stdin.write(word + '\r\n')
-                word = ''
-            elif c == '\b':
+                state.session.console.write(b'\x1D' * len(word))
+                p.stdin.write(state.console_state.codepage.str_to_unicode(word + b'\r\n', preserve_control=True).encode(plat.preferred_encoding))
+                word = b''
+            elif c == b'\b':
                 # handle backspace
                 if word:
                     word = word[:-1]
-                    console.write('\x1D \x1D')
-            elif c != '':
+                    state.session.console.write(b'\x1D \x1D')
+            elif c != b'':
                 # only send to pipe when enter is pressed
                 # needed for Wine and to handle backspace properly
                 word += c
-                console.write(c)
+                state.session.console.write(c)
         outp.join()
         errp.join()
 
-else:
-    def spawn_shell(command):
+
+class Shell(ShellBase):
+    """ Launcher for Unix shell. """
+
+    def __init__(self, shell_command):
+        """ Initialise the shell. """
+        if not pexpect:
+            raise InitFailed()
+        self.command = shell_command
+        if shell_command is None:
+            self.command = u'/bin/sh'
+
+    def launch(self, command):
         """ Run a SHELL subprocess. """
-        cmd = shell_command
+        cmd = self.command
         if command:
-            cmd += ' -c "' + command + '"'
-        p = pexpect.spawn(str(cmd))
+            cmd += u' -c "' + state.console_state.codepage.str_to_unicode(command) + u'"'
+        p = pexpect.spawn(cmd.encode(plat.preferred_encoding))
         while True:
             try:
-                c = state.console_state.keyb.get_char()
+                # expand=False suppresses key macros
+                c = state.console_state.keyb.get_char(expand=False)
             except error.Break:
                 # ignore ctrl+break in SHELL
                 pass
-            if c == '\b': # BACKSPACE
-                p.send('\x7f')
-            elif c != '':
+            if c == b'\b':
+                p.send(b'\x7f')
+            elif c < b' ':
+                p.send(c.encode(plat.preferred_encoding))
+            elif c != b'':
+                c = state.console_state.codepage.to_unicode(c).encode(plat.preferred_encoding)
                 p.send(c)
             while True:
                 try:
-                    c = p.read_nonblocking(1, timeout=0)
+                    c = p.read_nonblocking(1, timeout=0).decode(plat.preferred_encoding)
                 except:
-                    c = ''
-                if c == '' or c == '\n':
+                    c = u''
+                if c == u'' or c == u'\n':
                     break
-                elif c == '\r':
-                    console.write_line()
-                elif c == '\b':
+                elif c == u'\r':
+                    state.session.console.write_line()
+                elif c == u'\b':
                     if state.console_state.col != 1:
-                        console.set_pos(state.console_state.row,
+                        state.session.console.set_pos(state.console_state.row,
                                         state.console_state.col-1)
                 else:
-                    console.write(c)
-            if c == '' and not p.isalive():
+                    state.session.console.write(state.console_state.codepage.from_unicode(c))
+            if c == u'' and not p.isalive():
                 return
-
-prepare()

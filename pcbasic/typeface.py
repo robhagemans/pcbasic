@@ -17,12 +17,13 @@ except ImportError:
 import plat
 
 
-def prepare():
-    """ Prepare the typeface module. """
-
 def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=False):
     """ Load font typefaces. """
     fonts = {}
+    if 9 in heights_needed:
+        # 9-pixel font is same as 8-pixel font
+        heights_needed -= set([9])
+        heights_needed |= set([8])
     # load fonts, height-16 first
     for height in reversed(sorted(heights_needed)):
         # load a Unifont .hex font and take the codepage subset
@@ -38,6 +39,8 @@ def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=
                 unicode_needed, substitutes, warn=False)
         if font_16:
             fonts[height].fix_missing(unicode_needed, font_16)
+    if 8 in fonts:
+        fonts[9] = fonts[8]
     return fonts
 
 def _font_filenames(families, height, ext='hex'):
@@ -221,5 +224,3 @@ class Font(object):
                         glyph[yy][2*xx+1] = glyph[yy][xx]
                         glyph[yy][2*xx] = glyph[yy][xx]
         return glyph
-
-prepare()

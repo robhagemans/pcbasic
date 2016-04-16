@@ -10,119 +10,103 @@ import string
 
 import error
 import vartypes
-import operators
-import representation
+from operators import Operators as op
 import util
-import var
-import state
 
-# generic for both macro languages
-ml_whitepace = ' '
 
-def get_value_for_varptrstr(varptrstr):
-    """ Get a value given a VARPTR$ representation. """
-    if len(varptrstr) < 3:
-        raise error.RunError(error.IFC)
-    varptrstr = bytearray(varptrstr)
-    varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
-    for name, data in state.basic_state.var_memory.iteritems():
-        if data[1] == varptr:
-            return var.get_scalar(name)
-    # no scalar found, try arrays
-    found_addr = -1
-    found_name = None
-    for name, data in state.basic_state.array_memory.iteritems():
-        addr = state.basic_state.var_current + data[1]
-        if addr > found_addr and addr <= varptr:
-            found_addr = addr
-            found_name = name
-    if found_name is None:
-        raise error.RunError(error.IFC)
-    _, lst, _ = state.basic_state.arrays[name]
-    offset = varptr - found_addr
-    return (name[-1], lst[offset:offset+var.var_size_bytes(name)])
+class MLParser(object):
+    """ Macro Language parser. """
 
-def ml_parse_value(gmls, default=None):
-    """ Parse a value in a macro-language string. """
-    c = util.skip(gmls, ml_whitepace)
-    sgn = -1 if c == '-' else 1
-    if c in ('+', '-'):
-        gmls.read(1)
-        c = util.peek(gmls)
-        # don't allow default if sign is given
-        default = None
-    if c == '=':
-        gmls.read(1)
-        c = util.peek(gmls)
+    # whitespace character for both macro languages is only space
+    whitepace = ' '
+
+    def __init__(self, gmls, data_memory):
+        """ Initialise macro-language parser. """
+        self.gmls = gmls
+        self.memory = data_memory
+
+    def parse_value(self, default):
+        """ Parse a value in a macro-language string. """
+        c = util.skip(self.gmls, self.whitepace)
+        sgn = -1 if c == '-' else 1
+        if c in ('+', '-'):
+            self.gmls.read(1)
+            c = util.peek(self.gmls)
+            # don't allow default if sign is given
+            default = None
+        if c == '=':
+            self.gmls.read(1)
+            c = util.peek(self.gmls)
+            if len(c) == 0:
+                raise error.RunError(error.IFC)
+            elif ord(c) > 8:
+                name = util.read_name(self.gmls)
+                indices = self._parse_indices()
+                step = self.memory.get_variable(name, indices)
+                util.require_read(self.gmls, (';',), err=error.IFC)
+            else:
+                # varptr$
+                step = self.memory.get_value_for_varptrstr(self.gmls.read(3))
+        elif c and c in string.digits:
+            step = self._parse_const()
+        elif default is not None:
+            step = default
+        else:
+            raise error.RunError(error.IFC)
+        if sgn == -1:
+            step = op.number_neg(step)
+        return step
+
+    def parse_number(self, default=None):
+        """ Parse and return a number value in a macro-language string. """
+        return vartypes.pass_int_unpack(self.parse_value(default), err=error.IFC)
+
+    def parse_string(self):
+        """ Parse a string value in a macro-language string. """
+        c = util.skip(self.gmls, self.whitepace)
         if len(c) == 0:
             raise error.RunError(error.IFC)
         elif ord(c) > 8:
-            name = util.parse_scalar(gmls)
-            indices = ml_parse_indices(gmls)
-            step = var.get_variable(name, indices)
-            util.require_read(gmls, (';',), err=error.IFC)
+            name = util.read_name(self.gmls, err=error.IFC)
+            indices = self._parse_indices()
+            sub = self.memory.get_variable(name, indices)
+            util.require_read(self.gmls, (';',), err=error.IFC)
+            return self.memory.strings.copy(vartypes.pass_string(sub, err=error.IFC))
         else:
             # varptr$
-            step = get_value_for_varptrstr(gmls.read(3))
-    elif c and c in string.digits:
-        step = ml_parse_const(gmls)
-    elif default is not None:
-        step = default
-    else:
-        raise error.RunError(error.IFC)
-    if sgn == -1:
-        step = operators.number_neg(step)
-    return step
+            return self.memory.strings.copy(
+                    vartypes.pass_string(
+                        self.memory.get_value_for_varptrstr(self.gmls.read(3))))
 
-def ml_parse_number(gmls, default=None):
-    """ Parse and return a number value in a macro-language string. """
-    return vartypes.pass_int_unpack(ml_parse_value(gmls, default), err=error.IFC)
+    def _parse_const(self):
+        """ Parse and return a constant value in a macro-language string. """
+        c = util.skip(self.gmls, self.whitepace)
+        if c and c in string.digits:
+            numstr = ''
+            while c and c in string.digits:
+                self.gmls.read(1)
+                numstr += c
+                c = util.skip(self.gmls, self.whitepace)
+            return vartypes.int_to_integer_signed(int(numstr))
+        else:
+            raise error.RunError(error.IFC)
 
-def ml_parse_const(gmls):
-    """ Parse and return a constant value in a macro-language string. """
-    c = util.skip(gmls, ml_whitepace)
-    if c and c in string.digits:
-        numstr = ''
-        while c and c in string.digits:
-            gmls.read(1)
-            numstr += c
-            c = util.skip(gmls, ml_whitepace)
-        return vartypes.int_to_integer_signed(int(numstr))
-    else:
-        raise error.RunError(error.IFC)
+    def _parse_const_int(self):
+        """ Parse a constant value in a macro-language string, return Python int. """
+        return vartypes.pass_int_unpack(self._parse_const(), err=error.IFC)
 
-def ml_parse_const_int(gmls):
-    """ Parse a constant value in a macro-language string, return Python int. """
-    return vartypes.pass_int_unpack(ml_parse_const(gmls), err=error.IFC)
-
-def ml_parse_string(gmls):
-    """ Parse a string value in a macro-language string. """
-    c = util.skip(gmls, ml_whitepace)
-    if len(c) == 0:
-        raise error.RunError(error.IFC)
-    elif ord(c) > 8:
-        name = util.parse_scalar(gmls, err=error.IFC)
-        indices = ml_parse_indices(gmls)
-        sub = var.get_variable(name, indices)
-        util.require_read(gmls, (';',), err=error.IFC)
-        return var.copy_str(vartypes.pass_string(sub, err=error.IFC))
-    else:
-        # varptr$
-        return var.copy_str(
-                vartypes.pass_string(get_value_for_varptrstr(gmls.read(3))))
-
-def ml_parse_indices(gmls):
-    """ Parse constant array indices. """
-    indices = []
-    c = util.skip(gmls, ml_whitepace)
-    if c in ('[', '('):
-        gmls.read(1)
-        while True:
-            indices.append(ml_parse_const_int(gmls))
-            c = util.skip(gmls, ml_whitepace)
-            if c == ',':
-                gmls.read(1)
-            else:
-                break
-        util.require_read(gmls, (']', ')'))
-    return indices
+    def _parse_indices(self):
+        """ Parse constant array indices. """
+        indices = []
+        c = util.skip(self.gmls, self.whitepace)
+        if c in ('[', '('):
+            self.gmls.read(1)
+            while True:
+                indices.append(self._parse_const_int())
+                c = util.skip(self.gmls, self.whitepace)
+                if c == ',':
+                    self.gmls.read(1)
+                else:
+                    break
+            util.require_read(self.gmls, (']', ')'))
+        return indices

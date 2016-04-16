@@ -13,9 +13,6 @@ import plat
 encoding = plat.preferred_encoding
 
 
-def prepare():
-    """ Prepare the clipboard module. """
-
 
 class Clipboard(object):
     """ Clipboard handling interface. """
@@ -89,5 +86,3 @@ class XClipboard(Clipboard):
             p.communicate(text.encode(encoding, 'replace'))
         except subprocess.CalledProcessError:
             pass
-
-prepare()
