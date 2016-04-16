@@ -92,11 +92,7 @@ def convert():
     import program
     import files
     import disk
-
-    class SessionShim():
-        def wait(self, suppress_events=False):
-            """ No-op shim for wait() call in Devices """
-
+    import interpreter
     # set conversion output
     # first arg, if given, is mode; second arg, if given, is outfile
     mode = config.get('convert')
@@ -106,8 +102,8 @@ def convert():
     # keep uppercase first letter
     mode = mode[0].upper() if mode else 'A'
     # FIXME - need to remove Session dependence from Devices, replace with class to hold main event loop only
-    devices = files.Devices(SessionShim(), fields=None)
-    files = files.Files(devices, max_files=3)
+    session = interpreter.Session()
+    files = files.Files(session.devices, max_files=3)
     # load & save in different format
     try:
         prog_infile = None
