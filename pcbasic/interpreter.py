@@ -294,7 +294,9 @@ class Session(object):
         """ Execute a CLEAR command. """
         #   Resets the stack and string space
         #   Clears all COMMON and user variables
-        if not preserve_all:
+        if preserve_all:
+            self.memory.clear_variables(self.memory.scalars.variables, self.memory.arrays.arrays)
+        else:
             if not preserve_common:
                 # at least I think these should be cleared by CLEAR?
                 self.common_scalars = set()
