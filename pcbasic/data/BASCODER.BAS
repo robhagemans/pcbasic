@@ -104,7 +104,7 @@
 303 RETURN
 310 ' Format number as string; length and decimal places specified
 311   O.IN$ = STR$(FIX(SR)): O.FR$ = STR$(SR-FIX(SR))
-312   IF LEFT$(O.IN$) = " " THEN O.IN$ = RIGHT$(O.IN$, 2, LEN(O.IN$)-1)
+312   IF LEFT$(O.IN$, 1) = " " THEN O.IN$ = RIGHT$(O.IN$, LEN(O.IN$)-1)
 313   IF O.FR$ = "0" THEN O.FR$ = "": GOTO 321
 314   IF 1+CN <= LEN(O.FR$) THEN O.REST$ = MID$(O.FR$, 1+CN, 1) ELSE O.REST$ = "0"
 315   O.FR$ = MID$(O.FR$, 2, 1+CN): IF O.REST$ < "5" THEN GOTO 321
