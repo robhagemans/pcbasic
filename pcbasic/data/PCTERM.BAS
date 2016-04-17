@@ -1,7 +1,7 @@
 1000 '  PC-BASIC - PCTERM.BAS
 1010 '  Simple terminal emulator for the TERM statement
 1020 '  Copyright (c) 2015, 2016 Rob Hagemans
-1030 '  This file is released under the GNU GPL version 3 or later
+1030 '  This file is released under the Expat MIT licence [https://opensource.org/licenses/MIT]
 1040 '
 1050 GOSUB 2090 ' Reset
 1060 GOSUB 2240 ' Read default settings

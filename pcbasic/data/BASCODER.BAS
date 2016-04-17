@@ -1,7 +1,7 @@
 001 '  PC-BASIC - BASCODER.BAS
 002 '  Implementation of the BASICODE-3C API
 003 '  Copyright (c) 2015, 2016 Rob Hagemans
-004 '  This file is released under the GNU GPL version 3 or later
+004 '  This file is released under the Expat MIT licence [https://opensource.org/licenses/MIT]
 005 '
 009 GOTO 1000 ' Initialise client
 010 '
@@ -199,3 +199,4 @@
 952   CC[0] = 7: CC[1] = 0: GOSUB 100
 954   PALETTE
 955 END
+
