@@ -12,7 +12,7 @@
 024 HG = 640: VG = 350: HO = O.WD% - 1: VE = O.HG% - 1: CT = 0: CN = 0: SR = 0: SR$ = "": IN$ = " ": SV = 7
 025 CC[0] = 7: CC[1] = 0
 030 O.CL%[0] = 0: O.CL%[1] = 1: O.CL%[2] = 4: O.CL%[3] = 5
-031 O.CL%[4] = 2: O.CL%[5] = 3: O.CL%[6] = 6: O.CL%[7] = 63
+031 O.CL%[4] = 2: O.CL%[5] = 3: O.CL%[6] = 14: O.CL%[7] = 15
 035 GOSUB 100
 040 FOR O.I% = 1 TO 10
 050   KEY O.I%, ""
@@ -33,11 +33,8 @@
 101   SCREEN 0, 0, 0, 0
 102   WIDTH O.WD%
 103   KEY OFF
-104   COLOR CC[0],CC[1],0
+104   COLOR O.CL%[CC[0]],O.CL%[CC[1]],0
 105   CLS
-106   FOR O.I%=0 TO 15
-107       PALETTE O.I%, O.CL%[O.I% MOD 8]
-108   NEXT
 109 RETURN
 110 ' Set cursor position
 111   IF (HO < 0) OR (HO >= O.WD%) OR (VE < 0) OR (VE >= O.HG%) THEN RETURN
@@ -48,9 +45,9 @@
 122   HO = POS(0)
 123 RETURN
 150 ' Print highlighted text block to screen
-151   COLOR CC[0], CC[1]: PRINT " ";
-152   COLOR CC[1], CC[0]: PRINT "  "; SR$; "  ";
-153   COLOR CC[0], CC[1]: PRINT " ";
+151   COLOR O.CL%[CC[0]], O.CL%[CC[1]]: PRINT " ";
+152   COLOR O.CL%[CC[1]], O.CL%[CC[0]]: PRINT "   "; SR$; "   ";
+153   COLOR O.CL%[CC[0]], O.CL%[CC[1]]: PRINT " ";
 154 RETURN
 200 ' Read keystroke
 201   IN$ = INKEY$: IF IN$ = "" THEN IN = 0: RETURN
@@ -175,7 +172,7 @@
 600 ' Initialise graphics screen
 601   SCREEN 9
 602   GOSUB 106
-603   COLOR CC[0], O.CL%[CC[1]]
+603   COLOR O.CL%[CC[0]], O.CL%[CC[1]]
 604   CLS
 605   WINDOW SCREEN (0, 0) - (1, 1)
 606 RETURN
