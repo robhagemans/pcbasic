@@ -35,6 +35,7 @@
 108   NEXT
 109 RETURN
 110 ' Set cursor position
+111   IF (HO < 0) OR (HO >= O.WD%) OR (VE < 0) OR (VE >= O.HG%) THEN RETURN
 112   LOCATE VE+1, HO+1
 113 RETURN
 120 ' Retrieve cursor position
