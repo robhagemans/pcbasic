@@ -49,7 +49,7 @@
 154 RETURN
 200 ' Read keystroke
 201   IN$ = INKEY$: IF IN$ = "" THEN IN = 0: RETURN
-202   IN=ASC(IN$): CN=0: IF IN>=ASC("a") AND IN<=ASC("z") THEN IN=IN-32
+202   IN=ASC(IN$): IF IN>=ASC("a") AND IN<=ASC("z") THEN IN=IN-32
 204   IF IN = 0 THEN O.EA = ASC(RIGHT$(IN$, 1)): IN$ = "" ELSE O.EA = 0
 205   IF IN = 8 THEN IN = 127 ELSE IF IN < 32 OR IN > 95 THEN IN = 0
 206   IF O.EA >= &H3B AND O.EA <= &H44 THEN IN = &H3A-O.EA
@@ -61,8 +61,9 @@
 212   IF IN$ = "" AND IN = 0 THEN GOTO 211
 213 RETURN
 220 ' Read character from screen
-221   IN = SCREEN(VE+1, HO+1)
-222 RETURN
+221   IN = SCREEN(VE+1, HO+1): CN = 0
+222   IF IN >= ASC("a") AND IN <= ASC("z") THEN IN = IN-32: CN = 32
+229 RETURN
 250 ' Beep the speaker
 251   BEEP
 252 RETURN
