@@ -8,8 +8,8 @@
 011 ' Settings and initialisation
 020 '
 021 O.VERSION$ = "3C"
-023 O.WD% = 40 ' Screen width
-024 HG = 640: VG = 350: HO = O.WD% - 1: VE = 24: CT = 0: CN = 0: SR = 0: SR$ = "": IN$ = " ": SV = 7
+023 O.WD% = 40: O.HG% = 24 ' Screen width and height
+024 HG = 640: VG = 350: HO = O.WD% - 1: VE = O.HG% - 1: CT = 0: CN = 0: SR = 0: SR$ = "": IN$ = " ": SV = 7
 025 CC[0] = 7: CC[1] = 0
 030 O.CL%[0] = 0: O.CL%[1] = 1: O.CL%[2] = 4: O.CL%[3] = 5
 031 O.CL%[4] = 2: O.CL%[5] = 3: O.CL%[6] = 6: O.CL%[7] = 63
