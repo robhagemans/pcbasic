@@ -17,6 +17,10 @@
 040 FOR O.I% = 1 TO 10
 050   KEY O.I%, ""
 060 NEXT
+061 ' Determine if we have PCjr/Tandy sound capabilities
+062 ON ERROR GOTO 64
+063 O.PCJR% = -1: SOUND ON: GOTO 70
+064 O.PCJR% = 0: RESUME 70
 070 PLAY "MF"
 080 RANDOMIZE TIMER
 085 DIM O.FN%[8]: O.FFN% = 0
@@ -114,8 +118,8 @@
 400 ' Produce a tone on the speaker of specified frequency and duration
 401   IF SV = 0 THEN O.FREQ = 0 ELSE O.FREQ = EXP(SP*.057762+2.10125)
 402   IF O.FREQ > 32766 THEN O.FREQ = 32766
-403   IF O.FREQ < 37 THEN O.FREQ = 37
-404   SOUND O.FREQ, SD*1.82 ' NOTE: volume setting in SV is ignored
+403   IF O.FREQ < 37 AND O.FREQ > 0 THEN O.FREQ = 37
+404   IF O.PCJR% THEN SOUND O.FREQ, SD*1.82, SV ELSE SOUND O.FREQ, SD*1.82
 405 RETURN
 450 ' Wait for SD/10 seconds or until a key is pressed
 451   O.TM = TIMER + SD*0.1
