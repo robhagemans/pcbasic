@@ -3,26 +3,44 @@
 003 '  Copyright (c) 2015, 2016 Rob Hagemans
 004 '  This file is released under the Expat MIT licence [https://opensource.org/licenses/MIT]
 005 '
+006 ON ERROR GOTO 7: CLEAR ,,,32768!: GOTO 8
+007 RESUME 8
+008 ON ERROR GOTO 0
 009 GOTO 1000 ' Initialise client
 010 '
 011 ' Settings and initialisation
 020 '
 021 O.VERSION$ = "3C"
-023 O.WD% = 40: O.HG% = 24 ' Screen width and height
-024 HG = 640: VG = 350: HO = O.WD% - 1: VE = O.HG% - 1: CT = 0: CN = 0: SR = 0: SR$ = "": IN$ = " ": SV = 7
+024 CT = 0: CN = 0: SR = 0: SR$ = "": IN$ = " "
 025 CC[0] = 7: CC[1] = 0
+029 ' Colour map
 030 O.CL%[0] = 0: O.CL%[1] = 1: O.CL%[2] = 4: O.CL%[3] = 5
 031 O.CL%[4] = 2: O.CL%[5] = 3: O.CL%[6] = 14: O.CL%[7] = 15
-035 GOSUB 100
-040 FOR O.I% = 1 TO 10
-050   KEY O.I%, ""
-060 NEXT
+032 ' Determine available graphics screen
+033 ON ERROR GOTO 50
+034 O.SCRN% = 100: HG = 640: VG = 400: O.WD% = 80: SCREEN O.SCRN%: IF O.SCRN% > 0 THEN 51
+035 O.SCRN% = 10: HG = 640: VG = 350: O.WD% = 80: SCREEN O.SCRN%: IF O.SCRN% > 0 THEN 51
+036 O.SCRN% = 9: HG = 640: VG = 350: O.WD% = 80: SCREEN O.SCRN%: IF O.SCRN% > 0 THEN 51
+037 O.SCRN% = 5: HG = 320: VG = 200: O.WD% = 40: SCREEN O.SCRN%: IF O.SCRN% > 0 THEN 51
+038 O.SCRN% = 4: HG = 320: VG = 200: O.WD% = 40: SCREEN O.SCRN%: IF O.SCRN% > 0 THEN 51
+039 O.SCRN% = 2: HG = 640: VG = 200: O.WD% = 80: SCREEN O.SCRN%: IF O.SCRN% > 0 THEN 51
+040 O.SCRN% = 3: HG = 720: VG = 348: O.WD% = 80: SCREEN O.SCRN%: IF O.SCRN% > 0 THEN 51
+041 O.SCRN% = 1: HG = 320: VG = 200: O.WD% = 40: SCREEN O.SCRN%: GOTO 51
+050 O.SCRN% = 0: RESUME NEXT
+051 ON ERROR GOTO 0
+058 ' Initialise text screen
+059 O.HG% = 24: HO = O.WD% - 1: VE = O.HG% - 1
+060 GOSUB 100
 061 ' Determine if we have PCjr/Tandy sound capabilities
 062 ON ERROR GOTO 64
 063 O.PCJR% = -1: SOUND ON: GOTO 65
 064 O.PCJR% = 0: RESUME 65
 065 ON ERROR GOTO 0
-070 PLAY "MF"
+066 PLAY "MF": SV = 7
+070 ' Disable function key macros
+075 FOR O.I% = 1 TO 10
+076   KEY O.I%, ""
+077 NEXT
 080 RANDOMIZE TIMER
 085 DIM O.FN%[8]: O.FFN% = 0
 090 GOTO 1010 ' Yield control to client
@@ -168,31 +186,30 @@
 581   GOSUB 480
 582   CLOSE O.FFN%
 583   O.FN%[O.FFN%] = 0
-585 RETURN
-600 ' Initialise graphics screen
-601   SCREEN 9
-602   GOSUB 106
+582 RETURN
+600 ' Initalise graphics screen
+601   SCREEN O.SCRN%
 603   COLOR O.CL%[CC[0]], O.CL%[CC[1]]
 604   CLS
 605   WINDOW SCREEN (0, 0) - (1, 1)
 606 RETURN
 620 ' Put a pixel on the screen
-621   PSET (HO, VE), CC[CN] + 8
+621   PSET (HO, VE), O.CL%[CC[CN]]
 625 RETURN
 630 ' Draw a line on the screen
-631   LINE -(HO, VE), CC[CN] + 8
+631   LINE -(HO, VE), O.CL%[CC[CN]]
 635 RETURN
 650 ' Draw text at a specified position on the graphics screen
 651   DEF SEG = &HF000
 652   O.HO% = PMAP(HO, 0): O.VE% = PMAP(VE, 1)
 655   WINDOW
-657   'LINE (O.HO%, O.VE%)-(O.HO% + 8*LEN(SR$)-1, O.VE%+7), CC[1-CN]+8, BF
+657   'LINE (O.HO%, O.VE%)-(O.HO% + 8*LEN(SR$)-1, O.VE%+7), O.CL%[CC[1-CN]], BF
 660   FOR O.P% = 1 TO LEN(SR$)
 662       O.C$ = MID$(SR$, O.P%, 1)
 665       FOR O.I% = 0 TO 7
 667           IF ASC(O.C$) > 127 THEN O.V = 0 ELSE O.V = PEEK(&HFA6E+8*ASC(O.C$)+O.I%)*256
 670           IF O.V > 32767 THEN O.V = O.V-65536!
-672           LINE (O.HO%+7+8*(O.P%-1), O.VE%+O.I%) - (O.HO%+8*(O.P%-1), O.VE%+O.I%), CC[CN]+8,, O.V
+672           LINE (O.HO%+7+8*(O.P%-1), O.VE%+O.I%) - (O.HO%+8*(O.P%-1), O.VE%+O.I%), O.CL%[CC[CN]],, O.V
 675       NEXT
 677   NEXT
 680   WINDOW SCREEN (0, 0) - (1, 1)
