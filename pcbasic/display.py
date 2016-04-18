@@ -1150,11 +1150,12 @@ class Palette(object):
     def __init__(self, mode, capabilities):
         """ Initialise palette. """
         self.capabilities = capabilities
+        self.mode = mode
         self.set_all(mode.palette, check_mode=False)
 
     def set_entry(self, index, colour, check_mode=True):
         """ Set a new colour for a given attribute. """
-        mode = state.console_state.screen.mode
+        mode = self.mode
         if check_mode and not self.mode_allows_palette(mode):
             return
         self.palette[index] = colour
@@ -1169,7 +1170,7 @@ class Palette(object):
 
     def set_all(self, new_palette, check_mode=True):
         """ Set the colours for all attributes. """
-        mode = state.console_state.screen.mode
+        mode = self.mode
         if check_mode and new_palette and not self.mode_allows_palette(mode):
             return
         self.palette = list(new_palette)
