@@ -468,7 +468,7 @@ class Session(object):
             return
         if self.edit_prompt:
             linenum, tell = self.edit_prompt
-            self.program.edit(linenum, tell)
+            self.program.edit(self.console, linenum, tell)
             self.edit_prompt = False
         elif self.prompt:
             self.console.start_line()

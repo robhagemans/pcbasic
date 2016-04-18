@@ -197,16 +197,16 @@ class Program(object):
         # update line number dict
         self.update_line_dict(startpos, afterpos, 0, deleteable, beyond)
 
-    def edit(self, from_line, bytepos=None):
+    def edit(self, console, from_line, bytepos=None):
         """ Output program line to console and position cursor. """
         if self.protected:
-            state.session.console.write(str(from_line)+'\r')
+            console.write(str(from_line)+'\r')
             raise error.RunError(error.IFC)
         # list line
         self.bytecode.seek(self.line_numbers[from_line]+1)
         _, output, textpos = tokenise.detokenise_line(self.bytecode, bytepos)
         # no newline to avoid scrolling on line 24
-        state.session.console.list_line(str(output), newline=False)
+        console.list_line(str(output), newline=False)
         # find row, column position for textpos
         newlines, c = 0, 0
         pos_row, pos_col = 0, 0
@@ -214,7 +214,7 @@ class Program(object):
             return
         for i, byte in enumerate(output):
             c += 1
-            if chr(byte) == '\n' or c > state.console_state.screen.mode.width:
+            if chr(byte) == '\n' or c > console.screen.mode.width:
                 newlines += 1
                 c = 0
             if i == textpos:
@@ -222,9 +222,9 @@ class Program(object):
         if textpos > i:
             pos_row, pos_col = newlines, c + 1
         if bytepos:
-            state.session.console.set_pos(state.console_state.row-newlines+pos_row, pos_col)
+            console.set_pos(state.console_state.row-newlines+pos_row, pos_col)
         else:
-            state.session.console.set_pos(state.console_state.row-newlines, 1)
+            console.set_pos(state.console_state.row-newlines, 1)
 
     def renum(self, new_line, start_line, step):
         """ Renumber stored program. """

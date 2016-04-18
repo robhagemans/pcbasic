@@ -45,6 +45,7 @@ class BaseDebugger(object):
         if self.session.parser.run_mode:
             self.session.program.bytecode.seek(-1, 1)
             self.session.program.edit(
+                self.session.console,
                 self.session.program.get_line_number(
                             self.session.program.bytecode.tell()),
                             self.session.program.bytecode.tell())
