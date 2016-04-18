@@ -152,7 +152,7 @@ class Session(object):
         self.screen.set_mode(self.screen.mode, 0, 1, 0, 0)
 
         # prepare input methods
-        state.console_state.pen = inputs.Pen(self.screen)
+        self.pen = inputs.Pen(self.screen)
         state.console_state.stick = inputs.Stick()
         # Screen needed in Keyboard for print_screen()
         state.console_state.keyb = inputs.Keyboard(self.screen,
@@ -579,11 +579,11 @@ class Session(object):
             elif signal.event_type == signals.KEYB_UP:
                 state.console_state.keyb.key_up(*signal.params)
             elif signal.event_type == signals.PEN_DOWN:
-                state.console_state.pen.down(*signal.params)
+                self.pen.down(*signal.params)
             elif signal.event_type == signals.PEN_UP:
-                state.console_state.pen.up()
+                self.pen.up()
             elif signal.event_type == signals.PEN_MOVED:
-                state.console_state.pen.moved(*signal.params)
+                self.pen.moved(*signal.params)
             elif signal.event_type == signals.STICK_DOWN:
                 state.console_state.stick.down(*signal.params)
             elif signal.event_type == signals.STICK_UP:

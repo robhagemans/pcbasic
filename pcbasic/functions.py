@@ -575,7 +575,7 @@ class Functions(object):
         """ PEN: poll the light pen. """
         fn = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
         util.range_check(0, 9, fn)
-        pen = state.console_state.pen.poll(fn)
+        pen = self.session.pen.poll(fn)
         if pen is None or not self.parser.events.pen.enabled:
             # should return 0 or char pos 1 if PEN not ON
             pen = 1 if fn >= 6 else 0

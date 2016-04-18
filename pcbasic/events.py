@@ -176,9 +176,14 @@ class KeyHandler(EventHandler):
 class PenHandler(EventHandler):
     """ Manage PEN events. """
 
+    def __init__(self, pen):
+        """ Initialise STRIG trigger. """
+        EventHandler.__init__(self)
+        self.pen = pen
+
     def check(self):
         """ Trigger PEN events. """
-        if state.console_state.pen.poll_event():
+        if self.pen.poll_event():
             self.trigger()
 
 
@@ -230,7 +235,7 @@ class Events(object):
         self.com = [
             ComHandler(self.session.devices.devices['COM1:']),
             ComHandler(self.session.devices.devices['COM2:'])]
-        self.pen = PenHandler()
+        self.pen = PenHandler(self.session.pen)
         # joy*2 + button
         self.strig = [StrigHandler(joy, button)
                       for joy in range(2) for button in range(2)]
