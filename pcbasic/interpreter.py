@@ -151,11 +151,15 @@ class Session(object):
         # initialise a fresh textmode screen
         self.screen.set_mode(self.screen.mode, 0, 1, 0, 0)
 
+        # initialise sound queue
+        self.sound = sound.Sound()
+
         # prepare input methods
         self.pen = inputs.Pen(self.screen)
         state.console_state.stick = inputs.Stick()
         # Screen needed in Keyboard for print_screen()
-        state.console_state.keyb = inputs.Keyboard(self.screen,
+        # Sound is needed for the beeps when the buffer fills up
+        state.console_state.keyb = inputs.Keyboard(self.screen, self.sound,
                 ignore_caps=not config.get('capture-caps'),
                 ctrl_c_is_break=config.get('ctrl-c-break'))
         redirect.prepare_redirects()
@@ -165,11 +169,10 @@ class Session(object):
                 state.console_state.codepage.str_from_unicode(keystring),
                 check_full=False)
 
-
         # interpreter is executing a command
         self.set_parse_mode(False)
         # initialise the console
-        self.console = console.Console(self.screen)
+        self.console = console.Console(self.screen, self.sound)
         # direct line buffer
         self.direct_line = StringIO()
 
@@ -229,8 +232,6 @@ class Session(object):
 
         # initialise timer
         self.timer = timedate.Timer()
-        # initialise sound queue
-        state.console_state.sound = sound.Sound()
 
         # find program for PCjr TERM command
         pcjr_term = config.get('pcjr-term')
@@ -249,12 +250,8 @@ class Session(object):
 
 
         # TODO: these may not be necessary
-        # stop all sound
-        state.console_state.sound.stop_all_sound()
         # Resets STRIG to off
         state.console_state.stick.switch(False)
-        # reset sound and PLAY state
-        state.console_state.sound.reset()
         # reset DRAW state (angle, scale) and current graphics position
         self.screen.drawing.reset()
 
@@ -318,11 +315,11 @@ class Session(object):
         # release all disk buffers (FIELD)?
         self.memory.reset_fields()
         # stop all sound
-        state.console_state.sound.stop_all_sound()
+        self.sound.stop_all_sound()
         # Resets STRIG to off
         state.console_state.stick.switch(False)
         # reset sound and PLAY state
-        state.console_state.sound.reset()
+        self.sound.reset()
         # reset DRAW state (angle, scale) and current graphics position
         self.screen.drawing.reset()
         self.parser.clear()
@@ -398,7 +395,7 @@ class Session(object):
                             self.parse_mode = False
                     except error.Break as e:
                         # ctrl-break stops foreground and background sound
-                        state.console_state.sound.stop_all_sound()
+                        self.sound.stop_all_sound()
                         self.handle_break(e)
                 elif self.auto_mode:
                     try:
@@ -406,7 +403,7 @@ class Session(object):
                         self.auto_step()
                     except error.Break:
                         # ctrl+break, ctrl-c both stop background sound
-                        state.console_state.sound.stop_all_sound()
+                        self.sound.stop_all_sound()
                         self.auto_mode = False
                 else:
                     self.show_prompt()
@@ -415,7 +412,7 @@ class Session(object):
                         line = self.console.wait_screenline(from_start=True)
                         self.prompt = not self.store_line(line)
                     except error.Break:
-                        state.console_state.sound.stop_all_sound()
+                        self.sound.stop_all_sound()
                         self.prompt = False
                         continue
                 # change loop modes

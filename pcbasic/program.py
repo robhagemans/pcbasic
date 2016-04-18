@@ -21,8 +21,6 @@ import protect
 import util
 import state
 import memory
-# ensure initialisation of state_console_state.sound
-import sound
 
 class Program(object):
     """ BASIC program. """

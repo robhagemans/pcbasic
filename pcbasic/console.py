@@ -70,13 +70,14 @@ state.console_state.overflow = False
 class Console(object):
     """ Interactive environment. """
 
-    def __init__(self, screen):
+    def __init__(self, screen, sound):
         """ Initialise console. """
         # function key legend is visible
         self.keys_visible = False
         # overwrite mode (instead of insert)
         self._overwrite_mode = True
         self.screen = screen
+        self.sound = sound
         self.init_mode()
 
     def init_mode(self):
@@ -242,7 +243,7 @@ class Console(object):
                     break
                 elif d == b'\a':
                     # BEL, CTRL+G
-                    state.console_state.sound.beep()
+                    self.sound.beep()
                 elif d == b'\b':
                     # BACKSPACE, CTRL+H
                     self.backspace(start_row, furthest_left)
@@ -629,7 +630,7 @@ class Console(object):
                 self.set_pos(row + 1, 1, scroll_ok)
             elif c == '\a':
                 # BEL
-                state.console_state.sound.beep()
+                self.sound.beep()
             elif c == '\x0B':
                 # HOME
                 self.set_pos(1, 1, scroll_ok)

@@ -61,16 +61,17 @@ class EventHandler(object):
 class PlayHandler(EventHandler):
     """ Manage PLAY (music queue) events. """
 
-    def __init__(self, multivoice):
+    def __init__(self, sound, multivoice):
         """ Initialise PLAY trigger. """
         EventHandler.__init__(self)
         self.last = [0, 0, 0]
         self.trig = 1
         self.multivoice = multivoice
+        self.sound = sound
 
     def check(self):
         """ Check and trigger PLAY (music queue) events. """
-        play_now = [state.console_state.sound.queue_length(voice) for voice in range(3)]
+        play_now = [self.sound.queue_length(voice) for voice in range(3)]
         if self.multivoice:
             for voice in range(3):
                 if (play_now[voice] <= self.trig and
@@ -231,7 +232,7 @@ class Events(object):
         self.key = [KeyHandler(sc) for sc in keys]
         # other events
         self.timer = TimerHandler(self.session.timer)
-        self.play = PlayHandler(self.multivoice)
+        self.play = PlayHandler(self.session.sound, self.multivoice)
         self.com = [
             ComHandler(self.session.devices.devices['COM1:']),
             ComHandler(self.session.devices.devices['COM2:'])]

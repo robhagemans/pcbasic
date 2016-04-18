@@ -75,16 +75,16 @@ home_key_replacements_eascii = {
 class KeyboardBuffer(object):
     """ Quirky emulated ring buffer for keystrokes. """
 
-    def __init__(self, ring_length, s=''):
+    def __init__(self, sound, ring_length):
         """ Initialise to given length. """
         # buffer holds tuples (eascii/codepage, scancode, modifier)
         self.buffer = []
         self.ring_length = ring_length
         self.start = 0
-        self.insert(s)
         # expansion buffer for keyboard macros; also used for DBCS
         # expansion vessel holds codepage chars
         self.expansion_vessel = []
+        self.sound = sound
 
     def length(self):
         """ Return the number of keystrokes in the buffer. """
@@ -110,7 +110,7 @@ class KeyboardBuffer(object):
         if cp_c:
             if check_full and len(self.buffer) >= self.ring_length:
                 # emit a sound signal when buffer is full (and we care)
-                state.console_state.sound.play_sound_no_wait(800, 0.01)
+                self.sound.play_sound_no_wait(800, 0.01)
             else:
                 self.buffer.append((cp_c, scancode, modifier))
 
@@ -196,10 +196,10 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """ Keyboard handling. """
 
-    def __init__(self, screen, ignore_caps, ctrl_c_is_break):
+    def __init__(self, screen, sound, ignore_caps, ctrl_c_is_break):
         """ Initilise keyboard state. """
         # key queue (holds bytes)
-        self.buf = KeyboardBuffer(15)
+        self.buf = KeyboardBuffer(sound, 15)
         # pre-buffer for keystrokes to enable event handling (holds unicode)
         self.prebuf = []
         # INP(&H60) scancode

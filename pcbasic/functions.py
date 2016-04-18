@@ -549,7 +549,7 @@ class Functions(object):
         util.range_check(0, 255, voice)
         if not(self.parser.syntax in ('pcjr', 'tandy') and voice in (1, 2)):
             voice = 0
-        return vartypes.int_to_integer_signed(state.console_state.sound.queue_length(voice))
+        return vartypes.int_to_integer_signed(self.session.sound.queue_length(voice))
 
     #####################################################################
     # error functions

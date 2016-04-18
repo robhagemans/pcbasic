@@ -424,17 +424,17 @@ class Statements(object):
             state.console_state.beep_on = (ins.read(1) == tk.ON)
             util.require(ins, tk.end_statement)
             return
-        state.console_state.sound.beep()
+        self.session.sound.beep()
         # if a syntax error happens, we still beeped.
         util.require(ins, tk.end_statement)
-        if state.console_state.sound.foreground:
-            state.console_state.sound.wait_music()
+        if self.session.sound.foreground:
+            self.session.sound.wait_music()
 
     def exec_sound(self, ins):
         """ SOUND: produce an arbitrary sound or switch external speaker on/off. """
         # Tandy/PCjr SOUND ON, OFF
         if self.parser.syntax in ('pcjr', 'tandy') and util.skip_white(ins) in (tk.ON, tk.OFF):
-            state.console_state.sound.sound_on = (ins.read(1) == tk.ON)
+            self.session.sound.sound_on = (ins.read(1) == tk.ON)
             util.require(ins, tk.end_statement)
             return
         freq = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
@@ -445,7 +445,7 @@ class Statements(object):
         # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
         if dur.gt(fp.Single.zero):
             if (util.skip_white_read_if(ins, (',',)) and (self.parser.syntax == 'tandy' or
-                    (self.parser.syntax == 'pcjr' and state.console_state.sound.sound_on))):
+                    (self.parser.syntax == 'pcjr' and self.session.sound.sound_on))):
                 volume = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
                 util.range_check(0, 15, volume)
                 if util.skip_white_read_if(ins, (',',)):
@@ -457,7 +457,7 @@ class Statements(object):
                 volume, voice = 15, 0
         util.require(ins, tk.end_statement)
         if dur.is_zero():
-            state.console_state.sound.stop_all_sound()
+            self.session.sound.stop_all_sound()
             return
         # Tandy only allows frequencies below 37 (but plays them as 110 Hz)
         if freq != 0:
@@ -467,11 +467,11 @@ class Statements(object):
         dur_sec = dur.to_value()/18.2
         if one_over_44.gt(dur):
             # play indefinitely in background
-            state.console_state.sound.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
+            self.session.sound.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
         else:
-            state.console_state.sound.play_sound(freq, dur_sec, voice=voice, volume=volume)
-            if state.console_state.sound.foreground:
-                state.console_state.sound.wait_music()
+            self.session.sound.play_sound(freq, dur_sec, voice=voice, volume=volume)
+            if self.session.sound.foreground:
+                self.session.sound.wait_music()
 
     def exec_play(self, ins):
         """ PLAY: play sound sequence defined by a Music Macro Language string. """
@@ -487,7 +487,7 @@ class Statements(object):
                         allow_empty=True))
             mml1, mml2 = '', ''
             if ((self.parser.syntax == 'tandy' or (self.parser.syntax == 'pcjr' and
-                                             state.console_state.sound.sound_on))
+                                             self.session.sound.sound_on))
                     and util.skip_white_read_if(ins, (',',))):
                 with self.session.strings:
                     mml1 = self.session.strings.copy(vartypes.pass_string(
@@ -501,11 +501,11 @@ class Statements(object):
             util.require(ins, tk.end_statement)
             if not (mml0 or mml1 or mml2):
                 raise error.RunError(error.MISSING_OPERAND)
-            state.console_state.sound.play((mml0, mml1, mml2))
+            self.session.sound.play((mml0, mml1, mml2))
 
     def exec_noise(self, ins):
         """ NOISE: produce sound on the noise generator (Tandy/PCjr). """
-        if not state.console_state.sound.sound_on:
+        if not self.session.sound.sound_on:
             raise error.RunError(error.IFC)
         source = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (',',))
@@ -520,9 +520,9 @@ class Statements(object):
         one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
         dur_sec = dur.to_value()/18.2
         if one_over_44.gt(dur):
-            state.console_state.sound.play_noise(source, volume, dur_sec, loop=True)
+            self.session.sound.play_noise(source, volume, dur_sec, loop=True)
         else:
-            state.console_state.sound.play_noise(source, volume, dur_sec)
+            self.session.sound.play_noise(source, volume, dur_sec)
 
 
     ##########################################################
@@ -724,7 +724,7 @@ class Statements(object):
         # force cursor visible in all cases
         self.session.screen.cursor.show(True)
         # sound stops playing and is forgotten
-        state.console_state.sound.stop_all_sound()
+        self.session.sound.stop_all_sound()
         # no user events
         with self.parser.events.suspend():
             # run the os-specific shell
