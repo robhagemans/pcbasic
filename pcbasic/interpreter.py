@@ -145,13 +145,14 @@ class Session(object):
             screen_aspect = (3072, 2000)
         else:
             screen_aspect = (4, 3)
-        state.console_state.screen = display.Screen(config.get('text-width'),
+        self.screen = display.Screen(config.get('text-width'),
                 config.get('video-memory'), video_capabilities, monitor,
                 config.get('cga-low'), config.get('mono-tint'), screen_aspect)
+        state.console_state.screen = self.screen
         heights_needed = set([8])
-        for mode in state.console_state.screen.text_data.values():
+        for mode in self.screen.text_data.values():
             heights_needed.add(mode.font_height)
-        for mode in state.console_state.screen.mode_data.values():
+        for mode in self.screen.mode_data.values():
             heights_needed.add(mode.font_height)
         # load the graphics fonts, including the 8-pixel RAM font
         # use set() for speed - lookup is O(1) rather than O(n) for list
@@ -161,12 +162,12 @@ class Session(object):
         state.console_state.fonts = typeface.load_fonts(config.get('font'), heights_needed,
                     chars_needed, state.console_state.codepage.substitutes, warn=config.get('debug'))
         # initialise a fresh textmode screen
-        state.console_state.screen.set_mode(state.console_state.screen.mode, 0, 1, 0, 0)
+        self.screen.set_mode(self.screen.mode, 0, 1, 0, 0)
 
         # interpreter is executing a command
         self.set_parse_mode(False)
         # initialise the console
-        self.console = console.Console()
+        self.console = console.Console(self.screen)
         # direct line buffer
         self.direct_line = StringIO()
 
@@ -210,7 +211,7 @@ class Session(object):
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
         # Session needed for wait()
-        self.devices = files.Devices(self, self.memory.fields)
+        self.devices = files.Devices(self, self.memory.fields, self.screen)
         self.files = files.Files(self.devices, max_files)
 
         # set up rest of memory model
@@ -253,7 +254,7 @@ class Session(object):
         # reset sound and PLAY state
         state.console_state.sound.reset()
         # reset DRAW state (angle, scale) and current graphics position
-        state.console_state.screen.drawing.reset()
+        self.screen.drawing.reset()
 
         # set up debugger
         if config.get('debug'):
@@ -321,14 +322,14 @@ class Session(object):
         # reset sound and PLAY state
         state.console_state.sound.reset()
         # reset DRAW state (angle, scale) and current graphics position
-        state.console_state.screen.drawing.reset()
+        self.screen.drawing.reset()
         self.parser.clear()
 
     def resume(self):
         """ Resume an interpreter session. """
         # resume from saved emulator state (if requested and available)
         # reload the screen in resumed state
-        if not state.console_state.screen.resume():
+        if not self.screen.resume():
             raise ResumeFailed()
         # rebuild the audio queue
         for q, store in zip(signals.tone_queue, state.console_state.tone_queue_store):
@@ -351,7 +352,7 @@ class Session(object):
             # position the pointer at start of program and enter execute mode
             self.parser.jump(None)
             self.set_parse_mode(True)
-            state.console_state.screen.cursor.reset_visibility()
+            self.screen.cursor.reset_visibility()
         try:
             try:
                 while True:
@@ -431,7 +432,7 @@ class Session(object):
     def set_parse_mode(self, on):
         """ Enter or exit parse mode. """
         self.parse_mode = on
-        state.console_state.screen.cursor.default_visible = not on
+        self.screen.cursor.default_visible = not on
 
     def switch_mode(self):
         """ Switch loop mode. """
@@ -439,7 +440,7 @@ class Session(object):
         if self.parse_mode != last_execute:
             # move pointer to the start of direct line (for both on and off!)
             self.parser.set_pointer(False, 0)
-            state.console_state.screen.cursor.reset_visibility()
+            self.screen.cursor.reset_visibility()
         return ((not self.auto_mode) and
                 (not self.parse_mode) and last_execute)
 
@@ -590,6 +591,6 @@ class Session(object):
             elif signal.event_type == signals.CLIP_PASTE:
                 state.console_state.keyb.insert_chars(*signal.params, check_full=False)
             elif signal.event_type == signals.CLIP_COPY:
-                text = state.console_state.screen.get_text(*(signal.params[:4]))
+                text = self.screen.get_text(*(signal.params[:4]))
                 signals.video_queue.put(signals.Event(
                         signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))

@@ -317,7 +317,7 @@ class Functions(object):
         z = 0
         if util.skip_white_read_if(ins, (',',)):
             z = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-        cmode = state.console_state.screen.mode
+        cmode = self.session.screen.mode
         util.range_check(1, cmode.height, row)
         if state.console_state.view_set:
             util.range_check(state.console_state.view_start, state.console_state.scroll_height, row)
@@ -327,7 +327,7 @@ class Functions(object):
         if z and not cmode.is_text_mode:
             return vartypes.null('%')
         else:
-            return vartypes.int_to_integer_signed(state.console_state.screen.apage.get_char_attr(row, col, z!=0))
+            return vartypes.int_to_integer_signed(self.session.screen.apage.get_char_attr(row, col, z!=0))
 
     def value_input(self, ins):
         """ INPUT$: get characters from the keyboard or a file. """
@@ -352,7 +352,7 @@ class Functions(object):
     def value_csrlin(self, ins):
         """ CSRLIN: get the current screen row. """
         row, col = state.console_state.row, state.console_state.col
-        if (col == state.console_state.screen.mode.width and
+        if (col == self.session.screen.mode.width and
                 state.console_state.overflow and
                 row < state.console_state.scroll_height):
             # in overflow position, return row+1 except on the last row
@@ -364,7 +364,7 @@ class Functions(object):
         # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
         self.parser.parse_bracket(ins, self.session)
         col = state.console_state.col
-        if col == state.console_state.screen.mode.width and state.console_state.overflow:
+        if col == self.session.screen.mode.width and state.console_state.overflow:
             # in overflow position, return column 1.
             col = 1
         return vartypes.int_to_integer_signed(col)
@@ -487,7 +487,7 @@ class Functions(object):
         """ POINT: get pixel attribute at screen location. """
         util.require_read(ins, ('(',))
         arg0 = self.parser.parse_expression(ins, self.session)
-        screen = state.console_state.screen
+        screen = self.session.screen
         if util.skip_white_read_if(ins, (',',)):
             # two-argument mode
             arg1 = self.parser.parse_expression(ins, self.session)
@@ -524,7 +524,7 @@ class Functions(object):
         mode = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (')',))
         util.range_check(0, 3, mode)
-        screen = state.console_state.screen
+        screen = self.session.screen
         if screen.mode.is_text_mode:
             return vartypes.null('%')
         if mode == 0:

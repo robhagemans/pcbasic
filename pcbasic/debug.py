@@ -31,17 +31,17 @@ class BaseDebugger(object):
 
     def bluescreen(self, e):
         """ Display a modal exception message. """
-        state.console_state.screen.screen(0, 0, 0, 0, new_width=80)
+        self.session.screen.screen(0, 0, 0, 0, new_width=80)
         self.session.console.clear()
         self.session.console.init_mode()
         exc_type, exc_value, exc_traceback = sys.exc_info()
         # log the standard python error
         logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         # format the error more readably on the screen
-        state.console_state.screen.set_border(4)
-        state.console_state.screen.set_attr(0x70)
+        self.session.screen.set_border(4)
+        self.session.screen.set_attr(0x70)
         self.session.console.write_line('EXCEPTION')
-        state.console_state.screen.set_attr(15)
+        self.session.screen.set_attr(15)
         if self.session.parser.run_mode:
             self.session.program.bytecode.seek(-1, 1)
             self.session.program.edit(
@@ -57,36 +57,36 @@ class BaseDebugger(object):
             stack_line = '{0}:{1}, {2}'.format(
                 os.path.split(s[0])[-1], s[1], s[2])
             stack_line_2 = '    {0}'.format(s[3])
-            state.console_state.screen.set_attr(15)
+            self.session.screen.set_attr(15)
             self.session.console.write_line(stack_line)
-            state.console_state.screen.set_attr(7)
+            self.session.screen.set_attr(7)
             self.session.console.write_line(stack_line_2)
         exc_message = traceback.format_exception_only(exc_type, exc_value)[0]
-        state.console_state.screen.set_attr(15)
+        self.session.screen.set_attr(15)
         self.session.console.write('{0}:'.format(exc_type.__name__))
-        state.console_state.screen.set_attr(7)
+        self.session.screen.set_attr(7)
         self.session.console.write_line(' {0}'.format(str(exc_value)))
-        state.console_state.screen.set_attr(0x70)
+        self.session.screen.set_attr(0x70)
         self.session.console.write_line(
             '\nThis is a bug in PC-BASIC.')
-        state.console_state.screen.set_attr(7)
+        self.session.screen.set_attr(7)
         self.session.console.write(
             'Sorry about that. Please send the above messages to the bugs forum\nby e-mail to ')
-        state.console_state.screen.set_attr(15)
+        self.session.screen.set_attr(15)
         self.session.console.write(
             'bugs@discussion.pcbasic.p.re.sf.net')
-        state.console_state.screen.set_attr(7)
+        self.session.screen.set_attr(7)
         self.session.console.write(
             ' or by filing a bug\nreport at ')
-        state.console_state.screen.set_attr(15)
+        self.session.screen.set_attr(15)
         self.session.console.write(
             'https://github.com/robhagemans/pcbasic/issues')
-        state.console_state.screen.set_attr(7)
+        self.session.screen.set_attr(7)
         self.session.console.write_line(
             '. Please include')
         self.session.console.write_line('as much information as you can about what you were doing and how this happened.')
         self.session.console.write_line('Thank you!')
-        state.console_state.screen.set_attr(7)
+        self.session.screen.set_attr(7)
         self.session.parser.set_pointer(False)
 
     def debug_step(self, linum):
@@ -170,10 +170,10 @@ def show_variables():
 
 def show_screen():
     """ Copy the screen buffer to the log. """
-    logging.debug('  +' + '-'*state.console_state.screen.mode.width+'+')
+    logging.debug('  +' + '-'*session.screen.mode.width+'+')
     i = 0
     lastwrap = False
-    for row in state.console_state.screen.apage.row:
+    for row in session.screen.apage.row:
         s = [ c[0] for c in row.buf ]
         i += 1
         outstr = '{0:2}'.format(i)
@@ -187,7 +187,7 @@ def show_screen():
         else:
             logging.debug(outstr + '| {0:2}'.format(row.end))
         lastwrap = row.wrap
-    logging.debug('  +' + '-'*state.console_state.screen.mode.width+'+')
+    logging.debug('  +' + '-'*session.screen.mode.width+'+')
 
 def show_program():
     """ Write a marked-up hex dump of the program to the log. """

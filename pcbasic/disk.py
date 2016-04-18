@@ -499,7 +499,6 @@ class DiskDevice(object):
             raise error.RunError(error.FILE_NOT_FOUND)
         drivepath, relpath, mask = self._native_path_elements(pathmask, path_err=error.FILE_NOT_FOUND)
         path = os.path.join(drivepath, relpath)
-
         mask = mask.upper() or b'*.*'
         # output working dir in DOS format
         # NOTE: this is always the current dir, not the one being listed
@@ -523,7 +522,7 @@ class DiskDevice(object):
         output = (
               [(b'%-8s.%-3s' % (t, e) if (e or not t) else b'%-8s    ' % t) + b'<DIR>' for t, e in dirs]
             + [(b'%-8s.%-3s' % (t, e) if e else b'%-8s    ' % t) + b'     ' for t, e in fils])
-        num = state.console_state.screen.mode.width // 20
+        num = state.session.screen.mode.width // 20
         while len(output) > 0:
             line = b' '.join(output[:num])
             output = output[num:]

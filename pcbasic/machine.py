@@ -120,15 +120,15 @@ class MachinePorts(object):
             state.console_state.stick.reset_decay()
         elif addr == 0x3c5:
             # officially, requires OUT &H3C4, 2 first (not implemented)
-            state.console_state.screen.mode.set_plane_mask(val)
+            self.session.screen.mode.set_plane_mask(val)
         elif addr == 0x3cf:
             # officially, requires OUT &H3CE, 4 first (not implemented)
-            state.console_state.screen.mode.set_plane(val)
+            self.session.screen.mode.set_plane(val)
         elif addr == 0x3d8:
             #OUT &H3D8,&H1A: REM enable color burst
             #OUT &H3D8,&H1E: REM disable color burst
             # 0x1a == 0001 1010     0x1e == 0001 1110
-            state.console_state.screen.set_colorburst(val & 4 == 0)
+            self.session.screen.set_colorburst(val & 4 == 0)
         elif addr in (0x378, 0x37A, 0x278, 0x27A):
             # parallel port output ports
             # http://www.aaroncake.net/electronics/qblpt.htm

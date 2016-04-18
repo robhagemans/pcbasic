@@ -13,8 +13,6 @@ import error
 import console
 import state
 import var
-# unused import, needed to initialise state.console_state.screen
-import display
 
 def nullstream():
     return open(os.devnull, 'r+')
@@ -94,11 +92,11 @@ class SCRNDevice(Device):
 
     allowed_modes = 'OR'
 
-    def __init__(self):
+    def __init__(self, screen):
         """ Initialise screen device. """
         # open a master file on the screen
         Device.__init__(self)
-        self.device_file = SCRNFile()
+        self.device_file = SCRNFile(screen)
 
 
 class KYBDDevice(Device):
@@ -562,10 +560,11 @@ class SCRNFile(RawFile):
     """ SCRN: file, allows writing to the screen as a text file.
         SCRN: files work as a wrapper text file. """
 
-    def __init__(self):
+    def __init__(self, screen):
         """ Initialise screen file. """
         RawFile.__init__(self, nullstream(), filetype='D', mode='O')
-        self._width = state.console_state.screen.mode.width
+        self.screen = screen
+        self._width = self.screen.mode.width
         self._col = state.console_state.col
 
     def clone(self, filetype, mode, reclen=128):
@@ -604,11 +603,11 @@ class SCRNFile(RawFile):
             elif ord(c) >= 32:
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
-        if (self.width != 255 and state.console_state.row != state.console_state.screen.mode.height
+        if (self.width != 255 and state.console_state.row != self.screen.mode.height
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
             state.session.console.write_line(do_echo=do_echo)
             self._col = 1
-        cwidth = state.console_state.screen.mode.width
+        cwidth = self.screen.mode.width
         for c in str(s):
             if self.width <= cwidth and self.col > self.width:
                 state.session.console.write_line(do_echo=do_echo)
@@ -637,7 +636,7 @@ class SCRNFile(RawFile):
     def width(self):
         """ Return (virtual) screen width. """
         if self.is_master:
-            return state.console_state.screen.mode.width
+            return self.screen.mode.width
         else:
             return self._width
 

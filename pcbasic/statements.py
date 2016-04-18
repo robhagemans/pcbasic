@@ -722,7 +722,7 @@ class Statements(object):
         if self.parser.syntax == 'pcjr':
             raise error.RunError(error.IFC)
         # force cursor visible in all cases
-        state.console_state.screen.cursor.show(True)
+        self.session.screen.cursor.show(True)
         # sound stops playing and is forgotten
         state.console_state.sound.stop_all_sound()
         # no user events
@@ -730,7 +730,7 @@ class Statements(object):
             # run the os-specific shell
             self.session.shell.launch(cmd)
         # reset cursor visibility to its previous state
-        state.console_state.screen.cursor.reset_visibility()
+        self.session.screen.cursor.reset_visibility()
         util.require(ins, tk.end_statement)
 
     def exec_environ(self, ins):
@@ -813,7 +813,7 @@ class Statements(object):
         # throws back to direct mode
         # jump to end of direct line so execution stops
         self.parser.set_pointer(False)
-        state.console_state.screen.cursor.reset_visibility()
+        self.session.screen.cursor.reset_visibility()
         # request edit prompt
         self.session.edit_prompt = (from_line, None)
 
@@ -1206,14 +1206,14 @@ class Statements(object):
 
     def exec_pset(self, ins, c=-1):
         """ PSET: set a pixel to a given attribute, or foreground. """
-        if state.console_state.screen.mode.is_text_mode:
+        if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         lcoord = self._parse_coord_step(ins)
         if util.skip_white_read_if(ins, (',',)):
             c = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(-1, 255, c)
         util.require(ins, tk.end_statement)
-        state.console_state.screen.drawing.pset(lcoord, c)
+        self.session.screen.drawing.pset(lcoord, c)
 
     def exec_preset(self, ins):
         """ PRESET: set a pixel to a given attribute, or background. """
@@ -1221,7 +1221,7 @@ class Statements(object):
 
     def exec_line_graph(self, ins):
         """ LINE: draw a line or box between two points. """
-        if state.console_state.screen.mode.is_text_mode:
+        if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         if util.skip_white(ins) in ('(', tk.STEP):
             coord0 = self._parse_coord_step(ins)
@@ -1245,11 +1245,11 @@ class Statements(object):
             elif not expr:
                 raise error.RunError(error.MISSING_OPERAND)
         util.require(ins, tk.end_statement)
-        state.console_state.screen.drawing.line(coord0, coord1, c, pattern, mode)
+        self.session.screen.drawing.line(coord0, coord1, c, pattern, mode)
 
     def exec_view_graph(self, ins):
         """ VIEW: set graphics viewport and optionally draw a box. """
-        if state.console_state.screen.mode.is_text_mode:
+        if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         absolute = util.skip_white_read_if(ins, (tk.SCREEN,))
         if util.skip_white(ins) == '(':
@@ -1258,21 +1258,21 @@ class Statements(object):
             util.require_read(ins, (tk.O_MINUS,))
             x1, y1 = self._parse_coord_bare(ins)
             x1, y1 = x1.round_to_int(), y1.round_to_int()
-            util.range_check(0, state.console_state.screen.mode.pixel_width-1, x0, x1)
-            util.range_check(0, state.console_state.screen.mode.pixel_height-1, y0, y1)
+            util.range_check(0, self.session.screen.mode.pixel_width-1, x0, x1)
+            util.range_check(0, self.session.screen.mode.pixel_height-1, y0, y1)
             fill, border = None, None
             if util.skip_white_read_if(ins, (',',)):
                 fill = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
                 util.require_read(ins, (',',))
                 border = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-            state.console_state.screen.drawing.set_view(x0, y0, x1, y1, absolute, fill, border)
+            self.session.screen.drawing.set_view(x0, y0, x1, y1, absolute, fill, border)
         else:
-            state.console_state.screen.drawing.unset_view()
+            self.session.screen.drawing.unset_view()
         util.require(ins, tk.end_statement)
 
     def exec_window(self, ins):
         """ WINDOW: define logical coordinate system. """
-        if state.console_state.screen.mode.is_text_mode:
+        if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         cartesian = not util.skip_white_read_if(ins, (tk.SCREEN,))
         if util.skip_white(ins) == '(':
@@ -1281,14 +1281,14 @@ class Statements(object):
             x1, y1 = self._parse_coord_bare(ins)
             if x0.equals(x1) or y0.equals(y1):
                 raise error.RunError(error.IFC)
-            state.console_state.screen.drawing.set_window(x0, y0, x1, y1, cartesian)
+            self.session.screen.drawing.set_window(x0, y0, x1, y1, cartesian)
         else:
-            state.console_state.screen.drawing.unset_window()
+            self.session.screen.drawing.unset_window()
         util.require(ins, tk.end_statement)
 
     def exec_circle(self, ins):
         """ CIRCLE: Draw a circle, ellipse, arc or sector. """
-        if state.console_state.screen.mode.is_text_mode:
+        if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         centre = self._parse_coord_step(ins)
         util.require_read(ins, (',',))
@@ -1313,13 +1313,13 @@ class Statements(object):
             elif cval is None:
                 raise error.RunError(error.MISSING_OPERAND)
         util.require(ins, tk.end_statement)
-        state.console_state.screen.drawing.circle(centre, r, start, stop, c, aspect)
+        self.session.screen.drawing.circle(centre, r, start, stop, c, aspect)
 
     def exec_paint(self, ins):
         """ PAINT: flood fill from point. """
         # if paint *colour* specified, border default = paint colour
         # if paint *attribute* specified, border default = current foreground
-        if state.console_state.screen.mode.is_text_mode:
+        if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         coord = self._parse_coord_step(ins)
         pattern, c, border, background_pattern = None, -1, -1, None
@@ -1347,14 +1347,14 @@ class Statements(object):
                         background_pattern = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session), err=error.IFC))
                     # only in screen 7,8,9 is this an error (use ega memory as a check)
                     if (pattern and background_pattern[:len(pattern)] == pattern and
-                            state.console_state.screen.mode.mem_start == 0xa000):
+                            self.session.screen.mode.mem_start == 0xa000):
                         raise error.RunError(error.IFC)
         util.require(ins, tk.end_statement)
-        state.console_state.screen.drawing.paint(coord, pattern, c, border, background_pattern)
+        self.session.screen.drawing.paint(coord, pattern, c, border, background_pattern)
 
     def exec_get_graph(self, ins):
         """ GET: read a sprite to memory. """
-        if state.console_state.screen.mode.is_text_mode:
+        if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         # don't accept STEP for first coord
         util.require(ins, ('('))
@@ -1368,11 +1368,11 @@ class Statements(object):
             raise error.RunError(error.IFC)
         elif array[-1] == '$':
             raise error.RunError(error.TYPE_MISMATCH) # type mismatch
-        state.console_state.screen.drawing.get(coord0, coord1, array)
+        self.session.screen.drawing.get(coord0, coord1, array)
 
     def exec_put_graph(self, ins):
         """ PUT: draw sprite on screen. """
-        if state.console_state.screen.mode.is_text_mode:
+        if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         # don't accept STEP
         util.require(ins, ('('))
@@ -1390,16 +1390,16 @@ class Statements(object):
         elif array[-1] == '$':
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
-        state.console_state.screen.drawing.put(coord, array, action)
+        self.session.screen.drawing.put(coord, array, action)
 
     def exec_draw(self, ins):
         """ DRAW: draw a figure defined by a Graphics Macro Language string. """
-        if state.console_state.screen.mode.is_text_mode:
+        if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         with self.session.strings:
             gml = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         util.require(ins, tk.end_statement)
-        state.console_state.screen.drawing.draw(gml)
+        self.session.screen.drawing.draw(gml)
 
     ##########################################################
     # Flow-control statements
@@ -1789,11 +1789,11 @@ class Statements(object):
                     self.session.memory.set_stack_size(stack_size)
                 if self.parser.syntax in ('pcjr', 'tandy') and util.skip_white_read_if(ins, (',',)):
                     # Tandy/PCjr: select video memory size
-                    if not state.console_state.screen.set_video_memory_size(
+                    if not self.session.screen.set_video_memory_size(
                         fp.unpack(vartypes.pass_single(
                                      self.parser.parse_expression(ins, self.session)
                                  )).round_to_int()):
-                        state.console_state.screen.screen(0, 0, 0, 0)
+                        self.session.screen.screen(0, 0, 0, 0)
                         self.session.console.init_mode()
                 elif not exp2:
                     raise error.RunError(error.STX)
@@ -2123,7 +2123,7 @@ class Statements(object):
         """ CLS: clear the screen. """
         if (self.parser.syntax == 'pcjr' or
                         util.skip_white(ins) in (',',) + tk.end_statement):
-            if state.console_state.screen.drawing.view_is_set():
+            if self.session.screen.drawing.view_is_set():
                 val = 1
             elif state.console_state.view_set:
                 val = 2
@@ -2144,18 +2144,18 @@ class Statements(object):
         # cls is only executed if no errors have occurred
         if val == 0:
             self.session.console.clear()
-            state.console_state.screen.drawing.reset()
+            self.session.screen.drawing.reset()
         elif val == 1:
-            state.console_state.screen.drawing.clear_view()
-            state.console_state.screen.drawing.reset()
+            self.session.screen.drawing.clear_view()
+            self.session.screen.drawing.reset()
         elif val == 2:
-            state.console_state.screen.clear_view()
+            self.session.screen.clear_view()
         if self.parser.syntax == 'pcjr':
             util.require(ins, tk.end_statement)
 
     def exec_color(self, ins):
         """ COLOR: set colour attributes. """
-        screen = state.console_state.screen
+        screen = self.session.screen
         mode = screen.mode
         fore = self.parser.parse_expression(ins, self.session, allow_empty=True)
         if fore is None:
@@ -2209,7 +2209,7 @@ class Statements(object):
 
     def exec_color_mode_1(self, ins, back, pal, override):
         """ Helper function for COLOR in SCREEN 1. """
-        screen = state.console_state.screen
+        screen = self.session.screen
         back = screen.palette.get_entry(0) if back is None else back
         if override is not None:
             # uses last entry as palette if given
@@ -2231,13 +2231,13 @@ class Statements(object):
         d = util.skip_white(ins)
         if d in tk.end_statement:
             # reset palette
-            state.console_state.screen.palette.set_all(state.console_state.screen.mode.palette)
+            self.session.screen.palette.set_all(self.session.screen.mode.palette)
         elif d == tk.USING:
             ins.read(1)
             self.exec_palette_using(ins)
         else:
             # can't set blinking colours separately
-            mode = state.console_state.screen.mode
+            mode = self.session.screen.mode
             num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
             attrib = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             util.require_read(ins, (',',))
@@ -2247,12 +2247,12 @@ class Statements(object):
             util.range_check(0, num_palette_entries-1, attrib)
             util.range_check(-1, len(mode.colours)-1, colour)
             if colour != -1:
-                state.console_state.screen.palette.set_entry(attrib, colour)
+                self.session.screen.palette.set_entry(attrib, colour)
             util.require(ins, tk.end_statement)
 
     def exec_palette_using(self, ins):
         """ PALETTE USING: set full colour palette. """
-        screen = state.console_state.screen
+        screen = self.session.screen
         mode = screen.mode
         num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
         array_name, start_indices = self.parser.parse_variable(ins, self.session)
@@ -2320,7 +2320,7 @@ class Statements(object):
 
     def exec_locate(self, ins):
         """ LOCATE: Set cursor position, shape and visibility."""
-        cmode = state.console_state.screen.mode
+        cmode = self.session.screen.mode
         row = self.parser.parse_expression(ins, self.session, allow_empty=True)
         row = None if row is None else vartypes.pass_int_unpack(row)
         col, cursor, start, stop = None, None, None, None
@@ -2355,14 +2355,14 @@ class Statements(object):
         if cursor is not None:
             util.range_check(0, (255 if self.parser.syntax in ('pcjr', 'tandy') else 1), cursor)
             # set cursor visibility - this should set the flag but have no effect in graphics modes
-            state.console_state.screen.cursor.set_visibility(cursor != 0)
+            self.session.screen.cursor.set_visibility(cursor != 0)
         if stop is None:
             stop = start
         if start is not None:
             util.range_check(0, 31, start, stop)
             # cursor shape only has an effect in text mode
             if cmode.is_text_mode:
-                state.console_state.screen.cursor.set_shape(start, stop)
+                self.session.screen.cursor.set_shape(start, stop)
         util.require(ins, tk.end_statement)
 
     def exec_write(self, ins, output=None):
@@ -2493,7 +2493,7 @@ class Statements(object):
     def exec_view_print(self, ins):
         """ VIEW PRINT: set scroll region. """
         if util.skip_white(ins) in tk.end_statement:
-            state.console_state.screen.unset_view()
+            self.session.screen.unset_view()
         else:
             start = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             util.require_read(ins, (tk.TO,))
@@ -2501,7 +2501,7 @@ class Statements(object):
             util.require(ins, tk.end_statement)
             max_line = 25 if (self.parser.syntax in ('pcjr', 'tandy') and not self.session.console.keys_visible) else 24
             util.range_check(1, max_line, start, stop)
-            state.console_state.screen.set_view(start, stop)
+            self.session.screen.set_view(start, stop)
 
     def exec_width(self, ins):
         """ WIDTH: set width of screen or device. """
@@ -2572,7 +2572,7 @@ class Statements(object):
         util.range_check(0, 2, erase)
         util.require(ins, tk.end_statement)
         # decide whether to redraw the screen
-        screen = state.console_state.screen
+        screen = self.session.screen
         oldmode, oldcolor = screen.mode, screen.colorswitch
         screen.screen(mode, color, apagenum, vpagenum, erase)
         if ((not screen.mode.is_text_mode and screen.mode.name != oldmode.name) or
@@ -2585,9 +2585,9 @@ class Statements(object):
     def exec_pcopy(self, ins):
         """ PCOPY: copy video pages. """
         src = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-        util.range_check(0, state.console_state.screen.mode.num_pages-1, src)
+        util.range_check(0, self.session.screen.mode.num_pages-1, src)
         util.require_read(ins, (',',))
         dst = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require(ins, tk.end_statement)
-        util.range_check(0, state.console_state.screen.mode.num_pages-1, dst)
-        state.console_state.screen.copy_page(src, dst)
+        util.range_check(0, self.session.screen.mode.num_pages-1, dst)
+        self.session.screen.copy_page(src, dst)
