@@ -156,7 +156,7 @@ class Session(object):
 
         # prepare input methods
         self.pen = inputs.Pen(self.screen)
-        state.console_state.stick = inputs.Stick()
+        self.stick = inputs.Stick()
         # Screen needed in Keyboard for print_screen()
         # Sound is needed for the beeps when the buffer fills up
         state.console_state.keyb = inputs.Keyboard(self.screen, self.sound,
@@ -248,13 +248,6 @@ class Session(object):
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
 
-
-        # TODO: these may not be necessary
-        # Resets STRIG to off
-        state.console_state.stick.switch(False)
-        # reset DRAW state (angle, scale) and current graphics position
-        self.screen.drawing.reset()
-
         # set up debugger
         if config.get('debug'):
             self.debugger = debug.Debugger(self)
@@ -317,7 +310,7 @@ class Session(object):
         # stop all sound
         self.sound.stop_all_sound()
         # Resets STRIG to off
-        state.console_state.stick.switch(False)
+        self.stick.switch(False)
         # reset sound and PLAY state
         self.sound.reset()
         # reset DRAW state (angle, scale) and current graphics position
@@ -582,11 +575,11 @@ class Session(object):
             elif signal.event_type == signals.PEN_MOVED:
                 self.pen.moved(*signal.params)
             elif signal.event_type == signals.STICK_DOWN:
-                state.console_state.stick.down(*signal.params)
+                self.stick.down(*signal.params)
             elif signal.event_type == signals.STICK_UP:
-                state.console_state.stick.up(*signal.params)
+                self.stick.up(*signal.params)
             elif signal.event_type == signals.STICK_MOVED:
-                state.console_state.stick.moved(*signal.params)
+                self.stick.moved(*signal.params)
             elif signal.event_type == signals.CLIP_PASTE:
                 state.console_state.keyb.insert_chars(*signal.params, check_full=False)
             elif signal.event_type == signals.CLIP_COPY:

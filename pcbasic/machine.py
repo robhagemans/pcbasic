@@ -58,18 +58,18 @@ class MachinePorts(object):
         # game port (joystick)
         elif port == 0x201:
             value = (
-                (not state.console_state.stick.is_firing[0][0]) * 0x40 +
-                (not state.console_state.stick.is_firing[0][1]) * 0x20 +
-                (not state.console_state.stick.is_firing[1][0]) * 0x10 +
-                (not state.console_state.stick.is_firing[1][1]) * 0x80)
-            decay = state.console_state.stick.decay()
-            if decay < state.console_state.stick.axis[0][0] * self.joystick_time_factor:
+                (not self.session.stick.is_firing[0][0]) * 0x40 +
+                (not self.session.stick.is_firing[0][1]) * 0x20 +
+                (not self.session.stick.is_firing[1][0]) * 0x10 +
+                (not self.session.stick.is_firing[1][1]) * 0x80)
+            decay = self.session.stick.decay()
+            if decay < self.session.stick.axis[0][0] * self.joystick_time_factor:
                 value += 0x04
-            if decay < state.console_state.stick.axis[0][1] * self.joystick_time_factor:
+            if decay < self.session.stick.axis[0][1] * self.joystick_time_factor:
                 value += 0x02
-            if decay < state.console_state.stick.axis[1][0] * self.joystick_time_factor:
+            if decay < self.session.stick.axis[1][0] * self.joystick_time_factor:
                 value += 0x01
-            if decay < state.console_state.stick.axis[1][1] * self.joystick_time_factor:
+            if decay < self.session.stick.axis[1][1] * self.joystick_time_factor:
                 value += 0x08
             return value
         elif port in (0x379, 0x279):
@@ -117,7 +117,7 @@ class MachinePorts(object):
         """ Send a value to an emulated machine port. """
         if addr == 0x201:
             # game port reset
-            state.console_state.stick.reset_decay()
+            self.session.stick.reset_decay()
         elif addr == 0x3c5:
             # officially, requires OUT &H3C4, 2 first (not implemented)
             self.session.screen.mode.set_plane_mask(val)

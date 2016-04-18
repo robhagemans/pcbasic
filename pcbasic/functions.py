@@ -585,14 +585,14 @@ class Functions(object):
         """ STICK: poll the joystick. """
         fn = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
         util.range_check(0, 3, fn)
-        return vartypes.int_to_integer_signed(state.console_state.stick.poll(fn))
+        return vartypes.int_to_integer_signed(self.session.stick.poll(fn))
 
     def value_strig(self, ins):
         """ STRIG: poll the joystick fire button. """
         fn = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
         # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
         util.range_check(0, 7, fn)
-        return vartypes.bool_to_integer(state.console_state.stick.poll_trigger(fn))
+        return vartypes.bool_to_integer(self.session.stick.poll_trigger(fn))
 
     #########################################################
     # memory and machine

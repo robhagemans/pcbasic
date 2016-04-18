@@ -191,15 +191,16 @@ class PenHandler(EventHandler):
 class StrigHandler(EventHandler):
     """ Manage STRIG events. """
 
-    def __init__(self, joy, button):
+    def __init__(self, stick, joy, button):
         """ Initialise STRIG trigger. """
         EventHandler.__init__(self)
         self.joy = joy
         self.button = button
+        self.stick = stick
 
     def check(self):
         """ Trigger STRIG events. """
-        if state.console_state.stick.poll_event(self.joy, self.button):
+        if self.stick.poll_event(self.joy, self.button):
             self.trigger()
 
 
@@ -238,7 +239,7 @@ class Events(object):
             ComHandler(self.session.devices.devices['COM2:'])]
         self.pen = PenHandler(self.session.pen)
         # joy*2 + button
-        self.strig = [StrigHandler(joy, button)
+        self.strig = [StrigHandler(self.session.stick, joy, button)
                       for joy in range(2) for button in range(2)]
         # all handlers in order of handling; TIMER first
         # key events are not handled FIFO but first 11-20 in that order, then 1-10

@@ -318,10 +318,10 @@ class Statements(object):
                 raise error.RunError(error.STX)
         elif d == tk.ON:
             ins.read(1)
-            state.console_state.stick.switch(True)
+            self.session.stick.switch(True)
         elif d == tk.OFF:
             ins.read(1)
-            state.console_state.stick.switch(False)
+            self.session.stick.switch(False)
         else:
             raise error.RunError(error.STX)
         util.require(ins, tk.end_statement)
