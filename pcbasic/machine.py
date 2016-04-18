@@ -216,12 +216,14 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, data_memory, devices, peek_values, syntax):
+    def __init__(self, data_memory, devices, screen, peek_values, syntax):
         """ Initialise memory. """
         # data segment initialised elsewhere
         self.data = data_memory
         # device access needed for COM and LPT ports
         self.devices = devices
+        # screen access needed for video memory
+        self.screen = screen
         # initial DEF SEG
         self.segment = self.data.data_segment
         # pre-defined PEEK outputs
@@ -346,19 +348,19 @@ class Memory(object):
 
     def _get_video_memory(self, addr):
         """ Retrieve a byte from video memory. """
-        return state.console_state.screen.mode.get_memory(addr, 1)[0]
+        return self.screen.mode.get_memory(addr, 1)[0]
 
     def _set_video_memory(self, addr, val):
         """ Set a byte in video memory. """
-        return state.console_state.screen.mode.set_memory(addr, [val])
+        return self.screen.mode.set_memory(addr, [val])
 
     def _get_video_memory_block(self, addr, length):
         """ Retrieve a contiguous block of bytes from video memory. """
-        return bytearray(state.console_state.screen.mode.get_memory(addr, length))
+        return bytearray(self.screen.mode.get_memory(addr, length))
 
     def _set_video_memory_block(self, addr, some_bytes):
         """ Set a contiguous block of bytes in video memory. """
-        state.console_state.screen.mode.set_memory(addr, some_bytes)
+        self.screen.mode.set_memory(addr, some_bytes)
 
     ###############################################################################
 
@@ -390,7 +392,7 @@ class Memory(object):
         if uc:
             old = state.console_state.fonts[8].fontdict[uc]
             state.console_state.fonts[8].fontdict[uc] = old[:addr%8]+chr(value)+old[addr%8+1:]
-            state.console_state.screen.rebuild_glyph(char)
+            self.screen.rebuild_glyph(char)
 
     #################################################################################
 
@@ -411,7 +413,7 @@ class Memory(object):
             return self.ram_font_segment // 256
         # 1040 monitor type
         elif addr == 1040:
-            if state.console_state.screen.monitor == 'mono':
+            if self.screen.monitor == 'mono':
                 # mono
                 return 48 + 6
             else:
@@ -474,13 +476,13 @@ class Memory(object):
         # 1097 screen mode number
         elif addr == 1097:
             # these are the low-level mode numbers used by mode switching interrupt
-            cval = state.console_state.screen.colorswitch % 2
-            if state.console_state.screen.mode.is_text_mode:
-                if (state.console_state.screen.capabilities in ('mda', 'ega_mono') and
-                        state.console_state.screen.mode.width == 80):
+            cval = self.screen.colorswitch % 2
+            if self.screen.mode.is_text_mode:
+                if (self.screen.capabilities in ('mda', 'ega_mono') and
+                        self.screen.mode.width == 80):
                     return 7
-                return (state.console_state.screen.mode.width == 40)*2 + cval
-            elif state.console_state.screen.mode.name == '320x200x4':
+                return (self.screen.mode.width == 40)*2 + cval
+            elif self.screen.mode.name == '320x200x4':
                 return 4 + cval
             else:
                 mode_num = {'640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
@@ -489,20 +491,20 @@ class Memory(object):
                     '320x200x4pcjr': 4 }
                     # '720x348x2': ? # hercules - unknown
                 try:
-                    return mode_num[state.console_state.screen.mode.name]
+                    return mode_num[self.screen.mode.name]
                 except KeyError:
                     return 0xff
         # 1098, 1099 screen width
         elif addr == 1098:
-            return state.console_state.screen.mode.width % 256
+            return self.screen.mode.width % 256
         elif addr == 1099:
-            return state.console_state.screen.mode.width // 256
+            return self.screen.mode.width // 256
         # 1100, 1101 graphics page buffer size (32k for screen 9, 4k for screen 0)
         # 1102, 1103 zero (PCmag says graphics page buffer offset)
         elif addr == 1100:
-            return state.console_state.screen.mode.page_size % 256
+            return self.screen.mode.page_size % 256
         elif addr == 1101:
-            return state.console_state.screen.mode.page_size // 256
+            return self.screen.mode.page_size // 256
         # 1104 + 2*n (cursor column of page n) - 1
         # 1105 + 2*n (cursor row of page n) - 1
         # we only keep track of one row,col position
@@ -512,28 +514,28 @@ class Memory(object):
             return state.console_state.row - 1
         # 1120, 1121 cursor shape
         elif addr == 1120:
-            return state.console_state.screen.cursor.to_line
+            return self.screen.cursor.to_line
         elif addr == 1121:
-            return state.console_state.screen.cursor.from_line
+            return self.screen.cursor.from_line
         # 1122 visual page number
         elif addr == 1122:
-            return state.console_state.screen.vpagenum
+            return self.screen.vpagenum
         # 1125 screen mode info
         elif addr == 1125:
             # bit 0: only in text mode?
             # bit 2: should this be colorswitch or colorburst_is_enabled?
-            return ((state.console_state.screen.mode.width == 80) * 1 +
-                    (not state.console_state.screen.mode.is_text_mode) * 2 +
-                     state.console_state.screen.colorswitch * 4 + 8 +
-                     (state.console_state.screen.mode.name == '640x200x2') * 16 +
+            return ((self.screen.mode.width == 80) * 1 +
+                    (not self.screen.mode.is_text_mode) * 2 +
+                     self.screen.colorswitch * 4 + 8 +
+                     (self.screen.mode.name == '640x200x2') * 16 +
                      self.blink_enabled * 32)
         # 1126 color
         elif addr == 1126:
-            if state.console_state.screen.mode.name == '320x200x4':
-                return (state.console_state.screen.palette.get_entry(0)
-                        + 32 * state.console_state.screen.cga4_palette_num)
-            elif state.console_state.screen.mode.is_text_mode:
-                return state.console_state.screen.border_attr % 16
+            if self.screen.mode.name == '320x200x4':
+                return (self.screen.palette.get_entry(0)
+                        + 32 * self.screen.cga4_palette_num)
+            elif self.screen.mode.is_text_mode:
+                return self.screen.border_attr % 16
                 # not implemented: + 16 "if current color specified through
                 # COLOR f,b with f in [0,15] and b > 7
         # 1296, 1297: zero (PCmag says data segment address)

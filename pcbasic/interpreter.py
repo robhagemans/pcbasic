@@ -222,7 +222,7 @@ class Session(object):
                 peek_values[int(seg)*0x10 + int(addr)] = int(val)
         except (TypeError, ValueError):
             pass
-        self.all_memory = machine.Memory(self.memory, self.devices,
+        self.all_memory = machine.Memory(self.memory, self.devices, self.screen,
                                         peek_values, config.get('syntax'))
 
         # initialise timer
