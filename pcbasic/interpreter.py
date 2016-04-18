@@ -125,18 +125,6 @@ class Session(object):
         state.console_state.codepage = unicodepage.Codepage(
                                 codepage, box_protect=not config.get('nobox'))
 
-        # prepare input methods
-        state.console_state.pen = inputs.Pen()
-        state.console_state.stick = inputs.Stick()
-        state.console_state.keyb = inputs.Keyboard(
-                ignore_caps=not config.get('capture-caps'),
-                ctrl_c_is_break=config.get('ctrl-c-break'))
-        redirect.prepare_redirects()
-        # inserted keystrokes
-        keystring = config.get('keys').decode('string_escape').decode('utf-8')
-        state.console_state.keyb.buf.insert(
-                state.console_state.codepage.str_from_unicode(keystring),
-                check_full=False)
 
         # set initial video mode
         monitor = config.get('monitor')
@@ -148,7 +136,6 @@ class Session(object):
         self.screen = display.Screen(config.get('text-width'),
                 config.get('video-memory'), video_capabilities, monitor,
                 config.get('cga-low'), config.get('mono-tint'), screen_aspect)
-        state.console_state.screen = self.screen
         heights_needed = set([8])
         for mode in self.screen.text_data.values():
             heights_needed.add(mode.font_height)
@@ -163,6 +150,21 @@ class Session(object):
                     chars_needed, state.console_state.codepage.substitutes, warn=config.get('debug'))
         # initialise a fresh textmode screen
         self.screen.set_mode(self.screen.mode, 0, 1, 0, 0)
+
+        # prepare input methods
+        state.console_state.pen = inputs.Pen(self.screen)
+        state.console_state.stick = inputs.Stick()
+        # Screen needed in Keyboard for print_screen()
+        state.console_state.keyb = inputs.Keyboard(self.screen,
+                ignore_caps=not config.get('capture-caps'),
+                ctrl_c_is_break=config.get('ctrl-c-break'))
+        redirect.prepare_redirects()
+        # inserted keystrokes
+        keystring = config.get('keys').decode('string_escape').decode('utf-8')
+        state.console_state.keyb.buf.insert(
+                state.console_state.codepage.str_from_unicode(keystring),
+                check_full=False)
+
 
         # interpreter is executing a command
         self.set_parse_mode(False)

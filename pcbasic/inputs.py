@@ -196,7 +196,7 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """ Keyboard handling. """
 
-    def __init__(self, ignore_caps, ctrl_c_is_break):
+    def __init__(self, screen, ignore_caps, ctrl_c_is_break):
         """ Initilise keyboard state. """
         # key queue (holds bytes)
         self.buf = KeyboardBuffer(15)
@@ -218,6 +218,8 @@ class Keyboard(object):
         self.ctrl_c_is_break = ctrl_c_is_break
         # input stream has closed
         self.input_closed = False
+        # screen is needed only for print_screen()
+        self.screen = screen
 
     def read_chars(self, num):
         """ Read num keystrokes, blocking. """
@@ -336,7 +338,7 @@ class Keyboard(object):
             elif scan == scancode.PRINT:
                 if mod & (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT]):
                     # shift + printscreen
-                    state.console_state.screen.print_screen()
+                    self.screen.print_screen()
                 elif mod & modifier[scancode.CTRL]:
                     # ctrl + printscreen
                     redirect.toggle_echo(state.session.devices.lpt1_file)
@@ -351,7 +353,7 @@ class Keyboard(object):
 class Pen(object):
     """ Light pen support. """
 
-    def __init__(self):
+    def __init__(self, screen):
         """ Initialise light pen. """
         self.is_down = False
         self.pos = 0, 0
@@ -360,6 +362,7 @@ class Pen(object):
         # signal pen has been down for event triggers in poll_event()
         self.was_down_event = False
         self.down_pos = (0, 0)
+        self.screen = screen
 
     def down(self, x, y):
         """ Report a pen-down event at graphical x,y """
@@ -387,8 +390,8 @@ class Pen(object):
     def poll(self, fn):
         """ Poll the pen. """
         posx, posy = self.pos
-        fw = state.console_state.screen.mode.font_width
-        fh = state.console_state.screen.mode.font_height
+        fw = self.screen.mode.font_width
+        fh = self.screen.mode.font_height
         if fn == 0:
             pen_down_old, self.was_down = self.was_down, False
             return -1 if pen_down_old else 0
