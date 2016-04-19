@@ -128,18 +128,19 @@ class ComHandler(EventHandler):
 class KeyHandler(EventHandler):
     """ Manage KEY events. """
 
-    def __init__(self, scancode=None):
+    def __init__(self, keyboard, scancode=None):
         """ Initialise KEY trigger. """
         EventHandler.__init__(self)
         self.modcode = None
         self.scancode = scancode
         self.predefined = (scancode is not None)
+        self.keyboard = keyboard
 
     def check(self):
         """ Trigger KEY events. """
         if self.scancode is None:
             return False
-        for c, scancode, modifiers, check_full in state.console_state.keyb.prebuf:
+        for c, scancode, modifiers, check_full in self.keyboard.prebuf:
             if scancode != self.scancode:
                 continue
             # build KEY trigger code
@@ -162,7 +163,7 @@ class KeyHandler(EventHandler):
                 self.trigger()
                 # drop key from key buffer
                 if self.enabled:
-                    state.console_state.keyb.prebuf.remove((c, scancode, modifiers, check_full))
+                    self.keyboard.prebuf.remove((c, scancode, modifiers, check_full))
                     return True
         return False
 
@@ -230,7 +231,7 @@ class Events(object):
             keys += [scancode.F11, scancode.F12]
         keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
         keys += [None] * (20 - self.num_fn_keys - 4)
-        self.key = [KeyHandler(sc) for sc in keys]
+        self.key = [KeyHandler(self.session.keyboard, sc) for sc in keys]
         # other events
         self.timer = TimerHandler(self.session.timer)
         self.play = PlayHandler(self.session.sound, self.multivoice)
