@@ -70,7 +70,7 @@ state.console_state.overflow = False
 class Console(object):
     """ Interactive environment. """
 
-    def __init__(self, screen, sound):
+    def __init__(self, screen, keyboard, sound):
         """ Initialise console. """
         # function key legend is visible
         self.keys_visible = False
@@ -78,6 +78,7 @@ class Console(object):
         self._overwrite_mode = True
         self.screen = screen
         self.sound = sound
+        self.keyboard = keyboard
         self.init_mode()
 
     def init_mode(self):
@@ -222,12 +223,12 @@ class Console(object):
                     if col == self.screen.mode.width and state.console_state.overflow:
                         furthest_right += 1
                 # wait_char returns one e-ASCII code
-                d = state.console_state.keyb.get_char_block()
+                d = self.keyboard.get_char_block()
                 # insert dbcs chars from keyboard buffer two bytes at a time
                 if (d in state.console_state.codepage.lead and
-                        state.console_state.keyb.buf.peek() in
+                        self.keyboard.buf.peek() in
                         state.console_state.codepage.trail):
-                    d += state.console_state.keyb.buf.getc()
+                    d += self.keyboard.buf.getc()
                 if not d:
                     # input stream closed
                     raise error.Exit()

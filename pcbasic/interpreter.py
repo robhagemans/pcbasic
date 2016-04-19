@@ -159,20 +159,23 @@ class Session(object):
         self.stick = inputs.Stick()
         # Screen needed in Keyboard for print_screen()
         # Sound is needed for the beeps when the buffer fills up
-        state.console_state.keyb = inputs.Keyboard(self.screen, self.sound,
+        self.keyboard = inputs.Keyboard(self.screen, self.sound,
                 ignore_caps=not config.get('capture-caps'),
                 ctrl_c_is_break=config.get('ctrl-c-break'))
+
+        state.console_state.keyb = self.keyboard
+
         redirect.prepare_redirects()
         # inserted keystrokes
         keystring = config.get('keys').decode('string_escape').decode('utf-8')
-        state.console_state.keyb.buf.insert(
+        self.keyboard.buf.insert(
                 state.console_state.codepage.str_from_unicode(keystring),
                 check_full=False)
 
         # interpreter is executing a command
         self.set_parse_mode(False)
         # initialise the console
-        self.console = console.Console(self.screen, self.sound)
+        self.console = console.Console(self.screen, self.keyboard, self.sound)
         # direct line buffer
         self.direct_line = StringIO()
 
@@ -349,14 +352,14 @@ class Session(object):
             try:
                 while True:
                     self.loop()
-                    if quit and state.console_state.keyb.buf.is_empty():
+                    if quit and self.keyboard.buf.is_empty():
                         break
             except error.Exit:
                 # pause before exit if requested
                 if wait:
                     signals.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
                     signals.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
-                    state.console_state.keyb.pause = True
+                    self.keyboard.pause = True
                     # this performs a blocking keystroke read if in pause state
                     self.check_events()
             finally:
@@ -541,7 +544,7 @@ class Session(object):
         self._check_input()
         if self.parser.run_mode:
             self.parser.events.check()
-        state.console_state.keyb.drain_event_buffer()
+        self.keyboard.drain_event_buffer()
 
     def _check_input(self):
         """ Handle input events. """
@@ -549,7 +552,7 @@ class Session(object):
             try:
                 signal = signals.input_queue.get(False)
             except Queue.Empty:
-                if not state.console_state.keyb.pause:
+                if not self.keyboard.pause:
                     break
                 else:
                     time.sleep(tick_s)
@@ -559,15 +562,15 @@ class Session(object):
             if signal.event_type == signals.KEYB_QUIT:
                 raise error.Exit()
             if signal.event_type == signals.KEYB_CLOSED:
-                state.console_state.keyb.close_input()
+                self.keyboard.close_input()
             elif signal.event_type == signals.KEYB_CHAR:
                 # params is a unicode sequence
-                state.console_state.keyb.insert_chars(*signal.params)
+                self.keyboard.insert_chars(*signal.params)
             elif signal.event_type == signals.KEYB_DOWN:
                 # params is e-ASCII/unicode character sequence, scancode, modifier
-                state.console_state.keyb.key_down(*signal.params)
+                self.keyboard.key_down(*signal.params)
             elif signal.event_type == signals.KEYB_UP:
-                state.console_state.keyb.key_up(*signal.params)
+                self.keyboard.key_up(*signal.params)
             elif signal.event_type == signals.PEN_DOWN:
                 self.pen.down(*signal.params)
             elif signal.event_type == signals.PEN_UP:
@@ -581,7 +584,7 @@ class Session(object):
             elif signal.event_type == signals.STICK_MOVED:
                 self.stick.moved(*signal.params)
             elif signal.event_type == signals.CLIP_PASTE:
-                state.console_state.keyb.insert_chars(*signal.params, check_full=False)
+                self.keyboard.insert_chars(*signal.params, check_full=False)
             elif signal.event_type == signals.CLIP_COPY:
                 text = self.screen.get_text(*(signal.params[:4]))
                 signals.video_queue.put(signals.Event(
