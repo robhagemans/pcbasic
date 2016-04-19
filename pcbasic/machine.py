@@ -54,7 +54,7 @@ class MachinePorts(object):
         """ Get the value in an emulated machine port. """
         # keyboard
         if port == 0x60:
-            return state.console_state.keyb.last_scancode
+            return self.session.keyboard.last_scancode
         # game port (joystick)
         elif port == 0x201:
             value = (
@@ -216,7 +216,7 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, data_memory, devices, screen, peek_values, syntax):
+    def __init__(self, data_memory, devices, screen, keyboard, peek_values, syntax):
         """ Initialise memory. """
         # data segment initialised elsewhere
         self.data = data_memory
@@ -224,6 +224,8 @@ class Memory(object):
         self.devices = devices
         # screen access needed for video memory
         self.screen = screen
+        # keyboard buffer access
+        self.keyboard = keyboard
         # initial DEF SEG
         self.segment = self.data.data_segment
         # pre-defined PEEK outputs
@@ -440,7 +442,7 @@ class Memory(object):
         # &H02 - Left shift key depressed
         # &H01 - Right shift key depressed
         elif addr == 1047:
-            return state.console_state.keyb.mod
+            return self.keyboard.mod
         # &h40:&h18 keyboard flag
         # &H80 - Insert key is depressed
         # &H40 - CapsLock key is depressed
@@ -451,21 +453,21 @@ class Memory(object):
         elif addr == 1048:
             return 0
         elif addr == 1049:
-            return int(state.console_state.keyb.keypad_ascii or 0)%256
+            return int(self.keyboard.keypad_ascii or 0)%256
         elif addr == 1050:
             # keyboard ring buffer starts at n+1024; lowest 1054
-            return (state.console_state.keyb.buf.start*2 + self.key_buffer_offset) % 256
+            return (self.keyboard.buf.start*2 + self.key_buffer_offset) % 256
         elif addr == 1051:
-            return (state.console_state.keyb.buf.start*2 + self.key_buffer_offset) // 256
+            return (self.keyboard.buf.start*2 + self.key_buffer_offset) // 256
         elif addr == 1052:
             # ring buffer ends at n + 1023
-            return (state.console_state.keyb.buf.stop()*2 + self.key_buffer_offset) % 256
+            return (self.keyboard.buf.stop()*2 + self.key_buffer_offset) % 256
         elif addr == 1053:
-            return (state.console_state.keyb.buf.stop()*2 + self.key_buffer_offset) // 256
+            return (self.keyboard.buf.stop()*2 + self.key_buffer_offset) // 256
         elif addr in range(1024+self.key_buffer_offset, 1024+self.key_buffer_offset+32):
             index = (addr-1024-self.key_buffer_offset)//2
             odd = (addr-1024-self.key_buffer_offset)%2
-            c, scan = state.console_state.keyb.buf.ring_read(index)
+            c, scan = self.keyboard.buf.ring_read(index)
             if odd:
                 return scan
             elif c == '':
@@ -545,27 +547,27 @@ class Memory(object):
         """ Set data in low memory. """
         addr -= 0
         if addr == 1047:
-            state.console_state.keyb.mod = value
+            self.keyboard.mod = value
         # from basic_ref_3.pdf: the keyboard buffer may be cleared with
         # DEF SEG=0: POKE 1050, PEEK(1052)
         elif addr == 1050:
             # keyboard ring buffer starts at n+1024; lowest 1054
-            state.console_state.keyb.buf.ring_set_boundaries(
+            self.keyboard.buf.ring_set_boundaries(
                     (value - self.key_buffer_offset) // 2,
-                    state.console_state.keyb.buf.stop())
+                    self.keyboard.buf.stop())
         elif addr == 1052:
             # ring buffer ends at n + 1023
-            state.console_state.keyb.buf.ring_set_boundaries(
-                    state.console_state.keyb.buf.start,
+            self.keyboard.buf.ring_set_boundaries(
+                    self.keyboard.buf.start,
                     (value - self.key_buffer_offset) // 2)
         elif addr in range(1024+self.key_buffer_offset, 1024+self.key_buffer_offset+32):
             index = (addr-1024-self.key_buffer_offset)//2
             odd = (addr-1024-self.key_buffer_offset)%2
-            c, scan = state.console_state.keyb.buf.ring_read(index)
+            c, scan = self.keyboard.buf.ring_read(index)
             if odd:
                 scan = value
             elif value in (0, 0xe0):
                 c = ''
             else:
                 c = chr(value)
-            state.console_state.keyb.buf.ring_write(index, c, scan)
+            self.keyboard.buf.ring_write(index, c, scan)
