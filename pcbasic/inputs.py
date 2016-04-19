@@ -198,6 +198,7 @@ class Keyboard(object):
 
     def __init__(self, screen, sound, ignore_caps, ctrl_c_is_break):
         """ Initilise keyboard state. """
+
         # key queue (holds bytes)
         self.buf = KeyboardBuffer(sound, 15)
         # pre-buffer for keystrokes to enable event handling (holds unicode)

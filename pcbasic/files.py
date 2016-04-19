@@ -124,12 +124,12 @@ class Devices(object):
     # allowable drive letters in GW-BASIC are letters or @
     drive_letters = b'@' + string.ascii_uppercase
 
-    def __init__(self, session, fields, screen):
+    def __init__(self, session, fields, screen, keyboard):
         """ Initialise devices. """
         self.devices = {}
         # console
         self.devices['SCRN:'] = devices.SCRNDevice(screen)
-        self.devices['KYBD:'] = devices.KYBDDevice()
+        self.devices['KYBD:'] = devices.KYBDDevice(keyboard)
         self.scrn_file = self.devices['SCRN:'].device_file
         self.kybd_file = self.devices['KYBD:'].device_file
         # ports

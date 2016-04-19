@@ -219,7 +219,8 @@ class Session(object):
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
         # Session needed for wait()
-        self.devices = files.Devices(self, self.memory.fields, self.screen)
+        self.devices = files.Devices(self, self.memory.fields,
+                                    self.screen, self.keyboard)
         self.files = files.Files(self.devices, max_files)
 
         # set up rest of memory model

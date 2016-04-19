@@ -7,7 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
-import copy
 
 import error
 import console
@@ -63,7 +62,7 @@ class Device(object):
             raise error.RunError(error.DEVICE_UNAVAILABLE)
         if mode not in self.allowed_modes:
             raise error.RunError(error.BAD_FILE_MODE)
-        new_file = self.device_file.clone(filetype, mode, reclen)
+        new_file = self.device_file.open_clone(filetype, mode, reclen)
         return new_file
 
     def close(self):
@@ -104,11 +103,11 @@ class KYBDDevice(Device):
 
     allowed_modes = 'IR'
 
-    def __init__(self):
+    def __init__(self, keyboard):
         """ Initialise keyboard device. """
         # open a master file on the keyboard
         Device.__init__(self)
-        self.device_file = KYBDFile()
+        self.device_file = KYBDFile(keyboard)
 
 
 #################################################################################
@@ -132,15 +131,6 @@ class RawFile(object):
     def __exit__(self, exc_type, exc_value, traceback):
         """ Context guard. """
         self.close()
-
-    def clone(self, filetype, mode, reclen=128):
-        """ Clone device file. """
-        inst = copy.deepcopy(self)
-        inst.mode = mode
-        inst.reclen = reclen
-        inst.filetype = filetype
-        inst.is_master = False
-        return inst
 
     def close(self):
         """ Close the file. """
@@ -445,18 +435,28 @@ class KYBDFile(TextFileBase):
 
     col = 0
 
-    def __init__(self):
+    def __init__(self, keyboard):
         """ Initialise keyboard file. """
         # use mode = 'A' to avoid needing a first char from nullstream
         TextFileBase.__init__(self, nullstream(), filetype='D', mode='A')
         # buffer for the separator character that broke the last INPUT# field
         # to be attached to the next
         self.input_last = ''
+        self.keyboard = keyboard
+
+    def open_clone(self, filetype, mode, reclen=128):
+        """ Clone device file. """
+        inst = KYBDFile(self.keyboard)
+        inst.mode = mode
+        inst.reclen = reclen
+        inst.filetype = filetype
+        inst.is_master = False
+        return inst
 
     def read_raw(self, n=1):
         """ Read a list of chars from the keyboard - INPUT$ """
         word = ''
-        for char in state.console_state.keyb.read_chars(n):
+        for char in self.keyboard.read_chars(n):
             if len(char) > 1 and char[0] == '\0':
                 # replace some scancodes that console can return
                 if char[1] in ('\x4b', '\x4d', '\x48', '\x50',
@@ -470,7 +470,7 @@ class KYBDFile(TextFileBase):
     def read(self, n=1):
         """ Read a string from the keyboard - INPUT and LINE INPUT. """
         word = ''
-        for c in state.console_state.keyb.read_chars(n):
+        for c in self.keyboard.read_chars(n):
             if len(c) > 1 and c[0] == '\0':
                 try:
                     word += self.input_replace[c]
@@ -493,7 +493,7 @@ class KYBDFile(TextFileBase):
         if self.mode in ('A', 'O'):
             return False
         # blocking peek
-        return (state.console_state.keyb.wait_char() == '\x1a')
+        return (self.keyboard.wait_char() == '\x1a')
 
     def set_width(self, new_width=255):
         """ Setting width on KYBD device (not files) changes screen width. """
@@ -567,9 +567,13 @@ class SCRNFile(RawFile):
         self._width = self.screen.mode.width
         self._col = state.console_state.col
 
-    def clone(self, filetype, mode, reclen=128):
-        """ Close screen file. """
-        inst = RawFile.clone(self, filetype, mode, reclen)
+    def open_clone(self, filetype, mode, reclen=128):
+        """ Clone screen file. """
+        inst = SCRNFile(self.screen)
+        inst.mode = mode
+        inst.reclen = reclen
+        inst.filetype = filetype
+        inst.is_master = False
         inst._write_magic(filetype)
         return inst
 
