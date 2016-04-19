@@ -50,8 +50,10 @@ def get_env_entry(expr):
 class ShellBase(object):
     """ Launcher for command shell. """
 
-    def __init__(self, shell_command=None):
+    def __init__(self, keyboard, shell_command=None):
         """ Initialise the shell. """
+        self.keyboard = keyboard
+        self.command = shell_command
 
     def launch(self, command):
         """ Launch the shell. """
@@ -61,9 +63,9 @@ class ShellBase(object):
 class WindowsShell(ShellBase):
     """ Launcher for Windows CMD shell. """
 
-    def __init__(self, shell_command):
+    def __init__(self, keyboard, shell_command):
         """ Initialise the shell. """
-        self.command = shell_command
+        ShellBase.__init__(self, keyboard, shell_command)
         if shell_command is None:
             self.command = u'CMD.EXE'
 
@@ -108,7 +110,7 @@ class WindowsShell(ShellBase):
                 continue
             try:
                 # expand=False suppresses key macros
-                c = state.console_state.keyb.get_char(expand=False)
+                c = self.keyboard.get_char(expand=False)
             except error.Break:
                 pass
             if c in (b'\r', b'\n'):
@@ -135,11 +137,11 @@ class WindowsShell(ShellBase):
 class Shell(ShellBase):
     """ Launcher for Unix shell. """
 
-    def __init__(self, shell_command):
+    def __init__(self, keyboard, shell_command):
         """ Initialise the shell. """
         if not pexpect:
             raise InitFailed()
-        self.command = shell_command
+        ShellBase.__init__(self, keyboard, shell_command)
         if shell_command is None:
             self.command = u'/bin/sh'
 
@@ -152,7 +154,7 @@ class Shell(ShellBase):
         while True:
             try:
                 # expand=False suppresses key macros
-                c = state.console_state.keyb.get_char(expand=False)
+                c = self.keyboard.get_char(expand=False)
             except error.Break:
                 # ignore ctrl+break in SHELL
                 pass

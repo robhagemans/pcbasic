@@ -347,7 +347,7 @@ class Functions(object):
 
     def value_inkey(self, ins):
         """ INKEY$: get a character from the keyboard. """
-        return self.session.strings.store(state.console_state.keyb.get_char())
+        return self.session.strings.store(self.session.keyboard.get_char())
 
     def value_csrlin(self, ins):
         """ CSRLIN: get the current screen row. """
