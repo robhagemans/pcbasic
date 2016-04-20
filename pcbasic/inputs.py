@@ -196,7 +196,7 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """ Keyboard handling. """
 
-    def __init__(self, screen, sound, keystring, option_input, ignore_caps, ctrl_c_is_break):
+    def __init__(self, screen, codepage, sound, keystring, option_input, ignore_caps, ctrl_c_is_break):
         """ Initilise keyboard state. """
         # key queue (holds bytes)
         self.buf = KeyboardBuffer(sound, 15)
@@ -219,8 +219,9 @@ class Keyboard(object):
         # screen is needed only for print_screen()
         self.screen = screen
         # pre-inserted keystrings
+        self.codepage = codepage
         self.buf.insert(
-            state.console_state.codepage.str_from_unicode(keystring),
+            self.codepage.str_from_unicode(keystring),
             check_full=False)
         # input redirects
         self._input_closed = False
@@ -255,7 +256,7 @@ class Keyboard(object):
     def insert_chars(self, us, check_full=True):
         """ Insert eascii/unicode string into keyboard buffer. """
         self.pause = False
-        self.buf.insert(state.console_state.codepage.str_from_unicode(us),
+        self.buf.insert(self.codepage.str_from_unicode(us),
                         check_full)
 
     def key_down(self, c, scan, mods, check_full=True):
@@ -352,7 +353,7 @@ class Keyboard(object):
                     # ctrl + printscreen
                     state.session.output_redirection.toggle_echo(state.session.devices.lpt1_file)
             self.buf.insert_keypress(
-                    state.console_state.codepage.from_unicode(c),
+                    self.codepage.from_unicode(c),
                     scan, mod, check_full)
 
     def _set_input(self, f, encoding=None):
@@ -364,8 +365,8 @@ class Keyboard(object):
         else:
             # raw input means it's already in the BASIC codepage
             # but the keyboard functions use unicode
-            all_input = state.console_state.codepage.str_to_unicode(
-                                                all_input, preserve_control=True)
+            all_input = self.codepage.str_to_unicode(
+                            all_input, preserve_control=True)
         last = u''
         for c in all_input:
             # replace CRLF with CR

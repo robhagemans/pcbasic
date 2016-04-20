@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 import logging
-from functools import partial
 
 import state
 import unicodepage

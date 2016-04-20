@@ -373,7 +373,7 @@ class Memory(object):
         if char > 127 or char<0:
             return -1
         return ord(state.console_state.fonts[8].fontdict[
-                state.console_state.codepage.to_unicode(chr(char), u'\0')][addr%8])
+                self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
 
     def _get_font_memory(self, addr):
         """ Retrieve RAM font data. """
@@ -382,7 +382,7 @@ class Memory(object):
         if char < 128 or char > 254:
             return -1
         return ord(state.console_state.fonts[8].fontdict[
-                state.console_state.codepage.to_unicode(chr(char), u'\0')][addr%8])
+                self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
 
     def _set_font_memory(self, addr, value):
         """ Retrieve RAM font data. """
@@ -390,7 +390,7 @@ class Memory(object):
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return
-        uc = state.console_state.codepage.to_unicode(chr(char))
+        uc = self.screen.codepage.to_unicode(chr(char))
         if uc:
             old = state.console_state.fonts[8].fontdict[uc]
             state.console_state.fonts[8].fontdict[uc] = old[:addr%8]+chr(value)+old[addr%8+1:]
