@@ -124,7 +124,6 @@ class Session(object):
         # prepare codepage
         codepage = config.get('codepage') or '437'
         self.codepage = unicodepage.Codepage(codepage, not config.get('nobox'))
-        state.console_state.codepage = self.codepage
 
         # set initial video mode
         monitor = config.get('monitor')
@@ -174,8 +173,7 @@ class Session(object):
         # prepare output redirection
         if (config.get(b'interface') == u'none'):
             filter_stream = unicodepage.CodecStream(
-                        sys.stdout, state.console_state.codepage,
-                        sys.stdout.encoding or b'utf-8')
+                    sys.stdout, self.codepage, sys.stdout.encoding or b'utf-8')
         else:
             filter_stream = None
         self.output_redirection = redirect.OutputRedirection(

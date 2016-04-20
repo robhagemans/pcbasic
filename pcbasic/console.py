@@ -221,9 +221,8 @@ class Console(object):
                 # wait_char returns one e-ASCII code
                 d = self.keyboard.get_char_block()
                 # insert dbcs chars from keyboard buffer two bytes at a time
-                if (d in state.console_state.codepage.lead and
-                        self.keyboard.buf.peek() in
-                        state.console_state.codepage.trail):
+                if (d in self.keyboard.codepage.lead and
+                        self.keyboard.buf.peek() in self.keyboard.codepage.trail):
                     d += self.keyboard.buf.getc()
                 if not d:
                     # input stream closed

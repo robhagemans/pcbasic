@@ -27,10 +27,9 @@ import error
 import state
 # for check_events during FILES
 import events
-import console
 import vartypes
 import devices
-# to be abled to set current-device to CAS1
+# to be able to set current-device to CAS1
 import cassette
 
 # GW-BASIC FILE CONTROL BLOCK structure:
@@ -400,7 +399,7 @@ class DiskDevice(object):
 
     def _native_path_elements(self, path_without_drive, path_err, join_name=False):
         """ Return elements of the native path for a given BASIC path. """
-        path_without_drive = state.console_state.codepage.str_to_unicode(
+        path_without_drive = state.session.codepage.str_to_unicode(
                 bytes(path_without_drive), box_protect=False)
         if u'/' in path_without_drive:
             # bad file number - this is what GW produces here
@@ -830,14 +829,14 @@ class TextFile(devices.CRLFTextFileBase):
     def write_line(self, s=''):
         """ Write to file in normal or UTF-8 mode. """
         if self.utf8:
-            s = (state.console_state.codepage
+            s = (state.session.codepage
                 .str_to_unicode(s).encode(b'utf-8', b'replace'))
         devices.CRLFTextFileBase.write(self, s + '\r\n')
 
     def write(self, s):
         """ Write to file in normal or UTF-8 mode. """
         if self.utf8:
-            s = (state.console_state.codepage
+            s = (state.session.codepage
                 .str_to_unicode(s).encode(b'utf-8', b'replace'))
         devices.CRLFTextFileBase.write(self, s)
 
@@ -875,7 +874,7 @@ class TextFile(devices.CRLFTextFileBase):
         else:
             s = self._read_line_universal()
         if self.utf8 and s is not None:
-            s = state.console_state.codepage.str_from_unicode(s.decode(b'utf-8'))
+            s = state.session.codepage.str_from_unicode(s.decode(b'utf-8'))
         return s
 
     def lock(self, start, stop, lock_list):
