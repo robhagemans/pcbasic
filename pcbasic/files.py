@@ -135,9 +135,9 @@ class Devices(object):
         # ports
         # parallel devices - LPT1: must always be defined
         print_trigger = config.get('print-trigger')
-        self.devices['LPT1:'] = ports.LPTDevice(config.get('lpt1'), devices.nullstream(), print_trigger)
-        self.devices['LPT2:'] = ports.LPTDevice(config.get('lpt2'), None, print_trigger)
-        self.devices['LPT3:'] = ports.LPTDevice(config.get('lpt3'), None, print_trigger)
+        self.devices['LPT1:'] = ports.LPTDevice(config.get('lpt1'), devices.nullstream(), print_trigger, screen.codepage)
+        self.devices['LPT2:'] = ports.LPTDevice(config.get('lpt2'), None, print_trigger, screen.codepage)
+        self.devices['LPT3:'] = ports.LPTDevice(config.get('lpt3'), None, print_trigger, screen.codepage)
         self.lpt1_file = self.devices['LPT1:'].device_file
         # serial devices
         # buffer sizes (/c switch in GW-BASIC)

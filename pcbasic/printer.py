@@ -17,9 +17,10 @@ import plat
 class PrinterStreamBase(StringIO):
     """ Base stream for printing. """
 
-    def __init__(self, printer_name):
+    def __init__(self, printer_name, codepage):
         """ Initialise the printer stream. """
         self.printer_name = printer_name
+        self.codepage = codepage
         StringIO.__init__(self)
 
     def close(self):
@@ -34,7 +35,7 @@ class PrinterStreamBase(StringIO):
             return
         self.truncate(0)
         # any naked lead bytes in DBCS will remain just that - avoid in-line flushes.
-        utf8buf = state.console_state.codepage.str_to_unicode(
+        utf8buf = self.codepage.str_to_unicode(
                     printbuf, preserve_control=True).encode('utf-8', 'replace')
         self._line_print(utf8buf)
 
@@ -65,9 +66,9 @@ if plat.system == 'Windows':
     class PrinterStream(PrinterStreamBase):
         """ Stream that prints to Windows printer. """
 
-        def __init__(self, printer_name=''):
+        def __init__(self, printer_name, codepage):
             """ Initialise Windows printer stream. """
-            PrinterStreamBase.__init__(self, printer_name)
+            PrinterStreamBase.__init__(self, printer_name, codepage)
             # handle for last printing process
             self.handle = -1
 
