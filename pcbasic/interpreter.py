@@ -6,6 +6,7 @@ Main interpreter loop
 This file is released under the GNU GPL version 3 or later.
 """
 import os
+import sys
 import logging
 import time
 import threading
@@ -171,10 +172,15 @@ class Session(object):
         self.set_parse_mode(False)
 
         # prepare output redirection
+        if (config.get(b'interface') == u'none'):
+            filter_stream = unicodepage.CodecStream(
+                        sys.stdout, state.console_state.codepage,
+                        sys.stdout.encoding or b'utf-8')
+        else:
+            filter_stream = None
         self.output_redirection = redirect.OutputRedirection(
-                config.get(b'output'),
-                add_stdout=(config.get(b'interface') == u'none'),
-                append=config.get(b'append'))
+                config.get(b'output'), config.get(b'append'),
+                filter_stream)
         # initialise the console
         self.console = console.Console(
                 self.screen, self.keyboard, self.sound,

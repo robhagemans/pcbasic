@@ -6,26 +6,19 @@ Output redirection
 This file is released under the GNU GPL version 3 or later.
 """
 
-import sys
 import logging
-
-import state
-import unicodepage
 
 
 class OutputRedirection(object):
     """ Manage I/O redirection. """
 
-    def __init__(self, option_output, add_stdout, append):
+    def __init__(self, option_output, append, filter_stream):
         """ Initialise redirects. """
         # redirect output to file or printer
         self._output_echos = []
         # filter interface depends on redirection output
-        if add_stdout:
-            # filter redirection to stdout in preferred encoding
-            self._output_echos.append(unicodepage.CodecStream(
-                        sys.stdout, state.console_state.codepage,
-                        sys.stdout.encoding or b'utf-8'))
+        if filter_stream:
+            self._output_echos.append(filter_stream)
         if option_output:
             mode = b'ab' if append else b'wb'
             try:
