@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import datetime
+import logging
 
 import plat
 import config
@@ -15,7 +16,6 @@ import error
 import scancode
 from eascii import as_bytes as ea
 from eascii import as_unicode as uea
-import redirect
 import events
 
 
@@ -196,9 +196,8 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """ Keyboard handling. """
 
-    def __init__(self, screen, sound, ignore_caps, ctrl_c_is_break):
+    def __init__(self, screen, sound, keystring, option_input, ignore_caps, ctrl_c_is_break):
         """ Initilise keyboard state. """
-
         # key queue (holds bytes)
         self.buf = KeyboardBuffer(sound, 15)
         # pre-buffer for keystrokes to enable event handling (holds unicode)
@@ -217,10 +216,19 @@ class Keyboard(object):
         self.ignore_caps = ignore_caps
         # if true, treat Ctrl+C *exactly* like ctrl+break (unlike GW-BASIC)
         self.ctrl_c_is_break = ctrl_c_is_break
-        # input stream has closed
-        self.input_closed = False
         # screen is needed only for print_screen()
         self.screen = screen
+        # pre-inserted keystrings
+        self.buf.insert(
+            state.console_state.codepage.str_from_unicode(keystring),
+            check_full=False)
+        # input redirects
+        self._input_closed = False
+        if option_input:
+            try:
+                self._set_input(open(option_input, b'rb'))
+            except EnvironmentError as e:
+                logging.warning(u'Could not open input file %s: %s', option_input, e.strerror)
 
     def read_chars(self, num):
         """ Read num keystrokes, blocking. """
@@ -235,7 +243,7 @@ class Keyboard(object):
 
     def wait_char(self):
         """ Wait for character, then return it but don't drop from queue. """
-        while self.buf.is_empty() and not self.input_closed:
+        while self.buf.is_empty() and not self._input_closed:
             state.session.wait()
         return self.buf.peek()
 
@@ -316,7 +324,7 @@ class Keyboard(object):
 
     def close_input(self):
         """ Signal that input stream has closed. """
-        self.input_closed = True
+        self._input_closed = True
 
     def drain_event_buffer(self):
         """ Drain prebuffer into key buffer and handle trappable special keys. """
@@ -342,10 +350,29 @@ class Keyboard(object):
                     self.screen.print_screen()
                 elif mod & modifier[scancode.CTRL]:
                     # ctrl + printscreen
-                    redirect.toggle_echo(state.session.devices.lpt1_file)
+                    state.session.output_redirection.toggle_echo(state.session.devices.lpt1_file)
             self.buf.insert_keypress(
                     state.console_state.codepage.from_unicode(c),
                     scan, mod, check_full)
+
+    def _set_input(self, f, encoding=None):
+        """ BASIC-style redirected input. """
+        # read everything
+        all_input = f.read()
+        if encoding:
+            all_input = all_input.decode(encoding, b'replace')
+        else:
+            # raw input means it's already in the BASIC codepage
+            # but the keyboard functions use unicode
+            all_input = state.console_state.codepage.str_to_unicode(
+                                                all_input, preserve_control=True)
+        last = u''
+        for c in all_input:
+            # replace CRLF with CR
+            if not (c == u'\n' and last == u'\r'):
+                self.insert_chars(c, check_full=False)
+            last = c
+        self.close_input()
 
 
 ###############################################################################

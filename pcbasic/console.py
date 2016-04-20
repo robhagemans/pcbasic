@@ -10,7 +10,6 @@ import string
 
 import state
 import events
-import redirect
 import error
 # for num_fn_keys
 import events
@@ -70,7 +69,7 @@ state.console_state.overflow = False
 class Console(object):
     """ Interactive environment. """
 
-    def __init__(self, screen, keyboard, sound):
+    def __init__(self, screen, keyboard, sound, output_redirection):
         """ Initialise console. """
         # function key legend is visible
         self.keys_visible = False
@@ -80,6 +79,7 @@ class Console(object):
         self.sound = sound
         self.keyboard = keyboard
         self.init_mode()
+        self.redirect = output_redirection
 
     def init_mode(self):
         """ Initialisation when we switched to new screen mode. """
@@ -120,10 +120,8 @@ class Console(object):
             # give control to user for interactive mode
             prompt_row, left, right = self.wait_interactive(prompt_width)
         except error.Break:
-            for echo in redirect.output_echos:
-                # for some reason, 0E character is printed to redirects at break
-                echo ('\x0e')
-            self.write_line()
+            # for some reason, 0E character is printed to redirects at break
+            self.redirect.write('\x0e')
             raise
         # get contents and of the logical line
         if from_start:
@@ -133,14 +131,12 @@ class Console(object):
                                             prompt_row, left, right)
         # redirects output exactly the contents of the logical line
         # including any trailing whitespace and chars past 255
-        for echo in redirect.output_echos:
-            echo(outstr)
+        self.redirect.write(outstr)
         # go to last row of logical line
         state.console_state.row = self.find_end_of_line(state.console_state.row)
         # echo the CR, if requested
         if write_endl:
-            for echo in redirect.output_echos:
-                echo('\r\n')
+            self.redirect.write('\r\n')
             self.set_pos(state.console_state.row+1, 1)
         # to the parser/INPUT, only the first 255 chars are returned
         # with trailing whitespace removed
@@ -605,9 +601,8 @@ class Console(object):
     def write(self, s, scroll_ok=True, do_echo=True):
         """ Write a string to the screen at the current position. """
         if do_echo:
-            for echo in redirect.output_echos:
-                # CR -> CRLF, CRLF -> CRLF LF
-                echo(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
+            # CR -> CRLF, CRLF -> CRLF LF
+            self.redirect.write(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
         last = ''
         # if our line wrapped at the end before, it doesn't anymore
         self.screen.apage.row[state.console_state.row-1].wrap = False
@@ -659,8 +654,7 @@ class Console(object):
         """ Write a string to the screen and end with a newline. """
         self.write(s, scroll_ok, do_echo)
         if do_echo:
-            for echo in redirect.output_echos:
-                echo('\r\n')
+            self.redirect.write('\r\n')
         self.check_pos(scroll_ok=True)
         self.screen.apage.row[state.console_state.row-1].wrap = False
         self.set_pos(state.console_state.row + 1, 1)
@@ -841,8 +835,7 @@ class Console(object):
     def start_line(self):
         """ Move the cursor to the start of the next line, this line if empty. """
         if state.console_state.col != 1:
-            for echo in redirect.output_echos:
-                echo('\r\n')
+            self.redirect.write('\r\n')
             self.check_pos(scroll_ok=True)
             self.set_pos(state.console_state.row + 1, 1)
         # ensure line above doesn't wrap

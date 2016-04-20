@@ -1,6 +1,6 @@
 """
 PC-BASIC - redirect.py
-I/O redirection
+Output redirection
 
 (c) 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -10,73 +10,39 @@ import sys
 import logging
 from functools import partial
 
-import config
 import state
-
-# redirect i/o to file or printer
-output_echos = []
+import unicodepage
 
 
-def prepare_redirects():
-    """ Initialise i/o redirects. """
-    global uniconv
-    # converter with DBCS lead-byte buffer for utf8 output redirection
-    uniconv = state.console_state.codepage.get_converter(preserve_control=True)
-    # filter interface depends on redirection output
-    if config.get(b'interface') == u'none':
-        set_output(sys.stdout, sys.stdout.encoding or b'utf-8')
-    option_input = config.get(b'input')
-    option_output = config.get(b'output')
-    if option_output:
-        mode = b'ab' if config.get(b'append') else b'wb'
-        try:
-            set_output(open(option_output, mode))
-        except EnvironmentError as e:
-            logging.warning(u'Could not open output file %s: %s', option_output, e.strerror)
-    if option_input:
-        try:
-            set_input(open(option_input, b'rb'))
-        except EnvironmentError as e:
-            logging.warning(u'Could not open input file %s: %s', option_input, e.strerror)
+class OutputRedirection(object):
+    """ Manage I/O redirection. """
 
-def set_input(f, encoding=None):
-    """ BASIC-style redirected input. """
-    # read everything
-    all_input = f.read()
-    if encoding:
-        all_input = all_input.decode(encoding, b'replace')
-    else:
-        # raw input means it's already in the BASIC codepage
-        # but the keyboard functions use unicode
-        all_input = state.console_state.codepage.str_to_unicode(
-                                            all_input, preserve_control=True)
-    last = u''
-    for c in all_input:
-        # replace CRLF with CR
-        if not (c == u'\n' and last == u'\r'):
-            state.console_state.keyb.insert_chars(c, check_full=False)
-        last = c
-    state.console_state.keyb.close_input()
+    def __init__(self, option_output, add_stdout, append):
+        """ Initialise redirects. """
+        # redirect output to file or printer
+        self._output_echos = []
+        # filter interface depends on redirection output
+        if add_stdout:
+            # filter redirection to stdout in preferred encoding
+            self._output_echos.append(unicodepage.CodecStream(
+                        sys.stdout, state.console_state.codepage,
+                        sys.stdout.encoding or b'utf-8'))
+        if option_output:
+            mode = b'ab' if append else b'wb'
+            try:
+                # raw codepage output to file
+                self._output_echos.append(open(option_output, mode))
+            except EnvironmentError as e:
+                logging.warning(u'Could not open output file %s: %s', option_output, e.strerror)
 
-def set_output(f, encoding=None):
-    """ Redirected output as raw bytes or UTF-8 or other encoding """
-    if not encoding:
-        echo = partial(echo_raw, f=f)
-    else:
-        echo = partial(echo_encoded, f=f, encoding=encoding)
-    output_echos.append(echo)
+    def write(self, s):
+        """ Write a string/bytearray to all redirected outputs. """
+        for f in self._output_echos:
+            f.write(s)
 
-def echo_raw(s, f):
-    """ Output redirection echo as raw bytes. """
-    f.write(bytes(s))
-
-def echo_encoded(s, f, encoding=b'utf-8'):
-    """ Output redirection echo as UTF-8 or other encoding. """
-    f.write(uniconv.to_unicode(bytes(s)).encode(encoding, b'replace'))
-
-def toggle_echo(device):
-    """ Toggle copying of all screen I/O to LPT1. """
-    if device.write in output_echos:
-        output_echos.remove(device.write)
-    else:
-        output_echos.append(device.write)
+    def toggle_echo(self, stream):
+        """ Toggle copying of all screen I/O to stream. """
+        if stream in self._output_echos:
+            self._output_echos.remove(stream)
+        else:
+            self._output_echos.append(stream)

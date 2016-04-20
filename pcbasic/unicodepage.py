@@ -140,6 +140,22 @@ class Codepage(object):
         return Converter(self, preserve_control, box_protect)
 
 
+class CodecStream(object):
+    """ Converter stream wrapper. """
+
+    def __init__(self, stream, codepage, encoding):
+        """ Set up codec. """
+        self._encoding = encoding
+        # converter with DBCS lead-byte buffer for utf8 output redirection
+        self._uniconv = codepage.get_converter(preserve_control=True)
+        self._stream = stream
+
+    def write(self, s):
+        """ Write to codec stream. """
+        self._stream.write(self._uniconv.to_unicode(bytes(s)).encode(
+                    self._encoding, b'replace'))
+
+
 ########################################
 # box drawing protection
 
@@ -367,6 +383,8 @@ class Converter(object):
             self.bset = -1
             # goes to case 1
         return out
+
+
 
 
 ##################################################

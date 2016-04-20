@@ -157,25 +157,29 @@ class Session(object):
         # prepare input methods
         self.pen = inputs.Pen(self.screen)
         self.stick = inputs.Stick()
+
+        # inserted keystrokes
+        keystring = config.get('keys').decode('string_escape').decode('utf-8')
         # Screen needed in Keyboard for print_screen()
         # Sound is needed for the beeps when the buffer fills up
         self.keyboard = inputs.Keyboard(self.screen, self.sound,
+                keystring, config.get(b'input'),
                 ignore_caps=not config.get('capture-caps'),
                 ctrl_c_is_break=config.get('ctrl-c-break'))
 
-        state.console_state.keyb = self.keyboard
-
-        redirect.prepare_redirects()
-        # inserted keystrokes
-        keystring = config.get('keys').decode('string_escape').decode('utf-8')
-        self.keyboard.buf.insert(
-                state.console_state.codepage.str_from_unicode(keystring),
-                check_full=False)
-
         # interpreter is executing a command
         self.set_parse_mode(False)
+
+        # prepare output redirection
+        self.output_redirection = redirect.OutputRedirection(
+                config.get(b'output'),
+                add_stdout=(config.get(b'interface') == u'none'),
+                append=config.get(b'append'))
         # initialise the console
-        self.console = console.Console(self.screen, self.keyboard, self.sound)
+        self.console = console.Console(
+                self.screen, self.keyboard, self.sound,
+                self.output_redirection)
+
         # direct line buffer
         self.direct_line = StringIO()
 
