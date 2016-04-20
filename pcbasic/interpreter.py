@@ -122,9 +122,8 @@ class Session(object):
 
         # prepare codepage
         codepage = config.get('codepage') or '437'
-        state.console_state.codepage = unicodepage.Codepage(
-                                codepage, box_protect=not config.get('nobox'))
-
+        self.codepage = unicodepage.Codepage(codepage, not config.get('nobox'))
+        state.console_state.codepage = self.codepage
 
         # set initial video mode
         monitor = config.get('monitor')
@@ -135,7 +134,8 @@ class Session(object):
             screen_aspect = (4, 3)
         self.screen = display.Screen(config.get('text-width'),
                 config.get('video-memory'), video_capabilities, monitor,
-                config.get('cga-low'), config.get('mono-tint'), screen_aspect)
+                config.get('cga-low'), config.get('mono-tint'), screen_aspect,
+                self.codepage)
         heights_needed = set([8])
         for mode in self.screen.text_data.values():
             heights_needed.add(mode.font_height)
@@ -143,11 +143,11 @@ class Session(object):
             heights_needed.add(mode.font_height)
         # load the graphics fonts, including the 8-pixel RAM font
         # use set() for speed - lookup is O(1) rather than O(n) for list
-        chars_needed = set(state.console_state.codepage.cp_to_unicode.values())
+        chars_needed = set(self.codepage.cp_to_unicode.values())
         # break up any grapheme clusters and add components to set of needed glyphs
         chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
         state.console_state.fonts = typeface.load_fonts(config.get('font'), heights_needed,
-                    chars_needed, state.console_state.codepage.substitutes, warn=config.get('debug'))
+                    chars_needed, self.codepage.substitutes, warn=config.get('debug'))
         # initialise a fresh textmode screen
         self.screen.set_mode(self.screen.mode, 0, 1, 0, 0)
 

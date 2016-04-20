@@ -59,13 +59,14 @@ class TextRow(object):
 class TextPage(object):
     """ Buffer for a screen page. """
 
-    def __init__(self, battr, bwidth, bheight, pagenum, do_dbcs):
+    def __init__(self, battr, bwidth, bheight, pagenum, do_dbcs, codepage):
         """ Initialise the screen buffer to given dimensions. """
         self.row = [TextRow(battr, bwidth) for _ in xrange(bheight)]
         self.width = bwidth
         self.height = bheight
         self.pagenum = pagenum
         self.do_dbcs = do_dbcs
+        self.codepage = codepage
 
     def get_char_attr(self, crow, ccol, want_attr):
         """ Retrieve a byte from the screen (SBCS or DBCS half-char). """
@@ -80,23 +81,23 @@ class TextPage(object):
         start, stop = ccol, ccol+1
         self.row[crow-1].double[ccol-1] = 0
         # mark out sbcs and dbcs characters
-        if state.console_state.codepage.dbcs and self.do_dbcs:
+        if self.codepage.dbcs and self.do_dbcs:
             orig_col = ccol
             # replace chars from here until necessary to update double-width chars
             therow = self.row[crow-1]
             # replacing a trail byte? take one step back
             # previous char could be a lead byte? take a step back
             if (ccol > 1 and therow.double[ccol-2] != 2 and
-                    (therow.buf[ccol-1][0] in state.console_state.codepage.trail or
-                     therow.buf[ccol-2][0] in state.console_state.codepage.lead)):
+                    (therow.buf[ccol-1][0] in self.codepage.trail or
+                     therow.buf[ccol-2][0] in self.codepage.lead)):
                 ccol -= 1
                 start -= 1
             # check all dbcs characters between here until it doesn't matter anymore
             while ccol < self.width:
                 c = therow.buf[ccol-1][0]
                 d = therow.buf[ccol][0]
-                if (c in state.console_state.codepage.lead and
-                        d in state.console_state.codepage.trail):
+                if (c in self.codepage.lead and
+                        d in self.codepage.trail):
                     if (therow.double[ccol-1] == 1 and
                             therow.double[ccol] == 2 and ccol > orig_col):
                         break
@@ -114,21 +115,21 @@ class TextPage(object):
                         (one_only and ccol > orig_col)):
                     break
             # check for box drawing
-            if state.console_state.codepage.box_protect:
+            if self.codepage.box_protect:
                 ccol = start-2
                 connecting = 0
                 bset = -1
                 while ccol < stop+2 and ccol < self.width:
                     c = therow.buf[ccol-1][0]
                     d = therow.buf[ccol][0]
-                    if bset > -1 and state.console_state.codepage.connects(c, d, bset):
+                    if bset > -1 and self.codepage.connects(c, d, bset):
                         connecting += 1
                     else:
                         connecting = 0
                         bset = -1
                     if bset == -1:
                         for b in (0, 1):
-                            if state.console_state.codepage.connects(c, d, b):
+                            if self.codepage.connects(c, d, b):
                                 bset = b
                                 connecting = 1
                     if connecting >= 2:
@@ -149,9 +150,9 @@ class TextPage(object):
 class TextBuffer(object):
     """ Buffer for text on all screen pages. """
 
-    def __init__(self, battr, bwidth, bheight, bpages, do_dbcs):
+    def __init__(self, battr, bwidth, bheight, bpages, do_dbcs, codepage):
         """ Initialise the screen buffer to given pages and dimensions. """
-        self.pages = [TextPage(battr, bwidth, bheight, num, do_dbcs)
+        self.pages = [TextPage(battr, bwidth, bheight, num, do_dbcs, codepage)
                       for num in range(bpages)]
         self.width = bwidth
         self.height = bheight
@@ -397,7 +398,7 @@ class Screen(object):
     """ Screen manipulation operations. """
 
     def __init__(self, initial_width, video_mem_size, capabilities, monitor,
-                cga_low, mono_tint, screen_aspect):
+                cga_low, mono_tint, screen_aspect, codepage):
         """ Minimal initialisiation of the screen. """
         # emulated video card - cga, ega, etc
         if capabilities == 'ega' and monitor == 'mono':
@@ -437,8 +438,9 @@ class Screen(object):
         # cursor
         self.cursor = Cursor(self)
         # set codepage for video plugin
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_CODEPAGE,
-            state.console_state.codepage))
+        self.codepage = codepage
+        signals.video_queue.put(signals.Event(
+                signals.VIDEO_SET_CODEPAGE, self.codepage))
 
     def prepare_modes(self):
         """ Build lists of allowed graphics modes. """
@@ -605,7 +607,7 @@ class Screen(object):
         # preload SBCS glyphs
         try:
             self.glyphs = {
-                chr(c): state.console_state.fonts[mode_info.font_height].build_glyph(state.console_state.codepage.to_unicode(chr(c), u'\0'),
+                chr(c): state.console_state.fonts[mode_info.font_height].build_glyph(self.codepage.to_unicode(chr(c), u'\0'),
                                 mode_info.font_width, mode_info.font_height,
                                 chr(c) in carry_col_9_chars, chr(c) in carry_row_9_chars)
                 for c in range(256) }
@@ -637,7 +639,8 @@ class Screen(object):
         # build the screen buffer
         self.text = TextBuffer(self.attr, self.mode.width,
                                self.mode.height, self.mode.num_pages,
-                               do_dbcs=(self.mode.font_height >= 14))
+                               (self.mode.font_height >= 14),
+                               self.codepage)
         if not self.mode.is_text_mode:
             self.pixels = PixelBuffer(self.mode.pixel_width, self.mode.pixel_height,
                                     self.mode.num_pages, self.mode.bitsperpixel)
@@ -1003,12 +1006,12 @@ class Screen(object):
             c += 1
             if c > self.vpage.row[r-1].end:
                 if not self.vpage.row[r-1].wrap:
-                    full.append(state.console_state.codepage.str_to_unicode(b''.join(clip)))
+                    full.append(self.codepage.str_to_unicode(b''.join(clip)))
                     full.append('\r\n')
                     clip = []
                 r += 1
                 c = 1
-        full.append(state.console_state.codepage.str_to_unicode(clip))
+        full.append(self.codepage.str_to_unicode(clip))
         return u''.join(full).replace(u'\0', u' ')
 
 
@@ -1080,7 +1083,7 @@ class Screen(object):
         try:
             mask = self.glyphs[c]
         except KeyError:
-            uc = state.console_state.codepage.to_unicode(c, u'\0')
+            uc = self.codepage.to_unicode(c, u'\0')
             carry_col_9 = c in carry_col_9_chars
             carry_row_9 = c in carry_row_9_chars
             mask = state.console_state.fonts[self.mode.font_height].build_glyph(uc,
