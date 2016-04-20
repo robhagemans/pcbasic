@@ -50,10 +50,11 @@ def get_env_entry(expr):
 class ShellBase(object):
     """ Launcher for command shell. """
 
-    def __init__(self, keyboard, shell_command=None):
+    def __init__(self, keyboard, codepage=None, shell_command=None):
         """ Initialise the shell. """
         self.keyboard = keyboard
         self.command = shell_command
+        self.codepage = codepage
 
     def launch(self, command):
         """ Launch the shell. """
@@ -63,9 +64,9 @@ class ShellBase(object):
 class WindowsShell(ShellBase):
     """ Launcher for Windows CMD shell. """
 
-    def __init__(self, keyboard, shell_command):
+    def __init__(self, keyboard, codepage, shell_command):
         """ Initialise the shell. """
-        ShellBase.__init__(self, keyboard, shell_command)
+        ShellBase.__init__(self, keyboard, codepage, shell_command)
         if shell_command is None:
             self.command = u'CMD.EXE'
 
@@ -88,7 +89,7 @@ class WindowsShell(ShellBase):
         shell_output = []
         cmd = self.command
         if command:
-            cmd += u' /C ' + state.console_state.codepage.str_to_unicode(command)
+            cmd += u' /C ' + self.codepage.str_to_unicode(command)
         p = subprocess.Popen(cmd.encode(plat.preferred_encoding).split(), stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         outp = threading.Thread(target=self._process_stdout, args=(p, p.stdout, shell_output))
@@ -103,8 +104,8 @@ class WindowsShell(ShellBase):
                 lines, shell_output[:] = b''.join(shell_output).split('\r\n'), []
                 last = lines.pop()
                 for line in lines:
-                    state.session.console.write_line(state.console_state.codepage.str_from_unicode(line.decode(plat.preferred_encoding)))
-                state.session.console.write(state.console_state.codepage.str_from_unicode(last.decode(plat.preferred_encoding)))
+                    state.session.console.write_line(self.codepage.str_from_unicode(line.decode(plat.preferred_encoding)))
+                state.session.console.write(self.codepage.str_from_unicode(last.decode(plat.preferred_encoding)))
             if p.poll() is not None:
                 # drain output then break
                 continue
@@ -118,7 +119,7 @@ class WindowsShell(ShellBase):
                 # the command that's already there. Note that Wine's CMD.EXE
                 # doesn't echo the command, so it's overwritten by the output...
                 state.session.console.write(b'\x1D' * len(word))
-                p.stdin.write(state.console_state.codepage.str_to_unicode(word + b'\r\n', preserve_control=True).encode(plat.preferred_encoding))
+                p.stdin.write(self.codepage.str_to_unicode(word + b'\r\n', preserve_control=True).encode(plat.preferred_encoding))
                 word = b''
             elif c == b'\b':
                 # handle backspace
@@ -137,11 +138,11 @@ class WindowsShell(ShellBase):
 class Shell(ShellBase):
     """ Launcher for Unix shell. """
 
-    def __init__(self, keyboard, shell_command):
+    def __init__(self, keyboard, codepage, shell_command):
         """ Initialise the shell. """
         if not pexpect:
             raise InitFailed()
-        ShellBase.__init__(self, keyboard, shell_command)
+        ShellBase.__init__(self, keyboard, codepage, shell_command)
         if shell_command is None:
             self.command = u'/bin/sh'
 
@@ -149,7 +150,7 @@ class Shell(ShellBase):
         """ Run a SHELL subprocess. """
         cmd = self.command
         if command:
-            cmd += u' -c "' + state.console_state.codepage.str_to_unicode(command) + u'"'
+            cmd += u' -c "' + self.codepage.str_to_unicode(command) + u'"'
         p = pexpect.spawn(cmd.encode(plat.preferred_encoding))
         while True:
             try:
@@ -163,7 +164,7 @@ class Shell(ShellBase):
             elif c < b' ':
                 p.send(c.encode(plat.preferred_encoding))
             elif c != b'':
-                c = state.console_state.codepage.to_unicode(c).encode(plat.preferred_encoding)
+                c = self.codepage.to_unicode(c).encode(plat.preferred_encoding)
                 p.send(c)
             while True:
                 try:
@@ -179,6 +180,6 @@ class Shell(ShellBase):
                         state.session.console.set_pos(state.console_state.row,
                                         state.console_state.col-1)
                 else:
-                    state.session.console.write(state.console_state.codepage.from_unicode(c))
+                    state.session.console.write(self.codepage.from_unicode(c))
             if c == u'' and not p.isalive():
                 return

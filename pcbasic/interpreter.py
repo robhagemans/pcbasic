@@ -272,10 +272,10 @@ class Session(object):
             else:
                 shell_command = option_shell
             if plat.system == 'Windows':
-                self.shell = shell.WindowsShell(self.keyboard, shell_command)
+                self.shell = shell.WindowsShell(self.keyboard, self.codepage, shell_command)
             else:
                 try:
-                    self.shell = shell.Shell(self.keyboard, shell_command)
+                    self.shell = shell.Shell(self.keyboard, self.codepage, shell_command)
                 except shell.InitFailed:
                     logging.warning('Pexpect module not found. SHELL statement disabled.')
 
