@@ -459,6 +459,8 @@ class Screen(object):
         self.fonts = typeface.load_fonts(font_family, heights_needed,
                     chars_needed, self.codepage.substitutes, warn_fonts)
         self.scroll_height = 24
+        # true if we're on 80 but should be on 81
+        self.overflow = False
         # initialise a fresh textmode screen
         self.set_mode(self.mode, 0, 1, 0, 0)
 
@@ -942,7 +944,7 @@ class Screen(object):
         state.console_state.view_start = start
         self.scroll_height = stop
         #set_pos(start, 1)
-        state.console_state.overflow = False
+        self.overflow = False
         self.move_cursor(start, 1)
 
     def unset_view(self):

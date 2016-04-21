@@ -591,7 +591,7 @@ class SCRNFile(RawFile):
         do_echo = self.is_master
         self._col = self.screen.current_col
         # take column 80+overflow into account
-        if state.console_state.overflow:
+        if self.screen.overflow:
             self._col += 1
         # only break lines at the start of a new string. width 255 means unlimited width
         s_width = 0

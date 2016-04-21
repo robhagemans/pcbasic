@@ -2433,7 +2433,7 @@ class Statements(object):
         if util.skip_white_read_if(ins, (tk.USING,)):
             return self.exec_print_using(ins, output)
         if newline:
-            if output == self.session.devices.scrn_file and state.console_state.overflow:
+            if output == self.session.devices.scrn_file and self.session.screen.overflow:
                 output.write_line()
             output.write_line()
         util.require(ins, tk.end_statement)

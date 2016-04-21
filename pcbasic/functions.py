@@ -353,7 +353,7 @@ class Functions(object):
         """ CSRLIN: get the current screen row. """
         row, col = self.session.screen.current_row, self.session.screen.current_col
         if (col == self.session.screen.mode.width and
-                state.console_state.overflow and
+                self.session.screen.overflow and
                 row < self.session.screen.scroll_height):
             # in overflow position, return row+1 except on the last row
             row += 1
@@ -364,7 +364,7 @@ class Functions(object):
         # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
         self.parser.parse_bracket(ins, self.session)
         col = self.session.screen.current_col
-        if col == self.session.screen.mode.width and state.console_state.overflow:
+        if col == self.session.screen.mode.width and self.session.screen.overflow:
             # in overflow position, return column 1.
             col = 1
         return vartypes.int_to_integer_signed(col)

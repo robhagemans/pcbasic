@@ -15,8 +15,6 @@ import var
 import error
 import memory
 import program
-# for state.console_state globals
-import console
 
 
 ###############################################################################

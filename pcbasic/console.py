@@ -58,8 +58,6 @@ state.console_state.view_set = False
 # writing on bottom row is allowed
 state.console_state.bottom_row_allowed = False
 
-# true if we're on 80 but should be on 81
-state.console_state.overflow = False
 
 
 
@@ -213,7 +211,7 @@ class Console(object):
                 if row == start_row:
                     furthest_left = min(col, furthest_left)
                     furthest_right = max(col, furthest_right)
-                    if col == self.screen.mode.width and state.console_state.overflow:
+                    if col == self.screen.mode.width and self.screen.overflow:
                         furthest_right += 1
                 # wait_char returns one e-ASCII code
                 d = self.keyboard.get_char_block()
@@ -495,7 +493,7 @@ class Console(object):
             crow += 1
         if self.screen.apage.row[crow-1].end == self.screen.mode.width:
             self.set_pos(crow, self.screen.apage.row[crow-1].end)
-            state.console_state.overflow = True
+            self.screen.overflow = True
         else:
             self.set_pos(crow, self.screen.apage.row[crow-1].end+1)
 
@@ -737,9 +735,9 @@ class Console(object):
     def put_char(self, c, do_scroll_down=False):
         """ Put one byte at the current position. """
         # check if scroll& repositioning needed
-        if state.console_state.overflow:
+        if self.screen.overflow:
             self.screen.current_col += 1
-            state.console_state.overflow = False
+            self.screen.overflow = False
         # see if we need to wrap and scroll down
         self.check_wrap(do_scroll_down)
         # move cursor and see if we need to scroll up
@@ -757,7 +755,7 @@ class Console(object):
         if self.screen.current_col < self.screen.mode.width:
             self.screen.current_col += 1
         else:
-            state.console_state.overflow = True
+            self.screen.overflow = True
         # move cursor and see if we need to scroll up
         self.check_pos(scroll_ok=True)
 
@@ -778,7 +776,7 @@ class Console(object):
 
     def set_pos(self, to_row, to_col, scroll_ok=True):
         """ Set the current position. """
-        state.console_state.overflow = False
+        self.screen.overflow = False
         self.screen.current_row, self.screen.current_col = to_row, to_col
         # this may alter self.screen.current_row, self.screen.current_col
         self.check_pos(scroll_ok)
