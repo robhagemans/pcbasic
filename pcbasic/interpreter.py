@@ -322,7 +322,7 @@ class Session(object):
         if not self.screen.resume():
             raise ResumeFailed()
         # rebuild the audio queue
-        for q, store in zip(signals.tone_queue, state.console_state.tone_queue_store):
+        for q, store in zip(signals.tone_queue, self.tone_queue_store):
             signals.load_queue(q, store)
         # override selected settings from command line
         self.devices.resume()
@@ -362,7 +362,7 @@ class Session(object):
                 signals.video_queue.put(signals.Event(signals.VIDEO_QUIT))
                 signals.message_queue.put(signals.Event(signals.AUDIO_QUIT))
                 # persist unplayed tones in sound queue
-                state.console_state.tone_queue_store = [
+                self.tone_queue_store = [
                         signals.save_queue(q) for q in signals.tone_queue]
                 state.save()
                 # close files if we opened any
