@@ -2339,8 +2339,8 @@ class Statements(object):
                         if util.skip_white_read_if(ins, (',',)):
                             # can end on a 5th comma but no stuff allowed after it
                             pass
-        row = state.console_state.row if row is None else row
-        col = state.console_state.col if col is None else col
+        row = self.session.screen.current_row if row is None else row
+        col = self.session.screen.current_col if col is None else col
         if row == cmode.height and self.session.console.keys_visible:
             raise error.RunError(error.IFC)
         elif state.console_state.view_set:

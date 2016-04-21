@@ -565,7 +565,7 @@ class SCRNFile(RawFile):
         RawFile.__init__(self, nullstream(), filetype='D', mode='O')
         self.screen = screen
         self._width = self.screen.mode.width
-        self._col = state.console_state.col
+        self._col = self.screen.current_col
 
     def open_clone(self, filetype, mode, reclen=128):
         """ Clone screen file. """
@@ -589,7 +589,7 @@ class SCRNFile(RawFile):
         """ Write string s to SCRN: """
         # writes to SCRN files should *not* be echoed
         do_echo = self.is_master
-        self._col = state.console_state.col
+        self._col = self.screen.current_col
         # take column 80+overflow into account
         if state.console_state.overflow:
             self._col += 1
@@ -607,7 +607,7 @@ class SCRNFile(RawFile):
             elif ord(c) >= 32:
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
-        if (self.width != 255 and state.console_state.row != self.screen.mode.height
+        if (self.width != 255 and self.screen.current_row != self.screen.mode.height
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
             state.session.console.write_line(do_echo=do_echo)
             self._col = 1
@@ -632,7 +632,7 @@ class SCRNFile(RawFile):
     def col(self):
         """ Return current (virtual) column position. """
         if self.is_master:
-            return state.console_state.col
+            return self.screen.current_col
         else:
             return self._col
 

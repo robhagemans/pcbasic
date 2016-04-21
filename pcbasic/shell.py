@@ -176,9 +176,10 @@ class Shell(ShellBase):
                 elif c == u'\r':
                     state.session.console.write_line()
                 elif c == u'\b':
-                    if state.console_state.col != 1:
-                        state.session.console.set_pos(state.console_state.row,
-                                        state.console_state.col-1)
+                    if state.session.screen.current_col != 1:
+                        state.session.console.set_pos(
+                                state.session.screen.current_row,
+                                state.session.screen.current_col-1)
                 else:
                     state.session.console.write(self.codepage.from_unicode(c))
             if c == u'' and not p.isalive():

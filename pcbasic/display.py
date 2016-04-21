@@ -438,6 +438,9 @@ class Screen(object):
         self.mode = self.text_data[initial_width]
         # cursor
         self.cursor = Cursor(self)
+        # current row and column
+        self.current_row = 1
+        self.current_col = 1
         # set codepage for video plugin
         self.codepage = codepage
         signals.video_queue.put(signals.Event(
@@ -504,10 +507,10 @@ class Screen(object):
                 (self.cursor.width, mode_info.font_height,
                  self.cursor.from_line, self.cursor.to_line)))
         signals.video_queue.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
-                (state.console_state.row, state.console_state.col)))
+                (self.current_row, self.current_col)))
         if self.mode.is_text_mode:
             fore, _, _, _ = self.split_attr(
-                self.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+                self.apage.row[self.current_row-1].buf[self.current_col-1][1] & 0xf)
         else:
             fore, _, _, _ = self.split_attr(self.mode.cursor_index or self.attr)
         signals.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
@@ -661,7 +664,7 @@ class Screen(object):
             self.pixels = PixelBuffer(self.mode.pixel_width, self.mode.pixel_height,
                                     self.mode.num_pages, self.mode.bitsperpixel)
         # ensure current position is not outside new boundaries
-        state.console_state.row, state.console_state.col = 1, 1
+        self.current_row, self.current_col = 1, 1
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics characteristics
@@ -919,7 +922,7 @@ class Screen(object):
     #MOVE to Cursor.move ?
     def move_cursor(self, row, col):
         """ Move the cursor to a new position. """
-        state.console_state.row, state.console_state.col = row, col
+        self.current_row, self.current_col = row, col
         signals.video_queue.put(signals.Event(signals.VIDEO_MOVE_CURSOR, (row, col)))
         self.cursor.reset_attr()
 
@@ -952,8 +955,8 @@ class Screen(object):
             # keep background, set foreground to 7
             attr_save = self.attr
             self.set_attr(attr_save & 0x70 | 0x7)
-        state.console_state.row = state.console_state.view_start
-        state.console_state.col = 1
+        self.current_row = state.console_state.view_start
+        self.current_col = 1
         if state.console_state.bottom_row_allowed:
             last_row = self.mode.height
         else:
@@ -964,7 +967,7 @@ class Screen(object):
             r.wrap = False
         self.clear_rows(state.console_state.view_start, last_row)
         # ensure the cursor is show in the right position
-        self.move_cursor(state.console_state.row, state.console_state.col)
+        self.move_cursor(self.current_row, self.current_col)
         if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
             # restore attr
             self.set_attr(attr_save)
@@ -977,8 +980,8 @@ class Screen(object):
         signals.video_queue.put(signals.Event(signals.VIDEO_SCROLL_UP,
                     (from_line, state.console_state.scroll_height, back)))
         # sync buffers with the new screen reality:
-        if state.console_state.row > from_line:
-            state.console_state.row -= 1
+        if self.current_row > from_line:
+            self.current_row -= 1
         self.apage.row.insert(state.console_state.scroll_height,
                               TextRow(self.attr, self.mode.width))
         if not self.mode.is_text_mode:
@@ -994,8 +997,8 @@ class Screen(object):
         _, back, _, _ = self.split_attr(self.attr)
         signals.video_queue.put(signals.Event(signals.VIDEO_SCROLL_DOWN,
                     (from_line, state.console_state.scroll_height, back)))
-        if state.console_state.row >= from_line:
-            state.console_state.row += 1
+        if self.current_row >= from_line:
+            self.current_row += 1
         # sync buffers with the new screen reality:
         self.apage.row.insert(from_line - 1, TextRow(self.attr, self.mode.width))
         if not self.mode.is_text_mode:
@@ -1242,8 +1245,8 @@ class Cursor(object):
         """ Set the text cursor attribute to that of the current location. """
         if self.screen.mode.is_text_mode:
             fore, _, _, _ = self.screen.split_attr(self.screen.apage.row[
-                    state.console_state.row-1].buf[
-                    state.console_state.col-1][1] & 0xf)
+                    self.screen.current_row-1].buf[
+                    self.screen.current_col-1][1] & 0xf)
             signals.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
 
     def show(self, do_show):

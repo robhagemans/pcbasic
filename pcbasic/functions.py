@@ -351,7 +351,7 @@ class Functions(object):
 
     def value_csrlin(self, ins):
         """ CSRLIN: get the current screen row. """
-        row, col = state.console_state.row, state.console_state.col
+        row, col = self.session.screen.current_row, self.session.screen.current_col
         if (col == self.session.screen.mode.width and
                 state.console_state.overflow and
                 row < state.console_state.scroll_height):
@@ -363,7 +363,7 @@ class Functions(object):
         """ POS: get the current screen column. """
         # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
         self.parser.parse_bracket(ins, self.session)
-        col = state.console_state.col
+        col = self.session.screen.current_col
         if col == self.session.screen.mode.width and state.console_state.overflow:
             # in overflow position, return column 1.
             col = 1

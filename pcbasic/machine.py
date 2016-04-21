@@ -513,9 +513,9 @@ class Memory(object):
         # 1105 + 2*n (cursor row of page n) - 1
         # we only keep track of one row,col position
         elif addr in range(1104, 1120, 2):
-            return state.console_state.col - 1
+            return self.screen.current_col - 1
         elif addr in range(1105, 1120, 2):
-            return state.console_state.row - 1
+            return self.screen.current_row - 1
         # 1120, 1121 cursor shape
         elif addr == 1120:
             return self.screen.cursor.to_line
