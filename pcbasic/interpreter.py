@@ -254,17 +254,17 @@ class Session(object):
 
         # set up the SHELL command
         option_shell = config.get('shell')
-        self.shell = shell.ShellBase(self.keyboard)
+        self.shell = shell.ShellBase(self.keyboard, self.console)
         if option_shell != 'none':
             if option_shell == 'native':
                 shell_command = None
             else:
                 shell_command = option_shell
             if plat.system == 'Windows':
-                self.shell = shell.WindowsShell(self.keyboard, self.codepage, shell_command)
+                self.shell = shell.WindowsShell(self.keyboard, self.console, self.codepage, shell_command)
             else:
                 try:
-                    self.shell = shell.Shell(self.keyboard, self.codepage, shell_command)
+                    self.shell = shell.Shell(self.keyboard, self.console, self.codepage, shell_command)
                 except shell.InitFailed:
                     logging.warning('Pexpect module not found. SHELL statement disabled.')
 
