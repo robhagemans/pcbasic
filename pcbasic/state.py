@@ -23,11 +23,6 @@ import plat
 import config
 
 
-class State(object):
-    """ Base class for state """
-    pass
-
-console_state = State()
 session = None
 
 # name of state file
@@ -93,34 +88,25 @@ def save():
     """ Save emulator state to file. """
     if not state_file:
         return
-    # prepare pickling object
-    to_pickle = State()
-    to_pickle.console = console_state
-    to_pickle.session = session
     # pickle and compress
-    s = zlib.compress(pickle.dumps(to_pickle, 2))
     try:
         with open(state_file, 'wb') as f:
-            f.write(str(len(s)) + '\n' + s)
+            f.write(zlib.compress(pickle.dumps(session, 2)))
     except IOError:
         logging.warning("Could not write to state file %s. Emulator state not saved.", state_file)
 
 def load():
     """ Load emulator state from file. """
-    global console_state, session
+    global session
     if not state_file:
         return False
     # decompress and unpickle
     try:
         with open(state_file, 'rb') as f:
-            length = int(f.readline())
-            from_pickle = pickle.loads(zlib.decompress(f.read(length)))
+            session = pickle.loads(zlib.decompress(f.read()))
     except IOError:
         logging.warning("Could not read state file %s. Emulator state not loaded.", state_file)
         return False
-    # unpack pickling object
-    console_state = from_pickle.console
-    session = from_pickle.session
     return True
 
 def delete():
