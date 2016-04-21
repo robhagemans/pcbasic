@@ -461,6 +461,10 @@ class Screen(object):
         # viewport parameters
         self.view_start = 1
         self.scroll_height = 24
+        # viewport has been set
+        self.view_set = False
+        # writing on bottom row is allowed
+        self.bottom_row_allowed = False
         # true if we're on 80 but should be on 81
         self.overflow = False
         # initialise a fresh textmode screen
@@ -942,7 +946,7 @@ class Screen(object):
 
     def set_view(self, start, stop):
         """ Set the scroll area. """
-        state.console_state.view_set = True
+        self.view_set = True
         self.view_start = start
         self.scroll_height = stop
         #set_pos(start, 1)
@@ -952,7 +956,7 @@ class Screen(object):
     def unset_view(self):
         """ Unset scroll area. """
         self.set_view(1, 24)
-        state.console_state.view_set = False
+        self.view_set = False
 
     def clear_view(self):
         """ Clear the scroll area. """
@@ -962,7 +966,7 @@ class Screen(object):
             self.set_attr(attr_save & 0x70 | 0x7)
         self.current_row = self.view_start
         self.current_col = 1
-        if state.console_state.bottom_row_allowed:
+        if self.bottom_row_allowed:
             last_row = self.mode.height
         else:
             last_row = self.scroll_height

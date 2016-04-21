@@ -50,17 +50,6 @@ keys_line_replace_chars = {
         '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19'}
 
 
-#MOVE to Screen
-# viewport parameters
-
-
-state.console_state.view_set = False
-# writing on bottom row is allowed
-state.console_state.bottom_row_allowed = False
-
-
-
-
 class Console(object):
     """ Interactive environment. """
 
@@ -578,7 +567,7 @@ class Console(object):
 
     def clear(self):
         """ Clear the screen. """
-        save_view_set = state.console_state.view_set
+        save_view_set = self.screen.view_set
         save_view_start = self.screen.view_start
         save_scroll_height = self.screen.scroll_height
         self.screen.set_view(1, 25)
@@ -786,7 +775,7 @@ class Console(object):
     def check_pos(self, scroll_ok=True):
         """ Check if we have crossed the screen boundaries and move as needed. """
         oldrow, oldcol = self.screen.current_row, self.screen.current_col
-        if state.console_state.bottom_row_allowed:
+        if self.screen.bottom_row_allowed:
             if self.screen.current_row == self.screen.mode.height:
                 self.screen.current_col = min(self.screen.mode.width, self.screen.current_col)
                 if self.screen.current_col < 1:
@@ -797,7 +786,7 @@ class Console(object):
                 # if row > height, we also end up here
                 # (eg if we do INPUT on the bottom row)
                 # adjust viewport if necessary
-                state.console_state.bottom_row_allowed = False
+                self.screen.bottom_row_allowed = False
         # see if we need to move to the next row
         if self.screen.current_col > self.screen.mode.width:
             if self.screen.current_row < self.screen.scroll_height or scroll_ok:

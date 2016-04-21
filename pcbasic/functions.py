@@ -319,7 +319,7 @@ class Functions(object):
             z = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         cmode = self.session.screen.mode
         util.range_check(1, cmode.height, row)
-        if state.console_state.view_set:
+        if self.session.screen.view_set:
             util.range_check(self.session.screen.view_start, self.session.screen.scroll_height, row)
         util.range_check(1, cmode.width, col)
         util.range_check(0, 255, z)

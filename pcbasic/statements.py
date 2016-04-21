@@ -2125,7 +2125,7 @@ class Statements(object):
                         util.skip_white(ins) in (',',) + tk.end_statement):
             if self.session.screen.drawing.view_is_set():
                 val = 1
-            elif state.console_state.view_set:
+            elif self.session.screen.view_set:
                 val = 2
             else:
                 val = 0
@@ -2343,14 +2343,14 @@ class Statements(object):
         col = self.session.screen.current_col if col is None else col
         if row == cmode.height and self.session.console.keys_visible:
             raise error.RunError(error.IFC)
-        elif state.console_state.view_set:
+        elif self.session.screen.view_set:
             util.range_check(self.session.screen.view_start, self.session.screen.scroll_height, row)
         else:
             util.range_check(1, cmode.height, row)
         util.range_check(1, cmode.width, col)
         if row == cmode.height:
             # temporarily allow writing on last row
-            state.console_state.bottom_row_allowed = True
+            self.session.screen.bottom_row_allowed = True
         self.session.console.set_pos(row, col, scroll_ok=False)
         if cursor is not None:
             util.range_check(0, (255 if self.parser.syntax in ('pcjr', 'tandy') else 1), cursor)
