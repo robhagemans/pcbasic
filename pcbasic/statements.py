@@ -2278,7 +2278,7 @@ class Statements(object):
         d = util.skip_white_read(ins)
         if d == tk.ON:
             # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
-            if state.console_state.scroll_height == 25:
+            if self.session.screen.scroll_height == 25:
                 raise error.RunError(error.IFC)
             if not self.session.console.keys_visible:
                 self.session.console.show_keys(True)
@@ -2344,7 +2344,7 @@ class Statements(object):
         if row == cmode.height and self.session.console.keys_visible:
             raise error.RunError(error.IFC)
         elif state.console_state.view_set:
-            util.range_check(state.console_state.view_start, state.console_state.scroll_height, row)
+            util.range_check(state.console_state.view_start, self.session.screen.scroll_height, row)
         else:
             util.range_check(1, cmode.height, row)
         util.range_check(1, cmode.width, col)

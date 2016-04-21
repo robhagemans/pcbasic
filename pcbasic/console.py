@@ -53,7 +53,7 @@ keys_line_replace_chars = {
 #MOVE to Screen
 # viewport parameters
 state.console_state.view_start = 1
-state.console_state.scroll_height = 24
+
 state.console_state.view_set = False
 # writing on bottom row is allowed
 state.console_state.bottom_row_allowed = False
@@ -89,7 +89,7 @@ class Console(object):
         self.screen.cursor.set_default_shape(self._overwrite_mode)
         self.screen.cursor.reset_visibility()
         # there is only one VIEW PRINT setting across all pages.
-        if state.console_state.scroll_height == 25:
+        if self.screen.scroll_height == 25:
             # tandy/pcjr special case: VIEW PRINT to 25 is preserved
             self.screen.set_view(1, 25)
         else:
@@ -335,7 +335,7 @@ class Console(object):
                     therow.end = ccol
                 break
             else:
-                if crow == state.console_state.scroll_height:
+                if crow == self.screen.scroll_height:
                     self.screen.scroll()
                     # this is not the global row which is changed by scroll()
                     crow -= 1
@@ -375,7 +375,7 @@ class Console(object):
             therow.buf[ccol-1:] = nextrow.buf[:width-ccol+1]
             therow.end = min(max(therow.end, ccol) + nextrow.end, width)
             # and continue on the following rows as long as we wrap.
-            while crow < state.console_state.scroll_height and nextrow.wrap:
+            while crow < self.screen.scroll_height and nextrow.wrap:
                 nextrow2 = thepage.row[crow+1]
                 nextrow.buf = (nextrow.buf[width-ccol+1:] +
                                nextrow2.buf[:width-ccol+1])
@@ -398,7 +398,7 @@ class Console(object):
         elif ccol <= therow.end:
             # row not ending with LF
             while True:
-                if (therow.end < width or crow == state.console_state.scroll_height
+                if (therow.end < width or crow == self.screen.scroll_height
                         or not therow.wrap):
                     # no knock on to next row, just delete the char
                     del therow.buf[ccol-1]
@@ -509,9 +509,9 @@ class Console(object):
             self.screen.apage.row[crow-1].end = ccol - 1
         else:
             while (self.screen.apage.row[crow-1].wrap and
-                    crow < state.console_state.scroll_height):
+                    crow < self.screen.scroll_height):
                 crow += 1
-            if crow >= state.console_state.scroll_height:
+            if crow >= self.screen.scroll_height:
                 self.screen.scroll()
             # self.screen.current_row has changed, don't use crow
             if self.screen.current_row < self.screen.mode.height:
@@ -530,7 +530,7 @@ class Console(object):
                 break
             ccol += 1
             if ccol > self.screen.mode.width:
-                if crow >= state.console_state.scroll_height:
+                if crow >= self.screen.scroll_height:
                     # nothing found
                     return
                 crow += 1
@@ -542,7 +542,7 @@ class Console(object):
                 break
             ccol += 1
             if ccol > self.screen.mode.width:
-                if crow >= state.console_state.scroll_height:
+                if crow >= self.screen.scroll_height:
                     # nothing found
                     return
                 crow += 1
@@ -582,7 +582,7 @@ class Console(object):
         """ Clear the screen. """
         save_view_set = state.console_state.view_set
         save_view_start = state.console_state.view_start
-        save_scroll_height = state.console_state.scroll_height
+        save_scroll_height = self.screen.scroll_height
         self.screen.set_view(1, 25)
         self.screen.clear_view()
         if save_view_set:
@@ -769,7 +769,7 @@ class Console(object):
                 self.screen.apage.row[self.screen.current_row-1].wrap = True
                 if do_scroll_down:
                     # scroll down (make space by shifting the next rows down)
-                    if self.screen.current_row < state.console_state.scroll_height:
+                    if self.screen.current_row < self.screen.scroll_height:
                         self.screen.scroll_down(self.screen.current_row+1)
                 # move cursor and reset cursor attribute
                 self.screen.move_cursor(self.screen.current_row + 1, 1)
@@ -802,7 +802,7 @@ class Console(object):
                 state.console_state.bottom_row_allowed = False
         # see if we need to move to the next row
         if self.screen.current_col > self.screen.mode.width:
-            if self.screen.current_row < state.console_state.scroll_height or scroll_ok:
+            if self.screen.current_row < self.screen.scroll_height or scroll_ok:
                 # either we don't nee to scroll, or we're allowed to
                 self.screen.current_col -= self.screen.mode.width
                 self.screen.current_row += 1
@@ -817,10 +817,10 @@ class Console(object):
             else:
                 self.screen.current_col = 1
         # see if we need to scroll
-        if self.screen.current_row > state.console_state.scroll_height:
+        if self.screen.current_row > self.screen.scroll_height:
             if scroll_ok:
                 self.screen.scroll()
-            self.screen.current_row = state.console_state.scroll_height
+            self.screen.current_row = self.screen.scroll_height
         elif self.screen.current_row < state.console_state.view_start:
             self.screen.current_row = state.console_state.view_start
         self.screen.move_cursor(self.screen.current_row, self.screen.current_col)

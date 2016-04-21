@@ -320,7 +320,7 @@ class Functions(object):
         cmode = self.session.screen.mode
         util.range_check(1, cmode.height, row)
         if state.console_state.view_set:
-            util.range_check(state.console_state.view_start, state.console_state.scroll_height, row)
+            util.range_check(state.console_state.view_start, self.session.screen.scroll_height, row)
         util.range_check(1, cmode.width, col)
         util.range_check(0, 255, z)
         util.require_read(ins, (')',))
@@ -354,7 +354,7 @@ class Functions(object):
         row, col = self.session.screen.current_row, self.session.screen.current_col
         if (col == self.session.screen.mode.width and
                 state.console_state.overflow and
-                row < state.console_state.scroll_height):
+                row < self.session.screen.scroll_height):
             # in overflow position, return row+1 except on the last row
             row += 1
         return vartypes.int_to_integer_signed(row)

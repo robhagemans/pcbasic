@@ -458,6 +458,7 @@ class Screen(object):
         chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
         self.fonts = typeface.load_fonts(font_family, heights_needed,
                     chars_needed, self.codepage.substitutes, warn_fonts)
+        self.scroll_height = 24
         # initialise a fresh textmode screen
         self.set_mode(self.mode, 0, 1, 0, 0)
 
@@ -939,7 +940,7 @@ class Screen(object):
         """ Set the scroll area. """
         state.console_state.view_set = True
         state.console_state.view_start = start
-        state.console_state.scroll_height = stop
+        self.scroll_height = stop
         #set_pos(start, 1)
         state.console_state.overflow = False
         self.move_cursor(start, 1)
@@ -960,9 +961,9 @@ class Screen(object):
         if state.console_state.bottom_row_allowed:
             last_row = self.mode.height
         else:
-            last_row = state.console_state.scroll_height
+            last_row = self.scroll_height
         for r in self.apage.row[state.console_state.view_start-1:
-                        state.console_state.scroll_height]:
+                        self.scroll_height]:
             # we're clearing the rows below, but don't set the wrap there
             r.wrap = False
         self.clear_rows(state.console_state.view_start, last_row)
@@ -978,17 +979,17 @@ class Screen(object):
             from_line = state.console_state.view_start
         _, back, _, _ = self.split_attr(self.attr)
         signals.video_queue.put(signals.Event(signals.VIDEO_SCROLL_UP,
-                    (from_line, state.console_state.scroll_height, back)))
+                    (from_line, self.scroll_height, back)))
         # sync buffers with the new screen reality:
         if self.current_row > from_line:
             self.current_row -= 1
-        self.apage.row.insert(state.console_state.scroll_height,
+        self.apage.row.insert(self.scroll_height,
                               TextRow(self.attr, self.mode.width))
         if not self.mode.is_text_mode:
             sx0, sy0, sx1, sy1 = self.text_to_pixel_area(from_line+1, 1,
-                state.console_state.scroll_height, self.mode.width)
+                self.scroll_height, self.mode.width)
             tx0, ty0, _, _ = self.text_to_pixel_area(from_line, 1,
-                state.console_state.scroll_height-1, self.mode.width)
+                self.scroll_height-1, self.mode.width)
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
         del self.apage.row[from_line-1]
 
@@ -996,18 +997,18 @@ class Screen(object):
         """ Scroll the scroll region down by one line, starting at from_line. """
         _, back, _, _ = self.split_attr(self.attr)
         signals.video_queue.put(signals.Event(signals.VIDEO_SCROLL_DOWN,
-                    (from_line, state.console_state.scroll_height, back)))
+                    (from_line, self.scroll_height, back)))
         if self.current_row >= from_line:
             self.current_row += 1
         # sync buffers with the new screen reality:
         self.apage.row.insert(from_line - 1, TextRow(self.attr, self.mode.width))
         if not self.mode.is_text_mode:
             sx0, sy0, sx1, sy1 = self.text_to_pixel_area(from_line, 1,
-                state.console_state.scroll_height-1, self.mode.width)
+                self.scroll_height-1, self.mode.width)
             tx0, ty0, _, _ = self.text_to_pixel_area(from_line+1, 1,
-                state.console_state.scroll_height, self.mode.width)
+                self.scroll_height, self.mode.width)
             self.pixels.pages[self.apagenum].move_rect(sx0, sy0, sx1, sy1, tx0, ty0)
-        del self.apage.row[state.console_state.scroll_height-1]
+        del self.apage.row[self.scroll_height-1]
 
     def get_text(self, start_row, start_col, stop_row, stop_col):
         """ Retrieve unicode text for copying. """
