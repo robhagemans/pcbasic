@@ -52,7 +52,7 @@ keys_line_replace_chars = {
 
 #MOVE to Screen
 # viewport parameters
-state.console_state.view_start = 1
+
 
 state.console_state.view_set = False
 # writing on bottom row is allowed
@@ -554,7 +554,7 @@ class Console(object):
         while True:
             ccol -= 1
             if ccol < 1:
-                if crow <= state.console_state.view_start:
+                if crow <= self.screen.view_start:
                     # not found
                     return
                 crow -= 1
@@ -567,7 +567,7 @@ class Console(object):
             last_row, last_col = crow, ccol
             ccol -= 1
             if ccol < 1:
-                if crow <= state.console_state.view_start:
+                if crow <= self.screen.view_start:
                     break
                 crow -= 1
                 ccol = self.screen.mode.width
@@ -579,7 +579,7 @@ class Console(object):
     def clear(self):
         """ Clear the screen. """
         save_view_set = state.console_state.view_set
-        save_view_start = state.console_state.view_start
+        save_view_start = self.screen.view_start
         save_scroll_height = self.screen.scroll_height
         self.screen.set_view(1, 25)
         self.screen.clear_view()
@@ -809,7 +809,7 @@ class Console(object):
                 self.screen.current_col = self.screen.mode.width
         # see if we eed to move a row up
         elif self.screen.current_col < 1:
-            if self.screen.current_row > state.console_state.view_start:
+            if self.screen.current_row > self.screen.view_start:
                 self.screen.current_col += self.screen.mode.width
                 self.screen.current_row -= 1
             else:
@@ -819,8 +819,8 @@ class Console(object):
             if scroll_ok:
                 self.screen.scroll()
             self.screen.current_row = self.screen.scroll_height
-        elif self.screen.current_row < state.console_state.view_start:
-            self.screen.current_row = state.console_state.view_start
+        elif self.screen.current_row < self.screen.view_start:
+            self.screen.current_row = self.screen.view_start
         self.screen.move_cursor(self.screen.current_row, self.screen.current_col)
         # signal position change
         return (self.screen.current_row == oldrow and

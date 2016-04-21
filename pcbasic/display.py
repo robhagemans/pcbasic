@@ -458,6 +458,8 @@ class Screen(object):
         chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
         self.fonts = typeface.load_fonts(font_family, heights_needed,
                     chars_needed, self.codepage.substitutes, warn_fonts)
+        # viewport parameters
+        self.view_start = 1
         self.scroll_height = 24
         # true if we're on 80 but should be on 81
         self.overflow = False
@@ -941,7 +943,7 @@ class Screen(object):
     def set_view(self, start, stop):
         """ Set the scroll area. """
         state.console_state.view_set = True
-        state.console_state.view_start = start
+        self.view_start = start
         self.scroll_height = stop
         #set_pos(start, 1)
         self.overflow = False
@@ -958,17 +960,17 @@ class Screen(object):
             # keep background, set foreground to 7
             attr_save = self.attr
             self.set_attr(attr_save & 0x70 | 0x7)
-        self.current_row = state.console_state.view_start
+        self.current_row = self.view_start
         self.current_col = 1
         if state.console_state.bottom_row_allowed:
             last_row = self.mode.height
         else:
             last_row = self.scroll_height
-        for r in self.apage.row[state.console_state.view_start-1:
+        for r in self.apage.row[self.view_start-1:
                         self.scroll_height]:
             # we're clearing the rows below, but don't set the wrap there
             r.wrap = False
-        self.clear_rows(state.console_state.view_start, last_row)
+        self.clear_rows(self.view_start, last_row)
         # ensure the cursor is show in the right position
         self.move_cursor(self.current_row, self.current_col)
         if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
@@ -978,7 +980,7 @@ class Screen(object):
     def scroll(self, from_line=None):
         """ Scroll the scroll region up by one line, starting at from_line. """
         if from_line is None:
-            from_line = state.console_state.view_start
+            from_line = self.view_start
         _, back, _, _ = self.split_attr(self.attr)
         signals.video_queue.put(signals.Event(signals.VIDEO_SCROLL_UP,
                     (from_line, self.scroll_height, back)))

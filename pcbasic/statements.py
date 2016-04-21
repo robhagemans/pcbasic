@@ -2344,7 +2344,7 @@ class Statements(object):
         if row == cmode.height and self.session.console.keys_visible:
             raise error.RunError(error.IFC)
         elif state.console_state.view_set:
-            util.range_check(state.console_state.view_start, self.session.screen.scroll_height, row)
+            util.range_check(self.session.screen.view_start, self.session.screen.scroll_height, row)
         else:
             util.range_check(1, cmode.height, row)
         util.range_check(1, cmode.width, col)
