@@ -41,7 +41,6 @@ import memory
 import machine
 import parser
 import files
-import typeface
 import sound
 import redirect
 import unicodepage
@@ -135,21 +134,7 @@ class Session(object):
         self.screen = display.Screen(config.get('text-width'),
                 config.get('video-memory'), video_capabilities, monitor,
                 config.get('cga-low'), config.get('mono-tint'), screen_aspect,
-                self.codepage)
-        heights_needed = set([8])
-        for mode in self.screen.text_data.values():
-            heights_needed.add(mode.font_height)
-        for mode in self.screen.mode_data.values():
-            heights_needed.add(mode.font_height)
-        # load the graphics fonts, including the 8-pixel RAM font
-        # use set() for speed - lookup is O(1) rather than O(n) for list
-        chars_needed = set(self.codepage.cp_to_unicode.values())
-        # break up any grapheme clusters and add components to set of needed glyphs
-        chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
-        state.console_state.fonts = typeface.load_fonts(config.get('font'), heights_needed,
-                    chars_needed, self.codepage.substitutes, warn=config.get('debug'))
-        # initialise a fresh textmode screen
-        self.screen.set_mode(self.screen.mode, 0, 1, 0, 0)
+                self.codepage, config.get('font'), warn_fonts=config.get('debug'))
 
         # initialise sound queue
         self.sound = sound.Sound()
@@ -240,7 +225,7 @@ class Session(object):
         except (TypeError, ValueError):
             pass
         self.all_memory = machine.Memory(self.memory, self.devices,
-                            self.screen, self.keyboard,
+                            self.screen, self.keyboard, self.screen.fonts[8],
                             peek_values, config.get('syntax'))
 
         # initialise timer

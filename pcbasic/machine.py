@@ -216,7 +216,7 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, data_memory, devices, screen, keyboard, peek_values, syntax):
+    def __init__(self, data_memory, devices, screen, keyboard, font_8, peek_values, syntax):
         """ Initialise memory. """
         # data segment initialised elsewhere
         self.data = data_memory
@@ -226,6 +226,8 @@ class Memory(object):
         self.screen = screen
         # keyboard buffer access
         self.keyboard = keyboard
+        # 8-pixel font
+        self.font_8 = font_8
         # initial DEF SEG
         self.segment = self.data.data_segment
         # pre-defined PEEK outputs
@@ -372,7 +374,7 @@ class Memory(object):
         char = addr // 8
         if char > 127 or char<0:
             return -1
-        return ord(state.console_state.fonts[8].fontdict[
+        return ord(self.font_8.fontdict[
                 self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
 
     def _get_font_memory(self, addr):
@@ -381,7 +383,7 @@ class Memory(object):
         char = addr // 8 + 128
         if char < 128 or char > 254:
             return -1
-        return ord(state.console_state.fonts[8].fontdict[
+        return ord(self.font_8.fontdict[
                 self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
 
     def _set_font_memory(self, addr, value):
@@ -392,8 +394,8 @@ class Memory(object):
             return
         uc = self.screen.codepage.to_unicode(chr(char))
         if uc:
-            old = state.console_state.fonts[8].fontdict[uc]
-            state.console_state.fonts[8].fontdict[uc] = old[:addr%8]+chr(value)+old[addr%8+1:]
+            old = self.font_8.fontdict[uc]
+            self.font_8.fontdict[uc] = old[:addr%8]+chr(value)+old[addr%8+1:]
             self.screen.rebuild_glyph(char)
 
     #################################################################################

@@ -17,6 +17,7 @@ import signals
 import state
 import error
 import modes
+import typeface
 import graphics
 import basictoken as tk
 
@@ -398,7 +399,7 @@ class Screen(object):
     """ Screen manipulation operations. """
 
     def __init__(self, initial_width, video_mem_size, capabilities, monitor,
-                cga_low, mono_tint, screen_aspect, codepage):
+                cga_low, mono_tint, screen_aspect, codepage, font_family, warn_fonts):
         """ Minimal initialisiation of the screen. """
         # emulated video card - cga, ega, etc
         if capabilities == 'ega' and monitor == 'mono':
@@ -441,6 +442,21 @@ class Screen(object):
         self.codepage = codepage
         signals.video_queue.put(signals.Event(
                 signals.VIDEO_SET_CODEPAGE, self.codepage))
+        # prepare fonts
+        heights_needed = set([8])
+        for mode in self.text_data.values():
+            heights_needed.add(mode.font_height)
+        for mode in self.mode_data.values():
+            heights_needed.add(mode.font_height)
+        # load the graphics fonts, including the 8-pixel RAM font
+        # use set() for speed - lookup is O(1) rather than O(n) for list
+        chars_needed = set(self.codepage.cp_to_unicode.values())
+        # break up any grapheme clusters and add components to set of needed glyphs
+        chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
+        self.fonts = typeface.load_fonts(font_family, heights_needed,
+                    chars_needed, self.codepage.substitutes, warn_fonts)
+        # initialise a fresh textmode screen
+        self.set_mode(self.mode, 0, 1, 0, 0)
 
     def prepare_modes(self):
         """ Build lists of allowed graphics modes. """
@@ -607,7 +623,7 @@ class Screen(object):
         # preload SBCS glyphs
         try:
             self.glyphs = {
-                chr(c): state.console_state.fonts[mode_info.font_height].build_glyph(self.codepage.to_unicode(chr(c), u'\0'),
+                chr(c): self.fonts[mode_info.font_height].build_glyph(self.codepage.to_unicode(chr(c), u'\0'),
                                 mode_info.font_width, mode_info.font_height,
                                 chr(c) in carry_col_9_chars, chr(c) in carry_row_9_chars)
                 for c in range(256) }
@@ -1086,7 +1102,7 @@ class Screen(object):
             uc = self.codepage.to_unicode(c, u'\0')
             carry_col_9 = c in carry_col_9_chars
             carry_row_9 = c in carry_row_9_chars
-            mask = state.console_state.fonts[self.mode.font_height].build_glyph(uc,
+            mask = self.fonts[self.mode.font_height].build_glyph(uc,
                                 self.mode.font_width*2, self.mode.font_height,
                                 carry_col_9, carry_row_9)
             self.glyphs[c] = mask
