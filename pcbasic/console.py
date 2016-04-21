@@ -683,8 +683,8 @@ class Console(object):
 
     def list_keys(self):
         """ Print a list of the function key macros. """
-        for i in range(state.session.events.num_fn_keys):
-            text = bytearray(state.console_state.key_replace[i])
+        for i in range(state.session.parser.events.num_fn_keys):
+            text = bytearray(self.keyboard.buf.key_replace[i])
             for j in range(len(text)):
                 try:
                     text[j] = keys_line_replace_chars[chr(text[j])]
@@ -708,7 +708,7 @@ class Console(object):
             self.keys_visible = True
             self.clear_key_row()
             for i in range(self.screen.mode.width/8):
-                text = str(state.console_state.key_replace[i][:6])
+                text = str(self.keyboard.buf.key_replace[i][:6])
                 kcol = 1+8*i
                 self.write_for_keys(str(i+1)[-1], kcol, self.screen.attr)
                 if not self.screen.mode.is_text_mode:

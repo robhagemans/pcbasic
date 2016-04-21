@@ -2308,7 +2308,7 @@ class Statements(object):
             # macro starting with NUL is empty macro
             if text and str(text)[0] == '\0':
                 text = ''
-            state.console_state.key_replace[keynum-1] = str(text)
+            self.session.keyboard.buf.key_replace[keynum-1] = str(text)
             if self.session.console.keys_visible:
                 self.session.console.show_keys(True)
         else:

@@ -27,10 +27,6 @@ modifier = {
     scancode.ALT: 0x8, scancode.CTRL: 0x4,
     scancode.LSHIFT: 0x2, scancode.RSHIFT: 0x1}
 
-# user definable key list
-state.console_state.key_replace = [
-    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
-    'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
 # default function key eascii codes for KEY autotext.
 function_key = {
     ea.F1: 0, ea.F2: 1, ea.F3: 2, ea.F4: 3,
@@ -75,6 +71,7 @@ home_key_replacements_eascii = {
 class KeyboardBuffer(object):
     """ Quirky emulated ring buffer for keystrokes. """
 
+
     def __init__(self, sound, ring_length):
         """ Initialise to given length. """
         # buffer holds tuples (eascii/codepage, scancode, modifier)
@@ -85,6 +82,10 @@ class KeyboardBuffer(object):
         # expansion vessel holds codepage chars
         self.expansion_vessel = []
         self.sound = sound
+        # user definable key list
+        self.key_replace = [
+            'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
+            'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
 
     def length(self):
         """ Return the number of keystrokes in the buffer. """
@@ -130,7 +131,7 @@ class KeyboardBuffer(object):
             else:
                 try:
                     self.expansion_vessel = list(
-                            state.console_state.key_replace[function_key[c]])
+                            self.key_replace[function_key[c]])
                 except KeyError:
                     # not a function key or undefined, return scancode
                     return c
