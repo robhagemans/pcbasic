@@ -997,7 +997,8 @@ class Statements(object):
         util.require(ins, tk.end_statement)
         if step is not None and step < 1:
             raise error.RunError(error.IFC)
-        old_to_new = self.session.program.renum(new, old, step)
+        old_to_new = self.session.program.renum(
+                self.session.console, new, old, step)
         # stop running if we were
         self.parser.set_pointer(False)
         # reset loop stacks

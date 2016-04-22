@@ -224,7 +224,7 @@ class Program(object):
         else:
             console.set_pos(console.screen.current_row-newlines, 1)
 
-    def renum(self, new_line, start_line, step):
+    def renum(self, console, new_line, start_line, step):
         """ Renumber stored program. """
         new_line = 10 if new_line is None else new_line
         start_line = 0 if start_line is None else start_line
@@ -268,7 +268,7 @@ class Program(object):
                 # not redefined, exists in program?
                 if jumpnum not in self.line_numbers:
                     linum = self.get_line_number(ins.tell()-1)
-                    state.session.console.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
+                    console.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
                 newjump = jumpnum
             ins.seek(-2, 1)
             ins.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(newjump))))
