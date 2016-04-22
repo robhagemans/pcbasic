@@ -127,9 +127,10 @@ class Devices(object):
     def __init__(self, session, fields, console, keyboard):
         """ Initialise devices. """
         self.devices = {}
-        # console
+        # screen/console
         self.devices['SCRN:'] = devices.SCRNDevice(console)
-        self.devices['KYBD:'] = devices.KYBDDevice(keyboard)
+        # KYBD: device needs console as it can set the screen width
+        self.devices['KYBD:'] = devices.KYBDDevice(keyboard, console)
         self.scrn_file = self.devices['SCRN:'].device_file
         self.kybd_file = self.devices['KYBD:'].device_file
         # ports

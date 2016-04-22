@@ -10,7 +10,6 @@ import os
 
 import error
 import console
-import state
 import var
 
 def nullstream():
@@ -103,11 +102,11 @@ class KYBDDevice(Device):
 
     allowed_modes = 'IR'
 
-    def __init__(self, keyboard):
+    def __init__(self, keyboard, console):
         """ Initialise keyboard device. """
         # open a master file on the keyboard
         Device.__init__(self)
-        self.device_file = KYBDFile(keyboard)
+        self.device_file = KYBDFile(keyboard, console)
 
 
 #################################################################################
@@ -435,7 +434,7 @@ class KYBDFile(TextFileBase):
 
     col = 0
 
-    def __init__(self, keyboard):
+    def __init__(self, keyboard, console):
         """ Initialise keyboard file. """
         # use mode = 'A' to avoid needing a first char from nullstream
         TextFileBase.__init__(self, nullstream(), filetype='D', mode='A')
@@ -443,10 +442,12 @@ class KYBDFile(TextFileBase):
         # to be attached to the next
         self.input_last = ''
         self.keyboard = keyboard
+        # console needed for width settings on KYBD: master file
+        self.console = console
 
     def open_clone(self, filetype, mode, reclen=128):
         """ Clone device file. """
-        inst = KYBDFile(self.keyboard)
+        inst = KYBDFile(self.keyboard, self.console)
         inst.mode = mode
         inst.reclen = reclen
         inst.filetype = filetype
@@ -498,7 +499,7 @@ class KYBDFile(TextFileBase):
     def set_width(self, new_width=255):
         """ Setting width on KYBD device (not files) changes screen width. """
         if self.is_master:
-            state.session.console.set_width(new_width)
+            self.console.set_width(new_width)
 
     def input_entry(self, typechar, allow_past_end):
         """ Read a number or string entry from KYBD: for INPUT# """
