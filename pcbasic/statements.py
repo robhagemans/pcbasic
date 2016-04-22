@@ -851,6 +851,9 @@ class Statements(object):
                     out.write_line(l)
         else:
             for l in lines:
+                # flow of listing is visible on screen
+                # and interruptible
+                self.session.check_events()
                 # LIST on screen is slightly different from just writing
                 self.session.console.list_line(l)
         # return to direct mode
@@ -2290,7 +2293,7 @@ class Statements(object):
             if self.session.console.keys_visible:
                 self.session.console.show_keys(False)
         elif d == tk.LIST:
-            self.session.console.list_keys()
+            self.session.console.list_keys(self.parser.events.num_fn_keys)
         elif d == '(':
             # key (n)
             ins.seek(-1, 1)

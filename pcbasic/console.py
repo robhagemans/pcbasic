@@ -645,8 +645,6 @@ class Console(object):
     def list_line(self, line, newline=True):
         """ Print a line from a program listing or EDIT prompt. """
         # no wrap if 80-column line, clear row before printing.
-        # flow of listing is visible on screen
-        state.session.check_events()
         # replace LF CR with LF
         line = line.replace('\n\r', '\n')
         cuts = line.split('\n')
@@ -665,9 +663,9 @@ class Console(object):
     #####################
     # key replacement
 
-    def list_keys(self):
+    def list_keys(self, num_fn_keys):
         """ Print a list of the function key macros. """
-        for i in range(state.session.parser.events.num_fn_keys):
+        for i in range(num_fn_keys):
             text = bytearray(self.keyboard.buf.key_replace[i])
             for j in range(len(text)):
                 try:
