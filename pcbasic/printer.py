@@ -10,7 +10,6 @@ from StringIO import StringIO
 import subprocess
 import logging
 
-import state
 import plat
 
 

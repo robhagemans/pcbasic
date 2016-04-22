@@ -22,7 +22,6 @@ import fp
 import ports
 import print_and_input
 import representation
-import state
 import basictoken as tk
 import util
 import vartypes

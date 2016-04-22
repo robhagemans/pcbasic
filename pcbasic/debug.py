@@ -11,7 +11,6 @@ import traceback
 import logging
 import os
 
-import state
 import vartypes
 import var
 import representation

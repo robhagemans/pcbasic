@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 
-import state
 import events
 import vartypes
 import var

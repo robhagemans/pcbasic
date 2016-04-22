@@ -15,7 +15,6 @@ import util
 import devices
 import vartypes
 
-import state
 
 class InputTextFile(devices.TextFileBase):
     """ Handle INPUT from console. """

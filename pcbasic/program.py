@@ -19,7 +19,6 @@ import basictoken as tk
 import tokenise
 import protect
 import util
-import state
 import memory
 
 class Program(object):

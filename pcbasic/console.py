@@ -8,11 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import string
 
-import state
-import events
 import error
-# for num_fn_keys
-import events
 import basictoken as tk
 from eascii import as_bytes as ea
 

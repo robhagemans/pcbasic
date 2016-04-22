@@ -21,7 +21,6 @@ import devices
 import ports
 import representation
 import sound
-import state
 import basictoken as tk
 import util
 import vartypes

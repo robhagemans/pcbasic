@@ -18,7 +18,6 @@ except ImportError:
 
 import error
 import fp
-import state
 import vartypes
 import util
 import draw_and_play

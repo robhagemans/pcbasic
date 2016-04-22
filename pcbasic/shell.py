@@ -17,7 +17,6 @@ try:
 except ImportError:
     pexpect = None
 
-import state
 import error
 import plat
 
