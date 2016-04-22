@@ -17,7 +17,6 @@ except ImportError:
 
 import error
 import config
-import state
 import util
 import draw_and_play
 import representation
@@ -50,8 +49,10 @@ class PlayState(object):
 class Sound(object):
     """ Sound queue manipulations. """
 
-    def __init__(self):
+    def __init__(self, session):
         """ Initialise sound queue. """
+        # for wait()
+        self.session = session
         # Tandy/PCjr noise generator
         # frequency for noise sources
         self.noise_freq = [base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
@@ -108,12 +109,12 @@ class Sound(object):
         while (self.queue_length(0) > wait_length or
                 self.queue_length(1) > wait_length or
                 self.queue_length(2) > wait_length):
-            state.session.wait()
+            self.session.wait()
 
     def wait_all_music(self):
         """ Wait until all music (not noise) has finished playing. """
         while (self.is_playing(0) or self.is_playing(1) or self.is_playing(2)):
-            state.session.wait()
+            self.session.wait()
 
     def stop_all_sound(self):
         """ Terminate all sounds immediately. """
@@ -151,7 +152,7 @@ class Sound(object):
 
     ### PLAY statement
 
-    def play(self, mml_list):
+    def play(self, data_segment, mml_list):
         """ Parse a list of Music Macro Language strings. """
         gmls_list = []
         for mml in mml_list:
@@ -160,7 +161,7 @@ class Sound(object):
             gmls.write(str(mml))
             gmls.seek(0)
             gmls_list.append(gmls)
-        ml_parser_list = [draw_and_play.MLParser(gmls, state.session.memory) for gmls in gmls_list]
+        ml_parser_list = [draw_and_play.MLParser(gmls, data_segment) for gmls in gmls_list]
         next_oct = 0
         total_time = [0, 0, 0, 0]
         voices = range(3)

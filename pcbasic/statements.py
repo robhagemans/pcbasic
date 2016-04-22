@@ -502,7 +502,7 @@ class Statements(object):
             util.require(ins, tk.end_statement)
             if not (mml0 or mml1 or mml2):
                 raise error.RunError(error.MISSING_OPERAND)
-            self.session.sound.play((mml0, mml1, mml2))
+            self.session.sound.play(self.session.memory, (mml0, mml1, mml2))
 
     def exec_noise(self, ins):
         """ NOISE: produce sound on the noise generator (Tandy/PCjr). """

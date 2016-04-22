@@ -137,7 +137,8 @@ class Session(object):
                 self.codepage, config.get('font'), warn_fonts=config.get('debug'))
 
         # initialise sound queue
-        self.sound = sound.Sound()
+        # needs Session for wait() only
+        self.sound = sound.Sound(self)
 
         # prepare input methods
         self.pen = inputs.Pen(self.screen)
