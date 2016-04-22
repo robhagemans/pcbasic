@@ -145,7 +145,8 @@ class Devices(object):
         self.devices['COM1:'] = ports.COMDevice(config.get('com1'), session, devices.Field(serial_in_size), serial_in_size)
         self.devices['COM2:'] = ports.COMDevice(config.get('com2'), session, devices.Field(serial_in_size), serial_in_size)
         # cassette
-        self.devices['CAS1:'] = cassette.CASDevice(config.get('cas1'))
+        # needs a console for Found and Skipped messages on opening files
+        self.devices['CAS1:'] = cassette.CASDevice(config.get('cas1'), console)
         # disk file locks
         self.locks = disk.Locks()
         # field buffers
@@ -167,7 +168,7 @@ class Devices(object):
         """ Override settings after resume. """
         override_cas1 = config.get('cas1', False)
         if override_cas1:
-            self.devices['CAS1:'] = cassette.CASDevice(override_cas1)
+            self.devices['CAS1:'] = cassette.CASDevice(override_cas1, self.devices['CAS1:'].console)
         self._mount_drives(config.get(u'mount', False))
         # we always need to reset this or it may be a reference to an old device
         self._set_current_device(config.get(u'current-device', True).upper() + b':')
