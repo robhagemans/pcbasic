@@ -486,7 +486,7 @@ class DiskDevice(object):
             raise error.RunError(error.FILE_ALREADY_EXISTS)
         safe(os.rename, oldname, newname)
 
-    def files(self, pathmask):
+    def files(self, console, pathmask):
         """ Write directory listing to console. """
         # forward slashes - file not found
         # GW-BASIC sometimes allows leading or trailing slashes
@@ -502,7 +502,7 @@ class DiskDevice(object):
         # output working dir in DOS format
         # NOTE: this is always the current dir, not the one being listed
         dir_elems = [join_dosname(*short_name(path, e)) for e in self.cwd.split(os.sep)]
-        state.session.console.write_line(self.letter + b':\\' + b'\\'.join(dir_elems))
+        console.write_line(self.letter + b':\\' + b'\\'.join(dir_elems))
         fils = []
         if mask == b'.':
             dirs = [split_dosname((os.sep+relpath).split(os.sep)[-1:][0])]
@@ -521,14 +521,14 @@ class DiskDevice(object):
         output = (
               [(b'%-8s.%-3s' % (t, e) if (e or not t) else b'%-8s    ' % t) + b'<DIR>' for t, e in dirs]
             + [(b'%-8s.%-3s' % (t, e) if e else b'%-8s    ' % t) + b'     ' for t, e in fils])
-        num = state.session.screen.mode.width // 20
+        num = console.screen.mode.width // 20
         while len(output) > 0:
             line = b' '.join(output[:num])
             output = output[num:]
-            state.session.console.write_line(line)
+            console.write_line(line)
             # allow to break during dir listing & show names flowing on screen
             self.session.check_events()
-        state.session.console.write_line(b' %d Bytes free' % self.get_free())
+        console.write_line(b' %d Bytes free' % self.get_free())
 
     def get_free(self):
         """ Return the number of free bytes on the drive. """

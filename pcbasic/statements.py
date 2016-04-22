@@ -705,7 +705,7 @@ class Statements(object):
             if not pathmask:
                 raise error.RunError(error.BAD_FILE_NAME)
         dev, path = self.session.devices.get_diskdevice_and_path(pathmask)
-        dev.files(path)
+        dev.files(self.session.console, path)
         util.require(ins, tk.end_statement)
 
 
