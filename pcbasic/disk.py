@@ -125,7 +125,7 @@ def create_file_object(fhandle, filetype, mode, name=b'', number=0,
     elif filetype == b'A':
         # ascii program file (UTF8 or universal newline if option given)
         return TextFile(fhandle, filetype, number, name, mode, access, lock,
-                         utf8=config.get(u'utf8'),
+                         codepage=None if not config.get(u'utf8') else state.session.codepage,
                          universal=not config.get(u'strict-newline'),
                          split_long_lines=False, locks=locks)
     elif filetype == b'D':
@@ -782,7 +782,7 @@ class TextFile(devices.CRLFTextFileBase):
 
     def __init__(self, fhandle, filetype, number, name,
                  mode=b'A', access=b'RW', lock=b'',
-                 utf8=False, universal=False, split_long_lines=True, locks=None):
+                 codepage=None, universal=False, split_long_lines=True, locks=None):
         """ Initialise text file object. """
         devices.CRLFTextFileBase.__init__(self, fhandle, filetype, mode,
                                           b'', split_long_lines)
@@ -792,18 +792,20 @@ class TextFile(devices.CRLFTextFileBase):
         self.access = access
         self.number = number
         self.name = name
-        self.utf8 = utf8
+        # if a codepage is supplied, text is converted to utf8
+        # otherwise, it is read/written as raw bytes
+        self.codepage = codepage
         self.universal = universal
         self.spaces = b''
         if self.mode == b'A':
             self.fhandle.seek(0, 2)
-        elif self.mode == b'O' and self.utf8:
+        elif self.mode == b'O' and self.codepage is not None:
             # start UTF-8 files with BOM as many Windows readers expect this
             self.fhandle.write(b'\xef\xbb\xbf')
 
     def close(self):
         """ Close text file. """
-        if self.mode in (b'O', b'A') and not self.utf8:
+        if self.mode in (b'O', b'A') and self.codepage is None:
             # write EOF char
             self.fhandle.write(b'\x1a')
         devices.CRLFTextFileBase.close(self)
@@ -828,16 +830,14 @@ class TextFile(devices.CRLFTextFileBase):
 
     def write_line(self, s=''):
         """ Write to file in normal or UTF-8 mode. """
-        if self.utf8:
-            s = (state.session.codepage
-                .str_to_unicode(s).encode(b'utf-8', b'replace'))
+        if self.codepage is not None:
+            s = (self.codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
         devices.CRLFTextFileBase.write(self, s + '\r\n')
 
     def write(self, s):
         """ Write to file in normal or UTF-8 mode. """
-        if self.utf8:
-            s = (state.session.codepage
-                .str_to_unicode(s).encode(b'utf-8', b'replace'))
+        if self.codepage is not None:
+            s = (self.codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
         devices.CRLFTextFileBase.write(self, s)
 
     def _read_line_universal(self):
@@ -873,8 +873,8 @@ class TextFile(devices.CRLFTextFileBase):
             s = devices.CRLFTextFileBase.read_line(self)
         else:
             s = self._read_line_universal()
-        if self.utf8 and s is not None:
-            s = state.session.codepage.str_from_unicode(s.decode(b'utf-8'))
+        if self.codepage is not None and s is not None:
+            s = self.codepage.str_from_unicode(s.decode(b'utf-8'))
         return s
 
     def lock(self, start, stop, lock_list):
