@@ -28,19 +28,19 @@ class InputTextFile(devices.TextFileBase):
         devices.TextFileBase.__init__(self, StringIO(line), 'D', 'I')
 
 
-def input_console(prompt, readvar, newline):
+def input_console(console, stringspace, prompt, readvar, newline):
     """ Read a list of variables for INPUT. """
     # readvar is a list of (name, indices) tuples
     # we return a list of (name, indices, values) tuples
     while True:
-        state.session.console.write(prompt)
-        line = state.session.console.wait_screenline(write_endl=newline)
+        console.write(prompt)
+        line = console.wait_screenline(write_endl=newline)
         inputstream = InputTextFile(line)
         # read the values and group them and the separators
         values, seps = [], []
         for v in readvar:
             word, sep = inputstream.input_entry(v[0][-1], allow_past_end=True)
-            value = state.session.strings.str_to_type(v[0][-1], word)
+            value = stringspace.str_to_type(v[0][-1], word)
             values.append(value)
             seps.append(sep)
         # last separator not empty: there were too many values or commas
@@ -49,7 +49,7 @@ def input_console(prompt, readvar, newline):
         # None means a conversion error occurred
         if (seps[-1] or '' in seps[:-1] or None in values):
             # good old Redo!
-            state.session.console.write_line('?Redo from start')
+            console.write_line('?Redo from start')
         else:
             return [r + [v] for r, v in zip(readvar, values)]
 

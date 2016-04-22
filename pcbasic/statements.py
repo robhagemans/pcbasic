@@ -2009,7 +2009,9 @@ class Statements(object):
             ins.seek(self.parser.current_statement)
             # read the input
             self.session.input_mode = True
-            varlist = print_and_input.input_console(prompt, readvar, newline)
+            varlist = print_and_input.input_console(
+                    self.session.console, self.session.strings,
+                    prompt, readvar, newline)
             self.session.input_mode = False
             for v in varlist:
                 self.session.memory.set_variable(*v)
