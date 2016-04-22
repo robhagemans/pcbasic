@@ -91,11 +91,11 @@ class SCRNDevice(Device):
 
     allowed_modes = 'OR'
 
-    def __init__(self, screen):
+    def __init__(self, console):
         """ Initialise screen device. """
         # open a master file on the screen
         Device.__init__(self)
-        self.device_file = SCRNFile(screen)
+        self.device_file = SCRNFile(console)
 
 
 class KYBDDevice(Device):
@@ -560,16 +560,17 @@ class SCRNFile(RawFile):
     """ SCRN: file, allows writing to the screen as a text file.
         SCRN: files work as a wrapper text file. """
 
-    def __init__(self, screen):
+    def __init__(self, console):
         """ Initialise screen file. """
         RawFile.__init__(self, nullstream(), filetype='D', mode='O')
-        self.screen = screen
+        self.screen = console.screen
+        self.console = console
         self._width = self.screen.mode.width
         self._col = self.screen.current_col
 
     def open_clone(self, filetype, mode, reclen=128):
         """ Clone screen file. """
-        inst = SCRNFile(self.screen)
+        inst = SCRNFile(self.console)
         inst.mode = mode
         inst.reclen = reclen
         inst.filetype = filetype
@@ -609,15 +610,15 @@ class SCRNFile(RawFile):
                 s_width += 1
         if (self.width != 255 and self.screen.current_row != self.screen.mode.height
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
-            state.session.console.write_line(do_echo=do_echo)
+            self.console.write_line(do_echo=do_echo)
             self._col = 1
         cwidth = self.screen.mode.width
         for c in str(s):
             if self.width <= cwidth and self.col > self.width:
-                state.session.console.write_line(do_echo=do_echo)
+                self.console.write_line(do_echo=do_echo)
                 self._col = 1
             if self.col <= cwidth or self.width <= cwidth:
-                state.session.console.write(c, do_echo=do_echo)
+                self.console.write(c, do_echo=do_echo)
             if c in ('\n', '\r'):
                 self._col = 1
             else:
@@ -626,7 +627,7 @@ class SCRNFile(RawFile):
     def write_line(self, inp=''):
         """ Write a string to the screen and follow by CR. """
         self.write(inp)
-        state.session.console.write_line(do_echo=self.is_master)
+        self.console.write_line(do_echo=self.is_master)
 
     @property
     def col(self):
@@ -647,7 +648,7 @@ class SCRNFile(RawFile):
     def set_width(self, new_width=255):
         """ Set (virtual) screen width. """
         if self.is_master:
-            state.session.console.set_width(new_width)
+            self.console.set_width(new_width)
         else:
             self._width = new_width
 
