@@ -2150,7 +2150,7 @@ class Statements(object):
         # cls is only executed if no errors have occurred
         if val == 0:
             self.session.screen.clear()
-            self.session.console.show_keys(self.session.console.keys_visible)
+            self.session.fkey_macros.redraw_keys(self.session.screen)
             self.session.screen.drawing.reset()
         elif val == 1:
             self.session.screen.drawing.clear_view()
@@ -2287,13 +2287,13 @@ class Statements(object):
             # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
             if self.session.screen.scroll_height == 25:
                 raise error.RunError(error.IFC)
-            if not self.session.console.keys_visible:
-                self.session.console.show_keys(True)
+            if not self.session.fkey_macros.keys_visible:
+                self.session.fkey_macros.show_keys(self.session.screen, True)
         elif d == tk.OFF:
-            if self.session.console.keys_visible:
-                self.session.console.show_keys(False)
+            if self.session.fkey_macros.keys_visible:
+                self.session.fkey_macros.show_keys(self.session.screen, False)
         elif d == tk.LIST:
-            self.session.console.list_keys(self.parser.events.num_fn_keys)
+            self.session.fkey_macros.list_keys(self.session.screen)
         elif d == '(':
             # key (n)
             ins.seek(-1, 1)
@@ -2312,11 +2312,8 @@ class Statements(object):
         with self.session.strings:
             text = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         if keynum <= self.parser.events.num_fn_keys:
-            # NUL terminates macro string, rest is ignored
-            # macro starting with NUL is empty macro
-            self.session.keyboard.buf.key_replace[keynum-1] = text.split('\0', 1)[0]
-            if self.session.console.keys_visible:
-                self.session.console.show_keys(True)
+            self.session.fkey_macros.set(keynum, text)
+            self.session.fkey_macros.redraw_keys(self.session.screen)
         else:
             # only length-2 expressions can be assigned to KEYs over 10
             # in which case it's a key scancode definition
@@ -2347,7 +2344,7 @@ class Statements(object):
                             pass
         row = self.session.screen.current_row if row is None else row
         col = self.session.screen.current_col if col is None else col
-        if row == cmode.height and self.session.console.keys_visible:
+        if row == cmode.height and self.session.fkey_macros.keys_visible:
             raise error.RunError(error.IFC)
         elif self.session.screen.view_set:
             util.range_check(self.session.screen.view_start, self.session.screen.scroll_height, row)
@@ -2505,7 +2502,7 @@ class Statements(object):
             util.require_read(ins, (tk.TO,))
             stop = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             util.require(ins, tk.end_statement)
-            max_line = 25 if (self.parser.syntax in ('pcjr', 'tandy') and not self.session.console.keys_visible) else 24
+            max_line = 25 if (self.parser.syntax in ('pcjr', 'tandy') and not self.session.fkey_macros.keys_visible) else 24
             util.range_check(1, max_line, start, stop)
             self.session.screen.set_view(start, stop)
 

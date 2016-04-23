@@ -71,7 +71,7 @@ class KeyboardBuffer(object):
     """ Quirky emulated ring buffer for keystrokes. """
 
 
-    def __init__(self, sound, ring_length):
+    def __init__(self, sound, ring_length, fkey_macros):
         """ Initialise to given length. """
         # buffer holds tuples (eascii/codepage, scancode, modifier)
         self.buffer = []
@@ -81,10 +81,8 @@ class KeyboardBuffer(object):
         # expansion vessel holds codepage chars
         self.expansion_vessel = []
         self.sound = sound
-        # user definable key list
-        self.key_replace = [
-            'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
-            'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
+        # function-key macros
+        self.fkey_macros = fkey_macros
 
     def length(self):
         """ Return the number of keystrokes in the buffer. """
@@ -119,27 +117,22 @@ class KeyboardBuffer(object):
         try:
             return self.expansion_vessel.pop(0)
         except IndexError:
-            try:
-                c = self.buffer.pop(0)[0]
-            except IndexError:
-                c = ''
-            if c:
-                self.start = (self.start + 1) % self.ring_length
-            if not expand:
-                return c
-            else:
-                try:
-                    self.expansion_vessel = list(
-                            self.key_replace[function_key[c]])
-                except KeyError:
-                    # not a function key or undefined, return scancode
-                    return c
-                try:
-                    return self.expansion_vessel.pop(0)
-                except IndexError:
-                    # function macro has been redefined as empty: return scancode
-                    # e.g. KEY 1, "" enables catching F1 with INKEY$
-                    return c
+            pass
+        try:
+            c = self.buffer.pop(0)[0]
+        except IndexError:
+            c = ''
+        if c:
+            self.start = (self.start + 1) % self.ring_length
+        if not expand or c not in function_key:
+            return c
+        self.expansion_vessel = list(self.fkey_macros.get(function_key[c]))
+        try:
+            return self.expansion_vessel.pop(0)
+        except IndexError:
+            # function macro has been redefined as empty: return scancode
+            # e.g. KEY 1, "" enables catching F1 with INKEY$
+            return c
 
     def peek(self):
         """ Show top keystroke in keyboard buffer as eascii/codepage. """
@@ -196,10 +189,10 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """ Keyboard handling. """
 
-    def __init__(self, session, screen, codepage, sound, keystring, option_input, ignore_caps, ctrl_c_is_break):
+    def __init__(self, session, screen, fkey_macros, codepage, sound, keystring, option_input, ignore_caps, ctrl_c_is_break):
         """ Initilise keyboard state. """
         # key queue (holds bytes)
-        self.buf = KeyboardBuffer(sound, 15)
+        self.buf = KeyboardBuffer(sound, 15, fkey_macros)
         # pre-buffer for keystrokes to enable event handling (holds unicode)
         self.prebuf = []
         # INP(&H60) scancode

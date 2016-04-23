@@ -41,31 +41,99 @@ alt_key_replace = {
     ea.ALT_x: tk.keyword[tk.XOR],
     }
 
-# on the keys line 25, what characters to replace & with which
-keys_line_replace_chars = {
+
+class FunctionKeyMacros(object):
+    """ Handles function-key macro strings. """
+
+    # on the keys line 25, what characters to replace & with which
+    _replace_chars = {
         '\x07': '\x0e',    '\x08': '\xfe',    '\x09': '\x1a',    '\x0A': '\x1b',
         '\x0B': '\x7f',    '\x0C': '\x16',    '\x0D': '\x1b',    '\x1C': '\x10',
         '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19'}
+
+    _default_macros = (
+        'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
+        'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '')
+
+    def __init__(self, num_fn_keys):
+        """ Initialise user-definable key list. """
+        self._key_replace = list(self._default_macros)
+        self._num_fn_keys = num_fn_keys
+        self.keys_visible = False
+
+    def list_keys(self, screen):
+        """ Print a list of the function key macros. """
+        for i in range(self._num_fn_keys):
+            text = bytearray(self._key_replace[i])
+            for j in range(len(text)):
+                try:
+                    text[j] = self._replace_chars[chr(text[j])]
+                except KeyError:
+                    pass
+            screen.write_line('F' + str(i+1) + ' ' + str(text))
+
+    def show_keys(self, screen, do_show):
+        """ Show/hide the function keys line on the active page. """
+        key_row = screen.mode.height
+        screen.clear_rows(key_row, key_row)
+        # Keys will only be visible on the active page at which KEY ON was given,
+        # and only deleted on page at which KEY OFF given.
+        if not do_show:
+            self.keys_visible = False
+        else:
+            self.keys_visible = True
+            for i in range(screen.mode.width/8):
+                text = str(self._key_replace[i][:6])
+                kcol = 1+8*i
+                self._write_for_keys(screen, str(i+1)[-1], kcol, screen.attr)
+                if not screen.mode.is_text_mode:
+                    self._write_for_keys(screen, text, kcol+1, screen.attr)
+                else:
+                    if (screen.attr>>4) & 0x7 == 0:
+                        self._write_for_keys(screen, text, kcol+1, 0x70)
+                    else:
+                        self._write_for_keys(screen, text, kcol+1, 0x07)
+            screen.apage.row[24].end = screen.mode.width
+
+    def redraw_keys(self, screen):
+        """ Redraw key macro line if visible. """
+        if self.keys_visible:
+            self.show_keys(screen, True)
+
+    def _write_for_keys(self, screen, s, col, cattr):
+        """ Write chars on the keys line; no echo, some character replacements. """
+        for i, c in enumerate(s):
+            screen.put_char_attr(screen.apagenum, 25, col+i,
+                    self._replace_chars.get(c, c), cattr, for_keys=True)
+
+    def set(self, num, macro):
+        """ Set macro for given function key. """
+        # NUL terminates macro string, rest is ignored
+        # macro starting with NUL is empty macro
+        self._key_replace[num-1] = macro.split('\0', 1)[0]
+
+    def get(self, num):
+        """ Get macro for given function key. """
+        return self._key_replace[num]
 
 
 class Console(object):
     """ Interactive environment. """
 
-    def __init__(self, screen, keyboard, sound, output_redirection):
+    def __init__(self, screen, keyboard, sound, output_redirection, fkey_macros):
         """ Initialise console. """
-        # function key legend is visible
-        self.keys_visible = False
         # overwrite mode (instead of insert)
         self._overwrite_mode = True
         self.screen = screen
         self.sound = sound
         self.keyboard = keyboard
-        self.init_mode()
+        self.fkey_macros = fkey_macros
         self.redirect = output_redirection
+        self.init_mode()
 
     def init_mode(self):
         """ Initialisation when we switched to new screen mode. """
-        self.redraw_keys()
+        self.fkey_macros.redraw_keys(self.screen)
         self.screen.init_mode()
 
     def set_width(self, to_width):
@@ -556,57 +624,9 @@ class Console(object):
                 break
         self.screen.set_pos(last_row, last_col)
 
-    #####################
-    # key replacement
-
-    def list_keys(self, num_fn_keys):
-        """ Print a list of the function key macros. """
-        for i in range(num_fn_keys):
-            text = bytearray(self.keyboard.buf.key_replace[i])
-            for j in range(len(text)):
-                try:
-                    text[j] = keys_line_replace_chars[chr(text[j])]
-                except KeyError:
-                    pass
-            self.screen.write_line('F' + str(i+1) + ' ' + str(text))
-
-    def show_keys(self, do_show):
-        """ Show/hide the function keys line on the active page. """
-        key_row = self.screen.mode.height
-        self.screen.clear_rows(key_row, key_row)
-        # Keys will only be visible on the active page at which KEY ON was given,
-        # and only deleted on page at which KEY OFF given.
-        if not do_show:
-            self.keys_visible = False
-        else:
-            self.keys_visible = True
-            for i in range(self.screen.mode.width/8):
-                text = str(self.keyboard.buf.key_replace[i][:6])
-                kcol = 1+8*i
-                self._write_for_keys(str(i+1)[-1], kcol, self.screen.attr)
-                if not self.screen.mode.is_text_mode:
-                    self._write_for_keys(text, kcol+1, self.screen.attr)
-                else:
-                    if (self.screen.attr>>4) & 0x7 == 0:
-                        self._write_for_keys(text, kcol+1, 0x70)
-                    else:
-                        self._write_for_keys(text, kcol+1, 0x07)
-            self.screen.apage.row[24].end = self.screen.mode.width
-
-    def redraw_keys(self):
-        """ Redraw key macro line if visible. """
-        if self.keys_visible:
-            self.show_keys(True)
-
-    def _write_for_keys(self, s, col, cattr):
-        """ Write chars on the keys line; no echo, some character replacements. """
-        for i, c in enumerate(s):
-            self.screen.put_char_attr(self.screen.apagenum, 25, col+i,
-                keys_line_replace_chars.get(c, c), cattr, for_keys=True)
-
-
     ##### output methods
 
+    #MOVE to Screen
     def list_line(self, line, newline=True):
         """ Print a line from a program listing or EDIT prompt. """
         # no wrap if 80-column line, clear row before printing.

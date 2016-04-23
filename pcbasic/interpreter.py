@@ -157,23 +157,27 @@ class Session(object):
         self.pen = inputs.Pen(self.screen)
         self.stick = inputs.Stick()
 
+
+        self.fkey_macros = console.FunctionKeyMacros(
+                12 if config.get('syntax') == 'tandy' else 10)
+
         # inserted keystrokes
         keystring = config.get('keys').decode('string_escape').decode('utf-8')
         # Screen needed in Keyboard for print_screen()
         # Sound is needed for the beeps when the buffer fills up
         # Session needed for wait() only
-        self.keyboard = inputs.Keyboard(self, self.screen, self.codepage, self.sound,
+        self.keyboard = inputs.Keyboard(self, self.screen, self.fkey_macros,
+                self.codepage, self.sound,
                 keystring, config.get(b'input'),
                 ignore_caps=not config.get('capture-caps'),
                 ctrl_c_is_break=config.get('ctrl-c-break'))
 
         # interpreter is executing a command
         self.set_parse_mode(False)
-
         # initialise the console
         self.console = console.Console(
                 self.screen, self.keyboard, self.sound,
-                self.output_redirection)
+                self.output_redirection, self.fkey_macros)
 
         # direct line buffer
         self.direct_line = StringIO()
@@ -283,7 +287,7 @@ class Session(object):
         self.screen.write_line(greeting.format(
                 version=plat.version,
                 free=self.memory.get_free()))
-        self.console.show_keys(True)
+        self.fkey_macros.show_keys(self.screen, True)
 
     def clear(self, close_files=False,
               preserve_common=False, preserve_all=False, preserve_deftype=False):
