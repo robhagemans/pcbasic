@@ -65,20 +65,10 @@ class Console(object):
 
     def init_mode(self):
         """ Initialisation when we switched to new screen mode. """
-        # only redraw keys if screen has been cleared  (any colours stay the same).
-        if self.keys_visible:
-            self.show_keys(True)
-        # rebuild build the cursor;
-        # first move to home in case the screen has shrunk
-        self.screen.set_pos(1, 1)
+        self.redraw_keys()
+        self.screen.init_mode()
         self.screen.cursor.set_default_shape(self._overwrite_mode)
         self.screen.cursor.reset_visibility()
-        # there is only one VIEW PRINT setting across all pages.
-        if self.screen.scroll_height == 25:
-            # tandy/pcjr special case: VIEW PRINT to 25 is preserved
-            self.screen.set_view(1, 25)
-        else:
-            self.screen.unset_view()
 
     def set_width(self, to_width):
         """ Change the width of the screen. """
@@ -604,6 +594,11 @@ class Console(object):
                     else:
                         self._write_for_keys(text, kcol+1, 0x07)
             self.screen.apage.row[24].end = self.screen.mode.width
+
+    def redraw_keys(self):
+        """ Redraw key macro line if visible. """
+        if self.keys_visible:
+            self.show_keys(True)
 
     def _write_for_keys(self, s, col, cattr):
         """ Write chars on the keys line; no echo, some character replacements. """

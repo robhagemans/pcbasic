@@ -732,6 +732,18 @@ class Screen(object):
         else:
             raise error.RunError(error.IFC)
 
+    def init_mode(self):
+        """ Initialisation when we switched to new screen mode. """
+        # rebuild build the cursor;
+        # first move to home in case the screen has shrunk
+        self.set_pos(1, 1)
+        # there is only one VIEW PRINT setting across all pages.
+        if self.scroll_height == 25:
+            # tandy/pcjr special case: VIEW PRINT to 25 is preserved
+            self.set_view(1, 25)
+        else:
+            self.unset_view()
+
     def set_colorburst(self, on=True):
         """ Set the composite colorburst bit. """
         # On a composite monitor:
