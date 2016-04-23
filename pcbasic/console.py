@@ -67,8 +67,6 @@ class Console(object):
         """ Initialisation when we switched to new screen mode. """
         self.redraw_keys()
         self.screen.init_mode()
-        self.screen.cursor.set_default_shape(True)
-        self.screen.cursor.reset_visibility()
 
     def set_width(self, to_width):
         """ Change the width of the screen. """

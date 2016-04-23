@@ -743,6 +743,8 @@ class Screen(object):
             self.set_view(1, 25)
         else:
             self.unset_view()
+        self.cursor.set_default_shape(True)
+        self.cursor.reset_visibility()
 
     def set_colorburst(self, on=True):
         """ Set the composite colorburst bit. """
