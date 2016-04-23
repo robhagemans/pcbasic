@@ -398,7 +398,7 @@ class PixelPage(object):
 class Screen(object):
     """ Screen manipulation operations. """
 
-    def __init__(self, initial_width, video_mem_size, capabilities, monitor,
+    def __init__(self, initial_width, video_mem_size, capabilities, monitor, sound, redirect,
                 cga_low, mono_tint, screen_aspect, codepage, font_family, warn_fonts):
         """ Minimal initialisiation of the screen. """
         # emulated video card - cga, ega, etc
@@ -467,6 +467,10 @@ class Screen(object):
         self.bottom_row_allowed = False
         # true if we're on 80 but should be on 81
         self.overflow = False
+        # needed for printing \a
+        self.sound = sound
+        # output redirection
+        self.redirect = redirect
         # initialise a fresh textmode screen
         self.set_mode(self.mode, 0, 1, 0, 0)
 
@@ -812,6 +816,67 @@ class Screen(object):
     #####################
     # screen read/write
 
+    def write(self, s, scroll_ok=True, do_echo=True):
+        """ Write a string to the screen at the current position. """
+        if do_echo:
+            # CR -> CRLF, CRLF -> CRLF LF
+            self.redirect.write(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
+        last = ''
+        # if our line wrapped at the end before, it doesn't anymore
+        self.apage.row[self.current_row-1].wrap = False
+        for c in s:
+            row, col = self.current_row, self.current_col
+            if c == '\t':
+                # TAB
+                num = (8 - (col - 1 - 8 * int((col-1) / 8)))
+                for _ in range(num):
+                    self.write_char(' ')
+            elif c == '\n':
+                # LF
+                # exclude CR/LF
+                if last != '\r':
+                    # LF connects lines like word wrap
+                    self.apage.row[row-1].wrap = True
+                    self.set_pos(row + 1, 1, scroll_ok)
+            elif c == '\r':
+                # CR
+                self.apage.row[row-1].wrap = False
+                self.set_pos(row + 1, 1, scroll_ok)
+            elif c == '\a':
+                # BEL
+                self.sound.beep()
+            elif c == '\x0B':
+                # HOME
+                self.set_pos(1, 1, scroll_ok)
+            elif c == '\x0C':
+                # CLS
+                self.clear_view()
+            elif c == '\x1C':
+                # RIGHT
+                self.set_pos(row, col + 1, scroll_ok)
+            elif c == '\x1D':
+                # LEFT
+                self.set_pos(row, col - 1, scroll_ok)
+            elif c == '\x1E':
+                # UP
+                self.set_pos(row - 1, col, scroll_ok)
+            elif c == '\x1F':
+                # DOWN
+                self.set_pos(row + 1, col, scroll_ok)
+            else:
+                # includes \b, \0, and non-control chars
+                self.write_char(c)
+            last = c
+
+    def write_line(self, s='', scroll_ok=True, do_echo=True):
+        """ Write a string to the screen and end with a newline. """
+        self.write(s, scroll_ok, do_echo)
+        if do_echo:
+            self.redirect.write('\r\n')
+        self.check_pos(scroll_ok=True)
+        self.apage.row[self.current_row-1].wrap = False
+        self.set_pos(self.current_row + 1, 1)
+
     def write_char(self, c, do_scroll_down=False):
         """ Put one character at the current position. """
         # check if scroll& repositioning needed
@@ -852,6 +917,15 @@ class Screen(object):
                 self.move_cursor(self.current_row + 1, 1)
             else:
                 self.current_col = self.mode.width
+
+    def start_line(self):
+        """ Move the cursor to the start of the next line, this line if empty. """
+        if self.current_col != 1:
+            self.redirect.write('\r\n')
+            self.check_pos(scroll_ok=True)
+            self.set_pos(self.current_row + 1, 1)
+        # ensure line above doesn't wrap
+        self.apage.row[self.current_row-2].wrap = False
 
     def set_pos(self, to_row, to_col, scroll_ok=True):
         """ Set the current position. """

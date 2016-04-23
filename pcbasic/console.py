@@ -568,87 +568,6 @@ class Console(object):
                 break
         self.screen.set_pos(last_row, last_col)
 
-    ##### output methods
-
-    def write(self, s, scroll_ok=True, do_echo=True):
-        """ Write a string to the screen at the current position. """
-        if do_echo:
-            # CR -> CRLF, CRLF -> CRLF LF
-            self.redirect.write(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
-        last = ''
-        # if our line wrapped at the end before, it doesn't anymore
-        self.screen.apage.row[self.screen.current_row-1].wrap = False
-        for c in s:
-            row, col = self.screen.current_row, self.screen.current_col
-            if c == '\t':
-                # TAB
-                num = (8 - (col - 1 - 8 * int((col-1) / 8)))
-                for _ in range(num):
-                    self.screen.write_char(' ')
-            elif c == '\n':
-                # LF
-                # exclude CR/LF
-                if last != '\r':
-                    # LF connects lines like word wrap
-                    self.screen.apage.row[row-1].wrap = True
-                    self.screen.set_pos(row + 1, 1, scroll_ok)
-            elif c == '\r':
-                # CR
-                self.screen.apage.row[row-1].wrap = False
-                self.screen.set_pos(row + 1, 1, scroll_ok)
-            elif c == '\a':
-                # BEL
-                self.sound.beep()
-            elif c == '\x0B':
-                # HOME
-                self.screen.set_pos(1, 1, scroll_ok)
-            elif c == '\x0C':
-                # CLS
-                self.screen.clear_view()
-            elif c == '\x1C':
-                # RIGHT
-                self.screen.set_pos(row, col + 1, scroll_ok)
-            elif c == '\x1D':
-                # LEFT
-                self.screen.set_pos(row, col - 1, scroll_ok)
-            elif c == '\x1E':
-                # UP
-                self.screen.set_pos(row - 1, col, scroll_ok)
-            elif c == '\x1F':
-                # DOWN
-                self.screen.set_pos(row + 1, col, scroll_ok)
-            else:
-                # includes \b, \0, and non-control chars
-                self.screen.write_char(c)
-            last = c
-
-    def write_line(self, s='', scroll_ok=True, do_echo=True):
-        """ Write a string to the screen and end with a newline. """
-        self.write(s, scroll_ok, do_echo)
-        if do_echo:
-            self.redirect.write('\r\n')
-        self.screen.check_pos(scroll_ok=True)
-        self.screen.apage.row[self.screen.current_row-1].wrap = False
-        self.screen.set_pos(self.screen.current_row + 1, 1)
-
-    def list_line(self, line, newline=True):
-        """ Print a line from a program listing or EDIT prompt. """
-        # no wrap if 80-column line, clear row before printing.
-        # replace LF CR with LF
-        line = line.replace('\n\r', '\n')
-        cuts = line.split('\n')
-        for i, l in enumerate(cuts):
-            # clear_line looks back along wraps, use clear_rest_of_line instead
-            self.clear_rest_of_line(self.screen.current_row, 1)
-            self.write(str(l))
-            if i != len(cuts)-1:
-                self.write('\n')
-        if newline:
-            self.write_line()
-        # remove wrap after 80-column program line
-        if len(line) == self.screen.mode.width and self.screen.current_row > 2:
-            self.screen.apage.row[self.screen.current_row-3].wrap = False
-
     #####################
     # key replacement
 
@@ -661,7 +580,7 @@ class Console(object):
                     text[j] = keys_line_replace_chars[chr(text[j])]
                 except KeyError:
                     pass
-            self.write_line('F' + str(i+1) + ' ' + str(text))
+            self.screen.write_line('F' + str(i+1) + ' ' + str(text))
 
     def show_keys(self, do_show):
         """ Show/hide the function keys line on the active page. """
@@ -692,19 +611,31 @@ class Console(object):
             self.screen.put_char_attr(self.screen.apagenum, 25, col+i,
                 keys_line_replace_chars.get(c, c), cattr, for_keys=True)
 
-    def start_line(self):
-        """ Move the cursor to the start of the next line, this line if empty. """
-        if self.screen.current_col != 1:
-            self.redirect.write('\r\n')
-            self.screen.check_pos(scroll_ok=True)
-            self.screen.set_pos(self.screen.current_row + 1, 1)
-        # ensure line above doesn't wrap
-        self.screen.apage.row[self.screen.current_row-2].wrap = False
+
+    ##### output methods
+
+    def list_line(self, line, newline=True):
+        """ Print a line from a program listing or EDIT prompt. """
+        # no wrap if 80-column line, clear row before printing.
+        # replace LF CR with LF
+        line = line.replace('\n\r', '\n')
+        cuts = line.split('\n')
+        for i, l in enumerate(cuts):
+            # clear_line looks back along wraps, use clear_rest_of_line instead
+            self.clear_rest_of_line(self.screen.current_row, 1)
+            self.screen.write(str(l))
+            if i != len(cuts)-1:
+                self.screen.write('\n')
+        if newline:
+            self.screen.write_line()
+        # remove wrap after 80-column program line
+        if len(line) == self.screen.mode.width and self.screen.current_row > 2:
+            self.screen.apage.row[self.screen.current_row-3].wrap = False
 
     def write_error_message(self, msg, linenum):
         """ Write an error message to the console. """
-        self.start_line()
-        self.write(msg)
+        self.screen.start_line()
+        self.screen.write(msg)
         if linenum is not None and linenum > -1 and linenum < 65535:
-            self.write(' in %i' % linenum)
-        self.write_line(' ')
+            self.screen.write(' in %i' % linenum)
+        self.screen.write_line(' ')

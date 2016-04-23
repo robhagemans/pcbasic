@@ -124,6 +124,21 @@ class Session(object):
         codepage = config.get('codepage') or '437'
         self.codepage = unicodepage.Codepage(codepage, not config.get('nobox'))
 
+
+        # prepare output redirection
+        if (config.get(b'interface') == u'none'):
+            filter_stream = unicodepage.CodecStream(
+                    sys.stdout, self.codepage, sys.stdout.encoding or b'utf-8')
+        else:
+            filter_stream = None
+        self.output_redirection = redirect.OutputRedirection(
+                config.get(b'output'), config.get(b'append'),
+                filter_stream)
+
+        # initialise sound queue
+        # needs Session for wait() only
+        self.sound = sound.Sound(self)
+
         # set initial video mode
         monitor = config.get('monitor')
         video_capabilities = config.get('video')
@@ -131,14 +146,12 @@ class Session(object):
             screen_aspect = (3072, 2000)
         else:
             screen_aspect = (4, 3)
+        # Sound is needed for the beeps on \a
         self.screen = display.Screen(config.get('text-width'),
                 config.get('video-memory'), video_capabilities, monitor,
+                self.sound, self.output_redirection,
                 config.get('cga-low'), config.get('mono-tint'), screen_aspect,
                 self.codepage, config.get('font'), warn_fonts=config.get('debug'))
-
-        # initialise sound queue
-        # needs Session for wait() only
-        self.sound = sound.Sound(self)
 
         # prepare input methods
         self.pen = inputs.Pen(self.screen)
@@ -157,15 +170,6 @@ class Session(object):
         # interpreter is executing a command
         self.set_parse_mode(False)
 
-        # prepare output redirection
-        if (config.get(b'interface') == u'none'):
-            filter_stream = unicodepage.CodecStream(
-                    sys.stdout, self.codepage, sys.stdout.encoding or b'utf-8')
-        else:
-            filter_stream = None
-        self.output_redirection = redirect.OutputRedirection(
-                config.get(b'output'), config.get(b'append'),
-                filter_stream)
         # initialise the console
         self.console = console.Console(
                 self.screen, self.keyboard, self.sound,
@@ -256,17 +260,17 @@ class Session(object):
 
         # set up the SHELL command
         option_shell = config.get('shell')
-        self.shell = shell.ShellBase(self.keyboard, self.console)
+        self.shell = shell.ShellBase(self.keyboard, self.screen)
         if option_shell != 'none':
             if option_shell == 'native':
                 shell_command = None
             else:
                 shell_command = option_shell
             if plat.system == 'Windows':
-                self.shell = shell.WindowsShell(self.keyboard, self.console, self.codepage, shell_command)
+                self.shell = shell.WindowsShell(self.keyboard, self.screen, self.codepage, shell_command)
             else:
                 try:
-                    self.shell = shell.Shell(self.keyboard, self.console, self.codepage, shell_command)
+                    self.shell = shell.Shell(self.keyboard, self.screen, self.codepage, shell_command)
                 except shell.InitFailed:
                     logging.warning('Pexpect module not found. SHELL statement disabled.')
 
@@ -276,7 +280,7 @@ class Session(object):
             'PC-BASIC {version}\r'
             '(C) Copyright 2013--2016 Rob Hagemans.\r'
             '{free} Bytes free')
-        self.console.write_line(greeting.format(
+        self.screen.write_line(greeting.format(
                 version=plat.version,
                 free=self.memory.get_free()))
         self.console.show_keys(True)
@@ -462,20 +466,20 @@ class Session(object):
             self.program.edit(self.console, linenum, tell)
             self.edit_prompt = False
         elif self.prompt:
-            self.console.start_line()
-            self.console.write_line("Ok\xff")
+            self.screen.start_line()
+            self.screen.write_line("Ok\xff")
 
     def auto_step(self):
         """ Generate an AUTO line number and wait for input. """
         numstr = str(self.auto_linenum)
-        self.console.write(numstr)
+        self.screen.write(numstr)
         if self.auto_linenum in self.program.line_numbers:
-            self.console.write('*')
+            self.screen.write('*')
             line = bytearray(self.console.wait_screenline(from_start=True))
             if line[:len(numstr)+1] == numstr+'*':
                 line[len(numstr)] = ' '
         else:
-            self.console.write(' ')
+            self.screen.write(' ')
             line = bytearray(self.console.wait_screenline(from_start=True))
         # run or store it; don't clear lines or raise undefined line number
         self.direct_line = tokenise.tokenise_line(line)
@@ -515,7 +519,7 @@ class Session(object):
         """ Handle a Break event. """
         # print ^C at current position
         if not self.input_mode and not e.stop:
-            self.console.write('^C')
+            self.screen.write('^C')
         # if we're in a program, save pointer
         pos = -1
         if self.parser.run_mode:

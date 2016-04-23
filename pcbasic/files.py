@@ -147,7 +147,7 @@ class Devices(object):
         self.devices['COM2:'] = ports.COMDevice(config.get('com2'), session, devices.Field(serial_in_size), serial_in_size)
         # cassette
         # needs a console for Found and Skipped messages on opening files
-        self.devices['CAS1:'] = cassette.CASDevice(config.get('cas1'), console)
+        self.devices['CAS1:'] = cassette.CASDevice(config.get('cas1'), console.screen)
         # disk file locks
         self.locks = disk.Locks()
         # field buffers

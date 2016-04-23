@@ -32,7 +32,7 @@ def input_console(console, stringspace, prompt, readvar, newline):
     # readvar is a list of (name, indices) tuples
     # we return a list of (name, indices, values) tuples
     while True:
-        console.write(prompt)
+        console.screen.write(prompt)
         line = console.wait_screenline(write_endl=newline)
         inputstream = InputTextFile(line)
         # read the values and group them and the separators
@@ -48,7 +48,7 @@ def input_console(console, stringspace, prompt, readvar, newline):
         # None means a conversion error occurred
         if (seps[-1] or '' in seps[:-1] or None in values):
             # good old Redo!
-            console.write_line('?Redo from start')
+            console.screen.write_line('?Redo from start')
         else:
             return [r + [v] for r, v in zip(readvar, values)]
 

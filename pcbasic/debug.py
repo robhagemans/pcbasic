@@ -39,7 +39,7 @@ class BaseDebugger(object):
         # format the error more readably on the screen
         self.session.screen.set_border(4)
         self.session.screen.set_attr(0x70)
-        self.session.console.write_line('EXCEPTION')
+        self.session.screen.write_line('EXCEPTION')
         self.session.screen.set_attr(15)
         if self.session.parser.run_mode:
             self.session.program.bytecode.seek(-1, 1)
@@ -48,44 +48,44 @@ class BaseDebugger(object):
                 self.session.program.get_line_number(
                             self.session.program.bytecode.tell()),
                             self.session.program.bytecode.tell())
-            self.session.console.write_line('\n')
+            self.session.screen.write_line('\n')
         else:
             self.session.direct_line.seek(0)
-            self.session.console.write_line(str(tokenise.detokenise_compound_statement(self.session.direct_line)[0])+'\n')
+            self.session.screen.write_line(str(tokenise.detokenise_compound_statement(self.session.direct_line)[0])+'\n')
         stack = traceback.extract_tb(exc_traceback)
         for s in stack[-4:]:
             stack_line = '{0}:{1}, {2}'.format(
                 os.path.split(s[0])[-1], s[1], s[2])
             stack_line_2 = '    {0}'.format(s[3])
             self.session.screen.set_attr(15)
-            self.session.console.write_line(stack_line)
+            self.session.screen.write_line(stack_line)
             self.session.screen.set_attr(7)
-            self.session.console.write_line(stack_line_2)
+            self.session.screen.write_line(stack_line_2)
         exc_message = traceback.format_exception_only(exc_type, exc_value)[0]
         self.session.screen.set_attr(15)
-        self.session.console.write('{0}:'.format(exc_type.__name__))
+        self.session.screen.write('{0}:'.format(exc_type.__name__))
         self.session.screen.set_attr(7)
-        self.session.console.write_line(' {0}'.format(str(exc_value)))
+        self.session.screen.write_line(' {0}'.format(str(exc_value)))
         self.session.screen.set_attr(0x70)
-        self.session.console.write_line(
+        self.session.screen.write_line(
             '\nThis is a bug in PC-BASIC.')
         self.session.screen.set_attr(7)
-        self.session.console.write(
+        self.session.screen.write(
             'Sorry about that. Please send the above messages to the bugs forum\nby e-mail to ')
         self.session.screen.set_attr(15)
-        self.session.console.write(
+        self.session.screen.write(
             'bugs@discussion.pcbasic.p.re.sf.net')
         self.session.screen.set_attr(7)
-        self.session.console.write(
+        self.session.screen.write(
             ' or by filing a bug\nreport at ')
         self.session.screen.set_attr(15)
-        self.session.console.write(
+        self.session.screen.write(
             'https://github.com/robhagemans/pcbasic/issues')
         self.session.screen.set_attr(7)
-        self.session.console.write_line(
+        self.session.screen.write_line(
             '. Please include')
-        self.session.console.write_line('as much information as you can about what you were doing and how this happened.')
-        self.session.console.write_line('Thank you!')
+        self.session.screen.write_line('as much information as you can about what you were doing and how this happened.')
+        self.session.screen.write_line('Thank you!')
         self.session.screen.set_attr(7)
         self.session.parser.set_pointer(False)
 

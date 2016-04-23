@@ -704,7 +704,7 @@ class Statements(object):
             if not pathmask:
                 raise error.RunError(error.BAD_FILE_NAME)
         dev, path = self.session.devices.get_diskdevice_and_path(pathmask)
-        dev.files(self.session.console, path)
+        dev.files(self.session.screen, path)
         util.require(ins, tk.end_statement)
 
 
@@ -1000,7 +1000,7 @@ class Statements(object):
         if step is not None and step < 1:
             raise error.RunError(error.IFC)
         old_to_new = self.session.program.renum(
-                self.session.console, new, old, step)
+                self.session.screen, new, old, step)
         # stop running if we were
         self.parser.set_pointer(False)
         # reset loop stacks
@@ -2042,7 +2042,7 @@ class Statements(object):
                 raise error.RunError(error.INPUT_PAST_END)
         else:
             self.session.input_mode = True
-            self.session.console.write(prompt)
+            self.session.screen.write(prompt)
             line = self.session.console.wait_screenline(write_endl=newline)
             self.session.input_mode = False
         self.session.memory.set_variable(readvar, indices, self.session.strings.store(line))
@@ -2114,7 +2114,7 @@ class Statements(object):
         else:
             # prompt for random seed if not specified
             while not val:
-                self.session.console.write("Random number seed (-32768 to 32767)? ")
+                self.session.screen.write("Random number seed (-32768 to 32767)? ")
                 seed = self.session.console.wait_screenline()
                 # seed entered on prompt is rounded to int
                 val = representation.str_to_number(seed)

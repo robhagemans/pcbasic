@@ -49,10 +49,10 @@ def get_env_entry(expr):
 class ShellBase(object):
     """ Launcher for command shell. """
 
-    def __init__(self, keyboard, console, codepage=None, shell_command=None):
+    def __init__(self, keyboard, screen, codepage=None, shell_command=None):
         """ Initialise the shell. """
         self.keyboard = keyboard
-        self.console = console
+        self.screen = screen
         self.command = shell_command
         self.codepage = codepage
 
@@ -64,9 +64,9 @@ class ShellBase(object):
 class WindowsShell(ShellBase):
     """ Launcher for Windows CMD shell. """
 
-    def __init__(self, keyboard, console, codepage, shell_command):
+    def __init__(self, keyboard, screen, codepage, shell_command):
         """ Initialise the shell. """
-        ShellBase.__init__(self, keyboard, console, codepage, shell_command)
+        ShellBase.__init__(self, keyboard, screen, codepage, shell_command)
         if shell_command is None:
             self.command = u'CMD.EXE'
 
@@ -104,8 +104,8 @@ class WindowsShell(ShellBase):
                 lines, shell_output[:] = b''.join(shell_output).split('\r\n'), []
                 last = lines.pop()
                 for line in lines:
-                    self.console.write_line(self.codepage.str_from_unicode(line.decode(plat.preferred_encoding)))
-                self.console.write(self.codepage.str_from_unicode(last.decode(plat.preferred_encoding)))
+                    self.screen.write_line(self.codepage.str_from_unicode(line.decode(plat.preferred_encoding)))
+                self.screen.write(self.codepage.str_from_unicode(last.decode(plat.preferred_encoding)))
             if p.poll() is not None:
                 # drain output then break
                 continue
@@ -118,19 +118,19 @@ class WindowsShell(ShellBase):
                 # shift the cursor left so that CMD.EXE's echo can overwrite
                 # the command that's already there. Note that Wine's CMD.EXE
                 # doesn't echo the command, so it's overwritten by the output...
-                self.console.write(b'\x1D' * len(word))
+                self.screen.write(b'\x1D' * len(word))
                 p.stdin.write(self.codepage.str_to_unicode(word + b'\r\n', preserve_control=True).encode(plat.preferred_encoding))
                 word = b''
             elif c == b'\b':
                 # handle backspace
                 if word:
                     word = word[:-1]
-                    self.console.write(b'\x1D \x1D')
+                    self.screen.write(b'\x1D \x1D')
             elif c != b'':
                 # only send to pipe when enter is pressed
                 # needed for Wine and to handle backspace properly
                 word += c
-                self.console.write(c)
+                self.screen.write(c)
         outp.join()
         errp.join()
 
@@ -138,11 +138,11 @@ class WindowsShell(ShellBase):
 class Shell(ShellBase):
     """ Launcher for Unix shell. """
 
-    def __init__(self, keyboard, console, codepage, shell_command):
+    def __init__(self, keyboard, screen, codepage, shell_command):
         """ Initialise the shell. """
         if not pexpect:
             raise InitFailed()
-        ShellBase.__init__(self, keyboard, console, codepage, shell_command)
+        ShellBase.__init__(self, keyboard, screen, codepage, shell_command)
         if shell_command is None:
             self.command = u'/bin/sh'
 
@@ -174,13 +174,13 @@ class Shell(ShellBase):
                 if c == u'' or c == u'\n':
                     break
                 elif c == u'\r':
-                    self.console.write_line()
+                    self.screen.write_line()
                 elif c == u'\b':
-                    if self.console.screen.current_col != 1:
-                        self.console.screen.set_pos(
-                                self.console.screen.current_row,
-                                self.console.screen.current_col-1)
+                    if self.screen.current_col != 1:
+                        self.screen.set_pos(
+                                self.screen.current_row,
+                                self.screen.current_col-1)
                 else:
-                    self.console.write(self.codepage.from_unicode(c))
+                    self.screen.write(self.codepage.from_unicode(c))
             if c == u'' and not p.isalive():
                 return

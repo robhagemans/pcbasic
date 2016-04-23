@@ -9,7 +9,6 @@ This file is released under the GNU GPL version 3 or later.
 import os
 
 import error
-import console
 import var
 
 def nullstream():
@@ -611,15 +610,15 @@ class SCRNFile(RawFile):
                 s_width += 1
         if (self.width != 255 and self.screen.current_row != self.screen.mode.height
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
-            self.console.write_line(do_echo=do_echo)
+            self.screen.write_line(do_echo=do_echo)
             self._col = 1
         cwidth = self.screen.mode.width
         for c in str(s):
             if self.width <= cwidth and self.col > self.width:
-                self.console.write_line(do_echo=do_echo)
+                self.screen.write_line(do_echo=do_echo)
                 self._col = 1
             if self.col <= cwidth or self.width <= cwidth:
-                self.console.write(c, do_echo=do_echo)
+                self.screen.write(c, do_echo=do_echo)
             if c in ('\n', '\r'):
                 self._col = 1
             else:
@@ -628,7 +627,7 @@ class SCRNFile(RawFile):
     def write_line(self, inp=''):
         """ Write a string to the screen and follow by CR. """
         self.write(inp)
-        self.console.write_line(do_echo=self.is_master)
+        self.screen.write_line(do_echo=self.is_master)
 
     @property
     def col(self):

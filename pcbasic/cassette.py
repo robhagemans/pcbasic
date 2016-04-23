@@ -20,7 +20,6 @@ except ImportError:
 
 import error
 import devices
-import console
 import basictoken as tk
 
 token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
@@ -60,7 +59,7 @@ class CASDevice(object):
     # control characters not allowed in file name on tape
     _illegal_chars = set(map(chr, range(0x20)))
 
-    def __init__(self, arg, console):
+    def __init__(self, arg, screen):
         """ Initialise tape device. """
         addr, val = devices.parse_protocol_string(arg)
         ext = val.split('.')[-1].upper()
@@ -70,7 +69,7 @@ class CASDevice(object):
         # by default, show messages
         self.is_quiet = False
         # console for messages
-        self.console = console
+        self.screen = screen
         try:
             if not val:
                 self.tapestream = None
@@ -127,13 +126,13 @@ class CASDevice(object):
                         (not filetypes_req or filetype in filetypes_req)):
                     message = "%s Found." % (trunk + '.' + filetype)
                     if not self.is_quiet:
-                        self.console.write_line(message)
+                        self.screen.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
                     return trunk, filetype, seg, offset, length
                 else:
                     message = "%s Skipped." % (trunk + '.' + filetype)
                     if not self.is_quiet:
-                        self.console.write_line(message)
+                        self.screen.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
         except EndOfTape:
             # reached end-of-tape without finding appropriate file

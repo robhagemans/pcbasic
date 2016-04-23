@@ -197,7 +197,7 @@ class Program(object):
     def edit(self, console, from_line, bytepos=None):
         """ Output program line to console and position cursor. """
         if self.protected:
-            console.write(str(from_line)+'\r')
+            console.screen.write(str(from_line)+'\r')
             raise error.RunError(error.IFC)
         # list line
         self.bytecode.seek(self.line_numbers[from_line]+1)
@@ -223,7 +223,7 @@ class Program(object):
         else:
             console.screen.set_pos(console.screen.current_row-newlines, 1)
 
-    def renum(self, console, new_line, start_line, step):
+    def renum(self, screen, new_line, start_line, step):
         """ Renumber stored program. """
         new_line = 10 if new_line is None else new_line
         start_line = 0 if start_line is None else start_line
@@ -267,7 +267,7 @@ class Program(object):
                 # not redefined, exists in program?
                 if jumpnum not in self.line_numbers:
                     linum = self.get_line_number(ins.tell()-1)
-                    console.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
+                    screen.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
                 newjump = jumpnum
             ins.seek(-2, 1)
             ins.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(newjump))))
