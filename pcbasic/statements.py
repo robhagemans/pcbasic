@@ -2311,10 +2311,9 @@ class Statements(object):
         with self.session.strings:
             text = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         if keynum <= self.parser.events.num_fn_keys:
+            # NUL terminates macro string, rest is ignored
             # macro starting with NUL is empty macro
-            if text and str(text)[0] == '\0':
-                text = ''
-            self.session.keyboard.buf.key_replace[keynum-1] = str(text)
+            self.session.keyboard.buf.key_replace[keynum-1] = text.split('\0', 1)[0]
             if self.session.console.keys_visible:
                 self.session.console.show_keys(True)
         else:
