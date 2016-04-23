@@ -695,29 +695,21 @@ class Console(object):
             for i in range(self.screen.mode.width/8):
                 text = str(self.keyboard.buf.key_replace[i][:6])
                 kcol = 1+8*i
-                self.write_for_keys(str(i+1)[-1], kcol, self.screen.attr)
+                self._write_for_keys(str(i+1)[-1], kcol, self.screen.attr)
                 if not self.screen.mode.is_text_mode:
-                    self.write_for_keys(text, kcol+1, self.screen.attr)
+                    self._write_for_keys(text, kcol+1, self.screen.attr)
                 else:
                     if (self.screen.attr>>4) & 0x7 == 0:
-                        self.write_for_keys(text, kcol+1, 0x70)
+                        self._write_for_keys(text, kcol+1, 0x70)
                     else:
-                        self.write_for_keys(text, kcol+1, 0x07)
+                        self._write_for_keys(text, kcol+1, 0x07)
             self.screen.apage.row[24].end = self.screen.mode.width
 
-    def write_for_keys(self, s, col, cattr):
+    def _write_for_keys(self, s, col, cattr):
         """ Write chars on the keys line; no echo, some character replacements. """
-        for c in s:
-            if c == '\0':
-                # NUL character terminates display of a word
-                break
-            else:
-                try:
-                    c = keys_line_replace_chars[c]
-                except KeyError:
-                    pass
-                self.screen.put_char_attr(self.screen.apagenum, 25, col, c, cattr, for_keys=True)
-            col += 1
+        for i, c in enumerate(s):
+            self.screen.put_char_attr(self.screen.apagenum, 25, col+i,
+                keys_line_replace_chars.get(c, c), cattr, for_keys=True)
 
     def start_line(self):
         """ Move the cursor to the start of the next line, this line if empty. """
