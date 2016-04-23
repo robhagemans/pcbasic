@@ -177,7 +177,7 @@ class Shell(ShellBase):
                     self.console.write_line()
                 elif c == u'\b':
                     if self.console.screen.current_col != 1:
-                        self.console.set_pos(
+                        self.console.screen.set_pos(
                                 self.console.screen.current_row,
                                 self.console.screen.current_col-1)
                 else:

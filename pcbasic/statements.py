@@ -2357,7 +2357,7 @@ class Statements(object):
         if row == cmode.height:
             # temporarily allow writing on last row
             self.session.screen.bottom_row_allowed = True
-        self.session.console.set_pos(row, col, scroll_ok=False)
+        self.session.screen.set_pos(row, col, scroll_ok=False)
         if cursor is not None:
             util.range_check(0, (255 if self.parser.syntax in ('pcjr', 'tandy') else 1), cursor)
             # set cursor visibility - this should set the flag but have no effect in graphics modes

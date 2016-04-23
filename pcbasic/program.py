@@ -219,9 +219,9 @@ class Program(object):
         if textpos > i:
             pos_row, pos_col = newlines, c + 1
         if bytepos:
-            console.set_pos(console.screen.current_row-newlines+pos_row, pos_col)
+            console.screen.set_pos(console.screen.current_row-newlines+pos_row, pos_col)
         else:
-            console.set_pos(console.screen.current_row-newlines, 1)
+            console.screen.set_pos(console.screen.current_row-newlines, 1)
 
     def renum(self, console, new_line, start_line, step):
         """ Renumber stored program. """

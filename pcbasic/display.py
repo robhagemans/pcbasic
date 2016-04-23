@@ -809,6 +809,103 @@ class Screen(object):
         self.text.copy_page(src, dst)
         signals.video_queue.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
 
+    #####################
+    # screen read/write
+
+    def write_char(self, c, do_scroll_down=False):
+        """ Put one character at the current position. """
+        # check if scroll& repositioning needed
+        if self.overflow:
+            self.current_col += 1
+            self.overflow = False
+        # see if we need to wrap and scroll down
+        self._check_wrap(do_scroll_down)
+        # move cursor and see if we need to scroll up
+        self.check_pos(scroll_ok=True)
+        # put the character
+        self.put_char_attr(self.apagenum,
+                self.current_row, self.current_col, c, self.attr)
+        # adjust end of line marker
+        if (self.current_col >
+                self.apage.row[self.current_row-1].end):
+             self.apage.row[self.current_row-1].end = self.current_col
+        # move cursor. if on col 80, only move cursor to the next row
+        # when the char is printed
+        if self.current_col < self.mode.width:
+            self.current_col += 1
+        else:
+            self.overflow = True
+        # move cursor and see if we need to scroll up
+        self.check_pos(scroll_ok=True)
+
+    def _check_wrap(self, do_scroll_down):
+        """ Wrap if we need to. """
+        if self.current_col > self.mode.width:
+            if self.current_row < self.mode.height:
+                # wrap line
+                self.apage.row[self.current_row-1].wrap = True
+                if do_scroll_down:
+                    # scroll down (make space by shifting the next rows down)
+                    if self.current_row < self.scroll_height:
+                        self.scroll_down(self.current_row+1)
+                # move cursor and reset cursor attribute
+                self.move_cursor(self.current_row + 1, 1)
+            else:
+                self.current_col = self.mode.width
+
+    def set_pos(self, to_row, to_col, scroll_ok=True):
+        """ Set the current position. """
+        self.overflow = False
+        self.current_row, self.current_col = to_row, to_col
+        # this may alter self.current_row, self.current_col
+        self.check_pos(scroll_ok)
+        # move cursor and reset cursor attribute
+        self.move_cursor(self.current_row, self.current_col)
+
+    def check_pos(self, scroll_ok=True):
+        """ Check if we have crossed the screen boundaries and move as needed. """
+        oldrow, oldcol = self.current_row, self.current_col
+        if self.bottom_row_allowed:
+            if self.current_row == self.mode.height:
+                self.current_col = min(self.mode.width, self.current_col)
+                if self.current_col < 1:
+                    self.current_col += 1
+                self.move_cursor(self.current_row, self.current_col)
+                return self.current_col == oldcol
+            else:
+                # if row > height, we also end up here
+                # (eg if we do INPUT on the bottom row)
+                # adjust viewport if necessary
+                self.bottom_row_allowed = False
+        # see if we need to move to the next row
+        if self.current_col > self.mode.width:
+            if self.current_row < self.scroll_height or scroll_ok:
+                # either we don't nee to scroll, or we're allowed to
+                self.current_col -= self.mode.width
+                self.current_row += 1
+            else:
+                # we can't scroll, so we just stop at the right border
+                self.current_col = self.mode.width
+        # see if we eed to move a row up
+        elif self.current_col < 1:
+            if self.current_row > self.view_start:
+                self.current_col += self.mode.width
+                self.current_row -= 1
+            else:
+                self.current_col = 1
+        # see if we need to scroll
+        if self.current_row > self.scroll_height:
+            if scroll_ok:
+                self.scroll()
+            self.current_row = self.scroll_height
+        elif self.current_row < self.view_start:
+            self.current_row = self.view_start
+        self.move_cursor(self.current_row, self.current_col)
+        # signal position change
+        return (self.current_row == oldrow and
+                 self.current_col == oldcol)
+
+
     def get_char_attr(self, pagenum, crow, ccol, want_attr):
         """ Retrieve a byte from the screen. """
         return self.text.pages[pagenum].get_char_attr(crow, ccol, want_attr)

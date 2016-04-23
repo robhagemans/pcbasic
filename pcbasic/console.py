@@ -70,7 +70,7 @@ class Console(object):
             self.show_keys(True)
         # rebuild build the cursor;
         # first move to home in case the screen has shrunk
-        self.set_pos(1, 1)
+        self.screen.set_pos(1, 1)
         self.screen.cursor.set_default_shape(self._overwrite_mode)
         self.screen.cursor.reset_visibility()
         # there is only one VIEW PRINT setting across all pages.
@@ -119,7 +119,7 @@ class Console(object):
         # echo the CR, if requested
         if write_endl:
             self.redirect.write('\r\n')
-            self.set_pos(self.screen.current_row+1, 1)
+            self.screen.set_pos(self.screen.current_row+1, 1)
         # to the parser/INPUT, only the first 255 chars are returned
         # with trailing whitespace removed
         return str(outstr[:255].rstrip(' \t\n'))
@@ -237,19 +237,19 @@ class Console(object):
                 elif d in (ea.CTRL_END, ea.CTRL_e):
                     self.clear_rest_of_line(row, col)
                 elif d in (ea.UP, ea.CTRL_6):
-                    self.set_pos(row - 1, col, scroll_ok=False)
+                    self.screen.set_pos(row - 1, col, scroll_ok=False)
                 elif d in (ea.DOWN, ea.CTRL_MINUS):
-                    self.set_pos(row + 1, col, scroll_ok=False)
+                    self.screen.set_pos(row + 1, col, scroll_ok=False)
                 elif d in (ea.RIGHT, ea.CTRL_BACKSLASH):
                     # RIGHT, CTRL+\
                     # skip dbcs trail byte
                     if self.screen.apage.row[row-1].double[col-1] == 1:
-                        self.set_pos(row, col + 2, scroll_ok=False)
+                        self.screen.set_pos(row, col + 2, scroll_ok=False)
                     else:
-                        self.set_pos(row, col + 1, scroll_ok=False)
+                        self.screen.set_pos(row, col + 1, scroll_ok=False)
                 elif d in (ea.LEFT, ea.CTRL_RIGHTBRACKET):
                     # LEFT, CTRL+]
-                    self.set_pos(row, col - 1, scroll_ok=False)
+                    self.screen.set_pos(row, col - 1, scroll_ok=False)
                 elif d in (ea.CTRL_RIGHT, ea.CTRL_f):
                     self.skip_word_right()
                 elif d in (ea.CTRL_LEFT, ea.CTRL_b):
@@ -259,7 +259,7 @@ class Console(object):
                 elif d in (ea.DELETE, ea.CTRL_BACKSPACE):
                     self.delete_char(row, col)
                 elif d in (ea.HOME, ea.CTRL_k):
-                    self.set_pos(1, 1)
+                    self.screen.set_pos(1, 1)
                 elif d in (ea.END, ea.CTRL_n):
                     self.end()
                 elif d in (ea.CTRL_HOME, ea.CTRL_l):
@@ -284,16 +284,16 @@ class Console(object):
                                     # row and col have changed
                                     self.screen.redraw_row(col-1, row)
                                     col += 1
-                                self.set_pos(self.screen.current_row,
+                                self.screen.set_pos(self.screen.current_row,
                                         self.screen.current_col + len(d))
                             else:
                                 # put all dbcs in before messing with cursor position
                                 for c in d:
-                                    self.put_char(c, do_scroll_down=True)
+                                    self.screen.write_char(c, do_scroll_down=True)
                 # move left if we end up on dbcs trail byte
                 row, col = self.screen.current_row, self.screen.current_col
                 if self.screen.apage.row[row-1].double[col-1] == 2:
-                    self.set_pos(row, col-1, scroll_ok=False)
+                    self.screen.set_pos(row, col-1, scroll_ok=False)
                 # adjust cursor width
                 row, col = self.screen.current_row, self.screen.current_col
                 if self.screen.apage.row[row-1].double[col-1] == 1:
@@ -439,7 +439,7 @@ class Console(object):
             self.screen.scroll(r)
         therow = self.screen.apage.row[srow-1]
         therow.wrap = False
-        self.set_pos(srow, scol)
+        self.screen.set_pos(srow, scol)
         save_end = therow.end
         therow.end = mode.width
         if scol > 1:
@@ -459,10 +459,10 @@ class Console(object):
                 crow -= 1
         elif ccol != start_col or self.screen.current_row != start_row:
             ccol -= 1
-        self.set_pos(crow, max(1, ccol))
+        self.screen.set_pos(crow, max(1, ccol))
         if self.screen.apage.row[self.screen.current_row-1].double[self.screen.current_col-1] == 2:
             # we're on a trail byte, move to the lead
-            self.set_pos(self.screen.current_row, self.screen.current_col-1)
+            self.screen.set_pos(self.screen.current_row, self.screen.current_col-1)
         self.delete_char(crow, ccol)
 
     def tab(self):
@@ -470,12 +470,12 @@ class Console(object):
         row, col = self.screen.current_row, self.screen.current_col
         newcol = 9 + 8 * int((col-1) / 8)
         if self._overwrite_mode:
-            self.set_pos(row, newcol, scroll_ok=False)
+            self.screen.set_pos(row, newcol, scroll_ok=False)
         else:
             for _ in range(8):
                 self.insert(row, col, ' ', self.screen.attr)
             self.screen.redraw_row(col - 1, row)
-            self.set_pos(row, newcol)
+            self.screen.set_pos(row, newcol)
 
     def end(self):
         """ Jump to end of logical line; follow wraps (END). """
@@ -484,10 +484,10 @@ class Console(object):
                 crow < self.screen.mode.height):
             crow += 1
         if self.screen.apage.row[crow-1].end == self.screen.mode.width:
-            self.set_pos(crow, self.screen.apage.row[crow-1].end)
+            self.screen.set_pos(crow, self.screen.apage.row[crow-1].end)
             self.screen.overflow = True
         else:
-            self.set_pos(crow, self.screen.apage.row[crow-1].end+1)
+            self.screen.set_pos(crow, self.screen.apage.row[crow-1].end+1)
 
     def line_feed(self):
         """ Move the remainder of the line to the next row and wrap (LF). """
@@ -508,7 +508,7 @@ class Console(object):
                 self.screen.scroll_down(self.screen.current_row+1)
         # LF connects lines like word wrap
         self.screen.apage.row[self.screen.current_row-1].wrap = True
-        self.set_pos(self.screen.current_row+1, 1)
+        self.screen.set_pos(self.screen.current_row+1, 1)
 
     def skip_word_right(self):
         """ Skip one word to the right (CTRL+RIGHT). """
@@ -537,7 +537,7 @@ class Console(object):
                     return
                 crow += 1
                 ccol = 1
-        self.set_pos(crow, ccol)
+        self.screen.set_pos(crow, ccol)
 
     def skip_word_left(self):
         """ Skip one word to the left (CTRL+LEFT). """
@@ -566,7 +566,7 @@ class Console(object):
             c = self.screen.apage.row[crow-1].buf[ccol-1][0]
             if (c not in string.digits + string.ascii_letters):
                 break
-        self.set_pos(last_row, last_col)
+        self.screen.set_pos(last_row, last_col)
 
     def clear(self):
         """ Clear the screen. """
@@ -598,42 +598,42 @@ class Console(object):
                 # TAB
                 num = (8 - (col - 1 - 8 * int((col-1) / 8)))
                 for _ in range(num):
-                    self.put_char(' ')
+                    self.screen.write_char(' ')
             elif c == '\n':
                 # LF
                 # exclude CR/LF
                 if last != '\r':
                     # LF connects lines like word wrap
                     self.screen.apage.row[row-1].wrap = True
-                    self.set_pos(row + 1, 1, scroll_ok)
+                    self.screen.set_pos(row + 1, 1, scroll_ok)
             elif c == '\r':
                 # CR
                 self.screen.apage.row[row-1].wrap = False
-                self.set_pos(row + 1, 1, scroll_ok)
+                self.screen.set_pos(row + 1, 1, scroll_ok)
             elif c == '\a':
                 # BEL
                 self.sound.beep()
             elif c == '\x0B':
                 # HOME
-                self.set_pos(1, 1, scroll_ok)
+                self.screen.set_pos(1, 1, scroll_ok)
             elif c == '\x0C':
                 # CLS
                 self.clear()
             elif c == '\x1C':
                 # RIGHT
-                self.set_pos(row, col + 1, scroll_ok)
+                self.screen.set_pos(row, col + 1, scroll_ok)
             elif c == '\x1D':
                 # LEFT
-                self.set_pos(row, col - 1, scroll_ok)
+                self.screen.set_pos(row, col - 1, scroll_ok)
             elif c == '\x1E':
                 # UP
-                self.set_pos(row - 1, col, scroll_ok)
+                self.screen.set_pos(row - 1, col, scroll_ok)
             elif c == '\x1F':
                 # DOWN
-                self.set_pos(row + 1, col, scroll_ok)
+                self.screen.set_pos(row + 1, col, scroll_ok)
             else:
                 # includes \b, \0, and non-control chars
-                self.put_char(c)
+                self.screen.write_char(c)
             last = c
 
     def write_line(self, s='', scroll_ok=True, do_echo=True):
@@ -641,9 +641,9 @@ class Console(object):
         self.write(s, scroll_ok, do_echo)
         if do_echo:
             self.redirect.write('\r\n')
-        self.check_pos(scroll_ok=True)
+        self.screen.check_pos(scroll_ok=True)
         self.screen.apage.row[self.screen.current_row-1].wrap = False
-        self.set_pos(self.screen.current_row + 1, 1)
+        self.screen.set_pos(self.screen.current_row + 1, 1)
 
     def list_line(self, line, newline=True):
         """ Print a line from a program listing or EDIT prompt. """
@@ -719,109 +719,12 @@ class Console(object):
                 self.screen.put_char_attr(self.screen.apagenum, 25, col, c, cattr, for_keys=True)
             col += 1
 
-    #####################
-    # screen read/write
-
-    def put_char(self, c, do_scroll_down=False):
-        """ Put one byte at the current position. """
-        # check if scroll& repositioning needed
-        if self.screen.overflow:
-            self.screen.current_col += 1
-            self.screen.overflow = False
-        # see if we need to wrap and scroll down
-        self.check_wrap(do_scroll_down)
-        # move cursor and see if we need to scroll up
-        self.check_pos(scroll_ok=True)
-        # put the character
-        self.screen.put_char_attr(self.screen.apagenum,
-                self.screen.current_row, self.screen.current_col,
-                c, self.screen.attr)
-        # adjust end of line marker
-        if (self.screen.current_col >
-                self.screen.apage.row[self.screen.current_row-1].end):
-             self.screen.apage.row[self.screen.current_row-1].end = self.screen.current_col
-        # move cursor. if on col 80, only move cursor to the next row
-        # when the char is printed
-        if self.screen.current_col < self.screen.mode.width:
-            self.screen.current_col += 1
-        else:
-            self.screen.overflow = True
-        # move cursor and see if we need to scroll up
-        self.check_pos(scroll_ok=True)
-
-    def check_wrap(self, do_scroll_down):
-        """ Wrap if we need to. """
-        if self.screen.current_col > self.screen.mode.width:
-            if self.screen.current_row < self.screen.mode.height:
-                # wrap line
-                self.screen.apage.row[self.screen.current_row-1].wrap = True
-                if do_scroll_down:
-                    # scroll down (make space by shifting the next rows down)
-                    if self.screen.current_row < self.screen.scroll_height:
-                        self.screen.scroll_down(self.screen.current_row+1)
-                # move cursor and reset cursor attribute
-                self.screen.move_cursor(self.screen.current_row + 1, 1)
-            else:
-                self.screen.current_col = self.screen.mode.width
-
-    def set_pos(self, to_row, to_col, scroll_ok=True):
-        """ Set the current position. """
-        self.screen.overflow = False
-        self.screen.current_row, self.screen.current_col = to_row, to_col
-        # this may alter self.screen.current_row, self.screen.current_col
-        self.check_pos(scroll_ok)
-        # move cursor and reset cursor attribute
-        self.screen.move_cursor(self.screen.current_row, self.screen.current_col)
-
-    def check_pos(self, scroll_ok=True):
-        """ Check if we have crossed the screen boundaries and move as needed. """
-        oldrow, oldcol = self.screen.current_row, self.screen.current_col
-        if self.screen.bottom_row_allowed:
-            if self.screen.current_row == self.screen.mode.height:
-                self.screen.current_col = min(self.screen.mode.width, self.screen.current_col)
-                if self.screen.current_col < 1:
-                    self.screen.current_col += 1
-                self.screen.move_cursor(self.screen.current_row, self.screen.current_col)
-                return self.screen.current_col == oldcol
-            else:
-                # if row > height, we also end up here
-                # (eg if we do INPUT on the bottom row)
-                # adjust viewport if necessary
-                self.screen.bottom_row_allowed = False
-        # see if we need to move to the next row
-        if self.screen.current_col > self.screen.mode.width:
-            if self.screen.current_row < self.screen.scroll_height or scroll_ok:
-                # either we don't nee to scroll, or we're allowed to
-                self.screen.current_col -= self.screen.mode.width
-                self.screen.current_row += 1
-            else:
-                # we can't scroll, so we just stop at the right border
-                self.screen.current_col = self.screen.mode.width
-        # see if we eed to move a row up
-        elif self.screen.current_col < 1:
-            if self.screen.current_row > self.screen.view_start:
-                self.screen.current_col += self.screen.mode.width
-                self.screen.current_row -= 1
-            else:
-                self.screen.current_col = 1
-        # see if we need to scroll
-        if self.screen.current_row > self.screen.scroll_height:
-            if scroll_ok:
-                self.screen.scroll()
-            self.screen.current_row = self.screen.scroll_height
-        elif self.screen.current_row < self.screen.view_start:
-            self.screen.current_row = self.screen.view_start
-        self.screen.move_cursor(self.screen.current_row, self.screen.current_col)
-        # signal position change
-        return (self.screen.current_row == oldrow and
-                 self.screen.current_col == oldcol)
-
     def start_line(self):
         """ Move the cursor to the start of the next line, this line if empty. """
         if self.screen.current_col != 1:
             self.redirect.write('\r\n')
-            self.check_pos(scroll_ok=True)
-            self.set_pos(self.screen.current_row + 1, 1)
+            self.screen.check_pos(scroll_ok=True)
+            self.screen.set_pos(self.screen.current_row + 1, 1)
         # ensure line above doesn't wrap
         self.screen.apage.row[self.screen.current_row-2].wrap = False
 
