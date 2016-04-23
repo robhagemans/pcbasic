@@ -631,11 +631,3 @@ class Console(object):
         # remove wrap after 80-column program line
         if len(line) == self.screen.mode.width and self.screen.current_row > 2:
             self.screen.apage.row[self.screen.current_row-3].wrap = False
-
-    def write_error_message(self, msg, linenum):
-        """ Write an error message to the console. """
-        self.screen.start_line()
-        self.screen.write(msg)
-        if linenum is not None and linenum > -1 and linenum < 65535:
-            self.screen.write(' in %i' % linenum)
-        self.screen.write_line(' ')

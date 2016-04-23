@@ -504,7 +504,7 @@ class Session(object):
     def handle_error(self, e):
         """ Handle a BASIC error through error message. """
         # not handled by ON ERROR, stop execution
-        self.console.write_error_message(e.message, self.program.get_line_number(e.pos))
+        self._write_error_message(e.message, self.program.get_line_number(e.pos))
         self.set_parse_mode(False)
         self.input_mode = False
         # special case: syntax error
@@ -525,9 +525,17 @@ class Session(object):
         if self.parser.run_mode:
             pos = self.program.bytecode.tell()
             self.parser.stop = pos
-        self.console.write_error_message(e.message, self.program.get_line_number(pos))
+        self._write_error_message(e.message, self.program.get_line_number(pos))
         self.set_parse_mode(False)
         self.input_mode = False
+
+    def _write_error_message(self, msg, linenum):
+        """ Write an error message to the console. """
+        self.screen.start_line()
+        self.screen.write(msg)
+        if linenum is not None and linenum > -1 and linenum < 65535:
+            self.screen.write(' in %i' % linenum)
+        self.screen.write_line(' ')
 
     ##########################################################################
     # main event checker
