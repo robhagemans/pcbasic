@@ -263,7 +263,7 @@ class Console(object):
                 elif d in (ea.END, ea.CTRL_n):
                     self.end()
                 elif d in (ea.CTRL_HOME, ea.CTRL_l):
-                    self.clear()
+                    self.screen.clear_view()
                 elif d == ea.CTRL_PRINT:
                     # ctrl+printscreen toggles printer copy
                     # note that shift+print is a BIOS trigger
@@ -568,20 +568,6 @@ class Console(object):
                 break
         self.screen.set_pos(last_row, last_col)
 
-    def clear(self):
-        """ Clear the screen. """
-        save_view_set = self.screen.view_set
-        save_view_start = self.screen.view_start
-        save_scroll_height = self.screen.scroll_height
-        self.screen.set_view(1, 25)
-        self.screen.clear_view()
-        if save_view_set:
-            self.screen.set_view(save_view_start, save_scroll_height)
-        else:
-            self.screen.unset_view()
-        if self.keys_visible:
-            self.show_keys(True)
-
     ##### output methods
 
     def write(self, s, scroll_ok=True, do_echo=True):
@@ -618,7 +604,7 @@ class Console(object):
                 self.screen.set_pos(1, 1, scroll_ok)
             elif c == '\x0C':
                 # CLS
-                self.clear()
+                self.screen.clear_view()
             elif c == '\x1C':
                 # RIGHT
                 self.screen.set_pos(row, col + 1, scroll_ok)
@@ -677,21 +663,16 @@ class Console(object):
                     pass
             self.write_line('F' + str(i+1) + ' ' + str(text))
 
-    def clear_key_row(self):
-        """ Clear row 25 on the active page. """
-        key_row = self.screen.mode.height
-        self.screen.clear_rows(key_row, key_row)
-
     def show_keys(self, do_show):
         """ Show/hide the function keys line on the active page. """
+        key_row = self.screen.mode.height
+        self.screen.clear_rows(key_row, key_row)
         # Keys will only be visible on the active page at which KEY ON was given,
         # and only deleted on page at which KEY OFF given.
         if not do_show:
             self.keys_visible = False
-            self.clear_key_row()
         else:
             self.keys_visible = True
-            self.clear_key_row()
             for i in range(self.screen.mode.width/8):
                 text = str(self.keyboard.buf.key_replace[i][:6])
                 kcol = 1+8*i

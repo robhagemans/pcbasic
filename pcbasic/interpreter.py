@@ -276,7 +276,6 @@ class Session(object):
             'PC-BASIC {version}\r'
             '(C) Copyright 2013--2016 Rob Hagemans.\r'
             '{free} Bytes free')
-        self.console.clear()
         self.console.write_line(greeting.format(
                 version=plat.version,
                 free=self.memory.get_free()))

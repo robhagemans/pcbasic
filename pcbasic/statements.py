@@ -2149,7 +2149,8 @@ class Statements(object):
                 util.require(ins, tk.end_statement, err=error.IFC)
         # cls is only executed if no errors have occurred
         if val == 0:
-            self.session.console.clear()
+            self.session.screen.clear()
+            self.session.console.show_keys(self.session.console.keys_visible)
             self.session.screen.drawing.reset()
         elif val == 1:
             self.session.screen.drawing.clear_view()

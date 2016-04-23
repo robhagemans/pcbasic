@@ -1078,6 +1078,18 @@ class Screen(object):
             # restore attr
             self.set_attr(attr_save)
 
+    def clear(self):
+        """ Clear the screen. """
+        save_view_set = self.view_set
+        save_view_start = self.view_start
+        save_scroll_height = self.scroll_height
+        self.set_view(1, self.mode.height)
+        self.clear_view()
+        if save_view_set:
+            self.set_view(save_view_start, save_scroll_height)
+        else:
+            self.unset_view()
+
     def scroll(self, from_line=None):
         """ Scroll the scroll region up by one line, starting at from_line. """
         if from_line is None:
