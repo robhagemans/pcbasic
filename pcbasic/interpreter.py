@@ -148,7 +148,8 @@ class Session(object):
         keystring = config.get('keys').decode('string_escape').decode('utf-8')
         # Screen needed in Keyboard for print_screen()
         # Sound is needed for the beeps when the buffer fills up
-        self.keyboard = inputs.Keyboard(self.screen, self.codepage, self.sound,
+        # Session needed for wait() only
+        self.keyboard = inputs.Keyboard(self, self.screen, self.codepage, self.sound,
                 keystring, config.get(b'input'),
                 ignore_caps=not config.get('capture-caps'),
                 ctrl_c_is_break=config.get('ctrl-c-break'))

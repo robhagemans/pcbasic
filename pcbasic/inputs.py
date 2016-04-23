@@ -11,7 +11,6 @@ import logging
 
 import plat
 import config
-import state
 import error
 import scancode
 from eascii import as_bytes as ea
@@ -197,7 +196,7 @@ class KeyboardBuffer(object):
 class Keyboard(object):
     """ Keyboard handling. """
 
-    def __init__(self, screen, codepage, sound, keystring, option_input, ignore_caps, ctrl_c_is_break):
+    def __init__(self, session, screen, codepage, sound, keystring, option_input, ignore_caps, ctrl_c_is_break):
         """ Initilise keyboard state. """
         # key queue (holds bytes)
         self.buf = KeyboardBuffer(sound, 15)
@@ -231,6 +230,8 @@ class Keyboard(object):
                 self._set_input(open(option_input, b'rb'))
             except EnvironmentError as e:
                 logging.warning(u'Could not open input file %s: %s', option_input, e.strerror)
+        # session is needed for wait() in wait_char()
+        self.session = session
 
     def read_chars(self, num):
         """ Read num keystrokes, blocking. """
@@ -246,7 +247,7 @@ class Keyboard(object):
     def wait_char(self):
         """ Wait for character, then return it but don't drop from queue. """
         while self.buf.is_empty() and not self._input_closed:
-            state.session.wait()
+            self.session.wait()
         return self.buf.peek()
 
     def get_char_block(self):
