@@ -350,9 +350,6 @@ class Keyboard(object):
                 if mod & (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT]):
                     # shift + printscreen
                     self.screen.print_screen()
-                elif mod & modifier[scancode.CTRL]:
-                    # ctrl + printscreen
-                    state.session.output_redirection.toggle_echo(state.session.devices.lpt1_file)
             self.buf.insert_keypress(
                     self.codepage.from_unicode(c),
                     scan, mod, check_full)

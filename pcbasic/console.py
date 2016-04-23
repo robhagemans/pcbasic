@@ -12,6 +12,8 @@ import error
 import basictoken as tk
 from eascii import as_bytes as ea
 
+import state
+
 # alt+key macros for interactive mode
 # these happen at a higher level than F-key macros
 alt_key_replace = {
@@ -262,6 +264,11 @@ class Console(object):
                     self.end()
                 elif d in (ea.CTRL_HOME, ea.CTRL_l):
                     self.clear()
+                elif d == ea.CTRL_PRINT:
+                    # ctrl+printscreen toggles printer copy
+                    # note that shift+print is a BIOS trigger
+                    # and is emulated at a deeper level
+                    self.redirect.toggle_echo(state.session.devices.lpt1_file)
                 else:
                     try:
                         # these are done on a less deep level than the fn key macros
