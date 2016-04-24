@@ -29,6 +29,29 @@ def load_queue(q, qlist):
         q.put(item)
 
 
+class NullQueue(object):
+    """ Dummy implementation of Queue interface. """
+    def __init__(self, maxsize=0):
+        pass
+    def qsize(self):
+        return 0
+    def empty(self):
+        return True
+    def full(self):
+        return False
+    def put(self, item, block=False, timeout=False):
+        pass
+    def put_nowait(self, item):
+        pass
+    def get(self, block=False, timeout=False):
+        # we're ignoring block
+        raise Queue.Empty
+    def task_done(self):
+        pass
+    def join(self):
+        pass
+
+
 ###############################################################################
 # signals
 

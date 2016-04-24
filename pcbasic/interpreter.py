@@ -125,10 +125,10 @@ class Session(object):
         self.state_file = state_file
         # input, video and audio queues
         # use dummy queues if not provided
-        self.input_queue = input_queue or Queue.Queue()
-        self.video_queue = video_queue or Queue.Queue()
-        self.tone_queue = tone_queue or Queue.Queue()
-        self.message_queue = message_queue or Queue.Queue()
+        self.input_queue = input_queue or signals.NullQueue()
+        self.video_queue = video_queue or signals.NullQueue()
+        self.tone_queue = tone_queue or signals.NullQueue()
+        self.message_queue = message_queue or signals.NullQueue()
         # true if a prompt is needed on next cycle
         self.prompt = True
         # input mode is AUTO (used by AUTO)
