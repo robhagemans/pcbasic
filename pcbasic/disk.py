@@ -24,7 +24,6 @@ from bytestream import ByteStream
 
 import config
 import error
-import state
 # for check_events during FILES
 import events
 import vartypes

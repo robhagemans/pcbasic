@@ -23,26 +23,12 @@ import plat
 import config
 
 
-session = None
 
-# name of state file
-state_name = 'PCBASIC.SAV'
+class ResumeFailed(Exception):
+    """ Failed to resume session. """
+    def __str__(self):
+        return self.__doc__
 
-
-def prepare():
-    """ Initialise the state module. """
-    global state_file
-    state_file = config.get('state')
-    if os.path.exists(state_name):
-        state_file = state_name
-    else:
-        state_file = os.path.join(plat.state_path, state_name)
-    # do not load any state file from a package
-    if config.package:
-        state_file = ''
-    # register the picklers for file and cStringIO
-    copy_reg.pickle(file, pickle_file)
-    copy_reg.pickle(cStringIO.OutputType, pickle_StringIO)
 
 def unpickle_file(name, mode, pos):
     """ Unpickle a file object. """
@@ -84,7 +70,13 @@ def pickle_StringIO(csio):
     pos = csio.tell()
     return unpickle_StringIO, (value, pos)
 
-def save():
+
+# register the picklers for file and cStringIO
+copy_reg.pickle(file, pickle_file)
+copy_reg.pickle(cStringIO.OutputType, pickle_StringIO)
+
+
+def save(session, state_file):
     """ Save emulator state to file. """
     if not state_file:
         return
@@ -95,25 +87,14 @@ def save():
     except IOError:
         logging.warning("Could not write to state file %s. Emulator state not saved.", state_file)
 
-def load():
+def load(state_file):
     """ Load emulator state from file. """
-    global session
     if not state_file:
-        return False
+        raise ResumeFailed()
     # decompress and unpickle
     try:
         with open(state_file, 'rb') as f:
-            session = pickle.loads(zlib.decompress(f.read()))
+            return pickle.loads(zlib.decompress(f.read()))
     except IOError:
         logging.warning("Could not read state file %s. Emulator state not loaded.", state_file)
-        return False
-    return True
-
-def delete():
-    """ Delete emulator state file. """
-    try:
-        os.remove(state_file)
-    except OSError:
-        pass
-
-prepare()
+        raise ResumeFailed()

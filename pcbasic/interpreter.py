@@ -62,20 +62,30 @@ class SessionLauncher(object):
             not config.get('input') and not config.get('interface') == 'none')
         if self.resume:
             self.cmd, self.run = '', False
+        # name of state file
+        state_name = 'PCBASIC.SAV'
+        self.state_file = config.get('state')
+        if os.path.exists(state_name):
+            self.state_file = state_name
+        else:
+            self.state_file = os.path.join(plat.state_path, state_name)
+        # do not load any state file from a package
+        if config.package:
+            self.state_file = ''
 
     def __enter__(self):
         """ Resume or start the session. """
-        if self.resume and state.load():
-            state.session.resume()
+        if self.resume:
+            session = Session.resume(self.state_file)
         else:
-            state.session = Session()
+            session = Session(self.state_file)
             # load initial program, allowing native-os filenames or BASIC specs
             if self.prog:
-                with state.session.files.open_native_or_basic(self.prog) as progfile:
-                    state.session.program.load(progfile)
+                with session.files.open_native_or_basic(self.prog) as progfile:
+                    session.program.load(progfile)
             if self.show_greeting:
-                state.session.greet()
-        self.thread = threading.Thread(target=state.session.run,
+                session.greet()
+        self.thread = threading.Thread(target=session.run,
                                 args=(self.cmd, self.run, self.quit, self.wait))
         self.thread.start()
 
@@ -96,17 +106,14 @@ longtick_s = 0.006 - tick_s
 
 
 
-class ResumeFailed(Exception):
-    """ Failed to resume session. """
-    def __str__(self):
-        return self.__doc__
-
-
 class Session(object):
     """ Interpreter session. """
 
-    def __init__(self):
+    def __init__(self, state_file=u''):
         """ Initialise the interpreter session. """
+        # name of file to store and resume state
+        self.state_file = state_file
+
         # true if a prompt is needed on next cycle
         self.prompt = True
         # input mode is AUTO (used by AUTO)
@@ -328,12 +335,17 @@ class Session(object):
         self.screen.drawing.reset()
         self.parser.clear()
 
-    def resume(self):
+    @classmethod
+    def resume(cls, state_file):
         """ Resume an interpreter session. """
         # resume from saved emulator state (if requested and available)
+        self = state.load(state_file)
+        if not isinstance(self, cls):
+            raise state.ResumeFailed()
+        self.state_file = state_file
         # reload the screen in resumed state
         if not self.screen.resume():
-            raise ResumeFailed()
+            raise state.ResumeFailed()
         # rebuild the audio queue
         for q, store in zip(signals.tone_queue, self.tone_queue_store):
             signals.load_queue(q, store)
@@ -342,6 +354,7 @@ class Session(object):
         # suppress double prompt
         if not self.parse_mode:
             self.prompt = False
+        return self
 
 
     ###########################################################################
@@ -377,13 +390,16 @@ class Session(object):
                 # persist unplayed tones in sound queue
                 self.tone_queue_store = [
                         signals.save_queue(q) for q in signals.tone_queue]
-                state.save()
+                state.save(self, self.state_file)
                 # close files if we opened any
                 self.files.close_all()
                 self.devices.close()
         except error.Reset:
             # delete state if resetting
-            state.delete()
+            try:
+                os.remove(self.state_file)
+            except OSError:
+                pass
 
     def loop(self):
         """ Run read-eval-print loop until control returns to user after a command. """
