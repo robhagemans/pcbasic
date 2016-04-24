@@ -13,7 +13,6 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-import config
 import basictoken as tk
 import representation
 import util

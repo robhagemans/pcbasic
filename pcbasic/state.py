@@ -19,9 +19,6 @@ import copy_reg
 import os
 import zlib
 import logging
-import plat
-import config
-
 
 
 class ResumeFailed(Exception):

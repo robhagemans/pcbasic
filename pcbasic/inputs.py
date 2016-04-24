@@ -9,8 +9,6 @@ This file is released under the GNU GPL version 3 or later.
 import datetime
 import logging
 
-import plat
-import config
 import error
 import scancode
 from eascii import as_bytes as ea
