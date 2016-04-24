@@ -124,21 +124,21 @@ class Devices(object):
     # allowable drive letters in GW-BASIC are letters or @
     drive_letters = b'@' + string.ascii_uppercase
 
-    def __init__(self, session, fields, console, keyboard):
+    def __init__(self, session, fields, screen, keyboard):
         """ Initialise devices. """
         self.devices = {}
-        # screen/console
-        self.devices['SCRN:'] = devices.SCRNDevice(console)
-        # KYBD: device needs console as it can set the screen width
-        self.devices['KYBD:'] = devices.KYBDDevice(keyboard, console)
+        # screen device
+        self.devices['SCRN:'] = devices.SCRNDevice(screen)
+        # KYBD: device needs screen as it can set the screen width
+        self.devices['KYBD:'] = devices.KYBDDevice(keyboard, screen)
         self.scrn_file = self.devices['SCRN:'].device_file
         self.kybd_file = self.devices['KYBD:'].device_file
         # ports
         # parallel devices - LPT1: must always be defined
         print_trigger = config.get('print-trigger')
-        self.devices['LPT1:'] = ports.LPTDevice(config.get('lpt1'), devices.nullstream(), print_trigger, console.screen.codepage)
-        self.devices['LPT2:'] = ports.LPTDevice(config.get('lpt2'), None, print_trigger, console.screen.codepage)
-        self.devices['LPT3:'] = ports.LPTDevice(config.get('lpt3'), None, print_trigger, console.screen.codepage)
+        self.devices['LPT1:'] = ports.LPTDevice(config.get('lpt1'), devices.nullstream(), print_trigger, screen.codepage)
+        self.devices['LPT2:'] = ports.LPTDevice(config.get('lpt2'), None, print_trigger, screen.codepage)
+        self.devices['LPT3:'] = ports.LPTDevice(config.get('lpt3'), None, print_trigger, screen.codepage)
         self.lpt1_file = self.devices['LPT1:'].device_file
         # serial devices
         # buffer sizes (/c switch in GW-BASIC)
@@ -146,8 +146,8 @@ class Devices(object):
         self.devices['COM1:'] = ports.COMDevice(config.get('com1'), session, devices.Field(serial_in_size), serial_in_size)
         self.devices['COM2:'] = ports.COMDevice(config.get('com2'), session, devices.Field(serial_in_size), serial_in_size)
         # cassette
-        # needs a console for Found and Skipped messages on opening files
-        self.devices['CAS1:'] = cassette.CASDevice(config.get('cas1'), console.screen)
+        # needs a screen for write() and write_line() to display Found and Skipped messages on opening files
+        self.devices['CAS1:'] = cassette.CASDevice(config.get('cas1'), screen)
         # disk file locks
         self.locks = disk.Locks()
         # field buffers

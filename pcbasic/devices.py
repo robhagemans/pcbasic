@@ -89,11 +89,11 @@ class SCRNDevice(Device):
 
     allowed_modes = 'OR'
 
-    def __init__(self, console):
+    def __init__(self, screen):
         """ Initialise screen device. """
         # open a master file on the screen
         Device.__init__(self)
-        self.device_file = SCRNFile(console)
+        self.device_file = SCRNFile(screen)
 
 
 class KYBDDevice(Device):
@@ -101,11 +101,11 @@ class KYBDDevice(Device):
 
     allowed_modes = 'IR'
 
-    def __init__(self, keyboard, console):
+    def __init__(self, keyboard, screen):
         """ Initialise keyboard device. """
         # open a master file on the keyboard
         Device.__init__(self)
-        self.device_file = KYBDFile(keyboard, console)
+        self.device_file = KYBDFile(keyboard, screen)
 
 
 #################################################################################
@@ -433,7 +433,7 @@ class KYBDFile(TextFileBase):
 
     col = 0
 
-    def __init__(self, keyboard, console):
+    def __init__(self, keyboard, screen):
         """ Initialise keyboard file. """
         # use mode = 'A' to avoid needing a first char from nullstream
         TextFileBase.__init__(self, nullstream(), filetype='D', mode='A')
@@ -441,13 +441,12 @@ class KYBDFile(TextFileBase):
         # to be attached to the next
         self.input_last = ''
         self.keyboard = keyboard
-        # console needed for width settings on KYBD: master file
-        self.console = console
-        self.screen = console.screen
+        # screen needed for width settings on KYBD: master file
+        self.screen = screen
 
     def open_clone(self, filetype, mode, reclen=128):
         """ Clone device file. """
-        inst = KYBDFile(self.keyboard, self.console)
+        inst = KYBDFile(self.keyboard, self.screen)
         inst.mode = mode
         inst.reclen = reclen
         inst.filetype = filetype
@@ -561,17 +560,16 @@ class SCRNFile(RawFile):
     """ SCRN: file, allows writing to the screen as a text file.
         SCRN: files work as a wrapper text file. """
 
-    def __init__(self, console):
+    def __init__(self, screen):
         """ Initialise screen file. """
         RawFile.__init__(self, nullstream(), filetype='D', mode='O')
-        self.screen = console.screen
-        self.console = console
+        self.screen = screen
         self._width = self.screen.mode.width
         self._col = self.screen.current_col
 
     def open_clone(self, filetype, mode, reclen=128):
         """ Clone screen file. """
-        inst = SCRNFile(self.console)
+        inst = SCRNFile(self.screen)
         inst.mode = mode
         inst.reclen = reclen
         inst.filetype = filetype
