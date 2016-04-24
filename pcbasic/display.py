@@ -14,7 +14,6 @@ except ImportError:
     numpy = None
 
 import signals
-import state
 import error
 import modes
 import typeface
@@ -398,7 +397,7 @@ class PixelPage(object):
 class Screen(object):
     """ Screen manipulation operations. """
 
-    def __init__(self, initial_width, video_mem_size, capabilities, monitor, sound, redirect, fkey_macros,
+    def __init__(self, session, initial_width, video_mem_size, capabilities, monitor, sound, redirect, fkey_macros,
                 cga_low, mono_tint, screen_aspect, codepage, font_family, warn_fonts):
         """ Minimal initialisiation of the screen. """
         # emulated video card - cga, ega, etc
@@ -475,6 +474,8 @@ class Screen(object):
         self.fkey_macros = fkey_macros
         # print screen target, to be set later due to init order issues
         self.lpt1_file = None
+        # session dependence only for check_events() in Graphics
+        self.session = session
         # initialise a fresh textmode screen
         self.set_mode(self.mode, 0, 1, 0, 0)
 
@@ -685,7 +686,7 @@ class Screen(object):
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics characteristics
-        self.drawing = graphics.Drawing(self, state.session)
+        self.drawing = graphics.Drawing(self, self.session)
         # cursor width starts out as single char
         self.cursor.init_mode(self.mode)
         self.palette = Palette(self.mode, self.capabilities)

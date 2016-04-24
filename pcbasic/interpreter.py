@@ -151,7 +151,8 @@ class Session(object):
         else:
             screen_aspect = (4, 3)
         # Sound is needed for the beeps on \a
-        self.screen = display.Screen(config.get('text-width'),
+        # Session is only for check_events() in Graphics (flood fill)
+        self.screen = display.Screen(self, config.get('text-width'),
                 config.get('video-memory'), video_capabilities, monitor,
                 self.sound, self.output_redirection, self.fkey_macros,
                 config.get('cga-low'), config.get('mono-tint'), screen_aspect,
