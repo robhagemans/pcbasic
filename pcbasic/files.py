@@ -99,7 +99,9 @@ class Files(object):
         """ If the specified file exists, open it; if not, try as BASIC file spec. Do not register in files dict. """
         try:
             # first try exact file name
-            return disk.create_file_object(open(os.path.expandvars(os.path.expanduser(infile)), 'rb'), filetype='BPA', mode='I')
+            return self.devices.internal_disk.create_file_object(
+                    open(os.path.expandvars(os.path.expanduser(infile)), 'rb'),
+                    filetype='BPA', mode='I')
         except EnvironmentError as e:
             # otherwise, accept capitalised versions and default extension
             return self.open(0, infile, filetype='BPA', mode='I')
@@ -156,6 +158,7 @@ class Devices(object):
         # for wait() and check_events()
         self.session = session
         # disk devices
+        self.internal_disk = disk.DiskDevice(b'', None, u'', self.fields, self.locks, self.codepage, self.session)
         for letter in self.drive_letters:
             self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'', self.fields, self.locks, self.codepage, self.session)
         current_drive = config.get(u'current-device').upper()

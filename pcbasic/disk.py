@@ -100,47 +100,6 @@ allowable_chars = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~
 
 
 ##############################################################################
-# Disk file object wrapper
-
-def create_file_object(fhandle, filetype, mode, name=b'', number=0,
-                       access=b'RW', lock=b'', field=None, reclen=128,
-                       seg=0, offset=0, length=0, locks=None):
-    """ Create disk file object of requested type. """
-    # determine file type if needed
-    if len(filetype) > 1 and mode == b'I':
-        # read magic
-        first = fhandle.read(1)
-        fhandle.seek(-1, 1)
-        try:
-            filetype_found = devices.magic_to_type[first]
-            if filetype_found not in filetype:
-                raise error.RunError(error.BAD_FILE_MODE)
-            filetype = filetype_found
-        except KeyError:
-            filetype = b'A'
-    if filetype in b'BPM':
-        # binary [B]LOAD, [B]SAVE
-        return BinaryFile(fhandle, filetype, number, name, mode,
-                           seg, offset, length, locks=locks)
-    elif filetype == b'A':
-        # ascii program file (UTF8 or universal newline if option given)
-        return TextFile(fhandle, filetype, number, name, mode, access, lock,
-                         codepage=None if not config.get(u'utf8') else state.session.codepage,
-                         universal=not config.get(u'strict-newline'),
-                         split_long_lines=False, locks=locks)
-    elif filetype == b'D':
-        if mode in b'IAO':
-            # text data
-            return TextFile(fhandle, filetype, number, name, mode, access, lock, locks=locks)
-        else:
-            return RandomFile(fhandle, number, name, access, lock, field, reclen, locks=locks)
-    else:
-        # incorrect file type requested
-        msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
-        raise ValueError(msg)
-
-
-##############################################################################
 # Exception handling
 
 def safe(fnname, *fnargs):
@@ -325,6 +284,43 @@ class DiskDevice(object):
         """ Close disk device. """
         pass
 
+    def create_file_object(self, fhandle, filetype, mode, name=b'', number=0,
+                           access=b'RW', lock=b'', field=None, reclen=128,
+                           seg=0, offset=0, length=0):
+        """ Create disk file object of requested type. """
+        # determine file type if needed
+        if len(filetype) > 1 and mode == b'I':
+            # read magic
+            first = fhandle.read(1)
+            fhandle.seek(-1, 1)
+            try:
+                filetype_found = devices.magic_to_type[first]
+                if filetype_found not in filetype:
+                    raise error.RunError(error.BAD_FILE_MODE)
+                filetype = filetype_found
+            except KeyError:
+                filetype = b'A'
+        if filetype in b'BPM':
+            # binary [B]LOAD, [B]SAVE
+            return BinaryFile(fhandle, filetype, number, name, mode,
+                               seg, offset, length, locks=self.locks)
+        elif filetype == b'A':
+            # ascii program file (UTF8 or universal newline if option given)
+            return TextFile(fhandle, filetype, number, name, mode, access, lock,
+                             codepage=None if not config.get(u'utf8') else self.codepage,
+                             universal=not config.get(u'strict-newline'),
+                             split_long_lines=False, locks=self.locks)
+        elif filetype == b'D':
+            if mode in b'IAO':
+                # text data
+                return TextFile(fhandle, filetype, number, name, mode, access, lock, locks=self.locks)
+            else:
+                return RandomFile(fhandle, number, name, access, lock, field, reclen, locks=self.locks)
+        else:
+            # incorrect file type requested
+            msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
+            raise ValueError(msg)
+
     def open(self, number, param, filetype, mode, access, lock,
                    reclen, seg, offset, length):
         """ Open a file on a disk drive. """
@@ -354,9 +350,9 @@ class DiskDevice(object):
             fhandle = self._open_stream(name, mode, access)
             # apply the BASIC file wrapper
             field = self.fields[number] if number else None
-            f = create_file_object(fhandle, filetype, mode, name, number,
+            f = self.create_file_object(fhandle, filetype, mode, name, number,
                     access, lock, field, reclen,
-                    seg, offset, length, locks=self.locks)
+                    seg, offset, length)
             # register file as open
             self.locks.open_file(number, f)
             return f

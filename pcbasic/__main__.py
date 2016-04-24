@@ -89,9 +89,6 @@ def prepare_logging():
 
 def convert():
     """ Perform file format conversion. """
-    import program
-    import files
-    import disk
     import interpreter
     # set conversion output
     # first arg, if given, is mode; second arg, if given, is outfile
@@ -101,9 +98,10 @@ def convert():
     outfile = config.get(1)
     # keep uppercase first letter
     mode = mode[0].upper() if mode else 'A'
-    # FIXME - need to remove Session dependence from Devices, replace with class to hold main event loop only
     session = interpreter.Session()
-    files = files.Files(session.devices, max_files=3)
+    files = session.files
+    internal_disk = session.devices.internal_disk
+    prog = session.program
     # load & save in different format
     try:
         prog_infile = None
@@ -112,17 +110,16 @@ def convert():
         elif plat.has_stdin:
             # use StringIO buffer for seekability
             in_buffer = StringIO(sys.stdin.read())
-            prog_infile = disk.create_file_object(in_buffer, filetype='ABP', mode='I')
-        prog = program.Program(address=4717)
+            prog_infile = internal_disk.create_file_object(in_buffer, filetype='ABP', mode='I')
         if prog_infile:
             with prog_infile:
                 prog.load(prog_infile, rebuild_dict=False)
         prog_outfile = None
         if outfile:
             # on save from command-line, use exact file name
-            prog_outfile = disk.create_file_object(open(outfile, 'wb'), filetype=mode, mode='O')
+            prog_outfile = internal_disk.create_file_object(open(outfile, 'wb'), filetype=mode, mode='O')
         elif plat.has_stdout:
-            prog_outfile = disk.create_file_object(sys.stdout, filetype=mode, mode='O')
+            prog_outfile = internal_disk.create_file_object(sys.stdout, filetype=mode, mode='O')
         if prog_outfile:
             with prog_outfile:
                 prog.save(prog_outfile)
