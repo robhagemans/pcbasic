@@ -410,7 +410,7 @@ class Session(object):
                 # persist unplayed tones in sound queue
                 self.tone_queue_store = [
                         signals.save_queue(q) for q in self.tone_queue]
-                #state.save(self, self.state_file)
+                state.save(self, self.state_file)
                 # close files if we opened any
                 self.files.close_all()
                 self.devices.close()

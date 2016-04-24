@@ -19,6 +19,7 @@ import copy_reg
 import os
 import zlib
 import logging
+import Queue
 
 
 class ResumeFailed(Exception):
@@ -70,6 +71,19 @@ def pickle_StringIO(csio):
 # register the picklers for file and cStringIO
 copy_reg.pickle(file, pickle_file)
 copy_reg.pickle(cStringIO.OutputType, pickle_StringIO)
+
+
+def unpickle_Queue(self, dummy):
+    """ Dummy unpickler for Queue. """
+    return Queue.Queue()
+
+def pickle_Queue(self):
+    """ Dummy pickler for queue - nothing is saved except the type. """
+    return None
+
+# copy_reg does not work with old-style classes, so we inject pickling methods
+Queue.Queue.__setstate__ = unpickle_Queue
+Queue.Queue.__getstate__ = pickle_Queue
 
 
 def save(session, state_file):
