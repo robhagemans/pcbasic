@@ -16,7 +16,6 @@ except ImportError:
     from StringIO import StringIO
 
 import error
-import config
 import util
 import draw_and_play
 import representation
@@ -49,7 +48,7 @@ class PlayState(object):
 class Sound(object):
     """ Sound queue manipulations. """
 
-    def __init__(self, session):
+    def __init__(self, session, syntax):
         """ Initialise sound queue. """
         # for wait() and queues
         self.session = session
@@ -60,8 +59,8 @@ class Sound(object):
         self.noise_freq[7] = 0.
         # pc-speaker on/off; (not implemented; not sure whether should be on)
         self.beep_on = True
-        if config.get('syntax') in ('pcjr', 'tandy'):
-            self.capabilities = config.get('syntax')
+        if syntax in ('pcjr', 'tandy'):
+            self.capabilities = syntax
         else:
             self.capabilities = ''
         # Tandy/PCjr SOUND ON and BEEP ON

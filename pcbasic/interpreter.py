@@ -158,8 +158,8 @@ class Session(object):
                 filter_stream)
 
         # initialise sound queue
-        # needs Session for wait() only
-        self.sound = sound.Sound(self)
+        # needs Session for wait() and queues only
+        self.sound = sound.Sound(self, config.get('syntax'))
 
         # function key macros
         self.fkey_macros = console.FunctionKeyMacros(
@@ -173,7 +173,7 @@ class Session(object):
         else:
             screen_aspect = (4, 3)
         # Sound is needed for the beeps on \a
-        # Session is only for check_events() in Graphics (flood fill)
+        # Session is only for queues and check_events() in Graphics (flood fill)
         self.screen = display.Screen(self, config.get('text-width'),
                 config.get('video-memory'), video_capabilities, monitor,
                 self.sound, self.output_redirection, self.fkey_macros,
