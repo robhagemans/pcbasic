@@ -44,8 +44,6 @@ except Exception:
     parallel = None
 
 import error
-# for wait() during port read
-import events
 import devices
 import printer
 

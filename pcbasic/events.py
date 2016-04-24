@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 from contextlib import contextmanager
 
-import error
 import scancode
 
 

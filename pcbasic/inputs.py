@@ -13,7 +13,6 @@ import error
 import scancode
 from eascii import as_bytes as ea
 from eascii import as_unicode as uea
-import events
 
 
 # bit flags for modifier keys

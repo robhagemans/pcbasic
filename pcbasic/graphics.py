@@ -21,7 +21,6 @@ import fp
 import vartypes
 import util
 import draw_and_play
-import events
 
 # degree-to-radian conversion factor
 deg_to_rad = fp.div(fp.Single.twopi, fp.Single.from_int(360))

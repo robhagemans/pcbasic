@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 import os
-import logging
 try:
     import curses
 except ImportError:

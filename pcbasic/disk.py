@@ -23,12 +23,8 @@ if plat.system == b'Windows':
 from bytestream import ByteStream
 
 import error
-# for check_events during FILES
-import events
 import vartypes
 import devices
-# to be able to set current-device to CAS1
-import cassette
 
 # GW-BASIC FILE CONTROL BLOCK structure:
 # source: IBM Basic reference 1982 (for BASIC-C, BASIC-D, BASIC-A) appendix I-5

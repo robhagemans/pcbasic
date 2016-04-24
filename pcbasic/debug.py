@@ -12,11 +12,8 @@ import logging
 import os
 
 import vartypes
-import var
 import representation
 import tokenise
-import console
-import memory
 import error
 
 

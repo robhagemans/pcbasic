@@ -6,14 +6,7 @@ Machine emulation and memory model
 This file is released under the GNU GPL version 3 or later.
 """
 
-import logging
-
-import events
 import vartypes
-import var
-import error
-import memory
-import program
 
 
 ###############################################################################

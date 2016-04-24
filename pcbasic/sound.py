@@ -7,7 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import Queue
-import logging
 import string
 
 try:
@@ -18,9 +17,6 @@ except ImportError:
 import error
 import util
 import draw_and_play
-import representation
-import vartypes
-import events
 import signals
 
 # base frequency for noise source

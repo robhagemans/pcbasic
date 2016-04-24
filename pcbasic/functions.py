@@ -20,7 +20,6 @@ import shell
 import util
 import error
 import basictoken as tk
-import console
 
 
 

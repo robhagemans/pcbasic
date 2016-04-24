@@ -15,8 +15,6 @@ except ImportError:
     from StringIO import StringIO
 import string
 
-import console
-import disk
 import error
 import fp
 import ports

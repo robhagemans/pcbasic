@@ -13,7 +13,6 @@ except ImportError:
 
 import util
 import devices
-import vartypes
 
 
 class InputTextFile(devices.TextFileBase):

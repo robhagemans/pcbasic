@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import os
 
 import error
-import var
+import vartypes
 
 def nullstream():
     return open(os.devnull, 'r+')
@@ -164,8 +164,6 @@ class RawFile(object):
 #################################################################################
 # Text file base
 
-import representation
-import vartypes
 
 class TextFileBase(RawFile):
     """ Base for text files on disk, KYBD file, field buffer. """

@@ -13,14 +13,10 @@ except ImportError:
 import string
 from collections import deque
 
-import disk
 import error
 import events
 import fp
-import devices
-import ports
 import representation
-import sound
 import basictoken as tk
 import util
 import vartypes

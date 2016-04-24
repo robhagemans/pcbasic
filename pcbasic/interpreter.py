@@ -31,9 +31,6 @@ import state
 import inputs
 import debug
 import config
-import devices
-import cassette
-import disk
 import rnd
 import timedate
 import shell
