@@ -8,7 +8,7 @@ sending in patches, and documenting GW-BASIC's behaviour. Thank you all!
 - **Rob Hagemans**,   lead author
 - **Wengier Wu**,     bug fixes, advice for CJK support
 - **WJB**,            bug fixes
-  **Jan Bredenbeek**, bug fixes, advice for BASICODE support
+- **Jan Bredenbeek**, bug fixes, advice for BASICODE support
 - **Ronald Herrera**, testing, bug hunting
 - **Miguel Dorta**,   testing, serial ports
 - **Patrik**,         testing, serial ports
