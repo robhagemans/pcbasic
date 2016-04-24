@@ -32,7 +32,7 @@ class BaseDebugger(object):
         """ Display a modal exception message. """
         self.session.screen.screen(0, 0, 0, 0, new_width=80)
         self.session.screen.clear()
-        self.session.console.init_mode()
+        self.session.screen.init_mode()
         exc_type, exc_value, exc_traceback = sys.exc_info()
         # log the standard python error
         logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))

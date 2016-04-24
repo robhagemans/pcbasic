@@ -701,6 +701,12 @@ class Screen(object):
 
     def set_width(self, to_width):
         """ Set the character width of the screen, reset pages and change modes. """
+        # raise an error if the width value doesn't make sense
+        if to_width not in (20, 40, 80):
+            raise error.RunError(error.IFC)
+        # if we're currently at that width, do nothing
+        if to_width == self.mode.width:
+            return
         if to_width == 20:
             if self.capabilities in ('pcjr', 'tandy'):
                 self.screen(3, None, 0, 0)
@@ -733,11 +739,12 @@ class Screen(object):
                 self.screen(8, None, 0, 0)
         else:
             raise error.RunError(error.IFC)
+        self.init_mode()
 
     def init_mode(self):
         """ Initialisation when we switched to new screen mode. """
         # redraw key line
-        self.fkey_macros.redraw_keys(self.screen)
+        self.fkey_macros.redraw_keys(self)
         # rebuild build the cursor;
         # first move to home in case the screen has shrunk
         self.set_pos(1, 1)

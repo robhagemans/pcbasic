@@ -443,6 +443,7 @@ class KYBDFile(TextFileBase):
         self.keyboard = keyboard
         # console needed for width settings on KYBD: master file
         self.console = console
+        self.screen = console.screen
 
     def open_clone(self, filetype, mode, reclen=128):
         """ Clone device file. """
@@ -498,7 +499,7 @@ class KYBDFile(TextFileBase):
     def set_width(self, new_width=255):
         """ Setting width on KYBD device (not files) changes screen width. """
         if self.is_master:
-            self.console.set_width(new_width)
+            self.screen.set_width(new_width)
 
     def input_entry(self, typechar, allow_past_end):
         """ Read a number or string entry from KYBD: for INPUT# """
@@ -648,7 +649,7 @@ class SCRNFile(RawFile):
     def set_width(self, new_width=255):
         """ Set (virtual) screen width. """
         if self.is_master:
-            self.console.set_width(new_width)
+            self.screen.set_width(new_width)
         else:
             self._width = new_width
 
