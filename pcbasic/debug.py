@@ -17,6 +17,13 @@ import representation
 import tokenise
 import console
 import memory
+import error
+
+
+class DebugException(Exception):
+    """Test exception for debugging purposes"""
+    def __str__(self):
+        return self.__doc__
 
 
 class BaseDebugger(object):
@@ -137,6 +144,10 @@ class Debugger(BaseDebugger):
         sys.stdout = buf
         try:
             exec(debug_cmd)
+        except DebugException:
+            raise
+        except error.Reset:
+            raise
         except Exception as e:
             logging.debug(str(type(e))+' '+str(e))
             traceback.print_tb(sys.exc_info()[2])
@@ -152,6 +163,14 @@ class Debugger(BaseDebugger):
 debugger = None
 # convenient access to current session
 session = None
+
+def crash():
+    """ Simulate a crash. """
+    raise DebugException()
+
+def reset():
+    """ Ctrl+Alt+Delete. """
+    raise error.Reset()
 
 def trace(on=True):
     """ Switch line number tracing on or off. """
