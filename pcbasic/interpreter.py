@@ -221,6 +221,8 @@ class Session(object):
         self.devices = files.Devices(self, self.memory.fields,
                                     self.screen, self.keyboard)
         self.files = files.Files(self.devices, max_files)
+        # set LPT1 as target for print_screen()
+        self.screen.set_print_screen_target(self.devices.lpt1_file)
 
         # set up rest of memory model
         peek_values = {}
