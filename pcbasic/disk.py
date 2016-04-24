@@ -300,12 +300,11 @@ class DiskDevice(object):
     allowed_modes = b'IOR'
 
     # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
-    # and internal LOAD and SAVE modes
     _access_modes = {b'I': b'rb', b'O': b'wb', b'R': b'r+b', b'A': b'ab'}
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     _access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
-    def __init__(self, letter, path, cwd, fields, locks, session):
+    def __init__(self, letter, path, cwd, fields, locks, codepage, session):
         """ Initialise a disk device. """
         self.letter = letter
         # mount root
@@ -317,6 +316,8 @@ class DiskDevice(object):
         self.cwd = os.path.join(*cwd.split(u'\\'))
         self.fields = fields
         self.locks = locks
+        # code page for file system names and text file conversion
+        self.codepage = codepage
         # for check_events() during FILES
         self.session = session
 
@@ -399,7 +400,7 @@ class DiskDevice(object):
 
     def _native_path_elements(self, path_without_drive, path_err, join_name=False):
         """ Return elements of the native path for a given BASIC path. """
-        path_without_drive = state.session.codepage.str_to_unicode(
+        path_without_drive = self.codepage.str_to_unicode(
                 bytes(path_without_drive), box_protect=False)
         if u'/' in path_without_drive:
             # bad file number - this is what GW produces here

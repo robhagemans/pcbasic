@@ -133,12 +133,13 @@ class Devices(object):
         self.devices['KYBD:'] = devices.KYBDDevice(keyboard, screen)
         self.scrn_file = self.devices['SCRN:'].device_file
         self.kybd_file = self.devices['KYBD:'].device_file
+        self.codepage = screen.codepage
         # ports
         # parallel devices - LPT1: must always be defined
         print_trigger = config.get('print-trigger')
-        self.devices['LPT1:'] = ports.LPTDevice(config.get('lpt1'), devices.nullstream(), print_trigger, screen.codepage)
-        self.devices['LPT2:'] = ports.LPTDevice(config.get('lpt2'), None, print_trigger, screen.codepage)
-        self.devices['LPT3:'] = ports.LPTDevice(config.get('lpt3'), None, print_trigger, screen.codepage)
+        self.devices['LPT1:'] = ports.LPTDevice(config.get('lpt1'), devices.nullstream(), print_trigger, self.codepage)
+        self.devices['LPT2:'] = ports.LPTDevice(config.get('lpt2'), None, print_trigger, self.codepage)
+        self.devices['LPT3:'] = ports.LPTDevice(config.get('lpt3'), None, print_trigger, self.codepage)
         self.lpt1_file = self.devices['LPT1:'].device_file
         # serial devices
         # buffer sizes (/c switch in GW-BASIC)
@@ -156,12 +157,12 @@ class Devices(object):
         self.session = session
         # disk devices
         for letter in self.drive_letters:
-            self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'', self.fields, self.locks, self.session)
+            self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'', self.fields, self.locks, self.codepage, self.session)
         current_drive = config.get(u'current-device').upper()
         if config.get(u'map-drives'):
             current_drive = self._map_drives()
         else:
-            self.devices[b'Z:'] = disk.DiskDevice(b'Z', os.getcwdu(), u'', self.fields, self.locks, self.session)
+            self.devices[b'Z:'] = disk.DiskDevice(b'Z', os.getcwdu(), u'', self.fields, self.locks, self.codepage, self.session)
         self._mount_drives(config.get(u'mount'))
         self._set_current_device(current_drive + b':')
 
@@ -192,7 +193,7 @@ class Devices(object):
                 if not os.path.isdir(path):
                     logging.warning(u'Could not mount %s', a)
                 else:
-                    self.devices[letter + b':'] = disk.DiskDevice(letter, path, u'', self.fields, self.locks, self.session)
+                    self.devices[letter + b':'] = disk.DiskDevice(letter, path, u'', self.fields, self.locks, self.codepage, self.session)
             except (TypeError, ValueError) as e:
                 logging.warning(u'Could not mount %s: %s', a, unicode(e))
 
@@ -227,7 +228,7 @@ class Devices(object):
                     # must not start with \\
                     path, cwd = cwd[:3], cwd[3:]
                     bletter = letter.encode(b'ascii')
-                    self.devices[bletter + b':'] = disk.DiskDevice(bletter, path, cwd, self.fields, self.locks, self.session)
+                    self.devices[bletter + b':'] = disk.DiskDevice(bletter, path, cwd, self.fields, self.locks, self.codepage, self.session)
             os.chdir(save_current)
             return current_drive
     else:
@@ -235,16 +236,16 @@ class Devices(object):
             """ Map useful Unix directories to PC-BASIC disk devices. """
             cwd = os.getcwdu()
             # map C to root
-            self.devices[b'C:'] = disk.DiskDevice(b'C', u'/', cwd[1:], self.fields, self.locks, self.session)
+            self.devices[b'C:'] = disk.DiskDevice(b'C', u'/', cwd[1:], self.fields, self.locks, self.codepage, self.session)
             # map Z to cwd
-            self.devices[b'Z:'] = disk.DiskDevice(b'Z', cwd, u'', self.fields, self.locks, self.session)
+            self.devices[b'Z:'] = disk.DiskDevice(b'Z', cwd, u'', self.fields, self.locks, self.codepage, self.session)
             # map H to home
             home = os.path.expanduser(u'~')
             # if cwd is in home tree, set it also on H:
             if cwd[:len(home)] == home:
-                self.devices[b'H:'] = disk.DiskDevice(b'H', home, cwd[len(home)+1:], self.fields, self.locks, self.session)
+                self.devices[b'H:'] = disk.DiskDevice(b'H', home, cwd[len(home)+1:], self.fields, self.locks, self.codepage, self.session)
             else:
-                self.devices[b'H:'] = disk.DiskDevice(b'H', home, u'', self.fields, self.locks, self.session)
+                self.devices[b'H:'] = disk.DiskDevice(b'H', home, u'', self.fields, self.locks, self.codepage, self.session)
             # default durrent drive
             return b'Z'
 
