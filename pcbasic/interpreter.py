@@ -117,17 +117,18 @@ longtick_s = 0.006 - tick_s
 class Session(object):
     """ Interpreter session. """
 
-    def __init__(self, state_file,
-                input_queue, video_queue,
-                tone_queue, message_queue):
+    def __init__(self, state_file=u'',
+                input_queue=None, video_queue=None,
+                tone_queue=None, message_queue=None):
         """ Initialise the interpreter session. """
         # name of file to store and resume state
         self.state_file = state_file
         # input, video and audio queues
-        self.input_queue = input_queue
-        self.video_queue = video_queue
-        self.tone_queue = tone_queue
-        self.message_queue = message_queue
+        # use dummy queues if not provided
+        self.input_queue = input_queue or Queue.Queue()
+        self.video_queue = video_queue or Queue.Queue()
+        self.tone_queue = tone_queue or Queue.Queue()
+        self.message_queue = message_queue or Queue.Queue()
         # true if a prompt is needed on next cycle
         self.prompt = True
         # input mode is AUTO (used by AUTO)
