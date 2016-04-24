@@ -1798,7 +1798,7 @@ class Statements(object):
                                      self.parser.parse_expression(ins, self.session)
                                  )).round_to_int()):
                         self.session.screen.screen(0, 0, 0, 0)
-                        self.session.console.init_mode()
+                        self.session.screen.init_mode()
                 elif not exp2:
                     raise error.RunError(error.STX)
         util.require(ins, tk.end_statement)
@@ -2583,7 +2583,7 @@ class Statements(object):
                 (screen.mode.width != oldmode.width) or
                 (screen.colorswitch != oldcolor)):
             # rebuild the console if we've switched modes or colorswitch
-            self.session.console.init_mode()
+            self.session.screen.init_mode()
 
     def exec_pcopy(self, ins):
         """ PCOPY: copy video pages. """

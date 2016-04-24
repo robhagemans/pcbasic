@@ -128,10 +128,6 @@ class Console(object):
         self.sound = sound
         self.keyboard = keyboard
         self.redirect = output_redirection
-        self.init_mode()
-
-    def init_mode(self):
-        """ Initialisation when we switched to new screen mode. """
         self.screen.init_mode()
 
     def set_width(self, to_width):
@@ -143,7 +139,7 @@ class Console(object):
         if to_width != self.screen.mode.width:
             # change video mode to one with new width
             self.screen.set_width(to_width)
-            self.init_mode()
+            self.screen.init_mode()
 
     ###############################
     # interactive mode
