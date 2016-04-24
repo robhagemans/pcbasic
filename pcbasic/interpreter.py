@@ -139,6 +139,10 @@ class Session(object):
         # needs Session for wait() only
         self.sound = sound.Sound(self)
 
+        # function key macros
+        self.fkey_macros = console.FunctionKeyMacros(
+                12 if config.get('syntax') == 'tandy' else 10)
+
         # set initial video mode
         monitor = config.get('monitor')
         video_capabilities = config.get('video')
@@ -149,17 +153,13 @@ class Session(object):
         # Sound is needed for the beeps on \a
         self.screen = display.Screen(config.get('text-width'),
                 config.get('video-memory'), video_capabilities, monitor,
-                self.sound, self.output_redirection,
+                self.sound, self.output_redirection, self.fkey_macros,
                 config.get('cga-low'), config.get('mono-tint'), screen_aspect,
                 self.codepage, config.get('font'), warn_fonts=config.get('debug'))
 
         # prepare input methods
         self.pen = inputs.Pen(self.screen)
         self.stick = inputs.Stick()
-
-
-        self.fkey_macros = console.FunctionKeyMacros(
-                12 if config.get('syntax') == 'tandy' else 10)
 
         # inserted keystrokes
         keystring = config.get('keys').decode('string_escape').decode('utf-8')
@@ -176,8 +176,7 @@ class Session(object):
         self.set_parse_mode(False)
         # initialise the console
         self.console = console.Console(
-                self.screen, self.keyboard, self.sound,
-                self.output_redirection, self.fkey_macros)
+                self.screen, self.keyboard, self.sound, self.output_redirection)
 
         # direct line buffer
         self.direct_line = StringIO()

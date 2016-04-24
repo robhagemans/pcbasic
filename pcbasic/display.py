@@ -398,7 +398,7 @@ class PixelPage(object):
 class Screen(object):
     """ Screen manipulation operations. """
 
-    def __init__(self, initial_width, video_mem_size, capabilities, monitor, sound, redirect,
+    def __init__(self, initial_width, video_mem_size, capabilities, monitor, sound, redirect, fkey_macros,
                 cga_low, mono_tint, screen_aspect, codepage, font_family, warn_fonts):
         """ Minimal initialisiation of the screen. """
         # emulated video card - cga, ega, etc
@@ -471,6 +471,8 @@ class Screen(object):
         self.sound = sound
         # output redirection
         self.redirect = redirect
+        # function key macros
+        self.fkey_macros = fkey_macros
         # initialise a fresh textmode screen
         self.set_mode(self.mode, 0, 1, 0, 0)
 
@@ -734,6 +736,8 @@ class Screen(object):
 
     def init_mode(self):
         """ Initialisation when we switched to new screen mode. """
+        # redraw key line
+        self.fkey_macros.redraw_keys(self.screen)
         # rebuild build the cursor;
         # first move to home in case the screen has shrunk
         self.set_pos(1, 1)

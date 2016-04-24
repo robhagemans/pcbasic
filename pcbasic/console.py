@@ -120,20 +120,18 @@ class FunctionKeyMacros(object):
 class Console(object):
     """ Interactive environment. """
 
-    def __init__(self, screen, keyboard, sound, output_redirection, fkey_macros):
+    def __init__(self, screen, keyboard, sound, output_redirection):
         """ Initialise console. """
         # overwrite mode (instead of insert)
         self._overwrite_mode = True
         self.screen = screen
         self.sound = sound
         self.keyboard = keyboard
-        self.fkey_macros = fkey_macros
         self.redirect = output_redirection
         self.init_mode()
 
     def init_mode(self):
         """ Initialisation when we switched to new screen mode. """
-        self.fkey_macros.redraw_keys(self.screen)
         self.screen.init_mode()
 
     def set_width(self, to_width):
