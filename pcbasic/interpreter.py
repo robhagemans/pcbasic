@@ -241,8 +241,15 @@ class Session(object):
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
         # Session needed for wait()
-        self.devices = files.Devices(self, self.memory.fields,
-                                    self.screen, self.keyboard)
+        device_params = {
+                key.upper()+':' : config.get(key)
+                for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')}
+        self.devices = files.Devices(
+                self, self.memory.fields, self.screen, self.keyboard,
+                device_params, config.get(u'current-device'),
+                config.get(u'mount'), config.get(u'map-drives'),
+                config.get('print-trigger'), config.get('serial-buffer-size'),
+                config.get('utf8'), not config.get('strict-newline'))
         self.files = files.Files(self.devices, max_files)
         # set LPT1 as target for print_screen()
         self.screen.set_print_screen_target(self.devices.lpt1_file)

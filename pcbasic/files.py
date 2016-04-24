@@ -126,7 +126,9 @@ class Devices(object):
     # allowable drive letters in GW-BASIC are letters or @
     drive_letters = b'@' + string.ascii_uppercase
 
-    def __init__(self, session, fields, screen, keyboard):
+    def __init__(self, session, fields, screen, keyboard,
+                device_params, current_device, mount, map_drives,
+                print_trigger, serial_in_size, utf8, universal):
         """ Initialise devices. """
         self.devices = {}
         # screen device
@@ -138,19 +140,17 @@ class Devices(object):
         self.codepage = screen.codepage
         # ports
         # parallel devices - LPT1: must always be defined
-        print_trigger = config.get('print-trigger')
-        self.devices['LPT1:'] = ports.LPTDevice(config.get('lpt1'), devices.nullstream(), print_trigger, self.codepage)
-        self.devices['LPT2:'] = ports.LPTDevice(config.get('lpt2'), None, print_trigger, self.codepage)
-        self.devices['LPT3:'] = ports.LPTDevice(config.get('lpt3'), None, print_trigger, self.codepage)
+        self.devices['LPT1:'] = ports.LPTDevice(device_params['LPT1:'], devices.nullstream(), print_trigger, self.codepage)
+        self.devices['LPT2:'] = ports.LPTDevice(device_params['LPT2:'], None, print_trigger, self.codepage)
+        self.devices['LPT3:'] = ports.LPTDevice(device_params['LPT3:'], None, print_trigger, self.codepage)
         self.lpt1_file = self.devices['LPT1:'].device_file
         # serial devices
         # buffer sizes (/c switch in GW-BASIC)
-        serial_in_size = config.get('serial-buffer-size')
-        self.devices['COM1:'] = ports.COMDevice(config.get('com1'), session, devices.Field(serial_in_size), serial_in_size)
-        self.devices['COM2:'] = ports.COMDevice(config.get('com2'), session, devices.Field(serial_in_size), serial_in_size)
+        self.devices['COM1:'] = ports.COMDevice(device_params['COM1:'], session, devices.Field(serial_in_size), serial_in_size)
+        self.devices['COM2:'] = ports.COMDevice(device_params['COM2:'], session, devices.Field(serial_in_size), serial_in_size)
         # cassette
         # needs a screen for write() and write_line() to display Found and Skipped messages on opening files
-        self.devices['CAS1:'] = cassette.CASDevice(config.get('cas1'), screen)
+        self.devices['CAS1:'] = cassette.CASDevice(device_params['CAS1:'], screen)
         # disk file locks
         self.locks = disk.Locks()
         # field buffers
@@ -158,18 +158,18 @@ class Devices(object):
         # for wait() and check_events()
         self.session = session
         # text file settings
-        self.utf8 = config.get('utf8')
-        self.universal = not config.get('strict-newline')
+        self.utf8 = utf8
+        self.universal = universal
         # disk devices
         self.internal_disk = disk.DiskDevice(b'', None, u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
         for letter in self.drive_letters:
             self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-        current_drive = config.get(u'current-device').upper()
-        if config.get(u'map-drives'):
+        current_drive = current_device.upper()
+        if map_drives:
             current_drive = self._map_drives()
         else:
             self.devices[b'Z:'] = disk.DiskDevice(b'Z', os.getcwdu(), u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-        self._mount_drives(config.get(u'mount'))
+        self._mount_drives(mount)
         self._set_current_device(current_drive + b':')
 
     def resume(self):
