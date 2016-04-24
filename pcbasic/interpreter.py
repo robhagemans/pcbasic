@@ -174,9 +174,6 @@ class Session(object):
 
         # interpreter is executing a command
         self.set_parse_mode(False)
-        # initialise the console
-        self.console = console.Console(
-                self.screen, self.keyboard, self.sound, self.output_redirection)
 
         # direct line buffer
         self.direct_line = StringIO()
@@ -239,6 +236,11 @@ class Session(object):
 
         # initialise timer
         self.timer = timedate.Timer()
+
+        # initialise the console
+        self.console = console.Console(
+                self.screen, self.keyboard, self.sound,
+                self.output_redirection, self.devices.lpt1_file)
 
         # find program for PCjr TERM command
         pcjr_term = config.get('pcjr-term')

@@ -12,8 +12,6 @@ import error
 import basictoken as tk
 from eascii import as_bytes as ea
 
-import state
-
 # alt+key macros for interactive mode
 # these happen at a higher level than F-key macros
 alt_key_replace = {
@@ -120,7 +118,7 @@ class FunctionKeyMacros(object):
 class Console(object):
     """ Interactive environment. """
 
-    def __init__(self, screen, keyboard, sound, output_redirection):
+    def __init__(self, screen, keyboard, sound, output_redirection, lpt1_file):
         """ Initialise console. """
         # overwrite mode (instead of insert)
         self._overwrite_mode = True
@@ -128,6 +126,7 @@ class Console(object):
         self.sound = sound
         self.keyboard = keyboard
         self.redirect = output_redirection
+        self.lpt1_file = lpt1_file
         self.screen.init_mode()
 
     ###############################
@@ -307,7 +306,7 @@ class Console(object):
                     # ctrl+printscreen toggles printer copy
                     # note that shift+print is a BIOS trigger
                     # and is emulated at a deeper level
-                    self.redirect.toggle_echo(state.session.devices.lpt1_file)
+                    self.redirect.toggle_echo(self.lpt1_file)
                 else:
                     try:
                         # these are done on a less deep level than the fn key macros
