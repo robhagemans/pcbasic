@@ -378,7 +378,11 @@ class Session(object):
         for q, store in zip(self.tone_queue, self.tone_queue_store):
             signals.load_queue(q, store)
         # override selected settings from command line
-        self.devices.resume()
+        override_cas1 = config.get('cas1', False)
+        mount = config.get(u'mount', False)
+        # we always need to reset this or it may be a reference to an old device
+        current_device = config.get(u'current-device', True)
+        self.devices.resume(override_cas1, mount, current_device)
         # suppress double prompt
         if not self.parse_mode:
             self.prompt = False

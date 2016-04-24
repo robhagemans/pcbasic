@@ -16,8 +16,6 @@ import cassette
 import disk
 import ports
 
-import config
-
 import plat
 if plat.system == b'Windows':
     import win32api
@@ -172,14 +170,13 @@ class Devices(object):
         self._mount_drives(mount)
         self._set_current_device(current_drive + b':')
 
-    def resume(self):
+    def resume(self, override_cas1, mount, current_device):
         """ Override settings after resume. """
-        override_cas1 = config.get('cas1', False)
         if override_cas1:
             self.devices['CAS1:'] = cassette.CASDevice(override_cas1, self.devices['CAS1:'].screen)
-        self._mount_drives(config.get(u'mount', False))
+        self._mount_drives(mount)
         # we always need to reset this or it may be a reference to an old device
-        self._set_current_device(config.get(u'current-device', True).upper() + b':')
+        self._set_current_device(current_device.upper() + b':')
 
     def close(self):
         """ Close device master files. """
