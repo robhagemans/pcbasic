@@ -30,7 +30,7 @@ def prepare():
 class VideoANSI(video_cli.VideoCLI):
     """ Text interface implemented with ANSI escape sequences. """
 
-    def __init__(self, **kwargs):
+    def __init__(self, input_queue, video_queue, **kwargs):
         """ Initialise the text interface. """
         self.caption = kwargs.get('caption', '')
         self.set_caption_message('')
@@ -51,7 +51,7 @@ class VideoANSI(video_cli.VideoCLI):
         self.height = 25
         self.width = 80
         self._set_default_colours(16)
-        video_cli.VideoCLI.__init__(self, **kwargs)
+        video_cli.VideoCLI.__init__(self, input_queue, video_queue, **kwargs)
         self.text = [[[(u' ', (7, 0, False, False))]*80 for _ in range(25)]]
         # prevent logger from defacing the screen
         self.logger = logging.getLogger()

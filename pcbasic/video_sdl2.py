@@ -44,7 +44,7 @@ def prepare():
 class VideoSDL2(video_graphical.VideoGraphical):
     """ SDL2-based graphical interface. """
 
-    def __init__(self, **kwargs):
+    def __init__(self, input_queue, video_queue, **kwargs):
         """ Initialise SDL2 interface. """
         if not sdl2:
             logging.debug('PySDL2 module not found.')
@@ -52,7 +52,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         if not numpy:
             logging.debug('NumPy module not found.')
             raise video.InitFailed()
-        video_graphical.VideoGraphical.__init__(self, **kwargs)
+        video_graphical.VideoGraphical.__init__(self, input_queue, video_queue, **kwargs)
         # display & border
         # border attribute
         self.border_attr = 0
@@ -136,7 +136,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             sdl2.SDL_JoystickOpen(j)
             # if a joystick is present, its axes report 128 for mid, not 0
             for axis in (0, 1):
-                signals.input_queue.put(signals.Event(signals.STICK_MOVED,
+                self.input_queue.put(signals.Event(signals.STICK_MOVED,
                                                       (j, axis, 128)))
         return video_graphical.VideoGraphical.__enter__(self)
 
@@ -215,26 +215,26 @@ class VideoSDL2(video_graphical.VideoGraphical):
                     self.clipboard.paste(text)
                 if event.button.button == self.mousebutton_pen:
                     # right mouse button is a pen press
-                    signals.input_queue.put(signals.Event(signals.PEN_DOWN, pos))
+                    self.input_queue.put(signals.Event(signals.PEN_DOWN, pos))
             elif event.type == sdl2.SDL_MOUSEBUTTONUP:
-                signals.input_queue.put(signals.Event(signals.PEN_UP))
+                self.input_queue.put(signals.Event(signals.PEN_UP))
                 if event.button.button == self.mousebutton_copy:
                     self.clipboard.copy(mouse=True)
                     self.clipboard.stop()
             elif event.type == sdl2.SDL_MOUSEMOTION:
                 pos = self._normalise_pos(event.motion.x, event.motion.y)
-                signals.input_queue.put(signals.Event(signals.PEN_MOVED, pos))
+                self.input_queue.put(signals.Event(signals.PEN_MOVED, pos))
                 if self.clipboard.active():
                     self.clipboard.move(1 + pos[1] // self.font_height,
                            1 + (pos[0]+self.font_width//2) // self.font_width)
             elif event.type == sdl2.SDL_JOYBUTTONDOWN:
-                signals.input_queue.put(signals.Event(signals.STICK_DOWN,
+                self.input_queue.put(signals.Event(signals.STICK_DOWN,
                                     (event.jbutton.which, event.jbutton.button)))
             elif event.type == sdl2.SDL_JOYBUTTONUP:
-                signals.input_queue.put(signals.Event(signals.STICK_UP,
+                self.input_queue.put(signals.Event(signals.STICK_UP,
                                     (event.jbutton.which, event.jbutton.button)))
             elif event.type == sdl2.SDL_JOYAXISMOTION:
-                signals.input_queue.put(signals.Event(signals.STICK_MOVED,
+                self.input_queue.put(signals.Event(signals.STICK_MOVED,
                                     (event.jaxis.which, event.jaxis.axis,
                                     int((event.jaxis.value/32768.)*127 + 128))))
             elif event.type == sdl2.SDL_WINDOWEVENT:
@@ -253,7 +253,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 if self.nokill:
                     self.set_caption_message('to exit type <CTRL+BREAK> <ESC> SYSTEM')
                 else:
-                    signals.input_queue.put(signals.Event(signals.KEYB_QUIT))
+                    self.input_queue.put(signals.Event(signals.KEYB_QUIT))
         self._flush_keypress()
 
     def _handle_key_down(self, e):
@@ -302,7 +302,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         if self.last_down is not None:
             # insert into keyboard queue; no text event
             c, scan, mod, _ = self.last_down
-            signals.input_queue.put(signals.Event(
+            self.input_queue.put(signals.Event(
                                     signals.KEYB_DOWN, (c, scan, mod)))
             self.last_down = None
 
@@ -313,7 +313,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             self.f11_active = False
         # last key released gets remembered
         try:
-            signals.input_queue.put(signals.Event(
+            self.input_queue.put(signals.Event(
                     signals.KEYB_UP, (scan_to_scan[e.key.keysym.scancode],)))
         except KeyError:
             pass
@@ -331,7 +331,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # the text input event follows the key down event immediately
         elif self.last_down is None:
             # no key down event waiting: other input method
-            signals.input_queue.put(signals.Event(
+            self.input_queue.put(signals.Event(
                                     signals.KEYB_CHAR, (c, )))
         else:
             eascii, scan, mod, ts = self.last_down
@@ -339,14 +339,14 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 c = eascii
             if ts == event.text.timestamp:
                 # combine if same time stamp
-                signals.input_queue.put(signals.Event(
+                self.input_queue.put(signals.Event(
                                         signals.KEYB_DOWN, (c, scan, mod)))
             else:
                 # two separate events
                 # previous keypress has no corresponding textinput
                 self._flush_keypress()
                 # current textinput has no corresponding keypress
-                signals.input_queue.put(signals.Event(
+                self.input_queue.put(signals.Event(
                                         signals.KEYB_CHAR, (c, )))
             self.last_down = None
 

@@ -51,7 +51,7 @@ class Sound(object):
 
     def __init__(self, session):
         """ Initialise sound queue. """
-        # for wait()
+        # for wait() and queues
         self.session = session
         # Tandy/PCjr noise generator
         # frequency for noise sources
@@ -90,7 +90,7 @@ class Sound(object):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
         tone = signals.Event(signals.AUDIO_TONE, (frequency, duration, fill, loop, volume))
-        signals.tone_queue[voice].put(tone)
+        self.session.tone_queue[voice].put(tone)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
@@ -118,20 +118,20 @@ class Sound(object):
 
     def stop_all_sound(self):
         """ Terminate all sounds immediately. """
-        for q in signals.tone_queue:
+        for q in self.session.tone_queue:
             while not q.empty():
                 try:
                     q.get(False)
                 except Queue.Empty:
                     continue
                 q.task_done()
-        signals.message_queue.put(signals.Event(signals.AUDIO_STOP))
+        self.session.message_queue.put(signals.Event(signals.AUDIO_STOP))
 
     def play_noise(self, source, volume, duration, loop=False):
         """ Play a sound on the noise generator. """
         frequency = self.noise_freq[source]
         noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
-        signals.tone_queue[3].put(noise)
+        self.session.tone_queue[3].put(noise)
         # don't wait for noise
 
     def queue_length(self, voice=0):
@@ -139,16 +139,16 @@ class Sound(object):
         # NOTE: this returns zero when there are still TWO notes to play
         # one in the pre-play buffer and another because we subtract 1 here
         # this agrees with empirical GW-BASIC ON PLAY() timings!
-        return max(0, signals.tone_queue[voice].qsize()-1)
+        return max(0, self.session.tone_queue[voice].qsize()-1)
 
     def is_playing(self, voice):
         """ A note is playing or queued at the given voice. """
         # NOTE: Queue.unfinished_tasks is undocumented, may only work in CPython
-        return self.queue_length(voice) or signals.tone_queue[voice].unfinished_tasks
+        return self.queue_length(voice) or self.session.tone_queue[voice].unfinished_tasks
 
     def persist(self, flag):
         """ Set mixer persistence flag (runmode). """
-        signals.message_queue.put(signals.Event(signals.AUDIO_PERSIST, flag))
+        self.session.message_queue.put(signals.Event(signals.AUDIO_PERSIST, flag))
 
     ### PLAY statement
 

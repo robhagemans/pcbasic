@@ -133,9 +133,11 @@ def start_basic():
     import interface
     import interpreter
     try:
-        with interpreter.SessionLauncher():
+        with interpreter.SessionLauncher() as launcher:
             try:
-                interface.run()
+                interface.run(
+                        launcher.input_queue, launcher.video_queue,
+                        launcher.tone_queue, launcher.message_queue)
             except interface.InitFailed:
                 logging.error('Failed to initialise interface.')
     except error.RunError as e:

@@ -12,13 +12,6 @@ import Queue
 ###############################################################################
 # queues
 
-video_queue = Queue.Queue()
-input_queue = Queue.Queue()
-# audio queues
-message_queue = Queue.Queue()
-tone_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
-
-
 def save_queue(q):
     """ Get list of queue tasks. """
     qlist = []

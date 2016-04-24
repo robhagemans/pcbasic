@@ -47,13 +47,13 @@ elif plat.system != 'Android':
 class VideoCLI(video.VideoPlugin):
     """ Command-line interface. """
 
-    def __init__(self, **kwargs):
+    def __init__(self, input_queue, video_queue, **kwargs):
         """ Initialise command-line interface. """
         if not plat.stdin_is_tty:
             logging.warning('Input device is not a terminal. '
                             'Could not initialise text-based interface.')
             raise video.InitFailed()
-        video.VideoPlugin.__init__(self)
+        video.VideoPlugin.__init__(self, input_queue, video_queue)
         self._term_echo_on = True
         self._term_attr = None
         self._term_echo(False)
@@ -93,19 +93,19 @@ class VideoCLI(video.VideoPlugin):
                 break
             if uc == eof:
                 # ctrl-D (unix) / ctrl-Z (windows)
-                signals.input_queue.put(signals.Event(signals.KEYB_QUIT))
+                self.input_queue.put(signals.Event(signals.KEYB_QUIT))
             elif uc == u'\x7f':
                 # backspace
-                signals.input_queue.put(signals.Event(signals.KEYB_DOWN,
+                self.input_queue.put(signals.Event(signals.KEYB_DOWN,
                                         (uea.BACKSPACE, scancode.BACKSPACE, [])))
             elif sc or uc:
                 # check_full=False to allow pasting chunks of text
-                signals.input_queue.put(signals.Event(
+                self.input_queue.put(signals.Event(
                                         signals.KEYB_DOWN, (uc, sc, [], False)))
                 if sc == scancode.F12:
                     self.f12_active = True
                 else:
-                    signals.input_queue.put(signals.Event(
+                    self.input_queue.put(signals.Event(
                                             signals.KEYB_UP, (scancode.F12,)))
                     self.f12_active = False
 

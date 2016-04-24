@@ -53,7 +53,7 @@ def prepare():
 class AudioPygame(audio.AudioPlugin):
     """ Pygame-based audio plugin. """
 
-    def __init__(self):
+    def __init__(self, tone_queue, message_queue):
         """ Initialise sound system. """
         if not pygame:
             logging.warning('PyGame module not found. Failed to initialise PyGame audio plugin.')
@@ -70,7 +70,7 @@ class AudioPygame(audio.AudioPlugin):
         self.persist = False
         # keep track of quiet time to shut down mixer after a while
         self.quiet_ticks = 0
-        audio.AudioPlugin.__init__(self)
+        audio.AudioPlugin.__init__(self, tone_queue, message_queue)
 
     def __enter__(self):
         """ Perform any necessary initialisations. """
@@ -88,7 +88,7 @@ class AudioPygame(audio.AudioPlugin):
         alive = True
         while alive:
             try:
-                signal = signals.message_queue.get(False)
+                signal = self.message_queue.get(False)
             except Queue.Empty:
                 return True
             if signal.event_type == signals.AUDIO_STOP:
@@ -103,14 +103,14 @@ class AudioPygame(audio.AudioPlugin):
             elif signal.event_type == signals.AUDIO_PERSIST:
                 # allow/disallow mixer to quit
                 self.persist = signal.params
-            signals.message_queue.task_done()
+            self.message_queue.task_done()
 
     def _drain_tone_queue(self):
         """ Drain signal queue. """
         empty = False
         while not empty:
             empty = True
-            for voice, q in enumerate(signals.tone_queue):
+            for voice, q in enumerate(self.tone_queue):
                 # don't get the next tone if we're still working on one
                 if self.next_tone[voice]:
                     continue
@@ -148,7 +148,7 @@ class AudioPygame(audio.AudioPlugin):
                         # it's a looping tone, handle there
                         self.loop_sound[voice] = self.next_tone[voice]
                         self.next_tone[voice] = None
-                        signals.tone_queue[voice].task_done()
+                        self.tone_queue[voice].task_done()
                     else:
                         current_chunk[voice] = numpy.array([], dtype=numpy.int16)
                         while (self.next_tone[voice] and
@@ -157,7 +157,7 @@ class AudioPygame(audio.AudioPlugin):
                             if chunk is None:
                                 # tone has finished
                                 self.next_tone[voice] = None
-                                signals.tone_queue[voice].task_done()
+                                self.tone_queue[voice].task_done()
                             else:
                                 current_chunk[voice] = numpy.concatenate(
                                                     (current_chunk[voice], chunk))

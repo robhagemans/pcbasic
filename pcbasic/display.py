@@ -476,7 +476,9 @@ class Screen(object):
         self.current_col = 1
         # set codepage for video plugin
         self.codepage = codepage
-        signals.video_queue.put(signals.Event(
+        # session dependence only for queues and check_events() in Graphics
+        self.session = session
+        self.session.video_queue.put(signals.Event(
                 signals.VIDEO_SET_CODEPAGE, self.codepage))
         # prepare fonts
         heights_needed = set([8])
@@ -508,8 +510,6 @@ class Screen(object):
         self.fkey_macros = fkey_macros
         # print screen target, to be set later due to init order issues
         self.lpt1_file = None
-        # session dependence only for check_events() in Graphics
-        self.session = session
         # initialise a fresh textmode screen
         self.set_mode(self.mode, 0, 1, 0, 0)
 
@@ -544,31 +544,31 @@ class Screen(object):
                                      mode_info.font_height) // cmode.font_height
             self.palette = Palette(self.mode, self.capabilities)
         # set the screen mode
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_MODE, mode_info))
+        self.session.video_queue.put(signals.Event(signals.VIDEO_SET_MODE, mode_info))
         if mode_info.is_text_mode:
             # send glyphs to signals; copy is necessary
             # as dict may change here while the other thread is working on it
-            signals.video_queue.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
+            self.session.video_queue.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
                     dict((k,v) for k,v in self.glyphs.iteritems())))
         # set the visible and active pages
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
+        self.session.video_queue.put(signals.Event(signals.VIDEO_SET_PAGE, (self.vpagenum, self.apagenum)))
         # rebuild palette
         self.palette.set_all(self.palette.palette, check_mode=False)
         # fix the cursor
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
+        self.session.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
                 (self.cursor.width, mode_info.font_height,
                  self.cursor.from_line, self.cursor.to_line)))
-        signals.video_queue.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
+        self.session.video_queue.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
                 (self.current_row, self.current_col)))
         if self.mode.is_text_mode:
             fore, _, _, _ = self.split_attr(
                 self.apage.row[self.current_row-1].buf[self.current_col-1][1] & 0xf)
         else:
             fore, _, _, _ = self.split_attr(self.mode.cursor_index or self.attr)
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
+        self.session.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
         self.cursor.reset_visibility()
         fore, _, _, _ = self.split_attr(self.border_attr)
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
+        self.session.video_queue.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
         # redraw the text screen and rebuild text buffers in video plugin
         self.mode = mode_info
         for pagenum in range(self.mode.num_pages):
@@ -578,7 +578,7 @@ class Screen(object):
                                    for_keys=True, text_only=True)
             # redraw graphics
             if not self.mode.is_text_mode:
-                signals.video_queue.put(signals.Event(signals.VIDEO_PUT_RECT, (pagenum, 0, 0,
+                self.session.video_queue.put(signals.Event(signals.VIDEO_PUT_RECT, (pagenum, 0, 0,
                                 self.mode.pixel_width-1, self.mode.pixel_height-1,
                                 self.pixels.pages[pagenum].buffer)))
         return True
@@ -687,11 +687,11 @@ class Screen(object):
                 'No %d-pixel font available. Could not enter video mode %s.',
                 mode_info.font_height, mode_info.name)
             raise error.RunError(error.IFC)
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_MODE, mode_info))
+        self.session.video_queue.put(signals.Event(signals.VIDEO_SET_MODE, mode_info))
         if mode_info.is_text_mode:
             # send glyphs to signals; copy is necessary
             # as dict may change here while the other thread is working on it
-            signals.video_queue.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
+            self.session.video_queue.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
                                                                 self.glyphs))
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
@@ -727,7 +727,7 @@ class Screen(object):
         # set the attribute
         if not self.mode.is_text_mode:
             fore, _, _, _ = self.split_attr(self.mode.cursor_index or self.attr)
-            signals.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
+            self.session.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
         if self.mode.is_text_mode:
             self.set_colorburst(new_colorswitch)
@@ -814,7 +814,7 @@ class Screen(object):
             self.colours16[:] = self.colours16_mono
         # reset the palette to reflect the new mono or mode-5 situation
         self.palette = Palette(self.mode, self.capabilities)
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_COLORBURST, (on and colorburst_capable,
+        self.session.video_queue.put(signals.Event(signals.VIDEO_SET_COLORBURST, (on and colorburst_capable,
                             self.palette.rgb_palette, self.palette.rgb_palette1)))
 
     def set_cga4_palette(self, num):
@@ -855,25 +855,25 @@ class Screen(object):
         self.apagenum = new_apagenum
         self.vpage = self.text.pages[new_vpagenum]
         self.apage = self.text.pages[new_apagenum]
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_PAGE, (new_vpagenum, new_apagenum)))
+        self.session.video_queue.put(signals.Event(signals.VIDEO_SET_PAGE, (new_vpagenum, new_apagenum)))
 
     def set_attr(self, attr):
         """ Set the default attribute. """
         self.attr = attr
         if not self.mode.is_text_mode and self.mode.cursor_index is None:
             fore, _, _, _ = self.split_attr(attr)
-            signals.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
+            self.session.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
 
     def set_border(self, attr):
         """ Set the border attribute. """
         self.border_attr = attr
         fore, _, _, _ = self.split_attr(attr)
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
+        self.session.video_queue.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
 
     def copy_page(self, src, dst):
         """ Copy source to destination page. """
         self.text.copy_page(src, dst)
-        signals.video_queue.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
+        self.session.video_queue.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
 
     #####################
     # screen read/write
@@ -1081,7 +1081,7 @@ class Screen(object):
             fore, back, blink, underline = self.split_attr(attr)
             # ensure glyph is stored
             mask = self.get_glyph(char)
-            signals.video_queue.put(signals.Event(signals.VIDEO_PUT_GLYPH,
+            self.session.video_queue.put(signals.Event(signals.VIDEO_PUT_GLYPH,
                     (pagenum, r, c, char, len(char) > 1,
                                  fore, back, blink, underline, for_keys)))
             if not self.mode.is_text_mode and not text_only:
@@ -1090,7 +1090,7 @@ class Screen(object):
                                                 r, c, mask, fore, back)
                 self.pixels.pages[self.apagenum].put_rect(
                                                 x0, y0, x1, y1, sprite, tk.PSET)
-                signals.video_queue.put(signals.Event(signals.VIDEO_PUT_RECT,
+                self.session.video_queue.put(signals.Event(signals.VIDEO_PUT_RECT,
                                         (self.apagenum, x0, y0, x1, y1, sprite)))
 
     # should be in console? uses wrap
@@ -1133,7 +1133,7 @@ class Screen(object):
         if cx >= 0 and cy >= 0 and cx <= cxmax and cy <= cymax:
             self.apage.row[cy].buf[cx] = (' ', self.attr)
         fore, back, blink, underline = self.split_attr(self.attr)
-        signals.video_queue.put(signals.Event(signals.VIDEO_PUT_GLYPH,
+        self.session.video_queue.put(signals.Event(signals.VIDEO_PUT_GLYPH,
                 (self.apagenum, cy+1, cx+1, ' ', False,
                              fore, back, blink, underline, True)))
 
@@ -1166,13 +1166,13 @@ class Screen(object):
             # background attribute must be 0 in graphics mode
             self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, 0)
         _, back, _, _ = self.split_attr(self.attr)
-        signals.video_queue.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
+        self.session.video_queue.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
     #MOVE to Cursor.move ?
     def move_cursor(self, row, col):
         """ Move the cursor to a new position. """
         self.current_row, self.current_col = row, col
-        signals.video_queue.put(signals.Event(signals.VIDEO_MOVE_CURSOR, (row, col)))
+        self.session.video_queue.put(signals.Event(signals.VIDEO_MOVE_CURSOR, (row, col)))
         self.cursor.reset_attr()
 
     def rebuild_glyph(self, ordval):
@@ -1238,7 +1238,7 @@ class Screen(object):
         if from_line is None:
             from_line = self.view_start
         _, back, _, _ = self.split_attr(self.attr)
-        signals.video_queue.put(signals.Event(signals.VIDEO_SCROLL_UP,
+        self.session.video_queue.put(signals.Event(signals.VIDEO_SCROLL_UP,
                     (from_line, self.scroll_height, back)))
         # sync buffers with the new screen reality:
         if self.current_row > from_line:
@@ -1256,7 +1256,7 @@ class Screen(object):
     def scroll_down(self,from_line):
         """ Scroll the scroll region down by one line, starting at from_line. """
         _, back, _, _ = self.split_attr(self.attr)
-        signals.video_queue.put(signals.Event(signals.VIDEO_SCROLL_DOWN,
+        self.session.video_queue.put(signals.Event(signals.VIDEO_SCROLL_DOWN,
                     (from_line, self.scroll_height, back)))
         if self.current_row >= from_line:
             self.current_row += 1
@@ -1303,7 +1303,7 @@ class Screen(object):
             pagenum = self.apagenum
         if self.drawing.view_contains(x, y):
             self.pixels.pages[pagenum].put_pixel(x, y, index)
-            signals.video_queue.put(signals.Event(signals.VIDEO_PUT_PIXEL, (pagenum, x, y, index)))
+            self.session.video_queue.put(signals.Event(signals.VIDEO_PUT_PIXEL, (pagenum, x, y, index)))
             self.clear_text_at(x, y)
 
     def get_pixel(self, x, y, pagenum=None):
@@ -1320,14 +1320,14 @@ class Screen(object):
         """ Write a list of attributes to a scanline interval. """
         x, y, colours = self.drawing.view_clip_list(x, y, colours)
         newcolours = self.pixels.pages[pagenum].put_interval(x, y, colours, mask)
-        signals.video_queue.put(signals.Event(signals.VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours)))
+        self.session.video_queue.put(signals.Event(signals.VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours)))
         self.clear_text_area(x, y, x+len(colours), y)
 
     def fill_interval(self, x0, x1, y, index):
         """ Fill a scanline interval in a solid attribute. """
         x0, x1, y = self.drawing.view_clip_interval(x0, x1, y)
         self.pixels.pages[self.apagenum].fill_interval(x0, x1, y, index)
-        signals.video_queue.put(signals.Event(signals.VIDEO_FILL_INTERVAL,
+        self.session.video_queue.put(signals.Event(signals.VIDEO_FILL_INTERVAL,
                         (self.apagenum, x0, x1, y, index)))
         self.clear_text_area(x0, y, x1, y)
 
@@ -1344,7 +1344,7 @@ class Screen(object):
         x0, y0, x1, y1, sprite = self.drawing.view_clip_area(x0, y0, x1, y1, sprite)
         rect = self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1,
                                                         sprite, operation_token)
-        signals.video_queue.put(signals.Event(signals.VIDEO_PUT_RECT,
+        self.session.video_queue.put(signals.Event(signals.VIDEO_PUT_RECT,
                               (self.apagenum, x0, y0, x1, y1, rect)))
         self.clear_text_area(x0, y0, x1, y1)
 
@@ -1352,7 +1352,7 @@ class Screen(object):
         """ Fill a rectangle in a solid attribute. """
         x0, y0, x1, y1 = self.drawing.view_clip_rect(x0, y0, x1, y1)
         self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, index)
-        signals.video_queue.put(signals.Event(signals.VIDEO_FILL_RECT,
+        self.session.video_queue.put(signals.Event(signals.VIDEO_FILL_RECT,
                                 (self.apagenum, x0, y0, x1, y1, index)))
         self.clear_text_area(x0, y0, x1, y1)
 
@@ -1371,7 +1371,7 @@ class Screen(object):
                                 carry_col_9, carry_row_9)
             self.glyphs[c] = mask
             if self.mode.is_text_mode:
-                signals.video_queue.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
+                self.session.video_queue.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
                     {c: mask}))
         return mask
 
@@ -1445,7 +1445,8 @@ class Palette(object):
         self.rgb_palette[index] = mode.colours[colour]
         if mode.colours1:
             self.rgb_palette1[index] = mode.colours1[colour]
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
+        self.mode.screen.session.video_queue.put(
+            signals.Event(signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
 
     def get_entry(self, index):
         """ Retrieve the colour for a given attribute. """
@@ -1462,7 +1463,8 @@ class Palette(object):
             self.rgb_palette1 = [mode.colours1[i] for i in self.palette]
         else:
             self.rgb_palette1 = None
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
+        self.mode.screen.session.video_queue.put(
+            signals.Event(signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
 
     def mode_allows_palette(self, mode):
         """ Check if the video mode allows palette change. """
@@ -1508,11 +1510,11 @@ class Cursor(object):
             fore, _, _, _ = self.screen.split_attr(self.screen.apage.row[
                     self.screen.current_row-1].buf[
                     self.screen.current_col-1][1] & 0xf)
-            signals.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
+            self.screen.session.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
 
     def show(self, do_show):
         """ Force cursor to be visible/invisible. """
-        signals.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, do_show))
+        self.screen.session.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, do_show))
 
     def set_visibility(self, visible_run):
         """ Set default cursor visibility. """
@@ -1526,7 +1528,7 @@ class Cursor(object):
         # in graphics mode, we can't force the cursor to be visible on execute.
         if self.screen.mode.is_text_mode:
             visible = visible or self.visible_run
-        signals.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, visible))
+        self.screen.session.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, visible))
 
     def set_shape(self, from_line, to_line):
         """ Set the cursor shape. """
@@ -1564,7 +1566,7 @@ class Cursor(object):
                                 to_line -= 1
         self.from_line = max(0, min(from_line, fy-1))
         self.to_line = max(0, min(to_line, fy-1))
-        signals.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
+        self.screen.session.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
                             (self.width, fy, self.from_line, self.to_line)))
         self.reset_attr()
 
@@ -1593,6 +1595,6 @@ class Cursor(object):
         # update cursor shape to new width if necessary
         if new_width != self.width:
             self.width = new_width
-            signals.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
+            self.screen.session.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
                     (self.width, self.height, self.from_line, self.to_line)))
             self.reset_attr()

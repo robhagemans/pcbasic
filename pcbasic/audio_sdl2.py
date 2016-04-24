@@ -50,7 +50,7 @@ def prepare():
 class AudioSDL2(audio.AudioPlugin):
     """ SDL2-based audio plugin. """
 
-    def __init__(self):
+    def __init__(self, tone_queue, message_queue):
         """ Initialise sound system. """
         if not sdl2:
             logging.warning('SDL2 module not found. Failed to initialise SDL2 audio plugin.')
@@ -72,7 +72,7 @@ class AudioSDL2(audio.AudioPlugin):
         self.audiospec.callback = sdl2.SDL_AudioCallback(self._get_next_chunk)
         self.dev = None
         # start audio thread
-        audio.AudioPlugin.__init__(self)
+        audio.AudioPlugin.__init__(self, tone_queue, message_queue)
 
     def __enter__(self):
         """ Perform any necessary initialisations. """
@@ -93,10 +93,10 @@ class AudioSDL2(audio.AudioPlugin):
         """ Drain signal queue. """
         while True:
             try:
-                signal = signals.message_queue.get(False)
+                signal = self.message_queue.get(False)
             except Queue.Empty:
                 return True
-            signals.message_queue.task_done()
+            self.message_queue.task_done()
             if signal.event_type == signals.AUDIO_STOP:
                 self.next_tone = [None, None, None, None]
                 self.generators = [deque(), deque(), deque(), deque()]
@@ -112,7 +112,7 @@ class AudioSDL2(audio.AudioPlugin):
         empty = False
         while not empty:
             empty = True
-            for voice, q in enumerate(signals.tone_queue):
+            for voice, q in enumerate(self.tone_queue):
                 try:
                     signal = q.get(False)
                     empty = False
@@ -146,7 +146,7 @@ class AudioSDL2(audio.AudioPlugin):
                 current_chunk = self.next_tone[voice].build_chunk(chunk_length)
                 if current_chunk is not None:
                     break
-                signals.tone_queue[voice].task_done()
+                self.tone_queue[voice].task_done()
                 self.next_tone[voice] = None
             if current_chunk is not None:
                 # append chunk to samples list

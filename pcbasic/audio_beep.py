@@ -22,7 +22,7 @@ def prepare():
 class AudioBeep(audio.AudioPlugin):
     """ Audio plugin based on 'beep' command-line utility. """
 
-    def __init__(self):
+    def __init__(self, tone_queue, message_queue):
         """ Initialise sound system. """
         # Windows not supported as there's no beep utility anyway
         # and we can't run the test below on CMD
@@ -31,14 +31,14 @@ class AudioBeep(audio.AudioPlugin):
             raise audio.InitFailed()
         self.now_playing = [None, None, None, None]
         self.now_looping = [None, None, None, None]
-        audio.AudioPlugin.__init__(self)
+        audio.AudioPlugin.__init__(self, tone_queue, message_queue)
 
     def _drain_message_queue(self):
         """ Drain signal queue. """
         alive = True
         while alive:
             try:
-                signal = signals.message_queue.get(False)
+                signal = self.message_queue.get(False)
             except Queue.Empty:
                 return True
             if signal.event_type == signals.AUDIO_STOP:
@@ -54,14 +54,14 @@ class AudioBeep(audio.AudioPlugin):
                 # close thread after task_done
                 alive = False
             # drop other messages
-            signals.message_queue.task_done()
+            self.message_queue.task_done()
 
     def _drain_tone_queue(self):
         """ Drain tone queue. """
         empty = False
         while not empty:
             empty = True
-            for voice, q in enumerate(signals.tone_queue):
+            for voice, q in enumerate(self.tone_queue):
                 if self.next_tone[voice] is None:
                     try:
                         signal = q.get(False)

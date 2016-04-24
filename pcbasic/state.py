@@ -67,7 +67,6 @@ def pickle_StringIO(csio):
     pos = csio.tell()
     return unpickle_StringIO, (value, pos)
 
-
 # register the picklers for file and cStringIO
 copy_reg.pickle(file, pickle_file)
 copy_reg.pickle(cStringIO.OutputType, pickle_StringIO)

@@ -36,10 +36,10 @@ def prepare():
 class VideoNone(video.VideoPlugin):
     """ Command-line filter interface. """
 
-    def __init__(self, **kwargs):
+    def __init__(self, input_queue, video_queue, **kwargs):
         """ Initialise filter interface. """
         # sys.stdout output for video=none is set in redirect module
-        video.VideoPlugin.__init__(self)
+        video.VideoPlugin.__init__(self, input_queue, video_queue)
         # on unix ttys, replace input \n with \r
         # setting termios won't do the trick as it will not trigger read_line, gets too complicated
         if plat.system != 'Windows' and plat.stdin_is_tty:
@@ -54,12 +54,12 @@ class VideoNone(video.VideoPlugin):
         # only the last byte is erased, not the whole utf-8 sequence
         s = sys.stdin.readline().decode(encoding, errors='ignore')
         if s == '':
-            signals.input_queue.put(signals.Event(signals.KEYB_CLOSED))
+            self.input_queue.put(signals.Event(signals.KEYB_CLOSED))
         for c in s:
             # replace LF -> CR if needed
             if c == u'\n' and self.lf_to_cr:
                 c = u'\r'
             # check_full=False as all input may come at once
-            signals.input_queue.put(signals.Event(signals.KEYB_CHAR, (c, False)))
+            self.input_queue.put(signals.Event(signals.KEYB_CHAR, (c, False)))
 
 prepare()

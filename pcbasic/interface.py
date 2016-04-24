@@ -25,23 +25,19 @@ class InitFailed(Exception):
 
 delay = 0.024
 
-def run():
-    """ Start the interface. """
-    with get_video_plugin() as vp:
-        with get_audio_plugin() as ap:
-            event_loop(vp, ap)
-
-def event_loop(video_plugin, audio_plugin):
-    """ Main interface event loop. """
-    while True:
-        # ensure both queues are drained
-        video_plugin.cycle()
-        audio_plugin.cycle()
-        if not audio_plugin.alive and not video_plugin.alive:
-            break
-        # do not hog cpu
-        if not audio_plugin.playing and not video_plugin.screen_changed:
-            time.sleep(delay)
+def run(input_queue, video_queue, tone_queue, message_queue):
+    """ Start the main interface event loop. """
+    with get_video_plugin(input_queue, video_queue) as video_plugin:
+        with get_audio_plugin(tone_queue, message_queue) as audio_plugin:
+            while True:
+                # ensure both queues are drained
+                video_plugin.cycle()
+                audio_plugin.cycle()
+                if not audio_plugin.alive and not video_plugin.alive:
+                    break
+                # do not hog cpu
+                if not audio_plugin.playing and not video_plugin.screen_changed:
+                    time.sleep(delay)
 
 
 ###############################################################################
@@ -69,7 +65,7 @@ video_plugins = {
     }
 
 
-def get_video_plugin():
+def get_video_plugin(input_queue, video_queue):
     """ Find and initialise video plugin for given interface. """
     interface_name = config.get('interface') or 'graphical'
     while True:
@@ -78,6 +74,7 @@ def get_video_plugin():
         for video_name in names:
             try:
                 plugin = video_plugin_dict[video_name](
+                    input_queue, video_queue,
                     force_display_size=config.get('dimensions'),
                     aspect=config.get('aspect'),
                     border_width=config.get('border'),
@@ -108,10 +105,12 @@ def get_video_plugin():
 class VideoPlugin(object):
     """ Base class for display/input interface plugins. """
 
-    def __init__(self):
+    def __init__(self, input_queue, video_queue):
         """ Setup the interface. """
         self.alive = True
         self.screen_changed = False
+        self.input_queue = input_queue
+        self.video_queue = video_queue
 
     def __exit__(self, type, value, traceback):
         """ Close the interface. """
@@ -139,7 +138,7 @@ class VideoPlugin(object):
         alive = True
         while alive:
             try:
-                signal = signals.video_queue.get(False)
+                signal = self.video_queue.get(False)
             except Queue.Empty:
                 return True
             if signal.event_type == signals.VIDEO_QUIT:
@@ -193,7 +192,7 @@ class VideoPlugin(object):
                 self.set_clipboard_text(*signal.params)
             elif signal.event_type == signals.VIDEO_SET_CODEPAGE:
                 self.set_codepage(signal.params)
-            signals.video_queue.task_done()
+            self.video_queue.task_done()
 
     # signal handlers
 
@@ -285,7 +284,7 @@ audio_plugins = {
     }
 
 
-def get_audio_plugin():
+def get_audio_plugin(tone_queue, message_queue):
     """ Find and initialise audio plugin for given interface. """
     if config.get('nosound') :
         interface_name = 'none'
@@ -294,7 +293,7 @@ def get_audio_plugin():
     names = audio_plugins[interface_name]
     for audio_name in names:
         try:
-            plugin = audio_plugin_dict[audio_name]()
+            plugin = audio_plugin_dict[audio_name](tone_queue, message_queue)
         except KeyError:
             logging.debug('Audio plugin "%s" not available.', audio_name)
         except InitFailed:
@@ -308,13 +307,15 @@ def get_audio_plugin():
 class AudioPlugin(object):
     """ Base class for audio interface plugins. """
 
-    def __init__(self):
+    def __init__(self, tone_queue, message_queue):
         """ Setup the audio interface and start the event handling thread. """
         # sound generators for sounds not played yet
         # if not None, something is playing
         self.next_tone = [ None, None, None, None ]
         self.alive = True
         self.playing = False
+        self.tone_queue = tone_queue
+        self.message_queue = message_queue
 
     def __exit__(self, type, value, traceback):
         """ Close the audio interface. """

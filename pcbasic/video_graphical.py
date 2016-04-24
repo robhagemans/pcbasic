@@ -35,9 +35,9 @@ display_slack = 15
 class VideoGraphical(video.VideoPlugin):
     """ Graphical video plugin, base class """
 
-    def __init__(self, **kwargs):
+    def __init__(self, input_queue, video_queue, **kwargs):
         """ Initialise video plugin parameters. """
-        video.VideoPlugin.__init__(self)
+        video.VideoPlugin.__init__(self, input_queue, video_queue)
         # use native pixel sizes
         self.force_native_pixel = kwargs.get('force_native_pixel', False)
         # display dimensions
@@ -173,12 +173,12 @@ class ClipboardInterface(object):
             return
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        signals.input_queue.put(signals.Event(signals.CLIP_COPY,
+        self.videoplugin.input_queue.put(signals.Event(signals.CLIP_COPY,
                 (start[0], start[1], stop[0], stop[1], mouse)))
 
     def paste(self, text):
         """ Paste from clipboard into keyboard buffer. """
-        signals.input_queue.put(signals.Event(signals.CLIP_PASTE, (text,)))
+        self.videoplugin.input_queue.put(signals.Event(signals.CLIP_PASTE, (text,)))
 
     def move(self, r, c):
         """ Move the head of the selection and update feedback. """

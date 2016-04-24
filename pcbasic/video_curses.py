@@ -74,7 +74,7 @@ if curses:
 class VideoCurses(video.VideoPlugin):
     """ Curses-based text interface. """
 
-    def __init__(self, **kwargs):
+    def __init__(self, input_queue, video_queue, **kwargs):
         """ Initialise the text interface. """
         video.VideoPlugin.__init__(self)
         self.curses_init = False
@@ -160,7 +160,7 @@ class VideoCurses(video.VideoPlugin):
             else:
                 if i == curses.KEY_BREAK:
                     # this is fickle, on many terminals doesn't work
-                    signals.input_queue.put(signals.Event(
+                    self.input_queue.put(signals.Event(
                                             signals.KEYB_DOWN,
                                             (u'', scancode.BREAK, [scancode.CTRL])))
                 elif i == curses.KEY_RESIZE:
@@ -175,7 +175,7 @@ class VideoCurses(video.VideoPlugin):
                 scan = curses_to_scan.get(i, None)
                 c = curses_to_eascii.get(i, '')
                 if scan or c:
-                    signals.input_queue.put(signals.Event(
+                    self.input_queue.put(signals.Event(
                                             signals.KEYB_DOWN, (c, scan, [])))
                     if i == curses.KEY_F12:
                         self.f12_active = True
@@ -186,14 +186,14 @@ class VideoCurses(video.VideoPlugin):
         # then handle these one by one
         for c in u:
             #check_full=False to allow pasting chunks of text
-            signals.input_queue.put(signals.Event(
+            self.input_queue.put(signals.Event(
                                     signals.KEYB_DOWN, (c, None, [], False)))
             self._unset_f12()
 
     def _unset_f12(self):
         """ Deactivate F12 """
         if self.f12_active:
-            signals.input_queue.put(signals.Event(
+            self.input_queue.put(signals.Event(
                                     signals.KEYB_UP, (scancode.F12,)))
             self.f12_active = False
 

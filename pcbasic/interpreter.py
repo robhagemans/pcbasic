@@ -75,10 +75,17 @@ class SessionLauncher(object):
 
     def __enter__(self):
         """ Resume or start the session. """
+        # input queue
+        self.input_queue = Queue.Queue()
+        # video queue
+        self.video_queue = Queue.Queue()
+        # audio queues
+        self.tone_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
+        self.message_queue = Queue.Queue()
         if self.resume:
-            session = Session.resume(self.state_file)
+            session = Session.resume(self.state_file, self.input_queue, self.video_queue, self.tone_queue, self.message_queue)
         else:
-            session = Session(self.state_file)
+            session = Session(self.state_file, self.input_queue, self.video_queue, self.tone_queue, self.message_queue)
             # load initial program, allowing native-os filenames or BASIC specs
             if self.prog:
                 with session.files.open_native_or_basic(self.prog) as progfile:
@@ -88,12 +95,13 @@ class SessionLauncher(object):
         self.thread = threading.Thread(target=session.run,
                                 args=(self.cmd, self.run, self.quit, self.wait))
         self.thread.start()
+        return self
 
     def __exit__(self, dummy_one, dummy_two, dummy_three):
         """ Wait for the interpreter to exit. """
         if self.thread and self.thread.is_alive():
             # request exit
-            signals.input_queue.put(signals.Event(signals.KEYB_QUIT))
+            self.input_queue.put(signals.Event(signals.KEYB_QUIT))
             # wait for thread to finish
             self.thread.join()
 
@@ -109,11 +117,17 @@ longtick_s = 0.006 - tick_s
 class Session(object):
     """ Interpreter session. """
 
-    def __init__(self, state_file=u''):
+    def __init__(self, state_file,
+                input_queue, video_queue,
+                tone_queue, message_queue):
         """ Initialise the interpreter session. """
         # name of file to store and resume state
         self.state_file = state_file
-
+        # input, video and audio queues
+        self.input_queue = input_queue
+        self.video_queue = video_queue
+        self.tone_queue = tone_queue
+        self.message_queue = message_queue
         # true if a prompt is needed on next cycle
         self.prompt = True
         # input mode is AUTO (used by AUTO)
@@ -336,18 +350,24 @@ class Session(object):
         self.parser.clear()
 
     @classmethod
-    def resume(cls, state_file):
+    def resume(cls, state_file,
+                input_queue=None, video_queue=None,
+                tone_queue=None, message_queue=None):
         """ Resume an interpreter session. """
         # resume from saved emulator state (if requested and available)
         self = state.load(state_file)
         if not isinstance(self, cls):
             raise state.ResumeFailed()
         self.state_file = state_file
+        self.input_queue = input_queue
+        self.video_queue = video_queue
+        self.tone_queue = tone_queue
+        self.message_queue = message_queue
         # reload the screen in resumed state
         if not self.screen.resume():
             raise state.ResumeFailed()
         # rebuild the audio queue
-        for q, store in zip(signals.tone_queue, self.tone_queue_store):
+        for q, store in zip(self.tone_queue, self.tone_queue_store):
             signals.load_queue(q, store)
         # override selected settings from command line
         self.devices.resume()
@@ -378,19 +398,19 @@ class Session(object):
             except error.Exit:
                 # pause before exit if requested
                 if wait:
-                    signals.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
-                    signals.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
+                    self.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
+                    self.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
                     self.keyboard.pause = True
                     # this performs a blocking keystroke read if in pause state
                     self.check_events()
             finally:
                 # close interfaces
-                signals.video_queue.put(signals.Event(signals.VIDEO_QUIT))
-                signals.message_queue.put(signals.Event(signals.AUDIO_QUIT))
+                self.video_queue.put(signals.Event(signals.VIDEO_QUIT))
+                self.message_queue.put(signals.Event(signals.AUDIO_QUIT))
                 # persist unplayed tones in sound queue
                 self.tone_queue_store = [
-                        signals.save_queue(q) for q in signals.tone_queue]
-                state.save(self, self.state_file)
+                        signals.save_queue(q) for q in self.tone_queue]
+                #state.save(self, self.state_file)
                 # close files if we opened any
                 self.files.close_all()
                 self.devices.close()
@@ -582,7 +602,7 @@ class Session(object):
         """ Handle input events. """
         while True:
             try:
-                signal = signals.input_queue.get(False)
+                signal = self.input_queue.get(False)
             except Queue.Empty:
                 if not self.keyboard.pause:
                     break
@@ -590,7 +610,7 @@ class Session(object):
                     time.sleep(tick_s)
                     continue
             # we're on it
-            signals.input_queue.task_done()
+            self.input_queue.task_done()
             if signal.event_type == signals.KEYB_QUIT:
                 raise error.Exit()
             if signal.event_type == signals.KEYB_CLOSED:
@@ -619,5 +639,5 @@ class Session(object):
                 self.keyboard.insert_chars(*signal.params, check_full=False)
             elif signal.event_type == signals.CLIP_COPY:
                 text = self.screen.get_text(*(signal.params[:4]))
-                signals.video_queue.put(signals.Event(
+                self.video_queue.put(signals.Event(
                         signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))

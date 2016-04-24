@@ -25,7 +25,7 @@ class AudioNone(audio.AudioPlugin):
         alive = True
         while alive:
             try:
-                signal = signals.message_queue.get(False)
+                signal = self.message_queue.get(False)
             except Queue.Empty:
                 return True
             if signal.event_type == signals.AUDIO_STOP:
@@ -35,14 +35,14 @@ class AudioNone(audio.AudioPlugin):
                 # close thread after task_done
                 alive = False
             # drop other messages
-            signals.message_queue.task_done()
+            self.message_queue.task_done()
 
     def _drain_tone_queue(self):
         """ Drain signal queue. """
         empty = False
         while not empty:
             empty = True
-            for voice, q in enumerate(signals.tone_queue):
+            for voice, q in enumerate(self.tone_queue):
                 if self.next_tone[voice] is None:
                     try:
                         signal = q.get(False)
@@ -67,7 +67,7 @@ class AudioNone(audio.AudioPlugin):
         for voice in range(4):
             if self.next_tone[voice] is not None and now >= self.next_tone[voice]:
                 self.next_tone[voice] = None
-                signals.tone_queue[voice].task_done()
+                self.tone_queue[voice].task_done()
 
 
 prepare()

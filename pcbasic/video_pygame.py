@@ -39,9 +39,9 @@ def prepare():
 class VideoPygame(video_graphical.VideoGraphical):
     """ Pygame-based graphical interface. """
 
-    def __init__(self, **kwargs):
+    def __init__(self, input_queue, video_queue, **kwargs):
         """ Initialise pygame interface. """
-        video_graphical.VideoGraphical.__init__(self, **kwargs)
+        video_graphical.VideoGraphical.__init__(self, input_queue, video_queue, **kwargs)
         # set state objects to whatever is now in state (may have been unpickled)
         if not pygame:
             logging.warning('PyGame module not found.')
@@ -133,7 +133,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         # if a joystick is present, its axes report 128 for mid, not 0
         for joy in range(len(self.joysticks)):
             for axis in (0, 1):
-                signals.input_queue.put(signals.Event(signals.STICK_MOVED,
+                self.input_queue.put(signals.Event(signals.STICK_MOVED,
                                                       (joy, axis, 128)))
         # mouse setups
         buttons = { 'left': 1, 'middle': 2, 'right': 3, 'none': -1 }
@@ -201,27 +201,27 @@ class VideoPygame(video_graphical.VideoGraphical):
                     self.clipboard.paste(text)
                 if event.button == self.mousebutton_pen:
                     # right mouse button is a pen press
-                    signals.input_queue.put(signals.Event(signals.PEN_DOWN,
+                    self.input_queue.put(signals.Event(signals.PEN_DOWN,
                                                 self._normalise_pos(*event.pos)))
             elif event.type == pygame.MOUSEBUTTONUP:
-                signals.input_queue.put(signals.Event(signals.PEN_UP))
+                self.input_queue.put(signals.Event(signals.PEN_UP))
                 if event.button == self.mousebutton_copy:
                     self.clipboard.copy(mouse=True)
                     self.clipboard.stop()
             elif event.type == pygame.MOUSEMOTION:
                 pos = self._normalise_pos(*event.pos)
-                signals.input_queue.put(signals.Event(signals.PEN_MOVED, pos))
+                self.input_queue.put(signals.Event(signals.PEN_MOVED, pos))
                 if self.clipboard.active():
                     self.clipboard.move(1 + pos[1] // self.font_height,
                            1 + (pos[0]+self.font_width//2) // self.font_width)
             elif event.type == pygame.JOYBUTTONDOWN:
-                signals.input_queue.put(signals.Event(signals.STICK_DOWN,
+                self.input_queue.put(signals.Event(signals.STICK_DOWN,
                                                       (event.joy, event.button)))
             elif event.type == pygame.JOYBUTTONUP:
-                signals.input_queue.put(signals.Event(signals.STICK_UP,
+                self.input_queue.put(signals.Event(signals.STICK_UP,
                                                       (event.joy, event.button)))
             elif event.type == pygame.JOYAXISMOTION:
-                signals.input_queue.put(signals.Event(signals.STICK_MOVED,
+                self.input_queue.put(signals.Event(signals.STICK_MOVED,
                                                       (event.joy, event.axis,
                                                       int(event.value*127 + 128))))
             elif event.type == pygame.VIDEORESIZE:
@@ -231,7 +231,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                 if self.nokill:
                     self.set_caption_message('to exit type <CTRL+BREAK> <ESC> SYSTEM')
                 else:
-                    signals.input_queue.put(signals.Event(signals.KEYB_QUIT))
+                    self.input_queue.put(signals.Event(signals.KEYB_QUIT))
 
     def _handle_key_down(self, e):
         """ Handle key-down event. """
@@ -279,7 +279,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                 except KeyError:
                     pass
             # insert into keyboard queue
-            signals.input_queue.put(signals.Event(
+            self.input_queue.put(signals.Event(
                                     signals.KEYB_DOWN, (c, scan, mod)))
 
     def _handle_key_up(self, e):
@@ -289,7 +289,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             self.f11_active = False
         # last key released gets remembered
         try:
-            signals.input_queue.put(signals.Event(
+            self.input_queue.put(signals.Event(
                                     signals.KEYB_UP, (key_to_scan[e.key],)))
         except KeyError:
             pass
