@@ -22,7 +22,6 @@ if plat.system == b'Windows':
 
 from bytestream import ByteStream
 
-import config
 import error
 # for check_events during FILES
 import events
@@ -262,7 +261,7 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     _access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
-    def __init__(self, letter, path, cwd, fields, locks, codepage, session):
+    def __init__(self, letter, path, cwd, fields, locks, codepage, session, utf8, universal):
         """ Initialise a disk device. """
         self.letter = letter
         # mount root
@@ -278,6 +277,9 @@ class DiskDevice(object):
         self.codepage = codepage
         # for check_events() during FILES
         self.session = session
+        # text file settings
+        self.utf8 = utf8
+        self.universal = universal
 
     def close(self):
         """ Close disk device. """
@@ -306,8 +308,8 @@ class DiskDevice(object):
         elif filetype == b'A':
             # ascii program file (UTF8 or universal newline if option given)
             return TextFile(fhandle, filetype, number, name, mode, access, lock,
-                             codepage=None if not config.get(u'utf8') else self.codepage,
-                             universal=not config.get(u'strict-newline'),
+                             codepage=None if not self.utf8 else self.codepage,
+                             universal=self.universal,
                              split_long_lines=False, locks=self.locks)
         elif filetype == b'D':
             if mode in b'IAO':

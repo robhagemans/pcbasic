@@ -157,15 +157,18 @@ class Devices(object):
         self.fields = fields
         # for wait() and check_events()
         self.session = session
+        # text file settings
+        self.utf8 = config.get('utf8')
+        self.universal = not config.get('strict-newline')
         # disk devices
-        self.internal_disk = disk.DiskDevice(b'', None, u'', self.fields, self.locks, self.codepage, self.session)
+        self.internal_disk = disk.DiskDevice(b'', None, u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
         for letter in self.drive_letters:
-            self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'', self.fields, self.locks, self.codepage, self.session)
+            self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
         current_drive = config.get(u'current-device').upper()
         if config.get(u'map-drives'):
             current_drive = self._map_drives()
         else:
-            self.devices[b'Z:'] = disk.DiskDevice(b'Z', os.getcwdu(), u'', self.fields, self.locks, self.codepage, self.session)
+            self.devices[b'Z:'] = disk.DiskDevice(b'Z', os.getcwdu(), u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
         self._mount_drives(config.get(u'mount'))
         self._set_current_device(current_drive + b':')
 
@@ -196,7 +199,7 @@ class Devices(object):
                 if not os.path.isdir(path):
                     logging.warning(u'Could not mount %s', a)
                 else:
-                    self.devices[letter + b':'] = disk.DiskDevice(letter, path, u'', self.fields, self.locks, self.codepage, self.session)
+                    self.devices[letter + b':'] = disk.DiskDevice(letter, path, u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
             except (TypeError, ValueError) as e:
                 logging.warning(u'Could not mount %s: %s', a, unicode(e))
 
@@ -231,7 +234,7 @@ class Devices(object):
                     # must not start with \\
                     path, cwd = cwd[:3], cwd[3:]
                     bletter = letter.encode(b'ascii')
-                    self.devices[bletter + b':'] = disk.DiskDevice(bletter, path, cwd, self.fields, self.locks, self.codepage, self.session)
+                    self.devices[bletter + b':'] = disk.DiskDevice(bletter, path, cwd, self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
             os.chdir(save_current)
             return current_drive
     else:
@@ -239,16 +242,16 @@ class Devices(object):
             """ Map useful Unix directories to PC-BASIC disk devices. """
             cwd = os.getcwdu()
             # map C to root
-            self.devices[b'C:'] = disk.DiskDevice(b'C', u'/', cwd[1:], self.fields, self.locks, self.codepage, self.session)
+            self.devices[b'C:'] = disk.DiskDevice(b'C', u'/', cwd[1:], self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
             # map Z to cwd
-            self.devices[b'Z:'] = disk.DiskDevice(b'Z', cwd, u'', self.fields, self.locks, self.codepage, self.session)
+            self.devices[b'Z:'] = disk.DiskDevice(b'Z', cwd, u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
             # map H to home
             home = os.path.expanduser(u'~')
             # if cwd is in home tree, set it also on H:
             if cwd[:len(home)] == home:
-                self.devices[b'H:'] = disk.DiskDevice(b'H', home, cwd[len(home)+1:], self.fields, self.locks, self.codepage, self.session)
+                self.devices[b'H:'] = disk.DiskDevice(b'H', home, cwd[len(home)+1:], self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
             else:
-                self.devices[b'H:'] = disk.DiskDevice(b'H', home, u'', self.fields, self.locks, self.codepage, self.session)
+                self.devices[b'H:'] = disk.DiskDevice(b'H', home, u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
             # default durrent drive
             return b'Z'
 
