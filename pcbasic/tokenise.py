@@ -24,11 +24,26 @@ ascii_whitespace = ' \t\n'
 ascii_operators = '+-=/\\^*<>'
 
 # keywords than can followed by one or more line numbers
-linenum_words = [tk.keyword[token] for token in
-    (tk.GOTO, tk.THEN, tk.ELSE, tk.GOSUB,
-    tk.LIST, tk.RENUM, tk.EDIT, tk.LLIST,
-    tk.DELETE, tk.RUN, tk.RESUME, tk.AUTO,
-    tk.ERL, tk.RESTORE, tk.RETURN)]
+linenum_words = (
+    tk.KW_GOTO, tk.KW_THEN, tk.KW_ELSE, tk.KW_GOSUB,
+    tk.KW_LIST, tk.KW_RENUM, tk.KW_EDIT, tk.KW_LLIST,
+    tk.KW_DELETE, tk.KW_RUN, tk.KW_RESUME, tk.KW_AUTO,
+    tk.KW_ERL, tk.KW_RESTORE, tk.KW_RETURN)
+
+
+token_to_keyword = dict(tk.keyword)
+
+import config
+if config.get('debug'):
+    # NOTE: PC-BASIC only. Not the same command or token as Sperry DEBUG.
+    token_to_keyword[tk.DEBUG] = tk.KW_DEBUG
+
+if config.get('syntax') in ('pcjr', 'tandy'):
+    # pcjr, tandy; incompatible with Sperry PC.
+    token_to_keyword[tk.NOISE] = tk.KW_NOISE
+    token_to_keyword[tk.TERM] = tk.KW_TERM
+
+keyword_to_token = dict((reversed(item) for item in tk.keyword.items()))
 
 
 #################################################################
@@ -114,11 +129,11 @@ def detokenise_keyword(ins, output):
     # if no match, first char is passed unchanged
     s = ins.read(1)
     try:
-        keyword = tk.keyword[s]
+        keyword = token_to_keyword[s]
     except KeyError:
         s += util.peek(ins)
         try:
-            keyword = tk.keyword[s]
+            keyword = token_to_keyword[s]
             ins.read(1)
         except KeyError:
             output += s[0]
@@ -229,7 +244,7 @@ def tokenise_line(line):
             # operators don't affect line number mode - can do line number
             # arithmetic and RENUM will do the strangest things
             # this allows for 'LIST 100-200' etc.
-            outs.write(tk.keyword_to_token[c])
+            outs.write(keyword_to_token[c])
             allow_number = True
         # special case ' -> :REM'
         elif c == "'":
@@ -246,7 +261,7 @@ def tokenise_line(line):
             word = tokenise_word(ins, outs)
             # handle non-parsing modes
             if (word in ('REM', "'") or
-                            (word == 'DEBUG' and word in tk.keyword_to_token)):
+                            (word == 'DEBUG' and word in keyword_to_token)):
                 tokenise_rem(ins, outs)
             elif word == "DATA":
                 tokenise_data(ins, outs)
@@ -254,7 +269,7 @@ def tokenise_line(line):
                 allow_jumpnum = (word in linenum_words)
                 # numbers can follow tokenised keywords
                 # (which does not include the word 'AS')
-                allow_number = (word in tk.keyword_to_token)
+                allow_number = (word in keyword_to_token)
                 if word in ('SPC(', 'TAB('):
                     spc_or_tab = True
         else:
@@ -384,13 +399,13 @@ def tokenise_word(ins, outs):
                 if nxt and nxt in tk.name_chars:
                     ins.seek(pos)
                     word = 'GO'
-        if word in tk.keyword_to_token:
+        if word in keyword_to_token:
             # ignore if part of a longer name, except FN, SPC(, TAB(, USR
             if word not in ('FN', 'SPC(', 'TAB(', 'USR'):
                 nxt = util.peek(ins)
                 if nxt and nxt in tk.name_chars:
                     continue
-            token = tk.keyword_to_token[word]
+            token = keyword_to_token[word]
             # handle special case ELSE -> :ELSE
             if word == 'ELSE':
                 outs.write(':' + token)

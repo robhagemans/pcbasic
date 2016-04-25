@@ -10,8 +10,6 @@ import string
 # allowable as chars 2.. in a variable name (first char must be a letter)
 name_chars = string.ascii_letters + string.digits + '.'
 
-import config
-
 # indirect line number references
 T_UINT_PROC = '\x0d'
 T_UINT = '\x0e'
@@ -410,6 +408,38 @@ KW_NOISE = 'NOISE'
 KW_TERM = 'TERM'
 KW_DEBUG = 'DEBUG'
 
+# other keywords on http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html :
+# Sperry PC only:
+#   0xFEA4: 'DEBUG' (conflicts with PCjr/Tandy NOISE)
+# Undefined tokens:
+#   0x9A,  0x9B,  0x9F,  0xB4,  0xB5,  0xB6,  0xCB,  0xDF,  0xE0,  0xE1,  0xE2
+#   0xE3,  0xE4,  0xE5,  0xF5,  0xF6,  0xF7,  0xF8,  0xF9,  0xFA,  0xFB,  0xFC
+digit = (C_0, C_1, C_2, C_3, C_4, C_5, C_6, C_7, C_8, C_9)
+number = (T_OCT, T_HEX, T_BYTE, T_INT, T_SINGLE, T_DOUBLE,
+          C_0, C_1, C_2, C_3, C_4, C_5, C_6, C_7, C_8, C_9, C_10)
+linenum = (T_UINT, T_UINT_PROC)
+operator = (O_GT, O_EQ, O_LT, O_PLUS, O_MINUS,
+            O_TIMES, O_DIV, O_CARET, O_INTDIV)
+with_bracket = (SPC, TAB)
+
+# LF is just whitespace if not preceded by CR
+whitespace = (' ', '\t', '\n')
+# line ending tokens
+end_line = ('\0', '')
+# statement ending tokens
+end_statement = end_line + (':',)
+# expression ending tokens
+end_expression = end_statement + (')', ']', ',', ';')
+## tokens followed by one or more bytes to be skipped
+plus_bytes = {
+    T_BYTE:1, '\xff':1 , '\xfe':1, '\xfd':1, T_OCT:2, T_HEX:2,
+    T_UINT_PROC:2, T_UINT:2, T_INT:2, T_SINGLE:4, T_DOUBLE:8, '\0':4}
+# two-byte keyword token lead bytes
+twobyte = ('\xff', '\xfe', '\xfd')
+
+
+
+
 # keyword dictionary
 keyword = {
     END: KW_END, FOR: KW_FOR, NEXT: KW_NEXT, DATA: KW_DATA, INPUT: KW_INPUT,
@@ -453,44 +483,3 @@ keyword = {
     }
 
 extra_keywords = {NOISE: KW_NOISE, TERM: KW_TERM, DEBUG: KW_DEBUG}
-
-# other keywords on http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html :
-# Sperry PC only:
-#   0xFEA4: 'DEBUG' (conflicts with PCjr/Tandy NOISE)
-# Undefined tokens:
-#   0x9A,  0x9B,  0x9F,  0xB4,  0xB5,  0xB6,  0xCB,  0xDF,  0xE0,  0xE1,  0xE2
-#   0xE3,  0xE4,  0xE5,  0xF5,  0xF6,  0xF7,  0xF8,  0xF9,  0xFA,  0xFB,  0xFC
-digit = (C_0, C_1, C_2, C_3, C_4, C_5, C_6, C_7, C_8, C_9)
-number = (T_OCT, T_HEX, T_BYTE, T_INT, T_SINGLE, T_DOUBLE,
-          C_0, C_1, C_2, C_3, C_4, C_5, C_6, C_7, C_8, C_9, C_10)
-linenum = (T_UINT, T_UINT_PROC)
-operator = (O_GT, O_EQ, O_LT, O_PLUS, O_MINUS,
-            O_TIMES, O_DIV, O_CARET, O_INTDIV)
-with_bracket = (SPC, TAB)
-
-# LF is just whitespace if not preceded by CR
-whitespace = (' ', '\t', '\n')
-# line ending tokens
-end_line = ('\0', '')
-# statement ending tokens
-end_statement = end_line + (':',)
-# expression ending tokens
-end_expression = end_statement + (')', ']', ',', ';')
-## tokens followed by one or more bytes to be skipped
-plus_bytes = {
-    T_BYTE:1, '\xff':1 , '\xfe':1, '\xfd':1, T_OCT:2, T_HEX:2,
-    T_UINT_PROC:2, T_UINT:2, T_INT:2, T_SINGLE:4, T_DOUBLE:8, '\0':4}
-# two-byte keyword token lead bytes
-twobyte = ('\xff', '\xfe', '\xfd')
-
-
-if config.get('debug'):
-    # NOTE: PC-BASIC only. Not the same command or token as Sperry DEBUG.
-    keyword[DEBUG] = extra_keywords[DEBUG]
-
-if config.get('syntax') in ('pcjr', 'tandy'):
-    # pcjr, tandy; incompatible with Sperry PC.
-    keyword[NOISE] = extra_keywords[NOISE]
-    keyword[TERM] = extra_keywords[TERM]
-
-keyword_to_token = dict((reversed(item) for item in keyword.items()))
