@@ -412,13 +412,17 @@ class CassetteStream(object):
 class BasicodeStream(CassetteStream):
     """ BASICODE-format byte stream on cassette. """
 
-    # basicode-3 recognised keywords
-    keywords = [tk.keyword[token] for token in (
-        tk.PRINT, tk.INPUT, tk.LET, tk.GOTO, tk.GOSUB, tk.RETURN, tk.FOR, tk.TO,
-        tk.STEP, tk.NEXT, tk.IF, tk.THEN, tk.ON, tk.DIM, tk.READ, tk.DATA, tk.RESTORE,
-        tk.REM, tk.DEF, tk.FN, tk.ABS, tk.SGN, tk.INT, tk.SQR, tk.SIN, tk.COS,
-        tk.TAN, tk.ATN, tk.EXP, tk.LOG, tk.ASC, tk.VAL, tk.LEN, tk.CHR, tk.LEFT, tk.MID,
-        tk.RIGHT, tk.AND, tk.OR, tk.NOT)]
+    # basicode-3 keywords getting an extra space
+    keywords = (
+        tk.KW_PRINT, tk.KW_INPUT, tk.KW_LET, tk.KW_GOTO,
+        tk.KW_GOSUB, tk.KW_RETURN, tk.KW_FOR, tk.KW_TO,
+        tk.KW_STEP, tk.KW_NEXT, tk.KW_IF, tk.KW_THEN, tk.KW_ON,
+        tk.KW_DIM, tk.KW_READ, tk.KW_DATA, tk.KW_RESTORE,
+        tk.KW_REM, tk.KW_DEF, tk.KW_FN, tk.KW_ABS, tk.KW_SGN,
+        tk.KW_INT, tk.KW_SQR, tk.KW_SIN, tk.KW_COS,
+        tk.KW_TAN, tk.KW_ATN, tk.KW_EXP, tk.KW_LOG, tk.KW_ASC,
+        tk.KW_VAL, tk.KW_LEN, tk.KW_CHR, tk.KW_LEFT, tk.KW_MID,
+        tk.KW_RIGHT, tk.KW_AND, tk.KW_OR, tk.KW_NOT)
     # TAB is recognised but does not get an extra space
 
     def open_read(self):
