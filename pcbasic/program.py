@@ -16,14 +16,13 @@ except ImportError:
 import error
 import vartypes
 import basictoken as tk
-import tokenise
 import protect
 import util
 
 class Program(object):
     """ BASIC program. """
 
-    def __init__(self, max_list_line=65536,
+    def __init__(self, tokeniser, max_list_line=65536,
                 allow_protect=False, allow_code_poke=False, address=0):
         """ Initialise program. """
         # program bytecode buffer
@@ -34,6 +33,8 @@ class Program(object):
         self.allow_code_poke = allow_code_poke
         # to be set when file memory is initialised
         self.code_start = address
+        # for detokenise_line()
+        self.tokeniser = tokeniser
 
     def set_address(self, code_start):
         """ Memory location of program. """
@@ -200,7 +201,7 @@ class Program(object):
             raise error.RunError(error.IFC)
         # list line
         self.bytecode.seek(self.line_numbers[from_line]+1)
-        _, output, textpos = tokenise.detokenise_line(self.bytecode, bytepos)
+        _, output, textpos = self.tokeniser.detokenise_line(self.bytecode, bytepos)
         # no newline to avoid scrolling on line 24
         console.list_line(str(output), newline=False)
         # find row, column position for textpos
@@ -306,7 +307,7 @@ class Program(object):
             line = g.read_line()
             if line is None:
                 break
-            linebuf = tokenise.tokenise_line(line)
+            linebuf = self.tokeniser.tokenise_line(line)
             if linebuf.read(1) == '\0':
                 # line starts with a number, add to program memory; store_line seeks to 1 first
                 self.store_line(linebuf)
@@ -332,7 +333,7 @@ class Program(object):
         else:
             # ascii mode
             while True:
-                current_line, output, _ = tokenise.detokenise_line(self.bytecode)
+                current_line, output, _ = self.tokeniser.detokenise_line(self.bytecode)
                 if current_line == -1 or (current_line > self.max_list_line):
                     break
                 g.write_line(str(output))
@@ -355,7 +356,7 @@ class Program(object):
         lines = []
         for pos in listable:
             self.bytecode.seek(pos + 1)
-            _, line, _ = tokenise.detokenise_line(self.bytecode)
+            _, line, _ = self.tokeniser.detokenise_line(self.bytecode)
             lines.append(str(line))
         return lines
 

@@ -438,8 +438,6 @@ plus_bytes = {
 twobyte = ('\xff', '\xfe', '\xfd')
 
 
-
-
 # keyword dictionary
 keyword = {
     END: KW_END, FOR: KW_FOR, NEXT: KW_NEXT, DATA: KW_DATA, INPUT: KW_INPUT,

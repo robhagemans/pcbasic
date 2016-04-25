@@ -13,7 +13,6 @@ import os
 
 import vartypes
 import representation
-import tokenise
 import error
 
 
@@ -55,7 +54,9 @@ class BaseDebugger(object):
             self.session.screen.write_line('\n')
         else:
             self.session.direct_line.seek(0)
-            self.session.screen.write_line(str(tokenise.detokenise_compound_statement(self.session.direct_line)[0])+'\n')
+            self.session.screen.write_line(str(
+                    self.session.tokeniser.detokenise_compound_statement(
+                            self.session.direct_line)[0])+'\n')
         stack = traceback.extract_tb(exc_traceback)
         for s in stack[-4:]:
             stack_line = '{0}:{1}, {2}'.format(
@@ -175,7 +176,7 @@ def trace(on=True):
 
 def watch(expr):
     """ Add an expression to the watch list. """
-    outs = tokenise.tokenise_line('?'+expr)
+    outs = session.tokeniser.tokenise_line('?'+expr)
     debugger.watch_list.append((expr, outs))
 
 def show_variables():

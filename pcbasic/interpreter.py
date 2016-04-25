@@ -143,6 +143,8 @@ class Session(object):
         codepage = config.get('codepage') or '437'
         self.codepage = unicodepage.Codepage(codepage, not config.get('nobox'))
 
+        self.tokeniser = tokenise.Tokeniser(
+                config.get('syntax'), config.get('debug'))
 
         # prepare output redirection
         if (config.get(b'interface') == u'none'):
@@ -206,7 +208,8 @@ class Session(object):
         allow_protect = config.get('strict-protect')
         allow_code_poke = config.get('allow-code-poke')
         # initialise the program
-        self.program = program.Program(max_list_line, allow_protect, allow_code_poke)
+        self.program = program.Program(self.tokeniser,
+                max_list_line, allow_protect, allow_code_poke)
 
         # set up variables and memory model state
         # max available memory to BASIC (set by /m)
@@ -496,7 +499,7 @@ class Session(object):
         """ Store a program line or schedule a command line for execution. """
         if not line:
             return True
-        self.direct_line = tokenise.tokenise_line(line)
+        self.direct_line = self.tokeniser.tokenise_line(line)
         c = util.peek(self.direct_line)
         if c == '\0':
             # check for lines starting with numbers (6553 6) and empty lines
@@ -535,7 +538,7 @@ class Session(object):
             self.screen.write(' ')
             line = bytearray(self.console.wait_screenline(from_start=True))
         # run or store it; don't clear lines or raise undefined line number
-        self.direct_line = tokenise.tokenise_line(line)
+        self.direct_line = self.tokeniser.tokenise_line(line)
         c = util.peek(self.direct_line)
         if c == '\0':
             # check for lines starting with numbers (6553 6) and empty lines
