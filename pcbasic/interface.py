@@ -10,7 +10,6 @@ import Queue
 import logging
 import time
 
-import config
 import signals
 # for building the icon
 import typeface
@@ -25,10 +24,10 @@ class InitFailed(Exception):
 
 delay = 0.024
 
-def run(input_queue, video_queue, tone_queue, message_queue):
+def run(input_queue, video_queue, tone_queue, message_queue, interface_name, nosound, **video_params):
     """ Start the main interface event loop. """
-    with get_video_plugin(input_queue, video_queue) as video_plugin:
-        with get_audio_plugin(tone_queue, message_queue) as audio_plugin:
+    with get_video_plugin(input_queue, video_queue, interface_name, **video_params) as video_plugin:
+        with get_audio_plugin(tone_queue, message_queue, interface_name, nosound) as audio_plugin:
             while True:
                 # ensure both queues are drained
                 video_plugin.cycle()
@@ -65,9 +64,8 @@ video_plugins = {
     }
 
 
-def get_video_plugin(input_queue, video_queue):
+def get_video_plugin(input_queue, video_queue, interface_name, **kwargs):
     """ Find and initialise video plugin for given interface. """
-    interface_name = config.get('interface') or 'graphical'
     while True:
         # select interface
         names, fallback = video_plugins[interface_name]
@@ -75,20 +73,7 @@ def get_video_plugin(input_queue, video_queue):
             try:
                 plugin = video_plugin_dict[video_name](
                     input_queue, video_queue,
-                    force_display_size=config.get('dimensions'),
-                    aspect=config.get('aspect'),
-                    border_width=config.get('border'),
-                    force_native_pixel=(config.get('scaling') == 'native'),
-                    fullscreen=config.get('fullscreen'),
-                    smooth=(config.get('scaling') == 'smooth'),
-                    nokill=config.get('nokill'),
-                    altgr=config.get('altgr'),
-                    caption=config.get('caption'),
-                    composite_monitor=(config.get('monitor') == 'composite'),
-                    composite_card=config.get('video'),
-                    copy_paste=config.get('copy-paste'),
-                    pen=config.get('pen'),
-                    icon=icon)
+                    icon=icon, **kwargs)
             except KeyError:
                 logging.debug('Video plugin "%s" not available.', video_name)
             except InitFailed:
@@ -284,12 +269,10 @@ audio_plugins = {
     }
 
 
-def get_audio_plugin(tone_queue, message_queue):
+def get_audio_plugin(tone_queue, message_queue, interface_name, nosound):
     """ Find and initialise audio plugin for given interface. """
-    if config.get('nosound') :
+    if nosound:
         interface_name = 'none'
-    else:
-        interface_name = config.get('interface') or 'graphical'
     names = audio_plugins[interface_name]
     for audio_name in names:
         try:

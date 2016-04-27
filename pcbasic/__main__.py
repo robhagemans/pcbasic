@@ -132,12 +132,30 @@ def start_basic():
     """ Start an interactive interpreter session. """
     import interface
     import interpreter
+    interface_name = config.get('interface') or 'graphical'
+    nosound = config.get('nosound')
+    video_params = {
+        'force_display_size': config.get('dimensions'),
+        'aspect': config.get('aspect'),
+        'border_width': config.get('border'),
+        'force_native_pixel': (config.get('scaling') == 'native'),
+        'fullscreen': config.get('fullscreen'),
+        'smooth': (config.get('scaling') == 'smooth'),
+        'nokill': config.get('nokill'),
+        'altgr': config.get('altgr'),
+        'caption': config.get('caption'),
+        'composite_monitor': (config.get('monitor') == 'composite'),
+        'composite_card': config.get('video'),
+        'copy_paste': config.get('copy-paste'),
+        'pen': config.get('pen'),
+        }
     try:
         with interpreter.SessionLauncher() as launcher:
             try:
                 interface.run(
                         launcher.input_queue, launcher.video_queue,
-                        launcher.tone_queue, launcher.message_queue)
+                        launcher.tone_queue, launcher.message_queue,
+                        interface_name, nosound, **video_params)
             except interface.InitFailed:
                 logging.error('Failed to initialise interface.')
     except error.RunError as e:
