@@ -66,9 +66,6 @@ class SessionLauncher(object):
             self.state_file = state_name
         else:
             self.state_file = os.path.join(plat.state_path, state_name)
-        # do not load any state file from a package
-        if config.package:
-            self.state_file = ''
 
     def __enter__(self):
         """ Resume or start the session. """

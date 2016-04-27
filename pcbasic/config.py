@@ -38,8 +38,6 @@ families = sorted(list(set([ x[0] for x in [ c.split(u'_')
 
 # dictionary to hold all options chosen
 options = {}
-# flag True if we're running from a package
-package = False
 
 # number of positional arguments
 positional = 2
@@ -214,7 +212,7 @@ def retrieve_options(uargv):
     # convert command line arguments to string dictionary form
     remaining = get_arguments(uargv[1:])
     # unpack any packages
-    parse_package(remaining)
+    package = parse_package(remaining)
     # get preset groups from specified config file
     preset_dict = parse_config(remaining)
     # set defaults based on presets
@@ -225,6 +223,9 @@ def retrieve_options(uargv):
     merge_arguments(args, parse_args(remaining))
     # clean up arguments
     clean_arguments(args)
+    if package:
+        # do not resume from a package
+        args['resume'] = False
     return args
 
 def get(name, get_default=True):
@@ -319,39 +320,41 @@ def parse_presets(remaining, conf_dict):
 
 def parse_package(remaining):
     """ Unpack BAZ package, if specified, and make its temp dir current. """
-    global package
     # first positional arg: program or package name
     try:
         arg_package = remaining[0]
     except KeyError:
-        return
-    if os.path.isdir(arg_package):
-        os.chdir(arg_package)
-        remaining.pop(0)
-        package = arg_package
-    elif zipfile.is_zipfile(arg_package):
-        remaining.pop(0)
-        # extract the package to a temp directory
-        # and make that the current dir for our run
-        zipfile.ZipFile(arg_package).extractall(path=plat.temp_dir)
-        os.chdir(plat.temp_dir)
-        # if the zip-file contains only a directory at the top level,
-        # then move into that directory. E.g. all files in package.zip
-        # could be under the directory package/
-        contents = os.listdir('.')
-        if len(contents) == 1:
-            os.chdir(contents[0])
-        # recursively rename all files to all-caps to avoid case issues on Unix
-        # collisions: the last file renamed overwrites earlier ones
-        for root, dirs, files in os.walk(u'.', topdown=False):
-            for name in dirs + files:
-                try:
-                    os.rename(os.path.join(root, name),
-                              os.path.join(root, name.upper()))
-                except OSError:
-                    # if we can't rename, ignore
-                    pass
-        package = arg_package
+        package = None
+    else:
+        if os.path.isdir(arg_package):
+            os.chdir(arg_package)
+            remaining.pop(0)
+            package = arg_package
+        elif zipfile.is_zipfile(arg_package):
+            remaining.pop(0)
+            # extract the package to a temp directory
+            # and make that the current dir for our run
+            zipfile.ZipFile(arg_package).extractall(path=plat.temp_dir)
+            os.chdir(plat.temp_dir)
+            # if the zip-file contains only a directory at the top level,
+            # then move into that directory. E.g. all files in package.zip
+            # could be under the directory package/
+            contents = os.listdir('.')
+            if len(contents) == 1:
+                os.chdir(contents[0])
+            # recursively rename all files to all-caps to avoid case issues on Unix
+            # collisions: the last file renamed overwrites earlier ones
+            for root, dirs, files in os.walk(u'.', topdown=False):
+                for name in dirs + files:
+                    try:
+                        os.rename(os.path.join(root, name),
+                                  os.path.join(root, name.upper()))
+                    except OSError:
+                        # if we can't rename, ignore
+                        pass
+            package = arg_package
+    # make package setting available
+    return package
 
 def parse_config(remaining):
     """ Find the correct config file and read it. """
