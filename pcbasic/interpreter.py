@@ -45,7 +45,7 @@ import unicodepage
 class SessionLauncher(object):
     """ Launches a BASIC session. """
 
-    def __init__(self):
+    def __init__(self, **session_params):
         """ Initialise launch parameters. """
         self.quit = config.get('quit')
         self.wait = config.get('wait')
@@ -66,6 +66,7 @@ class SessionLauncher(object):
             self.state_file = state_name
         else:
             self.state_file = os.path.join(plat.state_path, state_name)
+        self._session_params = session_params
 
     def __enter__(self):
         """ Resume or start the session. """
@@ -79,7 +80,7 @@ class SessionLauncher(object):
         if self.resume:
             session = Session.resume(self.state_file, self.input_queue, self.video_queue, self.tone_queue, self.message_queue)
         else:
-            session = Session(self.state_file, self.input_queue, self.video_queue, self.tone_queue, self.message_queue)
+            session = Session(self.state_file, self.input_queue, self.video_queue, self.tone_queue, self.message_queue, **self._session_params)
             # load initial program, allowing native-os filenames or BASIC specs
             if self.prog:
                 with session.files.open_native_or_basic(self.prog) as progfile:
@@ -107,87 +108,28 @@ tick_s = 0.0001
 longtick_s = 0.006 - tick_s
 
 
-
 class Session(object):
     """ Interpreter session. """
 
     def __init__(self, state_file=u'',
-                input_queue=None, video_queue=None,
-                tone_queue=None, message_queue=None):
+            input_queue=None, video_queue=None,
+            tone_queue=None, message_queue=None,
+            syntax=u'advanced', option_debug=False, pcjr_term=u'', option_shell=u'',
+            output_file=None, append=False, input_file=None,
+            codepage=u'437', box_protect=True,
+            video_capabilities=u'vga', font=u'freedos',
+            monitor=u'rgb', mono_tint=(0, 255, 0), screen_aspect=(4, 3),
+            text_width=80, video_memory=262144, cga_low=False,
+            keystring=u'', double=False,
+            peek_values=None, device_params=None,
+            current_device='Z', mount=None, map_drives=False,
+            print_trigger='close', serial_buffer_size=128,
+            utf8=False, universal=True, echo_to_stdout=False,
+            ignore_caps=True, ctrl_c_is_break=True,
+            max_list_line=65535, allow_protect=False,
+            allow_code_poke=False, max_memory=65534,
+            max_reclen=128, max_files=3, reserved_memory=3429):
         """ Initialise the interpreter session. """
-
-        codepage = config.get('codepage') or '437'
-        box_protect = not config.get('nobox')
-        syntax = config.get('syntax')
-        option_debug = config.get('debug')
-        output = config.get(b'output')
-        append = config.get(b'append')
-        input_file = config.get(b'input')
-        monitor = config.get('monitor')
-        video_capabilities = config.get('video')
-        # inserted keystrokes
-        keystring = config.get('keys').decode('string_escape').decode('utf-8')
-        # find program for PCjr TERM command
-        pcjr_term = config.get('pcjr-term')
-        if pcjr_term and not os.path.exists(pcjr_term):
-            pcjr_term = os.path.join(plat.info_dir, pcjr_term)
-        if not os.path.exists(pcjr_term):
-            pcjr_term = ''
-        option_shell = config.get('shell')
-        double = config.get('double')
-        peek_values = {}
-        try:
-            for a in config.get('peek'):
-                seg, addr, val = a.split(':')
-                peek_values[int(seg)*0x10 + int(addr)] = int(val)
-        except (TypeError, ValueError):
-            pass
-        # device settings
-        device_params = {
-                key.upper()+':' : config.get(key)
-                for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')}
-        current_device = config.get(u'current-device')
-        mount = config.get(u'mount')
-        map_drives = config.get(u'map-drives')
-        print_trigger = config.get('print-trigger')
-        serial_buffer_size = config.get('serial-buffer-size')
-        # text file parameters
-        utf8 = config.get('utf8')
-        universal = not config.get('strict-newline')
-        # stdout echo (for filter interface)
-        echo_to_stdout = (config.get(b'interface') == u'none')
-        # screen settings
-        if video_capabilities == 'tandy':
-            screen_aspect = (3072, 2000)
-        else:
-            screen_aspect = (4, 3)
-        text_width = config.get('text-width')
-        video_memory = config.get('video-memory')
-        cga_low = config.get('cga-low')
-        mono_tint = config.get('mono-tint')
-        font = config.get('font')
-        # keyboard settings
-        ignore_caps = not config.get('capture-caps')
-        ctrl_c_is_break=config.get('ctrl-c-break')
-        # program parameters
-        if not config.get('strict-hidden-lines'):
-            max_list_line = 65535
-        else:
-            max_list_line = 65530
-        allow_protect = config.get('strict-protect')
-        allow_code_poke = config.get('allow-code-poke')
-        # max available memory to BASIC (set by /m)
-        max_list = config.get('max-memory')
-        max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
-        max_list[0] = max_list[0] or max_list[1]
-        max_memory = min(max_list) or 65534
-        # maximum record length (-s)
-        max_reclen = max(1, min(32767, config.get('max-reclen')))
-        # number of file records
-        max_files = config.get('max-files')
-        # first field buffer address (workspace size; 3429 for gw-basic)
-        reserved_memory = config.get('reserved-memory')
-
         # name of file to store and resume state
         self.state_file = state_file
         # input, video and audio queues
@@ -221,7 +163,7 @@ class Session(object):
             filter_stream = None
         # prepare output redirection
         self.output_redirection = redirect.OutputRedirection(
-                output, append, filter_stream)
+                output_file, append, filter_stream)
 
         # initialise sound queue
         # needs Session for wait() and queues only
