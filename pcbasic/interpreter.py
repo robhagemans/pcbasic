@@ -115,6 +115,79 @@ class Session(object):
                 input_queue=None, video_queue=None,
                 tone_queue=None, message_queue=None):
         """ Initialise the interpreter session. """
+
+        codepage = config.get('codepage') or '437'
+        box_protect = not config.get('nobox')
+        syntax = config.get('syntax')
+        option_debug = config.get('debug')
+        output = config.get(b'output')
+        append = config.get(b'append')
+        input_file = config.get(b'input')
+        monitor = config.get('monitor')
+        video_capabilities = config.get('video')
+        # inserted keystrokes
+        keystring = config.get('keys').decode('string_escape').decode('utf-8')
+        # find program for PCjr TERM command
+        pcjr_term = config.get('pcjr-term')
+        if pcjr_term and not os.path.exists(pcjr_term):
+            pcjr_term = os.path.join(plat.info_dir, pcjr_term)
+        if not os.path.exists(pcjr_term):
+            pcjr_term = ''
+        option_shell = config.get('shell')
+        double = config.get('double')
+        peek_values = {}
+        try:
+            for a in config.get('peek'):
+                seg, addr, val = a.split(':')
+                peek_values[int(seg)*0x10 + int(addr)] = int(val)
+        except (TypeError, ValueError):
+            pass
+        # device settings
+        device_params = {
+                key.upper()+':' : config.get(key)
+                for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')}
+        current_device = config.get(u'current-device')
+        mount = config.get(u'mount')
+        map_drives = config.get(u'map-drives')
+        print_trigger = config.get('print-trigger')
+        serial_buffer_size = config.get('serial-buffer-size')
+        # text file parameters
+        utf8 = config.get('utf8')
+        universal = not config.get('strict-newline')
+        # stdout echo (for filter interface)
+        echo_to_stdout = (config.get(b'interface') == u'none')
+        # screen settings
+        if video_capabilities == 'tandy':
+            screen_aspect = (3072, 2000)
+        else:
+            screen_aspect = (4, 3)
+        text_width = config.get('text-width')
+        video_memory = config.get('video-memory')
+        cga_low = config.get('cga-low')
+        mono_tint = config.get('mono-tint')
+        font = config.get('font')
+        # keyboard settings
+        ignore_caps = not config.get('capture-caps')
+        ctrl_c_is_break=config.get('ctrl-c-break')
+        # program parameters
+        if not config.get('strict-hidden-lines'):
+            max_list_line = 65535
+        else:
+            max_list_line = 65530
+        allow_protect = config.get('strict-protect')
+        allow_code_poke = config.get('allow-code-poke')
+        # max available memory to BASIC (set by /m)
+        max_list = config.get('max-memory')
+        max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
+        max_list[0] = max_list[0] or max_list[1]
+        max_memory = min(max_list) or 65534
+        # maximum record length (-s)
+        max_reclen = max(1, min(32767, config.get('max-reclen')))
+        # number of file records
+        max_files = config.get('max-files')
+        # first field buffer address (workspace size; 3429 for gw-basic)
+        reserved_memory = config.get('reserved-memory')
+
         # name of file to store and resume state
         self.state_file = state_file
         # input, video and audio queues
@@ -137,59 +210,44 @@ class Session(object):
         self.edit_prompt = False
 
         # prepare codepage
-        codepage = config.get('codepage') or '437'
-        self.codepage = unicodepage.Codepage(codepage, not config.get('nobox'))
+        self.codepage = unicodepage.Codepage(codepage, box_protect)
+        # prepare tokeniser
+        self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
 
-        self.tokeniser = tokenise.Tokeniser(
-                config.get('syntax'), config.get('debug'))
-
-        # prepare output redirection
-        if (config.get(b'interface') == u'none'):
+        if echo_to_stdout:
             filter_stream = unicodepage.CodecStream(
                     sys.stdout, self.codepage, sys.stdout.encoding or b'utf-8')
         else:
             filter_stream = None
+        # prepare output redirection
         self.output_redirection = redirect.OutputRedirection(
-                config.get(b'output'), config.get(b'append'),
-                filter_stream)
+                output, append, filter_stream)
 
         # initialise sound queue
         # needs Session for wait() and queues only
-        self.sound = sound.Sound(self, config.get('syntax'))
+        self.sound = sound.Sound(self, syntax)
 
         # function key macros
-        self.fkey_macros = console.FunctionKeyMacros(
-                12 if config.get('syntax') == 'tandy' else 10)
+        self.fkey_macros = console.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
 
-        # set initial video mode
-        monitor = config.get('monitor')
-        video_capabilities = config.get('video')
-        if config.get('video') == 'tandy':
-            screen_aspect = (3072, 2000)
-        else:
-            screen_aspect = (4, 3)
         # Sound is needed for the beeps on \a
         # Session is only for queues and check_events() in Graphics (flood fill)
-        self.screen = display.Screen(self, config.get('text-width'),
-                config.get('video-memory'), video_capabilities, monitor,
+        self.screen = display.Screen(self, text_width,
+                video_memory, video_capabilities, monitor,
                 self.sound, self.output_redirection, self.fkey_macros,
-                config.get('cga-low'), config.get('mono-tint'), screen_aspect,
-                self.codepage, config.get('font'), warn_fonts=config.get('debug'))
+                cga_low, mono_tint, screen_aspect,
+                self.codepage, font, warn_fonts=option_debug)
 
         # prepare input methods
         self.pen = inputs.Pen(self.screen)
         self.stick = inputs.Stick()
 
-        # inserted keystrokes
-        keystring = config.get('keys').decode('string_escape').decode('utf-8')
         # Screen needed in Keyboard for print_screen()
         # Sound is needed for the beeps when the buffer fills up
         # Session needed for wait() only
         self.keyboard = inputs.Keyboard(self, self.screen, self.fkey_macros,
                 self.codepage, self.sound,
-                keystring, config.get(b'input'),
-                ignore_caps=not config.get('capture-caps'),
-                ctrl_c_is_break=config.get('ctrl-c-break'))
+                keystring, input_file, ignore_caps, ctrl_c_is_break)
 
         # interpreter is executing a command
         self.set_parse_mode(False)
@@ -197,30 +255,11 @@ class Session(object):
         # direct line buffer
         self.direct_line = StringIO()
 
-        # program parameters
-        if not config.get('strict-hidden-lines'):
-            max_list_line = 65535
-        else:
-            max_list_line = 65530
-        allow_protect = config.get('strict-protect')
-        allow_code_poke = config.get('allow-code-poke')
         # initialise the program
         self.program = program.Program(self.tokeniser,
                 max_list_line, allow_protect, allow_code_poke)
 
         # set up variables and memory model state
-        # max available memory to BASIC (set by /m)
-        max_list = config.get('max-memory')
-        max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
-        max_list[0] = max_list[0] or max_list[1]
-        max_memory = min(max_list) or 65534
-        # length of field record (by default 128)
-        # maximum record length (-s)
-        max_reclen = max(1, min(32767, config.get('max-reclen')))
-        # number of file records
-        max_files = config.get('max-files')
-        # first field buffer address (workspace size; 3429 for gw-basic)
-        reserved_memory = config.get('reserved-memory')
         # initialise the data segment
         self.memory = memory.DataSegment(self.program, max_memory,
                                         reserved_memory, max_reclen, max_files)
@@ -238,30 +277,20 @@ class Session(object):
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
         # Session needed for wait()
-        device_params = {
-                key.upper()+':' : config.get(key)
-                for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')}
+
         self.devices = files.Devices(
                 self, self.memory.fields, self.screen, self.keyboard,
-                device_params, config.get(u'current-device'),
-                config.get(u'mount'), config.get(u'map-drives'),
-                config.get('print-trigger'), config.get('serial-buffer-size'),
-                config.get('utf8'), not config.get('strict-newline'))
+                device_params, current_device,
+                mount, map_drives,
+                print_trigger, serial_buffer_size,
+                utf8, universal)
         self.files = files.Files(self.devices, max_files)
         # set LPT1 as target for print_screen()
         self.screen.set_print_screen_target(self.devices.lpt1_file)
-
         # set up rest of memory model
-        peek_values = {}
-        try:
-            for a in config.get('peek'):
-                seg, addr, val = a.split(':')
-                peek_values[int(seg)*0x10 + int(addr)] = int(val)
-        except (TypeError, ValueError):
-            pass
         self.all_memory = machine.Memory(self.memory, self.devices,
                             self.screen, self.keyboard, self.screen.fonts[8],
-                            peek_values, config.get('syntax'))
+                            peek_values, syntax)
 
         # initialise timer
         self.timer = timedate.Timer()
@@ -271,15 +300,8 @@ class Session(object):
                 self.screen, self.keyboard, self.sound,
                 self.output_redirection, self.devices.lpt1_file)
 
-        # find program for PCjr TERM command
-        pcjr_term = config.get('pcjr-term')
-        if pcjr_term and not os.path.exists(pcjr_term):
-            pcjr_term = os.path.join(plat.info_dir, pcjr_term)
-        if not os.path.exists(pcjr_term):
-            pcjr_term = ''
         # initialise the parser
-        self.parser = parser.Parser(self, config.get('syntax'),
-                                    pcjr_term, config.get('double'))
+        self.parser = parser.Parser(self, syntax, pcjr_term, double)
 
         # initialise random number generator
         self.randomiser = rnd.RandomNumberGenerator()
@@ -287,13 +309,12 @@ class Session(object):
         self.machine = machine.MachinePorts(self)
 
         # set up debugger
-        if config.get('debug'):
+        if option_debug:
             self.debugger = debug.Debugger(self)
         else:
             self.debugger = debug.BaseDebugger(self)
 
         # set up the SHELL command
-        option_shell = config.get('shell')
         self.shell = shell.ShellBase(self.keyboard, self.screen)
         if option_shell != 'none':
             if option_shell == 'native':
