@@ -78,7 +78,15 @@ class SessionLauncher(object):
         self.tone_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
         self.message_queue = Queue.Queue()
         if self.resume:
-            session = Session.resume(self.state_file, self.input_queue, self.video_queue, self.tone_queue, self.message_queue)
+            # override selected settings from command line
+            override_cas1 = config.get('cas1', False)
+            override_mount = config.get(u'mount', False)
+            # we always need to reset this or it may be a reference to an old device
+            override_current_device = config.get(u'current-device', True)
+            session = Session.resume(self.state_file,
+                    self.input_queue, self.video_queue,
+                    self.tone_queue, self.message_queue,
+                    override_cas1, override_mount, override_current_device)
         else:
             session = Session(self.state_file, self.input_queue, self.video_queue, self.tone_queue, self.message_queue, **self._session_params)
             # load initial program, allowing native-os filenames or BASIC specs
@@ -320,7 +328,9 @@ class Session(object):
     @classmethod
     def resume(cls, state_file,
                 input_queue=None, video_queue=None,
-                tone_queue=None, message_queue=None):
+                tone_queue=None, message_queue=None,
+                override_cas1=None, override_mount=None,
+                override_current_device='Z'):
         """ Resume an interpreter session. """
         # resume from saved emulator state (if requested and available)
         self = state.load(state_file)
@@ -338,11 +348,7 @@ class Session(object):
         for q, store in zip(self.tone_queue, self.tone_queue_store):
             signals.load_queue(q, store)
         # override selected settings from command line
-        override_cas1 = config.get('cas1', False)
-        mount = config.get(u'mount', False)
-        # we always need to reset this or it may be a reference to an old device
-        current_device = config.get(u'current-device', True)
-        self.devices.resume(override_cas1, mount, current_device)
+        self.devices.resume(override_cas1, override_mount, override_current_device)
         # suppress double prompt
         if not self.parse_mode:
             self.prompt = False
