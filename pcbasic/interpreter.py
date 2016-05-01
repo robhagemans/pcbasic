@@ -59,6 +59,13 @@ class SessionLauncher(object):
             not config.get('input') and not config.get('interface') == 'none')
         if self.resume:
             self.cmd, self.run = '', False
+            self._resume_params = {
+                # override selected settings from command line
+                'override_cas1': config.get('cas1', False),
+                'override_mount': config.get(u'mount', False),
+                # we always need to reset this or it may be a reference to an old device
+                'override_current_device': config.get(u'current-device', True),
+            }
         # name of state file
         state_name = 'PCBASIC.SAV'
         self.state_file = config.get('state')
@@ -78,17 +85,15 @@ class SessionLauncher(object):
         self.tone_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
         self.message_queue = Queue.Queue()
         if self.resume:
-            # override selected settings from command line
-            override_cas1 = config.get('cas1', False)
-            override_mount = config.get(u'mount', False)
-            # we always need to reset this or it may be a reference to an old device
-            override_current_device = config.get(u'current-device', True)
             session = Session.resume(self.state_file,
                     self.input_queue, self.video_queue,
                     self.tone_queue, self.message_queue,
-                    override_cas1, override_mount, override_current_device)
+                    **self._resume_params)
         else:
-            session = Session(self.state_file, self.input_queue, self.video_queue, self.tone_queue, self.message_queue, **self._session_params)
+            session = Session(self.state_file,
+                    self.input_queue, self.video_queue,
+                    self.tone_queue, self.message_queue,
+                    **self._session_params)
             # load initial program, allowing native-os filenames or BASIC specs
             if self.prog:
                 with session.files.open_native_or_basic(self.prog) as progfile:
