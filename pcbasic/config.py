@@ -318,6 +318,15 @@ def get_session_parameters():
         'reserved_memory': get('reserved-memory'),
     }
 
+def get_state_file():
+    """ Name of state file. """
+    state_name = get('state') or 'PCBASIC.SAV'
+    if os.path.exists(state_name):
+        state_file = state_name
+    else:
+        state_file = os.path.join(plat.state_path, state_name)
+    return state_file
+
 
 def append_arg(args, key, value):
     """ Update a single argument by appending a value """

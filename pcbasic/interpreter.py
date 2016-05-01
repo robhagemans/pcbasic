@@ -67,13 +67,10 @@ class SessionLauncher(object):
                 'override_current_device': config.get(u'current-device', True),
             }
         # name of state file
-        state_name = 'PCBASIC.SAV'
-        self.state_file = config.get('state')
-        if os.path.exists(state_name):
-            self.state_file = state_name
-        else:
-            self.state_file = os.path.join(plat.state_path, state_name)
+        self._state_file = config.get_state_file()
+        # parameters for Session constructor
         self._session_params = session_params
+        # parameters for Session.run() thread target
         self._run_params = (cmd, run, quit, wait)
 
     def __enter__(self):
@@ -86,12 +83,12 @@ class SessionLauncher(object):
         self.tone_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
         self.message_queue = Queue.Queue()
         if self.resume:
-            session = Session.resume(self.state_file,
+            session = Session.resume(self._state_file,
                     self.input_queue, self.video_queue,
                     self.tone_queue, self.message_queue,
                     **self._resume_params)
         else:
-            session = Session(self.state_file,
+            session = Session(self._state_file,
                     self.input_queue, self.video_queue,
                     self.tone_queue, self.message_queue,
                     **self._session_params)
