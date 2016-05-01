@@ -47,18 +47,18 @@ class SessionLauncher(object):
 
     def __init__(self, **session_params):
         """ Initialise launch parameters. """
-        self.quit = config.get('quit')
-        self.wait = config.get('wait')
-        self.cmd = config.get('exec')
+        quit = config.get('quit')
+        wait = config.get('wait')
+        cmd = config.get('exec')
         self.prog = config.get(0) or config.get('run') or config.get('load')
-        self.run = (config.get(0) != '') or (config.get('run') != '')
+        run = (config.get(0) != '') or (config.get('run') != '')
         self.resume = config.get('resume')
         # following GW, don't write greeting for redirected input
         # or command-line filter run
-        self.show_greeting = (not self.run and not self.cmd and
+        self.show_greeting = (not run and not cmd and
             not config.get('input') and not config.get('interface') == 'none')
         if self.resume:
-            self.cmd, self.run = '', False
+            cmd, run = '', False
             self._resume_params = {
                 # override selected settings from command line
                 'override_cas1': config.get('cas1', False),
@@ -74,6 +74,7 @@ class SessionLauncher(object):
         else:
             self.state_file = os.path.join(plat.state_path, state_name)
         self._session_params = session_params
+        self._run_params = (cmd, run, quit, wait)
 
     def __enter__(self):
         """ Resume or start the session. """
@@ -100,8 +101,7 @@ class SessionLauncher(object):
                     session.program.load(progfile)
             if self.show_greeting:
                 session.greet()
-        self.thread = threading.Thread(target=session.run,
-                                args=(self.cmd, self.run, self.quit, self.wait))
+        self.thread = threading.Thread(target=session.run, args=self._run_params)
         self.thread.start()
         return self
 
