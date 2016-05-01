@@ -98,7 +98,10 @@ def convert():
     outfile = config.get(1)
     # keep uppercase first letter
     mode = mode[0].upper() if mode else 'A'
-    session = interpreter.Session()
+    try:
+        session = interpreter.Session(**config.get_session_parameters())
+    except Exception as e:
+        logging.error('Unhandled exception\n%s' % traceback.format_exc())
     files = session.files
     internal_disk = session.devices.internal_disk
     prog = session.program
@@ -149,75 +152,7 @@ def start_basic():
         'copy_paste': config.get('copy-paste'),
         'pen': config.get('pen'),
         }
-    pcjr_term = config.get('pcjr-term')
-    if pcjr_term and not os.path.exists(pcjr_term):
-        pcjr_term = os.path.join(plat.info_dir, pcjr_term)
-    if not os.path.exists(pcjr_term):
-        pcjr_term = ''
-    peek_values = {}
-    try:
-        for a in config.get('peek'):
-            seg, addr, val = a.split(':')
-            peek_values[int(seg)*0x10 + int(addr)] = int(val)
-    except (TypeError, ValueError):
-        pass
-    device_params = {
-            key.upper()+':' : config.get(key)
-            for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')}
-    max_list = config.get('max-memory')
-    max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
-    max_list[0] = max_list[0] or max_list[1]
-    session_params = {
-        'syntax': config.get('syntax'),
-        'option_debug': config.get('debug'),
-        'output_file': config.get(b'output'),
-        'append': config.get(b'append'),
-        'input_file': config.get(b'input'),
-        'video_capabilities': config.get('video'),
-        'codepage': config.get('codepage') or '437',
-        'box_protect': not config.get('nobox'),
-        'monitor': config.get('monitor'),
-        # screen settings
-        'screen_aspect': (3072, 2000) if config.get('video') == 'tandy' else (4, 3),
-        'text_width': config.get('text-width'),
-        'video_memory': config.get('video-memory'),
-        'cga_low': config.get('cga-low'),
-        'mono_tint': config.get('mono-tint'),
-        'font': config.get('font'),
-        # inserted keystrokes
-        'keystring': config.get('keys').decode('string_escape').decode('utf-8'),
-        # find program for PCjr TERM command
-        'pcjr_term': pcjr_term,
-        'option_shell': config.get('shell'),
-        'double': config.get('double'),
-        # device settings
-        'device_params': device_params,
-        'current_device': config.get(u'current-device'),
-        'mount': config.get(u'mount'),
-        'map_drives': config.get(u'map-drives'),
-        'print_trigger': config.get('print-trigger'),
-        'serial_buffer_size': config.get('serial-buffer-size'),
-        # text file parameters
-        'utf8': config.get('utf8'),
-        'universal': not config.get('strict-newline'),
-        # stdout echo (for filter interface)
-        'echo_to_stdout': (config.get(b'interface') == u'none'),
-        # keyboard settings
-        'ignore_caps': not config.get('capture-caps'),
-        'ctrl_c_is_break': config.get('ctrl-c-break'),
-        # program parameters
-        'max_list_line': 65535 if not config.get('strict-hidden-lines') else 65530,
-        'allow_protect': config.get('strict-protect'),
-        'allow_code_poke': config.get('allow-code-poke'),
-        # max available memory to BASIC (set by /m)
-        'max_memory': min(max_list) or 65534,
-        # maximum record length (-s)
-        'max_reclen': max(1, min(32767, config.get('max-reclen'))),
-        # number of file records
-        'max_files': config.get('max-files'),
-        # first field buffer address (workspace size; 3429 for gw-basic)
-        'reserved_memory': config.get('reserved-memory'),
-    }
+    session_params = config.get_session_parameters()
     try:
         with interpreter.SessionLauncher(**session_params) as launcher:
             try:

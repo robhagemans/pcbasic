@@ -245,6 +245,80 @@ def get(name, get_default=True):
             value = None
     return value
 
+
+def get_session_parameters():
+    """ Return a dictionary of parameters for the Session object. """
+    pcjr_term = get('pcjr-term')
+    if pcjr_term and not os.path.exists(pcjr_term):
+        pcjr_term = os.path.join(plat.info_dir, pcjr_term)
+    if not os.path.exists(pcjr_term):
+        pcjr_term = ''
+    peek_values = {}
+    try:
+        for a in get('peek'):
+            seg, addr, val = a.split(':')
+            peek_values[int(seg)*0x10 + int(addr)] = int(val)
+    except (TypeError, ValueError):
+        pass
+    device_params = {
+            key.upper()+':' : get(key)
+            for key in ('lpt1', 'lpt2', 'lpt3', 'com1', 'com2', 'cas1')}
+    max_list = get('max-memory')
+    max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
+    max_list[0] = max_list[0] or max_list[1]
+    return {
+        'syntax': get('syntax'),
+        'option_debug': get('debug'),
+        'output_file': get(b'output'),
+        'append': get(b'append'),
+        'input_file': get(b'input'),
+        'video_capabilities': get('video'),
+        'codepage': get('codepage') or '437',
+        'box_protect': not get('nobox'),
+        'monitor': get('monitor'),
+        # screen settings
+        'screen_aspect': (3072, 2000) if get('video') == 'tandy' else (4, 3),
+        'text_width': get('text-width'),
+        'video_memory': get('video-memory'),
+        'cga_low': get('cga-low'),
+        'mono_tint': get('mono-tint'),
+        'font': get('font'),
+        # inserted keystrokes
+        'keystring': get('keys').decode('string_escape').decode('utf-8'),
+        # find program for PCjr TERM command
+        'pcjr_term': pcjr_term,
+        'option_shell': get('shell'),
+        'double': get('double'),
+        # device settings
+        'device_params': device_params,
+        'current_device': get(u'current-device'),
+        'mount': get(u'mount'),
+        'map_drives': get(u'map-drives'),
+        'print_trigger': get('print-trigger'),
+        'serial_buffer_size': get('serial-buffer-size'),
+        # text file parameters
+        'utf8': get('utf8'),
+        'universal': not get('strict-newline'),
+        # stdout echo (for filter interface)
+        'echo_to_stdout': (get(b'interface') == u'none'),
+        # keyboard settings
+        'ignore_caps': not get('capture-caps'),
+        'ctrl_c_is_break': get('ctrl-c-break'),
+        # program parameters
+        'max_list_line': 65535 if not get('strict-hidden-lines') else 65530,
+        'allow_protect': get('strict-protect'),
+        'allow_code_poke': get('allow-code-poke'),
+        # max available memory to BASIC (set by /m)
+        'max_memory': min(max_list) or 65534,
+        # maximum record length (-s)
+        'max_reclen': max(1, min(32767, get('max-reclen'))),
+        # number of file records
+        'max_files': get('max-files'),
+        # first field buffer address (workspace size; 3429 for gw-basic)
+        'reserved_memory': get('reserved-memory'),
+    }
+
+
 def append_arg(args, key, value):
     """ Update a single argument by appending a value """
     if key in args and args[key]:
@@ -321,10 +395,11 @@ def parse_presets(remaining, conf_dict):
 def parse_package(remaining):
     """ Unpack BAZ package, if specified, and make its temp dir current. """
     # first positional arg: program or package name
+    package = None
     try:
         arg_package = remaining[0]
     except KeyError:
-        package = None
+        pass
     else:
         if os.path.isdir(arg_package):
             os.chdir(arg_package)
