@@ -137,21 +137,7 @@ def start_basic():
     import interpreter
     interface_name = config.get('interface') or 'graphical'
     nosound = config.get('nosound')
-    video_params = {
-        'force_display_size': config.get('dimensions'),
-        'aspect': config.get('aspect'),
-        'border_width': config.get('border'),
-        'force_native_pixel': (config.get('scaling') == 'native'),
-        'fullscreen': config.get('fullscreen'),
-        'smooth': (config.get('scaling') == 'smooth'),
-        'nokill': config.get('nokill'),
-        'altgr': config.get('altgr'),
-        'caption': config.get('caption'),
-        'composite_monitor': (config.get('monitor') == 'composite'),
-        'composite_card': config.get('video'),
-        'copy_paste': config.get('copy-paste'),
-        'pen': config.get('pen'),
-        }
+    video_params = config.get_video_parameters()
     session_params = config.get_session_parameters()
     try:
         with interpreter.SessionLauncher(**session_params) as launcher:

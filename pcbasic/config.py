@@ -245,7 +245,6 @@ def get(name, get_default=True):
             value = None
     return value
 
-
 def get_session_parameters():
     """ Return a dictionary of parameters for the Session object. """
     pcjr_term = get('pcjr-term')
@@ -317,6 +316,24 @@ def get_session_parameters():
         # first field buffer address (workspace size; 3429 for gw-basic)
         'reserved_memory': get('reserved-memory'),
     }
+
+def get_video_parameters():
+    """ Return a dictionary of parameters for the video plugin. """
+    return {
+        'force_display_size': get('dimensions'),
+        'aspect': get('aspect'),
+        'border_width': get('border'),
+        'force_native_pixel': (get('scaling') == 'native'),
+        'fullscreen': get('fullscreen'),
+        'smooth': (get('scaling') == 'smooth'),
+        'nokill': get('nokill'),
+        'altgr': get('altgr'),
+        'caption': get('caption'),
+        'composite_monitor': (get('monitor') == 'composite'),
+        'composite_card': get('video'),
+        'copy_paste': get('copy-paste'),
+        'pen': get('pen'),
+        }
 
 def get_state_file():
     """ Name of state file. """
