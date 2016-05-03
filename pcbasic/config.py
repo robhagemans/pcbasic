@@ -335,6 +335,11 @@ def get_video_parameters():
         'pen': get('pen'),
         }
 
+def get_audio_parameters():
+    return {
+        'nosound': get('nosound'),
+        }
+
 def get_state_file():
     """ Name of state file. """
     state_name = get('state') or 'PCBASIC.SAV'

@@ -24,10 +24,10 @@ class InitFailed(Exception):
 
 delay = 0.024
 
-def run(input_queue, video_queue, tone_queue, message_queue, interface_name, nosound, **video_params):
+def run(input_queue, video_queue, tone_queue, message_queue, interface_name, video_params, audio_params):
     """ Start the main interface event loop. """
     with get_video_plugin(input_queue, video_queue, interface_name, **video_params) as video_plugin:
-        with get_audio_plugin(tone_queue, message_queue, interface_name, nosound) as audio_plugin:
+        with get_audio_plugin(tone_queue, message_queue, interface_name, **audio_params) as audio_plugin:
             while True:
                 # ensure both queues are drained
                 video_plugin.cycle()

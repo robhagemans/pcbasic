@@ -136,7 +136,7 @@ def start_basic():
     import interface
     import interpreter
     interface_name = config.get('interface') or 'graphical'
-    nosound = config.get('nosound')
+    audio_params = config.get_audio_parameters()
     video_params = config.get_video_parameters()
     session_params = config.get_session_parameters()
     try:
@@ -145,7 +145,7 @@ def start_basic():
                 interface.run(
                         launcher.input_queue, launcher.video_queue,
                         launcher.tone_queue, launcher.message_queue,
-                        interface_name, nosound, **video_params)
+                        interface_name, video_params, audio_params)
             except interface.InitFailed:
                 logging.error('Failed to initialise interface.')
     except error.RunError as e:
