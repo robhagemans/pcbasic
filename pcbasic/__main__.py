@@ -41,22 +41,23 @@ import audio_sdl2
 
 
 def main():
-    """ Initialise and do requested operations. """
+    """Initialise and do requested operations"""
     try:
+        settings = config.Settings()
         # set up the logging system
-        prepare_logging()
-        if config.get('version'):
+        prepare_logging(settings)
+        if settings.get('version'):
             # in version mode, print version and exit
-            show_version()
-        elif config.get('help'):
+            show_version(settings)
+        elif settings.get('help'):
             # in help mode, print usage and exit
-            show_usage()
-        elif config.get('convert'):
+            show_usage(settings)
+        elif settings.get('convert'):
             # in converter mode, convert and exit
-            convert()
+            convert(settings)
         else:
             # otherwise, start an interpreter session
-            start_basic()
+            start_basic(settings)
     finally:
         # clean up our temp dir if we made one
         if plat.temp_dir:
@@ -72,34 +73,34 @@ def main():
         except:
             pass
 
-def prepare_logging():
-    """ Set up the logging system. """
-    logfile = config.get('logfile')
-    if config.get('version') or config.get('help'):
+def prepare_logging(settings):
+    """Set up the logging system"""
+    logfile = settings.get('logfile')
+    if settings.get('version') or settings.get('help'):
         formatstr = '%(message)s'
         loglevel = logging.INFO
     else:
         # logging setup before we import modules and may need to log errors
         formatstr = '%(levelname)s: %(message)s'
-        if config.get('debug'):
+        if settings.get('debug'):
             loglevel = logging.DEBUG
         else:
             loglevel = logging.INFO
     logging.basicConfig(format=formatstr, level=loglevel, filename=logfile)
 
-def convert():
-    """ Perform file format conversion. """
+def convert(settings):
+    """Perform file format conversion"""
     import interpreter
     # set conversion output
     # first arg, if given, is mode; second arg, if given, is outfile
-    mode = config.get('convert')
-    infile = (config.get(0) or
-              config.get('run') or config.get('load'))
-    outfile = config.get(1)
+    mode = settings.get('convert')
+    infile = (settings.get(0) or
+              settings.get('run') or settings.get('load'))
+    outfile = settings.get(1)
     # keep uppercase first letter
     mode = mode[0].upper() if mode else 'A'
     try:
-        session = interpreter.Session(**config.get_session_parameters())
+        session = interpreter.Session(**settings.get_session_parameters())
     except Exception as e:
         logging.error('Unhandled exception\n%s' % traceback.format_exc())
     files = session.files
@@ -131,16 +132,16 @@ def convert():
     except EnvironmentError as e:
         logging.error(str(e))
 
-def start_basic():
-    """ Start an interactive interpreter session. """
+def start_basic(settings):
+    """Start an interactive interpreter session"""
     import interface
     import interpreter
-    interface_name = config.get('interface') or 'graphical'
-    audio_params = config.get_audio_parameters()
-    video_params = config.get_video_parameters()
-    session_params = config.get_session_parameters()
+    interface_name = settings.get('interface') or 'graphical'
+    audio_params = settings.get_audio_parameters()
+    video_params = settings.get_video_parameters()
+    session_params = settings.get_session_parameters()
     try:
-        with interpreter.SessionLauncher(**session_params) as launcher:
+        with interpreter.SessionLauncher(settings, **session_params) as launcher:
             try:
                 interface.run(
                         launcher.input_queue, launcher.video_queue,
@@ -155,16 +156,16 @@ def start_basic():
     except Exception:
         logging.error('Unhandled exception\n%s' % traceback.format_exc())
 
-def show_usage():
-    """ Show usage description. """
+def show_usage(settings):
+    """Show usage description"""
     with open(os.path.join(plat.info_dir, 'usage.txt')) as f:
         for line in f:
             sys.stdout.write(line)
 
-def show_version():
-    """ Show version with optional debugging details. """
+def show_version(settings):
+    """Show version with optional debugging details"""
     sys.stdout.write(plat.version + '\n')
-    if not config.get('debug'):
+    if not settings.get('debug'):
         return
     logging.info('\nPLATFORM')
     logging.info('os: %s %s %s', plat.system, platform.processor(), platform.version())

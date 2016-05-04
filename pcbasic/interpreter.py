@@ -30,7 +30,6 @@ import state
 # prepare input state
 import inputs
 import debug
-import config
 import rnd
 import timedate
 import shell
@@ -45,29 +44,29 @@ import unicodepage
 class SessionLauncher(object):
     """ Launches a BASIC session. """
 
-    def __init__(self, **session_params):
+    def __init__(self, settings, **session_params):
         """ Initialise launch parameters. """
-        quit = config.get('quit')
-        wait = config.get('wait')
-        cmd = config.get('exec')
-        self.prog = config.get(0) or config.get('run') or config.get('load')
-        run = (config.get(0) != '') or (config.get('run') != '')
-        self.resume = config.get('resume')
+        quit = settings.get('quit')
+        wait = settings.get('wait')
+        cmd = settings.get('exec')
+        self.prog = settings.get(0) or settings.get('run') or settings.get('load')
+        run = (settings.get(0) != '') or (settings.get('run') != '')
+        self.resume = settings.get('resume')
         # following GW, don't write greeting for redirected input
         # or command-line filter run
         self.show_greeting = (not run and not cmd and
-            not config.get('input') and not config.get('interface') == 'none')
+            not settings.get('input') and not settings.get('interface') == 'none')
         if self.resume:
             cmd, run = '', False
             self._resume_params = {
                 # override selected settings from command line
-                'override_cas1': config.get('cas1', False),
-                'override_mount': config.get(u'mount', False),
+                'override_cas1': settings.get('cas1', False),
+                'override_mount': settings.get(u'mount', False),
                 # we always need to reset this or it may be a reference to an old device
-                'override_current_device': config.get(u'current-device', True),
+                'override_current_device': settings.get(u'current-device', True),
             }
         # name of state file
-        self._state_file = config.get_state_file()
+        self._state_file = settings.get_state_file()
         # parameters for Session constructor
         self._session_params = session_params
         # parameters for Session.run() thread target
