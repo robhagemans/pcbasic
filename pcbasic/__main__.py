@@ -139,9 +139,34 @@ def start_basic(settings):
     interface_name = settings.get('interface') or 'graphical'
     audio_params = settings.get_audio_parameters()
     video_params = settings.get_video_parameters()
-    session_params = settings.get_session_parameters()
+    state_file = settings.get_state_file()
+    run = (settings.get(0) != '') or (settings.get('run') != '')
+    launch_params = {
+        'quit': settings.get('quit'),
+        'wait': settings.get('wait'),
+        'cmd': settings.get('exec'),
+        'prog': settings.get(0) or settings.get('run') or settings.get('load'),
+        'run': run,
+        'resume': settings.get('resume'),
+        # following GW, don't write greeting for redirected input
+        # or command-line filter run
+        'show_greeting': (not run and not settings.get('exec') and
+            not settings.get('input') and not settings.get('interface') == 'none'),
+    }
+    if not settings.get('resume'):
+        session_params = settings.get_session_parameters()
+    else:
+        launch_params['cmd'] = ''
+        launch_params['run'] = False
+        session_params = {
+            # override selected settings from command line
+            'override_cas1': settings.get('cas1', False),
+            'override_mount': settings.get(u'mount', False),
+            # we always need to reset this or it may be a reference to an old device
+            'override_current_device': settings.get(u'current-device', True),
+        }
     try:
-        with interpreter.SessionLauncher(settings, **session_params) as launcher:
+        with interpreter.SessionLauncher(session_params, state_file, **launch_params) as launcher:
             try:
                 interface.run(
                         launcher.input_queue, launcher.video_queue,
