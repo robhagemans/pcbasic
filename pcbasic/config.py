@@ -280,6 +280,14 @@ class Settings(object):
 
     def get_session_parameters(self):
         """Return a dictionary of parameters for the Session object"""
+        if self.get('resume'):
+            return {
+                # override selected settings from command line
+                'override_cas1': self.get('cas1', False),
+                'override_mount': self.get(u'mount', False),
+                # we always need to reset this or it may be a reference to an old device
+                'override_current_device': self.get(u'current-device', True),
+            }
         pcjr_term = self.get('pcjr-term')
         if pcjr_term and not os.path.exists(pcjr_term):
             pcjr_term = os.path.join(plat.info_dir, pcjr_term)
@@ -383,6 +391,25 @@ class Settings(object):
             state_file = os.path.join(plat.state_path, state_name)
         return state_file
 
+    def get_launch_parameters(self):
+        """Return a dictionary of launch parameters"""
+        run = (self.get(0) != '') or (self.get('run') != '')
+        launch_params = {
+            'quit': self.get('quit'),
+            'wait': self.get('wait'),
+            'cmd': self.get('exec'),
+            'prog': self.get(0) or self.get('run') or self.get('load'),
+            'run': run,
+            'resume': self.get('resume'),
+            # following GW, don't write greeting for redirected input
+            # or command-line filter run
+            'show_greeting': (not run and not self.get('exec') and
+                not self.get('input') and not self.get('interface') == 'none'),
+        }
+        if self.get('resume'):
+            launch_params['cmd'] = ''
+            launch_params['run'] = False
+        return launch_params
 
     def _get_arguments(self, argv):
         """Convert arguments to dictionary"""
