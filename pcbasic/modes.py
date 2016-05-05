@@ -142,8 +142,7 @@ def get_modes(screen, cga4_palette, video_mem_size, video_capabilities, mono_tin
                     has_blink=True),
         # hercules screen 3
         '720x348x2':
-            # TODO hercules - this actually produces 350, not 348
-            # two scan lines must be left out somewhere, somehow
+            # this actually produces 350, not 348
             CGAMode(screen, '720x348x2', 720, 350, 25, 80, 1,
                     cga2_palette, screen.colours16_mono, bitsperpixel=1,
                     interleave_times=4, bank_size=0x2000,
