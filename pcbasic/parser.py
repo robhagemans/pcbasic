@@ -480,8 +480,7 @@ class Parser(object):
                     units.append(self._handle_math_error(e))
             elif d in tk.end_statement:
                 break
-            # FIXME: tk.keyword is out of place here
-            elif d in tk.end_expression or d in tk.keyword:
+            elif d in tk.end_expression:
                 # missing operand inside brackets or before comma is syntax error
                 missing_error = error.STX
                 break
