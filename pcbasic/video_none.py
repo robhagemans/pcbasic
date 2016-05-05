@@ -11,10 +11,6 @@ import platform
 
 import interface as video
 import signals
-import plat
-
-
-encoding = sys.stdin.encoding or 'utf-8'
 
 if platform.system() == 'Windows':
     from msvcrt import kbhit
@@ -24,6 +20,9 @@ else:
     def kbhit():
         """ Return whether a character is ready to be read from the keyboard. """
         return select.select([sys.stdin], [], [], 0)[0] != []
+
+
+encoding = sys.stdin.encoding or 'utf-8'
 
 ###############################################################################
 
@@ -41,15 +40,19 @@ class VideoNone(video.VideoPlugin):
         """ Initialise filter interface. """
         # sys.stdout output for video=none is set in redirect module
         video.VideoPlugin.__init__(self, input_queue, video_queue)
+        try:
+            self._stdin_is_tty = platform.system() in (b'Darwin', b'Windows') or sys.stdin.isatty()
+        except AttributeError:
+            self._stdin_is_tty = True
         # on unix ttys, replace input \n with \r
         # setting termios won't do the trick as it will not trigger read_line, gets too complicated
-        if platform.system() != 'Windows' and plat.stdin_is_tty:
+        if platform.system() != 'Windows' and self._stdin_is_tty:
             self.lf_to_cr = True
 
     def _check_input(self):
         """ Handle keyboard events. """
         # avoid blocking on ttys if there's no input
-        if plat.stdin_is_tty and not kbhit():
+        if self._stdin_is_tty and not kbhit():
             return
         # NOTE: errors occur when backspace is used with text input
         # only the last byte is erased, not the whole utf-8 sequence

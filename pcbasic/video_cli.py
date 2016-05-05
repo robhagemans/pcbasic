@@ -14,7 +14,6 @@ import Queue
 import platform
 
 import interface as video
-import plat
 import signals
 import scancode
 from eascii import as_unicode as uea
@@ -43,6 +42,8 @@ else:
     eof = uea.CTRL_d
 
 
+
+
 ###############################################################################
 
 class VideoCLI(video.VideoPlugin):
@@ -50,10 +51,13 @@ class VideoCLI(video.VideoPlugin):
 
     def __init__(self, input_queue, video_queue, **kwargs):
         """ Initialise command-line interface. """
-        if not plat.stdin_is_tty:
-            logging.warning('Input device is not a terminal. '
-                            'Could not initialise text-based interface.')
-            raise video.InitFailed()
+        try:
+            if platform.system() not in (b'Darwin',  b'Windows') and not sys.stdin.isatty():
+                logging.warning('Input device is not a terminal. '
+                                'Could not initialise text-based interface.')
+                raise video.InitFailed()
+        except AttributeError:
+            pass
         video.VideoPlugin.__init__(self, input_queue, video_queue)
         self._term_echo_on = True
         self._term_attr = None

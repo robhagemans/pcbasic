@@ -54,19 +54,16 @@ if not os.path.exists(state_path):
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps in OSX
 if platform.system() == b'Darwin':
-    stdin_is_tty, stdout_is_tty = True, True
     has_stdin, has_stdout = False, False
 elif platform.system() == b'Windows':
-    stdin_is_tty, stdout_is_tty = True, True
     has_stdin, has_stdout = True, True
 else:
     # Unix, Linux including Android
     try:
-        stdin_is_tty = sys.stdin.isatty()
-        stdout_is_tty = sys.stdout.isatty()
+        sys.stdin.isatty()
+        sys.stdout.isatty()
         has_stdin, has_stdout = True, True
     except AttributeError:
-        stdin_is_tty, stdout_is_tty = True, True
         has_stdin, has_stdout = False, False
 
 # create temporary directory
