@@ -58,6 +58,8 @@ def main():
         else:
             # otherwise, start an interpreter session
             start_basic(settings)
+    except:
+        raise
     finally:
         # clean up our temp dir if we made one
         if plat.temp_dir:
