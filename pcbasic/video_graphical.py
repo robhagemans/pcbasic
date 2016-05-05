@@ -6,17 +6,14 @@ Graphical interface base class
 This file is released under the GNU GPL version 3 or later.
 """
 
-import plat
-import interface as video
-import signals
-import scancode
+import platform
 
 try:
     import numpy
 except ImportError:
     numpy = None
 
-if plat.system == 'Windows':
+if platform.system() == 'Windows':
     # Windows 10 - set to DPI aware to avoid scaling twice on HiDPI screens
     # see https://bitbucket.org/pygame/pygame/issues/245/wrong-resolution-unless-you-use-ctypes
     import ctypes
@@ -25,6 +22,10 @@ if plat.system == 'Windows':
     except AttributeError:
         # old versions of Windows don't have this in user32.dll
         pass
+
+import interface as video
+import signals
+import scancode
 
 # percentage of the screen to leave unused for window decorations etc.
 display_slack = 15

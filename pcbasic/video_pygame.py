@@ -18,7 +18,7 @@ try:
 except ImportError:
     numpy = None
 
-import plat
+import platform
 import signals
 import scancode
 from eascii import as_unicode as uea
@@ -638,7 +638,7 @@ class PygameClipboard(clipboard.Clipboard):
         else:
             pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         try:
-            if plat.system == 'Windows':
+            if platform.system() == 'Windows':
                 # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
                 # but give it a utf-8 MIME type, because that's how Windows likes it
                 pygame.scrap.put('text/plain;charset=utf-8', text.encode('utf-16le', 'replace') + '\0\0')
@@ -661,7 +661,7 @@ class PygameClipboard(clipboard.Clipboard):
             us = pygame.scrap.get(text_type)
             if us:
                 break
-        if plat.system == 'Windows':
+        if platform.system() == 'Windows':
             if text_type == 'text/plain;charset=utf-8':
                 # it's lying, it's giving us UTF16 little-endian
                 # ignore any bad UTF16 characters from outside
@@ -675,9 +675,9 @@ class PygameClipboard(clipboard.Clipboard):
 def get_clipboard_handler():
     """ Get a working Clipboard handler object. """
     # Pygame.Scrap doesn't work on OSX and is buggy on Linux; avoid if we can
-    if plat.system == 'OSX':
+    if platform.system() == 'Darwin':
         handler = clipboard.MacClipboard()
-    elif plat.system in ('Linux', 'Unknown_OS') and clipboard.XClipboard().ok:
+    elif platform.system() != 'Windows' and clipboard.XClipboard().ok:
         handler = clipboard.XClipboard()
     else:
         handler = PygameClipboard()

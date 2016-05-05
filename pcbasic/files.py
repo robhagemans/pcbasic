@@ -16,8 +16,8 @@ import cassette
 import disk
 import ports
 
-import plat
-if plat.system == b'Windows':
+import platform
+if platform.system() == b'Windows':
     import win32api
 
 # MS-DOS device files
@@ -210,7 +210,7 @@ class Devices(object):
             self.current_device = self.devices[default]
 
 
-    if plat.system == b'Windows':
+    if platform.system() == b'Windows':
         def _map_drives(self):
             """ Map Windows drive letters to PC-BASIC disk devices. """
             # get all drives in use by windows

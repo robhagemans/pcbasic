@@ -14,9 +14,8 @@ import errno
 import logging
 import string
 import re
-
-import plat
-if plat.system == b'Windows':
+import platform
+if platform.system() == b'Windows':
     import win32api
     import ctypes
 
@@ -25,6 +24,7 @@ from bytestream import ByteStream
 import error
 import vartypes
 import devices
+import plat
 
 # GW-BASIC FILE CONTROL BLOCK structure:
 # source: IBM Basic reference 1982 (for BASIC-C, BASIC-D, BASIC-A) appendix I-5
@@ -116,7 +116,7 @@ def handle_oserror(e):
 ##############################################################################
 # DOS name translation
 
-if plat.system == b'Windows':
+if platform.system() == b'Windows':
     def short_name(path, longname):
         """ Get unicode Windows short name or fake it. """
         path_and_longname = os.path.join(path, longname)
@@ -526,13 +526,11 @@ class DiskDevice(object):
 
     def get_free(self):
         """ Return the number of free bytes on the drive. """
-        if plat.system == b'Windows':
+        if platform.system() == b'Windows':
             free_bytes = ctypes.c_ulonglong(0)
             ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(self.path),
                                             None, None, ctypes.pointer(free_bytes))
             return free_bytes.value
-        elif plat.system == b'Android':
-            return 0
         else:
             st = os.statvfs(self.path.encode(plat.preferred_encoding))
             return st.f_bavail * st.f_frsize

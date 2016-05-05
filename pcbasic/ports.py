@@ -14,10 +14,10 @@ import sys
 import os
 import socket
 import datetime
+import platform
 
 # kbhit() also appears in video_none.py
-import plat
-if plat.system == 'Windows':
+if platform.system() == 'Windows':
     from msvcrt import kbhit
 else:
     import select

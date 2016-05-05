@@ -7,15 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import platform
-if platform.system() == 'Windows':
-    system = b'Windows'
-elif platform.system() == 'Linux':
-    system = b'Linux'
-elif platform.system() == 'Darwin':
-    system = b'OSX'
-else:
-    # Everything else. Assume it's a Unix.
-    system = b'Unknown_OS'
 
 
 # preferred locale
@@ -50,15 +41,12 @@ system_config_dir = info_dir
 home_dir = os.path.expanduser(u'~')
 
 # user configuration and state directories
-if system == b'Windows':
+if platform.system() == b'Windows':
     user_config_dir = os.path.join(os.getenv(u'APPDATA'), u'pcbasic')
     state_path = user_config_dir
-elif system == b'OSX':
+elif platform.system() == b'Darwin':
     user_config_dir = os.path.join(home_dir, u'Library/Application Support/pcbasic')
     state_path = user_config_dir
-elif system == b'Android':
-    user_config_dir = info_dir
-    state_path = info_dir
 else:
     xdg_data_home = os.environ.get(u'XDG_DATA_HOME') or os.path.join(home_dir, u'.local', u'share')
     xdg_config_home = os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(home_dir, u'.config')
@@ -70,10 +58,10 @@ if not os.path.exists(state_path):
 
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps in OSX
-if system == b'OSX':
+if platform.system() == b'Darwin':
     stdin_is_tty, stdout_is_tty = True, True
     has_stdin, has_stdout = False, False
-elif system == b'Windows':
+elif platform.system() == b'Windows':
     stdin_is_tty, stdout_is_tty = True, True
     has_stdin, has_stdout = True, True
 else:
@@ -86,15 +74,9 @@ else:
         stdin_is_tty, stdout_is_tty = True, True
         has_stdin, has_stdout = False, False
 
-if system == b'Android':
-    # always use the same location on Android
-    # to ensure we can delete at start
-    # since we can't control exits
-    temp_dir = os.path.join(basepath, u'temp')
-else:
-    # create temporary directory
-    import tempfile
-    temp_dir = tempfile.mkdtemp(prefix=u'pcbasic-')
+# create temporary directory
+import tempfile
+temp_dir = tempfile.mkdtemp(prefix=u'pcbasic-')
 
 # PC-BASIC version
 try:

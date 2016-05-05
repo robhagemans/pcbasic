@@ -13,10 +13,12 @@ import logging
 import zipfile
 import codecs
 
-import plat
-if plat.system == b'Windows':
+import platform
+if platform.system() == b'Windows':
     import ctypes
     import ctypes.wintypes
+
+import plat
 
 
 def get_logger(logfile=None):
@@ -35,7 +37,7 @@ def get_logger(logfile=None):
 
 def get_unicode_argv():
     """ Convert command-line arguments to unicode. """
-    if plat.system == b'Windows':
+    if platform.system() == b'Windows':
         # see http://code.activestate.com/recipes/572200-get-sysargv-with-unicode-characters-under-windows/
         GetCommandLineW = ctypes.cdll.kernel32.GetCommandLineW
         GetCommandLineW.argtypes = []
@@ -75,8 +77,21 @@ def safe_split(s, sep):
     return s0, s1
 
 
+
+def get_system_preset_name():
+    """Return the name of the preset section for this system."""
+    if platform.system() == b'Windows':
+        return u'windows'
+    elif platform.system() == b'Linux':
+        return u'linux'
+    elif platform.system() == b'Darwin':
+        return u'osx'
+    else:
+        return u'unknown_os'
+
+
 class Settings(object):
-    """Read and retrieve command-line settings and options"""
+    """Read and retrieve command-line settings and options."""
 
     # system-wide config path
     system_config_path = os.path.join(plat.system_config_dir, u'default.ini')
@@ -87,7 +102,7 @@ class Settings(object):
 
     # by default, load what's in section [pcbasic] and override with anything
     # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
-    default_presets = [u'pcbasic', plat.system.lower().decode('ascii')]
+    default_presets = [u'pcbasic', get_system_preset_name()]
 
     # get supported codepages
     encodings = sorted([ x[0] for x in [ c.split(u'.ucp')

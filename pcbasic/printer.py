@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 from StringIO import StringIO
 import subprocess
 import logging
+import platform
 
 import plat
 
@@ -52,7 +53,7 @@ class PrinterStreamBase(StringIO):
         """ Wait for process to complete (dummy). """
 
 
-if plat.system == 'Windows':
+if platform.system() == 'Windows':
     import os
     import win32print
     import win32com

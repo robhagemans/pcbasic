@@ -11,6 +11,7 @@ import time
 import logging
 import threading
 import Queue
+import platform
 
 import interface as video
 import plat
@@ -30,13 +31,13 @@ def prepare():
 
 ###############################################################################
 
-if plat.system == 'Windows':
+if platform.system() == 'Windows':
     import ansipipe
     tty = ansipipe
     termios = ansipipe
     # Ctrl+Z to exit
     eof = uea.CTRL_z
-elif plat.system != 'Android':
+else:
     import tty, termios
     # Ctrl+D to exit
     eof = uea.CTRL_d

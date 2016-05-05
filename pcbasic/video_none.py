@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import sys
+import platform
 
 import interface as video
 import signals
@@ -15,7 +16,7 @@ import plat
 
 encoding = sys.stdin.encoding or 'utf-8'
 
-if plat.system == 'Windows':
+if platform.system() == 'Windows':
     from msvcrt import kbhit
 else:
     import select
@@ -42,7 +43,7 @@ class VideoNone(video.VideoPlugin):
         video.VideoPlugin.__init__(self, input_queue, video_queue)
         # on unix ttys, replace input \n with \r
         # setting termios won't do the trick as it will not trigger read_line, gets too complicated
-        if plat.system != 'Windows' and plat.stdin_is_tty:
+        if platform.system() != 'Windows' and plat.stdin_is_tty:
             self.lf_to_cr = True
 
     def _check_input(self):

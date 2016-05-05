@@ -8,10 +8,9 @@ This file is released under the GNU GPL version 3 or later.
 
 import Queue
 import subprocess
+import platform
 
-import plat
 import signals
-
 import interface as audio
 
 def prepare():
@@ -26,7 +25,7 @@ class AudioBeep(audio.AudioPlugin):
         """ Initialise sound system. """
         # Windows not supported as there's no beep utility anyway
         # and we can't run the test below on CMD
-        if (plat.system == 'Windows' or
+        if (platform.system() == 'Windows' or
                 subprocess.call("command -v beep >/dev/null 2>&1", shell=True) != 0):
             raise audio.InitFailed()
         self.now_playing = [None, None, None, None]

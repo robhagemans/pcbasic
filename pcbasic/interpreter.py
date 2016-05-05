@@ -11,6 +11,7 @@ import logging
 import time
 import threading
 import Queue
+import platform
 
 try:
     from cStringIO import StringIO
@@ -257,7 +258,7 @@ class Session(object):
                 shell_command = None
             else:
                 shell_command = option_shell
-            if plat.system == 'Windows':
+            if platform.system() == 'Windows':
                 self.shell = shell.WindowsShell(self.keyboard, self.screen, self.codepage, shell_command)
             else:
                 try:

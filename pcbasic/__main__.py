@@ -156,7 +156,7 @@ def show_version(settings):
     if not settings.get('debug'):
         return
     logging.info('\nPLATFORM')
-    logging.info('os: %s %s %s', plat.system, platform.processor(), platform.version())
+    logging.info('os: %s %s %s', platform.system(), platform.processor(), platform.version())
     logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
     logging.info('\nMODULES')
     # try numpy before pygame to avoid strange ImportError on FreeBSD
@@ -176,7 +176,7 @@ def show_version(settings):
                     pass
             else:
                 logging.info('available\n')
-    if plat.system != 'Windows':
+    if platform.system() != 'Windows':
         logging.info('\nEXTERNAL TOOLS')
         tools = ('lpr', 'paps', 'beep', 'xclip', 'xsel', 'pbcopy', 'pbpaste')
         for tool in tools:
