@@ -43,9 +43,8 @@ import audio_sdl2
 def main():
     """Initialise and do requested operations"""
     try:
+        # get settings and prepare logging
         settings = config.Settings()
-        # set up the logging system
-        prepare_logging(settings)
         if settings.get('version'):
             # in version mode, print version and exit
             show_version(settings)
@@ -74,21 +73,6 @@ def main():
             sys.stderr.close()
         except:
             pass
-
-def prepare_logging(settings):
-    """Set up the logging system"""
-    logfile = settings.get('logfile')
-    if settings.get('version') or settings.get('help'):
-        formatstr = '%(message)s'
-        loglevel = logging.INFO
-    else:
-        # logging setup before we import modules and may need to log errors
-        formatstr = '%(levelname)s: %(message)s'
-        if settings.get('debug'):
-            loglevel = logging.DEBUG
-        else:
-            loglevel = logging.INFO
-    logging.basicConfig(format=formatstr, level=loglevel, filename=logfile)
 
 def convert(settings):
     """Perform file format conversion"""

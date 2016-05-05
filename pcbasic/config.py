@@ -239,6 +239,23 @@ class Settings(object):
             self.build_default_config_file(self.user_config_path)
         # store options in options dictionary
         self._options = self._retrieve_options(uargv)
+        # prepare global logger for use by main program
+        self._prepare_logging()
+
+    def _prepare_logging(self):
+        """Set up the global logger"""
+        logfile = self.get('logfile')
+        if self.get('version') or self.get('help'):
+            formatstr = '%(message)s'
+            loglevel = logging.INFO
+        else:
+            # logging setup before we import modules and may need to log errors
+            formatstr = '%(levelname)s: %(message)s'
+            if self.get('debug'):
+                loglevel = logging.DEBUG
+            else:
+                loglevel = logging.INFO
+        logging.basicConfig(format=formatstr, level=loglevel, filename=logfile)
 
     def _retrieve_options(self, uargv):
         """Retrieve command line and option file options"""
