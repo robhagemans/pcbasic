@@ -15,6 +15,7 @@ import logging
 import string
 import re
 import platform
+import locale
 if platform.system() == b'Windows':
     import win32api
     import ctypes
@@ -24,7 +25,6 @@ from bytestream import ByteStream
 import error
 import vartypes
 import devices
-import plat
 
 # GW-BASIC FILE CONTROL BLOCK structure:
 # source: IBM Basic reference 1982 (for BASIC-C, BASIC-D, BASIC-A) appendix I-5
@@ -532,7 +532,7 @@ class DiskDevice(object):
                                             None, None, ctypes.pointer(free_bytes))
             return free_bytes.value
         else:
-            st = os.statvfs(self.path.encode(plat.preferred_encoding))
+            st = os.statvfs(self.path.encode(locale.getpreferredencoding()))
             return st.f_bavail * st.f_frsize
 
     def check_file_not_open(self, path):

@@ -7,11 +7,9 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import subprocess
+import locale
 
-import plat
-
-encoding = plat.preferred_encoding
-
+encoding = locale.getpreferredencoding()
 
 
 class Clipboard(object):

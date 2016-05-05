@@ -12,6 +12,7 @@ import ConfigParser
 import logging
 import zipfile
 import codecs
+import locale
 
 import platform
 if platform.system() == b'Windows':
@@ -56,7 +57,7 @@ def get_unicode_argv():
     else:
         # the official parameter should be LC_CTYPE but that's None in my locale
         # on windows, this would only work if the mbcs CP_ACP includes the characters we need
-        return [arg.decode(plat.preferred_encoding) for arg in sys.argv]
+        return [arg.decode(locale.getpreferredencoding()) for arg in sys.argv]
 
 def append_arg(args, key, value):
     """Update a single list-type argument by appending a value"""

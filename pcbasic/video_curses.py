@@ -8,13 +8,12 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 import os
+import locale
 try:
     import curses
 except ImportError:
     curses = None
 
-# ensure setlocale() has been run to allow unicode input
-import plat
 import scancode
 from eascii import as_unicode as uea
 import signals
@@ -24,8 +23,6 @@ import interface as video
 # only use these if you clear the screen afterwards,
 # so you don't see gibberish if the terminal doesn't support the sequence.
 import ansi
-
-encoding = plat.preferred_encoding
 
 
 ###############################################################################
@@ -125,6 +122,9 @@ class VideoCurses(video.VideoPlugin):
         self.text = [[[(u' ', bgcolor)]*self.width for _ in range(self.height)]]
         self.f12_active = False
         self.set_border_attr(0)
+        # we need to ensure setlocale() has been run first to allow unicode input
+        self._encoding = locale.getpreferredencoding()
+
 
     def __exit__(self, type, value, traceback):
         """ Close the curses interface. """
@@ -181,7 +181,7 @@ class VideoCurses(video.VideoPlugin):
                     else:
                         self._unset_f12()
         # convert into unicode chars
-        u = s.decode(encoding, 'replace')
+        u = s.decode(self._encoding, 'replace')
         # then handle these one by one
         for c in u:
             #check_full=False to allow pasting chunks of text
@@ -216,7 +216,8 @@ class VideoCurses(video.VideoPlugin):
         for row, textrow in enumerate(self.text[self.vpagenum]):
             for col, charattr in enumerate(textrow):
                 try:
-                    self.window.addstr(row, col, charattr[0].encode(encoding, 'replace'), charattr[1])
+                    self.window.addstr(row, col, charattr[0].encode(
+                                self._encoding, 'replace'), charattr[1])
                 except curses.error:
                     pass
         if self.cursor_visible:
@@ -377,7 +378,8 @@ class VideoCurses(video.VideoPlugin):
                 self.last_colour = colour
                 self.window.bkgdset(' ', colour)
             try:
-                self.window.addstr(row-1, col-1, c.encode(encoding, 'replace'), colour)
+                self.window.addstr(row-1, col-1, c.encode(
+                        self._encoding, 'replace'), colour)
             except curses.error:
                 pass
 

@@ -11,6 +11,7 @@ import subprocess
 import logging
 import threading
 import time
+import locale
 
 try:
     import pexpect
@@ -18,7 +19,6 @@ except ImportError:
     pexpect = None
 
 import error
-import plat
 
 
 class InitFailed(Exception):
@@ -55,6 +55,7 @@ class ShellBase(object):
         self.screen = screen
         self.command = shell_command
         self.codepage = codepage
+        self._encoding = locale.getpreferredencoding()
 
     def launch(self, command):
         """ Launch the shell. """
@@ -90,7 +91,7 @@ class WindowsShell(ShellBase):
         cmd = self.command
         if command:
             cmd += u' /C ' + self.codepage.str_to_unicode(command)
-        p = subprocess.Popen(cmd.encode(plat.preferred_encoding).split(), stdin=subprocess.PIPE,
+        p = subprocess.Popen(cmd.encode(self._encoding).split(), stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         outp = threading.Thread(target=self._process_stdout, args=(p, p.stdout, shell_output))
         outp.daemon = True
@@ -104,8 +105,8 @@ class WindowsShell(ShellBase):
                 lines, shell_output[:] = b''.join(shell_output).split('\r\n'), []
                 last = lines.pop()
                 for line in lines:
-                    self.screen.write_line(self.codepage.str_from_unicode(line.decode(plat.preferred_encoding)))
-                self.screen.write(self.codepage.str_from_unicode(last.decode(plat.preferred_encoding)))
+                    self.screen.write_line(self.codepage.str_from_unicode(line.decode(self._encoding)))
+                self.screen.write(self.codepage.str_from_unicode(last.decode(self._encoding)))
             if p.poll() is not None:
                 # drain output then break
                 continue
@@ -119,7 +120,7 @@ class WindowsShell(ShellBase):
                 # the command that's already there. Note that Wine's CMD.EXE
                 # doesn't echo the command, so it's overwritten by the output...
                 self.screen.write(b'\x1D' * len(word))
-                p.stdin.write(self.codepage.str_to_unicode(word + b'\r\n', preserve_control=True).encode(plat.preferred_encoding))
+                p.stdin.write(self.codepage.str_to_unicode(word + b'\r\n', preserve_control=True).encode(self._encoding))
                 word = b''
             elif c == b'\b':
                 # handle backspace
@@ -151,7 +152,7 @@ class Shell(ShellBase):
         cmd = self.command
         if command:
             cmd += u' -c "' + self.codepage.str_to_unicode(command) + u'"'
-        p = pexpect.spawn(cmd.encode(plat.preferred_encoding))
+        p = pexpect.spawn(cmd.encode(self._encoding))
         while True:
             try:
                 # expand=False suppresses key macros
@@ -162,13 +163,13 @@ class Shell(ShellBase):
             if c == b'\b':
                 p.send(b'\x7f')
             elif c < b' ':
-                p.send(c.encode(plat.preferred_encoding))
+                p.send(c.encode(self._encoding))
             elif c != b'':
-                c = self.codepage.to_unicode(c).encode(plat.preferred_encoding)
+                c = self.codepage.to_unicode(c).encode(self._encoding)
                 p.send(c)
             while True:
                 try:
-                    c = p.read_nonblocking(1, timeout=0).decode(plat.preferred_encoding)
+                    c = p.read_nonblocking(1, timeout=0).decode(self._encoding)
                 except:
                     c = u''
                 if c == u'' or c == u'\n':
