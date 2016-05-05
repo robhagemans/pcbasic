@@ -58,7 +58,7 @@ class Tokeniser(object):
             # pcjr, tandy; incompatible with Sperry PC.
             self._token_to_keyword[tk.NOISE] = tk.KW_NOISE
             self._token_to_keyword[tk.TERM] = tk.KW_TERM
-        self._keyword_to_token = dict((reversed(item) for item in tk.keyword.items()))
+        self._keyword_to_token = dict((reversed(item) for item in self._token_to_keyword.items()))
 
     #################################################################
     # Detokenise functions
