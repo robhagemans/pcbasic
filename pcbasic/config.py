@@ -391,6 +391,10 @@ class Settings(object):
             state_file = os.path.join(plat.state_path, state_name)
         return state_file
 
+    def get_interface(self):
+        """Return name of interface plugin"""
+        return self.get('interface') or 'graphical'
+
     def get_launch_parameters(self):
         """Return a dictionary of launch parameters"""
         run = (self.get(0) != '') or (self.get('run') != '')

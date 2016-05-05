@@ -136,7 +136,7 @@ def start_basic(settings):
     """Start an interactive interpreter session"""
     import interface
     import interpreter
-    interface_name = settings.get('interface') or 'graphical'
+    interface_name = settings.get_interface()
     audio_params = settings.get_audio_parameters()
     video_params = settings.get_video_parameters()
     launch_params = settings.get_launch_parameters()
