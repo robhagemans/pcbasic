@@ -111,7 +111,7 @@ class Session(object):
             tone_queue=None, message_queue=None,
             syntax=u'advanced', option_debug=False, pcjr_term=u'', option_shell=u'',
             output_file=None, append=False, input_file=None,
-            codepage=u'437', box_protect=True,
+            codepage_dir=u'', codepage=u'437', box_protect=True,
             video_capabilities=u'vga', font=u'freedos',
             monitor=u'rgb', mono_tint=(0, 255, 0), screen_aspect=(4, 3),
             text_width=80, video_memory=262144, cga_low=False,
@@ -147,7 +147,7 @@ class Session(object):
         self.edit_prompt = False
 
         # prepare codepage
-        self.codepage = unicodepage.Codepage(codepage, box_protect)
+        self.codepage = unicodepage.Codepage(codepage_dir, codepage, box_protect)
         # prepare tokeniser
         self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
 

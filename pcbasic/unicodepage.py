@@ -10,8 +10,6 @@ import unicodedata
 import logging
 import os
 
-import plat
-
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
 # ASCII but show as the subsitute glyph. Used e.g. for YEN SIGN in Shift-JIS
@@ -29,20 +27,20 @@ control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e
 class Codepage(object):
     """ Codepage tables. """
 
-    def __init__(self, codepage_name, box_protect=True):
+    def __init__(self, codepage_dir, codepage_name, box_protect=True):
         """ Load and initialise codepage tables. """
         # is the current codepage a double-byte codepage?
         self.dbcs = False
         # substitutes for printable ascii
         self.substitutes = {}
         # load codepage (overrides the above)
-        self.load(codepage_name)
+        self.load(codepage_dir, codepage_name)
         # protect box drawing sequences under dbcs?
         self.box_protect = box_protect
 
-    def load(self, codepage_name):
+    def load(self, codepage_dir, codepage_name):
         """ Load codepage to Unicode table. """
-        name = os.path.join(plat.encoding_dir, codepage_name + '.ucp')
+        name = os.path.join(codepage_dir, codepage_name + '.ucp')
         # lead and trail bytes
         self.lead = set()
         self.trail = set()
@@ -94,7 +92,7 @@ class Codepage(object):
                 return None
             else:
                 logging.warning('Could not load unicode mapping table for codepage %s. Falling back to codepage 437.', codepage_name)
-                return self.load('437')
+                return self.load(codepage_dir, '437')
         # fill up any undefined 1-byte codepoints
         for c in range(256):
             if chr(c) not in self.cp_to_unicode:

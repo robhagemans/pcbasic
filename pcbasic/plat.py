@@ -11,18 +11,17 @@ import sys
 import os
 if hasattr(sys, 'frozen'):
     # we're a package, get the directory of the packaged executable
-    _basepath = os.path.dirname(sys.executable)
+    basepath = os.path.dirname(sys.executable)
 else:
     # get the directory of this file
-    _basepath = os.path.dirname(os.path.realpath(__file__))
-if type(_basepath) == bytes:
+    basepath = os.path.dirname(os.path.realpath(__file__))
+if type(basepath) == bytes:
     # __file__ is a bytes object, not unicode
-    _basepath = _basepath.decode(sys.getfilesystemencoding())
+    basepath = basepath.decode(sys.getfilesystemencoding())
 
 # directories
-encoding_dir = os.path.join(_basepath, u'codepage')
-font_dir = os.path.join(_basepath, u'font')
-info_dir = os.path.join(_basepath, u'data')
+font_dir = os.path.join(basepath, u'font')
+info_dir = os.path.join(basepath, u'data')
 
 
 

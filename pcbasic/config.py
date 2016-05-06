@@ -107,6 +107,7 @@ else:
 if not os.path.exists(state_path):
     os.makedirs(state_path)
 
+codepage_dir = os.path.join(plat.basepath, u'codepage')
 
 class Settings(object):
     """Read and retrieve command-line settings and options."""
@@ -124,7 +125,7 @@ class Settings(object):
 
     # get supported codepages
     encodings = sorted([ x[0] for x in [ c.split(u'.ucp')
-                         for c in os.listdir(plat.encoding_dir) ] if len(x)>1])
+                         for c in os.listdir(codepage_dir) ] if len(x)>1])
     # get supported font families
     families = sorted(list(set([ x[0] for x in [ c.split(u'_')
                       for c in os.listdir(plat.font_dir) ] if len(x)>1])))
@@ -363,6 +364,7 @@ class Settings(object):
             'append': self.get(b'append'),
             'input_file': self.get(b'input'),
             'video_capabilities': self.get('video'),
+            'codepage_dir': codepage_dir,
             'codepage': self.get('codepage') or '437',
             'box_protect': not self.get('nobox'),
             'monitor': self.get('monitor'),
