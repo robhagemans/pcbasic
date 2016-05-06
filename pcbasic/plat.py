@@ -51,21 +51,6 @@ if not os.path.exists(state_path):
     os.makedirs(state_path)
 
 
-# OS-specific stdin/stdout selection
-# no stdin/stdout access allowed on packaged apps in OSX
-if platform.system() == b'Darwin':
-    has_stdin, has_stdout = False, False
-elif platform.system() == b'Windows':
-    has_stdin, has_stdout = True, True
-else:
-    # Unix, Linux including Android
-    try:
-        sys.stdin.isatty()
-        sys.stdout.isatty()
-        has_stdin, has_stdout = True, True
-    except AttributeError:
-        has_stdin, has_stdout = False, False
-
 # create temporary directory
 import tempfile
 temp_dir = tempfile.mkdtemp(prefix=u'pcbasic-')

@@ -40,6 +40,7 @@ import audio_pygame
 import audio_sdl2
 
 
+
 def main():
     """Initialise and do requested operations"""
     try:
@@ -77,6 +78,19 @@ def main():
 def convert(settings):
     """Perform file format conversion"""
     import interpreter
+    # OS-specific stdin/stdout selection
+    # no stdin/stdout access allowed on packaged apps in OSX
+    if platform.system() == b'Darwin':
+        has_stdio = False
+    elif platform.system() == b'Windows':
+        has_stdio = True
+    else:
+        try:
+            sys.stdin.isatty()
+            sys.stdout.isatty()
+            has_stdio = True
+        except AttributeError:
+            has_stdio = False
     # set conversion output
     # first arg, if given, is mode; second arg, if given, is outfile
     mode = settings.get('convert')
@@ -97,7 +111,7 @@ def convert(settings):
         prog_infile = None
         if infile:
             prog_infile = files.open_native_or_basic(infile)
-        elif plat.has_stdin:
+        elif has_stdio:
             # use StringIO buffer for seekability
             in_buffer = StringIO(sys.stdin.read())
             prog_infile = internal_disk.create_file_object(in_buffer, filetype='ABP', mode='I')
@@ -108,7 +122,7 @@ def convert(settings):
         if outfile:
             # on save from command-line, use exact file name
             prog_outfile = internal_disk.create_file_object(open(outfile, 'wb'), filetype=mode, mode='O')
-        elif plat.has_stdout:
+        elif has_stdio:
             prog_outfile = internal_disk.create_file_object(sys.stdout, filetype=mode, mode='O')
         if prog_outfile:
             with prog_outfile:
