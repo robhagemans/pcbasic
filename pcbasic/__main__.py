@@ -12,12 +12,18 @@ import sys
 import shutil
 import logging
 import platform
+import locale
 import subprocess
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
 import traceback
+
+# set locale - this is necessary for curses and *maybe* for clipboard handling
+# there's only one locale setting so best to do it all upfront here
+# NOTE that this affects str.upper() etc.
+locale.setlocale(locale.LC_ALL, '')
 
 import plat
 import ansipipe

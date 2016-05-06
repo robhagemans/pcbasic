@@ -7,12 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import platform
-import locale
-
-# this is necessary for curses and *maybe* for clipboard handling
-# there's only one locale setting so best to do it all upfront here
-# NOTE that this affects str.upper() etc.
-locale.setlocale(locale.LC_ALL, '')
 
 # get basepath (__file__ is undefined in pyinstaller packages)
 import sys
