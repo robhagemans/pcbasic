@@ -6,43 +6,24 @@ Platform identification
 This file is released under the GNU GPL version 3 or later.
 """
 
-import platform
-
 # get basepath (__file__ is undefined in pyinstaller packages)
 import sys
 import os
 if hasattr(sys, 'frozen'):
     # we're a package, get the directory of the packaged executable
-    basepath = os.path.dirname(sys.executable)
+    _basepath = os.path.dirname(sys.executable)
 else:
     # get the directory of this file
-    basepath = os.path.dirname(os.path.realpath(__file__))
-if type(basepath) == bytes:
+    _basepath = os.path.dirname(os.path.realpath(__file__))
+if type(_basepath) == bytes:
     # __file__ is a bytes object, not unicode
-    basepath = basepath.decode(sys.getfilesystemencoding())
+    _basepath = _basepath.decode(sys.getfilesystemencoding())
 
 # directories
-encoding_dir = os.path.join(basepath, u'codepage')
-font_dir = os.path.join(basepath, u'font')
-info_dir = os.path.join(basepath, u'data')
-system_config_dir = info_dir
-# user home
-home_dir = os.path.expanduser(u'~')
+encoding_dir = os.path.join(_basepath, u'codepage')
+font_dir = os.path.join(_basepath, u'font')
+info_dir = os.path.join(_basepath, u'data')
 
-# user configuration and state directories
-if platform.system() == b'Windows':
-    user_config_dir = os.path.join(os.getenv(u'APPDATA'), u'pcbasic')
-    state_path = user_config_dir
-elif platform.system() == b'Darwin':
-    user_config_dir = os.path.join(home_dir, u'Library/Application Support/pcbasic')
-    state_path = user_config_dir
-else:
-    xdg_data_home = os.environ.get(u'XDG_DATA_HOME') or os.path.join(home_dir, u'.local', u'share')
-    xdg_config_home = os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(home_dir, u'.config')
-    user_config_dir = os.path.join(xdg_config_home, u'pcbasic')
-    state_path = os.path.join(xdg_data_home, u'pcbasic')
-if not os.path.exists(state_path):
-    os.makedirs(state_path)
 
 
 # create temporary directory

@@ -65,6 +65,7 @@ def main():
             # otherwise, start an interpreter session
             start_basic(settings)
     except:
+        # without this except clause we seem to be dropping exceptions
         raise
     finally:
         # clean up our temp dir if we made one

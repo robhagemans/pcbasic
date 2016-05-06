@@ -91,15 +91,32 @@ def get_system_preset_name():
         return u'unknown_os'
 
 
+# user configuration and state directories
+_home_dir = os.path.expanduser(u'~')
+if platform.system() == b'Windows':
+    user_config_dir = os.path.join(os.getenv(u'APPDATA'), u'pcbasic')
+    state_path = user_config_dir
+elif platform.system() == b'Darwin':
+    user_config_dir = os.path.join(_home_dir, u'Library/Application Support/pcbasic')
+    state_path = user_config_dir
+else:
+    _xdg_data_home = os.environ.get(u'XDG_DATA_HOME') or os.path.join(_home_dir, u'.local', u'share')
+    _xdg_config_home = os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(_home_dir, u'.config')
+    user_config_dir = os.path.join(_xdg_config_home, u'pcbasic')
+    state_path = os.path.join(_xdg_data_home, u'pcbasic')
+if not os.path.exists(state_path):
+    os.makedirs(state_path)
+
+
 class Settings(object):
     """Read and retrieve command-line settings and options."""
 
     # system-wide config path
-    system_config_path = os.path.join(plat.system_config_dir, u'default.ini')
+    system_config_path = os.path.join(plat.info_dir, u'default.ini')
 
     #user and local config files
     config_name = u'PCBASIC.INI'
-    user_config_path = os.path.join(plat.user_config_dir, config_name)
+    user_config_path = os.path.join(user_config_dir, config_name)
 
     # by default, load what's in section [pcbasic] and override with anything
     # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
@@ -249,7 +266,7 @@ class Settings(object):
         # create user config file if needed
         if not os.path.exists(self.user_config_path):
             try:
-                os.makedirs(plat.user_config_dir)
+                os.makedirs(user_config_dir)
             except OSError:
                 pass
             self.build_default_config_file(self.user_config_path)
@@ -421,7 +438,7 @@ class Settings(object):
         if os.path.exists(state_name):
             state_file = state_name
         else:
-            state_file = os.path.join(plat.state_path, state_name)
+            state_file = os.path.join(state_path, state_name)
         return state_file
 
     def get_interface(self):
