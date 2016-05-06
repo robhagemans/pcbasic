@@ -72,7 +72,9 @@ class VideoCurses(video.VideoPlugin):
 
     def __init__(self, input_queue, video_queue, **kwargs):
         """ Initialise the text interface. """
-        video.VideoPlugin.__init__(self)
+        video.VideoPlugin.__init__(self, input_queue, video_queue)
+        # we need to ensure setlocale() has been run first to allow unicode input
+        self._encoding = locale.getpreferredencoding()
         self.curses_init = False
         if not curses:
             raise video.InitFailed()
@@ -122,8 +124,6 @@ class VideoCurses(video.VideoPlugin):
         self.text = [[[(u' ', bgcolor)]*self.width for _ in range(self.height)]]
         self.f12_active = False
         self.set_border_attr(0)
-        # we need to ensure setlocale() has been run first to allow unicode input
-        self._encoding = locale.getpreferredencoding()
 
 
     def __exit__(self, type, value, traceback):
