@@ -20,7 +20,7 @@ if type(basepath) == bytes:
     basepath = basepath.decode(sys.getfilesystemencoding())
 
 # directories
-font_dir = os.path.join(basepath, u'font')
+
 info_dir = os.path.join(basepath, u'data')
 
 

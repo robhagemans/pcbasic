@@ -14,10 +14,8 @@ try:
 except ImportError:
     numpy = None
 
-import plat
 
-
-def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=False):
+def load_fonts(font_dir, font_families, heights_needed, unicode_needed, substitutes, warn=False):
     """ Load font typefaces. """
     fonts = {}
     if 9 in heights_needed:
@@ -28,14 +26,14 @@ def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=
     for height in reversed(sorted(heights_needed)):
         # load a Unifont .hex font and take the codepage subset
         fonts[height] = Font(height).load_hex(
-            _font_filenames(font_families, height),
+            _font_filenames(font_dir, font_families, height),
             unicode_needed, substitutes, warn=warn)
         # fix missing code points font based on 16-line font
         try:
             font_16 = fonts[16]
         except KeyError:
             font_16 = Font(16).load_hex(
-                _font_filenames(font_families, 16),
+                _font_filenames(font_dir, font_families, 16),
                 unicode_needed, substitutes, warn=False)
         if font_16:
             fonts[height].fix_missing(unicode_needed, font_16)
@@ -43,10 +41,10 @@ def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=
         fonts[9] = fonts[8]
     return fonts
 
-def _font_filenames(families, height, ext='hex'):
+def _font_filenames(font_dir, families, height, ext='hex'):
     """ Return name_height.hex if filename exists in current path, else font_dir/name_height.hex. """
     names = ('%s_%02d.%s' % (name, height, ext) for name in families)
-    return (name if os.path.exists(name) else os.path.join(plat.font_dir, name)
+    return (name if os.path.exists(name) else os.path.join(font_dir, name)
                 for name in names)
 
 class Font(object):

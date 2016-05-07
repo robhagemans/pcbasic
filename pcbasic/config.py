@@ -107,6 +107,7 @@ else:
 if not os.path.exists(state_path):
     os.makedirs(state_path)
 
+font_dir = os.path.join(plat.basepath, u'font')
 codepage_dir = os.path.join(plat.basepath, u'codepage')
 
 class Settings(object):
@@ -128,7 +129,7 @@ class Settings(object):
                          for c in os.listdir(codepage_dir) ] if len(x)>1])
     # get supported font families
     families = sorted(list(set([ x[0] for x in [ c.split(u'_')
-                      for c in os.listdir(plat.font_dir) ] if len(x)>1])))
+                      for c in os.listdir(font_dir) ] if len(x)>1])))
 
     # number of positional arguments
     positional = 2
@@ -375,6 +376,7 @@ class Settings(object):
             'cga_low': self.get('cga-low'),
             'mono_tint': self.get('mono-tint'),
             'font': self.get('font'),
+            'font_dir': font_dir,
             # inserted keystrokes
             'keystring': self.get('keys').decode('string_escape').decode('utf-8'),
             # find program for PCjr TERM command

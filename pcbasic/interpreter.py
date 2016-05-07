@@ -112,7 +112,7 @@ class Session(object):
             syntax=u'advanced', option_debug=False, pcjr_term=u'', option_shell=u'',
             output_file=None, append=False, input_file=None,
             codepage_dir=u'', codepage=u'437', box_protect=True,
-            video_capabilities=u'vga', font=u'freedos',
+            video_capabilities=u'vga', font_dir=u'', font=u'freedos',
             monitor=u'rgb', mono_tint=(0, 255, 0), screen_aspect=(4, 3),
             text_width=80, video_memory=262144, cga_low=False,
             keystring=u'', double=False,
@@ -173,7 +173,7 @@ class Session(object):
                 video_memory, video_capabilities, monitor,
                 self.sound, self.output_redirection, self.fkey_macros,
                 cga_low, mono_tint, screen_aspect,
-                self.codepage, font, warn_fonts=option_debug)
+                self.codepage, font_dir, font, warn_fonts=option_debug)
 
         # prepare input methods
         self.pen = inputs.Pen(self.screen)
