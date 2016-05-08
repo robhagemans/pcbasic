@@ -6,8 +6,9 @@ Devices, Files and I/O operations
 This file is released under the GNU GPL version 3 or later.
 """
 
-import string
 import os
+import sys
+import string
 import logging
 
 import error
@@ -22,6 +23,13 @@ if platform.system() == b'Windows':
 
 # MS-DOS device files
 device_files = ('AUX', 'CON', 'NUL', 'PRN')
+
+# get basepath (__file__ is undefined in pyinstaller packages)
+if hasattr(sys, 'frozen'):
+    basepath = os.path.dirname(sys.executable)
+else:
+    basepath = os.path.dirname(os.path.realpath(__file__)).decode(sys.getfilesystemencoding())
+
 
 ############################################################################
 # General file manipulation
@@ -167,6 +175,8 @@ class Devices(object):
             current_drive = self._map_drives()
         else:
             self.devices[b'Z:'] = disk.DiskDevice(b'Z', os.getcwdu(), u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
+        # directory for bundled BASIC programs accessible through @:
+        self.devices[b'@:'] = disk.DiskDevice(b'@', os.path.join(basepath, u'programs'), u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
         self._mount_drives(mount)
         self._set_current_device(current_drive + b':')
 

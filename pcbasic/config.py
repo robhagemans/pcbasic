@@ -29,8 +29,6 @@ if hasattr(sys, 'frozen'):
 else:
     basepath = os.path.dirname(os.path.realpath(__file__)).decode(sys.getfilesystemencoding())
 
-# directories
-info_dir = os.path.join(basepath, u'programs')
 
 def get_logger(logfile=None):
     """Use the awkward logging interface as we can only use basicConfig once."""
@@ -171,7 +169,7 @@ class Settings(object):
             },
         u'pcjr': {
             u'syntax': u'pcjr',
-            u'pcjr-term': 'PCTERM.BAS',
+            u'pcjr-term': '@:\PCTERM.BAS',
             u'video': u'pcjr',
             u'font': u'vga',
             u'codepage': u'437',
@@ -444,10 +442,6 @@ class Settings(object):
                 'override_current_device': self.get(u'current-device', True),
             }
         pcjr_term = self.get('pcjr-term')
-        if pcjr_term and not os.path.exists(pcjr_term):
-            pcjr_term = os.path.join(info_dir, pcjr_term)
-        if not os.path.exists(pcjr_term):
-            pcjr_term = ''
         peek_values = {}
         try:
             for a in self.get('peek'):
