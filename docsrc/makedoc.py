@@ -11,6 +11,8 @@ import markdown
 from markdown.extensions.toc import TocExtension
 import markdown.extensions.headerid
 
+from pcbasic import __version__
+
 basepath = os.path.dirname(os.path.realpath(__file__))
 
 def mdtohtml(md_file, outf, prefix='', baselevel=1):
@@ -132,7 +134,7 @@ def makedoc(header=None, output=None, embedded_style=True):
     toc = StringIO()
     maketoc(predoc, toc)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    version = open(basepath + '/../pcbasic/data/version.txt', 'r').read().strip()
+    version = __version__
     subheader_html = '<header>\n<h1>PC-BASIC {0} documentation</h1>\n<small>Documentation compiled on {1}.</small>\n</header>\n'.format(version, now)
     header_html = open(header, 'r').read()
     with open(output, 'w') as outf:

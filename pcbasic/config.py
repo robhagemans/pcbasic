@@ -21,8 +21,21 @@ if platform.system() == b'Windows':
     import ctypes
     import ctypes.wintypes
 
-import plat
+from pcbasic import __version__
 
+# get basepath (__file__ is undefined in pyinstaller packages)
+if hasattr(sys, 'frozen'):
+    # we're a package, get the directory of the packaged executable
+    basepath = os.path.dirname(sys.executable)
+else:
+    # get the directory of this file
+    basepath = os.path.dirname(os.path.realpath(__file__))
+if type(basepath) == bytes:
+    # __file__ is a bytes object, not unicode
+    basepath = basepath.decode(sys.getfilesystemencoding())
+
+# directories
+info_dir = os.path.join(basepath, u'data')
 
 def get_logger(logfile=None):
     """Use the awkward logging interface as we can only use basicConfig once."""
@@ -40,7 +53,7 @@ def get_logger(logfile=None):
 
 def show_usage(settings):
     """Show usage description."""
-    with open(os.path.join(plat.info_dir, 'usage.txt')) as f:
+    with open(os.path.join(info_dir, 'usage.txt')) as f:
         for line in f:
             sys.stdout.write(line)
 
@@ -116,8 +129,8 @@ else:
 if not os.path.exists(state_path):
     os.makedirs(state_path)
 
-font_dir = os.path.join(plat.basepath, u'font')
-codepage_dir = os.path.join(plat.basepath, u'codepage')
+font_dir = os.path.join(basepath, u'font')
+codepage_dir = os.path.join(basepath, u'codepage')
 
 
 class TemporaryDirectory():
@@ -446,7 +459,7 @@ class Settings(object):
             }
         pcjr_term = self.get('pcjr-term')
         if pcjr_term and not os.path.exists(pcjr_term):
-            pcjr_term = os.path.join(plat.info_dir, pcjr_term)
+            pcjr_term = os.path.join(info_dir, pcjr_term)
         if not os.path.exists(pcjr_term):
             pcjr_term = ''
         peek_values = {}
@@ -807,7 +820,7 @@ class Settings(object):
         u"[pcbasic]\n"
         u"# Use the [pcbasic] section to specify options you want to be enabled by default.\n"
         u"# See the documentation or run pcbasic -h for a list of available options.\n"
-        u"# for example (for version '%s'):\n" % plat.version)
+        u"# for example (for version '%s'):\n" % __version__)
         footer = (
         u"\n\n# To add presets, create a section header between brackets and put the \n"
         u"# options you need below it, like this:\n"
