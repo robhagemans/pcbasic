@@ -44,7 +44,7 @@ def get_logger(logfile=None):
     return l
 
 
-def show_usage(settings):
+def show_usage():
     """Show usage description."""
     usage_file = os.path.join(basepath, '..', 'USAGE.txt')
     with open(usage_file) as f:

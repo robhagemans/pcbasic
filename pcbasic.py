@@ -10,6 +10,7 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import locale
 import platform
+import subprocess
 import logging
 import traceback
 try:
@@ -24,11 +25,8 @@ locale.setlocale(locale.LC_ALL, '')
 
 import ansipipe
 import pcbasic
-from pcbasic import config
-from pcbasic import error
-from pcbasic import debug
 import interface
-from pcbasic import interpreter
+from pcbasic import config
 
 
 def main():
@@ -42,7 +40,7 @@ def main():
                 show_version(settings)
             elif settings.get('help'):
                 # in help mode, print usage and exit
-                config.show_usage(settings)
+                config.show_usage()
             elif settings.get('convert'):
                 # in converter mode, convert and exit
                 convert(settings)
@@ -88,7 +86,7 @@ def convert(settings):
     outfile = settings.get(1)
     # keep uppercase first letter
     mode = mode[0].upper() if mode else 'A'
-    session = interpreter.Session(**settings.get_session_parameters())
+    session = pcbasic.Session(**settings.get_session_parameters())
     files = session.files
     internal_disk = session.devices.internal_disk
     prog = session.program
@@ -113,7 +111,7 @@ def convert(settings):
         if prog_outfile:
             with prog_outfile:
                 prog.save(prog_outfile)
-    except error.RunError as e:
+    except pcbasic.RunError as e:
         logging.error(e.message)
     except EnvironmentError as e:
         logging.error(str(e))
@@ -127,14 +125,14 @@ def start_basic(settings):
     session_params = settings.get_session_parameters()
     state_file = settings.get_state_file()
     try:
-        with interpreter.SessionLauncher(session_params, state_file, **launch_params) as launcher:
+        with pcbasic.SessionLauncher(session_params, state_file, **launch_params) as launcher:
             interface.run(
                     launcher.input_queue, launcher.video_queue,
                     launcher.tone_queue, launcher.message_queue,
                     interface_name, video_params, audio_params)
     except interface.InitFailed:
         logging.error('Failed to initialise interface.')
-    except error.RunError as e:
+    except pcbasic.RunError as e:
         # only runtime errors that occur on interpreter launch are caught here
         # e.g. "File not Found" for --load parameter
         logging.error(e.message)
@@ -143,7 +141,40 @@ def show_version(settings):
     """Show version with optional debugging details."""
     sys.stdout.write(pcbasic.__version__ + '\n')
     if settings.get('debug'):
-        debug.show_platform_info()
+        show_platform_info()
+
+def show_platform_info():
+    """Show information about operating system and installed modules."""
+    logging.info('\nPLATFORM')
+    logging.info('os: %s %s %s', platform.system(), platform.processor(), platform.version())
+    logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
+    logging.info('\nMODULES')
+    # try numpy before pygame to avoid strange ImportError on FreeBSD
+    modules = ('numpy', 'win32api', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial', 'parallel')
+    for module in modules:
+        try:
+            m = __import__(module)
+        except ImportError:
+            logging.info('%s: --', module)
+        else:
+            for version_attr in ('__version__', 'version', 'VERSION'):
+                try:
+                    version = getattr(m, version_attr)
+                    logging.info('%s: %s', module, version)
+                    break
+                except AttributeError:
+                    pass
+            else:
+                logging.info('available\n')
+    if platform.system() != 'Windows':
+        logging.info('\nEXTERNAL TOOLS')
+        tools = ('lpr', 'paps', 'beep', 'xclip', 'xsel', 'pbcopy', 'pbpaste')
+        for tool in tools:
+            try:
+                location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')
+                logging.info('%s: %s', tool, location)
+            except Exception as e:
+                logging.info('%s: --', tool)
 
 
 if __name__ == "__main__":
