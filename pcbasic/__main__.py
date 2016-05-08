@@ -9,15 +9,14 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import sys
-import logging
-import platform
 import locale
-import subprocess
+import platform
+import logging
+import traceback
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
-import traceback
 
 # set locale - this is necessary for curses and *maybe* for clipboard handling
 # there's only one locale setting so best to do it all upfront here
@@ -28,6 +27,7 @@ import plat
 import ansipipe
 import config
 import error
+import debug
 
 # video plugins
 # these are unused but need to be initialised and packaged
@@ -46,7 +46,7 @@ import audio_sdl2
 
 
 def main():
-    """Initialise and do requested operations"""
+    """Initialise and perform requested operations."""
     try:
         with config.TemporaryDirectory(prefix='pcbasic-') as temp_dir:
             # get settings and prepare logging
@@ -80,7 +80,7 @@ def main():
             pass
 
 def convert(settings):
-    """Perform file format conversion"""
+    """Perform file format conversion."""
     import interpreter
     # OS-specific stdin/stdout selection
     # no stdin/stdout access allowed on packaged apps in OSX
@@ -134,7 +134,7 @@ def convert(settings):
         logging.error(str(e))
 
 def start_basic(settings):
-    """Start an interactive interpreter session"""
+    """Start an interactive interpreter session."""
     import interface
     import interpreter
     interface_name = settings.get_interface()
@@ -158,46 +158,16 @@ def start_basic(settings):
         logging.error(e.message)
 
 def show_usage(settings):
-    """Show usage description"""
+    """Show usage description."""
     with open(os.path.join(plat.info_dir, 'usage.txt')) as f:
         for line in f:
             sys.stdout.write(line)
 
 def show_version(settings):
-    """Show version with optional debugging details"""
+    """Show version with optional debugging details."""
     sys.stdout.write(plat.version + '\n')
-    if not settings.get('debug'):
-        return
-    logging.info('\nPLATFORM')
-    logging.info('os: %s %s %s', platform.system(), platform.processor(), platform.version())
-    logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
-    logging.info('\nMODULES')
-    # try numpy before pygame to avoid strange ImportError on FreeBSD
-    modules = ('numpy', 'win32api', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial', 'parallel')
-    for module in modules:
-        try:
-            m = __import__(module)
-        except ImportError:
-            logging.info('%s: --', module)
-        else:
-            for version_attr in ('__version__', 'version', 'VERSION'):
-                try:
-                    version = getattr(m, version_attr)
-                    logging.info('%s: %s', module, version)
-                    break
-                except AttributeError:
-                    pass
-            else:
-                logging.info('available\n')
-    if platform.system() != 'Windows':
-        logging.info('\nEXTERNAL TOOLS')
-        tools = ('lpr', 'paps', 'beep', 'xclip', 'xsel', 'pbcopy', 'pbpaste')
-        for tool in tools:
-            try:
-                location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')
-                logging.info('%s: %s', tool, location)
-            except Exception as e:
-                logging.info('%s: --', tool)
+    if settings.get('debug'):
+        debug.show_platform_info()
 
 
 if __name__ == "__main__":

@@ -10,6 +10,8 @@ import sys
 import traceback
 import logging
 import os
+import platform
+import subprocess
 
 import vartypes
 import representation
@@ -226,3 +228,36 @@ def show_program():
     logging.debug(code[p:p+1].encode('hex') + ' ' +
                 code[p+1:p+3].encode('hex') + ' (ENDS) ' +
                 code[p+3:p+5].encode('hex') + ' ' + code[p+5:].encode('hex'))
+
+def show_platform_info():
+    """Show information about operating system and installed modules."""
+    logging.info('\nPLATFORM')
+    logging.info('os: %s %s %s', platform.system(), platform.processor(), platform.version())
+    logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
+    logging.info('\nMODULES')
+    # try numpy before pygame to avoid strange ImportError on FreeBSD
+    modules = ('numpy', 'win32api', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial', 'parallel')
+    for module in modules:
+        try:
+            m = __import__(module)
+        except ImportError:
+            logging.info('%s: --', module)
+        else:
+            for version_attr in ('__version__', 'version', 'VERSION'):
+                try:
+                    version = getattr(m, version_attr)
+                    logging.info('%s: %s', module, version)
+                    break
+                except AttributeError:
+                    pass
+            else:
+                logging.info('available\n')
+    if platform.system() != 'Windows':
+        logging.info('\nEXTERNAL TOOLS')
+        tools = ('lpr', 'paps', 'beep', 'xclip', 'xsel', 'pbcopy', 'pbpaste')
+        for tool in tools:
+            try:
+                location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')
+                logging.info('%s: %s', tool, location)
+            except Exception as e:
+                logging.info('%s: --', tool)
