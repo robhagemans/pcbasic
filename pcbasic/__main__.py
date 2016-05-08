@@ -9,7 +9,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import sys
-import shutil
 import logging
 import platform
 import locale
@@ -49,28 +48,26 @@ import audio_sdl2
 def main():
     """Initialise and do requested operations"""
     try:
-        # get settings and prepare logging
-        settings = config.Settings()
-        if settings.get('version'):
-            # in version mode, print version and exit
-            show_version(settings)
-        elif settings.get('help'):
-            # in help mode, print usage and exit
-            show_usage(settings)
-        elif settings.get('convert'):
-            # in converter mode, convert and exit
-            convert(settings)
-        else:
-            # otherwise, start an interpreter session
-            start_basic(settings)
+        with config.TemporaryDirectory(prefix='pcbasic-') as temp_dir:
+            # get settings and prepare logging
+            settings = config.Settings(temp_dir)
+            if settings.get('version'):
+                # in version mode, print version and exit
+                show_version(settings)
+            elif settings.get('help'):
+                # in help mode, print usage and exit
+                show_usage(settings)
+            elif settings.get('convert'):
+                # in converter mode, convert and exit
+                convert(settings)
+            else:
+                # otherwise, start an interpreter session
+                start_basic(settings)
     except:
         # without this except clause we seem to be dropping exceptions
         # probably due to the sys.stdout.close() hack below
         logging.error('Unhandled exception\n%s', traceback.format_exc())
     finally:
-        # clean up our temp dir if we made one
-        if plat.temp_dir:
-            shutil.rmtree(plat.temp_dir)
         # avoid sys.excepthook errors when piping output
         # http://stackoverflow.com/questions/7955138/addressing-sys-excepthook-error-in-bash-script
         try:

@@ -13,6 +13,8 @@ import logging
 import zipfile
 import codecs
 import locale
+import tempfile
+import shutil
 
 import platform
 if platform.system() == b'Windows':
@@ -109,6 +111,29 @@ if not os.path.exists(state_path):
 
 font_dir = os.path.join(plat.basepath, u'font')
 codepage_dir = os.path.join(plat.basepath, u'codepage')
+
+
+class TemporaryDirectory():
+    """Temporary directory context guard like in Python 3 tempfile."""
+
+    def __init__(self, prefix=u''):
+        """Initialise context guard."""
+        self._prefix = prefix
+        self._temp_dir = None
+
+    def __enter__(self):
+        """Create temp directory."""
+        self._temp_dir = tempfile.mkdtemp(prefix=self._prefix)
+        return self._temp_dir
+
+    def __exit__(self, dummy_1, dummy_2, dummy_3):
+        """Clean up temp directory."""
+        if self._temp_dir:
+            try:
+                shutil.rmtree(self._temp_dir)
+            except EnvironmentError as e:
+                logging.error(str(e))
+
 
 class Settings(object):
     """Read and retrieve command-line settings and options."""
@@ -253,7 +278,7 @@ class Settings(object):
     }
 
 
-    def __init__(self):
+    def __init__(self, temp_dir):
         """Initialise settings"""
         # convert arguments to unicode using preferred encoding
         uargv = get_unicode_argv()
@@ -265,6 +290,7 @@ class Settings(object):
         else:
             logfile = None
         self._logger = get_logger(logfile)
+        self._temp_dir = temp_dir
         # create user config file if needed
         if not os.path.exists(self.user_config_path):
             try:
@@ -389,7 +415,7 @@ class Settings(object):
             'mount': self.get(u'mount'),
             'map_drives': self.get(u'map-drives'),
             'print_trigger': self.get('print-trigger'),
-            'temp_dir': plat.temp_dir,
+            'temp_dir': self._temp_dir,
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
             'utf8': self.get('utf8'),
@@ -543,8 +569,8 @@ class Settings(object):
                 remaining.pop(0)
                 # extract the package to a temp directory
                 # and make that the current dir for our run
-                zipfile.ZipFile(arg_package).extractall(path=plat.temp_dir)
-                os.chdir(plat.temp_dir)
+                zipfile.ZipFile(arg_package).extractall(path=self._temp_dir)
+                os.chdir(self._temp_dir)
                 # if the zip-file contains only a directory at the top level,
                 # then move into that directory. E.g. all files in package.zip
                 # could be under the directory package/

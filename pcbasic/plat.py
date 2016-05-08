@@ -20,14 +20,7 @@ if type(basepath) == bytes:
     basepath = basepath.decode(sys.getfilesystemencoding())
 
 # directories
-
 info_dir = os.path.join(basepath, u'data')
-
-
-
-# create temporary directory
-import tempfile
-temp_dir = tempfile.mkdtemp(prefix=u'pcbasic-')
 
 # PC-BASIC version
 try:
