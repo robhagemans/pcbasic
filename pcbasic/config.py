@@ -38,6 +38,13 @@ def get_logger(logfile=None):
     return l
 
 
+def show_usage(settings):
+    """Show usage description."""
+    with open(os.path.join(plat.info_dir, 'usage.txt')) as f:
+        for line in f:
+            sys.stdout.write(line)
+
+
 def get_unicode_argv():
     """ Convert command-line arguments to unicode. """
     if platform.system() == b'Windows':

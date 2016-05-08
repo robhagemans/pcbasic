@@ -18,29 +18,29 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-import plat
-import error
-import util
-import tokenise
+from pcbasic import __version__
+from pcbasic import error
+from pcbasic import util
+from pcbasic import tokenise
 
-import program
-import signals
-import display
-import console
-import state
+from pcbasic import program
+from pcbasic import signals
+from pcbasic import display
+from pcbasic import console
+from pcbasic import state
 # prepare input state
-import inputs
-import debug
-import rnd
-import timedate
-import shell
-import memory
-import machine
-import parser
-import files
-import sound
-import redirect
-import unicodepage
+from pcbasic import inputs
+from pcbasic import debug
+from pcbasic import rnd
+from pcbasic import timedate
+from pcbasic import shell
+from pcbasic import memory
+from pcbasic import machine
+from pcbasic import parser
+from pcbasic import files
+from pcbasic import sound
+from pcbasic import redirect
+from pcbasic import unicodepage
 
 class SessionLauncher(object):
     """ Launches a BASIC session. """
@@ -274,7 +274,7 @@ class Session(object):
             '(C) Copyright 2013--2016 Rob Hagemans.\r'
             '{free} Bytes free')
         self.screen.write_line(greeting.format(
-                version=plat.version,
+                version=__version__,
                 free=self.memory.get_free()))
         self.fkey_macros.show_keys(self.screen, True)
 

@@ -23,7 +23,7 @@ except ImportError:
 # NOTE that this affects str.upper() etc.
 locale.setlocale(locale.LC_ALL, '')
 
-from pcbasic import plat
+import pcbasic
 from pcbasic import ansipipe
 from pcbasic import config
 from pcbasic import error
@@ -58,7 +58,7 @@ def main():
                 show_version(settings)
             elif settings.get('help'):
                 # in help mode, print usage and exit
-                show_usage(settings)
+                config.show_usage(settings)
             elif settings.get('convert'):
                 # in converter mode, convert and exit
                 convert(settings)
@@ -156,15 +156,9 @@ def start_basic(settings):
         # e.g. "File not Found" for --load parameter
         logging.error(e.message)
 
-def show_usage(settings):
-    """Show usage description."""
-    with open(os.path.join(plat.info_dir, 'usage.txt')) as f:
-        for line in f:
-            sys.stdout.write(line)
-
 def show_version(settings):
     """Show version with optional debugging details."""
-    sys.stdout.write(plat.version + '\n')
+    sys.stdout.write(pcbasic.__version__ + '\n')
     if settings.get('debug'):
         debug.show_platform_info()
 
