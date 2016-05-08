@@ -23,7 +23,7 @@ try:
 except ImportError:
     numpy = None
 
-from pcbasic import signals
+from basic import signals
 from interface import base as audio
 
 tick_ms = 24

@@ -14,9 +14,9 @@ import Queue
 import platform
 
 from interface import base as video
-from pcbasic import signals
-from pcbasic import scancode
-from pcbasic.eascii import as_unicode as uea
+from basic import signals
+from basic import scancode
+from basic.eascii import as_unicode as uea
 from interface import ansi
 
 encoding = sys.stdin.encoding or 'utf-8'

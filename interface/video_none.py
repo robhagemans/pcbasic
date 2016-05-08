@@ -10,7 +10,7 @@ import sys
 import platform
 
 from interface import base as video
-from pcbasic import signals
+from basic import signals
 
 if platform.system() == 'Windows':
     from msvcrt import kbhit

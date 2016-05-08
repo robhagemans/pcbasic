@@ -24,7 +24,7 @@ except ImportError:
 locale.setlocale(locale.LC_ALL, '')
 
 import ansipipe
-import pcbasic
+import basic
 import interface
 from interface import config
 
@@ -86,7 +86,7 @@ def convert(settings):
     outfile = settings.get(1)
     # keep uppercase first letter
     mode = mode[0].upper() if mode else 'A'
-    session = pcbasic.Session(**settings.get_session_parameters())
+    session = basic.Session(**settings.get_session_parameters())
     files = session.files
     internal_disk = session.devices.internal_disk
     prog = session.program
@@ -111,7 +111,7 @@ def convert(settings):
         if prog_outfile:
             with prog_outfile:
                 prog.save(prog_outfile)
-    except pcbasic.RunError as e:
+    except basic.RunError as e:
         logging.error(e.message)
     except EnvironmentError as e:
         logging.error(str(e))
@@ -125,21 +125,21 @@ def start_basic(settings):
     session_params = settings.get_session_parameters()
     state_file = settings.get_state_file()
     try:
-        with pcbasic.SessionLauncher(session_params, state_file, **launch_params) as launcher:
+        with basic.SessionLauncher(session_params, state_file, **launch_params) as launcher:
             interface.run(
                     launcher.input_queue, launcher.video_queue,
                     launcher.tone_queue, launcher.message_queue,
                     interface_name, video_params, audio_params)
     except interface.InitFailed:
         logging.error('Failed to initialise interface.')
-    except pcbasic.RunError as e:
+    except basic.RunError as e:
         # only runtime errors that occur on interpreter launch are caught here
         # e.g. "File not Found" for --load parameter
         logging.error(e.message)
 
 def show_version(settings):
     """Show version with optional debugging details."""
-    sys.stdout.write(pcbasic.__version__ + '\n')
+    sys.stdout.write(basic.__version__ + '\n')
     if settings.get('debug'):
         show_platform_info()
 

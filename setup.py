@@ -20,8 +20,8 @@ with open(path.join(here, 'docsrc', 'description.txt'), encoding='utf-8') as f:
 with open(path.join(here, 'docsrc', 'tagline.txt'), encoding='utf-8') as f:
     description = f.read()
 
-import pcbasic
-version_string = pcbasic.__version__
+import basic
+version_string = basic.__version__
 
 
 ###############################################################################
@@ -110,10 +110,10 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'pcbasic=pcbasic.__main__:main',
+            'pcbasic=pcbasic:main',
         ],
         'gui_scripts': [
-            'pcbasic=pcbasic.__main__:main',
+            'pcbasic=pcbasic:main',
         ],
 
     },

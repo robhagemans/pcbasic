@@ -14,9 +14,9 @@ try:
 except ImportError:
     curses = None
 
-from pcbasic import scancode
-from pcbasic.eascii import as_unicode as uea
-from pcbasic import signals
+from basic import scancode
+from basic.eascii import as_unicode as uea
+from basic import signals
 
 from interface import base as video
 # for a few ansi sequences not supported by curses

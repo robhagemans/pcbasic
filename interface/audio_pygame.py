@@ -25,7 +25,7 @@ from math import ceil
 import logging
 import Queue
 
-from pcbasic import signals
+from basic import signals
 from interface import base as audio
 
 tick_ms = 24

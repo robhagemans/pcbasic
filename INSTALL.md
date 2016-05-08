@@ -82,7 +82,7 @@ Of course, you'll also need [`git`](https://git-scm.com/) and all the PC-BASIC d
 
 3. Run pcbasic directly from the source directory
 
-        python pcbasic
+        python pcbasic.py
 
 
 #### Installing with Pygame ####

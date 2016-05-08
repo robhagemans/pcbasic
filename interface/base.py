@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import Queue
 
-from pcbasic import signals
+from basic import signals
 
 
 class InitFailed(Exception):

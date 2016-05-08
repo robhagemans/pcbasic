@@ -21,7 +21,7 @@ if platform.system() == b'Windows':
     import ctypes
     import ctypes.wintypes
 
-from pcbasic import __version__, codepages, fonts
+from basic import __version__, codepages, fonts
 
 # get basepath (__file__ is undefined in pyinstaller packages)
 if hasattr(sys, 'frozen'):
