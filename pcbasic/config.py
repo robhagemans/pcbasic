@@ -138,10 +138,81 @@ class TemporaryDirectory():
 class Settings(object):
     """Read and retrieve command-line settings and options."""
 
-    # system-wide config path
-    system_config_path = os.path.join(plat.info_dir, u'default.ini')
+    # Default preset definitions
+    # For example, --preset=tandy will load all options in the [tandy] section. Preset options override default options.
+    # Presets can also be added by adding a section in brackets in the user configuration file
+    # e.g., a section headed [myconfig] will be loaded with --preset=myconfig
 
-    #user and local config files
+    default_config = {
+        u'strict': {
+            u'strict-hidden-lines': u'True',
+            u'strict-newline': u'True',
+            u'strict-protect': u'True',
+            u'allow-code-poke': u'True',
+            u'shell': u'native',
+            u'nokill': u'True',
+            u'ctrl-c-break': u'False',
+            },
+        u'basica': {
+            u'reserved-memory': u'789',
+            },
+        u'pcjr': {
+            u'syntax': u'pcjr',
+            u'pcjr-term': 'PCTERM.BAS',
+            u'video': u'pcjr',
+            u'font': u'vga',
+            u'codepage': u'437',
+            u'reserved-memory': u'4035',
+            u'text-width': u'40',
+            u'video-memory': u'16384',
+            },
+        u'tandy': {
+            u'syntax': u'tandy',
+            u'video': u'tandy',
+            u'font': u'tandy2',
+            u'codepage': u'437',
+            u'aspect': u'3072,2000',
+            u'max-reclen': u'255',
+            u'reserved-memory': u'3240',
+            u'video-memory': u'16384',
+            },
+        u'cga': {
+            u'video': u'cga',
+            u'font': u'cga',
+            u'codepage': u'437',
+            u'text-width': u'40',
+            },
+        u'ega': {
+            u'video': u'ega',
+            u'font': u'vga',
+            },
+        u'mda': {
+            u'video': u'mda',
+            u'font': u'cga,mda',
+            u'codepage': u'437',
+            u'monitor': u'mono',
+            u'mono-tint': u'0,255,0',
+            },
+        u'hercules': {
+            u'video': u'hercules',
+            u'font': u'cga,mda',
+            u'codepage': u'437',
+            u'monitor': u'mono',
+            u'mono-tint': u'0,255,0',
+            },
+        u'olivetti': {
+            u'video': u'olivetti',
+            u'font': u'cga,olivetti',
+            u'codepage': u'437',
+            },
+        u'vga': {
+            u'video': u'vga',
+            u'font': u'vga',
+            u'codepage': u'437',
+            },
+        }
+
+    # user and local config files
     config_name = u'PCBASIC.INI'
     user_config_path = os.path.join(user_config_dir, config_name)
 
@@ -595,7 +666,7 @@ class Settings(object):
         """Find the correct config file and read it"""
         # always read default config files; private config overrides system config
         # we update a whole preset at once, there's no joining of settings.
-        conf_dict = self._read_config_file(self.system_config_path)
+        conf_dict = dict(self.default_config)
         conf_dict.update(self._read_config_file(self.user_config_path))
         # find any local overriding config file & read it
         config_file = None
