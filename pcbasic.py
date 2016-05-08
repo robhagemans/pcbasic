@@ -23,8 +23,8 @@ except ImportError:
 # NOTE that this affects str.upper() etc.
 locale.setlocale(locale.LC_ALL, '')
 
+import ansipipe
 import pcbasic
-from pcbasic import ansipipe
 from pcbasic import config
 from pcbasic import error
 from pcbasic import debug
