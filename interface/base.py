@@ -1,5 +1,5 @@
 """
-PC-BASIC - interface.py
+PC-BASIC - interface.base
 Base classes for video, input and audio handlers
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
@@ -10,9 +10,9 @@ import Queue
 import logging
 import time
 
-import signals
+from pcbasic import signals
 # for building the icon
-import typeface
+from pcbasic import typeface
 
 
 class InitFailed(Exception):

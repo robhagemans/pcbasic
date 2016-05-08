@@ -10,8 +10,8 @@ import Queue
 import subprocess
 import platform
 
-import signals
-import interface as audio
+from pcbasic import signals
+from interface import base as audio
 
 def prepare():
     """ Initialise audio_eep module. """

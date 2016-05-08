@@ -9,8 +9,8 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import platform
 
-import interface as video
-import signals
+from interface import base as video
+from pcbasic import signals
 
 if platform.system() == 'Windows':
     from msvcrt import kbhit

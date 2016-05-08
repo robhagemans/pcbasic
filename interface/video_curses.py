@@ -14,15 +14,15 @@ try:
 except ImportError:
     curses = None
 
-import scancode
-from eascii import as_unicode as uea
-import signals
-import interface as video
+from pcbasic import scancode
+from pcbasic.eascii import as_unicode as uea
+from pcbasic import signals
 
+from interface import base as video
 # for a few ansi sequences not supported by curses
 # only use these if you clear the screen afterwards,
 # so you don't see gibberish if the terminal doesn't support the sequence.
-import ansi
+from interface import ansi
 
 
 ###############################################################################

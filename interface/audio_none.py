@@ -9,8 +9,8 @@ This file is released under the GNU GPL version 3 or later.
 import datetime
 import Queue
 
-import signals
-import interface as audio
+from pcbasic import signals
+from interface import base as audio
 
 def prepare():
     """ Initialise audio_eep module. """

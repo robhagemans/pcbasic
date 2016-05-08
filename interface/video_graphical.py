@@ -23,9 +23,9 @@ if platform.system() == 'Windows':
         # old versions of Windows don't have this in user32.dll
         pass
 
-import interface as video
-import signals
-import scancode
+from interface import base as video
+from pcbasic import signals
+from pcbasic import scancode
 
 # percentage of the screen to leave unused for window decorations etc.
 display_slack = 15

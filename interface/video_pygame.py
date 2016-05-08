@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
+import platform
 
 try:
     import pygame
@@ -18,13 +19,13 @@ try:
 except ImportError:
     numpy = None
 
-import platform
-import signals
-import scancode
-from eascii import as_unicode as uea
-import clipboard
-import interface as video
-import video_graphical
+
+from pcbasic import signals
+from pcbasic import scancode
+from pcbasic.eascii import as_unicode as uea
+from interface import clipboard
+from interface import base as video
+from interface import video_graphical
 
 
 ###############################################################################

@@ -9,14 +9,14 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import logging
 
-import interface as video
-import video_cli
-from video_cli import encoding
+from interface import base as video
+from interface import video_cli
+from interface.video_cli import encoding
 
 # for a few ansi sequences not supported by curses
 # only use these if you clear the screen afterwards,
 # so you don't see gibberish if the terminal doesn't support the sequence.
-import ansi
+from interface import ansi
 
 
 ###############################################################################

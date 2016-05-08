@@ -28,23 +28,8 @@ import pcbasic
 from pcbasic import config
 from pcbasic import error
 from pcbasic import debug
-from pcbasic import interface
+import interface
 from pcbasic import interpreter
-
-# video plugins
-# these are unused but need to be initialised and packaged
-from pcbasic import video_none
-from pcbasic import video_ansi
-from pcbasic import video_cli
-from pcbasic import video_curses
-from pcbasic import video_pygame
-from pcbasic import video_sdl2
-
-# audio plugins
-from pcbasic import audio_none
-from pcbasic import audio_beep
-from pcbasic import audio_pygame
-from pcbasic import audio_sdl2
 
 
 def main():

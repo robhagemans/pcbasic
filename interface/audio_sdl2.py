@@ -1,109 +1,111 @@
 """
-PC-BASIC - audio_pygame.py
-Sound interface based on PyGame
+PC-BASIC - audio_sdl2.py
+Sound interface based on SDL2
 
-(c) 2013, 2014, 2015, 2016 Rob Hagemans
+(c) 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
+# see e.g. http://toomanyideas.net/2014/pysdl2-playing-a-sound-from-a-wav-file.html
+
+from math import ceil
+import logging
+import Queue
+from collections import deque
+
 try:
-    import pygame
+    import sdl2
 except ImportError:
-    pygame = None
+    sdl2 = None
 
 try:
     import numpy
 except ImportError:
     numpy = None
 
-if pygame:
-    import pygame.mixer as mixer
-else:
-    mixer = None
-
-from math import ceil
-import logging
-import Queue
-
-import signals
-import interface as audio
+from pcbasic import signals
+from interface import base as audio
 
 tick_ms = 24
-# quit sound server after quiet period of quiet_quit ticks
-# to avoid high-ish cpu load from the sound server.
-quiet_quit = 10000
 
 # mixer settings
 mixer_bits = 16
 sample_rate = 44100
 
+# approximate generator chunk length
+# one wavelength at 37 Hz is 1192 samples at 44100 Hz
+chunk_length = 1192 * 4
+
+callback_chunk_length = 2048
+min_samples_buffer = 2*callback_chunk_length
 
 def prepare():
     """ Initialise sound module. """
-    audio.audio_plugin_dict['pygame'] = AudioPygame
-    if pygame:
-        # must be called before pygame.init()
-        if mixer:
-            mixer.pre_init(sample_rate, -mixer_bits, channels=1, buffer=1024) #4096
+    audio.audio_plugin_dict['sdl2'] = AudioSDL2
 
 
 ##############################################################################
 # plugin
 
-class AudioPygame(audio.AudioPlugin):
-    """ Pygame-based audio plugin. """
+class AudioSDL2(audio.AudioPlugin):
+    """ SDL2-based audio plugin. """
 
     def __init__(self, tone_queue, message_queue):
         """ Initialise sound system. """
-        if not pygame:
-            logging.warning('PyGame module not found. Failed to initialise PyGame audio plugin.')
+        if not sdl2:
+            logging.warning('SDL2 module not found. Failed to initialise SDL2 audio plugin.')
             raise audio.InitFailed()
         if not numpy:
-            logging.warning('NumPy module not found. Failed to initialise PyGame audio plugin.')
+            logging.warning('NumPy module not found. Failed to initialise SDL2 audio plugin.')
             raise audio.InitFailed()
-        if not mixer:
-            logging.warning('PyGame mixer module not found. Failed to initialise PyGame audio plugin.')
-            raise audio.InitFailed()
-        # currently looping sound
-        self.loop_sound = [ None, None, None, None ]
-        # do not quit mixer if true
-        self.persist = False
-        # keep track of quiet time to shut down mixer after a while
-        self.quiet_ticks = 0
+        # sound generators for each tone
+        self.generators = [deque(), deque(), deque(), deque()]
+        # buffer of samples; drained by callback, replenished by _play_sound
+        self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
+        # SDL AudioDevice and specifications
+        self.audiospec = sdl2.SDL_AudioSpec(0, 0, 0, 0)
+        self.audiospec.freq = sample_rate
+        # samples are 16-bit signed ints
+        self.audiospec.format = sdl2.AUDIO_S16SYS
+        self.audiospec.channels = 1
+        self.audiospec.samples = callback_chunk_length
+        self.audiospec.callback = sdl2.SDL_AudioCallback(self._get_next_chunk)
+        self.dev = None
+        # start audio thread
         audio.AudioPlugin.__init__(self, tone_queue, message_queue)
 
     def __enter__(self):
         """ Perform any necessary initialisations. """
-        # initialise mixer as silent
-        # this is necessary to be able to set channels to mono
-        mixer.quit()
+        # init sdl audio in this thread separately
+        sdl2.SDL_Init(sdl2.SDL_INIT_AUDIO)
+        self.dev = sdl2.SDL_OpenAudioDevice(None, 0, self.audiospec, None, 0)
+        if self.dev == 0:
+            logging.warning('Could not open audio device: %s', sdl2.SDL_GetError())
+        # unpause the audio device
+        sdl2.SDL_PauseAudioDevice(self.dev, 0)
         return audio.AudioPlugin.__enter__(self)
 
     def _sleep(self):
         """ Sleep a tick to avoid hogging the cpu. """
-        pygame.time.wait(tick_ms)
+        sdl2.SDL_Delay(tick_ms)
 
     def _drain_message_queue(self):
         """ Drain signal queue. """
-        alive = True
-        while alive:
+        while True:
             try:
                 signal = self.message_queue.get(False)
             except Queue.Empty:
                 return True
-            if signal.event_type == signals.AUDIO_STOP:
-                # stop all channels
-                for voice in range(4):
-                    stop_channel(voice)
-                self.loop_sound = [None, None, None, None]
-                self.next_tone = [None, None, None, None]
-            elif signal.event_type == signals.AUDIO_QUIT:
-                # close thread after task_done
-                alive = False
-            elif signal.event_type == signals.AUDIO_PERSIST:
-                # allow/disallow mixer to quit
-                self.persist = signal.params
             self.message_queue.task_done()
+            if signal.event_type == signals.AUDIO_STOP:
+                self.next_tone = [None, None, None, None]
+                self.generators = [deque(), deque(), deque(), deque()]
+                sdl2.SDL_LockAudioDevice(self.dev)
+                self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
+                sdl2.SDL_UnlockAudioDevice(self.dev)
+            elif signal.event_type == signals.AUDIO_QUIT:
+                # close thread
+                return False
 
     def _drain_tone_queue(self):
         """ Drain signal queue. """
@@ -111,9 +113,6 @@ class AudioPygame(audio.AudioPlugin):
         while not empty:
             empty = True
             for voice, q in enumerate(self.tone_queue):
-                # don't get the next tone if we're still working on one
-                if self.next_tone[voice]:
-                    continue
                 try:
                     signal = q.get(False)
                     empty = False
@@ -121,85 +120,59 @@ class AudioPygame(audio.AudioPlugin):
                     continue
                 if signal.event_type == signals.AUDIO_TONE:
                     # enqueue a tone
-                    self.next_tone[voice] = SoundGenerator(signal_sources[voice],
-                                                      feedback_tone, *signal.params)
+                    self.generators[voice].append(SoundGenerator(
+                        signal_sources[voice], feedback_tone, *signal.params))
                 elif signal.event_type == signals.AUDIO_NOISE:
                     # enqueue a noise
                     feedback = feedback_noise if signal.params[0] else feedback_periodic
-                    self.next_tone[voice] = SoundGenerator(signal_sources[3],
-                                                      feedback, *signal.params[1:])
+                    self.generators[voice].append(SoundGenerator(
+                        signal_sources[3], feedback, *signal.params[1:]))
         return empty
 
     def _play_sound(self):
-        """ play sounds. """
-        current_chunk = [ None, None, None, None ]
-        if (self.next_tone == [ None, None, None, None ]
-                and self.loop_sound == [ None, None, None, None ]):
-            return
-        check_init_mixer()
+        """ Replenish sample buffer. """
         for voice in range(4):
-            # if there is a sound queue, stop looping sound
-            if self.next_tone[voice] and self.loop_sound[voice]:
-                stop_channel(voice)
-                self.loop_sound[voice] = None
-            if mixer.Channel(voice).get_queue() is None:
-                if self.next_tone[voice]:
-                    if self.next_tone[voice].loop:
-                        # it's a looping tone, handle there
-                        self.loop_sound[voice] = self.next_tone[voice]
-                        self.next_tone[voice] = None
-                        self.tone_queue[voice].task_done()
-                    else:
-                        current_chunk[voice] = numpy.array([], dtype=numpy.int16)
-                        while (self.next_tone[voice] and
-                                        len(current_chunk[voice]) < chunk_length):
-                            chunk = self.next_tone[voice].build_chunk()
-                            if chunk is None:
-                                # tone has finished
-                                self.next_tone[voice] = None
-                                self.tone_queue[voice].task_done()
-                            else:
-                                current_chunk[voice] = numpy.concatenate(
-                                                    (current_chunk[voice], chunk))
-                if self.loop_sound[voice]:
-                    # currently looping sound
-                    current_chunk[voice] = self.loop_sound[voice].build_chunk()
+            if len(self.samples[voice]) > min_samples_buffer:
+                # nothing to do
+                continue
+            while True:
+                if self.next_tone[voice] is None:
+                    try:
+                        self.next_tone[voice] = self.generators[voice].popleft()
+                    except IndexError:
+                        # FIXME: loop last tone if loop property was set?
+                        current_chunk = None
+                        break
+                current_chunk = self.next_tone[voice].build_chunk(chunk_length)
+                if current_chunk is not None:
+                    break
+                self.tone_queue[voice].task_done()
+                self.next_tone[voice] = None
+            if current_chunk is not None:
+                # append chunk to samples list
+                # lock to ensure callback doesn't try to access the list too
+                sdl2.SDL_LockAudioDevice(self.dev)
+                self.samples[voice] = numpy.concatenate(
+                        (self.samples[voice], current_chunk))
+                sdl2.SDL_UnlockAudioDevice(self.dev)
+
+    def _get_next_chunk(self, notused, stream, length_bytes):
+        """ Callback function to generate the next chunk to be played. """
+        # this is for 16-bit samples
+        length = length_bytes/2
+        samples = [self.samples[voice][:length] for voice in range(4)]
+        self.samples = [self.samples[voice][length:] for voice in range(4)]
+        # if samples have run out, add silence
+        # FIXME: loop sounds
         for voice in range(4):
-            if current_chunk[voice] is not None and len(current_chunk[voice]) != 0:
-                snd = pygame.sndarray.make_sound(current_chunk[voice])
-                mixer.Channel(voice).queue(snd)
-        # check if mixer can be quit
-        self._check_quit()
-
-    def _check_quit(self):
-        """ Quit the mixer if not running a program and sound quiet for a while. """
-        if self.next_tone != [None, None, None, None]:
-            self.quiet_ticks = 0
-        else:
-            self.quiet_ticks += 1
-            if not self.persist and self.quiet_ticks > quiet_quit:
-                # mixer is quiet and we're not running a program.
-                # quit to reduce pulseaudio cpu load
-                # this takes quite a while and leads to missed frames...
-                if mixer.get_init() is not None:
-                    mixer.quit()
-                self.quiet_ticks = 0
-
-
-def stop_channel(channel):
-    """ Stop sound on a channel. """
-    if mixer.get_init():
-        mixer.Channel(channel).stop()
-        # play short silence to avoid blocking the channel
-        # otherwise it won't play on queue()
-        silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.int16))
-        mixer.Channel(channel).play(silence)
-
-def check_init_mixer():
-    """ Initialise the mixer if necessary. """
-    if mixer.get_init() is None:
-        mixer.init()
-
+            if len(samples[voice]) < length:
+                silence = numpy.zeros(length-len(samples[voice]), numpy.int16)
+                samples[voice] = numpy.concatenate((samples[voice], silence))
+        # mix the samples by averaging
+        self.mixed = numpy.mean(samples, axis=0, dtype=numpy.int16)
+        # copy into byte array (is there a better way?)
+        for i in xrange(length_bytes):
+            stream[i] = ord(self.mixed.data[i])
 
 ##############################################################################
 # synthesizer
@@ -225,9 +198,6 @@ else:
     amplitude = [0]*16
 # zero volume means silent
 amplitude[0] = 0
-
-# one wavelength at 37 Hz is 1192 samples at 44100 Hz
-chunk_length = 1192 * 4
 
 
 class SignalSource(object):
@@ -266,19 +236,18 @@ class SoundGenerator(object):
         self.count_samples = 0
         self.num_samples = int(self.duration * sample_rate)
 
-    def build_chunk(self):
+    def build_chunk(self, length):
         """ Build a sound chunk. """
         self.signal_source.feedback = self.feedback
         if self.count_samples >= self.num_samples:
             # done already
             return None
         # work on last element of sound queue
-        check_init_mixer()
         if self.frequency == 0 or self.frequency == 32767:
-            chunk = numpy.zeros(chunk_length, numpy.int16)
+            chunk = numpy.zeros(length, numpy.int16)
         else:
             half_wavelength = sample_rate / (2.*self.frequency)
-            num_half_waves = int(ceil(chunk_length / half_wavelength))
+            num_half_waves = int(ceil(length / half_wavelength))
             # generate bits
             bits = [ -self.amplitude if self.signal_source.next()
                      else self.amplitude for _ in xrange(num_half_waves) ]
@@ -293,7 +262,7 @@ class SoundGenerator(object):
             matrix = matrix[:len(matrix)-(len(matrix)%resolution)]
             # average over blocks
             matrix = matrix.reshape((len(matrix)/resolution, resolution))
-            chunk = numpy.int16(numpy.average(matrix, axis=1))
+            chunk = numpy.int16(numpy.mean(matrix, axis=1))
         if not self.loop:
             # last chunk is shorter
             if self.count_samples + len(chunk) < self.num_samples:
@@ -311,6 +280,7 @@ class SoundGenerator(object):
                 self.count_samples = self.num_samples
         # if loop, attach one chunk to loop, do not increment count
         return chunk
+
 
 
 # three tone voices plus a noise source
