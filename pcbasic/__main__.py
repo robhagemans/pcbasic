@@ -65,7 +65,8 @@ def main():
             start_basic(settings)
     except:
         # without this except clause we seem to be dropping exceptions
-        raise
+        # probably due to the sys.stdout.close() hack below
+        logging.error('Unhandled exception\n%s', traceback.format_exc())
     finally:
         # clean up our temp dir if we made one
         if plat.temp_dir:
@@ -105,10 +106,7 @@ def convert(settings):
     outfile = settings.get(1)
     # keep uppercase first letter
     mode = mode[0].upper() if mode else 'A'
-    try:
-        session = interpreter.Session(**settings.get_session_parameters())
-    except Exception as e:
-        logging.error('Unhandled exception\n%s' % traceback.format_exc())
+    session = interpreter.Session(**settings.get_session_parameters())
     files = session.files
     internal_disk = session.devices.internal_disk
     prog = session.program
@@ -161,8 +159,6 @@ def start_basic(settings):
         # only runtime errors that occur on interpreter launch are caught here
         # e.g. "File not Found" for --load parameter
         logging.error(e.message)
-    except Exception:
-        logging.error('Unhandled exception\n%s' % traceback.format_exc())
 
 def show_usage(settings):
     """Show usage description"""
