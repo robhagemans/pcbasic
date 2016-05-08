@@ -26,7 +26,7 @@ locale.setlocale(locale.LC_ALL, '')
 import ansipipe
 import pcbasic
 import interface
-from pcbasic import config
+from interface import config
 
 
 def main():
