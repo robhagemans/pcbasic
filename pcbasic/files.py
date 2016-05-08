@@ -126,7 +126,7 @@ class Devices(object):
 
     def __init__(self, session, fields, screen, keyboard,
                 device_params, current_device, mount, map_drives,
-                print_trigger, serial_in_size, utf8, universal):
+                print_trigger, temp_dir, serial_in_size, utf8, universal):
         """ Initialise devices. """
         self.devices = {}
         # screen device
@@ -138,9 +138,9 @@ class Devices(object):
         self.codepage = screen.codepage
         # ports
         # parallel devices - LPT1: must always be defined
-        self.devices['LPT1:'] = ports.LPTDevice(device_params['LPT1:'], devices.nullstream(), print_trigger, self.codepage)
-        self.devices['LPT2:'] = ports.LPTDevice(device_params['LPT2:'], None, print_trigger, self.codepage)
-        self.devices['LPT3:'] = ports.LPTDevice(device_params['LPT3:'], None, print_trigger, self.codepage)
+        self.devices['LPT1:'] = ports.LPTDevice(device_params['LPT1:'], devices.nullstream(), print_trigger, self.codepage, temp_dir)
+        self.devices['LPT2:'] = ports.LPTDevice(device_params['LPT2:'], None, print_trigger, self.codepage, temp_dir)
+        self.devices['LPT3:'] = ports.LPTDevice(device_params['LPT3:'], None, print_trigger, self.codepage, temp_dir)
         self.lpt1_file = self.devices['LPT1:'].device_file
         # serial devices
         # buffer sizes (/c switch in GW-BASIC)

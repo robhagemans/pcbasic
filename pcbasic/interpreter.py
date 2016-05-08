@@ -123,7 +123,8 @@ class Session(object):
             ignore_caps=True, ctrl_c_is_break=True,
             max_list_line=65535, allow_protect=False,
             allow_code_poke=False, max_memory=65534,
-            max_reclen=128, max_files=3, reserved_memory=3429):
+            max_reclen=128, max_files=3, reserved_memory=3429,
+            temp_dir=u''):
         """ Initialise the interpreter session. """
         # name of file to store and resume state
         self.state_file = state_file
@@ -219,7 +220,7 @@ class Session(object):
                 self, self.memory.fields, self.screen, self.keyboard,
                 device_params, current_device,
                 mount, map_drives,
-                print_trigger, serial_buffer_size,
+                print_trigger, temp_dir, serial_buffer_size,
                 utf8, universal)
         self.files = files.Files(self.devices, max_files)
         # set LPT1 as target for print_screen()

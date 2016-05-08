@@ -509,7 +509,7 @@ class LPTDevice(devices.Device):
     # in GW-BASIC, FIELD gives a FIELD OVERFLOW; we get BAD FILE MODE.
     allowed_modes = 'OR'
 
-    def __init__(self, arg, default_stream, flush_trigger, codepage):
+    def __init__(self, arg, default_stream, flush_trigger, codepage, temp_dir):
         """ Initialise LPTn: device. """
         devices.Device.__init__(self)
         addr, val = devices.parse_protocol_string(arg)
@@ -529,7 +529,7 @@ class LPTDevice(devices.Device):
             self.stream = StdIOStream(crlf)
         elif addr == 'PRINTER' or (val and not addr):
             # 'PRINTER' is default
-            self.stream = printer.get_printer_stream(val, codepage)
+            self.stream = printer.get_printer_stream(val, codepage, temp_dir)
         elif val:
             logging.warning('Could not attach %s to LPT device', arg)
         if self.stream:

@@ -389,6 +389,7 @@ class Settings(object):
             'mount': self.get(u'mount'),
             'map_drives': self.get(u'map-drives'),
             'print_trigger': self.get('print-trigger'),
+            'temp_dir': plat.temp_dir,
             'serial_buffer_size': self.get('serial-buffer-size'),
             # text file parameters
             'utf8': self.get('utf8'),

@@ -12,8 +12,6 @@ import logging
 import platform
 import os
 
-import plat
-
 if platform.system() == 'Windows':
     import win32print
     import win32com
@@ -59,13 +57,10 @@ class PrinterStreamBase(StringIO):
         """ Wait for process to complete (dummy). """
 
 
-# temp file in temp dir
-printfile = os.path.join(plat.temp_dir, 'pcbasic_print.txt')
-
-def get_printer_stream(val, codepage):
+def get_printer_stream(val, codepage, temp_dir):
     """ Return the appropriate printer stream for this platform. """
     if platform.system() == 'Windows':
-        return WindowsPrinterStream(val, codepage)
+        return WindowsPrinterStream(val, codepage, temp_dir)
     elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
         return PAPSPrinterStream(val, codepage)
     else:
@@ -75,9 +70,11 @@ def get_printer_stream(val, codepage):
 class WindowsPrinterStream(PrinterStreamBase):
     """ Stream that prints to Windows printer. """
 
-    def __init__(self, printer_name, codepage):
+    def __init__(self, printer_name, codepage, temp_dir):
         """ Initialise Windows printer stream. """
         PrinterStreamBase.__init__(self, printer_name, codepage)
+        # temp file in temp dir
+        self._printfile = os.path.join(temp_dir, 'pcbasic_print.txt')
         # handle for last printing process
         self.handle = -1
 
@@ -87,14 +84,14 @@ class WindowsPrinterStream(PrinterStreamBase):
             self.printer_name = win32print.GetDefaultPrinter()
         # open a file in our PC-BASIC temporary directory
         # this will get cleaned up on exit
-        with open(printfile, 'wb') as f:
+        with open(self._printfile, 'wb') as f:
             # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
             f.write('\xef\xbb\xbf')
             f.write(printbuf)
         # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
         try:
             resdict = win32com.shell.shell.ShellExecuteEx(fMask=256+64,
-                            lpVerb='printto', lpFile=printfile,
+                            lpVerb='printto', lpFile=self._printfile,
                             lpParameters='"%s"' % self.printer_name)
             self.handle = resdict['hProcess']
         except OSError as e:
