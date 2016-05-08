@@ -15,7 +15,6 @@ import os
 import socket
 import datetime
 import platform
-import subprocess
 
 # kbhit() also appears in video_none.py
 if platform.system() == 'Windows':
