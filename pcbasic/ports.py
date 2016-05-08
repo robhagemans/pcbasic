@@ -15,6 +15,7 @@ import os
 import socket
 import datetime
 import platform
+import subprocess
 
 # kbhit() also appears in video_none.py
 if platform.system() == 'Windows':
@@ -528,7 +529,7 @@ class LPTDevice(devices.Device):
             self.stream = StdIOStream(crlf)
         elif addr == 'PRINTER' or (val and not addr):
             # 'PRINTER' is default
-            self.stream = printer.PrinterStream(val, codepage)
+            self.stream = printer.get_printer_stream(val, codepage)
         elif val:
             logging.warning('Could not attach %s to LPT device', arg)
         if self.stream:

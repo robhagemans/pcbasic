@@ -10,9 +10,15 @@ from StringIO import StringIO
 import subprocess
 import logging
 import platform
+import os
 
 import plat
 
+if platform.system() == 'Windows':
+    import win32print
+    import win32com
+    import win32com.shell.shell
+    import win32event
 
 class PrinterStreamBase(StringIO):
     """ Base stream for printing. """
@@ -53,91 +59,92 @@ class PrinterStreamBase(StringIO):
         """ Wait for process to complete (dummy). """
 
 
-if platform.system() == 'Windows':
-    import os
-    import win32print
-    import win32com
-    import win32com.shell.shell
-    import win32event
+# temp file in temp dir
+printfile = os.path.join(plat.temp_dir, 'pcbasic_print.txt')
 
-    # temp file in temp dir
-    printfile = os.path.join(plat.temp_dir, 'pcbasic_print.txt')
+def get_printer_stream(val, codepage):
+    """ Return the appropriate printer stream for this platform. """
+    if platform.system() == 'Windows':
+        return WindowsPrinterStream(val, codepage)
+    elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
+        return PAPSPrinterStream(val, codepage)
+    else:
+        return CUPSPrinterStream(val, codepage)
 
-    class PrinterStream(PrinterStreamBase):
-        """ Stream that prints to Windows printer. """
 
-        def __init__(self, printer_name, codepage):
-            """ Initialise Windows printer stream. """
-            PrinterStreamBase.__init__(self, printer_name, codepage)
-            # handle for last printing process
+class WindowsPrinterStream(PrinterStreamBase):
+    """ Stream that prints to Windows printer. """
+
+    def __init__(self, printer_name, codepage):
+        """ Initialise Windows printer stream. """
+        PrinterStreamBase.__init__(self, printer_name, codepage)
+        # handle for last printing process
+        self.handle = -1
+
+    def _line_print(self, printbuf):
+        """ Print the buffer to a Windows printer. """
+        if self.printer_name == '' or self.printer_name == 'default':
+            self.printer_name = win32print.GetDefaultPrinter()
+        # open a file in our PC-BASIC temporary directory
+        # this will get cleaned up on exit
+        with open(printfile, 'wb') as f:
+            # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
+            f.write('\xef\xbb\xbf')
+            f.write(printbuf)
+        # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
+        try:
+            resdict = win32com.shell.shell.ShellExecuteEx(fMask=256+64,
+                            lpVerb='printto', lpFile=printfile,
+                            lpParameters='"%s"' % self.printer_name)
+            self.handle = resdict['hProcess']
+        except OSError as e:
+            logging.warning('Error while printing: %s', bytes(e))
             self.handle = -1
 
-        def _line_print(self, printbuf):
-            """ Print the buffer to a Windows printer. """
-            if self.printer_name == '' or self.printer_name == 'default':
-                self.printer_name = win32print.GetDefaultPrinter()
-            # open a file in our PC-BASIC temporary directory
-            # this will get cleaned up on exit
-            with open(printfile, 'wb') as f:
-                # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
-                f.write('\xef\xbb\xbf')
-                f.write(printbuf)
-            # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
-            try:
-                resdict = win32com.shell.shell.ShellExecuteEx(fMask=256+64,
-                                lpVerb='printto', lpFile=printfile,
-                                lpParameters='"%s"' % self.printer_name)
-                self.handle = resdict['hProcess']
-            except OSError as e:
-                logging.warning('Error while printing: %s', bytes(e))
-                self.handle = -1
+    def _wait(self):
+        """ Give printing process some time to complete. """
+        try:
+            win32event.WaitForSingleObject(self.handle, 1000)
+        except OSError:
+            pass
 
-        def _wait(self):
-            """ Give printing process some time to complete. """
-            try:
-                win32event.WaitForSingleObject(self.handle, 1000)
-            except OSError:
-                pass
 
-elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
+class PAPSPrinterStream(PrinterStreamBase):
+    """ Stream that prints to a CUPS printer using PAPS. """
 
-    class PrinterStream(PrinterStreamBase):
-        """ Stream that prints to a CUPS printer using PAPS. """
+    def _line_print(self, printbuf):
+        """ Print the buffer to a LPR printer using PAPS. """
+        options = ''
+        if self.printer_name != '' and self.printer_name != 'default':
+            options += '-P ' + self.printer_name
+        if printbuf != '':
+            # A4 paper is 595 points wide by 842 points high.
+            # Letter paper is 612 by 792 points.
+            # the below seems to allow 82 chars horizontally on A4; it appears
+            # my PAPS version doesn't quite use cpi correctly as 10cpi should
+            # allow 80 chars on A4 with a narrow margin but only does so with a
+            # margin of 0.
+            pr = subprocess.Popen(
+                'paps --cpi=11 --lpi=6 --left-margin=20 --right-margin=20 '
+                '--top-margin=6 --bottom-margin=6 '
+                '| lpr %s' % options, shell=True, stdin=subprocess.PIPE)
+            # PAPS does not recognise CRLF
+            printbuf = printbuf.replace('\r\n', '\n')
+            pr.stdin.write(printbuf)
+            pr.stdin.close()
 
-        def _line_print(self, printbuf):
-            """ Print the buffer to a LPR printer using PAPS. """
-            options = ''
-            if self.printer_name != '' and self.printer_name != 'default':
-                options += '-P ' + self.printer_name
-            if printbuf != '':
-                # A4 paper is 595 points wide by 842 points high.
-                # Letter paper is 612 by 792 points.
-                # the below seems to allow 82 chars horizontally on A4; it appears
-                # my PAPS version doesn't quite use cpi correctly as 10cpi should
-                # allow 80 chars on A4 with a narrow margin but only does so with a
-                # margin of 0.
-                pr = subprocess.Popen(
-                    'paps --cpi=11 --lpi=6 --left-margin=20 --right-margin=20 '
-                    '--top-margin=6 --bottom-margin=6 '
-                    '| lpr %s' % options, shell=True, stdin=subprocess.PIPE)
-                # PAPS does not recognise CRLF
-                printbuf = printbuf.replace('\r\n', '\n')
-                pr.stdin.write(printbuf)
-                pr.stdin.close()
 
-else:
+class CUPSPrinterStream(PrinterStreamBase):
+    """ Stream that prints to a CUPS or LPR printer. """
 
-    class PrinterStream(PrinterStreamBase):
-        """ Stream that prints to a CUPS or LPR printer. """
-
-        def _line_print(self, printbuf):
-            """ Print the buffer to a LPR (CUPS or older UNIX) printer. """
-            options = ''
-            if self.printer_name != '' and self.printer_name != 'default':
-                options += '-P ' + self.printer_name
-            if printbuf != '':
-                # cups defaults to 10 cpi, 6 lpi.
-                pr = subprocess.Popen('lpr %s' % options, shell=True,
-                                      stdin=subprocess.PIPE)
-                pr.stdin.write(printbuf)
-                pr.stdin.close()
+    def _line_print(self, printbuf):
+        """ Print the buffer to a LPR (CUPS or older UNIX) printer. """
+        options = ''
+        if self.printer_name != '' and self.printer_name != 'default':
+            options += '-P ' + self.printer_name
+        if printbuf != '':
+            # cups defaults to 10 cpi, 6 lpi.
+            pr = subprocess.Popen('lpr %s' % options, shell=True,
+                                  stdin=subprocess.PIPE)
+            pr.stdin.write(printbuf)
+            pr.stdin.close()

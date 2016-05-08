@@ -46,7 +46,6 @@ import audio_pygame
 import audio_sdl2
 
 
-
 def main():
     """Initialise and do requested operations"""
     try:
