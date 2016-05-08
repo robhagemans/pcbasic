@@ -1,7 +1,7 @@
 *.pyc
 *.pyo
 .android.*
-pcbasic/data/usage.txt
+USAGE.txt
 doc/
 build/
 dist/

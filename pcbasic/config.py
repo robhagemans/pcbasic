@@ -25,14 +25,9 @@ from pcbasic import __version__, codepages, fonts
 
 # get basepath (__file__ is undefined in pyinstaller packages)
 if hasattr(sys, 'frozen'):
-    # we're a package, get the directory of the packaged executable
     basepath = os.path.dirname(sys.executable)
 else:
-    # get the directory of this file
-    basepath = os.path.dirname(os.path.realpath(__file__))
-if type(basepath) == bytes:
-    # __file__ is a bytes object, not unicode
-    basepath = basepath.decode(sys.getfilesystemencoding())
+    basepath = os.path.dirname(os.path.realpath(__file__)).decode(sys.getfilesystemencoding())
 
 # directories
 info_dir = os.path.join(basepath, u'data')
@@ -53,7 +48,8 @@ def get_logger(logfile=None):
 
 def show_usage(settings):
     """Show usage description."""
-    with open(os.path.join(info_dir, 'usage.txt')) as f:
+    usage_file = os.path.join(basepath, '..', 'USAGE.txt')
+    with open(usage_file) as f:
         for line in f:
             sys.stdout.write(line)
 
