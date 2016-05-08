@@ -30,7 +30,7 @@ else:
     basepath = os.path.dirname(os.path.realpath(__file__)).decode(sys.getfilesystemencoding())
 
 # directories
-info_dir = os.path.join(basepath, u'data')
+info_dir = os.path.join(basepath, u'programs')
 
 def get_logger(logfile=None):
     """Use the awkward logging interface as we can only use basicConfig once."""
