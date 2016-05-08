@@ -8,10 +8,10 @@ This file is released under the GNU GPL version 3 or later.
 
 import string
 
-import error
-import vartypes
-from operators import Operators as op
-import util
+from basic import error
+from basic import vartypes
+from basic.operators import Operators as op
+from basic import util
 
 
 class MLParser(object):

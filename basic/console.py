@@ -8,9 +8,9 @@ This file is released under the GNU GPL version 3 or later.
 
 import string
 
-import error
-import basictoken as tk
-from eascii import as_bytes as ea
+from basic import error
+from basic import basictoken as tk
+from basic.eascii import as_bytes as ea
 
 # alt+key macros for interactive mode
 # these happen at a higher level than F-key macros

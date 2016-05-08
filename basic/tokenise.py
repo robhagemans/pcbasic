@@ -13,10 +13,10 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-import basictoken as tk
-import representation
-import util
-import vartypes
+from basic import basictoken as tk
+from basic import representation
+from basic import util
+from basic import vartypes
 
 
 def ascii_read_to(ins, findrange):

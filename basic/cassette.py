@@ -18,9 +18,9 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-import error
-import devices
-import basictoken as tk
+from basic import error
+from basic import devices
+from basic import basictoken as tk
 
 token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
 type_to_token = dict((reversed(item) for item in token_to_type.items()))

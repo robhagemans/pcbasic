@@ -8,10 +8,10 @@ This file is released under the GNU GPL version 3 or later.
 
 from contextlib import contextmanager
 
-import error
-import var
-import vartypes
-import devices
+from basic import error
+from basic import var
+from basic import vartypes
+from basic import devices
 
 
 # Data Segment Map - default situation

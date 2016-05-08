@@ -9,9 +9,9 @@ This file is released under the GNU GPL version 3 or later.
 from functools import partial
 import string
 
-import error
-import vartypes
-import basictoken as tk
+from basic import error
+from basic import vartypes
+from basic import basictoken as tk
 
 ###############################################################################
 # stream utilities

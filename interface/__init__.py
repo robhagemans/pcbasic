@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import time
 import logging
 
-from base import InitFailed
+from interface.base import InitFailed
 
 # video plugins
 from interface.video_none import VideoNone

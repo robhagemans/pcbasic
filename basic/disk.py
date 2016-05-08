@@ -20,11 +20,10 @@ if platform.system() == b'Windows':
     import win32api
     import ctypes
 
-from bytestream import ByteStream
-
-import error
-import vartypes
-import devices
+from basic.bytestream import ByteStream
+from basic import error
+from basic import vartypes
+from basic import devices
 
 # GW-BASIC FILE CONTROL BLOCK structure:
 # source: IBM Basic reference 1982 (for BASIC-C, BASIC-D, BASIC-A) appendix I-5

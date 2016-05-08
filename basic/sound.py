@@ -14,10 +14,10 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-import error
-import util
-import draw_and_play
-import signals
+from basic import error
+from basic import util
+from basic import draw_and_play
+from basic import signals
 
 # base frequency for noise source
 base_freq = 3579545./1024.

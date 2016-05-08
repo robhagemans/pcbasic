@@ -13,15 +13,14 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-import error
-import util
-import fp
-from fp import Single, Double
-from fp import from_bytes, unpack
-from fp import mul, div, pow_int
-import vartypes
-
-import basictoken as tk
+from basic import error
+from basic import util
+from basic import fp
+from basic.fp import Single, Double
+from basic.fp import from_bytes, unpack
+from basic.fp import mul, div, pow_int
+from basic import vartypes
+from basic import basictoken as tk
 
 def number_to_str(inp, screen=False, write=False, allow_empty_expression=False):
     """ Convert BASIC number to Python str. """

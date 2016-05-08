@@ -6,12 +6,12 @@ Emulated video modes
 This file is released under the GNU GPL version 3 or later.
 """
 
-import vartypes
-
 try:
     import numpy
 except ImportError:
     numpy = None
+
+from basic import vartypes
 
 # SCREEN 10 EGA pseudocolours, blink state 0 and 1
 intensity_ega_mono_0 = (0x00, 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0xff, 0xff, 0xff)

@@ -6,10 +6,9 @@ Numeric and string operators
 This file is released under the GNU GPL version 3 or later.
 """
 
-import fp
-import vartypes
-
-import basictoken as tk
+from basic import fp
+from basic import vartypes
+from basic import basictoken as tk
 
 
 # operators and precedence

@@ -13,12 +13,12 @@ try:
 except ImportError:
     numpy = None
 
-import signals
-import error
-import modes
-import typeface
-import graphics
-import basictoken as tk
+from basic import signals
+from basic import error
+from basic import modes
+from basic import typeface
+from basic import graphics
+from basic import basictoken as tk
 
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)
 # Many internet sources say this should be 0xC0--0xDF. However, that would
