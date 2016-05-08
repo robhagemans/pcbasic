@@ -42,6 +42,30 @@ from pcbasic import sound
 from pcbasic import redirect
 from pcbasic import unicodepage
 
+
+###############################################################################
+# resource discovery
+
+# get basepath (__file__ is undefined in pyinstaller packages)
+if hasattr(sys, 'frozen'):
+    basepath = os.path.dirname(sys.executable)
+else:
+    basepath = os.path.dirname(os.path.realpath(__file__)).decode(sys.getfilesystemencoding())
+
+# get supported codepages
+codepage_dir = os.path.join(basepath, u'codepage')
+codepages = sorted(x[0] for x in (
+                c.split(u'.ucp') for c in os.listdir(codepage_dir)) if len(x)>1)
+
+# get supported font families
+font_dir = os.path.join(basepath, u'font')
+fonts = sorted(set(x[0] for x in (
+                c.split(u'_') for c in os.listdir(font_dir)) if len(x)>1))
+
+
+###############################################################################
+# launcher
+
 class SessionLauncher(object):
     """ Launches a BASIC session. """
 
@@ -111,8 +135,8 @@ class Session(object):
             tone_queue=None, message_queue=None,
             syntax=u'advanced', option_debug=False, pcjr_term=u'', option_shell=u'',
             output_file=None, append=False, input_file=None,
-            codepage_dir=u'', codepage=u'437', box_protect=True,
-            video_capabilities=u'vga', font_dir=u'', font=u'freedos',
+            codepage=u'437', box_protect=True,
+            video_capabilities=u'vga', font=u'freedos',
             monitor=u'rgb', mono_tint=(0, 255, 0), screen_aspect=(4, 3),
             text_width=80, video_memory=262144, cga_low=False,
             keystring=u'', double=False,

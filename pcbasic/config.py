@@ -21,7 +21,7 @@ if platform.system() == b'Windows':
     import ctypes
     import ctypes.wintypes
 
-from pcbasic import __version__
+from pcbasic import __version__, codepages, fonts
 
 # get basepath (__file__ is undefined in pyinstaller packages)
 if hasattr(sys, 'frozen'):
@@ -128,9 +128,6 @@ else:
     state_path = os.path.join(_xdg_data_home, u'pcbasic')
 if not os.path.exists(state_path):
     os.makedirs(state_path)
-
-font_dir = os.path.join(basepath, u'font')
-codepage_dir = os.path.join(basepath, u'codepage')
 
 
 class TemporaryDirectory():
@@ -240,13 +237,6 @@ class Settings(object):
     # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
     default_presets = [u'pcbasic', get_system_preset_name()]
 
-    # get supported codepages
-    encodings = sorted([ x[0] for x in [ c.split(u'.ucp')
-                         for c in os.listdir(codepage_dir) ] if len(x)>1])
-    # get supported font families
-    families = sorted(list(set([ x[0] for x in [ c.split(u'_')
-                      for c in os.listdir(font_dir) ] if len(x)>1])))
-
     # number of positional arguments
     positional = 2
 
@@ -310,9 +300,9 @@ class Settings(object):
         u'cas1': {u'type': u'string', u'default': u'',},
         u'com1': {u'type': u'string', u'default': u'',},
         u'com2': {u'type': u'string', u'default': u'',},
-        u'codepage': {u'type': u'string', u'choices': encodings, u'default': u'437',},
+        u'codepage': {u'type': u'string', u'choices': codepages, u'default': u'437',},
         u'font': {
-            u'type': u'string', u'list': u'*', u'choices': families,
+            u'type': u'string', u'list': u'*', u'choices': fonts,
             u'default': [u'unifont', u'univga', u'freedos'],},
         u'nosound': {u'type': u'bool', u'default': False, },
         u'dimensions': {u'type': u'int', u'list': 2, u'default': None,},
@@ -482,7 +472,6 @@ class Settings(object):
             'append': self.get(b'append'),
             'input_file': self.get(b'input'),
             'video_capabilities': self.get('video'),
-            'codepage_dir': codepage_dir,
             'codepage': self.get('codepage') or '437',
             'box_protect': not self.get('nobox'),
             'monitor': self.get('monitor'),
@@ -493,7 +482,6 @@ class Settings(object):
             'cga_low': self.get('cga-low'),
             'mono_tint': self.get('mono-tint'),
             'font': self.get('font'),
-            'font_dir': font_dir,
             # inserted keystrokes
             'keystring': self.get('keys').decode('string_escape').decode('utf-8'),
             # find program for PCjr TERM command
