@@ -13,10 +13,6 @@ import platform
 from pcbasic import signals
 from interface import base as audio
 
-def prepare():
-    """ Initialise audio_eep module. """
-    audio.audio_plugin_dict['beep'] = AudioBeep
-
 
 class AudioBeep(audio.AudioPlugin):
     """ Audio plugin based on 'beep' command-line utility. """
@@ -122,6 +118,3 @@ def beep(frequency, duration, fill):
 def sleep(duration):
     """ Wait for given number of seconds. """
     return subprocess.Popen('sleep {0}'.format(duration).split())
-
-
-prepare()

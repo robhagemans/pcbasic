@@ -19,14 +19,6 @@ from interface.video_cli import encoding
 from interface import ansi
 
 
-###############################################################################
-
-
-def prepare():
-    """ Initialise the video_curses module. """
-    video.video_plugin_dict['ansi'] = VideoANSI
-
-
 class VideoANSI(video_cli.VideoCLI):
     """ Text interface implemented with ANSI escape sequences. """
 
@@ -240,6 +232,3 @@ class VideoANSI(video_cli.VideoCLI):
         else:
             sys.stdout.write(ansi.esc_set_title % self.caption)
         sys.stdout.flush()
-
-
-prepare()

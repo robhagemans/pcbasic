@@ -7,12 +7,8 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import Queue
-import logging
-import time
 
 from pcbasic import signals
-# for building the icon
-from pcbasic import typeface
 
 
 class InitFailed(Exception):
@@ -20,71 +16,7 @@ class InitFailed(Exception):
 
 
 ###############################################################################
-# interface event loop
-
-delay = 0.024
-
-def run(input_queue, video_queue, tone_queue, message_queue, interface_name, video_params, audio_params):
-    """ Start the main interface event loop. """
-    with get_video_plugin(input_queue, video_queue, interface_name, **video_params) as video_plugin:
-        with get_audio_plugin(tone_queue, message_queue, interface_name, **audio_params) as audio_plugin:
-            while True:
-                # ensure both queues are drained
-                video_plugin.cycle()
-                audio_plugin.cycle()
-                if not audio_plugin.alive and not video_plugin.alive:
-                    break
-                # do not hog cpu
-                if not audio_plugin.playing and not video_plugin.screen_changed:
-                    time.sleep(delay)
-
-
-###############################################################################
 # video plugin
-
-# create the window icon
-icon_hex = '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
-icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}
-                            ).build_glyph('icon', 16, 16, False, False)
-
-# plugins will need to register themselves
-video_plugin_dict = {}
-
-video_plugins = {
-    # interface_name: video_plugin_name, fallback, warn_on_fallback
-    'none': (('none',), None),
-    'cli': (('cli',), 'none'),
-    'text': (('curses', 'ansi'), 'cli'),
-    'graphical':  (('pygame',), 'text'),
-    # force a particular plugin to be used
-    'ansi': (('ansi',), None),
-    'curses': (('curses',), None),
-    'pygame': (('pygame',), None),
-    'sdl2': (('sdl2',), None),
-    }
-
-
-def get_video_plugin(input_queue, video_queue, interface_name, **kwargs):
-    """ Find and initialise video plugin for given interface. """
-    while True:
-        # select interface
-        names, fallback = video_plugins[interface_name]
-        for video_name in names:
-            try:
-                plugin = video_plugin_dict[video_name](
-                    input_queue, video_queue,
-                    icon=icon, **kwargs)
-            except KeyError:
-                logging.debug('Video plugin "%s" not available.', video_name)
-            except InitFailed:
-                logging.debug('Could not initialise video plugin "%s".', video_name)
-            else:
-                return plugin
-        if fallback:
-            logging.info('Could not initialise %s interface. Falling back to %s interface.', interface_name, fallback)
-            interface_name = fallback
-        else:
-            raise InitFailed()
 
 
 class VideoPlugin(object):
@@ -252,39 +184,6 @@ class VideoPlugin(object):
 
 ###############################################################################
 # audio plugin
-
-# plugins will need to register themselves
-audio_plugin_dict = {}
-
-audio_plugins = {
-    # interface_name: plugin_name, fallback, warn_on_fallback
-    'none': ('none',),
-    'cli': ('beep', 'none'),
-    'text': ('beep', 'none'),
-    'graphical': ('pygame', 'beep', 'none'),
-    'ansi': ('none',),
-    'curses': ('none',),
-    'pygame': ('pygame', 'none'),
-    'sdl2': ('sdl2', 'none'),
-    }
-
-
-def get_audio_plugin(tone_queue, message_queue, interface_name, nosound):
-    """ Find and initialise audio plugin for given interface. """
-    if nosound:
-        interface_name = 'none'
-    names = audio_plugins[interface_name]
-    for audio_name in names:
-        try:
-            plugin = audio_plugin_dict[audio_name](tone_queue, message_queue)
-        except KeyError:
-            logging.debug('Audio plugin "%s" not available.', audio_name)
-        except InitFailed:
-            logging.debug('Could not initialise audio plugin "%s".', audio_name)
-        else:
-            return plugin
-    logging.error('Audio plugin malfunction. Could not initialise interface.')
-    raise InitFailed()
 
 
 class AudioPlugin(object):

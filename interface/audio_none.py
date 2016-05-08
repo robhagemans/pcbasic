@@ -12,10 +12,6 @@ import Queue
 from pcbasic import signals
 from interface import base as audio
 
-def prepare():
-    """ Initialise audio_eep module. """
-    audio.audio_plugin_dict['none'] = AudioNone
-
 
 class AudioNone(audio.AudioPlugin):
     """ Null audio plugin. """
@@ -68,6 +64,3 @@ class AudioNone(audio.AudioPlugin):
             if self.next_tone[voice] is not None and now >= self.next_tone[voice]:
                 self.next_tone[voice] = None
                 self.tone_queue[voice].task_done()
-
-
-prepare()

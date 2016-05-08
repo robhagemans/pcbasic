@@ -21,15 +21,6 @@ from interface import ansi
 
 encoding = sys.stdin.encoding or 'utf-8'
 
-###############################################################################
-
-def prepare():
-    """ Initialise the video_cli module. """
-    video.video_plugin_dict['cli'] = VideoCLI
-
-
-###############################################################################
-
 if platform.system() == 'Windows':
     import ansipipe
     tty = ansipipe
@@ -41,10 +32,6 @@ else:
     # Ctrl+D to exit
     eof = uea.CTRL_d
 
-
-
-
-###############################################################################
 
 class VideoCLI(video.VideoPlugin):
     """ Command-line interface. """
@@ -359,6 +346,3 @@ esc_to_eascii = {
     ansi.PAGEUP: uea.PAGEUP,
     ansi.PAGEDOWN: uea.PAGEDOWN,
     }
-
-
-prepare()

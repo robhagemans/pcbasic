@@ -40,7 +40,6 @@ sample_rate = 44100
 
 def prepare():
     """ Initialise sound module. """
-    audio.audio_plugin_dict['pygame'] = AudioPygame
     if pygame:
         # must be called before pygame.init()
         if mixer:

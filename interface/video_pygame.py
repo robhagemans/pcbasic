@@ -19,7 +19,6 @@ try:
 except ImportError:
     numpy = None
 
-
 from pcbasic import signals
 from pcbasic import scancode
 from pcbasic.eascii import as_unicode as uea
@@ -27,15 +26,6 @@ from interface import clipboard
 from interface import base as video
 from interface import video_graphical
 
-
-###############################################################################
-
-def prepare():
-    """ Initialise video_pygame module. """
-    video.video_plugin_dict['pygame'] = VideoPygame
-
-
-###############################################################################
 
 class VideoPygame(video_graphical.VideoGraphical):
     """ Pygame-based graphical interface. """
@@ -958,6 +948,3 @@ def glyph_to_surface(glyph):
     surf = pygame.Surface(glyph.shape, depth=8)
     pygame.surfarray.pixels2d(surf)[:] = glyph
     return surf
-
-
-prepare()

@@ -39,10 +39,6 @@ chunk_length = 1192 * 4
 callback_chunk_length = 2048
 min_samples_buffer = 2*callback_chunk_length
 
-def prepare():
-    """ Initialise sound module. """
-    audio.audio_plugin_dict['sdl2'] = AudioSDL2
-
 
 ##############################################################################
 # plugin
@@ -288,6 +284,3 @@ signal_sources = [  SignalSource(feedback_tone),
                     SignalSource(feedback_tone),
                     SignalSource(feedback_tone),
                     SignalSource(feedback_noise, init_noise) ]
-
-
-prepare()

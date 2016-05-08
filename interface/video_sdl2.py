@@ -32,15 +32,6 @@ import interface.base as video
 from interface import video_graphical
 
 
-###############################################################################
-
-def prepare():
-    """ Initialise video_sdl2 module. """
-    video.video_plugin_dict['sdl2'] = VideoSDL2
-
-
-###############################################################################
-
 class VideoSDL2(video_graphical.VideoGraphical):
     """ SDL2-based graphical interface. """
 
@@ -999,4 +990,3 @@ if sdl2:
         sdl2.KMOD_RCTRL: scancode.CTRL,
         sdl2.KMOD_LALT: scancode.ALT,
     }
-prepare()

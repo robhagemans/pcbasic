@@ -25,13 +25,6 @@ from interface import base as video
 from interface import ansi
 
 
-###############################################################################
-
-def prepare():
-    """ Initialise the video_curses module. """
-    video.video_plugin_dict['curses'] = VideoCurses
-
-
 if curses:
     # curses keycodes
     curses_to_scan = {
@@ -65,7 +58,6 @@ if curses:
         curses.KEY_CANCEL: uea.ESCAPE,
     }
 
-###############################################################################
 
 class VideoCurses(video.VideoPlugin):
     """ Curses-based text interface. """
@@ -432,7 +424,3 @@ class VideoCurses(video.VideoPlugin):
         sys.stdout.flush()
         # redraw in case terminal didn't recognise ansi sequence
         self._redraw()
-
-
-
-prepare()

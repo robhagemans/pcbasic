@@ -24,14 +24,6 @@ else:
 
 encoding = sys.stdin.encoding or 'utf-8'
 
-###############################################################################
-
-def prepare():
-    """ Initialise video_none module. """
-    video.video_plugin_dict['none'] = VideoNone
-
-
-##############################################################################
 
 class VideoNone(video.VideoPlugin):
     """ Command-line filter interface. """
@@ -65,5 +57,3 @@ class VideoNone(video.VideoPlugin):
                 c = u'\r'
             # check_full=False as all input may come at once
             self.input_queue.put(signals.Event(signals.KEYB_CHAR, (c, False)))
-
-prepare()
