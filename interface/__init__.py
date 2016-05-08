@@ -52,48 +52,32 @@ def run(input_queue, video_queue, tone_queue, message_queue, interface_name, vid
                     time.sleep(delay)
 
 
-
 ###############################################################################
 # video plugin
 
-# plugins will need to register themselves
-video_plugin_dict = {
-    'ansi': VideoANSI,
-    'cli': VideoCLI,
-    'curses': VideoCurses,
-    'none': VideoNone,
-    'pygame': VideoPygame,
-    'sdl2': VideoSDL2,
-}
-
 video_plugins = {
     # interface_name: video_plugin_name, fallback, warn_on_fallback
-    'none': (('none',), None),
-    'cli': (('cli',), 'none'),
-    'text': (('curses', 'ansi'), 'cli'),
-    'graphical':  (('pygame',), 'text'),
+    'none': ((VideoNone,), None),
+    'cli': ((VideoCLI,), 'none'),
+    'text': ((VideoCurses, VideoANSI), 'cli'),
+    'graphical':  ((VideoPygame,), 'text'),
     # force a particular plugin to be used
-    'ansi': (('ansi',), None),
-    'curses': (('curses',), None),
-    'pygame': (('pygame',), None),
-    'sdl2': (('sdl2',), None),
+    'ansi': ((VideoANSI,), None),
+    'curses': ((VideoCurses,), None),
+    'pygame': ((VideoPygame,), None),
+    'sdl2': ((VideoSDL2,), None),
     }
-
 
 def _get_video_plugin(input_queue, video_queue, interface_name, **kwargs):
     """ Find and initialise video plugin for given interface. """
     while True:
         # select interface
-        names, fallback = video_plugins[interface_name]
-        for video_name in names:
+        plugins, fallback = video_plugins[interface_name]
+        for plugin_class in plugins:
             try:
-                plugin = video_plugin_dict[video_name](
-                    input_queue, video_queue,
-                    icon=icon, **kwargs)
-            except KeyError:
-                logging.debug('Video plugin "%s" not available.', video_name)
+                plugin = plugin_class(input_queue, video_queue, icon=icon, **kwargs)
             except InitFailed:
-                logging.debug('Could not initialise video plugin "%s".', video_name)
+                logging.debug('Could not initialise video plugin "%s".', plugin_class.__name__)
             else:
                 return plugin
         if fallback:
@@ -103,44 +87,30 @@ def _get_video_plugin(input_queue, video_queue, interface_name, **kwargs):
             raise InitFailed()
 
 
-
 ###############################################################################
 # audio plugin
 
-audio_plugin_dict = {
-    'beep': AudioBeep,
-    'none': AudioNone,
-    'pygame': AudioPygame,
-    'sdl2': AudioSDL2,
-}
-
-
 audio_plugins = {
     # interface_name: plugin_name, fallback, warn_on_fallback
-    'none': ('none',),
-    'cli': ('beep', 'none'),
-    'text': ('beep', 'none'),
-    'graphical': ('pygame', 'beep', 'none'),
-    'ansi': ('none',),
-    'curses': ('none',),
-    'pygame': ('pygame', 'none'),
-    'sdl2': ('sdl2', 'none'),
+    'none': (AudioNone,),
+    'cli': (AudioBeep, AudioNone),
+    'text': (AudioBeep, AudioNone),
+    'graphical': (AudioPygame, AudioBeep, AudioNone),
+    'ansi': (AudioNone,),
+    'curses': (AudioNone,),
+    'graphical': (AudioPygame, AudioNone),
+    'sdl2': (AudioSDL2, AudioNone),
     }
-
 
 def _get_audio_plugin(tone_queue, message_queue, interface_name, nosound):
     """ Find and initialise audio plugin for given interface. """
     if nosound:
         interface_name = 'none'
-    names = audio_plugins[interface_name]
-    for audio_name in names:
+    for plugin_class in audio_plugins[interface_name]:
         try:
-            plugin = audio_plugin_dict[audio_name](tone_queue, message_queue)
-        except KeyError:
-            logging.debug('Audio plugin "%s" not available.', audio_name)
+            plugin = plugin_class(tone_queue, message_queue)
         except InitFailed:
-            logging.debug('Could not initialise audio plugin "%s".', audio_name)
+            logging.debug('Could not initialise audio plugin "%s".', plugin_class.__name__)
         else:
             return plugin
-    logging.error('Audio plugin malfunction. Could not initialise interface.')
     raise InitFailed()

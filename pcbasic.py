@@ -129,13 +129,12 @@ def start_basic(settings):
     state_file = settings.get_state_file()
     try:
         with interpreter.SessionLauncher(session_params, state_file, **launch_params) as launcher:
-            try:
-                interface.run(
-                        launcher.input_queue, launcher.video_queue,
-                        launcher.tone_queue, launcher.message_queue,
-                        interface_name, video_params, audio_params)
-            except interface.InitFailed:
-                logging.error('Failed to initialise interface.')
+            interface.run(
+                    launcher.input_queue, launcher.video_queue,
+                    launcher.tone_queue, launcher.message_queue,
+                    interface_name, video_params, audio_params)
+    except interface.InitFailed:
+        logging.error('Failed to initialise interface.')
     except error.RunError as e:
         # only runtime errors that occur on interpreter launch are caught here
         # e.g. "File not Found" for --load parameter
