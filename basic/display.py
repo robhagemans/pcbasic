@@ -425,7 +425,7 @@ class Screen(object):
         (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) )
 
     def __init__(self, session, initial_width, video_mem_size, capabilities, monitor, sound, redirect, fkey_macros,
-                cga_low, mono_tint, screen_aspect, codepage, font_dir, font_family, warn_fonts):
+                cga_low, mono_tint, screen_aspect, codepage, font_family, warn_fonts):
         """ Minimal initialisiation of the screen. """
         # emulated video card - cga, ega, etc
         if capabilities == 'ega' and monitor == 'mono':
@@ -491,7 +491,7 @@ class Screen(object):
         chars_needed = set(self.codepage.cp_to_unicode.values())
         # break up any grapheme clusters and add components to set of needed glyphs
         chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
-        self.fonts = typeface.load_fonts(font_dir, font_family, heights_needed,
+        self.fonts = typeface.load_fonts(font_family, heights_needed,
                     chars_needed, self.codepage.substitutes, warn_fonts)
         # viewport parameters
         self.view_start = 1

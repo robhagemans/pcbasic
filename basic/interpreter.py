@@ -44,26 +44,6 @@ from basic import unicodepage
 
 
 ###############################################################################
-# resource discovery
-
-# get basepath (__file__ is undefined in pyinstaller packages)
-if hasattr(sys, 'frozen'):
-    basepath = os.path.dirname(sys.executable)
-else:
-    basepath = os.path.dirname(os.path.realpath(__file__)).decode(sys.getfilesystemencoding())
-
-# get supported codepages
-codepage_dir = os.path.join(basepath, u'codepage')
-codepages = sorted(x[0] for x in (
-                c.split(u'.ucp') for c in os.listdir(codepage_dir)) if len(x)>1)
-
-# get supported font families
-font_dir = os.path.join(basepath, u'font')
-fonts = sorted(set(x[0] for x in (
-                c.split(u'_') for c in os.listdir(font_dir)) if len(x)>1))
-
-
-###############################################################################
 # launcher
 
 class SessionLauncher(object):
@@ -172,7 +152,7 @@ class Session(object):
         self.edit_prompt = False
 
         # prepare codepage
-        self.codepage = unicodepage.Codepage(codepage_dir, codepage, box_protect)
+        self.codepage = unicodepage.Codepage(codepage, box_protect)
         # prepare tokeniser
         self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
 
@@ -198,7 +178,7 @@ class Session(object):
                 video_memory, video_capabilities, monitor,
                 self.sound, self.output_redirection, self.fkey_macros,
                 cga_low, mono_tint, screen_aspect,
-                self.codepage, font_dir, font, warn_fonts=option_debug)
+                self.codepage, font, warn_fonts=option_debug)
 
         # prepare input methods
         self.pen = inputs.Pen(self.screen)

@@ -10,6 +10,8 @@ import unicodedata
 import logging
 import os
 
+from . import codepage
+
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
 # ASCII but show as the subsitute glyph. Used e.g. for YEN SIGN in Shift-JIS
@@ -24,23 +26,23 @@ control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e
 ###############################################################################
 # codepages
 
+
 class Codepage(object):
     """ Codepage tables. """
 
-    def __init__(self, codepage_dir, codepage_name, box_protect=True):
+    def __init__(self, codepage_name, box_protect=True):
         """ Load and initialise codepage tables. """
         # is the current codepage a double-byte codepage?
         self.dbcs = False
         # substitutes for printable ascii
         self.substitutes = {}
         # load codepage (overrides the above)
-        self.load(codepage_dir, codepage_name)
+        self.load(codepage_name)
         # protect box drawing sequences under dbcs?
         self.box_protect = box_protect
 
-    def load(self, codepage_dir, codepage_name):
+    def load(self, codepage_name):
         """ Load codepage to Unicode table. """
-        name = os.path.join(codepage_dir, codepage_name + '.ucp')
         # lead and trail bytes
         self.lead = set()
         self.trail = set()
@@ -48,51 +50,42 @@ class Codepage(object):
         self.box_right = [set(), set()]
         self.cp_to_unicode = {}
         self.dbcs_num_chars = 0
-        try:
-            with open(name, 'rb') as f:
-                for line in f:
-                    # ignore empty lines and comment lines (first char is #)
-                    if (not line) or (line[0] == '#'):
-                        continue
-                    # strip off comments; split unicodepoint and hex string
-                    splitline = line.split('#')[0].split(':')
-                    # ignore malformed lines
-                    if len(splitline) < 2:
-                        continue
-                    try:
-                        # extract codepage point
-                        cp_point = splitline[0].strip().decode('hex')
-                        # allow sequence of code points separated by commas
-                        grapheme_cluster = u''.join(unichr(int(ucs_str.strip(), 16)) for ucs_str in splitline[1].split(','))
-                        # do not redefine printable ASCII, but substitute glyphs
-                        if cp_point in printable_ascii and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point)):
-                            # substitutes is in reverse order: { yen: backslash }
-                            ascii_cp = unichr(ord(cp_point))
-                            self.substitutes[grapheme_cluster] = ascii_cp
-                            self.cp_to_unicode[cp_point] = ascii_cp
-                        else:
-                            self.cp_to_unicode[cp_point] = grapheme_cluster
-                        # track lead and trail bytes
-                        if len(cp_point) == 2:
-                            self.lead.add(cp_point[0])
-                            self.trail.add(cp_point[1])
-                            self.dbcs_num_chars += 1
-                        # track box drawing chars
-                        else:
-                            for i in (0, 1):
-                                if grapheme_cluster in box_left_unicode[i]:
-                                    self.box_left[i].add(cp_point[0])
-                                if grapheme_cluster in box_right_unicode[i]:
-                                    self.box_right[i].add(cp_point[0])
-                    except ValueError:
-                        logging.warning('Could not parse line in unicode mapping table: %s', repr(line))
-        except IOError:
-            if codepage_name == '437':
-                logging.error('Could not load unicode mapping table for codepage 437.')
-                return None
-            else:
-                logging.warning('Could not load unicode mapping table for codepage %s. Falling back to codepage 437.', codepage_name)
-                return self.load(codepage_dir, '437')
+        for line in codepage.read_file(codepage_name).splitlines():
+            # ignore empty lines and comment lines (first char is #)
+            if (not line) or (line[0] == '#'):
+                continue
+            # strip off comments; split unicodepoint and hex string
+            splitline = line.split('#')[0].split(':')
+            # ignore malformed lines
+            if len(splitline) < 2:
+                continue
+            try:
+                # extract codepage point
+                cp_point = splitline[0].strip().decode('hex')
+                # allow sequence of code points separated by commas
+                grapheme_cluster = u''.join(unichr(int(ucs_str.strip(), 16)) for ucs_str in splitline[1].split(','))
+                # do not redefine printable ASCII, but substitute glyphs
+                if cp_point in printable_ascii and (len(grapheme_cluster) > 1 or ord(grapheme_cluster) != ord(cp_point)):
+                    # substitutes is in reverse order: { yen: backslash }
+                    ascii_cp = unichr(ord(cp_point))
+                    self.substitutes[grapheme_cluster] = ascii_cp
+                    self.cp_to_unicode[cp_point] = ascii_cp
+                else:
+                    self.cp_to_unicode[cp_point] = grapheme_cluster
+                # track lead and trail bytes
+                if len(cp_point) == 2:
+                    self.lead.add(cp_point[0])
+                    self.trail.add(cp_point[1])
+                    self.dbcs_num_chars += 1
+                # track box drawing chars
+                else:
+                    for i in (0, 1):
+                        if grapheme_cluster in box_left_unicode[i]:
+                            self.box_left[i].add(cp_point[0])
+                        if grapheme_cluster in box_right_unicode[i]:
+                            self.box_right[i].add(cp_point[0])
+            except ValueError:
+                logging.warning('Could not parse line in unicode mapping table: %s', repr(line))
         # fill up any undefined 1-byte codepoints
         for c in range(256):
             if chr(c) not in self.cp_to_unicode:

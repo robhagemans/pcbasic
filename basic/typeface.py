@@ -14,8 +14,10 @@ try:
 except ImportError:
     numpy = None
 
+from . import font
 
-def load_fonts(font_dir, font_families, heights_needed, unicode_needed, substitutes, warn=False):
+
+def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=False):
     """ Load font typefaces. """
     fonts = {}
     if 9 in heights_needed:
@@ -26,14 +28,14 @@ def load_fonts(font_dir, font_families, heights_needed, unicode_needed, substitu
     for height in reversed(sorted(heights_needed)):
         # load a Unifont .hex font and take the codepage subset
         fonts[height] = Font(height).load_hex(
-            _font_filenames(font_dir, font_families, height),
-            unicode_needed, substitutes, warn=warn)
+                font.read_files(font_families, height),
+                unicode_needed, substitutes, warn=warn)
         # fix missing code points font based on 16-line font
         try:
             font_16 = fonts[16]
         except KeyError:
             font_16 = Font(16).load_hex(
-                _font_filenames(font_dir, font_families, 16),
+                font.read_files(font_families, 16),
                 unicode_needed, substitutes, warn=False)
         if font_16:
             fonts[height].fix_missing(unicode_needed, font_16)
@@ -41,11 +43,6 @@ def load_fonts(font_dir, font_families, heights_needed, unicode_needed, substitu
         fonts[9] = fonts[8]
     return fonts
 
-def _font_filenames(font_dir, families, height, ext='hex'):
-    """ Return name_height.hex if filename exists in current path, else font_dir/name_height.hex. """
-    names = ('%s_%02d.%s' % (name, height, ext) for name in families)
-    return (name if os.path.exists(name) else os.path.join(font_dir, name)
-                for name in names)
 
 class Font(object):
     """ Single-height bitfont. """
@@ -55,48 +52,43 @@ class Font(object):
         self.height = height
         self.fontdict = fontdict
 
-    def load_hex(self, names, unicode_needed, substitutes, warn=True):
+    def load_hex(self, hex_resources, unicode_needed, substitutes, warn=True):
         """ Load a set of overlaying unifont .hex files. """
-        # put names in loading order
-        names = [ name for name in reversed(list(names)) if os.path.exists(name) ]
-        if len(names) == 0:
-            if warn:
-                logging.warning('Could not read any font files for height %d', self.height)
-            return self
         self.fontdict = {}
         all_needed = unicode_needed | set(substitutes)
-        for name in names:
-            with open(name, 'r') as fontfile:
-                for line in fontfile:
-                    # ignore empty lines and comment lines (first char is #)
-                    if (not line) or (line[0] == '#'):
+        for hexres in reversed(hex_resources):
+            if hexres is None:
+                continue
+            for line in hexres.splitlines():
+                # ignore empty lines and comment lines (first char is #)
+                if (not line) or (line[0] == '#'):
+                    continue
+                # strip off comments
+                # split unicodepoint and hex string (max 32 chars)
+                ucs_str, fonthex = line.split('#')[0].split(':')
+                ucs_sequence = ucs_str.split(',')
+                fonthex = fonthex.strip()
+                # extract codepoint and hex string;
+                # discard anything following whitespace; ignore malformed lines
+                try:
+                    # construct grapheme cluster
+                    c = u''.join(unichr(int(ucshex.strip(), 16)) for ucshex in ucs_sequence)
+                    # skip grapheme clusters we won't need
+                    if c not in all_needed:
                         continue
-                    # strip off comments
-                    # split unicodepoint and hex string (max 32 chars)
-                    ucs_str, fonthex = line.split('#')[0].split(':')
-                    ucs_sequence = ucs_str.split(',')
-                    fonthex = fonthex.strip()
-                    # extract codepoint and hex string;
-                    # discard anything following whitespace; ignore malformed lines
-                    try:
-                        # construct grapheme cluster
-                        c = u''.join(unichr(int(ucshex.strip(), 16)) for ucshex in ucs_sequence)
-                        # skip grapheme clusters we won't need
-                        if c not in all_needed:
-                            continue
-                        # skip chars we already have
-                        if (c in self.fontdict):
-                            continue
-                        # string must be 32-byte or 16-byte; cut to required font size
-                        if len(fonthex) < 32:
-                            raise ValueError
-                        if len(fonthex) < 64:
-                            fonthex = fonthex[:2*self.height]
-                        else:
-                            fonthex = fonthex[:4*self.height]
-                        self.fontdict[c] = fonthex.decode('hex')
-                    except Exception as e:
-                        logging.warning('Could not parse line in font file: %s', repr(line))
+                    # skip chars we already have
+                    if (c in self.fontdict):
+                        continue
+                    # string must be 32-byte or 16-byte; cut to required font size
+                    if len(fonthex) < 32:
+                        raise ValueError
+                    if len(fonthex) < 64:
+                        fonthex = fonthex[:2*self.height]
+                    else:
+                        fonthex = fonthex[:4*self.height]
+                    self.fontdict[c] = fonthex.decode('hex')
+                except Exception as e:
+                    logging.warning('Could not parse line in font file: %s', repr(line))
         # substitute code points
         self.fontdict.update({old: self.fontdict[new]
                 for (new, old) in substitutes.iteritems()
