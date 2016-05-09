@@ -16,11 +16,11 @@ try:
 except ImportError:
     numpy = None
 
-from basic import error
-from basic import fp
-from basic import vartypes
-from basic import util
-from basic import draw_and_play
+from . import error
+from . import fp
+from . import vartypes
+from . import util
+from . import draw_and_play
 
 # degree-to-radian conversion factor
 deg_to_rad = fp.div(fp.Single.twopi, fp.Single.from_int(360))

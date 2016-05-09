@@ -27,9 +27,9 @@ except ImportError:
 from basic import signals
 from basic import scancode
 from basic.eascii import as_unicode as uea
-from interface import clipboard
-import interface.base as video
-from interface import video_graphical
+from . import clipboard
+from . import base as video
+from . import video_graphical
 
 
 class VideoSDL2(video_graphical.VideoGraphical):

@@ -6,8 +6,8 @@ Random number generator
 This file is released under the GNU GPL version 3 or later.
 """
 
-from basic import fp
-from basic import vartypes
+from . import fp
+from . import vartypes
 
 
 class RandomNumberGenerator(object):

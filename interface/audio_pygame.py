@@ -26,7 +26,7 @@ import logging
 import Queue
 
 from basic import signals
-from interface import base as audio
+from . import base as audio
 
 tick_ms = 24
 # quit sound server after quiet period of quiet_quit ticks

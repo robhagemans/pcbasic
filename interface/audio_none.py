@@ -10,7 +10,7 @@ import datetime
 import Queue
 
 from basic import signals
-from interface import base as audio
+from . import base as audio
 
 
 class AudioNone(audio.AudioPlugin):

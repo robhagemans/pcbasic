@@ -9,21 +9,21 @@ This file is released under the GNU GPL version 3 or later.
 import time
 import logging
 
-from interface.base import InitFailed
+from .base import InitFailed
 
 # video plugins
-from interface.video_none import VideoNone
-from interface.video_ansi import VideoANSI
-from interface.video_cli import VideoCLI
-from interface.video_curses import VideoCurses
-from interface.video_pygame import VideoPygame
-from interface.video_sdl2 import VideoSDL2
+from .video_none import VideoNone
+from .video_ansi import VideoANSI
+from .video_cli import VideoCLI
+from .video_curses import VideoCurses
+from .video_pygame import VideoPygame
+from .video_sdl2 import VideoSDL2
 
 # audio plugins
-from interface.audio_none import AudioNone
-from interface.audio_beep import AudioBeep
-from interface.audio_pygame import AudioPygame
-from interface.audio_sdl2 import AudioSDL2
+from .audio_none import AudioNone
+from .audio_beep import AudioBeep
+from .audio_pygame import AudioPygame
+from .audio_sdl2 import AudioSDL2
 
 # create the window icon
 from basic import typeface

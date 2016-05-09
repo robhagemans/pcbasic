@@ -9,10 +9,10 @@ This file is released under the GNU GPL version 3 or later.
 import datetime
 import logging
 
-from basic import error
-from basic import scancode
-from basic.eascii import as_bytes as ea
-from basic.eascii import as_unicode as uea
+from . import error
+from . import scancode
+from .eascii import as_bytes as ea
+from .eascii import as_unicode as uea
 
 
 # bit flags for modifier keys

@@ -11,8 +11,8 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from basic import util
-from basic import devices
+from . import util
+from . import devices
 
 
 class InputTextFile(devices.TextFileBase):

@@ -6,8 +6,8 @@ Type conversions and generic functions
 This file is released under the GNU GPL version 3 or later.
 """
 
-from basic import fp
-from basic import error
+from . import fp
+from . import error
 
 # BASIC types:
 # Integer (%) - stored as two's complement, little-endian

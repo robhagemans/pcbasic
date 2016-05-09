@@ -11,7 +11,7 @@ import subprocess
 import platform
 
 from basic import signals
-from interface import base as audio
+from . import base as audio
 
 
 class AudioBeep(audio.AudioPlugin):

@@ -9,7 +9,8 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import platform
 
-from interface import base as video
+from . import base as video
+
 from basic import signals
 
 if platform.system() == 'Windows':

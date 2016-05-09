@@ -14,11 +14,11 @@ import platform
 if platform.system() == b'Windows':
     import win32api
 
-from basic import error
-from basic import devices
-from basic import cassette
-from basic import disk
-from basic import ports
+from . import error
+from . import devices
+from . import cassette
+from . import disk
+from . import ports
 
 
 # MS-DOS device files

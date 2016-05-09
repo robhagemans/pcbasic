@@ -9,9 +9,9 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 from operator import itemgetter
 
-from basic import error
-from basic import vartypes
-from basic import representation
+from . import error
+from . import vartypes
+from . import representation
 
 
 ###############################################################################

@@ -13,13 +13,13 @@ except ImportError:
 from functools import partial
 import logging
 
-from basic import fp
-from basic import vartypes
-from basic import representation
-from basic import shell
-from basic import util
-from basic import error
-from basic import basictoken as tk
+from . import fp
+from . import vartypes
+from . import representation
+from . import shell
+from . import util
+from . import error
+from . import basictoken as tk
 
 
 class Functions(object):

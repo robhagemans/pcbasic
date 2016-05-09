@@ -12,9 +12,9 @@ import logging
 import os
 import platform
 
-from basic import vartypes
-from basic import representation
-from basic import error
+from . import vartypes
+from . import representation
+from . import error
 
 
 class DebugException(Exception):

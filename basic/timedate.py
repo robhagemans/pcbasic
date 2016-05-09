@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import datetime
 
-from basic import error
+from . import error
 
 
 class Timer(object):

@@ -13,11 +13,12 @@ import threading
 import Queue
 import platform
 
-from interface import base as video
+from . import base as video
+from . import ansi
+
 from basic import signals
 from basic import scancode
 from basic.eascii import as_unicode as uea
-from interface import ansi
 
 encoding = sys.stdin.encoding or 'utf-8'
 

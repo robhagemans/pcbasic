@@ -18,11 +18,11 @@ from basic import scancode
 from basic.eascii import as_unicode as uea
 from basic import signals
 
-from interface import base as video
+from . import base as video
 # for a few ansi sequences not supported by curses
 # only use these if you clear the screen afterwards,
 # so you don't see gibberish if the terminal doesn't support the sequence.
-from interface import ansi
+from . import ansi
 
 
 if curses:

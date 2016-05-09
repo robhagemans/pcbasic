@@ -13,11 +13,11 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from basic import error
-from basic import vartypes
-from basic import basictoken as tk
-from basic import protect
-from basic import util
+from . import error
+from . import vartypes
+from . import basictoken as tk
+from . import protect
+from . import util
 
 class Program(object):
     """ BASIC program. """

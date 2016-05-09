@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 from contextlib import contextmanager
 
-from basic import scancode
+from . import scancode
 
 
 ###############################################################################

@@ -23,7 +23,8 @@ if platform.system() == 'Windows':
         # old versions of Windows don't have this in user32.dll
         pass
 
-from interface import base as video
+from . import base as video
+
 from basic import signals
 from basic import scancode
 

@@ -8,8 +8,8 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 
-from basic import error
-from basic import vartypes
+from . import error
+from . import vartypes
 
 def nullstream():
     return open(os.devnull, 'r+')

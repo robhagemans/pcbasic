@@ -18,29 +18,28 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from basic import __version__
-from basic import error
-from basic import util
-from basic import tokenise
+from . import __version__
+from . import error
+from . import util
+from . import tokenise
 
-from basic import program
-from basic import signals
-from basic import display
-from basic import console
-from basic import state
-# prepare input state
-from basic import inputs
-from basic import debug
-from basic import rnd
-from basic import timedate
-from basic import shell
-from basic import memory
-from basic import machine
-from basic import parser
-from basic import files
-from basic import sound
-from basic import redirect
-from basic import unicodepage
+from . import program
+from . import signals
+from . import display
+from . import console
+from . import state
+from . import inputs
+from . import debug
+from . import rnd
+from . import timedate
+from . import shell
+from . import memory
+from . import machine
+from . import parser
+from . import files
+from . import sound
+from . import redirect
+from . import unicodepage
 
 
 ###############################################################################

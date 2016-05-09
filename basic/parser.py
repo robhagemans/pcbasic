@@ -13,16 +13,16 @@ except ImportError:
 import string
 from collections import deque
 
-from basic import error
-from basic import events
-from basic import fp
-from basic import representation
-from basic import basictoken as tk
-from basic import util
-from basic import vartypes
-from basic import statements
-from basic import operators as op
-from basic import functions
+from . import error
+from . import events
+from . import fp
+from . import representation
+from . import basictoken as tk
+from . import util
+from . import vartypes
+from . import statements
+from . import operators as op
+from . import functions
 
 
 class Parser(object):

@@ -15,14 +15,14 @@ except ImportError:
     from StringIO import StringIO
 import string
 
-from basic import error
-from basic import fp
-from basic import ports
-from basic import print_and_input
-from basic import representation
-from basic import basictoken as tk
-from basic import util
-from basic import vartypes
+from . import error
+from . import fp
+from . import ports
+from . import print_and_input
+from . import representation
+from . import basictoken as tk
+from . import util
+from . import vartypes
 
 
 class Statements(object):

@@ -18,7 +18,7 @@ try:
 except ImportError:
     pexpect = None
 
-from basic import error
+from . import error
 
 
 class InitFailed(Exception):

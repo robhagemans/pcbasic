@@ -43,9 +43,9 @@ try:
 except Exception:
     parallel = None
 
-from basic import error
-from basic import devices
-from basic import printer
+from . import error
+from . import devices
+from . import printer
 
 
 ###############################################################################

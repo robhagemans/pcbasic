@@ -6,9 +6,9 @@ Numeric and string operators
 This file is released under the GNU GPL version 3 or later.
 """
 
-from basic import fp
-from basic import vartypes
-from basic import basictoken as tk
+from . import fp
+from . import vartypes
+from . import basictoken as tk
 
 
 # operators and precedence
