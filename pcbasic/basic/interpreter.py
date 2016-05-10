@@ -12,6 +12,7 @@ import time
 import threading
 import Queue
 import platform
+from contextlib import contextmanager
 
 try:
     from cStringIO import StringIO
@@ -45,58 +46,41 @@ from . import unicodepage
 ###############################################################################
 # launcher
 
-class SessionLauncher(object):
-    """ Launches a BASIC session. """
-
-    def __init__(self, session_params, state_file,
-                 cmd, run, quit, wait, prog, show_greeting, resume):
-        """ Initialise launch parameters. """
-        self.prog = prog
-        self.resume = resume
-        self.show_greeting = show_greeting
-        # name of state file
-        self._state_file = state_file
-        # parameters for Session constructor
-        self._session_params = session_params
-        # parameters for Session.run() thread target
-        self._run_params = (cmd, run, quit, wait)
-
-    def __enter__(self):
-        """ Resume or start the session. """
-        # input queue
-        self.input_queue = Queue.Queue()
-        # video queue
-        self.video_queue = Queue.Queue()
-        # audio queues
-        self.tone_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
-        self.message_queue = Queue.Queue()
-        if self.resume:
-            session = Session.resume(self._state_file,
-                    self.input_queue, self.video_queue,
-                    self.tone_queue, self.message_queue,
-                    **self._session_params)
-        else:
-            session = Session(self._state_file,
-                    self.input_queue, self.video_queue,
-                    self.tone_queue, self.message_queue,
-                    **self._session_params)
-            # load initial program, allowing native-os filenames or BASIC specs
-            if self.prog:
-                with session.files.open_native_or_basic(self.prog) as progfile:
-                    session.program.load(progfile)
-            if self.show_greeting:
-                session.greet()
-        self.thread = threading.Thread(target=session.run, args=self._run_params)
-        self.thread.start()
-        return self
-
-    def __exit__(self, dummy_one, dummy_two, dummy_three):
-        """ Wait for the interpreter to exit. """
-        if self.thread and self.thread.is_alive():
-            # request exit
-            self.input_queue.put(signals.Event(signals.KEYB_QUIT))
-            # wait for thread to finish
-            self.thread.join()
+@contextmanager
+def launch_session(session_params, state_file,
+             cmd, run, quit, wait, prog, show_greeting, resume):
+    """Launch a BASIC session in a separate thread. """
+    # input queue
+    input_queue = Queue.Queue()
+    # video queue
+    video_queue = Queue.Queue()
+    # audio queues
+    tone_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
+    message_queue = Queue.Queue()
+    if resume:
+        session = Session.resume(state_file,
+                    input_queue, video_queue,
+                    tone_queue, message_queue,
+                    **session_params)
+    else:
+        session = Session(state_file,
+                    input_queue, video_queue,
+                    tone_queue, message_queue,
+                    **session_params)
+        # load initial program, allowing native-os filenames or BASIC specs
+        if prog:
+            with session.files.open_native_or_basic(prog) as progfile:
+                session.program.load(progfile)
+        if show_greeting:
+            session.greet()
+    thread = threading.Thread(target=session.run, args=(cmd, run, quit, wait))
+    thread.start()
+    yield session
+    if thread and thread.is_alive():
+        # request exit
+        input_queue.put(signals.Event(signals.KEYB_QUIT))
+        # wait for thread to finish
+        thread.join()
 
 
 ###############################################################################

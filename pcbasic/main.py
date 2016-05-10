@@ -123,7 +123,7 @@ def start_basic(settings):
     session_params = settings.get_session_parameters()
     state_file = settings.get_state_file()
     try:
-        with basic.SessionLauncher(session_params, state_file, **launch_params) as launcher:
+        with basic.launch_session(session_params, state_file, **launch_params) as launcher:
             interface.run(
                     launcher.input_queue, launcher.video_queue,
                     launcher.tone_queue, launcher.message_queue,

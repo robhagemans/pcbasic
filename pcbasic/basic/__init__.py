@@ -9,5 +9,5 @@ __version__ = b'16.05.dev0'
 
 from .codepage import codepages
 from .font import fonts
-from .interpreter import Session, SessionLauncher
+from .interpreter import Session, launch_session
 from .error import *
