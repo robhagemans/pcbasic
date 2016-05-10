@@ -26,7 +26,7 @@ from .audio_pygame import AudioPygame
 from .audio_sdl2 import AudioSDL2
 
 # create the window icon
-from basic import typeface
+from ..basic import typeface
 icon_hex = '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
 icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}
                             ).build_glyph('icon', 16, 16, False, False)

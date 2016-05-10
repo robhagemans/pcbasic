@@ -16,9 +16,9 @@ import platform
 from . import base as video
 from . import ansi
 
-from basic import signals
-from basic import scancode
-from basic.eascii import as_unicode as uea
+from ..basic import signals
+from ..basic import scancode
+from ..basic.eascii import as_unicode as uea
 
 encoding = sys.stdin.encoding or 'utf-8'
 

@@ -24,9 +24,9 @@ try:
 except ImportError:
     numpy = None
 
-from basic import signals
-from basic import scancode
-from basic.eascii import as_unicode as uea
+from ..basic import signals
+from ..basic import scancode
+from ..basic.eascii import as_unicode as uea
 from . import clipboard
 from . import base as video
 from . import video_graphical

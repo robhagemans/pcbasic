@@ -25,8 +25,8 @@ if platform.system() == 'Windows':
 
 from . import base as video
 
-from basic import signals
-from basic import scancode
+from ..basic import signals
+from ..basic import scancode
 
 # percentage of the screen to leave unused for window decorations etc.
 display_slack = 15

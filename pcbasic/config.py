@@ -21,7 +21,7 @@ if platform.system() == b'Windows':
     import ctypes
     import ctypes.wintypes
 
-from basic import __version__, codepages, fonts
+from .basic import __version__, codepages, fonts
 
 # get basepath (__file__ is undefined in pyinstaller packages)
 if hasattr(sys, 'frozen'):
@@ -46,7 +46,7 @@ def get_logger(logfile=None):
 
 def show_usage():
     """Show usage description."""
-    usage_file = os.path.join(basepath, '..', 'USAGE.txt')
+    usage_file = os.path.join(basepath, 'USAGE.txt')
     with open(usage_file) as f:
         for line in f:
             sys.stdout.write(line)

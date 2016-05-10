@@ -10,7 +10,7 @@ import Queue
 import subprocess
 import platform
 
-from basic import signals
+from ..basic import signals
 from . import base as audio
 
 

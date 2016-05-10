@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import datetime
 import Queue
 
-from basic import signals
+from ..basic import signals
 from . import base as audio
 
 

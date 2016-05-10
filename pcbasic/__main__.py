@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 """
 PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 
@@ -23,10 +21,10 @@ except ImportError:
 # NOTE that this affects str.upper() etc.
 locale.setlocale(locale.LC_ALL, '')
 
-import ansipipe
-import basic
-import interface
-from interface import config
+from . import ansipipe
+from . import basic
+from . import interface
+from . import config
 
 
 def main():
