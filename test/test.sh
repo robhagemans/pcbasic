@@ -24,7 +24,7 @@ do
     mkdir "$name/output"
     cp "$name"/* "$name/output" 2>/dev/null
     pushd "$name/output" > /dev/null
-    ../../../run-pcbasic.py --interface=none >/dev/null
+    ../../../pcbasic.py --interface=none >/dev/null
     popd > /dev/null
     pass=1
     known=1
