@@ -105,8 +105,7 @@ setup(
     #},
 
     package_data={
-        'pcbasic': ['data/*', 'codepage/*',
-                    'font/*'],
+        'pcbasic': ['*.BAS', '*.ucp', '*.hex', '*.txt', '*.md'],
     },
     entry_points={
         'console_scripts': [

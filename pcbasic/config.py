@@ -15,6 +15,7 @@ import codecs
 import locale
 import tempfile
 import shutil
+import pkgutil
 
 import platform
 if platform.system() == b'Windows':
@@ -22,12 +23,6 @@ if platform.system() == b'Windows':
     import ctypes.wintypes
 
 from .basic import __version__, codepages, fonts
-
-# get basepath (__file__ is undefined in pyinstaller packages)
-if hasattr(sys, 'frozen'):
-    basepath = os.path.dirname(sys.executable)
-else:
-    basepath = os.path.dirname(os.path.realpath(__file__)).decode(sys.getfilesystemencoding())
 
 
 def get_logger(logfile=None):
@@ -46,10 +41,7 @@ def get_logger(logfile=None):
 
 def show_usage():
     """Show usage description."""
-    usage_file = os.path.join(basepath, 'USAGE.txt')
-    with open(usage_file) as f:
-        for line in f:
-            sys.stdout.write(line)
+    sys.stdout.write(pkgutil.get_data(__name__, 'USAGE.txt'))
 
 
 def get_unicode_argv():

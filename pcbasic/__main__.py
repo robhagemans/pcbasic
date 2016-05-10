@@ -5,5 +5,5 @@ PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 This file is released under the GNU GPL version 3 or later.
 """
 
-from . import pcbasic
-pcbasic.main()
+from .main import main
+main()
