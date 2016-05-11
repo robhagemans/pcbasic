@@ -46,7 +46,7 @@ def show_usage():
 
 
 def get_unicode_argv():
-    """ Convert command-line arguments to unicode. """
+    """Convert command-line arguments to unicode."""
     if platform.system() == b'Windows':
         # see http://code.activestate.com/recipes/572200-get-sysargv-with-unicode-characters-under-windows/
         GetCommandLineW = ctypes.cdll.kernel32.GetCommandLineW
@@ -69,7 +69,7 @@ def get_unicode_argv():
         return [arg.decode(locale.getpreferredencoding()) for arg in sys.argv]
 
 def append_arg(args, key, value):
-    """Update a single list-type argument by appending a value"""
+    """Update a single list-type argument by appending a value."""
     if key in args and args[key]:
         if value:
             args[key] += u',' + value
@@ -77,7 +77,7 @@ def append_arg(args, key, value):
         args[key] = value
 
 def safe_split(s, sep):
-    """Split an argument by separator, always return two elements"""
+    """Split an argument by separator, always return two elements."""
     slist = s.split(sep, 1)
     s0 = slist[0]
     if len(slist) > 1:
@@ -348,7 +348,7 @@ class Settings(object):
 
 
     def __init__(self, temp_dir):
-        """Initialise settings"""
+        """Initialise settings."""
         # convert arguments to unicode using preferred encoding
         uargv = get_unicode_argv()
         # first parse a logfile argument, if any
@@ -373,7 +373,7 @@ class Settings(object):
         self._prepare_logging()
 
     def _prepare_logging(self):
-        """Set up the global logger"""
+        """Set up the global logger."""
         logfile = self.get('logfile')
         if self.get('version') or self.get('help'):
             formatstr = '%(message)s'
@@ -388,7 +388,7 @@ class Settings(object):
         logging.basicConfig(format=formatstr, level=loglevel, filename=logfile)
 
     def _retrieve_options(self, uargv):
-        """Retrieve command line and option file options"""
+        """Retrieve command line and option file options."""
         # convert command line arguments to string dictionary form
         remaining = self._get_arguments(uargv[1:])
         # unpack any packages
@@ -409,7 +409,7 @@ class Settings(object):
         return args
 
     def get(self, name, get_default=True):
-        """Get value of option; choose whether to get default or None if unspecified"""
+        """Get value of option; choose whether to get default or None if unspecified."""
         try:
             value = self._options[name]
             if value is None or value == u'':
@@ -426,7 +426,7 @@ class Settings(object):
         return value
 
     def get_session_parameters(self):
-        """Return a dictionary of parameters for the Session object"""
+        """Return a dictionary of parameters for the Session object."""
         current_device, mount_dict = self.get_drives(False)
         if self.get('resume'):
             return {
@@ -504,7 +504,7 @@ class Settings(object):
         }
 
     def get_video_parameters(self):
-        """Return a dictionary of parameters for the video plugin"""
+        """Return a dictionary of parameters for the video plugin."""
         return {
             'force_display_size': self.get('dimensions'),
             'aspect': self.get('aspect'),
@@ -522,7 +522,7 @@ class Settings(object):
             }
 
     def get_audio_parameters(self):
-        """Return a dictionary of parameters for the audio plugin"""
+        """Return a dictionary of parameters for the audio plugin."""
         return {
             'nosound': self.get('nosound'),
             }
@@ -537,11 +537,11 @@ class Settings(object):
         return state_file
 
     def get_interface(self):
-        """Return name of interface plugin"""
+        """Return name of interface plugin."""
         return self.get('interface') or 'graphical'
 
     def get_launch_parameters(self):
-        """Return a dictionary of launch parameters"""
+        """Return a dictionary of launch parameters."""
         run = (self.get(0) != '') or (self.get('run') != '')
         launch_params = {
             'quit': self.get('quit'),
@@ -631,7 +631,7 @@ class Settings(object):
         return current_device, mount_dict
 
     def _get_arguments(self, argv):
-        """Convert arguments to dictionary"""
+        """Convert arguments to dictionary."""
         args = {}
         pos = 0
         for arg in argv:
@@ -687,7 +687,7 @@ class Settings(object):
         return argdict
 
     def _parse_package(self, remaining):
-        """Unpack BAZ package, if specified, and make its temp dir current"""
+        """Unpack BAZ package, if specified, and make its temp dir current."""
         # first positional arg: program or package name
         package = None
         try:
@@ -726,7 +726,7 @@ class Settings(object):
         return package
 
     def _parse_config(self, remaining):
-        """Find the correct config file and read it"""
+        """Find the correct config file and read it."""
         # always read default config files; private config overrides system config
         # we update a whole preset at once, there's no joining of settings.
         conf_dict = dict(self.default_config)
@@ -743,7 +743,7 @@ class Settings(object):
         return conf_dict
 
     def _read_config_file(self, config_file):
-        """Read config file"""
+        """Read config file."""
         try:
             config = ConfigParser.RawConfigParser(allow_no_value=True)
             # use utf_8_sig to ignore a BOM if it's at the start of the file (e.g. created by Notepad)
@@ -758,7 +758,7 @@ class Settings(object):
         return presets
 
     def _parse_args(self, remaining):
-        """Retrieve command line options"""
+        """Retrieve command line options."""
         # set arguments
         known = self.arguments.keys() + range(self.positional)
         args = {d:remaining[d] for d in remaining if d in known}
@@ -771,7 +771,7 @@ class Settings(object):
     ################################################
 
     def _merge_arguments(self, args0, args1):
-        """Update args0 with args1. Lists of indefinite length are appended"""
+        """Update args0 with args1. Lists of indefinite length are appended."""
         for a in args1:
             try:
                 if (a in args0 and self.arguments[a][u'list'] == u'*' and args0[a]):
@@ -783,7 +783,7 @@ class Settings(object):
             args0[a] = args1[a]
 
     def _clean_arguments(self, args):
-        """Convert arguments to required type and list length"""
+        """Convert arguments to required type and list length."""
         for d in args:
             try:
                 args[d] = self._parse_list(d, args[d], self.arguments[d][u'list'])
@@ -792,7 +792,7 @@ class Settings(object):
                 args[d] = self._parse_type(d, args[d])
 
     def _parse_type(self, d, arg):
-        """Convert argument to required type"""
+        """Convert argument to required type."""
         if d not in self.arguments:
             return arg
         if u'choices' in self.arguments[d]:
@@ -810,7 +810,7 @@ class Settings(object):
         return arg
 
     def _parse_list(self, d, s, length='*'):
-        """Convert list strings to typed lists"""
+        """Convert list strings to typed lists."""
         lst = s.split(u',')
         if lst == [u'']:
             if length == '*':
@@ -829,7 +829,7 @@ class Settings(object):
         return lst
 
     def _parse_bool(self, d, s):
-        """Parse bool option. Empty string (i.e. specified) means True"""
+        """Parse bool option. Empty string (i.e. specified) means True."""
         if s == u'':
             return True
         try:
@@ -842,7 +842,7 @@ class Settings(object):
             return None
 
     def _parse_int(self, d, s):
-        """Parse int option provided as a one-element list of string"""
+        """Parse int option provided as a one-element list of string."""
         if s:
             try:
                 return int(s)
@@ -854,7 +854,7 @@ class Settings(object):
     #########################################################
 
     def build_default_config_file(self, file_name):
-        """Write a default config file"""
+        """Write a default config file."""
         header = (
         u"# PC-BASIC configuration file.\n"
         u"# Edit this file to change your default settings or add presets.\n"
