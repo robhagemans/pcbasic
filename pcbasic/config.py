@@ -856,7 +856,7 @@ class Settings(object):
     def build_default_config_file(self, file_name):
         """Write a default config file"""
         header = (
-        u"# PC-BASIC private configuration file.\n"
+        u"# PC-BASIC configuration file.\n"
         u"# Edit this file to change your default settings or add presets.\n"
         u"# Changes to this file will not affect any other users of your computer.\n"
         u"\n"
