@@ -8,9 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import pkgutil
 
-fonts = (
-    'freedos', 'unifont', 'univga', 'cga', 'cgathin', 'mda', 'vga',
-    'tandy1', 'tandy2', 'olivetti')
+fonts = pkgutil.get_data(__name__, 'list.txt').splitlines()
 
 
 def get_data(package, name):

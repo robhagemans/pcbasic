@@ -23,7 +23,7 @@ if platform.system() == b'Windows':
     import ctypes.wintypes
     import win32api
 
-from .basic import __version__, codepages, fonts
+from .basic import __version__, codepages, fonts, programs
 
 
 def get_logger(logfile=None):
@@ -113,9 +113,9 @@ else:
     _xdg_config_home = os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(_home_dir, u'.config')
     user_config_dir = os.path.join(_xdg_config_home, u'pcbasic')
     state_path = os.path.join(_xdg_data_home, u'pcbasic')
-if not os.path.exists(state_path):
-    os.makedirs(state_path)
 
+# @: drive for bundled programs
+program_path = os.path.join(state_path, 'bundled_programs')
 
 
 class TemporaryDirectory():
@@ -360,13 +360,18 @@ class Settings(object):
             logfile = None
         self._logger = get_logger(logfile)
         self._temp_dir = temp_dir
+        # create state path if needed
+        if not os.path.exists(state_path):
+            os.makedirs(state_path)
         # create user config file if needed
         if not os.path.exists(self.user_config_path):
-            try:
-                os.makedirs(user_config_dir)
-            except OSError:
-                pass
+            os.makedirs(self.user_config_path)
             self.build_default_config_file(self.user_config_path)
+        # create @: drive if not present
+        if not os.path.exists(program_path):
+            os.makedirs(program_path)
+            # unpack bundled programs
+            programs.store_bundled_programs(program_path)
         # store options in options dictionary
         self._options = self._retrieve_options(uargv)
         # prepare global logger for use by main program
@@ -607,12 +612,7 @@ class Settings(object):
         else:
             mount_dict[b'Z'] = (os.getcwdu(), u'')
         # directory for bundled BASIC programs accessible through @:
-        # get basepath (__file__ is undefined in pyinstaller packages)
-        if hasattr(sys, 'frozen'):
-            basepath = os.path.dirname(sys.executable)
-        else:
-            basepath = os.path.dirname(os.path.realpath(__file__)).decode(sys.getfilesystemencoding())
-        mount_dict[b'@'] = (os.path.join(basepath, u'programs'), u'')
+        mount_dict[b'@'] = (program_path, u'')
         # build mount dictionary
         mount_list = self.get('mount', get_default)
         if mount_list:
