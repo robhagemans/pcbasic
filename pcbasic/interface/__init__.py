@@ -38,7 +38,7 @@ icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}
 delay = 0.024
 
 def run(input_queue, video_queue, tone_queue, message_queue, interface_name, video_params, audio_params):
-    """ Start the main interface event loop. """
+    """Start the main interface event loop."""
     with _get_video_plugin(input_queue, video_queue, interface_name, **video_params) as video_plugin:
         with _get_audio_plugin(tone_queue, message_queue, interface_name, **audio_params) as audio_plugin:
             while True:
@@ -69,7 +69,7 @@ video_plugins = {
     }
 
 def _get_video_plugin(input_queue, video_queue, interface_name, **kwargs):
-    """ Find and initialise video plugin for given interface. """
+    """Find and initialise video plugin for given interface."""
     while True:
         # select interface
         plugins, fallback = video_plugins[interface_name]
@@ -103,7 +103,7 @@ audio_plugins = {
     }
 
 def _get_audio_plugin(tone_queue, message_queue, interface_name, nosound):
-    """ Find and initialise audio plugin for given interface. """
+    """Find and initialise audio plugin for given interface."""
     if nosound:
         interface_name = 'none'
     for plugin_class in audio_plugins[interface_name]:

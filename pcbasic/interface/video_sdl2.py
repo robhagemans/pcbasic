@@ -33,10 +33,10 @@ from . import video_graphical
 
 
 class VideoSDL2(video_graphical.VideoGraphical):
-    """ SDL2-based graphical interface. """
+    """SDL2-based graphical interface."""
 
     def __init__(self, input_queue, video_queue, **kwargs):
-        """ Initialise SDL2 interface. """
+        """Initialise SDL2 interface."""
         if not sdl2:
             logging.debug('PySDL2 module not found.')
             raise video.InitFailed()
@@ -81,7 +81,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.kwargs = kwargs
 
     def __enter__(self):
-        """ Complete SDL2 interface initialisation. """
+        """Complete SDL2 interface initialisation."""
         # initialise SDL
         sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING)
         # set clipboard handler to SDL2
@@ -132,7 +132,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         return video_graphical.VideoGraphical.__enter__(self)
 
     def __exit__(self, type, value, traceback):
-        """ Close the SDL2 interface. """
+        """Close the SDL2 interface."""
         video.VideoPlugin.__exit__(self, type, value, traceback)
         if sdl2 and numpy:
             # free windows
@@ -150,7 +150,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             sdl2.SDL_Quit()
 
     def _set_icon(self):
-        """ Set the icon on the SDL window. """
+        """Set the icon on the SDL window."""
         mask = numpy.array(self.icon).T.repeat(2, 0).repeat(2, 1)
         icon = sdl2.SDL_CreateRGBSurface(0, mask.shape[0], mask.shape[1], 8, 0, 0, 0, 0)
         pixels2d(icon.contents)[:] = mask
@@ -164,7 +164,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         sdl2.SDL_FreePalette(icon_palette)
 
     def _do_create_window(self, width, height):
-        """ Create a new SDL window """
+        """Create a new SDL window """
         flags = sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN
         if self.fullscreen:
              flags |= sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_BORDERLESS
@@ -182,7 +182,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
     # input cycle
 
     def _check_input(self):
-        """ Handle screen and interface events. """
+        """Handle screen and interface events."""
         # check and handle input events
         self.last_down = None
         event = sdl2.SDL_Event()
@@ -248,7 +248,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self._flush_keypress()
 
     def _handle_key_down(self, e):
-        """ Handle key-down event. """
+        """Handle key-down event."""
         # get scancode
         scan = scan_to_scan.get(e.key.keysym.scancode, None)
         # get modifiers
@@ -289,7 +289,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 self.last_down = c, scan, mod, e.key.timestamp
 
     def _flush_keypress(self):
-        """ Flush last keypress from buffer. """
+        """Flush last keypress from buffer."""
         if self.last_down is not None:
             # insert into keyboard queue; no text event
             c, scan, mod, _ = self.last_down
@@ -298,7 +298,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             self.last_down = None
 
     def _handle_key_up(self, e):
-        """ Handle key-up event. """
+        """Handle key-up event."""
         if e.key.keysym.sym == sdl2.SDLK_F11:
             self.clipboard.stop()
             self.f11_active = False
@@ -310,7 +310,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             pass
 
     def _handle_text_input(self, event):
-        """ Handle text-input event. """
+        """Handle text-input event."""
         c = event.text.text.decode('utf-8')
         if self.f11_active:
             # F11+f to toggle fullscreen mode
@@ -347,11 +347,11 @@ class VideoSDL2(video_graphical.VideoGraphical):
     # screen drawing cycle
 
     def _sleep(self):
-        """ Sleep a tick to avoid hogging the cpu. """
+        """Sleep a tick to avoid hogging the cpu."""
         sdl2.SDL_Delay(24)
 
     def _check_display(self):
-        """ Check screen and blink events; update screen if necessary. """
+        """Check screen and blink events; update screen if necessary."""
         self.blink_state = 0
         if self.mode_has_blink:
             self.blink_state = 0 if self._cycle < self.blink_cycles * 2 else 1
@@ -372,7 +372,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 self.screen_changed = False
 
     def _do_flip(self):
-        """ Draw the canvas to the screen. """
+        """Draw the canvas to the screen."""
         sdl2.SDL_FillRect(self.work_surface, None, self.border_attr)
         if self.composite_artifacts:
             self.work_pixels[:] = video_graphical.apply_composite_artifacts(
@@ -416,7 +416,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         sdl2.SDL_UpdateWindowSurface(self.display)
 
     def _show_cursor(self, do_show):
-        """ Draw or remove the cursor on the visible page. """
+        """Draw or remove the cursor on the visible page."""
         if not self.cursor_visible or self.vpagenum != self.apagenum:
             return
         screen = self.work_surface
@@ -447,7 +447,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.last_col = self.cursor_col
 
     def _resize_display(self, width, height):
-        """ Change the display size. """
+        """Change the display size."""
         maximised = sdl2.SDL_GetWindowFlags(self.display) & sdl2.SDL_WINDOW_MAXIMIZED
         # workaround for maximised state not reporting correctly (at least on Ubuntu Unity)
         # detect if window is very large compared to screen; force maximise if so.
@@ -475,7 +475,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
     # signal handlers
 
     def set_mode(self, mode_info):
-        """ Initialise a given text or graphics mode. """
+        """Initialise a given text or graphics mode."""
         self.text_mode = mode_info.is_text_mode
         # unpack mode info struct
         self.font_height = mode_info.font_height
@@ -525,16 +525,16 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def set_caption_message(self, msg):
-        """ Add a message to the window caption. """
+        """Add a message to the window caption."""
         title = self.caption + (' - ' + msg if msg else '')
         sdl2.SDL_SetWindowTitle(self.display, title)
 
     def set_clipboard_text(self, text, mouse):
-        """ Put text on the clipboard. """
+        """Put text on the clipboard."""
         self.clipboard_handler.copy(text, mouse)
 
     def set_palette(self, rgb_palette_0, rgb_palette_1):
-        """ Build the palette. """
+        """Build the palette."""
         self.num_fore_attrs = min(16, len(rgb_palette_0))
         self.num_back_attrs = min(8, self.num_fore_attrs)
         rgb_palette_1 = rgb_palette_1 or rgb_palette_0
@@ -552,17 +552,17 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def set_border_attr(self, attr):
-        """ Change the border attribute. """
+        """Change the border attribute."""
         self.border_attr = attr
         self.screen_changed = True
 
     def set_colorburst(self, on, rgb_palette, rgb_palette1):
-        """ Change the NTSC colorburst setting. """
+        """Change the NTSC colorburst setting."""
         self.set_palette(rgb_palette, rgb_palette1)
         self.composite_artifacts = on and self.mode_has_artifacts and self.composite_monitor
 
     def clear_rows(self, back_attr, start, stop):
-        """ Clear a range of screen rows. """
+        """Clear a range of screen rows."""
         scroll_area = sdl2.SDL_Rect(
                 0, (start-1)*self.font_height,
                 self.size[0], (stop-start+1)*self.font_height)
@@ -570,32 +570,32 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def set_page(self, vpage, apage):
-        """ Set the visible and active page. """
+        """Set the visible and active page."""
         self.vpagenum, self.apagenum = vpage, apage
         self.screen_changed = True
 
     def copy_page(self, src, dst):
-        """ Copy source to destination page. """
+        """Copy source to destination page."""
         self.pixels[dst][:] = self.pixels[src][:]
         # alternative:
         # sdl2.SDL_BlitSurface(self.canvas[src], None, self.canvas[dst], None)
         self.screen_changed = True
 
     def show_cursor(self, cursor_on):
-        """ Change visibility of cursor. """
+        """Change visibility of cursor."""
         self.cursor_visible = cursor_on
         self.screen_changed = True
 
     def move_cursor(self, crow, ccol):
-        """ Move the cursor to a new position. """
+        """Move the cursor to a new position."""
         self.cursor_row, self.cursor_col = crow, ccol
 
     def set_cursor_attr(self, attr):
-        """ Change attribute of cursor. """
+        """Change attribute of cursor."""
         self.cursor_attr = attr % self.num_fore_attrs
 
     def scroll_up(self, from_line, scroll_height, back_attr):
-        """ Scroll the screen up between from_line and scroll_height. """
+        """Scroll the screen up between from_line and scroll_height."""
         pixels = self.pixels[self.apagenum]
         # these are exclusive ranges [x0, x1) etc
         x0, x1 = 0, self.size[0]
@@ -606,7 +606,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def scroll_down(self, from_line, scroll_height, back_attr):
-        """ Scroll the screen down between from_line and scroll_height. """
+        """Scroll the screen down between from_line and scroll_height."""
         pixels = self.pixels[self.apagenum]
         # these are exclusive ranges [x0, x1) etc
         x0, x1 = 0, self.size[0]
@@ -617,7 +617,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
-        """ Put a character at a given position. """
+        """Put a character at a given position."""
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
@@ -648,42 +648,42 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def build_glyphs(self, new_dict):
-        """ Build a dict of glyphs for use in text mode. """
+        """Build a dict of glyphs for use in text mode."""
         for char, glyph in new_dict.iteritems():
             # transpose because pixels2d uses column-major mode and hence [x][y] indexing (we can change this)
             self.glyph_dict[char] = numpy.asarray(glyph).T
 
     def set_cursor_shape(self, width, height, from_line, to_line):
-        """ Build a sprite for the cursor. """
+        """Build a sprite for the cursor."""
         self.cursor_width = width
         self.cursor_from, self.cursor_to = from_line, to_line
         self.under_cursor = numpy.zeros((width, height))
 
     def put_pixel(self, pagenum, x, y, index):
-        """ Put a pixel on the screen; callback to empty character buffer. """
+        """Put a pixel on the screen; callback to empty character buffer."""
         self.pixels[pagenum][x, y] = index
         self.screen_changed = True
 
     def fill_rect(self, pagenum, x0, y0, x1, y1, index):
-        """ Fill a rectangle in a solid attribute. """
+        """Fill a rectangle in a solid attribute."""
         rect = sdl2.SDL_Rect(x0, y0, x1-x0+1, y1-y0+1)
         sdl2.SDL_FillRect(self.canvas[pagenum], rect, index)
         self.screen_changed = True
 
     def fill_interval(self, pagenum, x0, x1, y, index):
-        """ Fill a scanline interval in a solid attribute. """
+        """Fill a scanline interval in a solid attribute."""
         rect = sdl2.SDL_Rect(x0, y, x1-x0+1, 1)
         sdl2.SDL_FillRect(self.canvas[pagenum], rect, index)
         self.screen_changed = True
 
     def put_interval(self, pagenum, x, y, colours):
-        """ Write a list of attributes to a scanline interval. """
+        """Write a list of attributes to a scanline interval."""
         # reference the interval on the canvas
         self.pixels[pagenum][x:x+len(colours), y] = numpy.array(colours).astype(int)
         self.screen_changed = True
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
-        """ Apply numpy array [y][x] of attribytes to an area. """
+        """Apply numpy array [y][x] of attribytes to an area."""
         if (x1 < x0) or (y1 < y0):
             return
         # reference the destination area
@@ -696,18 +696,18 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
 
 class SDL2Clipboard(clipboard.Clipboard):
-    """ Clipboard handling interface using SDL2. """
+    """Clipboard handling interface using SDL2."""
 
     def __init__(self):
-        """ Initialise the clipboard handler. """
+        """Initialise the clipboard handler."""
         self.ok = (sdl2 is not None)
 
     def copy(self, text, mouse=False):
-        """ Put unicode text on clipboard. """
+        """Put unicode text on clipboard."""
         sdl2.SDL_SetClipboardText(text.encode('utf-8', errors='replace'))
 
     def paste(self, mouse=False):
-        """ Return unicode text from clipboard. """
+        """Return unicode text from clipboard."""
         text = sdl2.SDL_GetClipboardText()
         if text is None:
             return u''
@@ -718,7 +718,7 @@ class SDL2Clipboard(clipboard.Clipboard):
 
 
 def pixels2d(source):
-    """ Creates a 2D pixel array from the passed 8-bit surface. """
+    """Creates a 2D pixel array from the passed 8-bit surface."""
     # limited, specialised version of pysdl2.ext.pixels2d by Marcus von Appen
     # original is CC0 public domain with zlib fallback licence
     # https://bitbucket.org/marcusva/py-sdl2

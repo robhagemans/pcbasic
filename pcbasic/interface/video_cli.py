@@ -35,10 +35,10 @@ else:
 
 
 class VideoCLI(video.VideoPlugin):
-    """ Command-line interface. """
+    """Command-line interface."""
 
     def __init__(self, input_queue, video_queue, **kwargs):
-        """ Initialise command-line interface. """
+        """Initialise command-line interface."""
         try:
             if platform.system() not in (b'Darwin',  b'Windows') and not sys.stdin.isatty():
                 logging.warning('Input device is not a terminal. '
@@ -67,18 +67,18 @@ class VideoCLI(video.VideoPlugin):
         self.f12_active = False
 
     def __exit__(self, type, value, traceback):
-        """ Close command-line interface. """
+        """Close command-line interface."""
         video.VideoPlugin.__exit__(self, type, value, traceback)
         self._term_echo()
         if self.last_col and self.cursor_col != self.last_col:
             sys.stdout.write('\n')
 
     def _check_display(self):
-        """ Display update cycle. """
+        """Display update cycle."""
         self._update_position()
 
     def _check_input(self):
-        """ Handle keyboard events. """
+        """Handle keyboard events."""
         while True:
             # s is one unicode char or one scancode
             uc, sc = self.input_handler.get_key()
@@ -103,7 +103,7 @@ class VideoCLI(video.VideoPlugin):
                     self.f12_active = False
 
     def _term_echo(self, on=True):
-        """ Set/unset raw terminal attributes. """
+        """Set/unset raw terminal attributes."""
         # sets raw terminal - no echo, by the character rather than by the line
         fd = sys.stdin.fileno()
         if (not on) and self._term_echo_on:
@@ -119,11 +119,11 @@ class VideoCLI(video.VideoPlugin):
 
 
     def set_codepage(self, new_codepage):
-        """ Set codepage used in sending characters. """
+        """Set codepage used in sending characters."""
         self.codepage = new_codepage
 
     def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
-        """ Put a character at a given position. """
+        """Put a character at a given position."""
         char = self.codepage.to_unicode(cp, replace=u' ')
         if char == u'\0':
             char = u' '
@@ -140,11 +140,11 @@ class VideoCLI(video.VideoPlugin):
         self.last_col += 2 if is_fullwidth else 1
 
     def move_cursor(self, crow, ccol):
-        """ Move the cursor to a new position. """
+        """Move the cursor to a new position."""
         self.cursor_row, self.cursor_col = crow, ccol
 
     def clear_rows(self, back_attr, start, stop):
-        """ Clear screen rows. """
+        """Clear screen rows."""
         self.text[self.apagenum][start-1:stop] = [
             [u' ']*len(self.text[self.apagenum][0]) for _ in range(start-1, stop)]
         if (start <= self.cursor_row and stop >= self.cursor_row and
@@ -154,7 +154,7 @@ class VideoCLI(video.VideoPlugin):
             sys.stdout.flush()
 
     def scroll_up(self, from_line, scroll_height, back_attr):
-        """ Scroll the screen up between from_line and scroll_height. """
+        """Scroll the screen up between from_line and scroll_height."""
         self.text[self.apagenum][from_line-1:scroll_height] = (
                 self.text[self.apagenum][from_line:scroll_height]
                 + [[u' ']*len(self.text[self.apagenum][0])])
@@ -164,37 +164,37 @@ class VideoCLI(video.VideoPlugin):
         sys.stdout.flush()
 
     def scroll_down(self, from_line, scroll_height, back_attr):
-        """ Scroll the screen down between from_line and scroll_height. """
+        """Scroll the screen down between from_line and scroll_height."""
         self.text[self.apagenum][from_line-1:scroll_height] = (
                 [[u' ']*len(self.text[self.apagenum][0])] +
                 self.text[self.apagenum][from_line-1:scroll_height-1])
 
     def set_mode(self, mode_info):
-        """ Initialise video mode """
+        """Initialise video mode """
         self.num_pages = mode_info.num_pages
         self.text = [[[u' ']*mode_info.width for _ in range(mode_info.height)]
                                             for _ in range(self.num_pages)]
 
     def set_page(self, new_vpagenum, new_apagenum):
-        """ Set visible and active page. """
+        """Set visible and active page."""
         self.vpagenum, self.apagenum = new_vpagenum, new_apagenum
         self._redraw_row(self.cursor_row)
 
     def copy_page(self, src, dst):
-        """ Copy screen pages. """
+        """Copy screen pages."""
         self.text[dst] = [row[:] for row in self.text[src]]
         if dst == self.vpagenum:
             self._redraw_row(self.cursor_row)
 
     def _redraw_row(self, row):
-        """ Draw the stored text in a row. """
+        """Draw the stored text in a row."""
         rowtext = u''.join(self.text[self.vpagenum][row-1]).encode(encoding, 'replace')
         sys.stdout.write(rowtext)
         sys.stdout.write(ansi.esc_move_left*len(rowtext))
         sys.stdout.flush()
 
     def _update_position(self, row=None, col=None):
-        """ Update screen for new cursor position. """
+        """Update screen for new cursor position."""
         # this happens on resume
         if self.last_row is None:
             self.last_row = self.cursor_row
@@ -225,39 +225,39 @@ class VideoCLI(video.VideoPlugin):
 ###############################################################################
 
 class InputHandlerCLI(object):
-    """ Keyboard reader thread. """
+    """Keyboard reader thread."""
 
     # Note that we use a separate thread implementation because:
     # * sys.stdin.read(1) is a blocking read
     # * we need this to work on Windows as well as Unix, so select() won't do.
 
     def __init__(self):
-        """ Start the keyboard reader. """
+        """Start the keyboard reader."""
         self._launch_thread()
 
     def _launch_thread(self):
-        """ Start the keyboard reader thread. """
+        """Start the keyboard reader thread."""
         self.stdin_q = Queue.Queue()
         t = threading.Thread(target=self._read_stdin)
         t.daemon = True
         t.start()
 
     def _read_stdin(self):
-        """ Wait for stdin and put any input on the queue. """
+        """Wait for stdin and put any input on the queue."""
         while True:
             self.stdin_q.put(sys.stdin.read(1))
             # don't be a hog
             time.sleep(0.0001)
 
     def _getc(self):
-        """ Read character from keyboard, non-blocking. """
+        """Read character from keyboard, non-blocking."""
         try:
             return self.stdin_q.get_nowait()
         except Queue.Empty:
             return ''
 
     def get_key(self):
-        """ Retrieve one scancode sequence or one unicode char from keyboard. """
+        """Retrieve one scancode sequence or one unicode char from keyboard."""
         s = self._getc()
         if s == '':
             return None, None

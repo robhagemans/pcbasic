@@ -13,31 +13,31 @@ encoding = locale.getpreferredencoding()
 
 
 class Clipboard(object):
-    """ Clipboard handling interface. """
+    """Clipboard handling interface."""
 
     def __init__(self):
-        """ Initialise the clipboard handler. """
+        """Initialise the clipboard handler."""
         self.ok = True
 
     def copy(self, text, mouse=False):
-        """ Put unicode text on clipboard. """
+        """Put unicode text on clipboard."""
         pass
 
     def paste(self, mouse=False):
-        """ Return unicode text from clipboard. """
+        """Return unicode text from clipboard."""
         return u''
 
 
 class MacClipboard(Clipboard):
-    """ Clipboard handling for OSX. """
+    """Clipboard handling for OSX."""
 
     def paste(self, mouse=False):
-        """ Get unicode text from clipboard. """
+        """Get unicode text from clipboard."""
         return (subprocess.check_output('pbpaste').decode(encoding, 'replace')
                 .replace('\r\n','\r').replace('\n', '\r'))
 
     def copy(self, text, mouse=False):
-        """ Put unicode text on clipboard. """
+        """Put unicode text on clipboard."""
         try:
             p = subprocess.Popen('pbcopy', stdin=subprocess.PIPE)
             p.communicate(text.encode(encoding, 'replace'))
@@ -46,10 +46,10 @@ class MacClipboard(Clipboard):
 
 
 class XClipboard(Clipboard):
-    """ Clipboard handling for X Window System using xsel or xclip. """
+    """Clipboard handling for X Window System using xsel or xclip."""
 
     def __init__(self):
-        """ Check for presence of xsel or xclip. """
+        """Check for presence of xsel or xclip."""
         check = "command -v %s >/dev/null 2>&1"
         if subprocess.call(check % 'xsel', shell=True) == 0:
             self._command = 'xsel'
@@ -63,7 +63,7 @@ class XClipboard(Clipboard):
             self.ok = False
 
     def paste(self, mouse=False):
-        """ Get unicode text from clipboard. """
+        """Get unicode text from clipboard."""
         if mouse:
             output = subprocess.check_output((self._command, '-o'))
         else:
@@ -73,7 +73,7 @@ class XClipboard(Clipboard):
                 .replace('\r\n','\r').replace('\n', '\r'))
 
     def copy(self, text, mouse=False):
-        """ Put unicode text on clipboard. """
+        """Put unicode text on clipboard."""
         try:
             if mouse:
                 p = subprocess.Popen((self._command, '-i'),

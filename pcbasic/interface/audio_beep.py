@@ -15,10 +15,10 @@ from . import base as audio
 
 
 class AudioBeep(audio.AudioPlugin):
-    """ Audio plugin based on 'beep' command-line utility. """
+    """Audio plugin based on 'beep' command-line utility."""
 
     def __init__(self, tone_queue, message_queue):
-        """ Initialise sound system. """
+        """Initialise sound system."""
         # Windows not supported as there's no beep utility anyway
         # and we can't run the test below on CMD
         if (platform.system() == 'Windows' or
@@ -29,7 +29,7 @@ class AudioBeep(audio.AudioPlugin):
         audio.AudioPlugin.__init__(self, tone_queue, message_queue)
 
     def _drain_message_queue(self):
-        """ Drain signal queue. """
+        """Drain signal queue."""
         alive = True
         while alive:
             try:
@@ -52,7 +52,7 @@ class AudioBeep(audio.AudioPlugin):
             self.message_queue.task_done()
 
     def _drain_tone_queue(self):
-        """ Drain tone queue. """
+        """Drain tone queue."""
         empty = False
         while not empty:
             empty = True
@@ -72,7 +72,7 @@ class AudioBeep(audio.AudioPlugin):
         return empty
 
     def _play_sound(self):
-        """ Play sounds. """
+        """Play sounds."""
         for voice in range(4):
             if self.now_looping[voice]:
                 if self.next_tone[voice] and self._busy(voice):
@@ -86,11 +86,11 @@ class AudioBeep(audio.AudioPlugin):
                 self.next_tone[voice] = None
 
     def _busy(self, voice):
-        """ Is the beeper busy? """
+        """Is the beeper busy? """
         return self.now_playing[voice] and self.now_playing[voice].poll() is None
 
     def _play_now(self, frequency, duration, fill, loop, volume, voice):
-        """ Play a sound immediately. """
+        """Play a sound immediately."""
         frequency = max(1, min(19999, frequency))
         if loop:
             duration, fill = 5, 1
@@ -104,11 +104,11 @@ class AudioBeep(audio.AudioPlugin):
 
 
 def hush():
-    """ Turn off any sound. """
+    """Turn off any sound."""
     subprocess.call('beep -f 1 -l 0'.split())
 
 def beep(frequency, duration, fill):
-    """ Emit a sound. """
+    """Emit a sound."""
     return subprocess.Popen(
             'beep -f {freq} -l {dur} -D {gap}'.format(
                 freq=frequency, dur=duration*fill*1000,
@@ -116,5 +116,5 @@ def beep(frequency, duration, fill):
             ).split())
 
 def sleep(duration):
-    """ Wait for given number of seconds. """
+    """Wait for given number of seconds."""
     return subprocess.Popen('sleep {0}'.format(duration).split())

@@ -60,10 +60,10 @@ if curses:
 
 
 class VideoCurses(video.VideoPlugin):
-    """ Curses-based text interface. """
+    """Curses-based text interface."""
 
     def __init__(self, input_queue, video_queue, **kwargs):
-        """ Initialise the text interface. """
+        """Initialise the text interface."""
         video.VideoPlugin.__init__(self, input_queue, video_queue)
         # we need to ensure setlocale() has been run first to allow unicode input
         self._encoding = locale.getpreferredencoding()
@@ -119,7 +119,7 @@ class VideoCurses(video.VideoPlugin):
 
 
     def __exit__(self, type, value, traceback):
-        """ Close the curses interface. """
+        """Close the curses interface."""
         video.VideoPlugin.__exit__(self, type, value, traceback)
         if self.curses_init:
             # restore original terminal size
@@ -133,13 +133,13 @@ class VideoCurses(video.VideoPlugin):
             curses.endwin()
 
     def _check_display(self):
-        """ Handle screen and interface events. """
+        """Handle screen and interface events."""
         if self.cursor_visible:
             self.window.move(self.cursor_row-1, self.cursor_col-1)
         self.window.refresh()
 
     def _check_input(self):
-        """ Handle keyboard events. """
+        """Handle keyboard events."""
         s = ''
         i = 0
         while True:
@@ -182,14 +182,14 @@ class VideoCurses(video.VideoPlugin):
             self._unset_f12()
 
     def _unset_f12(self):
-        """ Deactivate F12 """
+        """Deactivate F12 """
         if self.f12_active:
             self.input_queue.put(signals.Event(
                                     signals.KEYB_UP, (scancode.F12,)))
             self.f12_active = False
 
     def _resize(self, height, width):
-        """ Resize the terminal. """
+        """Resize the terminal."""
         by, bx = self.border_y, self.border_x
         # curses.resizeterm triggers KEY_RESIZE leading to a flickering loop
         # curses.resize_term doesn't resize the terminal
@@ -201,7 +201,7 @@ class VideoCurses(video.VideoPlugin):
 
 
     def _redraw(self):
-        """ Redraw the screen. """
+        """Redraw the screen."""
         self.window.clear()
         if self.last_colour != 0:
             self.window.bkgdset(' ', self._curses_colour(7, 0, False))
@@ -217,7 +217,7 @@ class VideoCurses(video.VideoPlugin):
         self.window.refresh()
 
     def _set_default_colours(self, num_attrs):
-        """ Initialise the default colours for the palette. """
+        """Initialise the default colours for the palette."""
         if self.can_change_palette:
             self.default_colors = range(16, 32)
         elif num_attrs == 2:
@@ -237,7 +237,7 @@ class VideoCurses(video.VideoPlugin):
                 curses.COLOR_YELLOW, curses.COLOR_WHITE)
 
     def _set_curses_palette(self):
-        """ Initialise the curses colour palette. """
+        """Initialise the curses colour palette."""
         if self.can_change_palette:
             for back in range(8):
                 for fore in range(16):
@@ -257,7 +257,7 @@ class VideoCurses(video.VideoPlugin):
                                 self.default_colors[fore], self.default_colors[back])
 
     def _curses_colour(self, fore, back, blink):
-        """ Convert split attribute to curses colour. """
+        """Convert split attribute to curses colour."""
         if self.can_change_palette:
             cursattr = curses.color_pair(1 + (back&7)*16 + (fore&15))
         else:
@@ -275,11 +275,11 @@ class VideoCurses(video.VideoPlugin):
 
 
     def set_codepage(self, new_codepage):
-        """ Set codepage used in sending characters. """
+        """Set codepage used in sending characters."""
         self.codepage = new_codepage
 
     def set_mode(self, mode_info):
-        """ Change screen mode. """
+        """Change screen mode."""
         self.height = mode_info.height
         self.width = mode_info.width
         self.num_pages = mode_info.num_pages
@@ -294,18 +294,18 @@ class VideoCurses(video.VideoPlugin):
         self.window.move(0, 0)
 
     def set_page(self, new_vpagenum, new_apagenum):
-        """ Set visible and active page. """
+        """Set visible and active page."""
         self.vpagenum, self.apagenum = new_vpagenum, new_apagenum
         self._redraw()
 
     def copy_page(self, src, dst):
-        """ Copy screen pages. """
+        """Copy screen pages."""
         self.text[dst] = [row[:] for row in self.text[src]]
         if dst == self.vpagenum:
             self._redraw()
 
     def clear_rows(self, back_attr, start, stop):
-        """ Clear screen rows. """
+        """Clear screen rows."""
         bgcolor = self._curses_colour(7, back_attr, False)
         self.text[self.apagenum][start-1:stop] = [
                 [(u' ', bgcolor)]*len(self.text[self.apagenum][0])
@@ -321,7 +321,7 @@ class VideoCurses(video.VideoPlugin):
                 pass
 
     def set_palette(self, new_palette, new_palette1):
-        """ Build the game palette. """
+        """Build the game palette."""
         if self.can_change_palette:
             for i in range(len(new_palette)):
                 r, g, b = new_palette[i]
@@ -329,27 +329,27 @@ class VideoCurses(video.VideoPlugin):
                                 (r*1000)//255, (g*1000)//255, (b*1000)//255)
 
     def set_border_attr(self, attr):
-        """ Change border attribute. """
+        """Change border attribute."""
         self.border_attr = attr
         self.underlay.bkgd(' ', self._curses_colour(0, attr, False))
         self.underlay.refresh()
         self._redraw()
 
     def move_cursor(self, crow, ccol):
-        """ Move the cursor to a new position. """
+        """Move the cursor to a new position."""
         self.cursor_row, self.cursor_col = crow, ccol
 
     def set_cursor_attr(self, attr):
-        """ Change attribute of cursor. """
+        """Change attribute of cursor."""
         # term.write(ansi.esc_set_cursor_colour % ansi.colournames[attr%16])
 
     def show_cursor(self, cursor_on):
-        """ Change visibility of cursor. """
+        """Change visibility of cursor."""
         self.cursor_visible = cursor_on
         curses.curs_set(self.cursor_shape if cursor_on else 0)
 
     def set_cursor_shape(self, width, height, from_line, to_line):
-        """ Set the cursor shape. """
+        """Set the cursor shape."""
         if (to_line-from_line) >= 4:
             self.cursor_shape = 2
         else:
@@ -357,7 +357,7 @@ class VideoCurses(video.VideoPlugin):
         curses.curs_set(self.cursor_shape if self.cursor_visible else 0)
 
     def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
-        """ Put a character at a given position. """
+        """Put a character at a given position."""
         c = self.codepage.to_unicode(cp, replace=u' ')
         if c == u'\0':
             c = u' '
@@ -376,7 +376,7 @@ class VideoCurses(video.VideoPlugin):
                 pass
 
     def scroll_up(self, from_line, scroll_height, back_attr):
-        """ Scroll the screen up between from_line and scroll_height. """
+        """Scroll the screen up between from_line and scroll_height."""
         bgcolor = self._curses_colour(7, back_attr, False)
         self.text[self.apagenum][from_line-1:scroll_height] = (
                     self.text[self.apagenum][from_line:scroll_height]
@@ -396,7 +396,7 @@ class VideoCurses(video.VideoPlugin):
             self.window.move(self.cursor_row-2, self.cursor_col-1)
 
     def scroll_down(self, from_line, scroll_height, back_attr):
-        """ Scroll the screen down between from_line and scroll_height. """
+        """Scroll the screen down between from_line and scroll_height."""
         bgcolor = self._curses_colour(7, back_attr, False)
         self.text[self.apagenum][from_line-1:scroll_height] = (
                     [[(u' ', bgcolor)]*len(self.text[self.apagenum][0])]
@@ -416,7 +416,7 @@ class VideoCurses(video.VideoPlugin):
             self.window.move(self.cursor_row, self.cursor_col-1)
 
     def set_caption_message(self, msg):
-        """ Add a message to the window caption. """
+        """Add a message to the window caption."""
         if msg:
             sys.stdout.write(ansi.esc_set_title % (self.caption + ' - ' + msg))
         else:

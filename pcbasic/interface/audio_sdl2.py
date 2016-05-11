@@ -44,10 +44,10 @@ min_samples_buffer = 2*callback_chunk_length
 # plugin
 
 class AudioSDL2(audio.AudioPlugin):
-    """ SDL2-based audio plugin. """
+    """SDL2-based audio plugin."""
 
     def __init__(self, tone_queue, message_queue):
-        """ Initialise sound system. """
+        """Initialise sound system."""
         if not sdl2:
             logging.warning('SDL2 module not found. Failed to initialise SDL2 audio plugin.')
             raise audio.InitFailed()
@@ -71,7 +71,7 @@ class AudioSDL2(audio.AudioPlugin):
         audio.AudioPlugin.__init__(self, tone_queue, message_queue)
 
     def __enter__(self):
-        """ Perform any necessary initialisations. """
+        """Perform any necessary initialisations."""
         # init sdl audio in this thread separately
         sdl2.SDL_Init(sdl2.SDL_INIT_AUDIO)
         self.dev = sdl2.SDL_OpenAudioDevice(None, 0, self.audiospec, None, 0)
@@ -82,11 +82,11 @@ class AudioSDL2(audio.AudioPlugin):
         return audio.AudioPlugin.__enter__(self)
 
     def _sleep(self):
-        """ Sleep a tick to avoid hogging the cpu. """
+        """Sleep a tick to avoid hogging the cpu."""
         sdl2.SDL_Delay(tick_ms)
 
     def _drain_message_queue(self):
-        """ Drain signal queue. """
+        """Drain signal queue."""
         while True:
             try:
                 signal = self.message_queue.get(False)
@@ -104,7 +104,7 @@ class AudioSDL2(audio.AudioPlugin):
                 return False
 
     def _drain_tone_queue(self):
-        """ Drain signal queue. """
+        """Drain signal queue."""
         empty = False
         while not empty:
             empty = True
@@ -126,7 +126,7 @@ class AudioSDL2(audio.AudioPlugin):
         return empty
 
     def _play_sound(self):
-        """ Replenish sample buffer. """
+        """Replenish sample buffer."""
         for voice in range(4):
             if len(self.samples[voice]) > min_samples_buffer:
                 # nothing to do
@@ -153,7 +153,7 @@ class AudioSDL2(audio.AudioPlugin):
                 sdl2.SDL_UnlockAudioDevice(self.dev)
 
     def _get_next_chunk(self, notused, stream, length_bytes):
-        """ Callback function to generate the next chunk to be played. """
+        """Callback function to generate the next chunk to be played."""
         # this is for 16-bit samples
         length = length_bytes/2
         samples = [self.samples[voice][:length] for voice in range(4)]
@@ -197,15 +197,15 @@ amplitude[0] = 0
 
 
 class SignalSource(object):
-    """ Linear Feedback Shift Register to generate noise or tone. """
+    """Linear Feedback Shift Register to generate noise or tone."""
 
     def __init__(self, feedback, init=0x01):
-        """ Initialise the signal source. """
+        """Initialise the signal source."""
         self.lfsr = init
         self.feedback = feedback
 
     def next(self):
-        """ Get a sample bit. """
+        """Get a sample bit."""
         bit = self.lfsr & 1
         self.lfsr >>= 1
         if bit:
@@ -214,11 +214,11 @@ class SignalSource(object):
 
 
 class SoundGenerator(object):
-    """ Sound sample chunk generator. """
+    """Sound sample chunk generator."""
 
     def __init__(self, signal_source, feedback,
                  frequency, total_duration, fill, loop, volume):
-        """ Initialise the generator. """
+        """Initialise the generator."""
         # noise generator
         self.signal_source = signal_source
         self.feedback = feedback
@@ -233,7 +233,7 @@ class SoundGenerator(object):
         self.num_samples = int(self.duration * sample_rate)
 
     def build_chunk(self, length):
-        """ Build a sound chunk. """
+        """Build a sound chunk."""
         self.signal_source.feedback = self.feedback
         if self.count_samples >= self.num_samples:
             # done already

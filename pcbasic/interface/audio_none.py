@@ -14,10 +14,10 @@ from . import base as audio
 
 
 class AudioNone(audio.AudioPlugin):
-    """ Null audio plugin. """
+    """Null audio plugin."""
 
     def _drain_message_queue(self):
-        """ Drain signal queue. """
+        """Drain signal queue."""
         alive = True
         while alive:
             try:
@@ -34,7 +34,7 @@ class AudioNone(audio.AudioPlugin):
             self.message_queue.task_done()
 
     def _drain_tone_queue(self):
-        """ Drain signal queue. """
+        """Drain signal queue."""
         empty = False
         while not empty:
             empty = True
@@ -57,7 +57,7 @@ class AudioNone(audio.AudioPlugin):
         return empty
 
     def _play_sound(self):
-        """ Play sounds. """
+        """Play sounds."""
         # handle playing queues
         now = datetime.datetime.now()
         for voice in range(4):

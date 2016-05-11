@@ -29,10 +29,10 @@ from . import video_graphical
 
 
 class VideoPygame(video_graphical.VideoGraphical):
-    """ Pygame-based graphical interface. """
+    """Pygame-based graphical interface."""
 
     def __init__(self, input_queue, video_queue, **kwargs):
-        """ Initialise pygame interface. """
+        """Initialise pygame interface."""
         video_graphical.VideoGraphical.__init__(self, input_queue, video_queue, **kwargs)
         # set state objects to whatever is now in state (may have been unpickled)
         if not pygame:
@@ -144,12 +144,12 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.clipboard_handler = get_clipboard_handler()
 
     def __exit__(self, type, value, traceback):
-        """ Close the pygame interface. """
+        """Close the pygame interface."""
         video.VideoPlugin.__exit__(self, type, value, traceback)
         self._close_pygame()
 
     def _close_pygame(self):
-        """ Close pygame modules and displays. """
+        """Close pygame modules and displays."""
         # if pygame import failed, close() is called while pygame is None
         if pygame:
             pygame.joystick.quit()
@@ -157,7 +157,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             pygame.quit()
 
     def _set_icon(self, mask):
-        """ Set the window icon. """
+        """Set the window icon."""
         height, width = len(mask), len(mask[0])
         icon = pygame.Surface((width, height), depth=8)
         icon.fill(0)
@@ -173,7 +173,7 @@ class VideoPygame(video_graphical.VideoGraphical):
     # input cycle
 
     def _check_input(self):
-        """ Handle screen and interface events. """
+        """Handle screen and interface events."""
         # check and handle pygame events
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
@@ -226,7 +226,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                     self.input_queue.put(signals.Event(signals.KEYB_QUIT))
 
     def _handle_key_down(self, e):
-        """ Handle key-down event. """
+        """Handle key-down event."""
         # get scancode
         scan = key_to_scan.get(e.key, None)
         # get modifiers
@@ -275,7 +275,7 @@ class VideoPygame(video_graphical.VideoGraphical):
                                     signals.KEYB_DOWN, (c, scan, mod)))
 
     def _handle_key_up(self, e):
-        """ Handle key-up event. """
+        """Handle key-up event."""
         if e.key == pygame.K_F11:
             self.clipboard.stop()
             self.f11_active = False
@@ -291,11 +291,11 @@ class VideoPygame(video_graphical.VideoGraphical):
     # screen drawing cycle
 
     def _sleep(self):
-        """ Sleep a tick to avoid hogging the cpu. """
+        """Sleep a tick to avoid hogging the cpu."""
         pygame.time.wait(24)
 
     def _check_display(self):
-        """ Check screen and blink events; update screen if necessary. """
+        """Check screen and blink events; update screen if necessary."""
         self.blink_state = 0
         if self.mode_has_blink:
             self.blink_state = 0 if self._cycle < self.blink_cycles * 2 else 1
@@ -316,7 +316,7 @@ class VideoPygame(video_graphical.VideoGraphical):
             self.screen_changed = False
 
     def _do_flip(self):
-        """ Draw the canvas to the screen. """
+        """Draw the canvas to the screen."""
         # create the screen that will be stretched onto the display
         border_x = int(self.size[0] * self.border_width / 200.)
         border_y = int(self.size[1] * self.border_width / 200.)
@@ -348,7 +348,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         pygame.display.flip()
 
     def _draw_cursor(self, screen):
-        """ Draw the cursor on the surface provided. """
+        """Draw the cursor on the surface provided."""
         if not self.cursor_visible or self.vpagenum != self.apagenum:
             return
         # copy screen under cursor
@@ -381,7 +381,7 @@ class VideoPygame(video_graphical.VideoGraphical):
     # miscellaneous helper functions
 
     def _resize_display(self, width, height):
-        """ Change the display size. """
+        """Change the display size."""
         flags = pygame.RESIZABLE
         if self.fullscreen:
             flags |= pygame.FULLSCREEN | pygame.NOFRAME
@@ -395,7 +395,7 @@ class VideoPygame(video_graphical.VideoGraphical):
     # signal handlers
 
     def set_mode(self, mode_info):
-        """ Initialise a given text or graphics mode. """
+        """Initialise a given text or graphics mode."""
         self.text_mode = mode_info.is_text_mode
         # unpack mode info struct
         self.font_height = mode_info.font_height
@@ -424,18 +424,18 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def set_caption_message(self, msg):
-        """ Add a message to the window caption. """
+        """Add a message to the window caption."""
         if msg:
             pygame.display.set_caption(self.caption + ' - ' + msg)
         else:
             pygame.display.set_caption(self.caption)
 
     def set_clipboard_text(self, text, mouse):
-        """ Put text on the clipboard. """
+        """Put text on the clipboard."""
         self.clipboard_handler.copy(text, mouse)
 
     def set_palette(self, rgb_palette_0, rgb_palette_1):
-        """ Build the palette. """
+        """Build the palette."""
         self.num_fore_attrs = min(16, len(rgb_palette_0))
         self.num_back_attrs = min(8, self.num_fore_attrs)
         rgb_palette_1 = rgb_palette_1 or rgb_palette_0
@@ -449,17 +449,17 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def set_border_attr(self, attr):
-        """ Change the border attribute. """
+        """Change the border attribute."""
         self.border_attr = attr
         self.screen_changed = True
 
     def set_colorburst(self, on, rgb_palette, rgb_palette1):
-        """ Change the NTSC colorburst setting. """
+        """Change the NTSC colorburst setting."""
         self.set_palette(rgb_palette, rgb_palette1)
         self.composite_artifacts = on and self.mode_has_artifacts and self.composite_monitor
 
     def clear_rows(self, back_attr, start, stop):
-        """ Clear a range of screen rows. """
+        """Clear a range of screen rows."""
         bg = (0, 0, back_attr)
         scroll_area = pygame.Rect(0, (start-1)*self.font_height,
                                   self.size[0], (stop-start+1)*self.font_height)
@@ -467,32 +467,32 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def set_page(self, vpage, apage):
-        """ Set the visible and active page. """
+        """Set the visible and active page."""
         self.vpagenum, self.apagenum = vpage, apage
         self.screen_changed = True
 
     def copy_page(self, src, dst):
-        """ Copy source to destination page. """
+        """Copy source to destination page."""
         self.canvas[dst].blit(self.canvas[src], (0, 0))
         self.screen_changed = True
 
     def show_cursor(self, cursor_on):
-        """ Change visibility of cursor. """
+        """Change visibility of cursor."""
         self.cursor_visible = cursor_on
         self.screen_changed = True
 
     def move_cursor(self, crow, ccol):
-        """ Move the cursor to a new position. """
+        """Move the cursor to a new position."""
         self.cursor_row, self.cursor_col = crow, ccol
 
     def set_cursor_attr(self, attr):
-        """ Change attribute of cursor. """
+        """Change attribute of cursor."""
         self.cursor_attr = attr % self.num_fore_attrs
         self.cursor.set_palette_at(254,
                             pygame.Color(0, self.cursor_attr, self.cursor_attr))
 
     def scroll_up(self, from_line, scroll_height, back_attr):
-        """ Scroll the screen up between from_line and scroll_height. """
+        """Scroll the screen up between from_line and scroll_height."""
         temp_scroll_area = pygame.Rect(
                 0, (from_line-1)*self.font_height,
                 self.size[0], (scroll_height-from_line+1) * self.font_height)
@@ -508,7 +508,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def scroll_down(self, from_line, scroll_height, back_attr):
-        """ Scroll the screen down between from_line and scroll_height. """
+        """Scroll the screen down between from_line and scroll_height."""
         temp_scroll_area = pygame.Rect(
                 0, (from_line-1) * self.font_height,
                 self.size[0], (scroll_height-from_line+1) * self.font_height)
@@ -523,7 +523,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
-        """ Put a single-byte character at a given position. """
+        """Put a single-byte character at a given position."""
         if not self.text_mode:
             # in graphics mode, a put_rect call does the actual drawing
             return
@@ -554,12 +554,12 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def build_glyphs(self, new_dict):
-        """ Build a dict of glyphs for use in text mode. """
+        """Build a dict of glyphs for use in text mode."""
         for char, glyph in new_dict.iteritems():
             self.glyph_dict[char] = glyph_to_surface(glyph)
 
     def set_cursor_shape(self, width, height, from_line, to_line):
-        """ Build a sprite for the cursor. """
+        """Build a sprite for the cursor."""
         self.cursor_width = width
         self.cursor_from, self.cursor_to = from_line, to_line
         self.cursor = pygame.Surface((width, height), depth=8)
@@ -571,31 +571,31 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.screen_changed = True
 
     def put_pixel(self, pagenum, x, y, index):
-        """ Put a pixel on the screen; callback to empty character buffer. """
+        """Put a pixel on the screen; callback to empty character buffer."""
         self.canvas[pagenum].set_at((x,y), index)
         self.screen_changed = True
 
     def fill_rect(self, pagenum, x0, y0, x1, y1, index):
-        """ Fill a rectangle in a solid attribute. """
+        """Fill a rectangle in a solid attribute."""
         rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
         self.canvas[pagenum].fill(index, rect)
         self.screen_changed = True
 
     def fill_interval(self, pagenum, x0, x1, y, index):
-        """ Fill a scanline interval in a solid attribute. """
+        """Fill a scanline interval in a solid attribute."""
         dx = x1 - x0 + 1
         self.canvas[pagenum].fill(index, (x0, y, dx, 1))
         self.screen_changed = True
 
     def put_interval(self, pagenum, x, y, colours):
-        """ Write a list of attributes to a scanline interval. """
+        """Write a list of attributes to a scanline interval."""
         # reference the interval on the canvas
         pygame.surfarray.pixels2d(self.canvas[pagenum]
                 )[x:x+len(colours), y] = numpy.array(colours).astype(int)
         self.screen_changed = True
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
-        """ Apply numpy array [y][x] of attribytes to an area. """
+        """Apply numpy array [y][x] of attribytes to an area."""
         if (x1 < x0) or (y1 < y0):
             return
         # reference the destination area
@@ -607,14 +607,14 @@ class VideoPygame(video_graphical.VideoGraphical):
 # clipboard handling
 
 class PygameClipboard(clipboard.Clipboard):
-    """ Clipboard handling using Pygame.Scrap. """
+    """Clipboard handling using Pygame.Scrap."""
 
     # text type we look for in the clipboard
     text = ('UTF8_STRING', 'text/plain;charset=utf-8', 'text/plain',
             'TEXT', 'STRING')
 
     def __init__(self):
-        """ Initialise the clipboard handler. """
+        """Initialise the clipboard handler."""
         try:
             pygame.scrap.init()
             self.ok = True
@@ -624,7 +624,7 @@ class PygameClipboard(clipboard.Clipboard):
             self.ok = False
 
     def copy(self, text, mouse=False):
-        """ Put unicode text on clipboard. """
+        """Put unicode text on clipboard."""
         if mouse:
             pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
         else:
@@ -640,7 +640,7 @@ class PygameClipboard(clipboard.Clipboard):
             logging.debug('Clipboard copy failed for clip %s', repr(text))
 
     def paste(self, mouse=False):
-        """ Return unicode text from clipboard. """
+        """Return unicode text from clipboard."""
         if mouse:
             pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
         else:
@@ -665,7 +665,7 @@ class PygameClipboard(clipboard.Clipboard):
         return us or u''
 
 def get_clipboard_handler():
-    """ Get a working Clipboard handler object. """
+    """Get a working Clipboard handler object."""
     # Pygame.Scrap doesn't work on OSX and is buggy on Linux; avoid if we can
     if platform.system() == 'Darwin':
         handler = clipboard.MacClipboard()
@@ -679,7 +679,7 @@ def get_clipboard_handler():
     return handler
 
 def create_feedback(surface, selection_rects):
-    """ Create visual feedback for selection onto a surface. """
+    """Create visual feedback for selection onto a surface."""
     for r in selection_rects:
         work_area = surface.subsurface(pygame.Rect(r))
         orig = work_area.copy()
@@ -937,14 +937,14 @@ if pygame:
 
 
 def apply_composite_artifacts(screen, pixels=4):
-    """ Process the canvas to apply composite colour artifacts. """
+    """Process the canvas to apply composite colour artifacts."""
     src_array = pygame.surfarray.array2d(screen)
     return pygame.surfarray.make_surface(
                     video_graphical.apply_composite_artifacts(src_array, pixels))
 
 
 def glyph_to_surface(glyph):
-    """ Build a sprite surface for the given character glyph. """
+    """Build a sprite surface for the given character glyph."""
     glyph = numpy.asarray(glyph).T
     surf = pygame.Surface(glyph.shape, depth=8)
     pygame.surfarray.pixels2d(surf)[:] = glyph

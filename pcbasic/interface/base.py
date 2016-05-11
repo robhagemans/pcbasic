@@ -12,7 +12,7 @@ from ..basic import signals
 
 
 class InitFailed(Exception):
-    """ Initialisation failed. """
+    """Initialisation failed."""
 
 
 ###############################################################################
@@ -20,24 +20,24 @@ class InitFailed(Exception):
 
 
 class VideoPlugin(object):
-    """ Base class for display/input interface plugins. """
+    """Base class for display/input interface plugins."""
 
     def __init__(self, input_queue, video_queue):
-        """ Setup the interface. """
+        """Setup the interface."""
         self.alive = True
         self.screen_changed = False
         self.input_queue = input_queue
         self.video_queue = video_queue
 
     def __exit__(self, type, value, traceback):
-        """ Close the interface. """
+        """Close the interface."""
 
     def __enter__(self):
-        """ Final initialisation. """
+        """Final initialisation."""
         return self
 
     def cycle(self):
-        """ Video/input event cycle. """
+        """Video/input event cycle."""
         if self.alive:
             self.alive = self._drain_video_queue()
         if self.alive:
@@ -45,13 +45,13 @@ class VideoPlugin(object):
             self._check_input()
 
     def _check_display(self):
-        """ Display update cycle. """
+        """Display update cycle."""
 
     def _check_input(self):
-        """ Input devices update cycle. """
+        """Input devices update cycle."""
 
     def _drain_video_queue(self):
-        """ Drain signal queue. """
+        """Drain signal queue."""
         alive = True
         while alive:
             try:
@@ -114,83 +114,83 @@ class VideoPlugin(object):
     # signal handlers
 
     def set_mode(self, mode_info):
-        """ Initialise a given text or graphics mode. """
+        """Initialise a given text or graphics mode."""
 
     def set_caption_message(self, msg):
-        """ Add a message to the window caption. """
+        """Add a message to the window caption."""
 
     def set_clipboard_text(self, text, mouse):
-        """ Put text on the clipboard. """
+        """Put text on the clipboard."""
 
     def set_palette(self, rgb_palette_0, rgb_palette_1):
-        """ Build the palette. """
+        """Build the palette."""
 
     def set_border_attr(self, attr):
-        """ Change the border attribute. """
+        """Change the border attribute."""
 
     def set_colorburst(self, on, rgb_palette, rgb_palette1):
-        """ Change the NTSC colorburst setting. """
+        """Change the NTSC colorburst setting."""
 
     def clear_rows(self, back_attr, start, stop):
-        """ Clear a range of screen rows. """
+        """Clear a range of screen rows."""
 
     def set_page(self, vpage, apage):
-        """ Set the visible and active page. """
+        """Set the visible and active page."""
 
     def copy_page(self, src, dst):
-        """ Copy source to destination page. """
+        """Copy source to destination page."""
 
     def show_cursor(self, cursor_on):
-        """ Change visibility of cursor. """
+        """Change visibility of cursor."""
 
     def move_cursor(self, crow, ccol):
-        """ Move the cursor to a new position. """
+        """Move the cursor to a new position."""
 
     def set_cursor_attr(self, attr):
-        """ Change attribute of cursor. """
+        """Change attribute of cursor."""
 
     def scroll_up(self, from_line, scroll_height, back_attr):
-        """ Scroll the screen up between from_line and scroll_height. """
+        """Scroll the screen up between from_line and scroll_height."""
 
     def scroll_down(self, from_line, scroll_height, back_attr):
-        """ Scroll the screen down between from_line and scroll_height. """
+        """Scroll the screen down between from_line and scroll_height."""
 
     def put_glyph(self, pagenum, row, col, cp, is_fullwidth, fore, back, blink, underline, for_keys):
-        """ Put a character at a given position. """
+        """Put a character at a given position."""
 
     def build_glyphs(self, new_dict):
-        """ Build a dict of glyphs for use in text mode. """
+        """Build a dict of glyphs for use in text mode."""
 
     def set_codepage(self, new_codepage):
-        """ Set codepage used in sending characters. """
+        """Set codepage used in sending characters."""
 
     def set_cursor_shape(self, width, height, from_line, to_line):
-        """ Build a sprite for the cursor. """
+        """Build a sprite for the cursor."""
 
     def put_pixel(self, pagenum, x, y, index):
-        """ Put a pixel on the screen; callback to empty character buffer. """
+        """Put a pixel on the screen; callback to empty character buffer."""
 
     def fill_rect(self, pagenum, x0, y0, x1, y1, index):
-        """ Fill a rectangle in a solid attribute. """
+        """Fill a rectangle in a solid attribute."""
 
     def fill_interval(self, pagenum, x0, x1, y, index):
-        """ Fill a scanline interval in a solid attribute. """
+        """Fill a scanline interval in a solid attribute."""
 
     def put_interval(self, pagenum, x, y, colours):
-        """ Write a list of attributes to a scanline interval. """
+        """Write a list of attributes to a scanline interval."""
 
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
-        """ Apply numpy array [y][x] of attribytes to an area. """
+        """Apply numpy array [y][x] of attribytes to an area."""
 
 ###############################################################################
 # audio plugin
 
 
 class AudioPlugin(object):
-    """ Base class for audio interface plugins. """
+    """Base class for audio interface plugins."""
 
     def __init__(self, tone_queue, message_queue):
-        """ Setup the audio interface and start the event handling thread. """
+        """Setup the audio interface and start the event handling thread."""
         # sound generators for sounds not played yet
         # if not None, something is playing
         self.next_tone = [ None, None, None, None ]
@@ -200,14 +200,14 @@ class AudioPlugin(object):
         self.message_queue = message_queue
 
     def __exit__(self, type, value, traceback):
-        """ Close the audio interface. """
+        """Close the audio interface."""
 
     def __enter__(self):
-        """ Perform any necessary initialisations. """
+        """Perform any necessary initialisations."""
         return self
 
     def cycle(self):
-        """ Audio event cycle. """
+        """Audio event cycle."""
         if self.alive:
             self.alive = self._drain_message_queue()
         if self.alive:
@@ -215,12 +215,12 @@ class AudioPlugin(object):
             self._play_sound()
 
     def _play_sound(self):
-        """ Play the sounds queued."""
+        """Play the sounds queued."""
 
     def _drain_message_queue(self):
-        """ Process sound system messages. """
+        """Process sound system messages."""
         return False
 
     def _drain_tone_queue(self):
-        """ Process tone events. """
+        """Process tone events."""
         return True

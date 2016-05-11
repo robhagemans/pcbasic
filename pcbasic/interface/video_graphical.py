@@ -35,10 +35,10 @@ display_slack = 15
 
 
 class VideoGraphical(video.VideoPlugin):
-    """ Graphical video plugin, base class """
+    """Graphical video plugin, base class """
 
     def __init__(self, input_queue, video_queue, **kwargs):
-        """ Initialise video plugin parameters. """
+        """Initialise video plugin parameters."""
         video.VideoPlugin.__init__(self, input_queue, video_queue)
         # use native pixel sizes
         self.force_native_pixel = kwargs.get('force_native_pixel', False)
@@ -76,7 +76,7 @@ class VideoGraphical(video.VideoPlugin):
     # miscellaneous helper functions
 
     def _normalise_pos(self, x, y):
-        """ Convert physical to logical coordinates within screen bounds. """
+        """Convert physical to logical coordinates within screen bounds."""
         border_x = int(self.size[0] * self.border_width / 200.)
         border_y = int(self.size[1] * self.border_width / 200.)
         xscale = self.window_width / (1.*(self.size[0]+2*border_x))
@@ -86,7 +86,7 @@ class VideoGraphical(video.VideoPlugin):
         return xpos, ypos
 
     def _find_display_size(self, canvas_x, canvas_y, border_width):
-        """ Determine the optimal size for the display. """
+        """Determine the optimal size for the display."""
         # comply with requested size unless we're fullscreening
         if self.force_display_size and not self.fullscreen:
             return self.force_display_size
@@ -132,10 +132,10 @@ class VideoGraphical(video.VideoPlugin):
 
 
 class ClipboardInterface(object):
-    """ Clipboard user interface. """
+    """Clipboard user interface."""
 
     def __init__(self, videoplugin, width, height):
-        """ Initialise clipboard feedback handler. """
+        """Initialise clipboard feedback handler."""
         self._active = False
         self.select_start = None
         self.select_stop = None
@@ -148,18 +148,18 @@ class ClipboardInterface(object):
         self.videoplugin = videoplugin
 
     def active(self):
-        """ True if clipboard mode is active. """
+        """True if clipboard mode is active."""
         return self._active
 
     def start(self, r, c):
-        """ Enter clipboard mode (clipboard key pressed). """
+        """Enter clipboard mode (clipboard key pressed)."""
         self._active = True
         self.select_start = [r, c]
         self.select_stop = [r, c]
         self.selection_rect = []
 
     def stop(self):
-        """ Leave clipboard mode (clipboard key released). """
+        """Leave clipboard mode (clipboard key released)."""
         self._active = False
         self.select_start = None
         self.select_stop = None
@@ -167,7 +167,7 @@ class ClipboardInterface(object):
         self.videoplugin.screen_changed = True
 
     def copy(self, mouse=False):
-        """ Copy screen characters from selection into clipboard. """
+        """Copy screen characters from selection into clipboard."""
         start, stop = self.select_start, self.select_stop
         if not start or not stop:
             return
@@ -179,11 +179,11 @@ class ClipboardInterface(object):
                 (start[0], start[1], stop[0], stop[1], mouse)))
 
     def paste(self, text):
-        """ Paste from clipboard into keyboard buffer. """
+        """Paste from clipboard into keyboard buffer."""
         self.videoplugin.input_queue.put(signals.Event(signals.CLIP_PASTE, (text,)))
 
     def move(self, r, c):
-        """ Move the head of the selection and update feedback. """
+        """Move the head of the selection and update feedback."""
         self.select_stop = [r, c]
         start, stop = self.select_start, self.select_stop
         if stop[1] < 1:
@@ -218,7 +218,7 @@ class ClipboardInterface(object):
         self.videoplugin.screen_changed = True
 
     def handle_key(self, scan, c):
-        """ Handle keyboard clipboard commands. """
+        """Handle keyboard clipboard commands."""
         if not self._active:
             return
         if c.upper() == u'C':
@@ -269,7 +269,7 @@ composite_640 = {
         (0x00, 0xcc, 0xff),        (0x00, 0xfa, 0x00),        (0xff, 0xff, 0xff) ]        }
 
 def apply_composite_artifacts(src_array, pixels=4):
-    """ Process the canvas to apply composite colour artifacts. """
+    """Process the canvas to apply composite colour artifacts."""
     width, height = src_array.shape
     s = [None]*pixels
     for p in range(pixels):

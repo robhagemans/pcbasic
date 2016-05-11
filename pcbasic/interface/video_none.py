@@ -19,7 +19,7 @@ else:
     import select
 
     def kbhit():
-        """ Return whether a character is ready to be read from the keyboard. """
+        """Return whether a character is ready to be read from the keyboard."""
         return select.select([sys.stdin], [], [], 0)[0] != []
 
 
@@ -27,10 +27,10 @@ encoding = sys.stdin.encoding or 'utf-8'
 
 
 class VideoNone(video.VideoPlugin):
-    """ Command-line filter interface. """
+    """Command-line filter interface."""
 
     def __init__(self, input_queue, video_queue, **kwargs):
-        """ Initialise filter interface. """
+        """Initialise filter interface."""
         # sys.stdout output for video=none is set in redirect module
         video.VideoPlugin.__init__(self, input_queue, video_queue)
         try:
@@ -43,7 +43,7 @@ class VideoNone(video.VideoPlugin):
             self.lf_to_cr = True
 
     def _check_input(self):
-        """ Handle keyboard events. """
+        """Handle keyboard events."""
         # avoid blocking on ttys if there's no input
         if self._stdin_is_tty and not kbhit():
             return

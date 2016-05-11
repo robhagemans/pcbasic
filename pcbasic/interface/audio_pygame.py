@@ -39,7 +39,7 @@ sample_rate = 44100
 
 
 def prepare():
-    """ Initialise sound module. """
+    """Initialise sound module."""
     if pygame:
         # must be called before pygame.init()
         if mixer:
@@ -50,10 +50,10 @@ def prepare():
 # plugin
 
 class AudioPygame(audio.AudioPlugin):
-    """ Pygame-based audio plugin. """
+    """Pygame-based audio plugin."""
 
     def __init__(self, tone_queue, message_queue):
-        """ Initialise sound system. """
+        """Initialise sound system."""
         if not pygame:
             logging.warning('PyGame module not found. Failed to initialise PyGame audio plugin.')
             raise audio.InitFailed()
@@ -72,18 +72,18 @@ class AudioPygame(audio.AudioPlugin):
         audio.AudioPlugin.__init__(self, tone_queue, message_queue)
 
     def __enter__(self):
-        """ Perform any necessary initialisations. """
+        """Perform any necessary initialisations."""
         # initialise mixer as silent
         # this is necessary to be able to set channels to mono
         mixer.quit()
         return audio.AudioPlugin.__enter__(self)
 
     def _sleep(self):
-        """ Sleep a tick to avoid hogging the cpu. """
+        """Sleep a tick to avoid hogging the cpu."""
         pygame.time.wait(tick_ms)
 
     def _drain_message_queue(self):
-        """ Drain signal queue. """
+        """Drain signal queue."""
         alive = True
         while alive:
             try:
@@ -105,7 +105,7 @@ class AudioPygame(audio.AudioPlugin):
             self.message_queue.task_done()
 
     def _drain_tone_queue(self):
-        """ Drain signal queue. """
+        """Drain signal queue."""
         empty = False
         while not empty:
             empty = True
@@ -130,7 +130,7 @@ class AudioPygame(audio.AudioPlugin):
         return empty
 
     def _play_sound(self):
-        """ play sounds. """
+        """play sounds."""
         current_chunk = [ None, None, None, None ]
         if (self.next_tone == [ None, None, None, None ]
                 and self.loop_sound == [ None, None, None, None ]):
@@ -171,7 +171,7 @@ class AudioPygame(audio.AudioPlugin):
         self._check_quit()
 
     def _check_quit(self):
-        """ Quit the mixer if not running a program and sound quiet for a while. """
+        """Quit the mixer if not running a program and sound quiet for a while."""
         if self.next_tone != [None, None, None, None]:
             self.quiet_ticks = 0
         else:
@@ -186,7 +186,7 @@ class AudioPygame(audio.AudioPlugin):
 
 
 def stop_channel(channel):
-    """ Stop sound on a channel. """
+    """Stop sound on a channel."""
     if mixer.get_init():
         mixer.Channel(channel).stop()
         # play short silence to avoid blocking the channel
@@ -195,7 +195,7 @@ def stop_channel(channel):
         mixer.Channel(channel).play(silence)
 
 def check_init_mixer():
-    """ Initialise the mixer if necessary. """
+    """Initialise the mixer if necessary."""
     if mixer.get_init() is None:
         mixer.init()
 
@@ -230,15 +230,15 @@ chunk_length = 1192 * 4
 
 
 class SignalSource(object):
-    """ Linear Feedback Shift Register to generate noise or tone. """
+    """Linear Feedback Shift Register to generate noise or tone."""
 
     def __init__(self, feedback, init=0x01):
-        """ Initialise the signal source. """
+        """Initialise the signal source."""
         self.lfsr = init
         self.feedback = feedback
 
     def next(self):
-        """ Get a sample bit. """
+        """Get a sample bit."""
         bit = self.lfsr & 1
         self.lfsr >>= 1
         if bit:
@@ -247,11 +247,11 @@ class SignalSource(object):
 
 
 class SoundGenerator(object):
-    """ Sound sample chunk generator. """
+    """Sound sample chunk generator."""
 
     def __init__(self, signal_source, feedback,
                  frequency, total_duration, fill, loop, volume):
-        """ Initialise the generator. """
+        """Initialise the generator."""
         # noise generator
         self.signal_source = signal_source
         self.feedback = feedback
@@ -266,7 +266,7 @@ class SoundGenerator(object):
         self.num_samples = int(self.duration * sample_rate)
 
     def build_chunk(self):
-        """ Build a sound chunk. """
+        """Build a sound chunk."""
         self.signal_source.feedback = self.feedback
         if self.count_samples >= self.num_samples:
             # done already
