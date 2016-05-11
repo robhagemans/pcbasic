@@ -10,9 +10,6 @@ import os
 import sys
 import string
 import logging
-import platform
-if platform.system() == b'Windows':
-    import win32api
 
 from . import error
 from . import devices
@@ -23,12 +20,6 @@ from . import ports
 
 # MS-DOS device files
 device_files = ('AUX', 'CON', 'NUL', 'PRN')
-
-# get basepath (__file__ is undefined in pyinstaller packages)
-if hasattr(sys, 'frozen'):
-    basepath = os.path.dirname(sys.executable)
-else:
-    basepath = os.path.dirname(os.path.realpath(__file__)).decode(sys.getfilesystemencoding())
 
 
 ############################################################################
@@ -133,7 +124,7 @@ class Devices(object):
     drive_letters = b'@' + string.ascii_uppercase
 
     def __init__(self, session, fields, screen, keyboard,
-                device_params, current_device, mount, map_drives,
+                device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_in_size, utf8, universal):
         """ Initialise devices. """
         self.devices = {}
@@ -167,100 +158,31 @@ class Devices(object):
         self.utf8 = utf8
         self.universal = universal
         # disk devices
-        self.internal_disk = disk.DiskDevice(b'', None, u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
+        self.internal_disk = disk.DiskDevice(b'', None, u'',
+                        self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
         for letter in self.drive_letters:
-            self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-        current_drive = current_device.upper()
-        if map_drives:
-            current_drive = self._map_drives()
-        else:
-            self.devices[b'Z:'] = disk.DiskDevice(b'Z', os.getcwdu(), u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-        # directory for bundled BASIC programs accessible through @:
-        self.devices[b'@:'] = disk.DiskDevice(b'@', os.path.join(basepath, u'programs'), u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-        self._mount_drives(mount)
-        self._set_current_device(current_drive + b':')
+            if letter in mount_dict:
+                self.devices[letter + b':'] = disk.DiskDevice(letter, mount_dict[letter][0], mount_dict[letter][1],
+                            self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
+            else:
+                self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'',
+                                self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
+        self.current_device = self.devices[current_device.upper() + b':']
 
-    def resume(self, override_cas1, mount, current_device):
+    def resume(self, override_cas1, mount_dict, current_device):
         """ Override settings after resume. """
         if override_cas1:
             self.devices['CAS1:'] = cassette.CASDevice(override_cas1, self.devices['CAS1:'].screen)
-        self._mount_drives(mount)
+        for letter in mount_dict:
+            self.devices[letter + b':'] = disk.DiskDevice(letter, mount_dict[letter][0], mount_dict[letter][1],
+                        self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
         # we always need to reset this or it may be a reference to an old device
-        self._set_current_device(current_device.upper() + b':')
+        self.current_device = self.devices[current_device.upper() + b':']
 
     def close(self):
         """ Close device master files. """
         for d in self.devices.values():
             d.close()
-
-    def _mount_drives(self, mount_list):
-        """ Mount disk drives """
-        if not mount_list:
-            return
-        for a in mount_list:
-            # the last one that's specified will stick
-            try:
-                letter, path = a.split(u':', 1)
-                letter = letter.encode(b'ascii', errors=b'replace').upper()
-                path = os.path.realpath(path)
-                if not os.path.isdir(path):
-                    logging.warning(u'Could not mount %s', a)
-                else:
-                    self.devices[letter + b':'] = disk.DiskDevice(letter, path, u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-            except (TypeError, ValueError) as e:
-                logging.warning(u'Could not mount %s: %s', a, unicode(e))
-
-
-    def _set_current_device(self, current_drive, default=b'Z:'):
-        """ Set the current device. """
-        try:
-            self.current_device = self.devices[current_drive]
-        except KeyError:
-            logging.warning(u'Could not set current device to %s', current_drive)
-            self.current_device = self.devices[default]
-
-
-    if platform.system() == b'Windows':
-        def _map_drives(self):
-            """ Map Windows drive letters to PC-BASIC disk devices. """
-            # get all drives in use by windows
-            # if started from CMD.EXE, get the 'current working dir' for each drive
-            # if not in CMD.EXE, there's only one cwd
-            current_drive = os.path.abspath(os.getcwdu()).split(u':')[0].encode('ascii')
-            save_current = os.getcwdu()
-            drives = {}
-            for letter in win32api.GetLogicalDriveStrings().split(u':\\\0')[:-1]:
-                try:
-                    os.chdir(letter + u':')
-                    cwd = win32api.GetShortPathName(os.getcwdu())
-                except Exception:
-                    # something went wrong, do not mount this drive
-                    # this is often a pywintypes.error rather than a WindowsError
-                    pass
-                else:
-                    # must not start with \\
-                    path, cwd = cwd[:3], cwd[3:]
-                    bletter = letter.encode(b'ascii')
-                    self.devices[bletter + b':'] = disk.DiskDevice(bletter, path, cwd, self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-            os.chdir(save_current)
-            return current_drive
-    else:
-        def _map_drives(self):
-            """ Map useful Unix directories to PC-BASIC disk devices. """
-            cwd = os.getcwdu()
-            # map C to root
-            self.devices[b'C:'] = disk.DiskDevice(b'C', u'/', cwd[1:], self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-            # map Z to cwd
-            self.devices[b'Z:'] = disk.DiskDevice(b'Z', cwd, u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-            # map H to home
-            home = os.path.expanduser(u'~')
-            # if cwd is in home tree, set it also on H:
-            if cwd[:len(home)] == home:
-                self.devices[b'H:'] = disk.DiskDevice(b'H', home, cwd[len(home)+1:], self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-            else:
-                self.devices[b'H:'] = disk.DiskDevice(b'H', home, u'', self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-            # default durrent drive
-            return b'Z'
 
     def get_diskdevice_and_path(self, path):
         """ Return the disk device and remaining path for given file spec. """

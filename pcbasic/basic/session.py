@@ -104,7 +104,7 @@ class Session(object):
             text_width=80, video_memory=262144, cga_low=False,
             keystring=u'', double=False,
             peek_values=None, device_params=None,
-            current_device='Z', mount=None, map_drives=False,
+            current_device='Z', mount_dict=None,
             print_trigger='close', serial_buffer_size=128,
             utf8=False, universal=True, echo_to_stdout=False,
             ignore_caps=True, ctrl_c_is_break=True,
@@ -205,8 +205,7 @@ class Session(object):
 
         self.devices = files.Devices(
                 self, self.memory.fields, self.screen, self.keyboard,
-                device_params, current_device,
-                mount, map_drives,
+                device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_buffer_size,
                 utf8, universal)
         self.files = files.Files(self.devices, max_files)

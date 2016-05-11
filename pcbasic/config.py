@@ -21,6 +21,7 @@ import platform
 if platform.system() == b'Windows':
     import ctypes
     import ctypes.wintypes
+    import win32api
 
 from .basic import __version__, codepages, fonts
 
@@ -114,6 +115,7 @@ else:
     state_path = os.path.join(_xdg_data_home, u'pcbasic')
 if not os.path.exists(state_path):
     os.makedirs(state_path)
+
 
 
 class TemporaryDirectory():
@@ -425,13 +427,14 @@ class Settings(object):
 
     def get_session_parameters(self):
         """Return a dictionary of parameters for the Session object"""
+        current_device, mount_dict = self.get_drives(False)
         if self.get('resume'):
             return {
                 # override selected settings from command line
                 'override_cas1': self.get('cas1', False),
-                'override_mount': self.get(u'mount', False),
+                'override_mount': mount_dict,
                 # we always need to reset this or it may be a reference to an old device
-                'override_current_device': self.get(u'current-device', True),
+                'override_current_device': current_device,
             }
         pcjr_term = self.get('pcjr-term')
         peek_values = {}
@@ -447,6 +450,7 @@ class Settings(object):
         max_list = self.get('max-memory')
         max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
         max_list[0] = max_list[0] or max_list[1]
+        current_device, mount_dict = self.get_drives()
         return {
             'syntax': self.get('syntax'),
             'option_debug': self.get('debug'),
@@ -472,9 +476,8 @@ class Settings(object):
             'double': self.get('double'),
             # device settings
             'device_params': device_params,
-            'current_device': self.get(u'current-device'),
-            'mount': self.get(u'mount'),
-            'map_drives': self.get(u'map-drives'),
+            'current_device': current_device,
+            'mount_dict': mount_dict,
             'print_trigger': self.get('print-trigger'),
             'temp_dir': self._temp_dir,
             'serial_buffer_size': self.get('serial-buffer-size'),
@@ -556,6 +559,76 @@ class Settings(object):
             launch_params['cmd'] = ''
             launch_params['run'] = False
         return launch_params
+
+    def get_drives(self, get_default=True):
+        """Assign disk locations to disk devices."""
+        mount_dict = {}
+        # always get current device
+        current_device = self.get('current-device')
+        if self.get('map-drives', get_default):
+            if platform.system() == b'Windows':
+                # get all drives in use by windows
+                # if started from CMD.EXE, get the 'current working dir' for each drive
+                # if not in CMD.EXE, there's only one cwd
+                current_device = os.path.abspath(os.getcwdu()).split(u':')[0].encode('ascii')
+                save_current = os.getcwdu()
+                for letter in win32api.GetLogicalDriveStrings().split(u':\\\0')[:-1]:
+                    try:
+                        os.chdir(letter + u':')
+                        cwd = win32api.GetShortPathName(os.getcwdu())
+                    except Exception:
+                        # something went wrong, do not mount this drive
+                        # this is often a pywintypes.error rather than a WindowsError
+                        pass
+                    else:
+                        # must not start with \\
+                        path, cwd = cwd[:3], cwd[3:]
+                        bletter = letter.encode(b'ascii')
+                        mount_dict[bletter] = (path, cwd)
+                os.chdir(save_current)
+            else:
+                cwd = os.getcwdu()
+                home = os.path.expanduser(u'~')
+                # if cwd is in home tree, set it also on H:
+                if cwd[:len(home)] == home:
+                    home_cwd = cwd[len(home)+1:]
+                else:
+                    home_cwd = u''
+                mount_dict = {
+                    # map C to root
+                    b'C': (u'/', cwd[1:]),
+                    # map Z to cwd
+                    b'Z': (cwd, u''),
+                    # map H to home
+                    b'H': (home, home_cwd),
+                    }
+                # default durrent drive
+                current_device = b'Z'
+        else:
+            mount_dict[b'Z'] = (os.getcwdu(), u'')
+        # directory for bundled BASIC programs accessible through @:
+        # get basepath (__file__ is undefined in pyinstaller packages)
+        if hasattr(sys, 'frozen'):
+            basepath = os.path.dirname(sys.executable)
+        else:
+            basepath = os.path.dirname(os.path.realpath(__file__)).decode(sys.getfilesystemencoding())
+        mount_dict[b'@'] = (os.path.join(basepath, u'programs'), u'')
+        # build mount dictionary
+        mount_list = self.get('mount', get_default)
+        if mount_list:
+            for a in mount_list:
+                # the last one that's specified will stick
+                try:
+                    letter, path = a.split(u':', 1)
+                    letter = letter.encode(b'ascii', errors=b'replace').upper()
+                    path = os.path.realpath(path)
+                    if not os.path.isdir(path):
+                        logging.warning(u'Could not mount %s', a)
+                    else:
+                        mount_dict[letter] = (path, u'')
+                except (TypeError, ValueError) as e:
+                    logging.warning(u'Could not mount %s: %s', a, unicode(e))
+        return current_device, mount_dict
 
     def _get_arguments(self, argv):
         """Convert arguments to dictionary"""
