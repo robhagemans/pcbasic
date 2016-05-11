@@ -133,12 +133,9 @@ class Session(object):
         self.last_mode = False, False
         # syntax error prompt and EDIT
         self.edit_prompt = False
-
+        ######################################################################
         # prepare codepage
         self.codepage = unicodepage.Codepage(codepage, box_protect)
-        # prepare tokeniser
-        self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
-
         if echo_to_stdout:
             filter_stream = unicodepage.CodecStream(
                     sys.stdout, self.codepage, sys.stdout.encoding or b'utf-8')
@@ -147,14 +144,16 @@ class Session(object):
         # prepare output redirection
         self.output_redirection = redirect.OutputRedirection(
                 output_file, append, filter_stream)
-
+        # prepare tokeniser
+        self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
+        # initialise the program
+        self.program = program.Program(self.tokeniser,
+                max_list_line, allow_protect, allow_code_poke)
+        # function key macros
+        self.fkey_macros = console.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
         # initialise sound queue
         # needs Session for wait() and queues only
         self.sound = sound.Sound(self, syntax)
-
-        # function key macros
-        self.fkey_macros = console.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
-
         # Sound is needed for the beeps on \a
         # Session is only for queues and check_events() in Graphics (flood fill)
         self.screen = display.Screen(self, text_width,
@@ -162,28 +161,15 @@ class Session(object):
                 self.sound, self.output_redirection, self.fkey_macros,
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=option_debug)
-
         # prepare input methods
         self.pen = inputs.Pen(self.screen)
         self.stick = inputs.Stick()
-
         # Screen needed in Keyboard for print_screen()
         # Sound is needed for the beeps when the buffer fills up
         # Session needed for wait() only
         self.keyboard = inputs.Keyboard(self, self.screen, self.fkey_macros,
                 self.codepage, self.sound,
                 keystring, input_file, ignore_caps, ctrl_c_is_break)
-
-        # interpreter is executing a command
-        self.set_parse_mode(False)
-
-        # direct line buffer
-        self.direct_line = StringIO()
-
-        # initialise the program
-        self.program = program.Program(self.tokeniser,
-                max_list_line, allow_protect, allow_code_poke)
-
         # set up variables and memory model state
         # initialise the data segment
         self.memory = memory.DataSegment(self.program, max_memory,
@@ -198,11 +184,9 @@ class Session(object):
         self.common_scalars = set()
         self.common_arrays = set()
         self.user_functions = {}
-
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
         # Session needed for wait()
-
         self.devices = files.Devices(
                 self, self.memory.fields, self.screen, self.keyboard,
                 device_params, current_device, mount_dict,
@@ -215,29 +199,10 @@ class Session(object):
         self.all_memory = machine.Memory(self.memory, self.devices,
                             self.screen, self.keyboard, self.screen.fonts[8],
                             peek_values, syntax)
-
-        # initialise timer
-        self.timer = timedate.Timer()
-
         # initialise the console
         self.console = console.Console(
                 self.screen, self.keyboard, self.sound,
                 self.output_redirection, self.devices.lpt1_file)
-
-        # initialise the parser
-        self.parser = parser.Parser(self, syntax, pcjr_term, double)
-
-        # initialise random number generator
-        self.randomiser = rnd.RandomNumberGenerator()
-        # initialise machine ports
-        self.machine = machine.MachinePorts(self)
-
-        # set up debugger
-        if option_debug:
-            self.debugger = debug.Debugger(self)
-        else:
-            self.debugger = debug.BaseDebugger(self)
-
         # set up the SHELL command
         self.shell = shell.ShellBase(self.keyboard, self.screen)
         if option_shell != 'none':
@@ -252,6 +217,23 @@ class Session(object):
                     self.shell = shell.Shell(self.keyboard, self.screen, self.codepage, shell_command)
                 except shell.InitFailed:
                     logging.warning('Pexpect module not found. SHELL statement disabled.')
+        # initialise random number generator
+        self.randomiser = rnd.RandomNumberGenerator()
+        # initialise timer
+        self.timer = timedate.Timer()
+        # initialise machine ports
+        self.machine = machine.MachinePorts(self)
+        # interpreter is executing a command (needs Screen)
+        self.set_parse_mode(False)
+        # direct line buffer
+        self.direct_line = StringIO()
+        # initialise the parser
+        self.parser = parser.Parser(self, syntax, pcjr_term, double)
+        # set up debugger
+        if option_debug:
+            self.debugger = debug.Debugger(self)
+        else:
+            self.debugger = debug.BaseDebugger(self)
 
     def greet(self):
         """Show greeting and keys."""
