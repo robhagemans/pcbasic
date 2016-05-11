@@ -26,10 +26,10 @@ from . import functions
 
 
 class Parser(object):
-    """ Statement parser. """
+    """Statement parser."""
 
     def __init__(self, session, syntax, term, double_math):
-        """ Initialise parser. """
+        """Initialise parser."""
         self.session = session
         # syntax: advanced, pcjr, tandy
         self.syntax = syntax
@@ -55,7 +55,7 @@ class Parser(object):
 
 
     def init_error_trapping(self):
-        """ Initialise error trapping. """
+        """Initialise error trapping."""
         # True if error handling in progress
         self.error_handle_mode = False
         # statement pointer, run mode of error for RESUME
@@ -64,7 +64,7 @@ class Parser(object):
         self.on_error = None
 
     def parse_statement(self):
-        """ Parse one statement at the current pointer in current codestream.
+        """Parse one statement at the current pointer in current codestream.
             Return False if stream has ended, True otherwise.
             """
         try:
@@ -118,7 +118,7 @@ class Parser(object):
     #################################################################
 
     def clear(self):
-        """ Clear all to be cleared for CLEAR statement. """
+        """Clear all to be cleared for CLEAR statement."""
         # clear last error number (ERR) and line number (ERL)
         self.error_num, self.error_pos = 0, 0
         # disable error trapping
@@ -131,7 +131,7 @@ class Parser(object):
         self.restore()
 
     def clear_stacks_and_pointers(self):
-        """ Initialise the stacks and pointers for a new program. """
+        """Initialise the stacks and pointers for a new program."""
         # stop running if we were
         self.set_pointer(False)
         # reset loop stacks
@@ -144,19 +144,19 @@ class Parser(object):
         self.restore()
 
     def clear_stacks(self):
-        """ Clear loop and jump stacks. """
+        """Clear loop and jump stacks."""
         self.gosub_stack = []
         self.clear_loop_stacks()
 
     def clear_loop_stacks(self):
-        """ Clear loop stacks. """
+        """Clear loop stacks."""
         self.for_stack = []
         self.while_stack = []
 
     #################################################################
 
     def handle_basic_events(self):
-        """ Jump to user-defined event subs if events triggered. """
+        """Jump to user-defined event subs if events triggered."""
         if self.events.suspend_all or not self.run_mode:
             return
         for event in self.events.all:
@@ -171,7 +171,7 @@ class Parser(object):
                 self.jump_gosub(event.gosub, event)
 
     def trap_error(self, e):
-        """ Handle a BASIC error through trapping. """
+        """Handle a BASIC error through trapping."""
         if e.pos is None:
             if self.run_mode:
                 e.pos = self.program_code.tell()-1
@@ -192,7 +192,7 @@ class Parser(object):
     #################################################################
 
     def set_pointer(self, new_runmode, pos=None):
-        """ Set program pointer to the given codestream and position. """
+        """Set program pointer to the given codestream and position."""
         self.run_mode = new_runmode
         self.session.sound.persist(new_runmode)
         # suppress cassette messages in run mode
@@ -206,11 +206,11 @@ class Parser(object):
             codestream.seek(0, 2)
 
     def get_codestream(self):
-        """ Get the current codestream. """
+        """Get the current codestream."""
         return self.program_code if self.run_mode else self.session.direct_line
 
     def jump(self, jumpnum, err=error.UNDEFINED_LINE_NUMBER):
-        """ Execute jump for a GOTO or RUN instruction. """
+        """Execute jump for a GOTO or RUN instruction."""
         if jumpnum is None:
             self.set_pointer(True, 0)
         else:
@@ -221,13 +221,13 @@ class Parser(object):
                 raise error.RunError(err)
 
     def jump_gosub(self, jumpnum, handler=None):
-        """ Execute jump for a GOSUB. """
+        """Execute jump for a GOSUB."""
         # set return position
         self.gosub_stack.append((self.get_codestream().tell(), self.run_mode, handler))
         self.jump(jumpnum)
 
     def jump_return(self, jumpnum):
-        """ Execute jump for a RETURN. """
+        """Execute jump for a RETURN."""
         try:
             pos, orig_runmode, handler = self.gosub_stack.pop()
         except IndexError:
@@ -247,7 +247,7 @@ class Parser(object):
     #################################################################
 
     def loop_init(self, ins, forpos, nextpos, varname, start, stop, step):
-        """ Initialise a FOR loop. """
+        """Initialise a FOR loop."""
         # set start to start-step, then iterate - slower on init but allows for faster iterate
         self.session.scalars.set(varname, op.Operators.number_add(start, op.Operators.number_neg(step)))
         # NOTE: all access to varname must be in-place into the bytearray - no assignments!
@@ -259,7 +259,7 @@ class Parser(object):
         ins.seek(nextpos)
 
     def number_inc_gt(self, typechar, loopvar, stop, step, sgn):
-        """ Increase number and check if it exceeds a limit. """
+        """Increase number and check if it exceeds a limit."""
         if sgn == 0:
             return False
         if typechar in ('#', '!'):
@@ -272,7 +272,7 @@ class Parser(object):
             return int_left > stop if sgn > 0 else stop > int_left
 
     def loop_iterate(self, ins, pos):
-        """ Iterate a loop (NEXT). """
+        """Iterate a loop (NEXT)."""
         # find the matching NEXT record
         num = len(self.for_stack)
         for depth in range(num):
@@ -295,14 +295,14 @@ class Parser(object):
     # DATA utilities
 
     def restore(self, datanum=-1):
-        """ Reset data pointer (RESTORE) """
+        """Reset data pointer (RESTORE) """
         try:
             self.data_pos = 0 if datanum == -1 else self.session.program.line_numbers[datanum]
         except KeyError:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
 
     def read_entry(self):
-        """ READ a unit of DATA. """
+        """READ a unit of DATA."""
         current = self.program_code.tell()
         self.program_code.seek(self.data_pos)
         if util.peek(self.program_code) in tk.end_statement:
@@ -343,7 +343,7 @@ class Parser(object):
     # expression parser
 
     def parse_bracket(self, ins, session):
-        """ Compute the value of the bracketed expression. """
+        """Compute the value of the bracketed expression."""
         util.require_read(ins, ('(',))
         # we'll get a Syntax error, not a Missing operand, if we close with )
         val = self.parse_expression(ins, session)
@@ -351,7 +351,7 @@ class Parser(object):
         return val
 
     def parse_literal(self, ins, session):
-        """ Compute the value of the literal at the current code pointer. """
+        """Compute the value of the literal at the current code pointer."""
         d = util.skip_white(ins)
         # string literal
         if d == '"':
@@ -389,7 +389,7 @@ class Parser(object):
             raise error.RunError(error.STX)
 
     def parse_variable(self, ins, session):
-        """ Helper function: parse a variable or array element. """
+        """Helper function: parse a variable or array element."""
         name = self.parse_scalar(ins)
         indices = []
         if util.skip_white_read_if(ins, ('[', '(')):
@@ -402,7 +402,7 @@ class Parser(object):
         return name, indices
 
     def parse_scalar(self, ins, allow_empty=False, err=error.STX):
-        """ Get variable name from token stream. """
+        """Get variable name from token stream."""
         # append type specifier
         name = self.session.memory.complete_name(util.read_name(ins, allow_empty, err))
         # only the first 40 chars are relevant in GW-BASIC, rest is discarded
@@ -411,7 +411,7 @@ class Parser(object):
         return name.upper()
 
     def parse_file_number(self, ins, session, file_mode='IOAR'):
-        """ Helper function: parse a file number and retrieve the file object. """
+        """Helper function: parse a file number and retrieve the file object."""
         screen = None
         if util.skip_white_read_if(ins, ('#',)):
             number = vartypes.pass_int_unpack(self.parse_expression(ins, session))
@@ -421,14 +421,14 @@ class Parser(object):
         return screen
 
     def parse_file_number_opthash(self, ins, session):
-        """ Helper function: parse a file number, with optional hash. """
+        """Helper function: parse a file number, with optional hash."""
         util.skip_white_read_if(ins, ('#',))
         number = vartypes.pass_int_unpack(self.parse_expression(ins, session))
         util.range_check(0, 255, number)
         return number
 
     def parse_expression(self, ins, session, allow_empty=False):
-        """ Compute the value of the expression at the current code pointer. """
+        """Compute the value of the expression at the current code pointer."""
         stack = deque()
         units = deque()
         d = ''
@@ -499,7 +499,7 @@ class Parser(object):
             raise error.RunError(missing_error)
 
     def _evaluate_stack(self, stack, units, precedence, missing_err):
-        """ Drain evaluation stack until an operator of low precedence on top. """
+        """Drain evaluation stack until an operator of low precedence on top."""
         while stack:
             if precedence > op.precedence[stack[-1][0]]:
                 break
@@ -518,7 +518,7 @@ class Parser(object):
                 units.append(self._handle_math_error(e))
 
     def _handle_math_error(self, e):
-        """ Handle Overflow or Division by Zero. """
+        """Handle Overflow or Division by Zero."""
         if isinstance(e, ValueError):
             # math domain errors such as SQR(-1)
             raise error.RunError(error.IFC)

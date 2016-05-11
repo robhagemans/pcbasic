@@ -16,18 +16,18 @@ from . import devices
 
 
 class InputTextFile(devices.TextFileBase):
-    """ Handle INPUT from console. """
+    """Handle INPUT from console."""
 
     # spaces do not separate numbers on console INPUT
     soft_sep = ''
 
     def __init__(self, line):
-        """ Initialise InputStream. """
+        """Initialise InputStream."""
         devices.TextFileBase.__init__(self, StringIO(line), 'D', 'I')
 
 
 def input_console(console, stringspace, prompt, readvar, newline):
-    """ Read a list of variables for INPUT. """
+    """Read a list of variables for INPUT."""
     # readvar is a list of (name, indices) tuples
     # we return a list of (name, indices, values) tuples
     while True:
@@ -56,7 +56,7 @@ def input_console(console, stringspace, prompt, readvar, newline):
 # for PRINT USING
 
 def get_string_tokens(fors):
-    """ Get consecutive string-related formatting tokens. """
+    """Get consecutive string-related formatting tokens."""
     word = ''
     c = util.peek(fors)
     if c in ('!', '&'):
@@ -76,7 +76,7 @@ def get_string_tokens(fors):
     return word
 
 def get_number_tokens(fors):
-    """ Get consecutive number-related formatting tokens. """
+    """Get consecutive number-related formatting tokens."""
     word, digits_before, decimals = '', 0, 0
     # + comes first
     leading_plus = (util.peek(fors) == '+')

@@ -20,11 +20,11 @@ from . import protect
 from . import util
 
 class Program(object):
-    """ BASIC program. """
+    """BASIC program."""
 
     def __init__(self, tokeniser, max_list_line=65536,
                 allow_protect=False, allow_code_poke=False, address=0):
-        """ Initialise program. """
+        """Initialise program."""
         # program bytecode buffer
         self.bytecode = StringIO()
         self.erase()
@@ -37,15 +37,15 @@ class Program(object):
         self.tokeniser = tokeniser
 
     def set_address(self, code_start):
-        """ Memory location of program. """
+        """Memory location of program."""
         self.code_start = code_start
 
     def size(self):
-        """ Size of code space """
+        """Size of code space """
         return len(self.bytecode.getvalue())
 
     def erase(self):
-        """ Erase the program from memory. """
+        """Erase the program from memory."""
         self.bytecode.truncate(0)
         self.bytecode.write('\0\0\0')
         self.protected = False
@@ -53,13 +53,13 @@ class Program(object):
         self.last_stored = None
 
     def truncate(self, rest=''):
-        """ Write bytecode and cut the program of beyond the current position. """
+        """Write bytecode and cut the program of beyond the current position."""
         self.bytecode.write(rest if rest else '\0\0\0')
         # cut off at current position
         self.bytecode.truncate()
 
     def get_line_number(self, pos):
-        """ Get line number for stream position. """
+        """Get line number for stream position."""
         pre = -1
         for linum in self.line_numbers:
             linum_pos = self.line_numbers[linum]
@@ -68,7 +68,7 @@ class Program(object):
         return pre
 
     def rebuild_line_dict(self):
-        """ Preparse to build line number dictionary. """
+        """Preparse to build line number dictionary."""
         self.line_numbers, offsets = {}, []
         self.bytecode.seek(0)
         scanline, scanpos, last = 0, 0, 0
@@ -97,7 +97,7 @@ class Program(object):
         self.bytecode.write('\0\0\0')
 
     def update_line_dict(self, pos, afterpos, length, deleteable, beyond):
-        """ Update line number dictionary after deleting lines. """
+        """Update line number dictionary after deleting lines."""
         # subtract length of line we replaced
         length -= afterpos - pos
         addr = (self.code_start + 1) + afterpos
@@ -118,7 +118,7 @@ class Program(object):
             self.line_numbers[key] += length
 
     def check_number_start(self, linebuf):
-        """ Check if the given line buffer starts with a line number. """
+        """Check if the given line buffer starts with a line number."""
         # get the new line number
         linebuf.seek(1)
         scanline = util.parse_line_number(linebuf)
@@ -131,7 +131,7 @@ class Program(object):
         return empty, scanline
 
     def store_line(self, linebuf):
-        """ Store the given line buffer. """
+        """Store the given line buffer."""
         if self.protected:
             raise error.RunError(error.IFC)
         # get the new line number
@@ -166,7 +166,7 @@ class Program(object):
         self.last_stored = scanline
 
     def find_pos_line_dict(self, fromline, toline):
-        """ Find code positions for line range. """
+        """Find code positions for line range."""
         deleteable = [ num for num in self.line_numbers if num >= fromline and num <= toline ]
         beyond = [num for num in self.line_numbers if num > toline ]
         # find lowest number strictly above range
@@ -179,7 +179,7 @@ class Program(object):
         return startpos, afterpos, deleteable, beyond
 
     def delete(self, fromline, toline):
-        """ Delete range of lines from stored program. """
+        """Delete range of lines from stored program."""
         fromline = fromline if fromline is not None else min(self.line_numbers)
         toline = toline if toline is not None else 65535
         startpos, afterpos, deleteable, beyond = self.find_pos_line_dict(fromline, toline)
@@ -195,7 +195,7 @@ class Program(object):
         self.update_line_dict(startpos, afterpos, 0, deleteable, beyond)
 
     def edit(self, console, from_line, bytepos=None):
-        """ Output program line to console and position cursor. """
+        """Output program line to console and position cursor."""
         if self.protected:
             console.screen.write(str(from_line)+'\r')
             raise error.RunError(error.IFC)
@@ -224,7 +224,7 @@ class Program(object):
             console.screen.set_pos(console.screen.current_row-newlines, 1)
 
     def renum(self, screen, new_line, start_line, step):
-        """ Renumber stored program. """
+        """Renumber stored program."""
         new_line = 10 if new_line is None else new_line
         start_line = 0 if start_line is None else start_line
         step = 10 if step is None else step
@@ -280,7 +280,7 @@ class Program(object):
         return old_to_new
 
     def load(self, g, rebuild_dict=True):
-        """ Load program from ascii, bytecode or protected stream. """
+        """Load program from ascii, bytecode or protected stream."""
         self.erase()
         if g.filetype == 'B':
             # bytecode file
@@ -302,7 +302,7 @@ class Program(object):
             self.rebuild_line_dict()
 
     def merge(self, g):
-        """ Merge program from ascii or utf8 (if utf8_files is True) stream. """
+        """Merge program from ascii or utf8 (if utf8_files is True) stream."""
         while True:
             line = g.read_line()
             if line is None:
@@ -317,7 +317,7 @@ class Program(object):
                     raise error.RunError(error.DIRECT_STATEMENT_IN_FILE)
 
     def save(self, g):
-        """ Save the program to stream g in (A)scii, (B)ytecode or (P)rotected mode. """
+        """Save the program to stream g in (A)scii, (B)ytecode or (P)rotected mode."""
         mode = g.filetype
         if self.protected and mode != 'P':
             raise error.RunError(error.IFC)
@@ -340,7 +340,7 @@ class Program(object):
         self.bytecode.seek(current)
 
     def list_lines(self, from_line, to_line):
-        """ List line range. """
+        """List line range."""
         if self.protected:
             # don't list protected files
             raise error.RunError(error.IFC)
@@ -361,7 +361,7 @@ class Program(object):
         return lines
 
     def get_memory(self, offset):
-        """ Retrieve data from program code. """
+        """Retrieve data from program code."""
         offset -= self.code_start
         code = self.bytecode.getvalue()
         try:
@@ -370,7 +370,7 @@ class Program(object):
             return -1
 
     def set_memory(self, offset, val):
-        """ Change program code. """
+        """Change program code."""
         if not self.allow_code_poke:
             logging.warning('Ignored POKE into program code')
         else:

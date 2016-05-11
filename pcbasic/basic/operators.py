@@ -44,17 +44,17 @@ combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
 
 
 class Operators(object):
-    """ Context for numeric and string operations. """
+    """Context for numeric and string operations."""
 
     def __init__(self, string_space, double_math):
-        """ Initialise context. """
+        """Initialise context."""
         self.strings = string_space
         # double-precision power operator
         self.double_math = double_math
         self._init_operators()
 
     def _init_operators(self):
-        """ Initialise operators. """
+        """Initialise operators."""
         # unary operators
         self.unary = {
             tk.O_MINUS: self.neg,
@@ -88,7 +88,7 @@ class Operators(object):
 
 
     def __getstate__(self):
-        """ Pickle. """
+        """Pickle."""
         pickle_dict = self.__dict__.copy()
         # can't be pickled
         pickle_dict['unary'] = None
@@ -96,7 +96,7 @@ class Operators(object):
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
-        """ Unpickle. """
+        """Unpickle."""
         self.__dict__.update(pickle_dict)
         self._init_operators()
 
@@ -107,7 +107,7 @@ class Operators(object):
 
     @staticmethod
     def number_add(left, right):
-        """ Add two numbers. """
+        """Add two numbers."""
         left, right = vartypes.pass_most_precise(left, right)
         if left[0] in ('#', '!'):
             return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
@@ -118,12 +118,12 @@ class Operators(object):
 
     @staticmethod
     def number_subtract(left, right):
-        """ Subtract two numbers. """
+        """Subtract two numbers."""
         return Operators.number_add(left, Operators.number_neg(right))
 
     @staticmethod
     def number_sgn(inp):
-        """ Return the sign of a number. """
+        """Return the sign of a number."""
         if inp[0] == '%':
             i = vartypes.integer_to_int_signed(inp)
             if i > 0:
@@ -138,7 +138,7 @@ class Operators(object):
 
     @staticmethod
     def number_abs(inp):
-        """ Return the absolute value of a number. """
+        """Return the absolute value of a number."""
         if inp[0] == '%':
             val = abs(vartypes.integer_to_int_signed(inp))
             if val == 32768:
@@ -153,7 +153,7 @@ class Operators(object):
 
     @staticmethod
     def number_neg(inp):
-        """ Return the negation of a number. """
+        """Return the negation of a number."""
         inp = vartypes.pass_number(inp)
         if inp[0] == '%':
             val = -vartypes.integer_to_int_signed(inp)
@@ -169,7 +169,7 @@ class Operators(object):
         return inp
 
     def number_power(self, left, right):
-        """ Left^right. """
+        """Left^right."""
         if (left[0] == '#' or right[0] == '#') and self.double_math:
             return fp.pack( fp.power(fp.unpack(vartypes.pass_double(left)), fp.unpack(vartypes.pass_double(right))) )
         else:
@@ -180,7 +180,7 @@ class Operators(object):
 
     @staticmethod
     def number_multiply(left, right):
-        """ Left*right. """
+        """Left*right."""
         if left[0] == '#' or right[0] == '#':
             return fp.pack( fp.unpack(vartypes.pass_double(left)).imul(fp.unpack(vartypes.pass_double(right))) )
         else:
@@ -188,7 +188,7 @@ class Operators(object):
 
     @staticmethod
     def number_divide(left, right):
-        """ Left/right. """
+        """Left/right."""
         if left[0] == '#' or right[0] == '#':
             return fp.pack( fp.div(fp.unpack(vartypes.pass_double(left)), fp.unpack(vartypes.pass_double(right))) )
         else:
@@ -196,7 +196,7 @@ class Operators(object):
 
     @staticmethod
     def number_intdiv(left, right):
-        """ Left\\right. """
+        """Left\\right."""
         dividend = vartypes.pass_int_unpack(left)
         divisor = vartypes.pass_int_unpack(right)
         if divisor == 0:
@@ -209,7 +209,7 @@ class Operators(object):
 
     @staticmethod
     def number_modulo(left, right):
-        """ Left MOD right. """
+        """Left MOD right."""
         divisor = vartypes.pass_int_unpack(right)
         dividend = vartypes.pass_int_unpack(left)
         if divisor == 0:
@@ -222,40 +222,40 @@ class Operators(object):
 
     @staticmethod
     def number_not(right):
-        """ Bitwise NOT, -x-1. """
+        """Bitwise NOT, -x-1."""
         return vartypes.int_to_integer_signed(-vartypes.pass_int_unpack(right)-1)
 
     @staticmethod
     def number_and(left, right):
-        """ Bitwise AND. """
+        """Bitwise AND."""
         return vartypes.int_to_integer_unsigned(
             vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) &
             vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
 
     @staticmethod
     def number_or(left, right):
-        """ Bitwise OR. """
+        """Bitwise OR."""
         return vartypes.int_to_integer_unsigned(
             vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) |
             vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
 
     @staticmethod
     def number_xor(left, right):
-        """ Bitwise XOR. """
+        """Bitwise XOR."""
         return vartypes.int_to_integer_unsigned(
             vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) ^
             vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
 
     @staticmethod
     def number_eqv(left, right):
-        """ Bitwise equivalence. """
+        """Bitwise equivalence."""
         return vartypes.int_to_integer_unsigned(0xffff-(
             vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) ^
             vartypes.integer_to_int_unsigned(vartypes.pass_integer(right))))
 
     @staticmethod
     def number_imp(left, right):
-        """ Bitwise implication. """
+        """Bitwise implication."""
         return vartypes.int_to_integer_unsigned(
             (0xffff-vartypes.integer_to_int_unsigned(vartypes.pass_integer(left))) |
             vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
@@ -265,7 +265,7 @@ class Operators(object):
     # string operations
 
     def string_concat(self, left, right):
-        """ Concatenate strings. """
+        """Concatenate strings."""
         return self.strings.store(
             self.strings.copy(vartypes.pass_string(left)) +
             self.strings.copy(vartypes.pass_string(right)))
@@ -275,7 +275,7 @@ class Operators(object):
     # number and string operations
 
     def _bool_eq(self, left, right):
-        """ Return true if left == right, false otherwise. """
+        """Return true if left == right, false otherwise."""
         if left[0] == '$':
             return (self.strings.copy(vartypes.pass_string(left)) ==
                     self.strings.copy(vartypes.pass_string(right)))
@@ -287,7 +287,7 @@ class Operators(object):
                 return vartypes.integer_to_int_signed(left) == vartypes.integer_to_int_signed(right)
 
     def _bool_gt(self, left, right):
-        """ Ordering: return -1 if left > right, 0 otherwise. """
+        """Ordering: return -1 if left > right, 0 otherwise."""
         if left[0] == '$':
             left = self.strings.copy(vartypes.pass_string(left))
             right = self.strings.copy(vartypes.pass_string(right))
@@ -312,31 +312,31 @@ class Operators(object):
                 return vartypes.integer_to_int_signed(left) > vartypes.integer_to_int_signed(right)
 
     def equals(self, left, right):
-        """ Return -1 if left == right, 0 otherwise. """
+        """Return -1 if left == right, 0 otherwise."""
         return vartypes.bool_to_integer(self._bool_eq(left, right))
 
     def not_equals(self, left, right):
-        """ Return -1 if left != right, 0 otherwise. """
+        """Return -1 if left != right, 0 otherwise."""
         return vartypes.bool_to_integer(not self._bool_eq(left, right))
 
     def gt(self, left, right):
-        """ Ordering: return -1 if left > right, 0 otherwise. """
+        """Ordering: return -1 if left > right, 0 otherwise."""
         return vartypes.bool_to_integer(self._bool_gt(left, right))
 
     def gte(self, left, right):
-        """ Ordering: return -1 if left >= right, 0 otherwise. """
+        """Ordering: return -1 if left >= right, 0 otherwise."""
         return vartypes.bool_to_integer(not self._bool_gt(right, left))
 
     def lte(self, left, right):
-        """ Ordering: return -1 if left <= right, 0 otherwise. """
+        """Ordering: return -1 if left <= right, 0 otherwise."""
         return vartypes.bool_to_integer(not self._bool_gt(left, right))
 
     def lt(self, left, right):
-        """ Ordering: return -1 if left < right, 0 otherwise. """
+        """Ordering: return -1 if left < right, 0 otherwise."""
         return vartypes.bool_to_integer(self._bool_gt(right, left))
 
     def plus(self, left, right):
-        """ Binary + operator: add or concatenate. """
+        """Binary + operator: add or concatenate."""
         if left[0] == '$':
             return self.string_concat(left, right)
         else:
@@ -344,7 +344,7 @@ class Operators(object):
 
     @staticmethod
     def neg(right):
-        """ Unary - operator: negate or no-op for strings. """
+        """Unary - operator: negate or no-op for strings."""
         if right[0] == '$':
             return right
         else:

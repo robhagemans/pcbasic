@@ -28,10 +28,10 @@ control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e
 
 
 class Codepage(object):
-    """ Codepage tables. """
+    """Codepage tables."""
 
     def __init__(self, codepage_name, box_protect=True):
-        """ Load and initialise codepage tables. """
+        """Load and initialise codepage tables."""
         # is the current codepage a double-byte codepage?
         self.dbcs = False
         # substitutes for printable ascii
@@ -42,7 +42,7 @@ class Codepage(object):
         self.box_protect = box_protect
 
     def load(self, codepage_name):
-        """ Load codepage to Unicode table. """
+        """Load codepage to Unicode table."""
         # lead and trail bytes
         self.lead = set()
         self.trail = set()
@@ -96,11 +96,11 @@ class Codepage(object):
         return codepage_name
 
     def connects(self, c, d, bset):
-        """ Return True if c and d connect according to box-drawing set bset. """
+        """Return True if c and d connect according to box-drawing set bset."""
         return c in self.box_right[bset] and d in self.box_left[bset]
 
     def from_unicode(self, uc):
-        """ Convert normalised unicode grapheme cluster to codepage char sequence. """
+        """Convert normalised unicode grapheme cluster to codepage char sequence."""
         # bring cluster on C normal form (combine what can be combined)
         if len(uc) > 1:
             uc = unicodedata.normalize('NFC', uc)
@@ -115,34 +115,34 @@ class Codepage(object):
             return uc.encode('ascii', errors='ignore')
 
     def str_from_unicode(self, ucs):
-        """ Convert unicode string to codepage string. """
+        """Convert unicode string to codepage string."""
         return ''.join(self.from_unicode(uc) for uc in split_graphemes(ucs))
 
     def to_unicode(self, cp, replace=''):
-        """ Convert codepage point to unicode grapheme cluster """
+        """Convert codepage point to unicode grapheme cluster """
         return self.cp_to_unicode.get(cp, replace)
 
     def str_to_unicode(self, cps, preserve_control=False, box_protect=True):
-        """ Convert codepage string to unicode string. """
+        """Convert codepage string to unicode string."""
         return Converter(self, preserve_control, box_protect).to_unicode(cps)
 
     def get_converter(self, preserve_control=False, box_protect=None):
-        """ Get converter from codepage to unicode. """
+        """Get converter from codepage to unicode."""
         return Converter(self, preserve_control, box_protect)
 
 
 class CodecStream(object):
-    """ Converter stream wrapper. """
+    """Converter stream wrapper."""
 
     def __init__(self, stream, codepage, encoding):
-        """ Set up codec. """
+        """Set up codec."""
         self._encoding = encoding
         # converter with DBCS lead-byte buffer for utf8 output redirection
         self._uniconv = codepage.get_converter(preserve_control=True)
         self._stream = stream
 
     def write(self, s):
-        """ Write to codec stream. """
+        """Write to codec stream."""
         self._stream.write(self._uniconv.to_unicode(bytes(s)).encode(
                     self._encoding, b'replace'))
 
@@ -194,10 +194,10 @@ box_right_unicode = [u'\u2500', u'\u2550']
 # conversion with box protection
 
 class Converter(object):
-    """ Buffered converter to Unicode - supports DBCS and box-drawing protection. """
+    """Buffered converter to Unicode - supports DBCS and box-drawing protection."""
 
     def __init__(self, codepage, preserve_control=False, box_protect=None):
-        """ Initialise with empty buffer. """
+        """Initialise with empty buffer."""
         self.cp = codepage
         self.buf = ''
         self.preserve_control = preserve_control
@@ -208,7 +208,7 @@ class Converter(object):
         self.last = ''
 
     def to_unicode(self, s):
-        """ Process codepage string, returning unicode string when ready. """
+        """Process codepage string, returning unicode string when ready."""
         if not self.dbcs:
             # stateless if not dbcs
             return u''.join([ (c.decode('ascii', errors='ignore')
@@ -229,7 +229,7 @@ class Converter(object):
             return out
 
     def flush(self, num=None):
-        """ Empty buffer and return contents. """
+        """Empty buffer and return contents."""
         out = u''
         if num is None:
             num = len(self.buf)
@@ -240,7 +240,7 @@ class Converter(object):
         return out
 
     def process(self, c):
-        """ Process a single char, returning unicode char sequences when ready """
+        """Process a single char, returning unicode char sequences when ready """
         if not self.box_protect:
             return self.process_nobox(c)
         out = u''
@@ -269,7 +269,7 @@ class Converter(object):
         return out
 
     def process_nobox(self, c):
-        """ Process a single char, no box drawing protection """
+        """Process a single char, no box drawing protection """
         out = u''
         if self.preserve_control and c in control:
             # control char; flush buffer as SBCS and add control char unchanged
@@ -291,7 +291,7 @@ class Converter(object):
         return out
 
     def process_case0(self, c):
-        """ Process a single char with box drawing protection; case 0, starting point """
+        """Process a single char with box drawing protection; case 0, starting point """
         out = u''
         if c not in self.cp.lead:
             out += self.cp.to_unicode(c)
@@ -302,7 +302,7 @@ class Converter(object):
         return out
 
     def process_case1(self, c):
-        """ Process a single char with box drawing protection; case 1 """
+        """Process a single char with box drawing protection; case 1 """
         out = u''
         if c not in self.cp.trail:
             out += self.flush() + self.cp.to_unicode(c)
@@ -321,7 +321,7 @@ class Converter(object):
         return out
 
     def process_case2(self, c):
-        """ Process a single char with box drawing protection; case 2 """
+        """Process a single char with box drawing protection; case 2 """
         out = u''
         if c not in self.cp.lead:
             out += self.flush() + self.cp.to_unicode(c)
@@ -343,7 +343,7 @@ class Converter(object):
         return out
 
     def process_case3(self, c):
-        """ Process a single char with box drawing protection; case 3 """
+        """Process a single char with box drawing protection; case 3 """
         out = u''
         if c not in self.cp.lead:
             out += self.flush() + self.cp.to_unicode(c)
@@ -360,7 +360,7 @@ class Converter(object):
         return out
 
     def process_case4(self, c):
-        """ Process a single char with box drawing protection; case 4, continuing box drawing """
+        """Process a single char with box drawing protection; case 4, continuing box drawing """
         out = u''
         if c not in self.cp.lead:
             out += self.cp.to_unicode(c)
@@ -688,7 +688,7 @@ grapheme_break = {
 }
 
 def _get_grapheme_break(c):
-    """ Get grapheme break property of unicode char. """
+    """Get grapheme break property of unicode char."""
     for key, value in grapheme_break.iteritems():
         if ord(c) in value:
             return key
@@ -696,7 +696,7 @@ def _get_grapheme_break(c):
     return ''
 
 def _is_grapheme_boundary(last_c, current_c):
-    """ Return whether a grapheme boundary occurs between two chars. """
+    """Return whether a grapheme boundary occurs between two chars."""
     # see http://bugs.python.org/issue18406
     # and http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries
     # Break at the start and end of the text.
@@ -733,7 +733,7 @@ def _is_grapheme_boundary(last_c, current_c):
     return True
 
 def split_graphemes(ucs):
-    """ Split unicode string to list of grapheme clusters. """
+    """Split unicode string to list of grapheme clusters."""
     # generate pairs do_break, character_after
     split_iter = ((_is_grapheme_boundary(a, b), b) for a, b in zip([''] + list(ucs), list(ucs) + ['']))
     # split string on breaks

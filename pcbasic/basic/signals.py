@@ -13,7 +13,7 @@ import Queue
 # queues
 
 def save_queue(q):
-    """ Get list of queue tasks. """
+    """Get list of queue tasks."""
     qlist = []
     while True:
         try:
@@ -24,13 +24,13 @@ def save_queue(q):
     return qlist
 
 def load_queue(q, qlist):
-    """ Initialise queue from list of tasks. """
+    """Initialise queue from list of tasks."""
     for item in qlist:
         q.put(item)
 
 
 class NullQueue(object):
-    """ Dummy implementation of Queue interface. """
+    """Dummy implementation of Queue interface."""
     def __init__(self, maxsize=0):
         pass
     def qsize(self):
@@ -56,10 +56,10 @@ class NullQueue(object):
 # signals
 
 class Event(object):
-    """ Signal object for input, video or audio queue. """
+    """Signal object for input, video or audio queue."""
 
     def __init__(self, event_type, params=None):
-        """ Create signal. """
+        """Create signal."""
         self.event_type = event_type
         self.params = params
 

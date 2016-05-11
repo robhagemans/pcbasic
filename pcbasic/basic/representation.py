@@ -23,7 +23,7 @@ from . import vartypes
 from . import basictoken as tk
 
 def number_to_str(inp, screen=False, write=False, allow_empty_expression=False):
-    """ Convert BASIC number to Python str. """
+    """Convert BASIC number to Python str."""
     # screen=False means in a program listing
     # screen=True is used for screen, str$ and sequential files
     if not inp:
@@ -48,34 +48,34 @@ def number_to_str(inp, screen=False, write=False, allow_empty_expression=False):
 # tokenised ints to python str
 
 def uint_token_to_str(s):
-    """ Convert unsigned int token to Python string. """
+    """Convert unsigned int token to Python string."""
     return str(vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(s)))
 
 def int_token_to_str(s):
-    """ Convert signed int token to Python string. """
+    """Convert signed int token to Python string."""
     return str(vartypes.integer_to_int_signed(vartypes.bytes_to_integer(s)))
 
 def byte_token_to_str(s):
-    """ Convert unsigned byte token to Python string. """
+    """Convert unsigned byte token to Python string."""
     return str(bytearray(s)[0])
 
 def hex_token_to_str(s):
-    """ Convert hex token to Python str. """
+    """Convert hex token to Python str."""
     return '&H' + integer_to_str_hex(vartypes.bytes_to_integer(s))
 
 def oct_token_to_str(s):
-    """ Convert oct token to Python str. """
+    """Convert oct token to Python str."""
     return '&O' + integer_to_str_oct(vartypes.bytes_to_integer(s))
 
 def integer_to_str_oct(inp):
-    """ Convert integer to str in octal representation. """
+    """Convert integer to str in octal representation."""
     if vartypes.integer_to_int_unsigned(inp) == 0:
         return '0'
     else:
         return oct(vartypes.integer_to_int_unsigned(inp))[1:]
 
 def integer_to_str_hex(inp):
-    """ Convert integer to str in hex representation. """
+    """Convert integer to str in hex representation."""
     return hex(vartypes.integer_to_int_unsigned(inp))[2:].upper()
 
 
@@ -97,12 +97,12 @@ Double.type_sign, Double.exp_sign = '#', 'D'
 
 
 def just_under(n_in):
-    """ Return the largest floating-point number less than the given value. """
+    """Return the largest floating-point number less than the given value."""
     # decrease mantissa by one
     return n_in.__class__(n_in.neg, n_in.man - 0x100, n_in.exp)
 
 def get_digits(num, digits, remove_trailing=True):
-    """ Get the digits for an int. """
+    """Get the digits for an int."""
     pow10 = 10L**(digits-1)
     digitstr = ''
     while pow10 >= 1:
@@ -119,7 +119,7 @@ def get_digits(num, digits, remove_trailing=True):
     return digitstr
 
 def scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_dot=False):
-    """ Put digits in scientific E-notation. """
+    """Put digits in scientific E-notation."""
     valstr = digitstr[:digits_to_dot]
     if len(digitstr) > digits_to_dot:
         valstr += '.' + digitstr[digits_to_dot:]
@@ -135,7 +135,7 @@ def scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_do
     return valstr
 
 def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
-    """ Put digits in decimal notation. """
+    """Put digits in decimal notation."""
     # digits to decimal point
     exp10 += 1
     if exp10 >= len(digitstr):
@@ -159,7 +159,7 @@ def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
     return valstr
 
 def float_to_str(n_in, screen=False, write=False):
-    """ Convert BASIC float to Python string. """
+    """Convert BASIC float to Python string."""
     # screen=True (ie PRINT) - leading space, no type sign
     # screen='w' (ie WRITE) - no leading space, no type sign
     # default mode is for LIST
@@ -198,7 +198,7 @@ def float_to_str(n_in, screen=False, write=False):
     return valstr
 
 def format_number(value, tokens, digits_before, decimals):
-    """ Format a number to a format string. For PRINT USING. """
+    """Format a number to a format string. For PRINT USING."""
     # illegal function call if too many digits
     if digits_before + decimals > 24:
         raise error.RunError(error.IFC)
@@ -243,7 +243,7 @@ def format_number(value, tokens, digits_before, decimals):
     return valstr
 
 def format_float_scientific(expr, digits_before, decimals, force_dot):
-    """ Put a float in scientific format. """
+    """Put a float in scientific format."""
     work_digits = digits_before + decimals
     if work_digits > expr.digits:
         # decimal precision of the type
@@ -275,7 +275,7 @@ def format_float_scientific(expr, digits_before, decimals, force_dot):
     return scientific_notation(digitstr, exp10, expr.exp_sign, digits_to_dot=digits_before, force_dot=force_dot)
 
 def format_float_fixed(expr, decimals, force_dot):
-    """ Put a float in fixed-point representation. """
+    """Put a float in fixed-point representation."""
     unrounded = mul(expr, pow_int(expr.ten, decimals)) # expr * 10**decimals
     num = unrounded.copy().iround()
     # find exponent
@@ -300,7 +300,7 @@ def format_float_fixed(expr, decimals, force_dot):
 ##################################
 
 def str_to_float(s, allow_nonnum = True):
-    """ Return Float value for Python string. """
+    """Return Float value for Python string."""
     found_sign, found_point, found_exp = False, False, False
     found_exp_sign, exp_neg, neg = False, False, False
     exp10, exponent, mantissa, digits, zeros = 0, 0, 0, 0, 0
@@ -386,14 +386,14 @@ def str_to_float(s, allow_nonnum = True):
 #####
 
 def str_to_int(s):
-    """ Return Python int value for Python str, zero if malformed. """
+    """Return Python int value for Python str, zero if malformed."""
     try:
         return int(s)
     except ValueError:
         return 0
 
 def tokenise_hex(ins, outs):
-    """ Convert hex expression in Python string to number token. """
+    """Convert hex expression in Python string to number token."""
     # pass the H in &H
     ins.read(1)
     word = ''
@@ -408,7 +408,7 @@ def tokenise_hex(ins, outs):
     outs.write(tk.T_HEX + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(val))))
 
 def tokenise_oct(ins, outs):
-    """ Convert octal expression in Python string to number token. """
+    """Convert octal expression in Python string to number token."""
     # O is optional, could also be &777 instead of &O777
     if util.peek(ins).upper() == 'O':
         ins.read(1)
@@ -426,7 +426,7 @@ def tokenise_oct(ins, outs):
     outs.write(tk.T_OCT + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(val))))
 
 def tokenise_dec(ins, outs):
-    """ Convert decimal expression in Python string to number token. """
+    """Convert decimal expression in Python string to number token."""
     have_exp = False
     have_point = False
     word = ''
@@ -501,7 +501,7 @@ def tokenise_dec(ins, outs):
             outs.write(tk.T_DOUBLE + mbf)
 
 def tokenise_number(ins, outs):
-    """ Convert Python-string number representation to number token. """
+    """Convert Python-string number representation to number token."""
     c = util.peek(ins)
     if not c:
         return
@@ -529,7 +529,7 @@ def tokenise_number(ins, outs):
 
 
 def parse_value(ins):
-    """ Token to value. """
+    """Token to value."""
     d = ins.read(1)
     # note that hex and oct strings are interpreted signed here, but unsigned the other way!
     try:
@@ -553,7 +553,7 @@ def parse_value(ins):
     return None
 
 def str_to_number(strval, allow_nonnum=True):
-    """ Convert Python str to BASIC value. """
+    """Convert Python str to BASIC value."""
     ins = StringIO(strval)
     outs = StringIO()
     # skip spaces and line feeds (but not NUL).
@@ -569,7 +569,7 @@ def str_to_number(strval, allow_nonnum=True):
     return value
 
 def detokenise_number(ins, output):
-    """ Convert number token to Python string. """
+    """Convert number token to Python string."""
     s = ins.read(1)
     if s == tk.T_OCT:
         output += oct_token_to_str(ins.read(2))

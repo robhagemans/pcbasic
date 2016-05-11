@@ -12,10 +12,10 @@ This file is released under the GNU GPL version 3 or later.
 # except where convenient
 
 class _EASCIIBytes(object):
-    """EASCII constants as bytes"""
+    """EASCII constants as bytes."""
 
     def __init__(self):
-        """Set bytes constants"""
+        """Set bytes constants."""
         self.NUL = b'\0\0'
 
         self.CTRL_b = b'\x02'
@@ -200,10 +200,10 @@ class _EASCIIBytes(object):
 
 
 class _EASCIIUnicode(_EASCIIBytes):
-    """EASCII constants as unicode"""
+    """EASCII constants as unicode."""
 
     def __init__(self):
-        """Set unicode constants"""
+        """Set unicode constants."""
         # override class variables
         #_EASCIIBytes.__init__(self)
         for name, value in _EASCIIBytes().__dict__.iteritems():

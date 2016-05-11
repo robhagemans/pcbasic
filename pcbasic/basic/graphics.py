@@ -27,7 +27,7 @@ deg_to_rad = fp.div(fp.Single.twopi, fp.Single.from_int(360))
 
 
 class Drawing(object):
-    """ Manage graphics drawing. """
+    """Manage graphics drawing."""
 
     def __init__(self, screen, session):
         self.screen = screen
@@ -37,7 +37,7 @@ class Drawing(object):
         self.reset()
 
     def reset(self):
-        """ Reset graphics state. """
+        """Reset graphics state."""
         if self.screen.mode.is_text_mode:
             return
         self.last_point = self.get_view_mid()
@@ -50,7 +50,7 @@ class Drawing(object):
     ### attributes
 
     def get_attr_index(self, c):
-        """ Get the index of the specified attribute. """
+        """Get the index of the specified attribute."""
         if c == -1:
             # foreground; graphics 'background' attrib is always 0
             c = self.screen.attr & 0xf
@@ -61,7 +61,7 @@ class Drawing(object):
     ## VIEW graphics viewport
 
     def set_view(self, x0, y0, x1, y1, absolute, fill, border):
-        """ Set the graphics viewport and optionally draw a box (VIEW). """
+        """Set the graphics viewport and optionally draw a box (VIEW)."""
         # first unset the viewport so that we can draw the box
         self.unset_view()
         if fill is not None:
@@ -78,40 +78,40 @@ class Drawing(object):
         self.reset_view()
 
     def unset_view(self):
-        """ Unset the graphics viewport. """
+        """Unset the graphics viewport."""
         self.view_absolute = False
         self.view = None
         self.reset_view()
 
     def view_is_set(self):
-        """ Return whether the graphics viewport is set. """
+        """Return whether the graphics viewport is set."""
         return self.view is not None
 
     def reset_view(self):
-        """ Update graphics state after viewport reset. """
+        """Update graphics state after viewport reset."""
         self.last_point = self.get_view_mid()
         if self.window_bounds is not None:
             self.set_window(*self.window_bounds)
 
     def get_view(self):
-        """ Return the graphics viewport or full screen dimensions if not set. """
+        """Return the graphics viewport or full screen dimensions if not set."""
         if self.view:
             return self.view
         else:
             return 0, 0, self.screen.mode.pixel_width-1, self.screen.mode.pixel_height-1
 
     def view_contains(self, x, y):
-        """ Return whether the specified point is within the graphics view (boundaries inclusive). """
+        """Return whether the specified point is within the graphics view (boundaries inclusive)."""
         vx0, vy0, vx1, vy1 = self.get_view()
         return vx0 <= x <= vx1 and vy0 <= y <= vy1
 
     def view_clip_rect(self, x0, y0, x1, y1):
-        """ Return rect clipped to view. """
+        """Return rect clipped to view."""
         vx0, vy0, vx1, vy1 = self.get_view()
         return max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
 
     def view_clip_area(self, x0, y0, x1, y1, area_buffer):
-        """ Return area buffer in [y][x] format clipped to view. """
+        """Return area buffer in [y][x] format clipped to view."""
         vx0, vy0, vx1, vy1 = self.get_view()
         nx0, ny0, nx1, ny1 =  max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
         if numpy and type(area_buffer) == numpy.ndarray:
@@ -121,14 +121,14 @@ class Drawing(object):
         return nx0, ny0, nx1, ny1, nbuf
 
     def view_clip_interval(self, x0, x1, y):
-        """ Return rect clipped to view. """
+        """Return rect clipped to view."""
         vx0, vy0, vx1, vy1 = self.get_view()
         if not (vy0 <= y <= vy1):
             return x0, x0-1, y
         return max(x0, vx0), min(x1, vx1), y
 
     def view_clip_list(self, x0, y0, attr_list):
-        """ Return rect clipped to view. """
+        """Return rect clipped to view."""
         vx0, vy0, vx1, vy1 = self.get_view()
         if not (vy0 <= y0 <= vy1):
             return x0, y0, []
@@ -136,27 +136,27 @@ class Drawing(object):
         return nx0, y0, attr_list[nx0-x0:nx1-x0+1]
 
     def get_view_mid(self):
-        """ Get the midpoint of the current graphics view. """
+        """Get the midpoint of the current graphics view."""
         x0, y0, x1, y1 = self.get_view()
         # +1 to match GW-BASIC
         return x0 + (x1-x0)/2 + 1, y0 + (y1-y0)/2 + 1
 
     def view_coords(self, x, y):
-        """ Retrieve absolute coordinates for viewport coordinates. """
+        """Retrieve absolute coordinates for viewport coordinates."""
         if (not self.view) or self.view_absolute:
             return x, y
         else:
             return x + self.view[0], y + self.view[1]
 
     def clear_view(self):
-        """ Clear the current graphics viewport. """
+        """Clear the current graphics viewport."""
         if not self.screen.mode.is_text_mode:
             self.screen.fill_rect(*self.get_view(), index=(self.screen.attr>>4) & 0x7)
 
     ### WINDOW logical coords
 
     def set_window(self, fx0, fy0, fx1, fy1, cartesian=True):
-        """ Set the logical coordinate window (WINDOW). """
+        """Set the logical coordinate window (WINDOW)."""
         if fy0.gt(fy1):
             fy0, fy1 = fy1, fy0
         if fx0.gt(fx1):
@@ -174,16 +174,16 @@ class Drawing(object):
         self.window_bounds = fx0, fy0, fx1, fy1, cartesian
 
     def unset_window(self):
-        """ Unset the logical coordinate window. """
+        """Unset the logical coordinate window."""
         self.window = None
         self.window_bounds = None
 
     def window_is_set(self):
-        """ Return whether the logical coordinate window is set. """
+        """Return whether the logical coordinate window is set."""
         return self.window is not None
 
     def get_window_physical(self, fx, fy, step=False):
-        """ Convert logical to physical coordinates. """
+        """Convert logical to physical coordinates."""
         if self.window:
             scalex, scaley, offsetx, offsety = self.window
             if step:
@@ -202,7 +202,7 @@ class Drawing(object):
         return x, y
 
     def get_window_logical(self, x, y):
-        """ Convert physical to logical coordinates. """
+        """Convert physical to logical coordinates."""
         x, y = fp.Single.from_int(x), fp.Single.from_int(y)
         if self.window:
             scalex, scaley, offsetx, offsety = self.window
@@ -212,7 +212,7 @@ class Drawing(object):
             return x, y
 
     def get_window_scale(self, fx, fy):
-        """ Get logical to physical scale factor. """
+        """Get logical to physical scale factor."""
         if self.window:
             scalex, scaley, _, _ = self.window
             return (fp.mul(fx, scalex).round_to_int(),
@@ -223,7 +223,7 @@ class Drawing(object):
     ### PSET, POINT
 
     def pset(self, lcoord, c):
-        """ Draw a pixel in the given attribute (PSET, PRESET). """
+        """Draw a pixel in the given attribute (PSET, PRESET)."""
         x, y = self.view_coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
         self.screen.put_pixel(x, y, c)
@@ -231,7 +231,7 @@ class Drawing(object):
         self.last_point = x, y
 
     def point(self, lcoord):
-        """ Return the attribute of a pixel (POINT). """
+        """Return the attribute of a pixel (POINT)."""
         x, y = self.view_coords(*self.get_window_physical(*lcoord))
         if x < 0 or x >= self.screen.mode.pixel_width:
             return -1
@@ -242,7 +242,7 @@ class Drawing(object):
     ### LINE
 
     def line(self, lcoord0, lcoord1, c, pattern, shape):
-        """ Draw a patterned line or box (LINE). """
+        """Draw a patterned line or box (LINE)."""
         if lcoord0:
             x0, y0 = self.view_coords(*self.get_window_physical(*lcoord0))
         else:
@@ -259,7 +259,7 @@ class Drawing(object):
         self.last_attr = c
 
     def draw_line(self, x0, y0, x1, y1, c, pattern=0xffff):
-        """ Draw a line between the given physical points. """
+        """Draw a line between the given physical points."""
         # cut off any out-of-bound coordinates
         x0, y0 = self.screen.mode.cutoff_coord(x0, y0)
         x1, y1 = self.screen.mode.cutoff_coord(x1, y1)
@@ -292,7 +292,7 @@ class Drawing(object):
                 line_error += dx
 
     def draw_box_filled(self, x0, y0, x1, y1, c):
-        """ Draw a filled box between the given corner points. """
+        """Draw a filled box between the given corner points."""
         x0, y0 = self.screen.mode.cutoff_coord(x0, y0)
         x1, y1 = self.screen.mode.cutoff_coord(x1, y1)
         if y1 < y0:
@@ -302,7 +302,7 @@ class Drawing(object):
         self.screen.fill_rect(x0, y0, x1, y1, c)
 
     def draw_box(self, x0, y0, x1, y1, c, pattern=0xffff):
-        """ Draw an empty box between the given corner points. """
+        """Draw an empty box between the given corner points."""
         x0, y0 = self.screen.mode.cutoff_coord(x0, y0)
         x1, y1 = self.screen.mode.cutoff_coord(x1, y1)
         mask = 0x8000
@@ -315,7 +315,7 @@ class Drawing(object):
         mask = self.draw_straight(x0, y1, x0, y0, c, pattern, mask)
 
     def draw_straight(self, x0, y0, x1, y1, c, pattern, mask):
-        """ Draw a horizontal or vertical line. """
+        """Draw a horizontal or vertical line."""
         if x0 == x1:
             p0, p1, q, direction = y0, y1, x0, 'y'
         else:
@@ -372,7 +372,7 @@ class Drawing(object):
     # break yinc loop if one step no longer suffices
 
     def circle(self, lcoord, r, start, stop, c, aspect):
-        """ Draw a circle, ellipse, arc or sector (CIRCLE). """
+        """Draw a circle, ellipse, arc or sector (CIRCLE)."""
         x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
         if aspect is None:
@@ -417,7 +417,7 @@ class Drawing(object):
     def draw_circle(self, x0, y0, r, c,
                     oct0=-1, coo0=-1, line0=False,
                     oct1=-1, coo1=-1, line1=False):
-        """ Draw a circle sector using the midpoint algorithm. """
+        """Draw a circle sector using the midpoint algorithm."""
         # see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
         # find invisible octants
         if oct0 == -1:
@@ -473,7 +473,7 @@ class Drawing(object):
     def draw_ellipse(self, cx, cy, rx, ry, c,
                      qua0=-1, x0=-1, y0=-1, line0=False,
                      qua1=-1, x1=-1, y1=-1, line1=False):
-        """ Draw ellipse using the midpoint algorithm. """
+        """Draw ellipse using the midpoint algorithm."""
         # for algorithm see http://members.chello.at/~easyfilter/bresenham.html
         # find invisible quadrants
         if qua0 == -1:
@@ -535,7 +535,7 @@ class Drawing(object):
     ### PAINT: Flood fill
 
     def paint(self, lcoord, pattern, c, border, background):
-        """ Fill an area defined by a border attribute with a tiled pattern. """
+        """Fill an area defined by a border attribute with a tiled pattern."""
         # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
         # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
         # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
@@ -591,7 +591,7 @@ class Drawing(object):
 
     def check_scanline(self, line_seed, x_start, x_stop, y,
                        c, tile, back, border, ydir):
-        """ Append all subintervals between border colours to the scanning stack. """
+        """Append all subintervals between border colours to the scanning stack."""
         if x_stop < x_start:
             return line_seed
         x_start_next = x_start
@@ -624,7 +624,7 @@ class Drawing(object):
     ### PUT and GET: Sprite operations
 
     def put(self, lcoord, array_name, operation_token):
-        """ Put a sprite on the screen (PUT). """
+        """Put a sprite on the screen (PUT)."""
         x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
         self.last_point = x0, y0
         try:
@@ -655,7 +655,7 @@ class Drawing(object):
         self.screen.put_rect(x0, y0, x1, y1, sprite, operation_token)
 
     def get(self, lcoord0, lcoord1, array_name):
-        """ Read a sprite from the screen (GET). """
+        """Read a sprite from the screen (GET)."""
         x0, y0 = self.view_coords(*self.get_window_physical(*lcoord0))
         x1, y1 = self.view_coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
@@ -686,7 +686,7 @@ class Drawing(object):
     ### DRAW statement
 
     def draw(self, gml):
-        """ DRAW: Execute a Graphics Macro Language string. """
+        """DRAW: Execute a Graphics Macro Language string."""
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = StringIO(gml)
         ml_parser = draw_and_play.MLParser(gmls, self.session.memory)
@@ -779,7 +779,7 @@ class Drawing(object):
                 self.paint((x, y, False), None, colour, bound, None)
 
     def draw_step(self, x0, y0, sx, sy, plot, goback):
-        """ Make a DRAW step, drawing a line and reurning if requested. """
+        """Make a DRAW step, drawing a line and reurning if requested."""
         scale = self.draw_scale
         rotate = self.draw_angle
         aspect = self.screen.mode.pixel_aspect
@@ -811,7 +811,7 @@ class Drawing(object):
 
 
 def tile_to_interval(x0, x1, y, tile):
-    """ Convert a tile to a list of attributes. """
+    """Convert a tile to a list of attributes."""
     dx = x1 - x0 + 1
     h = len(tile)
     w = len(tile[0])
@@ -827,7 +827,7 @@ def tile_to_interval(x0, x1, y, tile):
 # octant logic for CIRCLE
 
 def get_octant(mbf, rx, ry):
-    """ Get the circle octant for a given coordinate. """
+    """Get the circle octant for a given coordinate."""
     neg = mbf.neg
     if neg:
         mbf.negate()
@@ -847,7 +847,7 @@ def get_octant(mbf, rx, ry):
     return octant, coord, neg
 
 def octant_coord(octant, x0, y0, x, y):
-    """ Return symmetrically reflected coordinates for a given pair. """
+    """Return symmetrically reflected coordinates for a given pair."""
     if   octant == 7:     return x0+x, y0+y
     elif octant == 0:     return x0+x, y0-y
     elif octant == 4:     return x0-x, y0+y
@@ -858,14 +858,14 @@ def octant_coord(octant, x0, y0, x, y):
     elif octant == 2:     return x0-y, y0-x
 
 def octant_gt(octant, y, coord):
-    """ Return whether y is further along the circle than coord. """
+    """Return whether y is further along the circle than coord."""
     if octant%2 == 1:
         return y < coord
     else:
         return y > coord
 
 def octant_gte(octant, y, coord):
-    """ Return whether y is further along the circle than coord, or equal. """
+    """Return whether y is further along the circle than coord, or equal."""
     if octant%2 == 1:
         return y <= coord
     else:
@@ -876,14 +876,14 @@ def octant_gte(octant, y, coord):
 # quadrant logic for CIRCLE
 
 def quadrant_coord(quadrant, x0,y0, x,y):
-    """ Return symmetrically reflected coordinates for a given pair. """
+    """Return symmetrically reflected coordinates for a given pair."""
     if   quadrant == 3:     return x0+x, y0+y
     elif quadrant == 0:     return x0+x, y0-y
     elif quadrant == 2:     return x0-x, y0+y
     elif quadrant == 1:     return x0-x, y0-y
 
 def quadrant_gt(quadrant, x, y, x0, y0):
-    """ Return whether y is further along the ellipse than coord. """
+    """Return whether y is further along the ellipse than coord."""
     if quadrant%2 == 0:
         if y != y0:
             return y > y0
@@ -896,7 +896,7 @@ def quadrant_gt(quadrant, x, y, x0, y0):
             return x > x0
 
 def quadrant_gte(quadrant, x, y, x0, y0):
-    """ Return whether y is further along the ellipse than coord, or equal. """
+    """Return whether y is further along the ellipse than coord, or equal."""
     if quadrant%2 == 0:
         if y != y0:
             return y > y0

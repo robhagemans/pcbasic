@@ -23,7 +23,7 @@ else:
     import select
 
     def kbhit():
-        """ Return whether a character is ready to be read from the keyboard. """
+        """Return whether a character is ready to be read from the keyboard."""
         return select.select([sys.stdin], [], [], 0)[0] != []
 
 try:
@@ -52,12 +52,12 @@ from . import printer
 # COM ports
 
 class COMDevice(devices.Device):
-    """ Serial port device (COMn:). """
+    """Serial port device (COMn:)."""
 
     allowed_modes = 'IOAR'
 
     def __init__(self, arg, session, field, serial_in_size):
-        """ Initialise COMn: device. """
+        """Initialise COMn: device."""
         devices.Device.__init__(self)
         addr, val = devices.parse_protocol_string(arg)
         self.stream = None
@@ -89,7 +89,7 @@ class COMDevice(devices.Device):
 
     def open(self, number, param, filetype, mode, access, lock,
                        reclen, seg, offset, length):
-        """ Open a file on COMn: """
+        """Open a file on COMn: """
         if not self.stream:
             raise error.RunError(error.DEVICE_UNAVAILABLE)
         # PE setting not implemented
@@ -116,7 +116,7 @@ class COMDevice(devices.Device):
         return f
 
     def get_params(self, param):
-        """ Parse serial port connection parameters """
+        """Parse serial port connection parameters """
         max_param = 10
         param_list = param.upper().split(',')
         if len(param_list) > max_param:
@@ -182,17 +182,17 @@ class COMDevice(devices.Device):
         return speed, parity, bytesize, stop, rs, cs, ds, cd, lf, pe
 
     def char_waiting(self):
-        """ Whether a char is present in buffer. For ON COM(n). """
+        """Whether a char is present in buffer. For ON COM(n)."""
         if not self.device_file:
             return False
         return self.device_file.in_buffer != ''
 
 
 class COMFile(devices.CRLFTextFileBase):
-    """ COMn: device - serial port. """
+    """COMn: device - serial port."""
 
     def __init__(self, fhandle, field, session, linefeed, serial_in_size):
-        """ Initialise COMn: file. """
+        """Initialise COMn: file."""
         # note that for random files, fhandle must be a seekable stream.
         devices.CRLFTextFileBase.__init__(self, fhandle, 'D', 'R')
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
@@ -205,7 +205,7 @@ class COMFile(devices.CRLFTextFileBase):
         self.overflow = False
 
     def check_read(self, allow_overflow=False):
-        """ Fill buffer at most up to buffer size; non blocking. """
+        """Fill buffer at most up to buffer size; non blocking."""
         try:
             self.in_buffer += self.fhandle.read(self.serial_in_size - len(self.in_buffer))
         except (EnvironmentError, ValueError):
@@ -222,7 +222,7 @@ class COMFile(devices.CRLFTextFileBase):
             raise error.RunError(error.COMMUNICATION_BUFFER_OVERFLOW)
 
     def read_raw(self, num=-1):
-        """ Read num characters from the port as a string; blocking """
+        """Read num characters from the port as a string; blocking """
         if num == -1:
             # read whole buffer, non-blocking
             self.check_read()
@@ -242,7 +242,7 @@ class COMFile(devices.CRLFTextFileBase):
         return out
 
     def read_line(self):
-        """ Blocking read line from the port (not the FIELD buffer!). """
+        """Blocking read line from the port (not the FIELD buffer!)."""
         out = bytearray('')
         while len(out) < 255:
             c = self.read(1)
@@ -258,11 +258,11 @@ class COMFile(devices.CRLFTextFileBase):
         return out
 
     def write_line(self, s=''):
-        """ Write string or bytearray and newline to port. """
+        """Write string or bytearray and newline to port."""
         self.write(str(s) + '\r')
 
     def write(self, s):
-        """ Write string to port. """
+        """Write string to port."""
         try:
             if self.linefeed:
                 s = s.replace('\r', '\r\n')
@@ -271,49 +271,49 @@ class COMFile(devices.CRLFTextFileBase):
             raise error.RunError(error.DEVICE_IO_ERROR)
 
     def get(self, num):
-        """ Read a record - GET. """
+        """Read a record - GET."""
         # blocking read of num bytes
         self.field.buffer[:] = self.read(num)
 
     def put(self, num):
-        """ Write a record - PUT. """
+        """Write a record - PUT."""
         self.write(self.field.buffer[:num])
 
     def loc(self):
-        """ LOC: Returns number of chars waiting to be read. """
+        """LOC: Returns number of chars waiting to be read."""
         # don't use inWaiting() as SocketSerial.inWaiting() returns dummy 0
         # fill up buffer insofar possible
         self.check_read(allow_overflow=True)
         return len(self.in_buffer)
 
     def eof(self):
-        """ EOF: no chars waiting. """
+        """EOF: no chars waiting."""
         # for EOF(i)
         return self.loc() <= 0
 
     def lof(self):
-        """ Returns number of bytes free in buffer. """
+        """Returns number of bytes free in buffer."""
         return self.serial_in_size - self.loc()
 
 
 class StdIOStream(object):
-    """ Wrapper object to route port to stdio."""
+    """Wrapper object to route port to stdio."""
 
     def __init__(self, crlf=False):
-        """ Initialise the stream. """
+        """Initialise the stream."""
         self.is_open = False
         self._crlf = crlf
 
     def open(self, rs=False, cs=1000, ds=1000, cd=0):
-        """ Open a connection. """
+        """Open a connection."""
         self.is_open = True
 
     def close(self):
-        """ Close the connection. """
+        """Close the connection."""
         self.is_open = False
 
     def read(self, num=1):
-        """ Non-blocking read of up to `num` chars from stdin. """
+        """Non-blocking read of up to `num` chars from stdin."""
         s = ''
         while kbhit() and len(s) < num:
             c = sys.stdin.read(1)
@@ -323,7 +323,7 @@ class StdIOStream(object):
         return s
 
     def write(self, s):
-        """ Write to stdout. """
+        """Write to stdout."""
         for c in s:
             if self._crlf and c == '\r':
                 c = '\n'
@@ -331,36 +331,36 @@ class StdIOStream(object):
         self.flush()
 
     def flush(self):
-        """ Flush stdout. """
+        """Flush stdout."""
         sys.stdout.flush()
 
     def set_params(self, speed, parity, bytesize, stop):
-        """ Set serial port connection parameters """
+        """Set serial port connection parameters """
 
     def get_params(self):
-        """ Get serial port connection parameters """
+        """Get serial port connection parameters """
         return 300, 'E', 8, 2
 
     def set_pins(self, rts=None, dtr=None, brk=None):
-        """ Set signal pins. """
+        """Set signal pins."""
 
     def get_pins(self):
-        """ Get signal pins. """
+        """Get signal pins."""
         return False, False, False, False
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
-        """ Set the values of the control pins. """
+        """Set the values of the control pins."""
 
     def get_status(self):
-        """ Get the values of the status pins. """
+        """Get the values of the status pins."""
         return False, False, False, False, False
 
 
 class SerialStream(object):
-    """ Wrapper object for Serial to enable pickling. """
+    """Wrapper object for Serial to enable pickling."""
 
     def __init__(self, port, session, do_open):
-        """ Initialise the stream. """
+        """Initialise the stream."""
         self._serial = serial.serial_for_url(port, timeout=0, do_not_open=not do_open)
         # for wait()
         self._session = session
@@ -368,11 +368,11 @@ class SerialStream(object):
         self.is_open = False
 
     def __getstate__(self):
-        """ Get pickling dict for stream. """
+        """Get pickling dict for stream."""
         return {'session': self._session, 'url': self._url, 'is_open': self.is_open}
 
     def __setstate__(self, st):
-        """ Initialise stream from pickling dict. """
+        """Initialise stream from pickling dict."""
         try:
             SerialStream.__init__(self, st['url'], st['session'], st['is_open'])
         except (EnvironmentError, ValueError) as e:
@@ -385,7 +385,7 @@ class SerialStream(object):
     #     return getattr(self._serial, attr)
 
     def open(self, rs=False, cs=1000, ds=1000, cd=0):
-        """ Open the serial connection. """
+        """Open the serial connection."""
         self._serial.open()
         # handshake
         # by default, RTS is up, DTR down
@@ -417,19 +417,19 @@ class SerialStream(object):
         self.is_open = True
 
     def set_params(self, speed, parity, bytesize, stop):
-        """ Set serial port connection parameters. """
+        """Set serial port connection parameters."""
         self._serial.baudrate = speed
         self._serial.parity = parity
         self._serial.bytesize = bytesize
         self._serial.stopbits = stop
 
     def get_params(self):
-        """ Get serial port connection parameters. """
+        """Get serial port connection parameters."""
         return (self._serial.baudrate, self._serial.parity,
                 self._serial.bytesize, self._serial.stopbits)
 
     def set_pins(self, rts=None, dtr=None, brk=None):
-        """ Set signal pins. """
+        """Set signal pins."""
         if rts is not None:
             self._serial.setRTS(rts)
         if dtr is not None:
@@ -438,45 +438,45 @@ class SerialStream(object):
             self._serial.setBreak(brk)
 
     def get_pins(self):
-        """ Get signal pins. """
+        """Get signal pins."""
         return (self._serial.getCD(), self._serial.getRI(),
                 self._serial.getDSR(), self._serial.getCTS())
 
     def close(self):
-        """ Close the serial connection. """
+        """Close the serial connection."""
         self._serial.close()
         self.is_open = False
 
     def flush(self):
-        """ No buffer to flush. """
+        """No buffer to flush."""
         pass
 
     def read(self, num=1):
-        """ Non-blocking read from socket. """
+        """Non-blocking read from socket."""
         # NOTE: num=1 follows PySerial
         # stream default is num=-1 to mean all available
         # but that's ill-defined for ports
         return self._serial.read(num)
 
     def write(self, s):
-        """ Write to socket. """
+        """Write to socket."""
         self._serial.write(s)
 
 
 class SocketSerialStream(SerialStream):
-    """ Wrapper object for SocketSerial to work around timeout==0 issues. """
+    """Wrapper object for SocketSerial to work around timeout==0 issues."""
 
     def __init__(self, socket, session, do_open):
-        """ Initialise the stream. """
+        """Initialise the stream."""
         SerialStream.__init__(self, 'socket://' + socket, session, do_open)
 
     def open(self, rs=False, cs=1000, ds=1000, cd=0):
-        """ Open the serial connection. """
+        """Open the serial connection."""
         self._serial.open()
         self.is_open = True
 
     def read(self, num=1):
-        """ Non-blocking read from socket. """
+        """Non-blocking read from socket."""
         # SocketSerial.read always returns '' if timeout==0
         if not self._serial._isOpen:
             # this is a ValueError for some reason, not an IOError
@@ -501,7 +501,7 @@ class SocketSerialStream(SerialStream):
 # LPT ports
 
 class LPTDevice(devices.Device):
-    """ Parallel port or printer device (LPTn:) """
+    """Parallel port or printer device (LPTn:) """
 
     # LPT1 can be opened as RANDOM
     # but behaves just like OUTPUT
@@ -509,7 +509,7 @@ class LPTDevice(devices.Device):
     allowed_modes = 'OR'
 
     def __init__(self, arg, default_stream, flush_trigger, codepage, temp_dir):
-        """ Initialise LPTn: device. """
+        """Initialise LPTn: device."""
         devices.Device.__init__(self)
         addr, val = devices.parse_protocol_string(arg)
         self.stream = default_stream
@@ -537,7 +537,7 @@ class LPTDevice(devices.Device):
 
     def open(self, number, param, filetype, mode, access, lock,
                    reclen, seg, offset, length):
-        """ Open a file on LPTn: """
+        """Open a file on LPTn: """
         # don't trigger flushes on LPT files, just on the device directly
         f = LPTFile(self.stream, 'close')
         # inherit width settings from device file
@@ -547,10 +547,10 @@ class LPTDevice(devices.Device):
 
 
 class LPTFile(devices.TextFileBase):
-    """ LPTn: device - line printer or parallel port. """
+    """LPTn: device - line printer or parallel port."""
 
     def __init__(self, stream, filetype='D', flush_trigger='close'):
-        """ Initialise LPTn. """
+        """Initialise LPTn."""
         devices.TextFileBase.__init__(self, StringIO(), filetype, mode='A')
         # width=255 means line wrap
         self.width = 255
@@ -559,14 +559,14 @@ class LPTFile(devices.TextFileBase):
         self.flush_trigger = flush_trigger
 
     def flush(self):
-        """ Flush the printer buffer to the underlying stream. """
+        """Flush the printer buffer to the underlying stream."""
         if self.fhandle:
             val = self.fhandle.getvalue()
             self.output_stream.write(val)
             self.fhandle.truncate(0)
 
     def write(self, s):
-        """ Write a string to the printer buffer. """
+        """Write a string to the printer buffer."""
         for c in str(s):
             if self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
                 self.fhandle.write('\r\n')
@@ -593,23 +593,23 @@ class LPTFile(devices.TextFileBase):
                     self.col += 1
 
     def write_line(self, s=''):
-        """ Write string or bytearray and newline to file. """
+        """Write string or bytearray and newline to file."""
         self.write(str(s) + '\r\n')
 
     def lof(self):
-        """ LOF: bad file mode """
+        """LOF: bad file mode """
         raise error.RunError(error.BAD_FILE_MODE)
 
     def loc(self):
-        """ LOC: bad file mode """
+        """LOC: bad file mode """
         raise error.RunError(error.BAD_FILE_MODE)
 
     def eof(self):
-        """ EOF: bad file mode """
+        """EOF: bad file mode """
         raise error.RunError(error.BAD_FILE_MODE)
 
     def close(self):
-        """ Close the printer device and actually print the output. """
+        """Close the printer device and actually print the output."""
         self.flush()
         self.output_stream.flush()
         self.fhandle.close()
@@ -617,7 +617,7 @@ class LPTFile(devices.TextFileBase):
 
 
 def parallel_port(port):
-    """ Return a ParallelStream object for a given port. """
+    """Return a ParallelStream object for a given port."""
     if not parallel:
         logging.warning('Parallel module not found. Parallel port communication not available.')
         return None
@@ -629,41 +629,41 @@ def parallel_port(port):
 
 
 class ParallelStream(object):
-    """ Wrapper for Parallel object to implement stream-like API. """
+    """Wrapper for Parallel object to implement stream-like API."""
 
     def __init__(self, port):
-        """ Initialise the ParallelStream. """
+        """Initialise the ParallelStream."""
         self._parallel = parallel.Parallel(port)
         self._port = port
 
     def __getstate__(self):
-        """ Get pickling dict for stream. """
+        """Get pickling dict for stream."""
         return { 'port': self._port }
 
     def __setstate__(self, st):
-        """ Initialise stream from pickling dict. """
+        """Initialise stream from pickling dict."""
         self.__init__(st['port'])
 
     def flush(self):
-        """ No buffer to flush. """
+        """No buffer to flush."""
         pass
 
     def write(self, s):
-        """ Write to the parallel port. """
+        """Write to the parallel port."""
         if self._parallel.getInPaperOut():
             raise error.RunError(error.OUT_OF_PAPER)
         for c in s:
             self._parallel.setData(ord(c))
 
     def set_control(self, select=False, init=False, lf=False, strobe=False):
-        """ Set the values of the control pins. """
+        """Set the values of the control pins."""
         self._parallel.setDataStrobe(strobe)
         self._parallel.setAutoFeed(lf)
         self._parallel.setInitOut(init)
         # select-printer pin not implemented
 
     def get_status(self):
-        """ Get the values of the status pins. """
+        """Get the values of the status pins."""
         paper = self._parallel.getInPaperOut()
         ack = self._parallel.getInAcknowledge()
         select = self._parallel.getInSelected()
@@ -673,5 +673,5 @@ class ParallelStream(object):
         return busy, ack, paper, select, err
 
     def close(self):
-        """ Close the stream. """
+        """Close the stream."""
         pass

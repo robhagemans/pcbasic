@@ -49,7 +49,7 @@ from . import unicodepage
 @contextmanager
 def launch_session(session_params, state_file,
              cmd, run, quit, wait, prog, show_greeting, resume):
-    """Launch a BASIC session in a separate thread. """
+    """Launch a BASIC session in a separate thread."""
     # input queue
     input_queue = Queue.Queue()
     # video queue
@@ -91,7 +91,7 @@ longtick_s = 0.006 - tick_s
 
 
 class Session(object):
-    """ Interpreter session. """
+    """Interpreter session."""
 
     def __init__(self, state_file=u'',
             input_queue=None, video_queue=None,
@@ -112,7 +112,7 @@ class Session(object):
             allow_code_poke=False, max_memory=65534,
             max_reclen=128, max_files=3, reserved_memory=3429,
             temp_dir=u''):
-        """ Initialise the interpreter session. """
+        """Initialise the interpreter session."""
         # name of file to store and resume state
         self.state_file = state_file
         # input, video and audio queues
@@ -254,7 +254,7 @@ class Session(object):
                     logging.warning('Pexpect module not found. SHELL statement disabled.')
 
     def greet(self):
-        """ Show greeting and keys. """
+        """Show greeting and keys."""
         greeting = (
             'PC-BASIC {version}\r'
             '(C) Copyright 2013--2016 Rob Hagemans.\r'
@@ -266,7 +266,7 @@ class Session(object):
 
     def clear(self, close_files=False,
               preserve_common=False, preserve_all=False, preserve_deftype=False):
-        """ Execute a CLEAR command. """
+        """Execute a CLEAR command."""
         #   Resets the stack and string space
         #   Clears all COMMON and user variables
         if preserve_all:
@@ -305,7 +305,7 @@ class Session(object):
                 tone_queue=None, message_queue=None,
                 override_cas1=None, override_mount=None,
                 override_current_device='Z'):
-        """ Resume an interpreter session. """
+        """Resume an interpreter session."""
         # resume from saved emulator state (if requested and available)
         self = state.load(state_file)
         if not isinstance(self, cls):
@@ -332,7 +332,7 @@ class Session(object):
     ###########################################################################
 
     def run(self, command, run, quit, wait):
-        """ Interactive interpreter session. """
+        """Interactive interpreter session."""
         if command:
             self.store_line(command)
             self.loop()
@@ -374,7 +374,7 @@ class Session(object):
                 pass
 
     def loop(self):
-        """ Run read-eval-print loop until control returns to user after a command. """
+        """Run read-eval-print loop until control returns to user after a command."""
         try:
             while True:
                 self.last_mode = self.parse_mode, self.auto_mode
@@ -421,12 +421,12 @@ class Session(object):
             self.debugger.bluescreen(e)
 
     def set_parse_mode(self, on):
-        """ Enter or exit parse mode. """
+        """Enter or exit parse mode."""
         self.parse_mode = on
         self.screen.cursor.default_visible = not on
 
     def switch_mode(self):
-        """ Switch loop mode. """
+        """Switch loop mode."""
         last_execute, last_auto = self.last_mode
         if self.parse_mode != last_execute:
             # move pointer to the start of direct line (for both on and off!)
@@ -436,7 +436,7 @@ class Session(object):
                 (not self.parse_mode) and last_execute)
 
     def store_line(self, line):
-        """ Store a program line or schedule a command line for execution. """
+        """Store a program line or schedule a command line for execution."""
         if not line:
             return True
         self.direct_line = self.tokeniser.tokenise_line(line)
@@ -454,7 +454,7 @@ class Session(object):
         return not self.parse_mode
 
     def show_prompt(self):
-        """ Show the Ok or EDIT prompt, unless suppressed. """
+        """Show the Ok or EDIT prompt, unless suppressed."""
         if self.parse_mode:
             return
         if self.edit_prompt:
@@ -466,7 +466,7 @@ class Session(object):
             self.screen.write_line("Ok\xff")
 
     def auto_step(self):
-        """ Generate an AUTO line number and wait for input. """
+        """Generate an AUTO line number and wait for input."""
         numstr = str(self.auto_linenum)
         self.screen.write(numstr)
         if self.auto_linenum in self.program.line_numbers:
@@ -498,7 +498,7 @@ class Session(object):
     # error handling
 
     def handle_error(self, e):
-        """ Handle a BASIC error through error message. """
+        """Handle a BASIC error through error message."""
         # not handled by ON ERROR, stop execution
         self._write_error_message(e.message, self.program.get_line_number(e.pos))
         self.set_parse_mode(False)
@@ -512,7 +512,7 @@ class Session(object):
                 self.edit_prompt = (self.program.get_line_number(e.pos), e.pos+1)
 
     def handle_break(self, e):
-        """ Handle a Break event. """
+        """Handle a Break event."""
         # print ^C at current position
         if not self.input_mode and not e.stop:
             self.screen.write('^C')
@@ -526,7 +526,7 @@ class Session(object):
         self.input_mode = False
 
     def _write_error_message(self, msg, linenum):
-        """ Write an error message to the console. """
+        """Write an error message to the console."""
         self.screen.start_line()
         self.screen.write(msg)
         if linenum is not None and linenum > -1 and linenum < 65535:
@@ -537,13 +537,13 @@ class Session(object):
     # main event checker
 
     def wait(self, suppress_events=False):
-        """ Wait and check events. """
+        """Wait and check events."""
         time.sleep(longtick_s)
         if not suppress_events:
             self.check_events()
 
     def check_events(self):
-        """ Main event cycle. """
+        """Main event cycle."""
         time.sleep(tick_s)
         self._check_input()
         if self.parser.run_mode:
@@ -551,7 +551,7 @@ class Session(object):
         self.keyboard.drain_event_buffer()
 
     def _check_input(self):
-        """ Handle input events. """
+        """Handle input events."""
         while True:
             try:
                 signal = self.input_queue.get(False)

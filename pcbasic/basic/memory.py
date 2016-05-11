@@ -40,7 +40,7 @@ from . import devices
 
 
 class DataSegment(object):
-    """ Memory model. """
+    """Memory model."""
 
     # data memory model: data segment
     # location depends on which flavour of BASIC we use (this is for GW-BASIC)
@@ -50,7 +50,7 @@ class DataSegment(object):
     protection_flag_addr = 1450
 
     def __init__(self, program, total_memory, reserved_memory, max_reclen, max_files):
-        """ Initialise memory. """
+        """Initialise memory."""
         # program buffer is initialised elsewhere
         self.program = program
         # BASIC stack (determined by CLEAR)
@@ -85,7 +85,7 @@ class DataSegment(object):
         self.reset_fields()
 
     def reset_fields(self):
-        """ Initialise FIELD buffers. """
+        """Initialise FIELD buffers."""
         self.fields = {}
         # fields are indexed by BASIC file number, hence max_files+1
         # file 0 (program/system file) probably doesn't need a field
@@ -93,17 +93,17 @@ class DataSegment(object):
             self.fields[i+1] = devices.Field(self.max_reclen, i+1, self)
 
     def clear_deftype(self):
-        """ Reset default sigils. """
+        """Reset default sigils."""
         self.deftype = ['!']*26
 
     def set_deftype(self, start, stop, sigil):
-        """ Set default sigils. """
+        """Set default sigils."""
         start = ord(start.upper()) - ord('A')
         stop = ord(stop.upper()) - ord('A')
         self.deftype[start:stop+1] = [sigil] * (stop-start+1)
 
     def clear_variables(self, preserve_sc, preserve_ar):
-        """ Reset and clear variables, arrays, common definitions and functions. """
+        """Reset and clear variables, arrays, common definitions and functions."""
         new_strings = var.StringSpace(self)
         # preserve COMMON variables
         # this is a re-assignment which is not FOR-safe;
@@ -121,7 +121,7 @@ class DataSegment(object):
 
     @contextmanager
     def _preserve_arrays(self, names, string_store):
-        """ Preserve COMMON variables. """
+        """Preserve COMMON variables."""
         common = {name:value for name, value in self.arrays.arrays.iteritems() if name in names}
         yield
         for name, value in common.iteritems():
@@ -141,7 +141,7 @@ class DataSegment(object):
 
     @contextmanager
     def _preserve_scalars(self, names, string_store):
-        """ Preserve COMMON variables. """
+        """Preserve COMMON variables."""
         common = {name:value for name, value in self.scalars.variables.iteritems() if name in names}
         yield
         for name, value in common.iteritems():
@@ -151,40 +151,40 @@ class DataSegment(object):
             self.scalars.set(name, full_var)
 
     def get_free(self):
-        """ Return the amount of memory available to variables, arrays, strings and code. """
+        """Return the amount of memory available to variables, arrays, strings and code."""
         return self.strings.current - self.var_current() - self.arrays.current
 
     def collect_garbage(self):
-        """ Collect garbage from string space. Compactify string storage. """
+        """Collect garbage from string space. Compactify string storage."""
         # find all strings that are actually referenced
         string_ptrs = self.scalars.get_strings() + self.arrays.get_strings()
         self.strings.collect_garbage(string_ptrs)
 
     def check_free(self, size, err):
-        """ Check if sufficient free memory is avilable, raise error if not. """
+        """Check if sufficient free memory is avilable, raise error if not."""
         if self.get_free() <= size:
             self.collect_garbage()
             if self.get_free() <= size:
                 raise error.RunError(err)
 
     def var_start(self):
-        """ Start of variable data. """
+        """Start of variable data."""
         return self.code_start + self.program.size()
 
     def var_current(self):
-        """ Current variable pointer."""
+        """Current variable pointer."""
         return self.var_start() + self.scalars.current
 
     def stack_start(self):
-        """ Top of string space; start of stack space """
+        """Top of string space; start of stack space """
         return self.total_memory - self.stack_size - 2
 
     def set_stack_size(self, new_stack_size):
-        """ Set the stack size (on CLEAR) """
+        """Set the stack size (on CLEAR) """
         self.stack_size = new_stack_size
 
     def set_basic_memory_size(self, new_size):
-        """ Set the data memory size (on CLEAR) """
+        """Set the data memory size (on CLEAR) """
         if new_size < 0:
             new_size += 0x10000
         if new_size > self.total_memory:
@@ -193,7 +193,7 @@ class DataSegment(object):
         return True
 
     def get_memory(self, addr):
-        """ Retrieve data from data memory. """
+        """Retrieve data from data memory."""
         addr -= self.data_segment*0x10
         if addr >= self.var_start():
             # variable memory
@@ -209,7 +209,7 @@ class DataSegment(object):
             return max(0, self._get_basic_memory(addr))
 
     def set_memory(self, addr, val):
-        """ Set datat in data memory. """
+        """Set datat in data memory."""
         addr -= self.data_segment*0x10
         if addr >= self.var_start():
             # POKING in variables
@@ -227,13 +227,13 @@ class DataSegment(object):
     # File buffer access
 
     def varptr_file(self, filenum):
-        """ Get address of FCB for a given file number. """
+        """Get address of FCB for a given file number."""
         if filenum < 1 or filenum > self.max_files:
             raise error.RunError(error.BAD_FILE_NUMBER)
         return self.field_mem_base + filenum * self.field_mem_offset + 6
 
     def _get_field_memory(self, address):
-        """ Retrieve data from FIELD buffer. """
+        """Retrieve data from FIELD buffer."""
         if address < self.field_mem_start:
             return -1
         # find the file we're in
@@ -249,7 +249,7 @@ class DataSegment(object):
     # other memory access
 
     def _get_var_memory(self, address):
-        """ Retrieve data from data memory. """
+        """Retrieve data from data memory."""
         if address < self.var_current():
             return self.scalars.get_memory(address)
         elif address < self.var_current() + self.arrays.current:
@@ -261,7 +261,7 @@ class DataSegment(object):
             return -1
 
     def _get_basic_memory(self, addr):
-        """ Retrieve data from BASIC memory. """
+        """Retrieve data from BASIC memory."""
         if addr < 4:
             # sentinel value, used by some programs to identify GW-BASIC
             return (0, 0, 0x10, 0x82)[addr]
@@ -295,10 +295,10 @@ class DataSegment(object):
         return -1
 
     def _not_implemented_pass(self, addr, val):
-        """ POKE into not implemented location; ignore. """
+        """POKE into not implemented location; ignore."""
 
     def _set_basic_memory(self, addr, val):
-        """ Change BASIC memory. """
+        """Change BASIC memory."""
         if addr == self.protection_flag_addr and self.program.allow_protect:
             self.program.protected = (val != 0)
 
@@ -307,13 +307,13 @@ class DataSegment(object):
     # generic variable access
 
     def complete_name(self, name):
-        """ Add default sigil to a name, if missing. """
+        """Add default sigil to a name, if missing."""
         if name and name[-1] not in vartypes.sigils:
             name += self.deftype[ord(name[0].upper()) - ord('A')]
         return name
 
     def get_variable(self, name, indices):
-        """ Retrieve the value of a scalar variable or an array element. """
+        """Retrieve the value of a scalar variable or an array element."""
         if indices == []:
             return self.scalars.get(name)
         else:
@@ -321,21 +321,21 @@ class DataSegment(object):
             return self.arrays.get(name, indices)
 
     def set_variable(self, name, indices, value):
-        """ Assign a value to a scalar variable or an array element. """
+        """Assign a value to a scalar variable or an array element."""
         if indices == []:
             self.scalars.set(name, value)
         else:
             self.arrays.set(name, indices, value)
 
     def varptr(self, name, indices):
-        """ Get address of variable. """
+        """Get address of variable."""
         if indices == []:
             return self.scalars.varptr(name)
         else:
             return self.arrays.varptr(name, indices)
 
     def dereference(self, address):
-        """ Get a value for a variable given its pointer address. """
+        """Get a value for a variable given its pointer address."""
         found = self.scalars.dereference(address)
         if found is not None:
             return found
@@ -346,7 +346,7 @@ class DataSegment(object):
         raise error.RunError(error.IFC)
 
     def get_value_for_varptrstr(self, varptrstr):
-        """ Get a value given a VARPTR$ representation. """
+        """Get a value given a VARPTR$ representation."""
         if len(varptrstr) < 3:
             raise error.RunError(error.IFC)
         varptrstr = bytearray(varptrstr)
@@ -354,7 +354,7 @@ class DataSegment(object):
         return self.dereference(varptr)
 
     def swap(self, name1, index1, name2, index2):
-        """ Swap two variables. """
+        """Swap two variables."""
         if name1[-1] != name2[-1]:
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)

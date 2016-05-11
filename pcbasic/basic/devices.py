@@ -35,7 +35,7 @@ magic_to_type = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
 ############################################################################
 
 def parse_protocol_string(arg):
-    """ Retrieve protocol and options from argument. """
+    """Retrieve protocol and options from argument."""
     argsplit = arg.split(':', 1)
     if len(argsplit) == 1:
         addr, val = None, argsplit[0]
@@ -45,17 +45,17 @@ def parse_protocol_string(arg):
 
 
 class Device(object):
-    """ Device interface for master-file devices. """
+    """Device interface for master-file devices."""
 
     allowed_modes = ''
 
     def __init__(self):
-        """ Set up device. """
+        """Set up device."""
         self.device_file = None
 
     def open(self, number, param, filetype, mode, access, lock,
                    reclen, seg, offset, length):
-        """ Open a file on the device. """
+        """Open a file on the device."""
         if not self.device_file:
             raise error.RunError(error.DEVICE_UNAVAILABLE)
         if mode not in self.allowed_modes:
@@ -64,45 +64,45 @@ class Device(object):
         return new_file
 
     def close(self):
-        """ Close the device. """
+        """Close the device."""
         if self.device_file:
             self.device_file.close()
 
 
 class NullDevice():
-    """ Null device (NUL) """
+    """Null device (NUL) """
 
     def __init__(self):
-        """ Set up device. """
+        """Set up device."""
 
     def open(self, number, param, filetype, mode, access, lock,
                    reclen, seg, offset, length):
-        """ Open a file on the device. """
+        """Open a file on the device."""
         return TextFileBase(nullstream(), filetype, mode)
 
     def close(self):
-        """ Close the device. """
+        """Close the device."""
 
 
 class SCRNDevice(Device):
-    """ Screen device (SCRN:) """
+    """Screen device (SCRN:) """
 
     allowed_modes = 'OR'
 
     def __init__(self, screen):
-        """ Initialise screen device. """
+        """Initialise screen device."""
         # open a master file on the screen
         Device.__init__(self)
         self.device_file = SCRNFile(screen)
 
 
 class KYBDDevice(Device):
-    """ Keyboard device (KYBD:) """
+    """Keyboard device (KYBD:) """
 
     allowed_modes = 'IR'
 
     def __init__(self, keyboard, screen):
-        """ Initialise keyboard device. """
+        """Initialise keyboard device."""
         # open a master file on the keyboard
         Device.__init__(self)
         self.device_file = KYBDFile(keyboard, screen)
@@ -112,10 +112,10 @@ class KYBDDevice(Device):
 # file classes
 
 class RawFile(object):
-    """ File class for raw access to underlying stream. """
+    """File class for raw access to underlying stream."""
 
     def __init__(self, fhandle, filetype, mode):
-        """ Setup the basic properties of the file. """
+        """Setup the basic properties of the file."""
         self.fhandle = fhandle
         self.filetype = filetype
         self.mode = mode.upper()
@@ -123,40 +123,40 @@ class RawFile(object):
         self.is_master = True
 
     def __enter__(self):
-        """ Context guard. """
+        """Context guard."""
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        """ Context guard. """
+        """Context guard."""
         self.close()
 
     def close(self):
-        """ Close the file. """
+        """Close the file."""
         try:
             self.fhandle.close()
         except EnvironmentError:
             pass
 
     def read_raw(self, num=-1):
-        """ Read num chars. If num==-1, read all available. """
+        """Read num chars. If num==-1, read all available."""
         try:
             return self.fhandle.read(num)
         except EnvironmentError:
             raise error.RunError(error.DEVICE_IO_ERROR)
 
     def read(self, num=-1):
-        """ Read num chars. If num==-1, read all available. """
+        """Read num chars. If num==-1, read all available."""
         return self.read_raw(num)
 
     def write(self, s):
-        """ Write string or bytearray to file. """
+        """Write string or bytearray to file."""
         try:
             self.fhandle.write(str(s))
         except EnvironmentError:
             raise error.RunError(error.DEVICE_IO_ERROR)
 
     def flush(self):
-        """ Write contents of buffers to file. """
+        """Write contents of buffers to file."""
         self.fhandle.flush()
 
 
@@ -166,11 +166,11 @@ class RawFile(object):
 
 
 class TextFileBase(RawFile):
-    """ Base for text files on disk, KYBD file, field buffer. """
+    """Base for text files on disk, KYBD file, field buffer."""
 
     def __init__(self, fhandle, filetype, mode,
                  first_char='', split_long_lines=True):
-        """ Setup the basic properties of the file. """
+        """Setup the basic properties of the file."""
         RawFile.__init__(self, fhandle, filetype, mode)
         # width=255 means line wrap
         self.width = 255
@@ -189,7 +189,7 @@ class TextFileBase(RawFile):
         self.char, self.last = '', ''
 
     def read_raw(self, num=-1):
-        """ Read num characters as string. """
+        """Read num characters as string."""
         s = ''
         while True:
             if (num > -1 and len(s) >= num):
@@ -203,7 +203,7 @@ class TextFileBase(RawFile):
         return s
 
     def read_line(self):
-        """ Read a single line. """
+        """Read a single line."""
         out = bytearray('')
         while not self._check_long_line(out):
             c = self.read(1)
@@ -216,7 +216,7 @@ class TextFileBase(RawFile):
         return out
 
     def _check_long_line(self, line):
-        """ Check if line is longer than max length; raise error if needed. """
+        """Check if line is longer than max length; raise error if needed."""
         if len(line) > 255:
             if self.split_long_lines:
                 return True
@@ -225,7 +225,7 @@ class TextFileBase(RawFile):
         return False
 
     def write(self, s):
-        """ Write the string s to the file, taking care of width settings. """
+        """Write the string s to the file, taking care of width settings."""
         # only break lines at the start of a new string. width 255 means unlimited width
         s_width = 0
         newline = False
@@ -257,18 +257,18 @@ class TextFileBase(RawFile):
                         self.col = 1
 
     def write_line(self, s=''):
-        """ Write string or bytearray and follow with CR or CRLF. """
+        """Write string or bytearray and follow with CR or CRLF."""
         self.write(str(s) + '\r')
 
     def eof(self):
-        """ Check for end of file EOF. """
+        """Check for end of file EOF."""
         # for EOF(i)
         if self.mode in ('A', 'O'):
             return False
         return self.next_char in ('', '\x1a')
 
     def set_width(self, new_width=255):
-        """ Set file width. """
+        """Set file width."""
         self.width = new_width
 
     # support for INPUT#
@@ -279,7 +279,7 @@ class TextFileBase(RawFile):
     soft_sep = ' '
 
     def _skip_whitespace(self, whitespace):
-        """ Skip spaces and line feeds and NUL; return last whitespace char """
+        """Skip spaces and line feeds and NUL; return last whitespace char """
         c = ''
         while self.next_char and self.next_char in whitespace:
             # drop whitespace char
@@ -291,7 +291,7 @@ class TextFileBase(RawFile):
         return c
 
     def input_entry(self, typechar, allow_past_end):
-        """ Read a number or string entry for INPUT """
+        """Read a number or string entry for INPUT """
         word, blanks = '', ''
         last = self._skip_whitespace(self.whitespace_input)
         # read first non-whitespace char
@@ -347,10 +347,10 @@ class TextFileBase(RawFile):
 
 
 class CRLFTextFileBase(TextFileBase):
-    """ Text file with CRLF line endings, on disk device or field buffer. """
+    """Text file with CRLF line endings, on disk device or field buffer."""
 
     def read(self, num=-1):
-        """ Read num characters, replacing CR LF with CR. """
+        """Read num characters, replacing CR LF with CR."""
         s = ''
         while len(s) < num:
             c = self.read_raw(1)
@@ -366,7 +366,7 @@ class CRLFTextFileBase(TextFileBase):
         return s
 
     def read_line(self):
-        """ Read line from text file, break on CR or CRLF (not LF). """
+        """Read line from text file, break on CR or CRLF (not LF)."""
         s = ''
         while not self._check_long_line(s):
             c = self.read(1)
@@ -380,7 +380,7 @@ class CRLFTextFileBase(TextFileBase):
         return s
 
     def write_line(self, s=''):
-        """ Write string or bytearray and newline to file. """
+        """Write string or bytearray and newline to file."""
         self.write(str(s) + '\r\n')
 
 
@@ -388,10 +388,10 @@ class CRLFTextFileBase(TextFileBase):
 # FIELD buffers
 
 class Field(object):
-    """ Buffer for FIELD access. """
+    """Buffer for FIELD access."""
 
     def __init__(self, reclen, number=0, memory=None):
-        """ Set up empty FIELD buffer. """
+        """Set up empty FIELD buffer."""
         if number > 0:
             self.address = memory.field_mem_start + (number-1)*memory.field_mem_offset
         else:
@@ -400,7 +400,7 @@ class Field(object):
         self.memory = memory
 
     def attach_var(self, name, indices, offset, length):
-        """ Attach a FIELD variable. """
+        """Attach a FIELD variable."""
         if self.address < 0 or self.memory == None:
             raise AttributeError("Can't attach variable to non-memory-mapped field.")
         if name[-1] != '$':
@@ -421,7 +421,7 @@ class Field(object):
 # Console files
 
 class KYBDFile(TextFileBase):
-    """ KYBD device: keyboard. """
+    """KYBD device: keyboard."""
 
     input_replace = {
         '\0\x47': '\xFF\x0B', '\0\x48': '\xFF\x1E', '\0\x49': '\xFE',
@@ -432,7 +432,7 @@ class KYBDFile(TextFileBase):
     col = 0
 
     def __init__(self, keyboard, screen):
-        """ Initialise keyboard file. """
+        """Initialise keyboard file."""
         # use mode = 'A' to avoid needing a first char from nullstream
         TextFileBase.__init__(self, nullstream(), filetype='D', mode='A')
         # buffer for the separator character that broke the last INPUT# field
@@ -443,7 +443,7 @@ class KYBDFile(TextFileBase):
         self.screen = screen
 
     def open_clone(self, filetype, mode, reclen=128):
-        """ Clone device file. """
+        """Clone device file."""
         inst = KYBDFile(self.keyboard, self.screen)
         inst.mode = mode
         inst.reclen = reclen
@@ -452,7 +452,7 @@ class KYBDFile(TextFileBase):
         return inst
 
     def read_raw(self, n=1):
-        """ Read a list of chars from the keyboard - INPUT$ """
+        """Read a list of chars from the keyboard - INPUT$ """
         word = ''
         for char in self.keyboard.read_chars(n):
             if len(char) > 1 and char[0] == '\0':
@@ -466,7 +466,7 @@ class KYBDFile(TextFileBase):
         return word
 
     def read(self, n=1):
-        """ Read a string from the keyboard - INPUT and LINE INPUT. """
+        """Read a string from the keyboard - INPUT and LINE INPUT."""
         word = ''
         for c in self.keyboard.read_chars(n):
             if len(c) > 1 and c[0] == '\0':
@@ -479,27 +479,27 @@ class KYBDFile(TextFileBase):
         return word
 
     def lof(self):
-        """ LOF for KYBD: is 1. """
+        """LOF for KYBD: is 1."""
         return 1
 
     def loc(self):
-        """ LOC for KYBD: is 0. """
+        """LOC for KYBD: is 0."""
         return 0
 
     def eof(self):
-        """ KYBD only EOF if ^Z is read. """
+        """KYBD only EOF if ^Z is read."""
         if self.mode in ('A', 'O'):
             return False
         # blocking peek
         return (self.keyboard.wait_char() == '\x1a')
 
     def set_width(self, new_width=255):
-        """ Setting width on KYBD device (not files) changes screen width. """
+        """Setting width on KYBD device (not files) changes screen width."""
         if self.is_master:
             self.screen.set_width(new_width)
 
     def input_entry(self, typechar, allow_past_end):
-        """ Read a number or string entry from KYBD: for INPUT# """
+        """Read a number or string entry from KYBD: for INPUT# """
         word, blanks = '', ''
         if self.input_last:
             c, self.input_last = self.input_last, ''
@@ -555,18 +555,18 @@ class KYBDFile(TextFileBase):
 
 
 class SCRNFile(RawFile):
-    """ SCRN: file, allows writing to the screen as a text file.
-        SCRN: files work as a wrapper text file. """
+    """SCRN: file, allows writing to the screen as a text file.
+        SCRN: files work as a wrapper text file."""
 
     def __init__(self, screen):
-        """ Initialise screen file. """
+        """Initialise screen file."""
         RawFile.__init__(self, nullstream(), filetype='D', mode='O')
         self.screen = screen
         self._width = self.screen.mode.width
         self._col = self.screen.current_col
 
     def open_clone(self, filetype, mode, reclen=128):
-        """ Clone screen file. """
+        """Clone screen file."""
         inst = SCRNFile(self.screen)
         inst.mode = mode
         inst.reclen = reclen
@@ -576,7 +576,7 @@ class SCRNFile(RawFile):
         return inst
 
     def _write_magic(self, filetype):
-        """ Write magic byte. """
+        """Write magic byte."""
         # SAVE "SCRN:" includes a magic byte
         try:
             self.write(type_to_magic[filetype])
@@ -584,7 +584,7 @@ class SCRNFile(RawFile):
             pass
 
     def write(self, s):
-        """ Write string s to SCRN: """
+        """Write string s to SCRN: """
         # writes to SCRN files should *not* be echoed
         do_echo = self.is_master
         self._col = self.screen.current_col
@@ -622,13 +622,13 @@ class SCRNFile(RawFile):
                 self._col += 1
 
     def write_line(self, inp=''):
-        """ Write a string to the screen and follow by CR. """
+        """Write a string to the screen and follow by CR."""
         self.write(inp)
         self.screen.write_line(do_echo=self.is_master)
 
     @property
     def col(self):
-        """ Return current (virtual) column position. """
+        """Return current (virtual) column position."""
         if self.is_master:
             return self.screen.current_col
         else:
@@ -636,27 +636,27 @@ class SCRNFile(RawFile):
 
     @property
     def width(self):
-        """ Return (virtual) screen width. """
+        """Return (virtual) screen width."""
         if self.is_master:
             return self.screen.mode.width
         else:
             return self._width
 
     def set_width(self, new_width=255):
-        """ Set (virtual) screen width. """
+        """Set (virtual) screen width."""
         if self.is_master:
             self.screen.set_width(new_width)
         else:
             self._width = new_width
 
     def lof(self):
-        """ LOF: bad file mode. """
+        """LOF: bad file mode."""
         raise error.RunError(error.BAD_FILE_MODE)
 
     def loc(self):
-        """ LOC: bad file mode. """
+        """LOC: bad file mode."""
         raise error.RunError(error.BAD_FILE_MODE)
 
     def eof(self):
-        """ EOF: bad file mode. """
+        """EOF: bad file mode."""
         raise error.RunError(error.BAD_FILE_MODE)

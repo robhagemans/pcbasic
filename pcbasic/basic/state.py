@@ -23,13 +23,13 @@ import Queue
 
 
 class ResumeFailed(Exception):
-    """ Failed to resume session. """
+    """Failed to resume session."""
     def __str__(self):
         return self.__doc__
 
 
 def unpickle_file(name, mode, pos):
-    """ Unpickle a file object. """
+    """Unpickle a file object."""
     try:
         if 'w' in mode and pos > 0:
             # preserve existing contents of writable file
@@ -47,7 +47,7 @@ def unpickle_file(name, mode, pos):
     return f
 
 def pickle_file(f):
-    """ Pickle a file object. """
+    """Pickle a file object."""
     try:
         return unpickle_file, (f.name, f.mode, f.tell())
     except IOError:
@@ -55,7 +55,7 @@ def pickle_file(f):
         return unpickle_file, (f.name, f.mode, -1)
 
 def unpickle_StringIO(value, pos):
-    """ Unpickle a cStringIO object. """
+    """Unpickle a cStringIO object."""
     # needs to be called without arguments or it's a StringI object without write()
     csio = StringIO()
     csio.write(value)
@@ -63,7 +63,7 @@ def unpickle_StringIO(value, pos):
     return csio
 
 def pickle_StringIO(csio):
-    """ Pickle a cStringIO object. """
+    """Pickle a cStringIO object."""
     value = csio.getvalue()
     pos = csio.tell()
     return unpickle_StringIO, (value, pos)
@@ -74,11 +74,11 @@ copy_reg.pickle(cStringIO.OutputType, pickle_StringIO)
 
 
 def unpickle_Queue(self, dummy):
-    """ Dummy unpickler for Queue. """
+    """Dummy unpickler for Queue."""
     return Queue.Queue()
 
 def pickle_Queue(self):
-    """ Dummy pickler for queue - nothing is saved except the type. """
+    """Dummy pickler for queue - nothing is saved except the type."""
     return None
 
 # copy_reg does not work with old-style classes, so we inject pickling methods
@@ -87,7 +87,7 @@ Queue.Queue.__getstate__ = pickle_Queue
 
 
 def save(session, state_file):
-    """ Save emulator state to file. """
+    """Save emulator state to file."""
     if not state_file:
         return
     # pickle and compress
@@ -98,7 +98,7 @@ def save(session, state_file):
         logging.warning("Could not write to state file %s. Emulator state not saved.", state_file)
 
 def load(state_file):
-    """ Load emulator state from file. """
+    """Load emulator state from file."""
     if not state_file:
         raise ResumeFailed()
     # decompress and unpickle

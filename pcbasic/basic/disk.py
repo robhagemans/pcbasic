@@ -96,14 +96,14 @@ allowable_chars = set(string.ascii_letters + string.digits + b" !#$%&'()-@^_`{}~
 # Exception handling
 
 def safe(fnname, *fnargs):
-    """ Execute OS function and handle errors. """
+    """Execute OS function and handle errors."""
     try:
         return fnname(*fnargs)
     except EnvironmentError as e:
         handle_oserror(e)
 
 def handle_oserror(e):
-    """ Translate OS and I/O exceptions to BASIC errors. """
+    """Translate OS and I/O exceptions to BASIC errors."""
     try:
         basic_err = os_error[e.errno]
     except KeyError:
@@ -117,7 +117,7 @@ def handle_oserror(e):
 
 if platform.system() == b'Windows':
     def short_name(path, longname):
-        """ Get unicode Windows short name or fake it. """
+        """Get unicode Windows short name or fake it."""
         path_and_longname = os.path.join(path, longname)
         try:
             # gets the short name if it exists, keeps long name otherwise
@@ -133,12 +133,12 @@ if platform.system() == b'Windows':
         return split_dosname(name, mark_shortened=True)
 else:
     def short_name(dummy_path, longname):
-        """ Get unicode Windows short name or fake it. """
+        """Get unicode Windows short name or fake it."""
         # path is only needed on Windows
         return split_dosname(longname, mark_shortened=True)
 
 def split_dosname(name, defext=b'', mark_shortened=False):
-    """ Convert unicode name into uppercase 8.3 tuple; apply default extension """
+    """Convert unicode name into uppercase 8.3 tuple; apply default extension """
     # convert to all uppercase, no leading or trailing spaces
     name = name.encode(b'ascii', errors=b'replace').strip().upper()
     # don't try to split special directory names
@@ -162,11 +162,11 @@ def split_dosname(name, defext=b'', mark_shortened=False):
     return strunk, sext
 
 def join_dosname(trunk, ext):
-    """ Join trunk and extension into (bytes) file name. """
+    """Join trunk and extension into (bytes) file name."""
     return trunk + (b'.' + ext if ext else b'')
 
 def istype(path, native_name, isdir):
-    """ Return whether a file exists and is a directory or regular. """
+    """Return whether a file exists and is a directory or regular."""
     name = os.path.join(path, native_name)
     try:
         return os.path.isdir(name) if isdir else os.path.isfile(name)
@@ -175,7 +175,7 @@ def istype(path, native_name, isdir):
         return False
 
 def match_dosname(dosname, path, isdir):
-    """ Find a matching native file name for a given 8.3 ascii DOS name. """
+    """Find a matching native file name for a given 8.3 ascii DOS name."""
     try:
         dosname = dosname.decode(b'ascii')
     except UnicodeDecodeError:
@@ -191,7 +191,7 @@ def match_dosname(dosname, path, isdir):
     return None
 
 def match_filename(name, defext, path, name_err, isdir):
-    """ Find or create a matching native file name for a given BASIC name. """
+    """Find or create a matching native file name for a given BASIC name."""
     # check if the name exists as-is; should also match Windows short names.
     # EXCEPT if default extension is not empty, in which case
     # default extension must be found first. Necessary for GW compatibility.
@@ -214,7 +214,7 @@ def match_filename(name, defext, path, name_err, isdir):
         raise error.RunError(name_err)
 
 def match_wildcard(name, mask):
-    """ Whether filename name matches DOS wildcard mask. """
+    """Whether filename name matches DOS wildcard mask."""
     # convert wildcard mask to regexp
     regexp = '\A'
     for c in mask:
@@ -230,12 +230,12 @@ def match_wildcard(name, mask):
     return cregexp.match(name) is not None
 
 def filename_from_unicode(name):
-    """ Replace disallowed characters in filename with ?. """
+    """Replace disallowed characters in filename with ?."""
     name_str = name.encode(b'ascii', b'replace')
     return b''.join(c if c in allowable_chars | set(b'.') else b'?' for c in name_str)
 
 def filter_names(path, files_list, mask=b'*.*'):
-    """ Apply filename filter to short version of names. """
+    """Apply filename filter to short version of names."""
     all_files = [short_name(path, name.decode(b'ascii')) for name in files_list]
     # apply mask separately to trunk and extension, dos-style.
     # hide dotfiles
@@ -247,7 +247,7 @@ def filter_names(path, files_list, mask=b'*.*'):
 ################################
 
 class DiskDevice(object):
-    """ Disk device (A:, B:, C:, ...) """
+    """Disk device (A:, B:, C:, ...) """
 
     allowed_modes = b'IOR'
 
@@ -257,7 +257,7 @@ class DiskDevice(object):
     _access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
     def __init__(self, letter, path, cwd, fields, locks, codepage, session, utf8, universal):
-        """ Initialise a disk device. """
+        """Initialise a disk device."""
         self.letter = letter
         # mount root
         # this is a native path, using os.sep
@@ -277,13 +277,13 @@ class DiskDevice(object):
         self.universal = universal
 
     def close(self):
-        """ Close disk device. """
+        """Close disk device."""
         pass
 
     def create_file_object(self, fhandle, filetype, mode, name=b'', number=0,
                            access=b'RW', lock=b'', field=None, reclen=128,
                            seg=0, offset=0, length=0):
-        """ Create disk file object of requested type. """
+        """Create disk file object of requested type."""
         # determine file type if needed
         if len(filetype) > 1 and mode == b'I':
             # read magic
@@ -319,7 +319,7 @@ class DiskDevice(object):
 
     def open(self, number, param, filetype, mode, access, lock,
                    reclen, seg, offset, length):
-        """ Open a file on a disk drive. """
+        """Open a file on a disk drive."""
         if not self.path:
             # undefined disk drive: path not found
             raise error.RunError(error.PATH_NOT_FOUND)
@@ -359,7 +359,7 @@ class DiskDevice(object):
             raise
 
     def _open_stream(self, native_name, mode, access):
-        """ Open a stream on disk by os-native name with BASIC mode and access level. """
+        """Open a stream on disk by os-native name with BASIC mode and access level."""
         name = native_name
         if (access and mode == b'R'):
             posix_access = self._access_access[access]
@@ -391,7 +391,7 @@ class DiskDevice(object):
             raise error.RunError(error.BAD_FILE_NUMBER)
 
     def _native_path_elements(self, path_without_drive, path_err, join_name=False):
-        """ Return elements of the native path for a given BASIC path. """
+        """Return elements of the native path for a given BASIC path."""
         path_without_drive = self.codepage.str_to_unicode(
                 bytes(path_without_drive), box_protect=False)
         if u'/' in path_without_drive:
@@ -439,7 +439,7 @@ class DiskDevice(object):
 
     def _native_path(self, path_and_name, defext=b'', name_err=error.FILE_NOT_FOUND,
                     isdir=False):
-        """ Find os-native path to match the given BASIC path. """
+        """Find os-native path to match the given BASIC path."""
         # substitute drives and cwds
         # always use Path Not Found error if not found at this stage
         drivepath, relpath, name = self._native_path_elements(path_and_name, path_err=error.PATH_NOT_FOUND)
@@ -452,26 +452,26 @@ class DiskDevice(object):
         return os.path.abspath(path)
 
     def chdir(self, name):
-        """ Change working directory to given BASIC path. """
+        """Change working directory to given BASIC path."""
         # get drive path and relative path
         dpath, rpath, _ = self._native_path_elements(name, path_err=error.PATH_NOT_FOUND, join_name=True)
         # set cwd for the specified drive
         self.cwd = rpath
 
     def mkdir(self, name):
-        """ Create directory at given BASIC path. """
+        """Create directory at given BASIC path."""
         safe(os.mkdir, self._native_path(name, name_err=None, isdir=True))
 
     def rmdir(self, name):
-        """ Remove directory at given BASIC path. """
+        """Remove directory at given BASIC path."""
         safe(os.rmdir, self._native_path(name, name_err=error.PATH_NOT_FOUND, isdir=True))
 
     def kill(self, name):
-        """ Remove regular file at given BASIC path. """
+        """Remove regular file at given BASIC path."""
         safe(os.remove, self._native_path(name))
 
     def rename(self, oldname, newname):
-        """ Rename a file or directory. """
+        """Rename a file or directory."""
         # note that we can't rename to another drive: "Rename across disks"
         oldname = self._native_path(bytes(oldname), name_err=error.FILE_NOT_FOUND, isdir=False)
         newname = self._native_path(bytes(newname), name_err=None, isdir=False)
@@ -480,7 +480,7 @@ class DiskDevice(object):
         safe(os.rename, oldname, newname)
 
     def files(self, screen, pathmask):
-        """ Write directory listing to console. """
+        """Write directory listing to console."""
         # forward slashes - file not found
         # GW-BASIC sometimes allows leading or trailing slashes
         # and then does weird things I don't understand.
@@ -524,7 +524,7 @@ class DiskDevice(object):
         screen.write_line(b' %d Bytes free' % self.get_free())
 
     def get_free(self):
-        """ Return the number of free bytes on the drive. """
+        """Return the number of free bytes on the drive."""
         if platform.system() == b'Windows':
             free_bytes = ctypes.c_ulonglong(0)
             ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(self.path),
@@ -535,7 +535,7 @@ class DiskDevice(object):
             return st.f_bavail * st.f_frsize
 
     def check_file_not_open(self, path):
-        """ Raise an error if the file is open. """
+        """Raise an error if the file is open."""
         for f in self.locks.open_files.values():
             try:
                 if self._native_path(path, name_err=None) == f.name:
@@ -548,23 +548,23 @@ class DiskDevice(object):
 # Locks
 
 class Locks(object):
-    """ Lock management. """
+    """Lock management."""
 
     def __init__(self):
-        """ Initialise locks. """
+        """Initialise locks."""
         # dict of native file names by number, for locking
         self._locks = {}
         # dict of disk files
         self.open_files = {}
 
     def list(self, name):
-        """ Retrieve a list of files open to the same disk stream. """
+        """Retrieve a list of files open to the same disk stream."""
         return [ self.open_files[fnum]
                        for (fnum, fname) in self._locks.iteritems()
                        if fname == name ]
 
     def acquire(self, name, number, lock_type, access):
-        """ Try to lock a file. """
+        """Try to lock a file."""
         if not number:
             return
         already_open = self.list(name)
@@ -582,18 +582,18 @@ class Locks(object):
         self._locks[number] = name
 
     def release(self, number):
-        """ Release the lock on a file before closing. """
+        """Release the lock on a file before closing."""
         try:
             del self._locks[number]
         except KeyError:
             pass
 
     def open_file(self, number, f):
-        """ Register disk file as open. """
+        """Register disk file as open."""
         self.open_files[number] = f
 
     def close_file(self, number):
-        """ Deregister disk file. """
+        """Deregister disk file."""
         try:
             del self.open_files[number]
         except KeyError:
@@ -604,11 +604,11 @@ class Locks(object):
 # Disk files
 
 class BinaryFile(devices.RawFile):
-    """ File class for binary (B, P, M) files on disk device. """
+    """File class for binary (B, P, M) files on disk device."""
 
     def __init__(self, fhandle, filetype, number, name, mode,
                        seg, offset, length, locks=None):
-        """ Initialise program file object and write header. """
+        """Initialise program file object and write header."""
         devices.RawFile.__init__(self, fhandle, filetype, mode)
         self.number = number
         # don't lock binary files
@@ -634,7 +634,7 @@ class BinaryFile(devices.RawFile):
                 self.length = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(self.read(2)))
 
     def close(self):
-        """ Write EOF and close program file. """
+        """Write EOF and close program file."""
         if self.mode == b'O':
             self.write(b'\x1a')
         devices.RawFile.close(self)
@@ -644,11 +644,11 @@ class BinaryFile(devices.RawFile):
 
 
 class RandomFile(devices.CRLFTextFileBase):
-    """ Random-access file on disk device. """
+    """Random-access file on disk device."""
 
     def __init__(self, output_stream, number, name,
                         access, lock, field, reclen=128, locks=None):
-        """ Initialise random-access file. """
+        """Initialise random-access file."""
         # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
         # actually work on the FIELD buffer; the file stream itself is not
         # touched until PUT or GET.
@@ -670,14 +670,14 @@ class RandomFile(devices.CRLFTextFileBase):
         self.output_stream.seek(0)
 
     def _check_overflow(self):
-        """ Check for FIELD OVERFLOW. """
+        """Check for FIELD OVERFLOW."""
         write = self.operating_mode == b'O'
         # FIELD overflow happens if last byte in record has been read or written
         if self.fhandle.tell() > self.reclen + write - 1:
             raise error.RunError(error.FIELD_OVERFLOW)
 
     def read_raw(self, num=-1):
-        """ Read num characters from the field. """
+        """Read num characters from the field."""
         # switch to reading mode and fix readahead buffer
         if self.operating_mode == b'O':
             self.flush()
@@ -688,7 +688,7 @@ class RandomFile(devices.CRLFTextFileBase):
         return s
 
     def write(self, s):
-        """ Write the string s to the field, taking care of width settings. """
+        """Write the string s to the field, taking care of width settings."""
         # switch to writing mode and fix readahead buffer
         if self.operating_mode == b'I':
             self.fhandle.seek(-1, 1)
@@ -697,7 +697,7 @@ class RandomFile(devices.CRLFTextFileBase):
         self._check_overflow()
 
     def close(self):
-        """ Close random-access file. """
+        """Close random-access file."""
         devices.CRLFTextFileBase.close(self)
         self.output_stream.close()
         if self.locks is not None:
@@ -705,7 +705,7 @@ class RandomFile(devices.CRLFTextFileBase):
             self.locks.close_file(self.number)
 
     def get(self, dummy=None):
-        """ Read a record. """
+        """Read a record."""
         if self.eof():
             contents = b'\0' * self.reclen
         else:
@@ -717,7 +717,7 @@ class RandomFile(devices.CRLFTextFileBase):
         self.recpos += 1
 
     def put(self, dummy=None):
-        """ Write a record. """
+        """Write a record."""
         current_length = self.lof()
         if self.recpos > current_length:
             self.output_stream.seek(0, 2)
@@ -727,21 +727,21 @@ class RandomFile(devices.CRLFTextFileBase):
         self.recpos += 1
 
     def set_pos(self, newpos):
-        """ Set current record number. """
+        """Set current record number."""
         # first record is newpos number 1
         self.output_stream.seek((newpos-1)*self.reclen)
         self.recpos = newpos - 1
 
     def loc(self):
-        """ Get number of record just past, for LOC. """
+        """Get number of record just past, for LOC."""
         return self.recpos
 
     def eof(self):
-        """ Return whether we're past currentg end-of-file, for EOF. """
+        """Return whether we're past currentg end-of-file, for EOF."""
         return self.recpos*self.reclen > self.lof()
 
     def lof(self):
-        """ Get length of file, in bytes, for LOF. """
+        """Get length of file, in bytes, for LOF."""
         current = self.output_stream.tell()
         self.output_stream.seek(0, 2)
         lof = self.output_stream.tell()
@@ -749,7 +749,7 @@ class RandomFile(devices.CRLFTextFileBase):
         return lof
 
     def lock(self, start, stop, lock_list):
-        """ Lock range of records. """
+        """Lock range of records."""
         bstart, bstop = (start-1) * self.reclen, stop*self.reclen - 1
         other_lock_list = set.union(f.lock_list for f in self.locks.list(self.name))
         for start_1, stop_1 in other_lock_list:
@@ -759,7 +759,7 @@ class RandomFile(devices.CRLFTextFileBase):
         self.lock_list.add((bstart, bstop))
 
     def unlock(self, start, stop, lock_list):
-        """ Unlock range of records. """
+        """Unlock range of records."""
         bstart, bstop = (start-1) * self.reclen, stop*self.reclen - 1
         # permission denied if the exact record range wasn't given before
         try:
@@ -769,12 +769,12 @@ class RandomFile(devices.CRLFTextFileBase):
 
 
 class TextFile(devices.CRLFTextFileBase):
-    """ Text file on disk device. """
+    """Text file on disk device."""
 
     def __init__(self, fhandle, filetype, number, name,
                  mode=b'A', access=b'RW', lock=b'',
                  codepage=None, universal=False, split_long_lines=True, locks=None):
-        """ Initialise text file object. """
+        """Initialise text file object."""
         devices.CRLFTextFileBase.__init__(self, fhandle, filetype, mode,
                                           b'', split_long_lines)
         self.lock_list = set()
@@ -795,7 +795,7 @@ class TextFile(devices.CRLFTextFileBase):
             self.fhandle.write(b'\xef\xbb\xbf')
 
     def close(self):
-        """ Close text file. """
+        """Close text file."""
         if self.mode in (b'O', b'A') and self.codepage is None:
             # write EOF char
             self.fhandle.write(b'\x1a')
@@ -805,14 +805,14 @@ class TextFile(devices.CRLFTextFileBase):
             self.locks.close_file(self.number)
 
     def loc(self):
-        """ Get file pointer LOC """
+        """Get file pointer LOC """
         # for LOC(i)
         if self.mode == b'I':
             return max(1, (127+self.fhandle.tell())/128)
         return self.fhandle.tell()/128
 
     def lof(self):
-        """ Get length of file LOF. """
+        """Get length of file LOF."""
         current = self.fhandle.tell()
         self.fhandle.seek(0, 2)
         lof = self.fhandle.tell()
@@ -820,19 +820,19 @@ class TextFile(devices.CRLFTextFileBase):
         return lof
 
     def write_line(self, s=''):
-        """ Write to file in normal or UTF-8 mode. """
+        """Write to file in normal or UTF-8 mode."""
         if self.codepage is not None:
             s = (self.codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
         devices.CRLFTextFileBase.write(self, s + '\r\n')
 
     def write(self, s):
-        """ Write to file in normal or UTF-8 mode. """
+        """Write to file in normal or UTF-8 mode."""
         if self.codepage is not None:
             s = (self.codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
         devices.CRLFTextFileBase.write(self, s)
 
     def _read_line_universal(self):
-        """ Read line from ascii program file with universal newlines. """
+        """Read line from ascii program file with universal newlines."""
         # keep reading until any kind of line break
         # is followed by a line starting with a number
         s, c = self.spaces, b''
@@ -859,7 +859,7 @@ class TextFile(devices.CRLFTextFileBase):
         return s
 
     def read_line(self):
-        """ Read line from text file. """
+        """Read line from text file."""
         if not self.universal:
             s = devices.CRLFTextFileBase.read_line(self)
         else:
@@ -869,13 +869,13 @@ class TextFile(devices.CRLFTextFileBase):
         return s
 
     def lock(self, start, stop, lock_list):
-        """ Lock the file. """
+        """Lock the file."""
         if set.union(f.lock_list for f in self.locks.list(self.name)):
             raise error.RunError(error.PERMISSION_DENIED)
         self.lock_list.add((0, -1))
 
     def unlock(self, start, stop):
-        """ Unlock the file. """
+        """Unlock the file."""
         try:
             self.lock_list.remove((0, -1))
         except KeyError:

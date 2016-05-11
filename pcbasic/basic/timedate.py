@@ -14,14 +14,14 @@ from . import error
 class Timer(object):
 
     def __init__(self):
-        """ Initialise timer. """
+        """Initialise timer."""
         # datetime offset for duration of the run
         # (so that we don't need permission to touch the system clock)
         # given in seconds
         self.time_offset = datetime.timedelta()
 
     def timer_milliseconds(self):
-        """ Get milliseconds since midnight. """
+        """Get milliseconds since midnight."""
         now = datetime.datetime.now() + self.time_offset
         midnight = datetime.datetime(now.year, now.month, now.day)
         diff = now-midnight
@@ -30,7 +30,7 @@ class Timer(object):
         return long(seconds)*1000 + long(micro)/1000
 
     def set_time(self, timestr):
-        """ Set the system time offset. """
+        """Set the system time offset."""
         now = datetime.datetime.now() + self.time_offset
         timelist = [0, 0, 0]
         pos, listpos, word = 0, 0, ''
@@ -56,7 +56,7 @@ class Timer(object):
         self.time_offset += newtime - now
 
     def set_date(self, datestr):
-        """ Set the system date offset. """
+        """Set the system date offset."""
         now = datetime.datetime.now() + self.time_offset
         datelist = [1, 1, 1]
         pos, listpos, word = 0, 0, ''
@@ -97,11 +97,11 @@ class Timer(object):
         self.time_offset += newtime - now
 
     def get_time(self):
-        """ Get (offset) system time. """
+        """Get (offset) system time."""
         return bytearray((datetime.datetime.now() + self.time_offset)
                     .strftime('%H:%M:%S'))
 
     def get_date(self):
-        """ Get (offset) system date. """
+        """Get (offset) system date."""
         return bytearray((datetime.datetime.now() + self.time_offset)
                     .strftime('%m-%d-%Y'))

@@ -18,7 +18,7 @@ from . import font
 
 
 def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=False):
-    """ Load font typefaces. """
+    """Load font typefaces."""
     fonts = {}
     if 9 in heights_needed:
         # 9-pixel font is same as 8-pixel font
@@ -45,15 +45,15 @@ def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=
 
 
 class Font(object):
-    """ Single-height bitfont. """
+    """Single-height bitfont."""
 
     def __init__(self, height, fontdict={}):
-        """ Initialise the font. """
+        """Initialise the font."""
         self.height = height
         self.fontdict = fontdict
 
     def load_hex(self, hex_resources, unicode_needed, substitutes, warn=True):
-        """ Load a set of overlaying unifont .hex files. """
+        """Load a set of overlaying unifont .hex files."""
         self.fontdict = {}
         all_needed = unicode_needed | set(substitutes)
         for hexres in reversed(hex_resources):
@@ -102,7 +102,7 @@ class Font(object):
         return self
 
     def _combine_glyphs(self, unicode_needed):
-        """ Fix missing grapheme clusters by combining components. """
+        """Fix missing grapheme clusters by combining components."""
         for cluster in unicode_needed:
             if cluster not in self.fontdict:
                 # try to combine grapheme clusters first
@@ -119,7 +119,7 @@ class Font(object):
                     self.fontdict[cluster] = str(clusterglyph)
 
     def _warn_missing(self, unicode_needed, max_warnings=3):
-        """ Check if we have all needed glyphs. """
+        """Check if we have all needed glyphs."""
         # fontdict: unicode char -> glyph
         missing = unicode_needed - set(self.fontdict)
         warnings = 0
@@ -131,7 +131,7 @@ class Font(object):
                 break
 
     def fix_missing(self, unicode_needed, font16):
-        """ Fill in missing codepoints in font using 16-line font or blanks. """
+        """Fill in missing codepoints in font using 16-line font or blanks."""
         if self.height == 16:
             return
         for c in unicode_needed:
@@ -148,7 +148,7 @@ class Font(object):
                     self.fontdict[c] = '\0'*self.height
 
     def build_glyph(self, c, req_width, req_height, carry_col_9, carry_row_9):
-        """ Build a glyph for the given unicode character. """
+        """Build a glyph for the given unicode character."""
         # req_width can be 8, 9 (SBCS), 16, 18 (DBCS) only
         req_width_base = req_width if req_width <= 9 else req_width // 2
         try:

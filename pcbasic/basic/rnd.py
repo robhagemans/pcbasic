@@ -11,7 +11,7 @@ from . import vartypes
 
 
 class RandomNumberGenerator(object):
-    """ Linear Congruential Generator """
+    """Linear Congruential Generator """
 
     step = 4455680 # 0x43fd00
     period = 2**24
@@ -19,15 +19,15 @@ class RandomNumberGenerator(object):
     increment = 2531011
 
     def __init__(self):
-        """ Initialise the random number generator. """
+        """Initialise the random number generator."""
         self.clear()
 
     def clear(self):
-        """ Reset the random number generator. """
+        """Reset the random number generator."""
         self.seed = 5228370 # 0x4fc752
 
     def reseed(self, val):
-        """ Reseed the random number generator. """
+        """Reseed the random number generator."""
         # RANDOMIZE converts to int in a non-standard way - looking at the first two bytes in the internal representation
         # on a program line, if a number outside the signed int range (or -32768) is entered,
         # the number is stored as a MBF double or float. Randomize then:
@@ -51,7 +51,7 @@ class RandomNumberGenerator(object):
         self.seed %= self.period
 
     def get_int(self, n):
-        """ Get a value from the random number generator (int argument). """
+        """Get a value from the random number generator (int argument)."""
         if n < 0:
             n = -n
             while n < 2**23:
@@ -63,5 +63,5 @@ class RandomNumberGenerator(object):
         return fp.pack(fp.div(fp.Single.from_int(self.seed), fp.Single.from_int(self.period)))
 
     def get(self, mbf):
-        """ Get a value from the random number generator (MBF single argument). """
+        """Get a value from the random number generator (MBF single argument)."""
         return self.get_int(-(mbf.man>>8) if mbf.neg else mbf.man>>8)

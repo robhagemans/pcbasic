@@ -24,16 +24,16 @@ class DebugException(Exception):
 
 
 class BaseDebugger(object):
-    """ Only debug uncaught exceptions. """
+    """Only debug uncaught exceptions."""
 
     debug_mode = False
 
     def __init__(self, session):
-        """ Initialise debugger. """
+        """Initialise debugger."""
         self.session = session
 
     def bluescreen(self, e):
-        """ Display a modal exception message. """
+        """Display a modal exception message."""
         self.session.screen.screen(0, 0, 0, 0, new_width=80)
         self.session.screen.clear()
         self.session.screen.init_mode()
@@ -96,25 +96,25 @@ class BaseDebugger(object):
         self.session.parser.set_pointer(False)
 
     def debug_step(self, linum):
-        """ Dummy debug step. """
+        """Dummy debug step."""
 
     def debug_exec(self, debug_cmd):
-        """ Dummy debug exec. """
+        """Dummy debug exec."""
 
 
 class Debugger(BaseDebugger):
-    """ Debugging helper. """
+    """Debugging helper."""
 
     debug_mode = True
 
     def __init__(self, session):
-        """ Initialise debugger. """
+        """Initialise debugger."""
         BaseDebugger.__init__(self, session)
         self.debug_tron = False
         self.watch_list = []
 
     def debug_step(self, linum):
-        """ Execute traces and watches on a program step. """
+        """Execute traces and watches on a program step."""
         outstr = ''
         if self.debug_tron:
             outstr += ('['+('%i' % linum) +']')
@@ -133,7 +133,7 @@ class Debugger(BaseDebugger):
             logging.debug(outstr)
 
     def debug_exec(self, debug_cmd):
-        """ Execute a debug command. """
+        """Execute a debug command."""
         global debugger, session
         # make session available to debugging commands
         debugger = self
@@ -164,30 +164,30 @@ debugger = None
 session = None
 
 def crash():
-    """ Simulate a crash. """
+    """Simulate a crash."""
     raise DebugException()
 
 def reset():
-    """ Ctrl+Alt+Delete. """
+    """Ctrl+Alt+Delete."""
     raise error.Reset()
 
 def trace(on=True):
-    """ Switch line number tracing on or off. """
+    """Switch line number tracing on or off."""
     debugger.debug_tron = on
 
 def watch(expr):
-    """ Add an expression to the watch list. """
+    """Add an expression to the watch list."""
     outs = session.tokeniser.tokenise_line('?'+expr)
     debugger.watch_list.append((expr, outs))
 
 def show_variables():
-    """ Dump all variables to the log. """
+    """Dump all variables to the log."""
     logging.debug(repr(debugger.session.scalars.variables))
     logging.debug(repr(debugger.session.arrays.arrays))
     logging.debug(repr(debugger.session.strings.strings))
 
 def show_screen():
-    """ Copy the screen buffer to the log. """
+    """Copy the screen buffer to the log."""
     logging.debug('  +' + '-'*session.screen.mode.width+'+')
     i = 0
     lastwrap = False
@@ -208,7 +208,7 @@ def show_screen():
     logging.debug('  +' + '-'*session.screen.mode.width+'+')
 
 def show_program():
-    """ Write a marked-up hex dump of the program to the log. """
+    """Write a marked-up hex dump of the program to the log."""
     prog = debugger.session.program
     code = prog.bytecode.getvalue()
     offset_val, p = 0, 0

@@ -33,10 +33,10 @@ carry_row_9_chars = [chr(c) for c in range(0xb0, 0xdf+1)]
 # screen buffer
 
 class TextRow(object):
-    """ Buffer for a single row of the screen. """
+    """Buffer for a single row of the screen."""
 
     def __init__(self, battr, bwidth):
-        """ Set up screen row empty and unwrapped. """
+        """Set up screen row empty and unwrapped."""
         # screen buffer, initialised to spaces, dim white on black
         self.buf = [(' ', battr)] * bwidth
         # character is part of double width char; 0 = no; 1 = lead, 2 = trail
@@ -47,7 +47,7 @@ class TextRow(object):
         self.wrap = False
 
     def clear(self, battr):
-        """ Clear the screen row buffer. Leave wrap untouched. """
+        """Clear the screen row buffer. Leave wrap untouched."""
         bwidth = len(self.buf)
         self.buf = [(' ', battr)] * bwidth
         # character is part of double width char; 0 = no; 1 = lead, 2 = trail
@@ -57,10 +57,10 @@ class TextRow(object):
 
 
 class TextPage(object):
-    """ Buffer for a screen page. """
+    """Buffer for a screen page."""
 
     def __init__(self, battr, bwidth, bheight, pagenum, do_dbcs, codepage):
-        """ Initialise the screen buffer to given dimensions. """
+        """Initialise the screen buffer to given dimensions."""
         self.row = [TextRow(battr, bwidth) for _ in xrange(bheight)]
         self.width = bwidth
         self.height = bheight
@@ -69,12 +69,12 @@ class TextPage(object):
         self.codepage = codepage
 
     def get_char_attr(self, crow, ccol, want_attr):
-        """ Retrieve a byte from the screen (SBCS or DBCS half-char). """
+        """Retrieve a byte from the screen (SBCS or DBCS half-char)."""
         ca = self.row[crow-1].buf[ccol-1][want_attr]
         return ca if want_attr else ord(ca)
 
     def put_char_attr(self, crow, ccol, c, cattr, one_only=False, force=False):
-        """ Put a byte to the screen, reinterpreting SBCS and DBCS as necessary. """
+        """Put a byte to the screen, reinterpreting SBCS and DBCS as necessary."""
         # update the screen buffer
         self.row[crow-1].buf[ccol-1] = (c, cattr)
         # mark the replaced char for refreshing
@@ -148,17 +148,17 @@ class TextPage(object):
         return start, stop
 
 class TextBuffer(object):
-    """ Buffer for text on all screen pages. """
+    """Buffer for text on all screen pages."""
 
     def __init__(self, battr, bwidth, bheight, bpages, do_dbcs, codepage):
-        """ Initialise the screen buffer to given pages and dimensions. """
+        """Initialise the screen buffer to given pages and dimensions."""
         self.pages = [TextPage(battr, bwidth, bheight, num, do_dbcs, codepage)
                       for num in range(bpages)]
         self.width = bwidth
         self.height = bheight
 
     def copy_page(self, src, dst):
-        """ Copy source to destination page. """
+        """Copy source to destination page."""
         for x in range(self.height):
             dstrow = self.pages[dst].row[x]
             srcrow = self.pages[src].row[x]
@@ -168,26 +168,26 @@ class TextBuffer(object):
 
 
 class PixelBuffer(object):
-    """ Buffer for graphics on all screen pages. """
+    """Buffer for graphics on all screen pages."""
 
     def __init__(self, bwidth, bheight, bpages, bitsperpixel):
-        """ Initialise the graphics buffer to given pages and dimensions. """
+        """Initialise the graphics buffer to given pages and dimensions."""
         self.pages = [ PixelPage(bwidth, bheight, num, bitsperpixel) for num in range(bpages)]
         self.width = bwidth
         self.height = bheight
 
     def copy_page(self, src, dst):
-        """ Copy source to destination page. """
+        """Copy source to destination page."""
         for x in range(self.height):
             dstrow = self.pages[dst].row[x]
             srcrow = self.pages[src].row[x]
             dstrow.buf[:] = srcrow.buf[:]
 
 class PixelPage(object):
-    """ Buffer for a screen page. """
+    """Buffer for a screen page."""
 
     def __init__(self, bwidth, bheight, pagenum, bitsperpixel):
-        """ Initialise the screen buffer to given dimensions. """
+        """Initialise the screen buffer to given dimensions."""
         if numpy:
             self.buffer = numpy.zeros((bheight, bwidth), dtype=numpy.int8)
         else:
@@ -199,33 +199,33 @@ class PixelPage(object):
         self.init_operations()
 
     def __getstate__(self):
-        """ Pickle the page. """
+        """Pickle the page."""
         pagedict = self.__dict__.copy()
         # lambdas can't be pickled
         pagedict['operations'] = None
         return pagedict
 
     def __setstate__(self, pagedict):
-        """ Initialise from pickled page. """
+        """Initialise from pickled page."""
         self.__dict__.update(pagedict)
         self.init_operations()
 
     def put_pixel(self, x, y, attr):
-        """ Put a pixel in the buffer. """
+        """Put a pixel in the buffer."""
         try:
             self.buffer[y][x] = attr
         except IndexError:
             pass
 
     def get_pixel(self, x, y):
-        """ Get attribute of a pixel in the buffer. """
+        """Get attribute of a pixel in the buffer."""
         try:
             return self.buffer[y][x]
         except IndexError:
             return 0
 
     def fill_interval(self, x0, x1, y, attr):
-        """ Write a list of attributes to a scanline interval. """
+        """Write a list of attributes to a scanline interval."""
         try:
             self.buffer[y][x0:x1+1] = [attr]*(x1-x0+1)
         except IndexError:
@@ -233,7 +233,7 @@ class PixelPage(object):
 
     if numpy:
         def init_operations(self):
-            """ Initialise operations closures. """
+            """Initialise operations closures."""
             self.operations = {
                 tk.PSET: lambda x, y: x.__setitem__(slice(len(x)), y),
                 tk.PRESET: lambda x, y: x.__setitem__(slice(len(x)), y.__xor__((1<<self.bitsperpixel) - 1)),
@@ -243,7 +243,7 @@ class PixelPage(object):
             }
 
         def put_interval(self, x, y, colours, mask=0xff):
-            """ Write a list of attributes to a scanline interval. """
+            """Write a list of attributes to a scanline interval."""
             colours = numpy.array(colours).astype(int)
             inv_mask = 0xff ^ mask
             colours &= mask
@@ -255,14 +255,14 @@ class PixelPage(object):
                 return numpy.zeros(len(colours), dtype=numpy.int8)
 
         def get_interval(self, x, y, length):
-            """ Return *view of* attributes of a scanline interval. """
+            """Return *view of* attributes of a scanline interval."""
             try:
                 return self.buffer[y, x:x+length]
             except IndexError:
                 return numpy.zeros(length, dtype=numpy.int8)
 
         def fill_rect(self, x0, y0, x1, y1, attr):
-            """ Apply solid attribute to an area. """
+            """Apply solid attribute to an area."""
             if (x1 < x0) or (y1 < y0):
                 return
             try:
@@ -271,7 +271,7 @@ class PixelPage(object):
                 pass
 
         def put_rect(self, x0, y0, x1, y1, array, operation_token):
-            """ Apply numpy array [y][x] of attributes to an area. """
+            """Apply numpy array [y][x] of attributes to an area."""
             if (x1 < x0) or (y1 < y0):
                 return
             try:
@@ -281,7 +281,7 @@ class PixelPage(object):
                 return numpy.zeros((y1-y0+1, x1-x0+1), dtype=numpy.int8)
 
         def get_rect(self, x0, y0, x1, y1):
-            """ Get *copy of* numpy array [y][x] of target area. """
+            """Get *copy of* numpy array [y][x] of target area."""
             try:
                 # our only user in module graphics needs a copy, so copy.
                 return numpy.array(self.buffer[y0:y1+1, x0:x1+1])
@@ -289,14 +289,14 @@ class PixelPage(object):
                 return numpy.zeros((y1-y0+1, x1-x0+1), dtype=numpy.int8)
 
         def move_rect(self, sx0, sy0, sx1, sy1, tx0, ty0):
-            """ Move pixels from an area to another, replacing with attribute 0. """
+            """Move pixels from an area to another, replacing with attribute 0."""
             w, h = sx1-sx0+1, sy1-sy0+1
             area = numpy.array(self.buffer[sy0:sy1+1, sx0:sx1+1])
             self.buffer[sy0:sy1+1, sx0:sx1+1] = numpy.zeros((h, w), dtype=numpy.int8)
             self.buffer[ty0:ty0+h, tx0:tx0+w] = area
 
         def get_until(self, x0, x1, y, c):
-            """ Get the attribute values of a scanline interval [x0, x1-1]. """
+            """Get the attribute values of a scanline interval [x0, x1-1]."""
             if x0 == x1:
                 return []
             toright = x1 > x0
@@ -316,7 +316,7 @@ class PixelPage(object):
 
     else:
         def init_operations(self):
-            """ Initialise operations closures. """
+            """Initialise operations closures."""
             self.operations = {
                 tk.PSET: lambda x, y: y,
                 tk.PRESET: lambda x, y: y ^ ((1<<self.bitsperpixel)-1),
@@ -326,7 +326,7 @@ class PixelPage(object):
             }
 
         def put_interval(self, x, y, colours, mask=0xff):
-            """ Write a list of attributes to a scanline interval. """
+            """Write a list of attributes to a scanline interval."""
             if mask != 0xff:
                 inv_mask = 0xff ^ mask
                 self.buffer[y][x:x+len(colours)] = [(c & mask) |
@@ -335,14 +335,14 @@ class PixelPage(object):
             return self.buffer[y][x:x+len(colours)]
 
         def get_interval(self, x, y, length):
-            """ Return *view of* attributes of a scanline interval. """
+            """Return *view of* attributes of a scanline interval."""
             try:
                 return self.buffer[y][x:x+length]
             except IndexError:
                 return [0] * length
 
         def fill_rect(self, x0, y0, x1, y1, attr):
-            """ Apply solid attribute to an area. """
+            """Apply solid attribute to an area."""
             if (x1 < x0) or (y1 < y0):
                 return
             try:
@@ -352,7 +352,7 @@ class PixelPage(object):
                 pass
 
         def put_rect(self, x0, y0, x1, y1, array, operation_token):
-            """ Apply 2d list [y][x] of attributes to an area. """
+            """Apply 2d list [y][x] of attributes to an area."""
             if (x1 < x0) or (y1 < y0):
                 return
             try:
@@ -365,21 +365,21 @@ class PixelPage(object):
                 return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
 
         def get_rect(self, x0, y0, x1, y1):
-            """ Get *copy of* 2d list [y][x] of target area. """
+            """Get *copy of* 2d list [y][x] of target area."""
             try:
                 return [self.buffer[y][x0:x1+1] for y in range(y0, y1+1)]
             except IndexError:
                 return [[0]*(x1-x0+1) for _ in range(y1-y0+1)]
 
         def move_rect(self, sx0, sy0, sx1, sy1, tx0, ty0):
-            """ Move pixels from an area to another, replacing with attribute 0. """
+            """Move pixels from an area to another, replacing with attribute 0."""
             for y in range(0, sy1-sy0+1):
                 row = self.buffer[sy0+y][sx0:sx1+1]
                 self.buffer[sy0+y][sx0:sx1+1] = [0] * (sx1-sx0+1)
                 self.buffer[ty0+y][tx0:tx0+(sx1-sx0+1)] = row
 
         def get_until(self, x0, x1, y, c):
-            """ Get the attribute values of a scanline interval [x0, x1-1]. """
+            """Get the attribute values of a scanline interval [x0, x1-1]."""
             if x0 == x1:
                 return []
             toright = x1 > x0
@@ -395,7 +395,7 @@ class PixelPage(object):
 # screen operations
 
 class Screen(object):
-    """ Screen manipulation operations. """
+    """Screen manipulation operations."""
 
     # CGA mono intensities
     intensity16_mono = range(0x00, 0x100, 0x11)
@@ -426,7 +426,7 @@ class Screen(object):
 
     def __init__(self, session, initial_width, video_mem_size, capabilities, monitor, sound, redirect, fkey_macros,
                 cga_low, mono_tint, screen_aspect, codepage, font_family, warn_fonts):
-        """ Minimal initialisiation of the screen. """
+        """Minimal initialisiation of the screen."""
         # emulated video card - cga, ega, etc
         if capabilities == 'ega' and monitor == 'mono':
             capabilities = 'ega_mono'
@@ -514,13 +514,13 @@ class Screen(object):
         self.set_mode(self.mode, 0, 1, 0, 0)
 
     def prepare_modes(self):
-        """ Build lists of allowed graphics modes. """
+        """Build lists of allowed graphics modes."""
         self.text_data, self.mode_data = modes.get_modes(self,
                     self.cga4_palette, self.video_mem_size,
                     self.capabilities, self.mono_tint, self.screen_aspect)
 
     def resume(self):
-        """ Load a video mode from storage and initialise. """
+        """Load a video mode from storage and initialise."""
         # recalculate modes in case we've changed hardware emulations
         self.prepare_modes()
         cmode = self.mode
@@ -585,7 +585,7 @@ class Screen(object):
 
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum,
                erase=1, new_width=None):
-        """ SCREEN: change the video mode, colourburst, visible or active page. """
+        """SCREEN: change the video mode, colourburst, visible or active page."""
         # reset palette happens even if the SCREEN call fails
         self.palette = Palette(self.mode, self.capabilities)
         # set default arguments
@@ -665,7 +665,7 @@ class Screen(object):
 
     def set_mode(self, mode_info, new_mode, new_colorswitch,
                  new_apagenum, new_vpagenum):
-        """ Change the video mode, colourburst, visible or active page. """
+        """Change the video mode, colourburst, visible or active page."""
         # reset palette happens even if the SCREEN call fails
         self.set_cga4_palette(1)
         # if the new mode has fewer pages than current vpage/apage,
@@ -737,7 +737,7 @@ class Screen(object):
             self.set_colorburst(False)
 
     def set_width(self, to_width):
-        """ Set the character width of the screen, reset pages and change modes. """
+        """Set the character width of the screen, reset pages and change modes."""
         # raise an error if the width value doesn't make sense
         if to_width not in (20, 40, 80):
             raise error.RunError(error.IFC)
@@ -779,7 +779,7 @@ class Screen(object):
         self.init_mode()
 
     def init_mode(self):
-        """ Initialisation when we switched to new screen mode. """
+        """Initialisation when we switched to new screen mode."""
         # redraw key line
         self.fkey_macros.redraw_keys(self)
         # rebuild build the cursor;
@@ -795,7 +795,7 @@ class Screen(object):
         self.cursor.reset_visibility()
 
     def set_colorburst(self, on=True):
-        """ Set the composite colorburst bit. """
+        """Set the composite colorburst bit."""
         # On a composite monitor:
         # - on SCREEN 2 this enables artifacting
         # - on SCREEN 1 and 0 this switches between colour and greyscale
@@ -818,7 +818,7 @@ class Screen(object):
                             self.palette.rgb_palette, self.palette.rgb_palette1)))
 
     def set_cga4_palette(self, num):
-        """ set the default 4-colour CGA palette. """
+        """set the default 4-colour CGA palette."""
         self.cga4_palette_num = num
         # we need to copy into cga4_palette as it's referenced by mode.palette
         if self.cga_mode_5 and self.capabilities in ('cga', 'cga_old'):
@@ -827,7 +827,7 @@ class Screen(object):
             self.cga4_palette[:] = self.cga4_palettes[num]
 
     def set_video_memory_size(self, new_size):
-        """ Change the amount of memory available to the video card. """
+        """Change the amount of memory available to the video card."""
         self.video_mem_size = new_size
         # redefine number of available video pages
         self.prepare_modes()
@@ -844,7 +844,7 @@ class Screen(object):
         return True
 
     def set_page(self, new_vpagenum, new_apagenum):
-        """ Set active page & visible page, counting from 0. """
+        """Set active page & visible page, counting from 0."""
         if new_vpagenum is None:
             new_vpagenum = self.vpagenum
         if new_apagenum is None:
@@ -858,20 +858,20 @@ class Screen(object):
         self.session.video_queue.put(signals.Event(signals.VIDEO_SET_PAGE, (new_vpagenum, new_apagenum)))
 
     def set_attr(self, attr):
-        """ Set the default attribute. """
+        """Set the default attribute."""
         self.attr = attr
         if not self.mode.is_text_mode and self.mode.cursor_index is None:
             fore, _, _, _ = self.split_attr(attr)
             self.session.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
 
     def set_border(self, attr):
-        """ Set the border attribute. """
+        """Set the border attribute."""
         self.border_attr = attr
         fore, _, _, _ = self.split_attr(attr)
         self.session.video_queue.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
 
     def copy_page(self, src, dst):
-        """ Copy source to destination page. """
+        """Copy source to destination page."""
         self.text.copy_page(src, dst)
         self.session.video_queue.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
 
@@ -879,7 +879,7 @@ class Screen(object):
     # screen read/write
 
     def write(self, s, scroll_ok=True, do_echo=True):
-        """ Write a string to the screen at the current position. """
+        """Write a string to the screen at the current position."""
         if do_echo:
             # CR -> CRLF, CRLF -> CRLF LF
             self.redirect.write(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
@@ -931,7 +931,7 @@ class Screen(object):
             last = c
 
     def write_line(self, s='', scroll_ok=True, do_echo=True):
-        """ Write a string to the screen and end with a newline. """
+        """Write a string to the screen and end with a newline."""
         self.write(s, scroll_ok, do_echo)
         if do_echo:
             self.redirect.write('\r\n')
@@ -940,7 +940,7 @@ class Screen(object):
         self.set_pos(self.current_row + 1, 1)
 
     def write_char(self, c, do_scroll_down=False):
-        """ Put one character at the current position. """
+        """Put one character at the current position."""
         # check if scroll& repositioning needed
         if self.overflow:
             self.current_col += 1
@@ -966,7 +966,7 @@ class Screen(object):
         self.check_pos(scroll_ok=True)
 
     def _check_wrap(self, do_scroll_down):
-        """ Wrap if we need to. """
+        """Wrap if we need to."""
         if self.current_col > self.mode.width:
             if self.current_row < self.mode.height:
                 # wrap line
@@ -981,7 +981,7 @@ class Screen(object):
                 self.current_col = self.mode.width
 
     def start_line(self):
-        """ Move the cursor to the start of the next line, this line if empty. """
+        """Move the cursor to the start of the next line, this line if empty."""
         if self.current_col != 1:
             self.redirect.write('\r\n')
             self.check_pos(scroll_ok=True)
@@ -990,7 +990,7 @@ class Screen(object):
         self.apage.row[self.current_row-2].wrap = False
 
     def set_pos(self, to_row, to_col, scroll_ok=True):
-        """ Set the current position. """
+        """Set the current position."""
         self.overflow = False
         self.current_row, self.current_col = to_row, to_col
         # this may alter self.current_row, self.current_col
@@ -999,7 +999,7 @@ class Screen(object):
         self.move_cursor(self.current_row, self.current_col)
 
     def check_pos(self, scroll_ok=True):
-        """ Check if we have crossed the screen boundaries and move as needed. """
+        """Check if we have crossed the screen boundaries and move as needed."""
         oldrow, oldcol = self.current_row, self.current_col
         if self.bottom_row_allowed:
             if self.current_row == self.mode.height:
@@ -1043,12 +1043,12 @@ class Screen(object):
 
 
     def get_char_attr(self, pagenum, crow, ccol, want_attr):
-        """ Retrieve a byte from the screen. """
+        """Retrieve a byte from the screen."""
         return self.text.pages[pagenum].get_char_attr(crow, ccol, want_attr)
 
     def put_char_attr(self, pagenum, crow, ccol, c, cattr,
                             one_only=False, for_keys=False, force=False):
-        """ Put a byte to the screen, redrawing as necessary. """
+        """Put a byte to the screen, redrawing as necessary."""
         if not self.mode.is_text_mode:
             cattr = cattr & 0xf
             # always force drawing of spaces, it may have been overdrawn
@@ -1059,7 +1059,7 @@ class Screen(object):
         self.refresh_range(pagenum, crow, start, stop-1, for_keys)
 
     def refresh_range(self, pagenum, crow, start, stop, for_keys=False, text_only=False):
-        """ Redraw a section of a screen row, assuming DBCS buffer has been set. """
+        """Redraw a section of a screen row, assuming DBCS buffer has been set."""
         therow = self.text.pages[pagenum].row[crow-1]
         ccol = start
         while ccol <= stop:
@@ -1095,7 +1095,7 @@ class Screen(object):
 
     # should be in console? uses wrap
     def redraw_row(self, start, crow, wrap=True):
-        """ Draw the screen row, wrapping around and reconstructing DBCS buffer. """
+        """Draw the screen row, wrapping around and reconstructing DBCS buffer."""
         while True:
             therow = self.apage.row[crow-1]
             for i in range(start, therow.end):
@@ -1111,11 +1111,11 @@ class Screen(object):
                 break
 
     def set_print_screen_target(self, lpt1_file):
-        """ Set stream for print_screen() """
+        """Set stream for print_screen() """
         self.lpt1_file = lpt1_file
 
     def print_screen(self):
-        """ Output the visible page to LPT1. """
+        """Output the visible page to LPT1."""
         if not self.lpt1_file:
             logging.debug('Print screen target not set.')
             return
@@ -1126,7 +1126,7 @@ class Screen(object):
             self.lpt1_file.write_line(line)
 
     def clear_text_at(self, x, y):
-        """ Remove the character covering a single pixel. """
+        """Remove the character covering a single pixel."""
         fx, fy = self.mode.font_width, self.mode.font_height
         cymax, cxmax = self.mode.height-1, self.mode.width-1
         cx, cy = x // fx, y // fy
@@ -1139,7 +1139,7 @@ class Screen(object):
 
     #MOVE to TextBuffer? replace with graphics_to_text_loc v.v.?
     def clear_text_area(self, x0, y0, x1, y1):
-        """ Remove all characters from the textbuffer on a rectangle of the graphics screen. """
+        """Remove all characters from the textbuffer on a rectangle of the graphics screen."""
         fx, fy = self.mode.font_width, self.mode.font_height
         cymax, cxmax = self.mode.height-1, self.mode.width-1
         cx0 = min(cxmax, max(0, x0 // fx))
@@ -1151,13 +1151,13 @@ class Screen(object):
                 (' ', self.attr)] * (cx1 - cx0 + 1)
 
     def text_to_pixel_area(self, row0, col0, row1, col1):
-        """ Convert area from text buffer to area for pixel buffer. """
+        """Convert area from text buffer to area for pixel buffer."""
         # area bounds are all inclusive
         return ((col0-1)*self.mode.font_width, (row0-1)*self.mode.font_height,
                 (col1-col0+1)*self.mode.font_width-1, (row1-row0+1)*self.mode.font_height-1)
 
     def clear_rows(self, start, stop):
-        """ Clear text and graphics on given (inclusive) text row range. """
+        """Clear text and graphics on given (inclusive) text row range."""
         for r in self.apage.row[start-1:stop]:
             r.clear(self.attr)
         if not self.mode.is_text_mode:
@@ -1170,13 +1170,13 @@ class Screen(object):
 
     #MOVE to Cursor.move ?
     def move_cursor(self, row, col):
-        """ Move the cursor to a new position. """
+        """Move the cursor to a new position."""
         self.current_row, self.current_col = row, col
         self.session.video_queue.put(signals.Event(signals.VIDEO_MOVE_CURSOR, (row, col)))
         self.cursor.reset_attr()
 
     def rebuild_glyph(self, ordval):
-        """ Rebuild a text-mode character after POKE. """
+        """Rebuild a text-mode character after POKE."""
         if self.mode.is_text_mode:
             # force rebuilding the character by deleting and requesting
             del self.glyphs[chr(ordval)]
@@ -1185,7 +1185,7 @@ class Screen(object):
     ## text viewport / scroll area
 
     def set_view(self, start, stop):
-        """ Set the scroll area. """
+        """Set the scroll area."""
         self.view_set = True
         self.view_start = start
         self.scroll_height = stop
@@ -1194,12 +1194,12 @@ class Screen(object):
         self.move_cursor(start, 1)
 
     def unset_view(self):
-        """ Unset scroll area. """
+        """Unset scroll area."""
         self.set_view(1, 24)
         self.view_set = False
 
     def clear_view(self):
-        """ Clear the scroll area. """
+        """Clear the scroll area."""
         if self.capabilities in ('vga', 'ega', 'cga', 'cga_old'):
             # keep background, set foreground to 7
             attr_save = self.attr
@@ -1222,7 +1222,7 @@ class Screen(object):
             self.set_attr(attr_save)
 
     def clear(self):
-        """ Clear the screen. """
+        """Clear the screen."""
         save_view_set = self.view_set
         save_view_start = self.view_start
         save_scroll_height = self.scroll_height
@@ -1234,7 +1234,7 @@ class Screen(object):
             self.unset_view()
 
     def scroll(self, from_line=None):
-        """ Scroll the scroll region up by one line, starting at from_line. """
+        """Scroll the scroll region up by one line, starting at from_line."""
         if from_line is None:
             from_line = self.view_start
         _, back, _, _ = self.split_attr(self.attr)
@@ -1254,7 +1254,7 @@ class Screen(object):
         del self.apage.row[from_line-1]
 
     def scroll_down(self,from_line):
-        """ Scroll the scroll region down by one line, starting at from_line. """
+        """Scroll the scroll region down by one line, starting at from_line."""
         _, back, _, _ = self.split_attr(self.attr)
         self.session.video_queue.put(signals.Event(signals.VIDEO_SCROLL_DOWN,
                     (from_line, self.scroll_height, back)))
@@ -1271,7 +1271,7 @@ class Screen(object):
         del self.apage.row[self.scroll_height-1]
 
     def get_text(self, start_row, start_col, stop_row, stop_col):
-        """ Retrieve unicode text for copying. """
+        """Retrieve unicode text for copying."""
         r, c = start_row, start_col
         full = []
         clip = []
@@ -1298,7 +1298,7 @@ class Screen(object):
     ## graphics primitives
 
     def put_pixel(self, x, y, index, pagenum=None):
-        """ Put a pixel on the screen; empty character buffer. """
+        """Put a pixel on the screen; empty character buffer."""
         if pagenum is None:
             pagenum = self.apagenum
         if self.drawing.view_contains(x, y):
@@ -1307,24 +1307,24 @@ class Screen(object):
             self.clear_text_at(x, y)
 
     def get_pixel(self, x, y, pagenum=None):
-        """ Return the attribute a pixel on the screen. """
+        """Return the attribute a pixel on the screen."""
         if pagenum is None:
             pagenum = self.apagenum
         return self.pixels.pages[pagenum].get_pixel(x, y)
 
     def get_interval(self, pagenum, x, y, length):
-        """ Read a scanline interval into a list of attributes. """
+        """Read a scanline interval into a list of attributes."""
         return self.pixels.pages[pagenum].get_interval(x, y, length)
 
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
-        """ Write a list of attributes to a scanline interval. """
+        """Write a list of attributes to a scanline interval."""
         x, y, colours = self.drawing.view_clip_list(x, y, colours)
         newcolours = self.pixels.pages[pagenum].put_interval(x, y, colours, mask)
         self.session.video_queue.put(signals.Event(signals.VIDEO_PUT_INTERVAL, (pagenum, x, y, newcolours)))
         self.clear_text_area(x, y, x+len(colours), y)
 
     def fill_interval(self, x0, x1, y, index):
-        """ Fill a scanline interval in a solid attribute. """
+        """Fill a scanline interval in a solid attribute."""
         x0, x1, y = self.drawing.view_clip_interval(x0, x1, y)
         self.pixels.pages[self.apagenum].fill_interval(x0, x1, y, index)
         self.session.video_queue.put(signals.Event(signals.VIDEO_FILL_INTERVAL,
@@ -1332,15 +1332,15 @@ class Screen(object):
         self.clear_text_area(x0, y, x1, y)
 
     def get_until(self, x0, x1, y, c):
-        """ Get the attribute values of a scanline interval. """
+        """Get the attribute values of a scanline interval."""
         return self.pixels.pages[self.apagenum].get_until(x0, x1, y, c)
 
     def get_rect(self, x0, y0, x1, y1):
-        """ Read a screen rect into an [y][x] array of attributes. """
+        """Read a screen rect into an [y][x] array of attributes."""
         return self.pixels.pages[self.apagenum].get_rect(x0, y0, x1, y1)
 
     def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
-        """ Apply an [y][x] array of attributes onto a screen rect. """
+        """Apply an [y][x] array of attributes onto a screen rect."""
         x0, y0, x1, y1, sprite = self.drawing.view_clip_area(x0, y0, x1, y1, sprite)
         rect = self.pixels.pages[self.apagenum].put_rect(x0, y0, x1, y1,
                                                         sprite, operation_token)
@@ -1349,7 +1349,7 @@ class Screen(object):
         self.clear_text_area(x0, y0, x1, y1)
 
     def fill_rect(self, x0, y0, x1, y1, index):
-        """ Fill a rectangle in a solid attribute. """
+        """Fill a rectangle in a solid attribute."""
         x0, y0, x1, y1 = self.drawing.view_clip_rect(x0, y0, x1, y1)
         self.pixels.pages[self.apagenum].fill_rect(x0, y0, x1, y1, index)
         self.session.video_queue.put(signals.Event(signals.VIDEO_FILL_RECT,
@@ -1359,7 +1359,7 @@ class Screen(object):
     # text
 
     def get_glyph(self, c):
-        """ Return a glyph mask for a given character """
+        """Return a glyph mask for a given character """
         try:
             mask = self.glyphs[c]
         except KeyError:
@@ -1377,7 +1377,7 @@ class Screen(object):
 
     if numpy:
         def glyph_to_rect(self, row, col, mask, fore, back):
-            """ Return a sprite for a given character """
+            """Return a sprite for a given character """
             # set background
             glyph = numpy.full(mask.shape, back)
             # stamp foreground mask
@@ -1387,7 +1387,7 @@ class Screen(object):
             return x0, y0, x1, y1, glyph
     else:
         def glyph_to_rect(self, row, col, mask, fore, back):
-            """ Return a sprite for a given character """
+            """Return a sprite for a given character """
             glyph = [[(fore if bit else back) for bit in row] for row in mask]
             x0, y0 = (col-1) * self.mode.font_width, (row-1) * self.mode.font_height
             x1, y1 = x0 + len(mask[0]) - 1, y0 + len(mask) - 1
@@ -1396,7 +1396,7 @@ class Screen(object):
 
     #MOVE to modes classes in modes.py
     def split_attr(self, attr):
-        """ Split attribute byte into constituent parts. """
+        """Split attribute byte into constituent parts."""
         if self.mode.has_underline:
             # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
             # see also http://support.microsoft.com/KB/35148
@@ -1428,16 +1428,16 @@ class Screen(object):
 # palette
 
 class Palette(object):
-    """ Colour palette. """
+    """Colour palette."""
 
     def __init__(self, mode, capabilities):
-        """ Initialise palette. """
+        """Initialise palette."""
         self.capabilities = capabilities
         self.mode = mode
         self.set_all(mode.palette, check_mode=False)
 
     def set_entry(self, index, colour, check_mode=True):
-        """ Set a new colour for a given attribute. """
+        """Set a new colour for a given attribute."""
         mode = self.mode
         if check_mode and not self.mode_allows_palette(mode):
             return
@@ -1449,11 +1449,11 @@ class Palette(object):
             signals.Event(signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
 
     def get_entry(self, index):
-        """ Retrieve the colour for a given attribute. """
+        """Retrieve the colour for a given attribute."""
         return self.palette[index]
 
     def set_all(self, new_palette, check_mode=True):
-        """ Set the colours for all attributes. """
+        """Set the colours for all attributes."""
         mode = self.mode
         if check_mode and new_palette and not self.mode_allows_palette(mode):
             return
@@ -1467,7 +1467,7 @@ class Palette(object):
             signals.Event(signals.VIDEO_SET_PALETTE, (self.rgb_palette, self.rgb_palette1)))
 
     def mode_allows_palette(self, mode):
-        """ Check if the video mode allows palette change. """
+        """Check if the video mode allows palette change."""
         # effective palette change is an error in CGA
         if self.capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
             raise error.RunError(error.IFC)
@@ -1482,10 +1482,10 @@ class Palette(object):
 # cursor
 
 class Cursor(object):
-    """ Manage the cursor. """
+    """Manage the cursor."""
 
     def __init__(self, screen):
-        """ Initialise the cursor. """
+        """Initialise the cursor."""
         self.screen = screen
         # are we in parse mode? invisible unless visible_run is True
         self.default_visible = True
@@ -1498,14 +1498,14 @@ class Cursor(object):
         self.height = screen.mode.font_height
 
     def init_mode(self, mode):
-        """ Change the cursor for a new screen mode. """
+        """Change the cursor for a new screen mode."""
         self.width = mode.font_width
         self.height = mode.font_height
         self.set_default_shape(True)
         self.reset_attr()
 
     def reset_attr(self):
-        """ Set the text cursor attribute to that of the current location. """
+        """Set the text cursor attribute to that of the current location."""
         if self.screen.mode.is_text_mode:
             fore, _, _, _ = self.screen.split_attr(self.screen.apage.row[
                     self.screen.current_row-1].buf[
@@ -1513,16 +1513,16 @@ class Cursor(object):
             self.screen.session.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
 
     def show(self, do_show):
-        """ Force cursor to be visible/invisible. """
+        """Force cursor to be visible/invisible."""
         self.screen.session.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, do_show))
 
     def set_visibility(self, visible_run):
-        """ Set default cursor visibility. """
+        """Set default cursor visibility."""
         self.visible_run = visible_run
         self.reset_visibility()
 
     def reset_visibility(self):
-        """ Set cursor visibility to its default state. """
+        """Set cursor visibility to its default state."""
         # visible if in interactive mode, unless forced visible in text mode.
         visible = self.default_visible
         # in graphics mode, we can't force the cursor to be visible on execute.
@@ -1531,7 +1531,7 @@ class Cursor(object):
         self.screen.session.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, visible))
 
     def set_shape(self, from_line, to_line):
-        """ Set the cursor shape. """
+        """Set the cursor shape."""
         # A block from from_line to to_line in 8-line modes.
         # Use compatibility algo in higher resolutions
         mode = self.screen.mode
@@ -1571,7 +1571,7 @@ class Cursor(object):
         self.reset_attr()
 
     def set_default_shape(self, overwrite_shape):
-        """ Set the cursor to one of two default shapes. """
+        """Set the cursor to one of two default shapes."""
         if overwrite_shape:
             if not self.screen.mode.is_text_mode:
                 # always a block cursor in graphics mode
@@ -1590,7 +1590,7 @@ class Cursor(object):
             self.set_shape(self.height//2, self.height-1)
 
     def set_width(self, num_chars):
-        """ Set the cursor with to num_chars characters. """
+        """Set the cursor with to num_chars characters."""
         new_width = num_chars * self.screen.mode.font_width
         # update cursor shape to new width if necessary
         if new_width != self.width:

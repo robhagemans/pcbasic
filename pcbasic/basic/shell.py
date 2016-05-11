@@ -22,20 +22,20 @@ from . import error
 
 
 class InitFailed(Exception):
-    """ Shell object initialisation failed. """
+    """Shell object initialisation failed."""
 
 
 #########################################
 # calling shell environment
 
 def get_env(parm):
-    """ Retrieve environment string by name. """
+    """Retrieve environment string by name."""
     if not parm:
         raise error.RunError(error.IFC)
     return bytearray(os.getenv(bytes(parm)) or b'')
 
 def get_env_entry(expr):
-    """ Retrieve environment string by number. """
+    """Retrieve environment string by number."""
     envlist = list(os.environ)
     if expr > len(envlist):
         return bytearray()
@@ -47,10 +47,10 @@ def get_env_entry(expr):
 # shell
 
 class ShellBase(object):
-    """ Launcher for command shell. """
+    """Launcher for command shell."""
 
     def __init__(self, keyboard, screen, codepage=None, shell_command=None):
-        """ Initialise the shell. """
+        """Initialise the shell."""
         self.keyboard = keyboard
         self.screen = screen
         self.command = shell_command
@@ -58,21 +58,21 @@ class ShellBase(object):
         self._encoding = locale.getpreferredencoding()
 
     def launch(self, command):
-        """ Launch the shell. """
+        """Launch the shell."""
         logging.warning(b'SHELL statement disabled.')
 
 
 class WindowsShell(ShellBase):
-    """ Launcher for Windows CMD shell. """
+    """Launcher for Windows CMD shell."""
 
     def __init__(self, keyboard, screen, codepage, shell_command):
-        """ Initialise the shell. """
+        """Initialise the shell."""
         ShellBase.__init__(self, keyboard, screen, codepage, shell_command)
         if shell_command is None:
             self.command = u'CMD.EXE'
 
     def _process_stdout(self, p, stream, shell_output):
-        """ Retrieve SHELL output and write to console. """
+        """Retrieve SHELL output and write to console."""
         while True:
             c = stream.read(1)
             if c != b'':
@@ -86,7 +86,7 @@ class WindowsShell(ShellBase):
                 time.sleep(0.001)
 
     def launch(self, command):
-        """ Run a SHELL subprocess. """
+        """Run a SHELL subprocess."""
         shell_output = []
         cmd = self.command
         if command:
@@ -137,10 +137,10 @@ class WindowsShell(ShellBase):
 
 
 class Shell(ShellBase):
-    """ Launcher for Unix shell. """
+    """Launcher for Unix shell."""
 
     def __init__(self, keyboard, screen, codepage, shell_command):
-        """ Initialise the shell. """
+        """Initialise the shell."""
         if not pexpect:
             raise InitFailed()
         ShellBase.__init__(self, keyboard, screen, codepage, shell_command)
@@ -148,7 +148,7 @@ class Shell(ShellBase):
             self.command = u'/bin/sh'
 
     def launch(self, command):
-        """ Run a SHELL subprocess. """
+        """Run a SHELL subprocess."""
         cmd = self.command
         if command:
             cmd += u' -c "' + self.codepage.str_to_unicode(command) + u'"'

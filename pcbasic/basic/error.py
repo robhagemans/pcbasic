@@ -134,37 +134,37 @@ errors = {
 
 
 class Error(Exception):
-    """ Base type for exceptions. """
+    """Base type for exceptions."""
 
 class Reset(Error):
-    """ Reset emulator. """
+    """Reset emulator."""
 
 class Exit(Error):
-    """ Exit emulator. """
+    """Exit emulator."""
 
 
 class Break(Error):
-    """ Program interrupt. """
+    """Program interrupt."""
 
     def __init__(self, stop=False):
-        """ Initialise break. """
+        """Initialise break."""
         Error.__init__(self)
         self.stop = stop
         self.message = 'Break'
 
 
 class RunError(Error):
-    """ Runtime error. """
+    """Runtime error."""
 
     def __init__(self, value, pos=None):
-        """ Initialise error. """
+        """Initialise error."""
         Error.__init__(self)
         self.err = value
         self.pos = pos
 
     @property
     def message(self):
-        """ Get error message. """
+        """Get error message."""
         try:
             return errors[self.err]
         except KeyError:

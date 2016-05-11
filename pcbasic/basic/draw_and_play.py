@@ -15,18 +15,18 @@ from . import util
 
 
 class MLParser(object):
-    """ Macro Language parser. """
+    """Macro Language parser."""
 
     # whitespace character for both macro languages is only space
     whitepace = ' '
 
     def __init__(self, gmls, data_memory):
-        """ Initialise macro-language parser. """
+        """Initialise macro-language parser."""
         self.gmls = gmls
         self.memory = data_memory
 
     def parse_value(self, default):
-        """ Parse a value in a macro-language string. """
+        """Parse a value in a macro-language string."""
         c = util.skip(self.gmls, self.whitepace)
         sgn = -1 if c == '-' else 1
         if c in ('+', '-'):
@@ -58,11 +58,11 @@ class MLParser(object):
         return step
 
     def parse_number(self, default=None):
-        """ Parse and return a number value in a macro-language string. """
+        """Parse and return a number value in a macro-language string."""
         return vartypes.pass_int_unpack(self.parse_value(default), err=error.IFC)
 
     def parse_string(self):
-        """ Parse a string value in a macro-language string. """
+        """Parse a string value in a macro-language string."""
         c = util.skip(self.gmls, self.whitepace)
         if len(c) == 0:
             raise error.RunError(error.IFC)
@@ -79,7 +79,7 @@ class MLParser(object):
                         self.memory.get_value_for_varptrstr(self.gmls.read(3))))
 
     def _parse_const(self):
-        """ Parse and return a constant value in a macro-language string. """
+        """Parse and return a constant value in a macro-language string."""
         c = util.skip(self.gmls, self.whitepace)
         if c and c in string.digits:
             numstr = ''
@@ -92,11 +92,11 @@ class MLParser(object):
             raise error.RunError(error.IFC)
 
     def _parse_const_int(self):
-        """ Parse a constant value in a macro-language string, return Python int. """
+        """Parse a constant value in a macro-language string, return Python int."""
         return vartypes.pass_int_unpack(self._parse_const(), err=error.IFC)
 
     def _parse_indices(self):
-        """ Parse constant array indices. """
+        """Parse constant array indices."""
         indices = []
         c = util.skip(self.gmls, self.whitepace)
         if c in ('[', '('):

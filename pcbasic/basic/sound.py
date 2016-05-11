@@ -30,10 +30,10 @@ notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6,
 
 
 class PlayState(object):
-    """ State variables of the PLAY command. """
+    """State variables of the PLAY command."""
 
     def __init__(self):
-        """ Initialise play state. """
+        """Initialise play state."""
         self.octave = 4
         self.speed = 7./8.
         self.tempo = 2. # 2*0.25 =0 .5 seconds per quarter note
@@ -42,10 +42,10 @@ class PlayState(object):
 
 
 class Sound(object):
-    """ Sound queue manipulations. """
+    """Sound queue manipulations."""
 
     def __init__(self, session, syntax):
-        """ Initialise sound queue. """
+        """Initialise sound queue."""
         # for wait() and queues
         self.session = session
         # Tandy/PCjr noise generator
@@ -65,18 +65,18 @@ class Sound(object):
         self.reset()
 
     def reset(self):
-        """ Reset PLAY state (CLEAR). """
+        """Reset PLAY state (CLEAR)."""
         # music foreground (MF) mode
         self.foreground = True
         # reset all PLAY state
         self.play_state = [ PlayState(), PlayState(), PlayState() ]
 
     def beep(self):
-        """ Play the BEEP sound. """
+        """Play the BEEP sound."""
         self.play_sound(800, 0.25)
 
     def play_sound_no_wait(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
-        """ Play a sound on the tone generator. """
+        """Play a sound on the tone generator."""
         if frequency < 0:
             frequency = 0
         if ((self.capabilities == 'tandy' or
@@ -94,25 +94,25 @@ class Sound(object):
 
 
     def play_sound(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
-        """ Play a sound on the tone generator; wait if tone queu is full. """
+        """Play a sound on the tone generator; wait if tone queu is full."""
         self.play_sound_no_wait(frequency, duration, fill, loop, voice, volume)
         # at most 16 notes in the sound queue (not 32 as the guide says!)
         self.wait_music(15)
 
     def wait_music(self, wait_length=0):
-        """ Wait until a given number of notes are left on the queue. """
+        """Wait until a given number of notes are left on the queue."""
         while (self.queue_length(0) > wait_length or
                 self.queue_length(1) > wait_length or
                 self.queue_length(2) > wait_length):
             self.session.wait()
 
     def wait_all_music(self):
-        """ Wait until all music (not noise) has finished playing. """
+        """Wait until all music (not noise) has finished playing."""
         while (self.is_playing(0) or self.is_playing(1) or self.is_playing(2)):
             self.session.wait()
 
     def stop_all_sound(self):
-        """ Terminate all sounds immediately. """
+        """Terminate all sounds immediately."""
         for q in self.session.tone_queue:
             while not q.empty():
                 try:
@@ -123,32 +123,32 @@ class Sound(object):
         self.session.message_queue.put(signals.Event(signals.AUDIO_STOP))
 
     def play_noise(self, source, volume, duration, loop=False):
-        """ Play a sound on the noise generator. """
+        """Play a sound on the noise generator."""
         frequency = self.noise_freq[source]
         noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
         self.session.tone_queue[3].put(noise)
         # don't wait for noise
 
     def queue_length(self, voice=0):
-        """ Return the number of notes in the queue. """
+        """Return the number of notes in the queue."""
         # NOTE: this returns zero when there are still TWO notes to play
         # one in the pre-play buffer and another because we subtract 1 here
         # this agrees with empirical GW-BASIC ON PLAY() timings!
         return max(0, self.session.tone_queue[voice].qsize()-1)
 
     def is_playing(self, voice):
-        """ A note is playing or queued at the given voice. """
+        """A note is playing or queued at the given voice."""
         # NOTE: Queue.unfinished_tasks is undocumented, may only work in CPython
         return self.queue_length(voice) or self.session.tone_queue[voice].unfinished_tasks
 
     def persist(self, flag):
-        """ Set mixer persistence flag (runmode). """
+        """Set mixer persistence flag (runmode)."""
         self.session.message_queue.put(signals.Event(signals.AUDIO_PERSIST, flag))
 
     ### PLAY statement
 
     def play(self, data_segment, mml_list):
-        """ Parse a list of Music Macro Language strings. """
+        """Parse a list of Music Macro Language strings."""
         gmls_list = []
         for mml in mml_list:
             gmls = StringIO()

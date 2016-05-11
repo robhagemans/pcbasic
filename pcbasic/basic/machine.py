@@ -12,14 +12,14 @@ from . import vartypes
 ###############################################################################
 
 class MachinePorts(object):
-    """ Machine ports. """
+    """Machine ports."""
 
     # time delay for port value to drop to 0 on maximum reading.
     #  use 100./255. for 100ms.
     joystick_time_factor = 75. / 255.
 
     def __init__(self, session):
-        """ Initialise machine ports. """
+        """Initialise machine ports."""
         self.session = session
         # parallel port base address:
         # http://retired.beyondlogic.org/spp/parallel.htm
@@ -41,7 +41,7 @@ class MachinePorts(object):
         self.com_break = [False, False]
 
     def inp(self, port):
-        """ Get the value in an emulated machine port. """
+        """Get the value in an emulated machine port."""
         # keyboard
         if port == 0x60:
             return self.session.keyboard.last_scancode
@@ -104,7 +104,7 @@ class MachinePorts(object):
             return 0
 
     def out(self, addr, val):
-        """ Send a value to an emulated machine port. """
+        """Send a value to an emulated machine port."""
         if addr == 0x201:
             # game port reset
             self.session.stick.reset_decay()
@@ -178,7 +178,7 @@ class MachinePorts(object):
                     com_port.stream.set_pins(rts=val & 0x2, dtr=val & 0x1)
 
     def wait(self, addr, ander, xorer):
-        """ Wait untial an emulated machine port has a specified value. """
+        """Wait untial an emulated machine port has a specified value."""
         with self.session.parser.events.suspend():
             while (self.inp(addr) ^ xorer) & ander == 0:
                 self.session.wait()
@@ -189,7 +189,7 @@ class MachinePorts(object):
 # Memory
 
 class Memory(object):
-    """ Memory model. """
+    """Memory model."""
 
     # lowest (EGA) video memory address; max 128k reserved for video
     video_segment = 0xa000
@@ -207,7 +207,7 @@ class Memory(object):
     blink_enabled = True
 
     def __init__(self, data_memory, devices, screen, keyboard, font_8, peek_values, syntax):
-        """ Initialise memory. """
+        """Initialise memory."""
         # data segment initialised elsewhere
         self.data = data_memory
         # device access needed for COM and LPT ports
@@ -226,21 +226,21 @@ class Memory(object):
         self.tandy_syntax = syntax == 'tandy'
 
     def peek(self, addr):
-        """ Retrieve the value at an emulated memory location. """
+        """Retrieve the value at an emulated memory location."""
         if addr < 0:
             addr += 0x10000
         addr += self.segment * 0x10
         return self._get_memory(addr)
 
     def poke(self, addr, val):
-        """ Set the value at an emulated memory location. """
+        """Set the value at an emulated memory location."""
         if addr < 0:
             addr += 0x10000
         addr += self.segment * 0x10
         self._set_memory(addr, val)
 
     def bload(self, g, offset):
-        """ Load a file into a block of memory. """
+        """Load a file into a block of memory."""
         # size gets ignored; even the \x1a at the end gets dumped onto the screen.
         seg = g.seg
         if offset is None:
@@ -255,7 +255,7 @@ class Memory(object):
         self._set_memory_block(addr, buf)
 
     def bsave(self, g, offset, length):
-        """ Save a block of memory into a file. """
+        """Save a block of memory into a file."""
         addr = self.segment * 0x10 + offset
         g.write(str(self._get_memory_block(addr, length)))
         # Tandys repeat the header at the end of the file
@@ -265,7 +265,7 @@ class Memory(object):
                     vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(length))))
 
     def def_seg(self, segment):
-        """ Set segment. """
+        """Set segment."""
         self.segment = segment
         if self.segment < 0:
             self.segment += 0x10000
@@ -275,7 +275,7 @@ class Memory(object):
     # IMPLEMENTATION
 
     def _get_memory(self, addr):
-        """ Retrieve the value at an emulated memory location. """
+        """Retrieve the value at an emulated memory location."""
         try:
             # try if there's a preset value
             return self._peek_values[addr]
@@ -297,7 +297,7 @@ class Memory(object):
                 return 0
 
     def _set_memory(self, addr, val):
-        """ Set the value at an emulated memory location. """
+        """Set the value at an emulated memory location."""
         if addr >= self.rom_segment*0x10:
             # ROM includes font memory
             pass
@@ -313,7 +313,7 @@ class Memory(object):
             self._set_low_memory(addr, val)
 
     def _get_memory_block(self, addr, length):
-        """ Retrieve a contiguous block of bytes from memory. """
+        """Retrieve a contiguous block of bytes from memory."""
         block = bytearray()
         if addr >= self.video_segment*0x10:
             video_len = 0x20000 - (addr - self.video_segment*0x10)
@@ -326,7 +326,7 @@ class Memory(object):
         return block
 
     def _set_memory_block(self, addr, buf):
-        """ Set a contiguous block of bytes in memory. """
+        """Set a contiguous block of bytes in memory."""
         if addr >= self.video_segment*0x10:
             video_len = 0x20000 - (addr - self.video_segment*0x10)
             # graphics and text memory - specialised call
@@ -341,25 +341,25 @@ class Memory(object):
     # video memory model
 
     def _get_video_memory(self, addr):
-        """ Retrieve a byte from video memory. """
+        """Retrieve a byte from video memory."""
         return self.screen.mode.get_memory(addr, 1)[0]
 
     def _set_video_memory(self, addr, val):
-        """ Set a byte in video memory. """
+        """Set a byte in video memory."""
         return self.screen.mode.set_memory(addr, [val])
 
     def _get_video_memory_block(self, addr, length):
-        """ Retrieve a contiguous block of bytes from video memory. """
+        """Retrieve a contiguous block of bytes from video memory."""
         return bytearray(self.screen.mode.get_memory(addr, length))
 
     def _set_video_memory_block(self, addr, some_bytes):
-        """ Set a contiguous block of bytes in video memory. """
+        """Set a contiguous block of bytes in video memory."""
         self.screen.mode.set_memory(addr, some_bytes)
 
     ###############################################################################
 
     def _get_rom_memory(self, addr):
-        """ Retrieve data from ROM. """
+        """Retrieve data from ROM."""
         addr -= self.rom_segment*0x10 + self.rom_font_addr
         char = addr // 8
         if char > 127 or char<0:
@@ -368,7 +368,7 @@ class Memory(object):
                 self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
 
     def _get_font_memory(self, addr):
-        """ Retrieve RAM font data. """
+        """Retrieve RAM font data."""
         addr -= self.ram_font_segment*0x10 + self.ram_font_addr
         char = addr // 8 + 128
         if char < 128 or char > 254:
@@ -377,7 +377,7 @@ class Memory(object):
                 self.screen.codepage.to_unicode(chr(char), u'\0')][addr%8])
 
     def _set_font_memory(self, addr, value):
-        """ Retrieve RAM font data. """
+        """Retrieve RAM font data."""
         addr -= self.ram_font_segment*0x10 + self.ram_font_addr
         char = addr // 8 + 128
         if char < 128 or char > 254:
@@ -392,7 +392,7 @@ class Memory(object):
 
 
     def _get_low_memory(self, addr):
-        """ Retrieve data from low memory. """
+        """Retrieve data from low memory."""
         addr -= 0
         # from MEMORY.ABC: PEEKs and POKEs (Don Watkins)
         # http://www.qbasicnews.com/abc/showsnippet.php?filename=MEMORY.ABC&snippet=6
@@ -536,7 +536,7 @@ class Memory(object):
         return -1
 
     def _set_low_memory(self, addr, value):
-        """ Set data in low memory. """
+        """Set data in low memory."""
         addr -= 0
         if addr == 1047:
             self.keyboard.mod = value

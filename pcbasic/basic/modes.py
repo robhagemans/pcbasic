@@ -37,7 +37,7 @@ ega_mono_text_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
 # video modes
 
 def get_modes(screen, cga4_palette, video_mem_size, video_capabilities, mono_tint, screen_aspect):
-    """ Build lists of allowed graphics modes. """
+    """Build lists of allowed graphics modes."""
     # initialise tinted monochrome palettes
     colours_ega_mono_0 = tuple(tuple(tint*i//255 for tint in mono_tint)
                                for i in intensity_ega_mono_0)
@@ -250,7 +250,7 @@ def get_modes(screen, cga4_palette, video_mem_size, video_capabilities, mono_tin
 
 
 class VideoMode(object):
-    """ Base class for video modes. """
+    """Base class for video modes."""
     def __init__(self, screen, name, height, width,
                   font_height, font_width,
                   attr, palette, colours,
@@ -258,7 +258,7 @@ class VideoMode(object):
                   has_underline, has_blink,
                   video_segment, page_size
                   ):
-        """ Initialise video mode settings. """
+        """Initialise video mode settings."""
         self.screen = screen
         self.is_text_mode = False
         self.name = name
@@ -284,14 +284,14 @@ class VideoMode(object):
 
 
 class TextMode(VideoMode):
-    """ Default settings for a text mode. """
+    """Default settings for a text mode."""
 
     def __init__(self, screen, name, height, width,
                   font_height, font_width,
                   attr, palette, colours,
                   num_pages,
                   is_mono=False, has_underline=False, has_blink=True):
-        """ Initialise video mode settings. """
+        """Initialise video mode settings."""
         video_segment = 0xb000 if is_mono else 0xb800
         page_size = 0x1000 if width == 80 else 0x800
         VideoMode.__init__(self, screen, name, height, width,
@@ -304,7 +304,7 @@ class TextMode(VideoMode):
         self.has_underline = has_underline
 
     def get_memory(self, addr, num_bytes):
-        """ Retrieve bytes from textmode video memory. """
+        """Retrieve bytes from textmode video memory."""
         addr -= self.video_segment*0x10
         bytes = [0]*num_bytes
         for i in xrange(num_bytes):
@@ -320,7 +320,7 @@ class TextMode(VideoMode):
         return bytes
 
     def set_memory(self, addr, bytes):
-        """ Set bytes in textmode video memory. """
+        """Set bytes in textmode video memory."""
         addr -= self.video_segment*0x10
         last_row = -1
         for i in xrange(len(bytes)):
@@ -349,7 +349,7 @@ class TextMode(VideoMode):
 
 if numpy:
     def bytes_to_interval(bytes, pixels_per_byte, mask=1):
-        """ Convert masked attributes packed into bytes to a scanline interval. """
+        """Convert masked attributes packed into bytes to a scanline interval."""
         bpp = 8//pixels_per_byte
         attrmask = (1<<bpp) - 1
         bitval = numpy.array([128, 64, 32, 16, 8, 4, 2, 1], dtype=numpy.uint8)
@@ -367,7 +367,7 @@ if numpy:
         return numpy.array(attrs) * mask
 
     def interval_to_bytes(colours, pixels_per_byte, plane=0):
-        """ Convert a scanline interval into masked attributes packed into bytes. """
+        """Convert a scanline interval into masked attributes packed into bytes."""
         num_pixels = len(colours)
         num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
         if odd_out:
@@ -393,14 +393,14 @@ if numpy:
 
 else:
     def bytes_to_interval(bytes, pixels_per_byte, mask=1):
-        """ Convert masked attributes packed into bytes to a scanline interval. """
+        """Convert masked attributes packed into bytes to a scanline interval."""
         bpp = 8//pixels_per_byte
         attrmask = (1<<bpp) - 1
         return [((byte >> (8-bpp-shift)) & attrmask) * mask
                     for byte in bytes for shift in xrange(0, 8, bpp)]
 
     def interval_to_bytes(colours, pixels_per_byte, plane=0):
-        """ Convert a scanline interval into masked attributes packed into bytes. """
+        """Convert a scanline interval into masked attributes packed into bytes."""
         num_pixels = len(colours)
         num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
         if odd_out:
@@ -419,7 +419,7 @@ else:
         return byte_list
 
 def walk_memory(self, addr, num_bytes, factor=1):
-    """ Yield parts of graphics memory corresponding to pixels. """
+    """Yield parts of graphics memory corresponding to pixels."""
     # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
     # with alternating planes in even and odd bytes (i.e. ppb==8)
     ppb = factor * self.ppb
@@ -454,18 +454,18 @@ def walk_memory(self, addr, num_bytes, factor=1):
         offset += row_size
 
 def sprite_size_to_record_ega(self, dx, dy):
-    """ Write 4-byte record of sprite size in EGA modes. """
+    """Write 4-byte record of sprite size in EGA modes."""
     return (vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(dx))
             + vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(dy)))
 
 def record_to_sprite_size_ega(self, byte_array):
-    """ Read 4-byte record of sprite size in EGA modes. """
+    """Read 4-byte record of sprite size in EGA modes."""
     dx = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(byte_array[0:2]))
     dy = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(byte_array[2:4]))
     return dx, dy
 
 def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offs):
-    """ Build the sprite byte array in EGA modes. """
+    """Build the sprite byte array in EGA modes."""
     # for EGA modes, sprites have 8 pixels per byte
     # with colour planes in consecutive rows
     # each new row is aligned on a new byte
@@ -491,7 +491,7 @@ else:
         return [ x | y for x, y in zip(list0, list1) ]
 
 def array_to_sprite_ega(self, byte_array, offset, dx, dy):
-    """ Build sprite from byte_array in EGA modes. """
+    """Build sprite from byte_array in EGA modes."""
     row_bytes = (dx+7) // 8
     attrs = []
     for y in range(dy):
@@ -505,7 +505,7 @@ def array_to_sprite_ega(self, byte_array, offset, dx, dy):
     return attrs
 
 def build_tile_cga(self, pattern):
-    """ Build a flood-fill tile for CGA screens. """
+    """Build a flood-fill tile for CGA screens."""
     tile = []
     bpp = self.bitsperpixel
     strlen = len(pattern)
@@ -527,7 +527,7 @@ def build_tile_cga(self, pattern):
 
 
 class GraphicsMode(VideoMode):
-    """ Default settings for a graphics mode. """
+    """Default settings for a graphics mode."""
 
     def __init__(self, screen, name, pixel_width, pixel_height,
                   text_height, text_width,
@@ -540,7 +540,7 @@ class GraphicsMode(VideoMode):
                   pixel_aspect=None, screen_aspect=None,
                   video_segment=0xb800,
                   ):
-        """ Initialise video mode settings. """
+        """Initialise video mode settings."""
         font_width = int(pixel_width // text_width)
         font_height = int(pixel_height // text_height)
         self.interleave_times = int(interleave_times)
@@ -565,29 +565,29 @@ class GraphicsMode(VideoMode):
                                  self.pixel_width * screen_aspect[1])
 
     def coord_ok(self, page, x, y):
-        """ Check if a page and coordinates are within limits. """
+        """Check if a page and coordinates are within limits."""
         return (page >= 0 and page < self.num_pages and
                 x >= 0 and x < self.pixel_width and
                 y >= 0 and y < self.pixel_height)
 
     def cutoff_coord(self, x, y):
-        """ Ensure coordinates are within screen + 1 pixel. """
+        """Ensure coordinates are within screen + 1 pixel."""
         return min(self.pixel_width, max(-1, x)), min(self.pixel_height, max(-1, y))
 
     def set_plane(self, plane):
-        """ Set the current colour plane (EGA only). """
+        """Set the current colour plane (EGA only)."""
         pass
 
     def set_plane_mask(self, mask):
-        """ Set the current colour plane mask (EGA only). """
+        """Set the current colour plane mask (EGA only)."""
         pass
 
 
 class CGAMode(GraphicsMode):
-    """ Default settings for a CGA graphics mode. """
+    """Default settings for a CGA graphics mode."""
 
     def get_coords(self, addr):
-        """ Get video page and coordinates for address. """
+        """Get video page and coordinates for address."""
         addr = int(addr) - self.video_segment * 0x10
         # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
         page, addr = addr//self.page_size, addr%self.page_size
@@ -599,13 +599,13 @@ class CGAMode(GraphicsMode):
         return page, x, y
 
     def set_memory(self, addr, bytes):
-        """ Set bytes in CGA memory. """
+        """Set bytes in CGA memory."""
         for page, x, y, ofs, length in walk_memory(self, addr, len(bytes)):
             self.screen.put_interval(page, x, y,
                 bytes_to_interval(bytes[ofs:ofs+length], self.ppb))
 
     def get_memory(self, addr, num_bytes):
-        """ Retrieve bytes from CGA memory. """
+        """Retrieve bytes from CGA memory."""
         bytes = bytearray(num_bytes)
         for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
             bytes[ofs:ofs+length] = interval_to_bytes(
@@ -613,18 +613,18 @@ class CGAMode(GraphicsMode):
         return bytes
 
     def sprite_size_to_record(self, dx, dy):
-        """ Write 4-byte record of sprite size. """
+        """Write 4-byte record of sprite size."""
         return (vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(dx*self.bitsperpixel))
                 + vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(dy)))
 
     def record_to_sprite_size(self, byte_array):
-        """ Read 4-byte record of sprite size. """
+        """Read 4-byte record of sprite size."""
         dx = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(byte_array[0:2])) / self.bitsperpixel
         dy = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(byte_array[2:4]))
         return dx, dy
 
     def sprite_to_array(self, attrs, dx, dy, byte_array, offs):
-        """ Build the sprite byte array. """
+        """Build the sprite byte array."""
         row_bytes = (dx * self.bitsperpixel + 7) // 8
         length = row_bytes*dy
         if offs+length > len(byte_array):
@@ -638,7 +638,7 @@ class CGAMode(GraphicsMode):
             offs += row_bytes
 
     def array_to_sprite(self, byte_array, offset, dx, dy):
-        """ Build sprite from byte_array. """
+        """Build sprite from byte_array."""
         row_bytes = (dx * self.bitsperpixel + 7) // 8
         # illegal fn call if outside screen boundary
         attrs = []
@@ -653,7 +653,7 @@ class CGAMode(GraphicsMode):
 
 
 class EGAMode(GraphicsMode):
-    """ Default settings for a EGA graphics mode. """
+    """Default settings for a EGA graphics mode."""
 
     def __init__(self, screen, name, pixel_width, pixel_height,
                   text_height, text_width,
@@ -662,7 +662,7 @@ class EGAMode(GraphicsMode):
                   colours1=None, has_blink=False, planes_used=range(4),
                   screen_aspect=None
                   ):
-        """ Initialise video mode settings. """
+        """Initialise video mode settings."""
         GraphicsMode.__init__(self, screen, name, pixel_width, pixel_height,
                   text_height, text_width,
                   attr, palette, colours, bitsperpixel,
@@ -683,15 +683,15 @@ class EGAMode(GraphicsMode):
         self.plane_mask = 0xff
 
     def set_plane(self, plane):
-        """ Set the current colour plane. """
+        """Set the current colour plane."""
         self.plane = plane
 
     def set_plane_mask(self, mask):
-        """ Set the current colour plane mask. """
+        """Set the current colour plane mask."""
         self.plane_mask = mask
 
     def get_coords(self, addr):
-        """ Get video page and coordinates for address. """
+        """Get video page and coordinates for address."""
         addr = int(addr) - self.video_segment * 0x10
         # modes 7-9: 1 bit per pixel per colour plane
         page, addr = addr//self.page_size, addr%self.page_size
@@ -699,7 +699,7 @@ class EGAMode(GraphicsMode):
         return page, x, y
 
     def get_memory(self, addr, num_bytes):
-        """ Retrieve bytes from EGA memory. """
+        """Retrieve bytes from EGA memory."""
         plane = self.plane % (max(self.planes_used)+1)
         bytes = bytearray(num_bytes)
         if plane not in self.planes_used:
@@ -711,7 +711,7 @@ class EGAMode(GraphicsMode):
         return bytes
 
     def set_memory(self, addr, bytes):
-        """ Set bytes in EGA video memory. """
+        """Set bytes in EGA video memory."""
         # EGA memory is planar with memory-mapped colour planes.
         # Within a plane, 8 pixels are encoded into each byte.
         # The colour plane is set through a port OUT and
@@ -731,7 +731,7 @@ class EGAMode(GraphicsMode):
     record_to_sprite_size = record_to_sprite_size_ega
 
     def build_tile(self, pattern):
-        """ Build a flood-fill tile. """
+        """Build a flood-fill tile."""
         tile = []
         bpp = self.bitsperpixel
         while len(pattern) % bpp != 0:
@@ -756,10 +756,10 @@ class EGAMode(GraphicsMode):
 
 
 class Tandy6Mode(GraphicsMode):
-    """ Default settings for Tandy graphics mode 6. """
+    """Default settings for Tandy graphics mode 6."""
 
     def __init__(self, *args, **kwargs):
-        """ Initialise video mode settings. """
+        """Initialise video mode settings."""
         GraphicsMode.__init__(self, *args, **kwargs)
         # mode 6: 4x interleaved scan lines, 8 pixels per two bytes,
         # low attribute bits stored in even bytes, high bits in odd bytes.
@@ -767,7 +767,7 @@ class Tandy6Mode(GraphicsMode):
         self.video_segment = 0xb800
 
     def get_coords(self, addr):
-        """ Get video page and coordinates for address. """
+        """Get video page and coordinates for address."""
         addr =  int(addr) - self.video_segment * 0x10
         page, addr = addr//self.page_size, addr%self.page_size
         # 4 x interleaved scan lines of 160bytes
@@ -778,7 +778,7 @@ class Tandy6Mode(GraphicsMode):
         return page, x, y
 
     def get_memory(self, addr, num_bytes):
-        """ Retrieve bytes from Tandy 640x200x4 """
+        """Retrieve bytes from Tandy 640x200x4 """
         # 8 pixels per 2 bytes
         # low attribute bits stored in even bytes, high bits in odd bytes.
         half_len = (num_bytes+1) // 2
@@ -792,7 +792,7 @@ class Tandy6Mode(GraphicsMode):
         return [item for pair in zip(*hbytes) for item in pair] [:num_bytes]
 
     def set_memory(self, addr, bytes):
-        """ Set bytes in Tandy 640x200x4 memory. """
+        """Set bytes in Tandy 640x200x4 memory."""
         hbytes = bytes[0::2], bytes[1::2]
         # Tandy-6 encodes 8 pixels per byte, alternating colour planes.
         # I.e. even addresses are 'colour plane 0', odd ones are 'plane 1'

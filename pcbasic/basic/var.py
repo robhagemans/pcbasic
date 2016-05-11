@@ -18,22 +18,22 @@ from . import representation
 # strings
 
 class StringSpace(object):
-    """ String space is a table of strings accessible by their 2-byte pointers. """
+    """String space is a table of strings accessible by their 2-byte pointers."""
 
     def __init__(self, memory):
-        """ Initialise empty string space. """
+        """Initialise empty string space."""
         self.memory = memory
         self.strings = {}
         self.clear()
 
     def clear(self):
-        """ Empty string space. """
+        """Empty string space."""
         self.strings.clear()
         # strings are placed at the top of string memory, just below the stack
         self.current = self.memory.stack_start()
 
     def _retrieve(self, key):
-        """ Retrieve a string by its 3-byte sequence. 2-byte keys allowed, but will return longer string for empty string. """
+        """Retrieve a string by its 3-byte sequence. 2-byte keys allowed, but will return longer string for empty string."""
         key = str(key)
         if len(key) == 2:
             return self.strings[key]
@@ -44,7 +44,7 @@ class StringSpace(object):
             raise KeyError('String key %s has wrong length.' % repr(key))
 
     def _view(self, basic_string):
-        """ Return a writeable view of a string from its string pointer. """
+        """Return a writeable view of a string from its string pointer."""
         length = vartypes.string_length(basic_string)
         # empty string pointers can point anywhere
         if length == 0:
@@ -67,11 +67,11 @@ class StringSpace(object):
             return memoryview(self.memory.fields[number].buffer)[offset:offset+length]
 
     def copy(self, basic_string):
-        """ Return a copy of a string from its string pointer. """
+        """Return a copy of a string from its string pointer."""
         return str(bytearray(self._view(basic_string)))
 
     def modify(self, basic_string, in_str, offset=None, num=None):
-        """ Assign a new string into an existing buffer. """
+        """Assign a new string into an existing buffer."""
         # if it is a code literal, we now do need to allocate space for a copy
         address = vartypes.string_address(basic_string)
         if address >= self.memory.code_start and address < self.memory.var_start():
@@ -83,7 +83,7 @@ class StringSpace(object):
         return basic_string
 
     def store(self, in_str, address=None):
-        """ Store a new string and return the string pointer. """
+        """Store a new string and return the string pointer."""
         size = len(in_str)
         # don't store overlong strings
         if size > 255:
@@ -104,7 +104,7 @@ class StringSpace(object):
         return vartypes.bytes_to_string(chr(size) + key)
 
     def delete_last(self):
-        """ Delete the string provided if it is at the top of string space. """
+        """Delete the string provided if it is at the top of string space."""
         last_address = self.current + 1
         last_key = str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(last_address)))
         try:
@@ -117,11 +117,11 @@ class StringSpace(object):
             pass
 
     def address(self, key):
-        """ Return the address of a given key. """
+        """Return the address of a given key."""
         return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(key[-2:]))
 
     def collect_garbage(self, string_ptrs):
-        """ Re-store the strings refrerenced in string_ptrs, delete the rest. """
+        """Re-store the strings refrerenced in string_ptrs, delete the rest."""
         # retrieve addresses and copy strings
         string_list = []
         for value in string_ptrs:
@@ -141,7 +141,7 @@ class StringSpace(object):
             item[0][:] = vartypes.string_to_bytes(self.store(item[2]))
 
     def get_memory(self, address):
-        """ Retrieve data from data memory: string space """
+        """Retrieve data from data memory: string space """
         # find the variable we're in
         for key, value in self.strings.iteritems():
             try_address = self.address(key)
@@ -151,16 +151,16 @@ class StringSpace(object):
         return -1
 
     def __enter__(self):
-        """ Enter temp-string context guard. """
+        """Enter temp-string context guard."""
         self.temp = self.current
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """ Exit temp-string context guard. """
+        """Exit temp-string context guard."""
         if self.temp != self.current:
             self.delete_last()
 
     def str_to_type(self, typechar, word):
-        """ convert result to requested type, be strict about non-numeric chars """
+        """convert result to requested type, be strict about non-numeric chars """
         if typechar == '$':
             return self.store(word)
         else:
@@ -172,21 +172,21 @@ class StringSpace(object):
 
 
 class Scalars(object):
-    """ Scalar variables. """
+    """Scalar variables."""
 
     def __init__(self, memory):
-        """ Initialise scalars. """
+        """Initialise scalars."""
         self.memory = memory
         self.clear()
 
     def clear(self):
-        """ Clear scalar variables. """
+        """Clear scalar variables."""
         self.variables = {}
         self.var_memory = {}
         self.current = 0
 
     def set(self, name, value=None):
-        """ Assign a value to a variable. """
+        """Assign a value to a variable."""
         name = self.memory.complete_name(name)
         type_char = name[-1]
         if value is not None:
@@ -218,7 +218,7 @@ class Scalars(object):
             self.variables[name] = value[1][:]
 
     def get(self, name):
-        """ Retrieve the value of a scalar variable. """
+        """Retrieve the value of a scalar variable."""
         name = self.memory.complete_name(name)
         try:
             return (name[-1], self.variables[name])
@@ -226,7 +226,7 @@ class Scalars(object):
             return vartypes.null(name[-1])
 
     def varptr(self, name):
-        """ Retrieve the address of a scalar variable. """
+        """Retrieve the address of a scalar variable."""
         name = self.memory.complete_name(name)
         try:
             _, var_ptr = self.var_memory[name]
@@ -235,14 +235,14 @@ class Scalars(object):
             return -1
 
     def dereference(self, address):
-        """ Get a value for a scalar given its pointer address. """
+        """Get a value for a scalar given its pointer address."""
         for name, data in self.var_memory.iteritems():
             if data[1] == address:
                 return self.get(name)
         return None
 
     def get_memory(self, address):
-        """ Retrieve data from data memory: variable space """
+        """Retrieve data from data memory: variable space """
         name_addr = -1
         var_addr = -1
         the_var = None
@@ -264,7 +264,7 @@ class Scalars(object):
             return get_name_in_memory(the_var, offset)
 
     def get_strings(self):
-        """ Return a list of views of string scalars. """
+        """Return a list of views of string scalars."""
         return [memoryview(value) for name, value in self.variables.iteritems() if name[-1] == '$']
 
 
@@ -274,20 +274,20 @@ class Scalars(object):
 class Arrays(object):
 
     def __init__(self, memory):
-        """ Initialise arrays. """
+        """Initialise arrays."""
         self.memory = memory
         self.clear()
         # OPTION BASE is unset
         self.base_index = None
 
     def clear(self):
-        """ Clear arrays. """
+        """Clear arrays."""
         self.arrays = {}
         self.array_memory = {}
         self.current = 0
 
     def erase(self, name):
-        """ Remove an array from memory. """
+        """Remove an array from memory."""
         try:
             del self.arrays[name]
         except KeyError:
@@ -295,7 +295,7 @@ class Arrays(object):
             raise error.RunError(error.IFC)
 
     def index(self, index, dimensions):
-        """ Return the flat index for a given dimensioned index. """
+        """Return the flat index for a given dimensioned index."""
         bigindex = 0
         area = 1
         for i in range(len(index)):
@@ -305,11 +305,11 @@ class Arrays(object):
         return bigindex
 
     def array_len(self, dimensions):
-        """ Return the flat length for given dimensioned size. """
+        """Return the flat length for given dimensioned size."""
         return self.index(dimensions, dimensions) + 1
 
     def array_size_bytes(self, name):
-        """ Return the byte size of an array, if it exists. Return 0 otherwise. """
+        """Return the byte size of an array, if it exists. Return 0 otherwise."""
         try:
             dimensions, _, _ = self.arrays[name]
         except KeyError:
@@ -317,7 +317,7 @@ class Arrays(object):
         return self.array_len(dimensions) * var_size_bytes(name)
 
     def dim(self, name, dimensions):
-        """ Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value. """
+        """Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value."""
         if self.base_index is None:
             self.base_index = 0
         name = self.memory.complete_name(name)
@@ -348,7 +348,7 @@ class Arrays(object):
             raise error.RunError(error.OUT_OF_MEMORY)
 
     def check_dim(self, name, index):
-        """ Check if an array has been allocated. If not, auto-allocate if indices are <= 10; raise error otherwise. """
+        """Check if an array has been allocated. If not, auto-allocate if indices are <= 10; raise error otherwise."""
         try:
             dimensions, lst, _ = self.arrays[name]
         except KeyError:
@@ -368,11 +368,11 @@ class Arrays(object):
         return dimensions, lst
 
     def clear_base(self):
-        """ Unset the array base. """
+        """Unset the array base."""
         self.base_index = None
 
     def base(self, base):
-        """ Set the array base to 0 or 1 (OPTION BASE). Raise error if already set. """
+        """Set the array base to 0 or 1 (OPTION BASE). Raise error if already set."""
         if base not in (1, 0):
             # syntax error
             raise error.RunError(error.STX)
@@ -382,14 +382,14 @@ class Arrays(object):
         self.base_index = base
 
     def get(self, name, index):
-        """ Retrieve the value of an array element. """
+        """Retrieve the value of an array element."""
         dimensions, lst = self.check_dim(name, index)
         bigindex = self.index(index, dimensions)
         value = lst[bigindex*var_size_bytes(name):(bigindex+1)*var_size_bytes(name)]
         return (name[-1], value)
 
     def set(self, name, index, value):
-        """ Assign a value to an array element. """
+        """Assign a value to an array element."""
         dimensions, lst = self.check_dim(name, index)
         bigindex = self.index(index, dimensions)
         # make a copy of the value, we don't want them to be linked
@@ -400,7 +400,7 @@ class Arrays(object):
         self.arrays[name][2] += 1
 
     def varptr(self, name, indices):
-        """ Retrieve the address of an array. """
+        """Retrieve the address of an array."""
         name = self.memory.complete_name(name)
         try:
             dimensions, _, _ = self.arrays[name]
@@ -411,7 +411,7 @@ class Arrays(object):
             return -1
 
     def dereference(self, address):
-        """ Get a value for an array given its pointer address. """
+        """Get a value for an array given its pointer address."""
         found_addr = -1
         found_name = None
         for name, data in self.array_memory.iteritems():
@@ -426,7 +426,7 @@ class Arrays(object):
         return (name[-1], lst[offset : offset+var_size_bytes(name)])
 
     def get_memory(self, address):
-        """ Retrieve data from data memory: array space """
+        """Retrieve data from data memory: array space """
         name_addr = -1
         arr_addr = -1
         the_arr = None
@@ -459,7 +459,7 @@ class Arrays(object):
                 return data_rep[offset]
 
     def get_strings(self):
-        """ Return a list of views of string array elements. """
+        """Return a list of views of string array elements."""
         return [memoryview(record[1])[i:i+3]
                     for name, record in self.arrays.iteritems()
                         if name[-1] == '$'
@@ -472,14 +472,14 @@ class Arrays(object):
 
 
 def var_size_bytes(name):
-    """ Return the size of a variable, if it exists. Raise ILLEGAL FUNCTION CALL otherwise. """
+    """Return the size of a variable, if it exists. Raise ILLEGAL FUNCTION CALL otherwise."""
     try:
         return vartypes.byte_size[name[-1]]
     except KeyError:
         raise error.RunError(error.IFC)
 
 def get_name_in_memory(name, offset):
-    """ Memory representation of variable name. """
+    """Memory representation of variable name."""
     if offset == 0:
         return vartypes.byte_size[name[-1]]
     elif offset == 1:

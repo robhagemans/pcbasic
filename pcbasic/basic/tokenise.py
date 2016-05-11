@@ -20,7 +20,7 @@ from . import vartypes
 
 
 def ascii_read_to(ins, findrange):
-    """ Read until a character from a given range is found. """
+    """Read until a character from a given range is found."""
     out = ''
     while True:
         d = ins.read(1)
@@ -34,7 +34,7 @@ def ascii_read_to(ins, findrange):
 
 
 class Tokeniser(object):
-    """ Tokeniser-detokeniser. """
+    """Tokeniser-detokeniser."""
 
     # keywords than can followed by one or more line numbers
     _linenum_words = (
@@ -49,7 +49,7 @@ class Tokeniser(object):
     _ascii_operators = '+-=/\\^*<>'
 
     def __init__(self, syntax, debug):
-        """ Initialise tokeniser. """
+        """Initialise tokeniser."""
         self._token_to_keyword = dict(tk.keyword)
         if debug:
             # NOTE: PC-BASIC only. Not the same command or token as Sperry DEBUG.
@@ -64,7 +64,7 @@ class Tokeniser(object):
     # Detokenise functions
 
     def detokenise_line(self, ins, bytepos=None):
-        """ Convert a tokenised program line to ascii text. """
+        """Convert a tokenised program line to ascii text."""
         current_line = util.parse_line_number(ins)
         if current_line < 0:
             # parse_line_number has returned -1 and left us at: .. 00 | _00_ 00 1A
@@ -82,7 +82,7 @@ class Tokeniser(object):
         return current_line, linum + line, textpos + len(linum) + 1
 
     def detokenise_compound_statement(self, ins, bytepos=None):
-        """ Detokenise tokens until end of line. """
+        """Detokenise tokens until end of line."""
         litstring, comment = False, False
         textpos = 0
         output = bytearray()
@@ -125,7 +125,7 @@ class Tokeniser(object):
         return output, textpos
 
     def _detokenise_keyword(self, ins, output):
-        """ Convert a one- or two-byte keyword token to ascii. """
+        """Convert a one- or two-byte keyword token to ascii."""
         # try for single-byte token or two-byte token
         # if no match, first char is passed unchanged
         s = ins.read(1)
@@ -193,7 +193,7 @@ class Tokeniser(object):
     # Tokenise functions
 
     def tokenise_line(self, line):
-        """ Convert an ascii program line to tokenised form. """
+        """Convert an ascii program line to tokenised form."""
         ins = StringIO(line)
         outs = StringIO()
         # skip whitespace at start of line
@@ -292,11 +292,11 @@ class Tokeniser(object):
         return outs
 
     def _tokenise_rem(self, ins, outs):
-        """ Pass anything after REM as is till EOL. """
+        """Pass anything after REM as is till EOL."""
         outs.write(ascii_read_to(ins, ('', '\r', '\0')))
 
     def _tokenise_data(self, ins, outs):
-        """ Pass DATA as is, till end of statement, except for literals. """
+        """Pass DATA as is, till end of statement, except for literals."""
         while True:
             outs.write(ascii_read_to(ins, ('', '\r', '\0', ':', '"')))
             if util.peek(ins) == '"':
@@ -306,14 +306,14 @@ class Tokeniser(object):
                 break
 
     def _tokenise_literal(self, ins, outs):
-        """ Pass a string literal. """
+        """Pass a string literal."""
         outs.write(ins.read(1))
         outs.write(ascii_read_to(ins, ('', '\r', '\0', '"') ))
         if util.peek(ins)=='"':
             outs.write(ins.read(1))
 
     def _tokenise_line_number(self, ins, outs):
-        """ Convert an ascii line number to tokenised start-of-line. """
+        """Convert an ascii line number to tokenised start-of-line."""
         linenum = self._tokenise_uint(ins)
         if linenum != '':
             # terminates last line and fills up the first char in the buffer
@@ -334,7 +334,7 @@ class Tokeniser(object):
             outs.write(':')
 
     def _tokenise_jump_number(self, ins, outs):
-        """ Convert an ascii line number pointer to tokenised form. """
+        """Convert an ascii line number pointer to tokenised form."""
         word = self._tokenise_uint(ins)
         if word != '':
             outs.write(tk.T_UINT + word)
@@ -343,7 +343,7 @@ class Tokeniser(object):
             outs.write('.')
 
     def _tokenise_uint(self, ins):
-        """ Convert an unsigned int (line number) to tokenised form. """
+        """Convert an unsigned int (line number) to tokenised form."""
         word = bytearray()
         while True:
             c = ins.read(1)
@@ -376,7 +376,7 @@ class Tokeniser(object):
             return ''
 
     def _tokenise_word(self, ins, outs):
-        """ Convert a keyword to tokenised form. """
+        """Convert a keyword to tokenised form."""
         word = ''
         while True:
             c = ins.read(1)

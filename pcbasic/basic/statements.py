@@ -26,16 +26,16 @@ from . import vartypes
 
 
 class Statements(object):
-    """ BASIC statements. """
+    """BASIC statements."""
 
     def __init__(self, parser):
-        """ Initialise statement context. """
+        """Initialise statement context."""
         self.parser = parser
         self.session = parser.session
         self._init_statements()
 
     def _init_statements(self):
-        """ Initialise statements. """
+        """Initialise statements."""
         self.statements = {
             tk.END: self.exec_end,
             tk.FOR: self.exec_for,
@@ -148,42 +148,42 @@ class Statements(object):
         }
 
     def __getstate__(self):
-        """ Pickle. """
+        """Pickle."""
         pickle_dict = self.__dict__.copy()
         # can't be pickled
         pickle_dict['statements'] = None
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
-        """ Unpickle. """
+        """Unpickle."""
         self.__dict__.update(pickle_dict)
         self._init_statements()
 
 
     def exec_system(self, ins):
-        """ SYSTEM: exit interpreter. """
+        """SYSTEM: exit interpreter."""
         # SYSTEM LAH does not execute
         util.require(ins, tk.end_statement)
         raise error.Exit()
 
     def exec_tron(self, ins):
-        """ TRON: turn on line number tracing. """
+        """TRON: turn on line number tracing."""
         self.parser.tron = True
         # TRON LAH gives error, but TRON has been executed
         util.require(ins, tk.end_statement)
 
     def exec_troff(self, ins):
-        """ TROFF: turn off line number tracing. """
+        """TROFF: turn off line number tracing."""
         self.tron = False
         util.require(ins, tk.end_statement)
 
     def exec_rem(self, ins):
-        """ REM: comment. """
+        """REM: comment."""
         # skip the rest of the line, but parse numbers to avoid triggering EOL
         util.skip_to(ins, tk.end_line)
 
     def exec_lcopy(self, ins):
-        """ LCOPY: do nothing but check for syntax errors. """
+        """LCOPY: do nothing but check for syntax errors."""
         # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
         if util.skip_white(ins) not in tk.end_statement:
             util.range_check(0, 255, vartypes.pass_int_unpack(
@@ -191,11 +191,11 @@ class Statements(object):
             util.require(ins, tk.end_statement)
 
     def exec_motor(self, ins):
-        """ MOTOR: do nothing but check for syntax errors. """
+        """MOTOR: do nothing but check for syntax errors."""
         self.exec_lcopy(ins)
 
     def exec_debug(self, ins):
-        """ DEBUG: execute Python command. """
+        """DEBUG: execute Python command."""
         # this is not a GW-BASIC behaviour, but helps debugging.
         # this is parsed like a REM by the tokeniser.
         # rest of the line is considered to be a python statement
@@ -206,7 +206,7 @@ class Statements(object):
         self.session.debugger.debug_exec(debug_cmd)
 
     def exec_term(self, ins):
-        """ TERM: load and run PCjr buitin terminal emulator program. """
+        """TERM: load and run PCjr buitin terminal emulator program."""
         try:
             util.require(ins, tk.end_statement)
             with self.session.files.open_native_or_basic(self.parser.term) as f:
@@ -225,7 +225,7 @@ class Statements(object):
     # statements that require further qualification
 
     def exec_def(self, ins):
-        """ DEF: select DEF FN, DEF USR, DEF SEG. """
+        """DEF: select DEF FN, DEF USR, DEF SEG."""
         c = util.skip_white(ins)
         if util.read_if(ins, c, (tk.FN,)):
             self.exec_def_fn(ins)
@@ -238,36 +238,36 @@ class Statements(object):
             raise error.RunError(error.STX)
 
     def exec_view(self, ins):
-        """ VIEW: select VIEW PRINT, VIEW (graphics). """
+        """VIEW: select VIEW PRINT, VIEW (graphics)."""
         if util.skip_white_read_if(ins, (tk.PRINT,)):
             self.exec_view_print(ins)
         else:
             self.exec_view_graph(ins)
 
     def exec_line(self, ins):
-        """ LINE: select LINE INPUT, LINE (graphics). """
+        """LINE: select LINE INPUT, LINE (graphics)."""
         if util.skip_white_read_if(ins, (tk.INPUT,)):
             self.exec_line_input(ins)
         else:
             self.exec_line_graph(ins)
 
     def exec_get(self, ins):
-        """ GET: select GET (graphics), GET (files). """
+        """GET: select GET (graphics), GET (files)."""
         if util.skip_white(ins) == '(':
             self.exec_get_graph(ins)
         else:
             self.exec_get_file(ins)
 
     def exec_put(self, ins):
-        """ PUT: select PUT (graphics), PUT (files). """
+        """PUT: select PUT (graphics), PUT (files)."""
         if util.skip_white(ins) == '(':
             self.exec_put_graph(ins)
         else:
             self.exec_put_file(ins)
 
     def exec_on(self, ins):
-        """ ON: select ON ERROR, ON KEY, ON TIMER, ON PLAY, ON COM, ON PEN, ON STRIG
-            or ON (jump statement). """
+        """ON: select ON ERROR, ON KEY, ON TIMER, ON PLAY, ON COM, ON PEN, ON STRIG
+            or ON (jump statement)."""
         c = util.skip_white(ins)
         if util.read_if(ins, c, (tk.ERROR,)):
             self.exec_on_error(ins)
@@ -294,7 +294,7 @@ class Statements(object):
     # event switches (except PLAY) and event definitions
 
     def exec_pen(self, ins):
-        """ PEN: switch on/off light pen event handling. """
+        """PEN: switch on/off light pen event handling."""
         if self.parser.events.pen.command(util.skip_white(ins)):
             ins.read(1)
         else:
@@ -302,7 +302,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_strig(self, ins):
-        """ STRIG: switch on/off fire button event handling. """
+        """STRIG: switch on/off fire button event handling."""
         d = util.skip_white(ins)
         if d == '(':
             # strig (n)
@@ -324,7 +324,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_com(self, ins):
-        """ COM: switch on/off serial port event handling. """
+        """COM: switch on/off serial port event handling."""
         util.require(ins, ('(',))
         num = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
         util.range_check(1, 2, num)
@@ -335,7 +335,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_timer(self, ins):
-        """ TIMER: switch on/off timer event handling. """
+        """TIMER: switch on/off timer event handling."""
         if self.parser.events.timer.command(util.skip_white(ins)):
             ins.read(1)
         else:
@@ -343,7 +343,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_key_events(self, ins):
-        """ KEY: switch on/off keyboard events. """
+        """KEY: switch on/off keyboard events."""
         num = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
         util.range_check(0, 255, num)
         d = util.skip_white(ins)
@@ -355,7 +355,7 @@ class Statements(object):
                 raise error.RunError(error.STX)
 
     def _parse_on_event(self, ins, bracket=True):
-        """ Helper function for ON event trap definitions. """
+        """Helper function for ON event trap definitions."""
         num = None
         if bracket:
             num = self.parser.parse_bracket(ins, self.session)
@@ -369,14 +369,14 @@ class Statements(object):
         return num, jumpnum
 
     def exec_on_key(self, ins):
-        """ ON KEY: define key event trapping. """
+        """ON KEY: define key event trapping."""
         keynum, jumpnum = self._parse_on_event(ins)
         keynum = vartypes.pass_int_unpack(keynum)
         util.range_check(1, 20, keynum)
         self.parser.events.key[keynum-1].set_jump(jumpnum)
 
     def exec_on_timer(self, ins):
-        """ ON TIMER: define timer event trapping. """
+        """ON TIMER: define timer event trapping."""
         timeval, jumpnum = self._parse_on_event(ins)
         timeval = vartypes.pass_single(timeval)
         period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
@@ -384,19 +384,19 @@ class Statements(object):
         self.parser.events.timer.set_jump(jumpnum)
 
     def exec_on_play(self, ins):
-        """ ON PLAY: define music event trapping. """
+        """ON PLAY: define music event trapping."""
         playval, jumpnum = self._parse_on_event(ins)
         playval = vartypes.pass_int_unpack(playval)
         self.parser.events.play.set_trigger(playval)
         self.parser.events.play.set_jump(jumpnum)
 
     def exec_on_pen(self, ins):
-        """ ON PEN: define light pen event trapping. """
+        """ON PEN: define light pen event trapping."""
         _, jumpnum = self._parse_on_event(ins, bracket=False)
         self.parser.events.pen.set_jump(jumpnum)
 
     def exec_on_strig(self, ins):
-        """ ON STRIG: define fire button event trapping. """
+        """ON STRIG: define fire button event trapping."""
         strigval, jumpnum = self._parse_on_event(ins)
         strigval = vartypes.pass_int_unpack(strigval)
         ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
@@ -405,7 +405,7 @@ class Statements(object):
         self.parser.events.strig[strigval//2].set_jump(jumpnum)
 
     def exec_on_com(self, ins):
-        """ ON COM: define serial port event trapping. """
+        """ON COM: define serial port event trapping."""
         keynum, jumpnum = self._parse_on_event(ins)
         keynum = vartypes.pass_int_unpack(keynum)
         util.range_check(1, 2, keynum)
@@ -415,7 +415,7 @@ class Statements(object):
     # sound
 
     def exec_beep(self, ins):
-        """ BEEP: produce an alert sound or switch internal speaker on/off. """
+        """BEEP: produce an alert sound or switch internal speaker on/off."""
         # Tandy/PCjr BEEP ON, OFF
         if self.parser.syntax in ('pcjr', 'tandy') and util.skip_white(ins) in (tk.ON, tk.OFF):
             # this is ignored
@@ -429,7 +429,7 @@ class Statements(object):
             self.session.sound.wait_music()
 
     def exec_sound(self, ins):
-        """ SOUND: produce an arbitrary sound or switch external speaker on/off. """
+        """SOUND: produce an arbitrary sound or switch external speaker on/off."""
         # Tandy/PCjr SOUND ON, OFF
         if self.parser.syntax in ('pcjr', 'tandy') and util.skip_white(ins) in (tk.ON, tk.OFF):
             self.session.sound.sound_on = (ins.read(1) == tk.ON)
@@ -472,7 +472,7 @@ class Statements(object):
                 self.session.sound.wait_music()
 
     def exec_play(self, ins):
-        """ PLAY: play sound sequence defined by a Music Macro Language string. """
+        """PLAY: play sound sequence defined by a Music Macro Language string."""
         # PLAY: event switch
         if self.parser.events.play.command(util.skip_white(ins)):
             ins.read(1)
@@ -502,7 +502,7 @@ class Statements(object):
             self.session.sound.play(self.session.memory, (mml0, mml1, mml2))
 
     def exec_noise(self, ins):
-        """ NOISE: produce sound on the noise generator (Tandy/PCjr). """
+        """NOISE: produce sound on the noise generator (Tandy/PCjr)."""
         if not self.session.sound.sound_on:
             raise error.RunError(error.IFC)
         source = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
@@ -527,7 +527,7 @@ class Statements(object):
     # machine emulation
 
     def exec_poke(self, ins):
-        """ POKE: write to a memory location. Limited implementation. """
+        """POKE: write to a memory location. Limited implementation."""
         addr = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session), maxint=0xffff)
         if self.session.program.protected and not self.parser.run_mode:
             raise error.RunError(error.IFC)
@@ -538,7 +538,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_def_seg(self, ins):
-        """ DEF SEG: set the current memory segment. """
+        """DEF SEG: set the current memory segment."""
         # &hb800: text screen buffer; &h13d: data segment
         if util.skip_white_read_if(ins, (tk.O_EQ,)):
             # def_seg() accepts signed values
@@ -548,7 +548,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_def_usr(self, ins):
-        """ DEF USR: Define a machine language function. Not implemented. """
+        """DEF USR: Define a machine language function. Not implemented."""
         util.require_read(ins, tk.digit)
         util.require_read(ins, (tk.O_EQ,))
         vartypes.pass_integer(self.parser.parse_expression(ins, self.session), maxint=0xffff)
@@ -556,7 +556,7 @@ class Statements(object):
         logging.warning("DEF USR statement not implemented")
 
     def exec_bload(self, ins):
-        """ BLOAD: load a file into a memory location. Limited implementation. """
+        """BLOAD: load a file into a memory location. Limited implementation."""
         if self.session.program.protected and not self.parser.run_mode:
             raise error.RunError(error.IFC)
         with self.session.strings:
@@ -572,7 +572,7 @@ class Statements(object):
             self.session.all_memory.bload(f, offset)
 
     def exec_bsave(self, ins):
-        """ BSAVE: save a block of memory to a file. Limited implementation. """
+        """BSAVE: save a block of memory to a file. Limited implementation."""
         if self.session.program.protected and not self.parser.run_mode:
             raise error.RunError(error.IFC)
         with self.session.strings:
@@ -593,7 +593,7 @@ class Statements(object):
             self.session.all_memory.bsave(f, offset, length)
 
     def exec_call(self, ins):
-        """ CALL: call an external procedure. Not implemented. """
+        """CALL: call an external procedure. Not implemented."""
         addr_var = self.parser.parse_scalar(ins)
         if addr_var[-1] == '$':
             # type mismatch
@@ -611,11 +611,11 @@ class Statements(object):
         logging.warning("CALL or CALLS statement not implemented")
 
     def exec_calls(self, ins):
-        """ CALLS: call an external procedure. Not implemented. """
+        """CALLS: call an external procedure. Not implemented."""
         self.exec_call(ins)
 
     def exec_out(self, ins):
-        """ OUT: send a byte to a machine port. Limited implementation. """
+        """OUT: send a byte to a machine port. Limited implementation."""
         addr = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session), maxint=0xffff)
         util.require_read(ins, (',',))
         val = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
@@ -624,7 +624,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_wait(self, ins):
-        """ WAIT: wait for a machine port. Limited implementation. """
+        """WAIT: wait for a machine port. Limited implementation."""
         addr = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session), maxint=0xffff)
         util.require_read(ins, (',',))
         ander = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
@@ -641,7 +641,7 @@ class Statements(object):
     # Disk
 
     def exec_chdir(self, ins):
-        """ CHDIR: change working directory. """
+        """CHDIR: change working directory."""
         with self.session.strings:
             dev, path = self.session.devices.get_diskdevice_and_path(
                 self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session))))
@@ -649,7 +649,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_mkdir(self, ins):
-        """ MKDIR: create directory. """
+        """MKDIR: create directory."""
         with self.session.strings:
             dev, path = self.session.devices.get_diskdevice_and_path(
                 self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session))))
@@ -657,7 +657,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_rmdir(self, ins):
-        """ RMDIR: remove directory. """
+        """RMDIR: remove directory."""
         with self.session.strings:
             dev, path = self.session.devices.get_diskdevice_and_path(
                 self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session))))
@@ -665,7 +665,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_name(self, ins):
-        """ NAME: rename file or directory. """
+        """NAME: rename file or directory."""
         with self.session.strings:
             oldname = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # AS is not a tokenised word
@@ -684,7 +684,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_kill(self, ins):
-        """ KILL: remove file. """
+        """KILL: remove file."""
         with self.session.strings:
             name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # don't delete open files
@@ -694,7 +694,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_files(self, ins):
-        """ FILES: output directory listing. """
+        """FILES: output directory listing."""
         pathmask = ''
         if util.skip_white(ins) not in tk.end_statement:
             with self.session.strings:
@@ -710,7 +710,7 @@ class Statements(object):
     # OS
 
     def exec_shell(self, ins):
-        """ SHELL: open OS shell and optionally execute command. """
+        """SHELL: open OS shell and optionally execute command."""
         # parse optional shell command
         cmd = b''
         if util.skip_white(ins) not in tk.end_statement:
@@ -732,7 +732,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_environ(self, ins):
-        """ ENVIRON: set environment string. """
+        """ENVIRON: set environment string."""
         with self.session.strings:
             envstr = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         eqs = envstr.find('=')
@@ -744,7 +744,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_time(self, ins):
-        """ TIME$: set time. """
+        """TIME$: set time."""
         util.require_read(ins, (tk.O_EQ,)) #time$=
         # allowed formats:  hh   hh:mm   hh:mm:ss  where hh 0-23, mm 0-59, ss 0-59
         with self.session.strings:
@@ -753,7 +753,7 @@ class Statements(object):
         self.session.timer.set_time(timestr)
 
     def exec_date(self, ins):
-        """ DATE$: set date. """
+        """DATE$: set date."""
         util.require_read(ins, (tk.O_EQ,)) # date$=
         # allowed formats:
         # mm/dd/yy  or mm-dd-yy  mm 0--12 dd 0--31 yy 80--00--77
@@ -767,7 +767,7 @@ class Statements(object):
     # code
 
     def _parse_line_range(self, ins):
-        """ Helper function: parse line number ranges. """
+        """Helper function: parse line number ranges."""
         from_line = self._parse_jumpnum_or_dot(ins, allow_empty=True)
         if util.skip_white_read_if(ins, (tk.O_MINUS,)):
             to_line = self._parse_jumpnum_or_dot(ins, allow_empty=True)
@@ -776,7 +776,7 @@ class Statements(object):
         return (from_line, to_line)
 
     def _parse_jumpnum_or_dot(self, ins, allow_empty=False, err=error.STX):
-        """ Helper function: parse jump target. """
+        """Helper function: parse jump target."""
         c = util.skip_white_read(ins)
         if c == tk.T_UINT:
             return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(ins.read(2)))
@@ -789,7 +789,7 @@ class Statements(object):
             raise error.RunError(err)
 
     def exec_delete(self, ins):
-        """ DELETE: delete range of lines from program. """
+        """DELETE: delete range of lines from program."""
         from_line, to_line = self._parse_line_range(ins)
         util.require(ins, tk.end_statement)
         # throws back to direct mode
@@ -800,7 +800,7 @@ class Statements(object):
         self.session.clear()
 
     def exec_edit(self, ins):
-        """ EDIT: output a program line and position cursor for editing. """
+        """EDIT: output a program line and position cursor for editing."""
         if util.skip_white(ins) in tk.end_statement:
             # undefined line number
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
@@ -816,7 +816,7 @@ class Statements(object):
         self.session.edit_prompt = (from_line, None)
 
     def exec_auto(self, ins):
-        """ AUTO: enter automatic line numbering mode. """
+        """AUTO: enter automatic line numbering mode."""
         linenum = self._parse_jumpnum_or_dot(ins, allow_empty=True)
         increment = None
         if util.skip_white_read_if(ins, (',',)):
@@ -831,7 +831,7 @@ class Statements(object):
         self.session.auto_mode = True
 
     def exec_list(self, ins):
-        """ LIST: output program lines. """
+        """LIST: output program lines."""
         from_line, to_line = self._parse_line_range(ins)
         out = None
         if util.skip_white_read_if(ins, (',',)):
@@ -857,7 +857,7 @@ class Statements(object):
         self.parser.set_pointer(False)
 
     def exec_llist(self, ins):
-        """ LLIST: output program lines to LPT1: """
+        """LLIST: output program lines to LPT1: """
         from_line, to_line = self._parse_line_range(ins)
         util.require(ins, tk.end_statement)
         for l in self.session.program.list_lines(from_line, to_line):
@@ -866,7 +866,7 @@ class Statements(object):
         self.parser.set_pointer(False)
 
     def exec_load(self, ins):
-        """ LOAD: load program from file. """
+        """LOAD: load program from file."""
         with self.session.strings:
             name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
@@ -888,7 +888,7 @@ class Statements(object):
         self.parser.tron = False
 
     def exec_chain(self, ins):
-        """ CHAIN: load program and chain execution. """
+        """CHAIN: load program and chain execution."""
         if util.skip_white_read_if(ins, (tk.MERGE,)):
             action = self.session.program.merge
         else:
@@ -930,7 +930,7 @@ class Statements(object):
         self.session.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==self.session.program.merge))
 
     def _parse_delete_clause(self, ins):
-        """ Helper function: parse the DELETE clause of a CHAIN statement. """
+        """Helper function: parse the DELETE clause of a CHAIN statement."""
         delete_lines = None
         if util.skip_white_read_if(ins, (tk.DELETE,)):
             from_line = util.parse_jumpnum(ins, allow_empty=True)
@@ -948,7 +948,7 @@ class Statements(object):
         return delete_lines
 
     def exec_save(self, ins):
-        """ SAVE: save program to a file. """
+        """SAVE: save program to a file."""
         with self.session.strings:
             name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         mode = 'B'
@@ -964,7 +964,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_merge(self, ins):
-        """ MERGE: merge lines from file into current program. """
+        """MERGE: merge lines from file into current program."""
         with self.session.strings:
             name = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
@@ -975,7 +975,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_new(self, ins):
-        """ NEW: clear program from memory. """
+        """NEW: clear program from memory."""
         self.parser.tron = False
         # deletes the program currently in memory
         self.session.program.erase()
@@ -986,7 +986,7 @@ class Statements(object):
         self.parser.set_pointer(False)
 
     def exec_renum(self, ins):
-        """ RENUM: renumber program line numbers. """
+        """RENUM: renumber program line numbers."""
         new, old, step = None, None, None
         if util.skip_white(ins) not in tk.end_statement:
             new = self._parse_jumpnum_or_dot(ins, allow_empty=True)
@@ -1015,12 +1015,12 @@ class Statements(object):
     # file
 
     def exec_reset(self, ins):
-        """ RESET: close all files. """
+        """RESET: close all files."""
         self.session.files.close_all()
         util.require(ins, tk.end_statement)
 
     def _parse_read_write(self, ins):
-        """ Helper function: parse access mode. """
+        """Helper function: parse access mode."""
         d = util.skip_white(ins)
         if d == tk.WRITE:
             ins.read(1)
@@ -1032,7 +1032,7 @@ class Statements(object):
 
 
     def exec_open(self, ins):
-        """ OPEN: open a file. """
+        """OPEN: open a file."""
         long_modes = {tk.INPUT:'I', 'OUTPUT':'O', 'RANDOM':'R', 'APPEND':'A'}
         default_access_modes = {'I':'R', 'O':'W', 'A':'RW', 'R':'RW'}
         with self.session.strings:
@@ -1102,7 +1102,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_close(self, ins):
-        """ CLOSE: close a file. """
+        """CLOSE: close a file."""
         if util.skip_white(ins) in tk.end_statement:
             # allow empty CLOSE; close all open files
             self.session.files.close_all()
@@ -1118,7 +1118,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_field(self, ins):
-        """ FIELD: link a string variable to record buffer. """
+        """FIELD: link a string variable to record buffer."""
         the_file = self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session), 'R')
         if util.skip_white_read_if(ins, (',',)):
             offset = 0
@@ -1134,7 +1134,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def _parse_get_or_put_file(self, ins):
-        """ Helper function: PUT and GET syntax. """
+        """Helper function: PUT and GET syntax."""
         the_file = self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session), 'R')
         # for COM files
         num_bytes = the_file.reclen
@@ -1150,19 +1150,19 @@ class Statements(object):
         return the_file, num_bytes
 
     def exec_put_file(self, ins):
-        """ PUT: write record to file. """
+        """PUT: write record to file."""
         thefile, num_bytes = self._parse_get_or_put_file(ins)
         thefile.put(num_bytes)
         util.require(ins, tk.end_statement)
 
     def exec_get_file(self, ins):
-        """ GET: read record from file. """
+        """GET: read record from file."""
         thefile, num_bytes = self._parse_get_or_put_file(ins)
         thefile.get(num_bytes)
         util.require(ins, tk.end_statement)
 
     def exec_lock_or_unlock(self, ins, action):
-        """ LOCK or UNLOCK: set file or record locks. """
+        """LOCK or UNLOCK: set file or record locks."""
         thefile = self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session))
         lock_start_rec = 1
         if util.skip_white_read_if(ins, (',',)):
@@ -1183,7 +1183,7 @@ class Statements(object):
     exec_unlock = partial(exec_lock_or_unlock, action = 'unlock')
 
     def exec_ioctl(self, ins):
-        """ IOCTL: send control string to I/O device. Not implemented. """
+        """IOCTL: send control string to I/O device. Not implemented."""
         self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session))
         logging.warning("IOCTL statement not implemented.")
         raise error.RunError(error.IFC)
@@ -1192,7 +1192,7 @@ class Statements(object):
     # Graphics statements
 
     def _parse_coord_bare(self, ins):
-        """ Helper function: parse coordinate pair. """
+        """Helper function: parse coordinate pair."""
         util.require_read(ins, ('(',))
         x = fp.unpack(vartypes.pass_single(self.parser.parse_expression(ins, self.session)))
         util.require_read(ins, (',',))
@@ -1201,13 +1201,13 @@ class Statements(object):
         return x, y
 
     def _parse_coord_step(self, ins):
-        """ Helper function: parse coordinate pair. """
+        """Helper function: parse coordinate pair."""
         step = util.skip_white_read_if(ins, (tk.STEP,))
         x, y = self._parse_coord_bare(ins)
         return x, y, step
 
     def exec_pset(self, ins, c=-1):
-        """ PSET: set a pixel to a given attribute, or foreground. """
+        """PSET: set a pixel to a given attribute, or foreground."""
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         lcoord = self._parse_coord_step(ins)
@@ -1218,11 +1218,11 @@ class Statements(object):
         self.session.screen.drawing.pset(lcoord, c)
 
     def exec_preset(self, ins):
-        """ PRESET: set a pixel to a given attribute, or background. """
+        """PRESET: set a pixel to a given attribute, or background."""
         self.exec_pset(ins, 0)
 
     def exec_line_graph(self, ins):
-        """ LINE: draw a line or box between two points. """
+        """LINE: draw a line or box between two points."""
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         if util.skip_white(ins) in ('(', tk.STEP):
@@ -1250,7 +1250,7 @@ class Statements(object):
         self.session.screen.drawing.line(coord0, coord1, c, pattern, mode)
 
     def exec_view_graph(self, ins):
-        """ VIEW: set graphics viewport and optionally draw a box. """
+        """VIEW: set graphics viewport and optionally draw a box."""
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         absolute = util.skip_white_read_if(ins, (tk.SCREEN,))
@@ -1273,7 +1273,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_window(self, ins):
-        """ WINDOW: define logical coordinate system. """
+        """WINDOW: define logical coordinate system."""
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         cartesian = not util.skip_white_read_if(ins, (tk.SCREEN,))
@@ -1289,7 +1289,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_circle(self, ins):
-        """ CIRCLE: Draw a circle, ellipse, arc or sector. """
+        """CIRCLE: Draw a circle, ellipse, arc or sector."""
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         centre = self._parse_coord_step(ins)
@@ -1318,7 +1318,7 @@ class Statements(object):
         self.session.screen.drawing.circle(centre, r, start, stop, c, aspect)
 
     def exec_paint(self, ins):
-        """ PAINT: flood fill from point. """
+        """PAINT: flood fill from point."""
         # if paint *colour* specified, border default = paint colour
         # if paint *attribute* specified, border default = current foreground
         if self.session.screen.mode.is_text_mode:
@@ -1355,7 +1355,7 @@ class Statements(object):
         self.session.screen.drawing.paint(coord, pattern, c, border, background_pattern)
 
     def exec_get_graph(self, ins):
-        """ GET: read a sprite to memory. """
+        """GET: read a sprite to memory."""
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         # don't accept STEP for first coord
@@ -1373,7 +1373,7 @@ class Statements(object):
         self.session.screen.drawing.get(coord0, coord1, array)
 
     def exec_put_graph(self, ins):
-        """ PUT: draw sprite on screen. """
+        """PUT: draw sprite on screen."""
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         # don't accept STEP
@@ -1395,7 +1395,7 @@ class Statements(object):
         self.session.screen.drawing.put(coord, array, action)
 
     def exec_draw(self, ins):
-        """ DRAW: draw a figure defined by a Graphics Macro Language string. """
+        """DRAW: draw a figure defined by a Graphics Macro Language string."""
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         with self.session.strings:
@@ -1407,7 +1407,7 @@ class Statements(object):
     # Flow-control statements
 
     def exec_end(self, ins):
-        """ END: end program execution and return to interpreter. """
+        """END: end program execution and return to interpreter."""
         util.require(ins, tk.end_statement)
         self.parser.stop = self.parser.program_code.tell()
         # jump to end of direct line so execution stops
@@ -1418,12 +1418,12 @@ class Statements(object):
         self.session.files.close_all()
 
     def exec_stop(self, ins):
-        """ STOP: break program execution and return to interpreter. """
+        """STOP: break program execution and return to interpreter."""
         util.require(ins, tk.end_statement)
         raise error.Break(stop=True)
 
     def exec_cont(self, ins):
-        """ CONT: continue STOPped or ENDed execution. """
+        """CONT: continue STOPped or ENDed execution."""
         if self.parser.stop is None:
             raise error.RunError(error.CANT_CONTINUE)
         else:
@@ -1439,7 +1439,7 @@ class Statements(object):
         # in this implementation, the CONT command will fully overwrite the line buffer so x is not printed.
 
     def exec_for(self, ins):
-        """ FOR: enter for-loop. """
+        """FOR: enter for-loop."""
         # read variable
         varname = self.parser.parse_scalar(ins)
         vartype = varname[-1]
@@ -1464,7 +1464,7 @@ class Statements(object):
         self.exec_next(ins)
 
     def _skip_to_next(self, ins, for_char, next_char, allow_comma=False):
-        """ Helper function for FOR: skip over bytecode until NEXT. """
+        """Helper function for FOR: skip over bytecode until NEXT."""
         stack = 0
         while True:
             c = util.skip_to_read(ins, tk.end_statement+(tk.THEN, tk.ELSE))
@@ -1496,7 +1496,7 @@ class Statements(object):
                                     return
 
     def _find_next(self, ins, varname):
-        """ Helper function for FOR: find the right NEXT. """
+        """Helper function for FOR: find the right NEXT."""
         current = ins.tell()
         self._skip_to_next(ins, tk.FOR, tk.NEXT, allow_comma=True)
         if util.skip_white(ins) not in (tk.NEXT, ','):
@@ -1518,7 +1518,7 @@ class Statements(object):
         return nextpos
 
     def exec_next(self, ins):
-        """ NEXT: iterate for-loop. """
+        """NEXT: iterate for-loop."""
         while True:
             # record the NEXT (or comma) location
             pos = ins.tell()
@@ -1538,12 +1538,12 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_goto(self, ins):
-        """ GOTO: jump to specified line number. """
+        """GOTO: jump to specified line number."""
         # parse line number, ignore rest of line and jump
         self.parser.jump(util.parse_jumpnum(ins))
 
     def exec_run(self, ins):
-        """ RUN: start program execution. """
+        """RUN: start program execution."""
         jumpnum, close_files = None, True
         c = util.skip_white(ins)
         if c == tk.T_UINT:
@@ -1564,7 +1564,7 @@ class Statements(object):
         self.parser.error_handle_mode = False
 
     def exec_if(self, ins):
-        """ IF: enter branching statement. """
+        """IF: enter branching statement."""
         # avoid overflow: don't use bools.
         val = vartypes.pass_single(self.parser.parse_expression(ins, self.session))
         util.skip_white_read_if(ins, (',',)) # optional comma
@@ -1597,12 +1597,12 @@ class Statements(object):
                     break
 
     def exec_else(self, ins):
-        """ ELSE: part of branch statement; ignore. """
+        """ELSE: part of branch statement; ignore."""
         # any else statement by itself means the THEN has already been executed, so it's really like a REM.
         util.skip_to(ins, tk.end_line)
 
     def exec_while(self, ins):
-        """ WHILE: enter while-loop. """
+        """WHILE: enter while-loop."""
         # just after WHILE opcode
         whilepos = ins.tell()
         # evaluate the 'boolean' expression
@@ -1621,7 +1621,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def _check_while_condition(self, ins, whilepos):
-        """ Check condition of while-loop. """
+        """Check condition of while-loop."""
         ins.seek(whilepos)
         # WHILE condition is zero?
         if not fp.unpack(vartypes.pass_double(self.parser.parse_expression(ins, self.session))).is_zero():
@@ -1634,7 +1634,7 @@ class Statements(object):
             ins.seek(wendpos)
 
     def exec_wend(self, ins):
-        """ WEND: iterate while-loop. """
+        """WEND: iterate while-loop."""
         # while will actually syntax error on the first run if anything is in the way.
         util.require(ins, tk.end_statement)
         pos = ins.tell()
@@ -1650,7 +1650,7 @@ class Statements(object):
         self._check_while_condition(ins, whilepos)
 
     def exec_on_jump(self, ins):
-        """ ON: calculated jump. """
+        """ON: calculated jump."""
         onvar = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(0, 255, onvar)
         command = util.skip_white_read(ins)
@@ -1678,7 +1678,7 @@ class Statements(object):
         util.skip_to(ins, tk.end_statement)
 
     def exec_on_error(self, ins):
-        """ ON ERROR: define error trapping routine. """
+        """ON ERROR: define error trapping routine."""
         util.require_read(ins, (tk.GOTO,))  # GOTO
         linenum = util.parse_jumpnum(ins)
         if linenum != 0 and linenum not in self.session.program.line_numbers:
@@ -1692,7 +1692,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_resume(self, ins):
-        """ RESUME: resume program flow after error-trap. """
+        """RESUME: resume program flow after error-trap."""
         if self.parser.error_resume is None:
             # unset error handler
             self.parser.on_error = 0
@@ -1723,20 +1723,20 @@ class Statements(object):
             self.parser.jump(jumpnum)
 
     def exec_error(self, ins):
-        """ ERRROR: simulate an error condition. """
+        """ERRROR: simulate an error condition."""
         errn = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(1, 255, errn)
         raise error.RunError(errn)
 
     def exec_gosub(self, ins):
-        """ GOSUB: jump into a subroutine. """
+        """GOSUB: jump into a subroutine."""
         jumpnum = util.parse_jumpnum(ins)
         # ignore rest of statement ('GOSUB 100 LAH' works just fine..); we need to be able to RETURN
         util.skip_to(ins, tk.end_statement)
         self.parser.jump_gosub(jumpnum)
 
     def exec_return(self, ins):
-        """ RETURN: return from a subroutine. """
+        """RETURN: return from a subroutine."""
         # return *can* have a line number
         if util.skip_white(ins) not in tk.end_statement:
             jumpnum = util.parse_jumpnum(ins)
@@ -1750,7 +1750,7 @@ class Statements(object):
     # Variable & array statements
 
     def _parse_var_list(self, ins):
-        """ Helper function: parse variable list.  """
+        """Helper function: parse variable list.  """
         readvar = []
         while True:
             readvar.append(list(self.parser.parse_variable(ins, self.session)))
@@ -1759,7 +1759,7 @@ class Statements(object):
         return readvar
 
     def exec_clear(self, ins):
-        """ CLEAR: clear memory and redefine memory limits. """
+        """CLEAR: clear memory and redefine memory limits."""
         # integer expression allowed but ignored
         intexp = self.parser.parse_expression(ins, self.session, allow_empty=True)
         if intexp:
@@ -1803,7 +1803,7 @@ class Statements(object):
         self.session.clear()
 
     def exec_common(self, ins):
-        """ COMMON: define variables to be preserved on CHAIN. """
+        """COMMON: define variables to be preserved on CHAIN."""
         common_scalars, common_arrays = set(), set()
         while True:
             name = self.parser.parse_scalar(ins)
@@ -1819,12 +1819,12 @@ class Statements(object):
         self.session.common_arrays |= common_arrays
 
     def exec_data(self, ins):
-        """ DATA: data definition; ignore. """
+        """DATA: data definition; ignore."""
         # ignore rest of statement after DATA
         util.skip_to(ins, tk.end_statement)
 
     def exec_dim(self, ins):
-        """ DIM: dimension arrays. """
+        """DIM: dimension arrays."""
         while True:
             name, dimensions = self.parser.parse_variable(ins, self.session)
             if not dimensions:
@@ -1835,7 +1835,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_deftype(self, ins, typechar):
-        """ DEFSTR/DEFINT/DEFSNG/DEFDBL: set type defaults for variables. """
+        """DEFSTR/DEFINT/DEFSNG/DEFDBL: set type defaults for variables."""
         while True:
             start = util.skip_white_read(ins)
             if start not in string.ascii_letters:
@@ -1851,7 +1851,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_erase(self, ins):
-        """ ERASE: erase an array. """
+        """ERASE: erase an array."""
         while True:
             self.session.arrays.erase(self.parser.parse_scalar(ins))
             if not util.skip_white_read_if(ins, (',',)):
@@ -1859,7 +1859,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_let(self, ins):
-        """ LET: assign value to variable or array. """
+        """LET: assign value to variable or array."""
         name, indices = self.parser.parse_variable(ins, self.session)
         if indices != []:
             # pre-dim even if this is not a legal statement!
@@ -1870,7 +1870,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_mid(self, ins):
-        """ MID$: set part of a string. """
+        """MID$: set part of a string."""
         # do not use require_read as we don't allow whitespace here
         if ins.read(1) != '(':
             raise error.RunError(error.STX)
@@ -1911,7 +1911,7 @@ class Statements(object):
                 self.session.strings.modify(basic_str, val, offset, num))
 
     def exec_lset(self, ins, justify_right=False):
-        """ LSET: assign string value in-place; left justified. """
+        """LSET: assign string value in-place; left justified."""
         name, index = self.parser.parse_variable(ins, self.session)
         v = vartypes.pass_string(self.session.memory.get_variable(name, index))
         util.require_read(ins, (tk.O_EQ,))
@@ -1929,11 +1929,11 @@ class Statements(object):
         self.session.memory.set_variable(name, index, self.session.strings.modify(v, s))
 
     def exec_rset(self, ins):
-        """ RSET: assign string value in-place; right justified. """
+        """RSET: assign string value in-place; right justified."""
         self.exec_lset(ins, justify_right=True)
 
     def exec_option(self, ins):
-        """ OPTION BASE: set array indexing convention. """
+        """OPTION BASE: set array indexing convention."""
         if util.skip_white_read_if(ins, ('BASE',)):
             # MUST be followed by ASCII '1' or '0', num constants or expressions are an error!
             d = util.skip_white_read(ins)
@@ -1948,7 +1948,7 @@ class Statements(object):
         util.skip_to(ins, tk.end_statement)
 
     def exec_read(self, ins):
-        """ READ: read values from DATA statement. """
+        """READ: read values from DATA statement."""
         # reading loop
         for name, indices in self._parse_var_list(ins):
             entry = self.parser.read_entry()
@@ -1969,7 +1969,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def _parse_prompt(self, ins, question_mark):
-        """ Helper function for INPUT: parse prompt definition. """
+        """Helper function for INPUT: parse prompt definition."""
         # parse prompt
         if util.skip_white_read_if(ins, ('"',)):
             prompt = ''
@@ -1990,7 +1990,7 @@ class Statements(object):
         return prompt
 
     def exec_input(self, ins):
-        """ INPUT: request input from user. """
+        """INPUT: request input from user."""
         finp = self.parser.parse_file_number(ins, self.session, 'IR')
         if finp is not None:
             for v in self._parse_var_list(ins):
@@ -2020,7 +2020,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_line_input(self, ins):
-        """ LINE INPUT: request input from user. """
+        """LINE INPUT: request input from user."""
         finp = self.parser.parse_file_number(ins, self.session, 'IR')
         if not finp:
             # ; to avoid echoing newline
@@ -2046,7 +2046,7 @@ class Statements(object):
         self.session.memory.set_variable(readvar, indices, self.session.strings.store(line))
 
     def exec_restore(self, ins):
-        """ RESTORE: reset DATA pointer. """
+        """RESTORE: reset DATA pointer."""
         if not util.skip_white(ins) in tk.end_statement:
             datanum = util.parse_jumpnum(ins, err=error.UNDEFINED_LINE_NUMBER)
         else:
@@ -2056,7 +2056,7 @@ class Statements(object):
         self.parser.restore(datanum)
 
     def exec_swap(self, ins):
-        """ SWAP: swap values of two variables. """
+        """SWAP: swap values of two variables."""
         name1, index1 = self.parser.parse_variable(ins, self.session)
         util.require_read(ins, (',',))
         name2, index2 = self.parser.parse_variable(ins, self.session)
@@ -2065,7 +2065,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_def_fn(self, ins):
-        """ DEF FN: define a function. """
+        """DEF FN: define a function."""
         fnname = self.parser.parse_scalar(ins)
         fntype = fnname[-1]
         # read parameters
@@ -2104,7 +2104,7 @@ class Statements(object):
 
 
     def exec_randomize(self, ins):
-        """ RANDOMIZE: set random number generator seed. """
+        """RANDOMIZE: set random number generator seed."""
         val = self.parser.parse_expression(ins, self.session, allow_empty=True)
         if val:
             # don't convert to int if provided in the code
@@ -2124,7 +2124,7 @@ class Statements(object):
     # Console statements
 
     def exec_cls(self, ins):
-        """ CLS: clear the screen. """
+        """CLS: clear the screen."""
         if (self.parser.syntax == 'pcjr' or
                         util.skip_white(ins) in (',',) + tk.end_statement):
             if self.session.screen.drawing.view_is_set():
@@ -2159,7 +2159,7 @@ class Statements(object):
             util.require(ins, tk.end_statement)
 
     def exec_color(self, ins):
-        """ COLOR: set colour attributes. """
+        """COLOR: set colour attributes."""
         screen = self.session.screen
         mode = screen.mode
         fore = self.parser.parse_expression(ins, self.session, allow_empty=True)
@@ -2213,7 +2213,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_color_mode_1(self, ins, back, pal, override):
-        """ Helper function for COLOR in SCREEN 1. """
+        """Helper function for COLOR in SCREEN 1."""
         screen = self.session.screen
         back = screen.palette.get_entry(0) if back is None else back
         if override is not None:
@@ -2232,7 +2232,7 @@ class Statements(object):
             screen.palette.set_entry(0, back & 0xf, check_mode=False)
 
     def exec_palette(self, ins):
-        """ PALETTE: set colour palette entry. """
+        """PALETTE: set colour palette entry."""
         d = util.skip_white(ins)
         if d in tk.end_statement:
             # reset palette
@@ -2256,7 +2256,7 @@ class Statements(object):
             util.require(ins, tk.end_statement)
 
     def exec_palette_using(self, ins):
-        """ PALETTE USING: set full colour palette. """
+        """PALETTE USING: set full colour palette."""
         screen = self.session.screen
         mode = screen.mode
         num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
@@ -2279,7 +2279,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_key(self, ins):
-        """ KEY: switch on/off or list function-key row on screen. """
+        """KEY: switch on/off or list function-key row on screen."""
         d = util.skip_white_read(ins)
         if d == tk.ON:
             # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
@@ -2303,7 +2303,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_key_define(self, ins):
-        """ KEY: define function-key shortcut or scancode for event trapping. """
+        """KEY: define function-key shortcut or scancode for event trapping."""
         keynum = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(1, 255, keynum)
         util.require_read(ins, (',',), err=error.IFC)
@@ -2320,7 +2320,7 @@ class Statements(object):
             self.parser.events.key[keynum-1].set_trigger(str(text))
 
     def exec_locate(self, ins):
-        """ LOCATE: Set cursor position, shape and visibility."""
+        """LOCATE: Set cursor position, shape and visibility."""
         cmode = self.session.screen.mode
         row = self.parser.parse_expression(ins, self.session, allow_empty=True)
         row = None if row is None else vartypes.pass_int_unpack(row)
@@ -2367,7 +2367,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_write(self, ins, output=None):
-        """ WRITE: Output machine-readable expressions to the screen or a file. """
+        """WRITE: Output machine-readable expressions to the screen or a file."""
         output = self.parser.parse_file_number(ins, self.session, 'OAR')
         output = self.session.devices.scrn_file if output is None else output
         expr = self.parser.parse_expression(ins, self.session, allow_empty=True)
@@ -2389,7 +2389,7 @@ class Statements(object):
         output.write_line(outstr)
 
     def exec_print(self, ins, output=None):
-        """ PRINT: Write expressions to the screen or a file. """
+        """PRINT: Write expressions to the screen or a file."""
         if output is None:
             output = self.parser.parse_file_number(ins, self.session, 'OAR')
             output = self.session.devices.scrn_file if output is None else output
@@ -2440,7 +2440,7 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_print_using(self, ins, output):
-        """ PRINT USING: Write expressions to screen or file using a formatting string. """
+        """PRINT USING: Write expressions to screen or file using a formatting string."""
         with self.session.strings:
             format_expr = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         if format_expr == '':
@@ -2488,11 +2488,11 @@ class Statements(object):
         util.require(ins, tk.end_statement)
 
     def exec_lprint(self, ins):
-        """ LPRINT: Write expressions to printer LPT1. """
+        """LPRINT: Write expressions to printer LPT1."""
         self.exec_print(ins, self.session.devices.lpt1_file)
 
     def exec_view_print(self, ins):
-        """ VIEW PRINT: set scroll region. """
+        """VIEW PRINT: set scroll region."""
         if util.skip_white(ins) in tk.end_statement:
             self.session.screen.unset_view()
         else:
@@ -2505,7 +2505,7 @@ class Statements(object):
             self.session.screen.set_view(start, stop)
 
     def exec_width(self, ins):
-        """ WIDTH: set width of screen or device. """
+        """WIDTH: set width of screen or device."""
         d = util.skip_white(ins)
         if d == '#':
             dev = self.parser.parse_file_number(ins, self.session)
@@ -2547,7 +2547,7 @@ class Statements(object):
         dev.set_width(w)
 
     def exec_screen(self, ins):
-        """ SCREEN: change video mode or page. """
+        """SCREEN: change video mode or page."""
         # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
         # this raises error before
         mode = self.parser.parse_expression(ins, self.session, allow_empty=True)
@@ -2584,7 +2584,7 @@ class Statements(object):
             self.session.screen.init_mode()
 
     def exec_pcopy(self, ins):
-        """ PCOPY: copy video pages. """
+        """PCOPY: copy video pages."""
         src = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.range_check(0, self.session.screen.mode.num_pages-1, src)
         util.require_read(ins, (',',))

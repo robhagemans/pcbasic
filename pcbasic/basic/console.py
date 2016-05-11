@@ -41,7 +41,7 @@ alt_key_replace = {
 
 
 class FunctionKeyMacros(object):
-    """ Handles function-key macro strings. """
+    """Handles function-key macro strings."""
 
     # on the keys line 25, what characters to replace & with which
     _replace_chars = {
@@ -54,13 +54,13 @@ class FunctionKeyMacros(object):
         'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '')
 
     def __init__(self, num_fn_keys):
-        """ Initialise user-definable key list. """
+        """Initialise user-definable key list."""
         self._key_replace = list(self._default_macros)
         self._num_fn_keys = num_fn_keys
         self.keys_visible = False
 
     def list_keys(self, screen):
-        """ Print a list of the function key macros. """
+        """Print a list of the function key macros."""
         for i in range(self._num_fn_keys):
             text = bytearray(self._key_replace[i])
             for j in range(len(text)):
@@ -71,7 +71,7 @@ class FunctionKeyMacros(object):
             screen.write_line('F' + str(i+1) + ' ' + str(text))
 
     def show_keys(self, screen, do_show):
-        """ Show/hide the function keys line on the active page. """
+        """Show/hide the function keys line on the active page."""
         key_row = screen.mode.height
         screen.clear_rows(key_row, key_row)
         # Keys will only be visible on the active page at which KEY ON was given,
@@ -94,32 +94,32 @@ class FunctionKeyMacros(object):
             screen.apage.row[24].end = screen.mode.width
 
     def redraw_keys(self, screen):
-        """ Redraw key macro line if visible. """
+        """Redraw key macro line if visible."""
         if self.keys_visible:
             self.show_keys(screen, True)
 
     def _write_for_keys(self, screen, s, col, cattr):
-        """ Write chars on the keys line; no echo, some character replacements. """
+        """Write chars on the keys line; no echo, some character replacements."""
         for i, c in enumerate(s):
             screen.put_char_attr(screen.apagenum, 25, col+i,
                     self._replace_chars.get(c, c), cattr, for_keys=True)
 
     def set(self, num, macro):
-        """ Set macro for given function key. """
+        """Set macro for given function key."""
         # NUL terminates macro string, rest is ignored
         # macro starting with NUL is empty macro
         self._key_replace[num-1] = macro.split('\0', 1)[0]
 
     def get(self, num):
-        """ Get macro for given function key. """
+        """Get macro for given function key."""
         return self._key_replace[num]
 
 
 class Console(object):
-    """ Interactive environment. """
+    """Interactive environment."""
 
     def __init__(self, screen, keyboard, sound, output_redirection, lpt1_file):
-        """ Initialise console. """
+        """Initialise console."""
         # overwrite mode (instead of insert)
         self._overwrite_mode = True
         self.screen = screen
@@ -133,7 +133,7 @@ class Console(object):
     # interactive mode
 
     def wait_screenline(self, write_endl=True, from_start=False):
-        """ Enter interactive mode and read string from console. """
+        """Enter interactive mode and read string from console."""
         # from_start means direct entry mode, otherwise input mode
         prompt_width = 0 if from_start else self.screen.current_col-1
         try:
@@ -163,21 +163,21 @@ class Console(object):
         return str(outstr[:255].rstrip(' \t\n'))
 
     def find_start_of_line(self, srow):
-        """ Find the start of the logical line that includes our current position. """
+        """Find the start of the logical line that includes our current position."""
         # move up as long as previous line wraps
         while srow > 1 and self.screen.apage.row[srow-2].wrap:
             srow -= 1
         return srow
 
     def find_end_of_line(self, srow):
-        """ Find the end of the logical line that includes our current position. """
+        """Find the end of the logical line that includes our current position."""
         # move down as long as this line wraps
         while srow <= self.screen.mode.height and self.screen.apage.row[srow-1].wrap:
             srow += 1
         return srow
 
     def get_logical_line(self, srow):
-        """ Get bytearray of the contents of the logical line. """
+        """Get bytearray of the contents of the logical line."""
         # find start of logical line
         srow = self.find_start_of_line(srow)
         line = bytearray()
@@ -194,7 +194,7 @@ class Console(object):
         return line
 
     def get_logical_line_input(self, srow, prompt_row, left, right):
-        """ Get bytearray of the contents of the logical line, adapted for INPUT. """
+        """Get bytearray of the contents of the logical line, adapted for INPUT."""
         # INPUT: the prompt starts at the beginning of a logical line
         # but the row may have moved up: this happens on line 24
         # in this case we need to move up to the start of the logical line
@@ -222,7 +222,7 @@ class Console(object):
         return line
 
     def wait_interactive(self, prompt_width):
-        """ Manage the interactive mode. """
+        """Manage the interactive mode."""
         # force cursor visibility in all cases
         self.screen.cursor.show(True)
         try:
@@ -345,13 +345,13 @@ class Console(object):
         return start_row, furthest_left, furthest_right
 
     def set_overwrite_mode(self, new_overwrite=True):
-        """ Set or unset the overwrite mode (INS). """
+        """Set or unset the overwrite mode (INS)."""
         if new_overwrite != self._overwrite_mode:
             self._overwrite_mode = new_overwrite
             self.screen.cursor.set_default_shape(new_overwrite)
 
     def insert(self, crow, ccol, c, cattr):
-        """ Insert a single byte at the current position. """
+        """Insert a single byte at the current position."""
         while True:
             therow = self.screen.apage.row[crow-1]
             therow.buf.insert(ccol-1, (c, cattr))
@@ -375,7 +375,7 @@ class Console(object):
                 ccol = 1
 
     def delete_char(self, crow, ccol):
-        """ Delete the character (single/double width) at the current position. """
+        """Delete the character (single/double width) at the current position."""
         double = self.screen.apage.row[crow-1].double[ccol-1]
         if double == 0:
             # we're on an sbcs byte.
@@ -390,7 +390,7 @@ class Console(object):
             self.delete_sbcs_char(crow, ccol-1)
 
     def delete_sbcs_char(self, crow, ccol):
-        """ Delete a single-byte character at the current position. """
+        """Delete a single-byte character at the current position."""
         save_col = ccol
         thepage = self.screen.apage
         therow = thepage.row[crow-1]
@@ -457,11 +457,11 @@ class Console(object):
                     thepage.row[crow-2].wrap = False
 
     def clear_line(self, the_row, from_col=1):
-        """ Clear whole logical line (ESC), leaving prompt. """
+        """Clear whole logical line (ESC), leaving prompt."""
         self.clear_rest_of_line(self.find_start_of_line(the_row), from_col)
 
     def clear_rest_of_line(self, srow, scol):
-        """ Clear from given position to end of logical line (CTRL+END). """
+        """Clear from given position to end of logical line (CTRL+END)."""
         mode = self.screen.mode
         therow = self.screen.apage.row[srow-1]
         therow.buf = (therow.buf[:scol-1] +
@@ -488,7 +488,7 @@ class Console(object):
         therow.end = save_end
 
     def backspace(self, start_row, start_col):
-        """ Delete the char to the left (BACKSPACE). """
+        """Delete the char to the left (BACKSPACE)."""
         crow, ccol = self.screen.current_row, self.screen.current_col
         # don't backspace through prompt
         if ccol == 1:
@@ -504,7 +504,7 @@ class Console(object):
         self.delete_char(crow, ccol)
 
     def tab(self):
-        """ Jump to next 8-position tab stop (TAB). """
+        """Jump to next 8-position tab stop (TAB)."""
         row, col = self.screen.current_row, self.screen.current_col
         newcol = 9 + 8 * int((col-1) / 8)
         if self._overwrite_mode:
@@ -516,7 +516,7 @@ class Console(object):
             self.screen.set_pos(row, newcol)
 
     def end(self):
-        """ Jump to end of logical line; follow wraps (END). """
+        """Jump to end of logical line; follow wraps (END)."""
         crow = self.screen.current_row
         while (self.screen.apage.row[crow-1].wrap and
                 crow < self.screen.mode.height):
@@ -528,7 +528,7 @@ class Console(object):
             self.screen.set_pos(crow, self.screen.apage.row[crow-1].end+1)
 
     def line_feed(self):
-        """ Move the remainder of the line to the next row and wrap (LF). """
+        """Move the remainder of the line to the next row and wrap (LF)."""
         crow, ccol = self.screen.current_row, self.screen.current_col
         if ccol < self.screen.apage.row[crow-1].end:
             for _ in range(self.screen.mode.width - ccol + 1):
@@ -549,7 +549,7 @@ class Console(object):
         self.screen.set_pos(self.screen.current_row+1, 1)
 
     def skip_word_right(self):
-        """ Skip one word to the right (CTRL+RIGHT). """
+        """Skip one word to the right (CTRL+RIGHT)."""
         crow, ccol = self.screen.current_row, self.screen.current_col
         # find non-alphanumeric chars
         while True:
@@ -578,7 +578,7 @@ class Console(object):
         self.screen.set_pos(crow, ccol)
 
     def skip_word_left(self):
-        """ Skip one word to the left (CTRL+LEFT). """
+        """Skip one word to the left (CTRL+LEFT)."""
         crow, ccol = self.screen.current_row, self.screen.current_col
         # find alphanumeric chars
         while True:
@@ -610,7 +610,7 @@ class Console(object):
 
     #MOVE to Screen
     def list_line(self, line, newline=True):
-        """ Print a line from a program listing or EDIT prompt. """
+        """Print a line from a program listing or EDIT prompt."""
         # no wrap if 80-column line, clear row before printing.
         # replace LF CR with LF
         line = line.replace('\n\r', '\n')

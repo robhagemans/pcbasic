@@ -17,13 +17,13 @@ from . import basictoken as tk
 # stream utilities
 
 def peek(ins, n=1):
-    """ Peek next char in stream. """
+    """Peek next char in stream."""
     d = ins.read(n)
     ins.seek(-len(d), 1)
     return d
 
 def skip_read(ins, skip_range, n=1):
-    """ Skip chars in skip_range, then read next. """
+    """Skip chars in skip_range, then read next."""
     while True:
         d = ins.read(1)
         # skip_range must not include ''
@@ -31,13 +31,13 @@ def skip_read(ins, skip_range, n=1):
             return d + ins.read(n-1)
 
 def skip(ins, skip_range, n=1):
-    """ Skip chars in skip_range, then peek next. """
+    """Skip chars in skip_range, then peek next."""
     d = skip_read(ins, skip_range, n)
     ins.seek(-len(d), 1)
     return d
 
 def backskip_white(ins):
-    """ Skip whitespace backwards, then peek next. """
+    """Skip whitespace backwards, then peek next."""
     while True:
         ins.seek(-1, 1)
         d = peek(ins)
@@ -51,18 +51,18 @@ skip_white_read = partial(skip_read, skip_range=tk.whitespace)
 skip_white = partial(skip, skip_range=tk.whitespace)
 
 def skip_white_read_if(ins, in_range):
-    """ Skip whitespace, then read if next char is in range. """
+    """Skip whitespace, then read if next char is in range."""
     return read_if(ins, skip_white(ins, n=len(in_range[0])), in_range)
 
 def read_if(ins, d, in_range):
-    """ Read if next char is in range. """
+    """Read if next char is in range."""
     if d != '' and d in in_range:
         ins.read(len(d))
         return True
     return False
 
 def skip_to(ins, findrange, break_on_first_char=True):
-    """ Skip until character is in findrange. """
+    """Skip until character is in findrange."""
     literal = False
     rem = False
     while True:
@@ -95,7 +95,7 @@ def skip_to(ins, findrange, break_on_first_char=True):
             ins.read(tk.plus_bytes[c])
 
 def skip_to_read(ins, findrange):
-    """ Skip until character is in findrange, then read. """
+    """Skip until character is in findrange, then read."""
     skip_to(ins, findrange)
     return ins.read(1)
 
@@ -103,18 +103,18 @@ def skip_to_read(ins, findrange):
 # parsing utilities
 
 def require_read(ins, in_range, err=error.STX):
-    """ Skip whitespace, read and raise error if not in range. """
+    """Skip whitespace, read and raise error if not in range."""
     if not skip_white_read_if(ins, in_range):
         raise error.RunError(err)
 
 def require(ins, rnge, err=error.STX):
-    """ Skip whitespace, peek and raise error if not in range. """
+    """Skip whitespace, peek and raise error if not in range."""
     a = skip_white(ins, n=len(rnge[0]))
     if a not in rnge:
         raise error.RunError(err)
 
 def parse_line_number(ins):
-    """ Parse line number and leave pointer at first char of line. """
+    """Parse line number and leave pointer at first char of line."""
     # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00
     off = ins.read(2)
     if off == '\0\0' or len(off) < 2:
@@ -128,7 +128,7 @@ def parse_line_number(ins):
         return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(off))
 
 def parse_jumpnum(ins, allow_empty=False, err=error.STX):
-    """ Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc. """
+    """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
     if skip_white_read_if(ins, (tk.T_UINT,)):
         return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(ins.read(2)))
     else:
@@ -138,7 +138,7 @@ def parse_jumpnum(ins, allow_empty=False, err=error.STX):
         raise error.RunError(err)
 
 def read_name(ins, allow_empty=False, err=error.STX):
-    """ Read a variable name """
+    """Read a variable name """
     name = ''
     d = skip_white_read(ins)
     if not d:
@@ -159,12 +159,12 @@ def read_name(ins, allow_empty=False, err=error.STX):
     return name
 
 def range_check(lower, upper, *allvars):
-    """ Check if all variables in list are within the given inclusive range. """
+    """Check if all variables in list are within the given inclusive range."""
     for v in allvars:
         if v is not None and not (lower <= v <= upper):
             raise error.RunError(error.IFC)
 
 def range_check_err(lower, upper, v, err=error.IFC):
-    """ Check if variable is within the given inclusive range. """
+    """Check if variable is within the given inclusive range."""
     if v is not None and not (lower <= v <= upper):
         raise error.RunError(err)
