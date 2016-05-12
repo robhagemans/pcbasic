@@ -353,17 +353,14 @@ class Session(object):
     def execute(self, command):
         """Execute a BASIC statement."""
         self.store_line(command)
-        self.loop()
+        self._loop()
 
     def interact(self):
         """Interactive interpreter session."""
-        try:
-            while True:
-                self.loop()
-        except error.Exit:
+        while self._loop():
             pass
 
-    def loop(self):
+    def _loop(self):
         """Run read-eval-print loop until control returns to user after a command."""
         try:
             while True:
@@ -404,11 +401,12 @@ class Session(object):
             self.handle_error(e)
             self.prompt = True
         except error.Exit:
-            raise
+            return False
         except error.Reset:
             raise
         except Exception as e:
             self.debugger.bluescreen(e)
+        return True
 
     def set_parse_mode(self, on):
         """Enter or exit parse mode."""
