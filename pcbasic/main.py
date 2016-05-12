@@ -62,10 +62,8 @@ def convert(settings):
     mode, name_in, name_out = settings.get_converter_parameters()
     session = basic.Session(**settings.get_session_parameters())
     try:
-        with session.files.open_native_or_basic(name_in, filetype='ABP', mode='I') as infile:
-            session.program.load(infile, rebuild_dict=False)
-        with session.files.open_native_or_basic(name_out, filetype=mode, mode='O') as outfile:
-            session.program.save(outfile)
+        session.load_program(name_in, rebuild_dict=False)
+        session.save_program(name_out, filetype=mode)
     except basic.RunError as e:
         logging.error(e.message)
 

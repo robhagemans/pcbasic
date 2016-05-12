@@ -69,8 +69,7 @@ def launch_session(session_params, state_file,
                     **session_params)
         # load initial program, allowing native-os filenames or BASIC specs
         if prog:
-            with session.files.open_native_or_basic(prog, filetype='ABP', mode='I') as progfile:
-                session.program.load(progfile)
+            session.load_program(prog)
         if show_greeting:
             session.greet()
         if cmd:
@@ -315,11 +314,24 @@ class Session(object):
 
     ###########################################################################
 
+    def load_program(self, prog, rebuild_dict=True):
+        """Load a program from native or BASIC file."""
+        with self.files.open_native_or_basic(
+                    prog, filetype='ABP',
+                    mode='I') as progfile:
+            self.program.load(progfile, rebuild_dict=rebuild_dict)
+
+    def save_program(self, prog, filetype):
+        """Save a program to native or BASIC file."""
+        with self.files.open_native_or_basic(
+                    prog, filetype=filetype,
+                    mode='O') as progfile:
+            self.program.save(progfile)
+
     def execute(self, command):
         """Execute a BASIC statement."""
         self.store_line(command)
         self.loop()
-
 
     def run(self, run, quit, wait):
         """Interactive interpreter session."""
