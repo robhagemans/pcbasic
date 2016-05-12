@@ -25,6 +25,11 @@ if platform.system() == b'Windows':
 
 from .basic import __version__, codepages, fonts, programs
 
+greeting = (
+    'KEY ON: PRINT "PC-BASIC %s":'
+    'PRINT "(C) Copyright 2013--2016 Rob Hagemans.":'
+    'PRINT USING "##### Bytes free"; FRE(0)' % __version__)
+
 
 def get_logger(logfile=None):
     """Use the awkward logging interface as we can only use basicConfig once."""
@@ -548,22 +553,25 @@ class Settings(object):
     def get_launch_parameters(self):
         """Return a dictionary of launch parameters."""
         run = (self.get(0) != '') or (self.get('run') != '')
-        launch_params = {
+        cmd = self.get('exec')
+        # build list of commands to execute on session startup
+        commands = []
+        # following GW, don't write greeting for redirected input
+        # or command-line filter run
+        if (not run and not cmd and not self.get('input') and not self.get('interface') == 'none'):
+            commands.append(greeting)
+        if not self.get('resume'):
+            if self.get('exec'):
+                commands.append(cmd)
+            if run:
+                commands.append('RUN')
+        return {
             'quit': self.get('quit'),
             'wait': self.get('wait'),
-            'cmd': self.get('exec'),
             'prog': self.get(0) or self.get('run') or self.get('load'),
-            'run': run,
             'resume': self.get('resume'),
-            # following GW, don't write greeting for redirected input
-            # or command-line filter run
-            'show_greeting': (not run and not self.get('exec') and
-                not self.get('input') and not self.get('interface') == 'none'),
-        }
-        if self.get('resume'):
-            launch_params['cmd'] = ''
-            launch_params['run'] = False
-        return launch_params
+            'commands': commands,
+            }
 
     def get_drives(self, get_default=True):
         """Assign disk locations to disk devices."""

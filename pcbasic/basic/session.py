@@ -19,7 +19,6 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from . import __version__
 from . import error
 from . import util
 from . import tokenise
@@ -48,7 +47,7 @@ from . import unicodepage
 
 @contextmanager
 def launch_session(session_params, state_file,
-             cmd, run, quit, wait, prog, show_greeting, resume):
+             commands, quit, wait, prog, resume):
     """Launch a BASIC session in a separate thread."""
     # input queue
     input_queue = Queue.Queue()
@@ -67,8 +66,7 @@ def launch_session(session_params, state_file,
                     input_queue, video_queue,
                     tone_queue, message_queue,
                     **session_params)
-
-    thread = threading.Thread(target=run_session, args=(session, prog, show_greeting, cmd, run, quit, wait))
+    thread = threading.Thread(target=run_session, args=(session, prog, commands, quit, wait))
     thread.start()
     yield session
     if thread and thread.is_alive():
@@ -77,22 +75,15 @@ def launch_session(session_params, state_file,
         # wait for thread to finish
         thread.join()
 
-def run_session(session, prog, show_greeting, cmd, run, quit, wait):
+def run_session(session, prog, commands, quit, wait):
     """Thread runner for BASIC session."""
     reset = False
     try:
         # load initial program, allowing native-os filenames or BASIC specs
         if prog:
             session.load_program(prog)
-        if show_greeting:
-            session.execute(
-                'KEY ON: PRINT "PC-BASIC %s":'
-                'PRINT "(C) Copyright 2013--2016 Rob Hagemans.":'
-                'PRINT USING "##### Bytes free"; FRE(0)' % __version__)
-        if cmd:
+        for cmd in commands:
             session.execute(cmd)
-        if run:
-            session.execute('RUN')
         if not quit:
             session.interact()
         if wait:
