@@ -552,15 +552,15 @@ class Settings(object):
 
     def get_launch_parameters(self):
         """Return a dictionary of launch parameters."""
-        run = (self.get(0) != '') or (self.get('run') != '')
-        cmd = self.get('exec')
         # build list of commands to execute on session startup
         commands = []
-        # following GW, don't write greeting for redirected input
-        # or command-line filter run
-        if (not run and not cmd and not self.get('input') and not self.get('interface') == 'none'):
-            commands.append(greeting)
         if not self.get('resume'):
+            run = (self.get(0) != '') or (self.get('run') != '')
+            cmd = self.get('exec')
+            # following GW, don't write greeting for redirected input
+            # or command-line filter run
+            if (not run and not cmd and not self.get('input') and not self.get('interface') == 'none'):
+                commands.append(greeting)
             if self.get('exec'):
                 commands.append(cmd)
             if run:
