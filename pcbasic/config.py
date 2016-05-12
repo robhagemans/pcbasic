@@ -630,6 +630,17 @@ class Settings(object):
                     logging.warning(u'Could not mount %s: %s', a, unicode(e))
         return current_device, mount_dict
 
+    def get_command(self):
+        """Get operating mode."""
+        if self.get('version'):
+            return 'version'
+        elif self.get('help'):
+            # in help mode, print usage and exit
+            return 'help'
+        elif self.get('convert'):
+            return 'convert'
+        return None
+
     def _get_arguments(self, argv):
         """Convert arguments to dictionary."""
         args = {}

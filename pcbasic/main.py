@@ -33,13 +33,14 @@ def main():
         with config.TemporaryDirectory(prefix='pcbasic-') as temp_dir:
             # get settings and prepare logging
             settings = config.Settings(temp_dir)
-            if settings.get('version'):
+            command = settings.get_command()
+            if command == 'version':
                 # in version mode, print version and exit
                 show_version(settings)
-            elif settings.get('help'):
+            elif command == 'help':
                 # in help mode, print usage and exit
                 config.show_usage()
-            elif settings.get('convert'):
+            elif command == 'convert':
                 # in converter mode, convert and exit
                 convert(settings)
             else:
