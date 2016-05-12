@@ -630,6 +630,17 @@ class Settings(object):
                     logging.warning(u'Could not mount %s: %s', a, unicode(e))
         return current_device, mount_dict
 
+    def get_converter_parameters(self):
+        """Get parameters for file conversion."""
+        # conversion output
+        # first arg, if given, is mode; second arg, if given, is outfile
+        mode = self.get('convert')
+        # keep uppercase first letter
+        mode = mode[0].upper() if mode else 'A'
+        name_in = (self.get(0) or self.get('run') or self.get('load'))
+        name_out = self.get(1)
+        return mode, name_in, name_out
+
     def get_command(self):
         """Get operating mode."""
         if self.get('version'):

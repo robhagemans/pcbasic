@@ -209,7 +209,7 @@ class Statements(object):
         """TERM: load and run PCjr buitin terminal emulator program."""
         try:
             util.require(ins, tk.end_statement)
-            with self.session.files.open_native_or_basic(self.parser.term) as f:
+            with self.session.files.open_native_or_basic(self.parser.term, filetype='ABP', mode='I') as f:
                 self.session.program.load(f)
         except EnvironmentError:
             # on Tandy, raises Internal Error

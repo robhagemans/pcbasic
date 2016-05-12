@@ -69,7 +69,7 @@ def launch_session(session_params, state_file,
                     **session_params)
         # load initial program, allowing native-os filenames or BASIC specs
         if prog:
-            with session.files.open_native_or_basic(prog) as progfile:
+            with session.files.open_native_or_basic(prog, filetype='ABP', mode='I') as progfile:
                 session.program.load(progfile)
         if show_greeting:
             session.greet()

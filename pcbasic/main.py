@@ -23,7 +23,6 @@ locale.setlocale(locale.LC_ALL, '')
 
 from . import ansipipe
 from . import basic
-from . import interface
 from . import config
 
 
@@ -62,8 +61,10 @@ def main():
         except:
             pass
 
+
 def convert(settings):
     """Perform file format conversion."""
+    from .basic.devices import nullstream
     # OS-specific stdin/stdout selection
     # no stdin/stdout access allowed on packaged apps in OSX
     if platform.system() == b'Darwin':
@@ -77,39 +78,30 @@ def convert(settings):
             has_stdio = True
         except AttributeError:
             has_stdio = False
-    # set conversion output
-    # first arg, if given, is mode; second arg, if given, is outfile
-    mode = settings.get('convert')
-    infile = (settings.get(0) or
-              settings.get('run') or settings.get('load'))
-    outfile = settings.get(1)
-    # keep uppercase first letter
-    mode = mode[0].upper() if mode else 'A'
+    mode, name_in, name_out = settings.get_converter_parameters()
     session = basic.Session(**settings.get_session_parameters())
-    files = session.files
     internal_disk = session.devices.internal_disk
-    prog = session.program
-    # load & save in different format
     try:
-        prog_infile = None
-        if infile:
-            prog_infile = files.open_native_or_basic(infile)
+        if name_in:
+            prog_infile = session.files.open_native_or_basic(name_in, filetype='ABP', mode='I')
         elif has_stdio:
             # use StringIO buffer for seekability
             in_buffer = StringIO(sys.stdin.read())
             prog_infile = internal_disk.create_file_object(in_buffer, filetype='ABP', mode='I')
-        if prog_infile:
-            with prog_infile:
-                prog.load(prog_infile, rebuild_dict=False)
-        prog_outfile = None
-        if outfile:
-            # on save from command-line, use exact file name
-            prog_outfile = internal_disk.create_file_object(open(outfile, 'wb'), filetype=mode, mode='O')
+        else:
+            # nothing to do
+            return
+        if name_out:
+            prog_outfile = session.files.open_native_or_basic(name_out, filetype=mode, mode='O')
         elif has_stdio:
             prog_outfile = internal_disk.create_file_object(sys.stdout, filetype=mode, mode='O')
-        if prog_outfile:
-            with prog_outfile:
-                prog.save(prog_outfile)
+        else:
+            # nothing to do
+            return
+        with prog_infile:
+            session.program.load(prog_infile, rebuild_dict=False)
+        with prog_outfile:
+            session.program.save(prog_outfile)
     except basic.RunError as e:
         logging.error(e.message)
     except EnvironmentError as e:
@@ -117,6 +109,7 @@ def convert(settings):
 
 def start_basic(settings):
     """Start an interactive interpreter session."""
+    from . import interface
     interface_name = settings.get_interface()
     audio_params = settings.get_audio_parameters()
     video_params = settings.get_video_parameters()

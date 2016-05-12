@@ -92,13 +92,13 @@ class Files(object):
             self.files[number] = new_file
         return new_file
 
-    def open_native_or_basic(self, infile):
+    def open_native_or_basic(self, infile, filetype, mode):
         """If the specified file exists, open it; if not, try as BASIC file spec. Do not register in files dict."""
         try:
             # first try exact file name
             return self.devices.internal_disk.create_file_object(
                     open(os.path.expandvars(os.path.expanduser(infile)), 'rb'),
-                    filetype='BPA', mode='I')
+                    filetype, mode)
         except EnvironmentError as e:
             # otherwise, accept capitalised versions and default extension
             return self.open(0, infile, filetype='BPA', mode='I')
