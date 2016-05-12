@@ -11,10 +11,6 @@ import platform
 import subprocess
 import logging
 import traceback
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 # set locale - this is necessary for curses and *maybe* for clipboard handling
 # there's only one locale setting so best to do it all upfront here
@@ -61,51 +57,17 @@ def main():
         except:
             pass
 
-
 def convert(settings):
     """Perform file format conversion."""
-    from .basic.devices import nullstream
-    # OS-specific stdin/stdout selection
-    # no stdin/stdout access allowed on packaged apps in OSX
-    if platform.system() == b'Darwin':
-        has_stdio = False
-    elif platform.system() == b'Windows':
-        has_stdio = True
-    else:
-        try:
-            sys.stdin.isatty()
-            sys.stdout.isatty()
-            has_stdio = True
-        except AttributeError:
-            has_stdio = False
     mode, name_in, name_out = settings.get_converter_parameters()
     session = basic.Session(**settings.get_session_parameters())
-    internal_disk = session.devices.internal_disk
     try:
-        if name_in:
-            prog_infile = session.files.open_native_or_basic(name_in, filetype='ABP', mode='I')
-        elif has_stdio:
-            # use StringIO buffer for seekability
-            in_buffer = StringIO(sys.stdin.read())
-            prog_infile = internal_disk.create_file_object(in_buffer, filetype='ABP', mode='I')
-        else:
-            # nothing to do
-            return
-        if name_out:
-            prog_outfile = session.files.open_native_or_basic(name_out, filetype=mode, mode='O')
-        elif has_stdio:
-            prog_outfile = internal_disk.create_file_object(sys.stdout, filetype=mode, mode='O')
-        else:
-            # nothing to do
-            return
-        with prog_infile:
-            session.program.load(prog_infile, rebuild_dict=False)
-        with prog_outfile:
-            session.program.save(prog_outfile)
+        with session.files.open_native_or_basic(name_in, filetype='ABP', mode='I') as infile:
+            session.program.load(infile, rebuild_dict=False)
+        with session.files.open_native_or_basic(name_out, filetype=mode, mode='O') as outfile:
+            session.program.save(outfile)
     except basic.RunError as e:
         logging.error(e.message)
-    except EnvironmentError as e:
-        logging.error(str(e))
 
 def start_basic(settings):
     """Start an interactive interpreter session."""

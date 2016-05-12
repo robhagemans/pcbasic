@@ -10,6 +10,11 @@ import os
 import sys
 import string
 import logging
+import platform
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 from . import error
 from . import devices
@@ -47,6 +52,7 @@ class Files(object):
         for f in self.files.values():
             f.close()
         self.files = {}
+
 
     def open(self, number, description, filetype, mode='I', access='R', lock='',
                   reclen=128, seg=0, offset=0, length=0):
@@ -92,16 +98,39 @@ class Files(object):
             self.files[number] = new_file
         return new_file
 
-    def open_native_or_basic(self, infile, filetype, mode):
+    def open_native_or_basic(self, filespec, filetype, mode):
         """If the specified file exists, open it; if not, try as BASIC file spec. Do not register in files dict."""
+        if not filespec:
+            return self._open_stdio(filetype, mode)
         try:
             # first try exact file name
             return self.devices.internal_disk.create_file_object(
-                    open(os.path.expandvars(os.path.expanduser(infile)), 'rb'),
+                    open(os.path.expandvars(os.path.expanduser(filespec)), 'rb'),
                     filetype, mode)
         except EnvironmentError as e:
             # otherwise, accept capitalised versions and default extension
-            return self.open(0, infile, filetype='BPA', mode='I')
+            return self.open(0, filespec, filetype='BPA', mode='I')
+
+    def _open_null(self, filetype, mode):
+        """Open a null file object. Do not register in files dict."""
+        return devices.TextFileBase(devices.nullstream(), filetype, mode)
+
+    def _open_stdio(self, filetype, mode):
+        """Open a file object on standard IO. Do not register in files dict."""
+        # OS-specific stdin/stdout selection
+        # no stdin/stdout access allowed on packaged apps in OSX
+        if platform.system() == b'Darwin':
+            return self._open_null(filetype, mode)
+        try:
+            if mode == 'I':
+                # use StringIO buffer for seekability
+                in_buffer = StringIO(sys.stdin.read())
+                return self.devices.internal_disk.create_file_object(in_buffer, filetype, mode)
+            else:
+                return self.devices.internal_disk.create_file_object(sys.stdout, filetype, mode)
+        except EnvironmentError as e:
+            logging.warning('Could not open standard I/O: %s', e)
+            return self._open_null(filetype, mode)
 
     def get(self, num, mode='IOAR'):
         """Get the file object for a file number and check allowed mode."""
