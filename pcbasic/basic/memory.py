@@ -82,11 +82,12 @@ class DataSegment(object):
         # FIELD buffers
         self.max_files = max_files
         self.max_reclen = max_reclen
+        self.fields = {}
         self.reset_fields()
 
     def reset_fields(self):
-        """Initialise FIELD buffers."""
-        self.fields = {}
+        """Reset FIELD buffers."""
+        self.fields.clear()
         # fields are indexed by BASIC file number, hence max_files+1
         # file 0 (program/system file) probably doesn't need a field
         for i in range(self.max_files+1):
