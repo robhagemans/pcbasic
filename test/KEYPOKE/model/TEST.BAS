@@ -8,4 +8,5 @@
 900 LIST
 910 PRINT#1, "welcome back!"
 920 CLOSE
+930 SYSTEM
 

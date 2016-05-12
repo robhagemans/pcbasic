@@ -67,14 +67,8 @@ def launch_session(session_params, state_file,
                     input_queue, video_queue,
                     tone_queue, message_queue,
                     **session_params)
-        # load initial program, allowing native-os filenames or BASIC specs
-        if prog:
-            session.load_program(prog)
-        if show_greeting:
-            session.greet()
-        if cmd:
-            session.execute(cmd)
-    thread = threading.Thread(target=session.run, args=(run, quit, wait))
+
+    thread = threading.Thread(target=run_session, args=(session, prog, show_greeting, cmd, run, quit, wait))
     thread.start()
     yield session
     if thread and thread.is_alive():
@@ -83,6 +77,27 @@ def launch_session(session_params, state_file,
         # wait for thread to finish
         thread.join()
 
+def run_session(session, prog, show_greeting, cmd, run, quit, wait):
+    """Thread runner for BASIC session."""
+    reset = False
+    try:
+        # load initial program, allowing native-os filenames or BASIC specs
+        if prog:
+            session.load_program(prog)
+        if show_greeting:
+            session.greet()
+        if cmd:
+            session.execute(cmd)
+        if run:
+            session.execute('RUN')
+        if not quit:
+            session.interact()
+        if wait:
+            session.pause('Press a key to close window')
+    except error.Reset:
+        reset = True
+    finally:
+        session.close(reset)
 
 ###############################################################################
 # interpreter session
@@ -236,6 +251,30 @@ class Session(object):
         else:
             self.debugger = debug.BaseDebugger(self)
 
+    def pause(self, msg):
+        """Pause the session."""
+        self.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, msg))
+        self.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
+        self.keyboard.pause = True
+        # this performs a blocking keystroke read if in pause state
+        self.check_events()
+
+    def close(self, reset=False):
+        """Close and save the session."""
+        # close interfaces
+        self.video_queue.put(signals.Event(signals.VIDEO_QUIT))
+        self.message_queue.put(signals.Event(signals.AUDIO_QUIT))
+        # save or reset state
+        if reset and self.state_file:
+            state.reset(self.state_file)
+        else:
+            # persist unplayed tones in sound queue
+            self.tone_queue_store = [signals.save_queue(q) for q in self.tone_queue]
+            state.save(self, self.state_file)
+        # close files if we opened any
+        self.files.close_all()
+        self.devices.close()
+
     def greet(self):
         """Show greeting and keys."""
         greeting = (
@@ -333,44 +372,13 @@ class Session(object):
         self.store_line(command)
         self.loop()
 
-    def run(self, run, quit, wait):
+    def interact(self):
         """Interactive interpreter session."""
-        if run:
-            # position the pointer at start of program and enter execute mode
-            self.parser.jump(None)
-            self.set_parse_mode(True)
-            self.screen.cursor.reset_visibility()
         try:
-            try:
-                while True:
-                    self.loop()
-                    if quit and self.keyboard.buf.is_empty():
-                        break
-            except error.Exit:
-                # pause before exit if requested
-                if wait:
-                    self.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
-                    self.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
-                    self.keyboard.pause = True
-                    # this performs a blocking keystroke read if in pause state
-                    self.check_events()
-            finally:
-                # close interfaces
-                self.video_queue.put(signals.Event(signals.VIDEO_QUIT))
-                self.message_queue.put(signals.Event(signals.AUDIO_QUIT))
-                # persist unplayed tones in sound queue
-                self.tone_queue_store = [
-                        signals.save_queue(q) for q in self.tone_queue]
-                state.save(self, self.state_file)
-                # close files if we opened any
-                self.files.close_all()
-                self.devices.close()
-        except error.Reset:
-            # delete state if resetting
-            try:
-                os.remove(self.state_file)
-            except OSError:
-                pass
+            while True:
+                self.loop()
+        except error.Exit:
+            pass
 
     def loop(self):
         """Run read-eval-print loop until control returns to user after a command."""

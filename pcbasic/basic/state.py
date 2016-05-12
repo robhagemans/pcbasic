@@ -94,7 +94,7 @@ def save(session, state_file):
     try:
         with open(state_file, 'wb') as f:
             f.write(zlib.compress(pickle.dumps(session, 2)))
-    except IOError:
+    except EnvironmentError:
         logging.warning("Could not write to state file %s. Emulator state not saved.", state_file)
 
 def load(state_file):
@@ -105,6 +105,13 @@ def load(state_file):
     try:
         with open(state_file, 'rb') as f:
             return pickle.loads(zlib.decompress(f.read()))
-    except IOError:
+    except EnvironmentError:
         logging.warning("Could not read state file %s. Emulator state not loaded.", state_file)
         raise ResumeFailed()
+
+def reset(state_file):
+    """Remove save-state file."""
+    try:
+        os.remove(state_file)
+    except EnvironmentError:
+        logging.warning("Could not remove state file %s. Emulator state not reset.", state_file)
