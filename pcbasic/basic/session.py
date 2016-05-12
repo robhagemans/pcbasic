@@ -85,7 +85,10 @@ def run_session(session, prog, show_greeting, cmd, run, quit, wait):
         if prog:
             session.load_program(prog)
         if show_greeting:
-            session.greet()
+            session.execute(
+                'KEY ON: PRINT "PC-BASIC %s":'
+                'PRINT "(C) Copyright 2013--2016 Rob Hagemans.":'
+                'PRINT USING "##### Bytes free"; FRE(0)' % __version__)
         if cmd:
             session.execute(cmd)
         if run:
@@ -274,17 +277,6 @@ class Session(object):
         # close files if we opened any
         self.files.close_all()
         self.devices.close()
-
-    def greet(self):
-        """Show greeting and keys."""
-        greeting = (
-            'PC-BASIC {version}\r'
-            '(C) Copyright 2013--2016 Rob Hagemans.\r'
-            '{free} Bytes free')
-        self.screen.write_line(greeting.format(
-                version=__version__,
-                free=self.memory.get_free()))
-        self.fkey_macros.show_keys(self.screen, True)
 
     def clear(self, close_files=False,
               preserve_common=False, preserve_all=False, preserve_deftype=False):
