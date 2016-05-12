@@ -73,7 +73,9 @@ def launch_session(session_params, state_file,
                 session.program.load(progfile)
         if show_greeting:
             session.greet()
-    thread = threading.Thread(target=session.run, args=(cmd, run, quit, wait))
+        if cmd:
+            session.execute(cmd)
+    thread = threading.Thread(target=session.run, args=(run, quit, wait))
     thread.start()
     yield session
     if thread and thread.is_alive():
@@ -313,11 +315,14 @@ class Session(object):
 
     ###########################################################################
 
-    def run(self, command, run, quit, wait):
+    def execute(self, command):
+        """Execute a BASIC statement."""
+        self.store_line(command)
+        self.loop()
+
+
+    def run(self, run, quit, wait):
         """Interactive interpreter session."""
-        if command:
-            self.store_line(command)
-            self.loop()
         if run:
             # position the pointer at start of program and enter execute mode
             self.parser.jump(None)
