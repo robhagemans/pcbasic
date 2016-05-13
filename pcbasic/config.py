@@ -608,8 +608,9 @@ class Settings(object):
                 commands.append(cmd)
             if run:
                 commands.append('RUN')
+            if self.get('quit'):
+                commands.append('SYSTEM')
         return {
-            'quit': self.get('quit'),
             'wait': self.get('wait'),
             'prog': self.get(0) or self.get('run') or self.get('load'),
             'resume': self.get('resume'),

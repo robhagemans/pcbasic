@@ -47,7 +47,7 @@ from . import unicodepage
 
 @contextmanager
 def launch_session(session_params, state_file,
-             commands, quit, wait, prog, resume):
+             commands, wait, prog, resume):
     """Launch a BASIC session in a separate thread."""
     # input queue
     input_queue = Queue.Queue()
@@ -66,7 +66,7 @@ def launch_session(session_params, state_file,
                     input_queue, video_queue,
                     tone_queue, message_queue,
                     **session_params)
-    thread = threading.Thread(target=run_session, args=(session, prog, commands, quit, wait))
+    thread = threading.Thread(target=run_session, args=(session, prog, commands, wait))
     thread.start()
     yield session
     if thread and thread.is_alive():
@@ -75,7 +75,7 @@ def launch_session(session_params, state_file,
         # wait for thread to finish
         thread.join()
 
-def run_session(session, prog, commands, quit, wait):
+def run_session(session, prog, commands, wait):
     """Thread runner for BASIC session."""
     reset = False
     try:
@@ -84,8 +84,7 @@ def run_session(session, prog, commands, quit, wait):
             session.load_program(prog)
         for cmd in commands:
             session.execute(cmd)
-        if not quit:
-            session.interact()
+        session.interact()
         if wait:
             session.pause('Press a key to close window')
     except error.Reset:
