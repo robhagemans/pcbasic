@@ -90,6 +90,10 @@ def run_session(session, prog, commands, quit, wait):
             session.pause('Press a key to close window')
     except error.Reset:
         reset = True
+    except error.RunError as e:
+        # only runtime errors that occur on interpreter launch are caught here
+        # e.g. "File not Found" for --load parameter
+        logging.error(e.message)
     finally:
         session.close(reset)
 
@@ -352,7 +356,8 @@ class Session(object):
 
     def execute(self, command):
         """Execute a BASIC statement."""
-        self.store_line(command)
+        for cmd in command.splitlines():
+            self.store_line(cmd)
         self._loop()
 
     def interact(self):

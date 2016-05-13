@@ -83,11 +83,6 @@ def start_basic(settings):
                     interface_name, video_params, audio_params)
     except interface.InitFailed:
         logging.error('Failed to initialise interface.')
-    except basic.RunError as e:
-        # only runtime errors that occur on interpreter launch are caught here
-        # e.g. "File not Found" for --load parameter
-        logging.error(e.message)
-
 
 if __name__ == "__main__":
     main()
