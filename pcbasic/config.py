@@ -323,7 +323,7 @@ class Settings(object):
         u'convert': {u'type': u'string', u'default': u'', },
         u'help': {u'type': u'bool', u'default': False, },
         u'keys': {u'type': u'string', u'default': u'', },
-        u'exec': {u'type': u'string', u'default': u'',  },
+        u'exec': {u'type': u'string', u'list': u'*', u'default': u'',  },
         u'quit': {u'type': u'bool', u'default': False,},
         u'double': {u'type': u'bool', u'default': False,},
         u'max-files': {u'type': u'int', u'default': 3,},
@@ -599,12 +599,12 @@ class Settings(object):
         commands = []
         if not self.get('resume'):
             run = (self.get(0) != '') or (self.get('run') != '')
-            cmd = self.get('exec')
+            cmd = '\r'.join(self.get('exec'))
             # following GW, don't write greeting for redirected input
             # or command-line filter run
             if (not run and not cmd and not self.get('input') and not self.get('interface') == 'none'):
                 commands.append(greeting)
-            if self.get('exec'):
+            if cmd:
                 commands.append(cmd)
             if run:
                 commands.append('RUN')
