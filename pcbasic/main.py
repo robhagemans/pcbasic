@@ -7,8 +7,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 import locale
-import platform
-import subprocess
 import logging
 import traceback
 
@@ -32,7 +30,7 @@ def main():
             command = settings.get_command()
             if command == 'version':
                 # in version mode, print version and exit
-                show_version(settings)
+                config.show_version(settings)
             elif command == 'help':
                 # in help mode, print usage and exit
                 config.show_usage()
@@ -89,45 +87,6 @@ def start_basic(settings):
         # only runtime errors that occur on interpreter launch are caught here
         # e.g. "File not Found" for --load parameter
         logging.error(e.message)
-
-def show_version(settings):
-    """Show version with optional debugging details."""
-    sys.stdout.write(__version__ + '\n')
-    if settings.get('debug'):
-        show_platform_info()
-
-def show_platform_info():
-    """Show information about operating system and installed modules."""
-    logging.info('\nPLATFORM')
-    logging.info('os: %s %s %s', platform.system(), platform.processor(), platform.version())
-    logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
-    logging.info('\nMODULES')
-    # try numpy before pygame to avoid strange ImportError on FreeBSD
-    modules = ('numpy', 'win32api', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial', 'parallel')
-    for module in modules:
-        try:
-            m = __import__(module)
-        except ImportError:
-            logging.info('%s: --', module)
-        else:
-            for version_attr in ('__version__', 'version', 'VERSION'):
-                try:
-                    version = getattr(m, version_attr)
-                    logging.info('%s: %s', module, version)
-                    break
-                except AttributeError:
-                    pass
-            else:
-                logging.info('available\n')
-    if platform.system() != 'Windows':
-        logging.info('\nEXTERNAL TOOLS')
-        tools = ('lpr', 'paps', 'beep', 'xclip', 'xsel', 'pbcopy', 'pbpaste')
-        for tool in tools:
-            try:
-                location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')
-                logging.info('%s: %s', tool, location)
-            except Exception as e:
-                logging.info('%s: --', tool)
 
 
 if __name__ == "__main__":
