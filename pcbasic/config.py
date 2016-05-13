@@ -24,13 +24,13 @@ if platform.system() == b'Windows':
     import ctypes.wintypes
     import win32api
 
-from .version import __version__
+from .version import __version__, __copyright__
 from .basic import codepages, fonts, programs
 
 greeting = (
-    'KEY ON: PRINT "PC-BASIC %s":'
-    'PRINT "(C) Copyright 2013--2016 Rob Hagemans.":'
-    'PRINT USING "##### Bytes free"; FRE(0)' % __version__)
+    'KEY ON:PRINT "PC-BASIC {version}":PRINT "{copyright}":'
+    'PRINT USING "##### Bytes free"; FRE(0)'.format(
+        version=__version__, copyright=__copyright__))
 
 
 def get_logger(logfile=None):

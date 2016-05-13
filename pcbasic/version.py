@@ -6,3 +6,4 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 __version__ = b'16.05.dev0'
+__copyright__ = b'(C) Copyright 2013--2016 Rob Hagemans.'
