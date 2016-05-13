@@ -5,5 +5,4 @@ PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 This file is released under the GNU GPL version 3 or later.
 """
 
-from .version import __version__
-from .main import main
+__version__ = b'16.05.dev0'

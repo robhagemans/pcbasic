@@ -20,8 +20,10 @@ with open(path.join(here, 'docsrc', 'description.txt'), encoding='utf-8') as f:
 with open(path.join(here, 'docsrc', 'tagline.txt'), encoding='utf-8') as f:
     description = f.read()
 
-import basic
-version_string = basic.__version__
+# NOTE that this is OK because we try-import all non-standard modules
+# this would fail on install if __init__ imported required non-standard packages
+from version import __version__
+version_string = __version__
 
 
 ###############################################################################

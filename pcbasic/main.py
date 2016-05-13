@@ -17,6 +17,7 @@ import traceback
 # NOTE that this affects str.upper() etc.
 locale.setlocale(locale.LC_ALL, '')
 
+from .version import __version__
 from . import ansipipe
 from . import basic
 from . import config
@@ -91,7 +92,7 @@ def start_basic(settings):
 
 def show_version(settings):
     """Show version with optional debugging details."""
-    sys.stdout.write(basic.__version__ + '\n')
+    sys.stdout.write(__version__ + '\n')
     if settings.get('debug'):
         show_platform_info()
 

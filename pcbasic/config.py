@@ -23,7 +23,8 @@ if platform.system() == b'Windows':
     import ctypes.wintypes
     import win32api
 
-from .basic import __version__, codepages, fonts, programs
+from .version import __version__
+from .basic import codepages, fonts, programs
 
 greeting = (
     'KEY ON: PRINT "PC-BASIC %s":'
