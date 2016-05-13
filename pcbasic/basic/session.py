@@ -90,6 +90,9 @@ def run_session(session, prog, commands, quit, wait):
             session.pause('Press a key to close window')
     except error.Reset:
         reset = True
+    except error.Exit:
+        # SYSTEM called during launch
+        pass
     except error.RunError as e:
         # only runtime errors that occur on interpreter launch are caught here
         # e.g. "File not Found" for --load parameter
@@ -362,7 +365,10 @@ class Session(object):
 
     def interact(self):
         """Interactive interpreter session."""
-        while self._loop():
+        try:
+            while True:
+                self._loop()
+        except error.Exit:
             pass
 
     def _loop(self):
@@ -406,12 +412,11 @@ class Session(object):
             self.handle_error(e)
             self.prompt = True
         except error.Exit:
-            return False
+            raise
         except error.Reset:
             raise
         except Exception as e:
             self.debugger.bluescreen(e)
-        return True
 
     def set_parse_mode(self, on):
         """Enter or exit parse mode."""
