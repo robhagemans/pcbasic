@@ -361,7 +361,7 @@ class Session(object):
         """Execute a BASIC statement."""
         for cmd in command.splitlines():
             self.store_line(cmd)
-        self._loop()
+            self._loop()
 
     def interact(self):
         """Interactive interpreter session."""
