@@ -357,7 +357,7 @@ class Session(object):
     def execute(self, command):
         """Execute a BASIC statement."""
         for cmd in command.splitlines():
-            self.store_line(cmd)
+            self._store_line(cmd)
             self._loop()
 
     def interact(self):
@@ -365,11 +365,11 @@ class Session(object):
         try:
             while True:
                 self._loop()
-                self.show_prompt()
+                self._show_prompt()
                 try:
                     # input loop, checks events
                     line = self.console.wait_screenline(from_start=True)
-                    self.prompt = not self.store_line(line)
+                    self.prompt = not self._store_line(line)
                 except error.Break:
                     self.sound.stop_all_sound()
                     self.prompt = False
@@ -397,7 +397,7 @@ class Session(object):
                 elif self.auto_mode:
                     try:
                         # auto step, checks events
-                        self.auto_step()
+                        self._auto_step()
                     except error.Break:
                         # ctrl+break, ctrl-c both stop background sound
                         self.sound.stop_all_sound()
@@ -425,7 +425,7 @@ class Session(object):
         self.parse_mode = on
         self.screen.cursor.default_visible = not on
 
-    def store_line(self, line):
+    def _store_line(self, line):
         """Store a program line or schedule a command line for execution."""
         if not line:
             return True
@@ -443,7 +443,7 @@ class Session(object):
             self._set_parse_mode(True)
         return not self.parse_mode
 
-    def show_prompt(self):
+    def _show_prompt(self):
         """Show the Ok or EDIT prompt, unless suppressed."""
         if self.parse_mode:
             return
@@ -455,7 +455,7 @@ class Session(object):
             self.screen.start_line()
             self.screen.write_line("Ok\xff")
 
-    def auto_step(self):
+    def _auto_step(self):
         """Generate an AUTO line number and wait for input."""
         numstr = str(self.auto_linenum)
         self.screen.write(numstr)
