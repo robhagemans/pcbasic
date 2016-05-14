@@ -138,10 +138,12 @@ class Console(object):
         prompt_width = 0 if from_start else self.screen.current_col-1
         try:
             # give control to user for interactive mode
-            prompt_row, left, right = self.wait_interactive(prompt_width)
+            prompt_row, left, right = self._interact(prompt_width)
         except error.Break:
-            # for some reason, 0E character is printed to redirects at break
+            # x0E CR LF is printed to redirects at break
             self.redirect.write('\x0e')
+            # while only a line break appears on the console
+            self.screen.write_line()
             raise
         # get contents and of the logical line
         if from_start:
@@ -156,8 +158,7 @@ class Console(object):
         self.screen.current_row = self.find_end_of_line(self.screen.current_row)
         # echo the CR, if requested
         if write_endl:
-            self.redirect.write('\r\n')
-            self.screen.set_pos(self.screen.current_row+1, 1)
+            self.screen.write_line()
         # to the parser/INPUT, only the first 255 chars are returned
         # with trailing whitespace removed
         return str(outstr[:255].rstrip(' \t\n'))
@@ -221,7 +222,7 @@ class Console(object):
                     line += '\n'
         return line
 
-    def wait_interactive(self, prompt_width):
+    def _interact(self, prompt_width):
         """Manage the interactive mode."""
         # force cursor visibility in all cases
         self.screen.cursor.show(True)
