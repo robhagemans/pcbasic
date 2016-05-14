@@ -528,7 +528,7 @@ class Session(object):
         self.screen.write(msg)
         if linenum is not None and linenum > -1 and linenum < 65535:
             self.screen.write(' in %i' % linenum)
-        self.screen.write_line(' ')
+        self.screen.write_line('\xFF')
 
     ##########################################################################
     # main event checker
