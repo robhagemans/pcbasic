@@ -145,8 +145,6 @@ class Session(object):
         self.auto_increment = 10
         # interpreter is waiting for INPUT or LINE INPUT
         self.input_mode = False
-        # previous interpreter mode
-        self.last_mode = False, False
         # syntax error prompt and EDIT
         self.edit_prompt = False
         ######################################################################
@@ -240,7 +238,7 @@ class Session(object):
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
         # interpreter is executing a command (needs Screen)
-        self.set_parse_mode(False)
+        self._set_parse_mode(False)
         # direct line buffer
         self.direct_line = StringIO()
         # initialise the parser
@@ -367,14 +365,24 @@ class Session(object):
         try:
             while True:
                 self._loop()
+                self.show_prompt()
+                try:
+                    # input loop, checks events
+                    line = self.console.wait_screenline(from_start=True)
+                    self.prompt = not self.store_line(line)
+                except error.Break:
+                    self.sound.stop_all_sound()
+                    self.prompt = False
         except error.Exit:
             pass
 
     def _loop(self):
-        """Run read-eval-print loop until control returns to user after a command."""
+        """Run read-eval-print loop until control returns to user."""
         try:
+            self.parser.set_pointer(False, 0)
+            self.screen.cursor.reset_visibility()
             while True:
-                self.last_mode = self.parse_mode, self.auto_mode
+                last_parse = self.parse_mode
                 if self.parse_mode:
                     try:
                         # may raise Break
@@ -385,7 +393,7 @@ class Session(object):
                     except error.Break as e:
                         # ctrl-break stops foreground and background sound
                         self.sound.stop_all_sound()
-                        self.handle_break(e)
+                        self._handle_break(e)
                 elif self.auto_mode:
                     try:
                         # auto step, checks events
@@ -394,21 +402,16 @@ class Session(object):
                         # ctrl+break, ctrl-c both stop background sound
                         self.sound.stop_all_sound()
                         self.auto_mode = False
-                else:
-                    self.show_prompt()
-                    try:
-                        # input loop, checks events
-                        line = self.console.wait_screenline(from_start=True)
-                        self.prompt = not self.store_line(line)
-                    except error.Break:
-                        self.sound.stop_all_sound()
-                        self.prompt = False
-                        continue
                 # change loop modes
-                if self.switch_mode():
+                if self.parse_mode != last_parse:
+                    # move pointer to the start of direct line (for both on and off!)
+                    self.parser.set_pointer(False, 0)
+                    self.screen.cursor.reset_visibility()
+                # return control to user
+                if ((not self.auto_mode) and (not self.parse_mode)):
                     break
         except error.RunError as e:
-            self.handle_error(e)
+            self._handle_error(e)
             self.prompt = True
         except error.Exit:
             raise
@@ -417,20 +420,10 @@ class Session(object):
         except Exception as e:
             self.debugger.bluescreen(e)
 
-    def set_parse_mode(self, on):
+    def _set_parse_mode(self, on):
         """Enter or exit parse mode."""
         self.parse_mode = on
         self.screen.cursor.default_visible = not on
-
-    def switch_mode(self):
-        """Switch loop mode."""
-        last_execute, last_auto = self.last_mode
-        if self.parse_mode != last_execute:
-            # move pointer to the start of direct line (for both on and off!)
-            self.parser.set_pointer(False, 0)
-            self.screen.cursor.reset_visibility()
-        return ((not self.auto_mode) and
-                (not self.parse_mode) and last_execute)
 
     def store_line(self, line):
         """Store a program line or schedule a command line for execution."""
@@ -447,7 +440,7 @@ class Session(object):
             self.clear()
         elif c != '':
             # it is a command, go and execute
-            self.set_parse_mode(True)
+            self._set_parse_mode(True)
         return not self.parse_mode
 
     def show_prompt(self):
@@ -488,17 +481,17 @@ class Session(object):
             self.auto_linenum = scanline + self.auto_increment
         elif c != '':
             # it is a command, go and execute
-            self.set_parse_mode(True)
+            self._set_parse_mode(True)
 
 
     ##############################################################################
     # error handling
 
-    def handle_error(self, e):
+    def _handle_error(self, e):
         """Handle a BASIC error through error message."""
         # not handled by ON ERROR, stop execution
         self._write_error_message(e.message, self.program.get_line_number(e.pos))
-        self.set_parse_mode(False)
+        self._set_parse_mode(False)
         self.input_mode = False
         # special case: syntax error
         if e.err == error.STX:
@@ -508,7 +501,7 @@ class Session(object):
                 # line edit gadget appears
                 self.edit_prompt = (self.program.get_line_number(e.pos), e.pos+1)
 
-    def handle_break(self, e):
+    def _handle_break(self, e):
         """Handle a Break event."""
         # print ^C at current position
         if not self.input_mode and not e.stop:
@@ -519,7 +512,7 @@ class Session(object):
             pos = self.program.bytecode.tell()
             self.parser.stop = pos
         self._write_error_message(e.message, self.program.get_line_number(pos))
-        self.set_parse_mode(False)
+        self._set_parse_mode(False)
         self.input_mode = False
 
     def _write_error_message(self, msg, linenum):
