@@ -29,9 +29,8 @@ deg_to_rad = fp.div(fp.Single.twopi, fp.Single.from_int(360))
 class Drawing(object):
     """Manage graphics drawing."""
 
-    def __init__(self, screen, session):
+    def __init__(self, screen):
         self.screen = screen
-        self.session = session
         self.unset_window()
         self.unset_view()
         self.reset()
@@ -534,7 +533,7 @@ class Drawing(object):
 
     ### PAINT: Flood fill
 
-    def paint(self, lcoord, pattern, c, border, background):
+    def paint(self, lcoord, pattern, c, border, background, events):
         """Fill an area defined by a border attribute with a tiled pattern."""
         # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
         # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
@@ -586,7 +585,7 @@ class Drawing(object):
                 self.screen.put_interval(self.screen.apagenum, x_left, y, interval)
             # allow interrupting the paint
             if y%4 == 0:
-                self.session.check_events()
+                events.check_events()
         self.last_attr = c
 
     def check_scanline(self, line_seed, x_start, x_stop, y,
@@ -623,12 +622,12 @@ class Drawing(object):
 
     ### PUT and GET: Sprite operations
 
-    def put(self, lcoord, array_name, operation_token):
+    def put(self, lcoord, arrays, array_name, operation_token):
         """Put a sprite on the screen (PUT)."""
         x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
         self.last_point = x0, y0
         try:
-            _, byte_array, a_version = self.session.arrays.arrays[array_name]
+            _, byte_array, a_version = arrays[array_name]
         except KeyError:
             byte_array = bytearray()
         try:
@@ -654,13 +653,13 @@ class Drawing(object):
         # apply the sprite to the screen
         self.screen.put_rect(x0, y0, x1, y1, sprite, operation_token)
 
-    def get(self, lcoord0, lcoord1, array_name):
+    def get(self, lcoord0, lcoord1, arrays, array_name):
         """Read a sprite from the screen (GET)."""
         x0, y0 = self.view_coords(*self.get_window_physical(*lcoord0))
         x1, y1 = self.view_coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
         try:
-            _, byte_array, version = self.session.arrays.arrays[array_name]
+            _, byte_array, version = arrays[array_name]
         except KeyError:
             raise error.RunError(error.IFC)
         dx, dy = x1-x0+1, y1-y0+1
@@ -685,11 +684,11 @@ class Drawing(object):
 
     ### DRAW statement
 
-    def draw(self, gml):
+    def draw(self, gml, memory, events):
         """DRAW: Execute a Graphics Macro Language string."""
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = StringIO(gml)
-        ml_parser = draw_and_play.MLParser(gmls, self.session.memory)
+        ml_parser = draw_and_play.MLParser(gmls, memory)
         plot, goback = True, False
         while True:
             c = util.skip_read(gmls, ml_parser.whitepace).upper()
@@ -706,7 +705,7 @@ class Drawing(object):
             elif c == 'X':
                 # execute substring
                 sub = ml_parser.parse_string()
-                self.draw(str(sub))
+                self.draw(str(sub), memory, events)
             elif c == 'C':
                 # set foreground colour
                 # allow empty spec (default 0), but only if followed by a semicolon
@@ -776,7 +775,7 @@ class Drawing(object):
                     raise error.RunError(error.IFC)
                 bound = ml_parser.parse_number()
                 x, y = self.get_window_logical(*self.last_point)
-                self.paint((x, y, False), None, colour, bound, None)
+                self.paint((x, y, False), None, colour, bound, None, events)
 
     def draw_step(self, x0, y0, sx, sy, plot, goback):
         """Make a DRAW step, drawing a line and reurning if requested."""

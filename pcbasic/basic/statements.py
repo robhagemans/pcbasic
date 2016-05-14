@@ -1351,7 +1351,7 @@ class Statements(object):
                             self.session.screen.mode.mem_start == 0xa000):
                         raise error.RunError(error.IFC)
         util.require(ins, tk.end_statement)
-        self.session.screen.drawing.paint(coord, pattern, c, border, background_pattern)
+        self.session.screen.drawing.paint(coord, pattern, c, border, background_pattern, self.session)
 
     def exec_get_graph(self, ins):
         """GET: read a sprite to memory."""
@@ -1369,7 +1369,7 @@ class Statements(object):
             raise error.RunError(error.IFC)
         elif array[-1] == '$':
             raise error.RunError(error.TYPE_MISMATCH) # type mismatch
-        self.session.screen.drawing.get(coord0, coord1, array)
+        self.session.screen.drawing.get(coord0, coord1, self.session.arrays.arrays, array)
 
     def exec_put_graph(self, ins):
         """PUT: draw sprite on screen."""
@@ -1391,7 +1391,7 @@ class Statements(object):
         elif array[-1] == '$':
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
-        self.session.screen.drawing.put(coord, array, action)
+        self.session.screen.drawing.put(coord, self.session.arrays.arrays, array, action)
 
     def exec_draw(self, ins):
         """DRAW: draw a figure defined by a Graphics Macro Language string."""
@@ -1400,7 +1400,7 @@ class Statements(object):
         with self.session.strings:
             gml = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         util.require(ins, tk.end_statement)
-        self.session.screen.drawing.draw(gml)
+        self.session.screen.drawing.draw(gml, self.session.memory, self.session)
 
     ##########################################################
     # Flow-control statements
