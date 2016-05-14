@@ -536,8 +536,7 @@ class Session(object):
         """Main event cycle."""
         time.sleep(tick_s)
         self._check_input()
-        if self.parser.run_mode:
-            self.parser.events.check()
+        self.parser.events.check()
         self.keyboard.drain_event_buffer()
 
     def _check_input(self):

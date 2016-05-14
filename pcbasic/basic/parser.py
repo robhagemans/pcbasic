@@ -31,6 +31,8 @@ class Parser(object):
     def __init__(self, session, syntax, term, double_math):
         """Initialise parser."""
         self.session = session
+        # set up event handlers
+        self.events = events.Events(self.session, syntax)
         # syntax: advanced, pcjr, tandy
         self.syntax = syntax
         # program for TERM command
@@ -43,8 +45,6 @@ class Parser(object):
         self.current_statement = 0
         # clear stacks
         self.clear_stacks_and_pointers()
-        # set up event handlers
-        self.events = events.Events(self.session, syntax)
         self.init_error_trapping()
         self.error_num = 0
         self.error_pos = 0
@@ -194,6 +194,9 @@ class Parser(object):
     def set_pointer(self, new_runmode, pos=None):
         """Set program pointer to the given codestream and position."""
         self.run_mode = new_runmode
+        # events are active in run mode
+        self.events.set_active(new_runmode)
+        # keep the sound engine on to avoid delays in run mode
         self.session.sound.persist(new_runmode)
         # suppress cassette messages in run mode
         self.session.devices.devices['CAS1:'].quiet(new_runmode)

@@ -209,6 +209,8 @@ class Events(object):
     def __init__(self, session, syntax):
         """Initialise event triggers."""
         self.session = session
+        # events start unactivated
+        self.active = False
         # 12 definable function keys for Tandy, 10 otherwise
         if syntax == 'tandy':
             self.num_fn_keys = 12
@@ -248,8 +250,15 @@ class Events(object):
         # set suspension off
         self.suspend_all = False
 
+    def set_active(self, active):
+        """Activate or deactisvate event checking."""
+        self.active = active
+
     def check(self):
         """Check events."""
+        # events are only active if a program is sunning
+        if not self.active:
+            return
         for e in self.all:
             e.check()
 
