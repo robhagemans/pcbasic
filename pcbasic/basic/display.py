@@ -543,6 +543,9 @@ class Screen(object):
             self.cursor.to_line = (self.cursor.to_line *
                                      mode_info.font_height) // cmode.font_height
             self.palette = Palette(self.mode, self.capabilities)
+        # set the codepage
+        self.session.video_queue.put(signals.Event(
+                signals.VIDEO_SET_CODEPAGE, self.codepage))
         # set the screen mode
         self.session.video_queue.put(signals.Event(signals.VIDEO_SET_MODE, mode_info))
         if mode_info.is_text_mode:
