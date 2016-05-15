@@ -79,6 +79,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
             mod_to_scan[sdl2.KMOD_RALT] = scancode.ALT
         # keep params for enter
         self.kwargs = kwargs
+        # we need a set_mode call to be really up and running
+        self._has_window = False
 
     def __enter__(self):
         """Complete SDL2 interface initialisation."""
@@ -134,7 +136,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def __exit__(self, type, value, traceback):
         """Close the SDL2 interface."""
         video.VideoPlugin.__exit__(self, type, value, traceback)
-        if sdl2 and numpy:
+        if sdl2 and numpy and self._has_window:
             # free windows
             sdl2.SDL_DestroyWindow(self.display)
             # free surfaces
@@ -352,6 +354,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def _check_display(self):
         """Check screen and blink events; update screen if necessary."""
+        if not self._has_window:
+            return
         self.blink_state = 0
         if self.mode_has_blink:
             self.blink_state = 0 if self._cycle < self.blink_cycles * 2 else 1
@@ -523,6 +527,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.clipboard = video_graphical.ClipboardInterface(self,
                 mode_info.width, mode_info.height)
         self.screen_changed = True
+        self._has_window = True
 
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
