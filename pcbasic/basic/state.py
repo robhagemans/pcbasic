@@ -79,10 +79,12 @@ def pickle_Queue(self):
 Queue.Queue.__setstate__ = unpickle_Queue
 Queue.Queue.__getstate__ = pickle_Queue
 
-def zunpickle(pickle_string):
+def zunpickle(state_file):
     """Read a compressed pickle string."""
-    return pickle.loads(zlib.decompress(pickle_string))
+    with open(state_file, 'rb') as f:
+        return pickle.loads(zlib.decompress(f.read()))
 
-def zpickle(obj):
+def zpickle(obj, state_file):
     """Retuen a compressed pickle string."""
-    return zlib.compress(pickle.dumps(obj, 2))
+    with open(state_file, 'wb') as f:
+        f.write(zlib.compress(pickle.dumps(obj, 2)))

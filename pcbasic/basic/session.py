@@ -45,8 +45,7 @@ from . import unicodepage
 def run_session(queues, resume, state_file, prog='', commands=[], **session_params):
     """Run an interactive BASIC session."""
     if resume:
-        with open(state_file, 'rb') as f:
-            session = Session.resume(f.read(), *queues, **session_params)
+        session = state.zunpickle(state_file).resume(*queues, **session_params)
     else:
         session = Session(*queues, **session_params)
     try:
@@ -63,8 +62,7 @@ def run_session(queues, resume, state_file, prog='', commands=[], **session_para
         # e.g. "File not Found" for --load parameter
         logging.error(e.message)
     finally:
-        with open(state_file, 'wb') as f:
-            f.write(session.store())
+        state.zpickle(session, state_file)
         session.close()
 
 
@@ -225,24 +223,18 @@ class Session(object):
         self.files.close_all()
         self.devices.close()
 
-    def store(self):
-        """Save the session."""
+    def __getstate__(self):
+        """Pickle the session."""
         # persist unplayed tones in sound queue
         self.tone_queue_store = [signals.save_queue(q) for q in self.tone_queue]
-        return state.zpickle(self)
+        return self.__dict__.copy()
 
-    @classmethod
-    def resume(cls, state_string,
+    def resume(self,
                 input_queue=None, video_queue=None,
                 tone_queue=None, message_queue=None,
                 override_cas1=None, override_mount=None,
                 override_current_device='Z'):
         """Resume a saved interpreter session."""
-        if not state_string:
-            raise ResumeFailed()
-        self = state.zunpickle(state_string)
-        if not isinstance(self, cls):
-            raise ResumeFailed()
         self.input_queue = input_queue
         self.video_queue = video_queue
         self.tone_queue = tone_queue
