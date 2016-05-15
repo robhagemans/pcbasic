@@ -36,6 +36,7 @@ from . import files
 from . import sound
 from . import redirect
 from . import unicodepage
+from . import var
 
 
 tick_s = 0.0001
@@ -294,6 +295,14 @@ class Session(object):
         for cmd in command.splitlines():
             self._store_line(cmd)
             self._loop()
+
+    def evaluate(self, expression):
+        """Evaluate a BASIC expression."""
+        # attach print token so tokeniser has a whole statement to work with
+        tokens = self.tokeniser.tokenise_line('?' + expression)
+        # skip : and print token and parse expression
+        tokens.read(2)
+        return var.type_to_value(self.parser.parse_expression(tokens, self), self.strings)
 
     def interact(self):
         """Interactive interpreter session."""

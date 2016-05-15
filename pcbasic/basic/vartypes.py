@@ -139,7 +139,6 @@ def number_unpack(value):
     else:
         return integer_to_int_signed(value)
 
-
 ###############################################################################
 # convert between BASIC Integer and token bytes
 

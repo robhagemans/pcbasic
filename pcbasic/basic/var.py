@@ -11,6 +11,7 @@ from operator import itemgetter
 
 from . import error
 from . import vartypes
+from . import fp
 from . import representation
 
 
@@ -497,3 +498,16 @@ def get_name_in_memory(name, offset):
     else:
         # rest of name is encoded such that c1 == 'A'
         return ord(name[offset-1].upper()) - ord('A') + 0xC1
+
+
+##############################################################################
+
+def type_to_value(basic_val, stringspace):
+    """Convert BASIC value to Python value."""
+    typechar = basic_val[0]
+    if typechar == '$':
+        return stringspace.copy(basic_val)
+    elif typechar == '%':
+        return vartypes.integer_to_int_signed(basic_val)
+    elif typechar in ('#', '!'):
+        return fp.unpack(basic_val).to_value()
