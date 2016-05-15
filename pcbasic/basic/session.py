@@ -163,10 +163,11 @@ class Session(object):
         # function key macros
         self.fkey_macros = console.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
         # initialise sound queue
-        # needs Session for wait() only
-        self.sound = sound.Sound(self, self.tone_queue, self.message_queue, syntax)
+        # needs Session for wait() and queues only
+        self.sound = sound.Sound(self, syntax)
         # Sound is needed for the beeps on \a
-        self.screen = display.Screen(self.video_queue, text_width,
+        # Session is only for queues and check_events() in Graphics (flood fill)
+        self.screen = display.Screen(self, text_width,
                 video_memory, video_capabilities, monitor,
                 self.sound, self.output_redirection, self.fkey_macros,
                 cga_low, mono_tint, screen_aspect,
