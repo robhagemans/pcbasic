@@ -37,7 +37,7 @@ icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}
 
 delay = 0.024
 
-def run(input_queue, video_queue, tone_queue, message_queue, interface_name, video_params, audio_params):
+def run(interface_name, video_params, audio_params, input_queue, video_queue, tone_queue, message_queue):
     """Start the main interface event loop."""
     with _get_video_plugin(input_queue, video_queue, interface_name, **video_params) as video_plugin:
         with _get_audio_plugin(tone_queue, message_queue, interface_name, **audio_params) as audio_plugin:

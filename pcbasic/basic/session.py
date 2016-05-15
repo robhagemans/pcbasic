@@ -49,8 +49,7 @@ from . import unicodepage
 # launcher
 
 @contextmanager
-def launch_session(session_params, state_file,
-             commands, wait, prog, resume):
+def launch_session(**launch_params):
     """Launch a BASIC session in a separate thread."""
     # input queue
     input_queue = Queue.Queue()
@@ -59,41 +58,36 @@ def launch_session(session_params, state_file,
     # audio queues
     tone_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
     message_queue = Queue.Queue()
-    if resume:
-        session = Session.resume(state_file,
-                    input_queue, video_queue,
-                    tone_queue, message_queue,
-                    **session_params)
-    else:
-        session = Session(state_file,
-                    input_queue, video_queue,
-                    tone_queue, message_queue,
-                    **session_params)
-    thread = threading.Thread(target=run_thread, args=(session, prog, commands, wait))
+    queues = (input_queue, video_queue, tone_queue, message_queue)
+    thread = threading.Thread(target=run_thread, args=(queues,), kwargs=launch_params)
     thread.start()
-    yield session
+    yield queues
     thread.join()
 
-def run_thread(session, prog, commands, wait):
+def run_thread(queues, wait, **launch_params):
     """Thread runner for BASIC session."""
+    input_queue, video_queue, tone_queue, message_queue = queues
     try:
-        run_session(session, prog, commands)
+        run_session(queues, **launch_params)
     finally:
         if wait:
-            session.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
-            session.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
+            video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
+            video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
             while True:
-                signal = session.input_queue.get()
+                signal = input_queue.get()
                 if signal.event_type == signals.KEYB_DOWN:
                     break
         # close interface
-        session.video_queue.put(signals.Event(signals.VIDEO_QUIT))
-        session.message_queue.put(signals.Event(signals.AUDIO_QUIT))
+        video_queue.put(signals.Event(signals.VIDEO_QUIT))
+        message_queue.put(signals.Event(signals.AUDIO_QUIT))
 
-def run_session(session, prog, commands):
-    """Manage BASIC session."""
+def run_session(queues, resume, prog, commands, **session_params):
+    """Thread runner for BASIC session."""
+    if resume:
+        session = Session.resume(*queues, **session_params)
+    else:
+        session = Session(*queues, **session_params)
     try:
-        # load initial program, allowing native-os filenames or BASIC specs
         if prog:
             session.load_program(prog)
         for cmd in commands:
@@ -124,9 +118,10 @@ class ResumeFailed(Exception):
 class Session(object):
     """Interpreter session."""
 
-    def __init__(self, state_file=u'',
+    def __init__(self,
             input_queue=None, video_queue=None,
             tone_queue=None, message_queue=None,
+            state_file=u'',
             syntax=u'advanced', option_debug=False, pcjr_term=u'', option_shell=u'',
             output_file=None, append=False, input_file=None,
             codepage=u'437', box_protect=True,

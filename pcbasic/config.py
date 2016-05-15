@@ -610,12 +610,15 @@ class Settings(object):
                 commands.append('RUN')
             if self.get('quit'):
                 commands.append('SYSTEM')
-        return {
+        launch_params = {
+            'state_file': self.get_state_file(),
             'wait': self.get('wait'),
             'prog': self.get(0) or self.get('run') or self.get('load'),
             'resume': self.get('resume'),
             'commands': commands,
             }
+        launch_params.update(self.get_session_parameters())
+        return launch_params
 
     def get_drives(self, get_default=True):
         """Assign disk locations to disk devices."""

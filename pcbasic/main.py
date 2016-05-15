@@ -73,14 +73,9 @@ def start_basic(settings):
     audio_params = settings.get_audio_parameters()
     video_params = settings.get_video_parameters()
     launch_params = settings.get_launch_parameters()
-    session_params = settings.get_session_parameters()
-    state_file = settings.get_state_file()
     try:
-        with basic.launch_session(session_params, state_file, **launch_params) as launcher:
-            interface.run(
-                    launcher.input_queue, launcher.video_queue,
-                    launcher.tone_queue, launcher.message_queue,
-                    interface_name, video_params, audio_params)
+        with basic.launch_session(**launch_params) as queues:
+            interface.run(interface_name, video_params, audio_params, *queues)
     except interface.InitFailed:
         logging.error('Failed to initialise interface.')
 
