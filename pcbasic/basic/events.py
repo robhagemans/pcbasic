@@ -7,18 +7,12 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from contextlib import contextmanager
-import Queue
-import time
 
 from . import scancode
-from . import signals
-from . import error
 
 
 ###############################################################################
 # BASIC event triggers
-
-
 
 class EventHandler(object):
     """Manage event triggers."""
@@ -212,9 +206,6 @@ class StrigHandler(EventHandler):
 class Events(object):
     """Event management."""
 
-    tick = 0.0001
-    longtick = 0.006 - tick
-
     def __init__(self, session, syntax):
         """Initialise event triggers."""
         self.session = session
@@ -227,6 +218,7 @@ class Events(object):
             self.num_fn_keys = 10
         # tandy and pcjr have multi-voice sound
         self.multivoice = syntax in ('pcjr', 'tandy')
+        self.reset()
 
     def reset(self):
         """Initialise or reset event triggers."""
@@ -262,75 +254,17 @@ class Events(object):
         """Activate or deactisvate event checking."""
         self.active = active
 
+    def check(self):
+        """Check events."""
+        # events are only active if a program is sunning
+        if not self.active:
+            return
+        for e in self.all:
+            e.check()
+
     @contextmanager
     def suspend(self):
         """Context guard to suspend events."""
         self.suspend_all, store = True, self.suspend_all
         yield
         self.suspend_all = store
-
-    def wait(self, suppress_events=False):
-        """Wait and check events."""
-        time.sleep(self.longtick)
-        if not suppress_events:
-            self.check_events()
-
-    def check_events(self):
-        """Main event cycle."""
-        time.sleep(self.tick)
-        self._check_input()
-        # BASIC events are only active if a program is running
-        if self.active:
-            for e in self.all:
-                e.check()
-        self.session.keyboard.drain_event_buffer()
-
-    def _check_input(self):
-        """Handle input events."""
-        input_queue = self.session.input_queue
-        video_queue = self.session.video_queue
-        screen = self.session.screen
-        keyboard = self.session.keyboard
-        pen = self.session.pen
-        stick = self.session.stick
-        while True:
-            try:
-                signal = input_queue.get(False)
-            except Queue.Empty:
-                if not keyboard.pause:
-                    break
-                else:
-                    time.sleep(self.tick)
-                    continue
-            # we're on it
-            input_queue.task_done()
-            if signal.event_type == signals.KEYB_QUIT:
-                raise error.Exit()
-            if signal.event_type == signals.KEYB_CLOSED:
-                keyboard.close_input()
-            elif signal.event_type == signals.KEYB_CHAR:
-                # params is a unicode sequence
-                keyboard.insert_chars(*signal.params)
-            elif signal.event_type == signals.KEYB_DOWN:
-                # params is e-ASCII/unicode character sequence, scancode, modifier
-                keyboard.key_down(*signal.params)
-            elif signal.event_type == signals.KEYB_UP:
-                keyboard.key_up(*signal.params)
-            elif signal.event_type == signals.PEN_DOWN:
-                pen.down(*signal.params)
-            elif signal.event_type == signals.PEN_UP:
-                pen.up()
-            elif signal.event_type == signals.PEN_MOVED:
-                pen.moved(*signal.params)
-            elif signal.event_type == signals.STICK_DOWN:
-                stick.down(*signal.params)
-            elif signal.event_type == signals.STICK_UP:
-                stick.up(*signal.params)
-            elif signal.event_type == signals.STICK_MOVED:
-                stick.moved(*signal.params)
-            elif signal.event_type == signals.CLIP_PASTE:
-                keyboard.insert_chars(*signal.params, check_full=False)
-            elif signal.event_type == signals.CLIP_COPY:
-                text = screen.get_text(*(signal.params[:4]))
-                video_queue.put(signals.Event(
-                        signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))

@@ -40,7 +40,6 @@ from . import files
 from . import sound
 from . import redirect
 from . import unicodepage
-from . import events
 
 
 ###############################################################################
@@ -99,6 +98,9 @@ def run_session(session, prog, commands, wait):
 
 ###############################################################################
 # interpreter session
+
+tick_s = 0.0001
+longtick_s = 0.006 - tick_s
 
 
 class Session(object):
@@ -160,10 +162,9 @@ class Session(object):
                 max_list_line, allow_protect, allow_code_poke)
         # function key macros
         self.fkey_macros = console.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
-        # set up event management
-        self.events = events.Events(self, syntax)
         # initialise sound queue
-        self.sound = sound.Sound(self.events, self.tone_queue, self.message_queue, syntax)
+        # needs Session for wait() only
+        self.sound = sound.Sound(self, self.tone_queue, self.message_queue, syntax)
         # Sound is needed for the beeps on \a
         self.screen = display.Screen(self.video_queue, text_width,
                 video_memory, video_capabilities, monitor,
@@ -175,7 +176,8 @@ class Session(object):
         self.stick = inputs.Stick()
         # Screen needed in Keyboard for print_screen()
         # Sound is needed for the beeps when the buffer fills up
-        self.keyboard = inputs.Keyboard(self.events, self.screen, self.fkey_macros,
+        # Session needed for wait() only
+        self.keyboard = inputs.Keyboard(self, self.screen, self.fkey_macros,
                 self.codepage, self.sound,
                 keystring, input_file, ignore_caps, ctrl_c_is_break)
         # set up variables and memory model state
@@ -194,16 +196,13 @@ class Session(object):
         self.user_functions = {}
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
+        # Session needed for wait()
         self.devices = files.Devices(
-                self.events, self.memory.fields, self.screen, self.keyboard,
+                self, self.memory.fields, self.screen, self.keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_buffer_size,
                 utf8, universal)
         self.files = files.Files(self.devices, max_files)
-        # initialise timer
-        self.timer = timedate.Timer()
-        # initialise input events
-        self.events.reset()
         # set LPT1 as target for print_screen()
         self.screen.set_print_screen_target(self.devices.lpt1_file)
         # set up rest of memory model
@@ -230,6 +229,8 @@ class Session(object):
                     logging.warning('Pexpect module not found. SHELL statement disabled.')
         # initialise random number generator
         self.randomiser = rnd.RandomNumberGenerator()
+        # initialise timer
+        self.timer = timedate.Timer()
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
         # interpreter is executing a command (needs Screen)
@@ -250,7 +251,7 @@ class Session(object):
         self.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
         self.keyboard.pause = True
         # this performs a blocking keystroke read if in pause state
-        self.events.check_events()
+        self.check_events()
 
     def close(self):
         """Close and save the session."""
@@ -377,7 +378,7 @@ class Session(object):
                 if self.parse_mode:
                     try:
                         # may raise Break
-                        self.events.check_events()
+                        self.check_events()
                         # returns True if more statements to parse
                         if not self.parser.parse_statement():
                             self.parse_mode = False
@@ -511,3 +512,63 @@ class Session(object):
         if linenum is not None and linenum > -1 and linenum < 65535:
             self.screen.write(' in %i' % linenum)
         self.screen.write_line('\xFF')
+
+    ##########################################################################
+    # main event checker
+
+    def wait(self, suppress_events=False):
+        """Wait and check events."""
+        time.sleep(longtick_s)
+        if not suppress_events:
+            self.check_events()
+
+    def check_events(self):
+        """Main event cycle."""
+        time.sleep(tick_s)
+        self._check_input()
+        self.parser.events.check()
+        self.keyboard.drain_event_buffer()
+
+    def _check_input(self):
+        """Handle input events."""
+        while True:
+            try:
+                signal = self.input_queue.get(False)
+            except Queue.Empty:
+                if not self.keyboard.pause:
+                    break
+                else:
+                    time.sleep(tick_s)
+                    continue
+            # we're on it
+            self.input_queue.task_done()
+            if signal.event_type == signals.KEYB_QUIT:
+                raise error.Exit()
+            if signal.event_type == signals.KEYB_CLOSED:
+                self.keyboard.close_input()
+            elif signal.event_type == signals.KEYB_CHAR:
+                # params is a unicode sequence
+                self.keyboard.insert_chars(*signal.params)
+            elif signal.event_type == signals.KEYB_DOWN:
+                # params is e-ASCII/unicode character sequence, scancode, modifier
+                self.keyboard.key_down(*signal.params)
+            elif signal.event_type == signals.KEYB_UP:
+                self.keyboard.key_up(*signal.params)
+            elif signal.event_type == signals.PEN_DOWN:
+                self.pen.down(*signal.params)
+            elif signal.event_type == signals.PEN_UP:
+                self.pen.up()
+            elif signal.event_type == signals.PEN_MOVED:
+                self.pen.moved(*signal.params)
+            elif signal.event_type == signals.STICK_DOWN:
+                self.stick.down(*signal.params)
+            elif signal.event_type == signals.STICK_UP:
+                self.stick.up(*signal.params)
+            elif signal.event_type == signals.STICK_MOVED:
+                self.stick.moved(*signal.params)
+            elif signal.event_type == signals.CLIP_PASTE:
+                self.keyboard.insert_chars(*signal.params, check_full=False)
+            elif signal.event_type == signals.CLIP_COPY:
+                text = self.screen.get_text(*(signal.params[:4]))
+                self.video_queue.put(signals.Event(
+                        signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
