@@ -69,14 +69,29 @@ def launch_session(session_params, state_file,
                     input_queue, video_queue,
                     tone_queue, message_queue,
                     **session_params)
-    thread = threading.Thread(target=run_session, args=(session, prog, commands, wait))
+    thread = threading.Thread(target=run_thread, args=(session, prog, commands, wait))
     thread.start()
     yield session
     thread.join()
 
-
-def run_session(session, prog, commands, wait):
+def run_thread(session, prog, commands, wait):
     """Thread runner for BASIC session."""
+    try:
+        run_session(session, prog, commands)
+    finally:
+        if wait:
+            session.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
+            session.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
+            while True:
+                signal = session.input_queue.get()
+                if signal.event_type == signals.KEYB_DOWN:
+                    break
+        # close interface
+        session.video_queue.put(signals.Event(signals.VIDEO_QUIT))
+        session.message_queue.put(signals.Event(signals.AUDIO_QUIT))
+
+def run_session(session, prog, commands):
+    """Manage BASIC session."""
     try:
         # load initial program, allowing native-os filenames or BASIC specs
         if prog:
@@ -93,16 +108,6 @@ def run_session(session, prog, commands, wait):
         logging.error(e.message)
     finally:
         session.close()
-        if wait:
-            session.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
-            session.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
-            while True:
-                signal = session.input_queue.get()
-                if signal.event_type == signals.KEYB_DOWN:
-                    break
-        # close interface
-        session.video_queue.put(signals.Event(signals.VIDEO_QUIT))
-        session.message_queue.put(signals.Event(signals.AUDIO_QUIT))
 
 
 ###############################################################################
