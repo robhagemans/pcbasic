@@ -72,11 +72,8 @@ def launch_session(session_params, state_file,
     thread = threading.Thread(target=run_session, args=(session, prog, commands, wait))
     thread.start()
     yield session
-    if thread and thread.is_alive():
-        # request exit
-        input_queue.put(signals.Event(signals.KEYB_QUIT))
-        # wait for thread to finish
-        thread.join()
+    thread.join()
+
 
 def run_session(session, prog, commands, wait):
     """Thread runner for BASIC session."""
@@ -87,8 +84,6 @@ def run_session(session, prog, commands, wait):
         for cmd in commands:
             session.execute(cmd)
         session.interact()
-        if wait:
-            session.pause('Press a key to close window')
     except error.Exit:
         # SYSTEM called during launch
         pass
@@ -98,6 +93,12 @@ def run_session(session, prog, commands, wait):
         logging.error(e.message)
     finally:
         session.close()
+        if wait:
+            session.pause('Press a key to close window')
+        # close interface
+        session.video_queue.put(signals.Event(signals.VIDEO_QUIT))
+        session.message_queue.put(signals.Event(signals.AUDIO_QUIT))
+
 
 ###############################################################################
 # interpreter session
@@ -263,9 +264,6 @@ class Session(object):
 
     def close(self):
         """Close and save the session."""
-        # close interfaces
-        self.video_queue.put(signals.Event(signals.VIDEO_QUIT))
-        self.message_queue.put(signals.Event(signals.AUDIO_QUIT))
         self.store()
         # close files if we opened any
         self.files.close_all()
