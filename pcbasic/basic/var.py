@@ -502,7 +502,7 @@ def get_name_in_memory(name, offset):
 
 ##############################################################################
 
-def type_to_value(basic_val, stringspace):
+def to_value(basic_val, stringspace):
     """Convert BASIC value to Python value."""
     typechar = basic_val[0]
     if typechar == '$':
@@ -511,3 +511,14 @@ def type_to_value(basic_val, stringspace):
         return vartypes.integer_to_int_signed(basic_val)
     elif typechar in ('#', '!'):
         return fp.unpack(basic_val).to_value()
+
+def from_value(python_val, typechar, stringspace):
+    """Convert Python value to BASIC value."""
+    if typechar == '$':
+        return stringspace.store(python_val)
+    elif typechar == '%':
+        return vartypes.int_to_integer_signed(python_val)
+    elif typechar == '!':
+        return fp.pack(fp.Single.from_value(python_val))
+    elif typechar == '#':
+        return fp.pack(fp.Double.from_value(python_val))

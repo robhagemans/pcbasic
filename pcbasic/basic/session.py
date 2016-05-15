@@ -275,6 +275,7 @@ class Session(object):
         self.parser.clear()
 
     ###########################################################################
+    # public interface methods
 
     def load_program(self, prog, rebuild_dict=True):
         """Load a program from native or BASIC file."""
@@ -302,7 +303,17 @@ class Session(object):
         tokens = self.tokeniser.tokenise_line('?' + expression)
         # skip : and print token and parse expression
         tokens.read(2)
-        return var.type_to_value(self.parser.parse_expression(tokens, self), self.strings)
+        return var.to_value(self.parser.parse_expression(tokens, self), self.strings)
+
+    def set_variable(self, name, value):
+        """Set a variable in memory."""
+        # scalars only for now
+        self.memory.set_variable(name, [], var.from_value(value, name[-1], self.strings))
+
+    def get_variable(self, name):
+        """Get a variable in memory."""
+        # scalars only for now
+        return var.to_value(self.memory.get_variable(name, []), self.strings)
 
     def interact(self):
         """Interactive interpreter session."""
@@ -319,6 +330,9 @@ class Session(object):
                     self.prompt = False
         except error.Exit:
             pass
+
+    ###########################################################################
+    # implementation
 
     def _loop(self):
         """Run read-eval-print loop until control returns to user."""
