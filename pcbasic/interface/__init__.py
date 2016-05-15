@@ -96,7 +96,7 @@ audio_plugins = {
     'graphical': (AudioPygame, AudioBeep, AudioNone),
     'ansi': (AudioNone,),
     'curses': (AudioNone,),
-    'graphical': (AudioPygame, AudioNone),
+    'pygame': (AudioPygame, AudioNone),
     'sdl2': (AudioSDL2, AudioNone),
     }
 
