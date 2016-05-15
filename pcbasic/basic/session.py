@@ -42,10 +42,11 @@ from . import unicodepage
 ###############################################################################
 # launcher
 
-def run_session(queues, resume=False, prog='', commands=[], **session_params):
+def run_session(queues, resume, state_file, prog='', commands=[], **session_params):
     """Run an interactive BASIC session."""
     if resume:
-        session = Session.resume(*queues, **session_params)
+        with open(state_file, 'rb') as f:
+            session = Session.resume(f.read(), *queues, **session_params)
     else:
         session = Session(*queues, **session_params)
     try:
@@ -62,6 +63,8 @@ def run_session(queues, resume=False, prog='', commands=[], **session_params):
         # e.g. "File not Found" for --load parameter
         logging.error(e.message)
     finally:
+        with open(state_file, 'wb') as f:
+            f.write(session.store())
         session.close()
 
 
@@ -82,7 +85,6 @@ class Session(object):
     def __init__(self,
             input_queue=None, video_queue=None,
             tone_queue=None, message_queue=None,
-            state_file=u'',
             syntax=u'advanced', option_debug=False, pcjr_term=u'', option_shell=u'',
             output_file=None, append=False, input_file=None,
             codepage=u'437', box_protect=True,
@@ -100,9 +102,6 @@ class Session(object):
             max_reclen=128, max_files=3, reserved_memory=3429,
             temp_dir=u''):
         """Initialise the interpreter session."""
-        # name of file to store and resume state
-        self.state_file = state_file
-        # input, video and audio queues
         # use dummy queues if not provided
         self.input_queue = input_queue or signals.NullQueue()
         self.video_queue = video_queue or signals.NullQueue()
@@ -221,8 +220,7 @@ class Session(object):
             self.debugger = debug.BaseDebugger(self)
 
     def close(self):
-        """Close and save the session."""
-        self.store()
+        """Close the session."""
         # close files if we opened any
         self.files.close_all()
         self.devices.close()
@@ -231,33 +229,20 @@ class Session(object):
         """Save the session."""
         # persist unplayed tones in sound queue
         self.tone_queue_store = [signals.save_queue(q) for q in self.tone_queue]
-        if self.state_file:
-            # pickle and compress
-            try:
-                with open(self.state_file, 'wb') as f:
-                    state.zpickle(self, f)
-            except EnvironmentError:
-                logging.warning("Could not write to state file %s. Emulator state not saved.", self.state_file)
+        return state.zpickle(self)
 
     @classmethod
-    def resume(cls, 
+    def resume(cls, state_string,
                 input_queue=None, video_queue=None,
                 tone_queue=None, message_queue=None,
-                state_file='',
                 override_cas1=None, override_mount=None,
                 override_current_device='Z'):
         """Resume a saved interpreter session."""
-        if not state_file:
+        if not state_string:
             raise ResumeFailed()
-        try:
-            with open(state_file, 'rb') as f:
-                self = state.zunpickle(f)
-        except EnvironmentError:
-            logging.warning("Could not read state file %s. Emulator state not loaded.", state_file)
-            raise ResumeFailed()
+        self = state.zunpickle(state_string)
         if not isinstance(self, cls):
             raise ResumeFailed()
-        self.state_file = state_file
         self.input_queue = input_queue
         self.video_queue = video_queue
         self.tone_queue = tone_queue

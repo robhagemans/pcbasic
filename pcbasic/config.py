@@ -583,11 +583,9 @@ class Settings(object):
     def get_state_file(self):
         """Name of state file"""
         state_name = self.get('state') or 'PCBASIC.SAV'
-        if os.path.exists(state_name):
-            state_file = state_name
-        else:
-            state_file = os.path.join(state_path, state_name)
-        return state_file
+        if not os.path.exists(state_name):
+            state_name = os.path.join(state_path, state_name)
+        return state_name
 
     def get_interface(self):
         """Return name of interface plugin."""
@@ -611,10 +609,10 @@ class Settings(object):
             if self.get('quit'):
                 commands.append('SYSTEM')
         launch_params = {
-            'state_file': self.get_state_file(),
             'wait': self.get('wait'),
             'prog': self.get(0) or self.get('run') or self.get('load'),
             'resume': self.get('resume'),
+            'state_file': self.get_state_file(),
             'commands': commands,
             }
         launch_params.update(self.get_session_parameters())

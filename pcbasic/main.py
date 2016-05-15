@@ -89,11 +89,11 @@ def launch_session(settings):
     except interface.InitFailed:
         logging.error('Failed to initialise interface.')
 
-def run_thread(queues, wait, **launch_params):
+def run_thread(queues, resume, state_file, wait, **launch_params):
     """Thread runner for BASIC session."""
     input_queue, video_queue, tone_queue, message_queue = queues
     try:
-        basic.run_session(queues, **launch_params)
+        basic.run_session(queues, resume, state_file, **launch_params)
     finally:
         if wait:
             video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
@@ -105,6 +105,7 @@ def run_thread(queues, wait, **launch_params):
         # close interface
         video_queue.put(signals.Event(signals.VIDEO_QUIT))
         message_queue.put(signals.Event(signals.AUDIO_QUIT))
+
 
 
 if __name__ == "__main__":
