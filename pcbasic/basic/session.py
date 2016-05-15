@@ -48,22 +48,22 @@ def run_session(queues, resume, state_file, prog='', commands=[], **session_para
         session = state.zunpickle(state_file).resume(*queues, **session_params)
     else:
         session = Session(*queues, **session_params)
-    try:
-        if prog:
-            session.load_program(prog)
-        for cmd in commands:
-            session.execute(cmd)
-        session.interact()
-    except error.Exit:
-        # SYSTEM called during launch
-        pass
-    except error.RunError as e:
-        # only runtime errors that occur on interpreter launch are caught here
-        # e.g. "File not Found" for --load parameter
-        logging.error(e.message)
-    finally:
-        state.zpickle(session, state_file)
-        session.close()
+    with session:
+        try:
+            if prog:
+                session.load_program(prog)
+            for cmd in commands:
+                session.execute(cmd)
+            session.interact()
+        except error.Exit:
+            # SYSTEM called during launch
+            pass
+        except error.RunError as e:
+            # only runtime errors that occur on interpreter launch are caught here
+            # e.g. "File not Found" for --load parameter
+            logging.error(e.message)
+        finally:
+            state.zpickle(session, state_file)
 
 
 ###############################################################################
@@ -222,6 +222,14 @@ class Session(object):
         # close files if we opened any
         self.files.close_all()
         self.devices.close()
+
+    def __enter__(self):
+        """Context guard."""
+        return self
+
+    def __exit__(self, dummy_1, dummy_2, dummy_3):
+        """Context guard."""
+        self.close()
 
     def __getstate__(self):
         """Pickle the session."""
