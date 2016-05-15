@@ -204,7 +204,13 @@ class Session(object):
         """Pickle the session."""
         # persist unplayed tones in sound queue
         self.tone_queue_store = [signals.save_queue(q) for q in self.tone_queue]
-        return self.__dict__.copy()
+        pickle_dict = self.__dict__.copy()
+        # remove queues from state
+        pickle_dict['input_queue'] = signals.NullQueue()
+        pickle_dict['video_queue'] = signals.NullQueue()
+        pickle_dict['tone_queue'] = signals.NullQueue()
+        pickle_dict['message_queue'] = signals.NullQueue()
+        return pickle_dict
 
     def resume(self,
                 input_queue=None, video_queue=None,
@@ -212,10 +218,11 @@ class Session(object):
                 override_cas1=None, override_mount=None,
                 override_current_device='Z'):
         """Resume a saved interpreter session."""
-        self.input_queue = input_queue
-        self.video_queue = video_queue
-        self.tone_queue = tone_queue
-        self.message_queue = message_queue
+        # use dummy queues if not provided
+        self.input_queue = input_queue or signals.NullQueue()
+        self.video_queue = video_queue or signals.NullQueue()
+        self.tone_queue = tone_queue or signals.NullQueue()
+        self.message_queue = message_queue or signals.NullQueue()
         # reload the screen in resumed state
         if not self.screen.resume():
             raise ResumeFailed()
