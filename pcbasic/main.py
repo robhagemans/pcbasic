@@ -21,6 +21,7 @@ from .version import __version__
 from . import ansipipe
 from . import basic
 from .basic import signals
+from . import state
 from . import config
 
 
@@ -93,7 +94,7 @@ def run_thread(queues, resume, state_file, wait, **launch_params):
     """Thread runner for BASIC session."""
     input_queue, video_queue, tone_queue, message_queue = queues
     try:
-        basic.run_session(queues, resume, state_file, **launch_params)
+        run_session(queues, resume, state_file, **launch_params)
     finally:
         if wait:
             video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
@@ -106,7 +107,28 @@ def run_thread(queues, resume, state_file, wait, **launch_params):
         video_queue.put(signals.Event(signals.VIDEO_QUIT))
         message_queue.put(signals.Event(signals.AUDIO_QUIT))
 
-
+def run_session(queues, resume, state_file, prog, commands, **session_params):
+    """Run an interactive BASIC session."""
+    if resume:
+        session = state.zunpickle(state_file).resume(*queues, **session_params)
+    else:
+        session = basic.Session(*queues, **session_params)
+    with session:
+        try:
+            if prog:
+                session.load_program(prog)
+            for cmd in commands:
+                session.execute(cmd)
+            session.interact()
+        except basic.Exit:
+            # SYSTEM called during launch
+            pass
+        except basic.RunError as e:
+            # only runtime errors that occur on interpreter launch are caught here
+            # e.g. "File not Found" for --load parameter
+            logging.error(e.message)
+        finally:
+            state.zpickle(session, state_file)
 
 
 if __name__ == "__main__":
