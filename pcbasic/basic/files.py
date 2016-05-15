@@ -166,6 +166,8 @@ class Devices(object):
         self.codepage = screen.codepage
         # ports
         # parallel devices - LPT1: must always be defined
+        if not device_params:
+            device_params = {'LPT1:': '', 'LPT2:': '', 'LPT3:': '', 'COM1:': '', 'COM2:': '', 'CAS1:': ''}
         self.devices['LPT1:'] = ports.LPTDevice(device_params['LPT1:'], devices.nullstream(), print_trigger, self.codepage, temp_dir)
         self.devices['LPT2:'] = ports.LPTDevice(device_params['LPT2:'], None, print_trigger, self.codepage, temp_dir)
         self.devices['LPT3:'] = ports.LPTDevice(device_params['LPT3:'], None, print_trigger, self.codepage, temp_dir)
@@ -190,6 +192,8 @@ class Devices(object):
         self.internal_disk = disk.DiskDevice(b'', None, u'',
                         self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
         for letter in self.drive_letters:
+            if not mount_dict:
+                mount_dict = {}
             if letter in mount_dict:
                 self.devices[letter + b':'] = disk.DiskDevice(letter, mount_dict[letter][0], mount_dict[letter][1],
                             self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
