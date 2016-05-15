@@ -94,7 +94,12 @@ def run_session(session, prog, commands, wait):
     finally:
         session.close()
         if wait:
-            session.pause('Press a key to close window')
+            session.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
+            session.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
+            while True:
+                signal = session.input_queue.get()
+                if signal.event_type == signals.KEYB_DOWN:
+                    break
         # close interface
         session.video_queue.put(signals.Event(signals.VIDEO_QUIT))
         session.message_queue.put(signals.Event(signals.AUDIO_QUIT))
@@ -253,14 +258,6 @@ class Session(object):
             self.debugger = debug.Debugger(self)
         else:
             self.debugger = debug.BaseDebugger(self)
-
-    def pause(self, msg):
-        """Pause the session."""
-        self.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, msg))
-        self.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
-        self.keyboard.pause = True
-        # this performs a blocking keystroke read if in pause state
-        self.check_events()
 
     def close(self):
         """Close and save the session."""

@@ -41,12 +41,10 @@ def run(input_queue, video_queue, tone_queue, message_queue, interface_name, vid
     """Start the main interface event loop."""
     with _get_video_plugin(input_queue, video_queue, interface_name, **video_params) as video_plugin:
         with _get_audio_plugin(tone_queue, message_queue, interface_name, **audio_params) as audio_plugin:
-            while True:
+            while audio_plugin.alive or video_plugin.alive:
                 # ensure both queues are drained
                 video_plugin.cycle()
                 audio_plugin.cycle()
-                if not audio_plugin.alive and not video_plugin.alive:
-                    break
                 # do not hog cpu
                 if not audio_plugin.playing and not video_plugin.screen_changed:
                     time.sleep(delay)
