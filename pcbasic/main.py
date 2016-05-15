@@ -9,6 +9,8 @@ import sys
 import locale
 import logging
 import traceback
+import threading
+from Queue import Queue
 
 # set locale - this is necessary for curses and *maybe* for clipboard handling
 # there's only one locale setting so best to do it all upfront here
@@ -18,6 +20,7 @@ locale.setlocale(locale.LC_ALL, '')
 from .version import __version__
 from . import ansipipe
 from . import basic
+from .basic import signals
 from . import config
 
 
@@ -39,7 +42,7 @@ def main():
                 convert(settings)
             else:
                 # otherwise, start an interpreter session
-                start_basic(settings)
+                launch_session(settings)
     except:
         # without this except clause we seem to be dropping exceptions
         # probably due to the sys.stdout.close() hack below
@@ -66,7 +69,7 @@ def convert(settings):
     except basic.RunError as e:
         logging.error(e.message)
 
-def start_basic(settings):
+def launch_session(settings):
     """Start an interactive interpreter session."""
     from . import interface
     interface_name = settings.get_interface()
@@ -74,10 +77,35 @@ def start_basic(settings):
     video_params = settings.get_video_parameters()
     launch_params = settings.get_launch_parameters()
     try:
-        with basic.launch_session(**launch_params) as queues:
-            interface.run(interface_name, video_params, audio_params, *queues)
+        input_queue = Queue()
+        video_queue = Queue()
+        tone_queue = [Queue(), Queue(), Queue(), Queue()]
+        message_queue = Queue()
+        queues = (input_queue, video_queue, tone_queue, message_queue)
+        thread = threading.Thread(target=run_thread, args=(queues,), kwargs=launch_params)
+        thread.start()
+        interface.run(interface_name, video_params, audio_params, *queues)
+        thread.join()
     except interface.InitFailed:
         logging.error('Failed to initialise interface.')
+
+def run_thread(queues, wait, **launch_params):
+    """Thread runner for BASIC session."""
+    input_queue, video_queue, tone_queue, message_queue = queues
+    try:
+        basic.run_session(queues, **launch_params)
+    finally:
+        if wait:
+            video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
+            video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
+            while True:
+                signal = input_queue.get()
+                if signal.event_type == signals.KEYB_DOWN:
+                    break
+        # close interface
+        video_queue.put(signals.Event(signals.VIDEO_QUIT))
+        message_queue.put(signals.Event(signals.AUDIO_QUIT))
+
 
 if __name__ == "__main__":
     main()

@@ -9,14 +9,8 @@ import os
 import sys
 import logging
 import time
-import threading
 import Queue
 import platform
-from contextlib import contextmanager
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -48,41 +42,8 @@ from . import unicodepage
 ###############################################################################
 # launcher
 
-@contextmanager
-def launch_session(**launch_params):
-    """Launch a BASIC session in a separate thread."""
-    # input queue
-    input_queue = Queue.Queue()
-    # video queue
-    video_queue = Queue.Queue()
-    # audio queues
-    tone_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
-    message_queue = Queue.Queue()
-    queues = (input_queue, video_queue, tone_queue, message_queue)
-    thread = threading.Thread(target=run_thread, args=(queues,), kwargs=launch_params)
-    thread.start()
-    yield queues
-    thread.join()
-
-def run_thread(queues, wait, **launch_params):
-    """Thread runner for BASIC session."""
-    input_queue, video_queue, tone_queue, message_queue = queues
-    try:
-        run_session(queues, **launch_params)
-    finally:
-        if wait:
-            video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
-            video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
-            while True:
-                signal = input_queue.get()
-                if signal.event_type == signals.KEYB_DOWN:
-                    break
-        # close interface
-        video_queue.put(signals.Event(signals.VIDEO_QUIT))
-        message_queue.put(signals.Event(signals.AUDIO_QUIT))
-
-def run_session(queues, resume, prog, commands, **session_params):
-    """Thread runner for BASIC session."""
+def run_session(queues, resume=False, prog='', commands=[], **session_params):
+    """Run an interactive BASIC session."""
     if resume:
         session = Session.resume(*queues, **session_params)
     else:
@@ -279,9 +240,10 @@ class Session(object):
                 logging.warning("Could not write to state file %s. Emulator state not saved.", self.state_file)
 
     @classmethod
-    def resume(cls, state_file,
+    def resume(cls, 
                 input_queue=None, video_queue=None,
                 tone_queue=None, message_queue=None,
+                state_file='',
                 override_cas1=None, override_mount=None,
                 override_current_device='Z'):
         """Resume a saved interpreter session."""
