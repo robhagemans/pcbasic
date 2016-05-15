@@ -34,6 +34,7 @@ class VideoPygame(video_graphical.VideoGraphical):
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise pygame interface."""
         video_graphical.VideoGraphical.__init__(self, input_queue, video_queue, **kwargs)
+        self._has_window = False
         # set state objects to whatever is now in state (may have been unpickled)
         if not pygame:
             logging.warning('PyGame module not found.')
@@ -71,7 +72,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.mode_has_blink = True
         # update cycle
         # update flag
-        self.screen_changed = True
+        self.screen_changed = False
         # refresh cycle parameters
         self._cycle = 0
         self.last_cycle = 0
@@ -175,6 +176,8 @@ class VideoPygame(video_graphical.VideoGraphical):
     def _check_input(self):
         """Handle screen and interface events."""
         # check and handle pygame events
+        if not self._has_window:
+            return
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 self._handle_key_down(event)
@@ -296,6 +299,8 @@ class VideoPygame(video_graphical.VideoGraphical):
 
     def _check_display(self):
         """Check screen and blink events; update screen if necessary."""
+        if not self._has_window:
+            return
         self.blink_state = 0
         if self.mode_has_blink:
             self.blink_state = 0 if self._cycle < self.blink_cycles * 2 else 1
@@ -422,6 +427,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         self.clipboard = video_graphical.ClipboardInterface(self,
                 mode_info.width, mode_info.height)
         self.screen_changed = True
+        self._has_window = True
 
     def set_caption_message(self, msg):
         """Add a message to the window caption."""
