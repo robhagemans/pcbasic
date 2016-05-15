@@ -136,11 +136,11 @@ errors = {
 class Error(Exception):
     """Base type for exceptions."""
 
-class Reset(Error):
-    """Reset emulator."""
-
 class Exit(Error):
     """Exit emulator."""
+
+class Reset(Exit):
+    """Reset emulator."""
 
 
 class Break(Error):

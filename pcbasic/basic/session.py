@@ -78,7 +78,6 @@ def launch_session(session_params, state_file,
 
 def run_session(session, prog, commands, wait):
     """Thread runner for BASIC session."""
-    reset = False
     try:
         # load initial program, allowing native-os filenames or BASIC specs
         if prog:
@@ -88,8 +87,6 @@ def run_session(session, prog, commands, wait):
         session.interact()
         if wait:
             session.pause('Press a key to close window')
-    except error.Reset:
-        reset = True
     except error.Exit:
         # SYSTEM called during launch
         pass
@@ -98,7 +95,7 @@ def run_session(session, prog, commands, wait):
         # e.g. "File not Found" for --load parameter
         logging.error(e.message)
     finally:
-        session.close(reset)
+        session.close()
 
 ###############################################################################
 # interpreter session
@@ -255,18 +252,14 @@ class Session(object):
         # this performs a blocking keystroke read if in pause state
         self.events.check_events()
 
-    def close(self, reset=False):
+    def close(self):
         """Close and save the session."""
         # close interfaces
         self.video_queue.put(signals.Event(signals.VIDEO_QUIT))
         self.message_queue.put(signals.Event(signals.AUDIO_QUIT))
-        # save or reset state
-        if reset and self.state_file:
-            state.reset(self.state_file)
-        else:
-            # persist unplayed tones in sound queue
-            self.tone_queue_store = [signals.save_queue(q) for q in self.tone_queue]
-            state.save(self, self.state_file)
+        # persist unplayed tones in sound queue
+        self.tone_queue_store = [signals.save_queue(q) for q in self.tone_queue]
+        state.save(self, self.state_file)
         # close files if we opened any
         self.files.close_all()
         self.devices.close()
@@ -412,8 +405,6 @@ class Session(object):
             self._handle_error(e)
             self.prompt = True
         except error.Exit:
-            raise
-        except error.Reset:
             raise
         except Exception as e:
             self.debugger.bluescreen(e)

@@ -108,10 +108,3 @@ def load(state_file):
     except EnvironmentError:
         logging.warning("Could not read state file %s. Emulator state not loaded.", state_file)
         raise ResumeFailed()
-
-def reset(state_file):
-    """Remove save-state file."""
-    try:
-        os.remove(state_file)
-    except EnvironmentError:
-        logging.warning("Could not remove state file %s. Emulator state not reset.", state_file)

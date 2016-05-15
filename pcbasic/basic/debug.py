@@ -145,7 +145,7 @@ class Debugger(BaseDebugger):
             exec(debug_cmd)
         except DebugException:
             raise
-        except error.Reset:
+        except error.Exit:
             raise
         except Exception as e:
             logging.debug(str(type(e))+' '+str(e))
@@ -170,6 +170,10 @@ def crash():
 def reset():
     """Ctrl+Alt+Delete."""
     raise error.Reset()
+
+def exit():
+    """Quit the session."""
+    raise error.Exit()
 
 def trace(on=True):
     """Switch line number tracing on or off."""
