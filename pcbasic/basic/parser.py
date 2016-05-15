@@ -31,8 +31,7 @@ class Parser(object):
     def __init__(self, session, syntax, term, double_math):
         """Initialise parser."""
         self.session = session
-        # set up event handlers
-        self.events = events.Events(self.session, syntax)
+        self.events = session.events
         # syntax: advanced, pcjr, tandy
         self.syntax = syntax
         # program for TERM command

@@ -152,7 +152,7 @@ class Devices(object):
     # allowable drive letters in GW-BASIC are letters or @
     drive_letters = b'@' + string.ascii_uppercase
 
-    def __init__(self, session, fields, screen, keyboard,
+    def __init__(self, events, fields, screen, keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_in_size, utf8, universal):
         """Initialise devices."""
@@ -172,8 +172,8 @@ class Devices(object):
         self.lpt1_file = self.devices['LPT1:'].device_file
         # serial devices
         # buffer sizes (/c switch in GW-BASIC)
-        self.devices['COM1:'] = ports.COMDevice(device_params['COM1:'], session, devices.Field(serial_in_size), serial_in_size)
-        self.devices['COM2:'] = ports.COMDevice(device_params['COM2:'], session, devices.Field(serial_in_size), serial_in_size)
+        self.devices['COM1:'] = ports.COMDevice(device_params['COM1:'], events, devices.Field(serial_in_size), serial_in_size)
+        self.devices['COM2:'] = ports.COMDevice(device_params['COM2:'], events, devices.Field(serial_in_size), serial_in_size)
         # cassette
         # needs a screen for write() and write_line() to display Found and Skipped messages on opening files
         self.devices['CAS1:'] = cassette.CASDevice(device_params['CAS1:'], screen)
@@ -182,20 +182,20 @@ class Devices(object):
         # field buffers
         self.fields = fields
         # for wait() and check_events()
-        self.session = session
+        self.events = events
         # text file settings
         self.utf8 = utf8
         self.universal = universal
         # disk devices
         self.internal_disk = disk.DiskDevice(b'', None, u'',
-                        self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
+                        self.fields, self.locks, self.codepage, self.events, self.utf8, self.universal)
         for letter in self.drive_letters:
             if letter in mount_dict:
                 self.devices[letter + b':'] = disk.DiskDevice(letter, mount_dict[letter][0], mount_dict[letter][1],
-                            self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
+                            self.fields, self.locks, self.codepage, self.events, self.utf8, self.universal)
             else:
                 self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'',
-                                self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
+                                self.fields, self.locks, self.codepage, self.events, self.utf8, self.universal)
         self.current_device = self.devices[current_device.upper() + b':']
 
     def resume(self, override_cas1, mount_dict, current_device):
@@ -204,7 +204,7 @@ class Devices(object):
             self.devices['CAS1:'] = cassette.CASDevice(override_cas1, self.devices['CAS1:'].screen)
         for letter in mount_dict:
             self.devices[letter + b':'] = disk.DiskDevice(letter, mount_dict[letter][0], mount_dict[letter][1],
-                        self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
+                        self.fields, self.locks, self.codepage, self.events, self.utf8, self.universal)
         # we always need to reset this or it may be a reference to an old device
         self.current_device = self.devices[current_device.upper() + b':']
 

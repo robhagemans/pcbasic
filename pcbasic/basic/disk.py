@@ -256,7 +256,7 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     _access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
-    def __init__(self, letter, path, cwd, fields, locks, codepage, session, utf8, universal):
+    def __init__(self, letter, path, cwd, fields, locks, codepage, events, utf8, universal):
         """Initialise a disk device."""
         self.letter = letter
         # mount root
@@ -271,7 +271,7 @@ class DiskDevice(object):
         # code page for file system names and text file conversion
         self.codepage = codepage
         # for check_events() during FILES
-        self.session = session
+        self.events = events
         # text file settings
         self.utf8 = utf8
         self.universal = universal
@@ -520,7 +520,7 @@ class DiskDevice(object):
             output = output[num:]
             screen.write_line(line)
             # allow to break during dir listing & show names flowing on screen
-            self.session.check_events()
+            self.events.check_events()
         screen.write_line(b' %d Bytes free' % self.get_free())
 
     def get_free(self):

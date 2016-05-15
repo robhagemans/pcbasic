@@ -294,7 +294,7 @@ class Statements(object):
 
     def exec_pen(self, ins):
         """PEN: switch on/off light pen event handling."""
-        if self.parser.events.pen.command(util.skip_white(ins)):
+        if self.session.events.pen.command(util.skip_white(ins)):
             ins.read(1)
         else:
             raise error.RunError(error.STX)
@@ -308,7 +308,7 @@ class Statements(object):
             num = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
             if num not in (0,2,4,6):
                 raise error.RunError(error.IFC)
-            if self.parser.events.strig[num//2].command(util.skip_white(ins)):
+            if self.session.events.strig[num//2].command(util.skip_white(ins)):
                 ins.read(1)
             else:
                 raise error.RunError(error.STX)
@@ -327,7 +327,7 @@ class Statements(object):
         util.require(ins, ('(',))
         num = vartypes.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
         util.range_check(1, 2, num)
-        if self.parser.events.com[num-1].command(util.skip_white(ins)):
+        if self.session.events.com[num-1].command(util.skip_white(ins)):
             ins.read(1)
         else:
             raise error.RunError(error.STX)
@@ -335,7 +335,7 @@ class Statements(object):
 
     def exec_timer(self, ins):
         """TIMER: switch on/off timer event handling."""
-        if self.parser.events.timer.command(util.skip_white(ins)):
+        if self.session.events.timer.command(util.skip_white(ins)):
             ins.read(1)
         else:
             raise error.RunError(error.STX)
@@ -348,7 +348,7 @@ class Statements(object):
         d = util.skip_white(ins)
         # others are ignored
         if num >= 1 and num <= 20:
-            if self.parser.events.key[num-1].command(d):
+            if self.session.events.key[num-1].command(d):
                 ins.read(1)
             else:
                 raise error.RunError(error.STX)
@@ -372,27 +372,27 @@ class Statements(object):
         keynum, jumpnum = self._parse_on_event(ins)
         keynum = vartypes.pass_int_unpack(keynum)
         util.range_check(1, 20, keynum)
-        self.parser.events.key[keynum-1].set_jump(jumpnum)
+        self.session.events.key[keynum-1].set_jump(jumpnum)
 
     def exec_on_timer(self, ins):
         """ON TIMER: define timer event trapping."""
         timeval, jumpnum = self._parse_on_event(ins)
         timeval = vartypes.pass_single(timeval)
         period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
-        self.parser.events.timer.set_trigger(period)
-        self.parser.events.timer.set_jump(jumpnum)
+        self.session.events.timer.set_trigger(period)
+        self.session.events.timer.set_jump(jumpnum)
 
     def exec_on_play(self, ins):
         """ON PLAY: define music event trapping."""
         playval, jumpnum = self._parse_on_event(ins)
         playval = vartypes.pass_int_unpack(playval)
-        self.parser.events.play.set_trigger(playval)
-        self.parser.events.play.set_jump(jumpnum)
+        self.session.events.play.set_trigger(playval)
+        self.session.events.play.set_jump(jumpnum)
 
     def exec_on_pen(self, ins):
         """ON PEN: define light pen event trapping."""
         _, jumpnum = self._parse_on_event(ins, bracket=False)
-        self.parser.events.pen.set_jump(jumpnum)
+        self.session.events.pen.set_jump(jumpnum)
 
     def exec_on_strig(self, ins):
         """ON STRIG: define fire button event trapping."""
@@ -401,14 +401,14 @@ class Statements(object):
         ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
         if strigval not in (0,2,4,6):
             raise error.RunError(error.IFC)
-        self.parser.events.strig[strigval//2].set_jump(jumpnum)
+        self.session.events.strig[strigval//2].set_jump(jumpnum)
 
     def exec_on_com(self, ins):
         """ON COM: define serial port event trapping."""
         keynum, jumpnum = self._parse_on_event(ins)
         keynum = vartypes.pass_int_unpack(keynum)
         util.range_check(1, 2, keynum)
-        self.parser.events.com[keynum-1].set_jump(jumpnum)
+        self.session.events.com[keynum-1].set_jump(jumpnum)
 
     ##########################################################
     # sound
@@ -473,7 +473,7 @@ class Statements(object):
     def exec_play(self, ins):
         """PLAY: play sound sequence defined by a Music Macro Language string."""
         # PLAY: event switch
-        if self.parser.events.play.command(util.skip_white(ins)):
+        if self.session.events.play.command(util.skip_white(ins)):
             ins.read(1)
             util.require(ins, tk.end_statement)
         else:
@@ -723,7 +723,7 @@ class Statements(object):
         # sound stops playing and is forgotten
         self.session.sound.stop_all_sound()
         # no user events
-        with self.parser.events.suspend():
+        with self.session.events.suspend():
             # run the os-specific shell
             self.session.shell.launch(cmd)
         # reset cursor visibility to its previous state
@@ -849,7 +849,7 @@ class Statements(object):
             for l in lines:
                 # flow of listing is visible on screen
                 # and interruptible
-                self.session.check_events()
+                self.session.events.check_events()
                 # LIST on screen is slightly different from just writing
                 self.session.console.list_line(l)
         # return to direct mode
@@ -1006,7 +1006,7 @@ class Statements(object):
         if self.parser.on_error:
             self.parser.on_error = old_to_new[self.parser.on_error]
         # renumber event traps
-        for handler in self.parser.events.all:
+        for handler in self.session.events.all:
             if handler.gosub:
                 handler.set_jump(old_to_new[handler.gosub])
 
@@ -1351,7 +1351,7 @@ class Statements(object):
                             self.session.screen.mode.mem_start == 0xa000):
                         raise error.RunError(error.IFC)
         util.require(ins, tk.end_statement)
-        self.session.screen.drawing.paint(coord, pattern, c, border, background_pattern, self.session)
+        self.session.screen.drawing.paint(coord, pattern, c, border, background_pattern, self.session.events)
 
     def exec_get_graph(self, ins):
         """GET: read a sprite to memory."""
@@ -1709,7 +1709,7 @@ class Statements(object):
         self.parser.error_num = 0
         self.parser.error_handle_mode = False
         self.parser.error_resume = None
-        self.parser.events.suspend_all = False
+        self.session.events.suspend_all = False
         if jumpnum == 0:
             # RESUME or RESUME 0
             self.parser.set_pointer(runmode, start_statement)
@@ -2308,7 +2308,7 @@ class Statements(object):
         util.require_read(ins, (',',), err=error.IFC)
         with self.session.strings:
             text = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
-        if keynum <= self.parser.events.num_fn_keys:
+        if keynum <= self.session.events.num_fn_keys:
             self.session.fkey_macros.set(keynum, text)
             self.session.fkey_macros.redraw_keys(self.session.screen)
         else:
@@ -2316,7 +2316,7 @@ class Statements(object):
             # in which case it's a key scancode definition
             if len(text) != 2:
                 raise error.RunError(error.IFC)
-            self.parser.events.key[keynum-1].set_trigger(str(text))
+            self.session.events.key[keynum-1].set_trigger(str(text))
 
     def exec_locate(self, ins):
         """LOCATE: Set cursor position, shape and visibility."""

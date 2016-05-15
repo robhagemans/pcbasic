@@ -179,9 +179,9 @@ class MachinePorts(object):
 
     def wait(self, addr, ander, xorer):
         """Wait untial an emulated machine port has a specified value."""
-        with self.session.parser.events.suspend():
+        with self.session.events.suspend():
             while (self.inp(addr) ^ xorer) & ander == 0:
-                self.session.wait()
+                self.session.events.wait()
 
 
 
