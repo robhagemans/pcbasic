@@ -1,6 +1,6 @@
 """
 PC-BASIC - state.py
-Emulator state
+Support for pickling emulator state
 
 (c) 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -17,15 +17,9 @@ except ImportError:
     from StringIO import StringIO
 import copy_reg
 import os
-import zlib
 import logging
 import Queue
-
-
-class ResumeFailed(Exception):
-    """Failed to resume session."""
-    def __str__(self):
-        return self.__doc__
+import zlib
 
 
 def unpickle_file(name, mode, pos):
@@ -85,26 +79,10 @@ def pickle_Queue(self):
 Queue.Queue.__setstate__ = unpickle_Queue
 Queue.Queue.__getstate__ = pickle_Queue
 
+def zunpickle(f):
+    """Read a compressed pickle stream."""
+    return pickle.loads(zlib.decompress(f.read()))
 
-def save(session, state_file):
-    """Save emulator state to file."""
-    if not state_file:
-        return
-    # pickle and compress
-    try:
-        with open(state_file, 'wb') as f:
-            f.write(zlib.compress(pickle.dumps(session, 2)))
-    except EnvironmentError:
-        logging.warning("Could not write to state file %s. Emulator state not saved.", state_file)
-
-def load(state_file):
-    """Load emulator state from file."""
-    if not state_file:
-        raise ResumeFailed()
-    # decompress and unpickle
-    try:
-        with open(state_file, 'rb') as f:
-            return pickle.loads(zlib.decompress(f.read()))
-    except EnvironmentError:
-        logging.warning("Could not read state file %s. Emulator state not loaded.", state_file)
-        raise ResumeFailed()
+def zpickle(obj, f):
+    """Write a compressed pickle stream."""
+    f.write(zlib.compress(pickle.dumps(obj, 2)))

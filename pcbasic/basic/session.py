@@ -13,7 +13,10 @@ import threading
 import Queue
 import platform
 from contextlib import contextmanager
-
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -102,6 +105,10 @@ def run_session(session, prog, commands, wait):
 tick_s = 0.0001
 longtick_s = 0.006 - tick_s
 
+class ResumeFailed(Exception):
+    """Failed to resume session."""
+    def __str__(self):
+        return self.__doc__
 
 class Session(object):
     """Interpreter session."""
@@ -259,12 +266,59 @@ class Session(object):
         # close interfaces
         self.video_queue.put(signals.Event(signals.VIDEO_QUIT))
         self.message_queue.put(signals.Event(signals.AUDIO_QUIT))
-        # persist unplayed tones in sound queue
-        self.tone_queue_store = [signals.save_queue(q) for q in self.tone_queue]
-        state.save(self, self.state_file)
+        self.store()
         # close files if we opened any
         self.files.close_all()
         self.devices.close()
+
+    def store(self):
+        """Save the session."""
+        # persist unplayed tones in sound queue
+        self.tone_queue_store = [signals.save_queue(q) for q in self.tone_queue]
+        if self.state_file:
+            # pickle and compress
+            try:
+                with open(self.state_file, 'wb') as f:
+                    state.zpickle(self, f)
+            except EnvironmentError:
+                logging.warning("Could not write to state file %s. Emulator state not saved.", self.state_file)
+
+    @classmethod
+    def resume(cls, state_file,
+                input_queue=None, video_queue=None,
+                tone_queue=None, message_queue=None,
+                override_cas1=None, override_mount=None,
+                override_current_device='Z'):
+        """Resume a saved interpreter session."""
+        if not state_file:
+            raise ResumeFailed()
+        try:
+            with open(state_file, 'rb') as f:
+                self = state.zunpickle(f)
+        except EnvironmentError:
+            logging.warning("Could not read state file %s. Emulator state not loaded.", state_file)
+            raise ResumeFailed()
+        if not isinstance(self, cls):
+            raise ResumeFailed()
+        self.state_file = state_file
+        self.input_queue = input_queue
+        self.video_queue = video_queue
+        self.tone_queue = tone_queue
+        self.message_queue = message_queue
+        # reload the screen in resumed state
+        if not self.screen.resume():
+            raise ResumeFailed()
+        # rebuild the audio queue
+        for q, store in zip(self.tone_queue, self.tone_queue_store):
+            signals.load_queue(q, store)
+        # override selected settings from command line
+        self.devices.resume(override_cas1, override_mount, override_current_device)
+        # suppress double prompt
+        if not self.parse_mode:
+            self.prompt = False
+        return self
+
+    ###########################################################################
 
     def clear(self, close_files=False,
               preserve_common=False, preserve_all=False, preserve_deftype=False):
@@ -300,36 +354,6 @@ class Session(object):
         # reset DRAW state (angle, scale) and current graphics position
         self.screen.drawing.reset()
         self.parser.clear()
-
-    @classmethod
-    def resume(cls, state_file,
-                input_queue=None, video_queue=None,
-                tone_queue=None, message_queue=None,
-                override_cas1=None, override_mount=None,
-                override_current_device='Z'):
-        """Resume an interpreter session."""
-        # resume from saved emulator state (if requested and available)
-        self = state.load(state_file)
-        if not isinstance(self, cls):
-            raise state.ResumeFailed()
-        self.state_file = state_file
-        self.input_queue = input_queue
-        self.video_queue = video_queue
-        self.tone_queue = tone_queue
-        self.message_queue = message_queue
-        # reload the screen in resumed state
-        if not self.screen.resume():
-            raise state.ResumeFailed()
-        # rebuild the audio queue
-        for q, store in zip(self.tone_queue, self.tone_queue_store):
-            signals.load_queue(q, store)
-        # override selected settings from command line
-        self.devices.resume(override_cas1, override_mount, override_current_device)
-        # suppress double prompt
-        if not self.parse_mode:
-            self.prompt = False
-        return self
-
 
     ###########################################################################
 
