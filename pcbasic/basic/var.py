@@ -501,6 +501,39 @@ def get_name_in_memory(name, offset):
 
 
 ##############################################################################
+# helper functions for Python interface
+
+def build_array(python_list, name, stringspace, arrays):
+    """Convert Python list to BASIC array."""
+    _array_from_list(python_list, name, [], stringspace, arrays)
+
+def _array_from_list(python_list, name, index, stringspace, arrays):
+    """Convert Python list to BASIC array."""
+    if not python_list:
+        return
+    if isinstance(python_list[0], list):
+        for i, v in enumerate(python_list):
+            _array_from_list(v, name, index+[i+(arrays.base_index or 0)], stringspace, arrays)
+    else:
+        for i, v in enumerate(python_list):
+            arrays.set(name, index+[i+(arrays.base_index or 0)], from_value(v, name[-1], stringspace))
+
+def build_list(name, stringspace, arrays):
+    """Convert BASIC array to Python list."""
+    if name in arrays.arrays:
+        indices, _, _ = arrays.arrays[name]
+        return _list_from_array(name, [], indices, stringspace, arrays)
+    else:
+        return []
+
+def _list_from_array(name, index, remaining_dimensions, stringspace, arrays):
+    """Convert BASIC array to Python list."""
+    if not remaining_dimensions:
+        return []
+    elif len(remaining_dimensions) == 1:
+        return [to_value(arrays.get(name, index+[i+(arrays.base_index or 0)]), stringspace) for i in xrange(remaining_dimensions[0])]
+    else:
+        return [_list_from_array(name, index+[i+(arrays.base_index or 0)], remaining_dimensions[1:], stringspace, arrays) for i in xrange(remaining_dimensions[0])]
 
 def to_value(basic_val, stringspace):
     """Convert BASIC value to Python value."""

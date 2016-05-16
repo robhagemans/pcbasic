@@ -307,13 +307,19 @@ class Session(object):
 
     def set_variable(self, name, value):
         """Set a variable in memory."""
-        # scalars only for now
-        self.memory.set_variable(name, [], var.from_value(value, name[-1], self.strings))
+        if '(' in name:
+            name = name.split('(', 1)[0]
+            var.build_array(value, name, self.strings, self.arrays)
+        else:
+            self.memory.set_variable(name, [], var.from_value(value, name[-1], self.strings))
 
     def get_variable(self, name):
         """Get a variable in memory."""
-        # scalars only for now
-        return var.to_value(self.memory.get_variable(name, []), self.strings)
+        if '(' in name:
+            name = name.split('(', 1)[0]
+            return var.build_list(name, self.strings, self.arrays)
+        else:
+            return var.to_value(self.memory.get_variable(name, []), self.strings)
 
     def interact(self):
         """Interactive interpreter session."""
