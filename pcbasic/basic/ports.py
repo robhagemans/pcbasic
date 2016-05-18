@@ -384,9 +384,14 @@ class SerialStream(object):
     # def __getattr__(self, attr):
     #     return getattr(self._serial, attr)
 
+    def _check_open(self):
+        """Open the underlying port if necessary."""
+        if not self._serial._isOpen:
+            self._serial.open()
+
     def open(self, rs=False, cs=1000, ds=1000, cd=0):
         """Open the serial connection."""
-        self._serial.open()
+        self._check_open()
         # handshake
         # by default, RTS is up, DTR down
         # RTS can be suppressed, DTR only accessible through machine ports
@@ -418,6 +423,7 @@ class SerialStream(object):
 
     def set_params(self, speed, parity, bytesize, stop):
         """Set serial port connection parameters."""
+        self._check_open()
         self._serial.baudrate = speed
         self._serial.parity = parity
         self._serial.bytesize = bytesize
@@ -425,11 +431,13 @@ class SerialStream(object):
 
     def get_params(self):
         """Get serial port connection parameters."""
+        self._check_open()
         return (self._serial.baudrate, self._serial.parity,
                 self._serial.bytesize, self._serial.stopbits)
 
     def set_pins(self, rts=None, dtr=None, brk=None):
         """Set signal pins."""
+        self._check_open()
         if rts is not None:
             self._serial.setRTS(rts)
         if dtr is not None:
@@ -439,6 +447,7 @@ class SerialStream(object):
 
     def get_pins(self):
         """Get signal pins."""
+        self._check_open()
         return (self._serial.getCD(), self._serial.getRI(),
                 self._serial.getDSR(), self._serial.getCTS())
 
@@ -453,6 +462,7 @@ class SerialStream(object):
 
     def read(self, num=1):
         """Non-blocking read from socket."""
+        self._check_open()
         # NOTE: num=1 follows PySerial
         # stream default is num=-1 to mean all available
         # but that's ill-defined for ports
@@ -460,6 +470,7 @@ class SerialStream(object):
 
     def write(self, s):
         """Write to socket."""
+        self._check_open()
         self._serial.write(s)
 
 
