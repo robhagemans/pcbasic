@@ -75,7 +75,7 @@ class Files(object):
                 # bad file number, for some reason
                 raise error.RunError(error.BAD_FILE_NUMBER)
         else:
-            device = self.devices.current_device
+            device = self.devices.devices[self.devices.current_device + b':']
             # MS-DOS device aliases - these can't be names of disk files
             if device != self.devices.devices['CAS1:'] and name in device_files:
                 if name == 'AUX':
@@ -200,7 +200,7 @@ class Devices(object):
             else:
                 self.devices[letter + b':'] = disk.DiskDevice(letter, None, u'',
                                 self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-        self.current_device = self.devices[current_device.upper() + b':']
+        self.current_device = current_device.upper()
 
     def resume(self, override_cas1, mount_dict, current_device):
         """Override settings after resume."""
@@ -210,7 +210,7 @@ class Devices(object):
             self.devices[letter + b':'] = disk.DiskDevice(letter, mount_dict[letter][0], mount_dict[letter][1],
                         self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
         # we always need to reset this or it may be a reference to an old device
-        self.current_device = self.devices[current_device.upper() + b':']
+        self.current_device = current_device.upper()
 
     def close(self):
         """Close device master files."""
@@ -222,14 +222,15 @@ class Devices(object):
         # careful - do not convert path to uppercase, we still need to match
         splits = bytes(path).split(b':', 1)
         if len(splits) == 0:
-            return self.current_device, b''
+            dev, spec = self.current_device, b''
         elif len(splits) == 1:
-            return self.current_device, splits[0]
+            dev, spec = self.current_device, splits[0]
         else:
-            # must be a disk device
-            if len(splits[0]) > 1:
-                raise error.RunError(error.DEVICE_UNAVAILABLE)
             try:
-                return self.devices[splits[0].upper() + b':'], splits[1]
+                dev, spec = splits[0].upper(), splits[1]
             except KeyError:
                 raise error.RunError(error.DEVICE_UNAVAILABLE)
+        # must be a disk device
+        if dev not in self.drive_letters:
+            raise error.RunError(error.DEVICE_UNAVAILABLE)
+        return self.devices[dev + b':'], spec
