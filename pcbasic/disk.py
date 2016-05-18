@@ -267,8 +267,12 @@ def get_diskdevice_and_path(path):
     # careful - do not convert path to uppercase, we still need to match
     splits = str(path).split(':', 1)
     if len(splits) == 0:
+        if state.io_state.current_device == state.io_state.devices['CAS1:']:
+            raise error.RunError(error.DEVICE_UNAVAILABLE)
         return state.io_state.current_device, ''
     elif len(splits) == 1:
+        if state.io_state.current_device == state.io_state.devices['CAS1:']:
+            raise error.RunError(error.DEVICE_UNAVAILABLE)
         return state.io_state.current_device, splits[0]
     else:
         # must be a disk device
