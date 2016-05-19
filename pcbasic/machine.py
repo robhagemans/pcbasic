@@ -125,8 +125,15 @@ def inp(port):
                 return value
             # Line Status Register: base_address + 5 (read only)
             elif port == base_addr + 5:
-                # not implemented
-                return 0
+                # bit 6: data holding register empty
+                # bit 5: transmitter holding register empty
+                # distinction between bit 5 and 6 not implemented
+                # bit 0: data ready
+                # other bits not implemented:
+                #   1 - overrun, 2 - parity 3 - framing errors;
+                #   4 - break interrupt; 7 - at least one error in received FIFO
+                in_waiting, out_waiting = com_port.stream.io_waiting()
+                return (1-out_waiting) * 0x60 + in_waiting
             # Modem Status Register: base_address + 6 (read only)
             elif port == base_addr + 6:
                 cd, ri, dsr, cts = com_port.stream.get_pins()
