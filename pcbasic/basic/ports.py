@@ -204,7 +204,7 @@ class COMFile(devices.CRLFTextFileBase):
         self.linefeed = linefeed
         self.overflow = False
 
-    def check_read(self, allow_overflow=False):
+    def _check_read(self, allow_overflow=False):
         """Fill buffer at most up to buffer size; non blocking."""
         try:
             self.in_buffer += self.fhandle.read(self.serial_in_size - len(self.in_buffer))
@@ -225,14 +225,14 @@ class COMFile(devices.CRLFTextFileBase):
         """Read num characters from the port as a string; blocking """
         if num == -1:
             # read whole buffer, non-blocking
-            self.check_read()
+            self._check_read()
             out = self.in_buffer
             del self.in_buffer[:]
         else:
             out = ''
             while len(out) < num:
                 # non blocking read
-                self.check_read()
+                self._check_read()
                 to_read = min(len(self.in_buffer), num - len(out))
                 out += str(self.in_buffer[:to_read])
                 del self.in_buffer[:to_read]
@@ -283,7 +283,7 @@ class COMFile(devices.CRLFTextFileBase):
         """LOC: Returns number of chars waiting to be read."""
         # don't use inWaiting() as SocketSerial.inWaiting() returns dummy 0
         # fill up buffer insofar possible
-        self.check_read(allow_overflow=True)
+        self._check_read(allow_overflow=True)
         return len(self.in_buffer)
 
     def eof(self):
@@ -354,6 +354,10 @@ class StdIOStream(object):
     def get_status(self):
         """Get the values of the status pins."""
         return False, False, False, False, False
+
+    def io_waiting(self):
+        """ Find out whether bytes are waiting for input or output. """
+        return kbhit(), False
 
 
 class SerialStream(object):
@@ -472,6 +476,11 @@ class SerialStream(object):
         """Write to socket."""
         self._check_open()
         self._serial.write(s)
+
+    def io_waiting(self):
+        """ Find out whether bytes are waiting for input or output. """
+        self._check_open()
+        return self._serial.inWaiting() > 0, self._serial.outWaiting() > 0
 
 
 class SocketSerialStream(SerialStream):
