@@ -181,11 +181,13 @@ class Session(object):
         self.direct_line = StringIO()
         # initialise the parser
         self.parser = parser.Parser(self, syntax, pcjr_term, double)
+        self.parser.set_pointer(False, 0)
         # set up debugger
         if option_debug:
             self.debugger = debug.Debugger(self)
         else:
             self.debugger = debug.BaseDebugger(self)
+
 
     def close(self):
         """Close the session."""
@@ -343,7 +345,6 @@ class Session(object):
     def _loop(self):
         """Run read-eval-print loop until control returns to user."""
         try:
-            self.parser.set_pointer(False, 0)
             self.screen.cursor.reset_visibility()
             while True:
                 last_parse = self.parse_mode
