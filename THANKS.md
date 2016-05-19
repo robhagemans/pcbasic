@@ -68,18 +68,24 @@ apologies to those whose contribution I have failed to acknowledge here.
 
 ##### Data cassette format
 
-  * **Mike Brutman**'s [Analysis of the IBM PC Data cassette format](http://www.brutman.com/Cassette_Waveforms/Cassette_Waveforms.html)
-  * **Dan Tobias**' [IBM PC Data cassette format documentation](http://fileformats.archiveteam.org/wiki/IBM_PC_data_cassette)
+  * **Mike Brutman**'s [Analysis of the IBM PC data cassette format](http://www.brutman.com/Cassette_Waveforms/Cassette_Waveforms.html)
+  * **Dan Tobias**' [IBM PC data cassette format documentation](http://fileformats.archiveteam.org/wiki/IBM_PC_data_cassette)
 
 ##### BASICODE
 
   * **Janny Looyenga**'s documentation of the [BASICODE format](http://www.nostalgia8.nl/basicode.htm)
   * **Prof. Dr. Horst Völz**'s documentation of the [BASICODE cassette file format](http://www.kc85emu.de/scans/rfe0190/Basicode.htm)
 
+##### Serial ports
+
+  * **Craig Peacock**'s documentation on [interfacing the serial port](http://retired.beyondlogic.org/serial/serial.htm)
+  * **Christopher E. Strangio**'s tutorial on [the RS232 standard](http://www.camiresearch.com/Data_Com_Basics/RS232_standard.html)
+  * [QB64 documentation](http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers)
+
 ##### Technical information on many topics
 
   * [VOGONS](http://www.vogons.org/)
-  * **Erik S. Klein**'s [Vintage computer forums](http://www.vintage-computer.com)
+  * **Erik S. Klein**'s [vintage computer forums](http://www.vintage-computer.com)
   * **Peter Berg**'s [Pete's QBasic/QuickBasic site](http://www.petesqbsite.com/)
 
 ### Fonts
