@@ -1,0 +1,4 @@
+[MASTER]
+enable=cyclic-import,relative-import
+disable=too-many-function-args
+errors-only=true

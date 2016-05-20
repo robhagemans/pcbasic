@@ -5,6 +5,6 @@ do
   if [[ "$file" != "$exclude" ]]
   then
     echo "$file"
-    pylint -E --ignored-modules=pygame,numpy,pygame.mixer --enable=cyclic-import,relative-import --disable=too-many-function-args "$file"
+    pylint --ignored-modules=pygame,numpy,pygame.mixer --ignored-classes=Serial,pygame.Surface "$file"
   fi
 done
