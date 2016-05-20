@@ -396,6 +396,10 @@ class Single(Float):
     bias = true_bias + mantissa_bits
     carry_mask = 0xffffff00
 
+    def round_to_single(self):
+        """Round to single."""
+        return self
+
 
 class Double(Float):
     """Double-precision float."""
