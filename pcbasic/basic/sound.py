@@ -183,7 +183,7 @@ class Sound(object):
                     gmls.write(rest)
                     gmls.seek(pos)
                 elif c == 'N':
-                    note = ml_parser.ml_parse_number()
+                    note = ml_parser.parse_number()
                     dur = vstate.length
                     c = util.skip(gmls, ml_parser.whitepace).upper()
                     if c == '.':
