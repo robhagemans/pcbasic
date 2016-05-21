@@ -64,4 +64,4 @@ class RandomNumberGenerator(object):
 
     def get(self, mbf):
         """Get a value from the random number generator (MBF single argument)."""
-        return self.get_int(-(mbf.man>>8) if mbf.neg else mbf.man>>8)
+        return self.get_int(-(mbf.man>>8) if mbf.neg else (0 if mbf.exp == 0 else mbf.man>>8))
