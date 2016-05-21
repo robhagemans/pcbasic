@@ -61,6 +61,6 @@ def get_random_int(n):
 
 def get_random(mbf):
     """ Get a value from the random number generator (MBF single argument). """
-    return get_random_int(-(mbf.man>>8) if mbf.neg else mbf.man>>8)
+    return get_random_int(-(mbf.man>>8) if mbf.neg else (0 if mbf.exp == 0 else mbf.man>>8))
 
 prepare()
