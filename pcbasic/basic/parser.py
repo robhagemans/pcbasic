@@ -74,6 +74,7 @@ class Parser(object):
             c = util.skip_white(ins)
             if c == '':
                 # stream has ended.
+                self.set_pointer(False)
                 return False
             # parse line number or : at start of statement
             elif c == '\0':
@@ -89,6 +90,7 @@ class Parser(object):
                         # get line number right
                         raise error.RunError(error.NO_RESUME, prepos-1)
                     # stream has ended
+                    self.set_pointer(False)
                     return False
                 if self.tron:
                     self.session.screen.write('[' + ('%i' % linenum) + ']')
@@ -187,6 +189,7 @@ class Parser(object):
             self.events.suspend_all = True
         else:
             self.error_handle_mode = False
+            self.set_pointer(False)
             raise e
 
     #################################################################
