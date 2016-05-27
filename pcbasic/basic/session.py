@@ -217,9 +217,7 @@ class Session(object):
 
     def resume(self,
                 input_queue=None, video_queue=None,
-                tone_queue=None, message_queue=None,
-                override_cas1=None, override_mount=None,
-                override_current_device='Z'):
+                tone_queue=None, message_queue=None):
         """Resume a saved interpreter session."""
         # use dummy queues if not provided
         self.input_queue = input_queue or signals.NullQueue()
@@ -232,8 +230,6 @@ class Session(object):
         # rebuild the audio queue
         for q, store in zip(self.tone_queue, self.tone_queue_store):
             signals.load_queue(q, store)
-        # override selected settings from command line
-        self.devices.resume(override_cas1, override_mount, override_current_device)
         # suppress double prompt
         if not self.parse_mode:
             self.prompt = False

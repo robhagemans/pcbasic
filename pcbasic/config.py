@@ -482,13 +482,7 @@ class Settings(object):
         """Return a dictionary of parameters for the Session object."""
         current_device, mount_dict = self.get_drives(False)
         if self.get('resume'):
-            return {
-                # override selected settings from command line
-                'override_cas1': self.get('cas1', False),
-                'override_mount': mount_dict,
-                # we always need to reset this or it may be a reference to an old device
-                'override_current_device': current_device,
-            }
+            return {}
         pcjr_term = self.get('pcjr-term')
         peek_values = {}
         try:

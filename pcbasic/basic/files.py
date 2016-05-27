@@ -202,16 +202,6 @@ class Devices(object):
                                 self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
         self.current_device = current_device.upper()
 
-    def resume(self, override_cas1, mount_dict, current_device):
-        """Override settings after resume."""
-        if override_cas1:
-            self.devices['CAS1:'] = cassette.CASDevice(override_cas1, self.devices['CAS1:'].screen)
-        for letter in mount_dict:
-            self.devices[letter + b':'] = disk.DiskDevice(letter, mount_dict[letter][0], mount_dict[letter][1],
-                        self.fields, self.locks, self.codepage, self.session, self.utf8, self.universal)
-        # we always need to reset this or it may be a reference to an old device
-        self.current_device = current_device.upper()
-
     def close(self):
         """Close device master files."""
         for d in self.devices.values():
