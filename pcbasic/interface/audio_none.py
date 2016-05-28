@@ -26,7 +26,11 @@ class AudioNone(audio.AudioPlugin):
                 return True
             if signal.event_type == signals.AUDIO_STOP:
                 # stop all channels
-                self.next_tone = [None, None, None, None]
+                for voice in range(4):
+                    if self.next_tone[voice] is not None:
+                        # ensure sender knows the tone has been dropped
+                        self.tone_queue[voice].task_done()
+                        self.next_tone[voice] = None
             elif signal.event_type == signals.AUDIO_QUIT:
                 # close thread after task_done
                 alive = False

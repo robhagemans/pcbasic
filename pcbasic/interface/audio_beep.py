@@ -38,13 +38,16 @@ class AudioBeep(audio.AudioPlugin):
                 return True
             if signal.event_type == signals.AUDIO_STOP:
                 # stop all channels
-                for voice in self.now_playing:
-                    if voice and voice.poll() is None:
-                        voice.terminate()
-                self.next_tone = [None, None, None, None]
+                for voice, proc in enumerate(self.now_playing):
+                    if proc and proc.poll() is None:
+                        proc.terminate()
+                    if self.next_tone[voice] is not None:
+                        # ensure sender knows the tone has been dropped
+                        self.tone_queue[voice].task_done()
+                        self.next_tone[voice] = None
                 self.now_playing = [None, None, None, None]
                 self.now_looping = [None, None, None, None]
-                hush()
+                _hush()
             elif signal.event_type == signals.AUDIO_QUIT:
                 # close thread after task_done
                 alive = False
@@ -78,12 +81,13 @@ class AudioBeep(audio.AudioPlugin):
                 if self.next_tone[voice] and self._busy(voice):
                     self.now_playing[voice].terminate()
                     self.now_looping[voice] = None
-                    hush()
+                    _hush()
                 elif not self._busy(voice):
                     self._play_now(*self.now_looping[voice], voice=voice)
             if self.next_tone[voice] and not self._busy(voice):
                 self._play_now(*self.next_tone[voice], voice=voice)
                 self.next_tone[voice] = None
+                self.tone_queue[voice].task_done()
 
     def _busy(self, voice):
         """Is the beeper busy? """
@@ -96,18 +100,18 @@ class AudioBeep(audio.AudioPlugin):
             duration, fill = 5, 1
             self.now_looping[voice] = (frequency, duration, fill, loop, volume)
         if voice == 0:
-            self.now_playing[voice] = beep(frequency, duration, fill)
+            self.now_playing[voice] = _beep(frequency, duration, fill)
         else:
             # don't play other channels as there is no mixer or noise generator
             # but use a sleep process to get timings right
-            self.now_playing[voice] = sleep(duration)
+            self.now_playing[voice] = _sleep(duration)
 
 
-def hush():
+def _hush():
     """Turn off any sound."""
     subprocess.call('beep -f 1 -l 0'.split())
 
-def beep(frequency, duration, fill):
+def _beep(frequency, duration, fill):
     """Emit a sound."""
     return subprocess.Popen(
             'beep -f {freq} -l {dur} -D {gap}'.format(
@@ -115,6 +119,6 @@ def beep(frequency, duration, fill):
                 gap=duration*(1-fill)*1000
             ).split())
 
-def sleep(duration):
+def _sleep(duration):
     """Wait for given number of seconds."""
     return subprocess.Popen('sleep {0}'.format(duration).split())

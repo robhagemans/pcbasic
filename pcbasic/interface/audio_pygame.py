@@ -94,6 +94,10 @@ class AudioPygame(audio.AudioPlugin):
                 # stop all channels
                 for voice in range(4):
                     stop_channel(voice)
+                    if self.next_tone[voice] is not None:
+                        # ensure sender knows the tone has been dropped
+                        self.tone_queue[voice].task_done()
+                        self.next_tone[voice] = None
                 self.loop_sound = [None, None, None, None]
                 self.next_tone = [None, None, None, None]
             elif signal.event_type == signals.AUDIO_QUIT:
