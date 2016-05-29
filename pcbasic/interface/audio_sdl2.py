@@ -94,8 +94,7 @@ class AudioSDL2(audio.AudioPlugin):
                 return True
             self.message_queue.task_done()
             if signal.event_type == signals.AUDIO_STOP:
-                self.next_tone = [None, None, None, None]
-                self.generators = [deque(), deque(), deque(), deque()]
+                self._hush()
                 sdl2.SDL_LockAudioDevice(self.dev)
                 self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
                 sdl2.SDL_UnlockAudioDevice(self.dev)
@@ -109,6 +108,10 @@ class AudioSDL2(audio.AudioPlugin):
         while not empty:
             empty = True
             for voice, q in enumerate(self.tone_queue):
+                # don't get the next tone if we're still working on one
+                # necessary for queue persistence/timing in other thread only
+                if self.next_tone[voice]:
+                    continue
                 try:
                     signal = q.get(False)
                     empty = False
@@ -124,6 +127,17 @@ class AudioSDL2(audio.AudioPlugin):
                     self.generators[voice].append(SoundGenerator(
                         signal_sources[3], feedback, *signal.params[1:]))
         return empty
+
+    def _hush(self):
+        """Stop sound."""
+        for voice in range(4):
+            if self.next_tone[voice] is not None:
+                # ensure sender knows the tone has been dropped
+                self.tone_queue[voice].task_done()
+                self.next_tone[voice] = None
+            while self.generators[voice]:
+                self.tone_queue[voice].task_done()
+                self.generators[voice].popleft()
 
     def _play_sound(self):
         """Replenish sample buffer."""
@@ -142,8 +156,8 @@ class AudioSDL2(audio.AudioPlugin):
                 current_chunk = self.next_tone[voice].build_chunk(chunk_length)
                 if current_chunk is not None:
                     break
-                self.tone_queue[voice].task_done()
                 self.next_tone[voice] = None
+                self.tone_queue[voice].task_done()
             if current_chunk is not None:
                 # append chunk to samples list
                 # lock to ensure callback doesn't try to access the list too
