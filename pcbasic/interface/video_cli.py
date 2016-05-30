@@ -23,7 +23,7 @@ from ..basic.eascii import as_unicode as uea
 encoding = sys.stdin.encoding or 'utf-8'
 
 if platform.system() == 'Windows':
-    import ansipipe
+    from .. import ansipipe
     tty = ansipipe
     termios = ansipipe
     # Ctrl+Z to exit
