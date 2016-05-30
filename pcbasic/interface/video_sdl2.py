@@ -28,8 +28,10 @@ from ..basic import signals
 from ..basic import scancode
 from ..basic.eascii import as_unicode as uea
 from . import clipboard
-from . import base as video
+from . import base
 from . import video_graphical
+
+# need to set PYSDL2_DLL_PATH ?
 
 
 class VideoSDL2(video_graphical.VideoGraphical):
@@ -39,10 +41,10 @@ class VideoSDL2(video_graphical.VideoGraphical):
         """Initialise SDL2 interface."""
         if not sdl2:
             logging.debug('PySDL2 module not found.')
-            raise video.InitFailed()
+            raise base.InitFailed()
         if not numpy:
             logging.debug('NumPy module not found.')
-            raise video.InitFailed()
+            raise base.InitFailed()
         video_graphical.VideoGraphical.__init__(self, input_queue, video_queue, **kwargs)
         # display & border
         # border attribute
@@ -81,11 +83,14 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.kwargs = kwargs
         # we need a set_mode call to be really up and running
         self._has_window = False
+        # initialise SDL
+        if sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING):
+            # SDL not initialised correctly
+            logging.error('SDL2: %s', sdl2.SDL_GetError())
+            raise base.InitFailed()
 
     def __enter__(self):
         """Complete SDL2 interface initialisation."""
-        # initialise SDL
-        sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING)
         # set clipboard handler to SDL2
         self.clipboard_handler = SDL2Clipboard()
         # display palettes for blink states 0, 1
@@ -135,7 +140,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def __exit__(self, type, value, traceback):
         """Close the SDL2 interface."""
-        video.VideoPlugin.__exit__(self, type, value, traceback)
+        base.VideoPlugin.__exit__(self, type, value, traceback)
         if sdl2 and numpy and self._has_window:
             # free windows
             sdl2.SDL_DestroyWindow(self.display)
