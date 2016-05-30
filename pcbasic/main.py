@@ -85,7 +85,7 @@ def launch_session(settings):
     message_queue = Queue()
     queues = (input_queue, video_queue, tone_queue, message_queue)
     # launch the BASIC thread
-    thread = threading.Thread(target=run_thread, args=(queues,), kwargs=launch_params)
+    thread = threading.Thread(target=run_session, args=(queues,), kwargs=launch_params)
     thread.start()
     try:
         interface.run(interface_name, video_params, audio_params, *queues)
@@ -94,16 +94,6 @@ def launch_session(settings):
     finally:
         input_queue.put(signals.Event(signals.KEYB_QUIT))
         thread.join()
-
-def run_thread(queues, resume, state_file,  **launch_params):
-    """Thread runner for BASIC session."""
-    input_queue, video_queue, tone_queue, message_queue = queues
-    try:
-        run_session(queues, resume, state_file, **launch_params)
-    finally:
-        # close interface
-        video_queue.put(signals.Event(signals.VIDEO_QUIT))
-        message_queue.put(signals.Event(signals.AUDIO_QUIT))
 
 def run_session(queues, resume, state_file, wait, prog, commands, **session_params):
     """Run an interactive BASIC session."""

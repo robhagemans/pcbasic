@@ -188,12 +188,14 @@ class Session(object):
         else:
             self.debugger = debug.BaseDebugger(self)
 
-
     def close(self):
         """Close the session."""
         # close files if we opened any
         self.files.close_all()
         self.devices.close()
+        # close interface
+        self.video_queue.put(signals.Event(signals.VIDEO_QUIT))
+        self.message_queue.put(signals.Event(signals.AUDIO_QUIT))
 
     def __enter__(self):
         """Context guard."""
