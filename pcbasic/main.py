@@ -73,22 +73,27 @@ def convert(settings):
 def launch_session(settings):
     """Start an interactive interpreter session."""
     from . import interface
+    # parse parameters
     interface_name = settings.get_interface()
     audio_params = settings.get_audio_parameters()
     video_params = settings.get_video_parameters()
     launch_params = settings.get_launch_parameters()
+    # initialise queues
+    input_queue = Queue()
+    video_queue = Queue()
+    tone_queue = [Queue(), Queue(), Queue(), Queue()]
+    message_queue = Queue()
+    queues = (input_queue, video_queue, tone_queue, message_queue)
+    # launch the BASIC thread
+    thread = threading.Thread(target=run_thread, args=(queues,), kwargs=launch_params)
+    thread.start()
     try:
-        input_queue = Queue()
-        video_queue = Queue()
-        tone_queue = [Queue(), Queue(), Queue(), Queue()]
-        message_queue = Queue()
-        queues = (input_queue, video_queue, tone_queue, message_queue)
-        thread = threading.Thread(target=run_thread, args=(queues,), kwargs=launch_params)
-        thread.start()
         interface.run(interface_name, video_params, audio_params, *queues)
-        thread.join()
     except interface.InitFailed:
         logging.error('Failed to initialise interface.')
+    finally:
+        input_queue.put(signals.Event(signals.KEYB_QUIT))
+        thread.join()
 
 def run_thread(queues, resume, state_file, wait, **launch_params):
     """Thread runner for BASIC session."""

@@ -86,7 +86,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
         # initialise SDL
         if sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING):
             # SDL not initialised correctly
-            logging.error('SDL2: %s', sdl2.SDL_GetError())
+            logging.error('Could not initialise SDL2: %s', sdl2.SDL_GetError())
             raise base.InitFailed()
 
     def __enter__(self):
