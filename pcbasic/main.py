@@ -95,24 +95,17 @@ def launch_session(settings):
         input_queue.put(signals.Event(signals.KEYB_QUIT))
         thread.join()
 
-def run_thread(queues, resume, state_file, wait, **launch_params):
+def run_thread(queues, resume, state_file,  **launch_params):
     """Thread runner for BASIC session."""
     input_queue, video_queue, tone_queue, message_queue = queues
     try:
         run_session(queues, resume, state_file, **launch_params)
     finally:
-        if wait:
-            video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, 'Press a key to close window'))
-            video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
-            while True:
-                signal = input_queue.get()
-                if signal.event_type == signals.KEYB_DOWN:
-                    break
         # close interface
         video_queue.put(signals.Event(signals.VIDEO_QUIT))
         message_queue.put(signals.Event(signals.AUDIO_QUIT))
 
-def run_session(queues, resume, state_file, prog, commands, **session_params):
+def run_session(queues, resume, state_file, wait, prog, commands, **session_params):
     """Run an interactive BASIC session."""
     if resume:
         session = state.zunpickle(state_file).resume(*queues, **session_params)
@@ -134,6 +127,8 @@ def run_session(queues, resume, state_file, prog, commands, **session_params):
             logging.error(e.message)
         finally:
             state.zpickle(session, state_file)
+            if wait:
+                session.pause('Press a key to close window')
 
 
 if __name__ == "__main__":

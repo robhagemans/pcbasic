@@ -335,6 +335,15 @@ class Session(object):
         except error.Exit:
             pass
 
+    def pause(self, message):
+        """Pause the session and wait for a key."""
+        self.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, message))
+        self.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
+        while True:
+            signal = self.input_queue.get()
+            if signal.event_type == signals.KEYB_DOWN:
+                break
+
     ###########################################################################
     # implementation
 
