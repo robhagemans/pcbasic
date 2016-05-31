@@ -184,26 +184,32 @@ class Sound(object):
                     gmls.seek(pos)
                 elif c == 'N':
                     note = ml_parser.parse_number()
+                    util.range_check(0, 84, note)
                     dur = vstate.length
                     c = util.skip(gmls, ml_parser.whitepace).upper()
                     if c == '.':
                         gmls.read(1)
                         dur *= 1.5
-                    if note > 0 and note <= 84:
+                    if note == 0:
+                        self.play_sound(0, dur*vstate.tempo, vstate.speed,
+                                        volume=0, voice=voice)
+                    else:
                         self.play_sound(note_freq[note-1], dur*vstate.tempo,
                                          vstate.speed, volume=vstate.volume,
                                          voice=voice)
-                        total_time[voice] += dur*vstate.tempo
-                    elif note == 0:
-                        self.play_sound(0, dur*vstate.tempo, vstate.speed,
-                                        volume=0, voice=voice)
-                        total_time[voice] += dur*vstate.tempo
+                    total_time[voice] += dur*vstate.tempo
                 elif c == 'L':
-                    vstate.length = 1./ml_parser.parse_number()
+                    recip = ml_parser.parse_number()
+                    util.range_check(1, 64, recip)
+                    vstate.length = 1. / recip
                 elif c == 'T':
-                    vstate.tempo = 240./ml_parser.parse_number()
+                    recip = ml_parser.parse_number()
+                    util.range_check(32, 255, recip)
+                    vstate.tempo = 240. / recip
                 elif c == 'O':
-                    vstate.octave = min(6, max(0, ml_parser.parse_number()))
+                    octave = ml_parser.parse_number()
+                    util.range_check(0, 6, octave)
+                    vstate.octave = octave
                 elif c == '>':
                     vstate.octave += 1
                     if vstate.octave > 6:
@@ -230,7 +236,9 @@ class Sound(object):
                                 c = util.skip(gmls, ml_parser.whitepace)
                             # NOT ml_parse_number, only literals allowed here!
                             length = int(numstr)
-                            dur = 1. / float(length)
+                            util.range_check(0, 64, length)
+                            if length > 0:
+                                dur = 1. / float(length)
                         elif c in ('#', '+'):
                             gmls.read(1)
                             note += '#'
@@ -240,10 +248,13 @@ class Sound(object):
                         else:
                             break
                     if note == 'P':
-                        self.play_sound(0, dur * vstate.tempo, vstate.speed,
-                                        volume=vstate.volume, voice=voice)
-                        total_time[voice] += dur*vstate.tempo
+                        # don't do anything for length 0
+                        if length > 0:
+                            self.play_sound(0, dur * vstate.tempo, vstate.speed,
+                                            volume=vstate.volume, voice=voice)
+                            total_time[voice] += dur*vstate.tempo
                     else:
+                        # use default length for length 0
                         try:
                             self.play_sound(
                                 note_freq[(vstate.octave+next_oct)*12 + notes[note]],
