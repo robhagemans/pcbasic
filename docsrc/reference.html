@@ -8553,6 +8553,8 @@
                         <code>-</code> indicates flat. <br/>
                         <code><var>m</var></code> is a numeric literal and
                         indicates duration of an <code><var>m</var></code>th note.
+                        <code><var>m</var></code> is in the range <code>[0&#8212;64]</code>.
+                        If <code><var>m</var>=0</code> or omitted, use the default length.
                     </td>
                 </tr>
                 <tr>
@@ -8574,7 +8576,11 @@
                 </tr>
                 <tr>
                     <td><code><b>P</b><var>n</var></code></td>
-                    <td>Pause for the duration of an <code><var>n</var></code>th note.</td>
+                    <td>
+                        Pause for the duration of an <code><var>n</var></code>th note.
+                        <code><var>n</var></code> is in the range <code>[0&#8212;64]</code>.
+                        If <code><var>n</var>=0</code>, this has no effect.
+                    </td>
                 </tr>
             </table>
         </div>
@@ -8593,9 +8599,11 @@
                 </tr>
                 <tr>
                     <td><code><b>L</b><var>n</var></code></td>
-                    <td>Set the duration of following note to an <code><var>n</var></code>th note.
-                    (<code><var>n</var>=4</code> is a quarter note, etc.)
-                            <code><var>n</var></code> is in the range <code>[1&#8212;64]</code>.</td>
+                    <td>
+                        Set the duration of following note to an <code><var>n</var></code>th note.
+                        (<code><var>n</var>=4</code> is a quarter note, etc.)
+                        <code><var>n</var></code> is in the range <code>[1&#8212;64]</code>.
+                    </td>
                 </tr>
                 <tr>
                     <td><code><b>MN</b></code></td>
@@ -8611,7 +8619,10 @@
                 </tr>
                 <tr>
                     <td><code><b>T</b><var>n</var></code></td>
-                    <td>Sets the tempo to <code><var>n</var></code> <code>L4</code>s per minute. Default is 120.</td>
+                    <td>
+                        Sets the tempo to <code><var>n</var></code> <code>L4</code>s per minute.
+                        <code><var>n</var></code> is in the range <code>[32&#8212;255]</code>.  Default is 120.
+                    </td>
                 </tr>
             </table>
         </div>
