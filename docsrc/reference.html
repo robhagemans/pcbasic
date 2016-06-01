@@ -4656,7 +4656,8 @@
                     </table>
                 </div>
                 <p>
-                    where <code><var>n</var></code>, <code><var>x</var></code>, <code><var>y</var></code> are integers in <code>[0&#8212;9999]</code>.
+                    where <code><var>n</var></code> is an integer in <code>[-32768&#8212;32767]</code> and
+                    <code><var>x</var></code>, <code><var>y</var></code> are integers in <code>[0&#8212;9999]</code>.
                     Where optional, <code><var>n</var></code> defaults to <code>1</code>.
                 </p>
             </dd>
@@ -4698,7 +4699,8 @@
                         <tr>
                             <td><code><b>C</b><var>n</var></code></td>
                             <td>
-                                set the foreground attribute to <code><var>n</var></code>.
+                                set the foreground attribute to <code><var>n</var></code>,
+                                where <code><var>n</var></code> is an integer in <code>[-32768&#8212;32767]</code>
                                 See <code><a href="#COLOR">COLOR</a></code>.
                             </td>
                         </tr>
@@ -4706,7 +4708,8 @@
                             <td><code><b>P</b><var>n</var>,<var>b</var></code></td>
                             <td>
                                 flood fill with attribute <code><var>n</var></code> and boundary
-                                attribute <code><var>b</var></code>.
+                                attribute <code><var>b</var></code>,
+                                where <code><var>n</var>, <var>b</var></code> are integers in <code>[0&#8212;9999]</code>
                                 See <code><a href="#PAINT">PAINT</a></code>.
                             </td>
                         </tr>
@@ -4755,6 +4758,12 @@
             <li>
                 The value <code><var>n</var></code> in the <code>TA</code>, <code>A</code> and <code>C</code> command can be left out but <em>only</em> if the
                 command is terminated by a semicolon. <code><var>n</var></code> defaults to <code>0</code>.
+            </li>
+            <li>
+                In GW-BASIC, the numeric arguments of <code><b>U</b></code>, <code><b>L</b></code>, <code><b>D</b></code>,
+                <code><b>R</b></code>, <code><b>E</b></code>, <code><b>F</b></code>, <code><b>G</b></code>, <code><b>H</b></code>, and <code><b>C</b></code>
+                can be in the range <code>[-99999&#8212;99999]</code>;
+                however, results for large numbers are unpredictable. This is not implemented in PC-BASIC.
             </li>
         </ul>
         <h5>Errors</h5>
