@@ -692,17 +692,25 @@ class Drawing(object):
                 if util.skip(gmls, draw_and_play.ml_whitepace) == ';':
                     self.last_attr = 0
                 else:
-                    self.last_attr = draw_and_play.ml_parse_number(gmls)
+                    attr = draw_and_play.ml_parse_number(gmls)
+                    # 100000 seems to be GW's limit
+                    # however, parse_number will overflow past signed int limits
+                    util.range_check(-99999, 99999, attr)
+                    self.last_attr = attr
             elif c == 'S':
                 # set scale
-                self.draw_scale = draw_and_play.ml_parse_number(gmls)
+                scale = draw_and_play.ml_parse_number(gmls)
+                util.range_check(1, 255, scale)
+                self.draw_scale = scale
             elif c == 'A':
                 # set angle
                 # allow empty spec (default 0), but only if followed by a semicolon
                 if util.skip(gmls, draw_and_play.ml_whitepace) == ';':
                     self.draw_angle = 0
                 else:
-                    self.draw_angle = 90 * draw_and_play.ml_parse_number(gmls)
+                    angle = draw_and_play.ml_parse_number(gmls)
+                    util.range_check(0, 3, angle)
+                    self.draw_angle = 90 * angle
             elif c == 'T':
                 # 'turn angle' - set (don't turn) the angle to any value
                 if gmls.read(1).upper() != 'A':
@@ -711,10 +719,15 @@ class Drawing(object):
                 if util.skip(gmls, draw_and_play.ml_whitepace) == ';':
                     self.draw_angle = 0
                 else:
-                    self.draw_angle = draw_and_play.ml_parse_number(gmls)
+                    angle = draw_and_play.ml_parse_number(gmls)
+                    util.range_check(-360, 360, angle)
+                    self.draw_angle = angle
             # one-variable movement commands:
             elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
                 step = draw_and_play.ml_parse_number(gmls, default=vartypes.int_to_integer_signed(1))
+                # 100000 seems to be GW's limit
+                # however, parse_number will overflow past signed int limits
+                util.range_check(-99999, 99999, step)
                 x0, y0 = self.last_point
                 x1, y1 = 0, 0
                 if c in ('U', 'E', 'H'):
@@ -730,13 +743,15 @@ class Drawing(object):
                 goback = False
             # two-variable movement command
             elif c == 'M':
-                relative =  util.skip(gmls, draw_and_play.ml_whitepace) in ('+','-')
+                relative = util.skip(gmls, draw_and_play.ml_whitepace) in ('+','-')
                 x = draw_and_play.ml_parse_number(gmls)
+                util.range_check(0, 9999, x)
                 if util.skip(gmls, draw_and_play.ml_whitepace) != ',':
                     raise error.RunError(error.IFC)
                 else:
                     gmls.read(1)
                 y = draw_and_play.ml_parse_number(gmls)
+                util.range_check(0, 9999, y)
                 x0, y0 = self.last_point
                 if relative:
                     self.draw_step(x0, y0, x, y,  plot, goback)
@@ -751,9 +766,11 @@ class Drawing(object):
             elif c =='P':
                 # paint - flood fill
                 colour = draw_and_play.ml_parse_number(gmls)
+                util.range_check(0, 9999, colour)
                 if util.skip_read(gmls, draw_and_play.ml_whitepace) != ',':
                     raise error.RunError(error.IFC)
                 bound = draw_and_play.ml_parse_number(gmls)
+                util.range_check(0, 9999, bound)
                 x, y = self.get_window_logical(*self.last_point)
                 self.paint((x, y, False), None, colour, bound, None)
 
