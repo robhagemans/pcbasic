@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 from contextlib import contextmanager
 
 from . import scancode
+from . import basictoken as tk
 
 
 ###############################################################################
@@ -34,15 +35,12 @@ class EventHandler(object):
 
     def command(self, command_char):
         """Turn the event ON, OFF and STOP."""
-        if command_char == '\x95':
-            # ON
+        if command_char == tk.ON:
             self.enabled = True
             self.stopped = False
-        elif command_char == '\xDD':
-            # OFF
+        elif command_char == tk.OFF:
             self.enabled = False
-        elif command_char == '\x90':
-            # STOP
+        elif command_char == tk.STOP:
             self.stopped = True
         else:
             return False
