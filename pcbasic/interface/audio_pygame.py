@@ -79,10 +79,6 @@ class AudioPygame(audio.AudioPlugin):
         mixer.quit()
         return audio.AudioPlugin.__enter__(self)
 
-    def _sleep(self):
-        """Sleep a tick to avoid hogging the cpu."""
-        pygame.time.wait(tick_ms)
-
     def _drain_message_queue(self):
         """Drain signal queue."""
         alive = True

@@ -35,7 +35,8 @@ icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}
 ###############################################################################
 # interface event loop
 
-delay = 0.024
+# millisecond delay
+delay = 24
 
 def run(interface_name, video_params, audio_params, input_queue, video_queue, tone_queue, message_queue):
     """Start the main interface event loop."""
@@ -47,7 +48,7 @@ def run(interface_name, video_params, audio_params, input_queue, video_queue, to
                 audio_plugin.cycle()
                 # do not hog cpu
                 if not audio_plugin.playing and not video_plugin.screen_changed:
-                    time.sleep(delay)
+                    video_plugin.sleep(delay)
 
 
 ###############################################################################

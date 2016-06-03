@@ -299,9 +299,9 @@ class VideoPygame(video_graphical.VideoGraphical):
     ###########################################################################
     # screen drawing cycle
 
-    def _sleep(self):
+    def sleep(self, ms):
         """Sleep a tick to avoid hogging the cpu."""
-        pygame.time.wait(24)
+        pygame.time.wait(ms)
 
     def _check_display(self):
         """Check screen and blink events; update screen if necessary."""

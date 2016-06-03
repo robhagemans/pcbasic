@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import Queue
+import time
 
 from ..basic import signals
 
@@ -43,6 +44,10 @@ class VideoPlugin(object):
         if self.alive:
             self._check_display()
             self._check_input()
+
+    def sleep(self, ms):
+        """Sleep a tick"""
+        time.sleep(ms/1000.)
 
     def _check_display(self):
         """Display update cycle."""
