@@ -8,6 +8,8 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 import ctypes
+import os
+import platform
 
 try:
     import sdl2
@@ -83,6 +85,10 @@ class VideoSDL2(video_graphical.VideoGraphical):
         self.kwargs = kwargs
         # we need a set_mode call to be really up and running
         self._has_window = False
+        # ensure the correct SDL2 video driver is chosen for Windows
+        # since this gets messed up if we also import pygame
+        if platform.system() == 'Windows':
+            os.environ['SDL_VIDEODRIVER'] = 'windows'
         # initialise SDL
         if sdl2.SDL_Init(sdl2.SDL_INIT_EVERYTHING):
             # SDL not initialised correctly

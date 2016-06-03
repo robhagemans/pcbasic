@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 import platform
+import os
 
 try:
     import pygame
@@ -42,6 +43,11 @@ class VideoPygame(video_graphical.VideoGraphical):
         if not numpy:
             logging.debug('NumPy module not found.')
             raise video.InitFailed()
+        # ensure we have the correct video driver for SDL 1.2
+        # pygame sets this on import, but if we've tried SDL2 we've had to
+        # reset this value
+        if platform.system() == 'Windows':
+            os.environ['SDL_VIDEODRIVER'] = 'directx'
         pygame.init()
         try:
             # poll the driver to force an exception if not initialised
