@@ -34,8 +34,6 @@ big5-2003
 big5-hkscs
 georgian-academy
 georgian-ps
-__init__.py
-__init__.pyc
 iransystem
 iscii-as
 iscii-be
