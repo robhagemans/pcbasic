@@ -47,6 +47,9 @@ class ResumeFailed(Exception):
 class Session(object):
     """Interpreter session."""
 
+    ###########################################################################
+    # public interface methods
+
     def __init__(self,
             input_queue=None, video_queue=None,
             tone_queue=None, message_queue=None,
@@ -173,15 +176,6 @@ class Session(object):
         else:
             self.debugger = debug.BaseDebugger(self)
 
-    def close(self):
-        """Close the session."""
-        # close files if we opened any
-        self.files.close_all()
-        self.devices.close()
-        # close interface
-        self.video_queue.put(signals.Event(signals.VIDEO_QUIT))
-        self.message_queue.put(signals.Event(signals.AUDIO_QUIT))
-
     def __enter__(self):
         """Context guard."""
         return self
@@ -224,46 +218,6 @@ class Session(object):
         for q, store in zip(self.tone_queue, self.tone_queue_store):
             signals.load_queue(q, store)
         return self
-
-    ###########################################################################
-
-    def clear(self, close_files=False,
-              preserve_common=False, preserve_all=False, preserve_deftype=False):
-        """Execute a CLEAR command."""
-        #   Resets the stack and string space
-        #   Clears all COMMON and user variables
-        if preserve_all:
-            self.memory.clear_variables(self.memory.scalars.variables, self.memory.arrays.arrays)
-        else:
-            if not preserve_common:
-                # at least I think these should be cleared by CLEAR?
-                self.common_scalars = set()
-                self.common_arrays = set()
-            self.memory.clear_variables(self.common_scalars, self.common_arrays)
-            # functions are cleared except when CHAIN ... ALL is specified
-            self.user_functions = {}
-        if not preserve_deftype:
-            # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
-            self.memory.clear_deftype()
-        # reset random number generator
-        self.randomiser.clear()
-        if close_files:
-            # close all files
-            self.files.close_all()
-        # release all disk buffers (FIELD)?
-        self.memory.reset_fields()
-        # stop all sound
-        self.sound.stop_all_sound()
-        # Resets STRIG to off
-        self.stick.switch(False)
-        # reset sound and PLAY state
-        self.sound.reset()
-        # reset DRAW state (angle, scale) and current graphics position
-        self.screen.drawing.reset()
-        self.parser.clear()
-
-    ###########################################################################
-    # public interface methods
 
     def load_program(self, prog, rebuild_dict=True):
         """Load a program from native or BASIC file."""
@@ -333,6 +287,15 @@ class Session(object):
             signal = self.input_queue.get()
             if signal.event_type == signals.KEYB_DOWN:
                 break
+
+    def close(self):
+        """Close the session."""
+        # close files if we opened any
+        self.files.close_all()
+        self.devices.close()
+        # close interface
+        self.video_queue.put(signals.Event(signals.VIDEO_QUIT))
+        self.message_queue.put(signals.Event(signals.AUDIO_QUIT))
 
     ###########################################################################
     # implementation
@@ -480,6 +443,43 @@ class Session(object):
         if linenum is not None and linenum > -1 and linenum < 65535:
             self.screen.write(' in %i' % linenum)
         self.screen.write_line('\xFF')
+
+    ###########################################################################
+
+    def clear(self, close_files=False,
+              preserve_common=False, preserve_all=False, preserve_deftype=False):
+        """Execute a CLEAR command."""
+        #   Resets the stack and string space
+        #   Clears all COMMON and user variables
+        if preserve_all:
+            self.memory.clear_variables(self.memory.scalars.variables, self.memory.arrays.arrays)
+        else:
+            if not preserve_common:
+                # at least I think these should be cleared by CLEAR?
+                self.common_scalars = set()
+                self.common_arrays = set()
+            self.memory.clear_variables(self.common_scalars, self.common_arrays)
+            # functions are cleared except when CHAIN ... ALL is specified
+            self.user_functions = {}
+        if not preserve_deftype:
+            # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
+            self.memory.clear_deftype()
+        # reset random number generator
+        self.randomiser.clear()
+        if close_files:
+            # close all files
+            self.files.close_all()
+        # release all disk buffers (FIELD)?
+        self.memory.reset_fields()
+        # stop all sound
+        self.sound.stop_all_sound()
+        # Resets STRIG to off
+        self.stick.switch(False)
+        # reset sound and PLAY state
+        self.sound.reset()
+        # reset DRAW state (angle, scale) and current graphics position
+        self.screen.drawing.reset()
+        self.parser.clear()
 
     ##########################################################################
     # main event checker
