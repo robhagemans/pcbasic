@@ -745,16 +745,16 @@ class Drawing(object):
             elif c == 'M':
                 relative = util.skip(gmls, draw_and_play.ml_whitepace) in ('+','-')
                 x = draw_and_play.ml_parse_number(gmls)
-                util.range_check(0, 9999, x)
+                util.range_check(-9999, 9999, x)
                 if util.skip(gmls, draw_and_play.ml_whitepace) != ',':
                     raise error.RunError(error.IFC)
                 else:
                     gmls.read(1)
                 y = draw_and_play.ml_parse_number(gmls)
-                util.range_check(0, 9999, y)
+                util.range_check(-9999, 9999, y)
                 x0, y0 = self.last_point
                 if relative:
-                    self.draw_step(x0, y0, x, y,  plot, goback)
+                    self.draw_step(x0, y0, x, y, plot, goback)
                 else:
                     if plot:
                         self.draw_line(x0, y0, x, y, self.last_attr)
@@ -763,7 +763,7 @@ class Drawing(object):
                         self.last_point = x0, y0
                 plot = True
                 goback = False
-            elif c =='P':
+            elif c == 'P':
                 # paint - flood fill
                 colour = draw_and_play.ml_parse_number(gmls)
                 util.range_check(0, 9999, colour)
