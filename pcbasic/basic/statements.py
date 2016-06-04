@@ -849,7 +849,7 @@ class Statements(object):
             for l in lines:
                 # flow of listing is visible on screen
                 # and interruptible
-                self.session.wait()
+                self.session.events.wait()
                 # LIST on screen is slightly different from just writing
                 self.session.console.list_line(l)
         # return to direct mode
@@ -1351,7 +1351,7 @@ class Statements(object):
                             self.session.screen.mode.mem_start == 0xa000):
                         raise error.RunError(error.IFC)
         util.require(ins, tk.end_statement)
-        self.session.screen.drawing.paint(coord, pattern, c, border, background_pattern, self.session)
+        self.session.screen.drawing.paint(coord, pattern, c, border, background_pattern, self.session.events)
 
     def exec_get_graph(self, ins):
         """GET: read a sprite to memory."""
@@ -1400,7 +1400,7 @@ class Statements(object):
         with self.session.strings:
             gml = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         util.require(ins, tk.end_statement)
-        self.session.screen.drawing.draw(gml, self.session.memory, self.session)
+        self.session.screen.drawing.draw(gml, self.session.memory, self.session.events)
 
     ##########################################################
     # Flow-control statements

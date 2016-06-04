@@ -8,8 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import sys
 import logging
-import time
-import Queue
 import platform
 try:
     from cStringIO import StringIO
@@ -103,6 +101,8 @@ class Session(object):
                 max_list_line, allow_protect, allow_code_poke)
         # function key macros
         self.fkey_macros = console.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
+        # set up event handlers
+        self.events = events.Events(self, syntax)
         # initialise sound queue
         # needs Session for wait() and queues only
         self.sound = sound.Sound(self, syntax)
@@ -118,8 +118,8 @@ class Session(object):
         self.stick = inputs.Stick()
         # Screen needed in Keyboard for print_screen()
         # Sound is needed for the beeps when the buffer fills up
-        # Session needed for wait() only
-        self.keyboard = inputs.Keyboard(self, self.screen, self.fkey_macros,
+        # Events needed for wait() only
+        self.keyboard = inputs.Keyboard(self.events, self.screen, self.fkey_macros,
                 self.codepage, self.sound,
                 keystring, input_file, ignore_caps, ctrl_c_is_break)
         # set up variables and memory model state
@@ -138,9 +138,9 @@ class Session(object):
         self.user_functions = {}
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
-        # Session needed for wait()
+        # Events needed for wait()
         self.devices = files.Devices(
-                self, self.memory.fields, self.screen, self.keyboard,
+                self.events, self.memory.fields, self.screen, self.keyboard,
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_buffer_size,
                 utf8, universal)
@@ -167,9 +167,8 @@ class Session(object):
         self._set_parse_mode(False)
         # direct line buffer
         self.direct_line = StringIO()
-        # set up event handlers
-        self.events = events.Events(self, syntax)
         # initialise the parser
+        self.events.reset()
         self.parser = parser.Parser(self, syntax, pcjr_term, double)
         self.parser.set_pointer(False, 0)
         # set up debugger
@@ -311,7 +310,7 @@ class Session(object):
                 if self._parse_mode:
                     try:
                         # may raise Break
-                        self.check_events()
+                        self.events.check_events()
                         # returns True if more statements to parse
                         if not self.parser.parse_statement():
                             self._parse_mode = False
@@ -482,62 +481,3 @@ class Session(object):
         # reset DRAW state (angle, scale) and current graphics position
         self.screen.drawing.reset()
         self.parser.clear()
-
-    ##########################################################################
-    # main event checker
-
-    tick = 0.006
-
-    def wait(self):
-        """Wait and check events."""
-        time.sleep(self.tick)
-        self.check_events()
-
-    def check_events(self):
-        """Main event cycle."""
-        self._check_input()
-        self.events.check()
-        self.keyboard.drain_event_buffer()
-
-    def _check_input(self):
-        """Handle input events."""
-        while True:
-            try:
-                signal = self.input_queue.get(False)
-            except Queue.Empty:
-                if not self.keyboard.pause:
-                    break
-                else:
-                    continue
-            # we're on it
-            self.input_queue.task_done()
-            if signal.event_type == signals.KEYB_QUIT:
-                raise error.Exit()
-            if signal.event_type == signals.KEYB_CLOSED:
-                self.keyboard.close_input()
-            elif signal.event_type == signals.KEYB_CHAR:
-                # params is a unicode sequence
-                self.keyboard.insert_chars(*signal.params)
-            elif signal.event_type == signals.KEYB_DOWN:
-                # params is e-ASCII/unicode character sequence, scancode, modifier
-                self.keyboard.key_down(*signal.params)
-            elif signal.event_type == signals.KEYB_UP:
-                self.keyboard.key_up(*signal.params)
-            elif signal.event_type == signals.PEN_DOWN:
-                self.pen.down(*signal.params)
-            elif signal.event_type == signals.PEN_UP:
-                self.pen.up()
-            elif signal.event_type == signals.PEN_MOVED:
-                self.pen.moved(*signal.params)
-            elif signal.event_type == signals.STICK_DOWN:
-                self.stick.down(*signal.params)
-            elif signal.event_type == signals.STICK_UP:
-                self.stick.up(*signal.params)
-            elif signal.event_type == signals.STICK_MOVED:
-                self.stick.moved(*signal.params)
-            elif signal.event_type == signals.CLIP_PASTE:
-                self.keyboard.insert_chars(*signal.params, check_full=False)
-            elif signal.event_type == signals.CLIP_COPY:
-                text = self.screen.get_text(*(signal.params[:4]))
-                self.video_queue.put(signals.Event(
-                        signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))

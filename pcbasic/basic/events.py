@@ -7,8 +7,12 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from contextlib import contextmanager
+import time
+import Queue
 
 from . import scancode
+from . import signals
+from . import error
 
 
 class Events(object):
@@ -26,7 +30,6 @@ class Events(object):
             self.num_fn_keys = 10
         # tandy and pcjr have multi-voice sound
         self.multivoice = syntax in ('pcjr', 'tandy')
-        self.reset()
 
     def reset(self):
         """Initialise or reset event triggers."""
@@ -64,7 +67,7 @@ class Events(object):
 
     def check(self):
         """Check events."""
-        # events are only active if a program is sunning
+        # events are only active if a program is running
         if not self.active:
             return
         for e in self.all:
@@ -76,6 +79,66 @@ class Events(object):
         self.suspend_all, store = True, self.suspend_all
         yield
         self.suspend_all = store
+
+
+    ##########################################################################
+    # main event checker
+
+    tick = 0.006
+
+    def wait(self):
+        """Wait and check events."""
+        time.sleep(self.tick)
+        self.check_events()
+
+    def check_events(self):
+        """Main event cycle."""
+        self._check_input()
+        self.check()
+        self.session.keyboard.drain_event_buffer()
+
+    def _check_input(self):
+        """Handle input events."""
+        while True:
+            try:
+                signal = self.session.input_queue.get(False)
+            except Queue.Empty:
+                if not self.session.keyboard.pause:
+                    break
+                else:
+                    continue
+            # we're on it
+            self.session.input_queue.task_done()
+            if signal.event_type == signals.KEYB_QUIT:
+                raise error.Exit()
+            if signal.event_type == signals.KEYB_CLOSED:
+                self.session.keyboard.close_input()
+            elif signal.event_type == signals.KEYB_CHAR:
+                # params is a unicode sequence
+                self.session.keyboard.insert_chars(*signal.params)
+            elif signal.event_type == signals.KEYB_DOWN:
+                # params is e-ASCII/unicode character sequence, scancode, modifier
+                self.session.keyboard.key_down(*signal.params)
+            elif signal.event_type == signals.KEYB_UP:
+                self.session.keyboard.key_up(*signal.params)
+            elif signal.event_type == signals.PEN_DOWN:
+                self.session.pen.down(*signal.params)
+            elif signal.event_type == signals.PEN_UP:
+                self.session.pen.up()
+            elif signal.event_type == signals.PEN_MOVED:
+                self.session.pen.moved(*signal.params)
+            elif signal.event_type == signals.STICK_DOWN:
+                self.session.stick.down(*signal.params)
+            elif signal.event_type == signals.STICK_UP:
+                self.session.stick.up(*signal.params)
+            elif signal.event_type == signals.STICK_MOVED:
+                self.session.stick.moved(*signal.params)
+            elif signal.event_type == signals.CLIP_PASTE:
+                self.session.keyboard.insert_chars(*signal.params, check_full=False)
+            elif signal.event_type == signals.CLIP_COPY:
+                text = self.session.screen.get_text(*(signal.params[:4]))
+                self.session.video_queue.put(signals.Event(
+                        signals.VIDEO_SET_CLIPBOARD_TEXT, (text, signal.params[-1])))
 
 
 ###############################################################################

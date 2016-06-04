@@ -104,12 +104,12 @@ class Sound(object):
         while (self.queue_length(0) > wait_length or
                 self.queue_length(1) > wait_length or
                 self.queue_length(2) > wait_length):
-            self.session.wait()
+            self.session.events.wait()
 
     def wait_all_music(self):
         """Wait until all music (not noise) has finished playing."""
         while (self.is_playing(0) or self.is_playing(1) or self.is_playing(2)):
-            self.session.wait()
+            self.session.events.wait()
 
     def stop_all_sound(self):
         """Terminate all sounds immediately."""
