@@ -153,19 +153,7 @@ class Session(object):
                 self.screen, self.keyboard, self.sound,
                 self.output_redirection, self.devices.lpt1_file)
         # set up the SHELL command
-        self.shell = shell.ShellBase(self.keyboard, self.screen)
-        if option_shell != 'none':
-            if option_shell == 'native':
-                shell_command = None
-            else:
-                shell_command = option_shell
-            if platform.system() == 'Windows':
-                self.shell = shell.WindowsShell(self.keyboard, self.screen, self.codepage, shell_command)
-            else:
-                try:
-                    self.shell = shell.Shell(self.keyboard, self.screen, self.codepage, shell_command)
-                except shell.InitFailed:
-                    logging.warning('Pexpect module not found. SHELL statement disabled.')
+        self.shell = shell.get_shell_manager(self.keyboard, self.screen, self.codepage, option_shell)
         # initialise random number generator
         self.randomiser = rnd.RandomNumberGenerator()
         # initialise timer

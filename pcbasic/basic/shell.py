@@ -12,6 +12,7 @@ import logging
 import threading
 import time
 import locale
+import platform
 
 try:
     import pexpect
@@ -45,6 +46,23 @@ def get_env_entry(expr):
 
 #########################################
 # shell
+
+def get_shell_manager(keyboard, screen, codepage, shell_type):
+    """Return a new shell manager object."""
+    if shell_type != 'none':
+        if shell_type == 'native':
+            shell_command = None
+        else:
+            shell_command = shell_type
+        if platform.system() == 'Windows':
+            return WindowsShell(keyboard, screen, codepage, shell_command)
+        else:
+            try:
+                return Shell(keyboard, screen, codepage, shell_command)
+            except InitFailed:
+                logging.warning('Pexpect module not found. SHELL statement disabled.')
+    return ShellBase(keyboard, screen)
+
 
 class ShellBase(object):
     """Launcher for command shell."""
