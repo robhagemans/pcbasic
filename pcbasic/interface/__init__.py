@@ -25,11 +25,6 @@ from .audio_beep import AudioBeep
 from .audio_pygame import AudioPygame
 from .audio_sdl2 import AudioSDL2
 
-# create the window icon
-from ..basic import typeface
-icon_hex = '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
-icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}
-                            ).build_glyph('icon', 16, 16, False, False)
 
 
 ###############################################################################
@@ -74,7 +69,7 @@ def _get_video_plugin(input_queue, video_queue, interface_name, **kwargs):
         plugins, fallback = video_plugins[interface_name]
         for plugin_class in plugins:
             try:
-                plugin = plugin_class(input_queue, video_queue, icon=icon, **kwargs)
+                plugin = plugin_class(input_queue, video_queue, **kwargs)
             except InitFailed:
                 logging.debug('Could not initialise video plugin "%s".', plugin_class.__name__)
             else:

@@ -32,6 +32,11 @@ greeting = (
     'PRINT USING "##### Bytes free"; FRE(0)'.format(
         version=__version__, copyright=__copyright__))
 
+# create the window icon
+from .basic import typeface
+icon_hex = '00003CE066606666666C6678666C3CE67F007F007F007F007F007F007F000000'
+icon = typeface.Font(16, {'icon': icon_hex.decode('hex')}
+                            ).build_glyph('icon', 16, 16, False, False)
 
 def get_logger(logfile=None):
     """Use the awkward logging interface as we can only use basicConfig once."""
@@ -566,6 +571,7 @@ class Settings(object):
             'composite_card': self.get('video'),
             'copy_paste': self.get('copy-paste'),
             'pen': self.get('pen'),
+            'icon': icon,
             }
 
     def get_audio_parameters(self):
