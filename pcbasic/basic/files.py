@@ -105,11 +105,12 @@ class Files(object):
         try:
             # first try exact file name
             return self.devices.internal_disk.create_file_object(
-                    open(os.path.expandvars(os.path.expanduser(filespec)), 'rb'),
+                    open(os.path.expandvars(os.path.expanduser(filespec)),
+                         self.devices.internal_disk.access_modes[mode]),
                     filetype, mode)
         except EnvironmentError as e:
             # otherwise, accept capitalised versions and default extension
-            return self.open(0, filespec, filetype='BPA', mode='I')
+            return self.open(0, filespec, filetype, mode)
 
     def _open_null(self, filetype, mode):
         """Open a null file object. Do not register in files dict."""

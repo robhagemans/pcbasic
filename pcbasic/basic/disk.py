@@ -252,9 +252,9 @@ class DiskDevice(object):
     allowed_modes = b'IOR'
 
     # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
-    _access_modes = {b'I': b'rb', b'O': b'wb', b'R': b'r+b', b'A': b'ab'}
+    access_modes = {b'I': b'rb', b'O': b'wb', b'R': b'r+b', b'A': b'ab'}
     # posix access modes for BASIC ACCESS mode for RANDOM files only
-    _access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
+    access_access = {b'R': b'rb', b'W': b'wb', b'RW': b'r+b'}
 
     def __init__(self, letter, path, cwd, fields, locks, codepage, events, utf8, universal):
         """Initialise a disk device."""
@@ -362,9 +362,9 @@ class DiskDevice(object):
         """Open a stream on disk by os-native name with BASIC mode and access level."""
         name = native_name
         if (access and mode == b'R'):
-            posix_access = self._access_access[access]
+            posix_access = self.access_access[access]
         else:
-            posix_access = self._access_modes[mode]
+            posix_access = self.access_modes[mode]
         try:
             # create file if in RANDOM or APPEND mode and doesn't exist yet
             # OUTPUT mode files are created anyway since they're opened with wb
