@@ -2166,7 +2166,7 @@ class Statements(object):
             fore = (screen.attr>>7)*0x10 + (screen.attr&0xf)
         else:
             fore = vartypes.pass_int_unpack(fore)
-        back, bord = None, 0
+        back, bord = None, None
         if util.skip_white_read_if(ins, (',')):
             back = self.parser.parse_expression(ins, self.session, allow_empty=True)
             back = None if back is None else vartypes.pass_int_unpack(back)
@@ -2185,6 +2185,8 @@ class Statements(object):
         elif mode.name in ('640x200x2', '720x348x2'):
             # screen 2; hercules: illegal fn call
             raise error.RunError(error.IFC)
+        # for screens other than 1, no distinction between 3rd parm zero and not supplied
+        bord = bord or 0
         util.range_check(0, 255, bord)
         if mode.is_text_mode:
             util.range_check(0, mode.num_attr-1, fore)
