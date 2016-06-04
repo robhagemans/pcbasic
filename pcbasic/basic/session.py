@@ -19,7 +19,7 @@ except ImportError:
 from . import error
 from . import util
 from . import tokenise
-
+from . import events
 from . import program
 from . import signals
 from . import display
@@ -167,6 +167,8 @@ class Session(object):
         self._set_parse_mode(False)
         # direct line buffer
         self.direct_line = StringIO()
+        # set up event handlers
+        self.events = events.Events(self, syntax)
         # initialise the parser
         self.parser = parser.Parser(self, syntax, pcjr_term, double)
         self.parser.set_pointer(False, 0)
@@ -494,7 +496,7 @@ class Session(object):
     def check_events(self):
         """Main event cycle."""
         self._check_input()
-        self.parser.events.check()
+        self.events.check()
         self.keyboard.drain_event_buffer()
 
     def _check_input(self):

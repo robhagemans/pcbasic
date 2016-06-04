@@ -14,7 +14,6 @@ import string
 from collections import deque
 
 from . import error
-from . import events
 from . import fp
 from . import representation
 from . import basictoken as tk
@@ -31,8 +30,6 @@ class Parser(object):
     def __init__(self, session, syntax, term, double_math):
         """Initialise parser."""
         self.session = session
-        # set up event handlers
-        self.events = events.Events(self.session, syntax)
         # syntax: advanced, pcjr, tandy
         self.syntax = syntax
         # program for TERM command
@@ -126,7 +123,7 @@ class Parser(object):
         # disable error trapping
         self.init_error_trapping()
         # disable all event trapping (resets PEN to OFF too)
-        self.events.reset()
+        self.session.events.reset()
         # CLEAR also dumps for_next and while_wend stacks
         self.clear_loop_stacks()
         # reset the DATA pointer
@@ -159,9 +156,9 @@ class Parser(object):
 
     def handle_basic_events(self):
         """Jump to user-defined event subs if events triggered."""
-        if self.events.suspend_all or not self.run_mode:
+        if self.session.events.suspend_all or not self.run_mode:
             return
-        for event in self.events.all:
+        for event in self.session.events.all:
             if (event.enabled and event.triggered
                     and not event.stopped and event.gosub is not None):
                 # release trigger
@@ -186,7 +183,7 @@ class Parser(object):
             self.error_resume = self.current_statement, self.run_mode
             self.jump(self.on_error)
             self.error_handle_mode = True
-            self.events.suspend_all = True
+            self.session.events.suspend_all = True
         else:
             self.error_handle_mode = False
             self.set_pointer(False)
@@ -198,7 +195,7 @@ class Parser(object):
         """Set program pointer to the given codestream and position."""
         self.run_mode = new_runmode
         # events are active in run mode
-        self.events.set_active(new_runmode)
+        self.session.events.set_active(new_runmode)
         # keep the sound engine on to avoid delays in run mode
         self.session.sound.persist(new_runmode)
         # suppress cassette messages in run mode
