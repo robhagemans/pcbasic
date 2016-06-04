@@ -9,7 +9,73 @@ This file is released under the GNU GPL version 3 or later.
 from contextlib import contextmanager
 
 from . import scancode
-from . import basictoken as tk
+
+
+class Events(object):
+    """Event management."""
+
+    def __init__(self, session, syntax):
+        """Initialise event triggers."""
+        self.session = session
+        # events start unactivated
+        self.active = False
+        # 12 definable function keys for Tandy, 10 otherwise
+        if syntax == 'tandy':
+            self.num_fn_keys = 12
+        else:
+            self.num_fn_keys = 10
+        # tandy and pcjr have multi-voice sound
+        self.multivoice = syntax in ('pcjr', 'tandy')
+        self.reset()
+
+    def reset(self):
+        """Initialise or reset event triggers."""
+        # KEY: init key events
+        keys = [
+            scancode.F1, scancode.F2, scancode.F3, scancode.F4, scancode.F5,
+            scancode.F6, scancode.F7, scancode.F8, scancode.F9, scancode.F10]
+        if self.num_fn_keys == 12:
+            # Tandy only
+            keys += [scancode.F11, scancode.F12]
+        keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
+        keys += [None] * (20 - self.num_fn_keys - 4)
+        self.key = [KeyHandler(self.session.keyboard, sc) for sc in keys]
+        # other events
+        self.timer = TimerHandler(self.session.timer)
+        self.play = PlayHandler(self.session.sound, self.multivoice)
+        self.com = [
+            ComHandler(self.session.devices.devices['COM1:']),
+            ComHandler(self.session.devices.devices['COM2:'])]
+        self.pen = PenHandler(self.session.pen)
+        # joy*2 + button
+        self.strig = [StrigHandler(self.session.stick, joy, button)
+                      for joy in range(2) for button in range(2)]
+        # all handlers in order of handling; TIMER first
+        # key events are not handled FIFO but first 11-20 in that order, then 1-10
+        self.all = ([self.timer]
+            + [self.key[num] for num in (range(10, 20) + range(10))]
+            + [self.play] + self.com + [self.pen] + self.strig)
+        # set suspension off
+        self.suspend_all = False
+
+    def set_active(self, active):
+        """Activate or deactisvate event checking."""
+        self.active = active
+
+    def check(self):
+        """Check events."""
+        # events are only active if a program is sunning
+        if not self.active:
+            return
+        for e in self.all:
+            e.check()
+
+    @contextmanager
+    def suspend(self):
+        """Context guard to suspend events."""
+        self.suspend_all, store = True, self.suspend_all
+        yield
+        self.suspend_all = store
 
 
 ###############################################################################
@@ -35,12 +101,15 @@ class EventHandler(object):
 
     def command(self, command_char):
         """Turn the event ON, OFF and STOP."""
-        if command_char == tk.ON:
+        if command_char == '\x95':
+            # ON
             self.enabled = True
             self.stopped = False
-        elif command_char == tk.OFF:
+        elif command_char == '\xDD':
+            # OFF
             self.enabled = False
-        elif command_char == tk.STOP:
+        elif command_char == '\x90':
+            # STOP
             self.stopped = True
         else:
             return False
@@ -199,70 +268,3 @@ class StrigHandler(EventHandler):
         """Trigger STRIG events."""
         if self.stick.poll_event(self.joy, self.button):
             self.trigger()
-
-
-class Events(object):
-    """Event management."""
-
-    def __init__(self, session, syntax):
-        """Initialise event triggers."""
-        self.session = session
-        # events start unactivated
-        self.active = False
-        # 12 definable function keys for Tandy, 10 otherwise
-        if syntax == 'tandy':
-            self.num_fn_keys = 12
-        else:
-            self.num_fn_keys = 10
-        # tandy and pcjr have multi-voice sound
-        self.multivoice = syntax in ('pcjr', 'tandy')
-        self.reset()
-
-    def reset(self):
-        """Initialise or reset event triggers."""
-        # KEY: init key events
-        keys = [
-            scancode.F1, scancode.F2, scancode.F3, scancode.F4, scancode.F5,
-            scancode.F6, scancode.F7, scancode.F8, scancode.F9, scancode.F10]
-        if self.num_fn_keys == 12:
-            # Tandy only
-            keys += [scancode.F11, scancode.F12]
-        keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
-        keys += [None] * (20 - self.num_fn_keys - 4)
-        self.key = [KeyHandler(self.session.keyboard, sc) for sc in keys]
-        # other events
-        self.timer = TimerHandler(self.session.timer)
-        self.play = PlayHandler(self.session.sound, self.multivoice)
-        self.com = [
-            ComHandler(self.session.devices.devices['COM1:']),
-            ComHandler(self.session.devices.devices['COM2:'])]
-        self.pen = PenHandler(self.session.pen)
-        # joy*2 + button
-        self.strig = [StrigHandler(self.session.stick, joy, button)
-                      for joy in range(2) for button in range(2)]
-        # all handlers in order of handling; TIMER first
-        # key events are not handled FIFO but first 11-20 in that order, then 1-10
-        self.all = ([self.timer]
-            + [self.key[num] for num in (range(10, 20) + range(10))]
-            + [self.play] + self.com + [self.pen] + self.strig)
-        # set suspension off
-        self.suspend_all = False
-
-    def set_active(self, active):
-        """Activate or deactisvate event checking."""
-        self.active = active
-
-    def check(self):
-        """Check events."""
-        # events are only active if a program is sunning
-        if not self.active:
-            return
-        for e in self.all:
-            e.check()
-
-    @contextmanager
-    def suspend(self):
-        """Context guard to suspend events."""
-        self.suspend_all, store = True, self.suspend_all
-        yield
-        self.suspend_all = store
