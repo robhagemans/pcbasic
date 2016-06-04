@@ -73,7 +73,7 @@ class Session(object):
         self.tone_queue = tone_queue or signals.NullQueue()
         self.message_queue = message_queue or signals.NullQueue()
         # true if a prompt is needed on next cycle
-        self.prompt = True
+        self._prompt = True
         # input mode is AUTO (used by AUTO)
         self.auto_mode = False
         self.auto_linenum = 10
@@ -230,8 +230,8 @@ class Session(object):
         for q, store in zip(self.tone_queue, self.tone_queue_store):
             signals.load_queue(q, store)
         # suppress double prompt
-        if not self.parse_mode:
-            self.prompt = False
+        if not self._parse_mode:
+            self._prompt = False
         return self
 
     ###########################################################################
@@ -327,10 +327,10 @@ class Session(object):
                 try:
                     # input loop, checks events
                     line = self.console.wait_screenline(from_start=True)
-                    self.prompt = not self._store_line(line)
+                    self._prompt = not self._store_line(line)
                 except error.Break:
                     self.sound.stop_all_sound()
-                    self.prompt = False
+                    self._prompt = False
         except error.Exit:
             pass
 
@@ -351,14 +351,14 @@ class Session(object):
         try:
             self.screen.cursor.reset_visibility()
             while True:
-                last_parse = self.parse_mode
-                if self.parse_mode:
+                last_parse = self._parse_mode
+                if self._parse_mode:
                     try:
                         # may raise Break
                         self.check_events()
                         # returns True if more statements to parse
                         if not self.parser.parse_statement():
-                            self.parse_mode = False
+                            self._parse_mode = False
                     except error.Break as e:
                         # ctrl-break stops foreground and background sound
                         self.sound.stop_all_sound()
@@ -372,16 +372,16 @@ class Session(object):
                         self.sound.stop_all_sound()
                         self.auto_mode = False
                 # change loop modes
-                if self.parse_mode != last_parse:
+                if self._parse_mode != last_parse:
                     # move pointer to the start of direct line (for both on and off!)
                     self.parser.set_pointer(False, 0)
                     self.screen.cursor.reset_visibility()
                 # return control to user
-                if ((not self.auto_mode) and (not self.parse_mode)):
+                if ((not self.auto_mode) and (not self._parse_mode)):
                     break
         except error.RunError as e:
             self._handle_error(e)
-            self.prompt = True
+            self._prompt = True
         except error.Exit:
             raise
         except Exception as e:
@@ -389,7 +389,7 @@ class Session(object):
 
     def _set_parse_mode(self, on):
         """Enter or exit parse mode."""
-        self.parse_mode = on
+        self._parse_mode = on
         self.screen.cursor.default_visible = not on
 
     def _store_line(self, line):
@@ -408,17 +408,17 @@ class Session(object):
         elif c != '':
             # it is a command, go and execute
             self._set_parse_mode(True)
-        return not self.parse_mode
+        return not self._parse_mode
 
     def _show_prompt(self):
         """Show the Ok or EDIT prompt, unless suppressed."""
-        if self.parse_mode:
+        if self._parse_mode:
             return
         if self.edit_prompt:
             linenum, tell = self.edit_prompt
             self.program.edit(self.console, linenum, tell)
             self.edit_prompt = False
-        elif self.prompt:
+        elif self._prompt:
             self.screen.start_line()
             self.screen.write_line("Ok\xff")
 
