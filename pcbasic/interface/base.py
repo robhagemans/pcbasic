@@ -15,8 +15,8 @@ from ..basic import signals
 
 def run(interface_name, video_params, audio_params, input_queue, video_queue, tone_queue, message_queue):
     """Start the main interface event loop."""
-    with _get_video_plugin(input_queue, video_queue, interface_name, **video_params) as video_plugin:
-        with _get_audio_plugin(tone_queue, message_queue, interface_name, **audio_params) as audio_plugin:
+    with _get_audio_plugin(tone_queue, message_queue, interface_name, **audio_params) as audio_plugin:
+        with _get_video_plugin(input_queue, video_queue, interface_name, **video_params) as video_plugin:
             while audio_plugin.alive or video_plugin.alive:
                 # ensure both queues are drained
                 video_plugin.cycle()

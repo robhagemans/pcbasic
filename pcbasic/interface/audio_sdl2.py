@@ -26,7 +26,6 @@ from ..basic import signals
 from . import base as audio
 from . import synthesiser
 
-tick_ms = 24
 
 # approximate generator chunk length
 # one wavelength at 37 Hz is 1192 samples at 44100 Hz

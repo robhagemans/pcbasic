@@ -29,20 +29,12 @@ from ..basic import signals
 from . import base as audio
 from . import synthesiser
 
-tick_ms = 24
 # quit sound server after quiet period of quiet_quit ticks
 # to avoid high-ish cpu load from the sound server.
 quiet_quit = 10000
 
 # one wavelength at 37 Hz is 1192 samples at 44100 Hz
 chunk_length = 1192 * 4
-
-def prepare():
-    """Initialise sound module."""
-    if pygame:
-        # must be called before pygame.init()
-        if mixer:
-            mixer.pre_init(synthesiser.sample_rate, -synthesiser.sample_bits, channels=1, buffer=1024) #4096
 
 
 ##############################################################################
@@ -62,6 +54,8 @@ class AudioPygame(audio.AudioPlugin):
         if not mixer:
             logging.warning('PyGame mixer module not found. Failed to initialise PyGame audio plugin.')
             raise audio.InitFailed()
+        # this must be called before pygame.init() in the video plugin
+        mixer.pre_init(synthesiser.sample_rate, -synthesiser.sample_bits, channels=1, buffer=1024) #4096
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # currently looping sound
@@ -199,5 +193,3 @@ def check_init_mixer():
     """Initialise the mixer if necessary."""
     if mixer.get_init() is None:
         mixer.init()
-
-prepare()
