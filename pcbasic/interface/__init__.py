@@ -6,10 +6,7 @@ Video, input and audio handlers
 This file is released under the GNU GPL version 3 or later.
 """
 
-import time
-import logging
-
-from .base import InitFailed
+from .base import run, video_plugins, audio_plugins, InitFailed
 
 # video plugins
 from .video_none import VideoNone
@@ -26,31 +23,8 @@ from .audio_pygame import AudioPygame
 from .audio_sdl2 import AudioSDL2
 
 
-
-###############################################################################
-# interface event loop
-
-# millisecond delay
-delay = 12
-
-def run(interface_name, video_params, audio_params, input_queue, video_queue, tone_queue, message_queue):
-    """Start the main interface event loop."""
-    with _get_video_plugin(input_queue, video_queue, interface_name, **video_params) as video_plugin:
-        with _get_audio_plugin(tone_queue, message_queue, interface_name, **audio_params) as audio_plugin:
-            while audio_plugin.alive or video_plugin.alive:
-                # ensure both queues are drained
-                video_plugin.cycle()
-                audio_plugin.cycle()
-                # do not hog cpu
-                if not audio_plugin.playing and not video_plugin.screen_changed:
-                    video_plugin.sleep(delay)
-
-
-###############################################################################
-# video plugin
-
-video_plugins = {
-    # interface_name: video_plugin_name, fallback, warn_on_fallback
+video_plugins.update({
+    # interface_name: ((video_plugin_name, ...), fallback)
     'none': ((VideoNone,), None),
     'cli': ((VideoCLI,), 'none'),
     'text': ((VideoCurses, VideoANSI), 'cli'),
@@ -60,32 +34,9 @@ video_plugins = {
     'curses': ((VideoCurses,), None),
     'pygame': ((VideoPygame,), None),
     'sdl2': ((VideoSDL2,), None),
-    }
+    })
 
-def _get_video_plugin(input_queue, video_queue, interface_name, **kwargs):
-    """Find and initialise video plugin for given interface."""
-    while True:
-        # select interface
-        plugins, fallback = video_plugins[interface_name]
-        for plugin_class in plugins:
-            try:
-                plugin = plugin_class(input_queue, video_queue, **kwargs)
-            except InitFailed:
-                logging.debug('Could not initialise video plugin "%s".', plugin_class.__name__)
-            else:
-                return plugin
-        if fallback:
-            logging.info('Could not initialise %s interface. Falling back to %s interface.', interface_name, fallback)
-            interface_name = fallback
-        else:
-            raise InitFailed()
-
-
-###############################################################################
-# audio plugin
-
-audio_plugins = {
-    # interface_name: plugin_name, fallback, warn_on_fallback
+audio_plugins.update({
     'none': (AudioNone,),
     'cli': (AudioBeep, AudioNone),
     'text': (AudioBeep, AudioNone),
@@ -94,17 +45,4 @@ audio_plugins = {
     'curses': (AudioNone,),
     'pygame': (AudioPygame, AudioNone),
     'sdl2': (AudioSDL2, AudioNone),
-    }
-
-def _get_audio_plugin(tone_queue, message_queue, interface_name, nosound):
-    """Find and initialise audio plugin for given interface."""
-    if nosound:
-        interface_name = 'none'
-    for plugin_class in audio_plugins[interface_name]:
-        try:
-            plugin = plugin_class(tone_queue, message_queue)
-        except InitFailed:
-            logging.debug('Could not initialise audio plugin "%s".', plugin_class.__name__)
-        else:
-            return plugin
-    raise InitFailed()
+    })

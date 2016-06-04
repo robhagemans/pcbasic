@@ -8,8 +8,30 @@ This file is released under the GNU GPL version 3 or later.
 
 import Queue
 import time
+import logging
 
 from ..basic import signals
+
+
+def run(interface_name, video_params, audio_params, input_queue, video_queue, tone_queue, message_queue):
+    """Start the main interface event loop."""
+    with _get_video_plugin(input_queue, video_queue, interface_name, **video_params) as video_plugin:
+        with _get_audio_plugin(tone_queue, message_queue, interface_name, **audio_params) as audio_plugin:
+            while audio_plugin.alive or video_plugin.alive:
+                # ensure both queues are drained
+                video_plugin.cycle()
+                audio_plugin.cycle()
+                # do not hog cpu
+                if not audio_plugin.playing and not video_plugin.screen_changed:
+                    video_plugin.sleep(delay)
+
+
+
+###############################################################################
+# implementation
+
+# millisecond delay
+delay = 12
 
 
 class InitFailed(Exception):
@@ -18,6 +40,27 @@ class InitFailed(Exception):
 
 ###############################################################################
 # video plugin
+
+video_plugins = {}
+
+
+def _get_video_plugin(input_queue, video_queue, interface_name, **kwargs):
+    """Find and initialise video plugin for given interface."""
+    while True:
+        # select interface
+        plugins, fallback = video_plugins[interface_name]
+        for plugin_class in plugins:
+            try:
+                plugin = plugin_class(input_queue, video_queue, **kwargs)
+            except InitFailed:
+                logging.debug('Could not initialise video plugin "%s".', plugin_class.__name__)
+            else:
+                return plugin
+        if fallback:
+            logging.info('Could not initialise %s interface. Falling back to %s interface.', interface_name, fallback)
+            interface_name = fallback
+        else:
+            raise InitFailed()
 
 
 class VideoPlugin(object):
@@ -187,8 +230,25 @@ class VideoPlugin(object):
     def put_rect(self, pagenum, x0, y0, x1, y1, array):
         """Apply numpy array [y][x] of attribytes to an area."""
 
+
 ###############################################################################
 # audio plugin
+
+audio_plugins = {}
+
+
+def _get_audio_plugin(tone_queue, message_queue, interface_name, nosound):
+    """Find and initialise audio plugin for given interface."""
+    if nosound:
+        interface_name = 'none'
+    for plugin_class in audio_plugins[interface_name]:
+        try:
+            plugin = plugin_class(tone_queue, message_queue)
+        except InitFailed:
+            logging.debug('Could not initialise audio plugin "%s".', plugin_class.__name__)
+        else:
+            return plugin
+    raise InitFailed()
 
 
 class AudioPlugin(object):
