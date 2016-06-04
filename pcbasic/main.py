@@ -97,7 +97,7 @@ def launch_session(settings):
 def run_session(queues, resume, state_file, wait, prog, commands, **session_params):
     """Run an interactive BASIC session."""
     if resume:
-        session = state.zunpickle(state_file).resume(*queues, **session_params)
+        session = state.zunpickle(state_file).attach(*queues)
     else:
         session = basic.Session(*queues, **session_params)
     with session:

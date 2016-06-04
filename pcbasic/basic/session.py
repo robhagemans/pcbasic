@@ -202,10 +202,16 @@ class Session(object):
         pickle_dict['message_queue'] = signals.NullQueue()
         return pickle_dict
 
-    def resume(self,
-                input_queue=None, video_queue=None,
-                tone_queue=None, message_queue=None):
-        """Resume a saved interpreter session."""
+    def __setstate__(self, pickle_dict):
+        """Unpickle and resume the session."""
+        self.__dict__.update(pickle_dict)
+        # suppress double prompt
+        if not self._parse_mode:
+            self._prompt = False
+
+    def attach(self, input_queue=None, video_queue=None,
+                     tone_queue=None, message_queue=None):
+        """Attach interface to interpreter session."""
         # use dummy queues if not provided
         self.input_queue = input_queue or signals.NullQueue()
         self.video_queue = video_queue or signals.NullQueue()
@@ -217,9 +223,6 @@ class Session(object):
         # rebuild the audio queue
         for q, store in zip(self.tone_queue, self.tone_queue_store):
             signals.load_queue(q, store)
-        # suppress double prompt
-        if not self._parse_mode:
-            self._prompt = False
         return self
 
     ###########################################################################
