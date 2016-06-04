@@ -849,7 +849,7 @@ class Statements(object):
             for l in lines:
                 # flow of listing is visible on screen
                 # and interruptible
-                self.session.check_events()
+                self.session.wait()
                 # LIST on screen is slightly different from just writing
                 self.session.console.list_line(l)
         # return to direct mode

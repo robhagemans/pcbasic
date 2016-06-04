@@ -39,9 +39,6 @@ from . import unicodepage
 from . import var
 
 
-tick_s = 0.0001
-longtick_s = 0.006 - tick_s
-
 class ResumeFailed(Exception):
     """Failed to resume session."""
     def __str__(self):
@@ -107,7 +104,7 @@ class Session(object):
         # needs Session for wait() and queues only
         self.sound = sound.Sound(self, syntax)
         # Sound is needed for the beeps on \a
-        # Session is only for queues and check_events() in Graphics (flood fill)
+        # Session is only for queues and wait() in Graphics (flood fill)
         self.screen = display.Screen(self, text_width,
                 video_memory, video_capabilities, monitor,
                 self.sound, self.output_redirection, self.fkey_macros,
@@ -496,15 +493,15 @@ class Session(object):
     ##########################################################################
     # main event checker
 
-    def wait(self, suppress_events=False):
+    tick = 0.006
+
+    def wait(self):
         """Wait and check events."""
-        time.sleep(longtick_s)
-        if not suppress_events:
-            self.check_events()
+        time.sleep(self.tick)
+        self.check_events()
 
     def check_events(self):
         """Main event cycle."""
-        time.sleep(tick_s)
         self._check_input()
         self.parser.events.check()
         self.keyboard.drain_event_buffer()
@@ -518,7 +515,6 @@ class Session(object):
                 if not self.keyboard.pause:
                     break
                 else:
-                    time.sleep(tick_s)
                     continue
             # we're on it
             self.input_queue.task_done()

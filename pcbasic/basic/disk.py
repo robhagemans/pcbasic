@@ -270,7 +270,7 @@ class DiskDevice(object):
         self.locks = locks
         # code page for file system names and text file conversion
         self.codepage = codepage
-        # for check_events() during FILES
+        # for wait() during FILES
         self.session = session
         # text file settings
         self.utf8 = utf8
@@ -520,7 +520,7 @@ class DiskDevice(object):
             output = output[num:]
             screen.write_line(line)
             # allow to break during dir listing & show names flowing on screen
-            self.session.check_events()
+            self.session.wait()
         screen.write_line(b' %d Bytes free' % self.get_free())
 
     def get_free(self):

@@ -183,7 +183,7 @@ class Devices(object):
         self.locks = disk.Locks()
         # field buffers
         self.fields = fields
-        # for wait() and check_events()
+        # for wait()
         self.session = session
         # text file settings
         self.utf8 = utf8

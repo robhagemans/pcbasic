@@ -476,7 +476,7 @@ class Screen(object):
         self.current_col = 1
         # set codepage for video plugin
         self.codepage = codepage
-        # session dependence only for queues and check_events() in Graphics
+        # session dependence only for queues and wait() in Graphics
         self.session = session
         self.session.video_queue.put(signals.Event(
                 signals.VIDEO_SET_CODEPAGE, self.codepage))
