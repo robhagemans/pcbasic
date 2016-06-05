@@ -88,9 +88,6 @@ class AudioSDL2(audio.AudioPlugin):
             self.message_queue.task_done()
             if signal.event_type == signals.AUDIO_STOP:
                 self._hush()
-                sdl2.SDL_LockAudioDevice(self.dev)
-                self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
-                sdl2.SDL_UnlockAudioDevice(self.dev)
             elif signal.event_type == signals.AUDIO_QUIT:
                 # close thread
                 return False
@@ -103,7 +100,7 @@ class AudioSDL2(audio.AudioPlugin):
             for voice, q in enumerate(self.tone_queue):
                 # don't get the next tone if we're still working on one
                 # necessary for queue persistence/timing in other thread only
-                if self.next_tone[voice]:
+                if self.next_tone[voice] and not self.next_tone[voice].loop:
                     continue
                 try:
                     signal = q.get(False)
@@ -131,6 +128,9 @@ class AudioSDL2(audio.AudioPlugin):
             while self.generators[voice]:
                 self.tone_queue[voice].task_done()
                 self.generators[voice].popleft()
+        sdl2.SDL_LockAudioDevice(self.dev)
+        self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
+        sdl2.SDL_UnlockAudioDevice(self.dev)
 
     def _play_sound(self):
         """Replenish sample buffer."""
@@ -139,13 +139,13 @@ class AudioSDL2(audio.AudioPlugin):
                 # nothing to do
                 continue
             while True:
-                if self.next_tone[voice] is None:
+                if self.next_tone[voice] is None or self.next_tone[voice].loop:
                     try:
                         self.next_tone[voice] = self.generators[voice].popleft()
                     except IndexError:
-                        # FIXME: loop last tone if loop property was set?
-                        current_chunk = None
-                        break
+                        if self.next_tone[voice] is None:
+                            current_chunk = None
+                            break
                 current_chunk = self.next_tone[voice].build_chunk(chunk_length)
                 if current_chunk is not None:
                     break
@@ -166,7 +166,6 @@ class AudioSDL2(audio.AudioPlugin):
         samples = [self.samples[voice][:length] for voice in range(4)]
         self.samples = [self.samples[voice][length:] for voice in range(4)]
         # if samples have run out, add silence
-        # FIXME: loop sounds
         for voice in range(4):
             if len(samples[voice]) < length:
                 silence = numpy.zeros(length-len(samples[voice]), numpy.int16)
