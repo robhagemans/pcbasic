@@ -452,7 +452,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
                                   self.font_height - self.cursor_from)
                 curs_rect = sdl2.SDL_Rect(
                     self.border_x + left, self.border_y + top + self.cursor_from,
-                    self.font_width, curs_height)
+                    self.cursor_width, curs_height)
                 sdl2.SDL_FillRect(screen, curs_rect, self.cursor_attr)
         else:
             pixels[ left : left+self.cursor_width,
