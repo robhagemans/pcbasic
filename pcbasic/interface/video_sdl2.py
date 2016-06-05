@@ -98,7 +98,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
     def __enter__(self):
         """Complete SDL2 interface initialisation."""
         # set clipboard handler to SDL2
-        self.clipboard_handler = SDL2Clipboard()
+        self.clipboard_handler = get_clipboard_handler()
         # display palettes for blink states 0, 1
         self.show_palette = [sdl2.SDL_AllocPalette(256), sdl2.SDL_AllocPalette(256)]
         # get physical screen dimensions (needs to be called before set_mode)
@@ -728,6 +728,21 @@ class SDL2Clipboard(clipboard.Clipboard):
         if text is None:
             return u''
         return text.decode('utf-8', 'replace').replace('\r\n', '\n').replace('\n', '\r')
+
+
+def get_clipboard_handler():
+    """Get a working Clipboard handler object."""
+    # only use the SDL clipboard on Windows or Linus if xclip/xsel not available
+    if platform.system() == 'Darwin':
+        handler = clipboard.MacClipboard()
+    elif platform.system() != 'Windows' and clipboard.XClipboard().ok:
+        handler = clipboard.XClipboard()
+    else:
+        handler = SDL2Clipboard()
+    if not handler.ok:
+        logging.warning('Clipboard copy and paste not available.')
+        handler = clipboard.Clipboard()
+    return handler
 
 
 ###############################################################################
