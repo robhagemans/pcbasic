@@ -1,6 +1,6 @@
 """
-PC-BASIC - interpreter.py
-Main interpreter loop
+PC-BASIC - session.py
+Session class and main interpreter loop
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -266,19 +266,23 @@ class Session(object):
 
     def interact(self):
         """Interactive interpreter session."""
-        try:
-            while True:
+        while True:
+            try:
                 self._loop()
                 self._show_prompt()
-                try:
-                    # input loop, checks events
-                    line = self.console.wait_screenline(from_start=True)
-                    self._prompt = not self._store_line(line)
-                except error.Break:
-                    self.sound.stop_all_sound()
-                    self._prompt = False
-        except error.Exit:
-            pass
+                # input loop, checks events
+                line = self.console.wait_screenline(from_start=True)
+                self._prompt = not self._store_line(line)
+            except error.Break:
+                self.sound.stop_all_sound()
+                self._prompt = False
+            except error.RunError as e:
+                self._handle_error(e)
+                self._prompt = True
+            except error.Exit:
+                break
+            except Exception as e:
+                self.debugger.bluescreen(e)
 
     def pause(self, message):
         """Pause the session and wait for a key."""
@@ -303,44 +307,36 @@ class Session(object):
 
     def _loop(self):
         """Run read-eval-print loop until control returns to user."""
-        try:
-            self.screen.cursor.reset_visibility()
-            while True:
-                last_parse = self._parse_mode
-                if self._parse_mode:
-                    try:
-                        # may raise Break
-                        self.events.check_events()
-                        # returns True if more statements to parse
-                        if not self.parser.parse_statement():
-                            self._parse_mode = False
-                    except error.Break as e:
-                        # ctrl-break stops foreground and background sound
-                        self.sound.stop_all_sound()
-                        self._handle_break(e)
-                elif self.auto_mode:
-                    try:
-                        # auto step, checks events
-                        self._auto_step()
-                    except error.Break:
-                        # ctrl+break, ctrl-c both stop background sound
-                        self.sound.stop_all_sound()
-                        self.auto_mode = False
-                # change loop modes
-                if self._parse_mode != last_parse:
-                    # move pointer to the start of direct line (for both on and off!)
-                    self.parser.set_pointer(False, 0)
-                    self.screen.cursor.reset_visibility()
-                # return control to user
-                if ((not self.auto_mode) and (not self._parse_mode)):
-                    break
-        except error.RunError as e:
-            self._handle_error(e)
-            self._prompt = True
-        except error.Exit:
-            raise
-        except Exception as e:
-            self.debugger.bluescreen(e)
+        self.screen.cursor.reset_visibility()
+        while True:
+            last_parse = self._parse_mode
+            if self._parse_mode:
+                try:
+                    # may raise Break
+                    self.events.check_events()
+                    # returns True if more statements to parse
+                    if not self.parser.parse_statement():
+                        self._parse_mode = False
+                except error.Break as e:
+                    # ctrl-break stops foreground and background sound
+                    self.sound.stop_all_sound()
+                    self._handle_break(e)
+            elif self.auto_mode:
+                try:
+                    # auto step, checks events
+                    self._auto_step()
+                except error.Break:
+                    # ctrl+break, ctrl-c both stop background sound
+                    self.sound.stop_all_sound()
+                    self.auto_mode = False
+            # change loop modes
+            if self._parse_mode != last_parse:
+                # move pointer to the start of direct line (for both on and off!)
+                self.parser.set_pointer(False, 0)
+                self.screen.cursor.reset_visibility()
+            # return control to user
+            if ((not self.auto_mode) and (not self._parse_mode)):
+                break
 
     def _set_parse_mode(self, on):
         """Enter or exit parse mode."""
@@ -419,7 +415,7 @@ class Session(object):
         if e.err == error.STX:
             # for some reason, err is reset to zero by GW-BASIC in this case.
             self.parser.error_num = 0
-            if e.pos != -1:
+            if e.pos is not None and e.pos != -1:
                 # line edit gadget appears
                 self.edit_prompt = (self.program.get_line_number(e.pos), e.pos+1)
 
