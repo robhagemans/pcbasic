@@ -156,10 +156,6 @@ def run_session(queues, resume, state_file, wait, prog, commands, **session_para
         except basic.Exit:
             # SYSTEM called during launch
             pass
-        except basic.RunError as e:
-            # only runtime errors that occur on interpreter launch are caught here
-            # e.g. "File not Found" for --load parameter
-            logging.error(e.message)
         finally:
             state.zpickle(session, state_file)
             if wait:

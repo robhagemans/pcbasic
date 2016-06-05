@@ -9,6 +9,7 @@ import os
 import sys
 import logging
 import platform
+from contextlib import contextmanager
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -222,31 +223,36 @@ class Session(object):
 
     def load_program(self, prog, rebuild_dict=True):
         """Load a program from native or BASIC file."""
-        with self.files.open_native_or_basic(
-                    prog, filetype='ABP',
-                    mode='I') as progfile:
-            self.program.load(progfile, rebuild_dict=rebuild_dict)
+        with self._handle_exceptions():
+            with self.files.open_native_or_basic(
+                        prog, filetype='ABP',
+                        mode='I') as progfile:
+                self.program.load(progfile, rebuild_dict=rebuild_dict)
 
     def save_program(self, prog, filetype):
         """Save a program to native or BASIC file."""
-        with self.files.open_native_or_basic(
-                    prog, filetype=filetype,
-                    mode='O') as progfile:
-            self.program.save(progfile)
+        with self._handle_exceptions():
+            with self.files.open_native_or_basic(
+                        prog, filetype=filetype,
+                        mode='O') as progfile:
+                self.program.save(progfile)
 
     def execute(self, command):
         """Execute a BASIC statement."""
         for cmd in command.splitlines():
-            self._store_line(cmd)
-            self._loop()
+            with self._handle_exceptions():
+                self._store_line(cmd)
+                self._loop()
 
     def evaluate(self, expression):
         """Evaluate a BASIC expression."""
-        # attach print token so tokeniser has a whole statement to work with
-        tokens = self.tokeniser.tokenise_line('?' + expression)
-        # skip : and print token and parse expression
-        tokens.read(2)
-        return var.to_value(self.parser.parse_expression(tokens, self), self.strings)
+        with self._handle_exceptions():
+            # attach print token so tokeniser has a whole statement to work with
+            tokens = self.tokeniser.tokenise_line('?' + expression)
+            # skip : and print token and parse expression
+            tokens.read(2)
+            return var.to_value(self.parser.parse_expression(tokens, self), self.strings)
+        return None
 
     def set_variable(self, name, value):
         """Set a variable in memory."""
@@ -268,21 +274,14 @@ class Session(object):
         """Interactive interpreter session."""
         while True:
             try:
-                self._loop()
-                self._show_prompt()
-                # input loop, checks events
-                line = self.console.wait_screenline(from_start=True)
-                self._prompt = not self._store_line(line)
-            except error.Break:
-                self.sound.stop_all_sound()
-                self._prompt = False
-            except error.RunError as e:
-                self._handle_error(e)
-                self._prompt = True
+                with self._handle_exceptions():
+                    self._loop()
+                    self._show_prompt()
+                    # input loop, checks events
+                    line = self.console.wait_screenline(from_start=True)
+                    self._prompt = not self._store_line(line)
             except error.Exit:
                 break
-            except Exception as e:
-                self.debugger.bluescreen(e)
 
     def pause(self, message):
         """Pause the session and wait for a key."""
@@ -404,6 +403,22 @@ class Session(object):
 
     ##############################################################################
     # error handling
+
+    @contextmanager
+    def _handle_exceptions(self):
+        """Context guard to handle BASIC exceptions."""
+        try:
+            yield
+        except error.Break:
+            self.sound.stop_all_sound()
+            self._prompt = False
+        except error.RunError as e:
+            self._handle_error(e)
+            self._prompt = True
+        except error.Exit:
+            raise
+        except Exception as e:
+            self.debugger.bluescreen(e)
 
     def _handle_error(self, e):
         """Handle a BASIC error through error message."""
