@@ -26,6 +26,24 @@ from .version import __version__, GREETING, ICON
 from .basic import codepages, fonts, programs
 
 
+# user configuration and state directories
+_home_dir = os.path.expanduser(u'~')
+if platform.system() == b'Windows':
+    user_config_dir = os.path.join(os.getenv(u'APPDATA'), u'pcbasic')
+    state_path = user_config_dir
+elif platform.system() == b'Darwin':
+    user_config_dir = os.path.join(_home_dir, u'Library/Application Support/pcbasic')
+    state_path = user_config_dir
+else:
+    _xdg_data_home = os.environ.get(u'XDG_DATA_HOME') or os.path.join(_home_dir, u'.local', u'share')
+    _xdg_config_home = os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(_home_dir, u'.config')
+    user_config_dir = os.path.join(_xdg_config_home, u'pcbasic')
+    state_path = os.path.join(_xdg_data_home, u'pcbasic')
+
+# @: drive for bundled programs
+program_path = os.path.join(state_path, 'bundled_programs')
+
+
 def get_logger(logfile=None):
     """Use the awkward logging interface as we can only use basicConfig once."""
     l = logging.getLogger(__name__)
@@ -79,35 +97,6 @@ def safe_split(s, sep):
     else:
         s1 = u''
     return s0, s1
-
-def get_system_preset_name():
-    """Return the name of the preset section for this system."""
-    if platform.system() == b'Windows':
-        return u'windows'
-    elif platform.system() == b'Linux':
-        return u'linux'
-    elif platform.system() == b'Darwin':
-        return u'osx'
-    else:
-        return u'unknown_os'
-
-
-# user configuration and state directories
-_home_dir = os.path.expanduser(u'~')
-if platform.system() == b'Windows':
-    user_config_dir = os.path.join(os.getenv(u'APPDATA'), u'pcbasic')
-    state_path = user_config_dir
-elif platform.system() == b'Darwin':
-    user_config_dir = os.path.join(_home_dir, u'Library/Application Support/pcbasic')
-    state_path = user_config_dir
-else:
-    _xdg_data_home = os.environ.get(u'XDG_DATA_HOME') or os.path.join(_home_dir, u'.local', u'share')
-    _xdg_config_home = os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(_home_dir, u'.config')
-    user_config_dir = os.path.join(_xdg_config_home, u'pcbasic')
-    state_path = os.path.join(_xdg_data_home, u'pcbasic')
-
-# @: drive for bundled programs
-program_path = os.path.join(state_path, 'bundled_programs')
 
 
 class TemporaryDirectory():
@@ -215,7 +204,7 @@ class Settings(object):
 
     # by default, load what's in section [pcbasic] and override with anything
     # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
-    default_presets = [u'pcbasic', get_system_preset_name()]
+    default_presets = [u'pcbasic']
 
     # number of positional arguments
     positional = 2
