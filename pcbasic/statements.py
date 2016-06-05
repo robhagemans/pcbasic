@@ -519,6 +519,7 @@ def exec_sound(ins):
     if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
         raise error.RunError(error.IFC)
     # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
+    volume, voice = 15, 0
     if dur.gt(fp.Single.zero):
         if (util.skip_white_read_if(ins, (',',)) and (pcjr_syntax == 'tandy' or
                 (pcjr_syntax == 'pcjr' and state.console_state.sound.sound_on))):
@@ -527,10 +528,6 @@ def exec_sound(ins):
             if util.skip_white_read_if(ins, (',',)):
                 voice = vartypes.pass_int_unpack(expressions.parse_expression(ins))
                 util.range_check(0, 2, voice) # can't address noise channel here
-            else:
-                voice = 0
-        else:
-            volume, voice = 15, 0
     util.require(ins, tk.end_statement)
     if dur.is_zero():
         state.console_state.sound.stop_all_sound()
@@ -543,7 +540,7 @@ def exec_sound(ins):
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
         # play indefinitely in background
-        state.console_state.sound.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
+        state.console_state.sound.play_sound(freq, 1, loop=True, voice=voice, volume=volume)
     else:
         state.console_state.sound.play_sound(freq, dur_sec, voice=voice, volume=volume)
         if state.console_state.sound.foreground:
