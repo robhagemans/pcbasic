@@ -8,8 +8,11 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import locale
 import logging
+import pkgutil
+import platform
 import traceback
 import threading
+import subprocess
 from Queue import Queue
 
 # set locale - this is necessary for curses and *maybe* for clipboard handling
@@ -34,10 +37,10 @@ def main():
             command = settings.get_command()
             if command == 'version':
                 # in version mode, print version and exit
-                config.show_version(settings)
+                show_version(settings)
             elif command == 'help':
                 # in help mode, print usage and exit
-                config.show_usage()
+                show_usage()
             elif command == 'convert':
                 # in converter mode, convert and exit
                 convert(settings)
@@ -59,6 +62,49 @@ def main():
             sys.stderr.close()
         except:
             pass
+
+def show_usage():
+    """Show usage description."""
+    sys.stdout.write(pkgutil.get_data(__name__, 'USAGE.txt'))
+
+def show_version(settings):
+    """Show version with optional debugging details."""
+    sys.stdout.write(__version__ + '\n')
+    if settings.get('debug'):
+        show_platform_info()
+
+def show_platform_info():
+    """Show information about operating system and installed modules."""
+    logging.info('\nPLATFORM')
+    logging.info('os: %s %s %s', platform.system(), platform.processor(), platform.version())
+    logging.info('python: %s %s', sys.version.replace('\n',''), ' '.join(platform.architecture()))
+    logging.info('\nMODULES')
+    # try numpy before pygame to avoid strange ImportError on FreeBSD
+    modules = ('numpy', 'win32api', 'sdl2', 'pygame', 'curses', 'pexpect', 'serial', 'parallel')
+    for module in modules:
+        try:
+            m = __import__(module)
+        except ImportError:
+            logging.info('%s: --', module)
+        else:
+            for version_attr in ('__version__', 'version', 'VERSION'):
+                try:
+                    version = getattr(m, version_attr)
+                    logging.info('%s: %s', module, version)
+                    break
+                except AttributeError:
+                    pass
+            else:
+                logging.info('available\n')
+    if platform.system() != 'Windows':
+        logging.info('\nEXTERNAL TOOLS')
+        tools = ('lpr', 'paps', 'beep', 'xclip', 'xsel', 'pbcopy', 'pbpaste')
+        for tool in tools:
+            try:
+                location = subprocess.check_output('command -v %s' % tool, shell=True).replace('\n','')
+                logging.info('%s: %s', tool, location)
+            except Exception as e:
+                logging.info('%s: --', tool)
 
 def convert(settings):
     """Perform file format conversion."""
@@ -118,6 +164,7 @@ def run_session(queues, resume, state_file, wait, prog, commands, **session_para
             state.zpickle(session, state_file)
             if wait:
                 session.pause('Press a key to close window')
+
 
 
 if __name__ == "__main__":
