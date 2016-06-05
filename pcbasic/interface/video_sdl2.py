@@ -727,7 +727,7 @@ class SDL2Clipboard(clipboard.Clipboard):
         text = sdl2.SDL_GetClipboardText()
         if text is None:
             return u''
-        return text.decode('utf-8', 'replace')
+        return text.decode('utf-8', 'replace').replace('\r\n', '\n').replace('\n', '\r')
 
 
 ###############################################################################

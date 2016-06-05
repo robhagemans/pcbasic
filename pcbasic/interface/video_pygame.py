@@ -674,6 +674,8 @@ class PygameClipboard(clipboard.Clipboard):
             us = us[:us.find(u'\0')]
         else:
             us = us.decode('utf-8', errors='replace')
+        if us:
+            us = us.replace('\r\n', '\n').replace('\n', '\r')
         return us or u''
 
 def get_clipboard_handler():

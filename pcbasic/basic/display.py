@@ -1290,7 +1290,7 @@ class Screen(object):
             if c > self.vpage.row[r-1].end:
                 if not self.vpage.row[r-1].wrap:
                     full.append(self.codepage.str_to_unicode(b''.join(clip)))
-                    full.append('\r\n')
+                    full.append('\n')
                     clip = []
                 r += 1
                 c = 1
