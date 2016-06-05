@@ -440,6 +440,7 @@ class Statements(object):
         if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
             raise error.RunError(error.IFC)
         # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
+        volume, voice = 15, 0
         if dur.gt(fp.Single.zero):
             if (util.skip_white_read_if(ins, (',',)) and (self.parser.syntax == 'tandy' or
                     (self.parser.syntax == 'pcjr' and self.session.sound.sound_on))):
@@ -448,10 +449,6 @@ class Statements(object):
                 if util.skip_white_read_if(ins, (',',)):
                     voice = vartypes.pass_int_unpack(self.parser.parse_expression(ins, self.session))
                     util.range_check(0, 2, voice) # can't address noise channel here
-                else:
-                    voice = 0
-            else:
-                volume, voice = 15, 0
         util.require(ins, tk.end_statement)
         if dur.is_zero():
             self.session.sound.stop_all_sound()
@@ -464,7 +461,7 @@ class Statements(object):
         dur_sec = dur.to_value()/18.2
         if one_over_44.gt(dur):
             # play indefinitely in background
-            self.session.sound.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
+            self.session.sound.play_sound(freq, 1, loop=True, voice=voice, volume=volume)
         else:
             self.session.sound.play_sound(freq, dur_sec, voice=voice, volume=volume)
             if self.session.sound.foreground:
