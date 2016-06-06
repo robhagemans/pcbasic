@@ -442,7 +442,7 @@ class Session(object):
         # if we're in a program, save pointer
         pos = -1
         if self.parser.run_mode:
-            pos = self.program.bytecode.tell()
+            pos = self.program.bytecode.tell()-1
             self.parser.stop = pos
         self._write_error_message(e.message, self.program.get_line_number(pos))
         self._set_parse_mode(False)
