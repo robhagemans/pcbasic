@@ -519,36 +519,14 @@ class Screen(object):
                     self.cga4_palette, self.video_mem_size,
                     self.capabilities, self.mono_tint, self.screen_aspect)
 
-    def resume(self):
-        """Load a video mode from storage and initialise."""
-        # recalculate modes in case we've changed hardware emulations
-        self.prepare_modes()
-        cmode = self.mode
-        nmode = self.screen_mode
-        if (not cmode.is_text_mode and
-                (nmode not in self.mode_data or
-                 cmode.name != self.mode_data[nmode].name)):
-            logging.warning(
-                "Resumed screen mode %d (%s) not supported by this setup",
-                nmode, cmode.name)
-            return False
-        if not cmode.is_text_mode:
-            mode_info = self.mode_data[nmode]
-        else:
-            mode_info = self.text_data[cmode.width]
-        if (cmode.is_text_mode and cmode.name != mode_info.name):
-            # we switched adapters on resume; fix font height, palette, cursor
-            self.cursor.from_line = (self.cursor.from_line *
-                                       mode_info.font_height) // cmode.font_height
-            self.cursor.to_line = (self.cursor.to_line *
-                                     mode_info.font_height) // cmode.font_height
-            self.palette = Palette(self.mode, self.capabilities)
+    def rebuild(self):
+        """Rebuild the screen from scratch."""
         # set the codepage
         self.session.video_queue.put(signals.Event(
                 signals.VIDEO_SET_CODEPAGE, self.codepage))
         # set the screen mode
-        self.session.video_queue.put(signals.Event(signals.VIDEO_SET_MODE, mode_info))
-        if mode_info.is_text_mode:
+        self.session.video_queue.put(signals.Event(signals.VIDEO_SET_MODE, self.mode))
+        if self.mode.is_text_mode:
             # send glyphs to signals; copy is necessary
             # as dict may change here while the other thread is working on it
             self.session.video_queue.put(signals.Event(signals.VIDEO_BUILD_GLYPHS,
@@ -559,7 +537,7 @@ class Screen(object):
         self.palette.set_all(self.palette.palette, check_mode=False)
         # fix the cursor
         self.session.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_SHAPE,
-                (self.cursor.width, mode_info.font_height,
+                (self.cursor.width, self.mode.font_height,
                  self.cursor.from_line, self.cursor.to_line)))
         self.session.video_queue.put(signals.Event(signals.VIDEO_MOVE_CURSOR,
                 (self.current_row, self.current_col)))
@@ -570,10 +548,10 @@ class Screen(object):
             fore, _, _, _ = self.split_attr(self.mode.cursor_index or self.attr)
         self.session.video_queue.put(signals.Event(signals.VIDEO_SET_CURSOR_ATTR, fore))
         self.cursor.reset_visibility()
+        # set the border
         fore, _, _, _ = self.split_attr(self.border_attr)
         self.session.video_queue.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
         # redraw the text screen and rebuild text buffers in video plugin
-        self.mode = mode_info
         for pagenum in range(self.mode.num_pages):
             for crow in range(self.mode.height):
                 # for_keys=True means 'suppress echo on cli'
@@ -584,7 +562,6 @@ class Screen(object):
                 self.session.video_queue.put(signals.Event(signals.VIDEO_PUT_RECT, (pagenum, 0, 0,
                                 self.mode.pixel_width-1, self.mode.pixel_height-1,
                                 self.pixels.pages[pagenum].buffer)))
-        return True
 
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum,
                erase=1, new_width=None):

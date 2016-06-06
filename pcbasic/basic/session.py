@@ -38,11 +38,6 @@ from . import unicodepage
 from . import var
 
 
-class ResumeFailed(Exception):
-    """Failed to resume session."""
-    def __str__(self):
-        return self.__doc__
-
 class Session(object):
     """Interpreter session."""
 
@@ -213,9 +208,8 @@ class Session(object):
         self.video_queue = video_queue or signals.NullQueue()
         self.tone_queue = tone_queue or signals.NullQueue()
         self.message_queue = message_queue or signals.NullQueue()
-        # reload the screen in resumed state
-        if not self.screen.resume():
-            raise ResumeFailed()
+        # rebuild the screen
+        self.screen.rebuild()
         # rebuild the audio queue
         for q, store in zip(self.tone_queue, self.tone_queue_store):
             signals.load_queue(q, store)
