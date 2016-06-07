@@ -87,9 +87,10 @@ class Session(object):
                     sys.stdout, self.codepage, sys.stdout.encoding or b'utf-8')
         else:
             filter_stream = None
-        # prepare output redirection
+        # prepare redirection
         self.output_redirection = redirect.OutputRedirection(
                 output_file, append, filter_stream)
+        self.input_redirection = redirect.InputRedirection((input_file,), (False,))
         # prepare tokeniser
         self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
         # initialise the program
@@ -117,7 +118,7 @@ class Session(object):
         # Events needed for wait() only
         self.keyboard = inputs.Keyboard(self.events, self.screen, self.fkey_macros,
                 self.codepage, self.sound,
-                keystring, input_file, ignore_caps, ctrl_c_is_break)
+                keystring, None, ignore_caps, ctrl_c_is_break)
         # set up variables and memory model state
         # initialise the data segment
         self.memory = memory.DataSegment(self.program, max_memory,
