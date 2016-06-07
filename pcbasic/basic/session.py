@@ -83,14 +83,18 @@ class Session(object):
         # prepare codepage
         self.codepage = unicodepage.Codepage(codepage, box_protect)
         if echo_to_stdout:
-            filter_stream = unicodepage.CodecStream(
+            stdout_stream = unicodepage.CodecStream(
                     sys.stdout, self.codepage, sys.stdout.encoding or b'utf-8')
+            # FIXME: need a readable CodecStream
+            stdin_stream = sys.stdin
         else:
-            filter_stream = None
+            stdout_stream, stdin_stream = None, None
         # prepare redirection
         self.output_redirection = redirect.OutputRedirection(
-                output_file, append, filter_stream)
-        self.input_redirection = redirect.InputRedirection((input_file,), (False,))
+                output_file, append, stdout_stream)
+        self.input_redirection = redirect.InputRedirection(
+                (open(input_file, b'rb') if input_file else None, stdin_stream),
+                (False, platform.system() != 'Windows' and sys.stdin.isatty()))
         # prepare tokeniser
         self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
         # initialise the program

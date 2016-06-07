@@ -51,9 +51,9 @@ class InputRedirection(object):
         self._buffer = []
         self._sources = []
         #self._input_stream = unicodepage.CodecStream(codepage, encoding)
-        self._input_streams = [open(f, b'rb') for f in input_streams if f]
-        self._lfcrs = lfcrs or [False]*len(input_streams)
-        self._closed = [False]*len(input_streams)
+        self._input_streams = [f for f in input_streams if f]
+        self._lfcrs = [lfcr for (lfcr, f) in zip(lfcrs, input_streams) if f] or [False]*len(self._input_streams)
+        self._closed = [False]*len(self._input_streams)
         self._start_threads()
 
     def _start_threads(self):
@@ -88,9 +88,11 @@ class InputRedirection(object):
 
     def _process_input(self, stream, queue):
         """Process input from stream."""
+        # FIXME: do not hardcode encoding
+        encoding = 'utf-8'
         while True:
             # blocking read
-            char = stream.read(1)
+            instr = stream.readline().decode(encoding, b'replace')
             # TODO: decode .decode(encoding, b'replace')
             # if encoding:
             #     all_input = all_input.decode(encoding, b'replace')
@@ -100,11 +102,11 @@ class InputRedirection(object):
             #     all_input = self.codepage.str_to_unicode(
             #                     all_input, preserve_control=True)
 
-            if not char:
+            if not instr:
                 # input stream is closed, stop the thread
                 queue.put(None)
                 return
-            queue.put(char)
+            queue.put(instr)
 
     def _drain_source(self, queue):
         """Read all available characters from a single source, or None if source closed."""

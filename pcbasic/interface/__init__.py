@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 from .base import run, video_plugins, audio_plugins, InitFailed
 
 # video plugins
-from .video_none import VideoNone
+from .base import VideoPlugin
 from .video_ansi import VideoANSI
 from .video_cli import VideoCLI
 from .video_curses import VideoCurses
@@ -25,7 +25,7 @@ from .audio_sdl2 import AudioSDL2
 
 video_plugins.update({
     # interface_name: ((video_plugin_name, ...), fallback)
-    'none': ((VideoNone,), None),
+    'none': ((VideoPlugin,), None),
     'cli': ((VideoCLI,), 'none'),
     'text': ((VideoCurses, VideoANSI), 'cli'),
     'graphical':  ((VideoPygame,), 'text'),

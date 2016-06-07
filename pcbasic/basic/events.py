@@ -101,8 +101,9 @@ class Events(object):
         """Handle input events."""
         while True:
             # drain redirect streams
-            self.session.keyboard.insert_chars(
-                    self.session.input_redirection.read(), check_full=False)
+            in_str = self.session.input_redirection.read()
+            if in_str:
+                self.session.keyboard.insert_chars(in_str, check_full=False)
             if self.session.input_redirection.is_closed():
                 self.session.keyboard.close_input()
             # pop input queues

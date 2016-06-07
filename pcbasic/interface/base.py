@@ -66,7 +66,7 @@ def _get_video_plugin(input_queue, video_queue, interface_name, **kwargs):
 class VideoPlugin(object):
     """Base class for display/input interface plugins."""
 
-    def __init__(self, input_queue, video_queue):
+    def __init__(self, input_queue, video_queue, **kwargs):
         """Setup the interface."""
         self.alive = True
         self.screen_changed = False
