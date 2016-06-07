@@ -92,8 +92,14 @@ class Session(object):
         # prepare redirection
         self.output_redirection = redirect.OutputRedirection(
                 output_file, append, stdout_stream)
+        input_stream = None
+        if input_file:
+            try:
+                input_stream = open(input_file, b'rb')
+            except EnvironmentError as e:
+                logging.warning(u'Could not open input file %s: %s', input_file, e.strerror)
         self.input_redirection = redirect.InputRedirection(
-                (open(input_file, b'rb') if input_file else None, stdin_stream),
+                (input_stream, stdin_stream),
                 (False, platform.system() != 'Windows' and sys.stdin.isatty()))
         # prepare tokeniser
         self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
@@ -122,7 +128,7 @@ class Session(object):
         # Events needed for wait() only
         self.keyboard = inputs.Keyboard(self.events, self.screen, self.fkey_macros,
                 self.codepage, self.sound,
-                keystring, None, ignore_caps, ctrl_c_is_break)
+                keystring, ignore_caps, ctrl_c_is_break)
         # set up variables and memory model state
         # initialise the data segment
         self.memory = memory.DataSegment(self.program, max_memory,
