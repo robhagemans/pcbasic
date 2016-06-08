@@ -113,8 +113,6 @@ class VideoPlugin(object):
                 self.set_mode(signal.params)
             elif signal.event_type == signals.VIDEO_PUT_GLYPH:
                 self.put_glyph(*signal.params)
-            elif signal.event_type == signals.VIDEO_MOVE_CURSOR:
-                self.move_cursor(*signal.params)
             elif signal.event_type == signals.VIDEO_CLEAR_ROWS:
                 self.clear_rows(*signal.params)
             elif signal.event_type == signals.VIDEO_SCROLL_UP:
