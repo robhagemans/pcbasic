@@ -46,14 +46,21 @@ class OutputRedirection(object):
 class InputRedirection(object):
     """Manage I/O redirection."""
 
-    def __init__(self, input_streams, lfcrs):
+    def __init__(self, input_list, codepage):
         """Initialise redirects."""
+        self._codepage = codepage
         self._buffer = []
         self._sources = []
-        #self._input_stream = unicodepage.CodecStream(codepage, encoding)
-        self._input_streams = [f for f in input_streams if f]
-        self._lfcrs = [lfcr for (lfcr, f) in zip(lfcrs, input_streams) if f] or [False]*len(self._input_streams)
-        self._closed = [False]*len(self._input_streams)
+        self._input_streams = []
+        self._lfcrs = []
+        self._encodings = []
+        self._closed = []
+        for f, lfcr, encoding in input_list:
+            if f:
+                self._input_streams.append(f)
+                self._lfcrs.append(lfcr)
+                self._encodings.append(encoding)
+                self._closed.append(False)
         self._start_threads()
 
     def _start_threads(self):
@@ -62,10 +69,10 @@ class InputRedirection(object):
         if not self._input_streams:
             return
         # launch a daemon thread for each source
-        for s in self._input_streams:
+        for s, encoding in zip(self._input_streams, self._encodings):
             # launch a thread to allow nonblocking reads on both Windows and Unix
             queue = Queue.Queue()
-            thread = threading.Thread(target=self._process_input, args=(s, queue))
+            thread = threading.Thread(target=self._process_input, args=(s, queue, encoding))
             thread.daemon = True
             thread.start()
             self._sources.append(queue)
@@ -86,27 +93,21 @@ class InputRedirection(object):
         self._sources = []
         self._start_threads()
 
-    def _process_input(self, stream, queue):
+    def _process_input(self, stream, queue, encoding):
         """Process input from stream."""
-        # FIXME: do not hardcode encoding
-        encoding = 'utf-8'
         while True:
             # blocking read
-            instr = stream.readline().decode(encoding, b'replace')
-            # TODO: decode .decode(encoding, b'replace')
-            # if encoding:
-            #     all_input = all_input.decode(encoding, b'replace')
-            # else:
-            #     # raw input means it's already in the BASIC codepage
-            #     # but the keyboard functions use unicode
-            #     all_input = self.codepage.str_to_unicode(
-            #                     all_input, preserve_control=True)
-
+            instr = stream.readline()
             if not instr:
                 # input stream is closed, stop the thread
                 queue.put(None)
                 return
-            queue.put(instr)
+            if encoding:
+                 queue.put(instr.decode(encoding, b'replace'))
+            else:
+                 # raw input means it's already in the BASIC codepage
+                 # but the keyboard functions use unicode
+                 queue.put(self._codepage.str_to_unicode(instr, preserve_control=True))
 
     def _drain_source(self, queue):
         """Read all available characters from a single source, or None if source closed."""

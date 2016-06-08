@@ -464,8 +464,8 @@ class Settings(object):
             # text file parameters
             'utf8': self.get('utf8'),
             'universal': not self.get('strict-newline'),
-            # stdout echo (for filter interface)
-            'echo_to_stdout': (self.get(b'interface') == u'none'),
+            # attach to standard I/O (for filter interface)
+            'stdio': (self.get(b'interface') == u'none'),
             # keyboard settings
             'ignore_caps': not self.get('capture-caps'),
             'ctrl_c_is_break': self.get('ctrl-c-break'),

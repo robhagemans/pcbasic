@@ -57,7 +57,7 @@ class Session(object):
             peek_values=None, device_params=None,
             current_device='Z', mount_dict=None,
             print_trigger='close', serial_buffer_size=128,
-            utf8=False, universal=True, echo_to_stdout=False,
+            utf8=False, universal=True, stdio=False,
             ignore_caps=True, ctrl_c_is_break=True,
             max_list_line=65535, allow_protect=False,
             allow_code_poke=False, max_memory=65534,
@@ -82,7 +82,7 @@ class Session(object):
         ######################################################################
         # prepare codepage
         self.codepage = unicodepage.Codepage(codepage, box_protect)
-        if echo_to_stdout:
+        if stdio:
             stdout_stream = unicodepage.CodecStream(
                     sys.stdout, self.codepage, sys.stdout.encoding or b'utf-8')
             # FIXME: need a readable CodecStream
@@ -99,8 +99,9 @@ class Session(object):
             except EnvironmentError as e:
                 logging.warning(u'Could not open input file %s: %s', input_file, e.strerror)
         self.input_redirection = redirect.InputRedirection(
-                (input_stream, stdin_stream),
-                (False, platform.system() != 'Windows' and sys.stdin.isatty()))
+                [(input_stream, False, None),
+                (stdin_stream, platform.system() != 'Windows' and sys.stdin.isatty(), sys.stdin.encoding)],
+                self.codepage)
         # prepare tokeniser
         self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
         # initialise the program
