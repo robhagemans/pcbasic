@@ -36,16 +36,19 @@ def main():
             settings = config.Settings(temp_dir)
             command = settings.get_command()
             if command == 'version':
-                # in version mode, print version and exit
+                # print version and exit
                 show_version(settings)
             elif command == 'help':
-                # in help mode, print usage and exit
+                # print usage and exit
                 show_usage()
             elif command == 'convert':
-                # in converter mode, convert and exit
+                # convert and exit
                 convert(settings)
+            elif settings.get_interface() == 'none':
+                # start an interpreter session with standard i/o
+                run_session([None, None, None, None], **settings.get_launch_parameters())
             else:
-                # otherwise, start an interpreter session
+                # start an interpreter session with interface
                 launch_session(settings)
     except:
         # without this except clause we seem to be dropping exceptions
