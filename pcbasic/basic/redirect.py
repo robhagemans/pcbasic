@@ -84,6 +84,10 @@ class InputRedirection(object):
         pickle_dict = self.__dict__
         # don't pickle the queues
         del pickle_dict['_sources']
+        del pickle_dict['_input_streams']
+        del pickle_dict['_lfcrs']
+        del pickle_dict['_encodings']
+        del pickle_dict['_closed']
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
@@ -91,6 +95,11 @@ class InputRedirection(object):
         # don't pickle the queues
         self.__dict__ = pickle_dict
         self._sources = []
+        # don't pickle the redirect sources
+        self._input_streams = []
+        self._lfcrs = []
+        self._encodings = []
+        self._closed = []
         self._start_threads()
 
     def _process_input(self, stream, queue, encoding):
