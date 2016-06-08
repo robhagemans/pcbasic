@@ -65,9 +65,11 @@ class Session(object):
             temp_dir=u''):
         """Initialise the interpreter session."""
         # use dummy queues if not provided
+        # *4 means we have multiple references to the same queue
+        # which doesn't matter since we're dropping all signals anyway
         self.input_queue = input_queue or signals.NullQueue()
         self.video_queue = video_queue or signals.NullQueue()
-        self.tone_queue = tone_queue or signals.NullQueue()
+        self.tone_queue = tone_queue or [signals.NullQueue()]*4
         self.message_queue = message_queue or signals.NullQueue()
         # true if a prompt is needed on next cycle
         self._prompt = True
@@ -201,7 +203,7 @@ class Session(object):
         # remove queues from state
         pickle_dict['input_queue'] = signals.NullQueue()
         pickle_dict['video_queue'] = signals.NullQueue()
-        pickle_dict['tone_queue'] = signals.NullQueue()
+        pickle_dict['tone_queue'] = [signals.NullQueue()]*4
         pickle_dict['message_queue'] = signals.NullQueue()
         return pickle_dict
 
