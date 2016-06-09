@@ -68,10 +68,12 @@ copy_reg.pickle(cStringIO.OutputType, pickle_StringIO)
 
 def zunpickle(state_file):
     """Read a compressed pickle string."""
-    with open(state_file, 'rb') as f:
-        return pickle.loads(zlib.decompress(f.read()))
+    if state_file:
+        with open(state_file, 'rb') as f:
+            return pickle.loads(zlib.decompress(f.read()))
 
 def zpickle(obj, state_file):
     """Retuen a compressed pickle string."""
-    with open(state_file, 'wb') as f:
-        f.write(zlib.compress(pickle.dumps(obj, 2)))
+    if state_file:
+        with open(state_file, 'wb') as f:
+            f.write(zlib.compress(pickle.dumps(obj, 2)))

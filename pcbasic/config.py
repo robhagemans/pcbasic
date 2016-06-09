@@ -517,6 +517,9 @@ class Settings(object):
 
     def get_interface(self):
         """Return name of interface plugin."""
+        interface = self.get('interface')
+        if interface == 'none':
+            return None
         return self.get('interface') or 'graphical'
 
     def get_launch_parameters(self):

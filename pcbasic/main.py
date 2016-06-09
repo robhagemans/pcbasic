@@ -44,12 +44,12 @@ def main():
             elif command == 'convert':
                 # convert and exit
                 convert(settings)
-            elif settings.get_interface() == 'none':
-                # start an interpreter session with standard i/o
-                run_session([None, None, None, None], **settings.get_launch_parameters())
-            else:
+            elif settings.get_interface():
                 # start an interpreter session with interface
                 launch_session(settings)
+            else:
+                # start an interpreter session with standard i/o
+                run_session(**settings.get_launch_parameters())
     except:
         # without this except clause we seem to be dropping exceptions
         # probably due to the sys.stdout.close() hack below
@@ -143,7 +143,8 @@ def launch_session(settings):
         input_queue.put(signals.Event(signals.KEYB_QUIT))
         thread.join()
 
-def run_session(queues, resume, state_file, wait, prog, commands, **session_params):
+def run_session(queues=[], resume=False, state_file=None, wait=False,
+                prog=None, commands=[], **session_params):
     """Run an interactive BASIC session."""
     if resume:
         session = state.zunpickle(state_file).attach(*queues)
