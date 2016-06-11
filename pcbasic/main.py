@@ -143,8 +143,8 @@ def launch_session(settings):
         input_queue.put(signals.Event(signals.KEYB_QUIT))
         thread.join()
 
-def run_session(queues=[], resume=False, state_file=None, wait=False,
-                prog=None, commands=[], **session_params):
+def run_session(queues=(), resume=False, state_file=None, wait=False,
+                prog=None, commands=(), **session_params):
     """Run an interactive BASIC session."""
     if resume:
         session = state.zunpickle(state_file).attach(*queues)
