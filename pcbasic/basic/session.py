@@ -26,7 +26,7 @@ from . import console
 from . import inputs
 from . import debug
 from . import rnd
-from . import timedate
+from . import clock
 from . import shell
 from . import memory
 from . import machine
@@ -153,7 +153,7 @@ class Session(object):
         # initialise random number generator
         self.randomiser = rnd.RandomNumberGenerator()
         # initialise system clock
-        self.clock = timedate.Clock()
+        self.clock = clock.Clock()
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
         # interpreter is executing a command (needs Screen)

@@ -1,5 +1,5 @@
 """
-PC-BASIC - timedate.py
+PC-BASIC - clock.py
 Time and date utilities
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
