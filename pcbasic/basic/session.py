@@ -84,25 +84,9 @@ class Session(object):
         ######################################################################
         # prepare codepage
         self.codepage = unicodepage.Codepage(codepage, box_protect)
-        if stdio:
-            stdout_stream = unicodepage.CodecStream(
-                    sys.stdout, self.codepage, sys.stdout.encoding or b'utf-8')
-            stdin_stream = sys.stdin
-        else:
-            stdout_stream, stdin_stream = None, None
-        # prepare redirection
-        self.output_redirection = redirect.OutputRedirection(
-                output_file, append, stdout_stream)
-        input_stream = None
-        if input_file:
-            try:
-                input_stream = open(input_file, b'rb')
-            except EnvironmentError as e:
-                logging.warning(u'Could not open input file %s: %s', input_file, e.strerror)
-        self.input_redirection = redirect.InputRedirection(
-                [(input_stream, False, None),
-                (stdin_stream, platform.system() != 'Windows' and sys.stdin.isatty(), sys.stdin.encoding)],
-                self.codepage)
+        # prepare I/O redirection
+        self.input_redirection, self.output_redirection = redirect.get_redirection(
+                self.codepage, stdio, input_file, output_file, append)
         # prepare tokeniser
         self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
         # initialise the program

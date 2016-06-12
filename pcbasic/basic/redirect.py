@@ -9,6 +9,32 @@ This file is released under the GNU GPL version 3 or later.
 import threading
 import logging
 import Queue
+import sys
+import platform
+
+import unicodepage
+
+
+def get_redirection(codepage, stdio, input_file, output_file, append):
+    """Initialise redirection objects."""
+    if stdio:
+        stdout_stream = unicodepage.CodecStream(
+                sys.stdout, codepage, sys.stdout.encoding or b'utf-8')
+        stdin_stream = sys.stdin
+    else:
+        stdout_stream, stdin_stream = None, None
+    output_redirection = OutputRedirection(output_file, append, stdout_stream)
+    input_stream = None
+    if input_file:
+        try:
+            input_stream = open(input_file, b'rb')
+        except EnvironmentError as e:
+            logging.warning(u'Could not open input file %s: %s', input_file, e.strerror)
+    input_redirection = InputRedirection(
+            [(input_stream, False, None),
+            (stdin_stream, platform.system() != 'Windows' and sys.stdin.isatty(), sys.stdin.encoding)],
+            codepage)
+    return input_redirection, output_redirection
 
 
 class OutputRedirection(object):
