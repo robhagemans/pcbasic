@@ -37,7 +37,7 @@ class Clock(object):
         while pos < len(timestr):
             if listpos > 2:
                 break
-            c = chr(timestr[pos])
+            c = timestr[pos]
             if c in (':', '.'):
                 timelist[listpos] = int(word)
                 listpos += 1
@@ -65,7 +65,7 @@ class Clock(object):
         while pos < len(datestr):
             if listpos > 2:
                 break
-            c = chr(datestr[pos])
+            c = datestr[pos]
             if c in ('-', '/'):
                 datelist[listpos] = int(word)
                 listpos += 1
