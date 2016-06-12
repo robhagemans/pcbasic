@@ -16,7 +16,7 @@ except ImportError:
 
 from . import error
 from . import util
-from . import draw_and_play
+from . import mlparser
 from . import signals
 
 # base frequency for noise source
@@ -156,7 +156,7 @@ class Sound(object):
             gmls.write(str(mml))
             gmls.seek(0)
             gmls_list.append(gmls)
-        ml_parser_list = [draw_and_play.MLParser(gmls, data_segment) for gmls in gmls_list]
+        ml_parser_list = [mlparser.MLParser(gmls, data_segment) for gmls in gmls_list]
         next_oct = 0
         total_time = [0, 0, 0, 0]
         voices = range(3)

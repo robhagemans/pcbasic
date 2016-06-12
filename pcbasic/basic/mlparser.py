@@ -1,5 +1,5 @@
 """
-PC-BASIC - draw_and_play.py
+PC-BASIC - mlparser.py
 DRAW and PLAY macro language stream utilities
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans

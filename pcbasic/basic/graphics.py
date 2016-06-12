@@ -20,7 +20,7 @@ from . import error
 from . import fp
 from . import vartypes
 from . import util
-from . import draw_and_play
+from . import mlparser
 
 # degree-to-radian conversion factor
 deg_to_rad = fp.div(fp.Single.twopi, fp.Single.from_int(360))
@@ -688,7 +688,7 @@ class Drawing(object):
         """DRAW: Execute a Graphics Macro Language string."""
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = StringIO(gml)
-        ml_parser = draw_and_play.MLParser(gmls, memory)
+        ml_parser = mlparser.MLParser(gmls, memory)
         plot, goback = True, False
         while True:
             c = util.skip_read(gmls, ml_parser.whitepace).upper()
