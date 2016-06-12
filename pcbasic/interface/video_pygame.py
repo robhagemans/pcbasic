@@ -25,7 +25,7 @@ from ..basic import scancode
 from ..basic.eascii import as_unicode as uea
 
 from . import clipboard
-from . import base as video
+from . import base
 from . import video_graphical
 
 
@@ -39,10 +39,10 @@ class VideoPygame(video_graphical.VideoGraphical):
         # set state objects to whatever is now in state (may have been unpickled)
         if not pygame:
             logging.warning('PyGame module not found.')
-            raise video.InitFailed()
+            raise base.InitFailed()
         if not numpy:
             logging.debug('NumPy module not found.')
-            raise video.InitFailed()
+            raise base.InitFailed()
         # ensure we have the correct video driver for SDL 1.2
         # pygame sets this on import, but if we've tried SDL2 we've had to
         # reset this value
@@ -55,7 +55,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         except pygame.error:
             self._close_pygame()
             logging.warning('No suitable display driver for PyGame.')
-            raise video.InitFailed()
+            raise base.InitFailed()
         # display & border
         # display buffer
         self.canvas = []
@@ -116,7 +116,7 @@ class VideoPygame(video_graphical.VideoGraphical):
         except pygame.error:
             self._close_pygame()
             logging.warning('Could not initialise PyGame display')
-            raise video.InitFailed()
+            raise base.InitFailed()
         if self.smooth and self.display.get_bitsize() < 24:
             logging.warning("Smooth scaling not available on this display (depth %d < 24)", self.display.get_bitsize())
             self.smooth = False
@@ -152,7 +152,7 @@ class VideoPygame(video_graphical.VideoGraphical):
 
     def __exit__(self, type, value, traceback):
         """Close the pygame interface."""
-        video.VideoPlugin.__exit__(self, type, value, traceback)
+        base.VideoPlugin.__exit__(self, type, value, traceback)
         self._close_pygame()
 
     def _close_pygame(self):

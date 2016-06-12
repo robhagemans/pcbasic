@@ -11,10 +11,10 @@ import subprocess
 import platform
 
 from ..basic import signals
-from . import base as audio
+from . import base
 
 
-class AudioBeep(audio.AudioPlugin):
+class AudioBeep(base.AudioPlugin):
     """Audio plugin based on 'beep' command-line utility."""
 
     def __init__(self, tone_queue, message_queue):
@@ -23,10 +23,10 @@ class AudioBeep(audio.AudioPlugin):
         # and we can't run the test below on CMD
         if (platform.system() == 'Windows' or
                 subprocess.call("command -v beep >/dev/null 2>&1", shell=True) != 0):
-            raise audio.InitFailed()
+            raise base.InitFailed()
         self.now_playing = [None, None, None, None]
         self.now_looping = [None, None, None, None]
-        audio.AudioPlugin.__init__(self, tone_queue, message_queue)
+        base.AudioPlugin.__init__(self, tone_queue, message_queue)
 
     def _drain_message_queue(self):
         """Drain signal queue."""

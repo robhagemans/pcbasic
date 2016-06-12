@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import sys
 import logging
 
-from . import base as video
+from . import base
 from . import video_cli
 from .video_cli import encoding
 from . import ansi
@@ -49,7 +49,7 @@ class VideoANSI(video_cli.VideoCLI):
 
     def __exit__(self, type, value, traceback):
         """Close the text interface."""
-        video.VideoPlugin.__exit__(self, type, value, traceback)
+        base.VideoPlugin.__exit__(self, type, value, traceback)
         sys.stdout.write(ansi.esc_set_colour % 0)
         sys.stdout.write(ansi.esc_clear_screen)
         sys.stdout.write(ansi.esc_move_cursor % (1, 1))

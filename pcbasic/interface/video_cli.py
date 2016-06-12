@@ -13,7 +13,7 @@ import threading
 import Queue
 import platform
 
-from . import base as video
+from . import base
 from . import ansi
 
 from ..basic import signals
@@ -34,7 +34,7 @@ else:
     eof = uea.CTRL_d
 
 
-class VideoCLI(video.VideoPlugin):
+class VideoCLI(base.VideoPlugin):
     """Command-line interface."""
 
     def __init__(self, input_queue, video_queue, **kwargs):
@@ -43,10 +43,10 @@ class VideoCLI(video.VideoPlugin):
             if platform.system() not in (b'Darwin',  b'Windows') and not sys.stdin.isatty():
                 logging.warning('Input device is not a terminal. '
                                 'Could not initialise text-based interface.')
-                raise video.InitFailed()
+                raise base.InitFailed()
         except AttributeError:
             pass
-        video.VideoPlugin.__init__(self, input_queue, video_queue)
+        base.VideoPlugin.__init__(self, input_queue, video_queue)
         self._term_echo_on = True
         self._term_attr = None
         self._term_echo(False)
@@ -68,7 +68,7 @@ class VideoCLI(video.VideoPlugin):
 
     def __exit__(self, type, value, traceback):
         """Close command-line interface."""
-        video.VideoPlugin.__exit__(self, type, value, traceback)
+        base.VideoPlugin.__exit__(self, type, value, traceback)
         self._term_echo()
         if self.last_col and self.cursor_col != self.last_col:
             sys.stdout.write('\n')

@@ -26,7 +26,7 @@ import logging
 import Queue
 
 from ..basic import signals
-from . import base as audio
+from . import base
 from . import synthesiser
 
 # quit sound server after quiet period of quiet_quit ticks
@@ -40,20 +40,20 @@ chunk_length = 1192 * 4
 ##############################################################################
 # plugin
 
-class AudioPygame(audio.AudioPlugin):
+class AudioPygame(base.AudioPlugin):
     """Pygame-based audio plugin."""
 
     def __init__(self, tone_queue, message_queue):
         """Initialise sound system."""
         if not pygame:
             logging.warning('PyGame module not found. Failed to initialise PyGame audio plugin.')
-            raise audio.InitFailed()
+            raise base.InitFailed()
         if not numpy:
             logging.warning('NumPy module not found. Failed to initialise PyGame audio plugin.')
-            raise audio.InitFailed()
+            raise base.InitFailed()
         if not mixer:
             logging.warning('PyGame mixer module not found. Failed to initialise PyGame audio plugin.')
-            raise audio.InitFailed()
+            raise base.InitFailed()
         # this must be called before pygame.init() in the video plugin
         mixer.pre_init(synthesiser.sample_rate, -synthesiser.sample_bits, channels=1, buffer=1024) #4096
         # synthesisers
@@ -64,14 +64,14 @@ class AudioPygame(audio.AudioPlugin):
         self.persist = False
         # keep track of quiet time to shut down mixer after a while
         self.quiet_ticks = 0
-        audio.AudioPlugin.__init__(self, tone_queue, message_queue)
+        base.AudioPlugin.__init__(self, tone_queue, message_queue)
 
     def __enter__(self):
         """Perform any necessary initialisations."""
         # initialise mixer as silent
         # this is necessary to be able to set channels to mono
         mixer.quit()
-        return audio.AudioPlugin.__enter__(self)
+        return base.AudioPlugin.__enter__(self)
 
     def _drain_message_queue(self):
         """Drain signal queue."""

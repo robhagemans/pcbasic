@@ -10,10 +10,10 @@ import datetime
 import Queue
 
 from ..basic import signals
-from . import base as audio
+from . import base
 
 
-class AudioNone(audio.AudioPlugin):
+class AudioNone(base.AudioPlugin):
     """Null audio plugin."""
 
     def _drain_message_queue(self):

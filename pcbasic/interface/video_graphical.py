@@ -23,7 +23,7 @@ if platform.system() == 'Windows':
         # old versions of Windows don't have this in user32.dll
         pass
 
-from . import base as video
+from . import base
 
 from ..basic import signals
 from ..basic import scancode
@@ -34,12 +34,12 @@ display_slack = 15
 
 
 
-class VideoGraphical(video.VideoPlugin):
+class VideoGraphical(base.VideoPlugin):
     """Graphical video plugin, base class """
 
     def __init__(self, input_queue, video_queue, **kwargs):
         """Initialise video plugin parameters."""
-        video.VideoPlugin.__init__(self, input_queue, video_queue)
+        base.VideoPlugin.__init__(self, input_queue, video_queue)
         # use native pixel sizes
         self.force_native_pixel = kwargs.get('force_native_pixel', False)
         # display dimensions

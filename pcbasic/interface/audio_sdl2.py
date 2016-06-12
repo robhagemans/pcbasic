@@ -23,7 +23,7 @@ except ImportError:
     numpy = None
 
 from ..basic import signals
-from . import base as audio
+from . import base
 from . import synthesiser
 
 
@@ -38,17 +38,17 @@ min_samples_buffer = 2*callback_chunk_length
 ##############################################################################
 # plugin
 
-class AudioSDL2(audio.AudioPlugin):
+class AudioSDL2(base.AudioPlugin):
     """SDL2-based audio plugin."""
 
     def __init__(self, tone_queue, message_queue):
         """Initialise sound system."""
         if not sdl2:
             logging.warning('SDL2 module not found. Failed to initialise SDL2 audio plugin.')
-            raise audio.InitFailed()
+            raise base.InitFailed()
         if not numpy:
             logging.warning('NumPy module not found. Failed to initialise SDL2 audio plugin.')
-            raise audio.InitFailed()
+            raise base.InitFailed()
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each tone
@@ -65,7 +65,7 @@ class AudioSDL2(audio.AudioPlugin):
         self.audiospec.callback = sdl2.SDL_AudioCallback(self._get_next_chunk)
         self.dev = None
         # start audio thread
-        audio.AudioPlugin.__init__(self, tone_queue, message_queue)
+        base.AudioPlugin.__init__(self, tone_queue, message_queue)
 
     def __enter__(self):
         """Perform any necessary initialisations."""
@@ -76,7 +76,7 @@ class AudioSDL2(audio.AudioPlugin):
             logging.warning('Could not open audio device: %s', sdl2.SDL_GetError())
         # unpause the audio device
         sdl2.SDL_PauseAudioDevice(self.dev, 0)
-        return audio.AudioPlugin.__enter__(self)
+        return base.AudioPlugin.__enter__(self)
 
     def _drain_message_queue(self):
         """Drain signal queue."""
