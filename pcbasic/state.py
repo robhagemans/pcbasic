@@ -19,10 +19,16 @@ import copy_reg
 import os
 import logging
 import zlib
+import sys
 
 
 def unpickle_file(name, mode, pos):
     """Unpickle a file object."""
+    if name is None:
+        if mode in ('r', 'rb'):
+            return sys.stdin
+        else:
+            return sys.stdout
     try:
         if 'w' in mode and pos > 0:
             # preserve existing contents of writable file
@@ -41,6 +47,8 @@ def unpickle_file(name, mode, pos):
 
 def pickle_file(f):
     """Pickle a file object."""
+    if f in (sys.stdout, sys.stdin):
+        return unpickle_file, (None, f.mode, -1)
     try:
         return unpickle_file, (f.name, f.mode, f.tell())
     except IOError:
