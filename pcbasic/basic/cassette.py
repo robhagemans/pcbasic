@@ -136,6 +136,9 @@ class CASDevice(object):
                     logging.debug(timestamp(self.tapestream.counter()) + message)
         except EndOfTape:
             # reached end-of-tape without finding appropriate file
+            # we'll loop the tape for future use
+            self.tapestream.wind(0)
+            # timeout error to align with GW-BASIC behaviour
             raise error.RunError(error.DEVICE_TIMEOUT)
 
     def quiet(self, is_quiet):
@@ -923,6 +926,7 @@ class WAVBitStream(TapeBitStream):
         try:
             length_up, length_dn = next(self.read_half), next(self.read_half)
         except StopIteration:
+            self.read_half = self._gen_read_halfpulse()
             raise EndOfTape
         if (length_up > self.halflength_max or length_dn > self.halflength_max or
                 length_up < self.halflength_min or length_dn < self.halflength_min):
@@ -1093,6 +1097,7 @@ class WAVBitStream(TapeBitStream):
                         logging.debug("%s Error in sync byte after %d pulses: %s",
                                       timestamp(self.counter()), counter, e)
         except (EndOfTape, StopIteration):
+            self.read_half = self._gen_read_halfpulse()
             return False
 
 ##############################################################################
@@ -1171,6 +1176,7 @@ class BasicodeWAVBitStream(WAVBitStream):
             else:
                 return 0
         except StopIteration:
+            self.read_half = self._gen_read_halfpulse()
             raise EndOfTape
 
     def write_bit(self, bit):
