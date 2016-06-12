@@ -121,8 +121,6 @@ VIDEO_SET_CODEPAGE = 31
 # input queue signals
 # quit interpreter
 KEYB_QUIT = 0
-# input stream closed
-KEYB_CLOSED = 1
 # insert character
 KEYB_CHAR = 4
 # insert keydown

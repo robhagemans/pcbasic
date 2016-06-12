@@ -118,8 +118,6 @@ class Events(object):
             # process input events
             if signal.event_type == signals.KEYB_QUIT:
                 raise error.Exit()
-            if signal.event_type == signals.KEYB_CLOSED:
-                self.session.keyboard.close_input()
             elif signal.event_type == signals.KEYB_CHAR:
                 # params is a unicode sequence
                 self.session.keyboard.insert_chars(*signal.params)
