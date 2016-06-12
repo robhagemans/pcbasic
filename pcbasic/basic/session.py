@@ -152,8 +152,8 @@ class Session(object):
         self.shell = shell.get_shell_manager(self.keyboard, self.screen, self.codepage, option_shell)
         # initialise random number generator
         self.randomiser = rnd.RandomNumberGenerator()
-        # initialise timer
-        self.timer = timedate.Timer()
+        # initialise system clock
+        self.clock = timedate.Clock()
         # initialise machine ports
         self.machine = machine.MachinePorts(self)
         # interpreter is executing a command (needs Screen)

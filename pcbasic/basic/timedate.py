@@ -11,17 +11,17 @@ import datetime
 from . import error
 
 
-class Timer(object):
+class Clock(object):
 
     def __init__(self):
-        """Initialise timer."""
+        """Initialise clock."""
         # datetime offset for duration of the run
         # (so that we don't need permission to touch the system clock)
         # given in seconds
         self.time_offset = datetime.timedelta()
 
-    def timer_milliseconds(self):
-        """Get milliseconds since midnight."""
+    def get_time_ms(self):
+        """Get time in milliseconds since midnight."""
         now = datetime.datetime.now() + self.time_offset
         midnight = datetime.datetime(now.year, now.month, now.day)
         diff = now-midnight

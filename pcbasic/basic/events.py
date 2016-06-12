@@ -44,7 +44,7 @@ class Events(object):
         keys += [None] * (20 - self.num_fn_keys - 4)
         self.key = [KeyHandler(self.session.keyboard, sc) for sc in keys]
         # other events
-        self.timer = TimerHandler(self.session.timer)
+        self.timer = TimerHandler(self.session.clock)
         self.play = PlayHandler(self.session.sound, self.multivoice)
         self.com = [
             ComHandler(self.session.devices.devices['COM1:']),
@@ -225,12 +225,12 @@ class PlayHandler(EventHandler):
 class TimerHandler(EventHandler):
     """Manage TIMER events."""
 
-    def __init__(self, timer):
+    def __init__(self, clock):
         """Initialise TIMER trigger."""
         EventHandler.__init__(self)
         self.period = 0
         self.start = 0
-        self.timer = timer
+        self.clock = clock
 
     def set_trigger(self, n):
         """Set TIMER trigger to n milliseconds."""
@@ -238,7 +238,7 @@ class TimerHandler(EventHandler):
 
     def check(self):
         """Trigger TIMER events."""
-        mutimer = self.timer.timer_milliseconds()
+        mutimer = self.clock.get_time_ms()
         if mutimer >= self.start + self.period:
             self.start = mutimer
             self.trigger()

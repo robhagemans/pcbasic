@@ -746,7 +746,7 @@ class Statements(object):
         with self.session.strings:
             timestr = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         util.require(ins, tk.end_statement)
-        self.session.timer.set_time(timestr)
+        self.session.clock.set_time(timestr)
 
     def exec_date(self, ins):
         """DATE$: set date."""
@@ -757,7 +757,7 @@ class Statements(object):
         with self.session.strings:
             datestr = self.session.strings.copy(vartypes.pass_string(self.parser.parse_expression(ins, self.session)))
         util.require(ins, tk.end_statement)
-        self.session.timer.set_date(datestr)
+        self.session.clock.set_date(datestr)
 
     ##########################################################
     # code

@@ -424,15 +424,15 @@ class Functions(object):
         """TIMER: get clock ticks since midnight."""
         # precision of GWBASIC TIMER is about 1/20 of a second
         return fp.pack(fp.div( fp.Single.from_int(
-                self.session.timer.timer_milliseconds()/50), fp.Single.from_int(20)))
+                self.session.clock.get_time_ms()/50), fp.Single.from_int(20)))
 
     def value_time(self, ins):
         """TIME$: get current system time."""
-        return self.session.strings.store(self.session.timer.get_time())
+        return self.session.strings.store(self.session.clock.get_time())
 
     def value_date(self, ins):
         """DATE$: get current system date."""
-        return self.session.strings.store(self.session.timer.get_date())
+        return self.session.strings.store(self.session.clock.get_date())
 
     #######################################################
     # user-defined functions
