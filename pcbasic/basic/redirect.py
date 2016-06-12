@@ -100,7 +100,6 @@ class InputRedirection(object):
         self._lfcrs = []
         self._encodings = []
         self._closed = []
-        self._start_threads()
 
     def _process_input(self, stream, queue, encoding):
         """Process input from stream."""

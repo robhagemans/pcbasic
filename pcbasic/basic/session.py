@@ -87,7 +87,6 @@ class Session(object):
         if stdio:
             stdout_stream = unicodepage.CodecStream(
                     sys.stdout, self.codepage, sys.stdout.encoding or b'utf-8')
-            # FIXME: need a readable CodecStream
             stdin_stream = sys.stdin
         else:
             stdout_stream, stdin_stream = None, None
@@ -210,6 +209,7 @@ class Session(object):
     def __setstate__(self, pickle_dict):
         """Unpickle and resume the session."""
         self.__dict__.update(pickle_dict)
+        self.keyboard._input_closed = False
         # suppress double prompt
         if not self._parse_mode:
             self._prompt = False
@@ -220,7 +220,7 @@ class Session(object):
         # use dummy queues if not provided
         self.input_queue = input_queue or signals.NullQueue()
         self.video_queue = video_queue or signals.NullQueue()
-        self.tone_queue = tone_queue or signals.NullQueue()
+        self.tone_queue = tone_queue or [signals.NullQueue()]*4
         self.message_queue = message_queue or signals.NullQueue()
         # rebuild the screen
         self.screen.rebuild()

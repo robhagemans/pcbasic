@@ -13,10 +13,13 @@ import platform
 import os
 
 if platform.system() == 'Windows':
-    import win32print
-    import win32com
-    import win32com.shell.shell
-    import win32event
+    try:
+        import win32print
+        import win32com
+        import win32com.shell.shell
+        import win32event
+    except ImportError:
+        win32print = None
 
 class PrinterStreamBase(StringIO):
     """Base stream for printing."""
@@ -60,7 +63,11 @@ class PrinterStreamBase(StringIO):
 def get_printer_stream(val, codepage, temp_dir):
     """Return the appropriate printer stream for this platform."""
     if platform.system() == 'Windows':
-        return WindowsPrinterStream(val, codepage, temp_dir)
+        if win32print:
+            return WindowsPrinterStream(val, codepage, temp_dir)
+        else:
+            logging.warning('Could not find win32print module. Printing is disabled.')
+            return PrinterStreamBase(val, codepage)
     elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
         return PAPSPrinterStream(val, codepage)
     else:
