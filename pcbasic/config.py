@@ -347,7 +347,10 @@ class Settings(object):
             os.makedirs(state_path)
         # create user config file if needed
         if not os.path.exists(self.user_config_path):
-            os.makedirs(self.user_config_path)
+            try:
+                os.makedirs(user_config_dir)
+            except OSError:
+                pass
             self.build_default_config_file(self.user_config_path)
         # create @: drive if not present
         if not os.path.exists(program_path):
@@ -759,7 +762,7 @@ class Settings(object):
         except (ConfigParser.Error, IOError):
             self._logger.warning(u'Error in configuration file %s. '
                            u'Configuration not loaded.', config_file)
-            return {}
+            return {u'pcbasic': {}}
         presets = { header: dict(config.items(header))
                     for header in config.sections() }
         return presets
