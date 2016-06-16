@@ -339,7 +339,7 @@ def read_config_file(config_file):
     except (ConfigParser.Error, IOError):
         logger.warning('Error in configuration file %s. '
                         'Configuration not loaded.', config_file)
-        return {}
+        return {'pcbasic': {}}
     presets = { header: dict(config.items(header))
                 for header in config.sections() }
     return presets
