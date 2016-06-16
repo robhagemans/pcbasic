@@ -77,6 +77,9 @@ class VideoGraphical(base.VideoPlugin):
 
     def _normalise_pos(self, x, y):
         """Convert physical to logical coordinates within screen bounds."""
+        if not self.size:
+            # window not initialised
+            return 0, 0
         border_x = int(self.size[0] * self.border_width / 200.)
         border_y = int(self.size[1] * self.border_width / 200.)
         xscale = self.window_width / (1.*(self.size[0]+2*border_x))
