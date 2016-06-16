@@ -26,22 +26,23 @@ from .version import __version__, GREETING, ICON
 from .basic import codepages, fonts, programs
 
 
+basename = u'pcbasic-dev'
 # user configuration and state directories
 _home_dir = os.path.expanduser(u'~')
 if platform.system() == b'Windows':
-    user_config_dir = os.path.join(os.getenv(u'APPDATA'), u'pcbasic')
+    user_config_dir = os.path.join(os.getenv(u'APPDATA'), basename)
     state_path = user_config_dir
 elif platform.system() == b'Darwin':
-    user_config_dir = os.path.join(_home_dir, u'Library/Application Support/pcbasic')
+    user_config_dir = os.path.join(_home_dir, u'Library', u'Application Support', basename)
     state_path = user_config_dir
 else:
     _xdg_data_home = os.environ.get(u'XDG_DATA_HOME') or os.path.join(_home_dir, u'.local', u'share')
     _xdg_config_home = os.environ.get(u'XDG_CONFIG_HOME') or os.path.join(_home_dir, u'.config')
-    user_config_dir = os.path.join(_xdg_config_home, u'pcbasic')
-    state_path = os.path.join(_xdg_data_home, u'pcbasic')
+    user_config_dir = os.path.join(_xdg_config_home, basename)
+    state_path = os.path.join(_xdg_data_home, basename)
 
 # @: drive for bundled programs
-program_path = os.path.join(state_path, 'bundled_programs')
+program_path = os.path.join(state_path, u'bundled_programs')
 
 
 def get_logger(logfile=None):
