@@ -196,6 +196,9 @@ class VideoSDL2(video_graphical.VideoGraphical):
 
     def _check_input(self):
         """Handle screen and interface events."""
+        # don't try to handle events before set_mode
+        if not self._has_window:
+            return
         # check and handle input events
         self.last_down = None
         event = sdl2.SDL_Event()
