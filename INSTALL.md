@@ -4,9 +4,9 @@ The instructions there cover the most common platforms and use cases. If the
 options described there are not applicable or you prefer to install from source,
 please consult the notes below.
 
-#### Installation from source ####
-To install from source, download the source distribution and unpack the TGZ archive.
-The following packages are needed or recommended when installing PC-BASIC from source:
+#### Installation from the Python distribution ####
+Download the Python distribution of PC-BASIC and unpack the TGZ archive.
+The following packages are needed or recommended when installing PC-BASIC from the Python distribution:
 
 | Package                                                         | OS                 | Status       | Used for
 |-----------------------------------------------------------------|--------------------|--------------|----------------------------------------
@@ -63,14 +63,13 @@ external command-line tools:
 | `beep`                                    | OSX, Linux, other | optional    | sound in cli/text interface
 
 
-#### Building from GitHub repository source ####
-The instructions above refer to the source *distribution*, which has pre-built
-documentation files and other niceties.
+#### Building from source ####
+The Python distribution of PC-BASIC described above contains precompiled documentation and Windows binaries for SDL2, SDL2_gfx and ANSI|pipe.
 If you wish to use the source code as-is in the GitHub repo,
-you'll need to build the docs yourself. Note that `pcbasic -h` will fail if you omit
-this. Compiling the documentation requires the Python modules
+you'll need to build these yourself. Compiling the documentation requires the Python modules
 [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3) and [`markdown`](https://pypi.python.org/pypi/Markdown).
-Of course, you'll also need [`git`](https://git-scm.com/) and all the PC-BASIC dependencies listed above.  
+You'll also need [`git`](https://git-scm.com/), [`setuptools`](https://pypi.python.org/pypi/setuptools) and all the PC-BASIC dependencies listed above.
+
 
 1. Clone the github repo
 
@@ -84,10 +83,11 @@ Of course, you'll also need [`git`](https://git-scm.com/) and all the PC-BASIC d
 
         python pcbasic.py
 
+To build the supporting binaries for Windows, please refer to the compilation instructions for [SDL2](https://www.libsdl.org/), [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) and [ANSI|pipe](http://github.com/robhagemans/ansipipe/). You will need a C compiler such as [MinGW](http://mingw.org/) or [Microsoft Visual Studio](https://www.visualstudio.com/).
 
-#### Building `SDL2_gfx.dll` on Windows ###
-While SDL2 itself has an [official binary distribution](https://www.libsdl.org/download-2.0.php), the
-[SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) plugin does not. This plugin is needed if
+
+#### Building `SDL2_gfx.dll` on Windows with MinGW GCC ###
+This plugin is needed if
 you want to use the SDL2 interface with smooth scaling. Most Linux distributions will include this with their pysdl2 package.
 On Windows, you will need to compile from source. The official distribution includes a solution file for Microsoft Visual Studio;
 for those who prefer to use the MinGW GCC compiler, follow these steps:  
