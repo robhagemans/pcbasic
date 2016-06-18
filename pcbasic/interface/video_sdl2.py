@@ -152,6 +152,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
             for axis in (0, 1):
                 self.input_queue.put(signals.Event(signals.STICK_MOVED,
                                                       (j, axis, 128)))
+        # enable IME
+        sdl2.SDL_StartTextInput()
         return video_graphical.VideoGraphical.__enter__(self)
 
     def __exit__(self, type, value, traceback):
@@ -169,6 +171,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
             for p in self.show_palette:
                 sdl2.SDL_FreePalette(p)
             sdl2.SDL_FreePalette(self.composite_palette)
+            # close IME
+            sdl2.SDL_StopTextInput()
             # close SDL2
             sdl2.SDL_Quit()
 
@@ -219,6 +223,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
                 self._handle_key_up(event)
             elif event.type == sdl2.SDL_TEXTINPUT:
                 self._handle_text_input(event)
+            elif event.type == sdl2.SDL_TEXTEDITING:
+                self.set_caption_message(event.text.text)
             elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
                 pos = self._normalise_pos(event.button.x, event.button.y)
                 # copy, paste and pen may be on the same button, so no elifs
@@ -352,11 +358,15 @@ class VideoSDL2(video_graphical.VideoGraphical):
                                     signals.KEYB_CHAR, (c, )))
         else:
             eascii, scan, mod, ts = self.last_down
-            if eascii:
-                c = eascii
             if ts == event.text.timestamp:
                 # combine if same time stamp
-                self.input_queue.put(signals.Event(
+                if eascii and c != eascii:
+                    self.input_queue.put(signals.Event(
+                                            signals.KEYB_CHAR, (c, )))
+                    self.input_queue.put(signals.Event(
+                                        signals.KEYB_DOWN, (eascii, scan, mod)))
+                else:
+                    self.input_queue.put(signals.Event(
                                         signals.KEYB_DOWN, (c, scan, mod)))
             else:
                 # two separate events
