@@ -98,7 +98,7 @@ def show_platform_info():
                 except AttributeError:
                     pass
             else:
-                logging.info('available\n')
+                logging.info('%s: available', module)
     if platform.system() != 'Windows':
         logging.info('\nEXTERNAL TOOLS')
         tools = ('lpr', 'paps', 'beep', 'xclip', 'xsel', 'pbcopy', 'pbpaste')
