@@ -49,38 +49,11 @@ If the options above are not applicable or you prefer to install from source, pl
 consult [`INSTALL.md`](https://github.com/robhagemans/pcbasic/blob/master/INSTALL.md) for detailed instructions.
 
 
-#### Usage essentials ####
+#### BASIC survival kit ####
 Click on the PC-BASIC application icon or run `pcbasic` on the Windows, OSX or Linux command
 line and PC-BASIC will start in direct mode with no program loaded. The default emulation target is
 GW-BASIC 3.23 on a generic IBM-compatible PC with a VGA video card.  
 
-A few selected command-line options:  
-`pcbasic PROGRAM.BAS` runs the program file named `PROGRAM.BAS` directly.  
-`pcbasic --preset=tandy` starts with the emulation target set to Tandy GW-BASIC on a Tandy 1000.  
-`pcbasic --preset=pcjr` starts with the emulation target set to Cartridge BASIC on an IBM PCjr.  
-`pcbasic -h` shows all available command line options.  
-
-If you prefer to run PC-BASIC from a GUI, you can set the required options in the configuration file instead.
-The configuration file is stored in the following location:
-
-| OS         | Configuration file  
-|------------|-------------------------------------------------------------------------  
-| Windows    | `%APPDATA%\pcbasic\PCBASIC.INI`  
-| OS X       | `~/Library/Application Support/pcbasic/PCBASIC.INI`  
-| Linux      | `~/.config/pcbasic/PCBASIC.INI`  
-
-The expression `%APPDATA%` is a Windows variable pointing to the folder in your roaming profile
-where applications store their data and settings. Typing the expression as above in the Windows Explorer
-should get you to the right place. Under Windows 7, `%APPDATA%` normally is the location
-`C:\Users\YourUsername\AppData\Roaming\` where you replace `YourUsername` with your Windows login name.
-
-For example, you could include the following line in the section `[pcbasic]` in `PCBASIC.INI`,
-to emulate IBM PCjr Cartridge Basic:
-
-    preset=pcjr  
-
-
-#### BASIC survival kit ####
 PC-BASIC starts in direct mode, a 1980s-style interface operated by executing
 BASIC commands directly. There is no menu, nor are there any of the visual clues
 that we've come to expect of modern software.  
@@ -95,6 +68,31 @@ A few essential commands to help you get around:
 
 Use one of the key combinations `Ctrl+Break`, `Ctrl+Scroll Lock`, `Ctrl+C` or `F12+B`
 to interrupt a running program and return to direct mode.  
+
+
+#### Configuration ####
+If you run PC-BASIC from the command line (the '`C:\>` prompt' on Windows), you can supply options to change its behaviour. For example:  
+
+`pcbasic PROGRAM.BAS` runs the program file named `PROGRAM.BAS` directly.  
+`pcbasic --preset=tandy` starts with the emulation target set to Tandy GW-BASIC on a Tandy 1000.  
+`pcbasic --preset=pcjr` starts with the emulation target set to Cartridge BASIC on an IBM PCjr.  
+`pcbasic -h` shows all available command line options.  
+
+If you prefer to run PC-BASIC from a GUI, you can set the required options in the configuration file instead.
+In the configuration file, use the long form of the command-line options and omit the preceding `--`.  
+
+The configuration file is stored in the following location:
+
+| OS         | Configuration file  
+|------------|-------------------------------------------------------------------------  
+| Windows    | `%APPDATA%\pcbasic\PCBASIC.INI`  
+| OS X       | `~/Library/Application Support/pcbasic/PCBASIC.INI`  
+| Linux      | `~/.config/pcbasic/PCBASIC.INI`  
+
+If you do not have a configuration file in that location, a default file will be created that location the first time you run PC-BASIC.
+See the comments in that default configuration file for examples and more information.
+If you install the Windows package, the installer will automatically create a shortcut to your configuration file in the PC-BASIC start menu folder.
+
 
 
 #### Getting programs ####
