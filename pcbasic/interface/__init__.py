@@ -28,7 +28,7 @@ video_plugins.update({
     'none': ((VideoPlugin,), None),
     'cli': ((VideoCLI,), 'none'),
     'text': ((VideoCurses, VideoANSI), 'cli'),
-    'graphical':  ((VideoPygame,), 'text'),
+    'graphical':  ((VideoSDL2, VideoPygame,), 'text'),
     # force a particular plugin to be used
     'ansi': ((VideoANSI,), None),
     'curses': ((VideoCurses,), None),
@@ -40,7 +40,7 @@ audio_plugins.update({
     'none': (AudioNone,),
     'cli': (AudioBeep, AudioNone),
     'text': (AudioBeep, AudioNone),
-    'graphical': (AudioPygame, AudioBeep, AudioNone),
+    'graphical': (AudioSDL2, AudioPygame, AudioBeep, AudioNone),
     'ansi': (AudioNone,),
     'curses': (AudioNone,),
     'pygame': (AudioPygame, AudioNone),
