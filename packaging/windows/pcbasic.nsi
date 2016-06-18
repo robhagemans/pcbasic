@@ -44,7 +44,7 @@ OutFile "pcbasic-win32.exe"
 
 Var StartMenuFolder
 Var Shortcuts
-
+Var UserShortcuts
 
 ;--------------------------------
 ;Interface Settings
@@ -102,14 +102,16 @@ Section "PC-BASIC" SecDummy
     SetOutPath "$PROFILE"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PC-BASIC.lnk" "$INSTDIR\pcbasic.exe"
 
+    ; workaround as multiuser doesn't seem to get the right location for shortcuts if an admin user installs 'just for me'
+    WriteRegStr HKCU "Software\PC-BASIC" "Shortcuts" "$SMPROGRAMS\$StartMenuFolder"
+
     ; create link to ini file in current user's start menu
     SetShellVarContext "current"
     CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Settings.lnk" "$APPDATA\PCBASIC\PCBASIC.INI"
 
     ; workaround as multiuser doesn't seem to get the right location for shortcuts if an admin user installs 'just for me'
-    WriteRegStr HKCU "Software\PC-BASIC" "Shortcuts" "$SMPROGRAMS\$StartMenuFolder"
-
+    WriteRegStr HKCU "Software\PC-BASIC" "UserShortcuts" "$SMPROGRAMS\$StartMenuFolder"
 
     !insertmacro MUI_STARTMENU_WRITE_END
 SectionEnd
@@ -146,15 +148,16 @@ Section UnInstall
     Delete "$Shortcuts\PC-BASIC.lnk"
     Delete "$Shortcuts\Documentation.lnk"
     Delete "$Shortcuts\Uninstall.lnk"
-    Delete "$Shortcuts\Settings.lnk"
     RMDir "$Shortcuts"
+
+    ;
+    ReadRegStr $UserShortcuts HKCU "Software\PC-BASIC" "UserShortcuts"
+
+    Delete "$UserShortcuts\Settings.lnk"
+    RMDir "$UserShortcuts"
 
     DeleteRegKey HKCU "Software\PC-BASIC"
 ;    DeleteRegKey /ifempty HKCU "Software\PC-BASIC"
-
-    SetShellVarContext "current"
-    Delete "$Shortcuts\Settings.lnk"
-    RMDir "$Shortcuts"
 SectionEnd
 
 
