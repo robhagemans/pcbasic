@@ -35,8 +35,8 @@ OutFile "pcbasic-win32.exe"
 
 
 ;Start Menu Folder Page Configuration
-!define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU" 
-!define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\PC-BASIC" 
+!define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU"
+!define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\PC-BASIC"
 !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
 
 ;--------------------------------
@@ -72,10 +72,10 @@ Var Shortcuts
 
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
-  
+
 ;--------------------------------
 ;Languages
- 
+
 !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
@@ -101,6 +101,11 @@ Section "PC-BASIC" SecDummy
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
     SetOutPath "$PROFILE"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PC-BASIC.lnk" "$INSTDIR\pcbasic.exe"
+
+    ; create link to ini file in current user's start menu
+    SetShellVarContext "current"
+    CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Settings.lnk" "$APPDATA\PCBASIC\PCBASIC.INI"
 
     ; workaround as multiuser doesn't seem to get the right location for shortcuts if an admin user installs 'just for me'
     WriteRegStr HKCU "Software\PC-BASIC" "Shortcuts" "$SMPROGRAMS\$StartMenuFolder"
@@ -138,13 +143,18 @@ Section UnInstall
     ; workaround as multiuser doesn't seem to get the right location for shortcuts if an admin user installs 'just for me'
     ReadRegStr $Shortcuts HKCU "Software\PC-BASIC" "Shortcuts"
 
-    Delete "$Shortcuts\PC-BASIC.lnk"  
-    Delete "$Shortcuts\Documentation.lnk"  
+    Delete "$Shortcuts\PC-BASIC.lnk"
+    Delete "$Shortcuts\Documentation.lnk"
     Delete "$Shortcuts\Uninstall.lnk"
+    Delete "$Shortcuts\Settings.lnk"
     RMDir "$Shortcuts"
-    
+
     DeleteRegKey HKCU "Software\PC-BASIC"
 ;    DeleteRegKey /ifempty HKCU "Software\PC-BASIC"
+
+    SetShellVarContext "current"
+    Delete "$Shortcuts\Settings.lnk"
+    RMDir "$Shortcuts"
 SectionEnd
 
 
@@ -154,5 +164,3 @@ Function UN.onInit
     ;begin uninstall, could be added on top of uninstall section instead
     !insertmacro UNINSTALL.LOG_BEGIN_UNINSTALL
 FunctionEnd
-
-
