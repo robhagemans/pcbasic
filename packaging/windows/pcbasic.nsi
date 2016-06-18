@@ -44,6 +44,7 @@ OutFile "pcbasic-win32.exe"
 
 Var StartMenuFolder
 Var Shortcuts
+Var UserShortcuts
 
 
 ;--------------------------------
@@ -110,6 +111,8 @@ Section "PC-BASIC (development version)" SecDummy
     CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Settings.lnk" "$APPDATA\PCBASIC-dev\PCBASIC.INI"
 
+    WriteRegStr HKCU "Software\PC-BASIC-dev" "UserShortcuts" "$SMPROGRAMS\$StartMenuFolder"
+
     !insertmacro MUI_STARTMENU_WRITE_END
 SectionEnd
 
@@ -141,19 +144,17 @@ Section UnInstall
 
     ; workaround as multiuser doesn't seem to get the right location for shortcuts if an admin user installs 'just for me'
     ReadRegStr $Shortcuts HKCU "Software\PC-BASIC-dev" "Shortcuts"
+    ReadRegStr $UserShortcuts HKCU "Software\PC-BASIC-dev" "UserShortcuts"
 
     Delete "$Shortcuts\PC-BASIC.lnk"
     Delete "$Shortcuts\Documentation.lnk"
     Delete "$Shortcuts\Uninstall.lnk"
-    Delete "$Shortcuts\Settings.lnk"
+    Delete "$UserShortcuts\Settings.lnk"
     RMDir "$Shortcuts"
+    RMDir "$UserShortcuts"
 
     DeleteRegKey HKCU "Software\PC-BASIC-dev"
 ;    DeleteRegKey /ifempty HKCU "Software\PC-BASIC-dev"
-
-    SetShellVarContext "current"
-    Delete "$Shortcuts\Settings.lnk"
-    RMDir "$Shortcuts"
 SectionEnd
 
 
