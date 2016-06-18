@@ -9,7 +9,7 @@
 ;Enter the windows uninstall reg sub key to add uninstall information to Add/Remove Programs also.
 
 !define INSTDIR_REG_ROOT "HKLM"
-!define INSTDIR_REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\PC-BASIC"
+!define INSTDIR_REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\PC-BASIC-dev"
 
 
 ; multiuser, modern UI
@@ -17,7 +17,7 @@
 !define MULTIUSER_EXECUTIONLEVEL Highest
 !define MULTIUSER_MUI
 !define MULTIUSER_INSTALLMODE_COMMANDLINE
-!define MULTIUSER_INSTALLMODE_INSTDIR "PC-BASIC"
+!define MULTIUSER_INSTALLMODE_INSTDIR "PC-BASIC-dev"
 !include "MultiUser.nsh"
 !include "MUI2.nsh"
 !include "AdvUninstLog.nsh"
@@ -27,7 +27,7 @@
 
 
 ;Name and file
-Name "PC-BASIC"
+Name "PC-BASIC (development version)"
 OutFile "pcbasic-win32.exe"
 
 !include LogicLib.nsh
@@ -35,8 +35,8 @@ OutFile "pcbasic-win32.exe"
 
 
 ;Start Menu Folder Page Configuration
-!define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU" 
-!define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\PC-BASIC" 
+!define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU"
+!define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\PC-BASIC-dev"
 !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
 
 ;--------------------------------
@@ -72,16 +72,16 @@ Var Shortcuts
 
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
-  
+
 ;--------------------------------
 ;Languages
- 
+
 !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
 ;Installer Sections
 
-Section "PC-BASIC" SecDummy
+Section "PC-BASIC (development version)" SecDummy
     SetOutPath "$INSTDIR"
 
     !insertmacro UNINSTALL.LOG_OPEN_INSTALL
@@ -91,20 +91,24 @@ Section "PC-BASIC" SecDummy
     !insertmacro UNINSTALL.LOG_CLOSE_INSTALL
 
     ;Store installation folder
-    WriteRegStr HKCU "Software\PC-BASIC" "" $INSTDIR
+    WriteRegStr HKCU "Software\PC-BASIC-dev" "" $INSTDIR
 
     !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
 
     ;Create shortcuts
+    SetOutPath "$PROFILE"
     CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Documentation.lnk" "$INSTDIR\doc\PC-BASIC_documentation.html"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
-    SetOutPath "$PROFILE"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PC-BASIC.lnk" "$INSTDIR\pcbasic.exe"
 
     ; workaround as multiuser doesn't seem to get the right location for shortcuts if an admin user installs 'just for me'
-    WriteRegStr HKCU "Software\PC-BASIC" "Shortcuts" "$SMPROGRAMS\$StartMenuFolder"
+    WriteRegStr HKCU "Software\PC-BASIC-dev" "Shortcuts" "$SMPROGRAMS\$StartMenuFolder"
 
+    ; create link to ini file in current user's start menu
+    SetShellVarContext "current"
+    CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Settings.lnk" "$APPDATA\PCBASIC-dev\PCBASIC.INI"
 
     !insertmacro MUI_STARTMENU_WRITE_END
 SectionEnd
@@ -136,15 +140,20 @@ Section UnInstall
     !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
 
     ; workaround as multiuser doesn't seem to get the right location for shortcuts if an admin user installs 'just for me'
-    ReadRegStr $Shortcuts HKCU "Software\PC-BASIC" "Shortcuts"
+    ReadRegStr $Shortcuts HKCU "Software\PC-BASIC-dev" "Shortcuts"
 
-    Delete "$Shortcuts\PC-BASIC.lnk"  
-    Delete "$Shortcuts\Documentation.lnk"  
+    Delete "$Shortcuts\PC-BASIC.lnk"
+    Delete "$Shortcuts\Documentation.lnk"
     Delete "$Shortcuts\Uninstall.lnk"
+    Delete "$Shortcuts\Settings.lnk"
     RMDir "$Shortcuts"
-    
-    DeleteRegKey HKCU "Software\PC-BASIC"
-;    DeleteRegKey /ifempty HKCU "Software\PC-BASIC"
+
+    DeleteRegKey HKCU "Software\PC-BASIC-dev"
+;    DeleteRegKey /ifempty HKCU "Software\PC-BASIC-dev"
+
+    SetShellVarContext "current"
+    Delete "$Shortcuts\Settings.lnk"
+    RMDir "$Shortcuts"
 SectionEnd
 
 
@@ -154,5 +163,3 @@ Function UN.onInit
     ;begin uninstall, could be added on top of uninstall section instead
     !insertmacro UNINSTALL.LOG_BEGIN_UNINSTALL
 FunctionEnd
-
-
