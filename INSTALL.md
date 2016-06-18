@@ -8,16 +8,16 @@ please consult the notes below.
 To install from source, download the source distribution and unpack the TGZ archive.
 The following packages are needed or recommended when installing PC-BASIC from source:
 
-| Package                                                         | OS                 | Status       | Needed for
+| Package                                                         | OS                 | Status       | Used for
 |-----------------------------------------------------------------|--------------------|--------------|----------------------------------------
 | [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all                | required     |
 | [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows            | required     |
-| [PyGame 1.9.2](http://www.pygame.org)                           | all                | essential    | sound and graphics
+| [PySDL2](https://pysdl2.readthedocs.org/en/latest/)             | all                | essential    | sound and graphics
 | [NumPy](https://sourceforge.net/projects/numpy/files/)          | all                | essential    | sound and graphics
 | [PySerial](https://pypi.python.org/pypi/pyserial)               | all                | recommended  | physical or emulated serial port access
 | [PyParallel](https://pypi.python.org/pypi/pyserial)             | Windows, Linux     | optional     | physical parallel port access
 | [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| OSX, Linux, other  | optional     | native `SHELL`
-| [PySDL2](https://pysdl2.readthedocs.org/en/latest/)             | all                | experimental | sound and graphics
+| [PyGame 1.9.2](http://www.pygame.org)                           | all                | optional     | sound and graphics (PyGame interface)
 
 In this list, _other_ refers to operating systems other than Windows, Linux or OSX.
 
@@ -35,15 +35,15 @@ On **Linux distributions with APT or DNF** (including Debian, Ubuntu, Mint and F
 
 The install script can also be used on **other Unix** systems or when not installing as root. The dependencies can often be installed through your package manager. For example, on Debian-based systems:
 
-        sudo apt-get install python2.7 python-pygame python-sdl2 python-numpy python-serial python-pexpect python-parallel
+        sudo apt-get install python2.7 python-sdl2 python-numpy python-serial python-pexpect python-parallel
 
 On Fedora:
 
-        sudo dnf install python pygame pysdl2 numpy pyserial python-pexpect
+        sudo dnf install python pysdl2 numpy pyserial python-pexpect
 
 On FreeBSD:
 
-        sudo pkg install python27 py27-game py27-sdl2 py27-numpy py27-serial py27-pexpect
+        sudo pkg install python27 py27-sdl2 py27-numpy py27-serial py27-pexpect
 
 Note that PyParallel is not available from the Fedora and FreeBSD repos. PyParallel does not support BSD; on Fedora, you'll need to install from source if you need access to physical parallel ports. However, since most modern machines do not actually have parallel ports, you probably don't need it. PyParallel is _not_ needed for printing to a CUPS or Windows printer.
 
@@ -53,7 +53,7 @@ On Linux, OSX and other Unix-like systems, PC-BASIC can employ the following
 external command-line tools:
 
 | Tool                                      | OS                | Status      | Used for
--------------------------------------------------------------------------------------------------------------
+|-------------------------------------------|-------------------|-------------|---------------------------------
 | `lpr`                                     | OSX, Linux, other | essential   | printing to CUPS printers
 | `paps`                                    | OSX, Linux, other | recommended | improved Unicode support for CUPS printing
 | `pbcopy`                                  | OSX               | essential   | clipboard operation
@@ -83,6 +83,27 @@ Of course, you'll also need [`git`](https://git-scm.com/) and all the PC-BASIC d
 3. Run pcbasic directly from the source directory
 
         python pcbasic.py
+
+
+#### Building `SDL2_gfx.dll` on Windows ###
+While SDL2 itself has an [official binary distribution](https://www.libsdl.org/download-2.0.php), the
+[SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) plugin does not. This plugin is needed if
+you want to use the SDL2 interface with smooth scaling. Most Linux distributions will include this with their pysdl2 package.
+On Windows, you will need to compile from source. The official distribution includes a solution file for Microsoft Visual Studio;
+for those who prefer to use the MinGW GCC compiler, follow these steps:  
+
+1. Download and unpack the SDL2 binary, the SDL2 development package for MinGW and the SDL2_gfx source code archive. Note that the SDL2 development package contains several subdirectories for different architectures. You'll need the 32-bit version in `i686-w64-mingw32/`  
+
+2. Place `SDL2.dll` in the directory where you unpacked the SDL2_gfx source code.  
+
+3. In the MinGW shell, run  
+
+        ./autogen.sh
+        ./configure --with-sdl-prefix="/path/to/where/you/put/i686-w64-mingw32/"
+        make
+        gcc -shared -o SDL2_gfx.dll *.o SDL2.dll
+
+4. Place `sdl2.dll` and `sdl2_gfx.dll` in the `pcbasic\interface` directory.  
 
 
 #### Installing with Pygame ####
