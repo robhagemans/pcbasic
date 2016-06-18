@@ -5,14 +5,15 @@
 PC-BASIC would not exist without those contributing code, reporting bugs,
 sending in patches, and documenting GW-BASIC's behaviour. Thank you all!
 
-- **Rob Hagemans**,   lead author
-- **Wengier Wu**,     bug fixes, advice for CJK support
-- **WJB**,            bug fixes
-- **Jan Bredenbeek**, bug fixes, advice for BASICODE support
-- **Ronald Herrera**, testing, bug hunting
-- **Miguel Dorta**,   testing, serial ports
-- **Patrik**,         testing, serial ports
-- **Duane**,          testing, serial ports
+- **Rob Hagemans**,         lead author
+- **Wengier Wu**,           bug fixes, CJK guidance
+- **Jan Bredenbeek**,       bug fixes, BASICODE guidance
+- **WJB**,                  bug fixes
+- **Ronald Herrera**,       testing, bug hunting
+- **Kenneth Wayne Boyd**,   testing, bug hunting
+- **Miguel Dorta**,         testing, serial ports
+- **Patrik**,               testing, serial ports
+- **Duane**,                testing, serial ports
 
 
 ### Shoulders of Giants
@@ -20,8 +21,8 @@ sending in patches, and documenting GW-BASIC's behaviour. Thank you all!
 PC-BASIC depends on the following open-source projects:
 
   * [Python](http://www.python.org)
-  * [PyGame](http://www.pygame.org)
   * [Simple DirectMedia Layer (SDL)](http://www.libsdl.org)
+  * [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/)
   * [PySDL2](https://pysdl2.readthedocs.org/en/latest/)
   * [NumPy](http://www.numpy.org)
   * [Python for Windows Extensions (PyWin32)](https://sourceforge.net/projects/pywin32/)
@@ -35,6 +36,7 @@ PC-BASIC depends on the following open-source projects:
 PC-BASIC would not have been what it is without the following open-source projects
 which it has depended on in the past:
 
+  * [PyGame](http://www.pygame.org)
   * **Tom Rothamel**'s [PyGame Subset for Android](https://web.archive.org/web/20150712040220/http://pygame.renpy.org/) (superseded by [RAPT](http://www.renpy.org/doc/html/android.html))
 
 
