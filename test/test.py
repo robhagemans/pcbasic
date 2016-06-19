@@ -8,8 +8,15 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 import os
+import subprocess
 import shutil
 import filecmp
+
+def is_same(file1, file2):
+    try:
+        return filecmp.cmp(file1, file2, shallow=False)
+    except EnvironmentError:
+        return False
 
 args = sys.argv[1:]
 
@@ -41,15 +48,16 @@ for name in args:
     top = os.getcwd()
     os.chdir(output_dir)
     sys.stdout.flush()
-    os.system('../../../pcbasic.py --interface=none >/dev/null')
+    subprocess.Popen(['python', os.path.join('..','..','..','pcbasic.py'), '--interface=none'],
+            stdin=sys.stdin, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w')).wait()
     os.chdir(top)
     passed = True
     known = True
     failfiles = []
     for filename in os.listdir(model_dir):
-        if not filecmp.cmp(os.path.join(output_dir, filename), os.path.join(model_dir, filename), shallow=False):
+        if not is_same(os.path.join(output_dir, filename), os.path.join(model_dir, filename)):
             failfiles.append(filename)
-            known = os.path.isdir(known_dir) and filecmp.cmp(os.path.join(output_dir, filename), os.path.join(known_dir, filename), shallow=False)
+            known = os.path.isdir(known_dir) and is_same(os.path.join(output_dir, filename), os.path.join(known_dir, filename))
             passed = False
     for filename in os.listdir(output_dir):
         if not os.path.isfile(os.path.join(output_dir, filename)):
@@ -58,10 +66,10 @@ for name in args:
             known = False
     if not passed:
         if not known:
-            print 'FAILED: %s differ.' % ' '.join(failfiles)
+            print 'FAILED: difference in %s.' % ' '.join(failfiles)
             failed.append(name)
         else:
-            print 'known failure: %s differ.' % ' '.join(failfiles)
+            print 'known failure: difference in %s.' % ' '.join(failfiles)
             knowfailed.append(name)
     else:
         print 'passed.'
