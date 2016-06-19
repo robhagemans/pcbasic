@@ -203,6 +203,9 @@ class Settings(object):
     config_name = u'PCBASIC.INI'
     user_config_path = os.path.join(user_config_dir, config_name)
 
+    # save-state file name
+    state_name = 'pcbasic.session'
+
     # by default, load what's in section [pcbasic] and override with anything
     # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
     default_presets = [u'pcbasic']
@@ -514,7 +517,7 @@ class Settings(object):
 
     def get_state_file(self):
         """Name of state file"""
-        state_name = self.get('state') or 'PCBASIC.SAV'
+        state_name = self.get('state') or self.state_name
         if not os.path.exists(state_name):
             state_name = os.path.join(state_path, state_name)
         return state_name
