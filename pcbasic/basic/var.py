@@ -382,22 +382,22 @@ class Arrays(object):
             raise error.RunError(error.DUPLICATE_DEFINITION)
         self.base_index = base
 
-    def get(self, name, index):
-        """Retrieve the value of an array element."""
+    def view(self, name, index):
+        """Return a memoryview to an array element."""
         dimensions, lst = self.check_dim(name, index)
         bigindex = self.index(index, dimensions)
-        value = lst[bigindex*var_size_bytes(name):(bigindex+1)*var_size_bytes(name)]
-        return (name[-1], value)
+        bytesize = var_size_bytes(name)
+        return memoryview(lst)[bigindex*bytesize:(bigindex+1)*bytesize]
+
+    def get(self, name, index):
+        """Retrieve a copy of the value of an array element."""
+        return (name[-1], bytearray(self.view(name, index)))
 
     def set(self, name, index, value):
         """Assign a value to an array element."""
-        dimensions, lst = self.check_dim(name, index)
-        bigindex = self.index(index, dimensions)
-        # make a copy of the value, we don't want them to be linked
-        value = (vartypes.pass_type(name[-1], value)[1])[:]
-        bytesize = var_size_bytes(name)
-        lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
-        # inc version
+        # copy value into array
+        self.view(name, index)[:] = vartypes.pass_type(name[-1], value)[1]
+        # increment array version
         self.arrays[name][2] += 1
 
     def varptr(self, name, indices):

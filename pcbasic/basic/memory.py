@@ -354,32 +354,28 @@ class DataSegment(object):
         varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
         return self.dereference(varptr)
 
+    def _view_variable(self, name, indices):
+        """Retrieve a memoryview to a scalar variable or an array element."""
+        if indices == []:
+            if name not in self.scalars.variables:
+                raise error.RunError(error.IFC)
+            return memoryview(self.scalars.variables[name])
+        else:
+            if name not in self.arrays.arrays:
+                raise error.RunError(error.IFC)
+            # array would be allocated if retrieved and nonexistant
+            return self.arrays.view(name, indices)
+
     def swap(self, name1, index1, name2, index2):
         """Swap two variables."""
         if name1[-1] != name2[-1]:
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
-        elif ((index1 == [] and name1 not in self.scalars.variables) or
-                (index1 != [] and name1 not in self.arrays.arrays) or
-                (index2 == [] and name2 not in self.scalars.variables) or
-                (index2 != [] and name2 not in self.arrays.arrays)):
-            # illegal function call
-            raise error.RunError(error.IFC)
-        typechar = name1[-1]
-        size = vartypes.byte_size[typechar]
         # get buffers (numeric representation or string pointer)
-        if index1 == []:
-            p1, off1 = self.scalars.variables[name1], 0
-        else:
-            dimensions, p1, _ = self.arrays.arrays[name1]
-            off1 = self.arrays.index(index1, dimensions)*size
-        if index2 == []:
-            p2, off2 = self.scalars.variables[name2], 0
-        else:
-            dimensions, p2, _ = self.arrays.arrays[name2]
-            off2 = self.arrays.index(index2, dimensions)*size
+        left = self._view_variable(name1, index1)
+        right = self._view_variable(name2, index2)
         # swap the contents
-        p1[off1:off1+size], p2[off2:off2+size] =  p2[off2:off2+size], p1[off1:off1+size]
+        left[:], right[:] = right.tobytes(), left.tobytes()
         # inc version
         if name1 in self.arrays.arrays:
             self.arrays.arrays[name1][2] += 1
