@@ -1,4 +1,7 @@
 include README.md
-include doc/*
 include LICENSE.md
+include CONTRIBUTING.md
+incluse THANKS.md
+include INSTALL.md
 include GPL3.txt
+include doc/*
