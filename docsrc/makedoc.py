@@ -133,7 +133,7 @@ def makedoc(header=None, output=None, embedded_style=True):
     maketoc(predoc, toc)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     version = open(basepath + '/../pcbasic/data/version.txt', 'r').read().strip()
-    subheader_html = '<header>\n<h1>PC-BASIC {0} documentation</h1>\n<small>Documentation compiled on {1}.</small>\n</header>\n'.format(version, now)
+    subheader_html = '<header>\n<h1>PC-BASIC {0} documentation</h1>\n<small>Last updated {1}.</small>\n</header>\n'.format(version, now)
     header_html = open(header, 'r').read()
     with open(output, 'w') as outf:
         outf.write(header_html)
