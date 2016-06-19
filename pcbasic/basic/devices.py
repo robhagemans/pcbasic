@@ -10,6 +10,7 @@ import os
 
 from . import error
 from . import vartypes
+from .eascii import as_bytes as ea
 
 def nullstream():
     return open(os.devnull, 'r+')
@@ -423,10 +424,11 @@ class Field(object):
 class KYBDFile(TextFileBase):
     """KYBD device: keyboard."""
 
+    # replace some eascii codes with control characters
     input_replace = {
-        '\0\x47': '\xFF\x0B', '\0\x48': '\xFF\x1E', '\0\x49': '\xFE',
-        '\0\x4B': '\xFF\x1D', '\0\x4D': '\xFF\x1C', '\0\x4F': '\xFF\x0E',
-        '\0\x50': '\xFF\x1F', '\0\x51': '\xFE', '\0\x53': '\xFF\x7F', '\0\x52': '\xFF\x12'
+        ea.HOME: '\xFF\x0B', ea.UP: '\xFF\x1E', ea.PAGEUP: '\xFE',
+        ea.LEFT: '\xFF\x1D', ea.RIGHT: '\xFF\x1C', ea.END: '\xFF\x0E',
+        ea.DOWN: '\xFF\x1F', ea.PAGEDOWN: '\xFE', ea.DELETE: '\xFF\x7F', ea.INSERT: '\xFF\x12'
         }
 
     col = 0
