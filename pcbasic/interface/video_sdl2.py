@@ -361,20 +361,19 @@ class VideoSDL2(video_graphical.VideoGraphical):
             if ts == event.text.timestamp:
                 # combine if same time stamp
                 if eascii and c != eascii:
-                    self.input_queue.put(signals.Event(
-                                            signals.KEYB_CHAR, (c, )))
-                    self.input_queue.put(signals.Event(
-                                        signals.KEYB_DOWN, (eascii, scan, mod)))
+                    # filter out chars being sent with alt+key on Linux
+                    if scancode.ALT not in mod:
+                        # with IME, the text is sent together with the final Enter keypress.
+                        self.input_queue.put(signals.Event(signals.KEYB_CHAR, (c, )))
+                    self.input_queue.put(signals.Event(signals.KEYB_DOWN, (eascii, scan, mod)))
                 else:
-                    self.input_queue.put(signals.Event(
-                                        signals.KEYB_DOWN, (c, scan, mod)))
+                    self.input_queue.put(signals.Event(signals.KEYB_DOWN, (c, scan, mod)))
             else:
                 # two separate events
                 # previous keypress has no corresponding textinput
                 self._flush_keypress()
                 # current textinput has no corresponding keypress
-                self.input_queue.put(signals.Event(
-                                        signals.KEYB_CHAR, (c, )))
+                self.input_queue.put(signals.Event(signals.KEYB_CHAR, (c, )))
             self.last_down = None
 
 
