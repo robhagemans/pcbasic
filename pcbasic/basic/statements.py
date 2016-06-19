@@ -848,7 +848,7 @@ class Statements(object):
                 # and interruptible
                 self.session.events.wait()
                 # LIST on screen is slightly different from just writing
-                self.session.console.list_line(l)
+                self.session.screen.list_line(l)
         # return to direct mode
         self.parser.set_pointer(False)
 

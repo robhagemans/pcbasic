@@ -194,16 +194,16 @@ class Program(object):
         # update line number dict
         self.update_line_dict(startpos, afterpos, 0, deleteable, beyond)
 
-    def edit(self, console, from_line, bytepos=None):
+    def edit(self, screen, from_line, bytepos=None):
         """Output program line to console and position cursor."""
         if self.protected:
-            console.screen.write(str(from_line)+'\r')
+            screen.write(str(from_line)+'\r')
             raise error.RunError(error.IFC)
         # list line
         self.bytecode.seek(self.line_numbers[from_line]+1)
         _, output, textpos = self.tokeniser.detokenise_line(self.bytecode, bytepos)
         # no newline to avoid scrolling on line 24
-        console.list_line(str(output), newline=False)
+        screen.list_line(str(output), newline=False)
         # find row, column position for textpos
         newlines, c = 0, 0
         pos_row, pos_col = 0, 0
@@ -211,7 +211,7 @@ class Program(object):
             return
         for i, byte in enumerate(output):
             c += 1
-            if chr(byte) == '\n' or c > console.screen.mode.width:
+            if chr(byte) == '\n' or c > screen.mode.width:
                 newlines += 1
                 c = 0
             if i == textpos:
@@ -219,9 +219,9 @@ class Program(object):
         if textpos > i:
             pos_row, pos_col = newlines, c + 1
         if bytepos:
-            console.screen.set_pos(console.screen.current_row-newlines+pos_row, pos_col)
+            screen.set_pos(screen.current_row-newlines+pos_row, pos_col)
         else:
-            console.screen.set_pos(console.screen.current_row-newlines, 1)
+            screen.set_pos(screen.current_row-newlines, 1)
 
     def renum(self, screen, new_line, start_line, step):
         """Renumber stored program."""

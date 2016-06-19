@@ -919,6 +919,24 @@ class Screen(object):
         self.apage.row[self.current_row-1].wrap = False
         self.set_pos(self.current_row + 1, 1)
 
+    def list_line(self, line, newline=True):
+        """Print a line from a program listing or EDIT prompt."""
+        # no wrap if 80-column line, clear row before printing.
+        # replace LF CR with LF
+        line = line.replace('\n\r', '\n')
+        cuts = line.split('\n')
+        for i, l in enumerate(cuts):
+            # clear_line looks back along wraps, use screen.clear_from instead
+            self.clear_from(self.current_row, 1)
+            self.write(str(l))
+            if i != len(cuts)-1:
+                self.write('\n')
+        if newline:
+            self.write_line()
+        # remove wrap after 80-column program line
+        if len(line) == self.mode.width and self.current_row > 2:
+            self.apage.row[self.current_row-3].wrap = False
+
     def write_char(self, c, do_scroll_down=False):
         """Put one character at the current position."""
         # check if scroll& repositioning needed
@@ -1088,6 +1106,33 @@ class Screen(object):
                 start = 0
             else:
                 break
+
+    def clear_from(self, srow, scol):
+        """Clear from given position to end of logical line (CTRL+END)."""
+        mode = self.mode
+        therow = self.apage.row[srow-1]
+        therow.buf = (therow.buf[:scol-1] +
+            [(' ', self.attr)] * (mode.width-scol+1))
+        therow.double = (therow.double[:scol-1] + [0] * (mode.width-scol+1))
+        therow.end = min(therow.end, scol-1)
+        crow = srow
+        while self.apage.row[crow-1].wrap:
+            crow += 1
+            self.apage.row[crow-1].clear(self.screen.attr)
+        for r in range(crow, srow, -1):
+            self.apage.row[r-1].wrap = False
+            self.scroll(r)
+        therow = self.apage.row[srow-1]
+        therow.wrap = False
+        self.set_pos(srow, scol)
+        save_end = therow.end
+        therow.end = mode.width
+        if scol > 1:
+            self.redraw_row(scol-1, srow)
+        else:
+            # inelegant: we're clearing the text buffer for a second time now
+            self.clear_rows(srow, srow)
+        therow.end = save_end
 
     def set_print_screen_target(self, lpt1_file):
         """Set stream for print_screen() """

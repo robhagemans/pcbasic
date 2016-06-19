@@ -274,7 +274,7 @@ class Console(object):
                     # ESC, CTRL+[
                     self.clear_line(row, furthest_left)
                 elif d in (ea.CTRL_END, ea.CTRL_e):
-                    self.clear_rest_of_line(row, col)
+                    self.screen.clear_from(row, col)
                 elif d in (ea.UP, ea.CTRL_6):
                     self.screen.set_pos(row - 1, col, scroll_ok=False)
                 elif d in (ea.DOWN, ea.CTRL_MINUS):
@@ -459,34 +459,7 @@ class Console(object):
 
     def clear_line(self, the_row, from_col=1):
         """Clear whole logical line (ESC), leaving prompt."""
-        self.clear_rest_of_line(self.find_start_of_line(the_row), from_col)
-
-    def clear_rest_of_line(self, srow, scol):
-        """Clear from given position to end of logical line (CTRL+END)."""
-        mode = self.screen.mode
-        therow = self.screen.apage.row[srow-1]
-        therow.buf = (therow.buf[:scol-1] +
-            [(' ', self.screen.attr)] * (mode.width-scol+1))
-        therow.double = (therow.double[:scol-1] + [0] * (mode.width-scol+1))
-        therow.end = min(therow.end, scol-1)
-        crow = srow
-        while self.screen.apage.row[crow-1].wrap:
-            crow += 1
-            self.screen.apage.row[crow-1].clear(self.screen.attr)
-        for r in range(crow, srow, -1):
-            self.screen.apage.row[r-1].wrap = False
-            self.screen.scroll(r)
-        therow = self.screen.apage.row[srow-1]
-        therow.wrap = False
-        self.screen.set_pos(srow, scol)
-        save_end = therow.end
-        therow.end = mode.width
-        if scol > 1:
-            self.screen.redraw_row(scol-1, srow)
-        else:
-            # inelegant: we're clearing the text buffer for a second time now
-            self.screen.clear_rows(srow, srow)
-        therow.end = save_end
+        self.screen.clear_from(self.find_start_of_line(the_row), from_col)
 
     def backspace(self, start_row, start_col):
         """Delete the char to the left (BACKSPACE)."""
@@ -606,24 +579,3 @@ class Console(object):
             if (c not in string.digits + string.ascii_letters):
                 break
         self.screen.set_pos(last_row, last_col)
-
-    ##### output methods
-
-    #MOVE to Screen
-    def list_line(self, line, newline=True):
-        """Print a line from a program listing or EDIT prompt."""
-        # no wrap if 80-column line, clear row before printing.
-        # replace LF CR with LF
-        line = line.replace('\n\r', '\n')
-        cuts = line.split('\n')
-        for i, l in enumerate(cuts):
-            # clear_line looks back along wraps, use clear_rest_of_line instead
-            self.clear_rest_of_line(self.screen.current_row, 1)
-            self.screen.write(str(l))
-            if i != len(cuts)-1:
-                self.screen.write('\n')
-        if newline:
-            self.screen.write_line()
-        # remove wrap after 80-column program line
-        if len(line) == self.screen.mode.width and self.screen.current_row > 2:
-            self.screen.apage.row[self.screen.current_row-3].wrap = False
