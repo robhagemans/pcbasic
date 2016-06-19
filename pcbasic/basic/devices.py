@@ -469,16 +469,7 @@ class KYBDFile(TextFileBase):
 
     def read(self, n=1):
         """Read a string from the keyboard - INPUT and LINE INPUT."""
-        word = ''
-        for c in self.keyboard.read_chars(n):
-            if len(c) > 1 and c[0] == '\0':
-                try:
-                    word += self.input_replace[c]
-                except KeyError:
-                    pass
-            else:
-                word += c
-        return word
+        return ''.join(self.input_replace.get(c, c) for c in self.keyboard.read_chars(n))
 
     def lof(self):
         """LOF for KYBD: is 1."""
