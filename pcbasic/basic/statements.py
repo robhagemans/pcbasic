@@ -2007,7 +2007,7 @@ class Statements(object):
             # read the input
             self.session.input_mode = True
             varlist = print_and_input.input_console(
-                    self.session.console, self.session.strings,
+                    self.session.editor, self.session.strings,
                     prompt, readvar, newline)
             self.session.input_mode = False
             for v in varlist:
@@ -2037,7 +2037,7 @@ class Statements(object):
         else:
             self.session.input_mode = True
             self.session.screen.write(prompt)
-            line = self.session.console.wait_screenline(write_endl=newline)
+            line = self.session.editor.wait_screenline(write_endl=newline)
             self.session.input_mode = False
         self.session.memory.set_variable(readvar, indices, self.session.strings.store(line))
 
@@ -2109,7 +2109,7 @@ class Statements(object):
             # prompt for random seed if not specified
             while not val:
                 self.session.screen.write("Random number seed (-32768 to 32767)? ")
-                seed = self.session.console.wait_screenline()
+                seed = self.session.editor.wait_screenline()
                 # seed entered on prompt is rounded to int
                 val = representation.str_to_number(seed)
             val = vartypes.pass_integer(val)

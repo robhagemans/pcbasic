@@ -1,6 +1,6 @@
 """
-PC-BASIC - console.py
-Console front-end
+PC-BASIC - editor.py
+Direct mode environment
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -115,11 +115,11 @@ class FunctionKeyMacros(object):
         return self._key_replace[num]
 
 
-class Console(object):
+class Editor(object):
     """Interactive environment."""
 
     def __init__(self, screen, keyboard, sound, output_redirection, lpt1_file):
-        """Initialise console."""
+        """Initialise environment."""
         # overwrite mode (instead of insert)
         self._overwrite_mode = True
         self.screen = screen
@@ -128,9 +128,6 @@ class Console(object):
         self.redirect = output_redirection
         self.lpt1_file = lpt1_file
         self.screen.init_mode()
-
-    ###############################
-    # interactive mode
 
     def wait_screenline(self, write_endl=True, from_start=False):
         """Enter interactive mode and read string from console."""
@@ -147,9 +144,9 @@ class Console(object):
             raise
         # get contents and of the logical line
         if from_start:
-            outstr = self.get_logical_line(self.screen.current_row)
+            outstr = self._get_logical_line(self.screen.current_row)
         else:
-            outstr = self.get_logical_line_input(self.screen.current_row,
+            outstr = self._get_logical_line_input(self.screen.current_row,
                                             prompt_row, left, right)
         # redirects output exactly the contents of the logical line
         # including any trailing whitespace and chars past 255
@@ -177,7 +174,7 @@ class Console(object):
             srow += 1
         return srow
 
-    def get_logical_line(self, srow):
+    def _get_logical_line(self, srow):
         """Get bytearray of the contents of the logical line."""
         # find start of logical line
         srow = self.find_start_of_line(srow)
@@ -194,7 +191,7 @@ class Console(object):
                 line += '\n'
         return line
 
-    def get_logical_line_input(self, srow, prompt_row, left, right):
+    def _get_logical_line_input(self, srow, prompt_row, left, right):
         """Get bytearray of the contents of the logical line, adapted for INPUT."""
         # INPUT: the prompt starts at the beginning of a logical line
         # but the row may have moved up: this happens on line 24

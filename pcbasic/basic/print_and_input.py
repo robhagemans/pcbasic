@@ -26,13 +26,13 @@ class InputTextFile(devices.TextFileBase):
         devices.TextFileBase.__init__(self, StringIO(line), 'D', 'I')
 
 
-def input_console(console, stringspace, prompt, readvar, newline):
+def input_console(editor, stringspace, prompt, readvar, newline):
     """Read a list of variables for INPUT."""
     # readvar is a list of (name, indices) tuples
     # we return a list of (name, indices, values) tuples
     while True:
-        console.screen.write(prompt)
-        line = console.wait_screenline(write_endl=newline)
+        editor.screen.write(prompt)
+        line = editor.wait_screenline(write_endl=newline)
         inputstream = InputTextFile(line)
         # read the values and group them and the separators
         values, seps = [], []
@@ -47,7 +47,7 @@ def input_console(console, stringspace, prompt, readvar, newline):
         # None means a conversion error occurred
         if (seps[-1] or '' in seps[:-1] or None in values):
             # good old Redo!
-            console.screen.write_line('?Redo from start')
+            editor.screen.write_line('?Redo from start')
         else:
             return [r + [v] for r, v in zip(readvar, values)]
 

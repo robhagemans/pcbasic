@@ -22,7 +22,7 @@ from . import events
 from . import program
 from . import signals
 from . import display
-from . import console
+from . import editor
 from . import inputs
 from . import debug
 from . import rnd
@@ -93,7 +93,7 @@ class Session(object):
         self.program = program.Program(self.tokeniser,
                 max_list_line, allow_protect, allow_code_poke)
         # function key macros
-        self.fkey_macros = console.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
+        self.fkey_macros = editor.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
         # set up event handlers
         self.events = events.Events(self, syntax)
         # initialise sound queue
@@ -144,8 +144,8 @@ class Session(object):
         self.all_memory = machine.Memory(self.memory, self.devices,
                             self.screen, self.keyboard, self.screen.fonts[8],
                             peek_values, syntax)
-        # initialise the console
-        self.console = console.Console(
+        # initialise the editor
+        self.editor = editor.Editor(
                 self.screen, self.keyboard, self.sound,
                 self.output_redirection, self.devices.lpt1_file)
         # set up the SHELL command
@@ -270,7 +270,7 @@ class Session(object):
                     self._loop()
                     self._show_prompt()
                     # input loop, checks events
-                    line = self.console.wait_screenline(from_start=True)
+                    line = self.editor.wait_screenline(from_start=True)
                     self._prompt = not self._store_line(line)
             except error.Exit:
                 break
@@ -370,12 +370,12 @@ class Session(object):
         self.screen.write(numstr)
         if self.auto_linenum in self.program.line_numbers:
             self.screen.write('*')
-            line = bytearray(self.console.wait_screenline(from_start=True))
+            line = bytearray(self.editor.wait_screenline(from_start=True))
             if line[:len(numstr)+1] == numstr+'*':
                 line[len(numstr)] = ' '
         else:
             self.screen.write(' ')
-            line = bytearray(self.console.wait_screenline(from_start=True))
+            line = bytearray(self.editor.wait_screenline(from_start=True))
         # run or store it; don't clear lines or raise undefined line number
         self.direct_line = self.tokeniser.tokenise_line(line)
         c = util.peek(self.direct_line)
