@@ -428,7 +428,10 @@ class KYBDFile(TextFileBase):
     input_replace = {
         ea.HOME: '\xFF\x0B', ea.UP: '\xFF\x1E', ea.PAGEUP: '\xFE',
         ea.LEFT: '\xFF\x1D', ea.RIGHT: '\xFF\x1C', ea.END: '\xFF\x0E',
-        ea.DOWN: '\xFF\x1F', ea.PAGEDOWN: '\xFE', ea.DELETE: '\xFF\x7F', ea.INSERT: '\xFF\x12'
+        ea.DOWN: '\xFF\x1F', ea.PAGEDOWN: '\xFE',
+        ea.DELETE: '\xFF\x7F', ea.INSERT: '\xFF\x12',
+        ea.F1: '', ea.F2: '', ea.F3: '', ea.F4: '', ea.F5: '',
+        ea.F6: '', ea.F7: '', ea.F8: '', ea.F9: '', ea.F10: '',
         }
 
     col = 0
@@ -469,7 +472,13 @@ class KYBDFile(TextFileBase):
 
     def read(self, n=1):
         """Read a string from the keyboard - INPUT and LINE INPUT."""
-        return ''.join(self.input_replace.get(c, c) for c in self.keyboard.read_chars(n))
+        chars = b''
+        while len(chars) < n:
+            # note that we need string length, not list length
+            # as read_chars can return multi-byte eascii codes
+            chars += b''.join(self.input_replace.get(c, c)
+                             for c in self.keyboard.read_chars(n-len(chars)))
+        return chars
 
     def lof(self):
         """LOF for KYBD: is 1."""
