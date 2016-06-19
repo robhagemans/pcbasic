@@ -457,18 +457,12 @@ class KYBDFile(TextFileBase):
         return inst
 
     def read_raw(self, n=1):
-        """Read a list of chars from the keyboard - INPUT$ """
-        word = ''
-        for char in self.keyboard.read_chars(n):
-            if len(char) > 1 and char[0] == '\0':
-                # replace some scancodes that console can return
-                if char[1] in ('\x4b', '\x4d', '\x48', '\x50',
-                                '\x47', '\x49', '\x4f', '\x51', '\x53'):
-                    word += '\0'
-                # ignore all others
-            else:
-                word += char
-        return word
+        """Read a string from the keyboard - INPUT$."""
+        chars = b''
+        while len(chars) < n:
+            chars += b''.join(b'\0' if c in self.input_replace else c if len(c) == 1 else b''
+                              for c in self.keyboard.read_chars(n-len(chars)))
+        return chars
 
     def read(self, n=1):
         """Read a string from the keyboard - INPUT and LINE INPUT."""
@@ -477,7 +471,7 @@ class KYBDFile(TextFileBase):
             # note that we need string length, not list length
             # as read_chars can return multi-byte eascii codes
             chars += b''.join(self.input_replace.get(c, c)
-                             for c in self.keyboard.read_chars(n-len(chars)))
+                              for c in self.keyboard.read_chars(n-len(chars)))
         return chars
 
     def lof(self):
