@@ -1073,7 +1073,6 @@ class Screen(object):
                 self.session.video_queue.put(signals.Event(signals.VIDEO_PUT_RECT,
                                         (self.apagenum, x0, y0, x1, y1, sprite)))
 
-    # should be in console? uses wrap
     def redraw_row(self, start, crow, wrap=True):
         """Draw the screen row, wrapping around and reconstructing DBCS buffer."""
         while True:
