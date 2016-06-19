@@ -34,65 +34,57 @@ class BaseDebugger(object):
 
     def bluescreen(self, e):
         """Display a modal exception message."""
-        self.session.screen.screen(0, 0, 0, 0, new_width=80)
-        self.session.screen.clear()
-        self.session.screen.init_mode()
+        screen = self.session.screen
+        screen.screen(0, 0, 0, 0, new_width=80)
+        screen.clear()
+        screen.init_mode()
         exc_type, exc_value, exc_traceback = sys.exc_info()
         # log the standard python error
         logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         # format the error more readably on the screen
-        self.session.screen.set_border(4)
-        self.session.screen.set_attr(0x70)
-        self.session.screen.write_line('EXCEPTION')
-        self.session.screen.set_attr(15)
+        screen.set_border(4)
+        screen.set_attr(0x70)
+        screen.write_line('EXCEPTION')
+        screen.set_attr(15)
         if self.session.parser.run_mode:
             self.session.program.bytecode.seek(-1, 1)
-            self.session.program.edit(
-                self.session.screen,
-                self.session.program.get_line_number(
+            self.session.program.edit(screen,
+                    self.session.program.get_line_number(
                             self.session.program.bytecode.tell()),
                             self.session.program.bytecode.tell())
-            self.session.screen.write_line('\n')
+            screen.write_line('\n')
         else:
             self.session.direct_line.seek(0)
-            self.session.screen.write_line(str(
+            screen.write_line(str(
                     self.session.tokeniser.detokenise_compound_statement(
                             self.session.direct_line)[0])+'\n')
         stack = traceback.extract_tb(exc_traceback)
         for s in stack[-4:]:
-            stack_line = '{0}:{1}, {2}'.format(
-                os.path.split(s[0])[-1], s[1], s[2])
-            stack_line_2 = '    {0}'.format(s[3])
-            self.session.screen.set_attr(15)
-            self.session.screen.write_line(stack_line)
-            self.session.screen.set_attr(7)
-            self.session.screen.write_line(stack_line_2)
+            screen.set_attr(15)
+            screen.write_line('{0}:{1}, {2}'.format(os.path.split(s[0])[-1], s[1], s[2]))
+            if s[3] is not None:
+                screen.set_attr(7)
+                screen.write_line('    {0}'.format(s[3]))
         exc_message = traceback.format_exception_only(exc_type, exc_value)[0]
-        self.session.screen.set_attr(15)
-        self.session.screen.write('{0}:'.format(exc_type.__name__))
-        self.session.screen.set_attr(7)
-        self.session.screen.write_line(' {0}'.format(str(exc_value)))
-        self.session.screen.set_attr(0x70)
-        self.session.screen.write_line(
-            '\nThis is a bug in PC-BASIC.')
-        self.session.screen.set_attr(7)
-        self.session.screen.write(
-            'Sorry about that. Please send the above messages to the bugs forum\nby e-mail to ')
-        self.session.screen.set_attr(15)
-        self.session.screen.write(
-            'bugs@discussion.pcbasic.p.re.sf.net')
-        self.session.screen.set_attr(7)
-        self.session.screen.write(
-            ' or by filing a bug\nreport at ')
-        self.session.screen.set_attr(15)
-        self.session.screen.write(
-            'https://github.com/robhagemans/pcbasic/issues')
-        self.session.screen.set_attr(7)
-        self.session.screen.write_line(
-            '. Please include')
-        self.session.screen.write_line('as much information as you can about what you were doing and how this happened.')
-        self.session.screen.write_line('Thank you!')
-        self.session.screen.set_attr(7)
+        screen.set_attr(15)
+        screen.write('{0}:'.format(exc_type.__name__))
+        screen.set_attr(7)
+        screen.write_line(' {0}'.format(str(exc_value)))
+        screen.set_attr(0x70)
+        screen.write_line('\nThis is a bug in PC-BASIC.')
+        screen.set_attr(7)
+        screen.write('Sorry about that. Please send the above messages to the bugs forum\nby e-mail to ')
+        screen.set_attr(15)
+        screen.write('bugs@discussion.pcbasic.p.re.sf.net')
+        screen.set_attr(7)
+        screen.write(' or file a bug\nreport at ')
+        screen.set_attr(15)
+        screen.write('https://github.com/robhagemans/pcbasic/issues')
+        screen.set_attr(7)
+        screen.write_line('. Please include')
+        screen.write_line('as much information as you can about what you were doing and how this happened.')
+        screen.write_line('Thank you!')
+        screen.set_attr(7)
         self.session.parser.set_pointer(False)
 
     def debug_step(self, linum):
