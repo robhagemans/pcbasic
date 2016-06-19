@@ -50,6 +50,8 @@ def main():
             else:
                 # start an interpreter session with standard i/o
                 run_session(**settings.get_launch_parameters())
+    except KeyboardInterrupt:
+        pass
     except:
         # without this except clause we seem to be dropping exceptions
         # probably due to the sys.stdout.close() hack below
@@ -146,11 +148,11 @@ def launch_session(settings):
 def run_session(queues=(), resume=False, state_file=None, wait=False,
                 prog=None, commands=(), **session_params):
     """Run an interactive BASIC session."""
-    if resume:
-        session = state.zunpickle(state_file).attach(*queues)
-    else:
-        session = basic.Session(*queues, **session_params)
-    with session:
+    try:
+        if resume:
+            session = state.zunpickle(state_file).attach(*queues)
+        else:
+            session = basic.Session(*queues, **session_params)
         try:
             if prog:
                 session.load_program(prog)
@@ -164,7 +166,11 @@ def run_session(queues=(), resume=False, state_file=None, wait=False,
             state.zpickle(session, state_file)
             if wait:
                 session.pause('Press a key to close window')
-
+            session.close()
+    finally:
+        _, video_queue, _, message_queue = queues
+        video_queue.put(signals.Event(signals.VIDEO_QUIT))
+        message_queue.put(signals.Event(signals.AUDIO_QUIT))
 
 
 if __name__ == "__main__":
