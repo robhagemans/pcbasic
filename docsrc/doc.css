@@ -93,7 +93,14 @@ nav.toc a:hover {
     color: black;
     text-decoration: underline;
 }
-h1, h2, h3 {
+
+h1 {
+    font-size: 1.3em;
+    padding: 0.2em;
+    padding-left: 0;
+    color: #000044;
+}
+h2, h3 {
     font-size: 1.3em;
     background: #000044;
     padding: 0.2em;
