@@ -13,25 +13,54 @@ import logging
 from ..basic import signals
 
 
-def run(interface_name, video_params, audio_params, input_queue, video_queue, tone_queue, message_queue):
-    """Start the main interface event loop."""
-    with _get_audio_plugin(tone_queue, message_queue, interface_name, **audio_params) as audio_plugin:
-        with _get_video_plugin(input_queue, video_queue, interface_name, **video_params) as video_plugin:
-            while audio_plugin.alive or video_plugin.alive:
-                # ensure both queues are drained
-                video_plugin.cycle()
-                audio_plugin.cycle()
-                # do not hog cpu
-                if not audio_plugin.playing and not video_plugin.screen_changed:
-                    video_plugin.sleep(delay)
+class Interface(object):
+    """User interface for PC-BASIC session."""
 
+    # millisecond delay
+    delay = 12
 
+    def __init__(self, interface_name, video_params, audio_params):
+        """Initialise interface."""
+        self._input_queue = Queue.Queue()
+        self._video_queue = Queue.Queue()
+        self._tone_queues = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
+        self._message_queue = Queue.Queue()
+        self._video = _get_video_plugin(self._input_queue, self._video_queue, interface_name, **video_params)
+        self._audio = _get_audio_plugin(self._tone_queues, self._message_queue, interface_name, **audio_params)
 
-###############################################################################
-# implementation
+    def get_queues(self):
+        """Retrieve interface queues."""
+        return self._input_queue, self._video_queue, self._tone_queues, self._message_queue
 
-# millisecond delay
-delay = 12
+    def run(self):
+        """Start the main interface event loop."""
+        with self._audio:
+            with self._video:
+                while self._audio.alive or self._video.alive:
+                    # ensure both queues are drained
+                    self._video.cycle()
+                    self._audio.cycle()
+                    # do not hog cpu
+                    if not self._audio.playing and not self._video.screen_changed:
+                        self._video.sleep(self.delay)
+
+    def pause(self, message):
+        """Pause and wait for a key."""
+        self._video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, message))
+        self._video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
+        while True:
+            signal = self._input_queue.get()
+            if signal.event_type == signals.KEYB_DOWN:
+                break
+
+    def quit_input(self):
+        """Send signal through the input queue to quit BASIC."""
+        self._input_queue.put(signals.Event(signals.KEYB_QUIT))
+
+    def quit_output(self):
+        """Send signal through the output queues to quit plugins."""
+        self._video_queue.put(signals.Event(signals.VIDEO_QUIT))
+        self._message_queue.put(signals.Event(signals.AUDIO_QUIT))
 
 
 class InitFailed(Exception):

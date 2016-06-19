@@ -44,9 +44,7 @@ class Session(object):
     ###########################################################################
     # public interface methods
 
-    def __init__(self,
-            input_queue=None, video_queue=None,
-            tone_queue=None, message_queue=None,
+    def __init__(self, iface=None,
             syntax=u'advanced', option_debug=False, pcjr_term=u'', option_shell=u'',
             output_file=None, append=False, input_file=None,
             codepage=u'437', box_protect=True,
@@ -65,12 +63,15 @@ class Session(object):
             temp_dir=u''):
         """Initialise the interpreter session."""
         # use dummy queues if not provided
-        # *4 means we have multiple references to the same queue
-        # which doesn't matter since we're dropping all signals anyway
-        self.input_queue = input_queue or signals.NullQueue()
-        self.video_queue = video_queue or signals.NullQueue()
-        self.tone_queue = tone_queue or [signals.NullQueue()]*4
-        self.message_queue = message_queue or signals.NullQueue()
+        if iface:
+            self.input_queue, self.video_queue, self.tone_queue, self.message_queue = iface.get_queues()
+        else:
+            self.input_queue = signals.NullQueue()
+            self.video_queue = signals.NullQueue()
+            # *4 means we have multiple references to the same queue
+            # which doesn't matter since we're dropping all signals anyway
+            self.tone_queue = [signals.NullQueue()]*4
+            self.message_queue = signals.NullQueue()
         # true if a prompt is needed on next cycle
         self._prompt = True
         # input mode is AUTO (used by AUTO)
@@ -198,14 +199,16 @@ class Session(object):
         if not self._parse_mode:
             self._prompt = False
 
-    def attach(self, input_queue=None, video_queue=None,
-                     tone_queue=None, message_queue=None):
+    def attach(self, iface=None):
         """Attach interface to interpreter session."""
         # use dummy queues if not provided
-        self.input_queue = input_queue or signals.NullQueue()
-        self.video_queue = video_queue or signals.NullQueue()
-        self.tone_queue = tone_queue or [signals.NullQueue()]*4
-        self.message_queue = message_queue or signals.NullQueue()
+        if iface:
+            self.input_queue, self.video_queue, self.tone_queue, self.message_queue = iface.get_queues()
+        else:
+            self.input_queue = signals.NullQueue()
+            self.video_queue = signals.NullQueue()
+            self.tone_queue = [signals.NullQueue()]*4
+            self.message_queue = signals.NullQueue()
         # rebuild the screen
         self.screen.rebuild()
         # rebuild the audio queue
@@ -273,15 +276,6 @@ class Session(object):
                     line = self.editor.wait_screenline(from_start=True)
                     self._prompt = not self._store_line(line)
             except error.Exit:
-                break
-
-    def pause(self, message):
-        """Pause the session and wait for a key."""
-        self.video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, message))
-        self.video_queue.put(signals.Event(signals.VIDEO_SHOW_CURSOR, False))
-        while True:
-            signal = self.input_queue.get()
-            if signal.event_type == signals.KEYB_DOWN:
                 break
 
     def close(self):

@@ -124,35 +124,36 @@ def convert(settings):
 def launch_session(settings):
     """Start an interactive interpreter session."""
     from . import interface
-    # initialise queues
-    input_queue = Queue()
-    video_queue = Queue()
-    tone_queues = [Queue(), Queue(), Queue(), Queue()]
-    message_queue = Queue()
-    queues = (input_queue, video_queue, tone_queues, message_queue)
-    # launch the BASIC thread
-    thread = threading.Thread(
-                target=run_session,
-                args=(queues,), kwargs=settings.get_launch_parameters())
-    thread.start()
     try:
-        interface.run(
-                settings.get_interface(),
-                settings.get_video_parameters(), settings.get_audio_parameters(), *queues)
+        # initialise queues
+        iface = interface.Interface(
+                    settings.get_interface(),
+                    settings.get_video_parameters(),
+                    settings.get_audio_parameters())
     except interface.InitFailed:
         logging.error('Failed to initialise interface.')
+        return
+    thread = threading.Thread(
+                target=run_session,
+                args=(iface,),
+                kwargs=settings.get_launch_parameters())
+    try:
+        # launch the BASIC thread
+        thread.start()
+        # run the interface
+        iface.run()
     finally:
-        input_queue.put(signals.Event(signals.KEYB_QUIT))
+        iface.quit_input()
         thread.join()
 
-def run_session(queues=(), resume=False, state_file=None, wait=False,
+def run_session(iface=None, resume=False, state_file=None, wait=False,
                 prog=None, commands=(), **session_params):
     """Run an interactive BASIC session."""
     try:
         if resume:
-            session = state.zunpickle(state_file).attach(*queues)
+            session = state.zunpickle(state_file).attach(iface)
         else:
-            session = basic.Session(*queues, **session_params)
+            session = basic.Session(iface, **session_params)
         try:
             if prog:
                 session.load_program(prog)
@@ -164,13 +165,12 @@ def run_session(queues=(), resume=False, state_file=None, wait=False,
             pass
         finally:
             state.zpickle(session, state_file)
-            if wait:
-                session.pause('Press a key to close window')
             session.close()
     finally:
-        _, video_queue, _, message_queue = queues
-        video_queue.put(signals.Event(signals.VIDEO_QUIT))
-        message_queue.put(signals.Event(signals.AUDIO_QUIT))
+        if iface:
+            if wait:
+                iface.pause('Press a key to close window')
+            iface.quit_output()
 
 
 if __name__ == "__main__":

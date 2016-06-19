@@ -6,7 +6,7 @@ Video, input and audio handlers
 This file is released under the GNU GPL version 3 or later.
 """
 
-from .base import run, video_plugins, audio_plugins, InitFailed
+from .base import Interface, video_plugins, audio_plugins, InitFailed
 
 # video plugins
 from .base import VideoPlugin
