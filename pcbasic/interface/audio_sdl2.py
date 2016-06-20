@@ -108,11 +108,15 @@ class AudioSDL2(base.AudioPlugin):
                 except Queue.Empty:
                     continue
                 if signal.event_type == signals.AUDIO_TONE:
+                    if self.next_tone[voice] and self.next_tone[voice].loop:
+                        self.tone_queue[voice].task_done()
                     # enqueue a tone
                     self.generators[voice].append(synthesiser.SoundGenerator(
                         self.signal_sources[voice], synthesiser.feedback_tone, *signal.params))
                 elif signal.event_type == signals.AUDIO_NOISE:
                     # enqueue a noise
+                    if self.next_tone[voice] and self.next_tone[voice].loop:
+                        self.tone_queue[voice].task_done()
                     feedback = synthesiser.feedback_noise if signal.params[0] else synthesiser.feedback_periodic
                     self.generators[voice].append(synthesiser.SoundGenerator(
                         self.signal_sources[3], feedback, *signal.params[1:]))
