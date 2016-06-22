@@ -288,7 +288,7 @@ class AudioPlugin(object):
         """Setup the audio interface and start the event handling thread."""
         # sound generators for sounds not played yet
         # if not None, something is playing
-        self.next_tone = [ None, None, None, None ]
+        self.next_tone = [None, None, None, None]
         self.alive = True
         self.playing = False
         self.tone_queue = tone_queue
@@ -322,6 +322,8 @@ class AudioPlugin(object):
             elif signal.event_type == signals.AUDIO_QUIT:
                 # close thread
                 return False
+            elif signal.event_type == signals.AUDIO_PERSIST:
+                self.persist(signal.params)
 
     def _drain_tone_queue(self):
         """Drain audio signal queue."""
@@ -346,3 +348,6 @@ class AudioPlugin(object):
 
     def hush(self):
         """Be quiet."""
+
+    def persist(self. do_persist):
+        """Allow or disallow mixer to quit."""
