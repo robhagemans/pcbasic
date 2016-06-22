@@ -40,9 +40,12 @@ class Interface(object):
                     # ensure both queues are drained
                     self._video.cycle()
                     self._audio.cycle()
-                    # do not hog cpu
                     if not self._audio.playing and not self._video.screen_changed:
+                        # nothing to do, come back later
                         self._video.sleep(self.delay)
+                    else:
+                        # tiny delay; significantly reduces cpu load when playing audio or blinking video
+                        self._video.sleep(1)
 
     def pause(self, message):
         """Pause and wait for a key."""
