@@ -307,15 +307,42 @@ class AudioPlugin(object):
             self.alive = self._drain_message_queue()
         if self.alive:
             self.playing = not (self._drain_tone_queue() and self.next_tone == [None, None, None, None])
-            self._play_sound()
-
-    def _play_sound(self):
-        """Play the sounds queued."""
+            self.work()
 
     def _drain_message_queue(self):
-        """Process sound system messages."""
-        return False
+        """Drain message queue."""
+        while True:
+            try:
+                signal = self.message_queue.get(False)
+            except Queue.Empty:
+                return True
+            self.message_queue.task_done()
+            if signal.event_type == signals.AUDIO_STOP:
+                self.hush()
+            elif signal.event_type == signals.AUDIO_QUIT:
+                # close thread
+                return False
 
     def _drain_tone_queue(self):
-        """Process tone events."""
-        return True
+        """Drain audio signal queue."""
+        empty = False
+        while not empty:
+            empty = True
+            for voice, q in enumerate(self.tone_queue):
+                try:
+                    signal = q.get(False)
+                    empty = False
+                except Queue.Empty:
+                    continue
+                self.tone_queue[voice].task_done()
+                if signal.event_type == signals.AUDIO_TONE:
+                    pass
+                elif signal.event_type == signals.AUDIO_NOISE:
+                    pass
+        return empty
+
+    def work(self):
+        """Play some of the sounds queued."""
+
+    def hush(self):
+        """Be quiet."""

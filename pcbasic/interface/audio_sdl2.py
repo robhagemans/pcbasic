@@ -78,51 +78,7 @@ class AudioSDL2(base.AudioPlugin):
         sdl2.SDL_PauseAudioDevice(self.dev, 0)
         return base.AudioPlugin.__enter__(self)
 
-    def _drain_message_queue(self):
-        """Drain signal queue."""
-        while True:
-            try:
-                signal = self.message_queue.get(False)
-            except Queue.Empty:
-                return True
-            self.message_queue.task_done()
-            if signal.event_type == signals.AUDIO_STOP:
-                self._hush()
-            elif signal.event_type == signals.AUDIO_QUIT:
-                # close thread
-                return False
-
-    def _drain_tone_queue(self):
-        """Drain signal queue."""
-        empty = False
-        while not empty:
-            empty = True
-            for voice, q in enumerate(self.tone_queue):
-                # don't get the next tone if we're still working on one
-                # necessary for queue persistence/timing in other thread only
-                if self.next_tone[voice] and not self.next_tone[voice].loop:
-                    continue
-                try:
-                    signal = q.get(False)
-                    empty = False
-                except Queue.Empty:
-                    continue
-                if signal.event_type == signals.AUDIO_TONE:
-                    if self.next_tone[voice] and self.next_tone[voice].loop:
-                        self.tone_queue[voice].task_done()
-                    # enqueue a tone
-                    self.generators[voice].append(synthesiser.SoundGenerator(
-                        self.signal_sources[voice], synthesiser.feedback_tone, *signal.params))
-                elif signal.event_type == signals.AUDIO_NOISE:
-                    # enqueue a noise
-                    if self.next_tone[voice] and self.next_tone[voice].loop:
-                        self.tone_queue[voice].task_done()
-                    feedback = synthesiser.feedback_noise if signal.params[0] else synthesiser.feedback_periodic
-                    self.generators[voice].append(synthesiser.SoundGenerator(
-                        self.signal_sources[3], feedback, *signal.params[1:]))
-        return empty
-
-    def _hush(self):
+    def hush(self):
         """Stop sound."""
         for voice in range(4):
             if self.next_tone[voice] is not None:
@@ -136,7 +92,7 @@ class AudioSDL2(base.AudioPlugin):
         self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
         sdl2.SDL_UnlockAudioDevice(self.dev)
 
-    def _play_sound(self):
+    def work(self):
         """Replenish sample buffer."""
         for voice in range(4):
             if len(self.samples[voice]) > min_samples_buffer:
