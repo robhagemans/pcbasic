@@ -6,8 +6,10 @@ Sound handling
 This file is released under the GNU GPL version 3 or later.
 """
 
+from collections import deque
 import Queue
 import string
+import datetime
 
 try:
     from cStringIO import StringIO
@@ -62,6 +64,9 @@ class Sound(object):
         # Tandy/PCjr SOUND ON and BEEP ON
         # tandy has SOUND ON by default, pcjr has it OFF
         self.sound_on = (self.capabilities == 'tandy')
+        # timed queues for each voice
+        self.voice_queue = [TimedQueue(), TimedQueue(), TimedQueue(), TimedQueue()]
+        # initialise PLAY state
         self.reset()
 
     def reset(self):
@@ -86,18 +91,26 @@ class Sound(object):
             frequency = 110.
         tone = signals.Event(signals.AUDIO_TONE, (frequency, duration, fill, loop, volume))
         self.session.tone_queue[voice].put(tone)
+        self.voice_queue[voice].put(tone, None if loop else duration)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
             self.noise_freq[3] = frequency/2.
             self.noise_freq[7] = frequency/2.
 
-
     def play_sound(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
         """Play a sound on the tone generator; wait if tone queu is full."""
         self.play_sound_no_wait(frequency, duration, fill, loop, voice, volume)
         # at most 16 notes in the sound queue (not 32 as the guide says!)
         self.wait_music(15)
+
+    def play_noise(self, source, volume, duration, loop=False):
+        """Play a sound on the noise generator."""
+        frequency = self.noise_freq[source]
+        noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
+        self.session.tone_queue[3].put(noise)
+        self.voice_queue[3].put(noise, None if loop else duration)
+        # don't wait for noise
 
     def wait_music(self, wait_length=0):
         """Wait until a given number of notes are left on the queue."""
@@ -113,6 +126,8 @@ class Sound(object):
 
     def stop_all_sound(self):
         """Terminate all sounds immediately."""
+        for q in self.voice_queue:
+            q.clear()
         for q in self.session.tone_queue:
             while not q.empty():
                 try:
@@ -122,24 +137,15 @@ class Sound(object):
                 q.task_done()
         self.session.message_queue.put(signals.Event(signals.AUDIO_STOP))
 
-    def play_noise(self, source, volume, duration, loop=False):
-        """Play a sound on the noise generator."""
-        frequency = self.noise_freq[source]
-        noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
-        self.session.tone_queue[3].put(noise)
-        # don't wait for noise
-
     def queue_length(self, voice=0):
         """Return the number of notes in the queue."""
         # NOTE: this returns zero when there are still TWO notes to play
-        # one in the pre-play buffer and another because we subtract 1 here
         # this agrees with empirical GW-BASIC ON PLAY() timings!
-        return max(0, self.session.tone_queue[voice].qsize()-1)
+        return max(0, self.voice_queue[voice].qsize()-2)
 
     def is_playing(self, voice):
         """A note is playing or queued at the given voice."""
-        # NOTE: Queue.unfinished_tasks is undocumented, may only work in CPython
-        return self.queue_length(voice) or self.session.tone_queue[voice].unfinished_tasks
+        return self.voice_queue[voice].qsize() > 0
 
     def persist(self, flag):
         """Set mixer persistence flag (runmode)."""
@@ -290,3 +296,56 @@ class Sound(object):
                 self.play_sound(0, max_time - total_time[voice], 1, 0, voice)
         if self.foreground:
             self.wait_all_music()
+
+
+class TimedQueue(object):
+    """Queue with expiring elements."""
+
+    def __init__(self):
+        """Initialise timed queue."""
+        self._deque = deque()
+
+    def __getstate__(self):
+        """Get pickling dict for queue."""
+        self._check_expired()
+        return {
+            'deque': self._deque,
+            'now': datetime.datetime.now()}
+
+    def __setstate__(self, st):
+        """Initialise queue from pickling dict."""
+        offset = datetime.datetime.now() - st['now']
+        self._deque = deque((item, expiry+offset) for (item, expiry) in st['deque'])
+
+    def _check_expired(self):
+        """Drop expired items from queue."""
+        try:
+            while self._deque[0][1] <= datetime.datetime.now():
+                self._deque.popleft()
+        except (IndexError, TypeError):
+            pass
+
+    def put(self, item, duration):
+        """Put item onto queue. Items with duration None remain until next item is put."""
+        self._check_expired()
+        try:
+            if self._deque[-1][1] is None:
+                self._deque.pop()
+        except IndexError:
+            pass
+        if duration is None:
+            expiry = None
+        elif self._deque:
+            expiry = max(self._deque[-1][1], datetime.datetime.now()) + datetime.timedelta(seconds=duration)
+        else:
+            expiry = datetime.datetime.now() + datetime.timedelta(seconds=duration)
+        self._deque.append((item, expiry))
+
+    def clear(self):
+        """Clear the queue."""
+        self._deque.clear()
+
+    def qsize(self):
+        """Number of elements in queue."""
+        self._check_expired()
+        return len(self._deque)
