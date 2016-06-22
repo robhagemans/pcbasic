@@ -51,7 +51,7 @@ class AudioSDL2(base.AudioPlugin):
             raise base.InitFailed()
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
-        # sound generators for each tone
+        # sound generators for each voice
         self.generators = [deque(), deque(), deque(), deque()]
         # buffer of samples; drained by callback, replenished by _play_sound
         self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
@@ -87,7 +87,7 @@ class AudioSDL2(base.AudioPlugin):
     def noise(self, source, frequency, duration, fill, loop, volume):
         """Enqueue a noise."""
         feedback = synthesiser.feedback_noise if source else synthesiser.feedback_periodic
-        self.generators[voice].append(synthesiser.SoundGenerator(
+        self.generators[3].append(synthesiser.SoundGenerator(
                     self.signal_sources[3], feedback,
                     frequency, duration, fill, loop, volume))
 
