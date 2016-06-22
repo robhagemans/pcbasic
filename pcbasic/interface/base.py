@@ -338,9 +338,9 @@ class AudioPlugin(object):
                     continue
                 self.tone_queue[voice].task_done()
                 if signal.event_type == signals.AUDIO_TONE:
-                    pass
+                    self.tone(voice, *signal.params)
                 elif signal.event_type == signals.AUDIO_NOISE:
-                    pass
+                    self.noise(*signal.params)
         return empty
 
     def work(self):
@@ -349,5 +349,11 @@ class AudioPlugin(object):
     def hush(self):
         """Be quiet."""
 
-    def persist(self. do_persist):
+    def persist(self, do_persist):
         """Allow or disallow mixer to quit."""
+
+    def tone(self, voice, frequency, duration, fill, loop, volume):
+        """Enqueue a tone."""
+
+    def noise(self, source, frequency, duration, fill, loop, volume):
+        """Enqueue a noise."""

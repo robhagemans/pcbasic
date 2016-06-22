@@ -78,15 +78,24 @@ class AudioSDL2(base.AudioPlugin):
         sdl2.SDL_PauseAudioDevice(self.dev, 0)
         return base.AudioPlugin.__enter__(self)
 
+    def tone(self, voice, frequency, duration, fill, loop, volume):
+        """Enqueue a tone."""
+        self.generators[voice].append(synthesiser.SoundGenerator(
+                    self.signal_sources[voice], synthesiser.feedback_tone,
+                    frequency, duration, fill, loop, volume))
+
+    def noise(self, source, frequency, duration, fill, loop, volume):
+        """Enqueue a noise."""
+        feedback = synthesiser.feedback_noise if source else synthesiser.feedback_periodic
+        self.generators[voice].append(synthesiser.SoundGenerator(
+                    self.signal_sources[3], feedback,
+                    frequency, duration, fill, loop, volume))
+
     def hush(self):
         """Stop sound."""
         for voice in range(4):
-            if self.next_tone[voice] is not None:
-                # ensure sender knows the tone has been dropped
-                self.tone_queue[voice].task_done()
-                self.next_tone[voice] = None
+            self.next_tone[voice] = None
             while self.generators[voice]:
-                self.tone_queue[voice].task_done()
                 self.generators[voice].popleft()
         sdl2.SDL_LockAudioDevice(self.dev)
         self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
@@ -110,7 +119,6 @@ class AudioSDL2(base.AudioPlugin):
                 if current_chunk is not None:
                     break
                 self.next_tone[voice] = None
-                self.tone_queue[voice].task_done()
             if current_chunk is not None:
                 # append chunk to samples list
                 # lock to ensure callback doesn't try to access the list too
