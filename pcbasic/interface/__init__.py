@@ -17,7 +17,7 @@ from .video_pygame import VideoPygame
 from .video_sdl2 import VideoSDL2
 
 # audio plugins
-from .audio_none import AudioNone
+from .base import AudioPlugin
 from .audio_beep import AudioBeep
 from .audio_pygame import AudioPygame
 from .audio_sdl2 import AudioSDL2
@@ -37,12 +37,12 @@ video_plugins.update({
     })
 
 audio_plugins.update({
-    'none': (AudioNone,),
-    'cli': (AudioBeep, AudioNone),
-    'text': (AudioBeep, AudioNone),
-    'graphical': (AudioSDL2, AudioPygame, AudioBeep, AudioNone),
-    'ansi': (AudioNone,),
-    'curses': (AudioNone,),
-    'pygame': (AudioPygame, AudioNone),
-    'sdl2': (AudioSDL2, AudioNone),
+    'none': (AudioPlugin,),
+    'cli': (AudioBeep, AudioPlugin),
+    'text': (AudioBeep, AudioPlugin),
+    'graphical': (AudioSDL2, AudioPygame, AudioBeep, AudioPlugin),
+    'ansi': (AudioPlugin,),
+    'curses': (AudioPlugin,),
+    'pygame': (AudioPygame, AudioPlugin),
+    'sdl2': (AudioSDL2, AudioPlugin),
     })
