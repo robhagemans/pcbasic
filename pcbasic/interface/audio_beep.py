@@ -11,14 +11,17 @@ import subprocess
 import platform
 from collections import deque
 import time
-
-from ..basic import signals
-from . import base
+import sys
 
 if platform.system() == 'Windows':
     import winsound
+    fcntl = None
 else:
+    import fcntl
     winsound = None
+
+from ..basic import signals
+from . import base
 
 
 class AudioBeep(base.AudioPlugin):
@@ -29,7 +32,10 @@ class AudioBeep(base.AudioPlugin):
         if platform.system() == 'Windows':
             self.beeper = WinBeeper
         else:
-            self.beeper = Beeper
+            if Beeper.ok():
+                self.beeper = Beeper
+            else:
+                self.beeper = LinuxBeeper
         if not self.beeper.ok():
             raise base.InitFailed()
         # sound generators for each voice
@@ -104,12 +110,13 @@ class Beeper(object):
         else:
             return None
 
+
 class WinBeeper(Beeper):
     """Manage speaker beeps through winsound."""
 
     @staticmethod
     def ok():
-        """This beeper is supported."""
+        """This beeper is supported when winsound is available."""
         return winsound is not None
 
     @staticmethod
@@ -121,7 +128,7 @@ class WinBeeper(Beeper):
         if not self._proc or (self.loop and not self._proc.is_alive()):
             self._proc = threading.Thread(
                 target=self._beep,
-                args=(self._frequency, self._duration, self._fill))
+                args=(self._frequency, self._duration, self._fill, self.loop))
             self._proc.start()
         # return self if still busy, None otherwise
         if self._proc and self._proc.is_alive():
@@ -130,10 +137,43 @@ class WinBeeper(Beeper):
             return None
 
     @staticmethod
-    def _beep(frequency, duration, fill):
+    def _beep(frequency, duration, fill, loop):
         """Beeping thread target."""
         if frequency < 37 or frequency >= 32767:
             time.sleep(duration)
         else:
             winsound.Beep(int(frequency), int(duration*fill*1000))
             time.sleep(duration*(1-fill))
+
+
+KIOCSOUND = 0x4B2F
+CLOCK_TICK_RATE = 1193180
+
+class LinuxBeeper(WinBeeper):
+    """Manage speaker beeps through Linux ioctl."""
+
+    @staticmethod
+    def ok():
+        """This beeper is supported if the ioctl call works."""
+        try:
+            fcntl.ioctl(sys.stdout, KIOCSOUND, 0)
+        except EnvironmentError:
+            return False
+        return True
+
+    @staticmethod
+    def hush():
+        """Stop sound."""
+        fcntl.ioctl(sys.stdout, KIOCSOUND, 0)
+
+    @staticmethod
+    def _beep(frequency, duration, fill, loop):
+        """Beeping thread target."""
+        if frequency < 37 or frequency >= 32767:
+            fcntl.ioctl(sys.stdout, KIOCSOUND, 0)
+        else:
+            fcntl.ioctl(sys.stdout, KIOCSOUND, CLOCK_TICK_RATE / frequency)
+        time.sleep(duration*fill)
+        if not loop:
+            fcntl.ioctl(sys.stdout, KIOCSOUND, 0)
+        time.sleep(duration*(1-fill))
