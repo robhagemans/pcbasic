@@ -6,21 +6,30 @@ Sound implementation through the linux beep utility
 This file is released under the GNU GPL version 3 or later.
 """
 
-import Queue
+import threading
 import subprocess
 import platform
 from collections import deque
-from datetime import datetime, timedelta
+import time
 
 from ..basic import signals
 from . import base
 
+if platform.system() == 'Windows':
+    import winsound
+else:
+    winsound = None
 
-class AudioExternal(base.AudioPlugin):
-    """Audio plugin based on external command-line utility."""
+
+class AudioBeep(base.AudioPlugin):
+    """Audio plugin based on the PC speaker."""
 
     def __init__(self, tone_queue, message_queue):
         """Initialise sound system."""
+        if platform.system() == 'Windows':
+            self.beeper = WinBeeper
+        else:
+            self.beeper = Beeper
         if not self.beeper.ok():
             raise base.InitFailed()
         # sound generators for each voice
@@ -66,13 +75,15 @@ class Beeper(object):
 
     @staticmethod
     def ok():
+        """This beeper is supported."""
         # Windows not supported as there's no beep utility anyway
         # and we can't run the test below on CMD
         return (platform.system() != 'Windows' and
-            subprocess.call('command -v beep >/dev/null 2>&1', shell=True) != 0)
+            subprocess.call('command -v beep >/dev/null 2>&1', shell=True) == 0)
 
     @staticmethod
     def hush():
+        """Stop sound."""
         subprocess.call('beep -f 1 -l 0'.split())
 
     def emit(self):
@@ -93,7 +104,36 @@ class Beeper(object):
         else:
             return None
 
+class WinBeeper(Beeper):
+    """Manage speaker beeps through winsound."""
 
-class AudioBeep(AudioExternal):
-    """Audio plugin based on the beep utility."""
-    beeper = Beeper
+    @staticmethod
+    def ok():
+        """This beeper is supported."""
+        return winsound is not None
+
+    @staticmethod
+    def hush():
+        """Stop sound."""
+
+    def emit(self):
+        """Emit a sound."""
+        if not self._proc or (self.loop and not self._proc.is_alive()):
+            self._proc = threading.Thread(
+                target=self._beep,
+                args=(self._frequency, self._duration, self._fill))
+            self._proc.start()
+        # return self if still busy, None otherwise
+        if self._proc and self._proc.is_alive():
+            return self
+        else:
+            return None
+
+    @staticmethod
+    def _beep(frequency, duration, fill):
+        """Beeping thread target."""
+        if frequency < 37 or frequency >= 32767:
+            time.sleep(duration)
+        else:
+            winsound.Beep(int(frequency), int(duration*fill*1000))
+            time.sleep(duration*(1-fill))
