@@ -9,116 +9,91 @@ This file is released under the GNU GPL version 3 or later.
 import Queue
 import subprocess
 import platform
+from collections import deque
+from datetime import datetime, timedelta
 
 from ..basic import signals
 from . import base
 
 
-class AudioBeep(base.AudioPlugin):
-    """Audio plugin based on 'beep' command-line utility."""
+class AudioExternal(base.AudioPlugin):
+    """Audio plugin based on external command-line utility."""
 
     def __init__(self, tone_queue, message_queue):
         """Initialise sound system."""
-        # Windows not supported as there's no beep utility anyway
-        # and we can't run the test below on CMD
-        if (platform.system() == 'Windows' or
-                subprocess.call("command -v beep >/dev/null 2>&1", shell=True) != 0):
+        if not self.beeper.ok():
             raise base.InitFailed()
-        self.now_playing = [None, None, None, None]
-        self.now_looping = [None, None, None, None]
+        # sound generators for each voice
+        self.generators = [deque(), deque(), deque(), deque()]
         base.AudioPlugin.__init__(self, tone_queue, message_queue)
 
-    def _drain_message_queue(self):
-        """Drain signal queue."""
-        alive = True
-        while alive:
-            try:
-                signal = self.message_queue.get(False)
-            except Queue.Empty:
-                return True
-            if signal.event_type == signals.AUDIO_STOP:
-                # stop all channels
-                for voice, proc in enumerate(self.now_playing):
-                    if proc and proc.poll() is None:
-                        proc.terminate()
-                    if self.next_tone[voice] is not None:
-                        # ensure sender knows the tone has been dropped
-                        self.tone_queue[voice].task_done()
-                        self.next_tone[voice] = None
-                self.now_playing = [None, None, None, None]
-                self.now_looping = [None, None, None, None]
-                _hush()
-            elif signal.event_type == signals.AUDIO_QUIT:
-                # close thread after task_done
-                alive = False
-            # drop other messages
-            self.message_queue.task_done()
-
-    def _drain_tone_queue(self):
-        """Drain tone queue."""
-        empty = False
-        while not empty:
-            empty = True
-            for voice, q in enumerate(self.tone_queue):
-                if self.next_tone[voice] is None:
-                    try:
-                        signal = q.get(False)
-                        empty = False
-                    except Queue.Empty:
-                        continue
-                    if signal.event_type == signals.AUDIO_TONE:
-                        # enqueue a tone
-                        self.next_tone[voice] = signal.params
-                    elif signal.event_type == signals.AUDIO_NOISE:
-                        # enqueue a noise (play as regular note)
-                        self.next_tone[voice] = signal.params[1:]
-        return empty
-
-    def _play_sound(self):
-        """Play sounds."""
-        for voice in range(4):
-            if self.now_looping[voice]:
-                if self.next_tone[voice] and self._busy(voice):
-                    self.now_playing[voice].terminate()
-                    self.now_looping[voice] = None
-                    _hush()
-                elif not self._busy(voice):
-                    self._play_now(*self.now_looping[voice], voice=voice)
-            if self.next_tone[voice] and not self._busy(voice):
-                self._play_now(*self.next_tone[voice], voice=voice)
-                self.next_tone[voice] = None
-                self.tone_queue[voice].task_done()
-
-    def _busy(self, voice):
-        """Is the beeper busy? """
-        return self.now_playing[voice] and self.now_playing[voice].poll() is None
-
-    def _play_now(self, frequency, duration, fill, loop, volume, voice):
-        """Play a sound immediately."""
-        frequency = max(1, min(19999, frequency))
-        if loop:
-            duration, fill = 5, 1
-            self.now_looping[voice] = (frequency, duration, fill, loop, volume)
+    def tone(self, voice, frequency, duration, fill, loop, volume):
+        """Enqueue a tone."""
         if voice == 0:
-            self.now_playing[voice] = _beep(frequency, duration, fill)
+            self.generators[voice].append(self.beeper(
+                    frequency, duration, fill, loop, volume))
+
+    def hush(self):
+        """Stop sound."""
+        for voice in range(4):
+            self.next_tone[voice] = None
+            while self.generators[voice]:
+                self.generators[voice].popleft()
+        self.beeper.hush()
+
+    def work(self):
+        """Replenish sample buffer."""
+        for voice in range(4):
+            if self.next_tone[voice] is None or self.next_tone[voice].loop:
+                try:
+                    self.next_tone[voice] = self.generators[voice].popleft()
+                except IndexError:
+                    if self.next_tone[voice] is None:
+                        continue
+            self.next_tone[voice] = self.next_tone[voice].emit()
+
+
+class Beeper(object):
+    """Manage external beeper."""
+
+    def __init__(self, frequency, duration, fill, loop, dummy_volume):
+        """Initialise beeper."""
+        self._frequency = frequency
+        self._duration = duration
+        self._fill = fill
+        self._proc = None
+        self.loop = loop
+
+    @staticmethod
+    def ok():
+        # Windows not supported as there's no beep utility anyway
+        # and we can't run the test below on CMD
+        return (platform.system() != 'Windows' and
+            subprocess.call('command -v beep >/dev/null 2>&1', shell=True) != 0)
+
+    @staticmethod
+    def hush():
+        subprocess.call('beep -f 1 -l 0'.split())
+
+    def emit(self):
+        """Emit a sound."""
+        if not self._proc or (self.loop and self._proc.poll() is not None):
+            if self._frequency == 0 or self._frequency == 32767:
+                self._proc = subprocess.Popen(
+                    'sleep {0}'.format(self._duration).split())
+            else:
+                self._proc = subprocess.Popen(
+                    'beep -f {freq} -l {dur} -D {gap}'.format(
+                        freq=self._frequency, dur=self._duration*self._fill*1000,
+                        gap=self._duration*(1-self._fill)*1000
+                    ).split())
+        # return self if still busy, None otherwise
+        if self._proc and self._proc.poll() is None:
+            return self
         else:
-            # don't play other channels as there is no mixer or noise generator
-            # but use a sleep process to get timings right
-            self.now_playing[voice] = _sleep(duration)
+            return None
 
 
-def _hush():
-    """Turn off any sound."""
-    subprocess.call('beep -f 1 -l 0'.split())
-
-def _beep(frequency, duration, fill):
-    """Emit a sound."""
-    return subprocess.Popen(
-            'beep -f {freq} -l {dur} -D {gap}'.format(
-                freq=frequency, dur=duration*fill*1000,
-                gap=duration*(1-fill)*1000
-            ).split())
-
-def _sleep(duration):
-    """Wait for given number of seconds."""
-    return subprocess.Popen('sleep {0}'.format(duration).split())
+class AudioBeep(AudioExternal):
+    """Audio plugin based on the beep utility."""
+    beeper = Beeper

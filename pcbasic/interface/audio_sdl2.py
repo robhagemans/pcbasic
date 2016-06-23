@@ -64,7 +64,6 @@ class AudioSDL2(base.AudioPlugin):
         self.audiospec.samples = callback_chunk_length
         self.audiospec.callback = sdl2.SDL_AudioCallback(self._get_next_chunk)
         self.dev = None
-        # start audio thread
         base.AudioPlugin.__init__(self, tone_queue, message_queue)
 
     def __enter__(self):
@@ -110,6 +109,7 @@ class AudioSDL2(base.AudioPlugin):
             while True:
                 if self.next_tone[voice] is None or self.next_tone[voice].loop:
                     try:
+                        # looping tone will be interrupted by any new tone appearing in the generator queue
                         self.next_tone[voice] = self.generators[voice].popleft()
                     except IndexError:
                         if self.next_tone[voice] is None:
