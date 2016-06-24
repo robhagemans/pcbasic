@@ -290,10 +290,11 @@ class Sound(object):
                                     max(0, ml_parser.parse_number()))
                 else:
                     raise error.RunError(error.IFC)
-        max_time = max(total_time)
-        for voice in range(3):
-            if total_time[voice] < max_time:
-                self.play_sound(0, max_time - total_time[voice], 1, 0, voice)
+        max_time = max(q.expiry() for q in self.voice_queue[:3])
+        for voice, q in enumerate(self.voice_queue):
+            dur = (max_time - q.expiry()).total_seconds()
+            if dur > 0:
+                self.play_sound(0, dur, fill=1, loop=False, voice=voice)
         if self.foreground:
             self.wait_all_music()
 
@@ -326,7 +327,7 @@ class TimedQueue(object):
             pass
 
     def put(self, item, duration):
-        """Put item onto queue. Items with duration None remain until next item is put."""
+        """Put item onto queue with duration in seconds. Items with duration None remain until next item is put."""
         self._check_expired()
         try:
             if self._deque[-1][1] is None:
@@ -349,3 +350,10 @@ class TimedQueue(object):
         """Number of elements in queue."""
         self._check_expired()
         return len(self._deque)
+
+    def expiry(self):
+        """Last expiry in queue."""
+        try:
+            return self._deque[-1][1]
+        except IndexError:
+            return datetime.datetime.now()
