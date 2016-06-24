@@ -164,7 +164,6 @@ class Sound(object):
             gmls_list.append(gmls)
         ml_parser_list = [mlparser.MLParser(gmls, data_segment) for gmls in gmls_list]
         next_oct = 0
-        total_time = [0, 0, 0, 0]
         voices = range(3)
         while True:
             if not voices:
@@ -203,7 +202,6 @@ class Sound(object):
                         self.play_sound(note_freq[note-1], dur*vstate.tempo,
                                          vstate.speed, volume=vstate.volume,
                                          voice=voice)
-                    total_time[voice] += dur*vstate.tempo
                 elif c == 'L':
                     recip = ml_parser.parse_number()
                     util.range_check(1, 64, recip)
@@ -258,7 +256,6 @@ class Sound(object):
                         if length > 0:
                             self.play_sound(0, dur * vstate.tempo, vstate.speed,
                                             volume=vstate.volume, voice=voice)
-                            total_time[voice] += dur*vstate.tempo
                     else:
                         # use default length for length 0
                         try:
@@ -266,7 +263,6 @@ class Sound(object):
                                 note_freq[(vstate.octave+next_oct)*12 + notes[note]],
                                 dur * vstate.tempo, vstate.speed,
                                 volume=vstate.volume, voice=voice)
-                            total_time[voice] += dur*vstate.tempo
                         except KeyError:
                             raise error.RunError(error.IFC)
                     next_oct = 0
