@@ -181,8 +181,6 @@ class Session(object):
 
     def __getstate__(self):
         """Pickle the session."""
-        # persist unplayed tones in sound queue
-        self.tone_queue_store = [signals.save_queue(q) for q in self.tone_queue]
         pickle_dict = self.__dict__.copy()
         # remove queues from state
         pickle_dict['input_queue'] = signals.NullQueue()
@@ -211,9 +209,8 @@ class Session(object):
             self.message_queue = signals.NullQueue()
         # rebuild the screen
         self.screen.rebuild()
-        # rebuild the audio queue
-        for q, store in zip(self.tone_queue, self.tone_queue_store):
-            signals.load_queue(q, store)
+        # rebuild audio queues
+        self.sound.rebuild()
         return self
 
     def load_program(self, prog, rebuild_dict=True):

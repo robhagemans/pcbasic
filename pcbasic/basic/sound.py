@@ -151,10 +151,22 @@ class Sound(object):
         """Set mixer persistence flag (runmode)."""
         self.session.message_queue.put(signals.Event(signals.AUDIO_PERSIST, flag))
 
-    ### PLAY statement
+    def rebuild(self):
+        """Rebuild tone queues."""
+        # should we pop one at a time from each voice queue to equalise timings?
+        for voice, q in enumerate(self.voice_queue):
+            last_expiry = datetime.datetime.now()
+            for item, expiry in q.iteritems():
+                frequency, _, fill, loop, volume = item.params
+                # adjust duration
+                duration = (expiry - last_expiry).total_seconds()
+                last_expiry = expiry
+                self.session.tone_queue[voice].put(signals.Event(
+                        signals.AUDIO_TONE,
+                        (frequency, duration, fill, loop, volume)))
 
     def play(self, data_segment, mml_list):
-        """Parse a list of Music Macro Language strings."""
+        """Parse a list of Music Macro Language strings (PLAY statement)."""
         gmls_list = []
         for mml in mml_list:
             gmls = StringIO()
@@ -353,3 +365,9 @@ class TimedQueue(object):
             return self._deque[-1][1]
         except IndexError:
             return datetime.datetime.now()
+
+    def iteritems(self):
+        """Iterate over items in queue."""
+        self._check_expired()
+        for item in self._deque:
+            yield item
