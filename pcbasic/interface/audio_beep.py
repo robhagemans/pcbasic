@@ -32,10 +32,10 @@ class AudioBeep(base.AudioPlugin):
         if platform.system() == 'Windows':
             self.beeper = WinBeeper
         else:
-            if Beeper.ok():
-                self.beeper = Beeper
-            else:
+            if LinuxBeeper.ok():
                 self.beeper = LinuxBeeper
+            else:
+                self.beeper = Beeper
         if not self.beeper.ok():
             raise base.InitFailed()
         # sound generators for each voice
@@ -172,7 +172,7 @@ class LinuxBeeper(WinBeeper):
         if frequency < 37 or frequency >= 32767:
             fcntl.ioctl(sys.stdout, KIOCSOUND, 0)
         else:
-            fcntl.ioctl(sys.stdout, KIOCSOUND, CLOCK_TICK_RATE / frequency)
+            fcntl.ioctl(sys.stdout, KIOCSOUND, int(CLOCK_TICK_RATE / frequency))
         time.sleep(duration*fill)
         if not loop:
             fcntl.ioctl(sys.stdout, KIOCSOUND, 0)
