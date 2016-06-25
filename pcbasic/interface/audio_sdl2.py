@@ -41,7 +41,7 @@ min_samples_buffer = 2*callback_chunk_length
 class AudioSDL2(base.AudioPlugin):
     """SDL2-based audio plugin."""
 
-    def __init__(self, tone_queue, message_queue):
+    def __init__(self, audio_queue):
         """Initialise sound system."""
         if not sdl2:
             logging.warning('SDL2 module not found. Failed to initialise SDL2 audio plugin.')
@@ -64,7 +64,7 @@ class AudioSDL2(base.AudioPlugin):
         self.audiospec.samples = callback_chunk_length
         self.audiospec.callback = sdl2.SDL_AudioCallback(self._get_next_chunk)
         self.dev = None
-        base.AudioPlugin.__init__(self, tone_queue, message_queue)
+        base.AudioPlugin.__init__(self, audio_queue)
 
     def __enter__(self):
         """Perform any necessary initialisations."""

@@ -23,14 +23,13 @@ class Interface(object):
         """Initialise interface."""
         self._input_queue = Queue.Queue()
         self._video_queue = Queue.Queue()
-        self._tone_queues = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
-        self._message_queue = Queue.Queue()
+        self._audio_queue = Queue.Queue()
         self._video = _get_video_plugin(self._input_queue, self._video_queue, interface_name, **video_params)
-        self._audio = _get_audio_plugin(self._tone_queues, self._message_queue, interface_name, **audio_params)
+        self._audio = _get_audio_plugin(self._audio_queue, interface_name, **audio_params)
 
     def get_queues(self):
         """Retrieve interface queues."""
-        return self._input_queue, self._video_queue, self._tone_queues, self._message_queue
+        return self._input_queue, self._video_queue, self._audio_queue
 
     def run(self):
         """Start the main interface event loop."""
@@ -63,7 +62,7 @@ class Interface(object):
     def quit_output(self):
         """Send signal through the output queues to quit plugins."""
         self._video_queue.put(signals.Event(signals.VIDEO_QUIT))
-        self._message_queue.put(signals.Event(signals.AUDIO_QUIT))
+        self._audio_queue.put(signals.Event(signals.AUDIO_QUIT))
 
 
 class InitFailed(Exception):
@@ -267,13 +266,13 @@ class VideoPlugin(object):
 audio_plugins = {}
 
 
-def _get_audio_plugin(tone_queue, message_queue, interface_name, nosound):
+def _get_audio_plugin(audio_queue, interface_name, nosound):
     """Find and initialise audio plugin for given interface."""
     if nosound:
         interface_name = 'none'
     for plugin_class in audio_plugins[interface_name]:
         try:
-            plugin = plugin_class(tone_queue, message_queue)
+            plugin = plugin_class(audio_queue)
         except InitFailed:
             logging.debug('Could not initialise audio plugin "%s".', plugin_class.__name__)
         else:
@@ -284,15 +283,14 @@ def _get_audio_plugin(tone_queue, message_queue, interface_name, nosound):
 class AudioPlugin(object):
     """Base class for audio interface plugins."""
 
-    def __init__(self, tone_queue, message_queue):
+    def __init__(self, audio_queue):
         """Setup the audio interface and start the event handling thread."""
         # sound generators for sounds not played yet
         # if not None, something is playing
         self.next_tone = [None, None, None, None]
         self.alive = True
         self.playing = False
-        self.tone_queue = tone_queue
-        self.message_queue = message_queue
+        self.audio_queue = audio_queue
 
     def __exit__(self, type, value, traceback):
         """Close the audio interface."""
@@ -304,44 +302,30 @@ class AudioPlugin(object):
     def cycle(self):
         """Audio event cycle."""
         if self.alive:
-            self.alive = self._drain_message_queue()
+            self._drain_queue()
         if self.alive:
-            self.playing = not (self._drain_tone_queue() and self.next_tone == [None, None, None, None])
+            self.playing = self.next_tone != [None, None, None, None]
             self.work()
 
-    def _drain_message_queue(self):
-        """Drain message queue."""
+    def _drain_queue(self):
+        """Drain audio queue."""
         while True:
             try:
-                signal = self.message_queue.get(False)
+                signal = self.audio_queue.get(False)
             except Queue.Empty:
-                return True
-            self.message_queue.task_done()
+                return
+            self.audio_queue.task_done()
             if signal.event_type == signals.AUDIO_STOP:
                 self.hush()
             elif signal.event_type == signals.AUDIO_QUIT:
                 # close thread
-                return False
+                self.alive = False
             elif signal.event_type == signals.AUDIO_PERSIST:
                 self.persist(signal.params)
-
-    def _drain_tone_queue(self):
-        """Drain audio signal queue."""
-        empty = False
-        while not empty:
-            empty = True
-            for voice, q in enumerate(self.tone_queue):
-                try:
-                    signal = q.get(False)
-                    empty = False
-                except Queue.Empty:
-                    continue
-                self.tone_queue[voice].task_done()
-                if signal.event_type == signals.AUDIO_TONE:
-                    self.tone(voice, *signal.params)
-                elif signal.event_type == signals.AUDIO_NOISE:
-                    self.noise(*signal.params)
-        return empty
+            elif signal.event_type == signals.AUDIO_TONE:
+                self.tone(*signal.params)
+            elif signal.event_type == signals.AUDIO_NOISE:
+                self.noise(*signal.params)
 
     def work(self):
         """Play some of the sounds queued."""

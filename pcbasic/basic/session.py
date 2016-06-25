@@ -64,14 +64,11 @@ class Session(object):
         """Initialise the interpreter session."""
         # use dummy queues if not provided
         if iface:
-            self.input_queue, self.video_queue, self.tone_queue, self.message_queue = iface.get_queues()
+            self.input_queue, self.video_queue, self.audio_queue = iface.get_queues()
         else:
             self.input_queue = signals.NullQueue()
             self.video_queue = signals.NullQueue()
-            # *4 means we have multiple references to the same queue
-            # which doesn't matter since we're dropping all signals anyway
-            self.tone_queue = [signals.NullQueue()]*4
-            self.message_queue = signals.NullQueue()
+            self.audio_queue = signals.NullQueue()
         # true if a prompt is needed on next cycle
         self._prompt = True
         # input mode is AUTO (used by AUTO)
@@ -185,8 +182,7 @@ class Session(object):
         # remove queues from state
         pickle_dict['input_queue'] = signals.NullQueue()
         pickle_dict['video_queue'] = signals.NullQueue()
-        pickle_dict['tone_queue'] = [signals.NullQueue()]*4
-        pickle_dict['message_queue'] = signals.NullQueue()
+        pickle_dict['audio_queue'] = signals.NullQueue()
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
@@ -201,12 +197,11 @@ class Session(object):
         """Attach interface to interpreter session."""
         # use dummy queues if not provided
         if iface:
-            self.input_queue, self.video_queue, self.tone_queue, self.message_queue = iface.get_queues()
+            self.input_queue, self.video_queue, self.audio_queue = iface.get_queues()
         else:
             self.input_queue = signals.NullQueue()
             self.video_queue = signals.NullQueue()
-            self.tone_queue = [signals.NullQueue()]*4
-            self.message_queue = signals.NullQueue()
+            self.audio_queue = signals.NullQueue()
         # rebuild the screen
         self.screen.rebuild()
         # rebuild audio queues

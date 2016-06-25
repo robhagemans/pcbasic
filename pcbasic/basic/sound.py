@@ -89,8 +89,8 @@ class Sound(object):
                 frequency < 110. and frequency != 0):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
-        tone = signals.Event(signals.AUDIO_TONE, (frequency, duration, fill, loop, volume))
-        self.session.tone_queue[voice].put(tone)
+        tone = signals.Event(signals.AUDIO_TONE, [voice, frequency, duration, fill, loop, volume])
+        self.session.audio_queue.put(tone)
         self.voice_queue[voice].put(tone, None if loop else duration)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
@@ -107,8 +107,8 @@ class Sound(object):
     def play_noise(self, source, volume, duration, loop=False):
         """Play a sound on the noise generator."""
         frequency = self.noise_freq[source]
-        noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
-        self.session.tone_queue[3].put(noise)
+        noise = signals.Event(signals.AUDIO_NOISE, [source > 3, frequency, duration, 1, loop, volume])
+        self.session.audio_queue.put(noise)
         self.voice_queue[3].put(noise, None if loop else duration)
         # don't wait for noise
 
@@ -128,14 +128,7 @@ class Sound(object):
         """Terminate all sounds immediately."""
         for q in self.voice_queue:
             q.clear()
-        for q in self.session.tone_queue:
-            while not q.empty():
-                try:
-                    q.get(False)
-                except Queue.Empty:
-                    continue
-                q.task_done()
-        self.session.message_queue.put(signals.Event(signals.AUDIO_STOP))
+        self.session.audio_queue.put(signals.Event(signals.AUDIO_STOP))
 
     def queue_length(self, voice=0):
         """Return the number of notes in the queue."""
@@ -149,7 +142,7 @@ class Sound(object):
 
     def persist(self, flag):
         """Set mixer persistence flag (runmode)."""
-        self.session.message_queue.put(signals.Event(signals.AUDIO_PERSIST, flag))
+        self.session.audio_queue.put(signals.Event(signals.AUDIO_PERSIST, flag))
 
     def rebuild(self):
         """Rebuild tone queues."""
@@ -157,13 +150,11 @@ class Sound(object):
         for voice, q in enumerate(self.voice_queue):
             last_expiry = datetime.datetime.now()
             for item, expiry in q.iteritems():
-                frequency, _, fill, loop, volume = item.params
                 # adjust duration
                 duration = (expiry - last_expiry).total_seconds()
                 last_expiry = expiry
-                self.session.tone_queue[voice].put(signals.Event(
-                        signals.AUDIO_TONE,
-                        (frequency, duration, fill, loop, volume)))
+                item.params[2] = duration
+                self.session.audio_queue.put(item)
 
     def play(self, data_segment, mml_list):
         """Parse a list of Music Macro Language strings (PLAY statement)."""
