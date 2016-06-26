@@ -21,6 +21,7 @@ from .base import AudioPlugin
 from .audio_beep import AudioBeep
 from .audio_pygame import AudioPygame
 from .audio_sdl2 import AudioSDL2
+from .audio_portaudio import AudioPortAudio
 
 
 video_plugins.update({
@@ -38,8 +39,8 @@ video_plugins.update({
 
 audio_plugins.update({
     'none': (AudioPlugin,),
-    'cli': (AudioBeep, AudioPlugin),
-    'text': (AudioBeep, AudioPlugin),
+    'cli': (AudioPortAudio, AudioBeep, AudioPlugin),
+    'text': (AudioPortAudio, AudioBeep, AudioPlugin),
     'graphical': (AudioSDL2, AudioPygame, AudioBeep, AudioPlugin),
     'ansi': (AudioPlugin,),
     'curses': (AudioPlugin,),
