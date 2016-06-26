@@ -547,14 +547,15 @@ class LPTDevice(devices.Device):
         self.stream = default_stream
         if addr == 'FILE':
             try:
-                if not os.path.exists(val):
-                    open(val, 'wb').close()
-                self.stream = open(val, 'r+b')
-            except (IOError, OSError) as e:
+                self.stream = open(val, 'wb')
+            except EnvironmentError as e:
                 logging.warning('Could not attach file %s to LPT device: %s', val, str(e))
         elif addr == 'PARPORT':
             # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
-            self.stream = parallel_port(val)
+            try:
+                self.stream = ParallelStream(val)
+            except EnvironmentError as e:
+                logging.warning('Could not attach parallel port %s to LPT device: %s', val, str(e))
         elif addr == 'STDIO' or (not addr and val == 'STDIO'):
             crlf = (val.upper() == 'CRLF')
             self.stream = StdIOStream(crlf)
@@ -648,24 +649,17 @@ class LPTFile(devices.TextFileBase):
         self.fhandle = None
 
 
-def parallel_port(port):
-    """ Return a ParallelStream object for a given port. """
-    if not parallel:
-        logging.warning('Parallel module not found. Parallel port communication not available.')
-        return None
-    try:
-        return ParallelStream(port)
-    except EnvironmentError:
-        logging.warning('Could not open parallel port %s.', port)
-        return None
-
-
 class ParallelStream(object):
     """ Wrapper for Parallel object to implement stream-like API. """
 
     def __init__(self, port):
-        """ Initialise the ParallelStream. """
-        self._parallel = parallel.Parallel(port)
+        """Initialise the ParallelStream."""
+        if not parallel:
+            raise IOError('PySerial Parallel module not found. Parallel port communication not available.')
+        try:
+            self._parallel = parallel.Parallel(port)
+        except TypeError:
+            raise IOError('Invalid port specification.')
         self._port = port
 
     def __getstate__(self):
