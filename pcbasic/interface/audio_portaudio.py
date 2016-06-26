@@ -36,32 +36,38 @@ class AudioPortAudio(base.AudioPlugin):
     def __init__(self, audio_queue):
         """Initialise sound system."""
         if not pyaudio:
-            logging.warning('PyAudio module not found. Failed to initialise SDL2 audio plugin.')
+            logging.warning('PyAudio module not found. Failed to initialise PortAudio audio plugin.')
             raise base.InitFailed()
         if not numpy:
-            logging.warning('NumPy module not found. Failed to initialise SDL2 audio plugin.')
+            logging.warning('NumPy module not found. Failed to initialise PortAudio audio plugin.')
             raise base.InitFailed()
         # synthesisers
         self.signal_sources = synthesiser.get_signal_sources()
         # sound generators for each voice
         self.generators = [deque(), deque(), deque(), deque()]
         # buffer of samples; drained by callback, replenished by _play_sound
-        self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
-        self.dev = None
+        self._samples = [numpy.array([], numpy.int16) for _ in range(4)]
+        self._dev = None
         base.AudioPlugin.__init__(self, audio_queue)
 
     def __enter__(self):
         """Perform any necessary initialisations."""
-        self.dev = pyaudio.PyAudio()
-        sample_format = self.dev.get_format_from_width(2)
-        self.min_samples_buffer = 2*1024
-        print self.dev.get_sample_size(sample_format)
-        stream = self.dev.open(format=sample_format, channels=1,
+        self._dev = pyaudio.PyAudio()
+        sample_format = self._dev.get_format_from_width(2)
+        self._min_samples_buffer = 2*1024
+        self._stream = self._dev.open(format=sample_format, channels=1,
                 rate=synthesiser.sample_rate, output=True,
                 frames_per_buffer=1024,
                 stream_callback=self._get_next_chunk)
-        stream.start_stream()
+        self._stream.start_stream()
         return base.AudioPlugin.__enter__(self)
+
+    def __exit__(self, type, value, traceback):
+        """Close down PortAudio."""
+        self._stream.stop_stream()
+        self._stream.close()
+        self._dev.terminate()
+        return base.AudioPlugin.__exit__(self, type, value, traceback)
 
     def tone(self, voice, frequency, duration, fill, loop, volume):
         """Enqueue a tone."""
@@ -82,12 +88,12 @@ class AudioPortAudio(base.AudioPlugin):
             self.next_tone[voice] = None
             while self.generators[voice]:
                 self.generators[voice].popleft()
-        self.samples = [numpy.array([], numpy.int16) for _ in range(4)]
+        self._samples = [numpy.array([], numpy.int16) for _ in range(4)]
 
     def work(self):
         """Replenish sample buffer."""
         for voice in range(4):
-            if len(self.samples[voice]) > self.min_samples_buffer:
+            if len(self._samples[voice]) > self._min_samples_buffer:
                 # nothing to do
                 continue
             while True:
@@ -106,14 +112,14 @@ class AudioPortAudio(base.AudioPlugin):
             if current_chunk is not None:
                 # append chunk to samples list
                 # should lock to ensure callback doesn't try to access the list too?
-                self.samples[voice] = numpy.concatenate(
-                        (self.samples[voice], current_chunk))
+                self._samples[voice] = numpy.concatenate(
+                        (self._samples[voice], current_chunk))
 
     def _get_next_chunk(self, in_data, length, time_info, status):
         """Callback function to generate the next chunk to be played."""
         # this is for 16-bit samples
-        samples = [self.samples[voice][:length] for voice in range(4)]
-        self.samples = [self.samples[voice][length:] for voice in range(4)]
+        samples = [self._samples[voice][:length] for voice in range(4)]
+        self._samples = [self._samples[voice][length:] for voice in range(4)]
         # if samples have run out, add silence
         for voice in range(4):
             if len(samples[voice]) < length:
