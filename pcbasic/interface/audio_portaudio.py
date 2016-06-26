@@ -76,14 +76,16 @@ class AudioPortAudio(base.AudioPlugin):
         """Perform any necessary initialisations."""
         with suppress_output():
             self._dev = pyaudio.PyAudio()
-        sample_format = self._dev.get_format_from_width(2)
-        self._min_samples_buffer = 4*1024
-        self._stream = self._dev.open(format=sample_format, channels=1,
-                rate=synthesiser.sample_rate, output=True,
-                frames_per_buffer=1024,
-                stream_callback=self._get_next_chunk)
-        self._stream.start_stream()
-        return base.AudioPlugin.__enter__(self)
+            sample_format = self._dev.get_format_from_width(2)
+            bufsize = 1024
+            self._min_samples_buffer = 2*bufsize
+            #self._samples = [numpy.zeros(bufsize*2, numpy.int16) for _ in range(4)]
+            self._stream = self._dev.open(format=sample_format, channels=1,
+                    rate=synthesiser.sample_rate, output=True,
+                    frames_per_buffer=bufsize,
+                    stream_callback=self._get_next_chunk)
+            self._stream.start_stream()
+            base.AudioPlugin.__enter__(self)
 
     def __exit__(self, type, value, traceback):
         """Close down PortAudio."""
