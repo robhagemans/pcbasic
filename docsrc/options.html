@@ -483,11 +483,6 @@
             Attach a resource to the <code>LPT1:</code> parallel device.
             <code><var>type</var><b>:</b><var>value</var></code> can be
             <dl>
-                <dt><code><b>PARPORT:</b><var>device_name</var></code></dt>
-                <dd>
-                    Connect to the parallel device <code><var>device_name</var></code>
-                    such as <code><b>LPT1</b></code> or <code><b>/dev/parport0</b></code>.
-                </dd>
 
                 <dt><code><b>PRINTER:</b><var>printer_name</var></code></dt>
                 <dd>
@@ -498,8 +493,8 @@
 
                 <dt><code><b>FILE:</b><var>file_name</var></code></dt>
                 <dd>
-                    Connect to any file or to a Unix character device such as
-                    <code><b>/dev/stdout</b></code>.
+                    Connect to any file or device such as
+                    <code><b>/dev/stdout</b></code> on Unix or <code><b>LPT1</b></code> on Windows.
                 </dd>
 
                 <dt><code><b>STDIO</b>[<b>:</b>[<b>CRLF</b>]]</code></dt>
@@ -508,6 +503,15 @@
                     If <code><b>CRLF</b></code> is specified, PC-BASIC replaces <code>CR</code>
                     characters with <code>LF</code> on its output. This is more intuitive on Unix shells.
                 </dd>
+
+                <dt><code><b>PARPORT:</b><var>port_number</var></code></dt>
+                <dd>
+                    Connect to a Centronics parallel port, where <code><var>port_number</var></code>
+                    is <code><b>0</b></code> for the first parallel port, etc.
+                    <code><b>PARPORT</b></code> only works with physical parallel ports; for example, a Windows printer or other
+                    device mapped with <code>NET USE LPT1:</code> can only be attached with <code><b>FILE:LPT1</b></code>
+                </dd>
+
             </dl>
             If this option is not specified, <code>LPT1:</code> is connected to the default printer.
         </dd>
