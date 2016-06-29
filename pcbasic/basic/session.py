@@ -198,14 +198,10 @@ class Session(object):
         # use dummy queues if not provided
         if iface:
             self.input_queue, self.video_queue, self.audio_queue = iface.get_queues()
-        else:
-            self.input_queue = signals.NullQueue()
-            self.video_queue = signals.NullQueue()
-            self.audio_queue = signals.NullQueue()
-        # rebuild the screen
-        self.screen.rebuild()
-        # rebuild audio queues
-        self.sound.rebuild()
+            # rebuild the screen
+            self.screen.rebuild()
+            # rebuild audio queues
+            self.sound.rebuild()
         return self
 
     def load_program(self, prog, rebuild_dict=True):
