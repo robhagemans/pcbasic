@@ -451,6 +451,8 @@ class VideoSDL2(video_graphical.VideoGraphical):
             sdl2.SDL_BlitScaled(self.overlay, None, self.display_surface, None)
         # flip the display
         sdl2.SDL_UpdateWindowSurface(self.display)
+        # desctroy the temporary surface
+        sdl2.SDL_FreeSurface(conv)
 
     def _show_cursor(self, do_show):
         """Draw or remove the cursor on the visible page."""
