@@ -462,6 +462,9 @@ class Parser(object):
                         raise error.RunError(error.STX)
                 else:
                     nargs = 2
+                    if d not in op.operators:
+                        # illegal combined ops like == raise syntax error
+                        raise error.RunError(error.STX)
                     self._evaluate_stack(stack, units, op.precedence[d], error.STX)
                 stack.append((d, nargs))
             elif not (last in op.operators or last == ''):
