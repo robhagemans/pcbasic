@@ -114,6 +114,9 @@ def parse_expression(ins, empty_err=error.MISSING_OPERAND):
                     raise error.RunError(error.STX)
             else:
                 nargs = 2
+                if d not in operators:
+                    # illegal combined ops like == raise syntax error
+                    raise error.RunError(error.STX)
                 units_expected -= evaluate_stack(stack, units, operators[d], error.STX)
             stack.append((d, nargs))
         elif not (last in operators or last == ''):
