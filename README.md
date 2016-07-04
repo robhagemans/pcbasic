@@ -71,17 +71,7 @@ to interrupt a running program and return to direct mode.
 
 
 #### Configuration ####
-If you run PC-BASIC from the command line (the '`C:\>` prompt' on Windows), you can supply options to change its behaviour. For example:  
-
-`pcbasic PROGRAM.BAS` runs the program file named `PROGRAM.BAS` directly.  
-`pcbasic --preset=tandy` starts with the emulation target set to Tandy GW-BASIC on a Tandy 1000.  
-`pcbasic --preset=pcjr` starts with the emulation target set to Cartridge BASIC on an IBM PCjr.  
-`pcbasic -h` shows all available command line options.  
-
-If you prefer to run PC-BASIC from a GUI, you can set the required options in the configuration file instead.
-In the configuration file, use the long form of the command-line options and omit the preceding `--`.  
-
-The configuration file is stored in the following location:
+You can supply options to change PC-BASIC's behaviour by editing the configuration file. If you install the Windows package, the installer will automatically create a shortcut to this file in the PC-BASIC start menu folder. The file can also be found in the following location:
 
 | OS         | Configuration file  
 |------------|-------------------------------------------------------------------------  
@@ -89,11 +79,20 @@ The configuration file is stored in the following location:
 | OS X       | `~/Library/Application Support/pcbasic/PCBASIC.INI`  
 | Linux      | `~/.config/pcbasic/PCBASIC.INI`  
 
-If you do not have a configuration file in that location, a default file will be created that location the first time you run PC-BASIC.
-See the comments in that default configuration file for examples and more information.
-If you install the Windows package, the installer will automatically create a shortcut to your configuration file in the PC-BASIC start menu folder.
+For example, to start with the emulation target set to Tandy 1000 GW-BASIC, include the following line under `[pcbasic]` in the configuration file:
 
+    preset=tandy
 
+A default configuration file will be created the first time you run PC-BASIC. See the comments in that file or consult the [documentation](http://pc-basic.org/doc#settings) for more information and example options.
+
+If you start PC-BASIC from the command prompt (on Windows this is the `C:\>` prompt), you can supply configuration options directly. For example:  
+
+`pcbasic PROGRAM.BAS` runs the program file named `PROGRAM.BAS` directly.  
+`pcbasic --preset=tandy` starts with the emulation target set to Tandy GW-BASIC on a Tandy 1000.  
+`pcbasic --preset=pcjr` starts with the emulation target set to Cartridge BASIC on an IBM PCjr.  
+`pcbasic -h` shows all available command line options.  
+
+If you use PC-BASIC from the command prompt on Windows, make sure you run the `pcbasic.com` binary. You will not see any output if you call the `pcbasic.exe` binary.
 
 #### Getting programs ####
 The following pages have GW-BASIC program downloads, lots of information and further links.  
