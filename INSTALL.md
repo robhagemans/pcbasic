@@ -25,7 +25,7 @@ On **Windows**, you should download all the required packages from the project w
 
 Download `launcher.exe` from the [ANSI|pipe release page](http://github.com/robhagemans/ansipipe/releases/) and place it in the directory where `pcbasic.py` is located.
 You can now run pc-basic with the command `launcher python pcbasic.py`. Without ANSI|pipe, PC-BASIC will run but you will
-be unable to use the text-based interfaces (options `--text` and `--cli`) as they will print only gibberish on the console.
+be unable to use the text-based interfaces (options `-t` and `-b`) as they will print only gibberish on the console.
 
 The ANSI|pipe C source is included with PC-BASIC; if you prefer this to downloading the launcher binary, you can compile it from source by running `winbuild.bat`. You will need a working C compiler (MinGW or Microsoft Visual C++) on your system.
 
