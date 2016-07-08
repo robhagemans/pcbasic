@@ -1118,7 +1118,7 @@ class Screen(object):
         crow = srow
         while self.apage.row[crow-1].wrap:
             crow += 1
-            self.apage.row[crow-1].clear(self.screen.attr)
+            self.apage.row[crow-1].clear(self.attr)
         for r in range(crow, srow, -1):
             self.apage.row[r-1].wrap = False
             self.scroll(r)
