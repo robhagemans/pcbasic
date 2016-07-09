@@ -73,7 +73,8 @@ def get_unicode_argv():
         argv = CommandLineToArgvW(cmd, ctypes.byref(argc))
         argv = [argv[i] for i in xrange(argc.value)]
         # clip off the python interpreter call, if we use it
-        if argv[0][:6].lower() == u'python':
+        # NOTE: we shouldn't name the executable or python module anything that includes 'python'
+        if u'python' in argv[0].lower():
             argv = argv[1:]
         return argv
     else:
