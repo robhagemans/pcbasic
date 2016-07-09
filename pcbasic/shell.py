@@ -113,7 +113,7 @@ if plat.system == 'Windows':
         global shell_output
         cmd = shell_command
         if command:
-            cmd += ' /C "' + command + '"'
+            cmd += ' /C ' + command
         p = subprocess.Popen( str(cmd).split(), stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         outp = threading.Thread(target=process_stdout, args=(p, p.stdout))
