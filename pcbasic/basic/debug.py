@@ -142,8 +142,9 @@ class Debugger(BaseDebugger):
         except Exception as e:
             logging.debug(str(type(e))+' '+str(e))
             traceback.print_tb(sys.exc_info()[2])
-        sys.stdout = save_stdout
-        logging.debug(buf.getvalue()[:-1]) # exclude \n
+        finally:
+            sys.stdout = save_stdout
+            logging.debug(buf.getvalue()[:-1]) # exclude \n
 
 
 ##############################################################################
