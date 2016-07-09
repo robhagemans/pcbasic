@@ -47,13 +47,9 @@ def get_env_entry(expr):
 #########################################
 # shell
 
-def get_shell_manager(keyboard, screen, codepage, shell_type):
+def get_shell_manager(keyboard, screen, codepage, shell_command):
     """Return a new shell manager object."""
-    if shell_type != 'none':
-        if shell_type == 'native':
-            shell_command = None
-        else:
-            shell_command = shell_type
+    if shell_command:
         if platform.system() == 'Windows':
             return WindowsShell(keyboard, screen, codepage, shell_command)
         else:
@@ -61,13 +57,13 @@ def get_shell_manager(keyboard, screen, codepage, shell_type):
                 return Shell(keyboard, screen, codepage, shell_command)
             except InitFailed:
                 logging.warning('Pexpect module not found. SHELL statement disabled.')
-    return ShellBase(keyboard, screen)
+    return ShellBase(keyboard, screen, codepage, u'')
 
 
 class ShellBase(object):
     """Launcher for command shell."""
 
-    def __init__(self, keyboard, screen, codepage=None, shell_command=None):
+    def __init__(self, keyboard, screen, codepage, shell_command):
         """Initialise the shell."""
         self.keyboard = keyboard
         self.screen = screen
@@ -85,9 +81,7 @@ class WindowsShell(ShellBase):
 
     def __init__(self, keyboard, screen, codepage, shell_command):
         """Initialise the shell."""
-        ShellBase.__init__(self, keyboard, screen, codepage, shell_command)
-        if shell_command is None:
-            self.command = u'CMD.EXE'
+        ShellBase.__init__(self, keyboard, screen, shell_command, codepage)
 
     def _process_stdout(self, p, stream, shell_output):
         """Retrieve SHELL output and write to console."""
@@ -162,8 +156,6 @@ class Shell(ShellBase):
         if not pexpect:
             raise InitFailed()
         ShellBase.__init__(self, keyboard, screen, codepage, shell_command)
-        if shell_command is None:
-            self.command = u'/bin/sh'
 
     def launch(self, command):
         """Run a SHELL subprocess."""

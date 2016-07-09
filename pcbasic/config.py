@@ -324,7 +324,7 @@ class Settings(object):
         u'caption': {u'type': u'string', u'default': 'PC-BASIC',},
         u'text-width': {u'type': u'int', u'choices':(40, 80), u'default': 80,},
         u'video-memory': {u'type': u'int', u'default': 262144,},
-        u'shell': {u'type': u'string', u'default': u'none',},
+        u'shell': {u'type': u'string', u'default': u'',},
         u'print-trigger': {u'type': u'string', u'choices':(u'close', u'page', u'line'), u'default': u'close',},
         u'altgr': {u'type': u'bool', u'default': True,},
         u'ctrl-c-break': {u'type': u'bool', u'default': True,},

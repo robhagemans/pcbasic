@@ -808,12 +808,15 @@
         </dd>
 
         <dt  id="--shell">
-            <code><b>--shell=</b>{<b>none</b>|<b>native</b>|<var>command</var>]</code>
+            <code><b>--shell=</b>[<var>shell-executable</var>]</code>
         </dt>
         <dd>
-            Set the command interpreter run on the <code><a href="#SHELL">SHELL</a></code>
-            command to the operating system's native shell or a custom shell
-            run by <code><var>command</var></code>. Default is <code><b>none</b></code>,
+            Set the <code><a href="#SHELL">SHELL</a></code>
+            command to run the operating system shell executable <code><var>shell-executable</var></code>.
+            The executable <code><var>shell-executable</var></code> should support the
+            command-line conventions of the primary shell of the host operating system
+            (<code>CMD.EXE</code> on Windows and <code>/bin/sh</code> on Unix).
+            By default <code><var>command</var></code> is empty,
             which disables the <code><a href="#SHELL">SHELL</a></code> command.
         </dd>
 
