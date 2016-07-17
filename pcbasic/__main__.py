@@ -338,7 +338,7 @@ def debug_details():
                 except AttributeError:
                     pass
             else:
-                logging.info('available\n')
+                logging.info('%s: available', module)
     if plat.system != 'Windows':
         logging.info('\nEXTERNAL TOOLS')
         tools = ('lpr', 'paps', 'beep', 'xclip', 'xsel', 'pbcopy', 'pbpaste')
