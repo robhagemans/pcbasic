@@ -46,7 +46,6 @@ class VideoANSI(video_cli.VideoCLI):
         if logging.getLogger().handlers[0].stream.name == sys.stderr.name:
             self.logger.disabled = True
 
-
     def __exit__(self, type, value, traceback):
         """Close the text interface."""
         base.VideoPlugin.__exit__(self, type, value, traceback)
@@ -101,7 +100,6 @@ class VideoANSI(video_cli.VideoCLI):
             sys.stdout.write(ansi.esc_set_colour % 5)
         sys.stdout.flush()
 
-
     def set_mode(self, mode_info):
         """Change screen mode."""
         self.height = mode_info.height
@@ -137,6 +135,8 @@ class VideoANSI(video_cli.VideoCLI):
             for r in range(start, stop+1):
                 sys.stdout.write(ansi.esc_move_cursor % (r, 1))
                 sys.stdout.write(ansi.esc_clear_line)
+            sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
+            self.last_pos = (self.cursor_row, self.cursor_col)
             sys.stdout.flush()
 
     def move_cursor(self, crow, ccol):
@@ -201,9 +201,6 @@ class VideoANSI(video_cli.VideoCLI):
         sys.stdout.write(ansi.esc_set_scroll_region % (from_line, scroll_height))
         sys.stdout.write(ansi.esc_scroll_up % 1)
         sys.stdout.write(ansi.esc_set_scroll_screen)
-        if self.cursor_row > 1:
-            sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
-            self.last_pos = (self.cursor_row, self.cursor_col)
         self.clear_rows(back_attr, scroll_height, scroll_height)
 
     def scroll_down(self, from_line, scroll_height, back_attr):
@@ -216,9 +213,6 @@ class VideoANSI(video_cli.VideoCLI):
         sys.stdout.write(ansi.esc_set_scroll_region % (from_line, scroll_height))
         sys.stdout.write(ansi.esc_scroll_down % 1)
         sys.stdout.write(ansi.esc_set_scroll_screen)
-        if self.cursor_row > 1:
-            sys.stdout.write(ansi.esc_move_cursor % (self.cursor_row, self.cursor_col))
-            self.last_pos = (self.cursor_row, self.cursor_col)
         self.clear_rows(back_attr, from_line, from_line)
 
     def set_caption_message(self, msg):
