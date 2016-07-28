@@ -365,7 +365,9 @@ class VideoSDL2(video_graphical.VideoGraphical):
                     if scancode.ALT not in mod:
                         # with IME, the text is sent together with the final Enter keypress.
                         self.input_queue.put(signals.Event(signals.KEYB_CHAR, (c, )))
-                    self.input_queue.put(signals.Event(signals.KEYB_DOWN, (eascii, scan, mod)))
+                    else:
+                        # final keypress such as space, CR have IME meaning, we should ignore them
+                        self.input_queue.put(signals.Event(signals.KEYB_DOWN, (eascii, scan, mod)))
                 else:
                     self.input_queue.put(signals.Event(signals.KEYB_DOWN, (c, scan, mod)))
             else:
@@ -451,7 +453,7 @@ class VideoSDL2(video_graphical.VideoGraphical):
             sdl2.SDL_BlitScaled(self.overlay, None, self.display_surface, None)
         # flip the display
         sdl2.SDL_UpdateWindowSurface(self.display)
-        # desctroy the temporary surface
+        # destroy the temporary surface
         sdl2.SDL_FreeSurface(conv)
 
     def _show_cursor(self, do_show):
