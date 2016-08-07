@@ -20,11 +20,7 @@ def is_same(file1, file2):
 
 args = sys.argv[1:]
 
-if not args:
-    print 'Usage: test.sh TESTNAME [TESTNAME] ...'
-    sys.exit(1)
-
-if args == ['--all']:
+if not args or args == ['--all']:
     args = [f for f in sorted(os.listdir('.')) if os.path.isdir(f)]
 
 numtests = 0
