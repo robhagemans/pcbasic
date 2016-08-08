@@ -8,9 +8,12 @@ This file is released under the GNU GPL version 3 or later.
 
 import sys
 import os
-import subprocess
 import shutil
 import filecmp
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+
+import pcbasic
 
 def is_same(file1, file2):
     try:
@@ -44,8 +47,14 @@ for name in args:
     top = os.getcwd()
     os.chdir(output_dir)
     sys.stdout.flush()
-    subprocess.Popen(['python', os.path.join('..','..','..','pcbasic.py'), '--interface=none'],
-            stdin=sys.stdin, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w')).wait()
+    # -----------------------------------------------------------
+    # suppress output and logging and call PC-BASIC
+    sys.stderr, err = open(os.devnull, 'w'), sys.stderr
+    sys.stdout, out = open(os.devnull, 'w'), sys.stdout
+    pcbasic.main('--interface=none')
+    sys.stderr = err
+    sys.stdout = out
+    # -----------------------------------------------------------
     os.chdir(top)
     passed = True
     known = True

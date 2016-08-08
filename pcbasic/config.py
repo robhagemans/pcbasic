@@ -333,10 +333,10 @@ class Settings(object):
     }
 
 
-    def __init__(self, temp_dir):
+    def __init__(self, temp_dir, arguments):
         """Initialise settings."""
         # convert arguments to unicode using preferred encoding
-        uargv = get_unicode_argv()
+        uargv = [''] + list(arguments) if arguments else get_unicode_argv()
         # first parse a logfile argument, if any
         for args in uargv:
             if args[:9] == u'--logfile':

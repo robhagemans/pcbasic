@@ -28,12 +28,12 @@ from . import state
 from . import config
 
 
-def main():
+def main(*arguments):
     """Initialise and perform requested operations."""
     try:
         with config.TemporaryDirectory(prefix='pcbasic-') as temp_dir:
             # get settings and prepare logging
-            settings = config.Settings(temp_dir)
+            settings = config.Settings(temp_dir, arguments)
             command = settings.get_command()
             if command == 'version':
                 # print version and exit
