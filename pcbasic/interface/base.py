@@ -19,13 +19,13 @@ class Interface(object):
     # millisecond delay
     delay = 12
 
-    def __init__(self, interface_name, video_params, audio_params):
+    def __init__(self, interface_name, audio_name, video_params, audio_params):
         """Initialise interface."""
         self._input_queue = Queue.Queue()
         self._video_queue = Queue.Queue()
         self._audio_queue = Queue.Queue()
         self._video = _get_video_plugin(self._input_queue, self._video_queue, interface_name, **video_params)
-        self._audio = _get_audio_plugin(self._audio_queue, interface_name, **audio_params)
+        self._audio = _get_audio_plugin(self._audio_queue, audio_name or interface_name, **audio_params)
 
     def get_queues(self):
         """Retrieve interface queues."""
@@ -266,10 +266,8 @@ class VideoPlugin(object):
 audio_plugins = {}
 
 
-def _get_audio_plugin(audio_queue, interface_name, nosound):
+def _get_audio_plugin(audio_queue, interface_name):
     """Find and initialise audio plugin for given interface."""
-    if nosound:
-        interface_name = 'none'
     for plugin_class in audio_plugins[interface_name]:
         try:
             plugin = plugin_class(audio_queue)

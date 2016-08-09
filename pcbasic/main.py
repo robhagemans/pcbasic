@@ -44,7 +44,7 @@ def main(*arguments):
             elif command == 'convert':
                 # convert and exit
                 convert(settings)
-            elif settings.get_interface():
+            elif settings.get_interfaces():
                 # start an interpreter session with interface
                 launch_session(settings)
             else:
@@ -127,9 +127,9 @@ def launch_session(settings):
     try:
         # initialise queues
         iface = interface.Interface(
-                    settings.get_interface(),
-                    settings.get_video_parameters(),
-                    settings.get_audio_parameters())
+                    *settings.get_interfaces(),
+                    video_params=settings.get_video_parameters(),
+                    audio_params=settings.get_audio_parameters())
     except interface.InitFailed:
         logging.error('Failed to initialise interface.')
         return

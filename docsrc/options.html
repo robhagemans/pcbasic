@@ -434,10 +434,11 @@
         </dd>
 
         <dt id="--interface">
-            <code><b>--interface=</b>{<b>none</b>|<b>cli</b>|<b>text</b>|<b>graphical</b>}</code>
+            <code><b>--interface=</b>[<b>none</b>|<b>cli</b>|<b>text</b>|<b>graphical</b>]</code>
         </dt>
         <dd>
-            Choose the type of interface. The following interface types are
+            Choose the type of interface. Not all interfaces will be available on all systems.
+            The following interface types may be
             available:
             <dl class="compact">
                 <dt><code><b>none</b></code></dt>
@@ -445,9 +446,17 @@
                 <dt><code><b>cli</b></code></dt>
                 <dd>Command-line interface. Also <code><b><a href="#-b">-b</a></b></code>.</dd>
                 <dt><code><b>text</b></code></dt>
-                <dd>Text-based interface. Also <code><b><a href="#-t">-t</a></b></code>.</dd>
+                <dd>Text interface. Also <code><b><a href="#-t">-t</a></b></code>.</dd>
                 <dt><code><b>graphical</b></code></dt>
                 <dd>Graphical interface.</dd>
+                <dt><code><b>sdl2</b></code></dt>
+                <dd>SDL2 graphical interface.</dd>
+                <dt><code><b>pygame</b></code></dt>
+                <dd>PyGame graphical interface.</dd>
+                <dt><code><b>ansi</b></code></dt>
+                <dd>ANSI text interface.</dd>
+                <dt><code><b>curses</b></code></dt>
+                <dd>NCurses text interface.</dd>
             </dl>
             The default is <code><b>graphical</b></code>.
         </dd>
@@ -660,13 +669,6 @@
             your program uses this key combination.
         </dd>
 
-        <dt id="--nosound">
-            <code><b>--nosound</b>[<b>=True</b>|<b>=False</b>]</code>
-        </dt>
-        <dd>
-            Disable sound output.
-        </dd>
-
         <dt id="--output">
             <code><b>--output=</b><var>output_file</var></code>
         </dt>
@@ -818,6 +820,28 @@
             (<code>CMD.EXE</code> on Windows and <code>/bin/sh</code> on Unix).
             By default <code><var>command</var></code> is empty,
             which disables the <code><a href="#SHELL">SHELL</a></code> command.
+        </dd>
+
+        <dt id="--sound-engine">
+            <code><b>--sound-engine=</b>[<b>none</b>|<b>beep</b>|<b>sdl2</b>|<b>pygame</b>|<b>portaudio</b>]</code>
+        </dt>
+        <dd>
+            Choose the engine to use for audio output. If omitted, the
+            default engine for the interface selected with
+            <code><a href="#--interface">--interface</a></code> is chosen.
+            Not all interfaces will be available on all systems.
+            <dl class="compact">
+                <dt><code><b>none</b></code></dt>
+                <dd>Suppress sound output.</dd>
+                <dt><code><b>beep</b></code></dt>
+                <dd>Use the built-in speaker.</dd>
+                <dt><code><b>portaudio</b></code></dt>
+                <dd>Use the PortAudio sound generator.</dd>
+                <dt><code><b>sdl2</b></code></dt>
+                <dd>Use the SDL2 sound generator.</dd>
+                <dt><code><b>pygame</b></code></dt>
+                <dd>Use the PyGame sound generator.</dd>
+            </dl>
         </dd>
 
         <dt id="--state">

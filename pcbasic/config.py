@@ -256,6 +256,10 @@ class Settings(object):
             u'type': u'string', u'default': u'',
             u'choices': (u'', u'none', u'cli', u'text', u'graphical',
                         u'ansi', u'curses', u'pygame', u'sdl2'), },
+        u'sound-engine': {
+            u'type': u'string', u'default': u'',
+            u'choices': (u'', u'none',
+                        u'beep', u'portaudio', u'pygame', u'sdl2'), },
         u'load': {u'type': u'string', u'default': u'', },
         u'run': {u'type': u'string', u'default': u'',  },
         u'convert': {u'type': u'string', u'default': u'', },
@@ -278,7 +282,6 @@ class Settings(object):
         u'font': {
             u'type': u'string', u'list': u'*', u'choices': fonts,
             u'default': [u'unifont', u'univga', u'freedos'],},
-        u'nosound': {u'type': u'bool', u'default': False, },
         u'dimensions': {u'type': u'int', u'list': 2, u'default': None,},
         u'fullscreen': {u'type': u'bool', u'default': False,},
         u'nokill': {u'type': u'bool', u'default': False,},
@@ -512,9 +515,7 @@ class Settings(object):
 
     def get_audio_parameters(self):
         """Return a dictionary of parameters for the audio plugin."""
-        return {
-            'nosound': self.get('nosound'),
-            }
+        return {}
 
     def get_state_file(self):
         """Name of state file"""
@@ -523,12 +524,12 @@ class Settings(object):
             state_name = os.path.join(state_path, state_name)
         return state_name
 
-    def get_interface(self):
+    def get_interfaces(self):
         """Return name of interface plugin."""
         interface = self.get('interface')
         if interface == 'none':
             return None
-        return self.get('interface') or 'graphical'
+        return interface or 'graphical', self.get('sound-engine')
 
     def get_launch_parameters(self):
         """Return a dictionary of launch parameters."""

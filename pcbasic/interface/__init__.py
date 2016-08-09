@@ -46,4 +46,6 @@ audio_plugins.update({
     'curses': (AudioPlugin,),
     'pygame': (AudioPygame, AudioPlugin),
     'sdl2': (AudioSDL2, AudioPlugin),
+    'portaudio': (AudioPortAudio, AudioPlugin),
+    'beep': (AudioBeep, AudioPlugin),
     })
