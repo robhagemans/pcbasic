@@ -182,8 +182,8 @@ class Tokeniser(object):
         nxt = util.peek(ins)
         if (not comment and
                 nxt not in tk.end_line + tk.operator +
-                                    (tk.O_REM, '"', ',', ' ', ':', '(', ')', '$',
-                                     '%', '!', '#', '_', '@', '~', '|', '`') and
+                        (tk.O_REM, '"', ',', ';', ' ', ':', '(', ')', '$',
+                         '%', '!', '#', '_', '@', '~', '|', '`') and
                 s not in tk.operator + tk.with_bracket + (tk.USR, tk.FN)):
             # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN, \xD0 is USR.
             output += ' '
