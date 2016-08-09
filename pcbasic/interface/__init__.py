@@ -39,8 +39,8 @@ video_plugins.update({
 
 audio_plugins.update({
     'none': (AudioPlugin,),
-    'cli': (AudioPortAudio, AudioBeep, AudioPlugin),
-    'text': (AudioPortAudio, AudioBeep, AudioPlugin),
+    'cli': (AudioBeep, AudioPlugin),
+    'text': (AudioBeep, AudioPlugin),
     'graphical': (AudioSDL2, AudioPygame, AudioBeep, AudioPlugin),
     'ansi': (AudioPlugin,),
     'curses': (AudioPlugin,),
