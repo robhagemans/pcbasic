@@ -52,6 +52,11 @@ def makeman():
     examples_html = open(basepath + '/examples.html', mode='r').read()
     more_html = open(basepath + '/moreman.html', mode='r').read()
     man_html = title_html + desc_html + options_html + examples_html + more_html
+    try:
+        os.mkdir(basepath + '/../doc')
+    except OSError:
+        # already there, ignore
+        pass
     # output manfile
     with gzip.open(basepath + '/../doc/pcbasic.1.gz', 'wb') as manfile:
         manfile.write(html_to_man(man_html))
