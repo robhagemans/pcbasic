@@ -12,12 +12,13 @@ The following packages are needed or recommended when installing PC-BASIC from t
 |-----------------------------------------------------------------|--------------------|--------------|----------------------------------------
 | [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all                | required     |
 | [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows            | required     |
-| [PySDL2](https://pysdl2.readthedocs.org/en/latest/)             | all                | essential    | sound and graphics
-| [NumPy](https://sourceforge.net/projects/numpy/files/)          | all                | essential    | sound and graphics
-| [PySerial](https://pypi.python.org/pypi/pyserial)               | all                | recommended  | physical or emulated serial port access
+| [PySDL2](https://pysdl2.readthedocs.org/en/latest/)             | all                | recommended  | sound and graphics
+| [NumPy](https://sourceforge.net/projects/numpy/files/)          | all                | recommended  | sound and graphics
+| [PySerial](https://pypi.python.org/pypi/pyserial)               | all                | optional     | physical or emulated serial port access
 | [PyParallel](https://pypi.python.org/pypi/pyserial)             | Windows, Linux     | optional     | physical parallel port access
-| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| OSX, Linux, other  | optional     | native `SHELL`
+| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| OSX, Linux, other  | optional     | `SHELL` command
 | [PyGame 1.9.2](http://www.pygame.org)                           | all                | optional     | sound and graphics (PyGame interface)
+| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)          | all                | experimental | sound (PortAudio engine)
 
 In this list, _other_ refers to operating systems other than Windows, Linux or OSX.
 
@@ -83,6 +84,8 @@ You'll also need [`git`](https://git-scm.com/), [`setuptools`](https://pypi.pyth
 
         python pcbasic.py
 
+
+The `--recursive` option is necessary to pull the `ansipipe` submodule; if you omit the option, you will have to get the submodule separately.
 To build the supporting binaries for Windows, please refer to the compilation instructions for [SDL2](https://www.libsdl.org/), [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) and [ANSI|pipe](http://github.com/robhagemans/ansipipe/). You will need a C compiler such as [MinGW](http://mingw.org/) or [Microsoft Visual Studio](https://www.visualstudio.com/).
 
 
