@@ -17,12 +17,12 @@ import string
 
 from . import error
 from . import fp
+from . import vartypes
+from . import values
 from . import ports
 from . import print_and_input
-from . import representation
 from . import basictoken as tk
 from . import util
-from . import vartypes
 
 
 class Statements(object):
@@ -1957,7 +1957,7 @@ class Statements(object):
                     address = None
                 value = self.session.strings.store(entry, address)
             else:
-                value = representation.str_to_number(entry, allow_nonnum=False)
+                value = values.str_to_number(entry, allow_nonnum=False)
                 if value is None:
                     # set pointer for EDIT gadget to position in DATA statement
                     self.parser.program_code.seek(self.parser.data_pos)
@@ -2113,7 +2113,7 @@ class Statements(object):
                 self.session.screen.write("Random number seed (-32768 to 32767)? ")
                 seed = self.session.editor.wait_screenline()
                 # seed entered on prompt is rounded to int
-                val = representation.str_to_number(seed)
+                val = values.str_to_number(seed)
             val = vartypes.pass_integer(val)
         self.session.randomiser.reseed(val)
         util.require(ins, tk.end_statement)
@@ -2378,7 +2378,7 @@ class Statements(object):
                     with self.session.strings:
                         outstr += '"' + self.session.strings.copy(expr) + '"'
                 else:
-                    outstr += representation.number_to_str(expr, screen=True, write=True)
+                    outstr += values.number_to_str(expr, screen=True, write=True)
                 if util.skip_white_read_if(ins, (',', ';')):
                     outstr += ','
                 else:
@@ -2426,7 +2426,7 @@ class Statements(object):
                     expr = self.parser.parse_expression(ins, self.session)
                     # numbers always followed by a space
                     if expr[0] in ('%', '!', '#'):
-                        word = representation.number_to_str(expr, screen=True) + ' '
+                        word = values.number_to_str(expr, screen=True) + ' '
                     else:
                         word = self.session.strings.copy(expr)
                 # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
@@ -2477,7 +2477,7 @@ class Statements(object):
                     if number_field:
                         if not data_ends:
                             num = vartypes.pass_float(self.parser.parse_expression(ins, self.session))
-                            output.write(representation.format_number(num, number_field, digits_before, decimals))
+                            output.write(values.format_number(num, number_field, digits_before, decimals))
                     else:
                         output.write(fors.read(1))
                 if string_field or number_field:

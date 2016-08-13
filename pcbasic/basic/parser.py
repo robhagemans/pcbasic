@@ -21,7 +21,7 @@ from . import operators as op
 from . import functions
 
 from . import fp
-from . import representation
+from . import values
 from . import vartypes
 
 
@@ -381,12 +381,12 @@ class Parser(object):
         # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
         elif d in string.digits:
             outs = StringIO()
-            representation.tokenise_number(ins, outs)
+            values.tokenise_number(ins, outs)
             outs.seek(0)
-            return representation.parse_value(outs)
+            return values.parse_value(outs)
         # number literals
         elif d in tk.number:
-            return representation.parse_value(ins)
+            return values.parse_value(ins)
         # gw-basic allows adding line numbers to numbers
         elif d == tk.T_UINT:
             return vartypes.int_to_integer_unsigned(util.parse_jumpnum(ins))

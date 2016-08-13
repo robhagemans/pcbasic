@@ -15,7 +15,7 @@ import logging
 
 from . import fp
 from . import vartypes
-from . import representation
+from . import values
 from . import shell
 from . import util
 from . import error
@@ -168,11 +168,11 @@ class Functions(object):
     def value_str(self, ins):
         """STR$: string representation of a number."""
         s = vartypes.pass_number(self.parser.parse_bracket(ins, self.session))
-        return self.session.strings.store(representation.number_to_str(s, screen=True))
+        return self.session.strings.store(values.number_to_str(s, screen=True))
 
     def value_val(self, ins):
         """VAL: number value of a string."""
-        return representation.str_to_number(self.session.strings.copy(vartypes.pass_string(self.parser.parse_bracket(ins, self.session))))
+        return values.str_to_number(self.session.strings.copy(vartypes.pass_string(self.parser.parse_bracket(ins, self.session))))
 
     def value_chr(self, ins):
         """CHR$: character for ASCII value."""
@@ -184,13 +184,13 @@ class Functions(object):
         """OCT$: octal representation of int."""
         # allow range -32768 to 65535
         val = vartypes.pass_integer(self.parser.parse_bracket(ins, self.session), 0xffff)
-        return self.session.strings.store(representation.integer_to_str_oct(val))
+        return self.session.strings.store(values.integer_to_str_oct(val))
 
     def value_hex(self, ins):
         """HEX$: hexadecimal representation of int."""
         # allow range -32768 to 65535
         val = vartypes.pass_integer(self.parser.parse_bracket(ins, self.session), 0xffff)
-        return self.session.strings.store(representation.integer_to_str_hex(val))
+        return self.session.strings.store(values.integer_to_str_hex(val))
 
 
     ######################################################################

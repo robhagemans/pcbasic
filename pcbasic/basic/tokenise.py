@@ -14,7 +14,7 @@ except ImportError:
     from StringIO import StringIO
 
 from . import basictoken as tk
-from . import representation
+from . import values
 from . import util
 from . import vartypes
 
@@ -104,12 +104,12 @@ class Tokeniser(object):
                 litstring = not litstring
             elif s in tk.number:
                 ins.seek(-1, 1)
-                representation.detokenise_number(ins, output)
+                values.detokenise_number(ins, output)
             elif s in tk.linenum:
                 # 0D: line pointer (unsigned int) - this token should not be here;
                 #     interpret as line number and carry on
                 # 0E: line number (unsigned int)
-                output += representation.uint_token_to_str(bytearray(ins.read(2)))
+                output += values.uint_token_to_str(bytearray(ins.read(2)))
             elif comment or litstring or ('\x20' <= s <= '\x7E'):
                 # honest ASCII
                 output += s
@@ -238,7 +238,7 @@ class Tokeniser(object):
             # number starting with . or & are always parsed
             elif c in ('&', '.') or (allow_number and
                                       not allow_jumpnum and c in string.digits):
-                representation.tokenise_number(ins, outs)
+                values.tokenise_number(ins, outs)
             # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):
             elif c in self._ascii_operators:
                 ins.read(1)

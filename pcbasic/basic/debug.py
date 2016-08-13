@@ -13,7 +13,7 @@ import os
 import platform
 
 from . import vartypes
-from . import representation
+from . import values
 from . import error
 
 
@@ -118,7 +118,7 @@ class Debugger(BaseDebugger):
                 if val[0] == '$':
                     outstr += '"' + self.session.strings.copy(val) + '"'
                 else:
-                    outstr += representation.number_to_str(val, screen=False)
+                    outstr += values.number_to_str(val, screen=False)
             except Exception as e:
                 logging.debug(str(type(e))+' '+str(e))
         if outstr:

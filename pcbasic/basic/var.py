@@ -12,7 +12,7 @@ from operator import itemgetter
 from . import error
 from . import vartypes
 from . import fp
-from . import representation
+from . import values
 
 
 ###############################################################################
@@ -165,7 +165,7 @@ class StringSpace(object):
         if typechar == '$':
             return self.store(word)
         else:
-            return representation.str_to_number(word, allow_nonnum=False)
+            return values.str_to_number(word, allow_nonnum=False)
 
 
 ###############################################################################
