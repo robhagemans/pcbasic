@@ -36,6 +36,7 @@ from . import sound
 from . import redirect
 from . import unicodepage
 from . import var
+from . import values
 
 
 class Session(object):
@@ -85,18 +86,13 @@ class Session(object):
         # prepare I/O redirection
         self.input_redirection, self.output_redirection = redirect.get_redirection(
                 self.codepage, stdio, input_file, output_file, append)
-        # prepare tokeniser
-        self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
-        # initialise the program
-        self.program = program.Program(self.tokeniser,
-                max_list_line, allow_protect, allow_code_poke)
-        # function key macros
-        self.fkey_macros = editor.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
         # set up event handlers
         self.events = events.Events(self, syntax)
         # initialise sound queue
         # needs Session for wait() and queues only
         self.sound = sound.Sound(self, syntax)
+        # function key macros
+        self.fkey_macros = editor.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
         # Sound is needed for the beeps on \a
         # Session is only for queues and wait() in Graphics (flood fill)
         self.screen = display.Screen(self, text_width,
@@ -104,6 +100,13 @@ class Session(object):
                 self.sound, self.output_redirection, self.fkey_macros,
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=option_debug)
+        # prepare math error handler
+        self.math_error_handler = values.MathErrorHandler(self.screen)
+        # prepare tokeniser
+        self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
+        # initialise the program
+        self.program = program.Program(self.tokeniser,
+                max_list_line, allow_protect, allow_code_poke)
         # prepare input methods
         self.pen = inputs.Pen(self.screen)
         self.stick = inputs.Stick()

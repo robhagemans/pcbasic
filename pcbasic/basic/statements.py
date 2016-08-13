@@ -1680,6 +1680,8 @@ class Statements(object):
         if linenum != 0 and linenum not in self.session.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         self.parser.on_error = linenum
+        # pause soft-handling math errors so that we can catch them
+        self.parser.math_error_handler.pause_handling(linenum != 0)
         # ON ERROR GOTO 0 in error handler
         if self.parser.on_error == 0 and self.parser.error_handle_mode:
             # re-raise the error so that execution stops

@@ -14,14 +14,15 @@ import string
 from collections import deque
 
 from . import error
-from . import fp
-from . import representation
 from . import basictoken as tk
 from . import util
-from . import vartypes
 from . import statements
 from . import operators as op
 from . import functions
+
+from . import fp
+from . import representation
+from . import vartypes
 
 
 class Parser(object):
@@ -30,6 +31,7 @@ class Parser(object):
     def __init__(self, session, syntax, term, double_math):
         """Initialise parser."""
         self.session = session
+        self.math_error_handler = self.session.math_error_handler
         # syntax: advanced, pcjr, tandy
         self.syntax = syntax
         # program for TERM command
@@ -480,10 +482,8 @@ class Parser(object):
             elif d in self.functions.functions:
                 # apply functions
                 ins.read(len(d))
-                try:
-                    units.append(self.functions.functions[d](ins))
-                except (ValueError, ArithmeticError) as e:
-                    units.append(self._handle_math_error(e))
+                units.append(
+                    self.math_error_handler.wrap(self.functions.functions[d], ins))
             elif d in tk.end_statement:
                 break
             elif d in tk.end_expression:
@@ -513,35 +513,12 @@ class Parser(object):
             try:
                 right = units.pop()
                 if narity == 1:
-                    units.append(self.operators.unary[oper](right))
+                    units.append(self.math_error_handler.wrap(
+                            self.operators.unary[oper], right))
                 else:
                     left = units.pop()
-                    units.append(self.operators.binary[oper](left, right))
+                    units.append(self.math_error_handler.wrap(
+                        self.operators.binary[oper], left, right))
             except IndexError:
                 # insufficient operators, error depends on context
                 raise error.RunError(missing_err)
-            except (ValueError, ArithmeticError) as e:
-                units.append(self._handle_math_error(e))
-
-    def _handle_math_error(self, e):
-        """Handle Overflow or Division by Zero."""
-        if isinstance(e, ValueError):
-            # math domain errors such as SQR(-1)
-            raise error.RunError(error.IFC)
-        elif isinstance(e, OverflowError):
-            math_error = error.OVERFLOW
-        elif isinstance(e, ZeroDivisionError):
-            math_error = error.DIVISION_BY_ZERO
-        else:
-            raise e
-        if self.session.parser.on_error:
-            # also raises exception in error_handle_mode!
-            # in that case, prints a normal error message
-            raise error.RunError(math_error)
-        else:
-            # write a message & continue as normal
-            self.session.screen.write_line(error.RunError(math_error).message)
-        # return max value for the appropriate float type
-        if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
-            return fp.pack(e.args[0])
-        return fp.pack(fp.Single.max.copy())
