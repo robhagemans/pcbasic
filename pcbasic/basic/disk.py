@@ -22,7 +22,7 @@ if platform.system() == b'Windows':
 
 from .bytestream import ByteStream
 from . import error
-from . import vartypes
+from . import values
 from . import devices
 
 # GW-BASIC FILE CONTROL BLOCK structure:
@@ -620,18 +620,18 @@ class BinaryFile(devices.RawFile):
         if self.mode == b'O':
             self.write(devices.type_to_magic[filetype])
             if self.filetype == b'M':
-                self.write(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(seg)) +
-                           vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(offset)) +
-                           vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(length)))
+                self.write(values.integer_to_bytes(values.int_to_integer_unsigned(seg)) +
+                           values.integer_to_bytes(values.int_to_integer_unsigned(offset)) +
+                           values.integer_to_bytes(values.int_to_integer_unsigned(length)))
                 self.seg, self.offset, self.length = seg, offset, length
         else:
             # drop magic byte
             self.read_raw(1)
             if self.filetype == b'M':
-                self.seg = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(self.read(2)))
-                self.offset = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(self.read(2)))
+                self.seg = values.integer_to_int_unsigned(values.bytes_to_integer(self.read(2)))
+                self.offset = values.integer_to_int_unsigned(values.bytes_to_integer(self.read(2)))
                 # size gets ignored: even the \x1a at the end is read
-                self.length = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(self.read(2)))
+                self.length = values.integer_to_int_unsigned(values.bytes_to_integer(self.read(2)))
 
     def close(self):
         """Write EOF and close program file."""

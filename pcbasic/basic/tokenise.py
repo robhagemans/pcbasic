@@ -16,7 +16,7 @@ except ImportError:
 from . import basictoken as tk
 from . import values
 from . import util
-from . import vartypes
+from . import values
 
 
 def ascii_read_to(ins, findrange):
@@ -66,9 +66,9 @@ class Tokeniser(object):
 
     def detokenise_line(self, ins, bytepos=None):
         """Convert a tokenised program line to ascii text."""
-        current_line = util.parse_line_number(ins)
+        current_line = self.detokenise_line_number(ins)
         if current_line < 0:
-            # parse_line_number has returned -1 and left us at: .. 00 | _00_ 00 1A
+            # detokenise_line_number has returned -1 and left us at: .. 00 | _00_ 00 1A
             # stream ends or end of file sequence \x00\x00\x1A
             return -1, '', 0
         elif current_line == 0 and util.peek(ins) == ' ':
@@ -81,6 +81,20 @@ class Tokeniser(object):
             linum += bytearray(' ')
         line, textpos = self.detokenise_compound_statement(ins, bytepos)
         return current_line, linum + line, textpos + len(linum) + 1
+
+    def detokenise_line_number(self, ins):
+        """Parse line number and leave pointer at first char of line."""
+        # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00
+        off = ins.read(2)
+        if off == '\0\0' or len(off) < 2:
+            ins.seek(-len(off), 1)
+            return -1
+        off = ins.read(2)
+        if len(off) < 2:
+            ins.seek(-len(off)-2, 1)
+            return -1
+        else:
+            return values.integer_to_int_unsigned(values.bytes_to_integer(off))
 
     def detokenise_compound_statement(self, ins, bytepos=None):
         """Detokenise tokens until end of line."""
@@ -372,7 +386,7 @@ class Tokeniser(object):
                 # keep 6553 as line number and push back the last number:
                 ins.seek(4-len(word), 1)
                 word = word[:4]
-            return str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(int(word))))
+            return str(values.integer_to_bytes(values.int_to_integer_unsigned(int(word))))
         else:
             return ''
 

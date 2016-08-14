@@ -10,7 +10,6 @@ from functools import partial
 import string
 
 from . import error
-from . import vartypes
 from . import basictoken as tk
 
 ###############################################################################
@@ -113,30 +112,6 @@ def require(ins, rnge, err=error.STX):
     if a not in rnge:
         raise error.RunError(err)
 
-def parse_line_number(ins):
-    """Parse line number and leave pointer at first char of line."""
-    # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00
-    off = ins.read(2)
-    if off == '\0\0' or len(off) < 2:
-        ins.seek(-len(off), 1)
-        return -1
-    off = ins.read(2)
-    if len(off) < 2:
-        ins.seek(-len(off)-2, 1)
-        return -1
-    else:
-        return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(off))
-
-def parse_jumpnum(ins, allow_empty=False, err=error.STX):
-    """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
-    if skip_white_read_if(ins, (tk.T_UINT,)):
-        return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(ins.read(2)))
-    else:
-        if allow_empty:
-            return -1
-        # Syntax error
-        raise error.RunError(err)
-
 def read_name(ins, allow_empty=False, err=error.STX):
     """Read a variable name """
     name = ''
@@ -150,7 +125,7 @@ def read_name(ins, allow_empty=False, err=error.STX):
         while d and d in tk.name_chars:
             name += d
             d = ins.read(1)
-        if d in vartypes.sigils:
+        if d in tk.sigils:
             name += d
         else:
             ins.seek(-len(d), 1)

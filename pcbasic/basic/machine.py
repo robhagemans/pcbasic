@@ -6,7 +6,7 @@ Machine emulation and memory model
 This file is released under the GNU GPL version 3 or later.
 """
 
-from . import vartypes
+from . import values
 
 
 ###############################################################################
@@ -267,9 +267,9 @@ class Memory(object):
         g.write(str(self._get_memory_block(addr, length)))
         # Tandys repeat the header at the end of the file
         if self.tandy_syntax:
-            g.write('\xfd' + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(self.segment)) +
-                    vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(offset)) +
-                    vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(length))))
+            g.write('\xfd' + str(values.integer_to_bytes(values.int_to_integer_unsigned(self.segment)) +
+                    values.integer_to_bytes(values.int_to_integer_unsigned(offset)) +
+                    values.integer_to_bytes(values.int_to_integer_unsigned(length))))
 
     def def_seg(self, segment):
         """Set segment."""

@@ -14,7 +14,7 @@ except ImportError:
     from StringIO import StringIO
 
 from . import error
-from . import vartypes
+from . import values
 from . import basictoken as tk
 from . import protect
 from . import util
@@ -74,10 +74,10 @@ class Program(object):
         scanline, scanpos, last = 0, 0, 0
         while True:
             self.bytecode.read(1) # pass \x00
-            scanline = util.parse_line_number(self.bytecode)
+            scanline = self.tokeniser.detokenise_line_number(self.bytecode)
             if scanline == -1:
                 scanline = 65536
-                # if parse_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A
+                # if detokenise_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A
                 break
             self.line_numbers[scanline] = scanpos
             last = scanpos
@@ -90,7 +90,7 @@ class Program(object):
         last = 0
         for pos in offsets:
             self.bytecode.read(1)
-            self.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned((self.code_start + 1) + pos))))
+            self.bytecode.write(str(values.integer_to_bytes(values.int_to_integer_unsigned((self.code_start + 1) + pos))))
             self.bytecode.read(pos - last - 3)
             last = pos
         # ensure program is properly sealed - last offset must be 00 00. keep, but ignore, anything after.
@@ -106,9 +106,9 @@ class Program(object):
             next_addr = self.bytecode.read(2)
             if len(next_addr) < 2 or next_addr == '\0\0':
                 break
-            next_addr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(next_addr))
+            next_addr = values.integer_to_int_unsigned(values.bytes_to_integer(next_addr))
             self.bytecode.seek(-2, 1)
-            self.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(next_addr + length))))
+            self.bytecode.write(str(values.integer_to_bytes(values.int_to_integer_unsigned(next_addr + length))))
             self.bytecode.read(next_addr - addr - 2)
             addr = next_addr
         # update line number dict
@@ -121,7 +121,7 @@ class Program(object):
         """Check if the given line buffer starts with a line number."""
         # get the new line number
         linebuf.seek(1)
-        scanline = util.parse_line_number(linebuf)
+        scanline = self.tokeniser.detokenise_line_number(linebuf)
         c = util.skip_white_read(linebuf)
         # check if linebuf is an empty line after the line number
         empty = (c in tk.end_line)
@@ -136,7 +136,7 @@ class Program(object):
             raise error.RunError(error.IFC)
         # get the new line number
         linebuf.seek(1)
-        scanline = util.parse_line_number(linebuf)
+        scanline = self.tokeniser.detokenise_line_number(linebuf)
         # check if linebuf is an empty line after the line number
         empty = (util.skip_white_read(linebuf) in tk.end_line)
         pos, afterpos, deleteable, beyond = self.find_pos_line_dict(scanline, scanline)
@@ -154,8 +154,8 @@ class Program(object):
             linebuf.seek(3) # pass \x00\xC0\xDE
             length = len(linebuf.getvalue())
             self.bytecode.write('\0' +
-                str(vartypes.integer_to_bytes(
-                    vartypes.int_to_integer_unsigned(
+                str(values.integer_to_bytes(
+                    values.int_to_integer_unsigned(
                         (self.code_start + 1) + pos + length))) + linebuf.read())
         # write back the remainder of the program
         self.truncate(rest)
@@ -245,13 +245,13 @@ class Program(object):
             self.bytecode.seek(self.line_numbers[old_line])
             # skip the \x00\xC0\xDE & overwrite line number
             self.bytecode.read(3)
-            self.bytecode.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(old_to_new[old_line]))))
+            self.bytecode.write(str(values.integer_to_bytes(values.int_to_integer_unsigned(old_to_new[old_line]))))
         # write the indirect line numbers
         ins = self.bytecode
         ins.seek(0)
         while util.skip_to_read(ins, (tk.T_UINT,)) == tk.T_UINT:
             # get the old g number
-            jumpnum = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(ins.read(2)))
+            jumpnum = values.integer_to_int_unsigned(values.bytes_to_integer(ins.read(2)))
             # handle exception for ERROR GOTO
             if jumpnum == 0:
                 pos = ins.tell()
@@ -270,7 +270,7 @@ class Program(object):
                     screen.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
                 newjump = jumpnum
             ins.seek(-2, 1)
-            ins.write(str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(newjump))))
+            ins.write(str(values.integer_to_bytes(values.int_to_integer_unsigned(newjump))))
         # rebuild the line number dictionary
         new_lines = {}
         for old_line in old_to_new:

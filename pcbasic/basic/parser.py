@@ -22,7 +22,7 @@ from . import functions
 
 from . import fp
 from . import values
-from . import vartypes
+from . import values
 
 
 class Parser(object):
@@ -81,7 +81,7 @@ class Parser(object):
                 prepos = ins.tell()
                 ins.read(1)
                 # line number marker, new statement
-                linenum = util.parse_line_number(ins)
+                linenum = self.session.tokeniser.detokenise_line_number(ins)
                 if linenum == -1:
                     if self.error_resume:
                         # unfinished error handler: no RESUME (don't trap this)
@@ -256,11 +256,11 @@ class Parser(object):
         # set start to start-step, then iterate - slower on init but allows for faster iterate
         self.session.scalars.set(varname, op.Operators.number_add(start, op.Operators.number_neg(step)))
         # NOTE: all access to varname must be in-place into the bytearray - no assignments!
-        sgn = vartypes.integer_to_int_signed(op.Operators.number_sgn(step))
+        sgn = values.integer_to_int_signed(op.Operators.number_sgn(step))
         self.for_stack.append(
             (forpos, nextpos, varname[-1],
                 self.session.scalars.variables[varname],
-                vartypes.number_unpack(stop), vartypes.number_unpack(step), sgn))
+                values.number_unpack(stop), values.number_unpack(step), sgn))
         ins.seek(nextpos)
 
     def number_inc_gt(self, typechar, loopvar, stop, step, sgn):
@@ -272,8 +272,8 @@ class Parser(object):
             loopvar[:] = fp_left.to_bytes()
             return fp_left.gt(stop) if sgn > 0 else stop.gt(fp_left)
         else:
-            int_left = vartypes.integer_to_int_signed(vartypes.bytes_to_integer(loopvar)) + step
-            loopvar[:] = vartypes.integer_to_bytes(vartypes.int_to_integer_signed(int_left))
+            int_left = values.integer_to_int_signed(values.bytes_to_integer(loopvar)) + step
+            loopvar[:] = values.integer_to_bytes(values.int_to_integer_signed(int_left))
             return int_left > stop if sgn > 0 else stop > int_left
 
     def loop_iterate(self, ins, pos):
@@ -389,7 +389,7 @@ class Parser(object):
             return values.parse_value(ins)
         # gw-basic allows adding line numbers to numbers
         elif d == tk.T_UINT:
-            return vartypes.int_to_integer_unsigned(util.parse_jumpnum(ins))
+            return values.int_to_integer_unsigned(self.statements.parse_jumpnum(ins))
         else:
             raise error.RunError(error.STX)
 
@@ -400,7 +400,7 @@ class Parser(object):
         if util.skip_white_read_if(ins, ('[', '(')):
             # it's an array, read indices
             while True:
-                indices.append(vartypes.pass_int_unpack(self.parse_expression(ins, session)))
+                indices.append(values.pass_int_unpack(self.parse_expression(ins, session)))
                 if not util.skip_white_read_if(ins, (',',)):
                     break
             util.require_read(ins, (']', ')'))
@@ -419,7 +419,7 @@ class Parser(object):
         """Helper function: parse a file number and retrieve the file object."""
         screen = None
         if util.skip_white_read_if(ins, ('#',)):
-            number = vartypes.pass_int_unpack(self.parse_expression(ins, session))
+            number = values.pass_int_unpack(self.parse_expression(ins, session))
             util.range_check(0, 255, number)
             screen = self.session.files.get(number, file_mode)
             util.require_read(ins, (',',))
@@ -428,7 +428,7 @@ class Parser(object):
     def parse_file_number_opthash(self, ins, session):
         """Helper function: parse a file number, with optional hash."""
         util.skip_white_read_if(ins, ('#',))
-        number = vartypes.pass_int_unpack(self.parse_expression(ins, session))
+        number = values.pass_int_unpack(self.parse_expression(ins, session))
         util.range_check(0, 255, number)
         return number
 

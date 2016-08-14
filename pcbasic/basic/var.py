@@ -10,7 +10,7 @@ import logging
 from operator import itemgetter
 
 from . import error
-from . import vartypes
+from . import values
 from . import fp
 from . import values
 
@@ -46,15 +46,15 @@ class StringSpace(object):
 
     def _view(self, basic_string):
         """Return a writeable view of a string from its string pointer."""
-        length = vartypes.string_length(basic_string)
+        length = values.string_length(basic_string)
         # empty string pointers can point anywhere
         if length == 0:
             return bytearray()
-        address = vartypes.string_address(basic_string)
+        address = values.string_address(basic_string)
         # address >= self.memory.var_start(): if we no longer double-store code strings in string space object
         if address >= self.memory.code_start:
             # string stored in string space
-            sequence = vartypes.string_to_bytes(basic_string)
+            sequence = values.string_to_bytes(basic_string)
             return memoryview(self._retrieve(sequence))
         else:
             # string stored in field buffers
@@ -74,7 +74,7 @@ class StringSpace(object):
     def modify(self, basic_string, in_str, offset=None, num=None):
         """Assign a new string into an existing buffer."""
         # if it is a code literal, we now do need to allocate space for a copy
-        address = vartypes.string_address(basic_string)
+        address = values.string_address(basic_string)
         if address >= self.memory.code_start and address < self.memory.var_start():
             basic_string = self.store(self.copy(basic_string))
         if num is None:
@@ -95,19 +95,19 @@ class StringSpace(object):
             # find new string address
             self.current -= size
             address = self.current + 1
-        key = str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(address)))
+        key = str(values.integer_to_bytes(values.int_to_integer_unsigned(address)))
         # don't store empty strings
         if size > 0:
             if key in self.strings:
                 logging.debug('String key %s at %d already defined.' % (repr(key), address))
             # copy and convert to bytearray
             self.strings[key] = bytearray(in_str)
-        return vartypes.bytes_to_string(chr(size) + key)
+        return values.bytes_to_string(chr(size) + key)
 
     def delete_last(self):
         """Delete the string provided if it is at the top of string space."""
         last_address = self.current + 1
-        last_key = str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(last_address)))
+        last_key = str(values.integer_to_bytes(values.int_to_integer_unsigned(last_address)))
         try:
             length = len(self.strings[last_key])
             self.current += length
@@ -119,7 +119,7 @@ class StringSpace(object):
 
     def address(self, key):
         """Return the address of a given key."""
-        return vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(key[-2:]))
+        return values.integer_to_int_unsigned(values.bytes_to_integer(key[-2:]))
 
     def collect_garbage(self, string_ptrs):
         """Re-store the strings refrerenced in string_ptrs, delete the rest."""
@@ -139,7 +139,7 @@ class StringSpace(object):
         self.clear()
         for item in string_list:
             # re-allocate string space
-            item[0][:] = vartypes.string_to_bytes(self.store(item[2]))
+            item[0][:] = values.string_to_bytes(self.store(item[2]))
 
     def get_memory(self, address):
         """Retrieve data from data memory: string space """
@@ -184,25 +184,25 @@ class Scalars(object):
         name = self.memory.complete_name(name)
         type_char = name[-1]
         if value is not None:
-            value = vartypes.pass_type(type_char, value)
+            value = values.pass_type(type_char, value)
         # update memory model
         # check if garbage needs collecting before allocating memory
         if name not in self.var_memory:
             # don't add string length, string already stored
-            size = (max(3, len(name)) + 1 + vartypes.byte_size[type_char])
+            size = (max(3, len(name)) + 1 + values.byte_size[type_char])
             self.memory.check_free(size, error.OUT_OF_MEMORY)
             # first two bytes: chars of name or 0 if name is one byte long
             name_ptr = self.memory.var_current()
             # byte_size first_letter second_letter_or_nul remaining_length_or_nul
             var_ptr = name_ptr + max(3, len(name)) + 1
-            self.current += max(3, len(name)) + 1 + vartypes.byte_size[name[-1]]
+            self.current += max(3, len(name)) + 1 + values.byte_size[name[-1]]
             self.var_memory[name] = (name_ptr, var_ptr)
         # don't change the value if just checking allocation
         if value is None:
             if name in self.variables:
                 return
             else:
-                value = vartypes.null(type_char)
+                value = values.null(type_char)
         # copy buffers
         try:
             # in-place copy is crucial for FOR
@@ -217,7 +217,7 @@ class Scalars(object):
         try:
             return (name[-1], self.variables[name])
         except KeyError:
-            return vartypes.null(name[-1])
+            return values.null(name[-1])
 
     def varptr(self, name):
         """Retrieve the address of a scalar variable."""
@@ -249,7 +249,7 @@ class Scalars(object):
             return -1
         if address >= var_addr:
             offset = address - var_addr
-            if offset >= vartypes.byte_size[the_var[-1]]:
+            if offset >= values.byte_size[the_var[-1]]:
                 return -1
             var_rep = self.variables[the_var]
             return var_rep[offset]
@@ -389,7 +389,7 @@ class Arrays(object):
     def set(self, name, index, value):
         """Assign a value to an array element."""
         # copy value into array
-        self.view(name, index)[:] = vartypes.pass_type(name[-1], value)[1]
+        self.view(name, index)[:] = values.pass_type(name[-1], value)[1]
         # increment array version
         self.arrays[name][2] += 1
 
@@ -445,10 +445,10 @@ class Arrays(object):
             else:
                 offset -= max(3, len(the_arr))+1
                 dimensions, _, _ = self.arrays[the_arr]
-                data_rep = vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
+                data_rep = values.integer_to_bytes(values.int_to_integer_unsigned(
                     self.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)))
                 for d in dimensions:
-                    data_rep += vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(
+                    data_rep += values.integer_to_bytes(values.int_to_integer_unsigned(
                                         d + 1 - self.base_index))
                 return data_rep[offset]
 
@@ -468,14 +468,14 @@ class Arrays(object):
 def var_size_bytes(name):
     """Return the size of a variable, if it exists. Raise ILLEGAL FUNCTION CALL otherwise."""
     try:
-        return vartypes.byte_size[name[-1]]
+        return values.byte_size[name[-1]]
     except KeyError:
         raise error.RunError(error.IFC)
 
 def get_name_in_memory(name, offset):
     """Memory representation of variable name."""
     if offset == 0:
-        return vartypes.byte_size[name[-1]]
+        return values.byte_size[name[-1]]
     elif offset == 1:
         return ord(name[0].upper())
     elif offset == 2:
@@ -534,7 +534,7 @@ def to_value(basic_val, stringspace):
     if typechar == '$':
         return stringspace.copy(basic_val)
     elif typechar == '%':
-        return vartypes.integer_to_int_signed(basic_val)
+        return values.integer_to_int_signed(basic_val)
     elif typechar in ('#', '!'):
         return fp.unpack(basic_val).to_value()
 
@@ -543,7 +543,7 @@ def from_value(python_val, typechar, stringspace):
     if typechar == '$':
         return stringspace.store(python_val)
     elif typechar == '%':
-        return vartypes.int_to_integer_signed(python_val)
+        return values.int_to_integer_signed(python_val)
     elif typechar == '!':
         return fp.pack(fp.Single.from_value(python_val))
     elif typechar == '#':

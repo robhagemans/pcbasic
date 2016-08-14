@@ -7,7 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from . import fp
-from . import vartypes
+from . import values
 
 
 class RandomNumberGenerator(object):
@@ -44,7 +44,7 @@ class RandomNumberGenerator(object):
         if len(s) >= 4:
             mask = s[-4:-2]
         final_two = bytearray(chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1]))
-        n = vartypes.integer_to_int_signed(vartypes.bytes_to_integer(final_two))
+        n = values.integer_to_int_signed(values.bytes_to_integer(final_two))
         self.seed &= 0xff
         self.get_int(1) # RND(1)
         self.seed += n * self.step

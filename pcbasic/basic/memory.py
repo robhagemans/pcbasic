@@ -10,8 +10,9 @@ from contextlib import contextmanager
 
 from . import error
 from . import var
-from . import vartypes
+from . import values
 from . import devices
+from . import basictoken as tk
 
 
 # Data Segment Map - default situation
@@ -131,11 +132,11 @@ class DataSegment(object):
             if name[-1] == '$':
                 s = bytearray()
                 for i in range(0, len(buf), 3):
-                    ptr = vartypes.bytes_to_string(buf[i:i+3])
+                    ptr = values.bytes_to_string(buf[i:i+3])
                     # if the string array is not full, pointers are zero
                     # but address is ignored for zero length
                     ptr = string_store.store(self.strings.copy(ptr))
-                    s += vartypes.string_to_bytes(ptr)
+                    s += values.string_to_bytes(ptr)
                 self.arrays.arrays[name][1] = s
             else:
                 self.arrays.arrays[name] = value
@@ -309,7 +310,7 @@ class DataSegment(object):
 
     def complete_name(self, name):
         """Add default sigil to a name, if missing."""
-        if name and name[-1] not in vartypes.sigils:
+        if name and name[-1] not in tk.sigils:
             name += self.deftype[ord(name[0].upper()) - ord('A')]
         return name
 
@@ -351,7 +352,7 @@ class DataSegment(object):
         if len(varptrstr) < 3:
             raise error.RunError(error.IFC)
         varptrstr = bytearray(varptrstr)
-        varptr = vartypes.integer_to_int_unsigned(vartypes.bytes_to_integer(varptrstr[1:3]))
+        varptr = values.integer_to_int_unsigned(values.bytes_to_integer(varptrstr[1:3]))
         return self.dereference(varptr)
 
     def _view_variable(self, name, indices):

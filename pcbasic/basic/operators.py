@@ -7,7 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from . import fp
-from . import vartypes
+from . import values
 from . import basictoken as tk
 
 
@@ -108,13 +108,13 @@ class Operators(object):
     @staticmethod
     def number_add(left, right):
         """Add two numbers."""
-        left, right = vartypes.pass_most_precise(left, right)
+        left, right = values.pass_most_precise(left, right)
         if left[0] in ('#', '!'):
             return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
         else:
             # return Single to avoid wrapping on integer overflow
-            return fp.pack(fp.Single.from_int(vartypes.integer_to_int_signed(left) +
-                                vartypes.integer_to_int_signed(right)))
+            return fp.pack(fp.Single.from_int(values.integer_to_int_signed(left) +
+                                values.integer_to_int_signed(right)))
 
     @staticmethod
     def number_subtract(left, right):
@@ -125,26 +125,26 @@ class Operators(object):
     def number_sgn(inp):
         """Return the sign of a number."""
         if inp[0] == '%':
-            i = vartypes.integer_to_int_signed(inp)
+            i = values.integer_to_int_signed(inp)
             if i > 0:
-                return vartypes.int_to_integer_signed(1)
+                return values.int_to_integer_signed(1)
             elif i < 0:
-                return vartypes.int_to_integer_signed(-1)
+                return values.int_to_integer_signed(-1)
             else:
-                return vartypes.int_to_integer_signed(0)
+                return values.int_to_integer_signed(0)
         elif inp[0] in ('!', '#'):
-            return vartypes.int_to_integer_signed(fp.unpack(inp).sign())
+            return values.int_to_integer_signed(fp.unpack(inp).sign())
         return inp
 
     @staticmethod
     def number_abs(inp):
         """Return the absolute value of a number."""
         if inp[0] == '%':
-            val = abs(vartypes.integer_to_int_signed(inp))
+            val = abs(values.integer_to_int_signed(inp))
             if val == 32768:
                 return fp.pack(fp.Single.from_int(val))
             else:
-                return vartypes.int_to_integer_signed(val)
+                return values.int_to_integer_signed(val)
         elif inp[0] in ('!', '#'):
             out = (inp[0], inp[1][:])
             out[1][-2] &= 0x7F
@@ -154,13 +154,13 @@ class Operators(object):
     @staticmethod
     def number_neg(inp):
         """Return the negation of a number."""
-        inp = vartypes.pass_number(inp)
+        inp = values.pass_number(inp)
         if inp[0] == '%':
-            val = -vartypes.integer_to_int_signed(inp)
+            val = -values.integer_to_int_signed(inp)
             if val == 32768:
                 return fp.pack(fp.Single.from_int(val))
             else:
-                return vartypes.int_to_integer_signed(val)
+                return values.int_to_integer_signed(val)
         elif inp[0] in ('!', '#'):
             out = (inp[0], inp[1][:])
             out[1][-2] ^= 0x80
@@ -171,94 +171,94 @@ class Operators(object):
     def number_power(self, left, right):
         """Left^right."""
         if (left[0] == '#' or right[0] == '#') and self.double_math:
-            return fp.pack( fp.power(fp.unpack(vartypes.pass_double(left)), fp.unpack(vartypes.pass_double(right))) )
+            return fp.pack( fp.power(fp.unpack(values.pass_double(left)), fp.unpack(values.pass_double(right))) )
         else:
             if right[0] == '%':
-                return fp.pack( fp.unpack(vartypes.pass_single(left)).ipow_int(vartypes.integer_to_int_signed(right)) )
+                return fp.pack( fp.unpack(values.pass_single(left)).ipow_int(values.integer_to_int_signed(right)) )
             else:
-                return fp.pack( fp.power(fp.unpack(vartypes.pass_single(left)), fp.unpack(vartypes.pass_single(right))) )
+                return fp.pack( fp.power(fp.unpack(values.pass_single(left)), fp.unpack(values.pass_single(right))) )
 
     @staticmethod
     def number_multiply(left, right):
         """Left*right."""
         if left[0] == '#' or right[0] == '#':
-            return fp.pack( fp.unpack(vartypes.pass_double(left)).imul(fp.unpack(vartypes.pass_double(right))) )
+            return fp.pack( fp.unpack(values.pass_double(left)).imul(fp.unpack(values.pass_double(right))) )
         else:
-            return fp.pack( fp.unpack(vartypes.pass_single(left)).imul(fp.unpack(vartypes.pass_single(right))) )
+            return fp.pack( fp.unpack(values.pass_single(left)).imul(fp.unpack(values.pass_single(right))) )
 
     @staticmethod
     def number_divide(left, right):
         """Left/right."""
         if left[0] == '#' or right[0] == '#':
-            return fp.pack( fp.div(fp.unpack(vartypes.pass_double(left)), fp.unpack(vartypes.pass_double(right))) )
+            return fp.pack( fp.div(fp.unpack(values.pass_double(left)), fp.unpack(values.pass_double(right))) )
         else:
-            return fp.pack( fp.div(fp.unpack(vartypes.pass_single(left)), fp.unpack(vartypes.pass_single(right))) )
+            return fp.pack( fp.div(fp.unpack(values.pass_single(left)), fp.unpack(values.pass_single(right))) )
 
     @staticmethod
     def number_intdiv(left, right):
         """Left\\right."""
-        dividend = vartypes.pass_int_unpack(left)
-        divisor = vartypes.pass_int_unpack(right)
+        dividend = values.pass_int_unpack(left)
+        divisor = values.pass_int_unpack(right)
         if divisor == 0:
             # division by zero, return single-precision maximum
             raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
         if (dividend >= 0) == (divisor >= 0):
-            return vartypes.int_to_integer_signed(dividend / divisor)
+            return values.int_to_integer_signed(dividend / divisor)
         else:
-            return vartypes.int_to_integer_signed(-(abs(dividend) / abs(divisor)))
+            return values.int_to_integer_signed(-(abs(dividend) / abs(divisor)))
 
     @staticmethod
     def number_modulo(left, right):
         """Left MOD right."""
-        divisor = vartypes.pass_int_unpack(right)
-        dividend = vartypes.pass_int_unpack(left)
+        divisor = values.pass_int_unpack(right)
+        dividend = values.pass_int_unpack(left)
         if divisor == 0:
             # division by zero, return single-precision maximum
             raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
         mod = dividend % divisor
         if dividend < 0 or mod < 0:
             mod -= divisor
-        return vartypes.int_to_integer_signed(mod)
+        return values.int_to_integer_signed(mod)
 
     @staticmethod
     def number_not(right):
         """Bitwise NOT, -x-1."""
-        return vartypes.int_to_integer_signed(-vartypes.pass_int_unpack(right)-1)
+        return values.int_to_integer_signed(-values.pass_int_unpack(right)-1)
 
     @staticmethod
     def number_and(left, right):
         """Bitwise AND."""
-        return vartypes.int_to_integer_unsigned(
-            vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) &
-            vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
+        return values.int_to_integer_unsigned(
+            values.integer_to_int_unsigned(values.pass_integer(left)) &
+            values.integer_to_int_unsigned(values.pass_integer(right)))
 
     @staticmethod
     def number_or(left, right):
         """Bitwise OR."""
-        return vartypes.int_to_integer_unsigned(
-            vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) |
-            vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
+        return values.int_to_integer_unsigned(
+            values.integer_to_int_unsigned(values.pass_integer(left)) |
+            values.integer_to_int_unsigned(values.pass_integer(right)))
 
     @staticmethod
     def number_xor(left, right):
         """Bitwise XOR."""
-        return vartypes.int_to_integer_unsigned(
-            vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) ^
-            vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
+        return values.int_to_integer_unsigned(
+            values.integer_to_int_unsigned(values.pass_integer(left)) ^
+            values.integer_to_int_unsigned(values.pass_integer(right)))
 
     @staticmethod
     def number_eqv(left, right):
         """Bitwise equivalence."""
-        return vartypes.int_to_integer_unsigned(0xffff-(
-            vartypes.integer_to_int_unsigned(vartypes.pass_integer(left)) ^
-            vartypes.integer_to_int_unsigned(vartypes.pass_integer(right))))
+        return values.int_to_integer_unsigned(0xffff-(
+            values.integer_to_int_unsigned(values.pass_integer(left)) ^
+            values.integer_to_int_unsigned(values.pass_integer(right))))
 
     @staticmethod
     def number_imp(left, right):
         """Bitwise implication."""
-        return vartypes.int_to_integer_unsigned(
-            (0xffff-vartypes.integer_to_int_unsigned(vartypes.pass_integer(left))) |
-            vartypes.integer_to_int_unsigned(vartypes.pass_integer(right)))
+        return values.int_to_integer_unsigned(
+            (0xffff-values.integer_to_int_unsigned(values.pass_integer(left))) |
+            values.integer_to_int_unsigned(values.pass_integer(right)))
 
 
     ###############################################################################
@@ -267,8 +267,8 @@ class Operators(object):
     def string_concat(self, left, right):
         """Concatenate strings."""
         return self.strings.store(
-            self.strings.copy(vartypes.pass_string(left)) +
-            self.strings.copy(vartypes.pass_string(right)))
+            self.strings.copy(values.pass_string(left)) +
+            self.strings.copy(values.pass_string(right)))
 
 
     ###############################################################################
@@ -277,20 +277,20 @@ class Operators(object):
     def _bool_eq(self, left, right):
         """Return true if left == right, false otherwise."""
         if left[0] == '$':
-            return (self.strings.copy(vartypes.pass_string(left)) ==
-                    self.strings.copy(vartypes.pass_string(right)))
+            return (self.strings.copy(values.pass_string(left)) ==
+                    self.strings.copy(values.pass_string(right)))
         else:
-            left, right = vartypes.pass_most_precise(left, right)
+            left, right = values.pass_most_precise(left, right)
             if left[0] in ('#', '!'):
                 return fp.unpack(left).equals(fp.unpack(right))
             else:
-                return vartypes.integer_to_int_signed(left) == vartypes.integer_to_int_signed(right)
+                return values.integer_to_int_signed(left) == values.integer_to_int_signed(right)
 
     def _bool_gt(self, left, right):
         """Ordering: return -1 if left > right, 0 otherwise."""
         if left[0] == '$':
-            left = self.strings.copy(vartypes.pass_string(left))
-            right = self.strings.copy(vartypes.pass_string(right))
+            left = self.strings.copy(values.pass_string(left))
+            right = self.strings.copy(values.pass_string(right))
             shortest = min(len(left), len(right))
             for i in range(shortest):
                 if left[i] > right[i]:
@@ -305,35 +305,35 @@ class Operators(object):
             # left is shorter, or equal strings
             return False
         else:
-            left, right = vartypes.pass_most_precise(left, right)
+            left, right = values.pass_most_precise(left, right)
             if left[0] in ('#', '!'):
                 return fp.unpack(left).gt(fp.unpack(right))
             else:
-                return vartypes.integer_to_int_signed(left) > vartypes.integer_to_int_signed(right)
+                return values.integer_to_int_signed(left) > values.integer_to_int_signed(right)
 
     def equals(self, left, right):
         """Return -1 if left == right, 0 otherwise."""
-        return vartypes.bool_to_integer(self._bool_eq(left, right))
+        return values.bool_to_integer(self._bool_eq(left, right))
 
     def not_equals(self, left, right):
         """Return -1 if left != right, 0 otherwise."""
-        return vartypes.bool_to_integer(not self._bool_eq(left, right))
+        return values.bool_to_integer(not self._bool_eq(left, right))
 
     def gt(self, left, right):
         """Ordering: return -1 if left > right, 0 otherwise."""
-        return vartypes.bool_to_integer(self._bool_gt(left, right))
+        return values.bool_to_integer(self._bool_gt(left, right))
 
     def gte(self, left, right):
         """Ordering: return -1 if left >= right, 0 otherwise."""
-        return vartypes.bool_to_integer(not self._bool_gt(right, left))
+        return values.bool_to_integer(not self._bool_gt(right, left))
 
     def lte(self, left, right):
         """Ordering: return -1 if left <= right, 0 otherwise."""
-        return vartypes.bool_to_integer(not self._bool_gt(left, right))
+        return values.bool_to_integer(not self._bool_gt(left, right))
 
     def lt(self, left, right):
         """Ordering: return -1 if left < right, 0 otherwise."""
-        return vartypes.bool_to_integer(self._bool_gt(right, left))
+        return values.bool_to_integer(self._bool_gt(right, left))
 
     def plus(self, left, right):
         """Binary + operator: add or concatenate."""

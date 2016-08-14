@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import string
 
 from . import error
-from . import vartypes
+from . import values
 from .operators import Operators as op
 from . import util
 
@@ -59,7 +59,7 @@ class MLParser(object):
 
     def parse_number(self, default=None):
         """Parse and return a number value in a macro-language string."""
-        return vartypes.pass_int_unpack(self.parse_value(default), err=error.IFC)
+        return values.pass_int_unpack(self.parse_value(default), err=error.IFC)
 
     def parse_string(self):
         """Parse a string value in a macro-language string."""
@@ -71,11 +71,11 @@ class MLParser(object):
             indices = self._parse_indices()
             sub = self.memory.get_variable(name, indices)
             util.require_read(self.gmls, (';',), err=error.IFC)
-            return self.memory.strings.copy(vartypes.pass_string(sub, err=error.IFC))
+            return self.memory.strings.copy(values.pass_string(sub, err=error.IFC))
         else:
             # varptr$
             return self.memory.strings.copy(
-                    vartypes.pass_string(
+                    values.pass_string(
                         self.memory.get_value_for_varptrstr(self.gmls.read(3))))
 
     def _parse_const(self):
@@ -87,13 +87,13 @@ class MLParser(object):
                 self.gmls.read(1)
                 numstr += c
                 c = util.skip(self.gmls, self.whitepace)
-            return vartypes.int_to_integer_signed(int(numstr))
+            return values.int_to_integer_signed(int(numstr))
         else:
             raise error.RunError(error.IFC)
 
     def _parse_const_int(self):
         """Parse a constant value in a macro-language string, return Python int."""
-        return vartypes.pass_int_unpack(self._parse_const(), err=error.IFC)
+        return values.pass_int_unpack(self._parse_const(), err=error.IFC)
 
     def _parse_indices(self):
         """Parse constant array indices."""

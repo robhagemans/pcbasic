@@ -18,7 +18,7 @@ except ImportError:
 
 from . import error
 from . import fp
-from . import vartypes
+from . import values
 from . import util
 from . import mlparser
 
@@ -389,11 +389,11 @@ class Drawing(object):
             ry = fp.mul(r, aspect).round_to_int()
         start_octant, start_coord, start_line = -1, -1, False
         if start:
-            start = fp.unpack(vartypes.pass_single(start))
+            start = fp.unpack(values.pass_single(start))
             start_octant, start_coord, start_line = get_octant(start, rx, ry)
         stop_octant, stop_coord, stop_line = -1, -1, False
         if stop:
-            stop = fp.unpack(vartypes.pass_single(stop))
+            stop = fp.unpack(values.pass_single(stop))
             stop_octant, stop_coord, stop_line = get_octant(stop, rx, ry)
         if aspect.equals(aspect.one):
             self.draw_circle(x0, y0, rx, c,
@@ -744,7 +744,7 @@ class Drawing(object):
                     self.draw_angle = angle
             # one-variable movement commands:
             elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
-                step = ml_parser.parse_number(default=vartypes.int_to_integer_signed(1))
+                step = ml_parser.parse_number(default=values.int_to_integer_signed(1))
                 # 100000 seems to be GW's limit
                 # however, parse_number will overflow past signed int limits
                 util.range_check(-99999, 99999, step)

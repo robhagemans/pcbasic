@@ -7,8 +7,11 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import string
+
 # allowable as chars 2.. in a variable name (first char must be a letter)
 name_chars = string.ascii_letters + string.digits + '.'
+# type characters
+sigils = set(('#', '!', '%', '$'))
 
 # indirect line number references
 T_UINT_PROC = '\x0d'
