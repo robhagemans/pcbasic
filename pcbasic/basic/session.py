@@ -100,10 +100,10 @@ class Session(object):
                 self.sound, self.output_redirection, self.fkey_macros,
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=option_debug)
-        # prepare math error handler
-        self.math_error_handler = values.MathErrorHandler(self.screen)
+        # prepare string and number handler
+        self.values = values.Values(self.screen)
         # prepare tokeniser
-        self.tokeniser = tokenise.Tokeniser(syntax, option_debug)
+        self.tokeniser = tokenise.Tokeniser(self.values, syntax, option_debug)
         # initialise the program
         self.program = program.Program(self.tokeniser,
                 max_list_line, allow_protect, allow_code_poke)

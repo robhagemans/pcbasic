@@ -1681,7 +1681,7 @@ class Statements(object):
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         self.parser.on_error = linenum
         # pause soft-handling math errors so that we can catch them
-        self.parser.math_error_handler.pause_handling(linenum != 0)
+        self.session.values._math_error_handler.pause_handling(linenum != 0)
         # ON ERROR GOTO 0 in error handler
         if self.parser.on_error == 0 and self.parser.error_handle_mode:
             # re-raise the error so that execution stops
@@ -1957,7 +1957,7 @@ class Statements(object):
                     address = None
                 value = self.session.strings.store(entry, address)
             else:
-                value = values.str_to_number(entry, allow_nonnum=False)
+                value = self.session.values.str_to_number(entry, allow_nonnum=False)
                 if value is None:
                     # set pointer for EDIT gadget to position in DATA statement
                     self.parser.program_code.seek(self.parser.data_pos)
@@ -1994,7 +1994,7 @@ class Statements(object):
             for v in self._parse_var_list(ins):
                 name, indices = v
                 word, _ = finp.input_entry(name[-1], allow_past_end=False)
-                value = self.session.strings.str_to_type(name[-1], word)
+                value = self.session.values.str_to_type(name[-1], word, self.session.strings)
                 if value is None:
                     value = vartypes.null(name[-1])
                 self.session.memory.set_variable(name, indices, value)
@@ -2009,7 +2009,8 @@ class Statements(object):
             # read the input
             self.session.input_mode = True
             varlist = print_and_input.input_console(
-                    self.session.editor, self.session.strings,
+                    self.session.editor,
+                    self.session.values, self.session.strings,
                     prompt, readvar, newline)
             self.session.input_mode = False
             for v in varlist:
@@ -2100,7 +2101,6 @@ class Statements(object):
             # allocate but don't set variables
             self.session.scalars.set(name)
 
-
     def exec_randomize(self, ins):
         """RANDOMIZE: set random number generator seed."""
         val = self.parser.parse_expression(ins, self.session, allow_empty=True)
@@ -2113,7 +2113,7 @@ class Statements(object):
                 self.session.screen.write("Random number seed (-32768 to 32767)? ")
                 seed = self.session.editor.wait_screenline()
                 # seed entered on prompt is rounded to int
-                val = values.str_to_number(seed)
+                val = self.session.values.str_to_number(seed)
             val = vartypes.pass_integer(val)
         self.session.randomiser.reseed(val)
         util.require(ins, tk.end_statement)

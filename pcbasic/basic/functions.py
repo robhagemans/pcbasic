@@ -172,7 +172,7 @@ class Functions(object):
 
     def value_val(self, ins):
         """VAL: number value of a string."""
-        return values.str_to_number(self.session.strings.copy(vartypes.pass_string(self.parser.parse_bracket(ins, self.session))))
+        return self.session.values.str_to_number(self.session.strings.copy(vartypes.pass_string(self.parser.parse_bracket(ins, self.session))))
 
     def value_chr(self, ins):
         """CHR$: character for ASCII value."""

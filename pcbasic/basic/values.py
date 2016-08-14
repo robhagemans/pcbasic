@@ -21,6 +21,46 @@ from . import vartypes
 from . import basictoken as tk
 
 
+class Values(object):
+    """Handles BASIC strings and numbers."""
+
+    def __init__(self, screen):
+        """Setup values."""
+        self._math_error_handler = MathErrorHandler(screen)
+        self._repr_converter = RepresentationConverter(self._math_error_handler)
+
+    def str_to_number(self, strval, allow_nonnum=True):
+        """Convert Python str to BASIC value."""
+        ins = StringIO(strval)
+        outs = StringIO()
+        # skip spaces and line feeds (but not NUL).
+        util.skip(ins, (' ', '\n'))
+        self._repr_converter.tokenise_number(ins, outs)
+        outs.seek(0)
+        value = parse_value(outs)
+        if not allow_nonnum and util.skip_white(ins) != '':
+            # not everything has been parsed - error
+            return None
+        if not value:
+            return vartypes.null('%')
+        return value
+
+    #REFACTOR: stringspace should be a member of this class (init order problem with DataSegment)
+    def str_to_type(self, typechar, word, stringspace):
+        """convert result to requested type, be strict about non-numeric chars """
+        if typechar == '$':
+            return stringspace.store(word)
+        else:
+            return self.str_to_number(word, allow_nonnum=False)
+
+    # this should not be in the interface but is quite entangled
+    # REFACTOR 1) to produce a string return value rather than write to stream
+    # REFACTOR 2) to util.read_numeric_string -> str_to_number
+    def tokenise_number(self, ins, outs):
+        """Convert Python-string number representation to number token."""
+        self._repr_converter.tokenise_number(ins, outs)
+
+
 class MathErrorHandler(object):
     """Handles floating point errors."""
 
@@ -64,6 +104,232 @@ class MathErrorHandler(object):
             return fp.pack(fp.Single.max.copy())
 
 
+class RepresentationConverter(object):
+    """Convert BASIC strings to numeric values."""
+
+    def __init__(self, math_error_handler):
+        """Initialise."""
+        self._math_error_handler = math_error_handler
+
+    def tokenise_number(self, ins, outs):
+        """Convert Python-string number representation to number token."""
+        c = util.peek(ins)
+        if not c:
+            return
+        elif c == '&':
+            # handle hex or oct constants
+            ins.read(1)
+            if util.peek(ins).upper() == 'H':
+                # hex constant
+                self._tokenise_hex(ins, outs)
+            else:
+                # octal constant
+                self._tokenise_oct(ins, outs)
+        elif c in string.digits + '.+-':
+            # handle other numbers
+            # note GW passes signs separately as a token
+            # and only stores positive numbers in the program
+            self._tokenise_dec(ins, outs)
+        else:
+            # why is this here?
+            # this looks wrong but hasn't hurt so far
+            ins.seek(-1, 1)
+
+    def _tokenise_dec(self, ins, outs):
+        """Convert decimal expression in Python string to number token."""
+        have_exp = False
+        have_point = False
+        word = ''
+        kill = False
+        while True:
+            c = ins.read(1).upper()
+            if not c:
+                break
+            elif c in '\x1c\x1d\x1f':
+                # ASCII separator chars invariably lead to zero result
+                kill = True
+            elif c == '.' and not have_point and not have_exp:
+                have_point = True
+                word += c
+            elif c in 'ED' and not have_exp:
+                # there's a special exception for number followed by EL or EQ
+                # presumably meant to protect ELSE and maybe EQV ?
+                if c == 'E' and util.peek(ins).upper() in ('L', 'Q'):
+                    ins.seek(-1, 1)
+                    break
+                else:
+                    have_exp = True
+                    word += c
+            elif c in '-+' and (not word or word[-1] in 'ED'):
+                # must be first token or in exponent
+                word += c
+            elif c in string.digits:
+                word += c
+            elif c in number_whitespace:
+                # we'll remove this later but need to keep it for now
+                # so we can reposition the stream on removing trailing whitespace
+                word += c
+            elif c in '!#' and not have_exp:
+                word += c
+                break
+            elif c == '%':
+                # swallow a %, but break parsing
+                break
+            else:
+                ins.seek(-1, 1)
+                break
+        # ascii separators encountered: zero output
+        if kill:
+            word = '0'
+        # don't claim trailing whitespace
+        while len(word)>0 and (word[-1] in number_whitespace):
+            word = word[:-1]
+            ins.seek(-1,1) # even if c==''
+        # remove all internal whitespace
+        trimword = ''
+        for c in word:
+            if c not in number_whitespace:
+                trimword += c
+        word = trimword
+        # write out the numbers
+        if len(word) == 1 and word in string.digits:
+            # digit
+            outs.write(chr(0x11+str_to_int(word)))
+        elif (not (have_exp or have_point or word[-1] in '!#') and
+                                str_to_int(word) <= 0x7fff and str_to_int(word) >= -0x8000):
+            if str_to_int(word) <= 0xff and str_to_int(word) >= 0:
+                # one-byte constant
+                outs.write(tk.T_BYTE + chr(str_to_int(word)))
+            else:
+                # two-byte constant
+                outs.write(tk.T_INT + str(vartypes.integer_to_bytes(vartypes.int_to_integer_signed(str_to_int(word)))))
+        else:
+            mbf = str(self._str_to_float(word)[1])
+            if len(mbf) == 4:
+                outs.write(tk.T_SINGLE + mbf)
+            else:
+                outs.write(tk.T_DOUBLE + mbf)
+
+    def _tokenise_hex(self, ins, outs):
+        """Convert hex expression in Python string to number token."""
+        # pass the H in &H
+        ins.read(1)
+        word = ''
+        while True:
+            c = util.peek(ins)
+            # hex literals must not be interrupted by whitespace
+            if not c or c not in string.hexdigits:
+                break
+            else:
+                word += ins.read(1)
+        val = int(word, 16) if word else 0
+        outs.write(tk.T_HEX + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(val))))
+
+    def _tokenise_oct(self, ins, outs):
+        """Convert octal expression in Python string to number token."""
+        # O is optional, could also be &777 instead of &O777
+        if util.peek(ins).upper() == 'O':
+            ins.read(1)
+        word = ''
+        while True:
+            c = util.peek(ins)
+            # oct literals may be interrupted by whitespace
+            if c and c in number_whitespace:
+                ins.read(1)
+            elif not c or c not in string.octdigits:
+                break
+            else:
+                word += ins.read(1)
+        val = int(word, 8) if word else 0
+        outs.write(tk.T_OCT + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(val))))
+
+    def _str_to_float(self, s, allow_nonnum=True):
+        """Return Float value for Python string."""
+        found_sign, found_point, found_exp = False, False, False
+        found_exp_sign, exp_neg, neg = False, False, False
+        exp10, exponent, mantissa, digits, zeros = 0, 0, 0, 0, 0
+        is_double, is_single = False, False
+        for c in s:
+            # ignore whitespace throughout (x = 1   234  56  .5  means x=123456.5 in gw!)
+            if c in number_whitespace:
+                continue
+            # determine sign
+            if (not found_sign):
+                found_sign = True
+                # number has started; if no sign encountered here, sign must be pos.
+                if c in '+-':
+                    neg = (c == '-')
+                    continue
+            # parse numbers and decimal points, until 'E' or 'D' is found
+            if (not found_exp):
+                if c >= '0' and c <= '9':
+                    mantissa *= 10
+                    mantissa += ord(c)-ord('0')
+                    if found_point:
+                        exp10 -= 1
+                    # keep track of precision digits
+                    if mantissa != 0:
+                        digits += 1
+                        if found_point and c=='0':
+                            zeros += 1
+                        else:
+                            zeros=0
+                    continue
+                elif c == '.':
+                    found_point = True
+                    continue
+                elif c.upper() in 'DE':
+                    found_exp = True
+                    is_double = (c.upper() == 'D')
+                    continue
+                elif c == '!':
+                    # makes it a single, even if more than eight digits specified
+                    is_single = True
+                    break
+                elif c == '#':
+                    is_double = True
+                    break
+                else:
+                    if allow_nonnum:
+                        break
+                    return None
+            # parse exponent
+            elif (not found_exp_sign):
+                # exponent has started; if no sign given, it must be pos.
+                found_exp_sign = True
+                if c in '+-':
+                    exp_neg = (c == '-')
+                    continue
+            if (c >= '0' and c <= '9'):
+                exponent *= 10
+                exponent += ord(c) - ord('0')
+                continue
+            else:
+                if allow_nonnum:
+                    break
+                return None
+        if exp_neg:
+            exp10 -= exponent
+        else:
+            exp10 += exponent
+        # eight or more digits means double, unless single override
+        if digits - zeros > 7 and not is_single:
+            is_double = True
+        cls = fp.Double if is_double else fp.Single
+        # isn't this just cls.from_int(-mantissa if neg else mantissa)?
+        mbf = cls(neg, mantissa * 0x100, cls.bias).normalise()
+        # apply decimal exponent
+        while (exp10 < 0):
+            mbf.idiv10()
+            exp10 += 1
+        while (exp10 > 0):
+            mbf.imul10()
+            exp10 -= 1
+        mbf.normalise()
+        return fp.pack(mbf)
+
+
+
 def number_to_str(inp, screen=False, write=False, allow_empty_expression=False):
     """Convert BASIC number to Python str."""
     # screen=False means in a program listing
@@ -88,6 +354,7 @@ def number_to_str(inp, screen=False, write=False, allow_empty_expression=False):
 
 
 # tokenised ints to python str
+#MOVE to tokenise
 
 def uint_token_to_str(s):
     """Convert unsigned int token to Python string."""
@@ -341,90 +608,6 @@ def format_float_fixed(expr, decimals, force_dot):
 
 ##################################
 
-def str_to_float(s, allow_nonnum = True):
-    """Return Float value for Python string."""
-    found_sign, found_point, found_exp = False, False, False
-    found_exp_sign, exp_neg, neg = False, False, False
-    exp10, exponent, mantissa, digits, zeros = 0, 0, 0, 0, 0
-    is_double, is_single = False, False
-    for c in s:
-        # ignore whitespace throughout (x = 1   234  56  .5  means x=123456.5 in gw!)
-        if c in number_whitespace:
-            continue
-        # determine sign
-        if (not found_sign):
-            found_sign = True
-            # number has started; if no sign encountered here, sign must be pos.
-            if c in '+-':
-                neg = (c == '-')
-                continue
-        # parse numbers and decimal points, until 'E' or 'D' is found
-        if (not found_exp):
-            if c >= '0' and c <= '9':
-                mantissa *= 10
-                mantissa += ord(c)-ord('0')
-                if found_point:
-                    exp10 -= 1
-                # keep track of precision digits
-                if mantissa != 0:
-                    digits += 1
-                    if found_point and c=='0':
-                        zeros += 1
-                    else:
-                        zeros=0
-                continue
-            elif c == '.':
-                found_point = True
-                continue
-            elif c.upper() in 'DE':
-                found_exp = True
-                is_double = (c.upper() == 'D')
-                continue
-            elif c == '!':
-                # makes it a single, even if more than eight digits specified
-                is_single = True
-                break
-            elif c == '#':
-                is_double = True
-                break
-            else:
-                if allow_nonnum:
-                    break
-                return None
-        # parse exponent
-        elif (not found_exp_sign):
-            # exponent has started; if no sign given, it must be pos.
-            found_exp_sign = True
-            if c in '+-':
-                exp_neg = (c == '-')
-                continue
-        if (c >= '0' and c <= '9'):
-            exponent *= 10
-            exponent += ord(c) - ord('0')
-            continue
-        else:
-            if allow_nonnum:
-                break
-            return None
-    if exp_neg:
-        exp10 -= exponent
-    else:
-        exp10 += exponent
-    # eight or more digits means double, unless single override
-    if digits - zeros > 7 and not is_single:
-        is_double = True
-    cls = fp.Double if is_double else fp.Single
-    mbf = cls(neg, mantissa * 0x100, cls.bias).normalise()
-    while (exp10 < 0):
-        mbf.idiv10()
-        exp10 += 1
-    while (exp10 > 0):
-        mbf.imul10()
-        exp10 -= 1
-    mbf.normalise()
-    return mbf
-
-
 #####
 
 def str_to_int(s):
@@ -434,142 +617,9 @@ def str_to_int(s):
     except ValueError:
         return 0
 
-def tokenise_hex(ins, outs):
-    """Convert hex expression in Python string to number token."""
-    # pass the H in &H
-    ins.read(1)
-    word = ''
-    while True:
-        c = util.peek(ins)
-        # hex literals must not be interrupted by whitespace
-        if not c or c not in string.hexdigits:
-            break
-        else:
-            word += ins.read(1)
-    val = int(word, 16) if word else 0
-    outs.write(tk.T_HEX + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(val))))
-
-def tokenise_oct(ins, outs):
-    """Convert octal expression in Python string to number token."""
-    # O is optional, could also be &777 instead of &O777
-    if util.peek(ins).upper() == 'O':
-        ins.read(1)
-    word = ''
-    while True:
-        c = util.peek(ins)
-        # oct literals may be interrupted by whitespace
-        if c and c in number_whitespace:
-            ins.read(1)
-        elif not c or c not in string.octdigits:
-            break
-        else:
-            word += ins.read(1)
-    val = int(word, 8) if word else 0
-    outs.write(tk.T_OCT + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(val))))
-
-def tokenise_dec(ins, outs):
-    """Convert decimal expression in Python string to number token."""
-    have_exp = False
-    have_point = False
-    word = ''
-    kill = False
-    while True:
-        c = ins.read(1).upper()
-        if not c:
-            break
-        elif c in '\x1c\x1d\x1f':
-            # ASCII separator chars invariably lead to zero result
-            kill = True
-        elif c == '.' and not have_point and not have_exp:
-            have_point = True
-            word += c
-        elif c in 'ED' and not have_exp:
-            # there's a special exception for number followed by EL or EQ
-            # presumably meant to protect ELSE and maybe EQV ?
-            if c == 'E' and util.peek(ins).upper() in ('L', 'Q'):
-                ins.seek(-1, 1)
-                break
-            else:
-                have_exp = True
-                word += c
-        elif c in '-+' and (not word or word[-1] in 'ED'):
-            # must be first token or in exponent
-            word += c
-        elif c in string.digits:
-            word += c
-        elif c in number_whitespace:
-            # we'll remove this later but need to keep it for now
-            # so we can reposition the stream on removing trailing whitespace
-            word += c
-        elif c in '!#' and not have_exp:
-            word += c
-            break
-        elif c == '%':
-            # swallow a %, but break parsing
-            break
-        else:
-            ins.seek(-1, 1)
-            break
-    # ascii separators encountered: zero output
-    if kill:
-        word = '0'
-    # don't claim trailing whitespace
-    while len(word)>0 and (word[-1] in number_whitespace):
-        word = word[:-1]
-        ins.seek(-1,1) # even if c==''
-    # remove all internal whitespace
-    trimword = ''
-    for c in word:
-        if c not in number_whitespace:
-            trimword += c
-    word = trimword
-    # write out the numbers
-    if len(word) == 1 and word in string.digits:
-        # digit
-        outs.write(chr(0x11+str_to_int(word)))
-    elif (not (have_exp or have_point or word[-1] in '!#') and
-                            str_to_int(word) <= 0x7fff and str_to_int(word) >= -0x8000):
-        if str_to_int(word) <= 0xff and str_to_int(word) >= 0:
-            # one-byte constant
-            outs.write(tk.T_BYTE + chr(str_to_int(word)))
-        else:
-            # two-byte constant
-            outs.write(tk.T_INT + str(vartypes.integer_to_bytes(vartypes.int_to_integer_signed(str_to_int(word)))))
-    else:
-        mbf = str(str_to_float(word).to_bytes())
-        if len(mbf) == 4:
-            outs.write(tk.T_SINGLE + mbf)
-        else:
-            outs.write(tk.T_DOUBLE + mbf)
-
-def tokenise_number(ins, outs):
-    """Convert Python-string number representation to number token."""
-    c = util.peek(ins)
-    if not c:
-        return
-    elif c == '&':
-        # handle hex or oct constants
-        ins.read(1)
-        if util.peek(ins).upper() == 'H':
-            # hex constant
-            tokenise_hex(ins, outs)
-        else:
-            # octal constant
-            tokenise_oct(ins, outs)
-    elif c in string.digits + '.+-':
-        # handle other numbers
-        # note GW passes signs separately as a token
-        # and only stores positive numbers in the program
-        tokenise_dec(ins, outs)
-    else:
-        # why is this here?
-        # this looks wrong but hasn't hurt so far
-        ins.seek(-1, 1)
-
-
 ##########################################
 
-
+#REFACTOR to util.read_full_token -> token_to_value
 def parse_value(ins):
     """Token to value."""
     d = ins.read(1)
@@ -594,22 +644,7 @@ def parse_value(ins):
         return ('#', val)
     return None
 
-def str_to_number(strval, allow_nonnum=True):
-    """Convert Python str to BASIC value."""
-    ins = StringIO(strval)
-    outs = StringIO()
-    # skip spaces and line feeds (but not NUL).
-    util.skip(ins, (' ', '\n'))
-    tokenise_number(ins, outs)
-    outs.seek(0)
-    value = parse_value(outs)
-    if not allow_nonnum and util.skip_white(ins) != '':
-        # not everything has been parsed - error
-        return None
-    if not value:
-        return vartypes.null('%')
-    return value
-
+#MOVE to tokenise
 def detokenise_number(ins, output):
     """Convert number token to Python string."""
     s = ins.read(1)

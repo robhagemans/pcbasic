@@ -48,8 +48,9 @@ class Tokeniser(object):
     # operator symbols
     _ascii_operators = '+-=/\\^*<>'
 
-    def __init__(self, syntax, debug):
+    def __init__(self, values, syntax, debug):
         """Initialise tokeniser."""
+        self._values = values
         self._token_to_keyword = dict(tk.keyword)
         if debug:
             # NOTE: PC-BASIC only. Not the same command or token as Sperry DEBUG.
@@ -238,7 +239,7 @@ class Tokeniser(object):
             # number starting with . or & are always parsed
             elif c in ('&', '.') or (allow_number and
                                       not allow_jumpnum and c in string.digits):
-                values.tokenise_number(ins, outs)
+                self._values.tokenise_number(ins, outs)
             # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):
             elif c in self._ascii_operators:
                 ins.read(1)

@@ -31,7 +31,7 @@ class Parser(object):
     def __init__(self, session, syntax, term, double_math):
         """Initialise parser."""
         self.session = session
-        self.math_error_handler = self.session.math_error_handler
+        self.values = self.session.values
         # syntax: advanced, pcjr, tandy
         self.syntax = syntax
         # program for TERM command
@@ -381,7 +381,7 @@ class Parser(object):
         # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
         elif d in string.digits:
             outs = StringIO()
-            values.tokenise_number(ins, outs)
+            self.values.tokenise_number(ins, outs)
             outs.seek(0)
             return values.parse_value(outs)
         # number literals
@@ -483,7 +483,7 @@ class Parser(object):
                 # apply functions
                 ins.read(len(d))
                 units.append(
-                    self.math_error_handler.wrap(self.functions.functions[d], ins))
+                    self.values._math_error_handler.wrap(self.functions.functions[d], ins))
             elif d in tk.end_statement:
                 break
             elif d in tk.end_expression:
@@ -513,11 +513,11 @@ class Parser(object):
             try:
                 right = units.pop()
                 if narity == 1:
-                    units.append(self.math_error_handler.wrap(
+                    units.append(self.values._math_error_handler.wrap(
                             self.operators.unary[oper], right))
                 else:
                     left = units.pop()
-                    units.append(self.math_error_handler.wrap(
+                    units.append(self.values._math_error_handler.wrap(
                         self.operators.binary[oper], left, right))
             except IndexError:
                 # insufficient operators, error depends on context

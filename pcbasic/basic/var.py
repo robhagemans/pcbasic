@@ -160,13 +160,6 @@ class StringSpace(object):
         if self.temp != self.current:
             self.delete_last()
 
-    def str_to_type(self, typechar, word):
-        """convert result to requested type, be strict about non-numeric chars """
-        if typechar == '$':
-            return self.store(word)
-        else:
-            return values.str_to_number(word, allow_nonnum=False)
-
 
 ###############################################################################
 # scalar variables
