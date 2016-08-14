@@ -113,8 +113,11 @@ class Float(object):
             self.man += 0x100
         # overflow?
         if self.man >= 0x100**self.byte_size:
-            self.exp +=1
+            self.exp += 1
             self.man >>= 1
+        if self.exp > 255:
+            self.exp, self.man = self.max.exp, self.max.man
+            raise OverflowError(self)
         # discard carry
         self.man ^= (self.man&0xff)
         return self
