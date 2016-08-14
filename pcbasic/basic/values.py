@@ -27,7 +27,6 @@ class Values(object):
     def __init__(self, screen):
         """Setup values."""
         self._math_error_handler = MathErrorHandler(screen)
-        self._repr_converter = RepresentationConverter(self._math_error_handler)
 
     def str_to_number(self, strval, allow_nonnum=True):
         """Convert Python str to BASIC value."""
@@ -35,7 +34,7 @@ class Values(object):
         outs = StringIO()
         # skip spaces and line feeds (but not NUL).
         util.skip(ins, (' ', '\n'))
-        self._repr_converter.tokenise_number(ins, outs)
+        self.tokenise_number(ins, outs)
         outs.seek(0)
         value = parse_value(outs)
         if not allow_nonnum and util.skip_white(ins) != '':
@@ -56,61 +55,6 @@ class Values(object):
     # this should not be in the interface but is quite entangled
     # REFACTOR 1) to produce a string return value rather than write to stream
     # REFACTOR 2) to util.read_numeric_string -> str_to_number
-    def tokenise_number(self, ins, outs):
-        """Convert Python-string number representation to number token."""
-        self._repr_converter.tokenise_number(ins, outs)
-
-
-class MathErrorHandler(object):
-    """Handles floating point errors."""
-
-    # types of errors that do not always interrupt execution
-    soft_types = (error.OVERFLOW, error.DIVISION_BY_ZERO)
-
-    def __init__(self, screen):
-        """Setup handler."""
-        self._screen = screen
-        self._do_raise = False
-
-    def pause_handling(self, do_raise):
-        """Pause local handling of floating point errors."""
-        self._do_raise = do_raise
-
-    def wrap(self, fn, *args, **kwargs):
-        """Handle Overflow or Division by Zero."""
-        try:
-            return fn(*args, **kwargs)
-        except Exception as e:
-            if isinstance(e, ValueError):
-                # math domain errors such as SQR(-1)
-                math_error = error.IFC
-            elif isinstance(e, OverflowError):
-                math_error = error.OVERFLOW
-            elif isinstance(e, ZeroDivisionError):
-                math_error = error.DIVISION_BY_ZERO
-            else:
-                raise e
-            if (self._do_raise or self._screen is None or
-                    math_error not in self.soft_types):
-                # also raises exception in error_handle_mode!
-                # in that case, prints a normal error message
-                raise error.RunError(math_error)
-            else:
-                # write a message & continue as normal
-                self._screen.write_line(error.RunError(math_error).message)
-            # return max value for the appropriate float type
-            if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
-                return fp.pack(e.args[0])
-            return fp.pack(fp.Single.max.copy())
-
-
-class RepresentationConverter(object):
-    """Convert BASIC strings to numeric values."""
-
-    def __init__(self, math_error_handler):
-        """Initialise."""
-        self._math_error_handler = math_error_handler
-
     def tokenise_number(self, ins, outs):
         """Convert Python-string number representation to number token."""
         c = util.peek(ins)
@@ -243,8 +187,9 @@ class RepresentationConverter(object):
         val = int(word, 8) if word else 0
         outs.write(tk.T_OCT + str(vartypes.integer_to_bytes(vartypes.int_to_integer_unsigned(val))))
 
-    def _str_to_float(self, s, allow_nonnum=True):
+    def _str_to_float(self, s):
         """Return Float value for Python string."""
+        allow_nonnum = True
         found_sign, found_point, found_exp = False, False, False
         found_exp_sign, exp_neg, neg = False, False, False
         exp10, exponent, mantissa, digits, zeros = 0, 0, 0, 0, 0
@@ -315,6 +260,10 @@ class RepresentationConverter(object):
         # eight or more digits means double, unless single override
         if digits - zeros > 7 and not is_single:
             is_double = True
+        return self._math_error_handler.wrap(self._float_from_exp10, neg, mantissa, exp10, is_double)
+
+    def _float_from_exp10(self, neg, mantissa, exp10, is_double):
+        """Create floating-point value from mantissa and decomal exponent."""
         cls = fp.Double if is_double else fp.Single
         # isn't this just cls.from_int(-mantissa if neg else mantissa)?
         mbf = cls(neg, mantissa * 0x100, cls.bias).normalise()
@@ -328,6 +277,48 @@ class RepresentationConverter(object):
         mbf.normalise()
         return fp.pack(mbf)
 
+
+class MathErrorHandler(object):
+    """Handles floating point errors."""
+
+    # types of errors that do not always interrupt execution
+    soft_types = (error.OVERFLOW, error.DIVISION_BY_ZERO)
+
+    def __init__(self, screen):
+        """Setup handler."""
+        self._screen = screen
+        self._do_raise = False
+
+    def pause_handling(self, do_raise):
+        """Pause local handling of floating point errors."""
+        self._do_raise = do_raise
+
+    def wrap(self, fn, *args, **kwargs):
+        """Handle Overflow or Division by Zero."""
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            if isinstance(e, ValueError):
+                # math domain errors such as SQR(-1)
+                math_error = error.IFC
+            elif isinstance(e, OverflowError):
+                math_error = error.OVERFLOW
+            elif isinstance(e, ZeroDivisionError):
+                math_error = error.DIVISION_BY_ZERO
+            else:
+                raise e
+            if (self._do_raise or self._screen is None or
+                    math_error not in self.soft_types):
+                # also raises exception in error_handle_mode!
+                # in that case, prints a normal error message
+                raise error.RunError(math_error)
+            else:
+                # write a message & continue as normal
+                self._screen.write_line(error.RunError(math_error).message)
+            # return max value for the appropriate float type
+            if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
+                return fp.pack(e.args[0])
+            return fp.pack(fp.Single.max.copy())
 
 
 def number_to_str(inp, screen=False, write=False, allow_empty_expression=False):
