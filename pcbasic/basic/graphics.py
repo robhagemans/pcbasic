@@ -26,20 +26,106 @@ from . import mlparser
 deg_to_rad = fp.div(fp.Single.twopi, fp.Single.from_int(360))
 
 
+class GraphicsViewPort(object):
+    """Graphics viewport (clip area) functions."""
+
+    def __init__(self, screen):
+        """Initialise graphics viewport."""
+        self.screen = screen
+        self.unset()
+
+    def unset(self):
+        """Unset the graphics viewport."""
+        self.absolute = False
+        self.rect = None
+
+    def set(self, x0, y0, x1, y1, absolute):
+        """Set the graphics viewport."""
+        # VIEW orders the coordinates
+        x0, x1 = min(x0, x1), max(x0, x1)
+        y0, y1 = min(y0, y1), max(y0, y1)
+        self.absolute = absolute
+        self.rect = x0, y0, x1, y1
+
+    def is_set(self):
+        """Return whether the graphics viewport is set."""
+        return self.rect is not None
+
+    def get(self):
+        """Return the graphics viewport or full screen dimensions if not set."""
+        if self.rect:
+            return self.rect
+        else:
+            return 0, 0, self.screen.mode.pixel_width-1, self.screen.mode.pixel_height-1
+
+    def contains(self, x, y):
+        """Return whether the specified point is within the graphics view (boundaries inclusive)."""
+        vx0, vy0, vx1, vy1 = self.get()
+        return vx0 <= x <= vx1 and vy0 <= y <= vy1
+
+    def clip_rect(self, x0, y0, x1, y1):
+        """Return rect clipped to view."""
+        vx0, vy0, vx1, vy1 = self.get()
+        return max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
+
+    def clip_area(self, x0, y0, x1, y1, area_buffer):
+        """Return area buffer in [y][x] format clipped to view."""
+        vx0, vy0, vx1, vy1 = self.get()
+        nx0, ny0, nx1, ny1 =  max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
+        if numpy and type(area_buffer) == numpy.ndarray:
+            nbuf = area_buffer[ny0-y0:ny1-y0+1, nx0-x0:nx1-x0+1]
+        else:
+            nbuf = [row[nx0-x0:nx1-x0+1] for row in area_buffer[ny0-y0:ny1-y0+1]]
+        return nx0, ny0, nx1, ny1, nbuf
+
+    def clip_interval(self, x0, x1, y):
+        """Return rect clipped to view."""
+        vx0, vy0, vx1, vy1 = self.get()
+        if not (vy0 <= y <= vy1):
+            return x0, x0-1, y
+        return max(x0, vx0), min(x1, vx1), y
+
+    def clip_list(self, x0, y0, attr_list):
+        """Return rect clipped to view."""
+        vx0, vy0, vx1, vy1 = self.get()
+        if not (vy0 <= y0 <= vy1):
+            return x0, y0, []
+        nx0, nx1 = max(x0, vx0), min(x0+len(attr_list), vx1)
+        return nx0, y0, attr_list[nx0-x0:nx1-x0+1]
+
+    def get_mid(self):
+        """Get the midpoint of the current graphics view."""
+        x0, y0, x1, y1 = self.get()
+        # +1 to match GW-BASIC
+        return x0 + (x1-x0)/2 + 1, y0 + (y1-y0)/2 + 1
+
+    def coords(self, x, y):
+        """Retrieve absolute coordinates for viewport coordinates."""
+        if (not self.rect) or self.absolute:
+            return x, y
+        else:
+            return x + self.rect[0], y + self.rect[1]
+
+    def clear(self):
+        """Clear the current graphics viewport."""
+        if not self.screen.mode.is_text_mode:
+            self.screen.fill_rect(*self.get(), index=(self.screen.attr>>4) & 0x7)
+
+
 class Drawing(object):
     """Manage graphics drawing."""
 
     def __init__(self, screen):
         self.screen = screen
         self.unset_window()
-        self.unset_view()
+        self.view = GraphicsViewPort(screen)
         self.reset()
 
     def reset(self):
         """Reset graphics state."""
         if self.screen.mode.is_text_mode:
             return
-        self.last_point = self.get_view_mid()
+        self.last_point = self.view.get_mid()
         self.last_attr = self.screen.mode.attr
         self.draw_scale = 4
         self.draw_angle = 0
@@ -62,95 +148,24 @@ class Drawing(object):
     def set_view(self, x0, y0, x1, y1, absolute, fill, border):
         """Set the graphics viewport and optionally draw a box (VIEW)."""
         # first unset the viewport so that we can draw the box
-        self.unset_view()
+        self.view.unset()
         if fill is not None:
             self.draw_box_filled(x0, y0, x1, y1, fill)
             self.last_attr = fill
         if border is not None:
             self.draw_box(x0-1, y0-1, x1+1, y1+1, border)
             self.last_attr = border
-        # VIEW orders the coordinates
-        x0, x1 = min(x0, x1), max(x0, x1)
-        y0, y1 = min(y0, y1), max(y0, y1)
-        self.view_absolute = absolute
-        self.view = x0, y0, x1, y1
-        self.reset_view()
-
-    def unset_view(self):
-        """Unset the graphics viewport."""
-        self.view_absolute = False
-        self.view = None
-        self.reset_view()
-
-    def view_is_set(self):
-        """Return whether the graphics viewport is set."""
-        return self.view is not None
-
-    def reset_view(self):
-        """Update graphics state after viewport reset."""
-        self.last_point = self.get_view_mid()
+        self.view.set(x0, y0, x1, y1, absolute)
+        self.last_point = self.view.get_mid()
         if self.window_bounds is not None:
             self.set_window(*self.window_bounds)
 
-    def get_view(self):
-        """Return the graphics viewport or full screen dimensions if not set."""
-        if self.view:
-            return self.view
-        else:
-            return 0, 0, self.screen.mode.pixel_width-1, self.screen.mode.pixel_height-1
-
-    def view_contains(self, x, y):
-        """Return whether the specified point is within the graphics view (boundaries inclusive)."""
-        vx0, vy0, vx1, vy1 = self.get_view()
-        return vx0 <= x <= vx1 and vy0 <= y <= vy1
-
-    def view_clip_rect(self, x0, y0, x1, y1):
-        """Return rect clipped to view."""
-        vx0, vy0, vx1, vy1 = self.get_view()
-        return max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
-
-    def view_clip_area(self, x0, y0, x1, y1, area_buffer):
-        """Return area buffer in [y][x] format clipped to view."""
-        vx0, vy0, vx1, vy1 = self.get_view()
-        nx0, ny0, nx1, ny1 =  max(x0, vx0), max(y0, vy0), min(x1, vx1), min(y1, vy1)
-        if numpy and type(area_buffer) == numpy.ndarray:
-            nbuf = area_buffer[ny0-y0:ny1-y0+1, nx0-x0:nx1-x0+1]
-        else:
-            nbuf = [row[nx0-x0:nx1-x0+1] for row in area_buffer[ny0-y0:ny1-y0+1]]
-        return nx0, ny0, nx1, ny1, nbuf
-
-    def view_clip_interval(self, x0, x1, y):
-        """Return rect clipped to view."""
-        vx0, vy0, vx1, vy1 = self.get_view()
-        if not (vy0 <= y <= vy1):
-            return x0, x0-1, y
-        return max(x0, vx0), min(x1, vx1), y
-
-    def view_clip_list(self, x0, y0, attr_list):
-        """Return rect clipped to view."""
-        vx0, vy0, vx1, vy1 = self.get_view()
-        if not (vy0 <= y0 <= vy1):
-            return x0, y0, []
-        nx0, nx1 = max(x0, vx0), min(x0+len(attr_list), vx1)
-        return nx0, y0, attr_list[nx0-x0:nx1-x0+1]
-
-    def get_view_mid(self):
-        """Get the midpoint of the current graphics view."""
-        x0, y0, x1, y1 = self.get_view()
-        # +1 to match GW-BASIC
-        return x0 + (x1-x0)/2 + 1, y0 + (y1-y0)/2 + 1
-
-    def view_coords(self, x, y):
-        """Retrieve absolute coordinates for viewport coordinates."""
-        if (not self.view) or self.view_absolute:
-            return x, y
-        else:
-            return x + self.view[0], y + self.view[1]
-
-    def clear_view(self):
-        """Clear the current graphics viewport."""
-        if not self.screen.mode.is_text_mode:
-            self.screen.fill_rect(*self.get_view(), index=(self.screen.attr>>4) & 0x7)
+    def unset_view(self):
+        """Unset the graphics viewport."""
+        self.view.unset()
+        self.last_point = self.view.get_mid()
+        if self.window_bounds is not None:
+            self.set_window(*self.window_bounds)
 
     ### WINDOW logical coords
 
@@ -162,7 +177,7 @@ class Drawing(object):
             fx0, fx1 = fx1, fx0
         if cartesian:
             fy0, fy1 = fy1, fy0
-        left, top, right, bottom = self.get_view()
+        left, top, right, bottom = self.view.get()
         x0, y0 = fp.Single.zero, fp.Single.zero
         x1, y1 = fp.Single.from_int(right-left), fp.Single.from_int(bottom-top)
         scalex = fp.div(fp.sub(x1, x0), fp.sub(fx1,fx0))
@@ -223,7 +238,7 @@ class Drawing(object):
 
     def pset(self, lcoord, c):
         """Draw a pixel in the given attribute (PSET, PRESET)."""
-        x, y = self.view_coords(*self.get_window_physical(*lcoord))
+        x, y = self.view.coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
         self.screen.put_pixel(x, y, c)
         self.last_attr = c
@@ -231,7 +246,7 @@ class Drawing(object):
 
     def point(self, lcoord):
         """Return the attribute of a pixel (POINT)."""
-        x, y = self.view_coords(*self.get_window_physical(*lcoord))
+        x, y = self.view.coords(*self.get_window_physical(*lcoord))
         if x < 0 or x >= self.screen.mode.pixel_width:
             return -1
         if y < 0 or y >= self.screen.mode.pixel_height:
@@ -243,10 +258,10 @@ class Drawing(object):
     def line(self, lcoord0, lcoord1, c, pattern, shape):
         """Draw a patterned line or box (LINE)."""
         if lcoord0:
-            x0, y0 = self.view_coords(*self.get_window_physical(*lcoord0))
+            x0, y0 = self.view.coords(*self.get_window_physical(*lcoord0))
         else:
             x0, y0 = self.last_point
-        x1, y1 = self.view_coords(*self.get_window_physical(*lcoord1))
+        x1, y1 = self.view.coords(*self.get_window_physical(*lcoord1))
         c = self.get_attr_index(c)
         if shape == '':
             self.draw_line(x0, y0, x1, y1, c, pattern)
@@ -372,7 +387,7 @@ class Drawing(object):
 
     def circle(self, lcoord, r, start, stop, c, aspect):
         """Draw a circle, ellipse, arc or sector (CIRCLE)."""
-        x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
+        x0, y0 = self.view.coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
         if aspect is None:
             aspect = fp.div(
@@ -546,8 +561,8 @@ class Drawing(object):
             back = self.screen.mode.build_tile(background) if background else None
         else:
             tile, back = [[c]*8], None
-        bound_x0, bound_y0, bound_x1, bound_y1 = self.get_view()
-        x, y = self.view_coords(*self.get_window_physical(*lcoord))
+        bound_x0, bound_y0, bound_x1, bound_y1 = self.view.get()
+        x, y = self.view.coords(*self.get_window_physical(*lcoord))
         line_seed = [(x, x, y, 0)]
         # paint nothing if seed is out of bounds
         if x < bound_x0 or x > bound_x1 or y < bound_y0 or y > bound_y1:
@@ -624,7 +639,7 @@ class Drawing(object):
 
     def put(self, lcoord, arrays, array_name, operation_token):
         """Put a sprite on the screen (PUT)."""
-        x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
+        x0, y0 = self.view.coords(*self.get_window_physical(*lcoord))
         self.last_point = x0, y0
         try:
             _, byte_array, a_version = arrays[array_name]
@@ -647,7 +662,7 @@ class Drawing(object):
         if self.screen.mode.name == '640x200x4':
             x1 = x0 + 2*dx - 1
         # illegal fn call if outside viewport boundary
-        vx0, vy0, vx1, vy1 = self.get_view()
+        vx0, vy0, vx1, vy1 = self.view.get()
         util.range_check(vx0, vx1, x0, x1)
         util.range_check(vy0, vy1, y0, y1)
         # apply the sprite to the screen
@@ -655,8 +670,8 @@ class Drawing(object):
 
     def get(self, lcoord0, lcoord1, arrays, array_name):
         """Read a sprite from the screen (GET)."""
-        x0, y0 = self.view_coords(*self.get_window_physical(*lcoord0))
-        x1, y1 = self.view_coords(*self.get_window_physical(*lcoord1))
+        x0, y0 = self.view.coords(*self.get_window_physical(*lcoord0))
+        x1, y1 = self.view.coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
         try:
             _, byte_array, version = arrays[array_name]
@@ -667,7 +682,7 @@ class Drawing(object):
         if self.screen.mode.name == '640x200x4':
             x1 = x0 + 2*dx - 1
         # illegal fn call if outside viewport boundary
-        vx0, vy0, vx1, vy1 = self.get_view()
+        vx0, vy0, vx1, vy1 = self.view.get()
         util.range_check(vx0, vx1, x0, x1)
         util.range_check(vy0, vy1, y0, y1)
         # set size record
