@@ -118,14 +118,13 @@ class Drawing(object):
     def __init__(self, screen):
         self.screen = screen
         self.unset_window()
-        self.view = GraphicsViewPort(screen)
         self.reset()
 
     def reset(self):
         """Reset graphics state."""
         if self.screen.mode.is_text_mode:
             return
-        self.last_point = self.view.get_mid()
+        self.last_point = self.screen.graph_view.get_mid()
         self.last_attr = self.screen.mode.attr
         self.draw_scale = 4
         self.draw_angle = 0
@@ -148,22 +147,22 @@ class Drawing(object):
     def set_view(self, x0, y0, x1, y1, absolute, fill, border):
         """Set the graphics viewport and optionally draw a box (VIEW)."""
         # first unset the viewport so that we can draw the box
-        self.view.unset()
+        self.screen.graph_view.unset()
         if fill is not None:
             self.draw_box_filled(x0, y0, x1, y1, fill)
             self.last_attr = fill
         if border is not None:
             self.draw_box(x0-1, y0-1, x1+1, y1+1, border)
             self.last_attr = border
-        self.view.set(x0, y0, x1, y1, absolute)
-        self.last_point = self.view.get_mid()
+        self.screen.graph_view.set(x0, y0, x1, y1, absolute)
+        self.last_point = self.screen.graph_view.get_mid()
         if self.window_bounds is not None:
             self.set_window(*self.window_bounds)
 
     def unset_view(self):
         """Unset the graphics viewport."""
-        self.view.unset()
-        self.last_point = self.view.get_mid()
+        self.screen.graph_view.unset()
+        self.last_point = self.screen.graph_view.get_mid()
         if self.window_bounds is not None:
             self.set_window(*self.window_bounds)
 
@@ -177,7 +176,7 @@ class Drawing(object):
             fx0, fx1 = fx1, fx0
         if cartesian:
             fy0, fy1 = fy1, fy0
-        left, top, right, bottom = self.view.get()
+        left, top, right, bottom = self.screen.graph_view.get()
         x0, y0 = fp.Single.zero, fp.Single.zero
         x1, y1 = fp.Single.from_int(right-left), fp.Single.from_int(bottom-top)
         scalex = fp.div(fp.sub(x1, x0), fp.sub(fx1,fx0))
@@ -238,7 +237,7 @@ class Drawing(object):
 
     def pset(self, lcoord, c):
         """Draw a pixel in the given attribute (PSET, PRESET)."""
-        x, y = self.view.coords(*self.get_window_physical(*lcoord))
+        x, y = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
         self.screen.put_pixel(x, y, c)
         self.last_attr = c
@@ -246,7 +245,7 @@ class Drawing(object):
 
     def point(self, lcoord):
         """Return the attribute of a pixel (POINT)."""
-        x, y = self.view.coords(*self.get_window_physical(*lcoord))
+        x, y = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         if x < 0 or x >= self.screen.mode.pixel_width:
             return -1
         if y < 0 or y >= self.screen.mode.pixel_height:
@@ -258,10 +257,10 @@ class Drawing(object):
     def line(self, lcoord0, lcoord1, c, pattern, shape):
         """Draw a patterned line or box (LINE)."""
         if lcoord0:
-            x0, y0 = self.view.coords(*self.get_window_physical(*lcoord0))
+            x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord0))
         else:
             x0, y0 = self.last_point
-        x1, y1 = self.view.coords(*self.get_window_physical(*lcoord1))
+        x1, y1 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord1))
         c = self.get_attr_index(c)
         if shape == '':
             self.draw_line(x0, y0, x1, y1, c, pattern)
@@ -387,7 +386,7 @@ class Drawing(object):
 
     def circle(self, lcoord, r, start, stop, c, aspect):
         """Draw a circle, ellipse, arc or sector (CIRCLE)."""
-        x0, y0 = self.view.coords(*self.get_window_physical(*lcoord))
+        x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
         if aspect is None:
             aspect = fp.div(
@@ -561,8 +560,8 @@ class Drawing(object):
             back = self.screen.mode.build_tile(background) if background else None
         else:
             tile, back = [[c]*8], None
-        bound_x0, bound_y0, bound_x1, bound_y1 = self.view.get()
-        x, y = self.view.coords(*self.get_window_physical(*lcoord))
+        bound_x0, bound_y0, bound_x1, bound_y1 = self.screen.graph_view.get()
+        x, y = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         line_seed = [(x, x, y, 0)]
         # paint nothing if seed is out of bounds
         if x < bound_x0 or x > bound_x1 or y < bound_y0 or y > bound_y1:
@@ -639,7 +638,7 @@ class Drawing(object):
 
     def put(self, lcoord, arrays, array_name, operation_token):
         """Put a sprite on the screen (PUT)."""
-        x0, y0 = self.view.coords(*self.get_window_physical(*lcoord))
+        x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         self.last_point = x0, y0
         try:
             _, byte_array, a_version = arrays[array_name]
@@ -662,7 +661,7 @@ class Drawing(object):
         if self.screen.mode.name == '640x200x4':
             x1 = x0 + 2*dx - 1
         # illegal fn call if outside viewport boundary
-        vx0, vy0, vx1, vy1 = self.view.get()
+        vx0, vy0, vx1, vy1 = self.screen.graph_view.get()
         util.range_check(vx0, vx1, x0, x1)
         util.range_check(vy0, vy1, y0, y1)
         # apply the sprite to the screen
@@ -670,8 +669,8 @@ class Drawing(object):
 
     def get(self, lcoord0, lcoord1, arrays, array_name):
         """Read a sprite from the screen (GET)."""
-        x0, y0 = self.view.coords(*self.get_window_physical(*lcoord0))
-        x1, y1 = self.view.coords(*self.get_window_physical(*lcoord1))
+        x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord0))
+        x1, y1 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
         try:
             _, byte_array, version = arrays[array_name]
@@ -682,7 +681,7 @@ class Drawing(object):
         if self.screen.mode.name == '640x200x4':
             x1 = x0 + 2*dx - 1
         # illegal fn call if outside viewport boundary
-        vx0, vy0, vx1, vy1 = self.view.get()
+        vx0, vy0, vx1, vy1 = self.screen.graph_view.get()
         util.range_check(vx0, vx1, x0, x1)
         util.range_check(vy0, vy1, y0, y1)
         # set size record

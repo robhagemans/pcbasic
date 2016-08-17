@@ -2135,7 +2135,7 @@ class Statements(object):
         """CLS: clear the screen."""
         if (self.parser.syntax == 'pcjr' or
                         util.skip_white(ins) in (',',) + tk.end_statement):
-            if self.session.screen.drawing.view.is_set():
+            if self.session.screen.graph_view.is_set():
                 val = 1
             elif self.session.screen.view_set:
                 val = 2

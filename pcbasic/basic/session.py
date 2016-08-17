@@ -94,7 +94,7 @@ class Session(object):
         # function key macros
         self.fkey_macros = editor.FunctionKeyMacros(12 if syntax == 'tandy' else 10)
         # Sound is needed for the beeps on \a
-        # Session is only for queues and wait() in Graphics (flood fill)
+        # Session is only for queues
         self.screen = display.Screen(self, text_width,
                 video_memory, video_capabilities, monitor,
                 self.sound, self.output_redirection, self.fkey_macros,
