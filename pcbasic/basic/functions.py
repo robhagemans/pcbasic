@@ -147,11 +147,11 @@ class Functions(object):
 
     def value_mks(self, ins):
         """MKS$: return the byte representation of a single."""
-        return self.session.strings.store(values.pass_single(self.parser.parse_bracket(ins, self.session))[1])
+        return self.session.strings.store(self.session.values.pass_single(self.parser.parse_bracket(ins, self.session))[1])
 
     def value_mkd(self, ins):
         """MKD$: return the byte representation of a double."""
-        return self.session.strings.store(values.pass_double(self.parser.parse_bracket(ins, self.session))[1])
+        return self.session.strings.store(self.session.values.pass_double(self.parser.parse_bracket(ins, self.session))[1])
 
     def value_cint(self, ins):
         """CINT: convert a number to integer."""
@@ -159,11 +159,11 @@ class Functions(object):
 
     def value_csng(self, ins):
         """CSNG: convert a number to single."""
-        return values.pass_single(self.parser.parse_bracket(ins, self.session))
+        return self.session.values.pass_single(self.parser.parse_bracket(ins, self.session))
 
     def value_cdbl(self, ins):
         """CDBL: convert a number to double."""
-        return values.pass_double(self.parser.parse_bracket(ins, self.session))
+        return self.session.values.pass_double(self.parser.parse_bracket(ins, self.session))
 
     def value_str(self, ins):
         """STR$: string representation of a number."""
@@ -475,7 +475,7 @@ class Functions(object):
         for name in varsave:
             # re-assign the stored value
             self.session.scalars.variables[name][:] = varsave[name]
-        return values.pass_type(fnname[-1], value)
+        return self.session.values.pass_type(fnname[-1], value)
 
     ###############################################################
     # graphics
@@ -492,8 +492,8 @@ class Functions(object):
             if screen.mode.is_text_mode:
                 raise error.RunError(error.IFC)
             return values.int_to_integer_signed(screen.drawing.point(
-                            (fp.unpack(values.pass_single(arg0)),
-                             fp.unpack(values.pass_single(arg1)), False)))
+                            (fp.unpack(self.session.values.pass_single(arg0)),
+                             fp.unpack(self.session.values.pass_single(arg1)), False)))
         else:
             # single-argument mode
             util.require_read(ins, (')',))
@@ -525,10 +525,10 @@ class Functions(object):
         if screen.mode.is_text_mode:
             return values.null('%')
         if mode == 0:
-            value, _ = screen.drawing.get_window_physical(fp.unpack(values.pass_single(coord)), fp.Single.zero)
+            value, _ = screen.drawing.get_window_physical(fp.unpack(self.session.values.pass_single(coord)), fp.Single.zero)
             return values.int_to_integer_signed(value)
         elif mode == 1:
-            _, value = screen.drawing.get_window_physical(fp.Single.zero, fp.unpack(values.pass_single(coord)))
+            _, value = screen.drawing.get_window_physical(fp.Single.zero, fp.unpack(self.session.values.pass_single(coord)))
             return values.int_to_integer_signed(value)
         elif mode == 2:
             value, _ = screen.drawing.get_window_logical(values.pass_int_unpack(coord), 0)
@@ -670,13 +670,13 @@ class Functions(object):
 
     def value_func(self, ins, fn):
         """Return value of unary math function."""
-        return fp.pack(fn(fp.unpack(values.pass_float(
+        return fp.pack(fn(fp.unpack(self.session.values.pass_float(
             self.parser.parse_bracket(ins, self.session), self.double_math))))
 
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
         if util.skip_white(ins) == '(':
-            return self.session.randomiser.get(fp.unpack(values.pass_single(self.parser.parse_bracket(ins, self.session))))
+            return self.session.randomiser.get(fp.unpack(self.session.values.pass_single(self.parser.parse_bracket(ins, self.session))))
         else:
             return self.session.randomiser.get_int(1)
 

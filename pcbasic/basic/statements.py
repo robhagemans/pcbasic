@@ -377,7 +377,7 @@ class Statements(object):
     def exec_on_timer(self, ins):
         """ON TIMER: define timer event trapping."""
         timeval, jumpnum = self._parse_on_event(ins)
-        timeval = values.pass_single(timeval)
+        timeval = self.session.values.pass_single(timeval)
         period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
         self.session.events.timer.set_trigger(period)
         self.session.events.timer.set_jump(jumpnum)
@@ -436,7 +436,7 @@ class Statements(object):
             return
         freq = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (',',))
-        dur = fp.unpack(values.pass_single(self.parser.parse_expression(ins, self.session)))
+        dur = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session)))
         if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
             raise error.RunError(error.IFC)
         # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
@@ -507,7 +507,7 @@ class Statements(object):
         util.require_read(ins, (',',))
         util.range_check(0, 7, source)
         util.range_check(0, 15, volume)
-        dur = fp.unpack(values.pass_single(self.parser.parse_expression(ins, self.session)))
+        dur = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session)))
         if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
             raise error.RunError(error.IFC)
         util.require(ins, tk.end_statement)
@@ -1145,7 +1145,7 @@ class Statements(object):
         # for COM files
         num_bytes = the_file.reclen
         if util.skip_white_read_if(ins, (',',)):
-            pos = fp.unpack(values.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
+            pos = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
             # not 2^32-1 as the manual boasts!
             # pos-1 needs to fit in a single-precision mantissa
             util.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
@@ -1172,10 +1172,10 @@ class Statements(object):
         thefile = self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session))
         lock_start_rec = 1
         if util.skip_white_read_if(ins, (',',)):
-            lock_start_rec = fp.unpack(values.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
+            lock_start_rec = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
         lock_stop_rec = lock_start_rec
         if util.skip_white_read_if(ins, (tk.TO,)):
-            lock_stop_rec = fp.unpack(values.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
+            lock_stop_rec = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
         if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
             raise error.RunError(error.BAD_RECORD_NUMBER)
         try:
@@ -1200,9 +1200,9 @@ class Statements(object):
     def _parse_coord_bare(self, ins):
         """Helper function: parse coordinate pair."""
         util.require_read(ins, ('(',))
-        x = fp.unpack(values.pass_single(self.parser.parse_expression(ins, self.session)))
+        x = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session)))
         util.require_read(ins, (',',))
-        y = fp.unpack(values.pass_single(self.parser.parse_expression(ins, self.session)))
+        y = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session)))
         util.require_read(ins, (')',))
         return x, y
 
@@ -1300,18 +1300,22 @@ class Statements(object):
             raise error.RunError(error.IFC)
         centre = self._parse_coord_step(ins)
         util.require_read(ins, (',',))
-        r = fp.unpack(values.pass_single(self.parser.parse_expression(ins, self.session)))
+        r = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session)))
         start, stop, c, aspect = None, None, -1, None
         if util.skip_white_read_if(ins, (',',)):
             cval = self.parser.parse_expression(ins, self.session, allow_empty=True)
-            if cval:
+            if cval is not None:
                 c = values.pass_int_unpack(cval)
             if util.skip_white_read_if(ins, (',',)):
                 start = self.parser.parse_expression(ins, self.session, allow_empty=True)
+                if start is not None:
+                    start = self.session.values.pass_single(start)
                 if util.skip_white_read_if(ins, (',',)):
                     stop = self.parser.parse_expression(ins, self.session, allow_empty=True)
+                    if stop is not None:
+                        stop = self.session.values.pass_single(stop)
                     if util.skip_white_read_if(ins, (',',)):
-                        aspect = fp.unpack(values.pass_single(
+                        aspect = fp.unpack(self.session.values.pass_single(
                                                 self.parser.parse_expression(ins, self.session)))
                     elif stop is None:
                         # missing operand
@@ -1452,15 +1456,15 @@ class Statements(object):
         if vartype in ('$', '#'):
             raise error.RunError(error.TYPE_MISMATCH)
         util.require_read(ins, (tk.O_EQ,))
-        start = values.pass_type(vartype, self.parser.parse_expression(ins, self.session))
+        start = self.session.values.pass_type(vartype, self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (tk.TO,))
-        stop = values.pass_type(vartype, self.parser.parse_expression(ins, self.session))
+        stop = self.session.values.pass_type(vartype, self.parser.parse_expression(ins, self.session))
         if util.skip_white_read_if(ins, (tk.STEP,)):
             step = self.parser.parse_expression(ins, self.session)
         else:
             # convert 1 to vartype
             step = values.int_to_integer_signed(1)
-        step = values.pass_type(vartype, step)
+        step = self.session.values.pass_type(vartype, step)
         util.require(ins, tk.end_statement)
         endforpos = ins.tell()
         # find NEXT
@@ -1572,7 +1576,7 @@ class Statements(object):
     def exec_if(self, ins):
         """IF: enter branching statement."""
         # avoid overflow: don't use bools.
-        val = values.pass_single(self.parser.parse_expression(ins, self.session))
+        val = self.session.values.pass_single(self.parser.parse_expression(ins, self.session))
         util.skip_white_read_if(ins, (',',)) # optional comma
         util.require_read(ins, (tk.THEN, tk.GOTO))
         if not fp.unpack(val).is_zero():
@@ -1630,7 +1634,7 @@ class Statements(object):
         """Check condition of while-loop."""
         ins.seek(whilepos)
         # WHILE condition is zero?
-        if not fp.unpack(values.pass_double(self.parser.parse_expression(ins, self.session))).is_zero():
+        if not fp.unpack(self.session.values.pass_double(self.parser.parse_expression(ins, self.session))).is_zero():
             # statement start is before WHILE token
             self.parser.current_statement = whilepos-2
             util.require(ins, tk.end_statement)
@@ -1800,7 +1804,7 @@ class Statements(object):
                 if self.parser.syntax in ('pcjr', 'tandy') and util.skip_white_read_if(ins, (',',)):
                     # Tandy/PCjr: select video memory size
                     if not self.session.screen.set_video_memory_size(
-                        fp.unpack(values.pass_single(
+                        fp.unpack(self.session.values.pass_single(
                                      self.parser.parse_expression(ins, self.session)
                                  )).round_to_int()):
                         self.session.screen.screen(0, 0, 0, 0)
@@ -2486,7 +2490,7 @@ class Statements(object):
                     number_field, digits_before, decimals = print_and_input.get_number_tokens(fors)
                     if number_field:
                         if not data_ends:
-                            num = values.pass_float(self.parser.parse_expression(ins, self.session))
+                            num = self.session.values.pass_float(self.parser.parse_expression(ins, self.session))
                             output.write(values.format_number(num, number_field, digits_before, decimals))
                     else:
                         output.write(fors.read(1))

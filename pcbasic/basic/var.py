@@ -168,9 +168,10 @@ class StringSpace(object):
 class Scalars(object):
     """Scalar variables."""
 
-    def __init__(self, memory):
+    def __init__(self, memory, values):
         """Initialise scalars."""
         self.memory = memory
+        self.values = values
         self.clear()
 
     def clear(self):
@@ -184,7 +185,7 @@ class Scalars(object):
         name = self.memory.complete_name(name)
         type_char = name[-1]
         if value is not None:
-            value = values.pass_type(type_char, value)
+            value = self.values.pass_type(type_char, value)
         # update memory model
         # check if garbage needs collecting before allocating memory
         if name not in self.var_memory:
@@ -267,9 +268,10 @@ class Scalars(object):
 
 class Arrays(object):
 
-    def __init__(self, memory):
+    def __init__(self, memory, values):
         """Initialise arrays."""
         self.memory = memory
+        self.values = values
         self.clear()
         # OPTION BASE is unset
         self.base_index = None
@@ -389,7 +391,7 @@ class Arrays(object):
     def set(self, name, index, value):
         """Assign a value to an array element."""
         # copy value into array
-        self.view(name, index)[:] = values.pass_type(name[-1], value)[1]
+        self.view(name, index)[:] = self.values.pass_type(name[-1], value)[1]
         # increment array version
         self.arrays[name][2] += 1
 

@@ -15,7 +15,6 @@ except ImportError:
 
 from . import fp
 from . import error
-
 from . import util
 from . import basictoken as tk
 
@@ -39,6 +38,9 @@ class Values(object):
     def __init__(self, screen):
         """Setup values."""
         self._math_error_handler = MathErrorHandler(screen)
+
+    ###########################################################################
+    # string representation of numbers
 
     def str_to_number(self, strval, allow_nonnum=True):
         """Convert Python str to BASIC value."""
@@ -288,6 +290,81 @@ class Values(object):
             exp10 -= 1
         mbf.normalise()
         return fp.pack(mbf)
+
+    ###########################################################################
+    # type conversions
+
+    def pass_single(self, num):
+        """Check if variable is numeric, convert to Single."""
+        if not num:
+            raise error.RunError(error.STX)
+        typechar = num[0]
+        if typechar == '!':
+            return num
+        elif typechar == '%':
+            return self._math_error_handler.wrap(self._int_to_single, num)
+        elif typechar == '#':
+            return self._math_error_handler.wrap(self._double_to_single, num)
+        elif typechar == '$':
+            raise error.RunError(error.TYPE_MISMATCH)
+
+    def pass_double(self, num):
+        """Check if variable is numeric, convert to Double."""
+        if not num:
+            raise error.RunError(error.STX)
+        typechar = num[0]
+        if typechar == '#':
+            return num
+        elif typechar == '%':
+            return self._math_error_handler.wrap(self._int_to_double, num)
+        elif typechar == '!':
+            return ('#', bytearray(4) + num[1])
+        elif typechar == '$':
+            raise error.RunError(error.TYPE_MISMATCH)
+
+    def _int_to_single(self, num):
+        """Convert integer to single."""
+        return fp.pack(fp.Single.from_int(integer_to_int_signed(num)))
+
+    def _int_to_double(self, num):
+        """Convert integer to double."""
+        return fp.pack(fp.Double.from_int(integer_to_int_signed(num)))
+
+    def _double_to_single(self, num):
+        """Round double to single."""
+        return fp.pack(fp.unpack(num).round_to_single())
+
+    def pass_float(self, num, allow_double=True):
+        """Check if variable is numeric, convert to Double or Single."""
+        if num and num[0] == '#' and allow_double:
+            return num
+        else:
+            return self.pass_single(num)
+
+    def pass_most_precise(self, left, right, err=error.TYPE_MISMATCH):
+        """Check if variables are numeric and convert to highest-precision."""
+        left_type, right_type = left[0][-1], right[0][-1]
+        if left_type=='#' or right_type=='#':
+            return (self.pass_double(left), self.pass_double(right))
+        elif left_type=='!' or right_type=='!':
+            return (self.pass_single(left), self.pass_single(right))
+        elif left_type=='%' or right_type=='%':
+            return (pass_integer(left), pass_integer(right))
+        else:
+            raise error.RunError(err)
+
+    def pass_type(self, typechar, value):
+        """Check if variable can be converted to the given type and convert."""
+        if typechar == '$':
+            return pass_string(value)
+        elif typechar == '%':
+            return pass_integer(value)
+        elif typechar == '!':
+            return self.pass_single(value)
+        elif typechar == '#':
+            return self.pass_double(value)
+        else:
+            raise error.RunError(error.STX)
 
 
 class MathErrorHandler(object):
@@ -611,7 +688,6 @@ def format_float_fixed(expr, decimals, force_dot):
 
 ##################################
 
-#####
 
 def str_to_int(s):
     """Return Python int value for Python str, zero if malformed."""
@@ -694,34 +770,6 @@ def pass_integer(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
         # type mismatch
         raise error.RunError(err)
 
-def pass_single(num):
-    """Check if variable is numeric, convert to Single."""
-    if not num:
-        raise error.RunError(error.STX)
-    typechar = num[0]
-    if typechar == '!':
-        return num
-    elif typechar == '%':
-        return fp.pack(fp.Single.from_int(integer_to_int_signed(num)))
-    elif typechar == '#':
-        # *round* to single
-        return fp.pack(fp.unpack(num).round_to_single())
-    elif typechar == '$':
-        raise error.RunError(error.TYPE_MISMATCH)
-
-def pass_double(num):
-    """Check if variable is numeric, convert to Double."""
-    if not num:
-        raise error.RunError(error.STX)
-    typechar = num[0]
-    if typechar == '#':
-        return num
-    elif typechar == '%':
-        return fp.pack(fp.Double.from_int(integer_to_int_signed(num)))
-    elif typechar == '!':
-        return ('#', bytearray(4) + num[1])
-    elif typechar == '$':
-        raise error.RunError(error.TYPE_MISMATCH)
 
 def pass_string(inp, allow_empty=False, err=error.TYPE_MISMATCH):
     """Check if variable is String-valued."""
@@ -735,43 +783,12 @@ def pass_string(inp, allow_empty=False, err=error.TYPE_MISMATCH):
     else:
         raise error.RunError(err)
 
-def pass_float(num, allow_double=True):
-    """Check if variable is numeric, convert to Double or Single."""
-    if num and num[0] == '#' and allow_double:
-        return num
-    else:
-        return pass_single(num)
-
 def pass_number(inp, err=error.TYPE_MISMATCH):
     """Check if variable is numeric."""
     if inp[0] not in ('%', '!', '#'):
         raise error.RunError(err)
     return inp
 
-def pass_type(typechar, value):
-    """Check if variable can be converted to the given type and convert."""
-    if typechar == '$':
-        return pass_string(value)
-    elif typechar == '%':
-        return pass_integer(value)
-    elif typechar == '!':
-        return pass_single(value)
-    elif typechar == '#':
-        return pass_double(value)
-    else:
-        raise error.RunError(error.STX)
-
-def pass_most_precise(left, right, err=error.TYPE_MISMATCH):
-    """Check if variables are numeric and convert to highest-precision."""
-    left_type, right_type = left[0][-1], right[0][-1]
-    if left_type=='#' or right_type=='#':
-        return (pass_double(left), pass_double(right))
-    elif left_type=='!' or right_type=='!':
-        return (pass_single(left), pass_single(right))
-    elif left_type=='%' or right_type=='%':
-        return (pass_integer(left), pass_integer(right))
-    else:
-        raise error.RunError(err)
 
 
 ###############################################################################

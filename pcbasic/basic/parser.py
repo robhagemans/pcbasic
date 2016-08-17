@@ -49,7 +49,7 @@ class Parser(object):
         self.error_pos = 0
         self.double_math = double_math
         self.statements = statements.Statements(self)
-        self.operators = op.Operators(session.strings, double_math)
+        self.operators = op.Operators(self.values, session.strings, double_math)
         self.functions = functions.Functions(self, double_math)
 
 
@@ -254,9 +254,9 @@ class Parser(object):
     def loop_init(self, ins, forpos, nextpos, varname, start, stop, step):
         """Initialise a FOR loop."""
         # set start to start-step, then iterate - slower on init but allows for faster iterate
-        self.session.scalars.set(varname, op.Operators.number_add(start, op.Operators.number_neg(step)))
+        self.session.scalars.set(varname, self.operators.number_add(start, self.operators.number_neg(step)))
         # NOTE: all access to varname must be in-place into the bytearray - no assignments!
-        sgn = values.integer_to_int_signed(op.Operators.number_sgn(step))
+        sgn = values.integer_to_int_signed(self.operators.number_sgn(step))
         self.for_stack.append(
             (forpos, nextpos, varname[-1],
                 self.session.scalars.variables[varname],

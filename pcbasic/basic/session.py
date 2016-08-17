@@ -118,7 +118,7 @@ class Session(object):
                 keystring, ignore_caps, ctrl_c_is_break)
         # set up variables and memory model state
         # initialise the data segment
-        self.memory = memory.DataSegment(self.program, max_memory,
+        self.memory = memory.DataSegment(self.values, self.program, max_memory,
                                         reserved_memory, max_reclen, max_files)
         self.program.set_address(self.memory.code_start)
         #D

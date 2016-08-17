@@ -46,9 +46,10 @@ combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
 class Operators(object):
     """Context for numeric and string operations."""
 
-    def __init__(self, string_space, double_math):
+    def __init__(self, values, string_space, double_math):
         """Initialise context."""
         self.strings = string_space
+        self.values = values
         # double-precision power operator
         self.double_math = double_math
         self._init_operators()
@@ -105,10 +106,9 @@ class Operators(object):
     ###############################################################################
     # numeric operations
 
-    @staticmethod
-    def number_add(left, right):
+    def number_add(self, left, right):
         """Add two numbers."""
-        left, right = values.pass_most_precise(left, right)
+        left, right = self.values.pass_most_precise(left, right)
         if left[0] in ('#', '!'):
             return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
         else:
@@ -116,10 +116,9 @@ class Operators(object):
             return fp.pack(fp.Single.from_int(values.integer_to_int_signed(left) +
                                 values.integer_to_int_signed(right)))
 
-    @staticmethod
-    def number_subtract(left, right):
+    def number_subtract(self, left, right):
         """Subtract two numbers."""
-        return Operators.number_add(left, Operators.number_neg(right))
+        return self.number_add(left, self.number_neg(right))
 
     @staticmethod
     def number_sgn(inp):
@@ -171,28 +170,26 @@ class Operators(object):
     def number_power(self, left, right):
         """Left^right."""
         if (left[0] == '#' or right[0] == '#') and self.double_math:
-            return fp.pack( fp.power(fp.unpack(values.pass_double(left)), fp.unpack(values.pass_double(right))) )
+            return fp.pack( fp.power(fp.unpack(self.values.pass_double(left)), fp.unpack(self.values.pass_double(right))) )
         else:
             if right[0] == '%':
-                return fp.pack( fp.unpack(values.pass_single(left)).ipow_int(values.integer_to_int_signed(right)) )
+                return fp.pack( fp.unpack(self.values.pass_single(left)).ipow_int(values.integer_to_int_signed(right)) )
             else:
-                return fp.pack( fp.power(fp.unpack(values.pass_single(left)), fp.unpack(values.pass_single(right))) )
+                return fp.pack( fp.power(fp.unpack(self.values.pass_single(left)), fp.unpack(self.values.pass_single(right))) )
 
-    @staticmethod
-    def number_multiply(left, right):
+    def number_multiply(self, left, right):
         """Left*right."""
         if left[0] == '#' or right[0] == '#':
-            return fp.pack( fp.unpack(values.pass_double(left)).imul(fp.unpack(values.pass_double(right))) )
+            return fp.pack( fp.unpack(self.values.pass_double(left)).imul(fp.unpack(self.values.pass_double(right))) )
         else:
-            return fp.pack( fp.unpack(values.pass_single(left)).imul(fp.unpack(values.pass_single(right))) )
+            return fp.pack( fp.unpack(self.values.pass_single(left)).imul(fp.unpack(self.values.pass_single(right))) )
 
-    @staticmethod
-    def number_divide(left, right):
+    def number_divide(self, left, right):
         """Left/right."""
         if left[0] == '#' or right[0] == '#':
-            return fp.pack( fp.div(fp.unpack(values.pass_double(left)), fp.unpack(values.pass_double(right))) )
+            return fp.pack( fp.div(fp.unpack(self.values.pass_double(left)), fp.unpack(self.values.pass_double(right))) )
         else:
-            return fp.pack( fp.div(fp.unpack(values.pass_single(left)), fp.unpack(values.pass_single(right))) )
+            return fp.pack( fp.div(fp.unpack(self.values.pass_single(left)), fp.unpack(self.values.pass_single(right))) )
 
     @staticmethod
     def number_intdiv(left, right):
@@ -280,7 +277,7 @@ class Operators(object):
             return (self.strings.copy(values.pass_string(left)) ==
                     self.strings.copy(values.pass_string(right)))
         else:
-            left, right = values.pass_most_precise(left, right)
+            left, right = self.values.pass_most_precise(left, right)
             if left[0] in ('#', '!'):
                 return fp.unpack(left).equals(fp.unpack(right))
             else:
@@ -305,7 +302,7 @@ class Operators(object):
             # left is shorter, or equal strings
             return False
         else:
-            left, right = values.pass_most_precise(left, right)
+            left, right = self.values.pass_most_precise(left, right)
             if left[0] in ('#', '!'):
                 return fp.unpack(left).gt(fp.unpack(right))
             else:

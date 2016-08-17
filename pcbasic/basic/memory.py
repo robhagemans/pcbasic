@@ -50,8 +50,9 @@ class DataSegment(object):
     # protection flag
     protection_flag_addr = 1450
 
-    def __init__(self, program, total_memory, reserved_memory, max_reclen, max_files):
+    def __init__(self, values, program, total_memory, reserved_memory, max_reclen, max_files):
         """Initialise memory."""
+        self.values = values
         # program buffer is initialised elsewhere
         self.program = program
         # BASIC stack (determined by CLEAR)
@@ -73,9 +74,9 @@ class DataSegment(object):
         # code_start+1: offsets in files (4718 == 0x126e)
         self.code_start = self.field_mem_base + (max_files+1) * self.field_mem_offset
         # scalar space
-        self.scalars = var.Scalars(self)
+        self.scalars = var.Scalars(self, self.values)
         # array space
-        self.arrays = var.Arrays(self)
+        self.arrays = var.Arrays(self, self.values)
         # string space
         self.strings = var.StringSpace(self)
         # default sigils for names
