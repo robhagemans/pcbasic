@@ -377,8 +377,8 @@ class Statements(object):
     def exec_on_timer(self, ins):
         """ON TIMER: define timer event trapping."""
         timeval, jumpnum = self._parse_on_event(ins)
-        timeval = self.session.values.pass_single(timeval)
-        period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
+        timeval = fp.unpack(self.session.values.pass_single(timeval)).to_value()
+        period = round(timeval * 1000.)
         self.session.events.timer.set_trigger(period)
         self.session.events.timer.set_jump(jumpnum)
 
@@ -1200,9 +1200,9 @@ class Statements(object):
     def _parse_coord_bare(self, ins):
         """Helper function: parse coordinate pair."""
         util.require_read(ins, ('(',))
-        x = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session)))
+        x = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).to_value()
         util.require_read(ins, (',',))
-        y = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session)))
+        y = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).to_value()
         util.require_read(ins, (')',))
         return x, y
 
@@ -1262,10 +1262,10 @@ class Statements(object):
         absolute = util.skip_white_read_if(ins, (tk.SCREEN,))
         if util.skip_white(ins) == '(':
             x0, y0 = self._parse_coord_bare(ins)
-            x0, y0 = x0.round_to_int(), y0.round_to_int()
+            x0, y0 = round(x0), round(y0)
             util.require_read(ins, (tk.O_MINUS,))
             x1, y1 = self._parse_coord_bare(ins)
-            x1, y1 = x1.round_to_int(), y1.round_to_int()
+            x1, y1 = round(x1), round(y1)
             util.range_check(0, self.session.screen.mode.pixel_width-1, x0, x1)
             util.range_check(0, self.session.screen.mode.pixel_height-1, y0, y1)
             fill, border = None, None
@@ -1287,7 +1287,7 @@ class Statements(object):
             x0, y0 = self._parse_coord_bare(ins)
             util.require_read(ins, (tk.O_MINUS,))
             x1, y1 = self._parse_coord_bare(ins)
-            if x0.equals(x1) or y0.equals(y1):
+            if x0 == x1 or y0 == y1:
                 raise error.RunError(error.IFC)
             self.session.screen.drawing.set_window(x0, y0, x1, y1, cartesian)
         else:
@@ -1300,7 +1300,7 @@ class Statements(object):
             raise error.RunError(error.IFC)
         centre = self._parse_coord_step(ins)
         util.require_read(ins, (',',))
-        r = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session)))
+        r = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).to_value()
         start, stop, c, aspect = None, None, -1, None
         if util.skip_white_read_if(ins, (',',)):
             cval = self.parser.parse_expression(ins, self.session, allow_empty=True)
@@ -1309,14 +1309,14 @@ class Statements(object):
             if util.skip_white_read_if(ins, (',',)):
                 start = self.parser.parse_expression(ins, self.session, allow_empty=True)
                 if start is not None:
-                    start = self.session.values.pass_single(start)
+                    start = fp.unpack(self.session.values.pass_single(start)).to_value()
                 if util.skip_white_read_if(ins, (',',)):
                     stop = self.parser.parse_expression(ins, self.session, allow_empty=True)
                     if stop is not None:
-                        stop = self.session.values.pass_single(stop)
+                        stop = fp.unpack(self.session.values.pass_single(stop)).to_value()
                     if util.skip_white_read_if(ins, (',',)):
                         aspect = fp.unpack(self.session.values.pass_single(
-                                                self.parser.parse_expression(ins, self.session)))
+                                    self.parser.parse_expression(ins, self.session))).to_value()
                     elif stop is None:
                         # missing operand
                         raise error.RunError(error.MISSING_OPERAND)

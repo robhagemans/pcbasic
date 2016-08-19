@@ -7,6 +7,9 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import string
+import functools
+import math
+
 
 try:
     from cStringIO import StringIO
@@ -365,6 +368,39 @@ class Values(object):
             return self.pass_double(value)
         else:
             raise error.RunError(error.STX)
+
+
+    ####################################
+    # math functions
+
+
+    # TODO - combine with safe(), use matherrorhandler instead of re-raising the exception
+    @staticmethod
+    def safe(fn, *args):
+        """Convert to IEEE 754, apply function, convert back."""
+        try:
+            return args[0].__class__().from_value(fn(*(arg.to_value() for arg in args)))
+        except ArithmeticError as e:
+            # positive infinity
+            raise e.__class__(args[0].max.copy())
+
+    @staticmethod
+    def power(x, y):
+        """Raise x to the power y."""
+        return fp.pack(Values.safe(lambda a, b: a**b, fp.unpack(x), fp.unpack(y)))
+
+    @staticmethod
+    def func(fn, right):
+        """Return value of unary math function."""
+        return fp.pack(Values.safe(fn, fp.unpack(right)))
+
+Values.sqrt = functools.partial(Values.func, math.sqrt)
+Values.exp  = functools.partial(Values.func, math.exp)
+Values.sin  = functools.partial(Values.func, math.sin)
+Values.cos  = functools.partial(Values.func, math.cos)
+Values.tan  = functools.partial(Values.func, math.tan)
+Values.atn  = functools.partial(Values.func, math.atan)
+Values.log  = functools.partial(Values.func, math.log)
 
 
 class MathErrorHandler(object):

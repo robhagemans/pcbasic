@@ -16,14 +16,15 @@ try:
 except ImportError:
     numpy = None
 
+import math
+
 from . import error
-from . import fp
 from . import values
 from . import util
 from . import mlparser
 
 # degree-to-radian conversion factor
-deg_to_rad = fp.div(fp.Single.twopi, fp.Single.from_int(360))
+deg_to_rad = math.pi / 180.
 
 
 class GraphicsViewPort(object):
@@ -170,19 +171,19 @@ class Drawing(object):
 
     def set_window(self, fx0, fy0, fx1, fy1, cartesian=True):
         """Set the logical coordinate window (WINDOW)."""
-        if fy0.gt(fy1):
+        if fy0 > fy1:
             fy0, fy1 = fy1, fy0
-        if fx0.gt(fx1):
+        if fx0 > fx1:
             fx0, fx1 = fx1, fx0
         if cartesian:
             fy0, fy1 = fy1, fy0
         left, top, right, bottom = self.screen.graph_view.get()
-        x0, y0 = fp.Single.zero, fp.Single.zero
-        x1, y1 = fp.Single.from_int(right-left), fp.Single.from_int(bottom-top)
-        scalex = fp.div(fp.sub(x1, x0), fp.sub(fx1,fx0))
-        scaley = fp.div(fp.sub(y1, y0), fp.sub(fy1,fy0))
-        offsetx = fp.sub(x0, fp.mul(fx0,scalex))
-        offsety = fp.sub(y0, fp.mul(fy0,scaley))
+        x0, y0 = 0., 0.
+        x1, y1 = float(right-left), float(bottom-top)
+        scalex = (x1-x0) / (fx1-fx0)
+        scaley = (y1-y0) / (fy1-fy0)
+        offsetx = x0 - fx0*scalex
+        offsety = y0 - fy0*scaley
         self.window = scalex, scaley, offsetx, offsety
         self.window_bounds = fx0, fy0, fx1, fy1, cartesian
 
@@ -202,13 +203,13 @@ class Drawing(object):
             if step:
                 fx0, fy0 = self.get_window_logical(*self.last_point)
             else:
-                fx0, fy0 = fp.Single.zero.copy(), fp.Single.zero.copy()
-            x = fp.add(offsetx, fp.mul(fx0.iadd(fx), scalex)).round_to_int()
-            y = fp.add(offsety, fp.mul(fy0.iadd(fy), scaley)).round_to_int()
+                fx0, fy0 = 0., 0.
+            x = int(round(offsetx + (fx0+fx) * scalex))
+            y = int(round(offsety + (fy0+fy) * scaley))
         else:
             x, y = self.last_point if step else (0, 0)
-            x += fx.round_to_int()
-            y += fy.round_to_int()
+            x += int(round(fx))
+            y += int(round(fy))
         # overflow check
         if x < -0x8000 or y < -0x8000 or x > 0x7fff or y > 0x7fff:
             raise error.RunError(error.OVERFLOW)
@@ -216,22 +217,20 @@ class Drawing(object):
 
     def get_window_logical(self, x, y):
         """Convert physical to logical coordinates."""
-        x, y = fp.Single.from_int(x), fp.Single.from_int(y)
+        x, y = float(x), float(y)
         if self.window:
             scalex, scaley, offsetx, offsety = self.window
-            return (fp.div(fp.sub(x, offsetx), scalex),
-                     fp.div(fp.sub(y, offsety), scaley))
+            return (x - offsetx) / scalex,  (y - offsety) / scaley
         else:
             return x, y
 
-    def get_window_scale(self, fx, fy):
+    def _get_window_scale(self, fx, fy):
         """Get logical to physical scale factor."""
         if self.window:
             scalex, scaley, _, _ = self.window
-            return (fp.mul(fx, scalex).round_to_int(),
-                     fp.mul(fy, scaley).round_to_int())
+            return int(round(fx * scalex)), int(round(fy * scaley))
         else:
-            return fx.round_to_int(), fy.round_to_int()
+            return int(round(fx)), int(round(fy))
 
     ### PSET, POINT
 
@@ -250,7 +249,7 @@ class Drawing(object):
             return -1
         if y < 0 or y >= self.screen.mode.pixel_height:
             return -1
-        return self.screen.get_pixel(x,y)
+        return self.screen.get_pixel(x, y)
 
     ### LINE
 
@@ -389,38 +388,34 @@ class Drawing(object):
         x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
         if aspect is None:
-            aspect = fp.div(
-                fp.Single.from_int(self.screen.mode.pixel_aspect[0]),
-                fp.Single.from_int(self.screen.mode.pixel_aspect[1]))
-        if aspect.equals(aspect.one):
-            rx, _ = self.get_window_scale(r, fp.Single.zero)
+            aspect = self.screen.mode.pixel_aspect[0] / float(self.screen.mode.pixel_aspect[1])
+        if aspect == 1.:
+            rx, _ = self._get_window_scale(r, 0.)
             ry = rx
-        elif aspect.gt(aspect.one):
-            _, ry = self.get_window_scale(fp.Single.zero, r)
-            rx = fp.div(r, aspect).round_to_int()
+        elif aspect > 1.:
+            _, ry = self._get_window_scale(0., r)
+            rx = int(round(r / aspect))
         else:
-            rx, _ = self.get_window_scale(r, fp.Single.zero)
-            ry = fp.mul(r, aspect).round_to_int()
+            rx, _ = self._get_window_scale(r, 0.)
+            ry = int(round(r * aspect))
         start_octant, start_coord, start_line = -1, -1, False
         if start:
-            start = fp.unpack(start)
-            start_octant, start_coord, start_line = get_octant(start, rx, ry)
+            start_octant, start_coord, start_line = _get_octant(start, rx, ry)
         stop_octant, stop_coord, stop_line = -1, -1, False
         if stop:
-            stop = fp.unpack(stop)
-            stop_octant, stop_coord, stop_line = get_octant(stop, rx, ry)
-        if aspect.equals(aspect.one):
+            stop_octant, stop_coord, stop_line = _get_octant(stop, rx, ry)
+        if aspect == 1.:
             self.draw_circle(x0, y0, rx, c,
                              start_octant, start_coord, start_line,
                              stop_octant, stop_coord, stop_line)
         else:
             startx, starty, stopx, stopy = -1, -1, -1, -1
             if start is not None:
-                startx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(start)).round_to_int())
-                starty = abs(fp.mul(fp.Single.from_int(ry), fp.sin(start)).round_to_int())
+                startx = abs(int(round(rx * math.cos(start))))
+                starty = abs(int(round(ry * math.sin(start))))
             if stop is not None:
-                stopx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(stop)).round_to_int())
-                stopy = abs(fp.mul(fp.Single.from_int(ry), fp.sin(stop)).round_to_int())
+                stopx = abs(int(round(rx * math.cos(stop))))
+                stopy = abs(int(round(ry * math.sin(stop))))
             self.draw_ellipse(x0, y0, rx, ry, c,
                               start_octant/2, startx, starty, start_line,
                               stop_octant/2, stopx, stopy, stop_line)
@@ -435,7 +430,7 @@ class Drawing(object):
         # find invisible octants
         if oct0 == -1:
             hide_oct = range(0,0)
-        elif oct0 < oct1 or oct0 == oct1 and octant_gte(oct0, coo1, coo0):
+        elif oct0 < oct1 or oct0 == oct1 and _octant_gte(oct0, coo1, coo0):
             hide_oct = range(0, oct0) + range(oct1+1, 8)
         else:
             hide_oct = range(oct1+1, oct0)
@@ -448,23 +443,23 @@ class Drawing(object):
             for octant in range(0,8):
                 if octant in hide_oct:
                     continue
-                elif oct0 != oct1 and octant == oct0 and octant_gt(oct0, coo0, y):
+                elif oct0 != oct1 and octant == oct0 and _octant_gt(oct0, coo0, y):
                     continue
-                elif oct0 != oct1 and octant == oct1 and octant_gt(oct1, y, coo1):
+                elif oct0 != oct1 and octant == oct1 and _octant_gt(oct1, y, coo1):
                     continue
                 elif oct0 == oct1 and octant == oct0:
                     # if coo1 >= coo0
-                    if octant_gte(oct0, coo1, coo0):
+                    if _octant_gte(oct0, coo1, coo0):
                         # if y > coo1 or y < coo0
                         # (don't draw if y is outside coo's)
-                        if octant_gt(oct0, y, coo1) or octant_gt(oct0, coo0,y):
+                        if _octant_gt(oct0, y, coo1) or _octant_gt(oct0, coo0,y):
                             continue
                     else:
                         # if coo0 > y > c001
                         # (don't draw if y is between coo's)
-                        if octant_gt(oct0, y, coo1) and octant_gt(oct0, coo0, y):
+                        if _octant_gt(oct0, y, coo1) and _octant_gt(oct0, coo0, y):
                             continue
-                self.screen.put_pixel(*octant_coord(octant, x0, y0, x, y), index=c)
+                self.screen.put_pixel(*_octant_coord(octant, x0, y0, x, y), index=c)
             # remember endpoints for pie sectors
             if y == coo0:
                 coo0x = x
@@ -479,9 +474,9 @@ class Drawing(object):
                 bres_error += 2*(y-x+1)
         # draw pie-slice lines
         if line0:
-            self.draw_line(x0, y0, *octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
+            self.draw_line(x0, y0, *_octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
         if line1:
-            self.draw_line(x0, y0, *octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
+            self.draw_line(x0, y0, *_octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
 
     def draw_ellipse(self, cx, cy, rx, ry, c,
                      qua0=-1, x0=-1, y0=-1, line0=False,
@@ -491,7 +486,7 @@ class Drawing(object):
         # find invisible quadrants
         if qua0 == -1:
             hide_qua = range(0,0)
-        elif qua0 < qua1 or qua0 == qua1 and quadrant_gte(qua0, x1, y1, x0, y0):
+        elif qua0 < qua1 or qua0 == qua1 and _quadrant_gte(qua0, x1, y1, x0, y0):
             hide_qua = range(0, qua0) + range(qua1+1, 4)
         else:
             hide_qua = range(qua1+1,qua0)
@@ -508,18 +503,18 @@ class Drawing(object):
                 # skip invisible arc sectors
                 if quadrant in hide_qua:
                     continue
-                elif qua0 != qua1 and quadrant == qua0 and quadrant_gt(qua0, x0, y0, x, y):
+                elif qua0 != qua1 and quadrant == qua0 and _quadrant_gt(qua0, x0, y0, x, y):
                     continue
-                elif qua0 != qua1 and quadrant == qua1 and quadrant_gt(qua1, x, y, x1, y1):
+                elif qua0 != qua1 and quadrant == qua1 and _quadrant_gt(qua1, x, y, x1, y1):
                     continue
                 elif qua0 == qua1 and quadrant == qua0:
-                    if quadrant_gte(qua0, x1, y1, x0, y0):
-                        if quadrant_gt(qua0, x, y, x1, y1) or quadrant_gt(qua0, x0, y0, x, y):
+                    if _quadrant_gte(qua0, x1, y1, x0, y0):
+                        if _quadrant_gt(qua0, x, y, x1, y1) or _quadrant_gt(qua0, x0, y0, x, y):
                             continue
                     else:
-                        if quadrant_gt(qua0, x, y, x1, y1) and quadrant_gt(qua0, x0, y0, x, y):
+                        if _quadrant_gt(qua0, x, y, x1, y1) and _quadrant_gt(qua0, x0, y0, x, y):
                             continue
-                self.screen.put_pixel(*quadrant_coord(quadrant, cx, cy, x, y), index=c)
+                self.screen.put_pixel(*_quadrant_coord(quadrant, cx, cy, x, y), index=c)
             # bresenham error step
             e2 = 2 * err
             if (e2 <= dy):
@@ -541,9 +536,9 @@ class Drawing(object):
             y += 1
         # draw pie-slice lines
         if line0:
-            self.draw_line(cx, cy, *quadrant_coord(qua0, cx, cy, x0, y0), c=c)
+            self.draw_line(cx, cy, *_quadrant_coord(qua0, cx, cy, x0, y0), c=c)
         if line1:
-            self.draw_line(cx, cy, *quadrant_coord(qua1, cx, cy, x1, y1), c=c)
+            self.draw_line(cx, cy, *_quadrant_coord(qua1, cx, cy, x1, y1), c=c)
 
     ### PAINT: Flood fill
 
@@ -809,7 +804,7 @@ class Drawing(object):
                 self.paint((x, y, False), None, colour, bound, None, events)
 
     def draw_step(self, x0, y0, sx, sy, plot, goback):
-        """Make a DRAW step, drawing a line and reurning if requested."""
+        """Make a DRAW step, drawing a line and returning if requested."""
         scale = self.draw_scale
         rotate = self.draw_angle
         aspect = self.screen.mode.pixel_aspect
@@ -825,12 +820,13 @@ class Drawing(object):
         elif rotate == 270:
             x1, y1 = -int(y1*yfac), int(x1//yfac)
         else:
-            fx, fy = fp.Single.from_int(x1), fp.Single.from_int(y1)
-            phi = fp.mul(fp.Single.from_int(rotate), deg_to_rad)
-            sinr, cosr = fp.sin(phi), fp.cos(phi)
-            fxfac = fp.div(fp.Single.from_int(aspect[0]), fp.Single.from_int(aspect[1]))
-            fx, fy = fp.add(fp.mul(cosr,fx), fp.div(fp.mul(sinr,fy), fxfac)), fp.mul(fp.sub(fp.mul(cosr,fy), fxfac), fp.mul(sinr,fx))
-            x1, y1 = fx.round_to_int(), fy.round_to_int()
+            fx, fy = float(x1), float(y1)
+            phi = rotate * deg_to_rad
+            sinr, cosr = math.sin(phi), math.cos(phi)
+            fxfac = float(aspect[0]) / float(aspect[1])
+            fx = cosr*fx + (sinr*fy) / fxfac
+            fy = (cosr*fy) * fxfac - sinr*fx
+            x1, y1 = int(round(fx)), int(round(fy))
         y1 += y0
         x1 += x0
         if plot:
@@ -856,27 +852,26 @@ def tile_to_interval(x0, x1, y, tile):
 ###############################################################################
 # octant logic for CIRCLE
 
-def get_octant(mbf, rx, ry):
+def _get_octant(f, rx, ry):
     """Get the circle octant for a given coordinate."""
-    neg = mbf.neg
-    if neg:
-        mbf.negate()
+    neg = f < 0.
+    f = abs(f)
     octant = 0
-    comp = fp.Single.pi4.copy()
-    while mbf.gt(comp):
-        comp.iadd(fp.Single.pi4)
+    comp = math.pi / 4.
+    while f > comp:
+        comp += math.pi / 4.
         octant += 1
         if octant >= 8:
             raise error.RunError(error.IFC)
     if octant in (0, 3, 4, 7):
         # running var is y
-        coord = abs(fp.mul(fp.Single.from_int(ry), fp.sin(mbf)).round_to_int())
+        coord = abs(int(round(ry * math.sin(f))))
     else:
         # running var is x
-        coord = abs(fp.mul(fp.Single.from_int(rx), fp.cos(mbf)).round_to_int())
+        coord = abs(int(round(rx * math.cos(f))))
     return octant, coord, neg
 
-def octant_coord(octant, x0, y0, x, y):
+def _octant_coord(octant, x0, y0, x, y):
     """Return symmetrically reflected coordinates for a given pair."""
     if   octant == 7:     return x0+x, y0+y
     elif octant == 0:     return x0+x, y0-y
@@ -887,14 +882,14 @@ def octant_coord(octant, x0, y0, x, y):
     elif octant == 5:     return x0-y, y0+x
     elif octant == 2:     return x0-y, y0-x
 
-def octant_gt(octant, y, coord):
+def _octant_gt(octant, y, coord):
     """Return whether y is further along the circle than coord."""
     if octant%2 == 1:
         return y < coord
     else:
         return y > coord
 
-def octant_gte(octant, y, coord):
+def _octant_gte(octant, y, coord):
     """Return whether y is further along the circle than coord, or equal."""
     if octant%2 == 1:
         return y <= coord
@@ -905,14 +900,14 @@ def octant_gte(octant, y, coord):
 ###############################################################################
 # quadrant logic for CIRCLE
 
-def quadrant_coord(quadrant, x0,y0, x,y):
+def _quadrant_coord(quadrant, x0, y0, x, y):
     """Return symmetrically reflected coordinates for a given pair."""
     if   quadrant == 3:     return x0+x, y0+y
     elif quadrant == 0:     return x0+x, y0-y
     elif quadrant == 2:     return x0-x, y0+y
     elif quadrant == 1:     return x0-x, y0-y
 
-def quadrant_gt(quadrant, x, y, x0, y0):
+def _quadrant_gt(quadrant, x, y, x0, y0):
     """Return whether y is further along the ellipse than coord."""
     if quadrant%2 == 0:
         if y != y0:
@@ -925,7 +920,7 @@ def quadrant_gt(quadrant, x, y, x0, y0):
         else:
             return x > x0
 
-def quadrant_gte(quadrant, x, y, x0, y0):
+def _quadrant_gte(quadrant, x, y, x0, y0):
     """Return whether y is further along the ellipse than coord, or equal."""
     if quadrant%2 == 0:
         if y != y0:

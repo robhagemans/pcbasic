@@ -170,12 +170,12 @@ class Operators(object):
     def number_power(self, left, right):
         """Left^right."""
         if (left[0] == '#' or right[0] == '#') and self.double_math:
-            return fp.pack( fp.power(fp.unpack(self.values.pass_double(left)), fp.unpack(self.values.pass_double(right))) )
+            return self.values.power(self.values.pass_double(left), self.values.pass_double(right))
         else:
             if right[0] == '%':
                 return fp.pack( fp.unpack(self.values.pass_single(left)).ipow_int(values.integer_to_int_signed(right)) )
             else:
-                return fp.pack( fp.power(fp.unpack(self.values.pass_single(left)), fp.unpack(self.values.pass_single(right))) )
+                return self.values.power(self.values.pass_single(left), self.values.pass_single(right))
 
     def number_multiply(self, left, right):
         """Left*right."""

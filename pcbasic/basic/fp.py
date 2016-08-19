@@ -23,7 +23,6 @@ This file is released under the GNU GPL version 3 or later.
 # There is an assumed 1 bit after the radix point (so the assumed mantissa is 0.1ffff... where f's are the fraction bits)
 
 import math
-from functools import partial
 
 # the exponent is biased by 128
 true_bias = 128
@@ -468,26 +467,6 @@ def sq(n):
 def pow_int(left_in, right_in):
     """Raise a float to an integer power."""
     return left_in.copy().ipow_int(right_in)
-
-####################################
-# math function
-
-def safe(fn, *args):
-    """Convert to IEEE 754, apply function, convert back."""
-    try:
-        return args[0].__class__().from_value(fn(*(arg.to_value() for arg in args)))
-    except ArithmeticError as e:
-        # positive infinity
-        raise e.__class__(args[0].max.copy())
-
-power = partial(safe, lambda a,b: a**b)
-sqrt = partial(safe, math.sqrt)
-exp  = partial(safe, math.exp)
-sin  = partial(safe, math.sin)
-cos  = partial(safe, math.cos)
-tan  = partial(safe, math.tan)
-atn  = partial(safe, math.atan)
-log  = partial(safe, math.log)
 
 
 ####################################

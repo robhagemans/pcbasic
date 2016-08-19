@@ -71,14 +71,14 @@ class Functions(object):
             tk.SGN: self.value_sgn,
             tk.INT: self.value_int,
             tk.ABS: self.value_abs,
-            tk.SQR: partial(self.value_func, fn=fp.sqrt),
+            tk.SQR: partial(self.value_func, fn=self.session.values.sqrt),
             tk.RND: self.value_rnd,
-            tk.SIN: partial(self.value_func, fn=fp.sin),
-            tk.LOG: partial(self.value_func, fn=fp.log),
-            tk.EXP: partial(self.value_func, fn=fp.exp),
-            tk.COS: partial(self.value_func, fn=fp.cos),
-            tk.TAN: partial(self.value_func, fn=fp.tan),
-            tk.ATN: partial(self.value_func, fn=fp.atn),
+            tk.SIN: partial(self.value_func, fn=self.session.values.sin),
+            tk.LOG: partial(self.value_func, fn=self.session.values.log),
+            tk.EXP: partial(self.value_func, fn=self.session.values.exp),
+            tk.COS: partial(self.value_func, fn=self.session.values.cos),
+            tk.TAN: partial(self.value_func, fn=self.session.values.tan),
+            tk.ATN: partial(self.value_func, fn=self.session.values.atn),
             tk.FRE: self.value_fre,
             tk.INP: self.value_inp,
             tk.POS: self.value_pos,
@@ -492,8 +492,9 @@ class Functions(object):
             if screen.mode.is_text_mode:
                 raise error.RunError(error.IFC)
             return values.int_to_integer_signed(screen.drawing.point(
-                            (fp.unpack(self.session.values.pass_single(arg0)),
-                             fp.unpack(self.session.values.pass_single(arg1)), False)))
+                            (fp.unpack(self.session.values.pass_single(arg0)).to_value(),
+                             fp.unpack(self.session.values.pass_single(arg1)).to_value(), False)
+                             ))
         else:
             # single-argument mode
             util.require_read(ins, (')',))
@@ -506,10 +507,10 @@ class Functions(object):
                     return values.int_to_integer_signed(y)
                 elif fn == 2:
                     fx, _ = screen.drawing.get_window_logical(x, y)
-                    return fp.pack(fx)
+                    return fp.Single.from_value(fx)
                 elif fn == 3:
                     _, fy = screen.drawing.get_window_logical(x, y)
-                    return fp.pack(fy)
+                    return fp.Single.from_value(fy)
             except AttributeError:
                 return values.null('%')
 
@@ -525,17 +526,17 @@ class Functions(object):
         if screen.mode.is_text_mode:
             return values.null('%')
         if mode == 0:
-            value, _ = screen.drawing.get_window_physical(fp.unpack(self.session.values.pass_single(coord)), fp.Single.zero)
+            value, _ = screen.drawing.get_window_physical(fp.unpack(self.session.values.pass_single(coord)).to_value(), 0.)
             return values.int_to_integer_signed(value)
         elif mode == 1:
-            _, value = screen.drawing.get_window_physical(fp.Single.zero, fp.unpack(self.session.values.pass_single(coord)))
+            _, value = screen.drawing.get_window_physical(0., fp.unpack(self.session.values.pass_single(coord)).to_value())
             return values.int_to_integer_signed(value)
         elif mode == 2:
             value, _ = screen.drawing.get_window_logical(values.pass_int_unpack(coord), 0)
-            return fp.pack(value)
+            return fp.Single.from_value(value)
         elif mode == 3:
             _, value = screen.drawing.get_window_logical(0, values.pass_int_unpack(coord))
-            return fp.pack(value)
+            return fp.Single.from_value(value)
 
     #####################################################################
     # sound functions
@@ -670,8 +671,9 @@ class Functions(object):
 
     def value_func(self, ins, fn):
         """Return value of unary math function."""
-        return fp.pack(fn(fp.unpack(self.session.values.pass_float(
-            self.parser.parse_bracket(ins, self.session), self.double_math))))
+        return fn(self.session.values.pass_float(
+                            self.parser.parse_bracket(ins, self.session),
+                            self.double_math))
 
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
