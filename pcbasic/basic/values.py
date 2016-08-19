@@ -373,27 +373,17 @@ class Values(object):
     ####################################
     # math functions
 
-
-    # TODO - combine with safe(), use matherrorhandler instead of re-raising the exception
+    #TODO: use matherrorhandler instead of re-raising
     @staticmethod
-    def safe(fn, *args):
+    def func(fn, *args):
         """Convert to IEEE 754, apply function, convert back."""
         try:
-            return args[0].__class__().from_value(fn(*(arg.to_value() for arg in args)))
+            return fp.pack(fp.unpack(args[0]).__class__().from_value(fn(*(fp.unpack(arg).to_value() for arg in args))))
         except ArithmeticError as e:
             # positive infinity
-            raise e.__class__(args[0].max.copy())
+            raise e.__class__(fp.unpack(args[0]).max.copy())
 
-    @staticmethod
-    def power(x, y):
-        """Raise x to the power y."""
-        return fp.pack(Values.safe(lambda a, b: a**b, fp.unpack(x), fp.unpack(y)))
-
-    @staticmethod
-    def func(fn, right):
-        """Return value of unary math function."""
-        return fp.pack(Values.safe(fn, fp.unpack(right)))
-
+Values.power = functools.partial(Values.func, lambda a, b: a**b)
 Values.sqrt = functools.partial(Values.func, math.sqrt)
 Values.exp  = functools.partial(Values.func, math.exp)
 Values.sin  = functools.partial(Values.func, math.sin)
