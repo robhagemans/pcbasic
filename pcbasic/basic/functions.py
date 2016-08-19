@@ -71,7 +71,7 @@ class Functions(object):
             tk.SGN: self.value_sgn,
             tk.INT: self.value_int,
             tk.ABS: self.value_abs,
-            tk.SQR: partial(self.value_func, fn=self.session.values.sqrt),
+            tk.SQR: partial(self.value_func, fn=self.session.values.sqr),
             tk.RND: self.value_rnd,
             tk.SIN: partial(self.value_func, fn=self.session.values.sin),
             tk.LOG: partial(self.value_func, fn=self.session.values.log),

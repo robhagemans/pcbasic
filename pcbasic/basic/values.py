@@ -42,6 +42,7 @@ class Values(object):
         """Setup values."""
         self._math_error_handler = MathErrorHandler(screen)
 
+
     ###########################################################################
     # string representation of numbers
 
@@ -373,9 +374,13 @@ class Values(object):
     ####################################
     # math functions
 
-    #TODO: use matherrorhandler instead of re-raising
+
+    def func(self, fn, *args):
+        """Convert to IEEE 754, apply function, convert back; catch errors."""
+        return self._math_error_handler.wrap(self._func, fn, *args)
+
     @staticmethod
-    def func(fn, *args):
+    def _func(fn, *args):
         """Convert to IEEE 754, apply function, convert back."""
         try:
             return fp.pack(fp.unpack(args[0]).__class__().from_value(fn(*(fp.unpack(arg).to_value() for arg in args))))
@@ -383,14 +388,29 @@ class Values(object):
             # positive infinity
             raise e.__class__(fp.unpack(args[0]).max.copy())
 
-Values.power = functools.partial(Values.func, lambda a, b: a**b)
-Values.sqrt = functools.partial(Values.func, math.sqrt)
-Values.exp  = functools.partial(Values.func, math.exp)
-Values.sin  = functools.partial(Values.func, math.sin)
-Values.cos  = functools.partial(Values.func, math.cos)
-Values.tan  = functools.partial(Values.func, math.tan)
-Values.atn  = functools.partial(Values.func, math.atan)
-Values.log  = functools.partial(Values.func, math.log)
+    def power(self, x, y):
+        return self.func(lambda a, b: a**b, x, y)
+
+    def sqr(self, x):
+        return self.func(math.sqrt, x)
+
+    def exp(self, x):
+        return self.func(math.exp, x)
+
+    def sin(self, x):
+        return self.func(math.sin, x)
+
+    def cos(self, x):
+        return self.func(math.cos, x)
+
+    def tan(self, x):
+        return self.func(math.tan, x)
+
+    def atn(self, x):
+        return self.func(math.atan, x)
+
+    def log(self, x):
+        return self.func(math.log, x)
 
 
 class MathErrorHandler(object):
@@ -412,7 +432,7 @@ class MathErrorHandler(object):
         """Handle Overflow or Division by Zero."""
         try:
             return fn(*args, **kwargs)
-        except Exception as e:
+        except (ValueError, ArithmeticError) as e:
             if isinstance(e, ValueError):
                 # math domain errors such as SQR(-1)
                 math_error = error.IFC
