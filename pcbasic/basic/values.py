@@ -38,9 +38,11 @@ def null(sigil):
 class Values(object):
     """Handles BASIC strings and numbers."""
 
-    def __init__(self, screen):
+    def __init__(self, screen, double_math):
         """Setup values."""
         self._math_error_handler = MathErrorHandler(screen)
+        # double-precision EXP, SIN, COS, TAN, ATN, LOG
+        self._double_math = double_math
 
 
     ###########################################################################
@@ -374,43 +376,80 @@ class Values(object):
     ####################################
     # math functions
 
-
-    def func(self, fn, *args):
+    def _func(self, fn, *args):
         """Convert to IEEE 754, apply function, convert back; catch errors."""
-        return self._math_error_handler.wrap(self._func, fn, *args)
+        args = (self.pass_float(arg, self._double_math) for arg in args)
+        return self._math_error_handler.wrap(self._func_unsafe, fn, *args)
 
     @staticmethod
-    def _func(fn, *args):
+    def _func_unsafe(fn, *args):
         """Convert to IEEE 754, apply function, convert back."""
+        floatcls = fp.unpack(args[0]).__class__
         try:
-            return fp.pack(fp.unpack(args[0]).__class__().from_value(fn(*(fp.unpack(arg).to_value() for arg in args))))
+            args = (fp.unpack(arg).to_value() for arg in args)
+            return fp.pack(floatcls().from_value(fn(*args)))
         except ArithmeticError as e:
             # positive infinity
-            raise e.__class__(fp.unpack(args[0]).max.copy())
+            raise e.__class__(floatcls.max.copy())
 
     def power(self, x, y):
-        return self.func(lambda a, b: a**b, x, y)
+        """x to the power y."""
+        return self._func(lambda a, b: a**b, x, y)
 
     def sqr(self, x):
-        return self.func(math.sqrt, x)
+        """Square root."""
+        return self._func(math.sqrt, x)
 
     def exp(self, x):
-        return self.func(math.exp, x)
+        """Exponential."""
+        return self._func(math.exp, x)
 
     def sin(self, x):
-        return self.func(math.sin, x)
+        """Sine."""
+        return self._func(math.sin, x)
 
     def cos(self, x):
-        return self.func(math.cos, x)
+        """Cosine."""
+        return self._func(math.cos, x)
 
     def tan(self, x):
-        return self.func(math.tan, x)
+        """Tangent."""
+        return self._func(math.tan, x)
 
     def atn(self, x):
-        return self.func(math.atan, x)
+        """Inverse tangent."""
+        return self._func(math.atan, x)
 
     def log(self, x):
-        return self.func(math.log, x)
+        """Logarithm."""
+        return self._func(math.log, x)
+
+    ###########################################################################
+
+    def sgn(self, x):
+        """Sign."""
+        x = pass_number(x)
+        if x[0] == '%':
+            inp_int = integer_to_int_signed(x)
+            return int_to_integer_signed(0 if inp_int==0 else (1 if inp_int > 0 else -1))
+        else:
+            return int_to_integer_signed(fp.unpack(x).sign())
+
+    def floor(self, x):
+        """Truncate towards negative infinity (INT)."""
+        x = pass_number(x)
+        return x if x[0] == '%' else fp.pack(fp.unpack(x).ifloor())
+
+    def fix(self, x):
+        """Truncate towards zero."""
+        inp = pass_number(x)
+        if inp[0] == '%':
+            return inp
+        elif inp[0] == '!':
+            # needs to be a float to avoid overflow
+            return fp.pack(fp.Single.from_int(fp.unpack(inp).trunc_to_int()))
+        elif inp[0] == '#':
+            return fp.pack(fp.Double.from_int(fp.unpack(inp).trunc_to_int()))
 
 
 class MathErrorHandler(object):

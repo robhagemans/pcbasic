@@ -101,7 +101,7 @@ class Session(object):
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=option_debug)
         # prepare string and number handler
-        self.values = values.Values(self.screen)
+        self.values = values.Values(self.screen, double)
         # prepare tokeniser
         self.tokeniser = tokenise.Tokeniser(self.values, syntax, option_debug)
         # initialise the program

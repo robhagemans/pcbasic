@@ -25,12 +25,10 @@ from . import basictoken as tk
 class Functions(object):
     """BASIC functions."""
 
-    def __init__(self, parser, double_math):
+    def __init__(self, parser):
         """Initialise function context."""
         self.parser = parser
         self.session = parser.session
-        # double-precision EXP, SIN, COS, TAN, ATN, LOG
-        self.double_math = double_math
         # state variable for detecting recursion
         self.user_function_parsing = set()
         self._init_functions()
@@ -68,8 +66,8 @@ class Functions(object):
             tk.LEFT: self.value_left,
             tk.RIGHT: self.value_right,
             tk.MID: self.value_mid,
-            tk.SGN: self.value_sgn,
-            tk.INT: self.value_int,
+            tk.SGN: partial(self.value_func, fn=self.session.values.sgn),
+            tk.INT: partial(self.value_func, fn=self.session.values.floor),
             tk.ABS: self.value_abs,
             tk.SQR: partial(self.value_func, fn=self.session.values.sqr),
             tk.RND: self.value_rnd,
@@ -92,10 +90,10 @@ class Functions(object):
             tk.OCT: self.value_oct,
             tk.HEX: self.value_hex,
             tk.LPOS: self.value_lpos,
-            tk.CINT: self.value_cint,
-            tk.CSNG: self.value_csng,
-            tk.CDBL: self.value_cdbl,
-            tk.FIX: self.value_fix,
+            tk.CINT: partial(self.value_func, fn=values.pass_integer),
+            tk.CSNG: partial(self.value_func, fn=self.session.values.pass_single),
+            tk.CDBL: partial(self.value_func, fn=self.session.values.pass_double),
+            tk.FIX: partial(self.value_func, fn=self.session.values.fix),
             tk.PEN: self.value_pen,
             tk.STICK: self.value_stick,
             tk.STRIG: self.value_strig,
@@ -152,18 +150,6 @@ class Functions(object):
     def value_mkd(self, ins):
         """MKD$: return the byte representation of a double."""
         return self.session.strings.store(self.session.values.pass_double(self.parser.parse_bracket(ins, self.session))[1])
-
-    def value_cint(self, ins):
-        """CINT: convert a number to integer."""
-        return values.pass_integer(self.parser.parse_bracket(ins, self.session))
-
-    def value_csng(self, ins):
-        """CSNG: convert a number to single."""
-        return self.session.values.pass_single(self.parser.parse_bracket(ins, self.session))
-
-    def value_cdbl(self, ins):
-        """CDBL: convert a number to double."""
-        return self.session.values.pass_double(self.parser.parse_bracket(ins, self.session))
 
     def value_str(self, ins):
         """STR$: string representation of a number."""
@@ -667,13 +653,12 @@ class Functions(object):
         raise error.RunError(error.IFC)
 
     ###########################################################
-    # double_math regulated single & double precision math
+    # unary math functions
 
     def value_func(self, ins, fn):
         """Return value of unary math function."""
-        return fn(self.session.values.pass_float(
-                            self.parser.parse_bracket(ins, self.session),
-                            self.double_math))
+        inp = self.parser.parse_bracket(ins, self.session)
+        return fn(inp)
 
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
@@ -686,28 +671,3 @@ class Functions(object):
         """ABS: get absolute value."""
         inp = self.parser.parse_bracket(ins, self.session)
         return inp if inp[0] == '$' else self.parser.operators.number_abs(inp)
-
-    def value_int(self, ins):
-        """INT: get floor value."""
-        inp = values.pass_number(self.parser.parse_bracket(ins, self.session))
-        return inp if inp[0] == '%' else fp.pack(fp.unpack(inp).ifloor())
-
-    def value_sgn(self, ins):
-        """SGN: get sign."""
-        inp = values.pass_number(self.parser.parse_bracket(ins, self.session))
-        if inp[0] == '%':
-            inp_int = values.integer_to_int_signed(inp)
-            return values.int_to_integer_signed(0 if inp_int==0 else (1 if inp_int > 0 else -1))
-        else:
-            return values.int_to_integer_signed(fp.unpack(inp).sign())
-
-    def value_fix(self, ins):
-        """FIX: round towards zero."""
-        inp = values.pass_number(self.parser.parse_bracket(ins, self.session))
-        if inp[0] == '%':
-            return inp
-        elif inp[0] == '!':
-            # needs to be a float to avoid overflow
-            return fp.pack(fp.Single.from_int(fp.unpack(inp).trunc_to_int()))
-        elif inp[0] == '#':
-            return fp.pack(fp.Double.from_int(fp.unpack(inp).trunc_to_int()))

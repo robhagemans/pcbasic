@@ -50,7 +50,7 @@ class Parser(object):
         self.double_math = double_math
         self.statements = statements.Statements(self)
         self.operators = op.Operators(self.values, session.strings, double_math)
-        self.functions = functions.Functions(self, double_math)
+        self.functions = functions.Functions(self)
 
 
     def init_error_trapping(self):
