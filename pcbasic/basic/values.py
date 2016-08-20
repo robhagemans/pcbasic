@@ -495,19 +495,15 @@ class Values(object):
             return out
         return inp
 
-    def _power(self, x, y):
-        """x to the power y."""
-        return self._func(lambda a, b: a**b, x, y)
-
     def power(self, left, right):
         """Left^right."""
         if (left[0] == '#' or right[0] == '#') and self._double_math:
-            return self._power(self.pass_double(left), self.pass_double(right))
+            return self._func(lambda a, b: a**b, self.pass_double(left), self.pass_double(right))
         else:
             if right[0] == '%':
                 return fp.pack(fp.unpack(self.pass_single(left)).ipow_int(integer_to_int_signed(right)))
             else:
-                return self._power(self.pass_single(left), self.pass_single(right))
+                return self._func(lambda a, b: a**b, self.pass_single(left), self.pass_single(right))
 
     def multiply(self, left, right):
         """Left*right."""
