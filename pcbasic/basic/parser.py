@@ -28,7 +28,7 @@ from . import values
 class Parser(object):
     """Statement parser."""
 
-    def __init__(self, session, syntax, term, double_math):
+    def __init__(self, session, syntax, term):
         """Initialise parser."""
         self.session = session
         self.values = self.session.values
@@ -47,9 +47,8 @@ class Parser(object):
         self.init_error_trapping()
         self.error_num = 0
         self.error_pos = 0
-        self.double_math = double_math
         self.statements = statements.Statements(self)
-        self.operators = op.Operators(self.values, session.strings, double_math)
+        self.operators = op.Operators(self.values, session.strings)
         self.functions = functions.Functions(self)
 
 
@@ -254,16 +253,16 @@ class Parser(object):
     def loop_init(self, ins, forpos, nextpos, varname, start, stop, step):
         """Initialise a FOR loop."""
         # set start to start-step, then iterate - slower on init but allows for faster iterate
-        self.session.scalars.set(varname, self.operators.number_add(start, self.operators.number_neg(step)))
+        self.session.scalars.set(varname, self.values.add(start, self.values.negate(step)))
         # NOTE: all access to varname must be in-place into the bytearray - no assignments!
-        sgn = values.integer_to_int_signed(self.operators.number_sgn(step))
+        sgn = values.integer_to_int_signed(self.values.sgn(step))
         self.for_stack.append(
             (forpos, nextpos, varname[-1],
                 self.session.scalars.variables[varname],
                 values.number_unpack(stop), values.number_unpack(step), sgn))
         ins.seek(nextpos)
 
-    def number_inc_gt(self, typechar, loopvar, stop, step, sgn):
+    def _inc_gt(self, typechar, loopvar, stop, step, sgn):
         """Increase number and check if it exceeds a limit."""
         if sgn == 0:
             return False
@@ -289,7 +288,7 @@ class Parser(object):
         else:
             raise error.RunError(error.NEXT_WITHOUT_FOR)
         # increment counter
-        loop_ends = self.number_inc_gt(typechar, loopvar, stop, step, sgn)
+        loop_ends = self._inc_gt(typechar, loopvar, stop, step, sgn)
         if loop_ends:
             self.for_stack.pop()
         else:

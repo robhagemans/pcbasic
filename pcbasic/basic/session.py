@@ -163,7 +163,7 @@ class Session(object):
         self.direct_line = StringIO()
         # initialise the parser
         self.events.reset()
-        self.parser = parser.Parser(self, syntax, pcjr_term, double)
+        self.parser = parser.Parser(self, syntax, pcjr_term)
         self.parser.set_pointer(False, 0)
         # set up debugger
         if option_debug:

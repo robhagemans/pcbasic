@@ -68,7 +68,7 @@ class Functions(object):
             tk.MID: self.value_mid,
             tk.SGN: partial(self.value_func, fn=self.session.values.sgn),
             tk.INT: partial(self.value_func, fn=self.session.values.floor),
-            tk.ABS: self.value_abs,
+            tk.ABS: partial(self.value_func, fn=self.session.values.abs),
             tk.SQR: partial(self.value_func, fn=self.session.values.sqr),
             tk.RND: self.value_rnd,
             tk.SIN: partial(self.value_func, fn=self.session.values.sin),
@@ -666,8 +666,3 @@ class Functions(object):
             return self.session.randomiser.rnd(self.session.values.pass_single(self.parser.parse_bracket(ins, self.session)))
         else:
             return self.session.randomiser.rnd()
-
-    def value_abs(self, ins):
-        """ABS: get absolute value."""
-        inp = self.parser.parse_bracket(ins, self.session)
-        return inp if inp[0] == '$' else self.parser.operators.number_abs(inp)

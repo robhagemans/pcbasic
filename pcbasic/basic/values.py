@@ -392,10 +392,6 @@ class Values(object):
             # positive infinity
             raise e.__class__(floatcls.max.copy())
 
-    def power(self, x, y):
-        """x to the power y."""
-        return self._func(lambda a, b: a**b, x, y)
-
     def sqr(self, x):
         """Square root."""
         return self._func(math.sqrt, x)
@@ -431,7 +427,7 @@ class Values(object):
         x = pass_number(x)
         if x[0] == '%':
             inp_int = integer_to_int_signed(x)
-            return int_to_integer_signed(0 if inp_int==0 else (1 if inp_int > 0 else -1))
+            return int_to_integer_signed(0 if inp_int == 0 else (1 if inp_int > 0 else -1))
         else:
             return int_to_integer_signed(fp.unpack(x).sign())
 
@@ -450,6 +446,141 @@ class Values(object):
             return fp.pack(fp.Single.from_int(fp.unpack(inp).trunc_to_int()))
         elif inp[0] == '#':
             return fp.pack(fp.Double.from_int(fp.unpack(inp).trunc_to_int()))
+
+
+    ###############################################################################
+    # numeric operators
+
+    def add(self, left, right):
+        """Add two numbers."""
+        left, right = self.pass_most_precise(left, right)
+        if left[0] in ('#', '!'):
+            return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
+        else:
+            # return Single to avoid wrapping on integer overflow
+            return fp.pack(fp.Single.from_int(
+                                integer_to_int_signed(left) +
+                                integer_to_int_signed(right)))
+
+    def subtract(self, left, right):
+        """Subtract two numbers."""
+        return self.add(left, self.negate(right))
+
+    def abs(self, inp):
+        """Return the absolute value of a number. No-op for strings."""
+        if inp[0] == '%':
+            val = abs(integer_to_int_signed(inp))
+            if val == 32768:
+                return fp.pack(fp.Single.from_int(val))
+            else:
+                return int_to_integer_signed(val)
+        elif inp[0] in ('!', '#'):
+            out = (inp[0], inp[1][:])
+            out[1][-2] &= 0x7F
+            return out
+        return inp
+
+    @staticmethod
+    def negate(inp):
+        """Negation (unary -). No-op for strings."""
+        if inp[0] == '%':
+            val = -integer_to_int_signed(inp)
+            if val == 32768:
+                return fp.pack(fp.Single.from_int(val))
+            else:
+                return int_to_integer_signed(val)
+        elif inp[0] in ('!', '#'):
+            out = (inp[0], inp[1][:])
+            out[1][-2] ^= 0x80
+            return out
+        return inp
+
+    def _power(self, x, y):
+        """x to the power y."""
+        return self._func(lambda a, b: a**b, x, y)
+
+    def power(self, left, right):
+        """Left^right."""
+        if (left[0] == '#' or right[0] == '#') and self._double_math:
+            return self._power(self.pass_double(left), self.pass_double(right))
+        else:
+            if right[0] == '%':
+                return fp.pack(fp.unpack(self.pass_single(left)).ipow_int(integer_to_int_signed(right)))
+            else:
+                return self._power(self.pass_single(left), self.pass_single(right))
+
+    def multiply(self, left, right):
+        """Left*right."""
+        if left[0] == '#' or right[0] == '#':
+            return fp.pack( fp.unpack(self.pass_double(left)).imul(fp.unpack(self.pass_double(right))) )
+        else:
+            return fp.pack( fp.unpack(self.pass_single(left)).imul(fp.unpack(self.pass_single(right))) )
+
+    def divide(self, left, right):
+        """Left/right."""
+        if left[0] == '#' or right[0] == '#':
+            return fp.pack( fp.div(fp.unpack(self.pass_double(left)), fp.unpack(self.pass_double(right))) )
+        else:
+            return fp.pack( fp.div(fp.unpack(self.pass_single(left)), fp.unpack(self.pass_single(right))) )
+
+    def divide_int(self, left, right):
+        """Left\\right."""
+        dividend = pass_int_unpack(left)
+        divisor = pass_int_unpack(right)
+        if divisor == 0:
+            # division by zero, return single-precision maximum
+            raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
+        if (dividend >= 0) == (divisor >= 0):
+            return int_to_integer_signed(dividend / divisor)
+        else:
+            return int_to_integer_signed(-(abs(dividend) / abs(divisor)))
+
+    def mod(self, left, right):
+        """Left modulo right."""
+        divisor = pass_int_unpack(right)
+        dividend = pass_int_unpack(left)
+        if divisor == 0:
+            # division by zero, return single-precision maximum
+            raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
+        mod = dividend % divisor
+        if dividend < 0 or mod < 0:
+            mod -= divisor
+        return int_to_integer_signed(mod)
+
+    def bitwise_not(self, right):
+        """Bitwise NOT, -x-1."""
+        return int_to_integer_signed(-pass_int_unpack(right)-1)
+
+    def bitwise_and(self, left, right):
+        """Bitwise AND."""
+        return int_to_integer_unsigned(
+            integer_to_int_unsigned(pass_integer(left)) &
+            integer_to_int_unsigned(pass_integer(right)))
+
+    def bitwise_or(self, left, right):
+        """Bitwise OR."""
+        return int_to_integer_unsigned(
+            integer_to_int_unsigned(pass_integer(left)) |
+            integer_to_int_unsigned(pass_integer(right)))
+
+    def bitwise_xor(self, left, right):
+        """Bitwise XOR."""
+        return int_to_integer_unsigned(
+            integer_to_int_unsigned(pass_integer(left)) ^
+            integer_to_int_unsigned(pass_integer(right)))
+
+    def bitwise_eqv(self, left, right):
+        """Bitwise equivalence."""
+        return int_to_integer_unsigned(0xffff-(
+            integer_to_int_unsigned(pass_integer(left)) ^
+            integer_to_int_unsigned(pass_integer(right))))
+
+    def bitwise_imp(self, left, right):
+        """Bitwise implication."""
+        return int_to_integer_unsigned(
+            (0xffff - integer_to_int_unsigned(pass_integer(left))) |
+            integer_to_int_unsigned(pass_integer(right)))
+
 
 
 class MathErrorHandler(object):

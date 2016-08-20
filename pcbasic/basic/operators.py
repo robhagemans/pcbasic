@@ -46,31 +46,29 @@ combinable = (tk.O_LT, tk.O_EQ, tk.O_GT)
 class Operators(object):
     """Context for numeric and string operations."""
 
-    def __init__(self, values, string_space, double_math):
+    def __init__(self, values, string_space):
         """Initialise context."""
         self.strings = string_space
-        self.values = values
-        # double-precision power operator
-        self.double_math = double_math
+        self._values = values
         self._init_operators()
 
     def _init_operators(self):
         """Initialise operators."""
         # unary operators
         self.unary = {
-            tk.O_MINUS: self.neg,
+            tk.O_MINUS: self._values.negate,
             tk.O_PLUS: lambda x: x,
-            tk.NOT: self.number_not,
+            tk.NOT: self._values.bitwise_not,
         }
         # binary operators
         self.binary = {
-            tk.O_CARET: self.number_power,
-            tk.O_TIMES: self.number_multiply,
-            tk.O_DIV: self.number_divide,
-            tk.O_INTDIV: self.number_intdiv,
-            tk.MOD: self.number_modulo,
+            tk.O_CARET: self._values.power,
+            tk.O_TIMES: self._values.multiply,
+            tk.O_DIV: self._values.divide,
+            tk.O_INTDIV: self._values.divide_int,
+            tk.MOD: self._values.mod,
             tk.O_PLUS: self.plus,
-            tk.O_MINUS: self.number_subtract,
+            tk.O_MINUS: self._values.subtract,
             tk.O_GT: self.gt,
             tk.O_EQ: self.equals,
             tk.O_LT: self.lt,
@@ -80,11 +78,11 @@ class Operators(object):
             tk.O_EQ + tk.O_LT: self.lte,
             tk.O_LT + tk.O_GT: self.not_equals,
             tk.O_GT + tk.O_LT: self.not_equals,
-            tk.AND: self.number_and,
-            tk.OR: self.number_or,
-            tk.XOR: self.number_xor,
-            tk.EQV: self.number_eqv,
-            tk.IMP: self.number_imp,
+            tk.AND: self._values.bitwise_and,
+            tk.OR: self._values.bitwise_or,
+            tk.XOR: self._values.bitwise_xor,
+            tk.EQV: self._values.bitwise_eqv,
+            tk.IMP: self._values.bitwise_imp,
         }
 
 
@@ -100,162 +98,6 @@ class Operators(object):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
         self._init_operators()
-
-
-
-    ###############################################################################
-    # numeric operations
-
-    def number_add(self, left, right):
-        """Add two numbers."""
-        left, right = self.values.pass_most_precise(left, right)
-        if left[0] in ('#', '!'):
-            return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
-        else:
-            # return Single to avoid wrapping on integer overflow
-            return fp.pack(fp.Single.from_int(values.integer_to_int_signed(left) +
-                                values.integer_to_int_signed(right)))
-
-    def number_subtract(self, left, right):
-        """Subtract two numbers."""
-        return self.number_add(left, self.number_neg(right))
-
-    @staticmethod
-    def number_sgn(inp):
-        """Return the sign of a number."""
-        if inp[0] == '%':
-            i = values.integer_to_int_signed(inp)
-            if i > 0:
-                return values.int_to_integer_signed(1)
-            elif i < 0:
-                return values.int_to_integer_signed(-1)
-            else:
-                return values.int_to_integer_signed(0)
-        elif inp[0] in ('!', '#'):
-            return values.int_to_integer_signed(fp.unpack(inp).sign())
-        return inp
-
-    @staticmethod
-    def number_abs(inp):
-        """Return the absolute value of a number."""
-        if inp[0] == '%':
-            val = abs(values.integer_to_int_signed(inp))
-            if val == 32768:
-                return fp.pack(fp.Single.from_int(val))
-            else:
-                return values.int_to_integer_signed(val)
-        elif inp[0] in ('!', '#'):
-            out = (inp[0], inp[1][:])
-            out[1][-2] &= 0x7F
-            return out
-        return inp
-
-    @staticmethod
-    def number_neg(inp):
-        """Return the negation of a number."""
-        inp = values.pass_number(inp)
-        if inp[0] == '%':
-            val = -values.integer_to_int_signed(inp)
-            if val == 32768:
-                return fp.pack(fp.Single.from_int(val))
-            else:
-                return values.int_to_integer_signed(val)
-        elif inp[0] in ('!', '#'):
-            out = (inp[0], inp[1][:])
-            out[1][-2] ^= 0x80
-            return out
-        # pass strings on, let error happen somewhere else.
-        return inp
-
-    def number_power(self, left, right):
-        """Left^right."""
-        if (left[0] == '#' or right[0] == '#') and self.double_math:
-            return self.values.power(self.values.pass_double(left), self.values.pass_double(right))
-        else:
-            if right[0] == '%':
-                return fp.pack( fp.unpack(self.values.pass_single(left)).ipow_int(values.integer_to_int_signed(right)) )
-            else:
-                return self.values.power(self.values.pass_single(left), self.values.pass_single(right))
-
-    def number_multiply(self, left, right):
-        """Left*right."""
-        if left[0] == '#' or right[0] == '#':
-            return fp.pack( fp.unpack(self.values.pass_double(left)).imul(fp.unpack(self.values.pass_double(right))) )
-        else:
-            return fp.pack( fp.unpack(self.values.pass_single(left)).imul(fp.unpack(self.values.pass_single(right))) )
-
-    def number_divide(self, left, right):
-        """Left/right."""
-        if left[0] == '#' or right[0] == '#':
-            return fp.pack( fp.div(fp.unpack(self.values.pass_double(left)), fp.unpack(self.values.pass_double(right))) )
-        else:
-            return fp.pack( fp.div(fp.unpack(self.values.pass_single(left)), fp.unpack(self.values.pass_single(right))) )
-
-    @staticmethod
-    def number_intdiv(left, right):
-        """Left\\right."""
-        dividend = values.pass_int_unpack(left)
-        divisor = values.pass_int_unpack(right)
-        if divisor == 0:
-            # division by zero, return single-precision maximum
-            raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
-        if (dividend >= 0) == (divisor >= 0):
-            return values.int_to_integer_signed(dividend / divisor)
-        else:
-            return values.int_to_integer_signed(-(abs(dividend) / abs(divisor)))
-
-    @staticmethod
-    def number_modulo(left, right):
-        """Left MOD right."""
-        divisor = values.pass_int_unpack(right)
-        dividend = values.pass_int_unpack(left)
-        if divisor == 0:
-            # division by zero, return single-precision maximum
-            raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
-        mod = dividend % divisor
-        if dividend < 0 or mod < 0:
-            mod -= divisor
-        return values.int_to_integer_signed(mod)
-
-    @staticmethod
-    def number_not(right):
-        """Bitwise NOT, -x-1."""
-        return values.int_to_integer_signed(-values.pass_int_unpack(right)-1)
-
-    @staticmethod
-    def number_and(left, right):
-        """Bitwise AND."""
-        return values.int_to_integer_unsigned(
-            values.integer_to_int_unsigned(values.pass_integer(left)) &
-            values.integer_to_int_unsigned(values.pass_integer(right)))
-
-    @staticmethod
-    def number_or(left, right):
-        """Bitwise OR."""
-        return values.int_to_integer_unsigned(
-            values.integer_to_int_unsigned(values.pass_integer(left)) |
-            values.integer_to_int_unsigned(values.pass_integer(right)))
-
-    @staticmethod
-    def number_xor(left, right):
-        """Bitwise XOR."""
-        return values.int_to_integer_unsigned(
-            values.integer_to_int_unsigned(values.pass_integer(left)) ^
-            values.integer_to_int_unsigned(values.pass_integer(right)))
-
-    @staticmethod
-    def number_eqv(left, right):
-        """Bitwise equivalence."""
-        return values.int_to_integer_unsigned(0xffff-(
-            values.integer_to_int_unsigned(values.pass_integer(left)) ^
-            values.integer_to_int_unsigned(values.pass_integer(right))))
-
-    @staticmethod
-    def number_imp(left, right):
-        """Bitwise implication."""
-        return values.int_to_integer_unsigned(
-            (0xffff-values.integer_to_int_unsigned(values.pass_integer(left))) |
-            values.integer_to_int_unsigned(values.pass_integer(right)))
 
 
     ###############################################################################
@@ -277,7 +119,7 @@ class Operators(object):
             return (self.strings.copy(values.pass_string(left)) ==
                     self.strings.copy(values.pass_string(right)))
         else:
-            left, right = self.values.pass_most_precise(left, right)
+            left, right = self._values.pass_most_precise(left, right)
             if left[0] in ('#', '!'):
                 return fp.unpack(left).equals(fp.unpack(right))
             else:
@@ -302,7 +144,7 @@ class Operators(object):
             # left is shorter, or equal strings
             return False
         else:
-            left, right = self.values.pass_most_precise(left, right)
+            left, right = self._values.pass_most_precise(left, right)
             if left[0] in ('#', '!'):
                 return fp.unpack(left).gt(fp.unpack(right))
             else:
@@ -337,12 +179,4 @@ class Operators(object):
         if left[0] == '$':
             return self.string_concat(left, right)
         else:
-            return self.number_add(left, right)
-
-    @staticmethod
-    def neg(right):
-        """Unary - operator: negate or no-op for strings."""
-        if right[0] == '$':
-            return right
-        else:
-            return Operators.number_neg(right)
+            return self._values.add(left, right)

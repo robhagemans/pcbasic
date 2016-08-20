@@ -10,7 +10,6 @@ import string
 
 from . import error
 from . import values
-from .operators import Operators as op
 from . import util
 
 
@@ -54,7 +53,7 @@ class MLParser(object):
         else:
             raise error.RunError(error.IFC)
         if sgn == -1:
-            step = op.number_neg(step)
+            step = values.Values.negate(step)
         return step
 
     def parse_number(self, default=None):
