@@ -423,8 +423,8 @@ class Functions(object):
     def value_timer(self, ins):
         """TIMER: get clock ticks since midnight."""
         # precision of GWBASIC TIMER is about 1/20 of a second
-        return fp.pack(fp.div( fp.Single.from_int(
-                self.session.clock.get_time_ms()/50), fp.Single.from_int(20)))
+        return fp.pack(fp.Single.from_value(
+                    float(self.session.clock.get_time_ms()//50) / 20.))
 
     def value_time(self, ins):
         """TIME$: get current system time."""
@@ -678,9 +678,9 @@ class Functions(object):
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
         if util.skip_white(ins) == '(':
-            return self.session.randomiser.get(fp.unpack(self.session.values.pass_single(self.parser.parse_bracket(ins, self.session))))
+            return self.session.randomiser.rnd(self.session.values.pass_single(self.parser.parse_bracket(ins, self.session)))
         else:
-            return self.session.randomiser.get_int(1)
+            return self.session.randomiser.rnd()
 
     def value_abs(self, ins):
         """ABS: get absolute value."""

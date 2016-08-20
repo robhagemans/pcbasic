@@ -13,10 +13,10 @@ from . import values
 class RandomNumberGenerator(object):
     """Linear Congruential Generator """
 
-    step = 4455680 # 0x43fd00
-    period = 2**24
-    multiplier = 214013
-    increment = 2531011
+    _step = 4455680 # 0x43fd00
+    _period = 2**24
+    _multiplier = 214013
+    _increment = 2531011
 
     def __init__(self):
         """Initialise the random number generator."""
@@ -24,16 +24,16 @@ class RandomNumberGenerator(object):
 
     def clear(self):
         """Reset the random number generator."""
-        self.seed = 5228370 # 0x4fc752
+        self._seed = 5228370 # 0x4fc752
 
-    def reseed(self, val):
+    def randomize(self, val):
         """Reseed the random number generator."""
         # RANDOMIZE converts to int in a non-standard way - looking at the first two bytes in the internal representation
         # on a program line, if a number outside the signed int range (or -32768) is entered,
         # the number is stored as a MBF double or float. Randomize then:
         #   - ignores the first 4 bytes (if it's a double)
         #   - reads the next two
-        #   - xors them with the final two (most signifant including sign bit, and exponent)
+        #   - xors them with the final two (most significant including sign bit, and exponent)
         # and interprets them as a signed int
         # e.g. 1#    = /x00/x00/x00/x00 /x00/x00/x00/x81 gets read as /x00/x00 ^ /x00/x81 = /x00/x81 -> 0x10000-0x8100 = -32512 (sign bit set)
         #      0.25# = /x00/x00/x00/x00 /x00/x00/x00/x7f gets read as /x00/x00 ^ /x00/x7f = /x00/x7F -> 0x7F00 = 32512 (sign bit not set)
@@ -45,23 +45,26 @@ class RandomNumberGenerator(object):
             mask = s[-4:-2]
         final_two = bytearray(chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1]))
         n = values.integer_to_int_signed(values.bytes_to_integer(final_two))
-        self.seed &= 0xff
-        self.get_int(1) # RND(1)
-        self.seed += n * self.step
-        self.seed %= self.period
+        self._seed &= 0xff
+        self._get(1) # RND(1)
+        self._seed += n * self._step
+        self._seed %= self._period
 
-    def get_int(self, n):
+    def rnd(self, f=None):
+        """Get a value from the random number generator."""
+        if f is None:
+            return self._get(1)
+        mbf = fp.unpack(f)
+        return self._get(-(mbf.man>>8) if mbf.neg else (0 if mbf.exp == 0 else mbf.man>>8))
+
+    def _get(self, n):
         """Get a value from the random number generator (int argument)."""
         if n < 0:
             n = -n
             while n < 2**23:
                 n *= 2
-            self.seed = n
+            self._seed = n
         if n != 0:
-            self.seed = (self.seed*self.multiplier + self.increment) % self.period
+            self._seed = (self._seed*self._multiplier + self._increment) % self._period
         # seed/period
-        return fp.pack(fp.div(fp.Single.from_int(self.seed), fp.Single.from_int(self.period)))
-
-    def get(self, mbf):
-        """Get a value from the random number generator (MBF single argument)."""
-        return self.get_int(-(mbf.man>>8) if mbf.neg else (0 if mbf.exp == 0 else mbf.man>>8))
+        return fp.pack(fp.div(fp.Single.from_int(self._seed), fp.Single.from_int(self._period)))

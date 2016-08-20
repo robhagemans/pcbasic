@@ -2115,18 +2115,18 @@ class Statements(object):
     def exec_randomize(self, ins):
         """RANDOMIZE: set random number generator seed."""
         val = self.parser.parse_expression(ins, self.session, allow_empty=True)
-        if val:
+        if val is not None:
             # don't convert to int if provided in the code
             val = values.pass_number(val)
         else:
             # prompt for random seed if not specified
-            while not val:
+            while val is None:
                 self.session.screen.write("Random number seed (-32768 to 32767)? ")
                 seed = self.session.editor.wait_screenline()
-                # seed entered on prompt is rounded to int
-                val = self.session.values.str_to_number(seed)
+                val = self.session.values.str_to_number(seed, allow_nonnum=False)
+            # seed entered on prompt is rounded to int
             val = values.pass_integer(val)
-        self.session.randomiser.reseed(val)
+        self.session.randomiser.randomize(val)
         util.require(ins, tk.end_statement)
 
     ################################################
