@@ -100,13 +100,31 @@ class Session(object):
                 self.sound, self.output_redirection, self.fkey_macros,
                 cga_low, mono_tint, screen_aspect,
                 self.codepage, font, warn_fonts=option_debug)
+        # set up variables and memory model state
+        # initialise the data segment
+        self.memory = memory.DataSegment(
+                    max_memory, reserved_memory, max_reclen, max_files)
+        #MOVE into DataSegment?
+        self.common_scalars = set()
+        self.common_arrays = set()
+        self.user_functions = {}
+        # string space
+        self.strings = var.StringSpace(self.memory)
         # prepare string and number handler
         self.values = values.Values(self.screen, double)
+        # scalar space
+        self.scalars = var.Scalars(self.memory, self.values)
+        # array space
+        self.arrays = var.Arrays(self.memory, self.values)
         # prepare tokeniser
         self.tokeniser = tokenise.Tokeniser(self.values, syntax, option_debug)
         # initialise the program
-        self.program = program.Program(self.tokeniser,
-                max_list_line, allow_protect, allow_code_poke)
+        self.program = program.Program(
+                self.tokeniser, max_list_line, allow_protect,
+                allow_code_poke, self.memory.code_start)
+        # register all data segment users
+        self.memory.set_buffers(
+                self.program, self.scalars, self.arrays, self.strings, self.values)
         # prepare input methods
         self.pen = inputs.Pen(self.screen)
         self.stick = inputs.Stick()
@@ -116,20 +134,6 @@ class Session(object):
         self.keyboard = inputs.Keyboard(self.events, self.screen, self.fkey_macros,
                 self.codepage, self.sound,
                 keystring, ignore_caps, ctrl_c_is_break)
-        # set up variables and memory model state
-        # initialise the data segment
-        self.memory = memory.DataSegment(self.values, self.program, max_memory,
-                                        reserved_memory, max_reclen, max_files)
-        self.program.set_address(self.memory.code_start)
-        #D
-        # these should not be reassigned by DataSegment
-        self.scalars = self.memory.scalars
-        self.arrays = self.memory.arrays
-        self.strings = self.memory.strings
-        #MOVE into DataSegment?
-        self.common_scalars = set()
-        self.common_arrays = set()
-        self.user_functions = {}
         # intialise devices and files
         # DataSegment needed for COMn and disk FIELD buffers
         # Events needed for wait()

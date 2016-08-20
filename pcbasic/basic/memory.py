@@ -50,11 +50,8 @@ class DataSegment(object):
     # protection flag
     protection_flag_addr = 1450
 
-    def __init__(self, values, program, total_memory, reserved_memory, max_reclen, max_files):
+    def __init__(self, total_memory, reserved_memory, max_reclen, max_files):
         """Initialise memory."""
-        self.values = values
-        # program buffer is initialised elsewhere
-        self.program = program
         # BASIC stack (determined by CLEAR)
         # Initially, the stack space should be set to 512 bytes,
         # or one-eighth of the available memory, whichever is smaller.
@@ -73,12 +70,6 @@ class DataSegment(object):
         # data memory model: start of code section
         # code_start+1: offsets in files (4718 == 0x126e)
         self.code_start = self.field_mem_base + (max_files+1) * self.field_mem_offset
-        # scalar space
-        self.scalars = var.Scalars(self, self.values)
-        # array space
-        self.arrays = var.Arrays(self, self.values)
-        # string space
-        self.strings = var.StringSpace(self)
         # default sigils for names
         self.deftype = ['!']*26
         # FIELD buffers
@@ -86,6 +77,14 @@ class DataSegment(object):
         self.max_reclen = max_reclen
         self.fields = {}
         self.reset_fields()
+
+    def set_buffers(self, program, scalars, arrays, strings, values):
+        """Register program and variables."""
+        self.scalars = scalars
+        self.arrays = arrays
+        self.strings = strings
+        self.program = program
+        self.values = values
 
     def reset_fields(self):
         """Reset FIELD buffers."""

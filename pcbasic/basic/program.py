@@ -22,8 +22,8 @@ from . import util
 class Program(object):
     """BASIC program."""
 
-    def __init__(self, tokeniser, max_list_line=65536,
-                allow_protect=False, allow_code_poke=False, address=0):
+    def __init__(self, tokeniser, max_list_line,
+                allow_protect, allow_code_poke, address):
         """Initialise program."""
         # program bytecode buffer
         self.bytecode = StringIO()
@@ -35,10 +35,6 @@ class Program(object):
         self.code_start = address
         # for detokenise_line()
         self.tokeniser = tokeniser
-
-    def set_address(self, code_start):
-        """Memory location of program."""
-        self.code_start = code_start
 
     def size(self):
         """Size of code space """
