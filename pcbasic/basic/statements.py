@@ -476,22 +476,19 @@ class Statements(object):
         else:
             # retrieve Music Macro Language string
             with self.session.strings:
-                mml0 = self.session.strings.copy(values.pass_string(
-                        self.parser.parse_expression(ins, self.session, allow_empty=True),
-                        allow_empty=True))
+                expr = self.parser.parse_expression(ins, self.session, allow_empty=True) or values.null('$')
+                mml0 = self.session.strings.copy(values.pass_string(expr))
             mml1, mml2 = '', ''
             if ((self.parser.syntax == 'tandy' or (self.parser.syntax == 'pcjr' and
                                              self.session.sound.sound_on))
                     and util.skip_white_read_if(ins, (',',))):
                 with self.session.strings:
-                    mml1 = self.session.strings.copy(values.pass_string(
-                            self.parser.parse_expression(ins, self.session, allow_empty=True),
-                            allow_empty=True))
+                    expr = self.parser.parse_expression(ins, self.session, allow_empty=True) or values.null('$')
+                    mml1 = self.session.strings.copy(values.pass_string(expr))
                 if util.skip_white_read_if(ins, (',',)):
                     with self.session.strings:
-                        mml2 = self.session.strings.copy(values.pass_string(
-                                self.parser.parse_expression(ins, self.session, allow_empty=True),
-                                allow_empty=True))
+                        expr = self.parser.parse_expression(ins, self.session, allow_empty=True) or values.null('$')
+                        mml2 = self.session.strings.copy(values.pass_string(expr))
             util.require(ins, tk.end_statement)
             if not (mml0 or mml1 or mml2):
                 raise error.RunError(error.MISSING_OPERAND)

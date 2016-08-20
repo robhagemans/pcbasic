@@ -817,13 +817,10 @@ def pass_integer(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
         raise error.RunError(err)
 
 
-def pass_string(inp, allow_empty=False, err=error.TYPE_MISMATCH):
+def pass_string(inp, err=error.TYPE_MISMATCH):
     """Check if variable is String-valued."""
     if not inp:
-        if not allow_empty:
-            raise error.RunError(error.STX)
-        else:
-            return null('$')
+        raise error.RunError(error.STX)
     if inp[0] == '$':
         return inp
     else:
