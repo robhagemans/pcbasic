@@ -35,6 +35,15 @@ def null(sigil):
     return (sigil, bytearray(byte_size[sigil]))
 
 
+def math_safe(fn):
+    """Decorator to handle math errors."""
+    def wrapped_fn(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except ArithmeticError as e:
+            return self._math_error_handler.handle(e)
+    return wrapped_fn
+
 class Values(object):
     """Handles BASIC strings and numbers."""
 
@@ -44,7 +53,6 @@ class Values(object):
         self._strings = string_space
         # double-precision EXP, SIN, COS, TAN, ATN, LOG
         self._double_math = double_math
-
 
     ###########################################################################
     # string representation of numbers
@@ -301,6 +309,7 @@ class Values(object):
     ###########################################################################
     # type conversions
 
+    @math_safe
     def pass_single(self, num):
         """Check if variable is numeric, convert to Single."""
         if not num:
@@ -309,12 +318,13 @@ class Values(object):
         if typechar == '!':
             return num
         elif typechar == '%':
-            return self._math_error_handler.wrap(self._int_to_single, num)
+            return fp.pack(fp.Single.from_int(integer_to_int_signed(num)))
         elif typechar == '#':
-            return self._math_error_handler.wrap(self._double_to_single, num)
+            return fp.pack(fp.unpack(num).round_to_single())
         elif typechar == '$':
             raise error.RunError(error.TYPE_MISMATCH)
 
+    @math_safe
     def pass_double(self, num):
         """Check if variable is numeric, convert to Double."""
         if not num:
@@ -323,23 +333,11 @@ class Values(object):
         if typechar == '#':
             return num
         elif typechar == '%':
-            return self._math_error_handler.wrap(self._int_to_double, num)
+            return fp.pack(fp.Double.from_int(integer_to_int_signed(num)))
         elif typechar == '!':
             return ('#', bytearray(4) + num[1])
         elif typechar == '$':
             raise error.RunError(error.TYPE_MISMATCH)
-
-    def _int_to_single(self, num):
-        """Convert integer to single."""
-        return fp.pack(fp.Single.from_int(integer_to_int_signed(num)))
-
-    def _int_to_double(self, num):
-        """Convert integer to double."""
-        return fp.pack(fp.Double.from_int(integer_to_int_signed(num)))
-
-    def _double_to_single(self, num):
-        """Round double to single."""
-        return fp.pack(fp.unpack(num).round_to_single())
 
     def pass_float(self, num, allow_double=True):
         """Check if variable is numeric, convert to Double or Single."""
@@ -452,6 +450,7 @@ class Values(object):
     ###############################################################################
     # numeric operators
 
+    @math_safe
     def add(self, left, right):
         """Add two numbers."""
         left, right = self.pass_most_precise(left, right)
@@ -463,6 +462,7 @@ class Values(object):
                                 integer_to_int_signed(left) +
                                 integer_to_int_signed(right)))
 
+    @math_safe
     def subtract(self, left, right):
         """Subtract two numbers."""
         return self.add(left, self.negate(right))
@@ -496,6 +496,7 @@ class Values(object):
             return out
         return inp
 
+    @math_safe
     def power(self, left, right):
         """Left^right."""
         if (left[0] == '#' or right[0] == '#') and self._double_math:
@@ -506,6 +507,7 @@ class Values(object):
             else:
                 return self._func(lambda a, b: a**b, self.pass_single(left), self.pass_single(right))
 
+    @math_safe
     def multiply(self, left, right):
         """Left*right."""
         if left[0] == '#' or right[0] == '#':
@@ -513,6 +515,7 @@ class Values(object):
         else:
             return fp.pack( fp.unpack(self.pass_single(left)).imul(fp.unpack(self.pass_single(right))) )
 
+    @math_safe
     def divide(self, left, right):
         """Left/right."""
         if left[0] == '#' or right[0] == '#':
@@ -520,6 +523,7 @@ class Values(object):
         else:
             return fp.pack( fp.div(fp.unpack(self.pass_single(left)), fp.unpack(self.pass_single(right))) )
 
+    @math_safe
     def divide_int(self, left, right):
         """Left\\right."""
         dividend = pass_int_unpack(left)
@@ -532,6 +536,7 @@ class Values(object):
         else:
             return int_to_integer_signed(-(abs(dividend) / abs(divisor)))
 
+    @math_safe
     def mod(self, left, right):
         """Left modulo right."""
         divisor = pass_int_unpack(right)
@@ -676,32 +681,36 @@ class MathErrorHandler(object):
         """Pause local handling of floating point errors."""
         self._do_raise = do_raise
 
-    def wrap(self, fn, *args, **kwargs):
+    def handle(self, e):
         """Handle Overflow or Division by Zero."""
+        if isinstance(e, ValueError):
+            # math domain errors such as SQR(-1)
+            math_error = error.IFC
+        elif isinstance(e, OverflowError):
+            math_error = error.OVERFLOW
+        elif isinstance(e, ZeroDivisionError):
+            math_error = error.DIVISION_BY_ZERO
+        else:
+            raise e
+        if (self._do_raise or self._screen is None or
+                math_error not in self.soft_types):
+            # also raises exception in error_handle_mode!
+            # in that case, prints a normal error message
+            raise error.RunError(math_error)
+        else:
+            # write a message & continue as normal
+            self._screen.write_line(error.RunError(math_error).message)
+        # return max value for the appropriate float type
+        if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
+            return fp.pack(e.args[0])
+        return fp.pack(fp.Single.max.copy())
+
+    def wrap(self, fn, *args, **kwargs):
+        """Call function and handle Overflow or Division by Zero."""
         try:
             return fn(*args, **kwargs)
         except (ValueError, ArithmeticError) as e:
-            if isinstance(e, ValueError):
-                # math domain errors such as SQR(-1)
-                math_error = error.IFC
-            elif isinstance(e, OverflowError):
-                math_error = error.OVERFLOW
-            elif isinstance(e, ZeroDivisionError):
-                math_error = error.DIVISION_BY_ZERO
-            else:
-                raise e
-            if (self._do_raise or self._screen is None or
-                    math_error not in self.soft_types):
-                # also raises exception in error_handle_mode!
-                # in that case, prints a normal error message
-                raise error.RunError(math_error)
-            else:
-                # write a message & continue as normal
-                self._screen.write_line(error.RunError(math_error).message)
-            # return max value for the appropriate float type
-            if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
-                return fp.pack(e.args[0])
-            return fp.pack(fp.Single.max.copy())
+            return self.handle(e)
 
 
 def number_to_str(inp, screen=False, write=False, allow_empty_expression=False):
