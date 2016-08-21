@@ -34,6 +34,10 @@ def null(sigil):
     """Return null value for the given type."""
     return (sigil, bytearray(byte_size[sigil]))
 
+def size_bytes(name):
+    """Return the size of a value type, by variable name or type char."""
+    return byte_size[name[-1]]
+
 def float_safe(fn):
     """Decorator to handle floating point errors."""
     def wrapped_fn(self, *args, **kwargs):

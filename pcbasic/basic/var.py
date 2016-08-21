@@ -308,7 +308,7 @@ class Arrays(object):
             dimensions, _, _ = self.arrays[name]
         except KeyError:
             return 0
-        return self.array_len(dimensions) * var_size_bytes(name)
+        return self.array_len(dimensions) * values.size_bytes(name)
 
     def dim(self, name, dimensions):
         """Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value."""
@@ -328,7 +328,7 @@ class Arrays(object):
         name_ptr = self.current
         record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
         array_ptr = name_ptr + record_len
-        array_bytes = size*var_size_bytes(name)
+        array_bytes = size*values.size_bytes(name)
         self.memory.check_free(record_len + array_bytes, error.OUT_OF_MEMORY)
         self.current += record_len + array_bytes
         self.array_memory[name] = (name_ptr, array_ptr)
@@ -379,7 +379,7 @@ class Arrays(object):
         """Return a memoryview to an array element."""
         dimensions, lst = self.check_dim(name, index)
         bigindex = self.index(index, dimensions)
-        bytesize = var_size_bytes(name)
+        bytesize = values.size_bytes(name)
         return memoryview(lst)[bigindex*bytesize:(bigindex+1)*bytesize]
 
     def get(self, name, index):
@@ -400,7 +400,7 @@ class Arrays(object):
             dimensions, _, _ = self.arrays[name]
             _, array_ptr = self.array_memory[name]
             # arrays are kept at the end of the var list
-            return self.memory.var_current() + array_ptr + var_size_bytes(name) * self.index(indices, dimensions)
+            return self.memory.var_current() + array_ptr + values.size_bytes(name) * self.index(indices, dimensions)
         except KeyError:
             return -1
 
@@ -417,7 +417,7 @@ class Arrays(object):
             return None
         _, lst, _ = self.arrays[name]
         offset = address - found_addr
-        return (name[-1], lst[offset : offset+var_size_bytes(name)])
+        return (name[-1], lst[offset : offset+values.size_bytes(name)])
 
     def get_memory(self, address):
         """Retrieve data from data memory: array space """
@@ -498,14 +498,6 @@ class Arrays(object):
 
 ###############################################################################
 # variable memory
-
-
-def var_size_bytes(name):
-    """Return the size of a variable, if it exists. Raise ILLEGAL FUNCTION CALL otherwise."""
-    try:
-        return values.byte_size[name[-1]]
-    except KeyError:
-        raise error.RunError(error.IFC)
 
 def get_name_in_memory(name, offset):
     """Memory representation of variable name."""
