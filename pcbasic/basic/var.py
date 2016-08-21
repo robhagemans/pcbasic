@@ -188,13 +188,13 @@ class Scalars(object):
         # check if garbage needs collecting before allocating memory
         if name not in self.var_memory:
             # don't add string length, string already stored
-            size = (max(3, len(name)) + 1 + values.byte_size[type_char])
+            size = (max(3, len(name)) + 1 + values.size_bytes(type_char))
             self.memory.check_free(size, error.OUT_OF_MEMORY)
             # first two bytes: chars of name or 0 if name is one byte long
             name_ptr = self.memory.var_current()
             # byte_size first_letter second_letter_or_nul remaining_length_or_nul
             var_ptr = name_ptr + max(3, len(name)) + 1
-            self.current += max(3, len(name)) + 1 + values.byte_size[name[-1]]
+            self.current += max(3, len(name)) + 1 + values.size_bytes(name)
             self.var_memory[name] = (name_ptr, var_ptr)
         # don't change the value if just checking allocation
         if value is None:
@@ -248,7 +248,7 @@ class Scalars(object):
             return -1
         if address >= var_addr:
             offset = address - var_addr
-            if offset >= values.byte_size[the_var[-1]]:
+            if offset >= values.size_bytes(the_var):
                 return -1
             var_rep = self.variables[the_var]
             return var_rep[offset]
@@ -502,7 +502,7 @@ class Arrays(object):
 def get_name_in_memory(name, offset):
     """Memory representation of variable name."""
     if offset == 0:
-        return values.byte_size[name[-1]]
+        return values.size_bytes(name)
     elif offset == 1:
         return ord(name[0].upper())
     elif offset == 2:

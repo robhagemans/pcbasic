@@ -507,7 +507,7 @@ class Functions(object):
             raise error.RunError(error.IFC)
         var_ptr = values.int_to_integer_unsigned(var_ptr)
         if dollar:
-            return self.session.strings.store(chr(values.byte_size[name[-1]]) + values.integer_to_bytes(var_ptr))
+            return self.session.strings.store(chr(values.size_bytes(name)) + values.integer_to_bytes(var_ptr))
         else:
             return var_ptr
 

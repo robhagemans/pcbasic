@@ -2105,7 +2105,7 @@ class Statements(object):
         # update memory model
         # allocate function pointer
         pointer = values.integer_to_bytes(values.int_to_integer_unsigned(pointer_loc))
-        pointer += '\0'*(values.byte_size[fntype]-2)
+        pointer += '\0'*(values.size_bytes(fntype)-2)
         # function name is represented with first char shifted by 128
         self.session.scalars.set(chr(128+ord(fnname[0]))+fnname[1:], (fntype, bytearray(pointer)))
         for name in fnvars:

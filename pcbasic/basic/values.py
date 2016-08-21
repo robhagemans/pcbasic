@@ -27,16 +27,16 @@ from . import basictoken as tk
 # Double (#) - stored as 8-byte Microsoft Binary Format
 # String ($) - stored as 1-byte length plus 2-byte pointer to string space
 
-byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
+BYTE_SIZE = {'$': 3, '%': 2, '!': 4, '#': 8}
 
 
 def null(sigil):
     """Return null value for the given type."""
-    return (sigil, bytearray(byte_size[sigil]))
+    return (sigil, bytearray(BYTE_SIZE[sigil]))
 
 def size_bytes(name):
     """Return the size of a value type, by variable name or type char."""
-    return byte_size[name[-1]]
+    return BYTE_SIZE[name[-1]]
 
 def float_safe(fn):
     """Decorator to handle floating point errors."""
