@@ -15,7 +15,6 @@ import logging
 
 from . import fp
 from . import values
-from . import values
 from . import shell
 from . import util
 from . import error
@@ -87,7 +86,7 @@ class Functions(object):
             tk.ASC: partial(self.value_func, fn=self.values.asc),
             tk.CHR: partial(self.value_func, fn=self.values.character),
             tk.PEEK: self.value_peek,
-            tk.SPACE: self.value_space,
+            tk.SPACE: partial(self.value_func, fn=self.values.space),
             tk.OCT: partial(self.value_func, fn=self.values.octal),
             tk.HEX: partial(self.value_func, fn=self.values.hexadecimal),
             tk.LPOS: self.value_lpos,
@@ -116,7 +115,8 @@ class Functions(object):
         self._init_functions()
 
 
-
+    ######################################################################
+    # string functions
 
     def value_instr(self, ins):
         """INSTR: find substring in string."""
@@ -205,12 +205,6 @@ class Functions(object):
             error.range_check(0, 255, j)
         util.require_read(ins, (')',))
         return self.session.strings.store(chr(j)*n)
-
-    def value_space(self, ins):
-        """SPACE$: repeat spaces."""
-        num = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
-        error.range_check(0, 255, num)
-        return self.session.strings.store(' '*num)
 
     ######################################################################
     # console functions
@@ -543,7 +537,7 @@ class Functions(object):
         """USR: get value of machine-code function; not implemented."""
         util.require_read(ins, tk.digit)
         self.parser.parse_bracket(ins, self.session)
-        logging.warning("USR() function not implemented.")
+        logging.warning("USR function not implemented.")
         return values.null('%')
 
     def value_inp(self, ins):
@@ -553,17 +547,18 @@ class Functions(object):
 
     def value_erdev(self, ins):
         """ERDEV$: device error string; not implemented."""
-        logging.warning("ERDEV or ERDEV$ function not implemented.")
         if util.skip_white_read_if(ins, ('$',)):
+            logging.warning("ERDEV$ function not implemented.")
             return values.null('$')
         else:
+            logging.warning("ERDEV function not implemented.")
             return values.null('%')
 
     def value_exterr(self, ins):
         """EXTERR: device error information; not implemented."""
         x = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
         error.range_check(0, 3, x)
-        logging.warning("EXTERR() function not implemented.")
+        logging.warning("EXTERR function not implemented.")
         return values.null('%')
 
     def value_ioctl(self, ins):
@@ -573,16 +568,15 @@ class Functions(object):
         num = self.parser.parse_file_number_opthash(ins, self.session)
         util.require_read(ins, (')',))
         self.session.files.get(num)
-        logging.warning("IOCTL$() function not implemented.")
+        logging.warning("IOCTL$ function not implemented.")
         raise error.RunError(error.IFC)
 
     ###########################################################
-    # unary math functions
+    # unary functions
 
     def value_func(self, ins, fn):
-        """Return value of unary math function."""
-        inp = self.parser.parse_bracket(ins, self.session)
-        return fn(inp)
+        """Return value of unary function."""
+        return fn(self.parser.parse_bracket(ins, self.session))
 
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""

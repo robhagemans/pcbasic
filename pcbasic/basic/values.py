@@ -734,6 +734,12 @@ class Values(object):
         error.throw_if(not s)
         return int_to_integer_signed(ord(s[0]))
 
+    def space(self, x):
+        """SPACE$: repeat spaces."""
+        num = pass_int_unpack(x)
+        error.range_check(0, 255, num)
+        return self._strings.store(' '*num)
+
 
 class MathErrorHandler(object):
     """Handles floating point errors."""
