@@ -121,9 +121,9 @@ class Functions(object):
     def value_instr(self, ins):
         """INSTR: find substring in string."""
         util.require_read(ins, ('(',))
-        big, small, n = '', '', 1
-        # followed by coma so empty will raise STX
+        # followed by comma so empty will raise STX
         s = self.parser.parse_expression(ins, self.session)
+        n = 1
         if s[0] != '$':
             n = values.pass_int_unpack(s)
             error.range_check(1, 255, n)
@@ -134,64 +134,38 @@ class Functions(object):
         s = self.parser.parse_expression(ins, self.session, empty_err=error.STX)
         small = values.pass_string(s)
         util.require_read(ins, (')',))
-        #
-        big, small = self.session.strings.copy(big), self.session.strings.copy(small)
-        if big == '' or n > len(big):
-            return values.null('%')
-        # BASIC counts string positions from 1
-        find = big[n-1:].find(small)
-        if find == -1:
-            return values.null('%')
-        return values.int_to_integer_signed(n + find)
+        return self.values.instr(big, small)
 
     def value_mid(self, ins):
         """MID$: get substring."""
         util.require_read(ins, ('(',))
-        s = self.session.strings.copy(values.pass_string(self.parser.parse_expression(ins, self.session)))
+        s = values.pass_string(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (',',))
-        start = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
+        start = values.pass_integer(self.parser.parse_expression(ins, self.session))
         if util.skip_white_read_if(ins, (',',)):
-            num = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
+            num = values.pass_integer(self.parser.parse_expression(ins, self.session))
         else:
             num = len(s)
         util.require_read(ins, (')',))
-        #
-        error.range_check(1, 255, start)
-        error.range_check(0, 255, num)
-        if num == 0 or start > len(s):
-            return values.null('$')
-        start -= 1
-        stop = start + num
-        stop = min(stop, len(s))
-        return self.session.strings.store(s[start:stop])
+        return self.values.mid(s, start, num)
 
     def value_left(self, ins):
         """LEFT$: get substring at the start of string."""
         util.require_read(ins, ('(',))
-        s = self.session.strings.copy(values.pass_string(self.parser.parse_expression(ins, self.session)))
+        s = values.pass_string(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (',',))
-        stop = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
+        stop = values.pass_integer(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (')',))
-        #
-        error.range_check(0, 255, stop)
-        if stop == 0:
-            return values.null('$')
-        stop = min(stop, len(s))
-        return self.session.strings.store(s[:stop])
+        return self.values.left(s, stop)
 
     def value_right(self, ins):
         """RIGHT$: get substring at the end of string."""
         util.require_read(ins, ('(',))
-        s = self.session.strings.copy(values.pass_string(self.parser.parse_expression(ins, self.session)))
+        s = values.pass_string(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (',',))
-        stop = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
+        stop = values.pass_integer(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (')',))
-        #
-        error.range_check(0, 255, stop)
-        if stop == 0:
-            return values.null('$')
-        stop = min(stop, len(s))
-        return self.session.strings.store(s[-stop:])
+        return self.values.right(s, stop)
 
     def value_string(self, ins):
         """STRING$: repeat characters."""
@@ -208,7 +182,6 @@ class Functions(object):
             j = values.pass_int_unpack(j)
             error.range_check(0, 255, j)
         util.require_read(ins, (')',))
-        #
         return self.session.strings.store(chr(j)*n)
 
     ######################################################################

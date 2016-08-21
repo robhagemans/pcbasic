@@ -740,6 +740,53 @@ class Values(object):
         error.range_check(0, 255, num)
         return self._strings.store(' '*num)
 
+    # FIXME: start is still a Python int
+    def instr(self, big, small, start):
+        """INSTR: find substring in string."""
+        big = self._strings.copy(pass_string(big))
+        small = self._strings.copy(pass_string(small))
+        if big == '' or start > len(big):
+            return null('%')
+        # BASIC counts string positions from 1
+        find = big[start-1:].find(small)
+        if find == -1:
+            return null('%')
+        return int_to_integer_signed(start + find)
+
+    def mid(self, s, start, num):
+        """MID$: get substring."""
+        start = pass_int_unpack(start)
+        num = pass_int_unpack(num)
+        error.range_check(1, 255, start)
+        error.range_check(0, 255, num)
+        s = self._strings.copy(s)
+        if num == 0 or start > len(s):
+            return null('$')
+        start -= 1
+        stop = start + num
+        stop = min(stop, len(s))
+        return self._strings.store(s[start:stop])
+
+    def left(self, s, stop):
+        """LEFT$: get substring at the start of string."""
+        s = self._strings.copy(s)
+        stop = pass_int_unpack(stop)
+        error.range_check(0, 255, stop)
+        if stop == 0:
+            return null('$')
+        stop = min(stop, len(s))
+        return self._strings.store(s[:stop])
+
+    def right(self, s, stop):
+        """RIGHT$: get substring at the end of string."""
+        s = self._strings.copy(s)
+        stop = pass_int_unpack(stop)
+        error.range_check(0, 255, stop)
+        if stop == 0:
+            return null('$')
+        stop = min(stop, len(s))
+        return self._strings.store(s[-stop:])
+
 
 class MathErrorHandler(object):
     """Handles floating point errors."""
