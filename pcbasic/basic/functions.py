@@ -13,7 +13,6 @@ except ImportError:
 from functools import partial
 import logging
 
-from . import fp
 from . import values
 from . import shell
 from . import util
@@ -267,7 +266,7 @@ class Functions(object):
         num = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session), maxint=0xffff)
         error.range_check(0, 255, num)
         the_file = self.session.files.get(num)
-        return fp.pack(fp.Single.from_int(the_file.loc()))
+        return self.values.from_value(the_file.loc(), '!')
 
     def value_eof(self, ins):
         """EOF: get end-of-file."""
@@ -285,7 +284,7 @@ class Functions(object):
         num = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session), maxint=0xffff)
         error.range_check(0, 255, num)
         the_file = self.session.files.get(num)
-        return fp.pack(fp.Single.from_int(the_file.lof()))
+        return self.values.from_value(the_file.lof(), '!')
 
 
     ######################################################################
@@ -305,8 +304,8 @@ class Functions(object):
     def value_timer(self, ins):
         """TIMER: get clock ticks since midnight."""
         # precision of GWBASIC TIMER is about 1/20 of a second
-        return fp.pack(fp.Single.from_value(
-                    float(self.session.clock.get_time_ms()//50) / 20.))
+        return self.values.from_value(
+                    float(self.session.clock.get_time_ms()//50) / 20., '!')
 
     def value_time(self, ins):
         """TIME$: get current system time."""
@@ -374,8 +373,8 @@ class Functions(object):
             if screen.mode.is_text_mode:
                 raise error.RunError(error.IFC)
             return values.int_to_integer_signed(screen.drawing.point(
-                            (fp.unpack(self.values.pass_single(arg0)).to_value(),
-                             fp.unpack(self.values.pass_single(arg1)).to_value(), False)
+                            (self.values.to_value(self.values.pass_single(arg0)),
+                             self.values.to_value(self.values.pass_single(arg1)), False)
                              ))
         else:
             # single-argument mode
@@ -389,10 +388,10 @@ class Functions(object):
                     return values.int_to_integer_signed(y)
                 elif fn == 2:
                     fx, _ = screen.drawing.get_window_logical(x, y)
-                    return fp.Single.from_value(fx)
+                    return self.values.from_value(fx, '!')
                 elif fn == 3:
                     _, fy = screen.drawing.get_window_logical(x, y)
-                    return fp.Single.from_value(fy)
+                    return self.values.from_value(fy, '!')
             except AttributeError:
                 return values.null('%')
 
@@ -408,17 +407,17 @@ class Functions(object):
         if screen.mode.is_text_mode:
             return values.null('%')
         if mode == 0:
-            value, _ = screen.drawing.get_window_physical(fp.unpack(self.values.pass_single(coord)).to_value(), 0.)
+            value, _ = screen.drawing.get_window_physical(self.values.to_value(self.values.pass_single(coord)), 0.)
             return values.int_to_integer_signed(value)
         elif mode == 1:
-            _, value = screen.drawing.get_window_physical(0., fp.unpack(self.values.pass_single(coord)).to_value())
+            _, value = screen.drawing.get_window_physical(0., self.values.to_value(self.values.pass_single(coord)))
             return values.int_to_integer_signed(value)
         elif mode == 2:
             value, _ = screen.drawing.get_window_logical(values.pass_int_unpack(coord), 0)
-            return fp.Single.from_value(value)
+            return self.values.from_value(value, '!')
         elif mode == 3:
             _, value = screen.drawing.get_window_logical(0, values.pass_int_unpack(coord))
-            return fp.Single.from_value(value)
+            return self.values.from_value(value, '!')
 
     #####################################################################
     # sound functions
@@ -442,7 +441,7 @@ class Functions(object):
             erl = 65535
         else:
             erl = self.session.program.get_line_number(self.parser.error_pos)
-        return fp.pack(fp.Single.from_int(erl))
+        return self.values.from_value(erl, '!')
 
     def value_err(self, ins):
         """ERR: get error code of last error."""
@@ -483,7 +482,7 @@ class Functions(object):
         if val[0] == '$':
             # grabge collection if a string-valued argument is specified.
             self.session.memory.collect_garbage()
-        return fp.pack(fp.Single.from_int(self.session.memory.get_free()))
+        return self.values.from_value(self.session.memory.get_free(), '!')
 
     def value_peek(self, ins):
         """PEEK: read memory location."""

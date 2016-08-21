@@ -381,8 +381,10 @@ class Float(object):
     @classmethod
     def from_value(cls, value):
         """Set to value of Python float."""
-        if value == 0.0:
+        if value == 0:
             return cls.zero
+        if isinstance(value, int):
+            return cls.from_int(value)
         neg = value < 0
         fexp = math.log(abs(value), 2) - cls.mantissa_bits
         man = int(abs(value) * 0.5**int(fexp-8))
