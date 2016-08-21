@@ -38,9 +38,10 @@ def null(sigil):
 class Values(object):
     """Handles BASIC strings and numbers."""
 
-    def __init__(self, screen, double_math):
+    def __init__(self, screen, string_space, double_math):
         """Setup values."""
         self._math_error_handler = MathErrorHandler(screen)
+        self._strings = string_space
         # double-precision EXP, SIN, COS, TAN, ATN, LOG
         self._double_math = double_math
 
@@ -577,6 +578,87 @@ class Values(object):
             (0xffff - integer_to_int_unsigned(pass_integer(left))) |
             integer_to_int_unsigned(pass_integer(right)))
 
+
+    ###############################################################################
+    # string operations
+
+    def concat(self, left, right):
+        """Concatenate strings."""
+        return self._strings.store(
+            self._strings.copy(pass_string(left)) +
+            self._strings.copy(pass_string(right)))
+
+
+    ###############################################################################
+    # number and string operations
+
+    def _bool_eq(self, left, right):
+        """Return true if left == right, false otherwise."""
+        if left[0] == '$':
+            return (self._strings.copy(pass_string(left)) ==
+                    self._strings.copy(pass_string(right)))
+        else:
+            left, right = self.pass_most_precise(left, right)
+            if left[0] in ('#', '!'):
+                return fp.unpack(left).equals(fp.unpack(right))
+            else:
+                return integer_to_int_signed(left) == integer_to_int_signed(right)
+
+    def _bool_gt(self, left, right):
+        """Ordering: return -1 if left > right, 0 otherwise."""
+        if left[0] == '$':
+            left = self._strings.copy(pass_string(left))
+            right = self._strings.copy(pass_string(right))
+            shortest = min(len(left), len(right))
+            for i in range(shortest):
+                if left[i] > right[i]:
+                    return True
+                elif left[i] < right[i]:
+                    return False
+            # the same so far...
+            # the shorter string is said to be less than the longer,
+            # provided they are the same up till the length of the shorter.
+            if len(left) > len(right):
+                return True
+            # left is shorter, or equal strings
+            return False
+        else:
+            left, right = self.pass_most_precise(left, right)
+            if left[0] in ('#', '!'):
+                return fp.unpack(left).gt(fp.unpack(right))
+            else:
+                return integer_to_int_signed(left) > integer_to_int_signed(right)
+
+    def equals(self, left, right):
+        """Return -1 if left == right, 0 otherwise."""
+        return bool_to_integer(self._bool_eq(left, right))
+
+    def not_equals(self, left, right):
+        """Return -1 if left != right, 0 otherwise."""
+        return bool_to_integer(not self._bool_eq(left, right))
+
+    def gt(self, left, right):
+        """Ordering: return -1 if left > right, 0 otherwise."""
+        return bool_to_integer(self._bool_gt(left, right))
+
+    def gte(self, left, right):
+        """Ordering: return -1 if left >= right, 0 otherwise."""
+        return bool_to_integer(not self._bool_gt(right, left))
+
+    def lte(self, left, right):
+        """Ordering: return -1 if left <= right, 0 otherwise."""
+        return bool_to_integer(not self._bool_gt(left, right))
+
+    def lt(self, left, right):
+        """Ordering: return -1 if left < right, 0 otherwise."""
+        return bool_to_integer(self._bool_gt(right, left))
+
+    def plus(self, left, right):
+        """Binary + operator: add or concatenate."""
+        if left[0] == '$':
+            return self.concat(left, right)
+        else:
+            return self.add(left, right)
 
 
 class MathErrorHandler(object):

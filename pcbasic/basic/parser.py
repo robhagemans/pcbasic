@@ -48,7 +48,7 @@ class Parser(object):
         self.error_num = 0
         self.error_pos = 0
         self.statements = statements.Statements(self)
-        self.operators = op.Operators(self.values, session.strings)
+        self.operators = op.Operators(self.values)
         self.functions = functions.Functions(self)
 
 

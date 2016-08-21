@@ -111,7 +111,7 @@ class Session(object):
         # string space
         self.strings = var.StringSpace(self.memory)
         # prepare string and number handler
-        self.values = values.Values(self.screen, double)
+        self.values = values.Values(self.screen, self.strings, double)
         # scalar space
         self.scalars = var.Scalars(self.memory, self.values)
         # array space

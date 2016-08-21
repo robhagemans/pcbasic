@@ -180,7 +180,7 @@ class Functions(object):
 
 
     ######################################################################
-    # string maniulation
+    # string manipulation
 
     def value_len(self, ins):
         """LEN: length of string."""
