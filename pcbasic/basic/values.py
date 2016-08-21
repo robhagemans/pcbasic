@@ -402,8 +402,21 @@ class Values(object):
         else:
             raise error.RunError(error.STX)
 
+    ###############################################################################
 
-    ####################################
+    def round(self, x):
+        """Round to nearest whole number."""
+        return fp.pack(fp.unpack(self.pass_float(x)).iround())
+
+    def is_zero(self, x):
+        x = pass_number(x)
+        typechar = x[0]
+        if typechar == '%':
+            return integer_to_int_signed(x) == 0
+        else:
+            return fp.unpack(x).is_zero()
+
+    ###############################################################################
     # math functions
 
     @float_safe

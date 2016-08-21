@@ -16,8 +16,6 @@ except ImportError:
 import string
 
 from . import error
-from . import fp
-from . import values
 from . import values
 from . import ports
 from . import print_and_input
@@ -32,6 +30,7 @@ class Statements(object):
         """Initialise statement context."""
         self.parser = parser
         self.session = parser.session
+        self.values = parser.session.values
         self._init_statements()
 
     def _init_statements(self):
@@ -377,7 +376,7 @@ class Statements(object):
     def exec_on_timer(self, ins):
         """ON TIMER: define timer event trapping."""
         timeval, jumpnum = self._parse_on_event(ins)
-        timeval = fp.unpack(self.session.values.pass_single(timeval)).to_value()
+        timeval = self.values.to_value(self.values.pass_single(timeval))
         period = round(timeval * 1000.)
         self.session.events.timer.set_trigger(period)
         self.session.events.timer.set_jump(jumpnum)
@@ -436,12 +435,11 @@ class Statements(object):
             return
         freq = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (',',))
-        dur = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session)))
-        if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
-            raise error.RunError(error.IFC)
+        dur = self.values.to_value(self.values.pass_single(self.parser.parse_expression(ins, self.session)))
+        error.range_check(-65535, 65535, dur)
         # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
         volume, voice = 15, 0
-        if dur.gt(fp.Single.zero):
+        if dur > 0:
             if (util.skip_white_read_if(ins, (',',)) and (self.parser.syntax == 'tandy' or
                     (self.parser.syntax == 'pcjr' and self.session.sound.sound_on))):
                 volume = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
@@ -450,22 +448,7 @@ class Statements(object):
                     voice = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
                     error.range_check(0, 2, voice) # can't address noise channel here
         util.require(ins, tk.end_statement)
-        if dur.is_zero():
-            self.session.sound.stop_all_sound()
-            return
-        # Tandy only allows frequencies below 37 (but plays them as 110 Hz)
-        if freq != 0:
-            error.range_check(-32768 if self.parser.syntax == 'tandy' else 37, 32767, freq) # 32767 is pause
-        # calculate duration in seconds
-        one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
-        dur_sec = dur.to_value()/18.2
-        if one_over_44.gt(dur):
-            # play indefinitely in background
-            self.session.sound.play_sound(freq, 1, loop=True, voice=voice, volume=volume)
-        else:
-            self.session.sound.play_sound(freq, dur_sec, voice=voice, volume=volume)
-            if self.session.sound.foreground:
-                self.session.sound.wait_music()
+        self.session.sound.sound(freq, dur, volume, voice)
 
     def exec_play(self, ins):
         """PLAY: play sound sequence defined by a Music Macro Language string."""
@@ -504,16 +487,10 @@ class Statements(object):
         util.require_read(ins, (',',))
         error.range_check(0, 7, source)
         error.range_check(0, 15, volume)
-        dur = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session)))
-        if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
-            raise error.RunError(error.IFC)
+        dur = self.values.to_value(self.values.pass_single(self.parser.parse_expression(ins, self.session)))
+        error.range_check(-65535, 65535, dur)
         util.require(ins, tk.end_statement)
-        one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
-        dur_sec = dur.to_value()/18.2
-        if one_over_44.gt(dur):
-            self.session.sound.play_noise(source, volume, dur_sec, loop=True)
-        else:
-            self.session.sound.play_noise(source, volume, dur_sec)
+        self.session.sound.noise(source, volume, dur)
 
 
     ##########################################################
@@ -1142,7 +1119,11 @@ class Statements(object):
         # for COM files
         num_bytes = the_file.reclen
         if util.skip_white_read_if(ins, (',',)):
-            pos = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
+            # forcing to single before rounding - this means we don't have enough precision
+            # to address each individual record close to the maximum record number
+            # but that's in line with GW
+            pos = self.values.to_value(self.values.round(
+                    self.values.pass_single(self.parser.parse_expression(ins, self.session))))
             # not 2^32-1 as the manual boasts!
             # pos-1 needs to fit in a single-precision mantissa
             error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
@@ -1164,15 +1145,17 @@ class Statements(object):
         thefile.get(num_bytes)
         util.require(ins, tk.end_statement)
 
-    def exec_lock_or_unlock(self, ins, action):
+    def _exec_lock_or_unlock(self, ins, action):
         """LOCK or UNLOCK: set file or record locks."""
         thefile = self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session))
         lock_start_rec = 1
         if util.skip_white_read_if(ins, (',',)):
-            lock_start_rec = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
+            lock_start_rec = pos = self.values.to_value(self.values.round(
+                    self.values.pass_single(self.parser.parse_expression(ins, self.session))))
         lock_stop_rec = lock_start_rec
         if util.skip_white_read_if(ins, (tk.TO,)):
-            lock_stop_rec = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
+            lock_stop_rec = pos = self.values.to_value(self.values.round(
+                    self.values.pass_single(self.parser.parse_expression(ins, self.session))))
         if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
             raise error.RunError(error.BAD_RECORD_NUMBER)
         try:
@@ -1182,8 +1165,8 @@ class Statements(object):
             raise error.RunError(error.PERMISSION_DENIED)
         util.require(ins, tk.end_statement)
 
-    exec_lock = partial(exec_lock_or_unlock, action = 'lock')
-    exec_unlock = partial(exec_lock_or_unlock, action = 'unlock')
+    exec_lock = partial(_exec_lock_or_unlock, action='lock')
+    exec_unlock = partial(_exec_lock_or_unlock, action='unlock')
 
     def exec_ioctl(self, ins):
         """IOCTL: send control string to I/O device. Not implemented."""
@@ -1197,9 +1180,9 @@ class Statements(object):
     def _parse_coord_bare(self, ins):
         """Helper function: parse coordinate pair."""
         util.require_read(ins, ('(',))
-        x = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).to_value()
+        x = self.values.to_value(self.values.pass_single(self.parser.parse_expression(ins, self.session)))
         util.require_read(ins, (',',))
-        y = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).to_value()
+        y = self.values.to_value(self.values.pass_single(self.parser.parse_expression(ins, self.session)))
         util.require_read(ins, (')',))
         return x, y
 
@@ -1297,7 +1280,7 @@ class Statements(object):
             raise error.RunError(error.IFC)
         centre = self._parse_coord_step(ins)
         util.require_read(ins, (',',))
-        r = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).to_value()
+        r = self.values.to_value(self.values.pass_single(self.parser.parse_expression(ins, self.session)))
         start, stop, c, aspect = None, None, -1, None
         if util.skip_white_read_if(ins, (',',)):
             cval = self.parser.parse_expression(ins, self.session, allow_empty=True)
@@ -1306,14 +1289,14 @@ class Statements(object):
             if util.skip_white_read_if(ins, (',',)):
                 start = self.parser.parse_expression(ins, self.session, allow_empty=True)
                 if start is not None:
-                    start = fp.unpack(self.session.values.pass_single(start)).to_value()
+                    start = self.values.to_value(self.values.pass_single(start))
                 if util.skip_white_read_if(ins, (',',)):
                     stop = self.parser.parse_expression(ins, self.session, allow_empty=True)
                     if stop is not None:
-                        stop = fp.unpack(self.session.values.pass_single(stop)).to_value()
+                        stop = self.values.to_value(self.values.pass_single(stop))
                     if util.skip_white_read_if(ins, (',',)):
-                        aspect = fp.unpack(self.session.values.pass_single(
-                                    self.parser.parse_expression(ins, self.session))).to_value()
+                        aspect = self.values.to_value(self.values.pass_single(
+                                    self.parser.parse_expression(ins, self.session)))
                     elif stop is None:
                         # missing operand
                         raise error.RunError(error.MISSING_OPERAND)
@@ -1453,15 +1436,15 @@ class Statements(object):
         if vartype in ('$', '#'):
             raise error.RunError(error.TYPE_MISMATCH)
         util.require_read(ins, (tk.O_EQ,))
-        start = self.session.values.pass_type(vartype, self.parser.parse_expression(ins, self.session))
+        start = self.values.pass_type(vartype, self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (tk.TO,))
-        stop = self.session.values.pass_type(vartype, self.parser.parse_expression(ins, self.session))
+        stop = self.values.pass_type(vartype, self.parser.parse_expression(ins, self.session))
         if util.skip_white_read_if(ins, (tk.STEP,)):
             step = self.parser.parse_expression(ins, self.session)
         else:
             # convert 1 to vartype
             step = values.int_to_integer_signed(1)
-        step = self.session.values.pass_type(vartype, step)
+        step = self.values.pass_type(vartype, step)
         util.require(ins, tk.end_statement)
         endforpos = ins.tell()
         # find NEXT
@@ -1573,10 +1556,10 @@ class Statements(object):
     def exec_if(self, ins):
         """IF: enter branching statement."""
         # avoid overflow: don't use bools.
-        val = self.session.values.pass_single(self.parser.parse_expression(ins, self.session))
+        val = self.values.pass_single(self.parser.parse_expression(ins, self.session))
         util.skip_white_read_if(ins, (',',)) # optional comma
         util.require_read(ins, (tk.THEN, tk.GOTO))
-        if not fp.unpack(val).is_zero():
+        if not self.values.is_zero(val):
             # TRUE: continue after THEN. line number or statement is implied GOTO
             if util.skip_white(ins) in (tk.T_UINT,):
                 self.parser.jump(self.parse_jumpnum(ins))
@@ -1631,7 +1614,7 @@ class Statements(object):
         """Check condition of while-loop."""
         ins.seek(whilepos)
         # WHILE condition is zero?
-        if not fp.unpack(self.session.values.pass_double(self.parser.parse_expression(ins, self.session))).is_zero():
+        if not self.values.is_zero(self.parser.parse_expression(ins, self.session)):
             # statement start is before WHILE token
             self.parser.current_statement = whilepos-2
             util.require(ins, tk.end_statement)
@@ -1692,7 +1675,7 @@ class Statements(object):
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         self.parser.on_error = linenum
         # pause soft-handling math errors so that we can catch them
-        self.session.values._math_error_handler.pause_handling(linenum != 0)
+        self.values._math_error_handler.pause_handling(linenum != 0)
         # ON ERROR GOTO 0 in error handler
         if self.parser.on_error == 0 and self.parser.error_handle_mode:
             # re-raise the error so that execution stops
@@ -1800,10 +1783,8 @@ class Statements(object):
                     self.session.memory.set_stack_size(stack_size)
                 if self.parser.syntax in ('pcjr', 'tandy') and util.skip_white_read_if(ins, (',',)):
                     # Tandy/PCjr: select video memory size
-                    if not self.session.screen.set_video_memory_size(
-                        fp.unpack(self.session.values.pass_single(
-                                     self.parser.parse_expression(ins, self.session)
-                                 )).round_to_int()):
+                    video_size = self.values.to_value(self.values.round(self.parser.parse_expression(ins, self.session)))
+                    if not self.session.screen.set_video_memory_size(video_size):
                         self.session.screen.screen(0, 0, 0, 0)
                         self.session.screen.init_mode()
                 elif not exp2:
@@ -1968,7 +1949,7 @@ class Statements(object):
                     address = None
                 value = self.session.strings.store(entry, address)
             else:
-                value = self.session.values.str_to_number(entry, allow_nonnum=False)
+                value = self.values.str_to_number(entry, allow_nonnum=False)
                 if value is None:
                     # set pointer for EDIT gadget to position in DATA statement
                     self.parser.program_code.seek(self.parser.data_pos)
@@ -2005,7 +1986,7 @@ class Statements(object):
             for v in self._parse_var_list(ins):
                 name, indices = v
                 word, _ = finp.input_entry(name[-1], allow_past_end=False)
-                value = self.session.values.str_to_type(name[-1], word, self.session.strings)
+                value = self.values.str_to_type(name[-1], word, self.session.strings)
                 if value is None:
                     value = values.null(name[-1])
                 self.session.memory.set_variable(name, indices, value)
@@ -2021,7 +2002,7 @@ class Statements(object):
             self.session.input_mode = True
             varlist = print_and_input.input_console(
                     self.session.editor,
-                    self.session.values, self.session.strings,
+                    self.values, self.session.strings,
                     prompt, readvar, newline)
             self.session.input_mode = False
             for v in varlist:
@@ -2123,7 +2104,7 @@ class Statements(object):
             while val is None:
                 self.session.screen.write("Random number seed (-32768 to 32767)? ")
                 seed = self.session.editor.wait_screenline()
-                val = self.session.values.str_to_number(seed, allow_nonnum=False)
+                val = self.values.str_to_number(seed, allow_nonnum=False)
             # seed entered on prompt is rounded to int
             val = values.pass_integer(val)
         self.session.randomiser.randomize(val)
@@ -2487,7 +2468,7 @@ class Statements(object):
                     number_field, digits_before, decimals = print_and_input.get_number_tokens(fors)
                     if number_field:
                         if not data_ends:
-                            num = self.session.values.pass_float(self.parser.parse_expression(ins, self.session))
+                            num = self.values.pass_float(self.parser.parse_expression(ins, self.session))
                             output.write(values.format_number(num, number_field, digits_before, decimals))
                     else:
                         output.write(fors.read(1))

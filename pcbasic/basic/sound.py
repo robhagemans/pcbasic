@@ -98,14 +98,44 @@ class Sound(object):
             self.noise_freq[3] = frequency/2.
             self.noise_freq[7] = frequency/2.
 
+    def sound(self, freq, dur, volume, voice):
+        """Play a sound (SOUND statement)."""
+        if dur == 0:
+            self.stop_all_sound()
+            return
+        # Tandy only allows frequencies below 37 (but plays them as 110 Hz)
+        if freq != 0:
+            # 32767 is pause
+            error.range_check(-32768 if self.capabilities == 'tandy' else 37, 32767, freq)
+        # calculate duration in seconds
+        dur_sec = dur / 18.2
+        # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
+        if dur < 0.02272727248:
+            # play indefinitely in background
+            self.play_sound(freq, 1, loop=True, voice=voice, volume=volume)
+        else:
+            self.play_sound(freq, dur_sec, voice=voice, volume=volume)
+            if self.foreground:
+                self.wait_music()
+
     def play_sound(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
-        """Play a sound on the tone generator; wait if tone queu is full."""
+        """Play a sound on the tone generator; wait if tone queue is full."""
         self.play_sound_no_wait(frequency, duration, fill, loop, voice, volume)
         # at most 16 notes in the sound queue (not 32 as the guide says!)
         self.wait_music(15)
 
+    def noise(self, source, volume, dur):
+        """Generate a noise (NOISE statement)."""
+        # calculate duration in seconds
+        dur_sec = dur / 18.2
+        # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
+        if dur < 0.02272727248:
+            self.play_noise(source, volume, dur_sec, loop=True)
+        else:
+            self.play_noise(source, volume, dur_sec)
+
     def play_noise(self, source, volume, duration, loop=False):
-        """Play a sound on the noise generator."""
+        """Generate a noise."""
         frequency = self.noise_freq[source]
         noise = signals.Event(signals.AUDIO_NOISE, [source > 3, frequency, duration, 1, loop, volume])
         self.session.audio_queue.put(noise)
