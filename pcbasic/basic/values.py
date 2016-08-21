@@ -1122,7 +1122,7 @@ def detokenise_number(ins, output):
 
 
 ###############################################################################
-# type checks
+# type conversion
 
 def pass_integer(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
     """Check if variable is numeric, convert to Int."""
@@ -1142,14 +1142,14 @@ def pass_integer(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
         raise error.RunError(err)
 
 
+###############################################################################
+# type checks
+
 def pass_string(inp, err=error.TYPE_MISMATCH):
     """Check if variable is String-valued."""
-    if not inp:
-        raise error.RunError(error.STX)
-    if inp[0] == '$':
-        return inp
-    else:
+    if inp[0] != '$':
         raise error.RunError(err)
+    return inp
 
 def pass_number(inp, err=error.TYPE_MISMATCH):
     """Check if variable is numeric."""
@@ -1162,13 +1162,11 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
 ###############################################################################
 # convenience functions
 
-#D
 def pass_int_unpack(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
     """Convert numeric variable to Python integer."""
     return integer_to_int_signed(pass_integer(inp, maxint, err))
 
 
-#D
 def number_unpack(value):
     """Unpack a number value."""
     if value[0] in ('#', '!'):

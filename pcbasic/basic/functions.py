@@ -128,12 +128,13 @@ class Functions(object):
             n = values.pass_int_unpack(s)
             error.range_check(1, 255, n)
             util.require_read(ins, (',',))
-            big = values.pass_string(self.parser.parse_expression(ins, self.session, allow_empty=True))
-        else:
-            big = values.pass_string(s)
+            s = self.parser.parse_expression(ins, self.session, empty_err=error.STX)
+        big = values.pass_string(s)
         util.require_read(ins, (',',))
-        small = values.pass_string(self.parser.parse_expression(ins, self.session, allow_empty=True))
+        s = self.parser.parse_expression(ins, self.session, empty_err=error.STX)
+        small = values.pass_string(s)
         util.require_read(ins, (')',))
+        #
         big, small = self.session.strings.copy(big), self.session.strings.copy(small)
         if big == '' or n > len(big):
             return values.null('%')
@@ -154,6 +155,7 @@ class Functions(object):
         else:
             num = len(s)
         util.require_read(ins, (')',))
+        #
         error.range_check(1, 255, start)
         error.range_check(0, 255, num)
         if num == 0 or start > len(s):
@@ -170,6 +172,7 @@ class Functions(object):
         util.require_read(ins, (',',))
         stop = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (')',))
+        #
         error.range_check(0, 255, stop)
         if stop == 0:
             return values.null('$')
@@ -183,6 +186,7 @@ class Functions(object):
         util.require_read(ins, (',',))
         stop = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (')',))
+        #
         error.range_check(0, 255, stop)
         if stop == 0:
             return values.null('$')
@@ -204,6 +208,7 @@ class Functions(object):
             j = values.pass_int_unpack(j)
             error.range_check(0, 255, j)
         util.require_read(ins, (')',))
+        #
         return self.session.strings.store(chr(j)*n)
 
     ######################################################################

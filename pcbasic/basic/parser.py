@@ -431,12 +431,11 @@ class Parser(object):
         error.range_check(0, 255, number)
         return number
 
-    def parse_expression(self, ins, session, allow_empty=False):
+    def parse_expression(self, ins, session, allow_empty=False, empty_err=error.MISSING_OPERAND):
         """Compute the value of the expression at the current code pointer."""
         stack = deque()
         units = deque()
         d = ''
-        missing_error = error.MISSING_OPERAND
         # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
         while True:
             last = d
@@ -486,7 +485,7 @@ class Parser(object):
                 break
             elif d in tk.end_expression:
                 # missing operand inside brackets or before comma is syntax error
-                missing_error = error.STX
+                empty_err = error.STX
                 break
             else:
                 # literal
@@ -495,12 +494,12 @@ class Parser(object):
         # or Missing Operand (in an assignment)
         # or not an error (in print and many functions)
         if units or stack:
-            self._evaluate_stack(stack, units, 0, missing_error)
+            self._evaluate_stack(stack, units, 0, empty_err)
             return units[0]
         elif allow_empty:
             return None
         else:
-            raise error.RunError(missing_error)
+            raise error.RunError(empty_err)
 
     def _evaluate_stack(self, stack, units, precedence, missing_err):
         """Drain evaluation stack until an operator of low precedence on top."""
