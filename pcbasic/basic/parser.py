@@ -481,8 +481,7 @@ class Parser(object):
             elif d in self.functions.functions:
                 # apply functions
                 ins.read(len(d))
-                units.append(
-                    self.values._math_error_handler.wrap(self.functions.functions[d], ins))
+                units.append(self.functions.functions[d](ins))
             elif d in tk.end_statement:
                 break
             elif d in tk.end_expression:
@@ -512,12 +511,10 @@ class Parser(object):
             try:
                 right = units.pop()
                 if narity == 1:
-                    units.append(self.values._math_error_handler.wrap(
-                            self.operators.unary[oper], right))
+                    units.append(self.operators.unary[oper](right))
                 else:
                     left = units.pop()
-                    units.append(self.values._math_error_handler.wrap(
-                        self.operators.binary[oper], left, right))
+                    units.append(self.operators.binary[oper](left, right))
             except IndexError:
                 # insufficient operators, error depends on context
                 raise error.RunError(missing_err)

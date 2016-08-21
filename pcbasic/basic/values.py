@@ -40,7 +40,7 @@ def math_safe(fn):
     def wrapped_fn(self, *args, **kwargs):
         try:
             return fn(self, *args, **kwargs)
-        except ArithmeticError as e:
+        except (ValueError, ArithmeticError) as e:
             return self._math_error_handler.handle(e)
     return wrapped_fn
 
@@ -701,13 +701,6 @@ class MathErrorHandler(object):
         if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
             return fp.pack(e.args[0])
         return fp.pack(fp.Single.max.copy())
-
-    def wrap(self, fn, *args, **kwargs):
-        """Call function and handle Overflow or Division by Zero."""
-        try:
-            return fn(*args, **kwargs)
-        except (ValueError, ArithmeticError) as e:
-            return self.handle(e)
 
 
 def number_to_str(inp, screen=False, write=False, allow_empty_expression=False):
