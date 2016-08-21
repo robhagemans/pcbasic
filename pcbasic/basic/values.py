@@ -29,19 +29,20 @@ from . import basictoken as tk
 
 byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
 
+
 def null(sigil):
     """Return null value for the given type."""
     return (sigil, bytearray(byte_size[sigil]))
 
-
-def math_safe(fn):
-    """Decorator to handle math errors."""
+def float_safe(fn):
+    """Decorator to handle floating point errors."""
     def wrapped_fn(self, *args, **kwargs):
         try:
             return fn(self, *args, **kwargs)
         except (ValueError, ArithmeticError) as e:
             return self._math_error_handler.handle(e)
     return wrapped_fn
+
 
 class Values(object):
     """Handles BASIC strings and numbers."""
@@ -52,6 +53,32 @@ class Values(object):
         self._strings = string_space
         # double-precision EXP, SIN, COS, TAN, ATN, LOG
         self._double_math = double_math
+
+    ###########################################################################
+    # convert between BASIC and Python values
+
+    @float_safe
+    def to_value(self, basic_val):
+        """Convert BASIC value to Python value."""
+        typechar = basic_val[0]
+        if typechar == '$':
+            return self._strings.copy(basic_val)
+        elif typechar == '%':
+            return integer_to_int_signed(basic_val)
+        elif typechar in ('#', '!'):
+            return fp.unpack(basic_val).to_value()
+
+    @float_safe
+    def from_value(self, python_val, typechar):
+        """Convert Python value to BASIC value."""
+        if typechar == '$':
+            return self._strings.store(python_val)
+        elif typechar == '%':
+            return int_to_integer_signed(python_val)
+        elif typechar == '!':
+            return fp.pack(fp.Single.from_value(python_val))
+        elif typechar == '#':
+            return fp.pack(fp.Double.from_value(python_val))
 
     ###########################################################################
     # string representation of numbers
@@ -290,7 +317,7 @@ class Values(object):
             is_double = True
         return self._float_from_exp10(neg, mantissa, exp10, is_double)
 
-    @math_safe
+    @float_safe
     def _float_from_exp10(self, neg, mantissa, exp10, is_double):
         """Create floating-point value from mantissa and decomal exponent."""
         cls = fp.Double if is_double else fp.Single
@@ -309,7 +336,7 @@ class Values(object):
     ###########################################################################
     # type conversions
 
-    @math_safe
+    @float_safe
     def pass_single(self, num):
         """Check if variable is numeric, convert to Single."""
         if not num:
@@ -324,7 +351,7 @@ class Values(object):
         elif typechar == '$':
             raise error.RunError(error.TYPE_MISMATCH)
 
-    @math_safe
+    @float_safe
     def pass_double(self, num):
         """Check if variable is numeric, convert to Double."""
         if not num:
@@ -375,7 +402,7 @@ class Values(object):
     ####################################
     # math functions
 
-    @math_safe
+    @float_safe
     def _call_float_function(self, fn, *args):
         """Convert to IEEE 754, apply function, convert back."""
         args = [self.pass_float(arg, self._double_math) for arg in args]
@@ -446,7 +473,7 @@ class Values(object):
     ###############################################################################
     # numeric operators
 
-    @math_safe
+    @float_safe
     def add(self, left, right):
         """Add two numbers."""
         left, right = self.pass_most_precise(left, right)
@@ -458,7 +485,7 @@ class Values(object):
                                 integer_to_int_signed(left) +
                                 integer_to_int_signed(right)))
 
-    @math_safe
+    @float_safe
     def subtract(self, left, right):
         """Subtract two numbers."""
         return self.add(left, self.negate(right))
@@ -492,7 +519,7 @@ class Values(object):
             return out
         return inp
 
-    @math_safe
+    @float_safe
     def power(self, left, right):
         """Left^right."""
         if (left[0] == '#' or right[0] == '#') and self._double_math:
@@ -503,7 +530,7 @@ class Values(object):
             else:
                 return self._call_float_function(lambda a, b: a**b, self.pass_single(left), self.pass_single(right))
 
-    @math_safe
+    @float_safe
     def multiply(self, left, right):
         """Left*right."""
         if left[0] == '#' or right[0] == '#':
@@ -511,7 +538,7 @@ class Values(object):
         else:
             return fp.pack( fp.unpack(self.pass_single(left)).imul(fp.unpack(self.pass_single(right))) )
 
-    @math_safe
+    @float_safe
     def divide(self, left, right):
         """Left/right."""
         if left[0] == '#' or right[0] == '#':
@@ -519,7 +546,7 @@ class Values(object):
         else:
             return fp.pack( fp.div(fp.unpack(self.pass_single(left)), fp.unpack(self.pass_single(right))) )
 
-    @math_safe
+    @float_safe
     def divide_int(self, left, right):
         """Left\\right."""
         dividend = pass_int_unpack(left)
@@ -532,7 +559,7 @@ class Values(object):
         else:
             return int_to_integer_signed(-(abs(dividend) / abs(divisor)))
 
-    @math_safe
+    @float_safe
     def mod(self, left, right):
         """Left modulo right."""
         divisor = pass_int_unpack(right)

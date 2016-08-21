@@ -11,8 +11,6 @@ from operator import itemgetter
 
 from . import error
 from . import values
-from . import fp
-from . import values
 
 
 ###############################################################################
@@ -462,6 +460,41 @@ class Arrays(object):
                             for i in range(0, len(record[1]), 3)]
 
 
+    ###########################################################################
+    # helper functions for Python interface
+
+    def from_list(self, python_list, name):
+        """Convert Python list to BASIC array."""
+        self._from_list(python_list, name, [])
+
+    def _from_list(self, python_list, name, index):
+        """Convert Python list to BASIC array."""
+        if not python_list:
+            return
+        if isinstance(python_list[0], list):
+            for i, v in enumerate(python_list):
+                self._from_list(v, name, index+[i+(self.base_index or 0)])
+        else:
+            for i, v in enumerate(python_list):
+                self.set(name, index+[i+(self.base_index or 0)], self.values.from_value(v, name[-1]))
+
+    def to_list(self, name):
+        """Convert BASIC array to Python list."""
+        if name in self.arrays:
+            indices, _, _ = self.arrays[name]
+            return self._to_list(name, [], indices)
+        else:
+            return []
+
+    def _to_list(self, name, index, remaining_dimensions):
+        """Convert BASIC array to Python list."""
+        if not remaining_dimensions:
+            return []
+        elif len(remaining_dimensions) == 1:
+            return [self.values.to_value(self.get(name, index+[i+(self.base_index or 0)])) for i in xrange(remaining_dimensions[0])]
+        else:
+            return [self._to_list(name, index+[i+(self.base_index or 0)], remaining_dimensions[1:]) for i in xrange(remaining_dimensions[0])]
+
 
 ###############################################################################
 # variable memory
@@ -493,60 +526,3 @@ def get_name_in_memory(name, offset):
     else:
         # rest of name is encoded such that c1 == 'A'
         return ord(name[offset-1].upper()) - ord('A') + 0xC1
-
-
-##############################################################################
-# helper functions for Python interface
-
-def build_array(python_list, name, stringspace, arrays):
-    """Convert Python list to BASIC array."""
-    _array_from_list(python_list, name, [], stringspace, arrays)
-
-def _array_from_list(python_list, name, index, stringspace, arrays):
-    """Convert Python list to BASIC array."""
-    if not python_list:
-        return
-    if isinstance(python_list[0], list):
-        for i, v in enumerate(python_list):
-            _array_from_list(v, name, index+[i+(arrays.base_index or 0)], stringspace, arrays)
-    else:
-        for i, v in enumerate(python_list):
-            arrays.set(name, index+[i+(arrays.base_index or 0)], from_value(v, name[-1], stringspace))
-
-def build_list(name, stringspace, arrays):
-    """Convert BASIC array to Python list."""
-    if name in arrays.arrays:
-        indices, _, _ = arrays.arrays[name]
-        return _list_from_array(name, [], indices, stringspace, arrays)
-    else:
-        return []
-
-def _list_from_array(name, index, remaining_dimensions, stringspace, arrays):
-    """Convert BASIC array to Python list."""
-    if not remaining_dimensions:
-        return []
-    elif len(remaining_dimensions) == 1:
-        return [to_value(arrays.get(name, index+[i+(arrays.base_index or 0)]), stringspace) for i in xrange(remaining_dimensions[0])]
-    else:
-        return [_list_from_array(name, index+[i+(arrays.base_index or 0)], remaining_dimensions[1:], stringspace, arrays) for i in xrange(remaining_dimensions[0])]
-
-def to_value(basic_val, stringspace):
-    """Convert BASIC value to Python value."""
-    typechar = basic_val[0]
-    if typechar == '$':
-        return stringspace.copy(basic_val)
-    elif typechar == '%':
-        return values.integer_to_int_signed(basic_val)
-    elif typechar in ('#', '!'):
-        return fp.unpack(basic_val).to_value()
-
-def from_value(python_val, typechar, stringspace):
-    """Convert Python value to BASIC value."""
-    if typechar == '$':
-        return stringspace.store(python_val)
-    elif typechar == '%':
-        return values.int_to_integer_signed(python_val)
-    elif typechar == '!':
-        return fp.pack(fp.Single.from_value(python_val))
-    elif typechar == '#':
-        return fp.pack(fp.Double.from_value(python_val))

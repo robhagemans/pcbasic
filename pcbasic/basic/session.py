@@ -241,24 +241,24 @@ class Session(object):
             tokens = self.tokeniser.tokenise_line('?' + expression)
             # skip : and print token and parse expression
             tokens.read(2)
-            return var.to_value(self.parser.parse_expression(tokens, self), self.strings)
+            return self.values.to_value(self.parser.parse_expression(tokens, self))
         return None
 
     def set_variable(self, name, value):
         """Set a variable in memory."""
         if '(' in name:
             name = name.split('(', 1)[0]
-            var.build_array(value, name, self.strings, self.arrays)
+            self.arrays.from_list(value, name)
         else:
-            self.memory.set_variable(name, [], var.from_value(value, name[-1], self.strings))
+            self.memory.set_variable(name, [], self.values.from_value(value, name[-1]))
 
     def get_variable(self, name):
         """Get a variable in memory."""
         if '(' in name:
             name = name.split('(', 1)[0]
-            return var.build_list(name, self.strings, self.arrays)
+            return self.arrays.to_list(name)
         else:
-            return var.to_value(self.memory.get_variable(name, []), self.strings)
+            return self.values.to_value(self.memory.get_variable(name, []))
 
     def interact(self):
         """Interactive interpreter session."""
