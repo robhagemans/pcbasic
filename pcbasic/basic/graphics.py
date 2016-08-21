@@ -657,8 +657,8 @@ class Drawing(object):
             x1 = x0 + 2*dx - 1
         # illegal fn call if outside viewport boundary
         vx0, vy0, vx1, vy1 = self.screen.graph_view.get()
-        util.range_check(vx0, vx1, x0, x1)
-        util.range_check(vy0, vy1, y0, y1)
+        error.range_check(vx0, vx1, x0, x1)
+        error.range_check(vy0, vy1, y0, y1)
         # apply the sprite to the screen
         self.screen.put_rect(x0, y0, x1, y1, sprite, operation_token)
 
@@ -677,8 +677,8 @@ class Drawing(object):
             x1 = x0 + 2*dx - 1
         # illegal fn call if outside viewport boundary
         vx0, vy0, vx1, vy1 = self.screen.graph_view.get()
-        util.range_check(vx0, vx1, x0, x1)
-        util.range_check(vy0, vy1, y0, y1)
+        error.range_check(vx0, vx1, x0, x1)
+        error.range_check(vy0, vy1, y0, y1)
         # set size record
         byte_array[0:4] = self.screen.mode.sprite_size_to_record(dx, dy)
         # read from screen and convert to byte array
@@ -724,12 +724,12 @@ class Drawing(object):
                     attr = ml_parser.parse_number()
                     # 100000 seems to be GW's limit
                     # however, parse_number will overflow past signed int limits
-                    util.range_check(-99999, 99999, attr)
+                    error.range_check(-99999, 99999, attr)
                     self.last_attr = attr
             elif c == 'S':
                 # set scale
                 scale = ml_parser.parse_number()
-                util.range_check(1, 255, scale)
+                error.range_check(1, 255, scale)
                 self.draw_scale = scale
             elif c == 'A':
                 # set angle
@@ -738,7 +738,7 @@ class Drawing(object):
                     self.draw_angle = 0
                 else:
                     angle = ml_parser.parse_number()
-                    util.range_check(0, 3, angle)
+                    error.range_check(0, 3, angle)
                     self.draw_angle = 90 * angle
             elif c == 'T':
                 # 'turn angle' - set (don't turn) the angle to any value
@@ -749,14 +749,14 @@ class Drawing(object):
                     self.draw_angle = 0
                 else:
                     angle = ml_parser.parse_number()
-                    util.range_check(-360, 360, angle)
+                    error.range_check(-360, 360, angle)
                     self.draw_angle = angle
             # one-variable movement commands:
             elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
                 step = ml_parser.parse_number(default=values.int_to_integer_signed(1))
                 # 100000 seems to be GW's limit
                 # however, parse_number will overflow past signed int limits
-                util.range_check(-99999, 99999, step)
+                error.range_check(-99999, 99999, step)
                 x0, y0 = self.last_point
                 x1, y1 = 0, 0
                 if c in ('U', 'E', 'H'):
@@ -774,13 +774,13 @@ class Drawing(object):
             elif c == 'M':
                 relative = util.skip(gmls, ml_parser.whitepace) in ('+','-')
                 x = ml_parser.parse_number()
-                util.range_check(-9999, 9999, x)
+                error.range_check(-9999, 9999, x)
                 if util.skip(gmls, ml_parser.whitepace) != ',':
                     raise error.RunError(error.IFC)
                 else:
                     gmls.read(1)
                 y = ml_parser.parse_number()
-                util.range_check(-9999, 9999, y)
+                error.range_check(-9999, 9999, y)
                 x0, y0 = self.last_point
                 if relative:
                     self.draw_step(x0, y0, x, y, plot, goback)
@@ -795,11 +795,11 @@ class Drawing(object):
             elif c == 'P':
                 # paint - flood fill
                 colour = ml_parser.parse_number()
-                util.range_check(0, 9999, colour)
+                error.range_check(0, 9999, colour)
                 if util.skip_read(gmls, ml_parser.whitepace) != ',':
                     raise error.RunError(error.IFC)
                 bound = ml_parser.parse_number()
-                util.range_check(0, 9999, bound)
+                error.range_check(0, 9999, bound)
                 x, y = self.get_window_logical(*self.last_point)
                 self.paint((x, y, False), None, colour, bound, None, events)
 

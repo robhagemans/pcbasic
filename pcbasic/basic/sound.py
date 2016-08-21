@@ -192,7 +192,7 @@ class Sound(object):
                     gmls.seek(pos)
                 elif c == 'N':
                     note = ml_parser.parse_number()
-                    util.range_check(0, 84, note)
+                    error.range_check(0, 84, note)
                     dur = vstate.length
                     c = util.skip(gmls, ml_parser.whitepace).upper()
                     if c == '.':
@@ -207,15 +207,15 @@ class Sound(object):
                                          voice=voice)
                 elif c == 'L':
                     recip = ml_parser.parse_number()
-                    util.range_check(1, 64, recip)
+                    error.range_check(1, 64, recip)
                     vstate.length = 1. / recip
                 elif c == 'T':
                     recip = ml_parser.parse_number()
-                    util.range_check(32, 255, recip)
+                    error.range_check(32, 255, recip)
                     vstate.tempo = 240. / recip
                 elif c == 'O':
                     octave = ml_parser.parse_number()
-                    util.range_check(0, 6, octave)
+                    error.range_check(0, 6, octave)
                     vstate.octave = octave
                 elif c == '>':
                     vstate.octave += 1
@@ -243,7 +243,7 @@ class Sound(object):
                                 c = util.skip(gmls, ml_parser.whitepace)
                             # NOT ml_parse_number, only literals allowed here!
                             length = int(numstr)
-                            util.range_check(0, 64, length)
+                            error.range_check(0, 64, length)
                             if length > 0:
                                 dur = 1. / float(length)
                         elif c in ('#', '+'):

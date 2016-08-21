@@ -173,3 +173,20 @@ class RunError(Error):
             self.message = self.messages[self.err]
         except KeyError:
             self.message = self.default_message
+
+
+def range_check(lower, upper, *allvars):
+    """Check if all variables in list are within the given inclusive range."""
+    for v in allvars:
+        if v is not None and not (lower <= v <= upper):
+            raise RunError(IFC)
+
+def throw_if(bool, err=IFC):
+    """Raise IFC if condition is met."""
+    if bool:
+        raise RunError(err)
+
+def range_check_err(lower, upper, v, err=IFC):
+    """Check if variable is within the given inclusive range."""
+    if v is not None and not (lower <= v <= upper):
+        raise RunError(err)

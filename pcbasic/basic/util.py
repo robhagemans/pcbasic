@@ -132,14 +132,3 @@ def read_name(ins, allow_empty=False, err=error.STX):
     if not name and not allow_empty:
         raise error.RunError(err)
     return name
-
-def range_check(lower, upper, *allvars):
-    """Check if all variables in list are within the given inclusive range."""
-    for v in allvars:
-        if v is not None and not (lower <= v <= upper):
-            raise error.RunError(error.IFC)
-
-def range_check_err(lower, upper, v, err=error.IFC):
-    """Check if variable is within the given inclusive range."""
-    if v is not None and not (lower <= v <= upper):
-        raise error.RunError(err)

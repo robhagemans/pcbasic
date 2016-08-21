@@ -186,7 +186,7 @@ class Statements(object):
         """LCOPY: do nothing but check for syntax errors."""
         # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
         if util.skip_white(ins) not in tk.end_statement:
-            util.range_check(0, 255, values.pass_int_unpack(
+            error.range_check(0, 255, values.pass_int_unpack(
                     self.parser.parse_expression(ins, self.session)))
             util.require(ins, tk.end_statement)
 
@@ -326,7 +326,7 @@ class Statements(object):
         """COM: switch on/off serial port event handling."""
         util.require(ins, ('(',))
         num = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
-        util.range_check(1, 2, num)
+        error.range_check(1, 2, num)
         if self.session.events.com[num-1].command(util.skip_white(ins)):
             ins.read(1)
         else:
@@ -344,7 +344,7 @@ class Statements(object):
     def exec_key_events(self, ins):
         """KEY: switch on/off keyboard events."""
         num = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
-        util.range_check(0, 255, num)
+        error.range_check(0, 255, num)
         d = util.skip_white(ins)
         # others are ignored
         if num >= 1 and num <= 20:
@@ -371,7 +371,7 @@ class Statements(object):
         """ON KEY: define key event trapping."""
         keynum, jumpnum = self._parse_on_event(ins)
         keynum = values.pass_int_unpack(keynum)
-        util.range_check(1, 20, keynum)
+        error.range_check(1, 20, keynum)
         self.session.events.key[keynum-1].set_jump(jumpnum)
 
     def exec_on_timer(self, ins):
@@ -407,7 +407,7 @@ class Statements(object):
         """ON COM: define serial port event trapping."""
         keynum, jumpnum = self._parse_on_event(ins)
         keynum = values.pass_int_unpack(keynum)
-        util.range_check(1, 2, keynum)
+        error.range_check(1, 2, keynum)
         self.session.events.com[keynum-1].set_jump(jumpnum)
 
     ##########################################################
@@ -445,17 +445,17 @@ class Statements(object):
             if (util.skip_white_read_if(ins, (',',)) and (self.parser.syntax == 'tandy' or
                     (self.parser.syntax == 'pcjr' and self.session.sound.sound_on))):
                 volume = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-                util.range_check(0, 15, volume)
+                error.range_check(0, 15, volume)
                 if util.skip_white_read_if(ins, (',',)):
                     voice = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-                    util.range_check(0, 2, voice) # can't address noise channel here
+                    error.range_check(0, 2, voice) # can't address noise channel here
         util.require(ins, tk.end_statement)
         if dur.is_zero():
             self.session.sound.stop_all_sound()
             return
         # Tandy only allows frequencies below 37 (but plays them as 110 Hz)
         if freq != 0:
-            util.range_check(-32768 if self.parser.syntax == 'tandy' else 37, 32767, freq) # 32767 is pause
+            error.range_check(-32768 if self.parser.syntax == 'tandy' else 37, 32767, freq) # 32767 is pause
         # calculate duration in seconds
         one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
         dur_sec = dur.to_value()/18.2
@@ -502,8 +502,8 @@ class Statements(object):
         util.require_read(ins, (',',))
         volume = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require_read(ins, (',',))
-        util.range_check(0, 7, source)
-        util.range_check(0, 15, volume)
+        error.range_check(0, 7, source)
+        error.range_check(0, 15, volume)
         dur = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session)))
         if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
             raise error.RunError(error.IFC)
@@ -526,7 +526,7 @@ class Statements(object):
             raise error.RunError(error.IFC)
         util.require_read(ins, (',',))
         val = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-        util.range_check(0, 255, val)
+        error.range_check(0, 255, val)
         self.session.all_memory.poke(addr, val)
         util.require(ins, tk.end_statement)
 
@@ -612,7 +612,7 @@ class Statements(object):
         addr = values.pass_int_unpack(self.parser.parse_expression(ins, self.session), maxint=0xffff)
         util.require_read(ins, (',',))
         val = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-        util.range_check(0, 255, val)
+        error.range_check(0, 255, val)
         self.session.machine.out(addr, val)
         util.require(ins, tk.end_statement)
 
@@ -621,11 +621,11 @@ class Statements(object):
         addr = values.pass_int_unpack(self.parser.parse_expression(ins, self.session), maxint=0xffff)
         util.require_read(ins, (',',))
         ander = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-        util.range_check(0, 255, ander)
+        error.range_check(0, 255, ander)
         xorer = 0
         if util.skip_white_read_if(ins, (',',)):
             xorer = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-        util.range_check(0, 255, xorer)
+        error.range_check(0, 255, xorer)
         util.require(ins, tk.end_statement)
         self.session.machine.wait(addr, ander, xorer)
 
@@ -1098,9 +1098,9 @@ class Statements(object):
             raise error.RunError(error.PATH_FILE_ACCESS_ERROR)
         elif mode != 'R' and access and access != default_access_modes[mode]:
             raise error.RunError(error.STX)
-        util.range_check(1, self.session.memory.max_reclen, reclen)
+        error.range_check(1, self.session.memory.max_reclen, reclen)
         # can't open file 0, or beyond max_files
-        util.range_check_err(1, self.session.memory.max_files, number, error.BAD_FILE_NUMBER)
+        error.range_check_err(1, self.session.memory.max_files, number, error.BAD_FILE_NUMBER)
         self.session.files.open(number, name, 'D', mode, access, lock, reclen)
         util.require(ins, tk.end_statement)
 
@@ -1127,7 +1127,7 @@ class Statements(object):
             offset = 0
             while True:
                 width = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-                util.range_check(0, 255, width)
+                error.range_check(0, 255, width)
                 util.require_read(ins, ('AS',), err=error.IFC)
                 name, index = self.parser.parse_variable(ins, self.session)
                 the_file.field.attach_var(name, index, offset, width)
@@ -1145,7 +1145,7 @@ class Statements(object):
             pos = fp.unpack(self.session.values.pass_single(self.parser.parse_expression(ins, self.session))).round_to_int()
             # not 2^32-1 as the manual boasts!
             # pos-1 needs to fit in a single-precision mantissa
-            util.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
+            error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
             if not isinstance(the_file, ports.COMFile):
                 the_file.set_pos(pos)
             else:
@@ -1216,7 +1216,7 @@ class Statements(object):
         lcoord = self._parse_coord_step(ins)
         if util.skip_white_read_if(ins, (',',)):
             c = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-        util.range_check(-1, 255, c)
+        error.range_check(-1, 255, c)
         util.require(ins, tk.end_statement)
         self.session.screen.drawing.pset(lcoord, c)
 
@@ -1263,8 +1263,8 @@ class Statements(object):
             util.require_read(ins, (tk.O_MINUS,))
             x1, y1 = self._parse_coord_bare(ins)
             x1, y1 = round(x1), round(y1)
-            util.range_check(0, self.session.screen.mode.pixel_width-1, x0, x1)
-            util.range_check(0, self.session.screen.mode.pixel_height-1, y0, y1)
+            error.range_check(0, self.session.screen.mode.pixel_width-1, x0, x1)
+            error.range_check(0, self.session.screen.mode.pixel_height-1, y0, y1)
             fill, border = None, None
             if util.skip_white_read_if(ins, (',',)):
                 fill = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
@@ -1659,7 +1659,7 @@ class Statements(object):
     def exec_on_jump(self, ins):
         """ON: calculated jump."""
         onvar = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-        util.range_check(0, 255, onvar)
+        error.range_check(0, 255, onvar)
         command = util.skip_white_read(ins)
         jumps = []
         while True:
@@ -1734,7 +1734,7 @@ class Statements(object):
     def exec_error(self, ins):
         """ERRROR: simulate an error condition."""
         errn = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-        util.range_check(1, 255, errn)
+        error.range_check(1, 255, errn)
         raise error.RunError(errn)
 
     def exec_gosub(self, ins):
@@ -1895,9 +1895,9 @@ class Statements(object):
         util.require_read(ins, (')',))
         with self.session.strings:
             s = self.session.strings.copy(values.pass_string(self.session.memory.get_variable(name, indices)))
-        util.range_check(0, 255, num)
+        error.range_check(0, 255, num)
         if num > 0:
-            util.range_check(1, len(s), start)
+            error.range_check(1, len(s), start)
         util.require_read(ins, (tk.O_EQ,))
         with self.session.strings:
             val = self.session.strings.copy(values.pass_string(self.parser.parse_expression(ins, self.session)))
@@ -2147,7 +2147,7 @@ class Statements(object):
             if self.parser.syntax == 'tandy':
                 # tandy gives illegal function call on CLS number
                 raise error.RunError(error.IFC)
-        util.range_check(0, 2, val)
+        error.range_check(0, 2, val)
         if self.parser.syntax != 'pcjr':
             if util.skip_white_read_if(ins, (',',)):
                 # comma is ignored, but a number after means syntax error
@@ -2197,27 +2197,27 @@ class Statements(object):
             raise error.RunError(error.IFC)
         # for screens other than 1, no distinction between 3rd parm zero and not supplied
         bord = bord or 0
-        util.range_check(0, 255, bord)
+        error.range_check(0, 255, bord)
         if mode.is_text_mode:
-            util.range_check(0, mode.num_attr-1, fore)
-            util.range_check(0, 15, back, bord)
+            error.range_check(0, mode.num_attr-1, fore)
+            error.range_check(0, 15, back, bord)
             screen.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10
                             + (fore & 0xf))
             screen.set_border(bord)
         elif mode.name in ('160x200x16', '320x200x4pcjr', '320x200x16pcjr'
                             '640x200x4', '320x200x16', '640x200x16'):
-            util.range_check(1, mode.num_attr-1, fore)
-            util.range_check(0, mode.num_attr-1, back)
+            error.range_check(1, mode.num_attr-1, fore)
+            error.range_check(0, mode.num_attr-1, back)
             screen.set_attr(fore)
             # in screen 7 and 8, only low intensity palette is used.
             screen.palette.set_entry(0, back % 8, check_mode=False)
         elif mode.name in ('640x350x16', '640x350x4'):
-            util.range_check(0, mode.num_attr-1, fore)
-            util.range_check(0, len(mode.colours)-1, back)
+            error.range_check(0, mode.num_attr-1, fore)
+            error.range_check(0, len(mode.colours)-1, back)
             screen.set_attr(fore)
             screen.palette.set_entry(0, back, check_mode=False)
         elif mode.name == '640x400x2':
-            util.range_check(0, len(mode.colours)-1, fore)
+            error.range_check(0, len(mode.colours)-1, fore)
             if back != 0:
                 raise error.RunError(error.IFC)
             screen.palette.set_entry(1, fore, check_mode=False)
@@ -2230,9 +2230,9 @@ class Statements(object):
         if override is not None:
             # uses last entry as palette if given
             pal = override
-        util.range_check(0, 255, back)
+        error.range_check(0, 255, back)
         if pal is not None:
-            util.range_check(0, 255, pal)
+            error.range_check(0, 255, pal)
             screen.set_cga4_palette(pal%2)
             palette = list(screen.mode.palette)
             palette[0] = back&0xf
@@ -2260,8 +2260,8 @@ class Statements(object):
             colour = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             if attrib is None or colour is None:
                 raise error.RunError(error.STX)
-            util.range_check(0, num_palette_entries-1, attrib)
-            util.range_check(-1, len(mode.colours)-1, colour)
+            error.range_check(0, num_palette_entries-1, attrib)
+            error.range_check(-1, len(mode.colours)-1, colour)
             if colour != -1:
                 self.session.screen.palette.set_entry(attrib, colour)
             util.require(ins, tk.end_statement)
@@ -2284,7 +2284,7 @@ class Statements(object):
         new_palette = []
         for i in range(num_palette_entries):
             val = values.pass_int_unpack(('%', lst[(start+i)*2:(start+i+1)*2]))
-            util.range_check(-1, len(mode.colours)-1, val)
+            error.range_check(-1, len(mode.colours)-1, val)
             new_palette.append(val if val > -1 else screen.palette.get_entry(i))
         screen.palette.set_all(new_palette)
         util.require(ins, tk.end_statement)
@@ -2316,7 +2316,7 @@ class Statements(object):
     def exec_key_define(self, ins):
         """KEY: define function-key shortcut or scancode for event trapping."""
         keynum = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-        util.range_check(1, 255, keynum)
+        error.range_check(1, 255, keynum)
         util.require_read(ins, (',',), err=error.IFC)
         with self.session.strings:
             text = self.session.strings.copy(values.pass_string(self.parser.parse_expression(ins, self.session)))
@@ -2356,22 +2356,22 @@ class Statements(object):
         if row == cmode.height and self.session.fkey_macros.keys_visible:
             raise error.RunError(error.IFC)
         elif self.session.screen.view_set:
-            util.range_check(self.session.screen.view_start, self.session.screen.scroll_height, row)
+            error.range_check(self.session.screen.view_start, self.session.screen.scroll_height, row)
         else:
-            util.range_check(1, cmode.height, row)
-        util.range_check(1, cmode.width, col)
+            error.range_check(1, cmode.height, row)
+        error.range_check(1, cmode.width, col)
         if row == cmode.height:
             # temporarily allow writing on last row
             self.session.screen.bottom_row_allowed = True
         self.session.screen.set_pos(row, col, scroll_ok=False)
         if cursor is not None:
-            util.range_check(0, (255 if self.parser.syntax in ('pcjr', 'tandy') else 1), cursor)
+            error.range_check(0, (255 if self.parser.syntax in ('pcjr', 'tandy') else 1), cursor)
             # set cursor visibility - this should set the flag but have no effect in graphics modes
             self.session.screen.cursor.set_visibility(cursor != 0)
         if stop is None:
             stop = start
         if start is not None:
-            util.range_check(0, 31, start, stop)
+            error.range_check(0, 31, start, stop)
             # cursor shape only has an effect in text mode
             if cmode.is_text_mode:
                 self.session.screen.cursor.set_shape(start, stop)
@@ -2512,7 +2512,7 @@ class Statements(object):
             stop = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
             util.require(ins, tk.end_statement)
             max_line = 25 if (self.parser.syntax in ('pcjr', 'tandy') and not self.session.fkey_macros.keys_visible) else 24
-            util.range_check(1, max_line, start, stop)
+            error.range_check(1, max_line, start, stop)
             self.session.screen.set_view(start, stop)
 
     def exec_width(self, ins):
@@ -2549,7 +2549,7 @@ class Statements(object):
                     num_rows_dummy = self.parser.parse_expression(ins, self.session, allow_empty=True)
                     if num_rows_dummy is not None:
                         min_num_rows = 0 if self.parser.syntax in ('pcjr', 'tandy') else 25
-                        util.range_check(min_num_rows, 25, values.pass_int_unpack(num_rows_dummy))
+                        error.range_check(min_num_rows, 25, values.pass_int_unpack(num_rows_dummy))
                     # trailing comma is accepted
                     util.skip_white_read_if(ins, (',',))
                 # gives illegal function call, not syntax error
@@ -2580,8 +2580,8 @@ class Statements(object):
         # if the parameters are outside narrow ranges
         # (e.g. not implemented screen mode, pagenum beyond max)
         # then the error is only raised after changing the palette.
-        util.range_check(0, 255, mode, color, apagenum, vpagenum)
-        util.range_check(0, 2, erase)
+        error.range_check(0, 255, mode, color, apagenum, vpagenum)
+        error.range_check(0, 2, erase)
         util.require(ins, tk.end_statement)
         # decide whether to redraw the screen
         screen = self.session.screen
@@ -2597,9 +2597,9 @@ class Statements(object):
     def exec_pcopy(self, ins):
         """PCOPY: copy video pages."""
         src = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
-        util.range_check(0, self.session.screen.mode.num_pages-1, src)
+        error.range_check(0, self.session.screen.mode.num_pages-1, src)
         util.require_read(ins, (',',))
         dst = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
         util.require(ins, tk.end_statement)
-        util.range_check(0, self.session.screen.mode.num_pages-1, dst)
+        error.range_check(0, self.session.screen.mode.num_pages-1, dst)
         self.session.screen.copy_page(src, dst)

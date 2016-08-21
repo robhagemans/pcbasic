@@ -10,7 +10,6 @@ import string
 import functools
 import math
 
-
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -661,6 +660,79 @@ class Values(object):
             return self.concat(left, right)
         else:
             return self.add(left, right)
+
+    ##########################################################################
+    # conversion
+
+    def cvi(self, x):
+        """CVI: return the int value of a byte representation."""
+        cstr = self._strings.copy(pass_string(x))
+        error.throw_if(len(cstr) < 2)
+        return bytes_to_integer(cstr[:2])
+
+    def cvs(self, x):
+        """CVS: return the single-precision value of a byte representation."""
+        cstr = self._strings.copy(pass_string(x))
+        error.throw_if(len(cstr) < 4)
+        return ('!', bytearray(cstr[:4]))
+
+    def cvd(self, x):
+        """CVD: return the double-precision value of a byte representation."""
+        cstr = self._strings.copy(pass_string(x))
+        error.throw_if(len(cstr) < 8)
+        return ('#', bytearray(cstr[:8]))
+
+    def mki(self, x):
+        """MKI$: return the byte representation of an int."""
+        return self._strings.store(integer_to_bytes(pass_integer(x)))
+
+    def mks(self, x):
+        """MKS$: return the byte representation of a single."""
+        return self._strings.store(self.pass_single(x)[1])
+
+    def mkd(self, x):
+        """MKD$: return the byte representation of a double."""
+        return self._strings.store(self.pass_double(x)[1])
+
+    def representation(self, x):
+        """STR$: string representation of a number."""
+        return self._strings.store(number_to_str(pass_number(x), screen=True))
+
+    def val(self, x):
+        """VAL: number value of a string."""
+        return self.str_to_number(self._strings.copy(pass_string(x)))
+
+    def character(self, x):
+        """CHR$: character for ASCII value."""
+        val = pass_int_unpack(x)
+        error.range_check(0, 255, val)
+        return self._strings.store(chr(val))
+
+    def octal(self, x):
+        """OCT$: octal representation of int."""
+        # allow range -32768 to 65535
+        val = pass_integer(x, 0xffff)
+        return self._strings.store(integer_to_str_oct(val))
+
+    def hexadecimal(self, x):
+        """HEX$: hexadecimal representation of int."""
+        # allow range -32768 to 65535
+        val = pass_integer(x, 0xffff)
+        return self._strings.store(integer_to_str_hex(val))
+
+
+    ######################################################################
+    # string manipulation
+
+    def length(self, x):
+        """LEN: length of string."""
+        return int_to_integer_signed(string_length(pass_string(x)))
+
+    def asc(self, x):
+        """ASC: ordinal ASCII value of a character."""
+        s = self._strings.copy(pass_string(x))
+        error.throw_if(not s)
+        return int_to_integer_signed(ord(s[0]))
 
 
 class MathErrorHandler(object):
