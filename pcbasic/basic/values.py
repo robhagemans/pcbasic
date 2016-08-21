@@ -289,8 +289,9 @@ class Values(object):
         # eight or more digits means double, unless single override
         if digits - zeros > 7 and not is_single:
             is_double = True
-        return self._math_error_handler.wrap(self._float_from_exp10, neg, mantissa, exp10, is_double)
+        return self._float_from_exp10(neg, mantissa, exp10, is_double)
 
+    @math_safe
     def _float_from_exp10(self, neg, mantissa, exp10, is_double):
         """Create floating-point value from mantissa and decomal exponent."""
         cls = fp.Double if is_double else fp.Single
@@ -375,14 +376,10 @@ class Values(object):
     ####################################
     # math functions
 
-    def _func(self, fn, *args):
-        """Convert to IEEE 754, apply function, convert back; catch errors."""
-        args = (self.pass_float(arg, self._double_math) for arg in args)
-        return self._math_error_handler.wrap(self._func_unsafe, fn, *args)
-
-    @staticmethod
-    def _func_unsafe(fn, *args):
+    @math_safe
+    def _call_float_function(self, fn, *args):
         """Convert to IEEE 754, apply function, convert back."""
+        args = [self.pass_float(arg, self._double_math) for arg in args]
         floatcls = fp.unpack(args[0]).__class__
         try:
             args = (fp.unpack(arg).to_value() for arg in args)
@@ -393,31 +390,31 @@ class Values(object):
 
     def sqr(self, x):
         """Square root."""
-        return self._func(math.sqrt, x)
+        return self._call_float_function(math.sqrt, x)
 
     def exp(self, x):
         """Exponential."""
-        return self._func(math.exp, x)
+        return self._call_float_function(math.exp, x)
 
     def sin(self, x):
         """Sine."""
-        return self._func(math.sin, x)
+        return self._call_float_function(math.sin, x)
 
     def cos(self, x):
         """Cosine."""
-        return self._func(math.cos, x)
+        return self._call_float_function(math.cos, x)
 
     def tan(self, x):
         """Tangent."""
-        return self._func(math.tan, x)
+        return self._call_float_function(math.tan, x)
 
     def atn(self, x):
         """Inverse tangent."""
-        return self._func(math.atan, x)
+        return self._call_float_function(math.atan, x)
 
     def log(self, x):
         """Logarithm."""
-        return self._func(math.log, x)
+        return self._call_float_function(math.log, x)
 
     ###########################################################################
 
@@ -500,12 +497,12 @@ class Values(object):
     def power(self, left, right):
         """Left^right."""
         if (left[0] == '#' or right[0] == '#') and self._double_math:
-            return self._func(lambda a, b: a**b, self.pass_double(left), self.pass_double(right))
+            return self._call_float_function(lambda a, b: a**b, self.pass_double(left), self.pass_double(right))
         else:
             if right[0] == '%':
                 return fp.pack(fp.unpack(self.pass_single(left)).ipow_int(integer_to_int_signed(right)))
             else:
-                return self._func(lambda a, b: a**b, self.pass_single(left), self.pass_single(right))
+                return self._call_float_function(lambda a, b: a**b, self.pass_single(left), self.pass_single(right))
 
     @math_safe
     def multiply(self, left, right):
