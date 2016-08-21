@@ -330,22 +330,22 @@ class Parser(object):
     ###########################################################################
     # expression parser
 
-    def parse_bracket(self, ins, session):
+    def parse_bracket(self, ins):
         """Compute the value of the bracketed expression."""
         util.require_read(ins, ('(',))
         # we'll get a Syntax error, not a Missing operand, if we close with )
-        val = self.parse_expression(ins, session)
+        val = self.parse_expression(ins)
         util.require_read(ins, (')',))
         return val
 
-    def parse_literal(self, ins, session):
+    def parse_literal(self, ins):
         """Compute the value of the literal at the current code pointer."""
         d = util.skip_white(ins)
         # string literal
         if d == '"':
             ins.read(1)
-            if ins == session.program.bytecode:
-                address = ins.tell() + session.memory.code_start
+            if ins == self.session.program.bytecode:
+                address = ins.tell() + self.session.memory.code_start
             else:
                 address = None
             output = bytearray()
@@ -359,7 +359,7 @@ class Parser(object):
             if d == '\0':
                 ins.seek(-1, 1)
             # store for easy retrieval, but don't reserve space in string memory
-            return session.strings.store(output, address)
+            return self.session.strings.store(output, address)
         # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
         # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
         elif d in string.digits:
@@ -376,14 +376,14 @@ class Parser(object):
         else:
             raise error.RunError(error.STX)
 
-    def parse_variable(self, ins, session):
+    def parse_variable(self, ins):
         """Helper function: parse a variable or array element."""
         name = self.parse_scalar(ins)
         indices = []
         if util.skip_white_read_if(ins, ('[', '(')):
             # it's an array, read indices
             while True:
-                indices.append(values.pass_int_unpack(self.parse_expression(ins, session)))
+                indices.append(values.pass_int_unpack(self.parse_expression(ins)))
                 if not util.skip_white_read_if(ins, (',',)):
                     break
             util.require_read(ins, (']', ')'))
@@ -398,24 +398,24 @@ class Parser(object):
             name = name[:40]+name[-1]
         return name.upper()
 
-    def parse_file_number(self, ins, session, file_mode='IOAR'):
+    def parse_file_number(self, ins, file_mode='IOAR'):
         """Helper function: parse a file number and retrieve the file object."""
         screen = None
         if util.skip_white_read_if(ins, ('#',)):
-            number = values.pass_int_unpack(self.parse_expression(ins, session))
+            number = values.pass_int_unpack(self.parse_expression(ins))
             error.range_check(0, 255, number)
             screen = self.session.files.get(number, file_mode)
             util.require_read(ins, (',',))
         return screen
 
-    def parse_file_number_opthash(self, ins, session):
+    def parse_file_number_opthash(self, ins):
         """Helper function: parse a file number, with optional hash."""
         util.skip_white_read_if(ins, ('#',))
-        number = values.pass_int_unpack(self.parse_expression(ins, session))
+        number = values.pass_int_unpack(self.parse_expression(ins))
         error.range_check(0, 255, number)
         return number
 
-    def parse_expression(self, ins, session, allow_empty=False, empty_err=error.MISSING_OPERAND):
+    def parse_expression(self, ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
         """Compute the value of the expression at the current code pointer."""
         stack = deque()
         units = deque()
@@ -456,10 +456,10 @@ class Parser(object):
                 # repeated literals or variables or non-keywords like 'AS'
                 break
             elif d == '(':
-                units.append(self.parse_bracket(ins, session))
+                units.append(self.parse_bracket(ins))
             elif d and d in string.ascii_letters:
                 # variable name
-                name, indices = self.parse_variable(ins, session)
+                name, indices = self.parse_variable(ins)
                 units.append(self.session.memory.get_variable(name, indices))
             elif d in self.functions.functions:
                 # apply functions
@@ -473,7 +473,7 @@ class Parser(object):
                 break
             else:
                 # literal
-                units.append(self.parse_literal(ins, session))
+                units.append(self.parse_literal(ins))
         # empty expression is a syntax error (inside brackets)
         # or Missing Operand (in an assignment)
         # or not an error (in print and many functions)

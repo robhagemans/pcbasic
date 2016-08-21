@@ -113,7 +113,7 @@ class Debugger(BaseDebugger):
             outstr += (' ' + expr +' = ')
             outs.seek(2)
             try:
-                val = self.session.parser.parse_expression(outs, self.session)
+                val = self.session.parser.parse_expression(outs)
                 if val[0] == '$':
                     outstr += '"' + self.session.strings.copy(val) + '"'
                 else:

@@ -121,16 +121,16 @@ class Functions(object):
         """INSTR: find substring in string."""
         util.require_read(ins, ('(',))
         # followed by comma so empty will raise STX
-        s = self.parser.parse_expression(ins, self.session)
+        s = self.parser.parse_expression(ins)
         n = 1
         if s[0] != '$':
             n = values.pass_int_unpack(s)
             error.range_check(1, 255, n)
             util.require_read(ins, (',',))
-            s = self.parser.parse_expression(ins, self.session, empty_err=error.STX)
+            s = self.parser.parse_expression(ins, empty_err=error.STX)
         big = values.pass_string(s)
         util.require_read(ins, (',',))
-        s = self.parser.parse_expression(ins, self.session, empty_err=error.STX)
+        s = self.parser.parse_expression(ins, empty_err=error.STX)
         small = values.pass_string(s)
         util.require_read(ins, (')',))
         return self.values.instr(big, small)
@@ -138,11 +138,11 @@ class Functions(object):
     def value_mid(self, ins):
         """MID$: get substring."""
         util.require_read(ins, ('(',))
-        s = values.pass_string(self.parser.parse_expression(ins, self.session))
+        s = values.pass_string(self.parser.parse_expression(ins))
         util.require_read(ins, (',',))
-        start = values.pass_integer(self.parser.parse_expression(ins, self.session))
+        start = values.pass_integer(self.parser.parse_expression(ins))
         if util.skip_white_read_if(ins, (',',)):
-            num = values.pass_integer(self.parser.parse_expression(ins, self.session))
+            num = values.pass_integer(self.parser.parse_expression(ins))
         else:
             num = len(s)
         util.require_read(ins, (')',))
@@ -151,28 +151,28 @@ class Functions(object):
     def value_left(self, ins):
         """LEFT$: get substring at the start of string."""
         util.require_read(ins, ('(',))
-        s = values.pass_string(self.parser.parse_expression(ins, self.session))
+        s = values.pass_string(self.parser.parse_expression(ins))
         util.require_read(ins, (',',))
-        stop = values.pass_integer(self.parser.parse_expression(ins, self.session))
+        stop = values.pass_integer(self.parser.parse_expression(ins))
         util.require_read(ins, (')',))
         return self.values.left(s, stop)
 
     def value_right(self, ins):
         """RIGHT$: get substring at the end of string."""
         util.require_read(ins, ('(',))
-        s = values.pass_string(self.parser.parse_expression(ins, self.session))
+        s = values.pass_string(self.parser.parse_expression(ins))
         util.require_read(ins, (',',))
-        stop = values.pass_integer(self.parser.parse_expression(ins, self.session))
+        stop = values.pass_integer(self.parser.parse_expression(ins))
         util.require_read(ins, (')',))
         return self.values.right(s, stop)
 
     def value_string(self, ins):
         """STRING$: repeat characters."""
         util.require_read(ins, ('(',))
-        n = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
+        n = values.pass_int_unpack(self.parser.parse_expression(ins))
         error.range_check(0, 255, n)
         util.require_read(ins, (',',))
-        j = self.parser.parse_expression(ins, self.session)
+        j = self.parser.parse_expression(ins)
         if j[0] == '$':
             j = self.session.strings.copy(j)
             error.range_check(1, 255, len(j))
@@ -189,12 +189,12 @@ class Functions(object):
     def value_screen(self, ins):
         """SCREEN: get char or attribute at a location."""
         util.require_read(ins, ('(',))
-        row = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
+        row = values.pass_int_unpack(self.parser.parse_expression(ins))
         util.require_read(ins, (',',), err=error.IFC)
-        col = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
+        col = values.pass_int_unpack(self.parser.parse_expression(ins))
         z = 0
         if util.skip_white_read_if(ins, (',',)):
-            z = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
+            z = values.pass_int_unpack(self.parser.parse_expression(ins))
         cmode = self.session.screen.mode
         error.range_check(1, cmode.height, row)
         if self.session.screen.view_set:
@@ -211,11 +211,11 @@ class Functions(object):
         """INPUT$: get characters from the keyboard or a file."""
         util.require_read(ins, ('$',))
         util.require_read(ins, ('(',))
-        num = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
+        num = values.pass_int_unpack(self.parser.parse_expression(ins))
         error.range_check(1, 255, num)
         infile = self.session.devices.kybd_file
         if util.skip_white_read_if(ins, (',',)):
-            infile = self.session.files.get(self.parser.parse_file_number_opthash(ins, self.session))
+            infile = self.session.files.get(self.parser.parse_file_number_opthash(ins))
         util.require_read(ins, (')',))
         word = bytearray(infile.read_raw(num))
         if len(word) < num:
@@ -240,7 +240,7 @@ class Functions(object):
     def value_pos(self, ins):
         """POS: get the current screen column."""
         # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
-        self.parser.parse_bracket(ins, self.session)
+        self.parser.parse_bracket(ins)
         col = self.session.screen.current_col
         if col == self.session.screen.mode.width and self.session.screen.overflow:
             # in overflow position, return column 1.
@@ -249,7 +249,7 @@ class Functions(object):
 
     def value_lpos(self, ins):
         """LPOS: get the current printer column."""
-        num = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
+        num = values.pass_int_unpack(self.parser.parse_bracket(ins))
         error.range_check(0, 3, num)
         printer = self.session.devices.devices['LPT' + max(1, num) + ':']
         if printer.device_file:
@@ -263,7 +263,7 @@ class Functions(object):
     def value_loc(self, ins):
         """LOC: get file pointer."""
         util.skip_white(ins)
-        num = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session), maxint=0xffff)
+        num = values.pass_int_unpack(self.parser.parse_bracket(ins), maxint=0xffff)
         error.range_check(0, 255, num)
         the_file = self.session.files.get(num)
         return self.values.from_value(the_file.loc(), '!')
@@ -271,7 +271,7 @@ class Functions(object):
     def value_eof(self, ins):
         """EOF: get end-of-file."""
         util.skip_white(ins)
-        num = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session), maxint=0xffff)
+        num = values.pass_int_unpack(self.parser.parse_bracket(ins), maxint=0xffff)
         if num == 0:
             return values.null('%')
         error.range_check(0, 255, num)
@@ -281,7 +281,7 @@ class Functions(object):
     def value_lof(self, ins):
         """LOF: get length of file."""
         util.skip_white(ins)
-        num = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session), maxint=0xffff)
+        num = values.pass_int_unpack(self.parser.parse_bracket(ins), maxint=0xffff)
         error.range_check(0, 255, num)
         the_file = self.session.files.get(num)
         return self.values.from_value(the_file.lof(), '!')
@@ -293,7 +293,7 @@ class Functions(object):
     def value_environ(self, ins):
         """ENVIRON$: get environment string."""
         util.require_read(ins, ('$',))
-        expr = self.parser.parse_bracket(ins, self.session)
+        expr = self.parser.parse_bracket(ins)
         if expr[0] == '$':
             return self.session.strings.store(shell.get_env(self.session.strings.copy(expr)))
         else:
@@ -338,7 +338,7 @@ class Functions(object):
         if util.skip_white_read_if(ins, ('(',)):
             exprs = []
             while True:
-                exprs.append(self.parser.parse_expression(ins, self.session))
+                exprs.append(self.parser.parse_expression(ins))
                 if not util.skip_white_read_if(ins, (',',)):
                     break
             if len(exprs) != len(varnames):
@@ -350,7 +350,7 @@ class Functions(object):
         fns = StringIO(fncode)
         fns.seek(0)
         self.user_function_parsing.add(fnname)
-        value = self.parser.parse_expression(fns, self.session)
+        value = self.parser.parse_expression(fns)
         self.user_function_parsing.remove(fnname)
         # restore existing vars
         for name in varsave:
@@ -364,11 +364,11 @@ class Functions(object):
     def value_point(self, ins):
         """POINT: get pixel attribute at screen location."""
         util.require_read(ins, ('(',))
-        arg0 = self.parser.parse_expression(ins, self.session)
+        arg0 = self.parser.parse_expression(ins)
         screen = self.session.screen
         if util.skip_white_read_if(ins, (',',)):
             # two-argument mode
-            arg1 = self.parser.parse_expression(ins, self.session)
+            arg1 = self.parser.parse_expression(ins)
             util.require_read(ins, (')',))
             if screen.mode.is_text_mode:
                 raise error.RunError(error.IFC)
@@ -398,9 +398,9 @@ class Functions(object):
     def value_pmap(self, ins):
         """PMAP: convert between logical and physical coordinates."""
         util.require_read(ins, ('(',))
-        coord = self.parser.parse_expression(ins, self.session)
+        coord = self.parser.parse_expression(ins)
         util.require_read(ins, (',',))
-        mode = values.pass_int_unpack(self.parser.parse_expression(ins, self.session))
+        mode = values.pass_int_unpack(self.parser.parse_expression(ins))
         util.require_read(ins, (')',))
         error.range_check(0, 3, mode)
         screen = self.session.screen
@@ -424,7 +424,7 @@ class Functions(object):
 
     def value_play(self, ins):
         """PLAY: get length of music queue."""
-        voice = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
+        voice = values.pass_int_unpack(self.parser.parse_bracket(ins))
         error.range_check(0, 255, voice)
         if not(self.parser.syntax in ('pcjr', 'tandy') and voice in (1, 2)):
             voice = 0
@@ -452,7 +452,7 @@ class Functions(object):
 
     def value_pen(self, ins):
         """PEN: poll the light pen."""
-        fn = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
+        fn = values.pass_int_unpack(self.parser.parse_bracket(ins))
         error.range_check(0, 9, fn)
         pen = self.session.pen.poll(fn)
         if pen is None or not self.session.events.pen.enabled:
@@ -462,13 +462,13 @@ class Functions(object):
 
     def value_stick(self, ins):
         """STICK: poll the joystick."""
-        fn = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
+        fn = values.pass_int_unpack(self.parser.parse_bracket(ins))
         error.range_check(0, 3, fn)
         return values.int_to_integer_signed(self.session.stick.poll(fn))
 
     def value_strig(self, ins):
         """STRIG: poll the joystick fire button."""
-        fn = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
+        fn = values.pass_int_unpack(self.parser.parse_bracket(ins))
         # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
         error.range_check(0, 7, fn)
         return values.bool_to_integer(self.session.stick.poll_trigger(fn))
@@ -478,7 +478,7 @@ class Functions(object):
 
     def value_fre(self, ins):
         """FRE: get free memory and optionally collect garbage."""
-        val = self.parser.parse_bracket(ins, self.session)
+        val = self.parser.parse_bracket(ins)
         if val[0] == '$':
             # grabge collection if a string-valued argument is specified.
             self.session.memory.collect_garbage()
@@ -486,7 +486,7 @@ class Functions(object):
 
     def value_peek(self, ins):
         """PEEK: read memory location."""
-        addr = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session), maxint=0xffff)
+        addr = values.pass_int_unpack(self.parser.parse_bracket(ins), maxint=0xffff)
         if self.session.program.protected and not self.parser.run_mode:
             raise error.RunError(error.IFC)
         return values.int_to_integer_signed(self.session.all_memory.peek(addr))
@@ -496,10 +496,10 @@ class Functions(object):
         dollar = util.skip_white_read_if(ins, ('$',))
         util.require_read(ins, ('(',))
         if (not dollar) and util.skip_white(ins) == '#':
-            filenum = self.parser.parse_file_number_opthash(ins, self.session)
+            filenum = self.parser.parse_file_number_opthash(ins)
             var_ptr = self.session.memory.varptr_file(filenum)
         else:
-            name, indices = self.parser.parse_variable(ins, self.session)
+            name, indices = self.parser.parse_variable(ins)
             var_ptr = self.session.memory.varptr(name, indices)
         util.require_read(ins, (')',))
         if var_ptr < 0:
@@ -513,13 +513,13 @@ class Functions(object):
     def value_usr(self, ins):
         """USR: get value of machine-code function; not implemented."""
         util.require_read(ins, tk.digit)
-        self.parser.parse_bracket(ins, self.session)
+        self.parser.parse_bracket(ins)
         logging.warning("USR function not implemented.")
         return values.null('%')
 
     def value_inp(self, ins):
         """INP: get value from machine port."""
-        port = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session), maxint=0xffff)
+        port = values.pass_int_unpack(self.parser.parse_bracket(ins), maxint=0xffff)
         return values.int_to_integer_signed(self.session.machine.inp(port))
 
     def value_erdev(self, ins):
@@ -533,7 +533,7 @@ class Functions(object):
 
     def value_exterr(self, ins):
         """EXTERR: device error information; not implemented."""
-        x = values.pass_int_unpack(self.parser.parse_bracket(ins, self.session))
+        x = values.pass_int_unpack(self.parser.parse_bracket(ins))
         error.range_check(0, 3, x)
         logging.warning("EXTERR function not implemented.")
         return values.null('%')
@@ -542,7 +542,7 @@ class Functions(object):
         """IOCTL$: read device control string response; not implemented."""
         util.require_read(ins, ('$',))
         util.require_read(ins, ('(',))
-        num = self.parser.parse_file_number_opthash(ins, self.session)
+        num = self.parser.parse_file_number_opthash(ins)
         util.require_read(ins, (')',))
         self.session.files.get(num)
         logging.warning("IOCTL$ function not implemented.")
@@ -553,11 +553,11 @@ class Functions(object):
 
     def value_func(self, ins, fn):
         """Return value of unary function."""
-        return fn(self.parser.parse_bracket(ins, self.session))
+        return fn(self.parser.parse_bracket(ins))
 
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
         if util.skip_white(ins) == '(':
-            return self.session.randomiser.rnd(self.values.pass_single(self.parser.parse_bracket(ins, self.session)))
+            return self.session.randomiser.rnd(self.values.pass_single(self.parser.parse_bracket(ins)))
         else:
             return self.session.randomiser.rnd()
