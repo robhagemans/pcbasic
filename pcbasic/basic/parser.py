@@ -19,9 +19,6 @@ from . import util
 from . import statements
 from . import operators as op
 from . import functions
-
-from . import fp
-from . import values
 from . import values
 
 
@@ -254,33 +251,17 @@ class Parser(object):
         """Initialise a FOR loop."""
         # set start to start-step, then iterate - slower on init but allows for faster iterate
         self.session.scalars.set(varname, self.values.add(start, self.values.negate(step)))
-        # NOTE: all access to varname must be in-place into the bytearray - no assignments!
         sgn = values.integer_to_int_signed(self.values.sgn(step))
         self.for_stack.append(
-            (forpos, nextpos, varname[-1],
-                self.session.scalars.variables[varname],
-                values.number_unpack(stop), values.number_unpack(step), sgn))
+            (varname, stop, step, sgn, forpos, nextpos,))
         ins.seek(nextpos)
-
-    def _inc_gt(self, typechar, loopvar, stop, step, sgn):
-        """Increase number and check if it exceeds a limit."""
-        if sgn == 0:
-            return False
-        if typechar in ('#', '!'):
-            fp_left = fp.from_bytes(loopvar).iadd(step)
-            loopvar[:] = fp_left.to_bytes()
-            return fp_left.gt(stop) if sgn > 0 else stop.gt(fp_left)
-        else:
-            int_left = values.integer_to_int_signed(values.bytes_to_integer(loopvar)) + step
-            loopvar[:] = values.integer_to_bytes(values.int_to_integer_signed(int_left))
-            return int_left > stop if sgn > 0 else stop > int_left
 
     def loop_iterate(self, ins, pos):
         """Iterate a loop (NEXT)."""
         # find the matching NEXT record
         num = len(self.for_stack)
         for depth in range(num):
-            forpos, nextpos, typechar, loopvar, stop, step, sgn = self.for_stack[-depth-1]
+            varname, stop, step, sgn, forpos, nextpos = self.for_stack[-depth-1]
             if pos == nextpos:
                 # only drop NEXT record if we've found a matching one
                 self.for_stack = self.for_stack[:len(self.for_stack)-depth]
@@ -288,7 +269,10 @@ class Parser(object):
         else:
             raise error.RunError(error.NEXT_WITHOUT_FOR)
         # increment counter
-        loop_ends = self._inc_gt(typechar, loopvar, stop, step, sgn)
+        loopvar = self.session.scalars.get(varname)
+        self.session.scalars.set(varname, self.values.add(loopvar, step))
+        # check condition
+        loop_ends = self.values.bool_gt(loopvar, stop) if sgn > 0 else self.values.bool_gt(stop, loopvar)
         if loop_ends:
             self.for_stack.pop()
         else:

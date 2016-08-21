@@ -409,6 +409,7 @@ class Values(object):
         return fp.pack(fp.unpack(self.pass_float(x)).iround())
 
     def is_zero(self, x):
+        """Return whether a number is zero."""
         x = pass_number(x)
         typechar = x[0]
         if typechar == '%':
@@ -649,7 +650,7 @@ class Values(object):
             else:
                 return integer_to_int_signed(left) == integer_to_int_signed(right)
 
-    def _bool_gt(self, left, right):
+    def bool_gt(self, left, right):
         """Ordering: return -1 if left > right, 0 otherwise."""
         if left[0] == '$':
             left = self._strings.copy(pass_string(left))
@@ -684,19 +685,19 @@ class Values(object):
 
     def gt(self, left, right):
         """Ordering: return -1 if left > right, 0 otherwise."""
-        return bool_to_integer(self._bool_gt(left, right))
+        return bool_to_integer(self.bool_gt(left, right))
 
     def gte(self, left, right):
         """Ordering: return -1 if left >= right, 0 otherwise."""
-        return bool_to_integer(not self._bool_gt(right, left))
+        return bool_to_integer(not self.bool_gt(right, left))
 
     def lte(self, left, right):
         """Ordering: return -1 if left <= right, 0 otherwise."""
-        return bool_to_integer(not self._bool_gt(left, right))
+        return bool_to_integer(not self.bool_gt(left, right))
 
     def lt(self, left, right):
         """Ordering: return -1 if left < right, 0 otherwise."""
-        return bool_to_integer(self._bool_gt(right, left))
+        return bool_to_integer(self.bool_gt(right, left))
 
     def plus(self, left, right):
         """Binary + operator: add or concatenate."""
