@@ -389,10 +389,10 @@ class Parser(object):
             util.require_read(ins, (']', ')'))
         return name, indices
 
-    def parse_scalar(self, ins, allow_empty=False, err=error.STX):
+    def parse_scalar(self, ins, allow_empty=False):
         """Get variable name from token stream."""
         # append type specifier
-        name = self.session.memory.complete_name(util.read_name(ins, allow_empty, err))
+        name = self.session.memory.complete_name(util.read_name(ins, allow_empty))
         # only the first 40 chars are relevant in GW-BASIC, rest is discarded
         if len(name) > 41:
             name = name[:40]+name[-1]

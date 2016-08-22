@@ -72,7 +72,12 @@ class MLParser(object):
         if len(c) == 0:
             raise error.RunError(error.IFC)
         elif ord(c) > 8:
-            name = util.read_name(self.gmls, err=error.IFC)
+            try:
+                name = util.read_name(self.gmls)
+            except error.RunError as e:
+                if e.err == error.STX:
+                    e.err = error.IFC
+                raise e
             indices = self._parse_indices()
             sub = self.memory.get_variable(name, indices)
             util.require_read(self.gmls, (';',), err=error.IFC)

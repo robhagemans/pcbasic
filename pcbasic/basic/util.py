@@ -112,7 +112,7 @@ def require(ins, rnge, err=error.STX):
     if a not in rnge:
         raise error.RunError(err)
 
-def read_name(ins, allow_empty=False, err=error.STX):
+def read_name(ins, allow_empty=False):
     """Read a variable name """
     name = ''
     d = skip_white_read(ins)
@@ -130,5 +130,5 @@ def read_name(ins, allow_empty=False, err=error.STX):
         else:
             ins.seek(-len(d), 1)
     if not name and not allow_empty:
-        raise error.RunError(err)
+        raise error.RunError(error.STX)
     return name
