@@ -85,9 +85,9 @@ class Values(object):
         elif typechar == '#':
             return fp.pack(fp.Double.from_value(python_val))
 
-    def to_int(self, inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
+    def to_int(self, inp, maxint=0x7fff):
         """Round numeric variable and convert to Python integer."""
-        return integer_to_int_signed(self.to_integer(inp, maxint, err))
+        return integer_to_int_signed(self.to_integer(inp, maxint))
 
     def from_bool(self, boo):
         """Convert Python boolean to Integer."""
@@ -366,7 +366,7 @@ class Values(object):
     ###########################################################################
     # type conversions
 
-    def to_integer(self, inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
+    def to_integer(self, inp, maxint=0x7fff):
         """Check if variable is numeric, convert to Int."""
         if not inp:
             raise error.RunError(error.STX)
@@ -381,7 +381,7 @@ class Values(object):
             return int_to_integer_unsigned(val)
         else:
             # type mismatch
-            raise error.RunError(err)
+            raise error.RunError(error.TYPE_MISMATCH)
 
     @float_safe
     def to_single(self, num):

@@ -59,7 +59,12 @@ class MLParser(object):
 
     def parse_number(self, default=None):
         """Parse and return a number value in a macro-language string."""
-        return self.values.to_int(self.parse_value(default), err=error.IFC)
+        try:
+            return self.values.to_int(self.parse_value(default))
+        except error.RunError as e:
+            if e.err == error.TYPE_MISMATCH:
+                e.err = error.IFC
+            raise e
 
     def parse_string(self):
         """Parse a string value in a macro-language string."""
@@ -93,7 +98,12 @@ class MLParser(object):
 
     def _parse_const_int(self):
         """Parse a constant value in a macro-language string, return Python int."""
-        return self.values.to_int(self._parse_const(), err=error.IFC)
+        try:
+            return self.values.to_int(self._parse_const())
+        except error.RunError as e:
+            if e.err == error.TYPE_MISMATCH:
+                e.err = error.IFC
+            raise e
 
     def _parse_indices(self):
         """Parse constant array indices."""
