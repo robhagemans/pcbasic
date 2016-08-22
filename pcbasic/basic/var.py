@@ -69,7 +69,7 @@ class StringSpace(object):
         """Return a copy of a string from its string pointer."""
         return str(bytearray(self._view(basic_string)))
 
-    def modify(self, basic_string, in_str, offset=None, num=None):
+    def _modify(self, basic_string, in_str, offset=None, num=None):
         """Assign a new string into an existing buffer."""
         # if it is a code literal, we now do need to allocate space for a copy
         address = values.string_address(basic_string)
@@ -80,6 +80,35 @@ class StringSpace(object):
         else:
             self._view(basic_string)[offset:offset+num] = in_str
         return basic_string
+
+    def lset(self, basic_string, in_str, justify_right):
+        """Justify a new string into an existing buffer and pad with spaces."""
+        # v is empty string if variable does not exist
+        # trim and pad to size of target buffer
+        length = values.string_length(basic_string)
+        in_str = in_str[:length]
+        if justify_right:
+            in_str = ' '*(length-len(in_str)) + in_str
+        else:
+            in_str += ' '*(length-len(in_str))
+        return self._modify(basic_string, in_str)
+
+    def midset(self, basic_str, start, num, val):
+        """Modify a string in an existing buffer."""
+        # we need to decrement basic offset by 1 to get python offset
+        offset = start-1
+        # don't overwrite more of the old string than the length of the new string
+        num = min(num, len(val))
+        # ensure the length of source string matches target
+        length = values.string_length(basic_str)
+        if offset + num > length:
+            num = length - offset
+        if num <= 0:
+            return basic_str
+        # cut new string to size if too long
+        val = val[:num]
+        # copy new value into existing buffer if possible
+        return self._modify(basic_str, val, offset, num)
 
     def store(self, in_str, address=None):
         """Store a new string and return the string pointer."""

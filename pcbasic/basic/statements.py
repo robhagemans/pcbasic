@@ -1883,22 +1883,10 @@ class Statements(object):
         with self.session.strings:
             val = self.session.strings.copy(values.pass_string(self.parser.parse_expression(ins)))
         util.require(ins, tk.end_statement)
-        # we need to decrement basic offset by 1 to get python offset
-        offset = start-1
-        # don't overwrite more of the old string than the length of the new string
-        num = min(num, len(val))
-        basic_str = self.session.memory.get_variable(name, indices)
-        # ensure the length of source string matches target
-        length = values.string_length(basic_str)
-        if offset + num > length:
-            num = length - offset
-        if num <= 0:
-            return
-        # cut new string to size if too long
-        val = val[:num]
         # copy new value into existing buffer if possible
+        basic_str = self.session.memory.get_variable(name, indices)
         self.session.memory.set_variable(name, indices,
-                self.session.strings.modify(basic_str, val, offset, num))
+            self.session.strings.midset(basic_str, start, num, val))
 
     def exec_lset(self, ins, justify_right=False):
         """LSET: assign string value in-place; left justified."""
@@ -1907,16 +1895,9 @@ class Statements(object):
         util.require_read(ins, (tk.O_EQ,))
         with self.session.strings:
             s = self.session.strings.copy(values.pass_string(self.parser.parse_expression(ins)))
-        # v is empty string if variable does not exist
-        # trim and pad to size of target buffer
-        length = values.string_length(v)
-        s = s[:length]
-        if justify_right:
-            s = ' '*(length-len(s)) + s
-        else:
-            s += ' '*(length-len(s))
         # copy new value into existing buffer if possible
-        self.session.memory.set_variable(name, index, self.session.strings.modify(v, s))
+        self.session.memory.set_variable(name, index,
+                self.session.strings.lset(v, s, justify_right))
 
     def exec_rset(self, ins):
         """RSET: assign string value in-place; right justified."""
