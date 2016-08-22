@@ -27,16 +27,17 @@ from . import basictoken as tk
 # Double (#) - stored as 8-byte Microsoft Binary Format
 # String ($) - stored as 1-byte length plus 2-byte pointer to string space
 
-BYTE_SIZE = {'$': 3, '%': 2, '!': 4, '#': 8}
+TYPE_TO_SIZE = {'$': 3, '%': 2, '!': 4, '#': 8}
+SIZE_TO_TYPE = {2: '%', 3: '$', 4: '!', 8: '#'}
 
 
 def null(sigil):
     """Return null value for the given type."""
-    return (sigil, bytearray(BYTE_SIZE[sigil]))
+    return (sigil, bytearray(TYPE_TO_SIZE[sigil]))
 
 def size_bytes(name):
     """Return the size of a value type, by variable name or type char."""
-    return BYTE_SIZE[name[-1]]
+    return TYPE_TO_SIZE[name[-1]]
 
 def float_safe(fn):
     """Decorator to handle floating point errors."""
@@ -87,6 +88,27 @@ class Values(object):
     def to_int(self, inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
         """Round numeric variable and convert to Python integer."""
         return integer_to_int_signed(self.to_integer(inp, maxint, err))
+
+    def from_bool(self, boo):
+        """Convert Python boolean to Integer."""
+        return self.from_bytes('\xff\xff') if boo else self.from_bytes('\0\0')
+
+    def to_bool(self, basic_value):
+        """Convert Integer to Python boolean."""
+        return not self.is_zero(basic_value)
+
+    ###########################################################################
+    # convert to and from internal representation
+
+    @staticmethod
+    def to_bytes(basic_val):
+        """Convert BASIC value to internal byte representation."""
+        return bytearray(basic_val[1])
+
+    @staticmethod
+    def from_bytes(token_bytes):
+        """Convert internal byte representation to BASIC value."""
+        return (SIZE_TO_TYPE[len(token_bytes)], bytearray(token_bytes))
 
     ###########################################################################
     # string representation of numbers
@@ -209,7 +231,7 @@ class Values(object):
                 outs.write(tk.T_BYTE + chr(str_to_int(word)))
             else:
                 # two-byte constant
-                outs.write(tk.T_INT + str(integer_to_bytes(int_to_integer_signed(str_to_int(word)))))
+                outs.write(tk.T_INT + str(self.to_bytes(int_to_integer_signed(str_to_int(word)))))
         else:
             mbf = str(self._str_to_float(word)[1])
             if len(mbf) == 4:
@@ -230,7 +252,7 @@ class Values(object):
             else:
                 word += ins.read(1)
         val = int(word, 16) if word else 0
-        outs.write(tk.T_HEX + str(integer_to_bytes(int_to_integer_unsigned(val))))
+        outs.write(tk.T_HEX + str(self.to_bytes(int_to_integer_unsigned(val))))
 
     def _tokenise_oct(self, ins, outs):
         """Convert octal expression in Python string to number token."""
@@ -248,7 +270,7 @@ class Values(object):
             else:
                 word += ins.read(1)
         val = int(word, 8) if word else 0
-        outs.write(tk.T_OCT + str(integer_to_bytes(int_to_integer_unsigned(val))))
+        outs.write(tk.T_OCT + str(self.to_bytes(int_to_integer_unsigned(val))))
 
     def _str_to_float(self, s):
         """Return Float value for Python string."""
@@ -697,27 +719,27 @@ class Values(object):
 
     def equals(self, left, right):
         """Return -1 if left == right, 0 otherwise."""
-        return bool_to_integer(self._bool_eq(left, right))
+        return self.from_bool(self._bool_eq(left, right))
 
     def not_equals(self, left, right):
         """Return -1 if left != right, 0 otherwise."""
-        return bool_to_integer(not self._bool_eq(left, right))
+        return self.from_bool(not self._bool_eq(left, right))
 
     def gt(self, left, right):
         """Ordering: return -1 if left > right, 0 otherwise."""
-        return bool_to_integer(self.bool_gt(left, right))
+        return self.from_bool(self.bool_gt(left, right))
 
     def gte(self, left, right):
         """Ordering: return -1 if left >= right, 0 otherwise."""
-        return bool_to_integer(not self.bool_gt(right, left))
+        return self.from_bool(not self.bool_gt(right, left))
 
     def lte(self, left, right):
         """Ordering: return -1 if left <= right, 0 otherwise."""
-        return bool_to_integer(not self.bool_gt(left, right))
+        return self.from_bool(not self.bool_gt(left, right))
 
     def lt(self, left, right):
         """Ordering: return -1 if left < right, 0 otherwise."""
-        return bool_to_integer(self.bool_gt(right, left))
+        return self.from_bool(self.bool_gt(right, left))
 
     def plus(self, left, right):
         """Binary + operator: add or concatenate."""
@@ -733,31 +755,31 @@ class Values(object):
         """CVI: return the int value of a byte representation."""
         cstr = self._strings.copy(pass_string(x))
         error.throw_if(len(cstr) < 2)
-        return bytes_to_integer(cstr[:2])
+        return self.from_bytes(cstr[:2])
 
     def cvs(self, x):
         """CVS: return the single-precision value of a byte representation."""
         cstr = self._strings.copy(pass_string(x))
         error.throw_if(len(cstr) < 4)
-        return ('!', bytearray(cstr[:4]))
+        return self.from_bytes(cstr[:4])
 
     def cvd(self, x):
         """CVD: return the double-precision value of a byte representation."""
         cstr = self._strings.copy(pass_string(x))
         error.throw_if(len(cstr) < 8)
-        return ('#', bytearray(cstr[:8]))
+        return self.from_bytes(cstr[:8])
 
     def mki(self, x):
         """MKI$: return the byte representation of an int."""
-        return self._strings.store(integer_to_bytes(self.to_integer(x)))
+        return self._strings.store(self.to_bytes(self.to_integer(x)))
 
     def mks(self, x):
         """MKS$: return the byte representation of a single."""
-        return self._strings.store(self.to_single(x)[1])
+        return self._strings.store(self.to_bytes(self.to_single(x)))
 
     def mkd(self, x):
         """MKD$: return the byte representation of a double."""
-        return self._strings.store(self.to_double(x)[1])
+        return self._strings.store(self.to_bytes(self.to_double(x)))
 
     def representation(self, x):
         """STR$: string representation of a number."""
@@ -895,6 +917,9 @@ class MathErrorHandler(object):
         return fp.pack(fp.Single.max.copy())
 
 
+
+##############################################################################
+
 def number_to_str(inp, screen=False, write=False, allow_empty_expression=False):
     """Convert BASIC number to Python str."""
     # screen=False means in a program listing
@@ -911,35 +936,12 @@ def number_to_str(inp, screen=False, write=False, allow_empty_expression=False):
         else:
             return str(integer_to_int_signed(inp))
     elif typechar == '!':
-        return float_to_str(fp.unpack(inp), screen, write)
+        return float_to_str(inp, screen, write)
     elif typechar == '#':
-        return float_to_str(fp.unpack(inp), screen, write)
+        return float_to_str(inp, screen, write)
     else:
         raise ValueError('Number operation on string')
 
-
-# tokenised ints to python str
-#MOVE to tokenise
-
-def uint_token_to_str(s):
-    """Convert unsigned int token to Python string."""
-    return str(integer_to_int_unsigned(bytes_to_integer(s)))
-
-def int_token_to_str(s):
-    """Convert signed int token to Python string."""
-    return str(integer_to_int_signed(bytes_to_integer(s)))
-
-def byte_token_to_str(s):
-    """Convert unsigned byte token to Python string."""
-    return str(bytearray(s)[0])
-
-def hex_token_to_str(s):
-    """Convert hex token to Python str."""
-    return '&H' + integer_to_str_hex(bytes_to_integer(s))
-
-def oct_token_to_str(s):
-    """Convert oct token to Python str."""
-    return '&O' + integer_to_str_oct(bytes_to_integer(s))
 
 def integer_to_str_oct(inp):
     """Convert integer to str in octal representation."""
@@ -951,6 +953,15 @@ def integer_to_str_oct(inp):
 def integer_to_str_hex(inp):
     """Convert integer to str in hex representation."""
     return hex(integer_to_int_unsigned(inp))[2:].upper()
+
+
+def str_to_int(s):
+    """Return Python int value for Python str, zero if malformed."""
+    try:
+        return int(s)
+    except ValueError:
+        return 0
+
 
 
 # floating point to string
@@ -1034,6 +1045,7 @@ def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
 
 def float_to_str(n_in, screen=False, write=False):
     """Convert BASIC float to Python string."""
+    n_in = fp.unpack(n_in)
     # screen=True (ie PRINT) - leading space, no type sign
     # screen='w' (ie WRITE) - no leading space, no type sign
     # default mode is for LIST
@@ -1171,16 +1183,6 @@ def format_float_fixed(expr, decimals, force_dot):
     return decimal_notation(digitstr, work_digits-1-1-decimals+diff, '', force_dot)
 
 
-##################################
-
-
-def str_to_int(s):
-    """Return Python int value for Python str, zero if malformed."""
-    try:
-        return int(s)
-    except ValueError:
-        return 0
-
 ##########################################
 
 #REFACTOR to util.read_full_token -> token_to_value
@@ -1208,32 +1210,6 @@ def parse_value(ins):
         return ('#', val)
     return None
 
-#MOVE to tokenise
-def detokenise_number(ins, output):
-    """Convert number token to Python string."""
-    s = ins.read(1)
-    if s == tk.T_OCT:
-        output += oct_token_to_str(ins.read(2))
-    elif s == tk.T_HEX:
-        output += hex_token_to_str(ins.read(2))
-    elif s == tk.T_BYTE:
-        output += byte_token_to_str(ins.read(1))
-    elif s >= tk.C_0 and s < tk.C_10:
-        output += chr(ord('0') + ord(s) - 0x11)
-    elif s == tk.C_10:
-        output += '10'
-    elif s == tk.T_INT:
-        output += int_token_to_str(ins.read(2))
-    elif s == tk.T_SINGLE:
-        output += float_to_str(fp.Single.from_bytes(bytearray(ins.read(4))), screen=False, write=False)
-    elif s == tk.T_DOUBLE:
-        output += float_to_str(fp.Double.from_bytes(bytearray(ins.read(8))), screen=False, write=False)
-    else:
-        ins.seek(-len(s),1)
-
-
-###############################################################################
-
 
 
 ###############################################################################
@@ -1253,27 +1229,8 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
 
 
 ###############################################################################
-# convert between BASIC Integer and token bytes
-
-def bytes_to_integer(in_bytes):
-    """Copy and convert token bytearray, list or str to BASIC integer."""
-    return ('%', bytearray(in_bytes))
-
-def integer_to_bytes(in_integer):
-    """Copy and convert BASIC integer to token bytearray."""
-    return bytearray(in_integer[1])
-
-
-###############################################################################
 # convert between BASIC String and token address bytes
 
-def bytes_to_string(in_bytes):
-    """Copy and convert token bytearray, list or str to BASIC string."""
-    return ('$', bytearray(in_bytes))
-
-def string_to_bytes(in_string):
-    """Copy and convert BASIC string to token bytearray."""
-    return bytearray(in_string[1])
 
 def string_length(in_string):
     """Get string length as Python int."""
@@ -1281,7 +1238,7 @@ def string_length(in_string):
 
 def string_address(in_string):
     """Get string address as Python int."""
-    return integer_to_int_unsigned(bytes_to_integer(in_string[1][1:]))
+    return integer_to_int_unsigned(Values.from_bytes(in_string[1][1:]))
 
 
 ###############################################################################
@@ -1318,14 +1275,3 @@ def integer_to_int_unsigned(in_integer):
     """Convert BASIC Integer to Python int in range [0, 65535]."""
     s = in_integer[1]
     return 0x100 * s[1] + s[0]
-
-###############################################################################
-# boolean functions operate as bitwise functions on unsigned Python ints
-
-def bool_to_integer(boo):
-    """Convert Python boolean to Integer."""
-    return ('%', bytearray('\xff\xff')) if boo else ('%', bytearray('\0\0'))
-
-def integer_to_bool(in_integer):
-    """Convert Integer to Python boolean."""
-    return (in_integer[1][0] != 0 or in_integer[1][1] != 0)

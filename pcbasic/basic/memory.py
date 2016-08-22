@@ -132,11 +132,11 @@ class DataSegment(object):
             if name[-1] == '$':
                 s = bytearray()
                 for i in range(0, len(buf), 3):
-                    ptr = values.bytes_to_string(buf[i:i+3])
+                    ptr = values.Values.from_bytes(buf[i:i+3])
                     # if the string array is not full, pointers are zero
                     # but address is ignored for zero length
                     ptr = string_store.store(self.strings.copy(ptr))
-                    s += values.string_to_bytes(ptr)
+                    s += values.Values.to_bytes(ptr)
                 self.arrays.arrays[name][1] = s
             else:
                 self.arrays.arrays[name] = value
@@ -352,7 +352,7 @@ class DataSegment(object):
         if len(varptrstr) < 3:
             raise error.RunError(error.IFC)
         varptrstr = bytearray(varptrstr)
-        varptr = values.integer_to_int_unsigned(values.bytes_to_integer(varptrstr[1:3]))
+        varptr = values.integer_to_int_unsigned(values.Values.from_bytes(varptrstr[1:3]))
         return self.dereference(varptr)
 
     def _view_variable(self, name, indices):

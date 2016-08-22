@@ -620,18 +620,18 @@ class BinaryFile(devices.RawFile):
         if self.mode == b'O':
             self.write(devices.type_to_magic[filetype])
             if self.filetype == b'M':
-                self.write(values.integer_to_bytes(values.int_to_integer_unsigned(seg)) +
-                           values.integer_to_bytes(values.int_to_integer_unsigned(offset)) +
-                           values.integer_to_bytes(values.int_to_integer_unsigned(length)))
+                self.write(values.Values.to_bytes(values.int_to_integer_unsigned(seg)) +
+                           values.Values.to_bytes(values.int_to_integer_unsigned(offset)) +
+                           values.Values.to_bytes(values.int_to_integer_unsigned(length)))
                 self.seg, self.offset, self.length = seg, offset, length
         else:
             # drop magic byte
             self.read_raw(1)
             if self.filetype == b'M':
-                self.seg = values.integer_to_int_unsigned(values.bytes_to_integer(self.read(2)))
-                self.offset = values.integer_to_int_unsigned(values.bytes_to_integer(self.read(2)))
+                self.seg = values.integer_to_int_unsigned(values.Values.from_bytes(self.read(2)))
+                self.offset = values.integer_to_int_unsigned(values.Values.from_bytes(self.read(2)))
                 # size gets ignored: even the \x1a at the end is read
-                self.length = values.integer_to_int_unsigned(values.bytes_to_integer(self.read(2)))
+                self.length = values.integer_to_int_unsigned(values.Values.from_bytes(self.read(2)))
 
     def close(self):
         """Write EOF and close program file."""

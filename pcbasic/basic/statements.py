@@ -748,7 +748,7 @@ class Statements(object):
     def parse_jumpnum(self, ins, allow_empty=False, err=error.STX):
         """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
         if util.skip_white_read_if(ins, (tk.T_UINT,)):
-            return values.integer_to_int_unsigned(values.bytes_to_integer(ins.read(2)))
+            return values.integer_to_int_unsigned(self.values.from_bytes(ins.read(2)))
         else:
             if allow_empty:
                 return -1
@@ -759,7 +759,7 @@ class Statements(object):
         """Helper function: parse jump target."""
         c = util.skip_white_read(ins)
         if c == tk.T_UINT:
-            return values.integer_to_int_unsigned(values.bytes_to_integer(ins.read(2)))
+            return values.integer_to_int_unsigned(self.values.from_bytes(ins.read(2)))
         elif c == '.':
             return self.session.program.last_stored
         else:
@@ -2085,7 +2085,7 @@ class Statements(object):
         self.session.user_functions[fnname] = fnvars, fncode
         # update memory model
         # allocate function pointer
-        pointer = values.integer_to_bytes(values.int_to_integer_unsigned(pointer_loc))
+        pointer = self.values.to_bytes(values.int_to_integer_unsigned(pointer_loc))
         pointer += '\0'*(values.size_bytes(fntype)-2)
         # function name is represented with first char shifted by 128
         self.session.scalars.set(chr(128+ord(fnname[0]))+fnname[1:], (fntype, bytearray(pointer)))

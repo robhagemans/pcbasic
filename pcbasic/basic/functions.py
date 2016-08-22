@@ -276,7 +276,7 @@ class Functions(object):
             return values.null('%')
         error.range_check(0, 255, num)
         the_file = self.session.files.get(num, 'IR')
-        return values.bool_to_integer(the_file.eof())
+        return self.values.from_bool(the_file.eof())
 
     def value_lof(self, ins):
         """LOF: get length of file."""
@@ -471,7 +471,7 @@ class Functions(object):
         fn = self.values.to_int(self.parser.parse_bracket(ins))
         # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
         error.range_check(0, 7, fn)
-        return values.bool_to_integer(self.session.stick.poll_trigger(fn))
+        return self.values.from_bool(self.session.stick.poll_trigger(fn))
 
     #########################################################
     # memory and machine
@@ -506,7 +506,7 @@ class Functions(object):
             raise error.RunError(error.IFC)
         var_ptr = values.int_to_integer_unsigned(var_ptr)
         if dollar:
-            return self.session.strings.store(chr(values.size_bytes(name)) + values.integer_to_bytes(var_ptr))
+            return self.session.strings.store(chr(values.size_bytes(name)) + self.values.to_bytes(var_ptr))
         else:
             return var_ptr
 

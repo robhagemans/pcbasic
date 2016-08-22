@@ -94,7 +94,7 @@ class Tokeniser(object):
             ins.seek(-len(off)-2, 1)
             return -1
         else:
-            return values.integer_to_int_unsigned(values.bytes_to_integer(off))
+            return values.integer_to_int_unsigned(self._values.from_bytes(off))
 
     def detokenise_compound_statement(self, ins, bytepos=None):
         """Detokenise tokens until end of line."""
@@ -119,12 +119,12 @@ class Tokeniser(object):
                 litstring = not litstring
             elif s in tk.number:
                 ins.seek(-1, 1)
-                values.detokenise_number(ins, output)
+                self._detokenise_number(ins, output)
             elif s in tk.linenum:
                 # 0D: line pointer (unsigned int) - this token should not be here;
                 #     interpret as line number and carry on
                 # 0E: line number (unsigned int)
-                output += values.uint_token_to_str(bytearray(ins.read(2)))
+                output += self._uint_token_to_str(bytearray(ins.read(2)))
             elif comment or litstring or ('\x20' <= s <= '\x7E'):
                 # honest ASCII
                 output += s
@@ -203,6 +203,50 @@ class Tokeniser(object):
             # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN, \xD0 is USR.
             output += ' '
         return comment
+
+    def _detokenise_number(self, ins, output):
+        """Convert number token to Python string."""
+        s = ins.read(1)
+        if s == tk.T_OCT:
+            output += self._oct_token_to_str(ins.read(2))
+        elif s == tk.T_HEX:
+            output += self._hex_token_to_str(ins.read(2))
+        elif s == tk.T_BYTE:
+            output += self._byte_token_to_str(ins.read(1))
+        elif s >= tk.C_0 and s < tk.C_10:
+            output += chr(ord('0') + ord(s) - 0x11)
+        elif s == tk.C_10:
+            output += '10'
+        elif s == tk.T_INT:
+            output += self._int_token_to_str(ins.read(2))
+        elif s == tk.T_SINGLE:
+            output += values.float_to_str(self._values.from_bytes(ins.read(4)), screen=False, write=False)
+        elif s == tk.T_DOUBLE:
+            output += values.float_to_str(self._values.from_bytes(ins.read(8)), screen=False, write=False)
+        else:
+            ins.seek(-len(s),1)
+
+    # tokenised ints to python str
+
+    def _uint_token_to_str(self, s):
+        """Convert unsigned int token to Python string."""
+        return str(values.integer_to_int_unsigned(self._values.from_bytes(s)))
+
+    def _int_token_to_str(self, s):
+        """Convert signed int token to Python string."""
+        return str(values.integer_to_int_signed(self._values.from_bytes(s)))
+
+    def _byte_token_to_str(self, s):
+        """Convert unsigned byte token to Python string."""
+        return str(bytearray(s)[0])
+
+    def _hex_token_to_str(self, s):
+        """Convert hex token to Python str."""
+        return '&H' + values.integer_to_str_hex(self._values.from_bytes(s))
+
+    def _oct_token_to_str(self, s):
+        """Convert oct token to Python str."""
+        return '&O' + values.integer_to_str_oct(self._values.from_bytes(s))
 
     #################################################################
     # Tokenise functions
@@ -386,7 +430,7 @@ class Tokeniser(object):
                 # keep 6553 as line number and push back the last number:
                 ins.seek(4-len(word), 1)
                 word = word[:4]
-            return str(values.integer_to_bytes(values.int_to_integer_unsigned(int(word))))
+            return str(self._values.to_bytes(values.int_to_integer_unsigned(int(word))))
         else:
             return ''
 

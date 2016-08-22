@@ -455,13 +455,13 @@ def walk_memory(self, addr, num_bytes, factor=1):
 
 def sprite_size_to_record_ega(self, dx, dy):
     """Write 4-byte record of sprite size in EGA modes."""
-    return (values.integer_to_bytes(values.int_to_integer_unsigned(dx))
-            + values.integer_to_bytes(values.int_to_integer_unsigned(dy)))
+    return (values.Values.to_bytes(values.int_to_integer_unsigned(dx))
+            + values.Values.to_bytes(values.int_to_integer_unsigned(dy)))
 
 def record_to_sprite_size_ega(self, byte_array):
     """Read 4-byte record of sprite size in EGA modes."""
-    dx = values.integer_to_int_unsigned(values.bytes_to_integer(byte_array[0:2]))
-    dy = values.integer_to_int_unsigned(values.bytes_to_integer(byte_array[2:4]))
+    dx = values.integer_to_int_unsigned(values.Values.from_bytes(byte_array[0:2]))
+    dy = values.integer_to_int_unsigned(values.Values.from_bytes(byte_array[2:4]))
     return dx, dy
 
 def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offs):
@@ -614,13 +614,13 @@ class CGAMode(GraphicsMode):
 
     def sprite_size_to_record(self, dx, dy):
         """Write 4-byte record of sprite size."""
-        return (values.integer_to_bytes(values.int_to_integer_unsigned(dx*self.bitsperpixel))
-                + values.integer_to_bytes(values.int_to_integer_unsigned(dy)))
+        return (values.Values.to_bytes(values.int_to_integer_unsigned(dx*self.bitsperpixel))
+                + values.Values.to_bytes(values.int_to_integer_unsigned(dy)))
 
     def record_to_sprite_size(self, byte_array):
         """Read 4-byte record of sprite size."""
-        dx = values.integer_to_int_unsigned(values.bytes_to_integer(byte_array[0:2])) / self.bitsperpixel
-        dy = values.integer_to_int_unsigned(values.bytes_to_integer(byte_array[2:4]))
+        dx = values.integer_to_int_unsigned(values.Values.from_bytes(byte_array[0:2])) / self.bitsperpixel
+        dy = values.integer_to_int_unsigned(values.Values.from_bytes(byte_array[2:4]))
         return dx, dy
 
     def sprite_to_array(self, attrs, dx, dy, byte_array, offs):

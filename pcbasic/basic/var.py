@@ -52,7 +52,7 @@ class StringSpace(object):
         # address >= self.memory.var_start(): if we no longer double-store code strings in string space object
         if address >= self.memory.code_start:
             # string stored in string space
-            sequence = values.string_to_bytes(basic_string)
+            sequence = values.Values.to_bytes(basic_string)
             return memoryview(self._retrieve(sequence))
         else:
             # string stored in field buffers
@@ -93,19 +93,19 @@ class StringSpace(object):
             # find new string address
             self.current -= size
             address = self.current + 1
-        key = str(values.integer_to_bytes(values.int_to_integer_unsigned(address)))
+        key = str(values.Values.to_bytes(values.int_to_integer_unsigned(address)))
         # don't store empty strings
         if size > 0:
             if key in self.strings:
                 logging.debug('String key %s at %d already defined.' % (repr(key), address))
             # copy and convert to bytearray
             self.strings[key] = bytearray(in_str)
-        return values.bytes_to_string(chr(size) + key)
+        return values.Values.from_bytes(chr(size) + key)
 
     def delete_last(self):
         """Delete the string provided if it is at the top of string space."""
         last_address = self.current + 1
-        last_key = str(values.integer_to_bytes(values.int_to_integer_unsigned(last_address)))
+        last_key = str(values.Values.to_bytes(values.int_to_integer_unsigned(last_address)))
         try:
             length = len(self.strings[last_key])
             self.current += length
@@ -117,7 +117,7 @@ class StringSpace(object):
 
     def address(self, key):
         """Return the address of a given key."""
-        return values.integer_to_int_unsigned(values.bytes_to_integer(key[-2:]))
+        return values.integer_to_int_unsigned(values.Values.from_bytes(key[-2:]))
 
     def collect_garbage(self, string_ptrs):
         """Re-store the strings refrerenced in string_ptrs, delete the rest."""
@@ -137,7 +137,7 @@ class StringSpace(object):
         self.clear()
         for item in string_list:
             # re-allocate string space
-            item[0][:] = values.string_to_bytes(self.store(item[2]))
+            item[0][:] = values.Values.to_bytes(self.store(item[2]))
 
     def get_memory(self, address):
         """Retrieve data from data memory: string space """
@@ -445,10 +445,10 @@ class Arrays(object):
             else:
                 offset -= max(3, len(the_arr))+1
                 dimensions, _, _ = self.arrays[the_arr]
-                data_rep = values.integer_to_bytes(values.int_to_integer_unsigned(
+                data_rep = values.Values.to_bytes(values.int_to_integer_unsigned(
                     self.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)))
                 for d in dimensions:
-                    data_rep += values.integer_to_bytes(values.int_to_integer_unsigned(
+                    data_rep += values.Values.to_bytes(values.int_to_integer_unsigned(
                                         d + 1 - self.base_index))
                 return data_rep[offset]
 
