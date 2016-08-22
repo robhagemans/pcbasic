@@ -86,7 +86,7 @@ class Values(object):
 
     def to_int(self, inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
         """Round numeric variable and convert to Python integer."""
-        return integer_to_int_signed(self.pass_integer(inp, maxint, err))
+        return integer_to_int_signed(self.to_integer(inp, maxint, err))
 
     ###########################################################################
     # string representation of numbers
@@ -344,7 +344,7 @@ class Values(object):
     ###########################################################################
     # type conversions
 
-    def pass_integer(self, inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
+    def to_integer(self, inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
         """Check if variable is numeric, convert to Int."""
         if not inp:
             raise error.RunError(error.STX)
@@ -362,7 +362,7 @@ class Values(object):
             raise error.RunError(err)
 
     @float_safe
-    def pass_single(self, num):
+    def to_single(self, num):
         """Check if variable is numeric, convert to Single."""
         if not num:
             raise error.RunError(error.STX)
@@ -377,7 +377,7 @@ class Values(object):
             raise error.RunError(error.TYPE_MISMATCH)
 
     @float_safe
-    def pass_double(self, num):
+    def to_double(self, num):
         """Check if variable is numeric, convert to Double."""
         if not num:
             raise error.RunError(error.STX)
@@ -391,35 +391,35 @@ class Values(object):
         elif typechar == '$':
             raise error.RunError(error.TYPE_MISMATCH)
 
-    def pass_float(self, num, allow_double=True):
+    def to_float(self, num, allow_double=True):
         """Check if variable is numeric, convert to Double or Single."""
         if num and num[0] == '#' and allow_double:
             return num
         else:
-            return self.pass_single(num)
+            return self.to_single(num)
 
-    def pass_most_precise(self, left, right, err=error.TYPE_MISMATCH):
+    def to_most_precise(self, left, right, err=error.TYPE_MISMATCH):
         """Check if variables are numeric and convert to highest-precision."""
         left_type, right_type = left[0][-1], right[0][-1]
         if left_type=='#' or right_type=='#':
-            return (self.pass_double(left), self.pass_double(right))
+            return (self.to_double(left), self.to_double(right))
         elif left_type=='!' or right_type=='!':
-            return (self.pass_single(left), self.pass_single(right))
+            return (self.to_single(left), self.to_single(right))
         elif left_type=='%' or right_type=='%':
-            return (self.pass_integer(left), self.pass_integer(right))
+            return (self.to_integer(left), self.to_integer(right))
         else:
             raise error.RunError(err)
 
-    def pass_type(self, typechar, value):
+    def to_type(self, typechar, value):
         """Check if variable can be converted to the given type and convert."""
         if typechar == '$':
             return pass_string(value)
         elif typechar == '%':
-            return self.pass_integer(value)
+            return self.to_integer(value)
         elif typechar == '!':
-            return self.pass_single(value)
+            return self.to_single(value)
         elif typechar == '#':
-            return self.pass_double(value)
+            return self.to_double(value)
         else:
             raise error.RunError(error.STX)
 
@@ -427,7 +427,7 @@ class Values(object):
 
     def round(self, x):
         """Round to nearest whole number."""
-        return fp.pack(fp.unpack(self.pass_float(x)).iround())
+        return fp.pack(fp.unpack(self.to_float(x)).iround())
 
     def is_zero(self, x):
         """Return whether a number is zero."""
@@ -444,7 +444,7 @@ class Values(object):
     @float_safe
     def _call_float_function(self, fn, *args):
         """Convert to IEEE 754, apply function, convert back."""
-        args = [self.pass_float(arg, self._double_math) for arg in args]
+        args = [self.to_float(arg, self._double_math) for arg in args]
         floatcls = fp.unpack(args[0]).__class__
         try:
             args = (fp.unpack(arg).to_value() for arg in args)
@@ -515,7 +515,7 @@ class Values(object):
     @float_safe
     def add(self, left, right):
         """Add two numbers."""
-        left, right = self.pass_most_precise(left, right)
+        left, right = self.to_most_precise(left, right)
         if left[0] in ('#', '!'):
             return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
         else:
@@ -561,28 +561,28 @@ class Values(object):
     def power(self, left, right):
         """Left^right."""
         if (left[0] == '#' or right[0] == '#') and self._double_math:
-            return self._call_float_function(lambda a, b: a**b, self.pass_double(left), self.pass_double(right))
+            return self._call_float_function(lambda a, b: a**b, self.to_double(left), self.to_double(right))
         else:
             if right[0] == '%':
-                return fp.pack(fp.unpack(self.pass_single(left)).ipow_int(integer_to_int_signed(right)))
+                return fp.pack(fp.unpack(self.to_single(left)).ipow_int(integer_to_int_signed(right)))
             else:
-                return self._call_float_function(lambda a, b: a**b, self.pass_single(left), self.pass_single(right))
+                return self._call_float_function(lambda a, b: a**b, self.to_single(left), self.to_single(right))
 
     @float_safe
     def multiply(self, left, right):
         """Left*right."""
         if left[0] == '#' or right[0] == '#':
-            return fp.pack( fp.unpack(self.pass_double(left)).imul(fp.unpack(self.pass_double(right))) )
+            return fp.pack( fp.unpack(self.to_double(left)).imul(fp.unpack(self.to_double(right))) )
         else:
-            return fp.pack( fp.unpack(self.pass_single(left)).imul(fp.unpack(self.pass_single(right))) )
+            return fp.pack( fp.unpack(self.to_single(left)).imul(fp.unpack(self.to_single(right))) )
 
     @float_safe
     def divide(self, left, right):
         """Left/right."""
         if left[0] == '#' or right[0] == '#':
-            return fp.pack( fp.div(fp.unpack(self.pass_double(left)), fp.unpack(self.pass_double(right))) )
+            return fp.pack( fp.div(fp.unpack(self.to_double(left)), fp.unpack(self.to_double(right))) )
         else:
-            return fp.pack( fp.div(fp.unpack(self.pass_single(left)), fp.unpack(self.pass_single(right))) )
+            return fp.pack( fp.div(fp.unpack(self.to_single(left)), fp.unpack(self.to_single(right))) )
 
     @float_safe
     def divide_int(self, left, right):
@@ -617,32 +617,32 @@ class Values(object):
     def bitwise_and(self, left, right):
         """Bitwise AND."""
         return int_to_integer_unsigned(
-            integer_to_int_unsigned(self.pass_integer(left)) &
-            integer_to_int_unsigned(self.pass_integer(right)))
+            integer_to_int_unsigned(self.to_integer(left)) &
+            integer_to_int_unsigned(self.to_integer(right)))
 
     def bitwise_or(self, left, right):
         """Bitwise OR."""
         return int_to_integer_unsigned(
-            integer_to_int_unsigned(self.pass_integer(left)) |
-            integer_to_int_unsigned(self.pass_integer(right)))
+            integer_to_int_unsigned(self.to_integer(left)) |
+            integer_to_int_unsigned(self.to_integer(right)))
 
     def bitwise_xor(self, left, right):
         """Bitwise XOR."""
         return int_to_integer_unsigned(
-            integer_to_int_unsigned(self.pass_integer(left)) ^
-            integer_to_int_unsigned(self.pass_integer(right)))
+            integer_to_int_unsigned(self.to_integer(left)) ^
+            integer_to_int_unsigned(self.to_integer(right)))
 
     def bitwise_eqv(self, left, right):
         """Bitwise equivalence."""
         return int_to_integer_unsigned(0xffff-(
-            integer_to_int_unsigned(self.pass_integer(left)) ^
-            integer_to_int_unsigned(self.pass_integer(right))))
+            integer_to_int_unsigned(self.to_integer(left)) ^
+            integer_to_int_unsigned(self.to_integer(right))))
 
     def bitwise_imp(self, left, right):
         """Bitwise implication."""
         return int_to_integer_unsigned(
-            (0xffff - integer_to_int_unsigned(self.pass_integer(left))) |
-            integer_to_int_unsigned(self.pass_integer(right)))
+            (0xffff - integer_to_int_unsigned(self.to_integer(left))) |
+            integer_to_int_unsigned(self.to_integer(right)))
 
 
     ###############################################################################
@@ -664,7 +664,7 @@ class Values(object):
             return (self._strings.copy(pass_string(left)) ==
                     self._strings.copy(pass_string(right)))
         else:
-            left, right = self.pass_most_precise(left, right)
+            left, right = self.to_most_precise(left, right)
             if left[0] in ('#', '!'):
                 return fp.unpack(left).equals(fp.unpack(right))
             else:
@@ -689,7 +689,7 @@ class Values(object):
             # left is shorter, or equal strings
             return False
         else:
-            left, right = self.pass_most_precise(left, right)
+            left, right = self.to_most_precise(left, right)
             if left[0] in ('#', '!'):
                 return fp.unpack(left).gt(fp.unpack(right))
             else:
@@ -749,15 +749,15 @@ class Values(object):
 
     def mki(self, x):
         """MKI$: return the byte representation of an int."""
-        return self._strings.store(integer_to_bytes(self.pass_integer(x)))
+        return self._strings.store(integer_to_bytes(self.to_integer(x)))
 
     def mks(self, x):
         """MKS$: return the byte representation of a single."""
-        return self._strings.store(self.pass_single(x)[1])
+        return self._strings.store(self.to_single(x)[1])
 
     def mkd(self, x):
         """MKD$: return the byte representation of a double."""
-        return self._strings.store(self.pass_double(x)[1])
+        return self._strings.store(self.to_double(x)[1])
 
     def representation(self, x):
         """STR$: string representation of a number."""
@@ -776,13 +776,13 @@ class Values(object):
     def octal(self, x):
         """OCT$: octal representation of int."""
         # allow range -32768 to 65535
-        val = self.pass_integer(x, 0xffff)
+        val = self.to_integer(x, 0xffff)
         return self._strings.store(integer_to_str_oct(val))
 
     def hexadecimal(self, x):
         """HEX$: hexadecimal representation of int."""
         # allow range -32768 to 65535
-        val = self.pass_integer(x, 0xffff)
+        val = self.to_integer(x, 0xffff)
         return self._strings.store(integer_to_str_hex(val))
 
 

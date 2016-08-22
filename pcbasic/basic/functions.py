@@ -89,9 +89,9 @@ class Functions(object):
             tk.OCT: partial(self.value_func, fn=self.values.octal),
             tk.HEX: partial(self.value_func, fn=self.values.hexadecimal),
             tk.LPOS: self.value_lpos,
-            tk.CINT: partial(self.value_func, fn=self.values.pass_integer),
-            tk.CSNG: partial(self.value_func, fn=self.values.pass_single),
-            tk.CDBL: partial(self.value_func, fn=self.values.pass_double),
+            tk.CINT: partial(self.value_func, fn=self.values.to_integer),
+            tk.CSNG: partial(self.value_func, fn=self.values.to_single),
+            tk.CDBL: partial(self.value_func, fn=self.values.to_double),
             tk.FIX: partial(self.value_func, fn=self.values.fix),
             tk.PEN: self.value_pen,
             tk.STICK: self.value_stick,
@@ -140,9 +140,9 @@ class Functions(object):
         util.require_read(ins, ('(',))
         s = values.pass_string(self.parser.parse_expression(ins))
         util.require_read(ins, (',',))
-        start = self.values.pass_integer(self.parser.parse_expression(ins))
+        start = self.values.to_integer(self.parser.parse_expression(ins))
         if util.skip_white_read_if(ins, (',',)):
-            num = self.values.pass_integer(self.parser.parse_expression(ins))
+            num = self.values.to_integer(self.parser.parse_expression(ins))
         else:
             num = len(s)
         util.require_read(ins, (')',))
@@ -153,7 +153,7 @@ class Functions(object):
         util.require_read(ins, ('(',))
         s = values.pass_string(self.parser.parse_expression(ins))
         util.require_read(ins, (',',))
-        stop = self.values.pass_integer(self.parser.parse_expression(ins))
+        stop = self.values.to_integer(self.parser.parse_expression(ins))
         util.require_read(ins, (')',))
         return self.values.left(s, stop)
 
@@ -162,7 +162,7 @@ class Functions(object):
         util.require_read(ins, ('(',))
         s = values.pass_string(self.parser.parse_expression(ins))
         util.require_read(ins, (',',))
-        stop = self.values.pass_integer(self.parser.parse_expression(ins))
+        stop = self.values.to_integer(self.parser.parse_expression(ins))
         util.require_read(ins, (')',))
         return self.values.right(s, stop)
 
@@ -356,7 +356,7 @@ class Functions(object):
         for name in varsave:
             # re-assign the stored value
             self.session.scalars.variables[name][:] = varsave[name]
-        return self.values.pass_type(fnname[-1], value)
+        return self.values.to_type(fnname[-1], value)
 
     ###############################################################
     # graphics
@@ -373,8 +373,8 @@ class Functions(object):
             if screen.mode.is_text_mode:
                 raise error.RunError(error.IFC)
             return values.int_to_integer_signed(screen.drawing.point(
-                            (self.values.to_value(self.values.pass_single(arg0)),
-                             self.values.to_value(self.values.pass_single(arg1)), False)
+                            (self.values.to_value(self.values.to_single(arg0)),
+                             self.values.to_value(self.values.to_single(arg1)), False)
                              ))
         else:
             # single-argument mode
@@ -407,10 +407,10 @@ class Functions(object):
         if screen.mode.is_text_mode:
             return values.null('%')
         if mode == 0:
-            value, _ = screen.drawing.get_window_physical(self.values.to_value(self.values.pass_single(coord)), 0.)
+            value, _ = screen.drawing.get_window_physical(self.values.to_value(self.values.to_single(coord)), 0.)
             return values.int_to_integer_signed(value)
         elif mode == 1:
-            _, value = screen.drawing.get_window_physical(0., self.values.to_value(self.values.pass_single(coord)))
+            _, value = screen.drawing.get_window_physical(0., self.values.to_value(self.values.to_single(coord)))
             return values.int_to_integer_signed(value)
         elif mode == 2:
             value, _ = screen.drawing.get_window_logical(self.values.to_int(coord), 0)
@@ -558,6 +558,6 @@ class Functions(object):
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
         if util.skip_white(ins) == '(':
-            return self.session.randomiser.rnd(self.values.pass_single(self.parser.parse_bracket(ins)))
+            return self.session.randomiser.rnd(self.values.to_single(self.parser.parse_bracket(ins)))
         else:
             return self.session.randomiser.rnd()

@@ -376,7 +376,7 @@ class Statements(object):
     def exec_on_timer(self, ins):
         """ON TIMER: define timer event trapping."""
         timeval, jumpnum = self._parse_on_event(ins)
-        timeval = self.values.to_value(self.values.pass_single(timeval))
+        timeval = self.values.to_value(self.values.to_single(timeval))
         period = round(timeval * 1000.)
         self.session.events.timer.set_trigger(period)
         self.session.events.timer.set_jump(jumpnum)
@@ -435,7 +435,7 @@ class Statements(object):
             return
         freq = self.values.to_int(self.parser.parse_expression(ins))
         util.require_read(ins, (',',))
-        dur = self.values.to_value(self.values.pass_single(self.parser.parse_expression(ins)))
+        dur = self.values.to_value(self.values.to_single(self.parser.parse_expression(ins)))
         error.range_check(-65535, 65535, dur)
         # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
         volume, voice = 15, 0
@@ -487,7 +487,7 @@ class Statements(object):
         util.require_read(ins, (',',))
         error.range_check(0, 7, source)
         error.range_check(0, 15, volume)
-        dur = self.values.to_value(self.values.pass_single(self.parser.parse_expression(ins)))
+        dur = self.values.to_value(self.values.to_single(self.parser.parse_expression(ins)))
         error.range_check(-65535, 65535, dur)
         util.require(ins, tk.end_statement)
         self.session.sound.noise(source, volume, dur)
@@ -521,7 +521,7 @@ class Statements(object):
         """DEF USR: Define a machine language function. Not implemented."""
         util.require_read(ins, tk.digit)
         util.require_read(ins, (tk.O_EQ,))
-        self.values.pass_integer(self.parser.parse_expression(ins), maxint=0xffff)
+        self.values.to_integer(self.parser.parse_expression(ins), maxint=0xffff)
         util.require(ins, tk.end_statement)
         logging.warning("DEF USR statement not implemented")
 
@@ -1123,7 +1123,7 @@ class Statements(object):
             # to address each individual record close to the maximum record number
             # but that's in line with GW
             pos = self.values.to_value(self.values.round(
-                    self.values.pass_single(self.parser.parse_expression(ins))))
+                    self.values.to_single(self.parser.parse_expression(ins))))
             # not 2^32-1 as the manual boasts!
             # pos-1 needs to fit in a single-precision mantissa
             error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
@@ -1151,11 +1151,11 @@ class Statements(object):
         lock_start_rec = 1
         if util.skip_white_read_if(ins, (',',)):
             lock_start_rec = pos = self.values.to_value(self.values.round(
-                    self.values.pass_single(self.parser.parse_expression(ins))))
+                    self.values.to_single(self.parser.parse_expression(ins))))
         lock_stop_rec = lock_start_rec
         if util.skip_white_read_if(ins, (tk.TO,)):
             lock_stop_rec = pos = self.values.to_value(self.values.round(
-                    self.values.pass_single(self.parser.parse_expression(ins))))
+                    self.values.to_single(self.parser.parse_expression(ins))))
         if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
             raise error.RunError(error.BAD_RECORD_NUMBER)
         try:
@@ -1180,9 +1180,9 @@ class Statements(object):
     def _parse_coord_bare(self, ins):
         """Helper function: parse coordinate pair."""
         util.require_read(ins, ('(',))
-        x = self.values.to_value(self.values.pass_single(self.parser.parse_expression(ins)))
+        x = self.values.to_value(self.values.to_single(self.parser.parse_expression(ins)))
         util.require_read(ins, (',',))
-        y = self.values.to_value(self.values.pass_single(self.parser.parse_expression(ins)))
+        y = self.values.to_value(self.values.to_single(self.parser.parse_expression(ins)))
         util.require_read(ins, (')',))
         return x, y
 
@@ -1280,7 +1280,7 @@ class Statements(object):
             raise error.RunError(error.IFC)
         centre = self._parse_coord_step(ins)
         util.require_read(ins, (',',))
-        r = self.values.to_value(self.values.pass_single(self.parser.parse_expression(ins)))
+        r = self.values.to_value(self.values.to_single(self.parser.parse_expression(ins)))
         start, stop, c, aspect = None, None, -1, None
         if util.skip_white_read_if(ins, (',',)):
             cval = self.parser.parse_expression(ins, allow_empty=True)
@@ -1289,13 +1289,13 @@ class Statements(object):
             if util.skip_white_read_if(ins, (',',)):
                 start = self.parser.parse_expression(ins, allow_empty=True)
                 if start is not None:
-                    start = self.values.to_value(self.values.pass_single(start))
+                    start = self.values.to_value(self.values.to_single(start))
                 if util.skip_white_read_if(ins, (',',)):
                     stop = self.parser.parse_expression(ins, allow_empty=True)
                     if stop is not None:
-                        stop = self.values.to_value(self.values.pass_single(stop))
+                        stop = self.values.to_value(self.values.to_single(stop))
                     if util.skip_white_read_if(ins, (',',)):
-                        aspect = self.values.to_value(self.values.pass_single(
+                        aspect = self.values.to_value(self.values.to_single(
                                     self.parser.parse_expression(ins)))
                     elif stop is None:
                         # missing operand
@@ -1436,15 +1436,15 @@ class Statements(object):
         if vartype in ('$', '#'):
             raise error.RunError(error.TYPE_MISMATCH)
         util.require_read(ins, (tk.O_EQ,))
-        start = self.values.pass_type(vartype, self.parser.parse_expression(ins))
+        start = self.values.to_type(vartype, self.parser.parse_expression(ins))
         util.require_read(ins, (tk.TO,))
-        stop = self.values.pass_type(vartype, self.parser.parse_expression(ins))
+        stop = self.values.to_type(vartype, self.parser.parse_expression(ins))
         if util.skip_white_read_if(ins, (tk.STEP,)):
             step = self.parser.parse_expression(ins)
         else:
             # convert 1 to vartype
             step = values.int_to_integer_signed(1)
-        step = self.values.pass_type(vartype, step)
+        step = self.values.to_type(vartype, step)
         util.require(ins, tk.end_statement)
         endforpos = ins.tell()
         # find NEXT
@@ -1556,7 +1556,7 @@ class Statements(object):
     def exec_if(self, ins):
         """IF: enter branching statement."""
         # avoid overflow: don't use bools.
-        val = self.values.pass_single(self.parser.parse_expression(ins))
+        val = self.values.to_single(self.parser.parse_expression(ins))
         util.skip_white_read_if(ins, (',',)) # optional comma
         util.require_read(ins, (tk.THEN, tk.GOTO))
         if not self.values.is_zero(val):
@@ -2106,7 +2106,7 @@ class Statements(object):
                 seed = self.session.editor.wait_screenline()
                 val = self.values.str_to_number(seed, allow_nonnum=False)
             # seed entered on prompt is rounded to int
-            val = self.values.pass_integer(val)
+            val = self.values.to_integer(val)
         self.session.randomiser.randomize(val)
         util.require(ins, tk.end_statement)
 
@@ -2468,7 +2468,7 @@ class Statements(object):
                     number_field, digits_before, decimals = print_and_input.get_number_tokens(fors)
                     if number_field:
                         if not data_ends:
-                            num = self.values.pass_float(self.parser.parse_expression(ins))
+                            num = self.values.to_float(self.parser.parse_expression(ins))
                             output.write(values.format_number(num, number_field, digits_before, decimals))
                     else:
                         output.write(fors.read(1))

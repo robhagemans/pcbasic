@@ -183,7 +183,7 @@ class Scalars(object):
         name = self.memory.complete_name(name)
         type_char = name[-1]
         if value is not None:
-            value = self.values.pass_type(type_char, value)
+            value = self.values.to_type(type_char, value)
         # update memory model
         # check if garbage needs collecting before allocating memory
         if name not in self.var_memory:
@@ -389,7 +389,7 @@ class Arrays(object):
     def set(self, name, index, value):
         """Assign a value to an array element."""
         # copy value into array
-        self.view(name, index)[:] = self.values.pass_type(name[-1], value)[1]
+        self.view(name, index)[:] = self.values.to_type(name[-1], value)[1]
         # increment array version
         self.arrays[name][2] += 1
 
