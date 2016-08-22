@@ -984,7 +984,6 @@ class Values(object):
         return fp.pack(mbf)
 
 
-
 ##############################################################################
 
 def number_to_str(inp, screen=False, write=False):
@@ -1023,87 +1022,6 @@ def str_to_int(s):
         return int(s)
     except ValueError:
         return 0
-
-
-
-# floating point to string
-
-# for to_str
-# for numbers, tab and LF are whitespace
-number_whitespace = ' \t\n'
-
-# string representations
-
-fp.Single.lim_top = fp.from_bytes(bytearray('\x7f\x96\x18\x98')) # 9999999, highest float less than 10e+7
-fp.Single.lim_bot = fp.from_bytes(bytearray('\xff\x23\x74\x94')) # 999999.9, highest float  less than 10e+6
-fp.Single.type_sign, fp.Single.exp_sign = '!', 'E'
-
-fp.Double.lim_top = fp.from_bytes(bytearray('\xff\xff\x03\xbf\xc9\x1b\x0e\xb6')) # highest float less than 10e+16
-fp.Double.lim_bot = fp.from_bytes(bytearray('\xff\xff\x9f\x31\xa9\x5f\x63\xb2')) # highest float less than 10e+15
-fp.Double.type_sign, fp.Double.exp_sign = '#', 'D'
-
-
-def _just_under(n_in):
-    """Return the largest floating-point number less than the given value."""
-    # decrease mantissa by one
-    return n_in.__class__(n_in.neg, n_in.man - 0x100, n_in.exp)
-
-def _get_digits(num, digits, remove_trailing):
-    """Get the digits for an int."""
-    pow10 = 10L**(digits-1)
-    digitstr = ''
-    while pow10 >= 1:
-        digit = ord('0')
-        while num >= pow10:
-            digit += 1
-            num -= pow10
-        digitstr += chr(digit)
-        pow10 /= 10
-    if remove_trailing:
-        # remove trailing zeros
-        while len(digitstr)>1 and digitstr[-1] == '0':
-            digitstr = digitstr[:-1]
-    return digitstr
-
-def _scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_dot=False):
-    """Put digits in scientific E-notation."""
-    valstr = digitstr[:digits_to_dot]
-    if len(digitstr) > digits_to_dot:
-        valstr += '.' + digitstr[digits_to_dot:]
-    elif len(digitstr) == digits_to_dot and force_dot:
-        valstr += '.'
-    exponent = exp10 - digits_to_dot + 1
-    valstr += exp_sign
-    if exponent < 0:
-        valstr += '-'
-    else:
-        valstr += '+'
-    valstr += _get_digits(abs(exponent), digits=2, remove_trailing=False)
-    return valstr
-
-def _decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
-    """Put digits in decimal notation."""
-    # digits to decimal point
-    exp10 += 1
-    if exp10 >= len(digitstr):
-        valstr = digitstr + '0'*(exp10-len(digitstr))
-        if force_dot:
-            valstr+='.'
-        if not force_dot or type_sign=='#':
-            valstr += type_sign
-    elif exp10 > 0:
-        valstr = digitstr[:exp10] + '.' + digitstr[exp10:]
-        if type_sign == '#':
-            valstr += type_sign
-    else:
-        if force_dot:
-            valstr = '0'
-        else:
-            valstr = ''
-        valstr += '.' + '0'*(-exp10) + digitstr
-        if type_sign == '#':
-            valstr += type_sign
-    return valstr
 
 def float_to_str(n_in, screen=False, write=False):
     """Convert BASIC float to Python string."""
@@ -1190,6 +1108,85 @@ def format_number(value, tokens, digits_before, decimals):
         valstr = ('*' if '*' in tokens else ' ') * (len(tokens) - len(valstr)) + valstr
     return valstr
 
+
+
+# for to_str
+# for numbers, tab and LF are whitespace
+number_whitespace = ' \t\n'
+
+# string representations
+
+fp.Single.lim_top = fp.from_bytes(bytearray('\x7f\x96\x18\x98')) # 9999999, highest float less than 10e+7
+fp.Single.lim_bot = fp.from_bytes(bytearray('\xff\x23\x74\x94')) # 999999.9, highest float  less than 10e+6
+fp.Single.type_sign, fp.Single.exp_sign = '!', 'E'
+
+fp.Double.lim_top = fp.from_bytes(bytearray('\xff\xff\x03\xbf\xc9\x1b\x0e\xb6')) # highest float less than 10e+16
+fp.Double.lim_bot = fp.from_bytes(bytearray('\xff\xff\x9f\x31\xa9\x5f\x63\xb2')) # highest float less than 10e+15
+fp.Double.type_sign, fp.Double.exp_sign = '#', 'D'
+
+
+def _just_under(n_in):
+    """Return the largest floating-point number less than the given value."""
+    # decrease mantissa by one
+    return n_in.__class__(n_in.neg, n_in.man - 0x100, n_in.exp)
+
+def _get_digits(num, digits, remove_trailing):
+    """Get the digits for an int."""
+    pow10 = 10L**(digits-1)
+    digitstr = ''
+    while pow10 >= 1:
+        digit = ord('0')
+        while num >= pow10:
+            digit += 1
+            num -= pow10
+        digitstr += chr(digit)
+        pow10 /= 10
+    if remove_trailing:
+        # remove trailing zeros
+        while len(digitstr)>1 and digitstr[-1] == '0':
+            digitstr = digitstr[:-1]
+    return digitstr
+
+def _scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_dot=False):
+    """Put digits in scientific E-notation."""
+    valstr = digitstr[:digits_to_dot]
+    if len(digitstr) > digits_to_dot:
+        valstr += '.' + digitstr[digits_to_dot:]
+    elif len(digitstr) == digits_to_dot and force_dot:
+        valstr += '.'
+    exponent = exp10 - digits_to_dot + 1
+    valstr += exp_sign
+    if exponent < 0:
+        valstr += '-'
+    else:
+        valstr += '+'
+    valstr += _get_digits(abs(exponent), digits=2, remove_trailing=False)
+    return valstr
+
+def _decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
+    """Put digits in decimal notation."""
+    # digits to decimal point
+    exp10 += 1
+    if exp10 >= len(digitstr):
+        valstr = digitstr + '0'*(exp10-len(digitstr))
+        if force_dot:
+            valstr+='.'
+        if not force_dot or type_sign=='#':
+            valstr += type_sign
+    elif exp10 > 0:
+        valstr = digitstr[:exp10] + '.' + digitstr[exp10:]
+        if type_sign == '#':
+            valstr += type_sign
+    else:
+        if force_dot:
+            valstr = '0'
+        else:
+            valstr = ''
+        valstr += '.' + '0'*(-exp10) + digitstr
+        if type_sign == '#':
+            valstr += type_sign
+    return valstr
+
 def _format_float_scientific(expr, digits_before, decimals, force_dot):
     """Put a float in scientific format."""
     work_digits = digits_before + decimals
@@ -1245,7 +1242,7 @@ def _format_float_fixed(expr, decimals, force_dot):
     return _decimal_notation(digitstr, work_digits-1-1-decimals+diff, '', force_dot)
 
 
-##########################################
+##############################################################################
 
 #REFACTOR to util.read_full_token -> token_to_value
 def parse_value(ins):
