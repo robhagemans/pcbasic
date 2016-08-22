@@ -84,6 +84,10 @@ class Values(object):
         elif typechar == '#':
             return fp.pack(fp.Double.from_value(python_val))
 
+    def to_int(self, inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
+        """Round numeric variable and convert to Python integer."""
+        return integer_to_int_signed(self.pass_integer(inp, maxint, err))
+
     ###########################################################################
     # string representation of numbers
 
@@ -340,6 +344,23 @@ class Values(object):
     ###########################################################################
     # type conversions
 
+    def pass_integer(self, inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
+        """Check if variable is numeric, convert to Int."""
+        if not inp:
+            raise error.RunError(error.STX)
+        typechar = inp[0]
+        if typechar == '%':
+            return inp
+        elif typechar in ('!', '#'):
+            val = fp.unpack(inp).round_to_int()
+            if val > maxint or val < -0x8000:
+                # overflow
+                raise error.RunError(error.OVERFLOW)
+            return int_to_integer_unsigned(val)
+        else:
+            # type mismatch
+            raise error.RunError(err)
+
     @float_safe
     def pass_single(self, num):
         """Check if variable is numeric, convert to Single."""
@@ -385,7 +406,7 @@ class Values(object):
         elif left_type=='!' or right_type=='!':
             return (self.pass_single(left), self.pass_single(right))
         elif left_type=='%' or right_type=='%':
-            return (pass_integer(left), pass_integer(right))
+            return (self.pass_integer(left), self.pass_integer(right))
         else:
             raise error.RunError(err)
 
@@ -394,7 +415,7 @@ class Values(object):
         if typechar == '$':
             return pass_string(value)
         elif typechar == '%':
-            return pass_integer(value)
+            return self.pass_integer(value)
         elif typechar == '!':
             return self.pass_single(value)
         elif typechar == '#':
@@ -522,8 +543,7 @@ class Values(object):
             return out
         return inp
 
-    @staticmethod
-    def negate(inp):
+    def negate(self, inp):
         """Negation (unary -). No-op for strings."""
         if inp[0] == '%':
             val = -integer_to_int_signed(inp)
@@ -567,8 +587,8 @@ class Values(object):
     @float_safe
     def divide_int(self, left, right):
         """Left\\right."""
-        dividend = pass_int_unpack(left)
-        divisor = pass_int_unpack(right)
+        dividend = self.to_int(left)
+        divisor = self.to_int(right)
         if divisor == 0:
             # division by zero, return single-precision maximum
             raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
@@ -580,8 +600,8 @@ class Values(object):
     @float_safe
     def mod(self, left, right):
         """Left modulo right."""
-        divisor = pass_int_unpack(right)
-        dividend = pass_int_unpack(left)
+        divisor = self.to_int(right)
+        dividend = self.to_int(left)
         if divisor == 0:
             # division by zero, return single-precision maximum
             raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
@@ -592,37 +612,37 @@ class Values(object):
 
     def bitwise_not(self, right):
         """Bitwise NOT, -x-1."""
-        return int_to_integer_signed(-pass_int_unpack(right)-1)
+        return int_to_integer_signed(-self.to_int(right)-1)
 
     def bitwise_and(self, left, right):
         """Bitwise AND."""
         return int_to_integer_unsigned(
-            integer_to_int_unsigned(pass_integer(left)) &
-            integer_to_int_unsigned(pass_integer(right)))
+            integer_to_int_unsigned(self.pass_integer(left)) &
+            integer_to_int_unsigned(self.pass_integer(right)))
 
     def bitwise_or(self, left, right):
         """Bitwise OR."""
         return int_to_integer_unsigned(
-            integer_to_int_unsigned(pass_integer(left)) |
-            integer_to_int_unsigned(pass_integer(right)))
+            integer_to_int_unsigned(self.pass_integer(left)) |
+            integer_to_int_unsigned(self.pass_integer(right)))
 
     def bitwise_xor(self, left, right):
         """Bitwise XOR."""
         return int_to_integer_unsigned(
-            integer_to_int_unsigned(pass_integer(left)) ^
-            integer_to_int_unsigned(pass_integer(right)))
+            integer_to_int_unsigned(self.pass_integer(left)) ^
+            integer_to_int_unsigned(self.pass_integer(right)))
 
     def bitwise_eqv(self, left, right):
         """Bitwise equivalence."""
         return int_to_integer_unsigned(0xffff-(
-            integer_to_int_unsigned(pass_integer(left)) ^
-            integer_to_int_unsigned(pass_integer(right))))
+            integer_to_int_unsigned(self.pass_integer(left)) ^
+            integer_to_int_unsigned(self.pass_integer(right))))
 
     def bitwise_imp(self, left, right):
         """Bitwise implication."""
         return int_to_integer_unsigned(
-            (0xffff - integer_to_int_unsigned(pass_integer(left))) |
-            integer_to_int_unsigned(pass_integer(right)))
+            (0xffff - integer_to_int_unsigned(self.pass_integer(left))) |
+            integer_to_int_unsigned(self.pass_integer(right)))
 
 
     ###############################################################################
@@ -729,7 +749,7 @@ class Values(object):
 
     def mki(self, x):
         """MKI$: return the byte representation of an int."""
-        return self._strings.store(integer_to_bytes(pass_integer(x)))
+        return self._strings.store(integer_to_bytes(self.pass_integer(x)))
 
     def mks(self, x):
         """MKS$: return the byte representation of a single."""
@@ -749,20 +769,20 @@ class Values(object):
 
     def character(self, x):
         """CHR$: character for ASCII value."""
-        val = pass_int_unpack(x)
+        val = self.to_int(x)
         error.range_check(0, 255, val)
         return self._strings.store(chr(val))
 
     def octal(self, x):
         """OCT$: octal representation of int."""
         # allow range -32768 to 65535
-        val = pass_integer(x, 0xffff)
+        val = self.pass_integer(x, 0xffff)
         return self._strings.store(integer_to_str_oct(val))
 
     def hexadecimal(self, x):
         """HEX$: hexadecimal representation of int."""
         # allow range -32768 to 65535
-        val = pass_integer(x, 0xffff)
+        val = self.pass_integer(x, 0xffff)
         return self._strings.store(integer_to_str_hex(val))
 
 
@@ -781,7 +801,7 @@ class Values(object):
 
     def space(self, x):
         """SPACE$: repeat spaces."""
-        num = pass_int_unpack(x)
+        num = self.to_int(x)
         error.range_check(0, 255, num)
         return self._strings.store(' '*num)
 
@@ -800,8 +820,8 @@ class Values(object):
 
     def mid(self, s, start, num):
         """MID$: get substring."""
-        start = pass_int_unpack(start)
-        num = pass_int_unpack(num)
+        start = self.to_int(start)
+        num = self.to_int(num)
         error.range_check(1, 255, start)
         error.range_check(0, 255, num)
         s = self._strings.copy(s)
@@ -815,7 +835,7 @@ class Values(object):
     def left(self, s, stop):
         """LEFT$: get substring at the start of string."""
         s = self._strings.copy(s)
-        stop = pass_int_unpack(stop)
+        stop = self.to_int(stop)
         error.range_check(0, 255, stop)
         if stop == 0:
             return null('$')
@@ -825,12 +845,14 @@ class Values(object):
     def right(self, s, stop):
         """RIGHT$: get substring at the end of string."""
         s = self._strings.copy(s)
-        stop = pass_int_unpack(stop)
+        stop = self.to_int(stop)
         error.range_check(0, 255, stop)
         if stop == 0:
             return null('$')
         stop = min(stop, len(s))
         return self._strings.store(s[-stop:])
+
+
 
 
 class MathErrorHandler(object):
@@ -1213,26 +1235,6 @@ def detokenise_number(ins, output):
 ###############################################################################
 
 
-###############################################################################
-# type conversion
-
-def pass_integer(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
-    """Check if variable is numeric, convert to Int."""
-    if not inp:
-        raise error.RunError(error.STX)
-    typechar = inp[0]
-    if typechar == '%':
-        return inp
-    elif typechar in ('!', '#'):
-        val = fp.unpack(inp).round_to_int()
-        if val > maxint or val < -0x8000:
-            # overflow
-            raise error.RunError(error.OVERFLOW)
-        return int_to_integer_unsigned(val)
-    else:
-        # type mismatch
-        raise error.RunError(err)
-
 
 ###############################################################################
 # type checks
@@ -1248,14 +1250,6 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
     if inp[0] not in ('%', '!', '#'):
         raise error.RunError(err)
     return inp
-
-
-###############################################################################
-# convenience functions
-
-def pass_int_unpack(inp, maxint=0x7fff, err=error.TYPE_MISMATCH):
-    """Convert numeric variable to Python integer."""
-    return integer_to_int_signed(pass_integer(inp, maxint, err))
 
 
 ###############################################################################

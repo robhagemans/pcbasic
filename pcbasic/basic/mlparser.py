@@ -17,16 +17,17 @@ class MLParser(object):
     """Macro Language parser."""
 
     # whitespace character for both macro languages is only space
-    whitepace = ' '
+    whitespace = ' '
 
-    def __init__(self, gmls, data_memory):
+    def __init__(self, gmls, data_memory, values):
         """Initialise macro-language parser."""
         self.gmls = gmls
         self.memory = data_memory
+        self.values = values
 
     def parse_value(self, default):
         """Parse a value in a macro-language string."""
-        c = util.skip(self.gmls, self.whitepace)
+        c = util.skip(self.gmls, self.whitespace)
         sgn = -1 if c == '-' else 1
         if c in ('+', '-'):
             self.gmls.read(1)
@@ -53,16 +54,16 @@ class MLParser(object):
         else:
             raise error.RunError(error.IFC)
         if sgn == -1:
-            step = values.Values.negate(step)
+            step = self.values.negate(step)
         return step
 
     def parse_number(self, default=None):
         """Parse and return a number value in a macro-language string."""
-        return values.pass_int_unpack(self.parse_value(default), err=error.IFC)
+        return self.values.to_int(self.parse_value(default), err=error.IFC)
 
     def parse_string(self):
         """Parse a string value in a macro-language string."""
-        c = util.skip(self.gmls, self.whitepace)
+        c = util.skip(self.gmls, self.whitespace)
         if len(c) == 0:
             raise error.RunError(error.IFC)
         elif ord(c) > 8:
@@ -79,30 +80,30 @@ class MLParser(object):
 
     def _parse_const(self):
         """Parse and return a constant value in a macro-language string."""
-        c = util.skip(self.gmls, self.whitepace)
+        c = util.skip(self.gmls, self.whitespace)
         if c and c in string.digits:
             numstr = ''
             while c and c in string.digits:
                 self.gmls.read(1)
                 numstr += c
-                c = util.skip(self.gmls, self.whitepace)
+                c = util.skip(self.gmls, self.whitespace)
             return values.int_to_integer_signed(int(numstr))
         else:
             raise error.RunError(error.IFC)
 
     def _parse_const_int(self):
         """Parse a constant value in a macro-language string, return Python int."""
-        return values.pass_int_unpack(self._parse_const(), err=error.IFC)
+        return self.values.to_int(self._parse_const(), err=error.IFC)
 
     def _parse_indices(self):
         """Parse constant array indices."""
         indices = []
-        c = util.skip(self.gmls, self.whitepace)
+        c = util.skip(self.gmls, self.whitespace)
         if c in ('[', '('):
             self.gmls.read(1)
             while True:
                 indices.append(self._parse_const_int())
-                c = util.skip(self.gmls, self.whitepace)
+                c = util.skip(self.gmls, self.whitespace)
                 if c == ',':
                     self.gmls.read(1)
                 else:

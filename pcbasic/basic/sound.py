@@ -186,7 +186,7 @@ class Sound(object):
                 item.params[2] = duration
                 self.session.audio_queue.put(item)
 
-    def play(self, data_segment, mml_list):
+    def play(self, data_segment, values, mml_list):
         """Parse a list of Music Macro Language strings (PLAY statement)."""
         gmls_list = []
         for mml in mml_list:
@@ -195,7 +195,7 @@ class Sound(object):
             gmls.write(str(mml))
             gmls.seek(0)
             gmls_list.append(gmls)
-        ml_parser_list = [mlparser.MLParser(gmls, data_segment) for gmls in gmls_list]
+        ml_parser_list = [mlparser.MLParser(gmls, data_segment, values) for gmls in gmls_list]
         next_oct = 0
         voices = range(3)
         while True:

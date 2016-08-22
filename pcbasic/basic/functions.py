@@ -89,7 +89,7 @@ class Functions(object):
             tk.OCT: partial(self.value_func, fn=self.values.octal),
             tk.HEX: partial(self.value_func, fn=self.values.hexadecimal),
             tk.LPOS: self.value_lpos,
-            tk.CINT: partial(self.value_func, fn=values.pass_integer),
+            tk.CINT: partial(self.value_func, fn=self.values.pass_integer),
             tk.CSNG: partial(self.value_func, fn=self.values.pass_single),
             tk.CDBL: partial(self.value_func, fn=self.values.pass_double),
             tk.FIX: partial(self.value_func, fn=self.values.fix),
@@ -124,7 +124,7 @@ class Functions(object):
         s = self.parser.parse_expression(ins)
         n = 1
         if s[0] != '$':
-            n = values.pass_int_unpack(s)
+            n = self.values.to_int(s)
             error.range_check(1, 255, n)
             util.require_read(ins, (',',))
             s = self.parser.parse_expression(ins, empty_err=error.STX)
@@ -140,9 +140,9 @@ class Functions(object):
         util.require_read(ins, ('(',))
         s = values.pass_string(self.parser.parse_expression(ins))
         util.require_read(ins, (',',))
-        start = values.pass_integer(self.parser.parse_expression(ins))
+        start = self.values.pass_integer(self.parser.parse_expression(ins))
         if util.skip_white_read_if(ins, (',',)):
-            num = values.pass_integer(self.parser.parse_expression(ins))
+            num = self.values.pass_integer(self.parser.parse_expression(ins))
         else:
             num = len(s)
         util.require_read(ins, (')',))
@@ -153,7 +153,7 @@ class Functions(object):
         util.require_read(ins, ('(',))
         s = values.pass_string(self.parser.parse_expression(ins))
         util.require_read(ins, (',',))
-        stop = values.pass_integer(self.parser.parse_expression(ins))
+        stop = self.values.pass_integer(self.parser.parse_expression(ins))
         util.require_read(ins, (')',))
         return self.values.left(s, stop)
 
@@ -162,14 +162,14 @@ class Functions(object):
         util.require_read(ins, ('(',))
         s = values.pass_string(self.parser.parse_expression(ins))
         util.require_read(ins, (',',))
-        stop = values.pass_integer(self.parser.parse_expression(ins))
+        stop = self.values.pass_integer(self.parser.parse_expression(ins))
         util.require_read(ins, (')',))
         return self.values.right(s, stop)
 
     def value_string(self, ins):
         """STRING$: repeat characters."""
         util.require_read(ins, ('(',))
-        n = values.pass_int_unpack(self.parser.parse_expression(ins))
+        n = self.values.to_int(self.parser.parse_expression(ins))
         error.range_check(0, 255, n)
         util.require_read(ins, (',',))
         j = self.parser.parse_expression(ins)
@@ -178,7 +178,7 @@ class Functions(object):
             error.range_check(1, 255, len(j))
             j = ord(j[0])
         else:
-            j = values.pass_int_unpack(j)
+            j = self.values.to_int(j)
             error.range_check(0, 255, j)
         util.require_read(ins, (')',))
         return self.session.strings.store(chr(j)*n)
@@ -189,12 +189,12 @@ class Functions(object):
     def value_screen(self, ins):
         """SCREEN: get char or attribute at a location."""
         util.require_read(ins, ('(',))
-        row = values.pass_int_unpack(self.parser.parse_expression(ins))
+        row = self.values.to_int(self.parser.parse_expression(ins))
         util.require_read(ins, (',',), err=error.IFC)
-        col = values.pass_int_unpack(self.parser.parse_expression(ins))
+        col = self.values.to_int(self.parser.parse_expression(ins))
         z = 0
         if util.skip_white_read_if(ins, (',',)):
-            z = values.pass_int_unpack(self.parser.parse_expression(ins))
+            z = self.values.to_int(self.parser.parse_expression(ins))
         cmode = self.session.screen.mode
         error.range_check(1, cmode.height, row)
         if self.session.screen.view_set:
@@ -211,7 +211,7 @@ class Functions(object):
         """INPUT$: get characters from the keyboard or a file."""
         util.require_read(ins, ('$',))
         util.require_read(ins, ('(',))
-        num = values.pass_int_unpack(self.parser.parse_expression(ins))
+        num = self.values.to_int(self.parser.parse_expression(ins))
         error.range_check(1, 255, num)
         infile = self.session.devices.kybd_file
         if util.skip_white_read_if(ins, (',',)):
@@ -249,7 +249,7 @@ class Functions(object):
 
     def value_lpos(self, ins):
         """LPOS: get the current printer column."""
-        num = values.pass_int_unpack(self.parser.parse_bracket(ins))
+        num = self.values.to_int(self.parser.parse_bracket(ins))
         error.range_check(0, 3, num)
         printer = self.session.devices.devices['LPT' + max(1, num) + ':']
         if printer.device_file:
@@ -263,7 +263,7 @@ class Functions(object):
     def value_loc(self, ins):
         """LOC: get file pointer."""
         util.skip_white(ins)
-        num = values.pass_int_unpack(self.parser.parse_bracket(ins), maxint=0xffff)
+        num = self.values.to_int(self.parser.parse_bracket(ins), maxint=0xffff)
         error.range_check(0, 255, num)
         the_file = self.session.files.get(num)
         return self.values.from_value(the_file.loc(), '!')
@@ -271,7 +271,7 @@ class Functions(object):
     def value_eof(self, ins):
         """EOF: get end-of-file."""
         util.skip_white(ins)
-        num = values.pass_int_unpack(self.parser.parse_bracket(ins), maxint=0xffff)
+        num = self.values.to_int(self.parser.parse_bracket(ins), maxint=0xffff)
         if num == 0:
             return values.null('%')
         error.range_check(0, 255, num)
@@ -281,7 +281,7 @@ class Functions(object):
     def value_lof(self, ins):
         """LOF: get length of file."""
         util.skip_white(ins)
-        num = values.pass_int_unpack(self.parser.parse_bracket(ins), maxint=0xffff)
+        num = self.values.to_int(self.parser.parse_bracket(ins), maxint=0xffff)
         error.range_check(0, 255, num)
         the_file = self.session.files.get(num)
         return self.values.from_value(the_file.lof(), '!')
@@ -297,7 +297,7 @@ class Functions(object):
         if expr[0] == '$':
             return self.session.strings.store(shell.get_env(self.session.strings.copy(expr)))
         else:
-            expr = values.pass_int_unpack(expr)
+            expr = self.values.to_int(expr)
             error.range_check(1, 255, expr)
             return self.session.strings.store(shell.get_env_entry(expr))
 
@@ -381,7 +381,7 @@ class Functions(object):
             util.require_read(ins, (')',))
             try:
                 x, y = screen.drawing.last_point
-                fn = values.pass_int_unpack(arg0)
+                fn = self.values.to_int(arg0)
                 if fn == 0:
                     return values.int_to_integer_signed(x)
                 elif fn == 1:
@@ -400,7 +400,7 @@ class Functions(object):
         util.require_read(ins, ('(',))
         coord = self.parser.parse_expression(ins)
         util.require_read(ins, (',',))
-        mode = values.pass_int_unpack(self.parser.parse_expression(ins))
+        mode = self.values.to_int(self.parser.parse_expression(ins))
         util.require_read(ins, (')',))
         error.range_check(0, 3, mode)
         screen = self.session.screen
@@ -413,10 +413,10 @@ class Functions(object):
             _, value = screen.drawing.get_window_physical(0., self.values.to_value(self.values.pass_single(coord)))
             return values.int_to_integer_signed(value)
         elif mode == 2:
-            value, _ = screen.drawing.get_window_logical(values.pass_int_unpack(coord), 0)
+            value, _ = screen.drawing.get_window_logical(self.values.to_int(coord), 0)
             return self.values.from_value(value, '!')
         elif mode == 3:
-            _, value = screen.drawing.get_window_logical(0, values.pass_int_unpack(coord))
+            _, value = screen.drawing.get_window_logical(0, self.values.to_int(coord))
             return self.values.from_value(value, '!')
 
     #####################################################################
@@ -424,7 +424,7 @@ class Functions(object):
 
     def value_play(self, ins):
         """PLAY: get length of music queue."""
-        voice = values.pass_int_unpack(self.parser.parse_bracket(ins))
+        voice = self.values.to_int(self.parser.parse_bracket(ins))
         error.range_check(0, 255, voice)
         if not(self.parser.syntax in ('pcjr', 'tandy') and voice in (1, 2)):
             voice = 0
@@ -452,7 +452,7 @@ class Functions(object):
 
     def value_pen(self, ins):
         """PEN: poll the light pen."""
-        fn = values.pass_int_unpack(self.parser.parse_bracket(ins))
+        fn = self.values.to_int(self.parser.parse_bracket(ins))
         error.range_check(0, 9, fn)
         pen = self.session.pen.poll(fn)
         if pen is None or not self.session.events.pen.enabled:
@@ -462,13 +462,13 @@ class Functions(object):
 
     def value_stick(self, ins):
         """STICK: poll the joystick."""
-        fn = values.pass_int_unpack(self.parser.parse_bracket(ins))
+        fn = self.values.to_int(self.parser.parse_bracket(ins))
         error.range_check(0, 3, fn)
         return values.int_to_integer_signed(self.session.stick.poll(fn))
 
     def value_strig(self, ins):
         """STRIG: poll the joystick fire button."""
-        fn = values.pass_int_unpack(self.parser.parse_bracket(ins))
+        fn = self.values.to_int(self.parser.parse_bracket(ins))
         # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
         error.range_check(0, 7, fn)
         return values.bool_to_integer(self.session.stick.poll_trigger(fn))
@@ -486,7 +486,7 @@ class Functions(object):
 
     def value_peek(self, ins):
         """PEEK: read memory location."""
-        addr = values.pass_int_unpack(self.parser.parse_bracket(ins), maxint=0xffff)
+        addr = self.values.to_int(self.parser.parse_bracket(ins), maxint=0xffff)
         if self.session.program.protected and not self.parser.run_mode:
             raise error.RunError(error.IFC)
         return values.int_to_integer_signed(self.session.all_memory.peek(addr))
@@ -519,7 +519,7 @@ class Functions(object):
 
     def value_inp(self, ins):
         """INP: get value from machine port."""
-        port = values.pass_int_unpack(self.parser.parse_bracket(ins), maxint=0xffff)
+        port = self.values.to_int(self.parser.parse_bracket(ins), maxint=0xffff)
         return values.int_to_integer_signed(self.session.machine.inp(port))
 
     def value_erdev(self, ins):
@@ -533,7 +533,7 @@ class Functions(object):
 
     def value_exterr(self, ins):
         """EXTERR: device error information; not implemented."""
-        x = values.pass_int_unpack(self.parser.parse_bracket(ins))
+        x = self.values.to_int(self.parser.parse_bracket(ins))
         error.range_check(0, 3, x)
         logging.warning("EXTERR function not implemented.")
         return values.null('%')

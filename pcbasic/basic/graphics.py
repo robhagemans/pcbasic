@@ -117,7 +117,12 @@ class Drawing(object):
     """Manage graphics drawing."""
 
     def __init__(self, screen):
+        """Initialise graphics object."""
         self.screen = screen
+        self.init_mode()
+
+    def init_mode(self):
+        """Initialise for new graphics mode."""
         self.unset_window()
         self.reset()
 
@@ -693,14 +698,14 @@ class Drawing(object):
 
     ### DRAW statement
 
-    def draw(self, gml, memory, events):
+    def draw(self, gml, memory, value_handler, events):
         """DRAW: Execute a Graphics Macro Language string."""
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = StringIO(gml)
-        ml_parser = mlparser.MLParser(gmls, memory)
+        ml_parser = mlparser.MLParser(gmls, memory, value_handler)
         plot, goback = True, False
         while True:
-            c = util.skip_read(gmls, ml_parser.whitepace).upper()
+            c = util.skip_read(gmls, ml_parser.whitespace).upper()
             if c == '':
                 break
             elif c == ';':
@@ -714,11 +719,11 @@ class Drawing(object):
             elif c == 'X':
                 # execute substring
                 sub = ml_parser.parse_string()
-                self.draw(str(sub), memory, events)
+                self.draw(str(sub), memory, value_handler, events)
             elif c == 'C':
                 # set foreground colour
                 # allow empty spec (default 0), but only if followed by a semicolon
-                if util.skip(gmls, ml_parser.whitepace) == ';':
+                if util.skip(gmls, ml_parser.whitespace) == ';':
                     self.last_attr = 0
                 else:
                     attr = ml_parser.parse_number()
@@ -734,7 +739,7 @@ class Drawing(object):
             elif c == 'A':
                 # set angle
                 # allow empty spec (default 0), but only if followed by a semicolon
-                if util.skip(gmls, ml_parser.whitepace) == ';':
+                if util.skip(gmls, ml_parser.whitespace) == ';':
                     self.draw_angle = 0
                 else:
                     angle = ml_parser.parse_number()
@@ -745,7 +750,7 @@ class Drawing(object):
                 if gmls.read(1).upper() != 'A':
                     raise error.RunError(error.IFC)
                 # allow empty spec (default 0), but only if followed by a semicolon
-                if util.skip(gmls, ml_parser.whitepace) == ';':
+                if util.skip(gmls, ml_parser.whitespace) == ';':
                     self.draw_angle = 0
                 else:
                     angle = ml_parser.parse_number()
@@ -772,10 +777,10 @@ class Drawing(object):
                 goback = False
             # two-variable movement command
             elif c == 'M':
-                relative = util.skip(gmls, ml_parser.whitepace) in ('+','-')
+                relative = util.skip(gmls, ml_parser.whitespace) in ('+','-')
                 x = ml_parser.parse_number()
                 error.range_check(-9999, 9999, x)
-                if util.skip(gmls, ml_parser.whitepace) != ',':
+                if util.skip(gmls, ml_parser.whitespace) != ',':
                     raise error.RunError(error.IFC)
                 else:
                     gmls.read(1)
@@ -796,7 +801,7 @@ class Drawing(object):
                 # paint - flood fill
                 colour = ml_parser.parse_number()
                 error.range_check(0, 9999, colour)
-                if util.skip_read(gmls, ml_parser.whitepace) != ',':
+                if util.skip_read(gmls, ml_parser.whitespace) != ',':
                     raise error.RunError(error.IFC)
                 bound = ml_parser.parse_number()
                 error.range_check(0, 9999, bound)
