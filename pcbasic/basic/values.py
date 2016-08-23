@@ -743,11 +743,10 @@ class Values(object):
             return null('%')
         return value
 
-    #REFACTOR: stringspace should be a member of this class (init order problem with DataSegment)
-    def str_to_type(self, typechar, word, stringspace):
-        """convert result to requested type, be strict about non-numeric chars """
+    def str_to_type(self, typechar, word):
+        """Convert Python str to requested type, be strict about non-numeric chars."""
         if typechar == '$':
-            return stringspace.store(word)
+            return self._strings.store(word)
         else:
             return self.str_to_number(word, allow_nonnum=False)
 

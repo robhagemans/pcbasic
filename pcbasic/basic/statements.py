@@ -1966,7 +1966,7 @@ class Statements(object):
             for v in self._parse_var_list(ins):
                 name, indices = v
                 word, _ = finp.input_entry(name[-1], allow_past_end=False)
-                value = self.values.str_to_type(name[-1], word, self.session.strings)
+                value = self.values.str_to_type(name[-1], word)
                 if value is None:
                     value = values.null(name[-1])
                 self.session.memory.set_variable(name, indices, value)
@@ -1981,8 +1981,7 @@ class Statements(object):
             # read the input
             self.session.input_mode = True
             varlist = print_and_input.input_console(
-                    self.session.editor,
-                    self.values, self.session.strings,
+                    self.session.editor, self.values,
                     prompt, readvar, newline)
             self.session.input_mode = False
             for v in varlist:

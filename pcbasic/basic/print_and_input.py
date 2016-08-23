@@ -26,7 +26,7 @@ class InputTextFile(devices.TextFileBase):
         devices.TextFileBase.__init__(self, StringIO(line), 'D', 'I')
 
 
-def input_console(editor, value_handler, stringspace, prompt, readvar, newline):
+def input_console(editor, value_handler, prompt, readvar, newline):
     """Read a list of variables for INPUT."""
     # readvar is a list of (name, indices) tuples
     # we return a list of (name, indices, values) tuples
@@ -38,7 +38,7 @@ def input_console(editor, value_handler, stringspace, prompt, readvar, newline):
         values, seps = [], []
         for v in readvar:
             word, sep = inputstream.input_entry(v[0][-1], allow_past_end=True)
-            value = value_handler.str_to_type(v[0][-1], word, stringspace)
+            value = value_handler.str_to_type(v[0][-1], word)
             values.append(value)
             seps.append(sep)
         # last separator not empty: there were too many values or commas
