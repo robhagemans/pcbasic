@@ -225,8 +225,7 @@ class Values(object):
 
     def to_integer(self, inp, maxint=0x7fff):
         """Check if variable is numeric, convert to Int."""
-        if not inp:
-            raise error.RunError(error.STX)
+        assert isinstance(inp, tuple)
         typechar = inp[0]
         if typechar == '%':
             return inp
@@ -243,8 +242,7 @@ class Values(object):
     @float_safe
     def to_single(self, num):
         """Check if variable is numeric, convert to Single."""
-        if not num:
-            raise error.RunError(error.STX)
+        assert isinstance(num, tuple)
         typechar = num[0]
         if typechar == '!':
             return num
@@ -252,14 +250,13 @@ class Values(object):
             return fp.pack(fp.Single.from_int(integer_to_int_signed(num)))
         elif typechar == '#':
             return fp.pack(fp.unpack(num).round_to_single())
-        elif typechar == '$':
+        else:
             raise error.RunError(error.TYPE_MISMATCH)
 
     @float_safe
     def to_double(self, num):
         """Check if variable is numeric, convert to Double."""
-        if not num:
-            raise error.RunError(error.STX)
+        assert isinstance(num, tuple)
         typechar = num[0]
         if typechar == '#':
             return num
@@ -267,7 +264,7 @@ class Values(object):
             return fp.pack(fp.Double.from_int(integer_to_int_signed(num)))
         elif typechar == '!':
             return ('#', bytearray(4) + num[1])
-        elif typechar == '$':
+        else:
             raise error.RunError(error.TYPE_MISMATCH)
 
     def to_float(self, num, allow_double=True):

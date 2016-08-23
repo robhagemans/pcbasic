@@ -393,6 +393,9 @@ class Parser(object):
         """Get variable name from token stream."""
         # append type specifier
         name = self.session.memory.complete_name(util.read_name(ins, allow_empty))
+        # return None for empty names (only happens with allow_empty)
+        if not name:
+            return None
         # only the first 40 chars are relevant in GW-BASIC, rest is discarded
         if len(name) > 41:
             name = name[:40]+name[-1]

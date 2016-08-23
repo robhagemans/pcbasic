@@ -1317,7 +1317,7 @@ class Statements(object):
         pattern, c, border, background_pattern = None, -1, -1, None
         if util.skip_white_read_if(ins, (',',)):
             cval = self.parser.parse_expression(ins, allow_empty=True)
-            if not cval:
+            if cval is None:
                 pass
             elif cval[0] == '$':
                 # pattern given; copy
@@ -1332,7 +1332,7 @@ class Statements(object):
             border = c
             if util.skip_white_read_if(ins, (',',)):
                 bval = self.parser.parse_expression(ins, allow_empty=True)
-                if bval:
+                if bval is not None:
                     border = self.values.to_int(bval)
                 if util.skip_white_read_if(ins, (',',)):
                     with self.session.strings:
@@ -1499,7 +1499,7 @@ class Statements(object):
         # check var name for NEXT
         varname2 = self.parser.parse_scalar(ins, allow_empty=True)
         # no-var only allowed in standalone NEXT
-        if not varname2:
+        if varname2 is None:
             util.require(ins, tk.end_statement)
         if (comma or varname2) and varname2 != varname:
             # NEXT without FOR marked with NEXT line number, while we're only at FOR
@@ -1516,7 +1516,7 @@ class Statements(object):
             name = self.parser.parse_scalar(ins, allow_empty=True)
             # if we haven't read a variable, we shouldn't find something else here
             # but if we have and we iterate, the rest of the line is ignored
-            if not name:
+            if name is None:
                 util.require(ins, tk.end_statement + (',',))
             # increment counter, check condition
             if self.parser.loop_iterate(ins, pos):
@@ -1754,13 +1754,13 @@ class Statements(object):
         """CLEAR: clear memory and redefine memory limits."""
         # integer expression allowed but ignored
         intexp = self.parser.parse_expression(ins, allow_empty=True)
-        if intexp:
+        if intexp is not None:
             expr = self.values.to_int(intexp)
             if expr < 0:
                 raise error.RunError(error.IFC)
         if util.skip_white_read_if(ins, (',',)):
             exp1 = self.parser.parse_expression(ins, allow_empty=True)
-            if exp1:
+            if exp1 is not None:
                 # this produces a *signed* int
                 mem_size = self.values.to_int(exp1, maxint=0xffff)
                 if mem_size == 0:
@@ -1772,7 +1772,7 @@ class Statements(object):
             if util.skip_white_read_if(ins, (',',)):
                 # set aside stack space for GW-BASIC. The default is the previous stack space size.
                 exp2 = self.parser.parse_expression(ins, allow_empty=True)
-                if exp2:
+                if exp2 is not None:
                     stack_size = self.values.to_int(exp2, maxint=0xffff)
                     # this should be an unsigned int
                     if stack_size < 0:
@@ -2345,7 +2345,7 @@ class Statements(object):
         output = self.session.devices.scrn_file if output is None else output
         expr = self.parser.parse_expression(ins, allow_empty=True)
         outstr = ''
-        if expr:
+        if expr is not None:
             while True:
                 if expr[0] == '$':
                     with self.session.strings:
