@@ -173,7 +173,7 @@ class Statements(object):
 
     def exec_troff(self, ins):
         """TROFF: turn off line number tracing."""
-        self.tron = False
+        self.parser.tron = False
         util.require(ins, tk.end_statement)
 
     def exec_rem(self, ins):
