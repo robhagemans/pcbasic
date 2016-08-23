@@ -772,10 +772,6 @@ class Values(object):
             # note GW passes signs separately as a token
             # and only stores positive numbers in the program
             self._tokenise_dec(ins, outs)
-        else:
-            # why is this here?
-            # this looks wrong but hasn't hurt so far
-            ins.seek(-1, 1)
 
     def _tokenise_dec(self, ins, outs):
         """Convert decimal expression in Python string to number token."""
