@@ -730,12 +730,10 @@ class Values(object):
     def str_to_number(self, strval, allow_nonnum=True):
         """Convert Python str to BASIC value."""
         ins = StringIO(strval)
-        outs = StringIO()
         # skip spaces and line feeds (but not NUL).
         util.skip(ins, (' ', '\n'))
-        self.tokenise_number(ins, outs)
-        outs.seek(0)
-        value = parse_value(outs)
+        token = self.tokenise_number(ins)
+        value = token_to_value(token)
         if not allow_nonnum and util.skip_white(ins) != '':
             # not everything has been parsed - error
             return None
@@ -751,29 +749,28 @@ class Values(object):
             return self.str_to_number(word, allow_nonnum=False)
 
     # this should not be in the interface but is quite entangled
-    # REFACTOR 1) to produce a string return value rather than write to stream
     # REFACTOR 2) to util.read_numeric_string -> str_to_number
-    def tokenise_number(self, ins, outs):
+    def tokenise_number(self, ins):
         """Convert Python-string number representation to number token."""
         c = util.peek(ins)
         if not c:
-            return
+            return ''
         elif c == '&':
             # handle hex or oct constants
             ins.read(1)
             if util.peek(ins).upper() == 'H':
                 # hex constant
-                self._tokenise_hex(ins, outs)
+                return self._tokenise_hex(ins)
             else:
                 # octal constant
-                self._tokenise_oct(ins, outs)
+                return self._tokenise_oct(ins)
         elif c in string.digits + '.+-':
             # handle other numbers
             # note GW passes signs separately as a token
             # and only stores positive numbers in the program
-            self._tokenise_dec(ins, outs)
+            return self._tokenise_dec(ins)
 
-    def _tokenise_dec(self, ins, outs):
+    def _tokenise_dec(self, ins):
         """Convert decimal expression in Python string to number token."""
         have_exp = False
         have_point = False
@@ -820,9 +817,9 @@ class Values(object):
         if kill:
             word = '0'
         # don't claim trailing whitespace
-        while len(word)>0 and (word[-1] in number_whitespace):
+        while len(word) > 0 and (word[-1] in number_whitespace):
             word = word[:-1]
-            ins.seek(-1,1) # even if c==''
+            ins.seek(-1, 1) # even if c==''
         # remove all internal whitespace
         trimword = ''
         for c in word:
@@ -832,23 +829,23 @@ class Values(object):
         # write out the numbers
         if len(word) == 1 and word in string.digits:
             # digit
-            outs.write(chr(0x11+str_to_int(word)))
+            return chr(0x11 + str_to_int(word))
         elif (not (have_exp or have_point or word[-1] in '!#') and
                                 str_to_int(word) <= 0x7fff and str_to_int(word) >= -0x8000):
             if str_to_int(word) <= 0xff and str_to_int(word) >= 0:
                 # one-byte constant
-                outs.write(tk.T_BYTE + chr(str_to_int(word)))
+                return tk.T_BYTE + chr(str_to_int(word))
             else:
                 # two-byte constant
-                outs.write(tk.T_INT + str(self.to_bytes(int_to_integer(str_to_int(word)))))
+                return tk.T_INT + str(self.to_bytes(int_to_integer(str_to_int(word))))
         else:
             mbf = str(self._str_to_float(word)[1])
             if len(mbf) == 4:
-                outs.write(tk.T_SINGLE + mbf)
+                return tk.T_SINGLE + mbf
             else:
-                outs.write(tk.T_DOUBLE + mbf)
+                return tk.T_DOUBLE + mbf
 
-    def _tokenise_hex(self, ins, outs):
+    def _tokenise_hex(self, ins):
         """Convert hex expression in Python string to number token."""
         # pass the H in &H
         ins.read(1)
@@ -861,9 +858,9 @@ class Values(object):
             else:
                 word += ins.read(1)
         val = int(word, 16) if word else 0
-        outs.write(tk.T_HEX + str(self.to_bytes(int_to_integer(val, unsigned=True))))
+        return tk.T_HEX + str(self.to_bytes(int_to_integer(val, unsigned=True)))
 
-    def _tokenise_oct(self, ins, outs):
+    def _tokenise_oct(self, ins):
         """Convert octal expression in Python string to number token."""
         # O is optional, could also be &777 instead of &O777
         if util.peek(ins).upper() == 'O':
@@ -879,7 +876,7 @@ class Values(object):
             else:
                 word += ins.read(1)
         val = int(word, 8) if word else 0
-        outs.write(tk.T_OCT + str(self.to_bytes(int_to_integer(val, unsigned=True))))
+        return tk.T_OCT + str(self.to_bytes(int_to_integer(val, unsigned=True)))
 
     def _str_to_float(self, s):
         """Return Float value for Python string."""
@@ -1245,7 +1242,3 @@ def token_to_value(full_token):
     elif tk.C_0 <= lead <= tk.C_10:
         return Values.from_bytes(chr(ord(lead)-0x11) + '\0')
     return None
-
-def parse_value(ins):
-    """Token to value."""
-    return token_to_value(util.read_token(ins))

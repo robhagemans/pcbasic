@@ -297,7 +297,7 @@ class Tokeniser(object):
             # number starting with . or & are always parsed
             elif c in ('&', '.') or (allow_number and
                                       not allow_jumpnum and c in string.digits):
-                self._values.tokenise_number(ins, outs)
+                outs.write(self._values.tokenise_number(ins))
             # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):
             elif c in self._ascii_operators:
                 ins.read(1)
