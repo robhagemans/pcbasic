@@ -412,7 +412,7 @@ class Field(object):
             raise error.RunError(error.FIELD_OVERFLOW)
         # create a string pointer
         str_addr = self.address + offset
-        str_sequence = chr(length) + values.Values.to_bytes(values.int_to_integer_unsigned(str_addr))
+        str_sequence = chr(length) + values.Values.to_bytes(values.int_to_integer(str_addr, unsigned=True))
         # assign the string ptr to the variable name
         # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
         self.memory.set_variable(name, indices, values.Values.from_bytes(str_sequence))

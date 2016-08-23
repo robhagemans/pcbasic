@@ -758,7 +758,7 @@ class Drawing(object):
                     self.draw_angle = angle
             # one-variable movement commands:
             elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
-                step = ml_parser.parse_number(default=values.int_to_integer_signed(1))
+                step = ml_parser.parse_number(default=values.int_to_integer(1))
                 # 100000 seems to be GW's limit
                 # however, parse_number will overflow past signed int limits
                 error.range_check(-99999, 99999, step)

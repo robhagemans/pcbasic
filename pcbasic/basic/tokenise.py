@@ -94,7 +94,7 @@ class Tokeniser(object):
             ins.seek(-len(off)-2, 1)
             return -1
         else:
-            return values.integer_to_int_unsigned(self._values.from_bytes(off))
+            return values.integer_to_int(self._values.from_bytes(off), unsigned=True)
 
     def detokenise_compound_statement(self, ins, bytepos=None):
         """Detokenise tokens until end of line."""
@@ -230,11 +230,11 @@ class Tokeniser(object):
 
     def _uint_token_to_str(self, s):
         """Convert unsigned int token to Python string."""
-        return str(values.integer_to_int_unsigned(self._values.from_bytes(s)))
+        return str(values.integer_to_int(self._values.from_bytes(s), unsigned=True))
 
     def _int_token_to_str(self, s):
         """Convert signed int token to Python string."""
-        return str(values.integer_to_int_signed(self._values.from_bytes(s)))
+        return str(values.integer_to_int(self._values.from_bytes(s)))
 
     def _byte_token_to_str(self, s):
         """Convert unsigned byte token to Python string."""
@@ -430,7 +430,7 @@ class Tokeniser(object):
                 # keep 6553 as line number and push back the last number:
                 ins.seek(4-len(word), 1)
                 word = word[:4]
-            return str(self._values.to_bytes(values.int_to_integer_unsigned(int(word))))
+            return str(self._values.to_bytes(values.int_to_integer(int(word), unsigned=True)))
         else:
             return ''
 

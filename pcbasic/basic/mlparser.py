@@ -97,7 +97,7 @@ class MLParser(object):
                 self.gmls.read(1)
                 numstr += c
                 c = util.skip(self.gmls, self.whitespace)
-            return values.int_to_integer_signed(int(numstr))
+            return values.int_to_integer(int(numstr))
         else:
             raise error.RunError(error.IFC)
 

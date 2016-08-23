@@ -267,9 +267,9 @@ class Memory(object):
         g.write(str(self._get_memory_block(addr, length)))
         # Tandys repeat the header at the end of the file
         if self.tandy_syntax:
-            g.write('\xfd' + str(values.Values.to_bytes(values.int_to_integer_unsigned(self.segment)) +
-                    values.Values.to_bytes(values.int_to_integer_unsigned(offset)) +
-                    values.Values.to_bytes(values.int_to_integer_unsigned(length))))
+            g.write('\xfd' + str(values.Values.to_bytes(values.int_to_integer(self.segment, unsigned=True)) +
+                    values.Values.to_bytes(values.int_to_integer(offset, unsigned=True)) +
+                    values.Values.to_bytes(values.int_to_integer(length, unsigned=True))))
 
     def def_seg(self, segment):
         """Set segment."""

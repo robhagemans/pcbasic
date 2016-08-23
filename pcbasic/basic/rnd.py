@@ -44,7 +44,7 @@ class RandomNumberGenerator(object):
         if len(s) >= 4:
             mask = s[-4:-2]
         final_two = bytearray(chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1]))
-        n = values.integer_to_int_signed(values.Values.from_bytes(final_two))
+        n = values.integer_to_int(values.Values.from_bytes(final_two))
         self._seed &= 0xff
         self._get(1) # RND(1)
         self._seed += n * self._step

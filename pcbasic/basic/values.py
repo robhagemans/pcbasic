@@ -21,14 +21,19 @@ from . import util
 from . import basictoken as tk
 
 
-# BASIC types:
+# BASIC type sigils:
 # Integer (%) - stored as two's complement, little-endian
 # Single (!) - stored as 4-byte Microsoft Binary Format
 # Double (#) - stored as 8-byte Microsoft Binary Format
 # String ($) - stored as 1-byte length plus 2-byte pointer to string space
+INT = '%'
+SNG = '!'
+DBL = '#'
+STR = '$'
 
-TYPE_TO_SIZE = {'$': 3, '%': 2, '!': 4, '#': 8}
-SIZE_TO_TYPE = {2: '%', 3: '$', 4: '!', 8: '#'}
+# storage size in bytes
+TYPE_TO_SIZE = {STR: 3, INT: 2, SNG: 4, DBL: 8}
+SIZE_TO_TYPE = {2: INT, 3: STR, 4: SNG, 8: DBL}
 
 
 def null(sigil):
@@ -65,43 +70,35 @@ def string_length(in_string):
 
 def string_address(in_string):
     """Get string address as Python int."""
-    return integer_to_int_unsigned(Values.from_bytes(in_string[1][1:]))
+    return integer_to_int(Values.from_bytes(in_string[1][1:]), unsigned=True)
 
 
 ###############################################################################
 # convert between BASIC Integer and Python int
 
-def int_to_integer_signed(n):
-    """Convert Python int in range [-32768, 32767] to BASIC Integer."""
-    if n > 0x7fff or n < -0x8000:
+
+def int_to_integer(n, unsigned=False):
+    """Convert Python int to BASIC Integer."""
+    maxint = 0xffff if unsigned else 0x7fff
+    if n > maxint or n < -0x8000:
         raise error.RunError(error.OVERFLOW)
     if n < 0:
         n = 0x10000 + n
     return ('%', bytearray((n&0xff, n >> 8)))
 
-def int_to_integer_unsigned(n):
-    """Convert Python int in range [-32768, 65535] to BASIC Integer."""
-    if n > 0xffff or n < -0x8000:
-        raise error.RunError(error.OVERFLOW)
-    if n < 0:
-        n = 0x10000 + n
-    return ('%', bytearray((n&0xff, n >> 8)))
-
-def integer_to_int_signed(in_integer):
-    """Convert BASIC Integer to Python int in range [-32768, 32767]."""
+def integer_to_int(in_integer, unsigned=False):
+    """Convert BASIC Integer to Python int."""
     s = in_integer[1]
-    # 2's complement signed int, least significant byte first,
-    # sign bit is most significant bit
-    value = 0x100 * (s[1] & 0x7f) + s[0]
-    if (s[1] & 0x80) == 0x80:
-        return -0x8000 + value
+    if unsigned:
+        return 0x100 * s[1] + s[0]
     else:
-        return value
-
-def integer_to_int_unsigned(in_integer):
-    """Convert BASIC Integer to Python int in range [0, 65535]."""
-    s = in_integer[1]
-    return 0x100 * s[1] + s[0]
+        # 2's complement signed int, least significant byte first,
+        # sign bit is most significant bit
+        value = 0x100 * (s[1] & 0x7f) + s[0]
+        if (s[1] & 0x80) == 0x80:
+            return -0x8000 + value
+        else:
+            return value
 
 
 ###############################################################################
@@ -179,7 +176,7 @@ class Values(object):
         if typechar == '$':
             return self._strings.copy(basic_val)
         elif typechar == '%':
-            return integer_to_int_signed(basic_val)
+            return integer_to_int(basic_val)
         elif typechar in ('#', '!'):
             return fp.unpack(basic_val).to_value()
 
@@ -189,15 +186,15 @@ class Values(object):
         if typechar == '$':
             return self._strings.store(python_val)
         elif typechar == '%':
-            return int_to_integer_signed(python_val)
+            return int_to_integer(python_val)
         elif typechar == '!':
             return fp.pack(fp.Single.from_value(python_val))
         elif typechar == '#':
             return fp.pack(fp.Double.from_value(python_val))
 
-    def to_int(self, inp, maxint=0x7fff):
+    def to_int(self, inp, unsigned=False):
         """Round numeric variable and convert to Python integer."""
-        return integer_to_int_signed(self.to_integer(inp, maxint))
+        return integer_to_int(self.to_integer(inp, unsigned))
 
     def from_bool(self, boo):
         """Convert Python boolean to Integer."""
@@ -223,9 +220,10 @@ class Values(object):
     ###########################################################################
     # type conversions
 
-    def to_integer(self, inp, maxint=0x7fff):
+    def to_integer(self, inp, unsigned=False):
         """Check if variable is numeric, convert to Int."""
         assert isinstance(inp, tuple)
+        maxint = 0xffff if unsigned else 0x7fff
         typechar = inp[0]
         if typechar == '%':
             return inp
@@ -234,7 +232,7 @@ class Values(object):
             if val > maxint or val < -0x8000:
                 # overflow
                 raise error.RunError(error.OVERFLOW)
-            return int_to_integer_unsigned(val)
+            return int_to_integer(val, unsigned=True)
         else:
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
@@ -247,7 +245,7 @@ class Values(object):
         if typechar == '!':
             return num
         elif typechar == '%':
-            return fp.pack(fp.Single.from_int(integer_to_int_signed(num)))
+            return fp.pack(fp.Single.from_int(integer_to_int(num)))
         elif typechar == '#':
             return fp.pack(fp.unpack(num).round_to_single())
         else:
@@ -261,7 +259,7 @@ class Values(object):
         if typechar == '#':
             return num
         elif typechar == '%':
-            return fp.pack(fp.Double.from_int(integer_to_int_signed(num)))
+            return fp.pack(fp.Double.from_int(integer_to_int(num)))
         elif typechar == '!':
             return ('#', bytearray(4) + num[1])
         else:
@@ -308,7 +306,7 @@ class Values(object):
         x = pass_number(x)
         typechar = x[0]
         if typechar == '%':
-            return integer_to_int_signed(x) == 0
+            return integer_to_int(x) == 0
         else:
             return fp.unpack(x).is_zero()
 
@@ -361,10 +359,10 @@ class Values(object):
         """Sign."""
         x = pass_number(x)
         if x[0] == '%':
-            inp_int = integer_to_int_signed(x)
-            return int_to_integer_signed(0 if inp_int == 0 else (1 if inp_int > 0 else -1))
+            inp_int = integer_to_int(x)
+            return int_to_integer(0 if inp_int == 0 else (1 if inp_int > 0 else -1))
         else:
-            return int_to_integer_signed(fp.unpack(x).sign())
+            return int_to_integer(fp.unpack(x).sign())
 
     def floor(self, x):
         """Truncate towards negative infinity (INT)."""
@@ -395,8 +393,7 @@ class Values(object):
         else:
             # return Single to avoid wrapping on integer overflow
             return fp.pack(fp.Single.from_int(
-                                integer_to_int_signed(left) +
-                                integer_to_int_signed(right)))
+                                integer_to_int(left) + integer_to_int(right)))
 
     @float_safe
     def subtract(self, left, right):
@@ -406,11 +403,11 @@ class Values(object):
     def abs(self, inp):
         """Return the absolute value of a number. No-op for strings."""
         if inp[0] == '%':
-            val = abs(integer_to_int_signed(inp))
+            val = abs(integer_to_int(inp))
             if val == 32768:
                 return fp.pack(fp.Single.from_int(val))
             else:
-                return int_to_integer_signed(val)
+                return int_to_integer(val)
         elif inp[0] in ('!', '#'):
             out = (inp[0], inp[1][:])
             out[1][-2] &= 0x7F
@@ -420,11 +417,11 @@ class Values(object):
     def negate(self, inp):
         """Negation (unary -). No-op for strings."""
         if inp[0] == '%':
-            val = -integer_to_int_signed(inp)
+            val = -integer_to_int(inp)
             if val == 32768:
                 return fp.pack(fp.Single.from_int(val))
             else:
-                return int_to_integer_signed(val)
+                return int_to_integer(val)
         elif inp[0] in ('!', '#'):
             out = (inp[0], inp[1][:])
             out[1][-2] ^= 0x80
@@ -438,7 +435,7 @@ class Values(object):
             return self._call_float_function(lambda a, b: a**b, self.to_double(left), self.to_double(right))
         else:
             if right[0] == '%':
-                return fp.pack(fp.unpack(self.to_single(left)).ipow_int(integer_to_int_signed(right)))
+                return fp.pack(fp.unpack(self.to_single(left)).ipow_int(integer_to_int(right)))
             else:
                 return self._call_float_function(lambda a, b: a**b, self.to_single(left), self.to_single(right))
 
@@ -467,9 +464,9 @@ class Values(object):
             # division by zero, return single-precision maximum
             raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
         if (dividend >= 0) == (divisor >= 0):
-            return int_to_integer_signed(dividend / divisor)
+            return int_to_integer(dividend / divisor)
         else:
-            return int_to_integer_signed(-(abs(dividend) / abs(divisor)))
+            return int_to_integer(-(abs(dividend) / abs(divisor)))
 
     @float_safe
     def mod(self, left, right):
@@ -482,41 +479,41 @@ class Values(object):
         mod = dividend % divisor
         if dividend < 0 or mod < 0:
             mod -= divisor
-        return int_to_integer_signed(mod)
+        return int_to_integer(mod)
 
     def bitwise_not(self, right):
         """Bitwise NOT, -x-1."""
-        return int_to_integer_signed(-self.to_int(right)-1)
+        return int_to_integer(-self.to_int(right)-1)
 
     def bitwise_and(self, left, right):
         """Bitwise AND."""
-        return int_to_integer_unsigned(
-            integer_to_int_unsigned(self.to_integer(left)) &
-            integer_to_int_unsigned(self.to_integer(right)))
+        return int_to_integer(
+            integer_to_int(self.to_integer(left), unsigned=True) &
+            integer_to_int(self.to_integer(right), unsigned=True), unsigned=True)
 
     def bitwise_or(self, left, right):
         """Bitwise OR."""
-        return int_to_integer_unsigned(
-            integer_to_int_unsigned(self.to_integer(left)) |
-            integer_to_int_unsigned(self.to_integer(right)))
+        return int_to_integer(
+            integer_to_int(self.to_integer(left), unsigned=True) |
+            integer_to_int(self.to_integer(right), unsigned=True), unsigned=True)
 
     def bitwise_xor(self, left, right):
         """Bitwise XOR."""
-        return int_to_integer_unsigned(
-            integer_to_int_unsigned(self.to_integer(left)) ^
-            integer_to_int_unsigned(self.to_integer(right)))
+        return int_to_integer(
+            integer_to_int(self.to_integer(left), unsigned=True) ^
+            integer_to_int(self.to_integer(right), unsigned=True), unsigned=True)
 
     def bitwise_eqv(self, left, right):
         """Bitwise equivalence."""
-        return int_to_integer_unsigned(0xffff-(
-            integer_to_int_unsigned(self.to_integer(left)) ^
-            integer_to_int_unsigned(self.to_integer(right))))
+        return int_to_integer(0xffff-(
+            integer_to_int(self.to_integer(left), unsigned=True) ^
+            integer_to_int(self.to_integer(right), unsigned=True)), unsigned=True)
 
     def bitwise_imp(self, left, right):
         """Bitwise implication."""
-        return int_to_integer_unsigned(
-            (0xffff - integer_to_int_unsigned(self.to_integer(left))) |
-            integer_to_int_unsigned(self.to_integer(right)))
+        return int_to_integer(
+            (0xffff - integer_to_int(self.to_integer(left), unsigned=True)) |
+            integer_to_int(self.to_integer(right), unsigned=True), unsigned=True)
 
 
     ###############################################################################
@@ -542,7 +539,7 @@ class Values(object):
             if left[0] in ('#', '!'):
                 return fp.unpack(left).equals(fp.unpack(right))
             else:
-                return integer_to_int_signed(left) == integer_to_int_signed(right)
+                return integer_to_int(left) == integer_to_int(right)
 
     def bool_gt(self, left, right):
         """Ordering: return -1 if left > right, 0 otherwise."""
@@ -567,7 +564,7 @@ class Values(object):
             if left[0] in ('#', '!'):
                 return fp.unpack(left).gt(fp.unpack(right))
             else:
-                return integer_to_int_signed(left) > integer_to_int_signed(right)
+                return integer_to_int(left) > integer_to_int(right)
 
     def equals(self, left, right):
         """Return -1 if left == right, 0 otherwise."""
@@ -650,13 +647,13 @@ class Values(object):
     def octal(self, x):
         """OCT$: octal representation of int."""
         # allow range -32768 to 65535
-        val = self.to_integer(x, 0xffff)
+        val = self.to_integer(x, unsigned=True)
         return self._strings.store(integer_to_str_oct(val))
 
     def hexadecimal(self, x):
         """HEX$: hexadecimal representation of int."""
         # allow range -32768 to 65535
-        val = self.to_integer(x, 0xffff)
+        val = self.to_integer(x, unsigned=True)
         return self._strings.store(integer_to_str_hex(val))
 
 
@@ -665,13 +662,13 @@ class Values(object):
 
     def length(self, x):
         """LEN: length of string."""
-        return int_to_integer_signed(string_length(pass_string(x)))
+        return int_to_integer(string_length(pass_string(x)))
 
     def asc(self, x):
         """ASC: ordinal ASCII value of a character."""
         s = self._strings.copy(pass_string(x))
         error.throw_if(not s)
-        return int_to_integer_signed(ord(s[0]))
+        return int_to_integer(ord(s[0]))
 
     def space(self, x):
         """SPACE$: repeat spaces."""
@@ -690,7 +687,7 @@ class Values(object):
         find = big[start-1:].find(small)
         if find == -1:
             return null('%')
-        return int_to_integer_signed(start + find)
+        return int_to_integer(start + find)
 
     def mid(self, s, start, num):
         """MID$: get substring."""
@@ -848,7 +845,7 @@ class Values(object):
                 outs.write(tk.T_BYTE + chr(str_to_int(word)))
             else:
                 # two-byte constant
-                outs.write(tk.T_INT + str(self.to_bytes(int_to_integer_signed(str_to_int(word)))))
+                outs.write(tk.T_INT + str(self.to_bytes(int_to_integer(str_to_int(word)))))
         else:
             mbf = str(self._str_to_float(word)[1])
             if len(mbf) == 4:
@@ -869,7 +866,7 @@ class Values(object):
             else:
                 word += ins.read(1)
         val = int(word, 16) if word else 0
-        outs.write(tk.T_HEX + str(self.to_bytes(int_to_integer_unsigned(val))))
+        outs.write(tk.T_HEX + str(self.to_bytes(int_to_integer(val, unsigned=True))))
 
     def _tokenise_oct(self, ins, outs):
         """Convert octal expression in Python string to number token."""
@@ -887,7 +884,7 @@ class Values(object):
             else:
                 word += ins.read(1)
         val = int(word, 8) if word else 0
-        outs.write(tk.T_OCT + str(self.to_bytes(int_to_integer_unsigned(val))))
+        outs.write(tk.T_OCT + str(self.to_bytes(int_to_integer(val, unsigned=True))))
 
     def _str_to_float(self, s):
         """Return Float value for Python string."""
@@ -991,10 +988,10 @@ def number_to_str(inp, screen=False, write=False):
         raise error.RunError(error.STX)
     typechar = inp[0]
     if typechar == '%':
-        if screen and not write and integer_to_int_signed(inp) >= 0:
-            return ' ' + str(integer_to_int_signed(inp))
+        if screen and not write and integer_to_int(inp) >= 0:
+            return ' ' + str(integer_to_int(inp))
         else:
-            return str(integer_to_int_signed(inp))
+            return str(integer_to_int(inp))
     elif typechar == '!':
         return float_to_str(inp, screen, write)
     elif typechar == '#':
@@ -1004,14 +1001,14 @@ def number_to_str(inp, screen=False, write=False):
 
 def integer_to_str_oct(inp):
     """Convert integer to str in octal representation."""
-    if integer_to_int_unsigned(inp) == 0:
+    if integer_to_int(inp, unsigned=True) == 0:
         return '0'
     else:
-        return oct(integer_to_int_unsigned(inp))[1:]
+        return oct(integer_to_int(inp, unsigned=True))[1:]
 
 def integer_to_str_hex(inp):
     """Convert integer to str in hex representation."""
-    return hex(integer_to_int_unsigned(inp))[2:].upper()
+    return hex(integer_to_int(inp, unsigned=True))[2:].upper()
 
 def str_to_int(s):
     """Return Python int value for Python str, zero if malformed."""

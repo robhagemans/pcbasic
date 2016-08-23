@@ -122,7 +122,7 @@ class StringSpace(object):
             # find new string address
             self.current -= size
             address = self.current + 1
-        key = str(values.Values.to_bytes(values.int_to_integer_unsigned(address)))
+        key = str(values.Values.to_bytes(values.int_to_integer(address, unsigned=True)))
         # don't store empty strings
         if size > 0:
             if key in self.strings:
@@ -134,7 +134,7 @@ class StringSpace(object):
     def delete_last(self):
         """Delete the string provided if it is at the top of string space."""
         last_address = self.current + 1
-        last_key = str(values.Values.to_bytes(values.int_to_integer_unsigned(last_address)))
+        last_key = str(values.Values.to_bytes(values.int_to_integer(last_address, unsigned=True)))
         try:
             length = len(self.strings[last_key])
             self.current += length
@@ -146,7 +146,7 @@ class StringSpace(object):
 
     def address(self, key):
         """Return the address of a given key."""
-        return values.integer_to_int_unsigned(values.Values.from_bytes(key[-2:]))
+        return values.integer_to_int(values.Values.from_bytes(key[-2:]), unsigned=True)
 
     def collect_garbage(self, string_ptrs):
         """Re-store the strings refrerenced in string_ptrs, delete the rest."""
@@ -474,11 +474,11 @@ class Arrays(object):
             else:
                 offset -= max(3, len(the_arr))+1
                 dimensions, _, _ = self.arrays[the_arr]
-                data_rep = values.Values.to_bytes(values.int_to_integer_unsigned(
-                    self.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)))
+                data_rep = values.Values.to_bytes(values.int_to_integer(
+                    self.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions), unsigned=True))
                 for d in dimensions:
-                    data_rep += values.Values.to_bytes(values.int_to_integer_unsigned(
-                                        d + 1 - self.base_index))
+                    data_rep += values.Values.to_bytes(values.int_to_integer(
+                                        d + 1 - self.base_index, unsigned=True))
                 return data_rep[offset]
 
     def get_strings(self):

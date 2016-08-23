@@ -498,7 +498,7 @@ class Statements(object):
 
     def exec_poke(self, ins):
         """POKE: write to a memory location. Limited implementation."""
-        addr = self.values.to_int(self.parser.parse_expression(ins), maxint=0xffff)
+        addr = self.values.to_int(self.parser.parse_expression(ins), unsigned=True)
         if self.session.program.protected and not self.parser.run_mode:
             raise error.RunError(error.IFC)
         util.require_read(ins, (',',))
@@ -512,7 +512,7 @@ class Statements(object):
         # &hb800: text screen buffer; &h13d: data segment
         if util.skip_white_read_if(ins, (tk.O_EQ,)):
             # def_seg() accepts signed values
-            self.session.all_memory.def_seg(self.values.to_int(self.parser.parse_expression(ins), maxint=0xffff))
+            self.session.all_memory.def_seg(self.values.to_int(self.parser.parse_expression(ins), unsigned=True))
         else:
             self.session.all_memory.def_seg(self.session.memory.data_segment)
         util.require(ins, tk.end_statement)
@@ -521,7 +521,7 @@ class Statements(object):
         """DEF USR: Define a machine language function. Not implemented."""
         util.require_read(ins, tk.digit)
         util.require_read(ins, (tk.O_EQ,))
-        self.values.to_integer(self.parser.parse_expression(ins), maxint=0xffff)
+        self.values.to_integer(self.parser.parse_expression(ins), unsigned=True)
         util.require(ins, tk.end_statement)
         logging.warning("DEF USR statement not implemented")
 
@@ -534,7 +534,7 @@ class Statements(object):
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         offset = None
         if util.skip_white_read_if(ins, (',',)):
-            offset = self.values.to_int(self.parser.parse_expression(ins), maxint=0xffff)
+            offset = self.values.to_int(self.parser.parse_expression(ins), unsigned=True)
             if offset < 0:
                 offset += 0x10000
         util.require(ins, tk.end_statement)
@@ -549,11 +549,11 @@ class Statements(object):
             name = self.session.strings.copy(values.pass_string(self.parser.parse_expression(ins)))
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         util.require_read(ins, (',',))
-        offset = self.values.to_int(self.parser.parse_expression(ins), maxint = 0xffff)
+        offset = self.values.to_int(self.parser.parse_expression(ins), unsigned=True)
         if offset < 0:
             offset += 0x10000
         util.require_read(ins, (',',))
-        length = self.values.to_int(self.parser.parse_expression(ins), maxint = 0xffff)
+        length = self.values.to_int(self.parser.parse_expression(ins), unsigned=True)
         if length < 0:
             length += 0x10000
         util.require(ins, tk.end_statement)
@@ -586,7 +586,7 @@ class Statements(object):
 
     def exec_out(self, ins):
         """OUT: send a byte to a machine port. Limited implementation."""
-        addr = self.values.to_int(self.parser.parse_expression(ins), maxint=0xffff)
+        addr = self.values.to_int(self.parser.parse_expression(ins), unsigned=True)
         util.require_read(ins, (',',))
         val = self.values.to_int(self.parser.parse_expression(ins))
         error.range_check(0, 255, val)
@@ -595,7 +595,7 @@ class Statements(object):
 
     def exec_wait(self, ins):
         """WAIT: wait for a machine port. Limited implementation."""
-        addr = self.values.to_int(self.parser.parse_expression(ins), maxint=0xffff)
+        addr = self.values.to_int(self.parser.parse_expression(ins), unsigned=True)
         util.require_read(ins, (',',))
         ander = self.values.to_int(self.parser.parse_expression(ins))
         error.range_check(0, 255, ander)
@@ -748,7 +748,7 @@ class Statements(object):
     def parse_jumpnum(self, ins, allow_empty=False, err=error.STX):
         """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
         if util.skip_white_read_if(ins, (tk.T_UINT,)):
-            return values.integer_to_int_unsigned(self.values.from_bytes(ins.read(2)))
+            return values.integer_to_int(self.values.from_bytes(ins.read(2)), unsigned=True)
         else:
             if allow_empty:
                 return -1
@@ -759,7 +759,7 @@ class Statements(object):
         """Helper function: parse jump target."""
         c = util.skip_white_read(ins)
         if c == tk.T_UINT:
-            return values.integer_to_int_unsigned(self.values.from_bytes(ins.read(2)))
+            return values.integer_to_int(self.values.from_bytes(ins.read(2)), unsigned=True)
         elif c == '.':
             return self.session.program.last_stored
         else:
@@ -880,7 +880,7 @@ class Statements(object):
             # check for an expression that indicates a line in the other self.session.program. This is not stored as a jumpnum (to avoid RENUM)
             expr = self.parser.parse_expression(ins, allow_empty=True)
             if expr is not None:
-                jumpnum = self.values.to_int(expr, maxint=0xffff)
+                jumpnum = self.values.to_int(expr, unsigned=True)
                 # negative numbers will be two's complemented into a line number
                 if jumpnum < 0:
                     jumpnum = 0x10000 + jumpnum
@@ -1228,8 +1228,7 @@ class Statements(object):
                 else:
                     util.require(ins, (',',))
                 if util.skip_white_read_if(ins, (',',)):
-                    pattern = self.values.to_int(
-                                self.parser.parse_expression(ins), maxint=0x7fff)
+                    pattern = self.values.to_int(self.parser.parse_expression(ins))
             elif not expr:
                 raise error.RunError(error.MISSING_OPERAND)
         util.require(ins, tk.end_statement)
@@ -1443,7 +1442,7 @@ class Statements(object):
             step = self.parser.parse_expression(ins)
         else:
             # convert 1 to vartype
-            step = values.int_to_integer_signed(1)
+            step = values.int_to_integer(1)
         step = self.values.to_type(vartype, step)
         util.require(ins, tk.end_statement)
         endforpos = ins.tell()
@@ -1762,7 +1761,7 @@ class Statements(object):
             exp1 = self.parser.parse_expression(ins, allow_empty=True)
             if exp1 is not None:
                 # this produces a *signed* int
-                mem_size = self.values.to_int(exp1, maxint=0xffff)
+                mem_size = self.values.to_int(exp1, unsigned=True)
                 if mem_size == 0:
                     #  0 leads to illegal fn call
                     raise error.RunError(error.IFC)
@@ -1773,7 +1772,7 @@ class Statements(object):
                 # set aside stack space for GW-BASIC. The default is the previous stack space size.
                 exp2 = self.parser.parse_expression(ins, allow_empty=True)
                 if exp2 is not None:
-                    stack_size = self.values.to_int(exp2, maxint=0xffff)
+                    stack_size = self.values.to_int(exp2, unsigned=True)
                     # this should be an unsigned int
                     if stack_size < 0:
                         stack_size += 0x10000
@@ -2066,7 +2065,7 @@ class Statements(object):
         self.session.user_functions[fnname] = fnvars, fncode
         # update memory model
         # allocate function pointer
-        pointer = self.values.to_bytes(values.int_to_integer_unsigned(pointer_loc))
+        pointer = self.values.to_bytes(values.int_to_integer(pointer_loc, unsigned=True))
         pointer += '\0'*(values.size_bytes(fntype)-2)
         # function name is represented with first char shifted by 128
         self.session.scalars.set(chr(128+ord(fnname[0]))+fnname[1:], (fntype, bytearray(pointer)))
@@ -2382,11 +2381,11 @@ class Statements(object):
                     else:
                         output.write(' '*(1+14*next_zone-output.col))
                 elif d == tk.SPC:
-                    numspaces = max(0, self.values.to_int(self.parser.parse_expression(ins), 0xffff)) % output.width
+                    numspaces = max(0, self.values.to_int(self.parser.parse_expression(ins), unsigned=True)) % output.width
                     util.require_read(ins, (')',))
                     output.write(' ' * numspaces)
                 elif d == tk.TAB:
-                    pos = max(0, self.values.to_int(self.parser.parse_expression(ins), 0xffff) - 1) % output.width + 1
+                    pos = max(0, self.values.to_int(self.parser.parse_expression(ins), unsigned=True) - 1) % output.width + 1
                     util.require_read(ins, (')',))
                     if pos < output.col:
                         output.write_line()

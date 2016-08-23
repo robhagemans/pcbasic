@@ -352,7 +352,7 @@ class DataSegment(object):
         if len(varptrstr) < 3:
             raise error.RunError(error.IFC)
         varptrstr = bytearray(varptrstr)
-        varptr = values.integer_to_int_unsigned(values.Values.from_bytes(varptrstr[1:3]))
+        varptr = values.integer_to_int(values.Values.from_bytes(varptrstr[1:3]), unsigned=True)
         return self.dereference(varptr)
 
     def _view_variable(self, name, indices):

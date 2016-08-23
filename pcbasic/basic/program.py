@@ -86,7 +86,7 @@ class Program(object):
         last = 0
         for pos in offsets:
             self.bytecode.read(1)
-            self.bytecode.write(str(values.Values.to_bytes(values.int_to_integer_unsigned((self.code_start + 1) + pos))))
+            self.bytecode.write(str(values.Values.to_bytes(values.int_to_integer((self.code_start + 1) + pos, unsigned=True))))
             self.bytecode.read(pos - last - 3)
             last = pos
         # ensure program is properly sealed - last offset must be 00 00. keep, but ignore, anything after.
@@ -102,9 +102,9 @@ class Program(object):
             next_addr = self.bytecode.read(2)
             if len(next_addr) < 2 or next_addr == '\0\0':
                 break
-            next_addr = values.integer_to_int_unsigned(values.Values.from_bytes(next_addr))
+            next_addr = values.integer_to_int(values.Values.from_bytes(next_addr), unsigned=True)
             self.bytecode.seek(-2, 1)
-            self.bytecode.write(str(values.Values.to_bytes(values.int_to_integer_unsigned(next_addr + length))))
+            self.bytecode.write(str(values.Values.to_bytes(values.int_to_integer(next_addr + length, unsigned=True))))
             self.bytecode.read(next_addr - addr - 2)
             addr = next_addr
         # update line number dict
@@ -151,8 +151,8 @@ class Program(object):
             length = len(linebuf.getvalue())
             self.bytecode.write('\0' +
                 str(values.Values.to_bytes(
-                    values.int_to_integer_unsigned(
-                        (self.code_start + 1) + pos + length))) + linebuf.read())
+                    values.int_to_integer(
+                        (self.code_start + 1) + pos + length, unsigned=True))) + linebuf.read())
         # write back the remainder of the program
         self.truncate(rest)
         # update all next offsets by shifting them by the length of the added line
@@ -241,13 +241,13 @@ class Program(object):
             self.bytecode.seek(self.line_numbers[old_line])
             # skip the \x00\xC0\xDE & overwrite line number
             self.bytecode.read(3)
-            self.bytecode.write(str(values.Values.to_bytes(values.int_to_integer_unsigned(old_to_new[old_line]))))
+            self.bytecode.write(str(values.Values.to_bytes(values.int_to_integer(old_to_new[old_line], unsigned=True))))
         # write the indirect line numbers
         ins = self.bytecode
         ins.seek(0)
         while util.skip_to_read(ins, (tk.T_UINT,)) == tk.T_UINT:
             # get the old g number
-            jumpnum = values.integer_to_int_unsigned(values.Values.from_bytes(ins.read(2)))
+            jumpnum = values.integer_to_int(values.Values.from_bytes(ins.read(2)), unsigned=True)
             # handle exception for ERROR GOTO
             if jumpnum == 0:
                 pos = ins.tell()
@@ -266,7 +266,7 @@ class Program(object):
                     screen.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
                 newjump = jumpnum
             ins.seek(-2, 1)
-            ins.write(str(values.Values.to_bytes(values.int_to_integer_unsigned(newjump))))
+            ins.write(str(values.Values.to_bytes(values.int_to_integer(newjump, unsigned=True))))
         # rebuild the line number dictionary
         new_lines = {}
         for old_line in old_to_new:
