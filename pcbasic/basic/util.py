@@ -98,6 +98,19 @@ def skip_to_read(ins, findrange):
     skip_to(ins, findrange)
     return ins.read(1)
 
+def read_token(ins):
+    """Read full token, including trailing bytes."""
+    lead = ins.read(1)
+    try:
+        length = tk.plus_bytes[lead]
+    except KeyError:
+        length = 0
+    trail = ins.read(length)
+    if len(trail) < length:
+        # truncated stream
+        raise error.RunError(error.STX)
+    return lead + trail
+
 ###############################################################################
 # parsing utilities
 

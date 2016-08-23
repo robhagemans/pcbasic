@@ -1238,27 +1238,19 @@ def _format_float_fixed(expr, decimals, force_dot):
 
 ##############################################################################
 
-#REFACTOR to util.read_full_token -> token_to_value
+def token_to_value(full_token):
+    """Token to value."""
+    if not full_token:
+        return None
+    lead = full_token[0]
+    if lead in (tk.T_OCT, tk.T_HEX, tk.T_INT, tk.T_SINGLE, tk.T_DOUBLE):
+        return Values.from_bytes(full_token[1:])
+    elif lead == tk.T_BYTE:
+        return Values.from_bytes(full_token[1:] + '\0')
+    elif tk.C_0 <= lead <= tk.C_10:
+        return Values.from_bytes(chr(ord(lead)-0x11) + '\0')
+    return None
+
 def parse_value(ins):
     """Token to value."""
-    d = ins.read(1)
-    # note that hex and oct strings are interpreted signed here, but unsigned the other way!
-    try:
-        length = tk.plus_bytes[d]
-    except KeyError:
-        length = 0
-    val = bytearray(ins.read(length))
-    if len(val) < length:
-        # truncated stream
-        raise error.RunError(error.STX)
-    if d in (tk.T_OCT, tk.T_HEX, tk.T_INT):
-        return ('%', val)
-    elif d == tk.T_BYTE:
-        return ('%', val + '\0')
-    elif d >= tk.C_0 and d <= tk.C_10:
-        return ('%', bytearray(chr(ord(d)-0x11) + '\0'))
-    elif d == tk.T_SINGLE:
-        return ('!', val)
-    elif d == tk.T_DOUBLE:
-        return ('#', val)
-    return None
+    return token_to_value(util.read_token(ins))
