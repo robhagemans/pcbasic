@@ -16,8 +16,10 @@ except ImportError:
     from StringIO import StringIO
 
 from . import error
+from . import basictoken as tk
+from . import tokeniser
+from . import lister
 from . import util
-from . import tokenise
 from . import events
 from . import program
 from . import signals
@@ -119,10 +121,12 @@ class Session(object):
         # array space
         self.arrays = arrays.Arrays(self.memory, self.values)
         # prepare tokeniser
-        self.tokeniser = tokenise.Tokeniser(self.values, syntax, option_debug)
+        token_keyword = tk.TokenKeywordDict(syntax, option_debug)
+        self.tokeniser = tokeniser.Tokeniser(self.values, token_keyword)
+        self.lister = lister.Lister(self.values, token_keyword)
         # initialise the program
         self.program = program.Program(
-                self.tokeniser, max_list_line, allow_protect,
+                self.tokeniser, self.lister, max_list_line, allow_protect,
                 allow_code_poke, self.memory.code_start)
         # register all data segment users
         self.memory.set_buffers(

@@ -484,3 +484,19 @@ keyword = {
     }
 
 extra_keywords = {NOISE: KW_NOISE, TERM: KW_TERM, DEBUG: KW_DEBUG}
+
+
+class TokenKeywordDict(object):
+    """Token to keyword conversion for given BASIC syntax."""
+
+    def __init__(self, syntax, debug):
+        """Build dictionaries."""
+        self.to_keyword = dict(keyword)
+        if debug:
+            # NOTE: PC-BASIC only. Not the same command or token as Sperry DEBUG.
+            self.to_keyword[DEBUG] = KW_DEBUG
+        if syntax in ('pcjr', 'tandy'):
+            # pcjr, tandy; incompatible with Sperry PC.
+            self.to_keyword[NOISE] = KW_NOISE
+            self.to_keyword[TERM] = KW_TERM
+        self.to_token = dict((reversed(item) for item in self.to_keyword.items()))

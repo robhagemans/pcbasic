@@ -56,7 +56,7 @@ class BaseDebugger(object):
         else:
             self.session.direct_line.seek(0)
             screen.write_line(str(
-                    self.session.tokeniser.detokenise_compound_statement(
+                    self.session.lister.detokenise_compound_statement(
                             self.session.direct_line)[0])+'\n')
         stack = traceback.extract_tb(exc_traceback)
         for s in stack[-4:]:

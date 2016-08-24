@@ -23,7 +23,7 @@ from . import util
 class Program(object):
     """BASIC program."""
 
-    def __init__(self, tokeniser, max_list_line,
+    def __init__(self, tokeniser, lister, max_list_line,
                 allow_protect, allow_code_poke, address):
         """Initialise program."""
         # program bytecode buffer
@@ -36,6 +36,7 @@ class Program(object):
         self.code_start = address
         # for detokenise_line()
         self.tokeniser = tokeniser
+        self.lister = lister
 
     def size(self):
         """Size of code space """
@@ -71,7 +72,7 @@ class Program(object):
         scanline, scanpos, last = 0, 0, 0
         while True:
             self.bytecode.read(1) # pass \x00
-            scanline = self.tokeniser.detokenise_line_number(self.bytecode)
+            scanline = self.lister.detokenise_line_number(self.bytecode)
             if scanline == -1:
                 scanline = 65536
                 # if detokenise_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A
@@ -118,7 +119,7 @@ class Program(object):
         """Check if the given line buffer starts with a line number."""
         # get the new line number
         linebuf.seek(1)
-        scanline = self.tokeniser.detokenise_line_number(linebuf)
+        scanline = self.lister.detokenise_line_number(linebuf)
         c = util.skip_white_read(linebuf)
         # check if linebuf is an empty line after the line number
         empty = (c in tk.end_line)
@@ -133,7 +134,7 @@ class Program(object):
             raise error.RunError(error.IFC)
         # get the new line number
         linebuf.seek(1)
-        scanline = self.tokeniser.detokenise_line_number(linebuf)
+        scanline = self.lister.detokenise_line_number(linebuf)
         # check if linebuf is an empty line after the line number
         empty = (util.skip_white_read(linebuf) in tk.end_line)
         pos, afterpos, deleteable, beyond = self.find_pos_line_dict(scanline, scanline)
@@ -197,7 +198,7 @@ class Program(object):
             raise error.RunError(error.IFC)
         # list line
         self.bytecode.seek(self.line_numbers[from_line]+1)
-        _, output, textpos = self.tokeniser.detokenise_line(self.bytecode, bytepos)
+        _, output, textpos = self.lister.detokenise_line(self.bytecode, bytepos)
         # no newline to avoid scrolling on line 24
         screen.list_line(str(output), newline=False)
         # find row, column position for textpos
@@ -331,7 +332,7 @@ class Program(object):
         else:
             # ascii mode
             while True:
-                current_line, output, _ = self.tokeniser.detokenise_line(self.bytecode)
+                current_line, output, _ = self.lister.detokenise_line(self.bytecode)
                 if current_line == -1 or (current_line > self.max_list_line):
                     break
                 g.write_line(str(output))
@@ -354,7 +355,7 @@ class Program(object):
         lines = []
         for pos in listable:
             self.bytecode.seek(pos + 1)
-            _, line, _ = self.tokeniser.detokenise_line(self.bytecode)
+            _, line, _ = self.lister.detokenise_line(self.bytecode)
             lines.append(str(line))
         return lines
 

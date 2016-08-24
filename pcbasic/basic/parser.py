@@ -77,7 +77,7 @@ class Parser(object):
                 prepos = ins.tell()
                 ins.read(1)
                 # line number marker, new statement
-                linenum = self.session.tokeniser.detokenise_line_number(ins)
+                linenum = self.session.lister.detokenise_line_number(ins)
                 if linenum == -1:
                     if self.error_resume:
                         # unfinished error handler: no RESUME (don't trap this)

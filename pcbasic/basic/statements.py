@@ -1463,7 +1463,7 @@ class Statements(object):
         while True:
             c = util.skip_to_read(ins, tk.end_statement+(tk.THEN, tk.ELSE))
             # skip line number, if there
-            if c == '\0' and self.session.tokeniser.detokenise_line_number(ins) == -1:
+            if c == '\0' and self.session.lister.detokenise_line_number(ins) == -1:
                 break
             # get first keyword in statement
             d = util.skip_white(ins)
