@@ -29,7 +29,7 @@ def ascii_read_to(ins, findrange):
         if d in findrange:
             break
         out += d
-    ins.seek(-len(d),1)
+    ins.seek(-len(d), 1)
     return out
 
 
@@ -122,17 +122,17 @@ class Tokeniser(object):
             elif c in string.ascii_letters:
                 word = self._tokenise_word(ins, outs)
                 # handle non-parsing modes
-                if (word in ('REM', "'") or
-                            (word == 'DEBUG' and word in self._keyword_to_token)):
+                if (word in (tk.KW_REM, "'") or
+                            (word == tk.KW_DEBUG and word in self._keyword_to_token)):
                     self._tokenise_rem(ins, outs)
-                elif word == "DATA":
+                elif word == tk.KW_DATA:
                     self._tokenise_data(ins, outs)
                 else:
                     allow_jumpnum = (word in self._linenum_words)
                     # numbers can follow tokenised keywords
                     # (which does not include the word 'AS')
                     allow_number = (word in self._keyword_to_token)
-                    if word in ('SPC(', 'TAB('):
+                    if word in (tk.KW_SPC, tk.KW_TAB):
                         spc_or_tab = True
             else:
                 ins.read(1)
@@ -170,7 +170,7 @@ class Tokeniser(object):
         """Pass a string literal."""
         outs.write(ins.read(1))
         outs.write(ascii_read_to(ins, ('', '\r', '\0', '"') ))
-        if util.peek(ins)=='"':
+        if util.peek(ins) == '"':
             outs.write(ins.read(1))
 
     def _tokenise_line_number(self, ins, outs):
@@ -214,7 +214,7 @@ class Tokeniser(object):
                 ins.seek(-len(c), 1)
                 break
         # don't claim trailing w/s
-        while len(word)>0 and chr(word[-1]) in self._ascii_whitespace:
+        while len(word) > 0 and chr(word[-1]) in self._ascii_whitespace:
             del word[-1]
             ins.seek(-1, 1)
         # remove all whitespace
@@ -246,32 +246,32 @@ class Tokeniser(object):
                 pos = ins.tell()
                 # GO SUB allows 1 space
                 if util.peek(ins, 4).upper() == ' SUB':
-                    word = 'GOSUB'
+                    word = tk.KW_GOSUB
                     ins.read(4)
                 else:
                     # GOTO allows any number of spaces
                     nxt = util.skip(ins, self._ascii_whitespace)
                     if ins.read(2).upper() == 'TO':
-                        word = 'GOTO'
+                        word = tk.KW_GOTO
                     else:
                         ins.seek(pos)
-                if word in ('GOTO', 'GOSUB'):
+                if word in (tk.KW_GOTO, tk.KW_GOSUB):
                     nxt = util.peek(ins)
                     if nxt and nxt in tk.name_chars:
                         ins.seek(pos)
                         word = 'GO'
             if word in self._keyword_to_token:
                 # ignore if part of a longer name, except FN, SPC(, TAB(, USR
-                if word not in ('FN', 'SPC(', 'TAB(', 'USR'):
+                if word not in (tk.KW_FN, tk.KW_SPC, tk.KW_TAB, tk.KW_USR):
                     nxt = util.peek(ins)
                     if nxt and nxt in tk.name_chars:
                         continue
                 token = self._keyword_to_token[word]
                 # handle special case ELSE -> :ELSE
-                if word == 'ELSE':
+                if word == tk.KW_ELSE:
                     outs.write(':' + token)
                 # handle special case WHILE -> WHILE+
-                elif word == 'WHILE':
+                elif word == tk.KW_WHILE:
                     outs.write(token + tk.O_PLUS)
                 else:
                     outs.write(token)

@@ -119,7 +119,7 @@ class Lister(object):
         comment = False
         if keyword == "'":
             comment = True
-        elif keyword == "REM":
+        elif keyword == tk.KW_REM:
             nxt = ins.read(1)
             if nxt == '':
                 pass
@@ -134,21 +134,21 @@ class Lister(object):
             comment = True
         # check for special cases
         #   [:REM']   ->  [']
-        if len(output) > 4 and str(output[-5:]) ==  ":REM'":
+        if len(output) > 4 and str(output[-5:]) == ":REM'":
             output[:] = output[:-5] + "'"
         #   [WHILE+]  ->  [WHILE]
-        elif len(output) > 5 and str(output[-6:]) == "WHILE+":
+        elif len(output) > 5 and str(output[-6:]) == 'WHILE+':
             output[:] = output[:-1]
         #   [:ELSE]  ->  [ELSE]
         # note that anything before ELSE gets cut off,
         # e.g. if we have 1ELSE instead of :ELSE it also becomes ELSE
         # SIC: len(output) > 4 and str(output[-4:])
-        elif len(output) > 4 and str(output[-4:]) == "ELSE":
+        elif len(output) > 4 and str(output[-4:]) == tk.KW_ELSE:
             if (len(output) > 5 and chr(output[-5]) == ':' and
                         chr(output[-6]) in string.digits):
-                output[:] = output[:-5] + " ELSE"
+                output[:] = output[:-5] + ' ' + tk.KW_ELSE
             else:
-                output[:] = output[:-5] + "ELSE"
+                output[:] = output[:-5] + tk.KW_ELSE
         # token followed by token or number is separated by a space,
         # except operator tokens and SPC(, TAB(, FN, USR
         nxt = util.peek(ins)
