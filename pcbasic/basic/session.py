@@ -35,7 +35,9 @@ from . import files
 from . import sound
 from . import redirect
 from . import unicodepage
-from . import var
+from . import strings
+from . import scalars
+from . import arrays
 from . import values
 
 
@@ -109,13 +111,13 @@ class Session(object):
         self.common_arrays = set()
         self.user_functions = {}
         # string space
-        self.strings = var.StringSpace(self.memory)
+        self.strings = strings.StringSpace(self.memory)
         # prepare string and number handler
         self.values = values.Values(self.screen, self.strings, double)
         # scalar space
-        self.scalars = var.Scalars(self.memory, self.values)
+        self.scalars = scalars.Scalars(self.memory, self.values)
         # array space
-        self.arrays = var.Arrays(self.memory, self.values)
+        self.arrays = arrays.Arrays(self.memory, self.values)
         # prepare tokeniser
         self.tokeniser = tokenise.Tokeniser(self.values, syntax, option_debug)
         # initialise the program

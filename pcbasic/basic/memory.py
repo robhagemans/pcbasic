@@ -10,7 +10,7 @@ import struct
 from contextlib import contextmanager
 
 from . import error
-from . import var
+from . import strings
 from . import values
 from . import devices
 from . import basictoken as tk
@@ -66,7 +66,6 @@ class DataSegment(object):
         # bytes distance between field buffers
         self.field_mem_offset = file_header_size + max_reclen
         # start of 1st field =3945, includes FCB & header header of 1st field
-        # used by var.py
         self.field_mem_start = self.field_mem_base + self.field_mem_offset + file_header_size
         # data memory model: start of code section
         # code_start+1: offsets in files (4718 == 0x126e)
@@ -107,7 +106,7 @@ class DataSegment(object):
 
     def clear_variables(self, preserve_sc, preserve_ar):
         """Reset and clear variables, arrays, common definitions and functions."""
-        new_strings = var.StringSpace(self)
+        new_strings = strings.StringSpace(self)
         # preserve COMMON variables
         # this is a re-assignment which is not FOR-safe;
         # but clear_variables is only called in CLEAR which also clears the FOR stack
