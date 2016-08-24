@@ -6,9 +6,10 @@ Types, values and conversions
 This file is released under the GNU GPL version 3 or later.
 """
 
-import string
-import functools
 import math
+import string
+import struct
+import functools
 
 try:
     from cStringIO import StringIO
@@ -70,7 +71,7 @@ def string_length(in_string):
 
 def string_address(in_string):
     """Get string address as Python int."""
-    return integer_to_int(Values.from_bytes(in_string[1][1:]), unsigned=True)
+    return struct.unpack('<H', in_string[1][1:])[0]
 
 
 ###############################################################################
@@ -858,7 +859,7 @@ class Values(object):
             else:
                 word += ins.read(1)
         val = int(word, 16) if word else 0
-        return tk.T_HEX + str(self.to_bytes(int_to_integer(val, unsigned=True)))
+        return tk.T_HEX + struct.pack('<H', val)
 
     def _tokenise_oct(self, ins):
         """Convert octal expression in Python string to number token."""
@@ -876,7 +877,7 @@ class Values(object):
             else:
                 word += ins.read(1)
         val = int(word, 8) if word else 0
-        return tk.T_OCT + str(self.to_bytes(int_to_integer(val, unsigned=True)))
+        return tk.T_OCT + struct.pack('<H', val)
 
     def _str_to_float(self, s):
         """Return Float value for Python string."""

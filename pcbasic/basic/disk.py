@@ -16,6 +16,7 @@ import string
 import re
 import platform
 import locale
+import struct
 if platform.system() == b'Windows':
     import win32api
     import ctypes
@@ -620,18 +621,19 @@ class BinaryFile(devices.RawFile):
         if self.mode == b'O':
             self.write(devices.type_to_magic[filetype])
             if self.filetype == b'M':
-                self.write(values.Values.to_bytes(values.int_to_integer(seg, unsigned=True)) +
-                           values.Values.to_bytes(values.int_to_integer(offset, unsigned=True)) +
-                           values.Values.to_bytes(values.int_to_integer(length, unsigned=True)))
+                self.write(struct.pack(b'<HHH', seg, offset, length))
                 self.seg, self.offset, self.length = seg, offset, length
         else:
             # drop magic byte
             self.read_raw(1)
             if self.filetype == b'M':
-                self.seg = values.integer_to_int(values.Values.from_bytes(self.read(2)), unsigned=True)
-                self.offset = values.integer_to_int(values.Values.from_bytes(self.read(2)), unsigned=True)
-                # size gets ignored: even the \x1a at the end is read
-                self.length = values.integer_to_int(values.Values.from_bytes(self.read(2)), unsigned=True)
+                # self.length gets ignored: even the \x1a at the end is read
+                header = self.read(6)
+                if len(header) == 6:
+                    self.seg, self.offset, self.length = struct.unpack(b'<HHH', header)
+                else:
+                    # truncated header
+                    raise error.RunError(error.BAD_FILE_MODE)
 
     def close(self):
         """Write EOF and close program file."""

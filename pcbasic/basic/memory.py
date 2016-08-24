@@ -6,6 +6,7 @@ Model memory
 This file is released under the GNU GPL version 3 or later.
 """
 
+import struct
 from contextlib import contextmanager
 
 from . import error
@@ -352,7 +353,7 @@ class DataSegment(object):
         if len(varptrstr) < 3:
             raise error.RunError(error.IFC)
         varptrstr = bytearray(varptrstr)
-        varptr = values.integer_to_int(values.Values.from_bytes(varptrstr[1:3]), unsigned=True)
+        varptr, = struct.unpack('<H', varptrstr[1:3])
         return self.dereference(varptr)
 
     def _view_variable(self, name, indices):

@@ -7,13 +7,14 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
-from functools import partial
 import logging
+import string
+import struct
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
-import string
+from functools import partial
 
 from . import error
 from . import values
@@ -748,7 +749,9 @@ class Statements(object):
     def parse_jumpnum(self, ins, allow_empty=False, err=error.STX):
         """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
         if util.skip_white_read_if(ins, (tk.T_UINT,)):
-            return values.integer_to_int(self.values.from_bytes(ins.read(2)), unsigned=True)
+            token = ins.read(2)
+            assert len(token) == 2, 'bytecode truncated in line number pointer'
+            return struct.unpack('<H', token)[0]
         else:
             if allow_empty:
                 return -1
@@ -759,7 +762,9 @@ class Statements(object):
         """Helper function: parse jump target."""
         c = util.skip_white_read(ins)
         if c == tk.T_UINT:
-            return values.integer_to_int(self.values.from_bytes(ins.read(2)), unsigned=True)
+            token = ins.read(2)
+            assert len(token) == 2, 'bytecode truncated in line number pointer'
+            return struct.unpack('<H', token)[0]
         elif c == '.':
             return self.session.program.last_stored
         else:
@@ -2064,10 +2069,9 @@ class Statements(object):
         self.session.user_functions[fnname] = fnvars, fncode
         # update memory model
         # allocate function pointer
-        pointer = self.values.to_bytes(values.int_to_integer(pointer_loc, unsigned=True))
-        pointer += '\0'*(values.size_bytes(fntype)-2)
+        pointer = struct.pack('<H', pointer_loc) + bytearray(values.size_bytes(fntype)-2)
         # function name is represented with first char shifted by 128
-        self.session.scalars.set(chr(128+ord(fnname[0]))+fnname[1:], (fntype, bytearray(pointer)))
+        self.session.scalars.set(chr(128+ord(fnname[0]))+fnname[1:], (fntype, pointer))
         for name in fnvars:
             # allocate but don't set variables
             self.session.scalars.set(name)

@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import string
+import struct
 
 try:
     from cStringIO import StringIO
@@ -14,7 +15,6 @@ except ImportError:
     from StringIO import StringIO
 
 from . import basictoken as tk
-from . import values
 from . import util
 from . import values
 
@@ -94,7 +94,7 @@ class Tokeniser(object):
             ins.seek(-len(off)-2, 1)
             return -1
         else:
-            return values.integer_to_int(self._values.from_bytes(off), unsigned=True)
+            return struct.unpack('<H', off)[0]
 
     def detokenise_compound_statement(self, ins, bytepos=None):
         """Detokenise tokens until end of line."""
@@ -118,13 +118,12 @@ class Tokeniser(object):
                 output += s
                 litstring = not litstring
             elif s in tk.number:
-                ins.seek(-1, 1)
-                self._detokenise_number(ins, output)
+                self._detokenise_number(ins, s, output)
             elif s in tk.linenum:
                 # 0D: line pointer (unsigned int) - this token should not be here;
                 #     interpret as line number and carry on
                 # 0E: line number (unsigned int)
-                output += self._uint_token_to_str(bytearray(ins.read(2)))
+                output += struct.unpack('<H', s)[0]
             elif comment or litstring or ('\x20' <= s <= '\x7E'):
                 # honest ASCII
                 output += s
@@ -204,49 +203,32 @@ class Tokeniser(object):
             output += ' '
         return comment
 
-    def _detokenise_number(self, ins, output):
+    def _detokenise_number(self, ins, lead, output):
         """Convert number token to Python string."""
-        s = ins.read(1)
-        if s == tk.T_OCT:
-            output += self._oct_token_to_str(ins.read(2))
-        elif s == tk.T_HEX:
-            output += self._hex_token_to_str(ins.read(2))
-        elif s == tk.T_BYTE:
-            output += self._byte_token_to_str(ins.read(1))
-        elif s >= tk.C_0 and s < tk.C_10:
-            output += chr(ord('0') + ord(s) - 0x11)
-        elif s == tk.C_10:
-            output += '10'
-        elif s == tk.T_INT:
-            output += self._int_token_to_str(ins.read(2))
-        elif s == tk.T_SINGLE:
-            output += values.float_to_str(self._values.from_bytes(ins.read(4)), screen=False, write=False)
-        elif s == tk.T_DOUBLE:
-            output += values.float_to_str(self._values.from_bytes(ins.read(8)), screen=False, write=False)
-        else:
-            ins.seek(-len(s),1)
+        ntrail = tk.plus_bytes.get(lead, 0)
+        trail = ins.read(ntrail)
+        if len(trail) != ntrail:
+            # not sure what GW does if the file is truncated here - we just stop
+            return
+        if lead == tk.T_OCT:
+            output += b'&O' + values.integer_to_str_oct(self._values.from_bytes(trail))
+            # not sure what GW does if the file is truncated here - we just stop
+        elif lead == tk.T_HEX:
+            output += b'&H' + values.integer_to_str_hex(self._values.from_bytes(trail))
+        elif lead == tk.T_BYTE:
+            output += str(ord(trail))
+        elif tk.C_0 <= lead < tk.C_10:
+            output += chr(ord(b'0') + ord(lead) - 0x11)
+        elif lead == tk.C_10:
+            output += b'10'
+        elif lead == tk.T_INT:
+            # lowercase h for signed int
+            output += str(struct.unpack(b'<h', trail)[0])
+        elif lead == tk.T_SINGLE:
+            output += values.float_to_str(self._values.from_bytes(trail), screen=False, write=False)
+        elif lead == tk.T_DOUBLE:
+            output += values.float_to_str(self._values.from_bytes(trail), screen=False, write=False)
 
-    # tokenised ints to python str
-
-    def _uint_token_to_str(self, s):
-        """Convert unsigned int token to Python string."""
-        return str(values.integer_to_int(self._values.from_bytes(s), unsigned=True))
-
-    def _int_token_to_str(self, s):
-        """Convert signed int token to Python string."""
-        return str(values.integer_to_int(self._values.from_bytes(s)))
-
-    def _byte_token_to_str(self, s):
-        """Convert unsigned byte token to Python string."""
-        return str(bytearray(s)[0])
-
-    def _hex_token_to_str(self, s):
-        """Convert hex token to Python str."""
-        return '&H' + values.integer_to_str_hex(self._values.from_bytes(s))
-
-    def _oct_token_to_str(self, s):
-        """Convert oct token to Python str."""
-        return '&O' + values.integer_to_str_oct(self._values.from_bytes(s))
 
     #################################################################
     # Tokenise functions
@@ -430,9 +412,8 @@ class Tokeniser(object):
                 # keep 6553 as line number and push back the last number:
                 ins.seek(4-len(word), 1)
                 word = word[:4]
-            return str(self._values.to_bytes(values.int_to_integer(int(word), unsigned=True)))
-        else:
-            return ''
+            return struct.pack('<H', int(word))
+        return ''
 
     def _tokenise_word(self, ins, outs):
         """Convert a keyword to tokenised form."""

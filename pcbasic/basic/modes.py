@@ -11,6 +11,8 @@ try:
 except ImportError:
     numpy = None
 
+import struct
+
 from . import values
 
 # SCREEN 10 EGA pseudocolours, blink state 0 and 1
@@ -455,14 +457,11 @@ def walk_memory(self, addr, num_bytes, factor=1):
 
 def sprite_size_to_record_ega(self, dx, dy):
     """Write 4-byte record of sprite size in EGA modes."""
-    return (values.Values.to_bytes(values.int_to_integer(dx, unsigned=True))
-            + values.Values.to_bytes(values.int_to_integer(dy, unsigned=True)))
+    return struct.pack('<HH', dx, dy)
 
 def record_to_sprite_size_ega(self, byte_array):
     """Read 4-byte record of sprite size in EGA modes."""
-    dx = values.integer_to_int(values.Values.from_bytes(byte_array[0:2]), unsigned=True)
-    dy = values.integer_to_int(values.Values.from_bytes(byte_array[2:4]), unsigned=True)
-    return dx, dy
+    return struct.unpack('<HH', byte_array[0:4])
 
 def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offs):
     """Build the sprite byte array in EGA modes."""
@@ -614,14 +613,11 @@ class CGAMode(GraphicsMode):
 
     def sprite_size_to_record(self, dx, dy):
         """Write 4-byte record of sprite size."""
-        return (values.Values.to_bytes(values.int_to_integer(dx*self.bitsperpixel, unsigned=True))
-                + values.Values.to_bytes(values.int_to_integer(dy, unsigned=True)))
+        return struct.pack('<HH', dx*self.bitsperpixel, dy)
 
     def record_to_sprite_size(self, byte_array):
         """Read 4-byte record of sprite size."""
-        dx = values.integer_to_int(values.Values.from_bytes(byte_array[0:2]), unsigned=True) / self.bitsperpixel
-        dy = values.integer_to_int(values.Values.from_bytes(byte_array[2:4]), unsigned=True)
-        return dx, dy
+        return struct.unpack('<HH', byte_array[0:4])
 
     def sprite_to_array(self, attrs, dx, dy, byte_array, offs):
         """Build the sprite byte array."""

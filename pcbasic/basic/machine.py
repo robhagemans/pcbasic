@@ -6,7 +6,10 @@ Machine emulation and memory model
 This file is released under the GNU GPL version 3 or later.
 """
 
+import struct
+
 from . import values
+from . import devices
 
 
 ###############################################################################
@@ -256,6 +259,7 @@ class Memory(object):
         # remove any EOF marker at end
         if buf and buf[-1] == 0x1a:
             buf = buf[:-1]
+        # Tandys repeat the header at the end of the file
         if self.tandy_syntax:
             buf = buf[:-7]
         addr = seg * 0x10 + offset
@@ -267,9 +271,8 @@ class Memory(object):
         g.write(str(self._get_memory_block(addr, length)))
         # Tandys repeat the header at the end of the file
         if self.tandy_syntax:
-            g.write('\xfd' + str(values.Values.to_bytes(values.int_to_integer(self.segment, unsigned=True)) +
-                    values.Values.to_bytes(values.int_to_integer(offset, unsigned=True)) +
-                    values.Values.to_bytes(values.int_to_integer(length, unsigned=True))))
+            g.write(devices.type_to_magic['M'] +
+                    struct.pack('<HHH', self.segment, offset, length))
 
     def def_seg(self, segment):
         """Set segment."""

@@ -6,6 +6,7 @@ Variable & array management
 This file is released under the GNU GPL version 3 or later.
 """
 
+import struct
 import logging
 from operator import itemgetter
 
@@ -122,7 +123,7 @@ class StringSpace(object):
             # find new string address
             self.current -= size
             address = self.current + 1
-        key = str(values.Values.to_bytes(values.int_to_integer(address, unsigned=True)))
+        key = struct.pack('<H', address)
         # don't store empty strings
         if size > 0:
             if key in self.strings:
@@ -133,8 +134,7 @@ class StringSpace(object):
 
     def delete_last(self):
         """Delete the string provided if it is at the top of string space."""
-        last_address = self.current + 1
-        last_key = str(values.Values.to_bytes(values.int_to_integer(last_address, unsigned=True)))
+        last_key = struct.pack('<H', self.current + 1)
         try:
             length = len(self.strings[last_key])
             self.current += length
@@ -146,7 +146,7 @@ class StringSpace(object):
 
     def address(self, key):
         """Return the address of a given key."""
-        return values.integer_to_int(values.Values.from_bytes(key[-2:]), unsigned=True)
+        return struct.unpack('<H', key[-2:])[0]
 
     def collect_garbage(self, string_ptrs):
         """Re-store the strings refrerenced in string_ptrs, delete the rest."""
@@ -474,11 +474,9 @@ class Arrays(object):
             else:
                 offset -= max(3, len(the_arr))+1
                 dimensions, _, _ = self.arrays[the_arr]
-                data_rep = values.Values.to_bytes(values.int_to_integer(
-                    self.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions), unsigned=True))
+                data_rep = struct.pack('<HB', self.array_size_bytes(the_arr) + 1 + 2*len(dimensions), len(dimensions))
                 for d in dimensions:
-                    data_rep += values.Values.to_bytes(values.int_to_integer(
-                                        d + 1 - self.base_index, unsigned=True))
+                    data_rep += struct.pack('<H', d + 1 - self.base_index)
                 return data_rep[offset]
 
     def get_strings(self):

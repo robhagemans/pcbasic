@@ -11,6 +11,7 @@ import traceback
 import logging
 import os
 import platform
+import struct
 
 from . import values
 from . import error
@@ -211,9 +212,9 @@ def show_program():
     for key in sorted(prog.line_numbers.keys())[1:]:
         offset, linum = code[p+1:p+3], code[p+3:p+5]
         last_offset = offset_val
-        offset_val = (values.integer_to_int(values.Values.from_bytes(offset), unsigned=True)
+        offset_val = (struct.unpack('<H', offset)[0]
                                 - (debugger.session.memory.code_start + 1))
-        linum_val = values.integer_to_int(values.Values.from_bytes(linum), unsigned=True)
+        linum_val, = struct.unpack('<H', linum)
         logging.debug((code[p:p+1].encode('hex') + ' ' +
                         offset.encode('hex') + ' (+%03d) ' +
                         code[p+3:p+5].encode('hex') + ' [%05d] ' +
