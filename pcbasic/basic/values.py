@@ -1040,14 +1040,14 @@ def float_to_str(n_in, screen=False, write=False):
     exp10 += mbf.digits-1
     if exp10 > mbf.digits-1 or len(digitstr)-exp10 > mbf.digits+1:
         # use scientific notation
-        valstr += _scientific_notation(digitstr, exp10, n_in.exp_sign)
+        valstr += _scientific_notation(digitstr, exp10, n_in.exp_sign, digits_to_dot=1, force_dot=False)
     else:
         # use decimal notation
         if screen or write:
             type_sign=''
         else:
             type_sign = n_in.type_sign
-        valstr += _decimal_notation(digitstr, exp10, type_sign)
+        valstr += _decimal_notation(digitstr, exp10, type_sign, force_dot=False)
     return valstr
 
 def format_number(value, tokens, digits_before, decimals):
@@ -1134,7 +1134,7 @@ def _get_digits(num, digits, remove_trailing):
             digitstr = digitstr[:-1]
     return digitstr
 
-def _scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_dot=False):
+def _scientific_notation(digitstr, exp10, exp_sign, digits_to_dot, force_dot):
     """Put digits in scientific E-notation."""
     valstr = digitstr[:digits_to_dot]
     if len(digitstr) > digits_to_dot:
@@ -1150,15 +1150,15 @@ def _scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_d
     valstr += _get_digits(abs(exponent), digits=2, remove_trailing=False)
     return valstr
 
-def _decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
+def _decimal_notation(digitstr, exp10, type_sign, force_dot):
     """Put digits in decimal notation."""
     # digits to decimal point
     exp10 += 1
     if exp10 >= len(digitstr):
         valstr = digitstr + '0'*(exp10-len(digitstr))
         if force_dot:
-            valstr+='.'
-        if not force_dot or type_sign=='#':
+            valstr += '.'
+        if not force_dot or type_sign == '#':
             valstr += type_sign
     elif exp10 > 0:
         valstr = digitstr[:exp10] + '.' + digitstr[exp10:]
@@ -1226,7 +1226,7 @@ def _format_float_fixed(expr, decimals, force_dot):
     # argument work_digits-1 means we're getting work_digits==exp10+1-diff digits
     # fill up with zeros
     digitstr = _get_digits(num, work_digits-1, remove_trailing=False) + '0' * diff
-    return _decimal_notation(digitstr, work_digits-1-1-decimals+diff, '', force_dot)
+    return _decimal_notation(digitstr, work_digits-1-1-decimals+diff, type_sign='', force_dot=force_dot)
 
 
 ##############################################################################
