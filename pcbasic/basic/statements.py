@@ -417,8 +417,8 @@ class Statements(object):
         """BEEP: produce an alert sound or switch internal speaker on/off."""
         # Tandy/PCjr BEEP ON, OFF
         if self.parser.syntax in ('pcjr', 'tandy') and util.skip_white(ins) in (tk.ON, tk.OFF):
-            # this is ignored
-            #self.session.sound.beep_on = (ins.read(1) == tk.ON)
+            # ON/OFF is ignored
+            ins.read(1)
             util.require(ins, tk.end_statement)
             return
         self.session.sound.beep()

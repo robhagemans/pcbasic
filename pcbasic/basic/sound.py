@@ -205,7 +205,7 @@ class Sound(object):
                 vstate = self.play_state[voice]
                 gmls = gmls_list[voice]
                 ml_parser = ml_parser_list[voice]
-                c = util.skip_read(gmls, ml_parser.whitepace).upper()
+                c = util.skip_read(gmls, ml_parser.whitespace).upper()
                 if c == '':
                     voices.remove(voice)
                     continue
@@ -224,7 +224,7 @@ class Sound(object):
                     note = ml_parser.parse_number()
                     error.range_check(0, 84, note)
                     dur = vstate.length
-                    c = util.skip(gmls, ml_parser.whitepace).upper()
+                    c = util.skip(gmls, ml_parser.whitespace).upper()
                     if c == '.':
                         gmls.read(1)
                         dur *= 1.5
@@ -259,7 +259,7 @@ class Sound(object):
                     note = c
                     dur = vstate.length
                     while True:
-                        c = util.skip(gmls, ml_parser.whitepace).upper()
+                        c = util.skip(gmls, ml_parser.whitespace).upper()
                         if not c:
                             break
                         elif c == '.':
@@ -270,7 +270,7 @@ class Sound(object):
                             while c and c in string.digits:
                                 gmls.read(1)
                                 numstr += c
-                                c = util.skip(gmls, ml_parser.whitepace)
+                                c = util.skip(gmls, ml_parser.whitespace)
                             # NOT ml_parse_number, only literals allowed here!
                             length = int(numstr)
                             error.range_check(0, 64, length)
@@ -300,7 +300,7 @@ class Sound(object):
                             raise error.RunError(error.IFC)
                     next_oct = 0
                 elif c == 'M':
-                    c = util.skip_read(gmls, ml_parser.whitepace).upper()
+                    c = util.skip_read(gmls, ml_parser.whitespace).upper()
                     if c == 'N':
                         vstate.speed = 7./8.
                     elif c == 'L':
