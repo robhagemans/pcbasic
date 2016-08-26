@@ -75,13 +75,8 @@ class Lister(object):
                 # even inside comments & literals
                 output += s
                 litstring = not litstring
-            elif s in tk.number:
+            elif s in tk.number or s in tk.linenum:
                 self._detokenise_number(ins, s, output)
-            elif s in tk.linenum:
-                # 0D: line pointer (unsigned int) - this token should not be here;
-                #     interpret as line number and carry on
-                # 0E: line number (unsigned int)
-                output += struct.unpack('<H', s)[0]
             elif comment or litstring or ('\x20' <= s <= '\x7E'):
                 # honest ASCII
                 output += s
@@ -182,6 +177,11 @@ class Lister(object):
         elif lead == tk.T_INT:
             # lowercase h for signed int
             output += str(struct.unpack(b'<h', trail)[0])
+        elif lead in tk.linenum:
+            # 0D: line pointer (unsigned int) - this token should not be here;
+            #     interpret as line number and carry on
+            # 0E: line number (unsigned int)
+            output += str(struct.unpack('<H', trail)[0])
         elif lead == tk.T_SINGLE:
             output += values.float_to_str(self._values.from_bytes(trail), screen=False, write=False)
         elif lead == tk.T_DOUBLE:
