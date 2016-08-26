@@ -1,7 +1,10 @@
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-from numbers import *
-import numbers
+from pcbasic.basic.numbers import *
+from pcbasic.basic import numbers
 
 if __name__ == '__main__':
     for i in range(127,130):
