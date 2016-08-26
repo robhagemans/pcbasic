@@ -141,10 +141,9 @@ class Functions(object):
         s = values.pass_string(self.parser.parse_expression(ins))
         util.require_read(ins, (',',))
         start = self.values.to_integer(self.parser.parse_expression(ins))
+        num = None
         if util.skip_white_read_if(ins, (',',)):
             num = self.values.to_integer(self.parser.parse_expression(ins))
-        else:
-            num = len(s)
         util.require_read(ins, (')',))
         return self.values.mid(s, start, num)
 

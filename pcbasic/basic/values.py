@@ -690,13 +690,16 @@ class Values(object):
             return null('%')
         return int_to_integer(start + find)
 
-    def mid(self, s, start, num):
+    def mid(self, s, start, num=None):
         """MID$: get substring."""
+        s = self._strings.copy(s)
         start = self.to_int(start)
-        num = self.to_int(num)
+        if num is None:
+            num = len(s)
+        else:
+            num = self.to_int(num)
         error.range_check(1, 255, start)
         error.range_check(0, 255, num)
-        s = self._strings.copy(s)
         if num == 0 or start > len(s):
             return null('$')
         start -= 1
