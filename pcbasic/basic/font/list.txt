@@ -1,0 +1,10 @@
+freedos
+unifont
+univga
+cga
+cgathin
+mda
+vga
+tandy1
+tandy2
+olivetti

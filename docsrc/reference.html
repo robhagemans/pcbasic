@@ -168,10 +168,10 @@
         Variable names must start with a letter; all characters of the variable name
         (except the <a href="#typechars">sigil</a>) must be letters <code>A&#8212;Z</code>, figures <code>0&#8212;9</code>, or a dot <code>.</code>
         Only the first 40 characters in the name are significant. A variable name must
-        not be identical to a <a href="#keywords">keyword</a> or a keyword plus sigil.
+        not be identical to a <a href="#reserved-words">reserved word</a> or a reserved word plus sigil.
         Therefore, for example, you cannot name a variable <code>TO!</code> but you can
-        name it <code>AS!</code>. Variable
-        names may <em>contain</em> any keyword. Variable names may also start with a keyword, with the exception of <code><a href="#USR">USR</a></code> and
+        name it <code>AS!</code>. Variable names may <em>contain</em> any reserved word.
+        Variable names may also start with a reserved word, with the exception of <code><a href="#USR">USR</a></code> and
         <code><a href="#FN">FN</a></code>. Thus, <code>FNORD%</code> and <code>USRNME$</code>
         are not legal variable names while <code>FRECKLE%</code> and <code>LUSR$</code> are.
     </p>
@@ -181,7 +181,10 @@
         <code>A%</code>, <code>A!</code> and <code>A#</code> as different variables.
         Which one of those is also known as <code>A</code> depends on the settings in
         <code><a href="#DEFINT">DEFINT</a></code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>.
-        By default, <code>A</code> equals the single-precision <code>A!</code>. The
+        By default, <code>A</code> equals the single-precision <code>A!</code>.
+    </p>
+    <p>
+        Furthermore, the
         <a href="#arrays">arrays</a> <code>A$()</code>, <code>A%()</code>,
         <code>A!()</code>, <code>A#()</code> are separate from the scalar
         variables of the same name.
@@ -234,7 +237,7 @@
         integers as their two's complement.
     </p>
 
-    <h4 id="arrays">Array elements</h4>
+    <h4 id="arrays">Arrays</h4>
     <p>
         Arrays are indexed with round or square
         brackets; even mixing brackets is allowed. The following are all legal array elements: <code>A[0]</code>, <code>A(0)</code>,
@@ -254,6 +257,39 @@
         with <code><a href="#CLEAR">CLEAR</a></code> or
         <code><a href="#ERASE">ERASE</a></code>.
     </p>
+
+    <h4 id="conversions">Conversions</h4>
+    <p>
+        PC-BASIC will implicitly convert between the three numerical data types. When a value of
+        one type is assigned to a variable, array element or parameter of another
+        type, it is converted according to the following rules:
+    </p>
+    <ul>
+        <li>
+            Single- and double-precision floats are converted to integer by rounding
+            to the nearest whole number. Halves are rounded away from zero. If the resulting whole
+            number is outside the allowed range for integers, <samp>Overflow</samp> is raised.
+        </li>
+        <li>
+            Double-precision floats are converted to single-precision floats by
+            Gaussian rounding of the mantissa, where the new least significant bit of the
+            mantissa is rounded up if the clipped-off binary fraction is greater than one-half; halves
+            are rounded to even.
+        </li>
+        <li>
+            Integers are converted to their exact representation as single-
+            or double-precision floats.
+        </li>
+        <li>
+            Single-precision floats are converted to their exact representation as
+            double-precision floats.
+        </li>
+        <li>
+            There is no implicit conversion between strings and any of the numeric types.
+            Attempting to assign a string value to a numeric variable, array element or parameter
+            (or vice versa) will raise <samp>Type mismatch</samp>.
+    </ul>
+
 </section>
 <hr />
 
@@ -678,7 +714,10 @@
     </ul>
 
     <h4 id="string-operators">String operators</h4>
-    <p>The string concatenation operator is <code>+</code>. It has a binary as well as a unary form.</p>
+    <p>
+        The string concatenation operator is <code>+</code>. It has a binary as well as a unary form.
+        The unary minus may also be used on strings, but has no effect.
+    </p>
     <div class="scrollable">
         <table>
             <tr>
@@ -694,6 +733,13 @@
             <tr>
                 <td id="unary-concat"><code>+ <var>y</var></code></td>
                 <td>Unary Plus</td>
+                <td>
+                    Value of <code><var>y</var></code>
+                </td>
+            </tr>
+            <tr>
+                <td id="string-unary-minus"><code>- <var>y</var></code></td>
+                <td>Unary Minus</td>
                 <td>
                     Value of <code><var>y</var></code>
                 </td>
@@ -738,18 +784,13 @@
             <var>y</var><b> = ABS(</b><var>x</var><b>)</b>
         </code>
         <p>
-            Returns the absolute value of <code><var>x</var></code>.
+            Returns the absolute value of <code><var>x</var></code> if <code><var>x</var></code> is a number and the
+            value of <code><var>x</var></code> if <code><var>x</var></code> is a string.
         </p>
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>x</var></code> is an expression with a numeric value.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>x</var></code> has a string value: <samp>Type mismatch</samp>.
+                <code><var>x</var></code> is an expression.
             </li>
         </ul>
     </section>
@@ -1349,6 +1390,10 @@
                 <samp>Type mismatch</samp>.
             </li>
             <li>
+                The return type is incompatible with the function name's sigil:
+                <samp>Type mismatch</samp>.
+            </li>
+            <li>
                 The function being called is recursive or mutually recursive:
                 <samp>Out of memory</samp>.
         </ul>
@@ -1567,7 +1612,7 @@
             <li>
                 When reading from the keyboard directly or through <code>KYBD:</code>, arrow keys, <kbd>Del</kbd>,
                 <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Pg Up</kbd>, <kbd>Pg Dn</kbd> are passed as <code>NUL</code> characters. Function keys
-                are ignored if they are event-trapped, otherwise keyword replacement is
+                are ignored if they are event-trapped, otherwise function-key macro replacement is
                 active as normal.
             </li>
         </ul>
@@ -3594,8 +3639,9 @@
                 The purpose of <code><var>expr</var></code> is unknown.
             </li>
             <li>
-                If called inside a <code><a href="#FOR">FOR</a></code>&#8212;<code><a href="#NEXT">NEXT</a></code> or <code><a href="#WHILE">WHILE</a></code>&#8212;<code><a href="#WEND">WEND</a></code> loop, an error will be raised at
-                the iteration keyword as the loop stacks are cleared.
+                If called inside a <code><a href="#FOR">FOR</a></code>&#8212;<code><a href="#NEXT">NEXT</a></code> or
+                <code><a href="#WHILE">WHILE</a></code>&#8212;<code><a href="#WEND">WEND</a></code> loop, an error will be raised at
+                the <code>NEXT</code> or <code>WEND</code> statement, since the loop stacks have been cleared.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -4278,7 +4324,8 @@
             evaluated with the supplied parameters substituted. Any variable names used in the function that are not
             in the argument list refer to the corresponding global variables.
             The result of the
-            evaluation is the return value of <code>FN<var>name</var></code>.
+            evaluation is the return value of <code>FN<var>name</var></code>. The type of the return value
+            must be compatible with the type indicated by <code><var>name</var></code>.
         </p>
         <h5>Notes</h5>
         <ul>
@@ -4307,6 +4354,11 @@
         <ul>
             <li>
                 The statement is executed directly instead of in a program line: <samp>Illegal direct</samp>.
+            </li>
+            <li>
+                If the type of the return value is incompatible with the type of <code><var>name</var></code>,
+                no error is raised at the <code>DEF FN</code> statement; however, a <samp>Type mismatch</samp>
+                will be raised at the first call of <code>FN<var>name</var></code>.
             </li>
         </ul>
     </section>
@@ -4604,7 +4656,8 @@
                     </table>
                 </div>
                 <p>
-                    where <code><var>n</var></code>, <code><var>x</var></code>, <code><var>y</var></code> are integers in <code>[0&#8212;9999]</code>.
+                    where <code><var>n</var></code> is an integer in <code>[-32768&#8212;32767]</code> and
+                    <code><var>x</var></code>, <code><var>y</var></code> are integers in <code>[0&#8212;9999]</code>.
                     Where optional, <code><var>n</var></code> defaults to <code>1</code>.
                 </p>
             </dd>
@@ -4646,7 +4699,8 @@
                         <tr>
                             <td><code><b>C</b><var>n</var></code></td>
                             <td>
-                                set the foreground attribute to <code><var>n</var></code>.
+                                set the foreground attribute to <code><var>n</var></code>,
+                                where <code><var>n</var></code> is an integer in <code>[-32768&#8212;32767]</code>
                                 See <code><a href="#COLOR">COLOR</a></code>.
                             </td>
                         </tr>
@@ -4654,7 +4708,8 @@
                             <td><code><b>P</b><var>n</var>,<var>b</var></code></td>
                             <td>
                                 flood fill with attribute <code><var>n</var></code> and boundary
-                                attribute <code><var>b</var></code>.
+                                attribute <code><var>b</var></code>,
+                                where <code><var>n</var>, <var>b</var></code> are integers in <code>[0&#8212;9999]</code>
                                 See <code><a href="#PAINT">PAINT</a></code>.
                             </td>
                         </tr>
@@ -4703,6 +4758,12 @@
             <li>
                 The value <code><var>n</var></code> in the <code>TA</code>, <code>A</code> and <code>C</code> command can be left out but <em>only</em> if the
                 command is terminated by a semicolon. <code><var>n</var></code> defaults to <code>0</code>.
+            </li>
+            <li>
+                In GW-BASIC, the numeric arguments of <code><b>U</b></code>, <code><b>L</b></code>, <code><b>D</b></code>,
+                <code><b>R</b></code>, <code><b>E</b></code>, <code><b>F</b></code>, <code><b>G</b></code>, <code><b>H</b></code>, and <code><b>C</b></code>
+                can be in the range <code>[-99999&#8212;99999]</code>;
+                however, results for large numbers are unpredictable. This is not implemented in PC-BASIC.
             </li>
         </ul>
         <h5>Errors</h5>
@@ -6978,7 +7039,9 @@
         <h5>Parameters</h5>
         <ul>
             <li>
-                <code><var>n</var></code> is a numeric expression in <code>[0&#8212;255]</code>. The expression must not start with the <code>STRIG</code>, <code>PEN</code>, <code>PLAY</code> or <code>TIMER</code> function keywords; if you need these functions, the expression must be bracketed.
+                <code><var>n</var></code> is a numeric expression in <code>[0&#8212;255]</code>.
+                The expression must not start with the <code>STRIG</code>, <code>PEN</code>, <code>PLAY</code> or <code>TIMER</code>
+                function keywords; if you need these functions, the expression must be bracketed.
             </li>
             <li>
                 <code><var>line_number_0</var>, <var>line_number_1</var>, ...</code> are existing line numbers in the program.
@@ -8507,6 +8570,8 @@
                         <code>-</code> indicates flat. <br/>
                         <code><var>m</var></code> is a numeric literal and
                         indicates duration of an <code><var>m</var></code>th note.
+                        <code><var>m</var></code> is in the range <code>[0&#8212;64]</code>.
+                        If <code><var>m</var>=0</code> or omitted, use the default length.
                     </td>
                 </tr>
                 <tr>
@@ -8528,7 +8593,11 @@
                 </tr>
                 <tr>
                     <td><code><b>P</b><var>n</var></code></td>
-                    <td>Pause for the duration of an <code><var>n</var></code>th note.</td>
+                    <td>
+                        Pause for the duration of an <code><var>n</var></code>th note.
+                        <code><var>n</var></code> is in the range <code>[0&#8212;64]</code>.
+                        If <code><var>n</var>=0</code>, this has no effect.
+                    </td>
                 </tr>
             </table>
         </div>
@@ -8547,9 +8616,11 @@
                 </tr>
                 <tr>
                     <td><code><b>L</b><var>n</var></code></td>
-                    <td>Set the duration of following note to an <code><var>n</var></code>th note.
-                    (<code><var>n</var>=4</code> is a quarter note, etc.)
-                            <code><var>n</var></code> is in the range <code>[1&#8212;64]</code>.</td>
+                    <td>
+                        Set the duration of following note to an <code><var>n</var></code>th note.
+                        (<code><var>n</var>=4</code> is a quarter note, etc.)
+                        <code><var>n</var></code> is in the range <code>[1&#8212;64]</code>.
+                    </td>
                 </tr>
                 <tr>
                     <td><code><b>MN</b></code></td>
@@ -8565,7 +8636,10 @@
                 </tr>
                 <tr>
                     <td><code><b>T</b><var>n</var></code></td>
-                    <td>Sets the tempo to <code><var>n</var></code> <code>L4</code>s per minute. Default is 120.</td>
+                    <td>
+                        Sets the tempo to <code><var>n</var></code> <code>L4</code>s per minute.
+                        <code><var>n</var></code> is in the range <code>[32&#8212;255]</code>.  Default is 120.
+                    </td>
                 </tr>
             </table>
         </div>
@@ -11045,7 +11119,8 @@
                     <p>
                         An <a href="#INPUT"><code>INPUT</code></a> or
                         <a href="#LINE-INPUT"><code>LINE INPUT</code></a> statement encountered
-                        an input string longer than 255 characters.
+                        an input string longer than 255 characters or the plain-text program file
+                        being loaded contains a line with more than 255 characters.
                     </p>
                 </td>
             </tr>

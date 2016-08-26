@@ -4,19 +4,21 @@ The instructions there cover the most common platforms and use cases. If the
 options described there are not applicable or you prefer to install from source,
 please consult the notes below.
 
-#### Installation from source ####
-To install from source, download the source distribution and unpack the TGZ archive.
-The following packages are needed or recommended when installing PC-BASIC from source:
+#### Installation from the Python distribution ####
+Download the Python distribution of PC-BASIC and unpack the TGZ archive.
+The following packages are needed or recommended when installing PC-BASIC from the Python distribution:
 
-| Package                                                         | OS                 | Status       | Needed for
+| Package                                                         | OS                 | Status       | Used for
 |-----------------------------------------------------------------|--------------------|--------------|----------------------------------------
 | [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all                | required     |
 | [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows            | required     |
-| [PySDL2](https://pysdl2.readthedocs.org/en/latest/)             | all                | essential    | sound and graphics
-| [NumPy](https://sourceforge.net/projects/numpy/files/)          | all                | essential    | sound and graphics
-| [PySerial](https://pypi.python.org/pypi/pyserial)               | all                | recommended  | physical or emulated serial port access
+| [PySDL2](https://pysdl2.readthedocs.org/en/latest/)             | all                | recommended  | sound and graphics
+| [NumPy](https://sourceforge.net/projects/numpy/files/)          | all                | recommended  | sound and graphics
+| [PySerial](https://pypi.python.org/pypi/pyserial)               | all                | optional     | physical or emulated serial port access
 | [PyParallel](https://pypi.python.org/pypi/pyserial)             | Windows, Linux     | optional     | physical parallel port access
-| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| OSX, Linux, other  | optional     | native `SHELL`
+| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| OSX, Linux, other  | optional     | `SHELL` command
+| [PyGame 1.9.2](http://www.pygame.org)                           | all                | optional     | sound and graphics (PyGame interface)
+| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)          | all                | experimental | sound (PortAudio engine)
 
 In this list, _other_ refers to operating systems other than Windows, Linux or OSX.
 
@@ -24,7 +26,7 @@ On **Windows**, you should download all the required packages from the project w
 
 Download `launcher.exe` from the [ANSI|pipe release page](http://github.com/robhagemans/ansipipe/releases/) and place it in the directory where `pcbasic.py` is located.
 You can now run pc-basic with the command `launcher python pcbasic.py`. Without ANSI|pipe, PC-BASIC will run but you will
-be unable to use the text-based interfaces (options `--text` and `--cli`) as they will print only gibberish on the console.
+be unable to use the text-based interfaces (options `-t` and `-b`) as they will print only gibberish on the console.
 
 The ANSI|pipe C source is included with PC-BASIC; if you prefer this to downloading the launcher binary, you can compile it from source by running `winbuild.bat`. You will need a working C compiler (MinGW or Microsoft Visual C++) on your system.
 
@@ -52,7 +54,7 @@ On Linux, OSX and other Unix-like systems, PC-BASIC can employ the following
 external command-line tools:
 
 | Tool                                      | OS                | Status      | Used for
--------------------------------------------------------------------------------------------------------------
+|-------------------------------------------|-------------------|-------------|---------------------------------
 | `lpr`                                     | OSX, Linux, other | essential   | printing to CUPS printers
 | `paps`                                    | OSX, Linux, other | recommended | improved Unicode support for CUPS printing
 | `pbcopy`                                  | OSX               | essential   | clipboard operation
@@ -62,14 +64,13 @@ external command-line tools:
 | `beep`                                    | OSX, Linux, other | optional    | sound in cli/text interface
 
 
-#### Building from GitHub repository source ####
-The instructions above refer to the source *distribution*, which has pre-built
-documentation files and other niceties.
+#### Building from source ####
+The Python distribution of PC-BASIC described above contains precompiled documentation and Windows binaries for SDL2, SDL2_gfx and ANSI|pipe.
 If you wish to use the source code as-is in the GitHub repo,
-you'll need to build the docs yourself. Note that `pcbasic -h` will fail if you omit
-this. Compiling the documentation requires the Python modules
+you'll need to build these yourself. Compiling the documentation requires the Python modules
 [`lxml`](https://pypi.python.org/pypi/lxml/3.4.3) and [`markdown`](https://pypi.python.org/pypi/Markdown).
-Of course, you'll also need [`git`](https://git-scm.com/) and all the PC-BASIC dependencies listed above.  
+You'll also need [`git`](https://git-scm.com/), [`setuptools`](https://pypi.python.org/pypi/setuptools) and all the PC-BASIC dependencies listed above.
+
 
 1. Clone the github repo
 
@@ -81,15 +82,37 @@ Of course, you'll also need [`git`](https://git-scm.com/) and all the PC-BASIC d
 
 3. Run pcbasic directly from the source directory
 
-        python pcbasic
+        python pcbasic.py
+
+
+The `--recursive` option is necessary to pull the `ansipipe` submodule; if you omit the option, you will have to get the submodule separately.
+To build the supporting binaries for Windows, please refer to the compilation instructions for [SDL2](https://www.libsdl.org/), [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) and [ANSI|pipe](http://github.com/robhagemans/ansipipe/). You will need a C compiler such as [MinGW](http://mingw.org/) or [Microsoft Visual Studio](https://www.visualstudio.com/).
+
+
+#### Building `SDL2_gfx.dll` on Windows with MinGW GCC ###
+This plugin is needed if
+you want to use the SDL2 interface with smooth scaling. Most Linux distributions will include this with their pysdl2 package.
+On Windows, you will need to compile from source. The official distribution includes a solution file for Microsoft Visual Studio;
+for those who prefer to use the MinGW GCC compiler, follow these steps:  
+
+1. Download and unpack the SDL2 binary, the SDL2 development package for MinGW and the SDL2_gfx source code archive. Note that the SDL2 development package contains several subdirectories for different architectures. You'll need the 32-bit version in `i686-w64-mingw32/`  
+
+2. Place `SDL2.dll` in the directory where you unpacked the SDL2_gfx source code.  
+
+3. In the MinGW shell, run  
+
+        ./autogen.sh
+        ./configure --with-sdl-prefix="/path/to/where/you/put/i686-w64-mingw32/"
+        make
+        gcc -shared -o SDL2_gfx.dll *.o SDL2.dll
+
+4. Place `sdl2.dll` and `sdl2_gfx.dll` in the `pcbasic\interface` directory.  
 
 
 #### Installing with Pygame ####
-It is possible to install PC-BASIC with a [PyGame](http://pygame.org/)-based
-graphical interface in addition to, or instead of, the default SDL2-based interface.
-This section covers workarounds for several issues you may run into when using PyGame.
+This section covers workarounds for several issues you may run into when using [PyGame](http://pygame.org/).
 
-The 1.9.1 release of PyGame, as currently distributed with Ubuntu and others, unfortunately still contains a few bugs that
+The 1.9.1 release of PyGame, as currently standard on some distributions, unfortunately still contains a few bugs that
 have already been resolved in the upstream PyGame code. This section documents workarounds for these bugs that can be used
 until a newer build of PyGame is released with major distributions.
 

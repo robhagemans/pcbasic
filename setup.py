@@ -2,8 +2,8 @@
 """
 PC-BASIC setup module.
 
-(c) 2015 Rob Hagemans
-This file is released under the GNU GPL version 3.
+(c) 2015, 2016 Rob Hagemans
+This file is released under the GNU GPL version 3 or later.
 """
 
 ###############################################################################
@@ -20,8 +20,10 @@ with open(path.join(here, 'docsrc', 'description.txt'), encoding='utf-8') as f:
 with open(path.join(here, 'docsrc', 'tagline.txt'), encoding='utf-8') as f:
     description = f.read()
 
-import pcbasic
-version_string = pcbasic.__version__
+# NOTE that this is OK because we try-import all non-standard modules
+# this would fail on install if __init__ imported required non-standard packages
+from pcbasic.version import __version__
+version_string = __version__
 
 
 ###############################################################################
@@ -105,15 +107,14 @@ setup(
     #},
 
     package_data={
-        'pcbasic': ['data/*', 'codepage/*',
-                    'font/*'],
+        'pcbasic': ['*.BAS', '*.ucp', '*.hex', '*.txt', '*.md'],
     },
     entry_points={
         'console_scripts': [
-            'pcbasic=pcbasic.__main__:main',
+            'pcbasic=pcbasic:main',
         ],
         'gui_scripts': [
-            'pcbasic=pcbasic.__main__:main',
+            'pcbasic=pcbasic:main',
         ],
 
     },

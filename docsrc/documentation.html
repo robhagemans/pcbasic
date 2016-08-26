@@ -446,7 +446,7 @@
             However, many modern keyboards do not have a <kbd>Break</kbd> or
             <kbd>Scroll Lock</kbd> key, which would make it impossible to interrupt
             a program that does not exit. Therefore, by default, PC-BASIC treats <kbd>Ctrl</kbd>+<kbd>C</kbd>
-            as if it were <kbd>Ctrl</kbd>+<kbd>Break</kbd>. Set <code><a href="#--ctrl-c-break">ctrl-c-break</a>=False</code>
+            as if it were <kbd>Ctrl</kbd>+<kbd>Break</kbd>. Set the <a href="#settings">option</a> <code><a href="#--ctrl-c-break">ctrl-c-break</a>=False</code>
             if you prefer the GW-BASIC style behaviour. When using the text-based or command-line interface,
             this option is ignored.
         </p>
@@ -501,18 +501,33 @@
         <section>
             <h4 id="mounting">Accessing your drives</h4>
             <p>
-                By default, drive letter <code>Z:</code> is mapped to the current working directory and
-                is the current drive. In particular, it is not mapped to the Windows <code>Z:</code>
-                drive, if that exists. You can map drives and other file system locations as PC-BASIC drive letters by
-                using the <code><a href="#--mount">mount</a></code> option. For example,
+                PC-BASIC emulates DOS disk devices, which are referred to by drive letters such as <code>Z:</code>.
+                These devices can be mapped to locations in your file system.
+                <em>Windows uses should note that they are not the same locations as Windows drive letters: the device <code>C:</code> on PC-BASIC
+                is not your Windows <code>C:</code> drive, unless you explicitly tell PC-BASIC to make it so.</em>
+            </p>
+            <p>
+                By default, <code>Z:</code> is PC-BASIC's current device. It is mapped to your home directory
+                if PC-BASIC is started from a graphical user interface. On Windows, your home directory is
+                <code>%USERPROFILE%</code>, which is usually a folder with your user name located under
+                <code>C:\Users\</code>; on other platforms, it is <code>&tilde;</code>.
+                This is where files will be saved to and loaded from in BASIC if you do not specify another device.
+                Note that if PC-BASIC is started from the command prompt, <code>Z:</code> is mapped to
+                the current working directory instead.
+            </p>
+            <p>
+                You can map drives and other file system locations as PC-BASIC devices by
+                using the <code><a href="#--mount">mount</a></code> option in the <a href="#settings">configuration file or on the command prompt</a>. For example,
+                on Windows, the option
                 <code class="block">
-                    <b>pcbasic --mount=A:/home/me/BasicFloppy,C:/home/me/Stuff</b>
+                    <b>mount=A:C:\Users\Me\BasicFloppy</b>
                 </code>
-                or, on Windows,
+                will make the folder <code>C:\Users\Me\BasicFloppy</code> available as PC-BASIC's <code>A:</code> device.
+                On other platforms, an example mount option could look like
                 <code class="block">
-                    <b>pcbasic --mount=A:C:\Users\Me\BasicFloppy,C:C:\Users\Me\Stuff</b>
+                    <b>mount=A:/home/me/BasicFloppy</b>
                 </code>
-                will map those locations to the PC-BASIC <code>A:</code> and <code>C:</code> drives.
+                which would make the directory <code>/home/me/BasicFloppy</code> available as PC-BASIC's <code>A:</code> device.
             </p>
              <p>
                 If you want PC-BASIC's drive letters to be the same as those in Windows,

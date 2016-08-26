@@ -5,13 +5,15 @@
 PC-BASIC would not exist without those contributing code, reporting bugs,
 sending in patches, and documenting GW-BASIC's behaviour. Thank you all!
 
-- **Rob Hagemans**,   lead author
-- **Wengier Wu**,     bug fixes, advice for CJK support
-- **WJB**,            bug fixes
-- **Ronald Herrera**, testing, bug hunting
-- **Miguel Dorta**,   testing, serial ports
-- **Patrik**,         testing, serial ports
-- **Duane**,          testing, serial ports
+- **Rob Hagemans**,         lead author
+- **Wengier Wu**,           bug fixes, CJK guidance
+- **Jan Bredenbeek**,       bug fixes, BASICODE guidance
+- **WJB**,                  bug fixes
+- **Ronald Herrera**,       testing, bug hunting
+- **Kenneth Wayne Boyd**,   testing, bug hunting
+- **Miguel Dorta**,         testing, serial ports
+- **Patrik**,               testing, serial ports
+- **Duane**,                testing, serial ports
 
 
 ### Shoulders of Giants
@@ -20,6 +22,7 @@ PC-BASIC depends on the following open-source projects:
 
   * [Python](http://www.python.org)
   * [Simple DirectMedia Layer (SDL)](http://www.libsdl.org)
+  * [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/)
   * [PySDL2](https://pysdl2.readthedocs.org/en/latest/)
   * [NumPy](http://www.numpy.org)
   * [Python for Windows Extensions (PyWin32)](https://sourceforge.net/projects/pywin32/)
@@ -67,18 +70,24 @@ apologies to those whose contribution I have failed to acknowledge here.
 
 ##### Data cassette format
 
-  * **Mike Brutman**'s [Analysis of the IBM PC Data cassette format](http://www.brutman.com/Cassette_Waveforms/Cassette_Waveforms.html)
-  * **Dan Tobias**' [IBM PC Data cassette format documentation](http://fileformats.archiveteam.org/wiki/IBM_PC_data_cassette)
+  * **Mike Brutman**'s [Analysis of the IBM PC data cassette format](http://www.brutman.com/Cassette_Waveforms/Cassette_Waveforms.html)
+  * **Dan Tobias**' [IBM PC data cassette format documentation](http://fileformats.archiveteam.org/wiki/IBM_PC_data_cassette)
 
 ##### BASICODE
 
   * **Janny Looyenga**'s documentation of the [BASICODE format](http://www.nostalgia8.nl/basicode.htm)
   * **Prof. Dr. Horst Völz**'s documentation of the [BASICODE cassette file format](http://www.kc85emu.de/scans/rfe0190/Basicode.htm)
 
+##### Serial ports
+
+  * **Craig Peacock**'s documentation on [interfacing the serial port](http://retired.beyondlogic.org/serial/serial.htm)
+  * **Christopher E. Strangio**'s tutorial on [the RS232 standard](http://www.camiresearch.com/Data_Com_Basics/RS232_standard.html)
+  * [QB64 documentation](http://www.qb64.net/wiki/index.php/Port_Access_Libraries#Serial_Communication_Registers)
+
 ##### Technical information on many topics
 
   * [VOGONS](http://www.vogons.org/)
-  * **Erik S. Klein**'s [Vintage computer forums](http://www.vintage-computer.com)
+  * **Erik S. Klein**'s [vintage computer forums](http://www.vintage-computer.com)
   * **Peter Berg**'s [Pete's QBasic/QuickBasic site](http://www.petesqbsite.com/)
 
 ### Fonts
@@ -100,11 +109,12 @@ apologies to those whose contribution I have failed to acknowledge here.
 
 ### Bibliography
 
-  * _GW-BASIC 3.23 User's Guide_, Microsoft Corporation, 1987
-  * _IBM Personal Computer Hardware Reference Library: BASIC_, IBM, 1982
-  * _Tandy 1000 BASIC, A Reference Guide_, Tandy Corporation
-  * **William Barden, Jr.**, _Graphics and Sound for the Tandy 1000s and PC Compatibles_, Microtrend, 1987
-  * **Don Inman** and **Bob Albrecht**, _The GW-BASIC Reference_, Osborne McGraw-Hill, 1990
+  * _GW-BASIC 3.23 User's Guide_, Microsoft Corporation, 1987.
+  * _IBM Personal Computer Hardware Reference Library: BASIC_, IBM, 1982.
+  * _Tandy 1000 BASIC, A Reference Guide_, Tandy Corporation.
+  * **William Barden, Jr.**, _Graphics and Sound for the Tandy 1000s and PC Compatibles_, Microtrend, 1987.
+  * **Don Inman** and **Bob Albrecht**, _The GW-BASIC Reference_, Osborne McGraw-Hill, 1990.
+  * **Thomas C. McIntyre**, _BLUE: BASIC Language User Essay_, 1991, [available online](https://web.archive.org/web/20060410121551/http://scottserver.net/basically/geewhiz.html).
 
 ### Development tools
 

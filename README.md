@@ -49,38 +49,11 @@ If the options above are not applicable or you prefer to install from source, pl
 consult [`INSTALL.md`](https://github.com/robhagemans/pcbasic/blob/master/INSTALL.md) for detailed instructions.
 
 
-#### Usage essentials ####
+#### BASIC survival kit ####
 Click on the PC-BASIC application icon or run `pcbasic` on the Windows, OSX or Linux command
 line and PC-BASIC will start in direct mode with no program loaded. The default emulation target is
 GW-BASIC 3.23 on a generic IBM-compatible PC with a VGA video card.  
 
-A few selected command-line options:  
-`pcbasic PROGRAM.BAS` runs the program file named `PROGRAM.BAS` directly.  
-`pcbasic --preset=tandy` starts with the emulation target set to Tandy GW-BASIC on a Tandy 1000.  
-`pcbasic --preset=pcjr` starts with the emulation target set to Cartridge BASIC on an IBM PCjr.  
-`pcbasic -h` shows all available command line options.  
-
-If you prefer to run PC-BASIC from a GUI, you can set the required options in the configuration file instead.
-The configuration file is stored in the following location:
-
-| OS         | Configuration file  
-|------------|-------------------------------------------------------------------------  
-| Windows    | `%APPDATA%\pcbasic\PCBASIC.INI`  
-| OS X       | `~/Library/Application Support/pcbasic/PCBASIC.INI`  
-| Linux      | `~/.config/pcbasic/PCBASIC.INI`  
-
-The expression `%APPDATA%` is a Windows variable pointing to the folder in your roaming profile
-where applications store their data and settings. Typing the expression as above in the Windows Explorer
-should get you to the right place. Under Windows 7, `%APPDATA%` normally is the location
-`C:\Users\YourUsername\AppData\Roaming\` where you replace `YourUsername` with your Windows login name.
-
-For example, you could include the following line in the section `[pcbasic]` in `PCBASIC.INI`,
-to emulate IBM PCjr Cartridge Basic:
-
-    preset=pcjr  
-
-
-#### BASIC survival kit ####
 PC-BASIC starts in direct mode, a 1980s-style interface operated by executing
 BASIC commands directly. There is no menu, nor are there any of the visual clues
 that we've come to expect of modern software.  
@@ -97,6 +70,30 @@ Use one of the key combinations `Ctrl+Break`, `Ctrl+Scroll Lock`, `Ctrl+C` or `F
 to interrupt a running program and return to direct mode.  
 
 
+#### Configuration ####
+You can supply options to change PC-BASIC's behaviour by editing the configuration file. If you install the Windows package, the installer will automatically create a shortcut to this file in the PC-BASIC start menu folder. The file can also be found in the following location:
+
+| OS         | Configuration file  
+|------------|-------------------------------------------------------------------------  
+| Windows    | `%APPDATA%\pcbasic\PCBASIC.INI`  
+| OS X       | `~/Library/Application Support/pcbasic/PCBASIC.INI`  
+| Linux      | `~/.config/pcbasic/PCBASIC.INI`  
+
+For example, to start with the emulation target set to Tandy 1000 GW-BASIC, include the following line under `[pcbasic]` in the configuration file:
+
+    preset=tandy
+
+A default configuration file will be created the first time you run PC-BASIC. See the comments in that file or consult the [documentation](http://pc-basic.org/doc#settings) for more information and example options.
+
+If you start PC-BASIC from the command prompt (on Windows this is the `C:\>` prompt), you can supply configuration options directly. For example:  
+
+`pcbasic PROGRAM.BAS` runs the program file named `PROGRAM.BAS` directly.  
+`pcbasic --preset=tandy` starts with the emulation target set to Tandy GW-BASIC on a Tandy 1000.  
+`pcbasic --preset=pcjr` starts with the emulation target set to Cartridge BASIC on an IBM PCjr.  
+`pcbasic -h` shows all available command line options.  
+
+If you use PC-BASIC from the command prompt on Windows, make sure you run the `pcbasic.com` binary. You will not see any output if you call the `pcbasic.exe` binary.
+
 #### Getting programs ####
 The following pages have GW-BASIC program downloads, lots of information and further links.  
 
@@ -110,4 +107,5 @@ The following pages have GW-BASIC program downloads, lots of information and fur
 - [Gary Peek](http://www.garypeek.com/basic/gwprograms.htm) provides miscellaneous GW-BASIC sources which he released into the public domain.  
 - [S.A. Moore's Classic BASIC Games page](http://www.moorecad.com/classicbasic/index.html) provides the BASIC games from David Ahl's classic book.  
 - [Joseph Sixpack's Last Book of GW-BASIC](http://www.geocities.ws/joseph_sixpack/btoc.html) has lots of office and utility programs, including the PC-CALC spreadsheet.  
+- [Thomas C. McIntyre](https://web.archive.org/web/20060410121551/http://scottserver.net/basically/geewhiz.html)'s GeeWhiz Collection has business applications, games and reference material.
 - [cd.textfiles.com](http://cd.textfiles.com) has tons of old shareware, among which some good GW-BASIC games.  

@@ -368,12 +368,12 @@
         </dd>
 
         <dt id="--exec">
-            <code id="-e"><b>-e=</b><var>command_line</var></code>
+            <code id="-e"><b>-e=</b><var>command_line</var>[<b>,</b><var>command_line</var> ... ]</code>
             <code><b>--exec=</b><var>command_line</var></code>
         </dt>
         <dd>
-            Execute BASIC <code><var>command_line</var></code>. The specified
-            commands are executed before entering into direct mode or
+            Execute BASIC commands. The <code><var>command_line</var></code>s are executed in order
+            before entering into direct mode or
             running a program.
         </dd>
 
@@ -434,10 +434,11 @@
         </dd>
 
         <dt id="--interface">
-            <code><b>--interface=</b>{<b>none</b>|<b>cli</b>|<b>text</b>|<b>graphical</b>}</code>
+            <code><b>--interface=</b>[<b>none</b>|<b>cli</b>|<b>text</b>|<b>graphical</b>]</code>
         </dt>
         <dd>
-            Choose the type of interface. The following interface types are
+            Choose the type of interface. Not all interfaces will be available on all systems.
+            The following interface types may be
             available:
             <dl class="compact">
                 <dt><code><b>none</b></code></dt>
@@ -445,9 +446,17 @@
                 <dt><code><b>cli</b></code></dt>
                 <dd>Command-line interface. Also <code><b><a href="#-b">-b</a></b></code>.</dd>
                 <dt><code><b>text</b></code></dt>
-                <dd>Text-based interface. Also <code><b><a href="#-t">-t</a></b></code>.</dd>
+                <dd>Text interface. Also <code><b><a href="#-t">-t</a></b></code>.</dd>
                 <dt><code><b>graphical</b></code></dt>
                 <dd>Graphical interface.</dd>
+                <dt><code><b>sdl2</b></code></dt>
+                <dd>SDL2 graphical interface.</dd>
+                <dt><code><b>pygame</b></code></dt>
+                <dd>PyGame graphical interface.</dd>
+                <dt><code><b>ansi</b></code></dt>
+                <dd>ANSI text interface.</dd>
+                <dt><code><b>curses</b></code></dt>
+                <dd>NCurses text interface.</dd>
             </dl>
             The default is <code><b>graphical</b></code>.
         </dd>
@@ -483,11 +492,6 @@
             Attach a resource to the <code>LPT1:</code> parallel device.
             <code><var>type</var><b>:</b><var>value</var></code> can be
             <dl>
-                <dt><code><b>PARPORT:</b><var>device_name</var></code></dt>
-                <dd>
-                    Connect to the parallel device <code><var>device_name</var></code>
-                    such as <code><b>LPT1</b></code> or <code><b>/dev/parport0</b></code>.
-                </dd>
 
                 <dt><code><b>PRINTER:</b><var>printer_name</var></code></dt>
                 <dd>
@@ -498,8 +502,8 @@
 
                 <dt><code><b>FILE:</b><var>file_name</var></code></dt>
                 <dd>
-                    Connect to any file or to a Unix character device such as
-                    <code><b>/dev/stdout</b></code>.
+                    Connect to any file or device such as
+                    <code><b>/dev/stdout</b></code> on Unix or <code><b>LPT1</b></code> on Windows.
                 </dd>
 
                 <dt><code><b>STDIO</b>[<b>:</b>[<b>CRLF</b>]]</code></dt>
@@ -508,6 +512,15 @@
                     If <code><b>CRLF</b></code> is specified, PC-BASIC replaces <code>CR</code>
                     characters with <code>LF</code> on its output. This is more intuitive on Unix shells.
                 </dd>
+
+                <dt><code><b>PARPORT:</b><var>port_number</var></code></dt>
+                <dd>
+                    Connect to a Centronics parallel port, where <code><var>port_number</var></code>
+                    is <code><b>0</b></code> for the first parallel port, etc.
+                    <code><b>PARPORT</b></code> only works with physical parallel ports; for example, a Windows printer or other
+                    device mapped with <code>NET USE LPT1:</code> can only be attached with <code><b>FILE:LPT1</b></code>
+                </dd>
+
             </dl>
             If this option is not specified, <code>LPT1:</code> is connected to the default printer.
         </dd>
@@ -656,13 +669,6 @@
             your program uses this key combination.
         </dd>
 
-        <dt id="--nosound">
-            <code><b>--nosound</b>[<b>=True</b>|<b>=False</b>]</code>
-        </dt>
-        <dd>
-            Disable sound output.
-        </dd>
-
         <dt id="--output">
             <code><b>--output=</b><var>output_file</var></code>
         </dt>
@@ -804,13 +810,38 @@
         </dd>
 
         <dt  id="--shell">
-            <code><b>--shell=</b>{<b>none</b>|<b>native</b>|<var>command</var>]</code>
+            <code><b>--shell=</b>[<var>shell-executable</var>]</code>
         </dt>
         <dd>
-            Set the command interpreter run on the <code><a href="#SHELL">SHELL</a></code>
-            command to the operating system's native shell or a custom shell
-            run by <code><var>command</var></code>. Default is <code><b>none</b></code>,
+            Set the <code><a href="#SHELL">SHELL</a></code>
+            command to run the operating system shell executable <code><var>shell-executable</var></code>.
+            The executable <code><var>shell-executable</var></code> should support the
+            command-line conventions of the primary shell of the host operating system
+            (<code>CMD.EXE</code> on Windows and <code>/bin/sh</code> on Unix).
+            By default <code><var>command</var></code> is empty,
             which disables the <code><a href="#SHELL">SHELL</a></code> command.
+        </dd>
+
+        <dt id="--sound-engine">
+            <code><b>--sound-engine=</b>[<b>none</b>|<b>beep</b>|<b>sdl2</b>|<b>pygame</b>|<b>portaudio</b>]</code>
+        </dt>
+        <dd>
+            Choose the engine to use for audio output. If omitted, the
+            default engine for the interface selected with
+            <code><a href="#--interface">--interface</a></code> is chosen.
+            Not all interfaces will be available on all systems.
+            <dl class="compact">
+                <dt><code><b>none</b></code></dt>
+                <dd>Suppress sound output.</dd>
+                <dt><code><b>beep</b></code></dt>
+                <dd>Use the built-in speaker.</dd>
+                <dt><code><b>portaudio</b></code></dt>
+                <dd>Use the PortAudio sound generator.</dd>
+                <dt><code><b>sdl2</b></code></dt>
+                <dd>Use the SDL2 sound generator.</dd>
+                <dt><code><b>pygame</b></code></dt>
+                <dd>Use the PyGame sound generator.</dd>
+            </dl>
         </dd>
 
         <dt id="--state">
@@ -973,7 +1004,7 @@
         with a command like <code>BASIC</code>, <code>BASICA</code>, or <code>GWBASIC</code>.
         These are matched by PC-BASIC with only minor modifications, usually just replacing the
         forward slash <code><b>/</b></code> with a dash <code><b>-</b></code>. The GW-BASIC syntax is shown here
-        for reference only; use the Unix-style syntax with PC-BASIC.
+        for reference only; only the syntax with the dash works with PC-BASIC.
     </p>
     <dl>
         <dt>
