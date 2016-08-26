@@ -1,0 +1,12 @@
+10 OPEN "bigbytes.dat" FOR RANDOM AS 1 LEN=4
+20 FIELD#1, 4 AS A$
+30 OPEN "gwbigadd.dat" FOR RANDOM AS 2 LEN=4
+40 FIELD#2, 4 AS B$
+50 FOR I = 1 TO 16384
+60   GET#1, I
+70   L = R: R = CVS(A$)
+75   LSET B$ = MKS$(L+R)
+80   PUT#2, I
+90 NEXT
+100 CLOSE
+
