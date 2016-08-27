@@ -105,7 +105,7 @@ class Integer(Number):
         """Return value as unsigned Python int"""
         return struct.unpack('<H', self.buffer)[0]
 
-    def from_unsigned(self):
+    def from_unsigned(self, in_int):
         """Set value to unsigned Python int"""
         # we can in fact assign negatives as 'unsigned'
         if not (-0x8000 <= in_int <= 0xffff):
@@ -134,7 +134,7 @@ class Integer(Number):
         """Return unsigned value as hex token"""
         return tk.T_HEX + self.buffer[:]
 
-    def to_token_hex(self):
+    def to_token_oct(self):
         """Return unsigned value as oct token"""
         return tk.T_OCT + self.buffer[:]
 
@@ -181,17 +181,34 @@ class Integer(Number):
         self._carry_list(lsb, msb)
         return self
 
-    def _carry_list(self, lsb, msb):
-        """Check for overflow and assign"""
-        if lsb > 0xff:
-            lsb -= 0xff
-            msb += 1
-        elif lsb < 0:
-            lsb += 0xff
-            msb -= 1
-        if not (0 <= msb <= 0xff):
-            raise OverflowError()
-        self.buffer[:] = chr(lsb) + chr(msb)
+    # no imul - we always promote to float first for multiplication
+    # no idiv - we always promote to float first for true division
+
+    def idiv_int(self, rhs):
+        """Perform integer division."""
+        if rhs.is_zero():
+            # division by zero - return single-precision maximum
+            raise ZeroDivisionError()
+        dividend = self.to_int()
+        divisor = rhs.to_int()
+        # BASIC intdiv rounds to zero, Python's floordiv to -inf
+        if (dividend >= 0) == (divisor >= 0):
+            return self.from_int(dividend // divisor)
+        else:
+            return self.from_int(-(abs(dividend) // abs(divisor)))
+
+    def imod(self, rhs):
+        """Left modulo right."""
+        if rhs.is_zero():
+            # division by zero - return single-precision maximum
+            raise ZeroDivisionError()
+        dividend = self.to_int()
+        divisor = rhs.to_int()
+        # BASIC MOD has same sign as dividend, Python mod has same sign as divisor
+        mod = dividend % divisor
+        if dividend < 0 or mod < 0:
+            mod -= divisor
+        return self.from_int(mod)
 
     # relations
 
@@ -225,20 +242,41 @@ class Integer(Number):
             return rhs.__class__().from_integer(self).eq(rhs)
         return self.buffer == rhs.buffer
 
+    # implementation
+
+    def _carry_list(self, lsb, msb):
+        """Check for overflow and assign"""
+        if lsb > 0xff:
+            lsb -= 0xff
+            msb += 1
+        elif lsb < 0:
+            lsb += 0xff
+            msb -= 1
+        if not (0 <= msb <= 0xff):
+            raise OverflowError()
+        self.buffer[:] = chr(lsb) + chr(msb)
+
 
 class Float(Number):
     """Abstract base class for floating-point value"""
 
     bias = None
     shift = None
-    pos_max = None
-    neg_max = None
     intformat = None
     mask = None
     posmask = None
+    signmask = None
+    den_mask = None
+
+    zero = None
+    one = None
+    ten = None
+    pos_max = None
+    neg_max = None
+    den_upper = None
 
     def __init__(self, buffer=None):
-        """Initialise the float"""
+        """Initialise float."""
         Number.__init__(self, buffer)
 
     def is_zero(self):
@@ -409,6 +447,8 @@ class Float(Number):
             return rhs.is_zero()
         return self.buffer == rhs.buffer
 
+    # in-place operations
+
     def iadd(self, right):
         """Add in-place"""
         return self._normalise(*self._iadd_den(self._denormalise(), right._denormalise()))
@@ -459,6 +499,84 @@ class Float(Number):
         self._normalise(lexp, lman, lneg)
         return self
 
+    def idiv(self, right_in):
+        """Divide in-place."""
+        if right_in.is_zero():
+            # division by zero - return max float with the type and sign of self
+            #self.exp, self.man = self.max.exp, self.max.man
+            raise ZeroDivisionError()
+        if self.is_zero():
+            return self
+        lden = self._div_den(self._denormalise(), right_in._denormalise())
+        # normalise and return
+        self._normalise(*lden)
+        return self
+
+    def _div_den(self, lden, rden):
+        """Denormalised divide."""
+        lexp, lman, lneg = lden
+        rexp, rman, rneg = rden
+        # signs
+        lneg = (lneg != rneg)
+        # subtract exponentials
+        lexp -= rexp - self.bias - 8
+        # long division of mantissas
+        work_man = lman
+        lman = 0L
+        lexp += 1
+        while (rman > 0):
+            lman <<= 1
+            lexp -= 1
+            if work_man > rman:
+                work_man -= rman
+                lman += 1L
+            rman >>= 1
+        return lexp, lman, lneg
+
+    # def _div10_den(self, lden):
+    #     """Divide by 10 in-place."""
+    #     # denormalised value of 10
+    #     ten_den = self.__class__().from_bytes(self.ten)._denormalise()
+    #     return self._div_den(self.ten_den)
+
+    def idiv10(self):
+        """Divide by 10 in-place."""
+        return self.idiv(self.__class__().from_bytes(self.ten))
+
+    def ipow_int(self, expt):
+        """Raise to integer power in-place."""
+        return self._ipow_int(expt.to_int())
+
+    # decimal representation
+
+    def to_decimal(self, lim_bot, lim_top):
+        """Return value as mantissa and decimal exponent."""
+        exp10 = 0
+        copy = self.clone()
+        while copy.abs_gt(lim_top):
+            copy.idiv10()
+            exp10 += 1
+        while lim_bot.abs_gt(copy):
+            copy.imul10()
+            exp10 -= 1
+        # round to int
+        num = abs(copy.to_int())
+        return num, exp10
+
+    def from_decimal(self, mantissa, exp10):
+        """Set value to mantissa and decimal exponent."""
+        self.from_int(mantissa)
+        # apply decimal exponent
+        while (exp10 < 0):
+            self.idiv10()
+            exp10 += 1
+        while (exp10 > 0):
+            self.imul10()
+            exp10 -= 1
+        return self
+
+    # implementation
+
     def _denormalise(self):
         """Denormalise to shifted mantissa, exp, sign"""
         exp = ord(self.buffer[-1])
@@ -486,7 +604,6 @@ class Float(Number):
         if self._check_limits(exp, neg):
             self.buffer[-1] = chr(exp)
         return self
-
 
     def _iadd_den(self, lden, rden):
         """ Denormalised add. """
@@ -534,6 +651,27 @@ class Float(Number):
         rexp, rman, rneg = rden
         return self._iadd_den(lden, (rexp, rman, not rneg))
 
+    def _ipow_int(self, expt):
+        """Raise to int power in-place."""
+        # exponentiation by squares
+        if expt < 0:
+            self.ipow_int(-expt)
+            divisor = self.clone()
+            self.from_bytes(self.one).idiv(divisor)
+        elif expt > 1:
+            if (expt % 2) == 0:
+                self.ipow_int(expt // 2)
+                self.imul(self)
+            else:
+                base = self.clone()
+                self.ipow_int((expt-1) // 2)
+                self.imul(self)
+                self.imul(base)
+        elif expt == 0:
+            self = self.from_bytes(self.one)
+        return self
+
+
 
 class Single(Float):
     """Single-precision MBF float"""
@@ -555,6 +693,9 @@ class Single(Float):
     pos_max = '\xff\xff\x7f\xff'
     neg_max = '\xff\xff\xff\xff'
     zero = '\0\0\0\0'
+
+    one = '\x00\x00\x00\x81'
+    ten = '\x00\x00\x20\x84'
 
     def to_token(self):
         """Return value as Single token"""
@@ -589,6 +730,9 @@ class Double(Float):
     pos_max = '\xff\xff\xff\xff\xff\xff\x7f\xff'
     neg_max = '\xff\xff\xff\xff\xff\xff\xff\xff'
     zero = '\0\0\0\0\0\0\0\0'
+
+    one = '\x00\x00\x00\x00\x00\x00\x00\x81'
+    ten = '\x00\x00\x00\x00\x00\x00\x20\x84'
 
     def from_single(self, in_single):
         """Convert Single to Double in-place"""

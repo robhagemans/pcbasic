@@ -23,7 +23,7 @@ class String(numbers.Value):
 
     def __init__(self, buffer, stringspace):
         """Initialise the pointer"""
-        Value.__init__(buffer)
+        numbers.Value.__init__(buffer)
         self.stringspace = memoryview(stringspace)
 
     def length(self):
@@ -36,7 +36,8 @@ class String(numbers.Value):
 
     def dereference(self):
         """String value pointed to"""
-        return bytearray(self.stringspace[self.address:self.address+self.length])
+        addr = self.address()
+        return bytearray(self.stringspace[addr : addr+self.length])
 
     value = dereference
 
