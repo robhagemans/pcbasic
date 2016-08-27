@@ -20,6 +20,8 @@ from . import fp
 from . import error
 from . import util
 from . import basictoken as tk
+from . import numbers
+from .numbers import float_safe
 
 
 # BASIC type sigils:
@@ -102,57 +104,6 @@ def integer_to_int(in_integer, unsigned=False):
             return value
 
 
-###############################################################################
-# error handling
-
-def float_safe(fn):
-    """Decorator to handle floating point errors."""
-    def wrapped_fn(self, *args, **kwargs):
-        try:
-            return fn(self, *args, **kwargs)
-        except (ValueError, ArithmeticError) as e:
-            return self._math_error_handler.handle(e)
-    return wrapped_fn
-
-
-class MathErrorHandler(object):
-    """Handles floating point errors."""
-
-    # types of errors that do not always interrupt execution
-    soft_types = (error.OVERFLOW, error.DIVISION_BY_ZERO)
-
-    def __init__(self, screen):
-        """Setup handler."""
-        self._screen = screen
-        self._do_raise = False
-
-    def pause_handling(self, do_raise):
-        """Pause local handling of floating point errors."""
-        self._do_raise = do_raise
-
-    def handle(self, e):
-        """Handle Overflow or Division by Zero."""
-        if isinstance(e, ValueError):
-            # math domain errors such as SQR(-1)
-            math_error = error.IFC
-        elif isinstance(e, OverflowError):
-            math_error = error.OVERFLOW
-        elif isinstance(e, ZeroDivisionError):
-            math_error = error.DIVISION_BY_ZERO
-        else:
-            raise e
-        if (self._do_raise or self._screen is None or
-                math_error not in self.soft_types):
-            # also raises exception in error_handle_mode!
-            # in that case, prints a normal error message
-            raise error.RunError(math_error)
-        else:
-            # write a message & continue as normal
-            self._screen.write_line(error.RunError(math_error).message)
-        # return max value for the appropriate float type
-        if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
-            return fp.pack(e.args[0])
-        return fp.pack(fp.Single.max.copy())
 
 
 ###############################################################################
@@ -162,10 +113,14 @@ class Values(object):
 
     def __init__(self, screen, string_space, double_math):
         """Setup values."""
-        self._math_error_handler = MathErrorHandler(screen)
+        self._float_error_handler = numbers.FloatErrorHandler(screen)
         self._strings = string_space
         # double-precision EXP, SIN, COS, TAN, ATN, LOG
         self._double_math = double_math
+
+    def pause_error_handling(self, do_pause):
+        """Suspend floating-point soft error handling."""
+        self._float_error_handler.pause_handling(do_pause)
 
     ###########################################################################
     # convert between BASIC and Python values

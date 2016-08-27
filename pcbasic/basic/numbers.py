@@ -1,6 +1,6 @@
 """
-PC-BASIC - values.py
-Value classes - String, Integer and Floating Point
+PC-BASIC - numbers.py
+Integer and Floating Point values
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3.
@@ -25,7 +25,11 @@ This file is released under the GNU GPL version 3.
 import struct
 import math
 
-import basictoken as bt
+from . import basictoken as tk
+from . import error
+#for float error handler
+from . import fp
+
 
 class Value(object):
     """Abstract base class for value types"""
@@ -60,33 +64,6 @@ class Value(object):
     def view(self):
         """Get a reference to the storage space"""
         return self.buffer
-
-
-
-class String(Value):
-    """String pointer"""
-
-    sigil = '$'
-    size = 3
-
-    def __init__(self, buffer, stringspace):
-        """Initialise the pointer"""
-        Value.__init__(buffer)
-        self.stringspace = memoryview(stringspace)
-
-    def length(self):
-        """String length"""
-        return ord(self.buffer[0])
-
-    def address(self):
-        """Pointer address"""
-        return struct.unpack_from('<H', self.buffer, 1)[0]
-
-    def dereference(self):
-        """String value pointed to"""
-        return bytearray(self.stringspace[self.address:self.address+self.length])
-
-    value = dereference
 
 
 class Number(Value):
@@ -630,7 +607,60 @@ class Double(Float):
         return self
 
 
-def number_from_token(token):
+###############################################################################
+# error handling
+
+def float_safe(fn):
+    """Decorator to handle floating point errors."""
+    def wrapped_fn(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except (ValueError, ArithmeticError) as e:
+            return self._float_error_handler.handle(e)
+    return wrapped_fn
+
+
+class FloatErrorHandler(object):
+    """Handles floating point errors."""
+
+    # types of errors that do not always interrupt execution
+    soft_types = (error.OVERFLOW, error.DIVISION_BY_ZERO)
+
+    def __init__(self, screen):
+        """Setup handler."""
+        self._screen = screen
+        self._do_raise = False
+
+    def pause_handling(self, do_raise):
+        """Pause local handling of floating point errors."""
+        self._do_raise = do_raise
+
+    def handle(self, e):
+        """Handle Overflow or Division by Zero."""
+        if isinstance(e, ValueError):
+            # math domain errors such as SQR(-1)
+            math_error = error.IFC
+        elif isinstance(e, OverflowError):
+            math_error = error.OVERFLOW
+        elif isinstance(e, ZeroDivisionError):
+            math_error = error.DIVISION_BY_ZERO
+        else:
+            raise e
+        if (self._do_raise or self._screen is None or
+                math_error not in self.soft_types):
+            # also raises exception in error_handle_mode!
+            # in that case, prints a normal error message
+            raise error.RunError(math_error)
+        else:
+            # write a message & continue as normal
+            self._screen.write_line(error.RunError(math_error).message)
+        # return max value for the appropriate float type
+        if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
+            return fp.pack(e.args[0])
+        return fp.pack(fp.Single.max.copy())
+
+
+def from_token(token):
     """Convert number token to new Number temporary"""
     if token[0] == tk.T_SINGLE:
         return Single().from_token(token)

@@ -12,6 +12,34 @@ from operator import itemgetter
 
 from . import error
 from . import values
+from . import numbers
+
+
+class String(numbers.Value):
+    """String pointer"""
+
+    sigil = '$'
+    size = 3
+
+    def __init__(self, buffer, stringspace):
+        """Initialise the pointer"""
+        Value.__init__(buffer)
+        self.stringspace = memoryview(stringspace)
+
+    def length(self):
+        """String length"""
+        return ord(self.buffer[0])
+
+    def address(self):
+        """Pointer address"""
+        return struct.unpack_from('<H', self.buffer, 1)[0]
+
+    def dereference(self):
+        """String value pointed to"""
+        return bytearray(self.stringspace[self.address:self.address+self.length])
+
+    value = dereference
+
 
 class StringSpace(object):
     """String space is a table of strings accessible by their 2-byte pointers."""
