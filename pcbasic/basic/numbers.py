@@ -544,7 +544,6 @@ class Float(Number):
 
     def idiv(self, right_in):
         """Divide in-place."""
-        print 'idiv', self, right_in
         if right_in.is_zero():
             # division by zero - return max float with the type and sign of self
             self.copy_from(self.neg_max if self.is_negative() else self.pos_max)
@@ -646,12 +645,10 @@ class Float(Number):
             self.buffer[:] = self.zero
             return self
         # shift left if subnormal
-        while man < self.den_mask:
+        while man < (self.den_mask-1):
             exp -= 1
             man <<= 1
         pden_s = man
-        #FIXME: this does not scale correctly for 1./1. -> 0.5
-        # however just shifting it breaks additions and e.g. 15./10.
         # round to nearest; halves to even (Gaussian rounding)
         round_up = (man & 0xff > 0x80) or (man & 0xff == 0x80 and man & 0x100 == 0x100)
         man = (man >> 8) + round_up
