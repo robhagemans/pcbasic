@@ -6,7 +6,9 @@ Random number generator
 This file is released under the GNU GPL version 3 or later.
 """
 
-from . import fp
+import struct
+
+from . import numbers
 from . import values
 
 
@@ -43,8 +45,9 @@ class RandomNumberGenerator(object):
         mask = bytearray(2)
         if len(s) >= 4:
             mask = s[-4:-2]
-        final_two = bytearray(chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1]))
-        n = values.integer_to_int(values.Values.from_bytes(final_two))
+        final_two = chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1])
+        # unpack to signed integer
+        n = struct.unpack('<h', final_two)
         self._seed &= 0xff
         self._get(1) # RND(1)
         self._seed += n * self._step
@@ -54,8 +57,11 @@ class RandomNumberGenerator(object):
         """Get a value from the random number generator."""
         if f is None:
             return self._get(1)
-        mbf = fp.unpack(f)
-        return self._get(-(mbf.man>>8) if mbf.neg else (0 if mbf.exp == 0 else mbf.man>>8))
+        elif f.is_zero():
+            return self._get(0)
+        else:
+            # use integer value of mantissa
+            return self._get(f.mantissa())
 
     def _get(self, n):
         """Get a value from the random number generator (int argument)."""
@@ -67,4 +73,4 @@ class RandomNumberGenerator(object):
         if n != 0:
             self._seed = (self._seed*self._multiplier + self._increment) % self._period
         # seed/period
-        return fp.pack(fp.div(fp.Single.from_int(self._seed), fp.Single.from_int(self._period)))
+        return numbers.Single().from_int(self._seed).idiv(numbers.Single().from_int(self._period))

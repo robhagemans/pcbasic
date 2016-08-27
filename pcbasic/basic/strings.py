@@ -39,7 +39,7 @@ class String(numbers.Value):
         addr = self.address()
         return bytearray(self.stringspace[addr : addr+self.length])
 
-    value = dereference
+    to_value = dereference
 
 
 class StringSpace(object):

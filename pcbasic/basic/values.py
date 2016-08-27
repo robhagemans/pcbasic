@@ -16,7 +16,6 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from . import fp
 from . import error
 from . import util
 from . import basictoken as tk
@@ -38,10 +37,15 @@ STR = '$'
 TYPE_TO_SIZE = {STR: 3, INT: 2, SNG: 4, DBL: 8}
 SIZE_TO_TYPE = {2: INT, 3: STR, 4: SNG, 8: DBL}
 
+SIZE_TO_CLASS = {2: numbers.Integer, 4: numbers.Single, 8: numbers.Double}
+TYPE_TO_CLASS = {INT: numbers.Integer, SNG: numbers.Single, DBL: numbers.Double}
 
 def null(sigil):
     """Return null value for the given type."""
-    return (sigil, bytearray(TYPE_TO_SIZE[sigil]))
+    if sigil in ('$', '%'):
+        return (sigil, bytearray(TYPE_TO_SIZE[sigil]))
+    else:
+        return TYPE_TO_CLASS[sigil]()
 
 def size_bytes(name):
     """Return the size of a value type, by variable name or type char."""
@@ -53,13 +57,13 @@ def size_bytes(name):
 
 def pass_string(inp, err=error.TYPE_MISMATCH):
     """Check if variable is String-valued."""
-    if inp[0] != '$':
+    if Values.sigil(inp) != '$':
         raise error.RunError(err)
     return inp
 
 def pass_number(inp, err=error.TYPE_MISMATCH):
     """Check if variable is numeric."""
-    if inp[0] not in ('%', '!', '#'):
+    if Values.sigil(inp) not in ('%', '!', '#'):
         raise error.RunError(err)
     return inp
 
@@ -69,11 +73,11 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
 
 def string_length(in_string):
     """Get string length as Python int."""
-    return in_string[1][0]
+    return Values.to_bytes(in_string)[0]
 
 def string_address(in_string):
     """Get string address as Python int."""
-    return struct.unpack('<H', in_string[1][1:])[0]
+    return struct.unpack('<H', Values.to_bytes(in_string)[1:])[0]
 
 
 ###############################################################################
@@ -91,7 +95,7 @@ def int_to_integer(n, unsigned=False):
 
 def integer_to_int(in_integer, unsigned=False):
     """Convert BASIC Integer to Python int."""
-    s = in_integer[1]
+    s = Values.to_bytes(in_integer)
     if unsigned:
         return 0x100 * s[1] + s[0]
     else:
@@ -128,13 +132,13 @@ class Values(object):
     @float_safe
     def to_value(self, basic_val):
         """Convert BASIC value to Python value."""
-        typechar = basic_val[0]
+        typechar = self.sigil(basic_val)
         if typechar == '$':
             return self._strings.copy(basic_val)
         elif typechar == '%':
             return integer_to_int(basic_val)
-        elif typechar in ('#', '!'):
-            return fp.unpack(basic_val).to_value()
+        else:
+            return basic_val.to_value()
 
     @float_safe
     def from_value(self, python_val, typechar):
@@ -144,9 +148,9 @@ class Values(object):
         elif typechar == '%':
             return int_to_integer(python_val)
         elif typechar == '!':
-            return fp.pack(fp.Single.from_value(python_val))
+            return numbers.Single().from_value(python_val)
         elif typechar == '#':
-            return fp.pack(fp.Double.from_value(python_val))
+            return numbers.Double().from_value(python_val)
 
     def to_int(self, inp, unsigned=False):
         """Round numeric variable and convert to Python integer."""
@@ -166,29 +170,41 @@ class Values(object):
     @staticmethod
     def to_bytes(basic_val):
         """Convert BASIC value to internal byte representation."""
-        return bytearray(basic_val[1])
+        if isinstance(basic_val, tuple):
+            return bytearray(basic_val[1])
+        else:
+            # make a copy, not a view
+            return basic_val.to_bytes()
 
     @staticmethod
     def from_bytes(token_bytes):
         """Convert internal byte representation to BASIC value."""
-        return (SIZE_TO_TYPE[len(token_bytes)], bytearray(token_bytes))
+        typechar = SIZE_TO_TYPE[len(token_bytes)]
+        if typechar in ('$', '%'):
+            return (SIZE_TO_TYPE[len(token_bytes)], bytearray(token_bytes))
+        else:
+            # make a copy, not a view
+            return SIZE_TO_CLASS[len(token_bytes)]().from_bytes(token_bytes)
 
     ###########################################################################
     # type conversions
 
+    @staticmethod
+    def sigil(num):
+        if isinstance(num, tuple):
+            return num[0]
+        elif isinstance(num, numbers.Value):
+            return num.sigil
+        else:
+            assert False, 'Unrecognised value type: %s' % type(num)
+
     def to_integer(self, inp, unsigned=False):
         """Check if variable is numeric, convert to Int."""
-        assert isinstance(inp, tuple)
-        maxint = 0xffff if unsigned else 0x7fff
-        typechar = inp[0]
+        typechar = self.sigil(inp)
         if typechar == '%':
             return inp
         elif typechar in ('!', '#'):
-            val = fp.unpack(inp).round_to_int()
-            if val > maxint or val < -0x8000:
-                # overflow
-                raise error.RunError(error.OVERFLOW)
-            return int_to_integer(val, unsigned=True)
+            return int_to_integer(inp.to_int(), unsigned)
         else:
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
@@ -196,41 +212,40 @@ class Values(object):
     @float_safe
     def to_single(self, num):
         """Check if variable is numeric, convert to Single."""
-        assert isinstance(num, tuple)
-        typechar = num[0]
+        typechar = self.sigil(num)
         if typechar == '!':
             return num
         elif typechar == '%':
-            return fp.pack(fp.Single.from_int(integer_to_int(num)))
+            return numbers.Single().from_int(integer_to_int(num))
         elif typechar == '#':
-            return fp.pack(fp.unpack(num).round_to_single())
+            return num.to_single()
         else:
             raise error.RunError(error.TYPE_MISMATCH)
 
     @float_safe
     def to_double(self, num):
         """Check if variable is numeric, convert to Double."""
-        assert isinstance(num, tuple)
-        typechar = num[0]
-        if typechar == '#':
-            return num
-        elif typechar == '%':
-            return fp.pack(fp.Double.from_int(integer_to_int(num)))
-        elif typechar == '!':
-            return ('#', bytearray(4) + num[1])
-        else:
+        typechar = self.sigil(num)
+        if typechar == '%':
+            return numbers.Double().from_int(integer_to_int(num))
+        elif typechar == '$':
             raise error.RunError(error.TYPE_MISMATCH)
+        elif typechar == '!':
+            return numbers.Double().from_single(num)
+        elif typechar == '#':
+            return num
 
     def to_float(self, num, allow_double=True):
         """Check if variable is numeric, convert to Double or Single."""
-        if num and num[0] == '#' and allow_double:
+        typechar = self.sigil(num)
+        if typechar == '#' and allow_double:
             return num
         else:
             return self.to_single(num)
 
     def to_most_precise(self, left, right):
         """Check if variables are numeric and convert to highest-precision."""
-        left_type, right_type = left[0][-1], right[0][-1]
+        left_type, right_type = self.sigil(left), self.sigil(right)
         if left_type == '#' or right_type == '#':
             return (self.to_double(left), self.to_double(right))
         elif left_type == '!' or right_type == '!':
@@ -254,17 +269,17 @@ class Values(object):
     ###############################################################################
 
     def round(self, x):
-        """Round to nearest whole number."""
-        return fp.pack(fp.unpack(self.to_float(x)).iround())
+        """Round to nearest whole number without converting to int."""
+        return self.to_float(x).iround()
 
     def is_zero(self, x):
         """Return whether a number is zero."""
         x = pass_number(x)
-        typechar = x[0]
+        typechar = self.sigil(x)
         if typechar == '%':
             return integer_to_int(x) == 0
         else:
-            return fp.unpack(x).is_zero()
+            return x.is_zero()
 
     ###############################################################################
     # math functions
@@ -273,13 +288,13 @@ class Values(object):
     def _call_float_function(self, fn, *args):
         """Convert to IEEE 754, apply function, convert back."""
         args = [self.to_float(arg, self._double_math) for arg in args]
-        floatcls = fp.unpack(args[0]).__class__
+        floatcls = args[0].__class__
         try:
-            args = (fp.unpack(arg).to_value() for arg in args)
-            return fp.pack(floatcls().from_value(fn(*args)))
+            args = (arg.to_value() for arg in args)
+            return floatcls().from_value(fn(*args))
         except ArithmeticError as e:
-            # positive infinity
-            raise e.__class__(floatcls.max.copy())
+            # positive infinity of the appropriate class
+            raise e.__class__(floatcls.pos_max)
 
     def sqr(self, x):
         """Square root."""
@@ -314,27 +329,21 @@ class Values(object):
     def sgn(self, x):
         """Sign."""
         x = pass_number(x)
-        if x[0] == '%':
+        if self.sigil(x) == '%':
             inp_int = integer_to_int(x)
             return int_to_integer(0 if inp_int == 0 else (1 if inp_int > 0 else -1))
         else:
-            return int_to_integer(fp.unpack(x).sign())
+            return int_to_integer(x.sign())
 
     def floor(self, x):
         """Truncate towards negative infinity (INT)."""
         x = pass_number(x)
-        return x if x[0] == '%' else fp.pack(fp.unpack(x).ifloor())
+        return x if self.sigil(x) == '%' else x.clone().ifloor()
 
     def fix(self, x):
         """Truncate towards zero."""
-        inp = pass_number(x)
-        if inp[0] == '%':
-            return inp
-        elif inp[0] == '!':
-            # needs to be a float to avoid overflow
-            return fp.pack(fp.Single.from_int(fp.unpack(inp).trunc_to_int()))
-        elif inp[0] == '#':
-            return fp.pack(fp.Double.from_int(fp.unpack(inp).trunc_to_int()))
+        x = pass_number(x)
+        return x if self.sigil(x) == '%' else x.clone().itrunc()
 
 
     ###############################################################################
@@ -344,12 +353,12 @@ class Values(object):
     def add(self, left, right):
         """Add two numbers."""
         left, right = self.to_most_precise(left, right)
-        if left[0] in ('#', '!'):
-            return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
+        if self.sigil(left) in ('#', '!'):
+            return left.clone().iadd(right)
         else:
             # return Single to avoid wrapping on integer overflow
-            return fp.pack(fp.Single.from_int(
-                                integer_to_int(left) + integer_to_int(right)))
+            return numbers.Single().from_int(
+                                integer_to_int(left) + integer_to_int(right))
 
     @float_safe
     def subtract(self, left, right):
@@ -358,58 +367,60 @@ class Values(object):
 
     def abs(self, inp):
         """Return the absolute value of a number. No-op for strings."""
-        if inp[0] == '%':
+        typechar = self.sigil(inp)
+        if typechar == '%':
             val = abs(integer_to_int(inp))
             if val == 32768:
-                return fp.pack(fp.Single.from_int(val))
+                return numbers.Single().from_int(val)
             else:
                 return int_to_integer(val)
-        elif inp[0] in ('!', '#'):
-            out = (inp[0], inp[1][:])
-            out[1][-2] &= 0x7F
-            return out
+        elif typechar in ('!', '#'):
+            return inp.clone().iabs()
+        # strings pass unchanged
         return inp
 
     def negate(self, inp):
         """Negation (unary -). No-op for strings."""
-        if inp[0] == '%':
+        typechar = self.sigil(inp)
+        if typechar == '%':
             val = -integer_to_int(inp)
             if val == 32768:
-                return fp.pack(fp.Single.from_int(val))
+                return numbers.Single().from_int(val)
             else:
                 return int_to_integer(val)
-        elif inp[0] in ('!', '#'):
-            out = (inp[0], inp[1][:])
-            out[1][-2] ^= 0x80
-            return out
+        elif typechar in ('!', '#'):
+            return inp.clone().ineg()
+        # strings pass unchanged
         return inp
 
     @float_safe
     def power(self, left, right):
         """Left^right."""
-        if (left[0] == '#' or right[0] == '#') and self._double_math:
+
+        if (self.sigil(left) == '#' or self.sigil(right) == '#') and self._double_math:
             return self._call_float_function(lambda a, b: a**b, self.to_double(left), self.to_double(right))
         else:
-            if right[0] == '%':
-                return fp.pack(fp.unpack(self.to_single(left)).ipow_int(integer_to_int(right)))
+            if self.sigil(right) == '%':
+                print left, right, integer_to_int(left), integer_to_int(right)
+                return self.to_single(left)._ipow_int(integer_to_int(right))
             else:
                 return self._call_float_function(lambda a, b: a**b, self.to_single(left), self.to_single(right))
 
     @float_safe
     def multiply(self, left, right):
         """Left*right."""
-        if left[0] == '#' or right[0] == '#':
-            return fp.pack( fp.unpack(self.to_double(left)).imul(fp.unpack(self.to_double(right))) )
+        if self.sigil(left) == '#' or self.sigil(right) == '#':
+            return self.to_double(left).clone().imul(self.to_double(right))
         else:
-            return fp.pack( fp.unpack(self.to_single(left)).imul(fp.unpack(self.to_single(right))) )
+            return self.to_single(left).clone().imul(self.to_single(right))
 
     @float_safe
     def divide(self, left, right):
         """Left/right."""
-        if left[0] == '#' or right[0] == '#':
-            return fp.pack( fp.div(fp.unpack(self.to_double(left)), fp.unpack(self.to_double(right))) )
+        if self.sigil(left) == '#' or self.sigil(right) == '#':
+            return self.to_double(left).clone().idiv(self.to_double(right))
         else:
-            return fp.pack( fp.div(fp.unpack(self.to_single(left)), fp.unpack(self.to_single(right))) )
+            return self.to_single(left).clone().idiv(self.to_single(right))
 
     @float_safe
     def divide_int(self, left, right):
@@ -418,7 +429,8 @@ class Values(object):
         divisor = self.to_int(right)
         if divisor == 0:
             # division by zero, return single-precision maximum
-            raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
+            smax = numbers.Single.neg_max if dividend < 0 else numbers.Single.pos_max
+            raise ZeroDivisionError(smax)
         if (dividend >= 0) == (divisor >= 0):
             return int_to_integer(dividend / divisor)
         else:
@@ -427,11 +439,12 @@ class Values(object):
     @float_safe
     def mod(self, left, right):
         """Left modulo right."""
-        divisor = self.to_int(right)
         dividend = self.to_int(left)
+        divisor = self.to_int(right)
         if divisor == 0:
             # division by zero, return single-precision maximum
-            raise ZeroDivisionError(fp.Single(dividend<0, fp.Single.max.man, fp.Single.max.exp))
+            smax = numbers.Single.neg_max if dividend < 0 else numbers.Single.pos_max
+            raise ZeroDivisionError(smax)
         mod = dividend % divisor
         if dividend < 0 or mod < 0:
             mod -= divisor
@@ -487,19 +500,20 @@ class Values(object):
 
     def _bool_eq(self, left, right):
         """Return true if left == right, false otherwise."""
-        if left[0] == '$':
+        if self.sigil(left) == '$':
             return (self._strings.copy(pass_string(left)) ==
                     self._strings.copy(pass_string(right)))
         else:
             left, right = self.to_most_precise(left, right)
-            if left[0] in ('#', '!'):
-                return fp.unpack(left).equals(fp.unpack(right))
+            if self.sigil(left) in ('#', '!'):
+                return left.eq(right)
             else:
                 return integer_to_int(left) == integer_to_int(right)
 
     def bool_gt(self, left, right):
         """Ordering: return -1 if left > right, 0 otherwise."""
-        if left[0] == '$':
+        ltype = self.sigil(left)
+        if self.sigil(left) == '$':
             left = self._strings.copy(pass_string(left))
             right = self._strings.copy(pass_string(right))
             shortest = min(len(left), len(right))
@@ -517,8 +531,8 @@ class Values(object):
             return False
         else:
             left, right = self.to_most_precise(left, right)
-            if left[0] in ('#', '!'):
-                return fp.unpack(left).gt(fp.unpack(right))
+            if self.sigil(left) in ('#', '!'):
+                return left.gt(right)
             else:
                 return integer_to_int(left) > integer_to_int(right)
 
@@ -548,7 +562,7 @@ class Values(object):
 
     def plus(self, left, right):
         """Binary + operator: add or concatenate."""
-        if left[0] == '$':
+        if self.sigil(left) == '$':
             return self.concat(left, right)
         else:
             return self.add(left, right)
@@ -796,9 +810,9 @@ class Values(object):
                 return tk.T_BYTE + chr(str_to_int(word))
             else:
                 # two-byte constant
-                return tk.T_INT + str(self.to_bytes(int_to_integer(str_to_int(word))))
+                return tk.T_INT + self.to_bytes(int_to_integer(str_to_int(word)))
         else:
-            mbf = str(self._str_to_float(word)[1])
+            mbf = self.to_bytes(self._str_to_float(word))
             if len(mbf) == 4:
                 return tk.T_SINGLE + mbf
             else:
@@ -915,18 +929,8 @@ class Values(object):
     @float_safe
     def _float_from_exp10(self, neg, mantissa, exp10, is_double):
         """Create floating-point value from mantissa and decomal exponent."""
-        cls = fp.Double if is_double else fp.Single
-        # isn't this just cls.from_int(-mantissa if neg else mantissa)?
-        mbf = cls(neg, mantissa * 0x100, cls.bias).normalise()
-        # apply decimal exponent
-        while (exp10 < 0):
-            mbf.idiv10()
-            exp10 += 1
-        while (exp10 > 0):
-            mbf.imul10()
-            exp10 -= 1
-        mbf.normalise()
-        return fp.pack(mbf)
+        cls = numbers.Double if is_double else numbers.Single
+        return cls().from_decimal(-mantissa if neg else mantissa, exp10)
 
 
 ##############################################################################
@@ -937,7 +941,7 @@ def number_to_str(inp, screen=False, write=False):
     # screen=True is used for screen, str$ and sequential files
     if not inp:
         raise error.RunError(error.STX)
-    typechar = inp[0]
+    typechar = Values.sigil(inp)
     if typechar == '%':
         if screen and not write and integer_to_int(inp) >= 0:
             return ' ' + str(integer_to_int(inp))
@@ -970,7 +974,6 @@ def str_to_int(s):
 
 def float_to_str(n_in, screen=False, write=False):
     """Convert BASIC float to Python string."""
-    n_in = fp.unpack(n_in)
     # screen=True (ie PRINT) - leading space, no type sign
     # screen='w' (ie WRITE) - no leading space, no type sign
     # default mode is for LIST
@@ -981,30 +984,30 @@ def float_to_str(n_in, screen=False, write=False):
         elif write:
             valstr = '0'
         else:
-            valstr = '0' + n_in.type_sign
+            valstr = '0' + n_in.sigil
         return valstr
     # print sign
-    if n_in.neg:
+    if n_in.is_negative():
         valstr = '-'
     else:
         if screen and not write:
             valstr = ' '
         else:
             valstr = ''
-    mbf = n_in.copy()
-    num, exp10 = mbf.bring_to_range(mbf.lim_bot, mbf.lim_top)
+    mbf = n_in.clone()
+    num, exp10 = mbf.to_decimal(mbf.lim_bot, mbf.lim_top)
     digitstr = _get_digits(num, digits=mbf.digits, remove_trailing=True)
     # exponent for scientific notation
-    exp10 += mbf.digits-1
-    if exp10 > mbf.digits-1 or len(digitstr)-exp10 > mbf.digits+1:
+    exp10 += mbf.digits - 1
+    if exp10 > mbf.digits - 1 or len(digitstr)-exp10 > mbf.digits + 1:
         # use scientific notation
         valstr += _scientific_notation(digitstr, exp10, n_in.exp_sign, digits_to_dot=1, force_dot=False)
     else:
         # use decimal notation
         if screen or write:
-            type_sign=''
+            type_sign = ''
         else:
-            type_sign = n_in.type_sign
+            type_sign = n_in.sigil
         valstr += _decimal_notation(digitstr, exp10, type_sign, force_dot=False)
     return valstr
 
@@ -1013,20 +1016,19 @@ def format_number(value, tokens, digits_before, decimals):
     # illegal function call if too many digits
     if digits_before + decimals > 24:
         raise error.RunError(error.IFC)
-    # extract sign, mantissa, exponent
-    value = fp.unpack(value)
     # dollar sign, decimal point
     has_dollar, force_dot = '$' in tokens, '.' in tokens
     # leading sign, if any
     valstr, post_sign = '', ''
+    neg = value.is_negative()
     if tokens[0] == '+':
-        valstr += '-' if value.neg else '+'
+        valstr += '-' if neg else '+'
     elif tokens[-1] == '+':
-        post_sign = '-' if value.neg else '+'
+        post_sign = '-' if neg else '+'
     elif tokens[-1] == '-':
-        post_sign = '-' if value.neg else ' '
+        post_sign = '-' if neg else ' '
     else:
-        valstr += '-' if value.neg else ''
+        valstr += '-' if neg else ''
         # reserve space for sign in scientific notation by taking away a digit position
         if not has_dollar:
             digits_before -= 1
@@ -1036,7 +1038,7 @@ def format_number(value, tokens, digits_before, decimals):
             #if force_dot and digits_before == 0 and decimals != 0:
             #    valstr += '0'
     # take absolute value
-    value.neg = False
+    value = value.clone().iabs()
     # currency sign, if any
     valstr += '$' if has_dollar else ''
     # format to string
@@ -1061,20 +1063,6 @@ number_whitespace = ' \t\n'
 
 # string representations
 
-fp.Single.lim_top = fp.from_bytes(bytearray('\x7f\x96\x18\x98')) # 9999999, highest float less than 10e+7
-fp.Single.lim_bot = fp.from_bytes(bytearray('\xff\x23\x74\x94')) # 999999.9, highest float  less than 10e+6
-fp.Single.type_sign, fp.Single.exp_sign = '!', 'E'
-
-fp.Double.lim_top = fp.from_bytes(bytearray('\xff\xff\x03\xbf\xc9\x1b\x0e\xb6')) # highest float less than 10e+16
-fp.Double.lim_bot = fp.from_bytes(bytearray('\xff\xff\x9f\x31\xa9\x5f\x63\xb2')) # highest float less than 10e+15
-fp.Double.type_sign, fp.Double.exp_sign = '#', 'D'
-
-
-def _just_under(n_in):
-    """Return the largest floating-point number less than the given value."""
-    # decrease mantissa by one
-    return n_in.__class__(n_in.neg, n_in.man - 0x100, n_in.exp)
-
 def _get_digits(num, digits, remove_trailing):
     """Get the digits for an int."""
     pow10 = 10L**(digits-1)
@@ -1088,7 +1076,7 @@ def _get_digits(num, digits, remove_trailing):
         pow10 /= 10
     if remove_trailing:
         # remove trailing zeros
-        while len(digitstr)>1 and digitstr[-1] == '0':
+        while len(digitstr) > 1 and digitstr[-1] == '0':
             digitstr = digitstr[:-1]
     return digitstr
 
@@ -1143,17 +1131,18 @@ def _format_float_scientific(expr, digits_before, decimals, force_dot):
             if expr.exp_sign == 'E':
                 return 'E+00'
             return '0D+00'  # matches GW output. odd, odd, odd
-        digitstr, exp10 = '0'*(digits_before+decimals), 0
+        digitstr = '0' * (digits_before + decimals)
+        exp10 = 0
     else:
         if work_digits > 0:
             # scientific representation
-            lim_bot = _just_under(fp.pow_int(expr.ten, work_digits-1))
+            lim_bot = expr.__class__().from_bytes(expr.ten)._ipow_int(work_digits-1).just_under()
         else:
             # special case when work_digits == 0, see also below
             # setting to 0.1 results in incorrect rounding (why?)
-            lim_bot = expr.one.copy()
-        lim_top = lim_bot.copy().imul10()
-        num, exp10 = expr.bring_to_range(lim_bot, lim_top)
+            lim_bot = expr.__class__().from_bytes(expr.one)
+        lim_top = lim_bot.clone().imul10()
+        num, exp10 = expr.to_decimal(lim_bot, lim_top)
         digitstr = _get_digits(num, work_digits, remove_trailing=True)
         if len(digitstr) < digits_before + decimals:
             digitstr += '0' * (digits_before + decimals - len(digitstr))
@@ -1166,21 +1155,23 @@ def _format_float_scientific(expr, digits_before, decimals, force_dot):
 
 def _format_float_fixed(expr, decimals, force_dot):
     """Put a float in fixed-point representation."""
-    unrounded = fp.mul(expr, fp.pow_int(expr.ten, decimals)) # expr * 10**decimals
-    num = unrounded.copy().iround()
+    #FIXME - use from_decimal here?
+    unrounded = expr.clone().imul(expr.__class__().from_bytes(expr.ten)._ipow_int(decimals)) # expr * 10**decimals
+    num = unrounded.clone().iround()
     # find exponent
     exp10 = 1
-    pow10 = fp.pow_int(expr.ten, exp10) # pow10 = 10L**exp10
-    while num.gt(pow10) or num.equals(pow10): # while pow10 <= num:
+    pow10 = expr.__class__().from_bytes(expr.ten)._ipow_int(exp10) # pow10 = 10L**exp10
+    while num.gt(pow10) or num.eq(pow10): # while pow10 <= num:
         pow10.imul10() # pow10 *= 10
         exp10 += 1
     work_digits = exp10 + 1
     diff = 0
     if exp10 > expr.digits:
         diff = exp10 - expr.digits
-        num = fp.div(unrounded, fp.pow_int(expr.ten, diff)).iround()  # unrounded / 10**diff
+        ten_diff = expr.__class__().from_bytes(expr.ten)._ipow_int(diff)
+        num = unrounded.clone().idiv(ten_diff).iround()  # unrounded / 10**diff
         work_digits -= diff
-    num = num.trunc_to_int()
+    num = num.to_int_truncate()
     # argument work_digits-1 means we're getting work_digits==exp10+1-diff digits
     # fill up with zeros
     digitstr = _get_digits(num, work_digits-1, remove_trailing=False) + '0' * diff
@@ -1193,7 +1184,7 @@ def token_to_value(full_token):
     """Token to value."""
     if not full_token:
         return None
-    lead = full_token[0]
+    lead = str(full_token)[0]
     if lead in (tk.T_OCT, tk.T_HEX, tk.T_INT, tk.T_SINGLE, tk.T_DOUBLE):
         return Values.from_bytes(full_token[1:])
     elif lead == tk.T_BYTE:

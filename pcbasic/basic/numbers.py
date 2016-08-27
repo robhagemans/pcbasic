@@ -69,16 +69,20 @@ class Value(object):
 class Number(Value):
     """Abstract base class for numeric value"""
 
+    zero = None
+    pos_max = None
+    neg_max = None
+
+    def __str__(self):
+        """String representation for debugging."""
+        return '[%s] %s %s' % (str(self.to_bytes()).encode('hex'), self.to_value(), self.sigil)
+
 
 class Integer(Number):
     """16-bit signed little-endian integer"""
 
     sigil = '%'
     size = 2
-
-    zero = '\0\0'
-    pos_max = '\xff\x7f'
-    neg_max = '\xff\xff'
 
     def is_zero(self):
         """Value is zero"""
@@ -95,11 +99,13 @@ class Integer(Number):
     def from_int(self, in_int):
         """Set value to Python int"""
         if not (-0x8000 <= in_int <= 0x7fff):
-            raise OverflowError()
+            self.copy_from(self.neg_max if in_int < 0 else self.pos_max)
+            raise OverflowError(self)
         struct.pack_into('<h', self.buffer, 0, in_int)
         return self
 
-    value = to_int
+    to_value = to_int
+    from_value = from_int
 
     def to_unsigned(self):
         """Return value as unsigned Python int"""
@@ -109,7 +115,8 @@ class Integer(Number):
         """Set value to unsigned Python int"""
         # we can in fact assign negatives as 'unsigned'
         if not (-0x8000 <= in_int <= 0xffff):
-            raise OverflowError()
+            self.copy_from(self.neg_max if in_int < 0 else self.pos_max)
+            raise OverflowError(self)
         if in_int < 0:
             in_int += 0xffff
         struct.pack_into('<H', self.buffer, 0, in_int)
@@ -188,7 +195,7 @@ class Integer(Number):
         """Perform integer division."""
         if rhs.is_zero():
             # division by zero - return single-precision maximum
-            raise ZeroDivisionError()
+            raise ZeroDivisionError(Single.neg_max if self.is_negative() else Single.pos_max)
         dividend = self.to_int()
         divisor = rhs.to_int()
         # BASIC intdiv rounds to zero, Python's floordiv to -inf
@@ -201,7 +208,7 @@ class Integer(Number):
         """Left modulo right."""
         if rhs.is_zero():
             # division by zero - return single-precision maximum
-            raise ZeroDivisionError()
+            raise ZeroDivisionError(Single.neg_max if self.is_negative() else Single.pos_max)
         dividend = self.to_int()
         divisor = rhs.to_int()
         # BASIC MOD has same sign as dividend, Python mod has same sign as divisor
@@ -229,9 +236,11 @@ class Integer(Number):
         if isinstance(rhs, Float):
             # upgrade to Float
             return rhs.__class__().from_integer(self).abs_gt(rhs)
-        if ord(self.buffer[1]) > ord(rhs.buffer[1]):
+        lmsb = ord(self.buffer[1] & 0x7f)
+        rmsb = ord(rhs.buffer[1] & 0x7f)
+        if lmsb > rmsb:
             return True
-        elif ord(self.buffer[1]) < ord(rhs.buffer[1]):
+        elif lmsb < rmsb:
             return False
         return ord(self.buffer[0]) > ord(rhs.buffer[0])
 
@@ -253,7 +262,8 @@ class Integer(Number):
             lsb += 0xff
             msb -= 1
         if not (0 <= msb <= 0xff):
-            raise OverflowError()
+            self.copy_from(self.neg_max if msb & 0x80 != 0 else self.pos_max)
+            raise OverflowError(self)
         self.buffer[:] = chr(lsb) + chr(msb)
 
 
@@ -305,8 +315,6 @@ class Float(Number):
             man |= self.signmask
         return man * 2.**exp
 
-    value = to_float
-
     def from_float(self, in_float):
         """Set to value of Python float."""
         if in_float == 0.:
@@ -332,8 +340,8 @@ class Float(Number):
             OverflowError if overflow
         """
         if exp > 255:
-            self.buffer[:] = self.neg_max if neg else self.pos_max
-            raise OverflowError()
+            self.copy_from(self.neg_max if neg else self.pos_max)
+            raise OverflowError(self)
         elif exp <= 0:
             # set to zero, but leave mantissa as is
             self.buffer[-1:] = chr(0)
@@ -352,17 +360,24 @@ class Float(Number):
 
     def to_int(self):
         """Return value rounded to Python int"""
-        exp = ord(self.buffer[-1]) - self.bias
-        mand = struct.unpack(self.intformat, '\0' + bytearray(self.buffer[:-1]))[0] | self.den_mask
-        neg = self.is_negative()
-        if exp > 0:
-            mand <<= exp
-        else:
-            mand >>= -exp
-        # round
+        exp, mand, neg = self._to_int_den()
+        # carry: round to nearest, halves away from zero
         if mand & 0x80:
             mand += 0x80
         return -mand >> 8 if neg else mand >> 8
+
+    def _to_int_den(self):
+        """Denormalised float to integer."""
+        exp, man, neg = self._denormalise()
+        exp -= self.bias
+        if exp > 0:
+            man <<= exp
+        else:
+            man >>= -exp
+        return self.bias, man, neg
+
+    to_value = to_float
+    from_value = from_float
 
     def from_int(self, in_int):
         """Set value to Python int"""
@@ -377,6 +392,12 @@ class Float(Number):
             self.buffer[-1] = chr(exp)
         return self
 
+    def to_int_truncate(self):
+        """Truncate float to integer."""
+        _, mand, neg = self._to_int_den()
+        # ignore carry
+        return -mand >> 8 if neg else mand >> 8
+
     def from_integer(self, in_integer):
         """Convert Integer to single, in-place"""
         return self.from_int(in_integer.to_int())
@@ -389,6 +410,25 @@ class Float(Number):
     def iabs(self):
         """Absolute value in-place"""
         self.buffer[-2] = chr(ord(self.buffer[-2]) & 0x7F)
+        return self
+
+    def iround(self):
+        """In-place. Round and return as float."""
+        return self._normalise(*self._to_int_den())
+
+    def itrunc(self):
+        """In-place. Truncate towards zero and return as float."""
+        lexp, lman, lneg = self._to_int_den()
+        # discard carry byte
+        lman &= 0xffffffffffffffff00
+        return self._normalise(lexp, lman, lneg)
+
+    def ifloor(self):
+        """In-place. Truncate towards negative infinity and return as float."""
+        if self.is_negative():
+            self.itrunc().isub(self.one)
+        else:
+            self.itrunc()
         return self
 
     # relations
@@ -424,12 +464,15 @@ class Float(Number):
         # don't compare zeroes
         if self.is_zero():
             return False
-        # we can compare floats as if they were ints
-        # so long as the sign is the same
-        for l, r in reversed(zip(self.buffer, rhs.buffer)):
-            if l > r:
+        rhscopy = bytearray(rhs.buffer)
+        # so long as the sign is the same ...
+        rhscopy[-2] &= (ord(self.buffer[-2]) | 0x7f)
+        # ... we can compare floats as if they were ints
+        for l, r in reversed(zip(self.buffer, rhscopy)):
+            # memoryview elements are str, bytearray elements are int
+            if ord(l) > r:
                 return True
-            elif l < r:
+            elif ord(l) < r:
                 return False
         # equal
         return False
@@ -501,16 +544,16 @@ class Float(Number):
 
     def idiv(self, right_in):
         """Divide in-place."""
+        print 'idiv', self, right_in
         if right_in.is_zero():
             # division by zero - return max float with the type and sign of self
-            #self.exp, self.man = self.max.exp, self.max.man
-            raise ZeroDivisionError()
+            self.copy_from(self.neg_max if self.is_negative() else self.pos_max)
+            raise ZeroDivisionError(self)
         if self.is_zero():
             return self
-        lden = self._div_den(self._denormalise(), right_in._denormalise())
+        lexp, lman, lneg = self._div_den(self._denormalise(), right_in._denormalise())
         # normalise and return
-        self._normalise(*lden)
-        return self
+        return self._normalise(lexp, lman, lneg)
 
     def _div_den(self, lden, rden):
         """Denormalised divide."""
@@ -522,14 +565,14 @@ class Float(Number):
         lexp -= rexp - self.bias - 8
         # long division of mantissas
         work_man = lman
-        lman = 0L
+        lman = 0
         lexp += 1
         while (rman > 0):
             lman <<= 1
             lexp -= 1
             if work_man > rman:
                 work_man -= rman
-                lman += 1L
+                lman += 1
             rman >>= 1
         return lexp, lman, lneg
 
@@ -575,6 +618,17 @@ class Float(Number):
             exp10 -= 1
         return self
 
+    def just_under(self, n_in):
+        """Return the largest floating-point number less than the given value."""
+        lexp, lman, lneg = self._denormalise()
+        # decrease mantissa by one
+        return self.__class__()._normalise(lexp, lman - 1, lneg)
+
+    def mantissa(self):
+        """Integer value of mantissa."""
+        lexp, lman, lneg = self._denormalise()
+        return -(lman>>8) if lneg else (lman>>8)
+
     # implementation
 
     def _denormalise(self):
@@ -596,6 +650,8 @@ class Float(Number):
             exp -= 1
             man <<= 1
         pden_s = man
+        #FIXME: this does not scale correctly for 1./1. -> 0.5
+        # however just shifting it breaks additions and e.g. 15./10.
         # round to nearest; halves to even (Gaussian rounding)
         round_up = (man & 0xff > 0x80) or (man & 0xff == 0x80 and man & 0x100 == 0x100)
         man = (man >> 8) + round_up
@@ -655,20 +711,19 @@ class Float(Number):
         """Raise to int power in-place."""
         # exponentiation by squares
         if expt < 0:
-            self.ipow_int(-expt)
-            divisor = self.clone()
-            self.from_bytes(self.one).idiv(divisor)
+            self._ipow_int(-expt)
+            self = self.one.clone().idiv(self)
         elif expt > 1:
             if (expt % 2) == 0:
-                self.ipow_int(expt // 2)
+                self._ipow_int(expt // 2)
                 self.imul(self)
             else:
                 base = self.clone()
-                self.ipow_int((expt-1) // 2)
+                self._ipow_int((expt-1) // 2)
                 self.imul(self)
                 self.imul(base)
         elif expt == 0:
-            self = self.from_bytes(self.one)
+            self = self.one.clone()
         return self
 
 
@@ -690,11 +745,6 @@ class Single(Float):
     mask = 0xffffff
     posmask = 0x7fffff
 
-    pos_max = '\xff\xff\x7f\xff'
-    neg_max = '\xff\xff\xff\xff'
-    zero = '\0\0\0\0'
-
-    one = '\x00\x00\x00\x81'
     ten = '\x00\x00\x20\x84'
 
     def to_token(self):
@@ -706,6 +756,10 @@ class Single(Float):
         if token[0] != tk.T_SINGLE:
             raise ValueError()
         self.buffer[:] = token[-4:]
+        return self
+
+    def to_single(self):
+        """Convert single to single (no-op)."""
         return self
 
 
@@ -727,11 +781,6 @@ class Double(Float):
     mask = 0xffffffffffffff
     posmask = 0x7fffffffffffff
 
-    pos_max = '\xff\xff\xff\xff\xff\xff\x7f\xff'
-    neg_max = '\xff\xff\xff\xff\xff\xff\xff\xff'
-    zero = '\0\0\0\0\0\0\0\0'
-
-    one = '\x00\x00\x00\x00\x00\x00\x00\x81'
     ten = '\x00\x00\x00\x00\x00\x00\x20\x84'
 
     def from_single(self, in_single):
@@ -750,6 +799,14 @@ class Double(Float):
         self.buffer[:] = token[-8:]
         return self
 
+    def to_single(self):
+        """Round double to single."""
+        mybytes = self.to_bytes()
+        single = Single().from_bytes(mybytes[4:])
+        exp, man, neg = single._denormalise()
+        # carry byte
+        man += mybytes[3]
+        return single._normalise(exp, man, neg)
 
 ###############################################################################
 # error handling
@@ -799,9 +856,13 @@ class FloatErrorHandler(object):
             # write a message & continue as normal
             self._screen.write_line(error.RunError(math_error).message)
         # return max value for the appropriate float type
-        if e.args and e.args[0] and isinstance(e.args[0], fp.Float):
-            return fp.pack(e.args[0])
-        return fp.pack(fp.Single.max.copy())
+        if e.args and e.args[0]:
+            if isinstance(e.args[0], Float):
+                return e.args[0]
+            elif isinstance(e.args[0], Integer):
+                # integer values are not soft-handled
+                raise e
+        return Single.pos_max
 
 
 def from_token(token):
@@ -813,6 +874,32 @@ def from_token(token):
     else:
         return Integer().from_token(token)
 
+# string representation settings
 
+Single.lim_top = Single('\x7f\x96\x18\x98') # 9999999, highest float less than 10e+7
+Single.lim_bot = Single('\xff\x23\x74\x94') # 999999.9, highest float  less than 10e+6
+Single.exp_sign = 'E'
+Single.digits = 7
+
+Double.lim_top = Double('\xff\xff\x03\xbf\xc9\x1b\x0e\xb6') # highest float less than 10e+16
+Double.lim_bot = Double('\xff\xff\x9f\x31\xa9\x5f\x63\xb2') # highest float less than 10e+15
+Double.exp_sign = 'D'
+Double.digits = 16
+
+
+Integer.pos_max = Integer('\xff\x7f')
+Integer.neg_max = Integer('\xff\xff')
+Integer.zero = '\0\0'
+
+Single.pos_max = Single('\xff\xff\x7f\xff')
+Single.neg_max = Single('\xff\xff\xff\xff')
+#FIXME
+Single.zero = '\0\0\0\0'
+Single.one = Single('\x00\x00\x00\x81')
+
+Double.pos_max = Double('\xff\xff\xff\xff\xff\xff\x7f\xff')
+Double.neg_max = Double('\xff\xff\xff\xff\xff\xff\xff\xff')
+Double.zero = '\0\0\0\0\0\0\0\0'
+Double.one = Double('\x00\x00\x00\x00\x00\x00\x00\x81')
 
 lden_s, rden_s, sden_s, pden_s = 0,0,0,0

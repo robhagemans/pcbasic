@@ -133,12 +133,13 @@ class Arrays(object):
 
     def get(self, name, index):
         """Retrieve a copy of the value of an array element."""
-        return (name[-1], bytearray(self.view(name, index)))
+        # from_bytes makes the copy
+        return self.values.from_bytes(self.view(name, index))
 
     def set(self, name, index, value):
         """Assign a value to an array element."""
         # copy value into array
-        self.view(name, index)[:] = self.values.to_type(name[-1], value)[1]
+        self.view(name, index)[:] = self.values.to_bytes(self.values.to_type(name[-1], value))
         # increment array version
         self.arrays[name][2] += 1
 
@@ -166,7 +167,7 @@ class Arrays(object):
             return None
         _, lst, _ = self.arrays[name]
         offset = address - found_addr
-        return (name[-1], lst[offset : offset+values.size_bytes(name)])
+        return self.values.from_bytes(lst[offset : offset+values.size_bytes(name)])
 
     def get_memory(self, address):
         """Retrieve data from data memory: array space """

@@ -250,7 +250,8 @@ class Parser(object):
     def loop_init(self, ins, forpos, nextpos, varname, start, stop, step):
         """Initialise a FOR loop."""
         # set start to start-step, then iterate - slower on init but allows for faster iterate
-        self.session.scalars.set(varname, self.values.add(start, self.values.negate(step)))
+        loopvar = self.values.add(start, self.values.negate(step))
+        self.session.scalars.set(varname, loopvar)
         sgn = values.integer_to_int(self.values.sgn(step))
         self.for_stack.append(
             (varname, stop, step, sgn, forpos, nextpos,))
@@ -269,8 +270,8 @@ class Parser(object):
         else:
             raise error.RunError(error.NEXT_WITHOUT_FOR)
         # increment counter
-        loopvar = self.session.scalars.get(varname)
-        self.session.scalars.set(varname, self.values.add(loopvar, step))
+        loopvar = self.values.add(self.session.scalars.get(varname), step)
+        self.session.scalars.set(varname, loopvar)
         # check condition
         loop_ends = self.values.bool_gt(loopvar, stop) if sgn > 0 else self.values.bool_gt(stop, loopvar)
         if loop_ends:

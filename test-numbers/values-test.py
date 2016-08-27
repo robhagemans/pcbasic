@@ -14,7 +14,7 @@ if __name__ == '__main__':
         s = r.clone()
         s.view()[-1:] = chr(ord(s.view()[-1])+8)
         t = s.clone()
-        print s.iadd(r).isub(t).isub(r).value(),
+        print s.iadd(r).isub(t).isub(r).to_value(),
 
     print
 

@@ -172,7 +172,7 @@ class Functions(object):
         error.range_check(0, 255, n)
         util.require_read(ins, (',',))
         j = self.parser.parse_expression(ins)
-        if j[0] == '$':
+        if self.values.sigil(j) == '$':
             j = self.session.strings.copy(j)
             error.range_check(1, 255, len(j))
             j = ord(j[0])

@@ -536,8 +536,6 @@ class Statements(object):
         offset = None
         if util.skip_white_read_if(ins, (',',)):
             offset = self.values.to_int(self.parser.parse_expression(ins), unsigned=True)
-            if offset < 0:
-                offset += 0x10000
         util.require(ins, tk.end_statement)
         with self.session.files.open(0, name, filetype='M', mode='I') as f:
             self.session.all_memory.bload(f, offset)
@@ -551,12 +549,8 @@ class Statements(object):
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         util.require_read(ins, (',',))
         offset = self.values.to_int(self.parser.parse_expression(ins), unsigned=True)
-        if offset < 0:
-            offset += 0x10000
         util.require_read(ins, (',',))
         length = self.values.to_int(self.parser.parse_expression(ins), unsigned=True)
-        if length < 0:
-            length += 0x10000
         util.require(ins, tk.end_statement)
         with self.session.files.open(0, name, filetype='M', mode='O',
                                 seg=self.session.all_memory.segment,
@@ -1323,7 +1317,7 @@ class Statements(object):
             cval = self.parser.parse_expression(ins, allow_empty=True)
             if cval is None:
                 pass
-            elif cval[0] == '$':
+            elif self.values.sigil(cval) == '$':
                 # pattern given; copy
                 with self.session.strings:
                     pattern = bytearray(self.session.strings.copy(values.pass_string(cval)))
@@ -2004,7 +1998,7 @@ class Statements(object):
             prompt = self._parse_prompt(ins, '')
         # get string variable
         readvar, indices = self.parser.parse_variable(ins)
-        if not readvar or readvar[0] == '':
+        if not readvar:
             raise error.RunError(error.STX)
         elif readvar[-1] != '$':
             raise error.RunError(error.TYPE_MISMATCH)
@@ -2071,7 +2065,7 @@ class Statements(object):
         # allocate function pointer
         pointer = struct.pack('<H', pointer_loc) + bytearray(values.size_bytes(fntype)-2)
         # function name is represented with first char shifted by 128
-        self.session.scalars.set(chr(128+ord(fnname[0]))+fnname[1:], (fntype, pointer))
+        self.session.scalars.set(chr(128+ord(fnname[0])) + fnname[1:], (fntype, pointer))
         for name in fnvars:
             # allocate but don't set variables
             self.session.scalars.set(name)
@@ -2199,7 +2193,7 @@ class Statements(object):
             error.range_check(0, 255, pal)
             screen.set_cga4_palette(pal%2)
             palette = list(screen.mode.palette)
-            palette[0] = back&0xf
+            palette[0] = back & 0xf
             # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
             # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15
             screen.palette.set_all(palette, check_mode=False)
@@ -2349,7 +2343,7 @@ class Statements(object):
         outstr = ''
         if expr is not None:
             while True:
-                if expr[0] == '$':
+                if self.values.sigil(expr) == '$':
                     with self.session.strings:
                         outstr += '"' + self.session.strings.copy(expr) + '"'
                 else:
@@ -2400,7 +2394,7 @@ class Statements(object):
                 with self.session.strings:
                     expr = self.parser.parse_expression(ins)
                     # numbers always followed by a space
-                    if expr[0] in ('%', '!', '#'):
+                    if self.values.sigil(expr) in ('%', '!', '#'):
                         word = values.number_to_str(expr, screen=True) + ' '
                     else:
                         word = self.session.strings.copy(expr)
@@ -2495,7 +2489,7 @@ class Statements(object):
                 expr = self.parser.parse_literal(ins)
             else:
                 expr = self.parser.parse_expression(ins)
-            if expr[0] == '$':
+            if self.values.sigil(expr) == '$':
                 with self.session.strings:
                     devname = self.session.strings.copy(values.pass_string(expr)).upper()
                 try:

@@ -115,12 +115,13 @@ class Debugger(BaseDebugger):
             outs.seek(2)
             try:
                 val = self.session.parser.parse_expression(outs)
-                if val[0] == '$':
+                if self.session.values.sigil(val) == '$':
                     outstr += '"' + self.session.strings.copy(val) + '"'
                 else:
                     outstr += values.number_to_str(val, screen=False)
             except Exception as e:
                 logging.debug(str(type(e))+' '+str(e))
+                traceback.print_tb(sys.exc_info()[2])
         if outstr:
             logging.debug(outstr)
 
