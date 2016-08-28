@@ -396,12 +396,10 @@ class Values(object):
     @float_safe
     def power(self, left, right):
         """Left^right."""
-
         if (self.sigil(left) == '#' or self.sigil(right) == '#') and self._double_math:
             return self._call_float_function(lambda a, b: a**b, self.to_double(left), self.to_double(right))
         else:
             if self.sigil(right) == '%':
-                print left, right, integer_to_int(left), integer_to_int(right)
                 return self.to_single(left)._ipow_int(integer_to_int(right))
             else:
                 return self._call_float_function(lambda a, b: a**b, self.to_single(left), self.to_single(right))
@@ -1065,7 +1063,7 @@ number_whitespace = ' \t\n'
 
 def _get_digits(num, digits, remove_trailing):
     """Get the digits for an int."""
-    pow10 = 10L**(digits-1)
+    pow10 = 10**(digits-1)
     digitstr = ''
     while pow10 >= 1:
         digit = ord('0')
@@ -1140,7 +1138,7 @@ def _format_float_scientific(expr, digits_before, decimals, force_dot):
         else:
             # special case when work_digits == 0, see also below
             # setting to 0.1 results in incorrect rounding (why?)
-            lim_bot = expr.__class__().from_bytes(expr.one)
+            lim_bot = expr.one
         lim_top = lim_bot.clone().imul10()
         num, exp10 = expr.to_decimal(lim_bot, lim_top)
         digitstr = _get_digits(num, work_digits, remove_trailing=True)
@@ -1155,27 +1153,28 @@ def _format_float_scientific(expr, digits_before, decimals, force_dot):
 
 def _format_float_fixed(expr, decimals, force_dot):
     """Put a float in fixed-point representation."""
-    #FIXME - use from_decimal here?
-    unrounded = expr.clone().imul(expr.__class__().from_bytes(expr.ten)._ipow_int(decimals)) # expr * 10**decimals
-    num = unrounded.clone().iround()
+    floatcls = expr.__class__
+    # expr * 10**decimals
+    unrounded = floatcls().from_int(10**decimals).imul(expr)
+    num = unrounded.to_int()
     # find exponent
     exp10 = 1
-    pow10 = expr.__class__().from_bytes(expr.ten)._ipow_int(exp10) # pow10 = 10L**exp10
-    while num.gt(pow10) or num.eq(pow10): # while pow10 <= num:
-        pow10.imul10() # pow10 *= 10
+    pow10 = 10
+    while pow10 <= num:
+        pow10 *= 10
         exp10 += 1
     work_digits = exp10 + 1
     diff = 0
     if exp10 > expr.digits:
         diff = exp10 - expr.digits
-        ten_diff = expr.__class__().from_bytes(expr.ten)._ipow_int(diff)
-        num = unrounded.clone().idiv(ten_diff).iround()  # unrounded / 10**diff
+        ten_diff = floatcls().from_int(10**diff)
+        # unrounded / 10**diff
+        num = unrounded.clone().idiv(ten_diff).to_int()
         work_digits -= diff
-    num = num.to_int_truncate()
-    # argument work_digits-1 means we're getting work_digits==exp10+1-diff digits
     # fill up with zeros
     digitstr = _get_digits(num, work_digits-1, remove_trailing=False) + '0' * diff
-    return _decimal_notation(digitstr, work_digits-1-1-decimals+diff, type_sign='', force_dot=force_dot)
+    return _decimal_notation(digitstr, work_digits - 2 - decimals + diff,
+                        type_sign='', force_dot=force_dot)
 
 
 ##############################################################################
