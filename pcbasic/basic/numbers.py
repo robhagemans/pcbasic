@@ -360,11 +360,11 @@ class Float(Number):
 
     def to_int(self):
         """Return value rounded to Python int"""
-        exp, mand, neg = self._to_int_den()
+        man, neg = self._to_int_den()
         # carry: round to nearest, halves away from zero
-        if mand & 0x80:
-            mand += 0x80
-        return -mand >> 8 if neg else mand >> 8
+        if man & 0x80:
+            man += 0x80
+        return -man >> 8 if neg else man >> 8
 
     def _to_int_den(self):
         """Denormalised float to integer."""
@@ -374,7 +374,7 @@ class Float(Number):
             man <<= exp
         else:
             man >>= -exp
-        return self.bias, man, neg
+        return man, neg
 
     to_value = to_float
     from_value = from_float
@@ -394,9 +394,9 @@ class Float(Number):
 
     def to_int_truncate(self):
         """Truncate float to integer."""
-        _, mand, neg = self._to_int_den()
-        # ignore carry
-        return -mand >> 8 if neg else mand >> 8
+        man, neg = self._to_int_den()
+        # discard carry
+        return -man >> 8 if neg else man >> 8
 
     def from_integer(self, in_integer):
         """Convert Integer to single, in-place"""
@@ -414,14 +414,11 @@ class Float(Number):
 
     def iround(self):
         """In-place. Round and return as float."""
-        return self._normalise(*self._to_int_den())
+        return self.from_int(self.to_int())
 
     def itrunc(self):
         """In-place. Truncate towards zero and return as float."""
-        lexp, lman, lneg = self._to_int_den()
-        # discard carry byte
-        lman &= 0xffffffffffffffff00
-        return self._normalise(lexp, lman, lneg)
+        return self.from_int(self.to_int_truncate())
 
     def ifloor(self):
         """In-place. Truncate towards negative infinity and return as float."""
@@ -617,11 +614,11 @@ class Float(Number):
             exp10 -= 1
         return self
 
-    def just_under(self, n_in):
+    def just_under(self):
         """Return the largest floating-point number less than the given value."""
         lexp, lman, lneg = self._denormalise()
         # decrease mantissa by one
-        return self.__class__()._normalise(lexp, lman - 1, lneg)
+        return self.__class__()._normalise(lexp, lman - 0x100, lneg)
 
     def mantissa(self):
         """Integer value of mantissa."""
