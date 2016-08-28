@@ -285,9 +285,10 @@ class Float(Number):
     signmask = None
     den_mask = None
 
-    zero = None
     one = None
     ten = None
+    lim_bot = None
+    lim_top = None
     pos_max = None
     neg_max = None
     den_upper = None
@@ -589,8 +590,13 @@ class Float(Number):
 
     # decimal representation
 
-    def to_decimal(self, lim_bot, lim_top):
+    def to_decimal(self, digits=None):
         """Return value as mantissa and decimal exponent."""
+        if digits is None:
+            lim_bot, lim_top = self.lim_bot, self.lim_top
+        else:
+            lim_bot = self.from_int(10**(digits-1))._just_under()
+            lim_top = lim_bot.clone().imul10()
         exp10 = 0
         copy = self.clone()
         while copy.abs_gt(lim_top):
@@ -615,7 +621,7 @@ class Float(Number):
             exp10 -= 1
         return self
 
-    def just_under(self):
+    def _just_under(self):
         """Return the largest floating-point number less than the given value."""
         lexp, lman, lneg = self._denormalise()
         # decrease mantissa by one

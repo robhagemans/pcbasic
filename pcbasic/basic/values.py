@@ -993,7 +993,7 @@ def float_to_str(n_in, screen=False, write=False):
         else:
             valstr = ''
     mbf = n_in.clone()
-    num, exp10 = mbf.to_decimal(mbf.lim_bot, mbf.lim_top)
+    num, exp10 = mbf.to_decimal()
     digitstr = _get_digits(num, digits=mbf.digits, remove_trailing=True)
     # exponent for scientific notation
     exp10 += mbf.digits - 1
@@ -1120,10 +1120,7 @@ def _decimal_notation(digitstr, exp10, type_sign, force_dot):
 
 def _format_float_scientific(expr, digits_before, decimals, force_dot):
     """Put a float in scientific format."""
-    work_digits = digits_before + decimals
-    if work_digits > expr.digits:
-        # decimal precision of the type
-        work_digits = expr.digits
+    work_digits = min(expr.digits, digits_before + decimals)
     if expr.is_zero():
         if not force_dot:
             if expr.exp_sign == 'E':
@@ -1132,15 +1129,9 @@ def _format_float_scientific(expr, digits_before, decimals, force_dot):
         digitstr = '0' * (digits_before + decimals)
         exp10 = 0
     else:
-        if work_digits > 0:
-            # lower limit: just under 10**(work_digits-1)
-            lim_bot = expr.__class__().from_int(10**(work_digits-1)).just_under()
-        else:
-            # special case when work_digits == 0, see also below
-            # setting to 0.1 results in incorrect rounding (why?)
-            lim_bot = expr.one
-        lim_top = lim_bot.clone().imul10()
-        num, exp10 = expr.to_decimal(lim_bot, lim_top)
+        # special case when work_digits == 0, see also below
+        # setting to 0 results in incorrect rounding (why?)
+        num, exp10 = expr.to_decimal(1 if work_digits == 0 else work_digits)
         digitstr = _get_digits(num, work_digits, remove_trailing=True)
         if len(digitstr) < digits_before + decimals:
             digitstr += '0' * (digits_before + decimals - len(digitstr))
