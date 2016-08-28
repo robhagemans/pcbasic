@@ -800,15 +800,15 @@ class Values(object):
         # write out the numbers
         if len(word) == 1 and word in string.digits:
             # digit
-            return chr(0x11 + str_to_int(word))
+            return chr(0x11 + _str_to_int(word))
         elif (not (have_exp or have_point or word[-1] in '!#') and
-                                str_to_int(word) <= 0x7fff and str_to_int(word) >= -0x8000):
-            if str_to_int(word) <= 0xff and str_to_int(word) >= 0:
+                                _str_to_int(word) <= 0x7fff and _str_to_int(word) >= -0x8000):
+            if _str_to_int(word) <= 0xff and _str_to_int(word) >= 0:
                 # one-byte constant
-                return tk.T_BYTE + chr(str_to_int(word))
+                return tk.T_BYTE + chr(_str_to_int(word))
             else:
                 # two-byte constant
-                return tk.T_INT + self.to_bytes(int_to_integer(str_to_int(word)))
+                return tk.T_INT + self.to_bytes(int_to_integer(_str_to_int(word)))
         else:
             mbf = self.to_bytes(self._str_to_float(word))
             if len(mbf) == 4:
@@ -963,7 +963,7 @@ def integer_to_str_hex(inp):
     """Convert integer to str in hex representation."""
     return hex(integer_to_int(inp, unsigned=True))[2:].upper()
 
-def str_to_int(s):
+def _str_to_int(s):
     """Return Python int value for Python str, zero if malformed."""
     try:
         return int(s)
@@ -973,41 +973,35 @@ def str_to_int(s):
 def float_to_str(n_in, screen=False, write=False):
     """Convert BASIC float to Python string."""
     # screen=True (ie PRINT) - leading space, no type sign
-    # screen='w' (ie WRITE) - no leading space, no type sign
+    # write=True (ie WRITE) - no leading space, no type sign
     # default mode is for LIST
     # zero exponent byte means zero
     if n_in.is_zero():
         if screen and not write:
-            valstr = ' 0'
+            return ' 0'
         elif write:
-            valstr = '0'
+            return '0'
         else:
-            valstr = '0' + n_in.sigil
-        return valstr
+            return '0' + n_in.sigil
     # print sign
+    sign = ''
     if n_in.is_negative():
-        valstr = '-'
-    else:
-        if screen and not write:
-            valstr = ' '
-        else:
-            valstr = ''
-    mbf = n_in.clone()
-    num, exp10 = mbf.to_decimal()
-    digitstr = _get_digits(num, digits=mbf.digits, remove_trailing=True)
+        sign = '-'
+    elif screen and not write:
+        sign = ' '
+    num, exp10 = n_in.to_decimal()
+    ndigits = n_in.digits
+    digitstr = _get_digits(num, ndigits, remove_trailing=True)
     # exponent for scientific notation
-    exp10 += mbf.digits - 1
-    if exp10 > mbf.digits - 1 or len(digitstr)-exp10 > mbf.digits + 1:
+    exp10 += ndigits - 1
+    if exp10 > ndigits - 1 or len(digitstr)-exp10 > ndigits + 1:
         # use scientific notation
-        valstr += _scientific_notation(digitstr, exp10, n_in.exp_sign, digits_to_dot=1, force_dot=False)
+        valstr = _scientific_notation(digitstr, exp10, n_in.exp_sign, digits_to_dot=1, force_dot=False)
     else:
         # use decimal notation
-        if screen or write:
-            type_sign = ''
-        else:
-            type_sign = n_in.sigil
-        valstr += _decimal_notation(digitstr, exp10, type_sign, force_dot=False)
-    return valstr
+        type_sign = '' if screen or write else n_in.sigil
+        valstr = _decimal_notation(digitstr, exp10, type_sign, force_dot=False)
+    return sign + valstr
 
 def format_number(value, tokens, digits_before, decimals):
     """Format a number to a format string. For PRINT USING."""
@@ -1063,19 +1057,10 @@ number_whitespace = ' \t\n'
 
 def _get_digits(num, digits, remove_trailing):
     """Get the digits for an int."""
-    pow10 = 10**(digits-1)
-    digitstr = ''
-    while pow10 >= 1:
-        digit = ord('0')
-        while num >= pow10:
-            digit += 1
-            num -= pow10
-        digitstr += chr(digit)
-        pow10 /= 10
+    digitstr = str(num)
+    digitstr = '0'*(digits-len(digitstr)) + digitstr[:digits]
     if remove_trailing:
-        # remove trailing zeros
-        while len(digitstr) > 1 and digitstr[-1] == '0':
-            digitstr = digitstr[:-1]
+        return digitstr.rstrip('0')
     return digitstr
 
 def _scientific_notation(digitstr, exp10, exp_sign, digits_to_dot, force_dot):

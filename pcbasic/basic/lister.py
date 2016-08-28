@@ -165,15 +165,12 @@ class Lister(object):
             return
         if lead == tk.T_OCT:
             output += b'&O' + values.integer_to_str_oct(self._values.from_bytes(trail))
-            # not sure what GW does if the file is truncated here - we just stop
         elif lead == tk.T_HEX:
             output += b'&H' + values.integer_to_str_hex(self._values.from_bytes(trail))
         elif lead == tk.T_BYTE:
             output += str(ord(trail))
-        elif tk.C_0 <= lead < tk.C_10:
-            output += chr(ord(b'0') + ord(lead) - 0x11)
-        elif lead == tk.C_10:
-            output += b'10'
+        elif tk.C_0 <= lead <= tk.C_10:
+            output += str(ord(lead) - ord(tk.C_0))
         elif lead == tk.T_INT:
             # lowercase h for signed int
             output += str(struct.unpack(b'<h', trail)[0])
@@ -181,7 +178,7 @@ class Lister(object):
             # 0D: line pointer (unsigned int) - this token should not be here;
             #     interpret as line number and carry on
             # 0E: line number (unsigned int)
-            output += str(struct.unpack('<H', trail)[0])
+            output += str(struct.unpack(b'<H', trail)[0])
         elif lead == tk.T_SINGLE:
             output += values.float_to_str(self._values.from_bytes(trail), screen=False, write=False)
         elif lead == tk.T_DOUBLE:
