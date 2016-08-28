@@ -24,7 +24,8 @@ def is_same(file1, file2):
 args = sys.argv[1:]
 
 if not args or args == ['--all']:
-    args = [f for f in sorted(os.listdir('.')) if os.path.isdir(f)]
+    args = [f for f in sorted(os.listdir('.'))
+            if os.path.isdir(f) and os.path.isdir(os.path.join(f, 'model'))]
 
 numtests = 0
 failed = []
