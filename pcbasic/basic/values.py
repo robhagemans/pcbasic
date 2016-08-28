@@ -1133,8 +1133,8 @@ def _format_float_scientific(expr, digits_before, decimals, force_dot):
         exp10 = 0
     else:
         if work_digits > 0:
-            # scientific representation
-            lim_bot = expr.__class__().from_bytes(expr.ten)._ipow_int(work_digits-1).just_under()
+            # lower limit: just under 10**(work_digits-1)
+            lim_bot = expr.__class__().from_int(10**(work_digits-1)).just_under()
         else:
             # special case when work_digits == 0, see also below
             # setting to 0.1 results in incorrect rounding (why?)

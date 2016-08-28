@@ -77,6 +77,9 @@ class Number(Value):
         """String representation for debugging."""
         return '[%s] %s %s' % (str(self.to_bytes()).encode('hex'), self.to_value(), self.sigil)
 
+    def to_value(self):
+        """Convert to Python value."""
+
 
 class Integer(Number):
     """16-bit signed little-endian integer"""
@@ -87,6 +90,10 @@ class Integer(Number):
     def is_zero(self):
         """Value is zero"""
         return self.buffer == '\0\0'
+
+    def is_negative(self):
+        """Value is negative"""
+        return (ord(self.buffer[-1]) & 0x80) != 0
 
     def sign(self):
         """Sign of value"""
@@ -382,7 +389,7 @@ class Float(Number):
     def from_int(self, in_int):
         """Set value to Python int"""
         if in_int == 0:
-            self.buffer[:] = self.zero
+            self.buffer[:] = '\0'*self.size
         else:
             neg = in_int < 0
             man, exp = self._bring_to_range(abs(in_int), self.bias, self.posmask, self.mask)
@@ -519,7 +526,7 @@ class Float(Number):
         global lden_s, rden_s, sden_s
         if self.is_zero() or right_in.is_zero():
             # set any zeroes to standard zero
-            self.buffer[:] = self.zero
+            self.buffer[:] = '\0' * self.size
             return self
         lexp, lman, lneg = self._denormalise()
         rexp, rman, rneg = right_in._denormalise()
@@ -529,7 +536,7 @@ class Float(Number):
         lman *= rman
         sden_s = lman
         if lexp < -31:
-            self.buffer[:] = self.zero
+            self.buffer[:] = '\0' * self.size
             return self.buffer
         # drop some precision
         lman, lexp = self._bring_to_range(lman, lexp, self.den_mask>>4, self.den_upper>>4)
@@ -572,15 +579,9 @@ class Float(Number):
             rman >>= 1
         return lexp, lman, lneg
 
-    # def _div10_den(self, lden):
-    #     """Divide by 10 in-place."""
-    #     # denormalised value of 10
-    #     ten_den = self.__class__().from_bytes(self.ten)._denormalise()
-    #     return self._div_den(self.ten_den)
-
     def idiv10(self):
         """Divide by 10 in-place."""
-        return self.idiv(self.__class__().from_bytes(self.ten))
+        return self.idiv(self.ten)
 
     def ipow_int(self, expt):
         """Raise to integer power in-place."""
@@ -639,7 +640,7 @@ class Float(Number):
         global pden_s
         # zero denormalised mantissa -> make zero
         if man == 0 or exp <= 0:
-            self.buffer[:] = self.zero
+            self.buffer[:] = '\0' * self.size
             return self
         # shift left if subnormal
         while man < (self.den_mask-1):
@@ -739,8 +740,6 @@ class Single(Float):
     mask = 0xffffff
     posmask = 0x7fffff
 
-    ten = '\x00\x00\x20\x84'
-
     def to_token(self):
         """Return value as Single token"""
         return tk.T_SINGLE + self.buffer[:]
@@ -774,8 +773,6 @@ class Double(Float):
     signmask = 0x80000000000000
     mask = 0xffffffffffffff
     posmask = 0x7fffffffffffff
-
-    ten = '\x00\x00\x00\x00\x00\x00\x20\x84'
 
     def from_single(self, in_single):
         """Convert Single to Double in-place"""
@@ -868,32 +865,32 @@ def from_token(token):
     else:
         return Integer().from_token(token)
 
+# limits
+
+Integer.pos_max = Integer('\xff\x7f')
+Integer.neg_max = Integer('\xff\xff')
+
+Single.pos_max = Single('\xff\xff\x7f\xff')
+Single.neg_max = Single('\xff\xff\xff\xff')
+
+Double.pos_max = Double('\xff\xff\xff\xff\xff\xff\x7f\xff')
+Double.neg_max = Double('\xff\xff\xff\xff\xff\xff\xff\xff')
+
 # string representation settings
 
+Single.one = Single('\x00\x00\x00\x81')
+Single.ten = Single('\x00\x00\x20\x84')
 Single.lim_top = Single('\x7f\x96\x18\x98') # 9999999, highest float less than 10e+7
 Single.lim_bot = Single('\xff\x23\x74\x94') # 999999.9, highest float  less than 10e+6
 Single.exp_sign = 'E'
 Single.digits = 7
 
+Double.one = Double('\x00\x00\x00\x00\x00\x00\x00\x81')
+Double.ten = Double('\x00\x00\x00\x00\x00\x00\x20\x84')
 Double.lim_top = Double('\xff\xff\x03\xbf\xc9\x1b\x0e\xb6') # highest float less than 10e+16
 Double.lim_bot = Double('\xff\xff\x9f\x31\xa9\x5f\x63\xb2') # highest float less than 10e+15
 Double.exp_sign = 'D'
 Double.digits = 16
 
-
-Integer.pos_max = Integer('\xff\x7f')
-Integer.neg_max = Integer('\xff\xff')
-Integer.zero = '\0\0'
-
-Single.pos_max = Single('\xff\xff\x7f\xff')
-Single.neg_max = Single('\xff\xff\xff\xff')
-#FIXME
-Single.zero = '\0\0\0\0'
-Single.one = Single('\x00\x00\x00\x81')
-
-Double.pos_max = Double('\xff\xff\xff\xff\xff\xff\x7f\xff')
-Double.neg_max = Double('\xff\xff\xff\xff\xff\xff\xff\xff')
-Double.zero = '\0\0\0\0\0\0\0\0'
-Double.one = Double('\x00\x00\x00\x00\x00\x00\x00\x81')
 
 lden_s, rden_s, sden_s, pden_s = 0,0,0,0
