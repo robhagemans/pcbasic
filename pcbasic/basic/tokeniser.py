@@ -206,34 +206,34 @@ class Tokeniser(object):
     def _tokenise_uint(self, ins):
         """Convert an unsigned int (line number) to tokenised form."""
         word = bytearray()
-        while True:
-            c = ins.read(1)
-            if c and c in string.digits + self._ascii_whitespace:
-                word += c
+        ndigits, nblanks = 0, 0
+        # don't read more than 5 digits
+        while (ndigits < 5): # and (int(word) < 6553):
+            c = util.peek(ins)
+            if not c:
+                break
+            elif c in string.digits:
+                word += ins.read(1)
+                nblanks = 0
+                ndigits += 1
+            elif c in self._ascii_whitespace:
+                ins.read(1)
+                nblanks += 1
             else:
-                ins.seek(-len(c), 1)
                 break
         # don't claim trailing w/s
-        while len(word) > 0 and chr(word[-1]) in self._ascii_whitespace:
-            del word[-1]
-            ins.seek(-1, 1)
-        # remove all whitespace
-        trimword = bytearray()
-        for c in word:
-            if chr(c) not in self._ascii_whitespace:
-                trimword += chr(c)
-        word = trimword
-        # line number (jump)
-        if len(word) > 0:
-            if int(word) >= 65530:
-                # note: anything >= 65530 is illegal in GW-BASIC
-                # in loading an ASCII file, GWBASIC would interpret these as
-                # '6553 1' etcetera, generating a syntax error on load.
-                # keep 6553 as line number and push back the last number:
-                ins.seek(4-len(word), 1)
-                word = word[:4]
-            return struct.pack('<H', int(word))
-        return ''
+        ins.seek(-nblanks, 1)
+        # no token
+        if len(word) == 0:
+            return ''
+        if int(word) >= 65530:
+            # note: anything >= 65530 is illegal in GW-BASIC
+            # in loading an ASCII file, GWBASIC would interpret these as
+            # '6553 1' etcetera, generating a syntax error on load.
+            # keep 6553 as line number and push back the last number:
+            ins.seek(4-len(word), 1)
+            word = word[:4]
+        return struct.pack('<H', int(word))
 
     def _tokenise_word(self, ins, outs):
         """Convert a keyword to tokenised form."""
