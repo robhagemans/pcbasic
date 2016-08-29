@@ -795,7 +795,7 @@ class Drawing(object):
             phi = fp.mul(fp.Single.from_int(rotate), deg_to_rad)
             sinr, cosr = fp.sin(phi), fp.cos(phi)
             fxfac = fp.div(fp.Single.from_int(aspect[0]), fp.Single.from_int(aspect[1]))
-            fx, fy = fp.add(fp.mul(cosr,fx), fp.div(fp.mul(sinr,fy), fxfac)), fp.mul(fp.sub(fp.mul(cosr,fy), fxfac), fp.mul(sinr,fx))
+            fx, fy = fp.add(fp.mul(cosr,fx), fp.div(fp.mul(sinr,fy), fxfac)), fp.sub(fp.mul(fp.mul(cosr,fy), fxfac), fp.mul(sinr,fx))
             x1, y1 = fx.round_to_int(), fy.round_to_int()
         y1 += y0
         x1 += x0
