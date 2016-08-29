@@ -290,6 +290,7 @@ class Float(Number):
     pos_max = None
     neg_max = None
     den_upper = None
+    digits = None
 
     def __init__(self, buffer=None):
         """Initialise float."""
