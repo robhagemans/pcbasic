@@ -21,6 +21,16 @@ def is_same(file1, file2):
     except EnvironmentError:
         return False
 
+def count_diff(file1, file2):
+    lines1 = open(file1).readlines()
+    lines2 = open(file2).readlines()
+    n = len(lines1)
+    count = 0
+    for one, two in zip(lines1, lines2):
+        if one != two:
+            count += 1
+    return n, count
+
 args = sys.argv[1:]
 
 if not args or args == ['--all']:
@@ -72,22 +82,28 @@ for name in args:
             known = False
     if not passed:
         if not known:
-            print 'FAILED: difference in %s.' % ' '.join(failfiles)
+            print '\033[01;31mFAILED.\033[00m'
+            for failname in failfiles:
+                n, count = count_diff(os.path.join(output_dir, failname), os.path.join(model_dir, failname))
+                print '    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, 100.*count/float(n))
             failed.append(name)
         else:
-            print 'known failure: difference in %s.' % ' '.join(failfiles)
+            print '\033[00;34mknown failure.\033[00m'
+            for failname in failfiles:
+                n, count = count_diff(os.path.join(output_dir, failname), os.path.join(model_dir, failname))
+                print '    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, 100.*count/float(n))
             knowfailed.append(name)
     else:
-        print 'passed.'
+        print '\033[00;32mpassed.\033[00m'
         shutil.rmtree(output_dir)
     numtests += 1
 
 print
 print 'Ran %d tests:' % numtests
 if failed:
-    print '    %d new failures: %s' % (len(failed), ' '.join(failed))
+    print '    %d new failures: \033[01;31m%s\033[00m' % (len(failed), ' '.join(failed))
 if knowfailed:
-    print '    %d known failures: %s' % (len(knowfailed), ' '.join(knowfailed))
+    print '    %d known failures: \033[00;34m%s\033[00m' % (len(knowfailed), ' '.join(knowfailed))
 numpass = numtests - len(failed) - len(knowfailed)
 if numpass:
     print '    %d passes' % numpass
