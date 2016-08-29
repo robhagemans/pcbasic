@@ -24,20 +24,20 @@ class String(numbers.Value):
     def __init__(self, buffer, stringspace):
         """Initialise the pointer"""
         numbers.Value.__init__(buffer)
-        self.stringspace = memoryview(stringspace)
+        self._stringspace = memoryview(stringspace)
 
     def length(self):
         """String length"""
-        return ord(self.buffer[0])
+        return ord(self._buffer[0])
 
     def address(self):
         """Pointer address"""
-        return struct.unpack_from('<H', self.buffer, 1)[0]
+        return struct.unpack_from('<H', self._buffer, 1)[0]
 
     def dereference(self):
         """String value pointed to"""
         addr = self.address()
-        return bytearray(self.stringspace[addr : addr+self.length])
+        return bytearray(self._stringspace[addr : addr+self.length()])
 
     to_value = dereference
 
