@@ -360,7 +360,9 @@ class Float(Number):
         # carry: round to nearest, halves away from zero
         if man & 0x80:
             man += 0x80
-        return -man >> 8 if neg else man >> 8
+        # note that -man >> 8 and -(man >> 8) are different
+        # due to Python's rounding rules
+        return -(man >> 8) if neg else man >> 8
 
     def from_int(self, in_int):
         """Set value to Python int"""
@@ -379,12 +381,12 @@ class Float(Number):
         """Truncate float to integer."""
         man, neg = self._to_int_den()
         # discard carry
-        return -man >> 8 if neg else man >> 8
+        return -(man >> 8) if neg else man >> 8
 
     def mantissa(self):
         """Integer value of mantissa."""
-        lexp, lman, lneg = self._denormalise()
-        return -(lman>>8) if lneg else (lman>>8)
+        exp, man, neg = self._denormalise()
+        return -(man >> 8) if neg else (man >> 8)
 
     # in-place unary operations
 
@@ -538,7 +540,7 @@ class Float(Number):
             man >>= -exp
         if man & 0x80:
             man += 0x80
-        num = -man >> 8 if neg else man >> 8
+        num = -(man >> 8) if neg else man >> 8
         return num, exp10
 
     def from_decimal(self, mantissa, exp10):
