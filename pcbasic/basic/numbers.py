@@ -27,8 +27,6 @@ import math
 
 from . import basictoken as tk
 from . import error
-#for float error handler
-from . import fp
 
 
 class Value(object):
@@ -235,14 +233,14 @@ class Integer(Number):
         if isneg != (ord(rhs.buffer[-1]) & 0x80):
             return not(isneg)
         if isneg:
-            return rhs.abs_gt(self)
-        return self.abs_gt(rhs)
+            return rhs._abs_gt(self)
+        return self._abs_gt(rhs)
 
-    def abs_gt(self, rhs):
+    def _abs_gt(self, rhs):
         """Absolute values greater than"""
         if isinstance(rhs, Float):
             # upgrade to Float
-            return rhs.__class__().from_integer(self).abs_gt(rhs)
+            return rhs.__class__().from_integer(self)._abs_gt(rhs)
         lmsb = ord(self.buffer[1] & 0x7f)
         rmsb = ord(rhs.buffer[1] & 0x7f)
         if lmsb > rmsb:
@@ -455,17 +453,17 @@ class Float(Number):
         if isneg != rhsneg:
             return not(isneg)
         if isneg:
-            return rhs.abs_gt(self)
-        return self.abs_gt(rhs)
+            return rhs._abs_gt(self)
+        return self._abs_gt(rhs)
 
-    def abs_gt(self, rhs):
+    def _abs_gt(self, rhs):
         """Absolute values greater than"""
         if isinstance(rhs, Integer):
             # upgrade rhs to Float
-            return self.abs_gt(self.__class__().from_integer(rhs))
+            return self._abs_gt(self.__class__().from_integer(rhs))
         elif isinstance(rhs, Double) and isinstance(self, Single):
             # upgrade to Double
-            return Double().from_single(self).abs_gt(rhs)
+            return Double().from_single(self)._abs_gt(rhs)
         # don't compare zeroes
         if self.is_zero():
             return False
@@ -499,28 +497,17 @@ class Float(Number):
 
     def iadd(self, right):
         """Add in-place"""
-        return self._normalise(*self._iadd_den(self._denormalise(), right._denormalise()))
+        return self._normalise(*self._add_den(self._denormalise(), right._denormalise()))
 
     def isub(self, right):
         """Subtract in-place"""
         return self._normalise(*self._isub_den(self._denormalise(), right._denormalise()))
 
-    def ishl(self, n=1):
-        """Multiply in-place by 2**n"""
-        if self.is_zero():
-            return self
-        exp = ord(self.buffer[-1]) + n
-        if not self._check_limits(exp, self.is_negative()):
-            return self
-        self.buffer[-1:] = chr(exp)
-        return self
-
-    def imul10(self):
+    def _mul10_den(self, den):
         """Multiply in-place by 10"""
+        exp, man, neg = den
         # 10x == 2(x+4x)
-        self.ishl()
-        self.iadd(self.clone().ishl(2))
-        return self
+        return self._add_den((exp+1, man, neg), (exp+3, man, neg))
 
     def imul(self, right_in):
         """Multiply in-place"""
@@ -580,13 +567,26 @@ class Float(Number):
             rman >>= 1
         return lexp, lman, lneg
 
-    def idiv10(self):
+    def _div10_den(self, lden):
         """Divide by 10 in-place."""
-        return self.idiv(self.ten)
+        exp, man, neg = self._div_den(lden, self.ten._denormalise())
+        # perhaps this should be in _div_den
+        while man < self.den_mask:
+            exp -= 1
+            man <<= 1
+        return exp, man, neg
 
     def ipow_int(self, expt):
         """Raise to integer power in-place."""
         return self._ipow_int(expt.to_int())
+
+    def _abs_gt_den(self, lden, rden):
+        """Absolute value is greater than."""
+        lexp, lman, _ = lden
+        rexp, rman, _ = rden
+        if lexp != rexp:
+            return (lexp > rexp)
+        return (lman > rman)
 
     # decimal representation
 
@@ -594,32 +594,45 @@ class Float(Number):
         """Return value as mantissa and decimal exponent."""
         if digits is None:
             lim_bot, lim_top = self.lim_bot, self.lim_top
+            digits = self.digits
         else:
-            lim_bot = self.from_int(10**(digits-1))._just_under()
-            lim_top = lim_bot.clone().imul10()
+            # we'd be better off storing these (and ten) in denormalised form
+            lim_bot = self.__class__().from_int(10**(digits-1))._just_under()
+            lim_top = self.__class__().from_int(10**digits)._just_under()
+        tden = lim_top._denormalise()
+        bden = lim_bot._denormalise()
         exp10 = 0
-        copy = self.clone()
-        while copy.abs_gt(lim_top):
-            copy.idiv10()
+        den = self._denormalise()
+        while self._abs_gt_den(den, tden):
+            den = self._div10_den(den)
             exp10 += 1
-        while lim_bot.abs_gt(copy):
-            copy.imul10()
+        # round here?
+        while self._abs_gt_den(bden, den):
+            den = self._mul10_den(den)
             exp10 -= 1
         # round to int
-        num = abs(copy.to_int())
+        exp, man, neg = den
+        exp -= self.bias
+        if exp > 0:
+            man <<= exp
+        else:
+            man >>= -exp
+        if man & 0x80:
+            man += 0x80
+        num = -man >> 8 if neg else man >> 8
         return num, exp10
 
     def from_decimal(self, mantissa, exp10):
         """Set value to mantissa and decimal exponent."""
-        self.from_int(mantissa)
+        den = self.from_int(mantissa)._denormalise()
         # apply decimal exponent
         while (exp10 < 0):
-            self.idiv10()
+            den = self._div10_den(den)
             exp10 += 1
         while (exp10 > 0):
-            self.imul10()
+            den = self._mul10_den(den)
             exp10 -= 1
-        return self
+        return self._normalise(*den)
 
     def _just_under(self):
         """Return the largest floating-point number less than the given value."""
@@ -662,7 +675,7 @@ class Float(Number):
             self.buffer[-1] = chr(exp)
         return self
 
-    def _iadd_den(self, lden, rden):
+    def _add_den(self, lden, rden):
         """ Denormalised add. """
         lexp, lman, lneg = lden
         rexp, rman, rneg = rden
@@ -706,7 +719,7 @@ class Float(Number):
     def _isub_den(self, lden, rden):
         """ Denormalised subtract. """
         rexp, rman, rneg = rden
-        return self._iadd_den(lden, (rexp, rman, not rneg))
+        return self._add_den(lden, (rexp, rman, not rneg))
 
     def _ipow_int(self, expt):
         """Raise to int power in-place."""
