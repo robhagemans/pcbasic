@@ -594,10 +594,10 @@ class Float(Number):
     def to_decimal(self, digits=None):
         """Return value as mantissa and decimal exponent."""
         if digits is None:
+            # we'd be better off storing these (and self.ten) in denormalised form
             lim_bot, lim_top = self.lim_bot, self.lim_top
             digits = self.digits
         elif digits > 0:
-            # we'd be better off storing these (and ten) in denormalised form
             lim_bot = self.__class__().from_int(10**(digits-1))._just_under()
             lim_top = self.__class__().from_int(10**digits)._just_under()
         else:
@@ -609,10 +609,13 @@ class Float(Number):
         while self._abs_gt_den(den, tden):
             den = self._div10_den(den)
             exp10 += 1
-        # round here?
+        # rounding - gets us close to GW results
+        den = self._apply_carry_den(den)
         while self._abs_gt_den(bden, den):
             den = self._mul10_den(den)
             exp10 -= 1
+        # rounding - gets us close to GW results
+        den = self._apply_carry_den(den)
         # round to int
         exp, man, neg = den
         exp -= self.bias
@@ -624,6 +627,22 @@ class Float(Number):
             man += 0x80
         num = -man >> 8 if neg else man >> 8
         return num, exp10
+
+    def _apply_carry_den(self, den):
+        """Round the carry byte (to be used only in to_decimal)."""
+        exp, man, neg = den
+        # apply_carry()
+        # carry bit set? then round up
+        if (man & 0xff) > 0x7f:
+            man += 0x100
+        # overflow?
+        if man >= self.den_upper:
+            exp += 1
+            man >>= 1
+        # discard carry
+        man ^= man & 0xff
+        return exp, man, neg
+
 
     def from_decimal(self, mantissa, exp10):
         """Set value to mantissa and decimal exponent."""
