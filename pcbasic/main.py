@@ -29,27 +29,9 @@ from . import config
 
 
 def main(*arguments):
-    """Initialise and perform requested operations."""
+    """Wrapper for run() to deal with Ctrl-C, stdio and pipes."""
     try:
-        with config.TemporaryDirectory(prefix='pcbasic-') as temp_dir:
-            # get settings and prepare logging
-            settings = config.Settings(temp_dir, arguments)
-            command = settings.get_command()
-            if command == 'version':
-                # print version and exit
-                show_version(settings)
-            elif command == 'help':
-                # print usage and exit
-                show_usage()
-            elif command == 'convert':
-                # convert and exit
-                convert(settings)
-            elif settings.get_interfaces():
-                # start an interpreter session with interface
-                launch_session(settings)
-            else:
-                # start an interpreter session with standard i/o
-                run_session(**settings.get_launch_parameters())
+        run(*arguments)
     except KeyboardInterrupt:
         pass
     except:
@@ -67,6 +49,28 @@ def main(*arguments):
             sys.stderr.close()
         except:
             pass
+
+def run(*arguments):
+    """Initialise, parse arguments and perform requested operations."""
+    with config.TemporaryDirectory(prefix='pcbasic-') as temp_dir:
+        # get settings and prepare logging
+        settings = config.Settings(temp_dir, arguments)
+        command = settings.get_command()
+        if command == 'version':
+            # print version and exit
+            show_version(settings)
+        elif command == 'help':
+            # print usage and exit
+            show_usage()
+        elif command == 'convert':
+            # convert and exit
+            convert(settings)
+        elif settings.get_interfaces():
+            # start an interpreter session with interface
+            launch_session(settings)
+        else:
+            # start an interpreter session with standard i/o
+            run_session(**settings.get_launch_parameters())
 
 def show_usage():
     """Show usage description."""

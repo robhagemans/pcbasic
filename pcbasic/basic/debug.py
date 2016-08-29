@@ -147,6 +147,10 @@ class Debugger(BaseDebugger):
             sys.stdout = save_stdout
             logging.debug(buf.getvalue()[:-1]) # exclude \n
 
+    def bluescreen(self, e):
+        """Let the crash happen."""
+        print e
+        raise e
 
 ##############################################################################
 # debugging commands

@@ -42,9 +42,9 @@ failed = []
 knowfailed = []
 
 for name in args:
-    print 'Running test %s .. ' % name,
+    print '\033[00;37mRunning test \033[01m%s \033[00;37m.. ' % name,
     if not os.path.isdir(name):
-        print 'no such test.'
+        print '\033[01;31mno such test.\033[00;37m'
         continue
     output_dir = os.path.join(name, 'output')
     model_dir = os.path.join(name, 'model')
@@ -62,7 +62,11 @@ for name in args:
     # suppress output and logging and call PC-BASIC
     sys.stderr, err = open(os.devnull, 'w'), sys.stderr
     sys.stdout, out = open(os.devnull, 'w'), sys.stdout
-    pcbasic.main('--interface=none')
+    crash = None
+    try:
+        pcbasic.run('--interface=none', '--debug')
+    except Exception as e:
+        crash = e
     sys.stderr = err
     sys.stdout = out
     # -----------------------------------------------------------
@@ -80,30 +84,40 @@ for name in args:
             failfiles.append(filename)
             passed = False
             known = False
-    if not passed:
-        if not known:
-            print '\033[01;31mFAILED.\033[00m'
+    if crash or not passed:
+        if crash:
+            print '\033[01;31mEXCEPTION.\033[00;37m'
+            print '    %s' % repr(e)
+            failed.append(name)
+        elif not known:
+            print '\033[01;31mfailed.\033[00;37m'
             for failname in failfiles:
-                n, count = count_diff(os.path.join(output_dir, failname), os.path.join(model_dir, failname))
-                print '    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, 100.*count/float(n))
+                try:
+                    n, count = count_diff(os.path.join(output_dir, failname), os.path.join(model_dir, failname))
+                    print '    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, 100.*count/float(n))
+                except EnvironmentError as e:
+                    print '    %s: %s' % (failname, e)
             failed.append(name)
         else:
-            print '\033[00;34mknown failure.\033[00m'
+            print '\033[00;36mknown failure.\033[00;37m'
             for failname in failfiles:
-                n, count = count_diff(os.path.join(output_dir, failname), os.path.join(model_dir, failname))
-                print '    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, 100.*count/float(n))
+                try:
+                    n, count = count_diff(os.path.join(output_dir, failname), os.path.join(model_dir, failname))
+                    print '    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, 100.*count/float(n))
+                except EnvironmentError as e:
+                    print '    %s: %s' % (failname, e)
             knowfailed.append(name)
     else:
-        print '\033[00;32mpassed.\033[00m'
+        print '\033[00;32mpassed.\033[00;37m'
         shutil.rmtree(output_dir)
     numtests += 1
 
 print
-print 'Ran %d tests:' % numtests
+print '\033[00mRan %d tests:' % numtests
 if failed:
     print '    %d new failures: \033[01;31m%s\033[00m' % (len(failed), ' '.join(failed))
 if knowfailed:
-    print '    %d known failures: \033[00;34m%s\033[00m' % (len(knowfailed), ' '.join(knowfailed))
+    print '    %d known failures: \033[00;36m%s\033[00m' % (len(knowfailed), ' '.join(knowfailed))
 numpass = numtests - len(failed) - len(knowfailed)
 if numpass:
     print '    %d passes' % numpass
