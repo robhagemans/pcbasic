@@ -1057,7 +1057,7 @@ number_whitespace = ' \t\n'
 
 def _get_digits(num, digits, remove_trailing):
     """Get the digits for an int."""
-    digitstr = str(num)
+    digitstr = str(abs(num))
     digitstr = '0'*(digits-len(digitstr)) + digitstr[:digits]
     if remove_trailing:
         return digitstr.rstrip('0')
@@ -1129,28 +1129,26 @@ def _format_float_scientific(expr, digits_before, decimals, force_dot):
 
 def _format_float_fixed(expr, decimals, force_dot):
     """Put a float in fixed-point representation."""
-    floatcls = expr.__class__
-    # expr * 10**decimals
-    unrounded = floatcls().from_int(10**decimals).imul(expr)
-    num = unrounded.to_int()
-    # find exponent
-    exp10 = 1
-    pow10 = 10
-    while pow10 <= num:
-        pow10 *= 10
-        exp10 += 1
-    work_digits = exp10 + 1
-    diff = 0
-    if exp10 > expr.digits:
-        diff = exp10 - expr.digits
-        ten_diff = floatcls().from_int(10**diff)
-        # unrounded / 10**diff
-        num = unrounded.clone().idiv(ten_diff).to_int()
-        work_digits -= diff
-    # fill up with zeros
-    digitstr = _get_digits(num, work_digits-1, remove_trailing=False) + '0' * diff
-    return _decimal_notation(digitstr, work_digits - 2 - decimals + diff,
-                        type_sign='', force_dot=force_dot)
+    trunc = abs(expr.to_int_truncate())
+    # total number or digits we think we'll need
+    # in C, you'd compare to another integer which is incrementally multiplied by 10
+    # in Python, just building the string to get the length is faster and simpler
+    ndigits = len(str(trunc)) + decimals
+    # working number of digits - never more than float type decimal precision
+    nwork = min(expr.digits, ndigits)
+    # bring to decimal form of working precision
+    num, exp10 = expr.to_decimal(nwork)
+    digitstr = str(abs(num))
+    # we may have got more digits than we thought earlier, due to rounding
+    # the number of decimals in num that come after the radix point ..
+    nafter = -exp10
+    # .. and before the radix point.
+    nbefore = len(digitstr) - nafter
+    # fill up with zeros to required number of figures
+    digitstr += '0' * (decimals - nafter)
+    return _decimal_notation(
+                digitstr, nbefore-1,
+                type_sign='', force_dot=force_dot)
 
 
 ##############################################################################
