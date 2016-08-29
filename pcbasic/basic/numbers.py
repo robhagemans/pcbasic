@@ -483,8 +483,7 @@ class Float(Number):
         lman, lexp = self._bring_to_range(lman, lexp, self._den_mask>>4, self._den_upper>>4)
         # rounding quirk
         if lman & 0xf == 0x9:
-            #FIXME: single only?
-            lman &= 0xfffffffffe
+            lman &= (self._carrymask + 0xfe)
         self._normalise(lexp, lman, lneg)
         return self
 
@@ -539,6 +538,7 @@ class Float(Number):
             man <<= exp
         else:
             man >>= -exp
+        # here we don't care about overflowing the mantissa as we output it as int
         if man & 0x80:
             man += 0x80
         num = -(man >> 8) if neg else man >> 8
@@ -620,6 +620,7 @@ class Float(Number):
     _signmask = None
     _den_mask = None
     _den_upper = None
+    _carrymask = None
 
     def _denormalise(self):
         """Denormalise to shifted mantissa, exp, sign"""
@@ -642,7 +643,7 @@ class Float(Number):
         pden_s = man
         # round to nearest; halves to even (Gaussian rounding)
         round_up = (man & 0xff > 0x80) or (man & 0xff == 0x80 and man & 0x100 == 0x100)
-        man = (man ^ (man & 0xff)) + 0x100 * round_up
+        man = (man & self._carrymask) + 0x100 * round_up
         if man >= self._den_upper:
             exp += 1
             man >>= 1
@@ -745,8 +746,7 @@ class Float(Number):
         # attempt to match GW-BASIC subtraction rounding
         sden_s = -man if sub_flag else man
         if sub_flag and (man & 0x1c0 == 0x80) and (man & 0x1df != 0x80):
-            # FIXME: single only?
-            man &= 0xffffffff7f
+            man &= (self._carrymask + 0x7f)
         return lexp, man, neg
 
     def _ipow_int(self, expt):
@@ -810,6 +810,8 @@ class Single(Float):
 
     _den_mask = 0x80000000
     _den_upper = _den_mask * 2
+    _carrymask = 0xffffff00
+
     _signmask = 0x800000
     _mask = 0xffffff
     _posmask = 0x7fffff
@@ -858,6 +860,7 @@ class Double(Float):
 
     _den_mask = 0x8000000000000000
     _den_upper = _den_mask * 2
+    _carrymask = 0xffffffffffffff00
 
     _signmask = 0x80000000000000
     _mask = 0xffffffffffffff
