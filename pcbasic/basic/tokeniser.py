@@ -204,11 +204,11 @@ class Tokeniser(object):
             outs.write('.')
 
     def _tokenise_uint(self, ins):
-        """Convert an unsigned int (line number) to tokenised form."""
+        """Convert a line or jump number to tokenised form."""
         word = bytearray()
         ndigits, nblanks = 0, 0
         # don't read more than 5 digits
-        while (ndigits < 5): # and (int(word) < 6553):
+        while (ndigits < 5):
             c = util.peek(ins)
             if not c:
                 break
@@ -216,6 +216,11 @@ class Tokeniser(object):
                 word += ins.read(1)
                 nblanks = 0
                 ndigits += 1
+                if int(word) > 6552:
+                    # note: anything >= 65530 is illegal in GW-BASIC
+                    # in loading an ASCII file, GWBASIC would interpret these as
+                    # '6553 1' etcetera, generating a syntax error on load.
+                    break
             elif c in self._ascii_whitespace:
                 ins.read(1)
                 nblanks += 1
@@ -226,13 +231,6 @@ class Tokeniser(object):
         # no token
         if len(word) == 0:
             return ''
-        if int(word) >= 65530:
-            # note: anything >= 65530 is illegal in GW-BASIC
-            # in loading an ASCII file, GWBASIC would interpret these as
-            # '6553 1' etcetera, generating a syntax error on load.
-            # keep 6553 as line number and push back the last number:
-            ins.seek(4-len(word), 1)
-            word = word[:4]
         return struct.pack('<H', int(word))
 
     def _tokenise_word(self, ins, outs):
