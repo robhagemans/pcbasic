@@ -595,10 +595,12 @@ class Float(Number):
         if digits is None:
             lim_bot, lim_top = self.lim_bot, self.lim_top
             digits = self.digits
-        else:
+        elif digits > 0:
             # we'd be better off storing these (and ten) in denormalised form
             lim_bot = self.__class__().from_int(10**(digits-1))._just_under()
             lim_top = self.__class__().from_int(10**digits)._just_under()
+        else:
+            return 0, 0
         tden = lim_top._denormalise()
         bden = lim_bot._denormalise()
         exp10 = 0

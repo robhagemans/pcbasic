@@ -1129,25 +1129,20 @@ def _format_float_scientific(expr, digits_before, decimals, force_dot):
 
 def _format_float_fixed(expr, decimals, force_dot):
     """Put a float in fixed-point representation."""
-    trunc = abs(expr.to_int_truncate())
-    # total number or digits we think we'll need
-    # in C, you'd compare to another integer which is incrementally multiplied by 10
-    # in Python, just building the string to get the length is faster and simpler
-    ndigits = len(str(trunc)) + decimals
-    # working number of digits - never more than float type decimal precision
-    nwork = min(expr.digits, ndigits)
-    # bring to decimal form of working precision
-    num, exp10 = expr.to_decimal(nwork)
+    num, exp10 = expr.to_decimal()
+    # -exp10 is the number of digits after the radix point
+    if -exp10 > decimals:
+        nwork = expr.digits - (-exp10 - decimals)
+        # bring to decimal form of working precision
+        # this has nwork or nwork+1 digits, depending on rounding
+        num, exp10 = expr.to_decimal(nwork)
     digitstr = str(abs(num))
-    # we may have got more digits than we thought earlier, due to rounding
-    # the number of decimals in num that come after the radix point ..
-    nafter = -exp10
-    # .. and before the radix point.
-    nbefore = len(digitstr) - nafter
+    # number of digits before the radix point.
+    nbefore = len(digitstr) + exp10
     # fill up with zeros to required number of figures
-    digitstr += '0' * (decimals - nafter)
+    digitstr += '0' * (decimals + exp10)
     return _decimal_notation(
-                digitstr, nbefore-1,
+                digitstr, nbefore - 1,
                 type_sign='', force_dot=force_dot)
 
 
