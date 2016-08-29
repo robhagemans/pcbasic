@@ -325,7 +325,7 @@ class Float(Number):
             return 0.
         # unpack as unsigned long int
         man = struct.unpack(self._intformat, bytearray(self._buffer[:-1]) + '\0')[0]
-        # preprend assumed bit and apply sign
+        # prepend assumed bit and apply sign
         if man & self._signmask:
             man = -man
         else:
@@ -483,6 +483,7 @@ class Float(Number):
         lman, lexp = self._bring_to_range(lman, lexp, self._den_mask>>4, self._den_upper>>4)
         # rounding quirk
         if lman & 0xf == 0x9:
+            #FIXME: single only?
             lman &= 0xfffffffffe
         self._normalise(lexp, lman, lneg)
         return self
@@ -641,9 +642,12 @@ class Float(Number):
         pden_s = man
         # round to nearest; halves to even (Gaussian rounding)
         round_up = (man & 0xff > 0x80) or (man & 0xff == 0x80 and man & 0x100 == 0x100)
-        man = (man >> 8) + round_up
+        man = (man ^ (man & 0xff)) + 0x100 * round_up
+        if man >= self._den_upper:
+            exp += 1
+            man >>= 1
         # pack into byte representation
-        struct.pack_into(self._intformat, self._buffer, 0, man & (self._mask if neg else self._posmask))
+        struct.pack_into(self._intformat, self._buffer, 0, (man>>8) & (self._mask if neg else self._posmask))
         if self._check_limits(exp, neg):
             self._buffer[-1] = chr(exp)
         return self
@@ -741,6 +745,7 @@ class Float(Number):
         # attempt to match GW-BASIC subtraction rounding
         sden_s = -man if sub_flag else man
         if sub_flag and (man & 0x1c0 == 0x80) and (man & 0x1df != 0x80):
+            # FIXME: single only?
             man &= 0xffffffff7f
         return lexp, man, neg
 
