@@ -251,11 +251,10 @@ class Parser(object):
     def loop_init(self, ins, forpos, nextpos, varname, start, stop, step):
         """Initialise a FOR loop."""
         # set start to start-step, then iterate - slower on init but allows for faster iterate
-        loopvar = self.values.add(start, self.values.negate(step))
+        loopvar = self.values.subtract(start, step)
         self.session.scalars.set(varname, loopvar)
-        sgn = values.integer_to_int(self.values.sgn(step))
         self.for_stack.append(
-            (varname, stop, step, sgn, forpos, nextpos,))
+            (varname, stop, step, step.sign(), forpos, nextpos,))
         ins.seek(nextpos)
 
     def loop_iterate(self, ins, pos):
@@ -371,7 +370,7 @@ class Parser(object):
             return numbers.from_token(util.read_token(ins))
         # gw-basic allows adding line numbers to numbers
         elif d == tk.T_UINT:
-            return values.int_to_integer(self.statements.parse_jumpnum(ins), unsigned=True)
+            return numbers.Integer().from_int(self.statements.parse_jumpnum(ins), unsigned=True)
         else:
             raise error.RunError(error.STX)
 

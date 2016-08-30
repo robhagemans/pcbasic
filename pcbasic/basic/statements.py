@@ -1441,7 +1441,7 @@ class Statements(object):
             step = self.parser.parse_expression(ins)
         else:
             # convert 1 to vartype
-            step = values.int_to_integer(1)
+            step = self.values.from_value(1, vartype)
         step = self.values.to_type(vartype, step)
         util.require(ins, tk.end_statement)
         endforpos = ins.tell()

@@ -41,7 +41,7 @@ SIZE_TO_CLASS = {2: numbers.Integer, 4: numbers.Single, 8: numbers.Double}
 TYPE_TO_CLASS = {INT: numbers.Integer, SNG: numbers.Single, DBL: numbers.Double}
 
 def null(sigil):
-    """Return null value for the given type."""
+    """Return newly allocated value of the given type with zeroed buffer."""
     if sigil == '$':
         return (sigil, bytearray(TYPE_TO_SIZE[sigil]))
     else:
@@ -50,7 +50,6 @@ def null(sigil):
 def size_bytes(name):
     """Return the size of a value type, by variable name or type char."""
     return TYPE_TO_SIZE[name[-1]]
-
 
 ###############################################################################
 # type checks
@@ -78,22 +77,6 @@ def string_length(in_string):
 def string_address(in_string):
     """Get string address as Python int."""
     return struct.unpack('<H', Values.to_bytes(in_string)[1:])[0]
-
-
-###############################################################################
-# convert between BASIC Integer and Python int
-
-#D
-def int_to_integer(n, unsigned=False):
-    """Convert Python int to BASIC Integer."""
-    return numbers.Integer().from_int(n, unsigned)
-
-#D
-def integer_to_int(in_integer, unsigned=False):
-    """Convert BASIC Integer to Python int."""
-    return in_integer.to_int(unsigned)
-
-
 
 
 ###############################################################################
@@ -865,15 +848,15 @@ def number_to_str(inp, screen=False, write=False):
     # screen=True is used for screen, str$ and sequential files
     if not inp:
         raise error.RunError(error.STX)
-    typechar = Values.sigil(inp)
-    if typechar == '%':
-        if screen and not write and integer_to_int(inp) >= 0:
-            return ' ' + str(integer_to_int(inp))
+    if isinstance(inp, numbers.Integer):
+        intvalue = inp.to_int()
+        if screen and not write and intvalue >= 0:
+            return ' ' + str(intvalue)
         else:
-            return str(integer_to_int(inp))
-    elif typechar == '!':
+            return str(intvalue)
+    elif isinstance(inp, numbers.Single):
         return float_to_str(inp, screen, write)
-    elif typechar == '#':
+    elif isinstance(inp, numbers.Double):
         return float_to_str(inp, screen, write)
     else:
         raise error.RunError(error.TYPE_MISMATCH)
