@@ -149,7 +149,6 @@ class Debugger(BaseDebugger):
 
     def bluescreen(self, e):
         """Let the crash happen."""
-        print e
         raise e
 
 ##############################################################################

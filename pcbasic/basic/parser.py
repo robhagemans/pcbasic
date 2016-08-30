@@ -20,6 +20,7 @@ from . import statements
 from . import operators as op
 from . import functions
 from . import values
+from . import numbers
 
 
 class Parser(object):
@@ -364,10 +365,10 @@ class Parser(object):
         # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
         # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
         elif d in string.digits:
-            return values.token_to_value(self.values.tokenise_number(ins))
+            return numbers.from_token(self.values.tokenise_number(ins))
         # number literals
         elif d in tk.number:
-            return values.token_to_value(util.read_token(ins))
+            return numbers.from_token(util.read_token(ins))
         # gw-basic allows adding line numbers to numbers
         elif d == tk.T_UINT:
             return values.int_to_integer(self.statements.parse_jumpnum(ins), unsigned=True)

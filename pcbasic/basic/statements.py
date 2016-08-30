@@ -2065,7 +2065,7 @@ class Statements(object):
         # allocate function pointer
         pointer = struct.pack('<H', pointer_loc) + bytearray(values.size_bytes(fntype)-2)
         # function name is represented with first char shifted by 128
-        self.session.scalars.set(chr(128+ord(fnname[0])) + fnname[1:], (fntype, pointer))
+        self.session.scalars.set(chr(128+ord(fnname[0])) + fnname[1:], self.values.from_bytes(pointer))
         for name in fnvars:
             # allocate but don't set variables
             self.session.scalars.set(name)
@@ -2241,7 +2241,7 @@ class Statements(object):
             raise error.RunError(error.IFC)
         new_palette = []
         for i in range(num_palette_entries):
-            val = self.values.to_int(('%', lst[(start+i)*2:(start+i+1)*2]))
+            val = self.values.from_bytes(lst[(start+i)*2:(start+i+1)*2]).to_int()
             error.range_check(-1, len(mode.colours)-1, val)
             new_palette.append(val if val > -1 else screen.palette.get_entry(i))
         screen.palette.set_all(new_palette)

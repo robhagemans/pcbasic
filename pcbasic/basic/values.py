@@ -42,7 +42,7 @@ TYPE_TO_CLASS = {INT: numbers.Integer, SNG: numbers.Single, DBL: numbers.Double}
 
 def null(sigil):
     """Return null value for the given type."""
-    if sigil in ('$', '%'):
+    if sigil == '$':
         return (sigil, bytearray(TYPE_TO_SIZE[sigil]))
     else:
         return TYPE_TO_CLASS[sigil]()
@@ -83,29 +83,15 @@ def string_address(in_string):
 ###############################################################################
 # convert between BASIC Integer and Python int
 
-
+#D
 def int_to_integer(n, unsigned=False):
     """Convert Python int to BASIC Integer."""
-    maxint = 0xffff if unsigned else 0x7fff
-    if n > maxint or n < -0x8000:
-        raise error.RunError(error.OVERFLOW)
-    if n < 0:
-        n = 0x10000 + n
-    return ('%', bytearray((n&0xff, n >> 8)))
+    return numbers.Integer().from_int(n, unsigned)
 
+#D
 def integer_to_int(in_integer, unsigned=False):
     """Convert BASIC Integer to Python int."""
-    s = Values.to_bytes(in_integer)
-    if unsigned:
-        return 0x100 * s[1] + s[0]
-    else:
-        # 2's complement signed int, least significant byte first,
-        # sign bit is most significant bit
-        value = 0x100 * (s[1] & 0x7f) + s[0]
-        if (s[1] & 0x80) == 0x80:
-            return -0x8000 + value
-        else:
-            return value
+    return in_integer.to_int(unsigned)
 
 
 
@@ -135,8 +121,6 @@ class Values(object):
         typechar = self.sigil(basic_val)
         if typechar == '$':
             return self._strings.copy(basic_val)
-        elif typechar == '%':
-            return integer_to_int(basic_val)
         else:
             return basic_val.to_value()
 
@@ -145,16 +129,12 @@ class Values(object):
         """Convert Python value to BASIC value."""
         if typechar == '$':
             return self._strings.store(python_val)
-        elif typechar == '%':
-            return int_to_integer(python_val)
-        elif typechar == '!':
-            return numbers.Single().from_value(python_val)
-        elif typechar == '#':
-            return numbers.Double().from_value(python_val)
+        else:
+            return TYPE_TO_CLASS[typechar]().from_value(python_val)
 
     def to_int(self, inp, unsigned=False):
         """Round numeric variable and convert to Python integer."""
-        return integer_to_int(self.to_integer(inp, unsigned))
+        return self.to_integer(inp, unsigned).to_int(unsigned)
 
     def from_bool(self, boo):
         """Convert Python boolean to Integer."""
@@ -180,7 +160,7 @@ class Values(object):
     def from_bytes(token_bytes):
         """Convert internal byte representation to BASIC value."""
         typechar = SIZE_TO_TYPE[len(token_bytes)]
-        if typechar in ('$', '%'):
+        if typechar == '$':
             return (SIZE_TO_TYPE[len(token_bytes)], bytearray(token_bytes))
         else:
             # make a copy, not a view
@@ -201,35 +181,30 @@ class Values(object):
     def to_integer(self, inp, unsigned=False):
         """Check if variable is numeric, convert to Int."""
         typechar = self.sigil(inp)
-        if typechar == '%':
-            return inp
-        elif typechar in ('!', '#'):
-            return int_to_integer(inp.to_int(), unsigned)
-        else:
+        if typechar == '$':
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
+        return inp.to_integer(unsigned)
 
     @float_safe
     def to_single(self, num):
         """Check if variable is numeric, convert to Single."""
         typechar = self.sigil(num)
-        if typechar == '!':
-            return num
-        elif typechar == '%':
-            return numbers.Single().from_int(integer_to_int(num))
-        elif typechar == '#':
-            return num.to_single()
-        else:
+        if typechar == '$':
             raise error.RunError(error.TYPE_MISMATCH)
+        elif typechar == '%':
+            return numbers.Single().from_integer(num)
+        else:
+            return num.to_single()
 
     @float_safe
     def to_double(self, num):
         """Check if variable is numeric, convert to Double."""
         typechar = self.sigil(num)
-        if typechar == '%':
-            return numbers.Double().from_int(integer_to_int(num))
-        elif typechar == '$':
+        if typechar == '$':
             raise error.RunError(error.TYPE_MISMATCH)
+        elif typechar == '%':
+            return numbers.Double().from_integer(num)
         elif typechar == '!':
             return numbers.Double().from_single(num)
         elif typechar == '#':
@@ -274,12 +249,7 @@ class Values(object):
 
     def is_zero(self, x):
         """Return whether a number is zero."""
-        x = pass_number(x)
-        typechar = self.sigil(x)
-        if typechar == '%':
-            return integer_to_int(x) == 0
-        else:
-            return x.is_zero()
+        return pass_number(x).is_zero()
 
     ###############################################################################
     # math functions
@@ -328,22 +298,15 @@ class Values(object):
 
     def sgn(self, x):
         """Sign."""
-        x = pass_number(x)
-        if self.sigil(x) == '%':
-            inp_int = integer_to_int(x)
-            return int_to_integer(0 if inp_int == 0 else (1 if inp_int > 0 else -1))
-        else:
-            return int_to_integer(x.sign())
+        return numbers.Integer().from_int(pass_number(x).sign())
 
     def floor(self, x):
         """Truncate towards negative infinity (INT)."""
-        x = pass_number(x)
-        return x if self.sigil(x) == '%' else x.clone().ifloor()
+        return pass_number(x).clone().ifloor()
 
     def fix(self, x):
         """Truncate towards zero."""
-        x = pass_number(x)
-        return x if self.sigil(x) == '%' else x.clone().itrunc()
+        return pass_number(x).clone().itrunc()
 
 
     ###############################################################################
@@ -352,13 +315,10 @@ class Values(object):
     @float_safe
     def add(self, left, right):
         """Add two numbers."""
+        # promote Integer to Single to avoid integer overflow
+        left = self.to_float(left)
         left, right = self.to_most_precise(left, right)
-        if self.sigil(left) in ('#', '!'):
-            return left.clone().iadd(right)
-        else:
-            # return Single to avoid wrapping on integer overflow
-            return numbers.Single().from_int(
-                                integer_to_int(left) + integer_to_int(right))
+        return left.clone().iadd(right)
 
     @float_safe
     def subtract(self, left, right):
@@ -367,47 +327,35 @@ class Values(object):
 
     def abs(self, inp):
         """Return the absolute value of a number. No-op for strings."""
-        typechar = self.sigil(inp)
-        if typechar == '%':
-            val = abs(integer_to_int(inp))
-            if val == 32768:
-                return numbers.Single().from_int(val)
-            else:
-                return int_to_integer(val)
-        elif typechar in ('!', '#'):
-            return inp.clone().iabs()
-        # strings pass unchanged
-        return inp
+        if self.sigil(inp) == '$':
+            # strings pass unchanged
+            return inp
+        # promote Integer to Single to avoid integer overflow on -32768
+        return self.to_float(inp).clone().iabs()
 
     def negate(self, inp):
         """Negation (unary -). No-op for strings."""
-        typechar = self.sigil(inp)
-        if typechar == '%':
-            val = -integer_to_int(inp)
-            if val == 32768:
-                return numbers.Single().from_int(val)
-            else:
-                return int_to_integer(val)
-        elif typechar in ('!', '#'):
-            return inp.clone().ineg()
-        # strings pass unchanged
-        return inp
+        if self.sigil(inp) == '$':
+            # strings pass unchanged
+            return inp
+        # promote Integer to Single to avoid integer overflow on -32768
+        return self.to_float(inp).clone().ineg()
 
     @float_safe
     def power(self, left, right):
         """Left^right."""
-        if (self.sigil(left) == '#' or self.sigil(right) == '#') and self._double_math:
+        if self._double_math and (
+                isinstance(left, numbers.Double) or isinstance(right, numbers.Double)):
             return self._call_float_function(lambda a, b: a**b, self.to_double(left), self.to_double(right))
+        elif isinstance(right, numbers.Integer):
+            return self.to_single(left).ipow_int(right)
         else:
-            if self.sigil(right) == '%':
-                return self.to_single(left)._ipow_int(integer_to_int(right))
-            else:
-                return self._call_float_function(lambda a, b: a**b, self.to_single(left), self.to_single(right))
+            return self._call_float_function(lambda a, b: a**b, self.to_single(left), self.to_single(right))
 
     @float_safe
     def multiply(self, left, right):
         """Left*right."""
-        if self.sigil(left) == '#' or self.sigil(right) == '#':
+        if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
             return self.to_double(left).clone().imul(self.to_double(right))
         else:
             return self.to_single(left).clone().imul(self.to_single(right))
@@ -415,7 +363,7 @@ class Values(object):
     @float_safe
     def divide(self, left, right):
         """Left/right."""
-        if self.sigil(left) == '#' or self.sigil(right) == '#':
+        if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
             return self.to_double(left).clone().idiv(self.to_double(right))
         else:
             return self.to_single(left).clone().idiv(self.to_single(right))
@@ -423,64 +371,48 @@ class Values(object):
     @float_safe
     def divide_int(self, left, right):
         """Left\\right."""
-        dividend = self.to_int(left)
-        divisor = self.to_int(right)
-        if divisor == 0:
-            # division by zero, return single-precision maximum
-            smax = numbers.Single.neg_max if dividend < 0 else numbers.Single.pos_max
-            raise ZeroDivisionError(smax)
-        if (dividend >= 0) == (divisor >= 0):
-            return int_to_integer(dividend / divisor)
-        else:
-            return int_to_integer(-(abs(dividend) / abs(divisor)))
+        return left.to_integer().clone().idiv_int(right.to_integer())
 
     @float_safe
     def mod(self, left, right):
         """Left modulo right."""
-        dividend = self.to_int(left)
-        divisor = self.to_int(right)
-        if divisor == 0:
-            # division by zero, return single-precision maximum
-            smax = numbers.Single.neg_max if dividend < 0 else numbers.Single.pos_max
-            raise ZeroDivisionError(smax)
-        mod = dividend % divisor
-        if dividend < 0 or mod < 0:
-            mod -= divisor
-        return int_to_integer(mod)
+        return left.to_integer().clone().imod(right.to_integer())
 
     def bitwise_not(self, right):
         """Bitwise NOT, -x-1."""
-        return int_to_integer(-self.to_int(right)-1)
+        return numbers.Integer().from_int(-right.to_int()-1)
 
     def bitwise_and(self, left, right):
         """Bitwise AND."""
-        return int_to_integer(
-            integer_to_int(self.to_integer(left), unsigned=True) &
-            integer_to_int(self.to_integer(right), unsigned=True), unsigned=True)
+        return numbers.Integer().from_int(
+            left.to_integer().to_int(unsigned=True) &
+            right.to_integer().to_int(unsigned=True), unsigned=True)
 
     def bitwise_or(self, left, right):
         """Bitwise OR."""
-        return int_to_integer(
-            integer_to_int(self.to_integer(left), unsigned=True) |
-            integer_to_int(self.to_integer(right), unsigned=True), unsigned=True)
+        return numbers.Integer().from_int(
+            left.to_integer().to_int(unsigned=True) |
+            right.to_integer().to_int(unsigned=True), unsigned=True)
 
     def bitwise_xor(self, left, right):
         """Bitwise XOR."""
-        return int_to_integer(
-            integer_to_int(self.to_integer(left), unsigned=True) ^
-            integer_to_int(self.to_integer(right), unsigned=True), unsigned=True)
+        return numbers.Integer().from_int(
+            left.to_integer().to_int(unsigned=True) ^
+            right.to_integer().to_int(unsigned=True), unsigned=True)
 
     def bitwise_eqv(self, left, right):
         """Bitwise equivalence."""
-        return int_to_integer(0xffff-(
-            integer_to_int(self.to_integer(left), unsigned=True) ^
-            integer_to_int(self.to_integer(right), unsigned=True)), unsigned=True)
+        return numbers.Integer().from_int(0xffff - (
+                left.to_integer().to_int(unsigned=True) ^
+                right.to_integer().to_int(unsigned=True)
+            ), unsigned=True)
 
     def bitwise_imp(self, left, right):
         """Bitwise implication."""
-        return int_to_integer(
-            (0xffff - integer_to_int(self.to_integer(left), unsigned=True)) |
-            integer_to_int(self.to_integer(right), unsigned=True), unsigned=True)
+        return numbers.Integer().from_int(
+                (0xffff - left.to_integer().to_int(unsigned=True)) |
+                right.to_integer().to_int(unsigned=True),
+            unsigned=True)
 
 
     ###############################################################################
@@ -503,10 +435,7 @@ class Values(object):
                     self._strings.copy(pass_string(right)))
         else:
             left, right = self.to_most_precise(left, right)
-            if self.sigil(left) in ('#', '!'):
-                return left.eq(right)
-            else:
-                return integer_to_int(left) == integer_to_int(right)
+            return left.eq(right)
 
     def bool_gt(self, left, right):
         """Ordering: return -1 if left > right, 0 otherwise."""
@@ -529,10 +458,7 @@ class Values(object):
             return False
         else:
             left, right = self.to_most_precise(left, right)
-            if self.sigil(left) in ('#', '!'):
-                return left.gt(right)
-            else:
-                return integer_to_int(left) > integer_to_int(right)
+            return left.gt(right)
 
     def equals(self, left, right):
         """Return -1 if left == right, 0 otherwise."""
@@ -630,13 +556,13 @@ class Values(object):
 
     def length(self, x):
         """LEN: length of string."""
-        return int_to_integer(string_length(pass_string(x)))
+        return numbers.Integer().from_int(string_length(pass_string(x)))
 
     def asc(self, x):
         """ASC: ordinal ASCII value of a character."""
         s = self._strings.copy(pass_string(x))
         error.throw_if(not s)
-        return int_to_integer(ord(s[0]))
+        return numbers.Integer().from_int(ord(s[0]))
 
     def space(self, x):
         """SPACE$: repeat spaces."""
@@ -655,7 +581,7 @@ class Values(object):
         find = big[start-1:].find(small)
         if find == -1:
             return null('%')
-        return int_to_integer(start + find)
+        return numbers.Integer().from_int(start + find)
 
     def mid(self, s, start, num=None):
         """MID$: get substring."""
@@ -704,7 +630,7 @@ class Values(object):
         # skip spaces and line feeds (but not NUL).
         util.skip(ins, (' ', '\n'))
         token = self.tokenise_number(ins)
-        value = token_to_value(token)
+        value = numbers.from_token(token)
         if not allow_nonnum and util.skip_white(ins) != '':
             # not everything has been parsed - error
             return None
@@ -808,7 +734,7 @@ class Values(object):
                 return tk.T_BYTE + chr(_str_to_int(word))
             else:
                 # two-byte constant
-                return tk.T_INT + self.to_bytes(int_to_integer(_str_to_int(word)))
+                return tk.T_INT + self.to_bytes(numbers.Integer().from_int(_str_to_int(word)))
         else:
             mbf = self.to_bytes(self._str_to_float(word))
             if len(mbf) == 4:
@@ -954,14 +880,15 @@ def number_to_str(inp, screen=False, write=False):
 
 def integer_to_str_oct(inp):
     """Convert integer to str in octal representation."""
-    if integer_to_int(inp, unsigned=True) == 0:
+    intval = inp.to_int(unsigned=True)
+    if intval == 0:
         return '0'
     else:
-        return oct(integer_to_int(inp, unsigned=True))[1:]
+        return oct(intval)[1:]
 
 def integer_to_str_hex(inp):
     """Convert integer to str in hex representation."""
-    return hex(integer_to_int(inp, unsigned=True))[2:].upper()
+    return hex(inp.to_int(unsigned=True))[2:].upper()
 
 def _str_to_int(s):
     """Return Python int value for Python str, zero if malformed."""
@@ -1030,6 +957,8 @@ def format_number(value, tokens, digits_before, decimals):
             #if force_dot and digits_before == 0 and decimals != 0:
             #    valstr += '0'
     # take absolute value
+    # NOTE: this could overflow for Integer -32768
+    # but we convert to Float before calling format_number
     value = value.clone().iabs()
     # currency sign, if any
     valstr += '$' if has_dollar else ''
@@ -1144,19 +1073,3 @@ def _format_float_fixed(expr, decimals, force_dot):
     return _decimal_notation(
                 digitstr, nbefore - 1,
                 type_sign='', force_dot=force_dot)
-
-
-##############################################################################
-
-def token_to_value(full_token):
-    """Token to value."""
-    if not full_token:
-        return None
-    lead = str(full_token)[0]
-    if lead in (tk.T_OCT, tk.T_HEX, tk.T_INT, tk.T_SINGLE, tk.T_DOUBLE):
-        return Values.from_bytes(full_token[1:])
-    elif lead == tk.T_BYTE:
-        return Values.from_bytes(full_token[1:] + '\0')
-    elif tk.C_0 <= lead <= tk.C_10:
-        return Values.from_bytes(chr(ord(lead)-0x11) + '\0')
-    return None

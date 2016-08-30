@@ -147,7 +147,7 @@ class DataSegment(object):
         common = {name:value for name, value in self.scalars.variables.iteritems() if name in names}
         yield
         for name, value in common.iteritems():
-            full_var = (name[-1], value)
+            full_var = values.Values.from_bytes(value)
             if name[-1] == '$':
                 full_var = string_store.store(self.strings.copy(full_var))
             self.scalars.set(name, full_var)

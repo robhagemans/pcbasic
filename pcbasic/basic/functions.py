@@ -293,7 +293,7 @@ class Functions(object):
         """ENVIRON$: get environment string."""
         util.require_read(ins, ('$',))
         expr = self.parser.parse_bracket(ins)
-        if expr[0] == '$':
+        if self.values.sigil(expr) == '$':
             return self.session.strings.store(shell.get_env(self.session.strings.copy(expr)))
         else:
             expr = self.values.to_int(expr)
@@ -478,7 +478,7 @@ class Functions(object):
     def value_fre(self, ins):
         """FRE: get free memory and optionally collect garbage."""
         val = self.parser.parse_bracket(ins)
-        if val[0] == '$':
+        if self.values.sigil(val) == '$':
             # grabge collection if a string-valued argument is specified.
             self.session.memory.collect_garbage()
         return self.values.from_value(self.session.memory.get_free(), '!')

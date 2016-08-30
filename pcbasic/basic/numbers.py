@@ -106,35 +106,36 @@ class Integer(Number):
         """Sign of value"""
         return -1 if (ord(self._buffer[-1]) & 0x80) != 0 else (0 if self._buffer == '\0\0' else 1)
 
-    def to_int(self):
+    def to_int(self, unsigned=False):
         """Return value as Python int"""
-        return struct.unpack('<h', self._buffer)[0]
+        if unsigned:
+            return struct.unpack('<H', self._buffer)[0]
+        else:
+            return struct.unpack('<h', self._buffer)[0]
 
-    def from_int(self, in_int):
+    def from_int(self, in_int, unsigned=False):
         """Set value to Python int"""
-        if not (-0x8000 <= in_int <= 0x7fff):
+        if unsigned:
+            # we can in fact assign negatives as 'unsigned'
+            if in_int < 0:
+                in_int += 0x10000
+            intformat = '<H'
+            maxint = 0xffff
+        else:
+            intformat = '<h'
+            maxint = 0x7fff
+        if not (-0x8000 <= in_int <= maxint):
             self.copy_from(self.neg_max if in_int < 0 else self.pos_max)
-            raise OverflowError(self)
-        struct.pack_into('<h', self._buffer, 0, in_int)
+            raise error.RunError(error.OVERFLOW)
+        struct.pack_into(intformat, self._buffer, 0, in_int)
+        return self
+
+    def to_integer(self, unsigned=False):
+        """Convert to Integer (no-op)."""
         return self
 
     to_value = to_int
     from_value = from_int
-
-    def to_unsigned(self):
-        """Return value as unsigned Python int"""
-        return struct.unpack('<H', self._buffer)[0]
-
-    def from_unsigned(self, in_int):
-        """Set value to unsigned Python int"""
-        # we can in fact assign negatives as 'unsigned'
-        if not (-0x8000 <= in_int <= 0xffff):
-            self.copy_from(self.neg_max if in_int < 0 else self.pos_max)
-            raise OverflowError(self)
-        if in_int < 0:
-            in_int += 0xffff
-        struct.pack_into('<H', self._buffer, 0, in_int)
-        return self
 
     def to_token(self):
         """Return signed value as integer token"""
@@ -161,18 +162,27 @@ class Integer(Number):
 
     def from_token(self, token):
         """Set value to signed or unsigned integer token"""
-        d = token[0]
+        d = str(token)[0]
         if d in (tk.T_OCT, tk.T_HEX, tk.T_INT, tk.T_UINT):
             self._buffer[:] = token[-2:]
         elif d == tk.T_BYTE:
             self._buffer[:] = token[-1] + '\0'
-        elif d >= tk.C_0 and d <= tk.C_10:
+        elif tk.C_0 <= d <= tk.C_10:
             self._buffer[:] = chr(ord(d) - 0x11) + '\0'
         else:
             raise ValueError()
         return self
 
     # operations
+
+    def iround(self):
+        """Round in-place (no-op)."""
+
+    def itrunc(self):
+        """Truncate towards zero in-place (no-op)."""
+
+    def ifloor(self):
+        """Truncate towards negative infinity in-place (no-op)."""
 
     def ineg(self):
         """Negate in-place"""
@@ -256,8 +266,8 @@ class Integer(Number):
 
     def _abs_gt(self, rhs):
         """Absolute values greater than"""
-        lmsb = ord(self._buffer[1] & 0x7f)
-        rmsb = ord(rhs._buffer[1] & 0x7f)
+        lmsb = ord(self._buffer[1]) & 0x7f
+        rmsb = ord(rhs._buffer[1]) & 0x7f
         if lmsb > rmsb:
             return True
         elif lmsb < rmsb:
@@ -274,7 +284,7 @@ class Integer(Number):
             msb -= 1
         if not (0 <= msb <= 0xff):
             self.copy_from(self.neg_max if msb & 0x80 != 0 else self.pos_max)
-            raise OverflowError(self)
+            raise error.RunError(error.OVERFLOW)
         self._buffer[:] = chr(lsb) + chr(msb)
 
 
@@ -313,8 +323,12 @@ class Float(Number):
     # BASIC type conversions
 
     def from_integer(self, in_integer):
-        """Convert Integer to single, in-place"""
+        """Convert Integer to Float."""
         return self.from_int(in_integer.to_int())
+
+    def to_integer(self, unsigned=False):
+        """Convert Float to Integer."""
+        return Integer().from_int(self.to_int(), unsigned)
 
     # Python float conversions
 
@@ -401,15 +415,15 @@ class Float(Number):
         return self
 
     def iround(self):
-        """In-place. Round and return as float."""
+        """Round in-place."""
         return self.from_int(self.to_int())
 
     def itrunc(self):
-        """In-place. Truncate towards zero and return as float."""
+        """Truncate towards zero in-place."""
         return self.from_int(self.to_int_truncate())
 
     def ifloor(self):
-        """In-place. Truncate towards negative infinity and return as float."""
+        """Truncate towards negative infinity in-place."""
         if self.is_negative():
             self.itrunc().isub(self._one)
         else:
@@ -822,7 +836,7 @@ class Single(Float):
 
     def from_token(self, token):
         """Set value to Single token"""
-        if token[0] != tk.T_SINGLE:
+        if str(token)[0] != tk.T_SINGLE:
             raise ValueError()
         self._buffer[:] = token[-4:]
         return self
@@ -877,7 +891,7 @@ class Double(Float):
 
     def from_token(self, token):
         """Set value to Single token"""
-        if token[0] != tk.T_DOUBLE:
+        if str(token)[0] != tk.T_DOUBLE:
             raise ValueError()
         self._buffer[:] = token[-8:]
         return self
@@ -954,19 +968,23 @@ class FloatErrorHandler(object):
                 return e.args[0]
             elif isinstance(e.args[0], Integer):
                 # integer values are not soft-handled
-                raise e
+                raise error.RunError(math_error)
         return Single.pos_max
 
 ##############################################################################
 
 def from_token(token):
     """Convert number token to new Number temporary"""
-    if token[0] == tk.T_SINGLE:
+    if not token:
+        return None
+    lead = str(token)[0]
+    if lead == tk.T_SINGLE:
         return Single().from_token(token)
-    elif token[0] == tk.T_DOUBLE:
+    elif lead == tk.T_DOUBLE:
         return Double().from_token(token)
-    else:
+    elif lead in tk.number:
         return Integer().from_token(token)
+    return None
 
 
 lden_s, rden_s, sden_s, pden_s = 0,0,0,0
