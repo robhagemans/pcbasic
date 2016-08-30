@@ -10,6 +10,7 @@ import sys
 import os
 import shutil
 import filecmp
+import contextlib
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
@@ -31,11 +32,26 @@ def count_diff(file1, file2):
             count += 1
     return n, count
 
+@contextlib.contextmanager
+def suppress_stdio(do_suppress):
+    if not do_suppress:
+        yield
+    else:
+        sys.stderr, err = open(os.devnull, 'w'), sys.stderr
+        sys.stdout, out = open(os.devnull, 'w'), sys.stdout
+        yield
+        sys.stderr = err
+        sys.stdout = out
+
+
+
 args = sys.argv[1:]
 
-if not args or args == ['--all']:
+if not args or '--all' in args:
     args = [f for f in sorted(os.listdir('.'))
             if os.path.isdir(f) and os.path.isdir(os.path.join(f, 'model'))]
+
+do_suppress = '--loud' not in args
 
 numtests = 0
 failed = []
@@ -60,15 +76,12 @@ for name in args:
     sys.stdout.flush()
     # -----------------------------------------------------------
     # suppress output and logging and call PC-BASIC
-    sys.stderr, err = open(os.devnull, 'w'), sys.stderr
-    sys.stdout, out = open(os.devnull, 'w'), sys.stdout
-    crash = None
-    try:
-        pcbasic.run('--interface=none', '--debug')
-    except Exception as e:
-        crash = e
-    sys.stderr = err
-    sys.stdout = out
+    with suppress_stdio(do_suppress):
+        crash = None
+        try:
+            pcbasic.run('--interface=none', '--debug')
+        except Exception as e:
+            crash = e
     # -----------------------------------------------------------
     os.chdir(top)
     passed = True
