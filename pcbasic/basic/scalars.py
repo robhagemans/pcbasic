@@ -29,7 +29,6 @@ class Scalars(object):
 
     def set(self, name, value=None):
         """Assign a value to a variable."""
-        name = self.memory.complete_name(name)
         type_char = name[-1]
         if value is not None:
             value = self.values.to_type(type_char, value)
@@ -61,7 +60,6 @@ class Scalars(object):
 
     def get(self, name):
         """Retrieve the value of a scalar variable."""
-        name = self.memory.complete_name(name)
         try:
             return self.values.from_bytes(self.variables[name])
         except KeyError:
@@ -73,7 +71,6 @@ class Scalars(object):
 
     def varptr(self, name):
         """Retrieve the address of a scalar variable."""
-        name = self.memory.complete_name(name)
         try:
             _, var_ptr = self.var_memory[name]
             return var_ptr

@@ -375,7 +375,7 @@ class Parser(object):
             raise error.RunError(error.STX)
 
     def parse_variable(self, ins):
-        """Helper function: parse a variable or array element."""
+        """Helper function: parse a scalar or array element."""
         name = self.parse_scalar(ins)
         indices = []
         if util.skip_white_read_if(ins, ('[', '(')):
@@ -388,7 +388,7 @@ class Parser(object):
         return name, indices
 
     def parse_scalar(self, ins, allow_empty=False):
-        """Get variable name from token stream."""
+        """Get scalar part of variable name from token stream."""
         # append type specifier
         name = self.session.memory.complete_name(util.read_name(ins, allow_empty))
         # return None for empty names (only happens with allow_empty)

@@ -63,7 +63,6 @@ class Arrays(object):
         """Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value."""
         if self.base_index is None:
             self.base_index = 0
-        name = self.memory.complete_name(name)
         if name in self.arrays:
             raise error.RunError(error.DUPLICATE_DEFINITION)
         for d in dimensions:
@@ -81,14 +80,7 @@ class Arrays(object):
         self.memory.check_free(record_len + array_bytes, error.OUT_OF_MEMORY)
         self.current += record_len + array_bytes
         self.array_memory[name] = (name_ptr, array_ptr)
-        try:
-            self.arrays[name] = [ dimensions, bytearray(array_bytes), 0 ]
-        except OverflowError:
-            # out of memory
-            raise error.RunError(error.OUT_OF_MEMORY)
-        except MemoryError:
-            # out of memory
-            raise error.RunError(error.OUT_OF_MEMORY)
+        self.arrays[name] = [dimensions, bytearray(array_bytes), 0]
 
     def check_dim(self, name, index):
         """Check if an array has been allocated. If not, auto-allocate if indices are <= 10; raise error otherwise."""
@@ -124,7 +116,7 @@ class Arrays(object):
             raise error.RunError(error.DUPLICATE_DEFINITION)
         self.base_index = base
 
-    def view(self, name, index):
+    def view_buffer(self, name, index):
         """Return a memoryview to an array element."""
         dimensions, lst = self.check_dim(name, index)
         bigindex = self.index(index, dimensions)
@@ -134,18 +126,17 @@ class Arrays(object):
     def get(self, name, index):
         """Retrieve a copy of the value of an array element."""
         # from_bytes makes the copy
-        return self.values.from_bytes(self.view(name, index))
+        return self.values.from_bytes(self.view_buffer(name, index))
 
     def set(self, name, index, value):
         """Assign a value to an array element."""
         # copy value into array
-        self.view(name, index)[:] = self.values.to_bytes(self.values.to_type(name[-1], value))
+        self.view_buffer(name, index)[:] = self.values.to_bytes(self.values.to_type(name[-1], value))
         # increment array version
         self.arrays[name][2] += 1
 
     def varptr(self, name, indices):
         """Retrieve the address of an array."""
-        name = self.memory.complete_name(name)
         try:
             dimensions, _, _ = self.arrays[name]
             _, array_ptr = self.array_memory[name]

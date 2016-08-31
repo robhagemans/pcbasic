@@ -316,6 +316,7 @@ class DataSegment(object):
 
     def get_variable(self, name, indices):
         """Retrieve the value of a scalar variable or an array element."""
+        name = self.complete_name(name)
         if indices == []:
             return self.scalars.get(name)
         else:
@@ -324,6 +325,7 @@ class DataSegment(object):
 
     def set_variable(self, name, indices, value):
         """Assign a value to a scalar variable or an array element."""
+        name = self.complete_name(name)
         if indices == []:
             self.scalars.set(name, value)
         else:
@@ -331,6 +333,7 @@ class DataSegment(object):
 
     def varptr(self, name, indices):
         """Get address of variable."""
+        name = self.complete_name(name)
         if indices == []:
             return self.scalars.varptr(name)
         else:
@@ -355,8 +358,8 @@ class DataSegment(object):
         varptr, = struct.unpack('<H', varptrstr[1:3])
         return self.dereference(varptr)
 
-    def _view_variable(self, name, indices):
-        """Retrieve a memoryview to a scalar variable or an array element."""
+    def _view_buffer(self, name, indices):
+        """Retrieve a memoryview to a scalar variable or an array element's buffer."""
         if indices == []:
             if name not in self.scalars.variables:
                 raise error.RunError(error.IFC)
@@ -365,7 +368,7 @@ class DataSegment(object):
             if name not in self.arrays.arrays:
                 raise error.RunError(error.IFC)
             # array would be allocated if retrieved and nonexistant
-            return self.arrays.view(name, indices)
+            return self.arrays.view_buffer(name, indices)
 
     def swap(self, name1, index1, name2, index2):
         """Swap two variables."""
@@ -373,8 +376,8 @@ class DataSegment(object):
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
         # get buffers (numeric representation or string pointer)
-        left = self._view_variable(name1, index1)
-        right = self._view_variable(name2, index2)
+        left = self._view_buffer(name1, index1)
+        right = self._view_buffer(name2, index2)
         # swap the contents
         left[:], right[:] = right.tobytes(), left.tobytes()
         # inc version

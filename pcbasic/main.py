@@ -23,7 +23,6 @@ locale.setlocale(locale.LC_ALL, '')
 from .version import __version__
 from . import ansipipe
 from . import basic
-from .basic import signals
 from . import state
 from . import config
 
