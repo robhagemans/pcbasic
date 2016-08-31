@@ -125,7 +125,6 @@ class Integer(Number):
             intformat = '<h'
             maxint = 0x7fff
         if not (-0x8000 <= in_int <= maxint):
-            self.copy_from(self.neg_max if in_int < 0 else self.pos_max)
             raise error.RunError(error.OVERFLOW)
         struct.pack_into(intformat, self._buffer, 0, in_int)
         return self
@@ -186,31 +185,42 @@ class Integer(Number):
 
     def ineg(self):
         """Negate in-place"""
-        self._buffer[-1]  = chr(ord(self._buffer[-1]) ^ 0x80)
+        if self._buffer == '\x00\x80':
+            raise error.RunError(error.OVERFLOW)
+        lsb = (ord(self._buffer[0]) ^ 0xff) + 1
+        msb = ord(self._buffer[1]) ^ 0xff
+        # apply carry
+        if lsb > 0xff:
+            lsb -= 0x100
+            msb += 1
+        # ignore overflow, since -0 == 0
+        self._buffer[:] = chr(lsb) + chr(msb & 0xff)
         return self
 
     def iabs(self):
         """Absolute value in-place"""
-        self._buffer[-1] = chr(ord(self._buffer[-1]) & 0x7F)
-        return self
+        if (ord(self._buffer[-1]) & 0x80):
+            return self.ineg()
 
     def iadd(self, rhs):
         """Add another Integer in-place"""
-        if (ord(self._buffer[-1]) & 0x80) != (ord(rhs._buffer[-1]) & 0x80):
-            return self.ineg().isub(rhs).ineg()
         lsb = ord(self._buffer[0]) + ord(rhs._buffer[0])
         msb = ord(self._buffer[1]) + ord(rhs._buffer[1])
-        self._carry_list(lsb, msb)
+        # apply carry
+        if lsb > 0xff:
+            lsb -= 0x100
+            msb += 1
+        # overflow if signs were equal and have changed
+        if (ord(self._buffer[1]) > 0x7f) == (ord(rhs._buffer[1]) > 0x7f) != (msb > 0x7f):
+            raise error.RunError(error.OVERFLOW)
+        self._buffer[:] = chr(lsb) + chr(msb & 0xff)
         return self
 
     def isub(self, rhs):
         """Subtract another Integer in-place"""
-        if (ord(self._buffer[-1]) & 0x80) != (ord(rhs._buffer[-1]) & 0x80):
-            return self.ineg().iadd(rhs).ineg()
-        lsb = ord(self._buffer[0]) - ord(rhs._buffer[0])
-        msb = ord(self._buffer[1]) - ord(rhs._buffer[1])
-        self._carry_list(lsb, msb)
-        return self
+        # we can't apply the neg on the lhs and avoid a copy
+        # because of things like -32768 - (-1)
+        return self.iadd(rhs.clone().ineg())
 
     # no imul - we always promote to float first for multiplication
     # no idiv - we always promote to float first for true division
@@ -274,18 +284,6 @@ class Integer(Number):
             return False
         return ord(self._buffer[0]) > ord(rhs._buffer[0])
 
-    def _carry_list(self, lsb, msb):
-        """Check for overflow and assign"""
-        if lsb > 0xff:
-            lsb -= 0xff
-            msb += 1
-        elif lsb < 0:
-            lsb += 0xff
-            msb -= 1
-        if not (0 <= msb <= 0xff):
-            self.copy_from(self.neg_max if msb & 0x80 != 0 else self.pos_max)
-            raise error.RunError(error.OVERFLOW)
-        self._buffer[:] = chr(lsb) + chr(msb)
 
 
 Integer.pos_max = Integer('\xff\x7f')
