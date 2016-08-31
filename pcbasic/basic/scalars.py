@@ -69,6 +69,10 @@ class Scalars(object):
         """Retrieve a view of an existing scalar variable."""
         return self.values.create(self.variables[name])
 
+    def view_buffer(self, name):
+        """Retrieve a view of an existing scalar variable's buffer."""
+        return memoryview(self.variables[name])
+
     def varptr(self, name):
         """Retrieve the address of a scalar variable."""
         try:

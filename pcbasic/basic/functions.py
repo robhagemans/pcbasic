@@ -332,8 +332,8 @@ class Functions(object):
         varsave = {}
         for name in varnames:
             if name in self.session.scalars.variables:
-                # copy the *value* - set_var is in-place it's safe for FOR loops
-                varsave[name] = self.session.scalars.variables[name][:]
+                # copy the buffer
+                varsave[name] = self.session.scalars.view(name).clone()
         # read variables
         if util.skip_white_read_if(ins, ('(',)):
             exprs = []
@@ -355,7 +355,7 @@ class Functions(object):
         # restore existing vars
         for name in varsave:
             # re-assign the stored value
-            self.session.scalars.variables[name][:] = varsave[name]
+            self.session.scalars.view(name).copy_from(varsave[name])
         return self.values.to_type(fnname[-1], value)
 
     ###############################################################

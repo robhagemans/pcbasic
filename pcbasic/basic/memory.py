@@ -363,7 +363,7 @@ class DataSegment(object):
         if indices == []:
             if name not in self.scalars.variables:
                 raise error.RunError(error.IFC)
-            return memoryview(self.scalars.variables[name])
+            return self.scalars.view_buffer(name)
         else:
             if name not in self.arrays.arrays:
                 raise error.RunError(error.IFC)
