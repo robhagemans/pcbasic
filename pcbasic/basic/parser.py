@@ -251,10 +251,11 @@ class Parser(object):
     def loop_init(self, ins, forpos, nextpos, varname, start, stop, step):
         """Initialise a FOR loop."""
         # set start to start-step, then iterate - slower on init but allows for faster iterate
-        loopvar = start.clone().isub(step)
-        self.session.scalars.set(varname, loopvar)
+        self.session.scalars.set(varname, start.clone().isub(step))
+        # obtain a view of the loop variable
+        counter_view = self.session.scalars.view(varname)
         self.for_stack.append(
-            (varname, stop, step, step.sign(), forpos, nextpos,))
+            (counter_view, stop, step, step.sign(), forpos, nextpos,))
         ins.seek(nextpos)
 
     def loop_iterate(self, ins, pos):
@@ -262,7 +263,7 @@ class Parser(object):
         # find the matching NEXT record
         num = len(self.for_stack)
         for depth in range(num):
-            varname, stop, step, sgn, forpos, nextpos = self.for_stack[-depth-1]
+            counter_view, stop, step, sgn, forpos, nextpos = self.for_stack[-depth-1]
             if pos == nextpos:
                 # only drop NEXT record if we've found a matching one
                 self.for_stack = self.for_stack[:len(self.for_stack)-depth]
@@ -270,10 +271,9 @@ class Parser(object):
         else:
             raise error.RunError(error.NEXT_WITHOUT_FOR)
         # increment counter
-        loopvar = self.session.scalars.get(varname).iadd(step)
-        self.session.scalars.set(varname, loopvar)
+        counter_view.iadd(step)
         # check condition
-        loop_ends = loopvar.gt(stop) if sgn > 0 else stop.gt(loopvar)
+        loop_ends = counter_view.gt(stop) if sgn > 0 else stop.gt(counter_view)
         if loop_ends:
             self.for_stack.pop()
         else:

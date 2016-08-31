@@ -67,6 +67,10 @@ class Scalars(object):
         except KeyError:
             return values.null(name[-1])
 
+    def view(self, name):
+        """Retrieve a view of an existing scalar variable."""
+        return self.values.create(self.variables[name])
+
     def varptr(self, name):
         """Retrieve the address of a scalar variable."""
         name = self.memory.complete_name(name)

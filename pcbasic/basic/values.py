@@ -149,6 +149,16 @@ class Values(object):
             # make a copy, not a view
             return SIZE_TO_CLASS[len(token_bytes)]().from_bytes(token_bytes)
 
+    @staticmethod
+    def create(buf):
+        """Create new variable object with buffer provided."""
+        typechar = SIZE_TO_TYPE[len(buf)]
+        if typechar == '$':
+            return (SIZE_TO_TYPE[len(buf)], buf)
+        else:
+            # make a copy, not a view
+            return SIZE_TO_CLASS[len(buf)](buf)
+
     ###########################################################################
     # type conversions
 
