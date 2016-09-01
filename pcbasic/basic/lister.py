@@ -171,13 +171,10 @@ class Lister(object):
             output += str(ord(trail))
         elif tk.C_0 <= lead <= tk.C_10:
             output += str(ord(lead) - ord(tk.C_0))
-        elif lead == tk.T_INT:
-            # lowercase h for signed int
-            output += str(struct.unpack(b'<h', trail)[0])
         elif lead in tk.linenum:
             # 0D: line pointer (unsigned int) - this token should not be here;
             #     interpret as line number and carry on
             # 0E: line number (unsigned int)
             output += str(struct.unpack(b'<H', trail)[0])
-        elif lead in (tk.T_SINGLE, tk.T_DOUBLE):
-            output += values.float_to_str(self._values.from_bytes(trail), leading_space=False, type_sign=True)
+        elif lead in (tk.T_SINGLE, tk.T_DOUBLE, tk.T_INT):
+            output += self._values.from_bytes(trail).to_str(leading_space=False, type_sign=True)

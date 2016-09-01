@@ -18,6 +18,7 @@ from functools import partial
 
 from . import error
 from . import values
+from .import numbers
 from . import ports
 from . import print_and_input
 from . import basictoken as tk
@@ -2446,7 +2447,7 @@ class Statements(object):
                     if number_field:
                         if not data_ends:
                             num = self.values.to_float(self.parser.parse_expression(ins))
-                            output.write(values.format_number(num, number_field, digits_before, decimals))
+                            output.write(numbers.format_number(num, number_field, digits_before, decimals))
                     else:
                         output.write(fors.read(1))
                 if string_field or number_field:
