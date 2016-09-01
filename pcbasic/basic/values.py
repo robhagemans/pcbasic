@@ -194,6 +194,19 @@ class Values(object):
             return numbers.Double().from_decimal(mantissa, exp10)
         return numbers.Single().from_decimal(mantissa, exp10)
 
+    @classmethod
+    def to_str(cls, inp, leading_space, type_sign):
+        """Convert BASIC number to Python str."""
+        # PRINT, STR$ - yes leading space, no type sign
+        # WRITE - no leading space, no type sign
+        # LIST - no loading space, yes type sign
+        if not inp:
+            raise error.RunError(error.STX)
+        if isinstance(inp, numbers.Number):
+            return inp.to_str(leading_space, type_sign)
+        else:
+            raise error.RunError(error.TYPE_MISMATCH)
+
     ###########################################################################
     # type conversions
 
@@ -554,7 +567,7 @@ class Values(object):
 
     def representation(self, x):
         """STR$: string representation of a number."""
-        return self._strings.store(number_to_str(pass_number(x), screen=True))
+        return self._strings.store(self.to_str(pass_number(x), leading_space=True, type_sign=False))
 
     def val(self, x):
         """VAL: number value of a string."""
@@ -647,22 +660,3 @@ class Values(object):
             return null('$')
         stop = min(stop, len(s))
         return self._strings.store(s[-stop:])
-
-
-##############################################################################
-
-def number_to_str(inp, screen=False, write=False):
-    """Convert BASIC number to Python str."""
-    # screen=False means in a program listing
-    # screen=True is used for screen, str$ and sequential files
-    # screen=True (ie PRINT) - leading space, no type sign
-    # write=True (ie WRITE) - no leading space, no type sign
-    # default mode is for LIST
-    leading_space = screen and not write
-    type_sign = not screen and not write
-    if not inp:
-        raise error.RunError(error.STX)
-    if isinstance(inp, numbers.Number):
-        return inp.to_str(leading_space, type_sign)
-    else:
-        raise error.RunError(error.TYPE_MISMATCH)

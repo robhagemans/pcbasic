@@ -118,7 +118,7 @@ class Debugger(BaseDebugger):
                 if self.session.values.sigil(val) == '$':
                     outstr += '"' + self.session.strings.copy(val) + '"'
                 else:
-                    outstr += values.number_to_str(val, screen=False)
+                    outstr += self.session.values.to_str(val, leading_space=False, type_sign=True)
             except Exception as e:
                 logging.debug(str(type(e))+' '+str(e))
                 traceback.print_tb(sys.exc_info()[2])

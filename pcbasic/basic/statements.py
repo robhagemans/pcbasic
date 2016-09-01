@@ -2348,7 +2348,7 @@ class Statements(object):
                     with self.session.strings:
                         outstr += '"' + self.session.strings.copy(expr) + '"'
                 else:
-                    outstr += values.number_to_str(expr, screen=True, write=True)
+                    outstr += self.values.to_str(expr, leading_space=False, type_sign=False)
                 if util.skip_white_read_if(ins, (',', ';')):
                     outstr += ','
                 else:
@@ -2396,7 +2396,7 @@ class Statements(object):
                     expr = self.parser.parse_expression(ins)
                     # numbers always followed by a space
                     if self.values.sigil(expr) in ('%', '!', '#'):
-                        word = values.number_to_str(expr, screen=True) + ' '
+                        word = self.values.to_str(expr, leading_space=True, type_sign=False) + ' '
                     else:
                         word = self.session.strings.copy(expr)
                 # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
