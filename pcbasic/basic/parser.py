@@ -55,59 +55,59 @@ class Parser(object):
         # pointer to error trap
         self.on_error = None
 
-    def parse_statement(self):
-        """Parse one statement at the current pointer in current codestream.
-            Return False if stream has ended, True otherwise.
-            """
-        try:
-            self.handle_basic_events()
-            ins = self.get_codestream()
-            self.current_statement = ins.tell()
-            c = util.skip_white(ins)
-            if c == '':
-                # stream has ended.
-                self.set_pointer(False)
-                return False
-            # parse line number or : at start of statement
-            elif c == '\0':
-                # save position for error message
-                prepos = ins.tell()
-                ins.read(1)
-                # line number marker, new statement
-                linenum = self.session.lister.detokenise_line_number(ins)
-                if linenum == -1:
-                    if self.error_resume:
-                        # unfinished error handler: no RESUME (don't trap this)
-                        self.error_handle_mode = True
-                        # get line number right
-                        raise error.RunError(error.NO_RESUME, prepos-1)
+    def parse(self):
+        """Parse from the current pointer in current codestream."""
+        while True:
+            # may raise Break
+            self.session.events.check_events()
+            try:
+                self.handle_basic_events()
+                ins = self.get_codestream()
+                self.current_statement = ins.tell()
+                c = util.skip_white(ins)
+                if c == '':
                     # stream has ended
                     self.set_pointer(False)
-                    return False
-                if self.tron:
-                    self.session.screen.write('[' + ('%i' % linenum) + ']')
-                self.session.debugger.debug_step(linenum)
-            elif c == ':':
-                ins.read(1)
-            c = util.skip_white(ins)
-            # empty statement, return to parse next
-            if c in tk.end_statement:
-                return True
-            # implicit LET
-            elif c in string.ascii_letters:
-                self.statements.exec_let(ins)
-            # token
-            else:
-                ins.read(1)
-                if c in tk.twobyte:
-                    c += ins.read(1)
-                # don't use try-block to avoid catching other KeyErrors in statement
-                if c not in self.statements.statements:
-                    raise error.RunError(error.STX)
-                self.statements.statements[c](ins)
-        except error.RunError as e:
-            self.trap_error(e)
-        return True
+                    return
+                # parse line number or : at start of statement
+                elif c == '\0':
+                    # save position for error message
+                    prepos = ins.tell()
+                    ins.read(1)
+                    # line number marker, new statement
+                    linenum = self.session.lister.detokenise_line_number(ins)
+                    if linenum == -1:
+                        if self.error_resume:
+                            # unfinished error handler: no RESUME (don't trap this)
+                            self.error_handle_mode = True
+                            # get line number right
+                            raise error.RunError(error.NO_RESUME, prepos-1)
+                        # stream has ended
+                        self.set_pointer(False)
+                        return
+                    if self.tron:
+                        self.session.screen.write('[' + ('%i' % linenum) + ']')
+                    self.session.debugger.debug_step(linenum)
+                elif c == ':':
+                    ins.read(1)
+                c = util.skip_white(ins)
+                # empty statement, return to parse next
+                if c in tk.end_statement:
+                    continue
+                # implicit LET
+                elif c in string.ascii_letters:
+                    self.statements.exec_let(ins)
+                # token
+                else:
+                    ins.read(1)
+                    if c in tk.twobyte:
+                        c += ins.read(1)
+                    # don't use try-block to avoid catching other KeyErrors in statement
+                    if c not in self.statements.statements:
+                        raise error.RunError(error.STX)
+                    self.statements.statements[c](ins)
+            except error.RunError as e:
+                self.trap_error(e)
 
     ###########################################################################
     # clear state

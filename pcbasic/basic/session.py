@@ -295,11 +295,9 @@ class Session(object):
             last_parse = self._parse_mode
             if self._parse_mode:
                 try:
-                    # may raise Break
-                    self.events.check_events()
-                    # returns True if more statements to parse
-                    if not self.parser.parse_statement():
-                        self._parse_mode = False
+                    # parse until break or end
+                    self.parser.parse()
+                    self._parse_mode = False
                 except error.Break as e:
                     # ctrl-break stops foreground and background sound
                     self.sound.stop_all_sound()

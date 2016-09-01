@@ -62,7 +62,7 @@ class Events(object):
         self.suspend_all = False
 
     def set_active(self, active):
-        """Activate or deactisvate event checking."""
+        """Activate or deactivate event checking."""
         self.active = active
 
     def check(self):
