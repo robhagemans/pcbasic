@@ -194,14 +194,12 @@ class Values(object):
             return numbers.Double().from_decimal(mantissa, exp10)
         return numbers.Single().from_decimal(mantissa, exp10)
 
-    @classmethod
-    def to_str(cls, inp, leading_space, type_sign):
+    @staticmethod
+    def to_str(inp, leading_space, type_sign):
         """Convert BASIC number to Python str."""
         # PRINT, STR$ - yes leading space, no type sign
         # WRITE - no leading space, no type sign
         # LIST - no loading space, yes type sign
-        if not inp:
-            raise error.RunError(error.STX)
         if isinstance(inp, numbers.Number):
             return inp.to_str(leading_space, type_sign)
         else:
