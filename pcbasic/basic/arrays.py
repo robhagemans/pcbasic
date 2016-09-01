@@ -71,6 +71,22 @@ class Arrays(object):
             return 0
         return self.array_len(dimensions) * values.size_bytes(name)
 
+    def view_full_buffer(self, name):
+        """Return a memoryview to a full array."""
+        return memoryview(self.arrays[name][1])
+
+    def dimensions(self, name):
+        """Return the dimensions of an array."""
+        return self.arrays[name][0]
+
+    def version(self, name):
+        """Return the update version of an array (for cached graphics)."""
+        return self.arrays[name][2]
+
+    def inc_version(self, name):
+        """Increase the update version of an array (for cached graphics)."""
+        self.arrays[name][2] += 1
+
     def dim(self, name, dimensions):
         """Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value."""
         if self.base_index is None:
@@ -88,7 +104,7 @@ class Arrays(object):
         name_ptr = self.current
         record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
         array_ptr = name_ptr + record_len
-        array_bytes = size*values.size_bytes(name)
+        array_bytes = size * values.size_bytes(name)
         self.memory.check_free(record_len + array_bytes, error.OUT_OF_MEMORY)
         self.current += record_len + array_bytes
         self.array_memory[name] = (name_ptr, array_ptr)

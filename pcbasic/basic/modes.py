@@ -391,7 +391,7 @@ if numpy:
         nattrs = attrs[0::pixels_per_byte]
         for i in xrange(1, pixels_per_byte):
             nattrs |= attrs[i::pixels_per_byte]
-        return list(nattrs)
+        return bytearray(list(nattrs))
 
 else:
     def bytes_to_interval(bytes, pixels_per_byte, mask=1):
@@ -597,19 +597,19 @@ class CGAMode(GraphicsMode):
         y = bank + self.interleave_times * row
         return page, x, y
 
-    def set_memory(self, addr, bytes):
+    def set_memory(self, addr, byte_array):
         """Set bytes in CGA memory."""
-        for page, x, y, ofs, length in walk_memory(self, addr, len(bytes)):
+        for page, x, y, ofs, length in walk_memory(self, addr, len(byte_array)):
             self.screen.put_interval(page, x, y,
-                bytes_to_interval(bytes[ofs:ofs+length], self.ppb))
+                bytes_to_interval(byte_array[ofs:ofs+length], self.ppb))
 
     def get_memory(self, addr, num_bytes):
         """Retrieve bytes from CGA memory."""
-        bytes = bytearray(num_bytes)
+        byte_array = bytearray(num_bytes)
         for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
-            bytes[ofs:ofs+length] = interval_to_bytes(
+            byte_array[ofs:ofs+length] = interval_to_bytes(
                 self.screen.get_interval(page, x, y, length*self.ppb), self.ppb)
-        return bytes
+        return byte_array
 
     def sprite_size_to_record(self, dx, dy):
         """Write 4-byte record of sprite size."""
@@ -697,14 +697,14 @@ class EGAMode(GraphicsMode):
     def get_memory(self, addr, num_bytes):
         """Retrieve bytes from EGA memory."""
         plane = self.plane % (max(self.planes_used)+1)
-        bytes = bytearray(num_bytes)
+        byte_array = bytearray(num_bytes)
         if plane not in self.planes_used:
-            return bytes
+            return byte_array
         for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
-            bytes[ofs:ofs+length] = interval_to_bytes(
+            byte_array[ofs:ofs+length] = interval_to_bytes(
                 self.screen.get_interval(page, x, y, length*self.ppb),
                 self.ppb, plane)
-        return bytes
+        return byte_array
 
     def set_memory(self, addr, bytes):
         """Set bytes in EGA video memory."""

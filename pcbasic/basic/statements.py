@@ -1359,7 +1359,7 @@ class Statements(object):
             raise error.RunError(error.IFC)
         elif array[-1] == '$':
             raise error.RunError(error.TYPE_MISMATCH) # type mismatch
-        self.session.screen.drawing.get(coord0, coord1, self.session.arrays.arrays, array)
+        self.session.screen.drawing.get(coord0, coord1, self.session.arrays, array)
 
     def exec_put_graph(self, ins):
         """PUT: draw sprite on screen."""
@@ -1381,7 +1381,7 @@ class Statements(object):
         elif array[-1] == '$':
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
-        self.session.screen.drawing.put(coord, self.session.arrays.arrays, array, action)
+        self.session.screen.drawing.put(coord, self.session.arrays, array, action)
 
     def exec_draw(self, ins):
         """DRAW: draw a figure defined by a Graphics Macro Language string."""
@@ -2231,12 +2231,16 @@ class Statements(object):
         mode = screen.mode
         num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
         array_name, start_indices = self.parser.parse_variable(ins)
+        # brackets are not optional
+        if not start_indices:
+            raise error.RunError(error.STX)
         try:
-            dimensions, lst, _ = self.session.arrays.arrays[array_name]
+            dimensions = self.session.arrays.dimensions(array_name)
         except KeyError:
             raise error.RunError(error.IFC)
         if array_name[-1] != '%':
             raise error.RunError(error.TYPE_MISMATCH)
+        lst = self.session.arrays.view_full_buffer(array_name)
         start = self.session.arrays.index(start_indices, dimensions)
         if self.session.arrays.array_len(dimensions) - start < num_palette_entries:
             raise error.RunError(error.IFC)

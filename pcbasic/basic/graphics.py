@@ -642,7 +642,8 @@ class Drawing(object):
         x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         self.last_point = x0, y0
         try:
-            _, byte_array, a_version = arrays[array_name]
+            byte_array = arrays.view_full_buffer(array_name)
+            a_version = arrays.version(array_name)
         except KeyError:
             byte_array = bytearray()
         try:
@@ -674,7 +675,8 @@ class Drawing(object):
         x1, y1 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
         try:
-            _, byte_array, version = arrays[array_name]
+            byte_array = arrays.view_full_buffer(array_name)
+            version = arrays.version(array_name)
         except KeyError:
             raise error.RunError(error.IFC)
         dx, dy = x1-x0+1, y1-y0+1
@@ -691,7 +693,7 @@ class Drawing(object):
         sprite = self.screen.get_rect(x0, y0, x1, y1)
         try:
             self.screen.mode.sprite_to_array(sprite, dx, dy, byte_array, 4)
-        except ValueError:
+        except ValueError as e:
             raise error.RunError(error.IFC)
         # store a copy in the sprite store
         self.sprites[array_name] = (dx, dy, sprite, version)

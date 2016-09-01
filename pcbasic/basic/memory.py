@@ -124,23 +124,24 @@ class DataSegment(object):
     @contextmanager
     def _preserve_arrays(self, names, string_store):
         """Preserve COMMON variables."""
-        common = {name: self.arrays.arrays[name]
+        # copy the array buffers
+        common = {name: (self.arrays.dimensions(name),
+                        bytearray(self.arrays.view_full_buffer(name)),
+                        self.arrays.version(name))
                     for name in names if name in self.arrays}
         yield
         for name, value in common.iteritems():
             dimensions, buf, _ = value
             self.arrays.dim(name, dimensions)
             if name[-1] == '$':
-                s = bytearray()
                 for i in range(0, len(buf), 3):
                     ptr = values.Values.from_bytes(buf[i:i+3])
                     # if the string array is not full, pointers are zero
                     # but address is ignored for zero length
                     ptr = string_store.store(self.strings.copy(ptr))
-                    s += values.Values.to_bytes(ptr)
-                self.arrays.arrays[name][1] = s
-            else:
-                self.arrays.arrays[name] = value
+                    buf[i:i+3] = values.Values.to_bytes(ptr)
+            # copy the array buffers back
+            self.arrays.view_full_buffer(name)[:] = buf
 
     @contextmanager
     def _preserve_scalars(self, names, string_store):
@@ -384,6 +385,6 @@ class DataSegment(object):
         left[:], right[:] = right.tobytes(), left.tobytes()
         # inc version
         if name1 in self.arrays:
-            self.arrays.arrays[name1][2] += 1
+            self.arrays.inc_version(name1)
         if name2 in self.arrays:
-            self.arrays.arrays[name2][2] += 1
+            self.arrays.inc_version(name2)
