@@ -1355,7 +1355,7 @@ class Statements(object):
         util.require_read(ins, (',',))
         array = self.parser.parse_scalar(ins)
         util.require(ins, tk.end_statement)
-        if array not in self.session.arrays.arrays:
+        if array not in self.session.arrays:
             raise error.RunError(error.IFC)
         elif array[-1] == '$':
             raise error.RunError(error.TYPE_MISMATCH) # type mismatch
@@ -1376,7 +1376,7 @@ class Statements(object):
                                tk.AND, tk.OR, tk.XOR))
             action = ins.read(1)
         util.require(ins, tk.end_statement)
-        if array not in self.session.arrays.arrays:
+        if array not in self.session.arrays:
             raise error.RunError(error.IFC)
         elif array[-1] == '$':
             # type mismatch

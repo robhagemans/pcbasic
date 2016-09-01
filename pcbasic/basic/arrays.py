@@ -23,6 +23,18 @@ class Arrays(object):
         # OPTION BASE is unset
         self.base_index = None
 
+    def __contains__(self, varname):
+        """Check if a scalar has been defined."""
+        return varname in self.arrays
+
+    def __iter__(self):
+        """Return an iterable over all scalar names."""
+        return self.arrays.iterkeys()
+
+    def __str__(self):
+        """Debugging representation of variable dictionary."""
+        return '\n'.join('%s%s: %s' % (n, v[0], str(v[1]).encode('hex')) for n, v in self.arrays.iteritems())
+
     def clear(self):
         """Clear arrays."""
         self.arrays = {}

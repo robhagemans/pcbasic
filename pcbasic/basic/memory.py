@@ -124,7 +124,8 @@ class DataSegment(object):
     @contextmanager
     def _preserve_arrays(self, names, string_store):
         """Preserve COMMON variables."""
-        common = {name:value for name, value in self.arrays.arrays.iteritems() if name in names}
+        common = {name: self.arrays.arrays[name]
+                    for name in names if name in self.arrays}
         yield
         for name, value in common.iteritems():
             dimensions, buf, _ = value
@@ -366,7 +367,7 @@ class DataSegment(object):
                 raise error.RunError(error.IFC)
             return self.scalars.view_buffer(name)
         else:
-            if name not in self.arrays.arrays:
+            if name not in self.arrays:
                 raise error.RunError(error.IFC)
             # array would be allocated if retrieved and nonexistant
             return self.arrays.view_buffer(name, indices)
@@ -382,7 +383,7 @@ class DataSegment(object):
         # swap the contents
         left[:], right[:] = right.tobytes(), left.tobytes()
         # inc version
-        if name1 in self.arrays.arrays:
+        if name1 in self.arrays:
             self.arrays.arrays[name1][2] += 1
-        if name2 in self.arrays.arrays:
+        if name2 in self.arrays:
             self.arrays.arrays[name2][2] += 1
