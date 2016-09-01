@@ -1,6 +1,6 @@
 """
 PC-BASIC - tokeniser.py
-Convert between tokenised and plain-text formats of a GW-BASIC program file
+Convert plain-text BASIC code to tokenised form
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -17,6 +17,7 @@ except ImportError:
 from . import basictoken as tk
 from . import util
 from . import values
+from . import numbers
 
 
 def ascii_read_to(ins, findrange):
@@ -99,7 +100,7 @@ class Tokeniser(object):
             # number starting with . or & are always parsed
             elif c in ('&', '.') or (allow_number and
                                       not allow_jumpnum and c in string.digits):
-                outs.write(self._values.tokenise_number(ins))
+                outs.write(self.tokenise_number(ins))
             # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):
             elif c in self._ascii_operators:
                 ins.read(1)
@@ -203,36 +204,6 @@ class Tokeniser(object):
             ins.read(1)
             outs.write('.')
 
-    def _tokenise_uint(self, ins):
-        """Convert a line or jump number to tokenised form."""
-        word = bytearray()
-        ndigits, nblanks = 0, 0
-        # don't read more than 5 digits
-        while (ndigits < 5):
-            c = util.peek(ins)
-            if not c:
-                break
-            elif c in string.digits:
-                word += ins.read(1)
-                nblanks = 0
-                ndigits += 1
-                if int(word) > 6552:
-                    # note: anything >= 65530 is illegal in GW-BASIC
-                    # in loading an ASCII file, GWBASIC would interpret these as
-                    # '6553 1' etcetera, generating a syntax error on load.
-                    break
-            elif c in self._ascii_whitespace:
-                ins.read(1)
-                nblanks += 1
-            else:
-                break
-        # don't claim trailing w/s
-        ins.seek(-nblanks, 1)
-        # no token
-        if len(word) == 0:
-            return ''
-        return struct.pack('<H', int(word))
-
     def _tokenise_word(self, ins, outs):
         """Convert a keyword to tokenised form."""
         word = ''
@@ -284,3 +255,129 @@ class Tokeniser(object):
                 outs.write(word)
                 break
         return word
+
+    def _tokenise_uint(self, ins):
+        """Convert a line or jump number to tokenised form."""
+        word = bytearray()
+        ndigits, nblanks = 0, 0
+        # don't read more than 5 digits
+        while (ndigits < 5):
+            c = util.peek(ins)
+            if not c:
+                break
+            elif c in string.digits:
+                word += ins.read(1)
+                nblanks = 0
+                ndigits += 1
+                if int(word) > 6552:
+                    # note: anything >= 65530 is illegal in GW-BASIC
+                    # in loading an ASCII file, GWBASIC would interpret these as
+                    # '6553 1' etcetera, generating a syntax error on load.
+                    break
+            elif c in self._ascii_whitespace:
+                ins.read(1)
+                nblanks += 1
+            else:
+                break
+        # don't claim trailing w/s
+        ins.seek(-nblanks, 1)
+        # no token
+        if len(word) == 0:
+            return ''
+        return struct.pack('<H', int(word))
+
+    def tokenise_number(self, ins):
+        """Convert Python-string number representation to number token."""
+        c = util.peek(ins)
+        if not c:
+            return ''
+        elif c == '&':
+            # handle hex or oct constants
+            ins.read(1)
+            if util.peek(ins).upper() == 'H':
+                # hex constant
+                return self._tokenise_hex(ins)
+            else:
+                # octal constant
+                return self._tokenise_oct(ins)
+        elif c in string.digits + '.+-':
+            # handle other numbers
+            # note GW passes signs separately as a token
+            # and only stores positive numbers in the program
+            return self._tokenise_dec(ins)
+
+    def _tokenise_dec(self, ins):
+        """Convert decimal expression in Python string to number token."""
+        have_exp = False
+        have_point = False
+        word = ''
+        while True:
+            c = ins.read(1).upper()
+            if not c:
+                break
+            elif c == '.' and not have_point and not have_exp:
+                have_point = True
+                word += c
+            elif c in 'ED' and not have_exp:
+                # there's a special exception for number followed by EL or EQ
+                # presumably meant to protect ELSE and maybe EQV ?
+                if c == 'E' and util.peek(ins).upper() in ('L', 'Q'):
+                    ins.seek(-1, 1)
+                    break
+                else:
+                    have_exp = True
+                    word += c
+            elif c in '-+' and (not word or word[-1] in 'ED'):
+                # must be first character or in exponent
+                word += c
+            elif c in string.digits + numbers.BLANKS + numbers.SEPARATORS:
+                # we'll remove blanks later but need to keep it for now
+                # so we can reposition the stream on removing trailing whitespace
+                word += c
+            elif c in '!#' and not have_exp:
+                word += c
+                # must be last character
+                break
+            elif c == '%':
+                # swallow a %, but break parsing
+                break
+            else:
+                ins.seek(-1, 1)
+                break
+        # don't claim trailing whitespace
+        trimword = word.rstrip(numbers.BLANKS)
+        ins.seek(-len(word)+len(trimword), 1)
+        # remove all internal whitespace
+        word = trimword.strip(numbers.BLANKS)
+        return self._values.from_str(word, allow_nonnum=False).to_token()
+
+    def _tokenise_hex(self, ins):
+        """Convert hex expression in Python string to number token."""
+        # pass the H in &H
+        ins.read(1)
+        word = ''
+        while True:
+            c = util.peek(ins)
+            # hex literals must not be interrupted by whitespace
+            if c and c in string.hexdigits:
+                word += ins.read(1)
+            else:
+                break
+        x = numbers.Integer().from_hex(word)
+        y = x.to_token_hex()
+        return y
+
+    def _tokenise_oct(self, ins):
+        """Convert octal expression in Python string to number token."""
+        # O is optional, could also be &777 instead of &O777
+        if util.peek(ins).upper() == 'O':
+            ins.read(1)
+        word = ''
+        while True:
+            c = util.peek(ins)
+            # oct literals may be interrupted by whitespace
+            if c and c in string.octdigits + numbers.BLANKS:
+                word += ins.read(1)
+            else:
+                break
+        return numbers.Integer().from_oct(word).to_token_oct()
