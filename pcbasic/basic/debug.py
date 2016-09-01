@@ -183,7 +183,7 @@ def watch(expr):
 
 def show_variables():
     """Dump all variables to the log."""
-    logging.debug(repr(debugger.session.scalars.variables))
+    logging.debug(str(debugger.session.scalars))
     logging.debug(repr(debugger.session.arrays.arrays))
     logging.debug(repr(debugger.session.strings.strings))
 

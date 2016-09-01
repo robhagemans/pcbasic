@@ -17,73 +17,85 @@ class Scalars(object):
 
     def __init__(self, memory, values):
         """Initialise scalars."""
-        self.memory = memory
-        self.values = values
+        self._memory = memory
+        self._values = values
         self.clear()
+
+    def __contains__(self, varname):
+        """Check if a scalar has been defined."""
+        return varname in self._vars
+
+    def __iter__(self):
+        """Return an iterable over all scalar names."""
+        return self._vars.iterkeys()
+
+    def __str__(self):
+        """Debugging representation of variable dictionary."""
+        return '\n'.join('%s: %s' % (n, self._values.from_bytes(v)) for n, v in self._vars.iteritems())
 
     def clear(self):
         """Clear scalar variables."""
-        self.variables = {}
-        self.var_memory = {}
+        self._vars = {}
+        self._var_memory = {}
         self.current = 0
 
     def set(self, name, value=None):
         """Assign a value to a variable."""
         type_char = name[-1]
         if value is not None:
-            value = self.values.to_type(type_char, value)
+            value = self._values.to_type(type_char, value)
         # update memory model
         # check if garbage needs collecting before allocating memory
-        if name not in self.var_memory:
+        if name not in self._var_memory:
             # don't add string length, string already stored
             size = (max(3, len(name)) + 1 + values.size_bytes(type_char))
-            self.memory.check_free(size, error.OUT_OF_MEMORY)
+            self._memory.check_free(size, error.OUT_OF_MEMORY)
             # first two bytes: chars of name or 0 if name is one byte long
-            name_ptr = self.memory.var_current()
+            name_ptr = self._memory.var_current()
             # byte_size first_letter second_letter_or_nul remaining_length_or_nul
             var_ptr = name_ptr + max(3, len(name)) + 1
             self.current += max(3, len(name)) + 1 + values.size_bytes(name)
-            self.var_memory[name] = (name_ptr, var_ptr)
+            self._var_memory[name] = (name_ptr, var_ptr)
         # don't change the value if just checking allocation
         if value is None:
-            if name in self.variables:
+            if name in self._vars:
                 return
             else:
                 value = values.null(type_char)
         # copy buffers
         try:
             # in-place copy is crucial for FOR
-            self.variables[name][:] = self.values.to_bytes(value)[:]
+            self._vars[name][:] = self._values.to_bytes(value)[:]
         except KeyError:
             # copy into new buffer if not existing
-            self.variables[name] = self.values.to_bytes(value)[:]
+            self._vars[name] = self._values.to_bytes(value)[:]
 
     def get(self, name):
         """Retrieve the value of a scalar variable."""
         try:
-            return self.values.from_bytes(self.variables[name])
+            return self._values.from_bytes(self._vars[name])
         except KeyError:
             return values.null(name[-1])
 
     def view(self, name):
         """Retrieve a view of an existing scalar variable."""
-        return self.values.create(self.variables[name])
+        return self._values.create(self._vars[name])
 
     def view_buffer(self, name):
         """Retrieve a view of an existing scalar variable's buffer."""
-        return memoryview(self.variables[name])
+        return memoryview(self._vars[name])
 
     def varptr(self, name):
         """Retrieve the address of a scalar variable."""
         try:
-            _, var_ptr = self.var_memory[name]
+            _, var_ptr = self._var_memory[name]
             return var_ptr
         except KeyError:
             return -1
 
     def dereference(self, address):
         """Get a value for a scalar given its pointer address."""
-        for name, data in self.var_memory.iteritems():
+        for name, data in self._var_memory.iteritems():
             if data[1] == address:
                 return self.get(name)
         return None
@@ -93,8 +105,8 @@ class Scalars(object):
         name_addr = -1
         var_addr = -1
         the_var = None
-        for name in self.var_memory:
-            name_try, var_try = self.var_memory[name]
+        for name in self._var_memory:
+            name_try, var_try = self._var_memory[name]
             if name_try <= address and name_try > name_addr:
                 name_addr, var_addr = name_try, var_try
                 the_var = name
@@ -104,7 +116,7 @@ class Scalars(object):
             offset = address - var_addr
             if offset >= values.size_bytes(the_var):
                 return -1
-            var_rep = self.variables[the_var]
+            var_rep = self._vars[the_var]
             return var_rep[offset]
         else:
             offset = address - name_addr
@@ -112,7 +124,7 @@ class Scalars(object):
 
     def get_strings(self):
         """Return a list of views of string scalars."""
-        return [memoryview(value) for name, value in self.variables.iteritems() if name[-1] == '$']
+        return [memoryview(value) for name, value in self._vars.iteritems() if name[-1] == '$']
 
 
 ###############################################################################

@@ -144,13 +144,14 @@ class DataSegment(object):
     @contextmanager
     def _preserve_scalars(self, names, string_store):
         """Preserve COMMON variables."""
-        common = {name:value for name, value in self.scalars.variables.iteritems() if name in names}
+        # copy all variables that need to be preserved
+        common = {name: self.scalars.get(name)
+                    for name in names if name in self.scalars}
         yield
         for name, value in common.iteritems():
-            full_var = values.Values.from_bytes(value)
             if name[-1] == '$':
-                full_var = string_store.store(self.strings.copy(full_var))
-            self.scalars.set(name, full_var)
+                value = string_store.store(self.strings.copy(value))
+            self.scalars.set(name, value)
 
     def get_free(self):
         """Return the amount of memory available to variables, arrays, strings and code."""
@@ -361,7 +362,7 @@ class DataSegment(object):
     def _view_buffer(self, name, indices):
         """Retrieve a memoryview to a scalar variable or an array element's buffer."""
         if indices == []:
-            if name not in self.scalars.variables:
+            if name not in self.scalars:
                 raise error.RunError(error.IFC)
             return self.scalars.view_buffer(name)
         else:

@@ -331,7 +331,7 @@ class Functions(object):
         # save existing vars
         varsave = {}
         for name in varnames:
-            if name in self.session.scalars.variables:
+            if name in self.session.scalars:
                 # copy the buffer
                 varsave[name] = self.session.scalars.view(name).clone()
         # read variables
