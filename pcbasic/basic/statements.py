@@ -1928,7 +1928,7 @@ class Statements(object):
                     address = None
                 value = self.session.strings.store(entry, address)
             else:
-                value = self.values.str_to_number(entry, allow_nonnum=False)
+                value = self.values.from_str(entry, allow_nonnum=False)
                 if value is None:
                     # set pointer for EDIT gadget to position in DATA statement
                     self.parser.program_code.seek(self.parser.data_pos)
@@ -1965,7 +1965,7 @@ class Statements(object):
             for v in self._parse_var_list(ins):
                 name, indices = v
                 word, _ = finp.input_entry(name[-1], allow_past_end=False)
-                value = self.values.str_to_type(name[-1], word)
+                value = self.values.from_str(word, allow_nonnum=False, typechar=name[-1])
                 if value is None:
                     value = values.null(name[-1])
                 self.session.memory.set_variable(name, indices, value)
@@ -2081,7 +2081,7 @@ class Statements(object):
             while val is None:
                 self.session.screen.write("Random number seed (-32768 to 32767)? ")
                 seed = self.session.editor.wait_screenline()
-                val = self.values.str_to_number(seed, allow_nonnum=False)
+                val = self.values.from_str(seed, allow_nonnum=False)
             # seed entered on prompt is rounded to int
             val = self.values.to_integer(val)
         self.session.randomiser.randomize(val)

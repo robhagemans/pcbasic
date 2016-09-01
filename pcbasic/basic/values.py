@@ -160,6 +160,41 @@ class Values(object):
             return SIZE_TO_CLASS[len(buf)](buf)
 
     ###########################################################################
+    # representations
+
+    @float_safe
+    def from_str(self, word, allow_nonnum, typechar=None):
+        """Convert decimal str representation to number."""
+        # keep as string if typechar asks for it, ignore typechar otherwise
+        # FIXME: typechar is only used in INPUT and should be replaced
+        # by creating the desired variable and then filling it with its class from_str
+        if typechar == '$':
+            return self._strings.store(word)
+        # skip spaces and line feeds (but not NUL).
+        word = word.lstrip(' \n').upper()
+        if not word:
+            return numbers.Integer().from_int(0)
+        if word[:2] == '&H':
+            return numbers.Integer().from_hex(word[2:])
+        elif word[:1] == '&':
+            return numbers.Integer().from_oct(word[2:] if word[1:2] == 'O' else word[1:])
+        # we need to try to convert to int first,
+        # mainly so that the tokeniser can output the right token type
+        try:
+            return numbers.Integer().from_str(word)
+        except ValueError as e:
+            # non-integer characters, try a float
+            pass
+        except error.RunError as e:
+            if e.err != error.OVERFLOW:
+                raise
+        # if allow_nonnum == False, raises ValueError for non-numerical characters
+        is_double, mantissa, exp10 = numbers.str_to_decimal(word, allow_nonnum)
+        if is_double:
+            return numbers.Double().from_decimal(mantissa, exp10)
+        return numbers.Single().from_decimal(mantissa, exp10)
+
+    ###########################################################################
     # type conversions
 
     @staticmethod
@@ -523,7 +558,7 @@ class Values(object):
 
     def val(self, x):
         """VAL: number value of a string."""
-        return self.str_to_number(self._strings.copy(pass_string(x)))
+        return self.from_str(self._strings.copy(pass_string(x)), allow_nonnum=True)
 
     def character(self, x):
         """CHR$: character for ASCII value."""
@@ -535,13 +570,13 @@ class Values(object):
         """OCT$: octal representation of int."""
         # allow range -32768 to 65535
         val = self.to_integer(x, unsigned=True)
-        return self._strings.store(integer_to_str_oct(val))
+        return self._strings.store(val.to_oct())
 
     def hexadecimal(self, x):
         """HEX$: hexadecimal representation of int."""
         # allow range -32768 to 65535
         val = self.to_integer(x, unsigned=True)
-        return self._strings.store(integer_to_str_hex(val))
+        return self._strings.store(val.to_hex())
 
 
     ######################################################################
@@ -615,31 +650,8 @@ class Values(object):
 
 
     ###########################################################################
-    # string representation of numbers
+    # this should  move to tokeniser
 
-    def str_to_number(self, strval, allow_nonnum=True):
-        """Convert Python str to BASIC value."""
-        ins = StringIO(strval)
-        # skip spaces and line feeds (but not NUL).
-        util.skip(ins, (' ', '\n'))
-        token = self.tokenise_number(ins)
-        value = numbers.from_token(token)
-        if not allow_nonnum and util.skip_white(ins) != '':
-            # not everything has been parsed - error
-            return None
-        if not value:
-            return null('%')
-        return value
-
-    def str_to_type(self, typechar, word):
-        """Convert Python str to requested type, be strict about non-numeric chars."""
-        if typechar == '$':
-            return self._strings.store(word)
-        else:
-            return self.str_to_number(word, allow_nonnum=False)
-
-    # this should not be in the interface but is quite entangled
-    # REFACTOR 2) to util.read_numeric_string -> str_to_number
     def tokenise_number(self, ins):
         """Convert Python-string number representation to number token."""
         c = util.peek(ins)
@@ -665,14 +677,10 @@ class Values(object):
         have_exp = False
         have_point = False
         word = ''
-        kill = False
         while True:
             c = ins.read(1).upper()
             if not c:
                 break
-            elif c in '\x1c\x1d\x1f':
-                # ASCII separator chars invariably lead to zero result
-                kill = True
             elif c == '.' and not have_point and not have_exp:
                 have_point = True
                 word += c
@@ -686,16 +694,15 @@ class Values(object):
                     have_exp = True
                     word += c
             elif c in '-+' and (not word or word[-1] in 'ED'):
-                # must be first token or in exponent
+                # must be first character or in exponent
                 word += c
-            elif c in string.digits:
-                word += c
-            elif c in number_whitespace:
-                # we'll remove this later but need to keep it for now
+            elif c in string.digits + numbers.BLANKS + numbers.SEPARATORS:
+                # we'll remove blanks later but need to keep it for now
                 # so we can reposition the stream on removing trailing whitespace
                 word += c
             elif c in '!#' and not have_exp:
                 word += c
+                # must be last character
                 break
             elif c == '%':
                 # swallow a %, but break parsing
@@ -703,37 +710,12 @@ class Values(object):
             else:
                 ins.seek(-1, 1)
                 break
-        # ascii separators encountered: zero output
-        if kill:
-            word = '0'
         # don't claim trailing whitespace
-        while len(word) > 0 and (word[-1] in number_whitespace):
-            word = word[:-1]
-            ins.seek(-1, 1) # even if c==''
+        trimword = word.rstrip(numbers.BLANKS)
+        ins.seek(-len(word)+len(trimword), 1)
         # remove all internal whitespace
-        trimword = ''
-        for c in word:
-            if c not in number_whitespace:
-                trimword += c
-        word = trimword
-        # write out the numbers
-        if len(word) == 1 and word in string.digits:
-            # digit
-            return chr(0x11 + _str_to_int(word))
-        elif (not (have_exp or have_point or word[-1] in '!#') and
-                                _str_to_int(word) <= 0x7fff and _str_to_int(word) >= -0x8000):
-            if _str_to_int(word) <= 0xff and _str_to_int(word) >= 0:
-                # one-byte constant
-                return tk.T_BYTE + chr(_str_to_int(word))
-            else:
-                # two-byte constant
-                return tk.T_INT + self.to_bytes(numbers.Integer().from_int(_str_to_int(word)))
-        else:
-            mbf = self.to_bytes(self._str_to_float(word))
-            if len(mbf) == 4:
-                return tk.T_SINGLE + mbf
-            else:
-                return tk.T_DOUBLE + mbf
+        word = trimword.strip(numbers.BLANKS)
+        return self.from_str(word, allow_nonnum=False).to_token()
 
     def _tokenise_hex(self, ins):
         """Convert hex expression in Python string to number token."""
@@ -743,12 +725,13 @@ class Values(object):
         while True:
             c = util.peek(ins)
             # hex literals must not be interrupted by whitespace
-            if not c or c not in string.hexdigits:
-                break
-            else:
+            if c and c in string.hexdigits:
                 word += ins.read(1)
-        val = int(word, 16) if word else 0
-        return tk.T_HEX + struct.pack('<H', val)
+            else:
+                break
+        x = numbers.Integer().from_hex(word)
+        y = x.to_token_hex()
+        return y
 
     def _tokenise_oct(self, ins):
         """Convert octal expression in Python string to number token."""
@@ -759,95 +742,11 @@ class Values(object):
         while True:
             c = util.peek(ins)
             # oct literals may be interrupted by whitespace
-            if c and c in number_whitespace:
-                ins.read(1)
-            elif not c or c not in string.octdigits:
-                break
-            else:
+            if c and c in string.octdigits + numbers.BLANKS:
                 word += ins.read(1)
-        val = int(word, 8) if word else 0
-        return tk.T_OCT + struct.pack('<H', val)
-
-    def _str_to_float(self, s):
-        """Return Float value for Python string."""
-        allow_nonnum = True
-        found_sign, found_point, found_exp = False, False, False
-        found_exp_sign, exp_neg, neg = False, False, False
-        exp10, exponent, mantissa, digits, zeros = 0, 0, 0, 0, 0
-        is_double, is_single = False, False
-        for c in s:
-            # ignore whitespace throughout (x = 1   234  56  .5  means x=123456.5 in gw!)
-            if c in number_whitespace:
-                continue
-            # determine sign
-            if (not found_sign):
-                found_sign = True
-                # number has started; if no sign encountered here, sign must be pos.
-                if c in '+-':
-                    neg = (c == '-')
-                    continue
-            # parse numbers and decimal points, until 'E' or 'D' is found
-            if (not found_exp):
-                if c >= '0' and c <= '9':
-                    mantissa *= 10
-                    mantissa += ord(c)-ord('0')
-                    if found_point:
-                        exp10 -= 1
-                    # keep track of precision digits
-                    if mantissa != 0:
-                        digits += 1
-                        if found_point and c=='0':
-                            zeros += 1
-                        else:
-                            zeros=0
-                    continue
-                elif c == '.':
-                    found_point = True
-                    continue
-                elif c.upper() in 'DE':
-                    found_exp = True
-                    is_double = (c.upper() == 'D')
-                    continue
-                elif c == '!':
-                    # makes it a single, even if more than eight digits specified
-                    is_single = True
-                    break
-                elif c == '#':
-                    is_double = True
-                    break
-                else:
-                    if allow_nonnum:
-                        break
-                    return None
-            # parse exponent
-            elif (not found_exp_sign):
-                # exponent has started; if no sign given, it must be pos.
-                found_exp_sign = True
-                if c in '+-':
-                    exp_neg = (c == '-')
-                    continue
-            if (c >= '0' and c <= '9'):
-                exponent *= 10
-                exponent += ord(c) - ord('0')
-                continue
             else:
-                if allow_nonnum:
-                    break
-                return None
-        if exp_neg:
-            exp10 -= exponent
-        else:
-            exp10 += exponent
-        # eight or more digits means double, unless single override
-        if digits - zeros > 7 and not is_single:
-            is_double = True
-        return self._float_from_exp10(neg, mantissa, exp10, is_double)
-
-    @float_safe
-    def _float_from_exp10(self, neg, mantissa, exp10, is_double):
-        """Create floating-point value from mantissa and decomal exponent."""
-        cls = numbers.Double if is_double else numbers.Single
-        return cls().from_decimal(-mantissa if neg else mantissa, exp10)
+                break
+        return numbers.Integer().from_oct(word).to_token_oct()
 
 
 ##############################################################################
@@ -856,58 +755,32 @@ def number_to_str(inp, screen=False, write=False):
     """Convert BASIC number to Python str."""
     # screen=False means in a program listing
     # screen=True is used for screen, str$ and sequential files
-    if not inp:
-        raise error.RunError(error.STX)
-    if isinstance(inp, numbers.Integer):
-        intvalue = inp.to_int()
-        if screen and not write and intvalue >= 0:
-            return ' ' + str(intvalue)
-        else:
-            return str(intvalue)
-    elif isinstance(inp, numbers.Single):
-        return float_to_str(inp, screen, write)
-    elif isinstance(inp, numbers.Double):
-        return float_to_str(inp, screen, write)
-    else:
-        raise error.RunError(error.TYPE_MISMATCH)
-
-def integer_to_str_oct(inp):
-    """Convert integer to str in octal representation."""
-    intval = inp.to_int(unsigned=True)
-    if intval == 0:
-        return '0'
-    else:
-        return oct(intval)[1:]
-
-def integer_to_str_hex(inp):
-    """Convert integer to str in hex representation."""
-    return hex(inp.to_int(unsigned=True))[2:].upper()
-
-def _str_to_int(s):
-    """Return Python int value for Python str, zero if malformed."""
-    try:
-        return int(s)
-    except ValueError:
-        return 0
-
-def float_to_str(n_in, screen=False, write=False):
-    """Convert BASIC float to Python string."""
     # screen=True (ie PRINT) - leading space, no type sign
     # write=True (ie WRITE) - no leading space, no type sign
     # default mode is for LIST
-    # zero exponent byte means zero
+    leading_space = screen and not write
+    type_sign = not screen and not write
+    if not inp:
+        raise error.RunError(error.STX)
+    if isinstance(inp, numbers.Integer):
+        return inp.to_str(leading_space, type_sign)
+    elif isinstance(inp, numbers.Single):
+        return float_to_str(inp, leading_space, type_sign)
+    elif isinstance(inp, numbers.Double):
+        return float_to_str(inp, leading_space, type_sign)
+    else:
+        raise error.RunError(error.TYPE_MISMATCH)
+
+
+def float_to_str(n_in, leading_space, type_sign):
+    """Convert BASIC float to Python string."""
     if n_in.is_zero():
-        if screen and not write:
-            return ' 0'
-        elif write:
-            return '0'
-        else:
-            return '0' + n_in.sigil
-    # print sign
+        return (' ' * leading_space) + '0' + (n_in.sigil * type_sign)
+    # sign or leading space
     sign = ''
     if n_in.is_negative():
         sign = '-'
-    elif screen and not write:
+    elif leading_space:
         sign = ' '
     num, exp10 = n_in.to_decimal()
     ndigits = n_in.digits
@@ -919,7 +792,7 @@ def float_to_str(n_in, screen=False, write=False):
         valstr = _scientific_notation(digitstr, exp10, n_in.exp_sign, digits_to_dot=1, force_dot=False)
     else:
         # use decimal notation
-        type_sign = '' if screen or write else n_in.sigil
+        type_sign = '' if not type_sign else n_in.sigil
         valstr = _decimal_notation(digitstr, exp10, type_sign, force_dot=False)
     return sign + valstr
 
@@ -971,9 +844,6 @@ def format_number(value, tokens, digits_before, decimals):
 
 
 
-# for to_str
-# for numbers, tab and LF are whitespace
-number_whitespace = ' \t\n'
 
 # string representations
 

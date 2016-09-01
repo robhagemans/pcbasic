@@ -164,9 +164,9 @@ class Lister(object):
             # not sure what GW does if the file is truncated here - we just stop
             return
         if lead == tk.T_OCT:
-            output += b'&O' + values.integer_to_str_oct(self._values.from_bytes(trail))
+            output += b'&O' + self._values.from_bytes(trail).to_oct()
         elif lead == tk.T_HEX:
-            output += b'&H' + values.integer_to_str_hex(self._values.from_bytes(trail))
+            output += b'&H' + self._values.from_bytes(trail).to_hex()
         elif lead == tk.T_BYTE:
             output += str(ord(trail))
         elif tk.C_0 <= lead <= tk.C_10:
@@ -179,7 +179,5 @@ class Lister(object):
             #     interpret as line number and carry on
             # 0E: line number (unsigned int)
             output += str(struct.unpack(b'<H', trail)[0])
-        elif lead == tk.T_SINGLE:
-            output += values.float_to_str(self._values.from_bytes(trail), screen=False, write=False)
-        elif lead == tk.T_DOUBLE:
-            output += values.float_to_str(self._values.from_bytes(trail), screen=False, write=False)
+        elif lead in (tk.T_SINGLE, tk.T_DOUBLE):
+            output += values.float_to_str(self._values.from_bytes(trail), leading_space=False, type_sign=True)

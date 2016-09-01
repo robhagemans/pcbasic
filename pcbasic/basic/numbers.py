@@ -29,6 +29,12 @@ from . import basictoken as tk
 from . import error
 
 
+# for to_str
+# for numbers, tab and LF are whitespace
+BLANKS = b' \t\n'
+# ASCII separators - these cause string representations to evaluate to zero
+SEPARATORS = b'\x1c\x1d\x1f'
+
 ##############################################################################
 # value base class
 
@@ -79,7 +85,7 @@ class Number(Value):
 
     def __str__(self):
         """String representation for debugging."""
-        return '[%s] %s %s' % (str(self.to_bytes()).encode('hex'), self.to_value(), self.sigil)
+        return b'[%s] %s %s' % (bytes(self.to_bytes()).encode('hex'), self.to_value(), self.sigil)
 
     def to_value(self):
         """Convert to Python value."""
@@ -91,12 +97,12 @@ class Number(Value):
 class Integer(Number):
     """16-bit signed little-endian integer"""
 
-    sigil = '%'
+    sigil = b'%'
     size = 2
 
     def is_zero(self):
         """Value is zero"""
-        return self._buffer == '\0\0'
+        return self._buffer == b'\0\0'
 
     def is_negative(self):
         """Value is negative"""
@@ -104,7 +110,7 @@ class Integer(Number):
 
     def sign(self):
         """Sign of value"""
-        return -1 if (ord(self._buffer[-1]) & 0x80) != 0 else (0 if self._buffer == '\0\0' else 1)
+        return -1 if (ord(self._buffer[-1]) & 0x80) != 0 else (0 if self._buffer == b'\0\0' else 1)
 
     def to_int(self, unsigned=False):
         """Return value as Python int"""
@@ -138,39 +144,76 @@ class Integer(Number):
 
     def to_token(self):
         """Return signed value as integer token"""
-        if self._buffer[1] == '\0':
+        if self._buffer[1] == b'\0':
             byte = ord(self._buffer[0])
-            if byte <= 10:
+            # although there is a one-byte token for '10', we don't write it.
+            if byte < 10:
                 return chr(ord(tk.C_0) + byte)
             else:
                 return tk.T_BYTE + self._buffer[0]
         else:
-            return tk.T_INT + self._buffer[:]
+            return tk.T_INT + self._buffer.tobytes()
 
     def to_token_linenum(self):
         """Return unsigned value as line number token"""
-        return tk.T_UINT + self._buffer[:]
+        return tk.T_UINT + self._buffer.tobytes()
 
     def to_token_hex(self):
         """Return unsigned value as hex token"""
-        return tk.T_HEX + self._buffer[:]
+        return tk.T_HEX + self._buffer.tobytes()
 
     def to_token_oct(self):
         """Return unsigned value as oct token"""
-        return tk.T_OCT + self._buffer[:]
+        return tk.T_OCT + self._buffer.tobytes()
 
     def from_token(self, token):
         """Set value to signed or unsigned integer token"""
-        d = str(token)[0]
+        d = bytes(token)[0]
         if d in (tk.T_OCT, tk.T_HEX, tk.T_INT, tk.T_UINT):
             self._buffer[:] = token[-2:]
         elif d == tk.T_BYTE:
-            self._buffer[:] = token[-1] + '\0'
+            self._buffer[:] = token[-1] + b'\0'
         elif tk.C_0 <= d <= tk.C_10:
-            self._buffer[:] = chr(ord(d) - 0x11) + '\0'
+            self._buffer[:] = chr(ord(d) - 0x11) + b'\0'
         else:
             raise ValueError()
         return self
+
+    # representations
+
+    def to_oct(self):
+        """Convert integer to str in octal representation."""
+        if self.is_zero():
+            return b'0'
+        return oct(self.to_int(unsigned=True))[1:]
+
+    def to_hex(self):
+        """Convert integer to str in hex representation."""
+        return hex(self.to_int(unsigned=True))[2:].upper()
+
+    def to_str(self, leading_space, type_sign):
+        """Convert integer to str in decimal representation."""
+        intstr = bytes(self.to_int())
+        if leading_space and intstr[0] != b'-':
+            return b' ' + intstr
+        else:
+            return intstr
+
+    def from_oct(self, oct_repr):
+        """Convert str in octal representation to integer."""
+        # oct representations may be interrupted by blanks
+        val = int(oct_repr.strip(BLANKS), 8) if oct_repr else 0
+        return self.from_int(val, unsigned=True)
+
+    def from_hex(self, hex_repr):
+        """Convert str in hexadecimal representation to integer."""
+        # hex representations must be contiguous
+        val = int(hex_repr, 16) if hex_repr else 0
+        return self.from_int(val, unsigned=True)
+
+    def from_str(self, dec_repr):
+        """Convert str in decimal representation to integer."""
+        return self.from_int(int(dec_repr.strip(BLANKS)))
 
     # operations
 
@@ -285,9 +328,8 @@ class Integer(Number):
         return ord(self._buffer[0]) > ord(rhs._buffer[0])
 
 
-
-Integer.pos_max = Integer('\xff\x7f')
-Integer.neg_max = Integer('\xff\xff')
+Integer.pos_max = Integer(b'\xff\x7f')
+Integer.neg_max = Integer(b'\xff\xff')
 
 
 ##############################################################################
@@ -308,15 +350,15 @@ class Float(Number):
 
     def is_zero(self):
         """Value is zero"""
-        return self._buffer[-1] == '\0'
+        return self._buffer[-1] == b'\0'
 
     def is_negative(self):
         """Value is negative"""
-        return self._buffer[-2] >= '\x80'
+        return self._buffer[-2] >= b'\x80'
 
     def sign(self):
         """Sign of value"""
-        return 0 if self._buffer[-1] == '\0' else (-1 if (ord(self._buffer[-2]) & 0x80) != 0 else 1)
+        return 0 if self._buffer[-1] == b'\0' else (-1 if (ord(self._buffer[-2]) & 0x80) != 0 else 1)
 
     # BASIC type conversions
 
@@ -336,7 +378,7 @@ class Float(Number):
         if exp == -self._bias:
             return 0.
         # unpack as unsigned long int
-        man = struct.unpack(self._intformat, bytearray(self._buffer[:-1]) + '\0')[0]
+        man = struct.unpack(self._intformat, bytearray(self._buffer[:-1]) + b'\0')[0]
         # prepend assumed bit and apply sign
         if man & self._signmask:
             man = -man
@@ -347,7 +389,7 @@ class Float(Number):
     def from_float(self, in_float):
         """Set to value of Python float."""
         if in_float == 0.:
-            self._buffer[:] = '\0'*self.size
+            self._buffer[:] = b'\0' * self.size
         neg = in_float < 0
         exp = int(math.log(abs(in_float), 2) - self._shift)
         man = int(abs(in_float) * 0.5**exp)
@@ -379,7 +421,7 @@ class Float(Number):
     def from_int(self, in_int):
         """Set value to Python int"""
         if in_int == 0:
-            self._buffer[:] = '\0'*self.size
+            self._buffer[:] = b'\0' * self.size
         else:
             neg = in_int < 0
             man, exp = self._bring_to_range(abs(in_int), self._bias, self._posmask, self._mask)
@@ -479,7 +521,7 @@ class Float(Number):
         global lden_s, rden_s, sden_s
         if self.is_zero() or right_in.is_zero():
             # set any zeroes to standard zero
-            self._buffer[:] = '\0' * self.size
+            self._buffer[:] = b'\0' * self.size
             return self
         lexp, lman, lneg = self._denormalise()
         rexp, rman, rneg = right_in._denormalise()
@@ -489,7 +531,7 @@ class Float(Number):
         lman *= rman
         sden_s = lman
         if lexp < -31:
-            self._buffer[:] = '\0' * self.size
+            self._buffer[:] = b'\0' * self.size
             return self._buffer
         # drop some precision
         lman, lexp = self._bring_to_range(lman, lexp, self._den_mask>>4, self._den_upper>>4)
@@ -637,7 +679,7 @@ class Float(Number):
     def _denormalise(self):
         """Denormalise to shifted mantissa, exp, sign"""
         exp = ord(self._buffer[-1])
-        man = struct.unpack(self._intformat, '\0' + bytearray(self._buffer[:-1]))[0] | self._den_mask
+        man = struct.unpack(self._intformat, b'\0' + bytearray(self._buffer[:-1]))[0] | self._den_mask
         neg = self.is_negative()
         return exp, man, neg
 
@@ -646,7 +688,7 @@ class Float(Number):
         global pden_s
         # zero denormalised mantissa -> make zero
         if man == 0 or exp <= 0:
-            self._buffer[:] = '\0' * self.size
+            self._buffer[:] = b'\0' * self.size
             return self
         # shift left if subnormal
         while man < (self._den_mask-1):
@@ -809,10 +851,10 @@ class Float(Number):
 class Single(Float):
     """Single-precision MBF float"""
 
-    sigil = '!'
+    sigil = b'!'
     size = 4
 
-    exp_sign = 'E'
+    exp_sign = b'E'
     digits = 7
 
     _intformat = '<L'
@@ -830,11 +872,11 @@ class Single(Float):
 
     def to_token(self):
         """Return value as Single token"""
-        return tk.T_SINGLE + self._buffer[:]
+        return tk.T_SINGLE + self._buffer.tobytes()
 
     def from_token(self, token):
         """Set value to Single token"""
-        if str(token)[0] != tk.T_SINGLE:
+        if bytes(token)[0] != tk.T_SINGLE:
             raise ValueError()
         self._buffer[:] = token[-4:]
         return self
@@ -844,13 +886,13 @@ class Single(Float):
         return self
 
 
-Single.pos_max = Single('\xff\xff\x7f\xff')
-Single.neg_max = Single('\xff\xff\xff\xff')
+Single.pos_max = Single(b'\xff\xff\x7f\xff')
+Single.neg_max = Single(b'\xff\xff\xff\xff')
 
-Single._one = Single('\x00\x00\x00\x81')
-Single._ten = Single('\x00\x00\x20\x84')
-Single._lim_top = Single('\x7f\x96\x18\x98') # 9999999, highest float less than 10e+7
-Single._lim_bot = Single('\xff\x23\x74\x94') # 999999.9, highest float  less than 10e+6
+Single._one = Single(b'\x00\x00\x00\x81')
+Single._ten = Single(b'\x00\x00\x20\x84')
+Single._lim_top = Single(b'\x7f\x96\x18\x98') # 9999999, highest float less than 10e+7
+Single._lim_bot = Single(b'\xff\x23\x74\x94') # 999999.9, highest float  less than 10e+6
 
 
 ###############################################################################
@@ -859,10 +901,10 @@ Single._lim_bot = Single('\xff\x23\x74\x94') # 999999.9, highest float  less tha
 class Double(Float):
     """Double-precision MBF float"""
 
-    sigil = '#'
+    sigil = b'#'
     size = 8
 
-    exp_sign = 'D'
+    exp_sign = b'D'
     digits = 16
 
     _intformat = '<Q'
@@ -880,16 +922,16 @@ class Double(Float):
 
     def from_single(self, in_single):
         """Convert Single to Double in-place"""
-        self._buffer[:4] = '\0\0\0\0'
+        self._buffer[:4] = b'\0\0\0\0'
         self._buffer[4:] = in_single._buffer
 
     def to_token(self):
         """Return value as Single token"""
-        return tk.T_DOUBLE + self._buffer[:]
+        return tk.T_DOUBLE + self._buffer.tobytes()
 
     def from_token(self, token):
         """Set value to Single token"""
-        if str(token)[0] != tk.T_DOUBLE:
+        if bytes(token)[0] != tk.T_DOUBLE:
             raise ValueError()
         self._buffer[:] = token[-8:]
         return self
@@ -904,13 +946,13 @@ class Double(Float):
         return single._normalise(exp, man, neg)
 
 
-Double.pos_max = Double('\xff\xff\xff\xff\xff\xff\x7f\xff')
-Double.neg_max = Double('\xff\xff\xff\xff\xff\xff\xff\xff')
+Double.pos_max = Double(b'\xff\xff\xff\xff\xff\xff\x7f\xff')
+Double.neg_max = Double(b'\xff\xff\xff\xff\xff\xff\xff\xff')
 
-Double._one = Double('\x00\x00\x00\x00\x00\x00\x00\x81')
-Double._ten = Double('\x00\x00\x00\x00\x00\x00\x20\x84')
-Double._lim_top = Double('\xff\xff\x03\xbf\xc9\x1b\x0e\xb6') # highest float less than 10e+16
-Double._lim_bot = Double('\xff\xff\x9f\x31\xa9\x5f\x63\xb2') # highest float less than 10e+15
+Double._one = Double(b'\x00\x00\x00\x00\x00\x00\x00\x81')
+Double._ten = Double(b'\x00\x00\x00\x00\x00\x00\x20\x84')
+Double._lim_top = Double(b'\xff\xff\x03\xbf\xc9\x1b\x0e\xb6') # highest float less than 10e+16
+Double._lim_bot = Double(b'\xff\xff\x9f\x31\xa9\x5f\x63\xb2') # highest float less than 10e+15
 
 
 ###############################################################################
@@ -970,12 +1012,13 @@ class FloatErrorHandler(object):
         return Single.pos_max
 
 ##############################################################################
+# generic constructors
 
 def from_token(token):
     """Convert number token to new Number temporary"""
     if not token:
         return None
-    lead = str(token)[0]
+    lead = bytes(token)[0]
     if lead == tk.T_SINGLE:
         return Single().from_token(token)
     elif lead == tk.T_DOUBLE:
@@ -983,6 +1026,86 @@ def from_token(token):
     elif lead in tk.number:
         return Integer().from_token(token)
     return None
+
+##############################################################################
+# representations
+
+def str_to_decimal(s, allow_nonnum=True):
+    """Return Float value for Python string."""
+    found_sign, found_point, found_exp = False, False, False
+    found_exp_sign, exp_neg, neg = False, False, False
+    exp10, exponent, mantissa, digits, zeros = 0, 0, 0, 0, 0
+    is_double, is_single = False, False
+    for c in s:
+        # ignore whitespace throughout (x = 1   234  56  .5  means x=123456.5 in gw!)
+        if c in BLANKS:
+            continue
+        if c in SEPARATORS:
+            # ASCII separator chars invariably lead to zero result
+            return False, 0, 0
+        # determine sign
+        if (not found_sign):
+            found_sign = True
+            # number has started; if no sign encountered here, sign must be pos.
+            if c in b'+-':
+                neg = (c == b'-')
+                continue
+        # parse numbers and decimal points, until 'E' or 'D' is found
+        if (not found_exp):
+            if b'0' <= c <= b'9':
+                mantissa *= 10
+                mantissa += ord(c) - ord(b'0')
+                if found_point:
+                    exp10 -= 1
+                # keep track of precision digits
+                if mantissa != 0:
+                    digits += 1
+                    if found_point and c == b'0':
+                        zeros += 1
+                    else:
+                        zeros = 0
+                continue
+            elif c == '.':
+                found_point = True
+                continue
+            elif c.upper() in b'DE':
+                found_exp = True
+                is_double = (c.upper() == b'D')
+                continue
+            elif c == b'!':
+                # makes it a single, even if more than eight digits specified
+                is_single = True
+                break
+            elif c == b'#':
+                is_double = True
+                break
+            else:
+                if allow_nonnum:
+                    break
+                raise ValueError('Non-numerical character in string')
+        # parse exponent
+        elif (not found_exp_sign):
+            # exponent has started; if no sign given, it must be pos.
+            found_exp_sign = True
+            if c in b'+-':
+                exp_neg = (c == b'-')
+                continue
+        if (b'0' <= c <= b'9'):
+            exponent *= 10
+            exponent += ord(c) - ord(b'0')
+            continue
+        else:
+            if allow_nonnum:
+                break
+            raise ValueError('Non-numerical character in string')
+    if exp_neg:
+        exp10 -= exponent
+    else:
+        exp10 += exponent
+    # eight or more digits means double, unless single override
+    if digits - zeros > 7 and not is_single:
+        is_double = True
+    return is_double, -mantissa if neg else mantissa, exp10
 
 
 lden_s, rden_s, sden_s, pden_s = 0,0,0,0

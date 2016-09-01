@@ -38,12 +38,12 @@ def input_console(editor, value_handler, prompt, readvar, newline):
         values, seps = [], []
         for v in readvar:
             word, sep = inputstream.input_entry(v[0][-1], allow_past_end=True)
-            value = value_handler.str_to_type(v[0][-1], word)
+            value = value_handler.from_str(word, allow_nonnum=False, typechar=v[0][-1])
             values.append(value)
             seps.append(sep)
         # last separator not empty: there were too many values or commas
         # earlier separators empty: there were too few values
-        # empty values will be converted to zero by string_to_number
+        # empty values will be converted to zero by from_str
         # None means a conversion error occurred
         if (seps[-1] or '' in seps[:-1] or None in values):
             # good old Redo!
