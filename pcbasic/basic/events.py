@@ -13,6 +13,7 @@ import Queue
 from . import scancode
 from . import signals
 from . import error
+from . import basictoken as tk
 
 
 class Events(object):
@@ -67,14 +68,6 @@ class Events(object):
         """Activate or deactivate event checking."""
         self.active = active
 
-    def check(self):
-        """Check events."""
-        # events are only active if a program is running
-        if not self.active:
-            return
-        for e in self.enabled:
-            e.check()
-
     @contextmanager
     def suspend(self):
         """Context guard to suspend events."""
@@ -99,20 +92,20 @@ class Events(object):
         # but how much does it slow us down otherwise?
         time.sleep(0)
         self._check_input()
-        self.check()
+        # events are only active if a program is running
+        if self.active:
+            for e in self.enabled:
+                e.check()
         self.session.keyboard.drain_event_buffer()
 
     def command(self, handler, command_char):
         """Turn the event ON, OFF and STOP."""
-        if command_char == '\x95':
-            # ON
+        if command_char == tk.ON:
             self.enabled.add(handler)
             handler.stopped = False
-        elif command_char == '\xDD':
-            # OFF
+        elif command_char == tk.OFF:
             self.enabled -= handler
-        elif command_char == '\x90':
-            # STOP
+        elif command_char == tk.STOP:
             handler.stopped = True
         else:
             return False

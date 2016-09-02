@@ -121,8 +121,7 @@ def require_read(ins, in_range, err=error.STX):
 
 def require(ins, rnge, err=error.STX):
     """Skip whitespace, peek and raise error if not in range."""
-    a = skip_white(ins, n=len(rnge[0]))
-    if a not in rnge:
+    if skip_white(ins, n=len(rnge[0])) not in rnge:
         raise error.RunError(err)
 
 def read_name(ins, allow_empty=False):
