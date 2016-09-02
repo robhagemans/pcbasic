@@ -292,7 +292,9 @@ class Statements(object):
 
     def exec_pen(self, ins):
         """PEN: switch on/off light pen event handling."""
-        if self.session.events.pen.command(util.skip_white(ins)):
+        if self.session.events.command(
+                    self.session.events.pen,
+                    util.skip_white(ins)):
             ins.read(1)
         else:
             raise error.RunError(error.STX)
@@ -306,7 +308,9 @@ class Statements(object):
             num = values.to_int(self.parser.parse_bracket(ins))
             if num not in (0,2,4,6):
                 raise error.RunError(error.IFC)
-            if self.session.events.strig[num//2].command(util.skip_white(ins)):
+            if self.session.events.command(
+                        self.session.events.strig[num//2],
+                        util.skip_white(ins)):
                 ins.read(1)
             else:
                 raise error.RunError(error.STX)
@@ -325,7 +329,9 @@ class Statements(object):
         util.require(ins, ('(',))
         num = values.to_int(self.parser.parse_bracket(ins))
         error.range_check(1, 2, num)
-        if self.session.events.com[num-1].command(util.skip_white(ins)):
+        if self.session.events.command(
+                    self.session.events.com[num-1],
+                    util.skip_white(ins)):
             ins.read(1)
         else:
             raise error.RunError(error.STX)
@@ -333,7 +339,9 @@ class Statements(object):
 
     def exec_timer(self, ins):
         """TIMER: switch on/off timer event handling."""
-        if self.session.events.timer.command(util.skip_white(ins)):
+        if self.session.events.command(
+                    self.session.events.timer,
+                    util.skip_white(ins)):
             ins.read(1)
         else:
             raise error.RunError(error.STX)
@@ -346,7 +354,8 @@ class Statements(object):
         d = util.skip_white(ins)
         # others are ignored
         if num >= 1 and num <= 20:
-            if self.session.events.key[num-1].command(d):
+            if self.session.events.command(
+                        self.session.events.key[num-1], d):
                 ins.read(1)
             else:
                 raise error.RunError(error.STX)
@@ -452,7 +461,9 @@ class Statements(object):
     def exec_play(self, ins):
         """PLAY: play sound sequence defined by a Music Macro Language string."""
         # PLAY: event switch
-        if self.session.events.play.command(util.skip_white(ins)):
+        if self.session.events.command(
+                    self.session.events.play,
+                    util.skip_white(ins)):
             ins.read(1)
             util.require(ins, tk.end_statement)
         else:

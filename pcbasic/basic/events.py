@@ -58,6 +58,8 @@ class Events(object):
         self.all = ([self.timer]
             + [self.key[num] for num in (range(10, 20) + range(10))]
             + [self.play] + self.com + [self.pen] + self.strig)
+        # keep a list of enabled events
+        self.enabled = set()
         # set suspension off
         self.suspend_all = False
 
@@ -70,7 +72,7 @@ class Events(object):
         # events are only active if a program is running
         if not self.active:
             return
-        for e in self.all:
+        for e in self.enabled:
             e.check()
 
     @contextmanager
@@ -99,6 +101,22 @@ class Events(object):
         self._check_input()
         self.check()
         self.session.keyboard.drain_event_buffer()
+
+    def command(self, handler, command_char):
+        """Turn the event ON, OFF and STOP."""
+        if command_char == '\x95':
+            # ON
+            self.enabled.add(handler)
+            handler.stopped = False
+        elif command_char == '\xDD':
+            # OFF
+            self.enabled -= handler
+        elif command_char == '\x90':
+            # STOP
+            handler.stopped = True
+        else:
+            return False
+        return True
 
     def _check_input(self):
         """Handle input events."""
@@ -169,22 +187,6 @@ class EventHandler(object):
     def set_jump(self, jump):
         """Set the jump line number."""
         self.gosub = jump
-
-    def command(self, command_char):
-        """Turn the event ON, OFF and STOP."""
-        if command_char == '\x95':
-            # ON
-            self.enabled = True
-            self.stopped = False
-        elif command_char == '\xDD':
-            # OFF
-            self.enabled = False
-        elif command_char == '\x90':
-            # STOP
-            self.stopped = True
-        else:
-            return False
-        return True
 
     def trigger(self):
         """Trigger the event."""
@@ -298,9 +300,9 @@ class KeyHandler(EventHandler):
                 # trigger event
                 self.trigger()
                 # drop key from key buffer
-                if self.enabled:
-                    self.keyboard.prebuf.remove((c, scancode, modifiers, check_full))
-                    return True
+                #if self.enabled:
+                self.keyboard.prebuf.remove((c, scancode, modifiers, check_full))
+                return True
         return False
 
     def set_trigger(self, keystr):
