@@ -65,10 +65,10 @@ class Scalars(object):
         # copy buffers
         try:
             # in-place copy is crucial for FOR
-            self._vars[name][:] = self._values.to_bytes(value)[:]
+            self._vars[name][:] = value.to_bytes()[:]
         except KeyError:
             # copy into new buffer if not existing
-            self._vars[name] = self._values.to_bytes(value)[:]
+            self._vars[name] = value.to_bytes()[:]
 
     def get(self, name):
         """Retrieve the value of a scalar variable."""

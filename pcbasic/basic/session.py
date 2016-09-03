@@ -250,7 +250,7 @@ class Session(object):
             tokens = self.tokeniser.tokenise_line('?' + expression)
             # skip : and print token and parse expression
             tokens.read(2)
-            return self.values.to_value(self.parser.parse_expression(tokens))
+            return self.parser.parse_expression(tokens).to_value()
         return None
 
     def set_variable(self, name, value):
@@ -267,7 +267,7 @@ class Session(object):
             name = name.split('(', 1)[0]
             return self.arrays.to_list(name)
         else:
-            return self.values.to_value(self.memory.get_variable(name, []))
+            return self.memory.get_variable(name, []).to_value()
 
     def interact(self):
         """Interactive interpreter session."""

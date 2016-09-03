@@ -165,7 +165,7 @@ class Arrays(object):
     def set(self, name, index, value):
         """Assign a value to an array element."""
         # copy value into array
-        self.view_buffer(name, index)[:] = self._values.to_bytes(values.to_type(name[-1], value))
+        self.view_buffer(name, index)[:] = values.to_type(name[-1], value).to_bytes()
         # increment array version
         self._versions[name] += 1
 
@@ -264,6 +264,6 @@ class Arrays(object):
         if not remaining_dimensions:
             return []
         elif len(remaining_dimensions) == 1:
-            return [self._values.to_value(self.get(name, index+[i+(self._base or 0)])) for i in xrange(remaining_dimensions[0])]
+            return [self.get(name, index+[i+(self._base or 0)]).to_value() for i in xrange(remaining_dimensions[0])]
         else:
             return [self._to_list(name, index+[i+(self._base or 0)], remaining_dimensions[1:]) for i in xrange(remaining_dimensions[0])]

@@ -383,11 +383,9 @@ class Functions(object):
             if screen.mode.is_text_mode:
                 raise error.RunError(error.IFC)
             return self.values.from_value(
-                            screen.drawing.point((
-                                self.values.to_value(values.csng_(arg0)),
-                                self.values.to_value(values.csng_(arg1)),
-                                False)
-                            ), values.INT)
+                        screen.drawing.point((
+                            values.csng_(arg0).to_value(), values.csng_(arg1).to_value(), False)
+                        ), values.INT)
         else:
             # single-argument mode
             util.require_read(ins, (')',))
@@ -419,10 +417,10 @@ class Functions(object):
         if screen.mode.is_text_mode:
             return self.values.null(values.INT)
         if mode == 0:
-            value, _ = screen.drawing.get_window_physical(self.values.to_value(values.csng_(coord)), 0.)
+            value, _ = screen.drawing.get_window_physical(values.csng_(coord).to_value(), 0.)
             return self.values.from_value(value, values.INT)
         elif mode == 1:
-            _, value = screen.drawing.get_window_physical(0., self.values.to_value(values.csng_(coord)))
+            _, value = screen.drawing.get_window_physical(0., values.csng_(coord).to_value())
             return self.values.from_value(value, values.INT)
         elif mode == 2:
             value, _ = screen.drawing.get_window_logical(self.values.to_int(coord), 0)

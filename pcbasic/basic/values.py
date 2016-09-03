@@ -196,11 +196,6 @@ class Values(object):
     # convert between BASIC and Python values
 
     @float_safe
-    def to_value(self, basic_val):
-        """Convert BASIC value to Python value."""
-        return basic_val.to_value()
-
-    @float_safe
     def from_value(self, python_val, typechar):
         """Convert Python value to BASIC value."""
         return TYPE_TO_CLASS[typechar](None, self).from_value(python_val)
@@ -224,12 +219,6 @@ class Values(object):
 
     ###########################################################################
     # convert to and from internal representation
-
-    @staticmethod
-    def to_bytes(basic_val):
-        """Convert BASIC value to internal byte representation."""
-        # make a copy, not a view
-        return basic_val.to_bytes()
 
     def from_bytes(self, token_bytes):
         """Convert internal byte representation to BASIC value."""
