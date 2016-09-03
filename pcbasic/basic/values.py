@@ -309,25 +309,6 @@ class Values(object):
         """VAL: number value of a string."""
         return self.from_str(pass_string(x).to_str(), allow_nonnum=True)
 
-    def character(self, x):
-        """CHR$: character for ASCII value."""
-        val = self.to_int(x)
-        error.range_check(0, 255, val)
-        return strings.String(None, self).from_str(chr(val))
-
-    def octal(self, x):
-        """OCT$: octal representation of int."""
-        # allow range -32768 to 65535
-        val = cint_(x, unsigned=True)
-        return strings.String(None, self).from_str(val.to_oct())
-
-    def hexadecimal(self, x):
-        """HEX$: hexadecimal representation of int."""
-        # allow range -32768 to 65535
-        val = cint_(x, unsigned=True)
-        return strings.String(None, self).from_str(val.to_hex())
-
-
 
 @float_safe
 def round(x):
@@ -508,7 +489,6 @@ def fix_(inp):
     """Truncate towards zero."""
     return pass_number(inp).clone().itrunc()
 
-
 def sqr_(x):
     """Square root."""
     return _call_float_function(math.sqrt, x)
@@ -539,20 +519,37 @@ def log_(x):
 
 
 ######################################################################
-# unary string operations
+# string representations and characteristics
 
 def len_(s):
     """LEN: length of string."""
     return pass_string(s).len()
 
+def space_(num):
+    """SPACE$: repeat spaces."""
+    return num._values.new_string().space(num)
+
 def asc_(s):
     """ASC: ordinal ASCII value of a character."""
     return pass_string(s).asc()
 
-def space_(num):
-    """SPACE$: repeat spaces."""
-    return strings.String(None, num._values).space(num)
+def chr_(x):
+    """CHR$: character for ASCII value."""
+    val = x.to_integer().to_int()
+    error.range_check(0, 255, val)
+    return x._values.new_string().from_str(chr(val))
 
+def oct_(x):
+    """OCT$: octal representation of int."""
+    # allow range -32768 to 65535
+    val = cint_(x, unsigned=True)
+    return x._values.new_string().from_str(val.to_oct())
+
+def hex_(x):
+    """HEX$: hexadecimal representation of int."""
+    # allow range -32768 to 65535
+    val = cint_(x, unsigned=True)
+    return x._values.new_string().from_str(val.to_hex())
 
 ##############################################################################
 # binary operations
