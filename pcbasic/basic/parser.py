@@ -46,7 +46,6 @@ class Parser(object):
         self.error_num = 0
         self.error_pos = 0
         self.statements = statements.Statements(self)
-        self.operators = op.Operators(self.values)
         self.functions = functions.Functions(self)
 
 
@@ -429,31 +428,31 @@ class Parser(object):
             # two-byte function tokens
             if d in tk.twobyte:
                 d = util.peek(ins, n=2)
-            if d == tk.NOT and not (last in op.operators or last == ''):
+            if d == tk.NOT and not (last in op.OPERATORS or last == ''):
                 # unary NOT ends expression except after another operator or at start
                 break
-            elif d in op.operators:
+            elif d in op.OPERATORS:
                 ins.read(len(d))
                 # get combined operators such as >=
-                if d in op.combinable:
+                if d in op.COMBINABLE:
                     nxt = util.skip_white(ins)
-                    if nxt in op.combinable:
+                    if nxt in op.COMBINABLE:
                         d += ins.read(len(nxt))
-                if last in op.operators or last == '' or d == tk.NOT:
+                if last in op.OPERATORS or last == '' or d == tk.NOT:
                     # also if last is ( but that leads to recursive call and last == ''
                     nargs = 1
                     # zero operands for a binary operator is always syntax error
                     # because it will be seen as an illegal unary
-                    if d not in self.operators.unary:
+                    if d not in op.UNARY:
                         raise error.RunError(error.STX)
                 else:
                     nargs = 2
-                    if d not in op.operators:
+                    if d not in op.OPERATORS:
                         # illegal combined ops like == raise syntax error
                         raise error.RunError(error.STX)
-                    self._evaluate_stack(stack, units, op.precedence[d], error.STX)
+                    self._evaluate_stack(stack, units, op.PRECEDENCE[d], error.STX)
                 stack.append((d, nargs))
-            elif not (last in op.operators or last == ''):
+            elif not (last in op.OPERATORS or last == ''):
                 # repeated unit ends expression
                 # repeated literals or variables or non-keywords like 'AS'
                 break
@@ -490,16 +489,16 @@ class Parser(object):
     def _evaluate_stack(self, stack, units, precedence, missing_err):
         """Drain evaluation stack until an operator of low precedence on top."""
         while stack:
-            if precedence > op.precedence[stack[-1][0]]:
+            if precedence > op.PRECEDENCE[stack[-1][0]]:
                 break
             oper, narity = stack.pop()
             try:
                 right = units.pop()
                 if narity == 1:
-                    units.append(self.operators.unary[oper](right))
+                    units.append(op.UNARY[oper](right))
                 else:
                     left = units.pop()
-                    units.append(self.operators.binary[oper](left, right))
+                    units.append(op.BINARY[oper](left, right))
             except IndexError:
                 # insufficient operators, error depends on context
                 raise error.RunError(missing_err)
