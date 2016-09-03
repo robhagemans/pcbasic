@@ -27,7 +27,6 @@ from . import display
 from . import editor
 from . import inputs
 from . import debug
-from . import rnd
 from . import clock
 from . import shell
 from . import memory
@@ -164,7 +163,7 @@ class Session(object):
         # set up the SHELL command
         self.shell = shell.get_shell_manager(self.keyboard, self.screen, self.codepage, option_shell)
         # initialise random number generator
-        self.randomiser = rnd.RandomNumberGenerator(self.values)
+        self.randomiser = values.Randomiser(self.values)
         # initialise system clock
         self.clock = clock.Clock()
         # initialise machine ports

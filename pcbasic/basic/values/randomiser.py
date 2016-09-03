@@ -1,5 +1,5 @@
 """
-PC-BASIC - rnd.py
+PC-BASIC - randomiser.py
 Random number generator
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
@@ -11,7 +11,7 @@ import struct
 from . import values
 
 
-class RandomNumberGenerator(object):
+class Randomiser(object):
     """Linear Congruential Generator """
 
     _step = 4455680 # 0x43fd00

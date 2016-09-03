@@ -12,7 +12,6 @@ import logging
 import os
 import platform
 import struct
-import strings
 
 from . import values
 from . import error
