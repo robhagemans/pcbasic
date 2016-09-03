@@ -19,7 +19,8 @@ from functools import partial
 from . import error
 from . import values
 from . import ports
-from . import print_and_input
+from . import parseprint
+from . import parseinput
 from . import basictoken as tk
 from . import util
 
@@ -1976,7 +1977,7 @@ class Statements(object):
             ins.seek(self.parser.current_statement)
             # read the input
             self.session.input_mode = True
-            varlist = print_and_input.input_console(
+            varlist = parseinput.input_console(
                     self.session.editor, self.values,
                     prompt, readvar, newline)
             self.session.input_mode = False
@@ -2434,7 +2435,7 @@ class Statements(object):
                 # escape char; write next char in fors or _ if this is the last char
                 output.write(fors.read(2)[-1])
             else:
-                string_field = print_and_input.get_string_tokens(fors)
+                string_field = parseprint.get_string_tokens(fors)
                 if string_field:
                     if not data_ends:
                         with self.session.strings:
@@ -2444,11 +2445,11 @@ class Statements(object):
                         else:
                             output.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
                 else:
-                    number_field, digits_before, decimals = print_and_input.get_number_tokens(fors)
+                    number_field, digits_before, decimals = parseprint.get_number_tokens(fors)
                     if number_field:
                         if not data_ends:
                             num = self.parser.parse_expression(ins).to_float()
-                            output.write(print_and_input.format_number(num, number_field, digits_before, decimals))
+                            output.write(parseprint.format_number(num, number_field, digits_before, decimals))
                     else:
                         output.write(fors.read(1))
                 if string_field or number_field:

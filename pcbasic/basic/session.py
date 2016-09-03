@@ -25,7 +25,7 @@ from . import program
 from . import signals
 from . import display
 from . import editor
-from . import inputs
+from . import inputmethods
 from . import debug
 from . import clock
 from . import shell
@@ -133,12 +133,12 @@ class Session(object):
         self.memory.set_buffers(
                 self.program, self.scalars, self.arrays, self.strings, self.values)
         # prepare input methods
-        self.pen = inputs.Pen(self.screen)
-        self.stick = inputs.Stick()
+        self.pen = inputmethods.Pen(self.screen)
+        self.stick = inputmethods.Stick()
         # Screen needed in Keyboard for print_screen()
         # Sound is needed for the beeps when the buffer fills up
         # Events needed for wait() only
-        self.keyboard = inputs.Keyboard(self.events, self.screen, self.fkey_macros,
+        self.keyboard = inputmethods.Keyboard(self.events, self.screen, self.fkey_macros,
                 self.codepage, self.sound,
                 keystring, ignore_caps, ctrl_c_is_break)
         # intialise devices and files
