@@ -99,6 +99,8 @@ class Values(object):
         return strings.String(values=self).from_pointer(
             *self._strings.store(python_str, address))
 
+    # NOTE that this function will overflow if outside the range of Integer
+    # whereas Float.to_int will not
     def to_int(self, inp, unsigned=False):
         """Round numeric variable and convert to Python integer."""
         return self.to_integer(inp, unsigned).to_int(unsigned)
@@ -535,53 +537,3 @@ class Values(object):
         num = self.to_int(x)
         error.range_check(0, 255, num)
         return strings.String(buf=None, values=self).from_str(' ' * num)
-
-    # FIXME: start is still a Python int
-    def instr(self, big, small, start):
-        """INSTR: find substring in string."""
-        big = pass_string(big).to_str()
-        small = pass_string(small).to_str()
-        if big == '' or start > len(big):
-            return self.null(INT)
-        # BASIC counts string positions from 1
-        find = big[start-1:].find(small)
-        if find == -1:
-            return self.null(INT)
-        return numbers.Integer().from_int(start + find)
-
-    def mid(self, s, start, num=None):
-        """MID$: get substring."""
-        s = s.to_str()
-        start = self.to_int(start)
-        if num is None:
-            num = len(s)
-        else:
-            num = self.to_int(num)
-        error.range_check(1, 255, start)
-        error.range_check(0, 255, num)
-        if num == 0 or start > len(s):
-            return self.null(STR)
-        start -= 1
-        stop = start + num
-        stop = min(stop, len(s))
-        return strings.String(buf=None, values=self).from_str(s[start:stop])
-
-    def left(self, s, stop):
-        """LEFT$: get substring at the start of string."""
-        s = s.to_str()
-        stop = self.to_int(stop)
-        error.range_check(0, 255, stop)
-        if stop == 0:
-            return self.null(STR)
-        stop = min(stop, len(s))
-        return strings.String(buf=None, values=self).from_str(s[:stop])
-
-    def right(self, s, stop):
-        """RIGHT$: get substring at the end of string."""
-        s = s.to_str()
-        stop = self.to_int(stop)
-        error.range_check(0, 255, stop)
-        if stop == 0:
-            return self.null(STR)
-        stop = min(stop, len(s))
-        return strings.String(buf=None, values=self).from_str(s[-stop:])

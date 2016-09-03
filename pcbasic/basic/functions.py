@@ -117,6 +117,21 @@ class Functions(object):
         self._init_functions()
 
 
+    ###########################################################
+    # unary functions
+
+    def value_func(self, ins, fn):
+        """Return value of unary function."""
+        return fn(self.parser.parse_bracket(ins))
+
+    def value_rnd(self, ins):
+        """RND: get pseudorandom value."""
+        if util.skip_white(ins) == '(':
+            return self.session.randomiser.rnd(self.values.to_single(self.parser.parse_bracket(ins)))
+        else:
+            return self.session.randomiser.rnd()
+
+
     ######################################################################
     # string functions
 
@@ -136,7 +151,7 @@ class Functions(object):
         s = self.parser.parse_expression(ins, empty_err=error.STX)
         small = values.pass_string(s)
         util.require_read(ins, (')',))
-        return self.values.instr(big, small)
+        return big.instr(small)
 
     def value_mid(self, ins):
         """MID$: get substring."""
@@ -148,7 +163,7 @@ class Functions(object):
         if util.skip_white_read_if(ins, (',',)):
             num = self.values.to_integer(self.parser.parse_expression(ins))
         util.require_read(ins, (')',))
-        return self.values.mid(s, start, num)
+        return s.mid(start, num)
 
     def value_left(self, ins):
         """LEFT$: get substring at the start of string."""
@@ -157,7 +172,7 @@ class Functions(object):
         util.require_read(ins, (',',))
         stop = self.values.to_integer(self.parser.parse_expression(ins))
         util.require_read(ins, (')',))
-        return self.values.left(s, stop)
+        return s.left(stop)
 
     def value_right(self, ins):
         """RIGHT$: get substring at the end of string."""
@@ -166,7 +181,7 @@ class Functions(object):
         util.require_read(ins, (',',))
         stop = self.values.to_integer(self.parser.parse_expression(ins))
         util.require_read(ins, (')',))
-        return self.values.right(s, stop)
+        return s.right(stop)
 
     def value_string(self, ins):
         """STRING$: repeat characters."""
@@ -174,14 +189,10 @@ class Functions(object):
         n = self.values.to_int(self.parser.parse_expression(ins))
         error.range_check(0, 255, n)
         util.require_read(ins, (',',))
-        j = self.parser.parse_expression(ins)
-        if isinstance(j, strings.String):
-            j = ord(j.to_str()[0])
-        else:
-            j = self.values.to_int(j)
-            error.range_check(0, 255, j)
+        asc_value_or_char = self.parser.parse_expression(ins)
+        strstr = self.values.null(values.STR).repeat(asc_value_or_char, n)
         util.require_read(ins, (')',))
-        return self.values.from_value(chr(j)*n, '$')
+        return strstr
 
     ######################################################################
     # console functions
@@ -547,17 +558,3 @@ class Functions(object):
         self.session.files.get(num)
         logging.warning("IOCTL$ function not implemented.")
         raise error.RunError(error.IFC)
-
-    ###########################################################
-    # unary functions
-
-    def value_func(self, ins, fn):
-        """Return value of unary function."""
-        return fn(self.parser.parse_bracket(ins))
-
-    def value_rnd(self, ins):
-        """RND: get pseudorandom value."""
-        if util.skip_white(ins) == '(':
-            return self.session.randomiser.rnd(self.values.to_single(self.parser.parse_bracket(ins)))
-        else:
-            return self.session.randomiser.rnd()

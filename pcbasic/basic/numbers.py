@@ -61,8 +61,12 @@ class Value(object):
         """Convert to Python value."""
 
     def clone(self):
-        """Create a temporary copy"""
+        """Create a copy."""
         return self.__class__(None, self._values).from_bytes(self._buffer)
+
+    def new(self):
+        """Create a new null value."""
+        return self.__class__(None, self._values)
 
     def copy_from(self, other):
         """Copy another value into this one"""

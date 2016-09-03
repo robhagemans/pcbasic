@@ -23,6 +23,7 @@ class String(numbers.Value):
     def __init__(self, buf=None, values=None):
         """Initialise the pointer"""
         numbers.Value.__init__(self, buf, values)
+        self._values = values
         self._stringspace = values._strings
 
     def length(self):
@@ -113,6 +114,64 @@ class String(numbers.Value):
         # copy new value into existing buffer if possible
         length, address = struct.unpack('<BH', self._buffer)
         return self.from_pointer(*self._stringspace.modify(length, address, val, offset, num))
+
+    # the below have mostly Integer parameters
+
+    def repeat(self, asc_value_or_char, num):
+        """STRING$: repeat a character num times."""
+        if isinstance(asc_value_or_char, String):
+            char = asc_value_or_char.to_str()[0]
+        else:
+            # overflow if outside Integer range
+            ascval = self._values.to_int(asc_value_or_char)
+            error.range_check(0, 255, ascval)
+            char = chr(ascval)
+        return self.new().from_str(char * num)
+
+    # NOTE: start is still a Python int
+    def instr(self, small, start):
+        """INSTR: find substring in string."""
+        big = self.to_str()
+        small = small.to_str()
+        if big == '' or start > len(big):
+            return numbers.Integer(None, self._values)
+        # BASIC counts string positions from 1
+        find = big[start-1:].find(small)
+        if find == -1:
+            return numbers.Integer(None, self._values)
+        return numbers.Integer(None, self._values).from_int(start + find)
+
+    def mid(self, start, num=None):
+        """MID$: get substring."""
+        length = self.length()
+        start = self._values.to_int(start)
+        if num is None:
+            num = length
+        else:
+            num = self._values.to_int(num)
+        error.range_check(1, 255, start)
+        error.range_check(0, 255, num)
+        if num == 0 or start > length:
+            return self.new()
+        # BASIC's indexing starts at 1, Python's at 0
+        start -= 1
+        return self.new().from_str(self.to_str()[start:start+num])
+
+    def left(self, num):
+        """LEFT$: get substring of num characters at the start of string."""
+        stop = self._values.to_int(num)
+        if stop == 0:
+            return self.new()
+        error.range_check(0, 255, stop)
+        return self.new().from_str(self.to_str()[:stop])
+
+    def right(self, s, num):
+        """RIGHT$: get substring of num characters at the end of string."""
+        stop = self._values.to_int(num)
+        if stop == 0:
+            return self.new()
+        error.range_check(0, 255, stop)
+        return self.new().from_str(self.to_str()[-stop:])
 
 
 class StringSpace(object):
