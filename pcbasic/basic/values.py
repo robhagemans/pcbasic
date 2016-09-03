@@ -92,6 +92,19 @@ def float_safe(fn):
             return args[0]._float_error_handler.handle(e)
     return wrapped_fn
 
+def _call_float_function(fn, *args):
+    """Convert to IEEE 754, apply function, convert back."""
+    args = [arg.to_float(arg._values._double_math) for arg in args]
+    floatcls = args[0].__class__
+    values = args[0]._values
+    feh = args[0]._float_error_handler
+    try:
+        args = (arg.to_value() for arg in args)
+        return floatcls(None, values).from_value(fn(*args))
+    except (ValueError, ArithmeticError) as e:
+        # positive infinity of the appropriate class
+        return feh.handle(e.__class__(floatcls(None, values).from_bytes(floatcls.pos_max)))
+
 
 class FloatErrorHandler(object):
     """Handles floating point errors."""
@@ -134,7 +147,7 @@ class FloatErrorHandler(object):
             elif isinstance(e.args[0], numbers.Integer):
                 # integer values are not soft-handled
                 raise error.RunError(math_error)
-        return Single.pos_max
+        return numbers.Single(None, self).from_bytes(Single.pos_max)
 
 
 ###############################################################################
@@ -330,49 +343,6 @@ class Values(object):
         """Return whether a number is zero."""
         return pass_number(x).is_zero()
 
-    ###############################################################################
-    # math functions
-
-    @float_safe
-    def _call_float_function(self, fn, *args):
-        """Convert to IEEE 754, apply function, convert back."""
-        args = [self.to_float(arg, self._double_math) for arg in args]
-        floatcls = args[0].__class__
-        try:
-            args = (arg.to_value() for arg in args)
-            return floatcls(None, self).from_value(fn(*args))
-        except ArithmeticError as e:
-            # positive infinity of the appropriate class
-            raise e.__class__(floatcls(None, self).from_bytes(floatcls.pos_max))
-
-    def sqr(self, x):
-        """Square root."""
-        return self._call_float_function(math.sqrt, x)
-
-    def exp(self, x):
-        """Exponential."""
-        return self._call_float_function(math.exp, x)
-
-    def sin(self, x):
-        """Sine."""
-        return self._call_float_function(math.sin, x)
-
-    def cos(self, x):
-        """Cosine."""
-        return self._call_float_function(math.cos, x)
-
-    def tan(self, x):
-        """Tangent."""
-        return self._call_float_function(math.tan, x)
-
-    def atn(self, x):
-        """Inverse tangent."""
-        return self._call_float_function(math.atan, x)
-
-    def log(self, x):
-        """Logarithm."""
-        return self._call_float_function(math.log, x)
-
 
     def sgn(self, x):
         """Sign."""
@@ -381,17 +351,6 @@ class Values(object):
     ###############################################################################
     # numeric operators
 
-
-    @float_safe
-    def power(self, left, right):
-        """Left^right."""
-        if self._double_math and (
-                isinstance(left, numbers.Double) or isinstance(right, numbers.Double)):
-            return self._call_float_function(lambda a, b: a**b, self.to_double(left), self.to_double(right))
-        elif isinstance(right, numbers.Integer):
-            return self.to_single(left).ipow_int(right)
-        else:
-            return self._call_float_function(lambda a, b: a**b, self.to_single(left), self.to_single(right))
 
     def bitwise_not(self, right):
         """Bitwise NOT, -x-1."""
@@ -572,9 +531,49 @@ def fix_(inp):
     """Truncate towards zero."""
     return pass_number(inp).clone().itrunc()
 
+
+def sqr_(x):
+    """Square root."""
+    return _call_float_function(math.sqrt, x)
+
+def exp_(x):
+    """Exponential."""
+    return _call_float_function(math.exp, x)
+
+def sin_(x):
+    """Sine."""
+    return _call_float_function(math.sin, x)
+
+def cos_(x):
+    """Cosine."""
+    return _call_float_function(math.cos, x)
+
+def tan_(x):
+    """Tangent."""
+    return _call_float_function(math.tan, x)
+
+def atn_(x):
+    """Inverse tangent."""
+    return _call_float_function(math.atan, x)
+
+def log_(x):
+    """Logarithm."""
+    return _call_float_function(math.log, x)
+
+
 ##############################################################################
 # binary operations
 
+@float_safe
+def pow(left, right):
+    """Left^right."""
+    if left._values._double_math and (
+            isinstance(left, numbers.Double) or isinstance(right, numbers.Double)):
+        return _call_float_function(lambda a, b: a**b, left.to_double(), right.to_double())
+    elif isinstance(right, numbers.Integer):
+        return left.to_single().ipow_int(right)
+    else:
+        return _call_float_function(lambda a, b: a**b, left.to_single(), right.to_single())
 
 @float_safe
 def add(left, right):
