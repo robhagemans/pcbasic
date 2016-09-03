@@ -11,6 +11,7 @@ import os
 import shutil
 import filecmp
 import contextlib
+import traceback
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
@@ -47,11 +48,17 @@ def suppress_stdio(do_suppress):
 
 args = sys.argv[1:]
 
+do_suppress = '--loud' not in args
+
+try:
+    args.remove('--loud')
+except ValueError:
+    pass
+
 if not args or '--all' in args:
     args = [f for f in sorted(os.listdir('.'))
             if os.path.isdir(f) and os.path.isdir(os.path.join(f, 'model'))]
 
-do_suppress = '--loud' not in args
 
 numtests = 0
 failed = []
@@ -82,6 +89,7 @@ for name in args:
             pcbasic.run('--interface=none', '--debug')
         except Exception as e:
             crash = e
+            traceback.print_tb(sys.exc_info()[2])
     # -----------------------------------------------------------
     os.chdir(top)
     passed = True
@@ -107,7 +115,8 @@ for name in args:
             for failname in failfiles:
                 try:
                     n, count = count_diff(os.path.join(output_dir, failname), os.path.join(model_dir, failname))
-                    print '    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, 100.*count/float(n))
+                    pct = 100.*count/float(n) if n != 0 else 0
+                    print '    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, pct)
                 except EnvironmentError as e:
                     print '    %s: %s' % (failname, e)
             failed.append(name)
@@ -116,7 +125,8 @@ for name in args:
             for failname in failfiles:
                 try:
                     n, count = count_diff(os.path.join(output_dir, failname), os.path.join(model_dir, failname))
-                    print '    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, 100.*count/float(n))
+                    pct = 100.*count/float(n) if n != 0 else 0
+                    print '    %s: %d lines, %d differences (%3.2f %%)' % (failname, n, count, pct)
                 except EnvironmentError as e:
                     print '    %s: %s' % (failname, e)
             knowfailed.append(name)
