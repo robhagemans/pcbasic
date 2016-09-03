@@ -339,43 +339,6 @@ class Values(object):
             unsigned=True)
 
 
-    ###############################################################################
-    # number and string operations
-
-    def _bool_eq(self, left, right):
-        """Return true if left == right, false otherwise."""
-        left, right = match_types(left, right)
-        return left.eq(right)
-
-    def _bool_gt(self, left, right):
-        """Ordering: return -1 if left > right, 0 otherwise."""
-        left, right = match_types(left, right)
-        return left.gt(right)
-
-    def equals(self, left, right):
-        """Return -1 if left == right, 0 otherwise."""
-        return self.from_bool(self._bool_eq(left, right))
-
-    def not_equals(self, left, right):
-        """Return -1 if left != right, 0 otherwise."""
-        return self.from_bool(not self._bool_eq(left, right))
-
-    def gt(self, left, right):
-        """Ordering: return -1 if left > right, 0 otherwise."""
-        return self.from_bool(self._bool_gt(left, right))
-
-    def gte(self, left, right):
-        """Ordering: return -1 if left >= right, 0 otherwise."""
-        return self.from_bool(not self._bool_gt(right, left))
-
-    def lte(self, left, right):
-        """Ordering: return -1 if left <= right, 0 otherwise."""
-        return self.from_bool(not self._bool_gt(left, right))
-
-    def lt(self, left, right):
-        """Ordering: return -1 if left < right, 0 otherwise."""
-        return self.from_bool(self._bool_gt(right, left))
-
 
     ##########################################################################
     # conversion between numbers and strings
@@ -479,6 +442,44 @@ def cvd_(x):
     cstr = pass_string(x).to_str()
     error.throw_if(len(cstr) < 8)
     return x._values.from_bytes(cstr[:8])
+
+
+###############################################################################
+# comparisons
+
+def _bool_eq(left, right):
+    """Return true if left == right, false otherwise."""
+    left, right = match_types(left, right)
+    return left.eq(right)
+
+def _bool_gt(left, right):
+    """Ordering: return -1 if left > right, 0 otherwise."""
+    left, right = match_types(left, right)
+    return left.gt(right)
+
+def eq(left, right):
+    """Return -1 if left == right, 0 otherwise."""
+    return left._values.from_bool(_bool_eq(left, right))
+
+def neq(left, right):
+    """Return -1 if left != right, 0 otherwise."""
+    return left._values.from_bool(not _bool_eq(left, right))
+
+def gt(left, right):
+    """Ordering: return -1 if left > right, 0 otherwise."""
+    return left._values.from_bool(_bool_gt(left, right))
+
+def gte(left, right):
+    """Ordering: return -1 if left >= right, 0 otherwise."""
+    return left._values.from_bool(not _bool_gt(right, left))
+
+def lte(left, right):
+    """Ordering: return -1 if left <= right, 0 otherwise."""
+    return left._values.from_bool(not _bool_gt(left, right))
+
+def lt(left, right):
+    """Ordering: return -1 if left < right, 0 otherwise."""
+    return left._values.from_bool(_bool_gt(right, left))
 
 
 ##############################################################################
