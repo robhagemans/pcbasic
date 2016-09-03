@@ -174,6 +174,26 @@ class String(numbers.Value):
         return self.new().from_str(self.to_str()[-stop:])
 
 
+    ######################################################################
+    # unary functions
+
+    def len(self):
+        """LEN: length of string."""
+        return numbers.Integer(None, self._values).from_int(self.length())
+
+    def asc(self):
+        """ASC: ordinal ASCII value of a character."""
+        s = self.to_str()
+        error.throw_if(not s)
+        return numbers.Integer(None, self._values).from_int(ord(s[0]))
+
+    def space(self, num):
+        """SPACE$: repeat spaces."""
+        num = self._values.to_int(num)
+        error.range_check(0, 255, num)
+        return self.new().from_str(' ' * num)
+
+
 class StringSpace(object):
     """Table of strings accessible by their length and address."""
 

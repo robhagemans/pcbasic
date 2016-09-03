@@ -458,8 +458,9 @@ class Values(object):
         """Ordering: return -1 if left < right, 0 otherwise."""
         return self.from_bool(self._bool_gt(right, left))
 
+
     ##########################################################################
-    # conversion
+    # conversion between numbers and strings
 
     def cvi(self, x):
         """CVI: return the int value of a byte representation."""
@@ -522,18 +523,14 @@ class Values(object):
     ######################################################################
     # string manipulation
 
-    def length(self, x):
+    def length(self, s):
         """LEN: length of string."""
-        return numbers.Integer().from_int(pass_string(x).length())
+        return pass_string(s).len()
 
-    def asc(self, x):
+    def asc(self, s):
         """ASC: ordinal ASCII value of a character."""
-        s = pass_string(x).to_str()
-        error.throw_if(not s)
-        return numbers.Integer().from_int(ord(s[0]))
+        return pass_string(s).asc()
 
-    def space(self, x):
+    def space(self, num):
         """SPACE$: repeat spaces."""
-        num = self.to_int(x)
-        error.range_check(0, 255, num)
-        return strings.String(buf=None, values=self).from_str(' ' * num)
+        return strings.String(buf=None, values=self).space(num)
