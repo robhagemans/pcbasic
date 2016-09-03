@@ -2032,39 +2032,9 @@ class Statements(object):
     def exec_def_fn(self, ins):
         """DEF FN: define a function."""
         fnname = self.parser.parse_scalar(ins)
-        fntype = fnname[-1]
-        # read parameters
-        fnvars = []
         util.skip_white(ins)
         pointer_loc = self.session.memory.code_start + ins.tell()
-        if util.skip_white_read_if(ins, ('(',)):
-            while True:
-                fnvars.append(self.parser.parse_scalar(ins))
-                if util.skip_white(ins) in tk.end_statement + (')',):
-                    break
-                util.require_read(ins, (',',))
-            util.require_read(ins, (')',))
-        # read code
-        fncode = ''
-        util.require_read(ins, (tk.O_EQ,)) #=
-        startloc = ins.tell()
-        util.skip_to(ins, tk.end_statement)
-        endloc = ins.tell()
-        ins.seek(startloc)
-        fncode = ins.read(endloc - startloc)
-        if not self.parser.run_mode:
-            # GW doesn't allow DEF FN in direct mode, neither do we
-            # (for no good reason, works fine)
-            raise error.RunError(error.ILLEGAL_DIRECT)
-        self.session.user_functions[fnname] = fnvars, fncode
-        # update memory model
-        # allocate function pointer
-        pointer = struct.pack('<H', pointer_loc) + bytearray(values.size_bytes(fntype)-2)
-        # function name is represented with first char shifted by 128
-        self.session.scalars.set(chr(128+ord(fnname[0])) + fnname[1:], self.values.from_bytes(pointer))
-        for name in fnvars:
-            # allocate but don't set variables
-            self.session.scalars.set(name)
+        self.session.user_functions.define(fnname, self.parser, ins, pointer_loc)
 
     def exec_randomize(self, ins):
         """RANDOMIZE: set random number generator seed."""

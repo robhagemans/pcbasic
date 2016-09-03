@@ -36,6 +36,7 @@ from . import codepage as cp
 from . import scalars
 from . import arrays
 from . import values
+from . import userfunctions
 
 
 class Session(object):
@@ -106,7 +107,6 @@ class Session(object):
         #MOVE into DataSegment?
         self.common_scalars = set()
         self.common_arrays = set()
-        self.user_functions = {}
         # string space
         self.strings = values.StringSpace(self.memory)
         # prepare string and number handler
@@ -118,6 +118,8 @@ class Session(object):
         self.scalars = scalars.Scalars(self.memory, self.values)
         # array space
         self.arrays = arrays.Arrays(self.memory, self.values)
+        # user-defined functions
+        self.user_functions = userfunctions.UserFunctions(self.scalars, self.values)
         # prepare tokeniser
         token_keyword = tk.TokenKeywordDict(syntax, option_debug)
         self.tokeniser = tokeniser.Tokeniser(self.values, token_keyword)
@@ -454,7 +456,7 @@ class Session(object):
                 self.common_arrays = set()
             self.memory.clear_variables(self.common_scalars, self.common_arrays)
             # functions are cleared except when CHAIN ... ALL is specified
-            self.user_functions = {}
+            self.user_functions = userfunctions.UserFunctions(self.scalars, self.values)
         if not preserve_deftype:
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
             self.memory.clear_deftype()

@@ -9,7 +9,6 @@ This file is released under the GNU GPL version 3 or later.
 from functools import partial
 import logging
 import struct
-import io
 
 from . import values
 from . import dos
@@ -26,8 +25,6 @@ class Functions(object):
         self.parser = parser
         self.session = parser.session
         self.values = self.session.values
-        # state variable for detecting recursion
-        self.user_function_parsing = set()
         self._init_functions()
 
     def _init_functions(self):
@@ -326,42 +323,7 @@ class Functions(object):
     def value_fn(self, ins):
         """FN: get value of user-defined function."""
         fnname = self.parser.parse_scalar(ins)
-        # recursion is not allowed as there's no way to terminate it
-        if fnname in self.user_function_parsing:
-            raise error.RunError(error.OUT_OF_MEMORY)
-        try:
-            varnames, fncode = self.session.user_functions[fnname]
-        except KeyError:
-            raise error.RunError(error.UNDEFINED_USER_FUNCTION)
-        # save existing vars
-        varsave = {}
-        for name in varnames:
-            if name in self.session.scalars:
-                # copy the buffer
-                varsave[name] = self.session.scalars.view(name).clone()
-        # read variables
-        if util.skip_white_read_if(ins, ('(',)):
-            exprs = []
-            while True:
-                exprs.append(self.parser.parse_expression(ins))
-                if not util.skip_white_read_if(ins, (',',)):
-                    break
-            if len(exprs) != len(varnames):
-                raise error.RunError(error.STX)
-            for name, value in zip(varnames, exprs):
-                self.session.scalars.set(name, value)
-            util.require_read(ins, (')',))
-        # execute the code
-        fns = io.BytesIO(fncode)
-        fns.seek(0)
-        self.user_function_parsing.add(fnname)
-        value = self.parser.parse_expression(fns)
-        self.user_function_parsing.remove(fnname)
-        # restore existing vars
-        for name in varsave:
-            # re-assign the stored value
-            self.session.scalars.view(name).copy_from(varsave[name])
-        return values.to_type(fnname[-1], value)
+        return self.session.user_functions.value(fnname, self.parser, ins)
 
     ###############################################################
     # graphics
