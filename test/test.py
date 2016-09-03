@@ -12,6 +12,7 @@ import shutil
 import filecmp
 import contextlib
 import traceback
+import time
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
@@ -63,6 +64,8 @@ if not args or '--all' in args:
 numtests = 0
 failed = []
 knowfailed = []
+
+start_time = time.time()
 
 for name in args:
     print '\033[00;37mRunning test \033[01m%s \033[00;37m.. ' % name,
@@ -136,7 +139,7 @@ for name in args:
     numtests += 1
 
 print
-print '\033[00mRan %d tests:' % numtests
+print '\033[00mRan %d tests in %.2fs:' % (numtests, time.time() - start_time)
 if failed:
     print '    %d new failures: \033[01;31m%s\033[00m' % (len(failed), ' '.join(failed))
 if knowfailed:
