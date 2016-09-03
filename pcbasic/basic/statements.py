@@ -18,8 +18,6 @@ from functools import partial
 
 from . import error
 from . import values
-from . import numbers
-from . import strings
 from . import ports
 from . import print_and_input
 from . import basictoken as tk
@@ -1318,7 +1316,7 @@ class Statements(object):
             cval = self.parser.parse_expression(ins, allow_empty=True)
             if cval is None:
                 pass
-            elif isinstance(cval, strings.String):
+            elif isinstance(cval, values.String):
                 # pattern given; copy
                 with self.session.strings:
                     pattern = values.pass_string(cval).to_str()
@@ -2347,7 +2345,7 @@ class Statements(object):
         outstr = ''
         if expr is not None:
             while True:
-                if isinstance(expr, strings.String):
+                if isinstance(expr, values.String):
                     with self.session.strings:
                         outstr += '"' + expr.to_str() + '"'
                 else:
@@ -2398,7 +2396,7 @@ class Statements(object):
                 with self.session.strings:
                     expr = self.parser.parse_expression(ins)
                     # numbers always followed by a space
-                    if isinstance(expr, numbers.Number):
+                    if isinstance(expr, values.Number):
                         word = values.to_repr(expr, leading_space=True, type_sign=False) + ' '
                     else:
                         word = expr.to_str()
@@ -2493,7 +2491,7 @@ class Statements(object):
                 expr = self.parser.parse_literal(ins)
             else:
                 expr = self.parser.parse_expression(ins)
-            if isinstance(expr, strings.String):
+            if isinstance(expr, values.String):
                 with self.session.strings:
                     devname = values.pass_string(expr).to_str().upper()
                 try:

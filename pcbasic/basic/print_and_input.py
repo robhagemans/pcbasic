@@ -13,7 +13,7 @@ except ImportError:
 
 from . import util
 from . import devices
-from . import numbers
+from . import values
 from . import error
 
 
@@ -191,7 +191,7 @@ def _format_float_scientific(expr, digits_before, decimals, force_dot):
         # special case when work_digits == 0, see also below
         # setting to 0 results in incorrect rounding (why?)
         num, exp10 = expr.to_decimal(1 if work_digits == 0 else work_digits)
-        digitstr = numbers.get_digits(num, work_digits, remove_trailing=True)
+        digitstr = values.get_digits(num, work_digits, remove_trailing=True)
         if len(digitstr) < digits_before + decimals:
             digitstr += '0' * (digits_before + decimals - len(digitstr))
     # this is just to reproduce GW results for no digits:
@@ -199,7 +199,7 @@ def _format_float_scientific(expr, digits_before, decimals, force_dot):
     if work_digits == 0:
         exp10 += 1
     exp10 += digits_before + decimals - 1
-    return numbers.scientific_notation(digitstr, exp10, expr.exp_sign, digits_to_dot=digits_before, force_dot=force_dot)
+    return values.scientific_notation(digitstr, exp10, expr.exp_sign, digits_to_dot=digits_before, force_dot=force_dot)
 
 def _format_float_fixed(expr, decimals, force_dot):
     """Put a float in fixed-point representation."""
@@ -215,6 +215,6 @@ def _format_float_fixed(expr, decimals, force_dot):
     nbefore = len(digitstr) + exp10
     # fill up with zeros to required number of figures
     digitstr += '0' * (decimals + exp10)
-    return numbers.decimal_notation(
+    return values.decimal_notation(
                 digitstr, nbefore - 1,
                 type_sign='', force_dot=force_dot)

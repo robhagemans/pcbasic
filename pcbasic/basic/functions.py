@@ -15,8 +15,6 @@ import logging
 import struct
 
 from . import values
-from . import numbers
-from . import strings
 from . import shell
 from . import util
 from . import error
@@ -304,7 +302,7 @@ class Functions(object):
         """ENVIRON$: get environment string."""
         util.require_read(ins, ('$',))
         expr = self.parser.parse_bracket(ins)
-        if isinstance(expr, strings.String):
+        if isinstance(expr, values.String):
             return self.values.from_value(shell.get_env(expr.to_str()), values.STR)
         else:
             expr = values.to_int(expr)
@@ -489,7 +487,7 @@ class Functions(object):
     def value_fre(self, ins):
         """FRE: get free memory and optionally collect garbage."""
         val = self.parser.parse_bracket(ins)
-        if isinstance(val, strings.String):
+        if isinstance(val, values.String):
             # grabge collection if a string-valued argument is specified.
             self.session.memory.collect_garbage()
         return self.values.from_value(self.session.memory.get_free(), '!')

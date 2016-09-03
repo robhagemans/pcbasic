@@ -10,7 +10,6 @@ import struct
 from contextlib import contextmanager
 
 from . import error
-from . import strings
 from . import values
 from . import devices
 from . import basictoken as tk
@@ -106,7 +105,7 @@ class DataSegment(object):
 
     def clear_variables(self, preserve_sc, preserve_ar):
         """Reset and clear variables, arrays, common definitions and functions."""
-        new_strings = strings.StringSpace(self)
+        new_strings = values.StringSpace(self)
         # preserve COMMON variables
         # this is a re-assignment which is not FOR-safe;
         # but clear_variables is only called in CLEAR which also clears the FOR stack

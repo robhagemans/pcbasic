@@ -17,7 +17,6 @@ except ImportError:
 from . import basictoken as tk
 from . import util
 from . import values
-from . import numbers
 
 
 def ascii_read_to(ins, findrange):
@@ -330,7 +329,7 @@ class Tokeniser(object):
             elif c in '-+' and (not word or word[-1] in 'ED'):
                 # must be first character or in exponent
                 word += c
-            elif c in string.digits + numbers.BLANKS + numbers.SEPARATORS:
+            elif c in string.digits + values.BLANKS + values.SEPARATORS:
                 # we'll remove blanks later but need to keep it for now
                 # so we can reposition the stream on removing trailing whitespace
                 word += c
@@ -345,10 +344,10 @@ class Tokeniser(object):
                 ins.seek(-1, 1)
                 break
         # don't claim trailing whitespace
-        trimword = word.rstrip(numbers.BLANKS)
+        trimword = word.rstrip(values.BLANKS)
         ins.seek(-len(word)+len(trimword), 1)
         # remove all internal whitespace
-        word = trimword.strip(numbers.BLANKS)
+        word = trimword.strip(values.BLANKS)
         return self._values.from_repr(word, allow_nonnum=False).to_token()
 
     def _tokenise_hex(self, ins):
@@ -376,7 +375,7 @@ class Tokeniser(object):
         while True:
             c = util.peek(ins)
             # oct literals may be interrupted by whitespace
-            if c and c in string.octdigits + numbers.BLANKS:
+            if c and c in string.octdigits + values.BLANKS:
                 word += ins.read(1)
             else:
                 break

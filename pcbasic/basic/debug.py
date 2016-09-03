@@ -116,7 +116,7 @@ class Debugger(BaseDebugger):
             outs.seek(2)
             try:
                 val = self.session.parser.parse_expression(outs)
-                if isinstance(val, strings.String):
+                if isinstance(val, values.String):
                     outstr += '"' + val.to_str() + '"'
                 else:
                     outstr += values.to_repr(val, leading_space=False, type_sign=True)

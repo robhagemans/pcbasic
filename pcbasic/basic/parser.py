@@ -20,7 +20,6 @@ from . import statements
 from . import operators as op
 from . import functions
 from . import values
-from . import numbers
 
 
 class Parser(object):

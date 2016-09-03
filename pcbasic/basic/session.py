@@ -37,7 +37,6 @@ from . import files
 from . import sound
 from . import redirect
 from . import unicodepage
-from . import strings
 from . import scalars
 from . import arrays
 from . import values
@@ -113,7 +112,7 @@ class Session(object):
         self.common_arrays = set()
         self.user_functions = {}
         # string space
-        self.strings = strings.StringSpace(self.memory)
+        self.strings = values.StringSpace(self.memory)
         # prepare string and number handler
         self.values = values.Values(self.screen, self.strings, double)
         # create fields after value handler has been created (circular dependency in DataSegment)

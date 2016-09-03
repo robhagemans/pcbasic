@@ -10,7 +10,7 @@ import struct
 import logging
 from operator import itemgetter
 
-from . import error
+from .. import error
 from . import numbers
 
 
@@ -20,9 +20,9 @@ class String(numbers.Value):
     sigil = '$'
     size = 3
 
-    def __init__(self, buf, values):
+    def __init__(self, buffer, values):
         """Initialise the pointer"""
-        numbers.Value.__init__(self, buf, values)
+        numbers.Value.__init__(self, buffer, values)
         self._stringspace = values._strings
 
     def length(self):

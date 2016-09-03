@@ -16,9 +16,9 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from . import error
-from . import util
-from . import basictoken as tk
+from .. import error
+from .. import util
+from .. import basictoken as tk
 from . import numbers
 from . import strings
 
