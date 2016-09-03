@@ -1,5 +1,5 @@
 """
-PC-BASIC - basictoken.py
+PC-BASIC - tokens.py
 BASIC keyword tokens
 
 (c) 2014, 2015, 2016 Rob Hagemans

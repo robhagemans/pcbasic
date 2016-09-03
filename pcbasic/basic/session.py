@@ -16,7 +16,7 @@ except ImportError:
     from StringIO import StringIO
 
 from . import error
-from . import basictoken as tk
+from . import tokens as tk
 from . import tokeniser
 from . import lister
 from . import util

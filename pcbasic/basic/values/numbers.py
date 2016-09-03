@@ -25,7 +25,7 @@ This file is released under the GNU GPL version 3.
 import struct
 import math
 
-from .. import basictoken as tk
+from .. import tokens as tk
 from .. import error
 
 

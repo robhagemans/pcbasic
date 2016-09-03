@@ -10,7 +10,7 @@ from functools import partial
 import string
 
 from . import error
-from . import basictoken as tk
+from . import tokens as tk
 
 ###############################################################################
 # stream utilities

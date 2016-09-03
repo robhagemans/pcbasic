@@ -14,7 +14,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from . import basictoken as tk
+from . import tokens as tk
 from . import util
 from . import values
 

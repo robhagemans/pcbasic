@@ -14,7 +14,7 @@ import string
 from collections import deque
 
 from . import error
-from . import basictoken as tk
+from . import tokens as tk
 from . import util
 from . import statements
 from . import operators as op

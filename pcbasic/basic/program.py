@@ -16,7 +16,7 @@ except ImportError:
 
 from . import error
 from . import values
-from . import basictoken as tk
+from . import tokens as tk
 from . import protect
 from . import util
 

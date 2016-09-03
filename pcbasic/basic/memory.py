@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from . import error
 from . import values
 from . import devices
-from . import basictoken as tk
+from . import tokens as tk
 
 
 # Data Segment Map - default situation

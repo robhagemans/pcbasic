@@ -18,7 +18,7 @@ from . import values
 from . import dos
 from . import util
 from . import error
-from . import basictoken as tk
+from . import tokens as tk
 
 
 class Functions(object):

@@ -7,7 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 from . import values
-from . import basictoken as tk
+from . import tokens as tk
 
 
 # operators and precedence

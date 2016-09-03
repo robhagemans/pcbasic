@@ -21,7 +21,7 @@ from . import values
 from . import ports
 from . import parseprint
 from . import parseinput
-from . import basictoken as tk
+from . import tokens as tk
 from . import util
 
 

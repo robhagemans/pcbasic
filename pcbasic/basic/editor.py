@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import string
 
 from . import error
-from . import basictoken as tk
+from . import tokens as tk
 from .eascii import as_bytes as ea
 
 # alt+key macros for interactive mode
