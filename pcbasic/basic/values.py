@@ -147,7 +147,7 @@ class FloatErrorHandler(object):
             elif isinstance(e.args[0], numbers.Integer):
                 # integer values are not soft-handled
                 raise error.RunError(math_error)
-        return numbers.Single(None, self).from_bytes(Single.pos_max)
+        return numbers.Single(None, self).from_bytes(numbers.Single.pos_max)
 
 
 ###############################################################################
@@ -344,10 +344,6 @@ class Values(object):
         return pass_number(x).is_zero()
 
 
-    def sgn(self, x):
-        """Sign."""
-        return numbers.Integer(None, self).from_int(pass_number(x).sign())
-
     ###############################################################################
     # numeric operators
 
@@ -430,35 +426,17 @@ class Values(object):
     ##########################################################################
     # conversion between numbers and strings
 
-    def cvi(self, x):
-        """CVI: return the int value of a byte representation."""
-        cstr = pass_string(x).to_str()
-        error.throw_if(len(cstr) < 2)
-        return self.from_bytes(cstr[:2])
-
-    def cvs(self, x):
-        """CVS: return the single-precision value of a byte representation."""
-        cstr = pass_string(x).to_str()
-        error.throw_if(len(cstr) < 4)
-        return self.from_bytes(cstr[:4])
-
-    def cvd(self, x):
-        """CVD: return the double-precision value of a byte representation."""
-        cstr = pass_string(x).to_str()
-        error.throw_if(len(cstr) < 8)
-        return self.from_bytes(cstr[:8])
-
     def mki(self, x):
         """MKI$: return the byte representation of an int."""
-        return strings.String(None, self).from_str(self.to_bytes(self.to_integer(x)))
+        return strings.String(None, self).from_str(x.to_integer().to_bytes())
 
     def mks(self, x):
         """MKS$: return the byte representation of a single."""
-        return strings.String(None, self).from_str(self.to_bytes(self.to_single(x)))
+        return strings.String(None, self).from_str(self.to_single(x).to_bytes())
 
     def mkd(self, x):
         """MKD$: return the byte representation of a double."""
-        return strings.String(None, self).from_str(self.to_bytes(self.to_double(x)))
+        return strings.String(None, self).from_str(self.to_double(x).to_bytes())
 
     def representation(self, x):
         """STR$: string representation of a number."""
@@ -488,20 +466,26 @@ class Values(object):
         return strings.String(None, self).from_str(val.to_hex())
 
 
-    ######################################################################
-    # string manipulation
+###############################################################################
+# conversions
 
-    def length(self, s):
-        """LEN: length of string."""
-        return pass_string(s).len()
+def cvi_(x):
+    """CVI: return the int value of a byte representation."""
+    cstr = pass_string(x).to_str()
+    error.throw_if(len(cstr) < 2)
+    return x._values.from_bytes(cstr[:2])
 
-    def asc(self, s):
-        """ASC: ordinal ASCII value of a character."""
-        return pass_string(s).asc()
+def cvs_(x):
+    """CVS: return the single-precision value of a byte representation."""
+    cstr = pass_string(x).to_str()
+    error.throw_if(len(cstr) < 4)
+    return x._values.from_bytes(cstr[:4])
 
-    def space(self, num):
-        """SPACE$: repeat spaces."""
-        return strings.String(None, self).space(num)
+def cvd_(x):
+    """CVD: return the double-precision value of a byte representation."""
+    cstr = pass_string(x).to_str()
+    error.throw_if(len(cstr) < 8)
+    return x._values.from_bytes(cstr[:8])
 
 
 ##############################################################################
@@ -522,6 +506,10 @@ def neg(inp):
         return inp
     # promote Integer to Single to avoid integer overflow on -32768
     return inp.to_float().clone().ineg()
+
+def sgn_(x):
+    """Sign."""
+    return numbers.Integer(None, x._values).from_int(pass_number(x).sign())
 
 def int_(inp):
     """Truncate towards negative infinity (INT)."""
@@ -559,6 +547,22 @@ def atn_(x):
 def log_(x):
     """Logarithm."""
     return _call_float_function(math.log, x)
+
+
+######################################################################
+# unary string operations
+
+def len_(s):
+    """LEN: length of string."""
+    return pass_string(s).len()
+
+def asc_(s):
+    """ASC: ordinal ASCII value of a character."""
+    return pass_string(s).asc()
+
+def space_(num):
+    """SPACE$: repeat spaces."""
+    return strings.String(None, num._values).space(num)
 
 
 ##############################################################################
