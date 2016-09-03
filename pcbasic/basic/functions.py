@@ -15,7 +15,7 @@ import logging
 import struct
 
 from . import values
-from . import shell
+from . import dos
 from . import util
 from . import error
 from . import basictoken as tk
@@ -303,11 +303,11 @@ class Functions(object):
         util.require_read(ins, ('$',))
         expr = self.parser.parse_bracket(ins)
         if isinstance(expr, values.String):
-            return self.values.from_value(shell.get_env(expr.to_str()), values.STR)
+            return self.values.from_value(dos.get_env(expr.to_str()), values.STR)
         else:
             expr = values.to_int(expr)
             error.range_check(1, 255, expr)
-            return self.values.from_value(shell.get_env_entry(expr), values.STR)
+            return self.values.from_value(dos.get_env_entry(expr), values.STR)
 
     def value_timer(self, ins):
         """TIMER: get clock ticks since midnight."""

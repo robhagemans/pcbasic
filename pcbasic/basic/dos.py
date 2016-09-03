@@ -1,5 +1,5 @@
 """
-PC-BASIC - shell.py
+PC-BASIC - dos.py
 Operating system shell and environment
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans

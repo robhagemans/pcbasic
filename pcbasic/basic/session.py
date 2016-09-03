@@ -28,7 +28,7 @@ from . import editor
 from . import inputmethods
 from . import debug
 from . import clock
-from . import shell
+from . import dos
 from . import memory
 from . import machine
 from . import parser
@@ -161,7 +161,7 @@ class Session(object):
                 self.screen, self.keyboard, self.sound,
                 self.output_redirection, self.devices.lpt1_file)
         # set up the SHELL command
-        self.shell = shell.get_shell_manager(self.keyboard, self.screen, self.codepage, option_shell)
+        self.shell = dos.get_shell_manager(self.keyboard, self.screen, self.codepage, option_shell)
         # initialise random number generator
         self.randomiser = values.Randomiser(self.values)
         # initialise system clock
