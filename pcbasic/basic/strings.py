@@ -122,7 +122,7 @@ class String(numbers.Value):
             char = asc_value_or_char.to_str()[0]
         else:
             # overflow if outside Integer range
-            ascval = self._values.to_int(asc_value_or_char)
+            ascval = asc_value_or_char.to_integer().to_int()
             error.range_check(0, 255, ascval)
             char = chr(ascval)
         return self.new().from_str(char * num)
@@ -143,11 +143,11 @@ class String(numbers.Value):
     def mid(self, start, num=None):
         """MID$: get substring."""
         length = self.length()
-        start = self._values.to_int(start)
+        start = start.to_integer().to_int()
         if num is None:
             num = length
         else:
-            num = self._values.to_int(num)
+            num = num.to_integer().to_int()
         error.range_check(1, 255, start)
         error.range_check(0, 255, num)
         if num == 0 or start > length:
@@ -158,7 +158,7 @@ class String(numbers.Value):
 
     def left(self, num):
         """LEFT$: get substring of num characters at the start of string."""
-        stop = self._values.to_int(num)
+        stop = num.to_integer().to_int()
         if stop == 0:
             return self.new()
         error.range_check(0, 255, stop)
@@ -166,7 +166,7 @@ class String(numbers.Value):
 
     def right(self, s, num):
         """RIGHT$: get substring of num characters at the end of string."""
-        stop = self._values.to_int(num)
+        stop = num.to_integer().to_int()
         if stop == 0:
             return self.new()
         error.range_check(0, 255, stop)
@@ -188,7 +188,7 @@ class String(numbers.Value):
 
     def space(self, num):
         """SPACE$: repeat spaces."""
-        num = self._values.to_int(num)
+        num = num.to_integer().to_int()
         error.range_check(0, 255, num)
         return self.new().from_str(' ' * num)
 

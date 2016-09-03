@@ -382,7 +382,7 @@ class Parser(object):
         if util.skip_white_read_if(ins, ('[', '(')):
             # it's an array, read indices
             while True:
-                indices.append(self.values.to_int(self.parse_expression(ins)))
+                indices.append(values.to_int(self.parse_expression(ins)))
                 if not util.skip_white_read_if(ins, (',',)):
                     break
             util.require_read(ins, (']', ')'))
@@ -404,7 +404,7 @@ class Parser(object):
         """Helper function: parse a file number and retrieve the file object."""
         screen = None
         if util.skip_white_read_if(ins, ('#',)):
-            number = self.values.to_int(self.parse_expression(ins))
+            number = values.to_int(self.parse_expression(ins))
             error.range_check(0, 255, number)
             screen = self.session.files.get(number, file_mode)
             util.require_read(ins, (',',))
@@ -413,7 +413,7 @@ class Parser(object):
     def parse_file_number_opthash(self, ins):
         """Helper function: parse a file number, with optional hash."""
         util.skip_white_read_if(ins, ('#',))
-        number = self.values.to_int(self.parse_expression(ins))
+        number = values.to_int(self.parse_expression(ins))
         error.range_check(0, 255, number)
         return number
 

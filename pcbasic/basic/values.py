@@ -205,12 +205,6 @@ class Values(object):
         return strings.String(None, self).from_pointer(
             *self._strings.store(python_str, address))
 
-    # NOTE that this function will overflow if outside the range of Integer
-    # whereas Float.to_int will not
-    def to_int(self, inp, unsigned=False):
-        """Round numeric variable and convert to Python integer."""
-        return cint_(inp, unsigned).to_int(unsigned)
-
     def from_bool(self, boo):
         """Convert Python boolean to Integer."""
         if boo:
@@ -312,6 +306,12 @@ def to_type(typechar, value):
     elif typechar == DBL:
         return cdbl_(value)
     raise ValueError('%s is not a valid sigil.' % typechar)
+
+# NOTE that this function will overflow if outside the range of Integer
+# whereas Float.to_int will not
+def to_int(inp, unsigned=False):
+    """Round numeric variable and convert to Python integer."""
+    return cint_(inp, unsigned).to_int(unsigned)
 
 def mki_(x):
     """MKI$: return the byte representation of an int."""
