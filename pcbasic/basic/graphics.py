@@ -130,8 +130,6 @@ class Drawing(object):
         self.last_attr = self.screen.mode.attr
         self.draw_scale = 4
         self.draw_angle = 0
-        # storage for faster access to sprites
-        self.sprites = {}
 
     ### attributes
 
@@ -638,20 +636,18 @@ class Drawing(object):
         self.last_point = x0, y0
         try:
             byte_array = arrays.view_full_buffer(array_name)
-            a_version = arrays.version(array_name)
+            spriterec = arrays.get_cache(array_name)
         except KeyError:
             byte_array = bytearray()
-        try:
-            spriterec = self.sprites[array_name]
-            dx, dy, sprite, s_version = spriterec
-        except KeyError:
             spriterec = None
-        if (not spriterec) or (s_version != a_version):
+        if spriterec is not None:
+            dx, dy, sprite = spriterec
+        else:
             # we don't have it stored or it has been modified
             dx, dy = self.screen.mode.record_to_sprite_size(byte_array)
             sprite = self.screen.mode.array_to_sprite(byte_array, 4, dx, dy)
             # store it now that we have it!
-            self.sprites[array_name] = (dx, dy, sprite, a_version)
+            arrays.set_cache(array_name, (dx, dy, sprite))
         # sprite must be fully inside *viewport* boundary
         x1, y1 = x0+dx-1, y0+dy-1
         # Tandy screen 6 sprites are twice as wide as claimed
@@ -671,7 +667,6 @@ class Drawing(object):
         self.last_point = x1, y1
         try:
             byte_array = arrays.view_full_buffer(array_name)
-            version = arrays.version(array_name)
         except KeyError:
             raise error.RunError(error.IFC)
         dx, dy = x1-x0+1, y1-y0+1
@@ -691,8 +686,7 @@ class Drawing(object):
         except ValueError as e:
             raise error.RunError(error.IFC)
         # store a copy in the sprite store
-        self.sprites[array_name] = (dx, dy, sprite, version)
-
+        arrays.set_cache(array_name, (dx, dy, sprite))
 
     ### DRAW statement
 

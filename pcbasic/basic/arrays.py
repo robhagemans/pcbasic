@@ -39,7 +39,7 @@ class Arrays(object):
         """Clear arrays."""
         self._dims = {}
         self._buffers = {}
-        self._versions = {}
+        self._cache = {}
         self._array_memory = {}
         self.current = 0
 
@@ -48,7 +48,7 @@ class Arrays(object):
         try:
             del self._dims[name]
             del self._buffers[name]
-            del self._versions[name]
+            del self._cache[name]
         except KeyError:
             # illegal fn call
             raise error.RunError(error.IFC)
@@ -83,13 +83,13 @@ class Arrays(object):
         """Return the dimensions of an array."""
         return self._dims[name]
 
-    def version(self, name):
-        """Return the update version of an array (for cached graphics)."""
-        return self._versions[name]
+    def get_cache(self, name):
+        """Retrieve the sprite cache for the given array."""
+        return self._cache[name]
 
-    def inc_version(self, name):
-        """Increase the update version of an array (for cached graphics)."""
-        self._versions[name] += 1
+    def set_cache(self, name, item):
+        """Store a sprite in the cache for a given array."""
+        self._cache[name] = item
 
     def dim(self, name, dimensions):
         """Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value."""
@@ -114,7 +114,7 @@ class Arrays(object):
         self._array_memory[name] = (name_ptr, array_ptr)
         self._buffers[name] = bytearray(array_bytes)
         self._dims[name] = dimensions
-        self._versions[name] = 0
+        self._cache[name] = None
 
     def check_dim(self, name, index):
         """Check if an array has been allocated. If not, auto-allocate if indices are <= 10; raise error otherwise."""
@@ -166,8 +166,8 @@ class Arrays(object):
         """Assign a value to an array element."""
         # copy value into array
         self.view_buffer(name, index)[:] = values.to_type(name[-1], value).to_bytes()
-        # increment array version
-        self._versions[name] += 1
+        # drop cache
+        self._cache[name] = None
 
     def varptr(self, name, indices):
         """Retrieve the address of an array."""

@@ -124,12 +124,11 @@ class DataSegment(object):
         """Preserve COMMON variables."""
         # copy the array buffers
         common = {name: (self.arrays.dimensions(name),
-                        bytearray(self.arrays.view_full_buffer(name)),
-                        self.arrays.version(name))
+                        bytearray(self.arrays.view_full_buffer(name)))
                     for name in names if name in self.arrays}
         yield
         for name, value in common.iteritems():
-            dimensions, buf, _ = value
+            dimensions, buf = value
             self.arrays.dim(name, dimensions)
             if name[-1] == '$':
                 for i in range(0, len(buf), 3):
@@ -382,8 +381,8 @@ class DataSegment(object):
         right = self._view_buffer(name2, index2)
         # swap the contents
         left[:], right[:] = right.tobytes(), left.tobytes()
-        # inc version
+        # drop caches
         if name1 in self.arrays:
-            self.arrays.inc_version(name1)
+            self.arrays.set_cache(name1, None)
         if name2 in self.arrays:
-            self.arrays.inc_version(name2)
+            self.arrays.set_cache(name2, None)
