@@ -190,7 +190,7 @@ class Functions(object):
         error.range_check(0, 255, n)
         util.require_read(ins, (',',))
         asc_value_or_char = self.parser.parse_expression(ins)
-        strstr = self.values.null(values.STR).repeat(asc_value_or_char, n)
+        strstr = self.values.new_string().repeat(asc_value_or_char, n)
         util.require_read(ins, (')',))
         return strstr
 
@@ -214,7 +214,7 @@ class Functions(object):
         error.range_check(0, 255, z)
         util.require_read(ins, (')',))
         if z and not cmode.is_text_mode:
-            return self.values.null(values.INT)
+            return self.values.new_integer()
         else:
             return self.values.from_value(self.session.screen.apage.get_char_attr(row, col, z!=0), values.INT)
 
@@ -283,7 +283,7 @@ class Functions(object):
         util.skip_white(ins)
         num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
         if num == 0:
-            return self.values.null(values.INT)
+            return self.values.new_integer()
         error.range_check(0, 255, num)
         the_file = self.session.files.get(num, 'IR')
         return self.values.from_bool(the_file.eof())
@@ -403,7 +403,7 @@ class Functions(object):
                     _, fy = screen.drawing.get_window_logical(x, y)
                     return self.values.from_value(fy, '!')
             except AttributeError:
-                return self.values.null(values.INT)
+                return self.values.new_integer()
 
     def value_pmap(self, ins):
         """PMAP: convert between logical and physical coordinates."""
@@ -415,7 +415,7 @@ class Functions(object):
         error.range_check(0, 3, mode)
         screen = self.session.screen
         if screen.mode.is_text_mode:
-            return self.values.null(values.INT)
+            return self.values.new_integer()
         if mode == 0:
             value, _ = screen.drawing.get_window_physical(values.csng_(coord).to_value(), 0.)
             return self.values.from_value(value, values.INT)
@@ -518,35 +518,35 @@ class Functions(object):
             var_ptr_str = struct.pack('<BH', values.size_bytes(name), var_ptr)
             return self.values.from_value(var_ptr_str, values.STR)
         else:
-            return numbers.Integer(None, self.values).from_int(var_ptr, unsigned=True)
+            return self.values.new_integer().from_int(var_ptr, unsigned=True)
 
     def value_usr(self, ins):
         """USR: get value of machine-code function; not implemented."""
         util.require_read(ins, tk.digit)
         self.parser.parse_bracket(ins)
         logging.warning("USR function not implemented.")
-        return self.values.null(values.INT)
+        return self.values.new_integer()
 
     def value_inp(self, ins):
         """INP: get value from machine port."""
         port = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
-        return numbers.Integer(None, self.values).from_int(self.session.machine.inp(port), unsigned=True)
+        return self.values.new_integer().from_int(self.session.machine.inp(port), unsigned=True)
 
     def value_erdev(self, ins):
         """ERDEV$: device error string; not implemented."""
         if util.skip_white_read_if(ins, ('$',)):
             logging.warning("ERDEV$ function not implemented.")
-            return self.values.null(values.STR)
+            return self.values.new_string()
         else:
             logging.warning("ERDEV function not implemented.")
-            return self.values.null(values.INT)
+            return self.values.new_integer()
 
     def value_exterr(self, ins):
         """EXTERR: device error information; not implemented."""
         x = values.to_int(self.parser.parse_bracket(ins))
         error.range_check(0, 3, x)
         logging.warning("EXTERR function not implemented.")
-        return self.values.null(values.INT)
+        return self.values.new_integer()
 
     def value_ioctl(self, ins):
         """IOCTL$: read device control string response; not implemented."""

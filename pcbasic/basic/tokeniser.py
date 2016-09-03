@@ -363,7 +363,7 @@ class Tokeniser(object):
                 word += ins.read(1)
             else:
                 break
-        x = numbers.Integer(None, self._values).from_hex(word)
+        x = self._values.new_integer().from_hex(word)
         y = x.to_token_hex()
         return y
 
@@ -380,4 +380,4 @@ class Tokeniser(object):
                 word += ins.read(1)
             else:
                 break
-        return numbers.Integer(None, self._values).from_oct(word).to_token_oct()
+        return self._values.new_integer().from_oct(word).to_token_oct()

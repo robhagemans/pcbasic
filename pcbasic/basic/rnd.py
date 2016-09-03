@@ -64,8 +64,8 @@ class RandomNumberGenerator(object):
             # use integer value of mantissa
             self._cycle(f.mantissa())
         # seed/period
-        return numbers.Single(None, self._values).from_int(self._seed).idiv(
-                    numbers.Single(None, self._values).from_int(self._period))
+        return self._values.new_single().from_int(self._seed).idiv(
+                    self._values.new_single().from_int(self._period))
 
     def _cycle(self, n):
         """Get a value from the random number generator (int argument)."""

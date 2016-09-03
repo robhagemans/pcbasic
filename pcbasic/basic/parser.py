@@ -371,7 +371,7 @@ class Parser(object):
             return self.values.from_token(util.read_token(ins))
         # gw-basic allows adding line numbers to numbers
         elif d == tk.T_UINT:
-            return numbers.Integer(None, self.values).from_int(self.statements.parse_jumpnum(ins), unsigned=True)
+            return self.values.new_integer().from_int(self.statements.parse_jumpnum(ins), unsigned=True)
         else:
             raise error.RunError(error.STX)
 

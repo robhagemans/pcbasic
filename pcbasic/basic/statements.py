@@ -462,18 +462,18 @@ class Statements(object):
         else:
             # retrieve Music Macro Language string
             with self.session.strings:
-                expr = self.parser.parse_expression(ins, allow_empty=True) or self.values.null(values.STR)
+                expr = self.parser.parse_expression(ins, allow_empty=True) or self.values.new_string()
                 mml0 = values.pass_string(expr).to_str()
             mml1, mml2 = '', ''
             if ((self.parser.syntax == 'tandy' or (self.parser.syntax == 'pcjr' and
                                              self.session.sound.sound_on))
                     and util.skip_white_read_if(ins, (',',))):
                 with self.session.strings:
-                    expr = self.parser.parse_expression(ins, allow_empty=True) or self.values.null(values.STR)
+                    expr = self.parser.parse_expression(ins, allow_empty=True) or self.values.new_string()
                     mml1 = values.pass_string(expr).to_str()
                 if util.skip_white_read_if(ins, (',',)):
                     with self.session.strings:
-                        expr = self.parser.parse_expression(ins, allow_empty=True) or self.values.null(values.STR)
+                        expr = self.parser.parse_expression(ins, allow_empty=True) or self.values.new_string()
                         mml2 = values.pass_string(expr).to_str()
             util.require(ins, tk.end_statement)
             if not (mml0 or mml1 or mml2):
@@ -1966,7 +1966,7 @@ class Statements(object):
                 word, _ = finp.input_entry(name[-1], allow_past_end=False)
                 value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1])
                 if value is None:
-                    value = self.values.null(name[-1])
+                    value = self.values.new(name[-1])
                 self.session.memory.set_variable(name, indices, value)
         else:
             # ; to avoid echoing newline

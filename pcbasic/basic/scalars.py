@@ -61,7 +61,7 @@ class Scalars(object):
             if name in self._vars:
                 return
             else:
-                value = self._values.null(type_char)
+                value = self._values.new(type_char)
         # copy buffers
         try:
             # in-place copy is crucial for FOR
@@ -75,7 +75,7 @@ class Scalars(object):
         try:
             return self._values.from_bytes(self._vars[name])
         except KeyError:
-            return self._values.null(name[-1])
+            return self._values.new(name[-1])
 
     def view(self, name):
         """Retrieve a view of an existing scalar variable."""

@@ -172,7 +172,7 @@ class Values(object):
         # this sets a view, not a copy
         return SIZE_TO_CLASS[len(buf)](buf, self)
 
-    def null(self, sigil):
+    def new(self, sigil):
         """Return newly allocated value of the given type with zeroed buffer."""
         return TYPE_TO_CLASS[sigil](None, self)
 
