@@ -9,8 +9,9 @@ This file is released under the GNU GPL version 3 or later.
 import unicodedata
 import logging
 import os
+import pkgutil
 
-from . import codepage
+codepages = pkgutil.get_data(__name__, 'list.txt').splitlines()
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
 # but can have their glyphs subsituted - they will work and transcode as the
@@ -21,6 +22,26 @@ printable_ascii = map(chr, range(0x20, 0x7F))
 # on the terminal, these values are not shown as special graphic chars but as their normal effect
 # BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
 control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
+
+
+###############################################################################
+# resource reader
+
+class ResourceFailed(Exception):
+    """Failed to load codepage."""
+    def __str__(self):
+        return self.__doc__
+
+
+def read_file(codepage_name):
+    """Retrieve contents of codepage file."""
+    try:
+        resource = pkgutil.get_data(__name__, codepage_name + '.ucp')
+    except EnvironmentError:
+        raise ResourceFailed()
+    if resource is None:
+        raise ResourceFailed()
+    return resource
 
 
 ###############################################################################
@@ -50,7 +71,7 @@ class Codepage(object):
         self.box_right = [set(), set()]
         self.cp_to_unicode = {}
         self.dbcs_num_chars = 0
-        for line in codepage.read_file(codepage_name).splitlines():
+        for line in read_file(codepage_name).splitlines():
             # ignore empty lines and comment lines (first char is #)
             if (not line) or (line[0] == '#'):
                 continue

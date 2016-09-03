@@ -8,13 +8,28 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import logging
+import pkgutil
 
 try:
     import numpy
 except ImportError:
     numpy = None
 
-from . import font
+
+fonts = pkgutil.get_data(__name__, 'list.txt').splitlines()
+
+
+def get_data(package, name):
+    """Wrapper for get_data to make it do what is advertised."""
+    try:
+        return pkgutil.get_data(package, name)
+    except EnvironmentError:
+        return None
+
+def read_files(families, height):
+    """Retrieve contents of font files."""
+    return [get_data(__name__, '%s_%02d.hex' % (name, height)) for name in families]
+
 
 
 def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=False):
@@ -28,14 +43,14 @@ def load_fonts(font_families, heights_needed, unicode_needed, substitutes, warn=
     for height in reversed(sorted(heights_needed)):
         # load a Unifont .hex font and take the codepage subset
         fonts[height] = Font(height).load_hex(
-                font.read_files(font_families, height),
+                read_files(font_families, height),
                 unicode_needed, substitutes, warn=warn)
         # fix missing code points font based on 16-line font
         try:
             font_16 = fonts[16]
         except KeyError:
             font_16 = Font(16).load_hex(
-                font.read_files(font_families, 16),
+                read_files(font_families, 16),
                 unicode_needed, substitutes, warn=False)
         if font_16:
             fonts[height].fix_missing(unicode_needed, font_16)

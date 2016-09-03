@@ -12,13 +12,13 @@ import Queue
 import sys
 import platform
 
-import unicodepage
+from . import codepage as cp
 
 
 def get_redirection(codepage, stdio, input_file, output_file, append):
     """Initialise redirection objects."""
     if stdio:
-        stdout_stream = unicodepage.CodecStream(
+        stdout_stream = cp.CodecStream(
                 sys.stdout, codepage, sys.stdout.encoding or b'utf-8')
         stdin_stream = sys.stdin
     else:

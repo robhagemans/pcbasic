@@ -16,7 +16,7 @@ except ImportError:
 from . import signals
 from . import error
 from . import modes
-from . import typeface
+from . import font
 from . import graphics
 from . import tokens as tk
 
@@ -491,7 +491,7 @@ class Screen(object):
         chars_needed = set(self.codepage.cp_to_unicode.values())
         # break up any grapheme clusters and add components to set of needed glyphs
         chars_needed |= set(c for cluster in chars_needed if len(cluster) > 1 for c in cluster)
-        self.fonts = typeface.load_fonts(font_family, heights_needed,
+        self.fonts = font.load_fonts(font_family, heights_needed,
                     chars_needed, self.codepage.substitutes, warn_fonts)
         # text viewport parameters
         self.view_start = 1

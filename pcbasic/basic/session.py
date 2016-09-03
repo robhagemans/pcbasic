@@ -35,7 +35,7 @@ from . import parser
 from . import files
 from . import sound
 from . import redirect
-from . import unicodepage
+from . import codepage as cp
 from . import scalars
 from . import arrays
 from . import values
@@ -84,7 +84,7 @@ class Session(object):
         self.edit_prompt = False
         ######################################################################
         # prepare codepage
-        self.codepage = unicodepage.Codepage(codepage, box_protect)
+        self.codepage = cp.Codepage(codepage, box_protect)
         # prepare I/O redirection
         self.input_redirection, self.output_redirection = redirect.get_redirection(
                 self.codepage, stdio, input_file, output_file, append)
