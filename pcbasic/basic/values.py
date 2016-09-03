@@ -65,6 +65,22 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
 
 
 ###############################################################################
+# type conversions
+
+def match_types(left, right):
+    """Check if variables are numeric and convert to highest-precision."""
+    if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
+        return left.to_double(), right.to_double()
+    elif isinstance(left, numbers.Single) or isinstance(right, numbers.Single):
+        return left.to_single(), right.to_single()
+    elif isinstance(left, numbers.Integer) or isinstance(right, numbers.Integer):
+        return left.to_integer(), right.to_integer()
+    elif isinstance(left, strings.String) or isinstance(right, strings.String):
+        return pass_string(left), pass_string(right)
+    raise TypeError('%s or %s is not of class Value.' % (type(left), type(right)))
+
+
+###############################################################################
 # error handling
 
 def float_safe(fn):
@@ -74,15 +90,6 @@ def float_safe(fn):
             return fn(*args, **kwargs)
         except (ValueError, ArithmeticError) as e:
             return args[0]._float_error_handler.handle(e)
-    return wrapped_fn
-
-def float_safe_method(fn):
-    """Decorator to handle floating point errors."""
-    def wrapped_fn(self, *args, **kwargs):
-        try:
-            return fn(self, *args, **kwargs)
-        except (ValueError, ArithmeticError) as e:
-            return self._float_error_handler.handle(e)
     return wrapped_fn
 
 
@@ -158,12 +165,12 @@ class Values(object):
     ###########################################################################
     # convert between BASIC and Python values
 
-    @float_safe_method
+    @float_safe
     def to_value(self, basic_val):
         """Convert BASIC value to Python value."""
         return basic_val.to_value()
 
-    @float_safe_method
+    @float_safe
     def from_value(self, python_val, typechar):
         """Convert Python value to BASIC value."""
         return TYPE_TO_CLASS[typechar](None, self).from_value(python_val)
@@ -219,7 +226,7 @@ class Values(object):
     ###########################################################################
     # representations
 
-    @float_safe_method
+    @float_safe
     def from_str(self, word, allow_nonnum, typechar=None):
         """Convert decimal str representation to number."""
         # keep as string if typechar asks for it, ignore typechar otherwise
@@ -273,7 +280,7 @@ class Values(object):
             raise error.RunError(error.TYPE_MISMATCH)
         return inp.to_integer(unsigned)
 
-    @float_safe_method
+    @float_safe
     def to_single(self, num):
         """Check if variable is numeric, convert to Single."""
         if isinstance(num, strings.String):
@@ -282,7 +289,7 @@ class Values(object):
             return numbers.Single(None, self).from_integer(num)
         return num.to_single()
 
-    @float_safe_method
+    @float_safe
     def to_double(self, num):
         """Check if variable is numeric, convert to Double."""
         if isinstance(num, strings.String):
@@ -299,17 +306,6 @@ class Values(object):
             return num
         return self.to_single(num)
 
-    def match_types(self, left, right):
-        """Check if variables are numeric and convert to highest-precision."""
-        if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
-            return self.to_double(left), self.to_double(right)
-        elif isinstance(left, numbers.Single) or isinstance(right, numbers.Single):
-            return self.to_single(left), self.to_single(right)
-        elif isinstance(left, numbers.Integer) or isinstance(right, numbers.Integer):
-            return self.to_integer(left), self.to_integer(right)
-        elif isinstance(left, strings.String) or isinstance(right, strings.String):
-            return pass_string(left), pass_string(right)
-        raise TypeError('%s or %s is not of class Value.' % (type(left), type(right)))
 
     def to_type(self, typechar, value):
         """Check if variable can be converted to the given type and convert."""
@@ -337,7 +333,7 @@ class Values(object):
     ###############################################################################
     # math functions
 
-    @float_safe_method
+    @float_safe
     def _call_float_function(self, fn, *args):
         """Convert to IEEE 754, apply function, convert back."""
         args = [self.to_float(arg, self._double_math) for arg in args]
@@ -395,19 +391,10 @@ class Values(object):
     ###############################################################################
     # numeric operators
 
-    @float_safe_method
-    def add(self, left, right):
-        """Add two numbers or concatenate two strings."""
-        if isinstance(left, numbers.Number):
-            # promote Integer to Single to avoid integer overflow
-            left = self.to_float(left)
-        left, right = self.match_types(left, right)
-        return left.clone().iadd(right)
-
-    @float_safe_method
+    @float_safe
     def subtract(self, left, right):
         """Subtract two numbers."""
-        return self.add(pass_number(left), self.negate(right))
+        return add(pass_number(left), self.negate(right))
 
     def abs(self, inp):
         """Return the absolute value of a number. No-op for strings."""
@@ -425,7 +412,7 @@ class Values(object):
         # promote Integer to Single to avoid integer overflow on -32768
         return self.to_float(inp).clone().ineg()
 
-    @float_safe_method
+    @float_safe
     def power(self, left, right):
         """Left^right."""
         if self._double_math and (
@@ -436,7 +423,7 @@ class Values(object):
         else:
             return self._call_float_function(lambda a, b: a**b, self.to_single(left), self.to_single(right))
 
-    @float_safe_method
+    @float_safe
     def multiply(self, left, right):
         """Left*right."""
         if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
@@ -444,12 +431,12 @@ class Values(object):
         else:
             return self.to_single(left).clone().imul(self.to_single(right))
 
-    @float_safe_method
+    @float_safe
     def divide_int(self, left, right):
         """Left\\right."""
         return left.to_integer().clone().idiv_int(right.to_integer())
 
-    @float_safe_method
+    @float_safe
     def mod(self, left, right):
         """Left modulo right."""
         return left.to_integer().clone().imod(right.to_integer())
@@ -496,12 +483,12 @@ class Values(object):
 
     def _bool_eq(self, left, right):
         """Return true if left == right, false otherwise."""
-        left, right = self.match_types(left, right)
+        left, right = match_types(left, right)
         return left.eq(right)
 
     def _bool_gt(self, left, right):
         """Ordering: return -1 if left > right, 0 otherwise."""
-        left, right = self.match_types(left, right)
+        left, right = match_types(left, right)
         return left.gt(right)
 
     def equals(self, left, right):
@@ -609,6 +596,16 @@ class Values(object):
 
 ##############################################################################
 # binary operations
+
+
+@float_safe
+def add(left, right):
+    """Add two numbers or concatenate two strings."""
+    if isinstance(left, numbers.Number):
+        # promote Integer to Single to avoid integer overflow
+        left = left.to_float()
+    left, right = match_types(left, right)
+    return left.clone().iadd(right)
 
 @float_safe
 def div(left, right):

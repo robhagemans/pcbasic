@@ -65,7 +65,7 @@ class Operators(object):
             tk.O_DIV: values.div,
             tk.O_INTDIV: self._values.divide_int,
             tk.MOD: self._values.mod,
-            tk.O_PLUS: self._values.add,
+            tk.O_PLUS: values.add,
             tk.O_MINUS: self._values.subtract,
             tk.O_GT: self._values.gt,
             tk.O_EQ: self._values.equals,

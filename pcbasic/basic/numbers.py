@@ -111,6 +111,8 @@ class Number(Value):
     def to_single(self):
         """Convert to single."""
 
+    to_float = to_single
+
     def idiv(self, right):
         """In-place division."""
 
@@ -177,6 +179,8 @@ class Integer(Number):
 
     to_value = to_int
     from_value = from_int
+
+    to_float = to_single
 
     def to_token(self):
         """Return signed value as integer token"""
@@ -411,7 +415,7 @@ class Float(Number):
 
     # Python float conversions
 
-    def to_float(self):
+    def to_value(self):
         """Return value as Python float"""
         exp = ord(self._buffer[-1]) - self._bias
         if exp == -self._bias:
@@ -425,7 +429,7 @@ class Float(Number):
             man |= self._signmask
         return man * 2.**exp
 
-    def from_float(self, in_float):
+    def from_value(self, in_float):
         """Set to value of Python float."""
         if in_float == 0.:
             self._buffer[:] = b'\0' * self.size
@@ -440,9 +444,6 @@ class Float(Number):
         struct.pack_into(self._intformat, self._buffer, 0, man & (self._mask if neg else self._posmask))
         self._buffer[-1] = chr(exp)
         return self
-
-    to_value = to_float
-    from_value = from_float
 
 
     # Python int conversions
@@ -962,6 +963,8 @@ class Single(Float):
         """Convert single to double."""
         return Double(None, self._values).from_single(self)
 
+    to_float = to_single
+
 
 ###############################################################################
 # double-precision floating-point number
@@ -1024,6 +1027,8 @@ class Double(Float):
     def to_double(self):
         """Convert double to double (no-op)."""
         return self
+
+    to_float = to_double
 
 
 ##############################################################################
