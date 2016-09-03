@@ -83,7 +83,7 @@ def float_safe(fn):
         try:
             return fn(*args, **kwargs)
         except (ValueError, ArithmeticError) as e:
-            return args[0]._float_error_handler.handle(e)
+            return args[0].error_handler.handle(e)
     return wrapped_fn
 
 def _call_float_function(fn, *args):
@@ -91,10 +91,10 @@ def _call_float_function(fn, *args):
     args = list(args)
     floatcls = args[0].__class__
     values = args[0]._values
-    feh = args[0]._float_error_handler
+    feh = args[0].error_handler
     try:
         # to_float can overflow on Double.pos_max
-        args = (arg.to_float(arg._values._double_math).to_value() for arg in args)
+        args = (arg.to_float(arg._values.double_math).to_value() for arg in args)
         return floatcls(None, values).from_value(fn(*args))
     except (ValueError, ArithmeticError) as e:
         # positive infinity of the appropriate class
@@ -112,7 +112,7 @@ class FloatErrorHandler(object):
         self._screen = screen
         self._do_raise = False
 
-    def pause_handling(self, do_raise):
+    def suspend(self, do_raise):
         """Pause local handling of floating point errors."""
         self._do_raise = do_raise
 
@@ -152,14 +152,10 @@ class Values(object):
 
     def __init__(self, screen, string_space, double_math):
         """Setup values."""
-        self._float_error_handler = FloatErrorHandler(screen)
-        self._strings = string_space
+        self.error_handler = FloatErrorHandler(screen)
+        self.stringspace = string_space
         # double-precision EXP, SIN, COS, TAN, ATN, LOG
-        self._double_math = double_math
-
-    def pause_error_handling(self, do_pause):
-        """Suspend floating-point soft error handling."""
-        self._float_error_handler.pause_handling(do_pause)
+        self.double_math = double_math
 
     def create(self, buf):
         """Create new variable object with buffer provided."""
@@ -197,7 +193,7 @@ class Values(object):
     def from_str_at(self, python_str, address):
         """Convert str to String at given address."""
         return strings.String(None, self).from_pointer(
-            *self._strings.store(python_str, address))
+            *self.stringspace.store(python_str, address))
 
     def from_bool(self, boo):
         """Convert Python boolean to Integer."""
@@ -534,7 +530,7 @@ def hex_(x):
 @float_safe
 def pow(left, right):
     """Left^right."""
-    if left._values._double_math and (
+    if left._values.double_math and (
             isinstance(left, numbers.Double) or isinstance(right, numbers.Double)):
         return _call_float_function(lambda a, b: a**b, left.to_double(), right.to_double())
     elif isinstance(right, numbers.Integer):

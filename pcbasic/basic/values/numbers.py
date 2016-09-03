@@ -102,8 +102,7 @@ class Number(Value):
     def __init__(self, buffer, values):
         """Initialise the number."""
         Value.__init__(self, buffer, values)
-        self._float_error_handler = values._float_error_handler
-
+        self.error_handler = values.error_handler
 
     def to_double(self):
         """Convert to double."""

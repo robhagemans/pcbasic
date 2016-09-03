@@ -1670,7 +1670,7 @@ class Statements(object):
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         self.parser.on_error = linenum
         # pause soft-handling math errors so that we can catch them
-        self.values.pause_error_handling(linenum != 0)
+        self.values.error_handler.suspend(linenum != 0)
         # ON ERROR GOTO 0 in error handler
         if self.parser.on_error == 0 and self.parser.error_handle_mode:
             # re-raise the error so that execution stops

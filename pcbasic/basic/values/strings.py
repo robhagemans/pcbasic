@@ -23,7 +23,7 @@ class String(numbers.Value):
     def __init__(self, buffer, values):
         """Initialise the pointer."""
         numbers.Value.__init__(self, buffer, values)
-        self._stringspace = values._strings
+        self._stringspace = values.stringspace
 
     def length(self):
         """String length."""
