@@ -62,7 +62,6 @@ class Value(object):
 
     def clone(self):
         """Create a temporary copy"""
-        print repr(self._buffer.tobytes())
         return self.__class__(None, self._values).from_bytes(self._buffer)
 
     def copy_from(self, other):

@@ -94,6 +94,11 @@ class Values(object):
         """Convert Python value to BASIC value."""
         return TYPE_TO_CLASS[typechar](values=self).from_value(python_val)
 
+    def from_str_at(self, python_str, address):
+        """Convert str to String at given address."""
+        return strings.String(values=self).from_pointer(
+            *self._strings.store(python_str, address))
+
     def to_int(self, inp, unsigned=False):
         """Round numeric variable and convert to Python integer."""
         return self.to_integer(inp, unsigned).to_int(unsigned)

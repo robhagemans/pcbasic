@@ -36,12 +36,21 @@ class String(numbers.Value):
     def dereference(self):
         """String value pointed to"""
         length, address = struct.unpack('<BH', self._buffer)
-        return self._stringspace.copy(length, address)
+        return self._stringspace.view(length, address).tobytes()
 
     def from_str(self, python_str):
         """Set to value of python str."""
-        self._buffer[:] = self._stringspace.store(python_str)
+        self._buffer[:] = struct.pack('<BH', *self._stringspace.store(python_str))
         return self
+
+    def from_pointer(self, length, address):
+        """Set buffer to string pointer."""
+        self._buffer[:] = struct.pack('<BH', length, address)
+        return self
+
+    def to_pointer(self):
+        """Get length and address."""
+        return struct.unpack('<BH', self._buffer)
 
     from_value = from_str
     to_value = dereference
@@ -49,12 +58,7 @@ class String(numbers.Value):
 
     def iconcat(self, right):
         """Concatenate strings. In-place for the pointer."""
-        left_args = struct.unpack('<BH', self._buffer)
-        right_args = struct.unpack('<BH', right._buffer)
-        self._buffer[:] = self._stringspace.store(
-                self._stringspace.copy(*left_args) +
-                self._stringspace.copy(*right_args))
-        return self
+        return self.from_str(self.dereference() + right.dereference())
 
     # NOTE: in_str is a Python str
     def lset(self, in_str, justify_right):
@@ -62,14 +66,12 @@ class String(numbers.Value):
         # v is empty string if variable does not exist
         # trim and pad to size of target buffer
         length = self.length()
-        in_str = in_str[:length]
         if justify_right:
-            in_str = ' '*(length-len(in_str)) + in_str
+            in_str = in_str[:length].rjust(length)
         else:
-            in_str += ' '*(length-len(in_str))
+            in_str = in_str[:length].ljust(length)
         length, address = struct.unpack('<BH', self._buffer)
-        self._buffer[:] = self._stringspace.modify(length, address, in_str, offset=None, num=None)
-        return self
+        return self.from_pointer(*self._stringspace.modify(length, address, in_str, offset=None, num=None))
 
     # NOTE: val is a Python str
     def midset(self, start, num, val):
@@ -88,12 +90,11 @@ class String(numbers.Value):
         val = val[:num]
         # copy new value into existing buffer if possible
         length, address = struct.unpack('<BH', self._buffer)
-        self._buffer[:] = self._stringspace.modify(length, address, val, offset, num)
-        return self
+        return self.from_pointer(*self._stringspace.modify(length, address, val, offset, num))
 
 
 class StringSpace(object):
-    """String space is a table of strings accessible by their 2-byte pointers."""
+    """Table of strings accessible by their length and address."""
 
     def __init__(self, memory):
         """Initialise empty string space."""
@@ -116,13 +117,16 @@ class StringSpace(object):
         self.clear()
         self._strings.update(stringspace._strings)
 
+    def copy_to(self, string_space, length, address):
+        """Copy a string to another string space."""
+        return string_space.store(self.view(length, address).tobytes())
+
     def _retrieve(self, length, address):
-        """Retrieve a string by its 3-byte sequence. 2-byte keys allowed, but will return longer string for empty string."""
+        """Retrieve a string by its pointer."""
         # if string length == 0, return empty string
-        print address, self._strings[address]
         return bytearray() if length == 0 else self._strings[address]
 
-    def _view(self, length, address):
+    def view(self, length, address):
         """Return a writeable view of a string from its string pointer."""
         # empty string pointers can point anywhere
         if length == 0:
@@ -142,23 +146,16 @@ class StringSpace(object):
             # memoryview slice continues to point to buffer, does not copy
             return memoryview(self._memory.fields[number].buffer)[offset:offset+length]
 
-    def copy(self, length, address):
-        """Return a copy of a string from its string pointer."""
-        return self._view(length, address).tobytes()
-
     def modify(self, length, address, in_str, offset, num):
         """Assign a new string into an existing buffer."""
         # if it is a code literal, we now do need to allocate space for a copy
         if address >= self._memory.code_start and address < self._memory.var_start():
-            sequence = self.store(self.copy(length, address))
-            length, address = struct.unpack('<BH', sequence)
-        else:
-            sequence = bytearray(struct.pack('<BH', length, address))
+            length, address = self.store(self.view(length, address).tobytes())
         if num is None:
-            self._view(length, address)[:] = in_str
+            self.view(length, address)[:] = in_str
         else:
-            self._view(length, address)[offset:offset+num] = in_str
-        return sequence
+            self.view(length, address)[offset:offset+num] = in_str
+        return length, address
 
     def store(self, in_str, address=None):
         """Store a new string and return the string pointer."""
@@ -178,7 +175,7 @@ class StringSpace(object):
                 logging.debug('String at %d already defined.' % (address,))
             # copy and convert to bytearray
             self._strings[address] = bytearray(in_str)
-        return bytearray(struct.pack('<BH', length, address))
+        return length, address
 
     def delete_last(self):
         """Delete the string provided if it is at the top of string space."""
@@ -210,7 +207,7 @@ class StringSpace(object):
         self.clear()
         for item in string_list:
             # re-allocate string space
-            item[0][:] = self.store(item[2])
+            item[0][:] = struct.pack('<BH', *self.store(item[2]))
 
     def get_memory(self, address):
         """Retrieve data from data memory: string space """

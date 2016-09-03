@@ -1926,7 +1926,7 @@ class Statements(object):
                     address = self.parser.data_pos + self.session.memory.code_start
                 else:
                     address = None
-                value = self.values.create(self.session.strings.store(entry, address))
+                value = self.values.from_str_at(entry, address)
             else:
                 value = self.values.from_str(entry, allow_nonnum=False)
                 if value is None:

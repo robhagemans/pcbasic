@@ -134,11 +134,11 @@ class DataSegment(object):
             self.arrays.dim(name, dimensions)
             if name[-1] == '$':
                 for i in range(0, len(buf), 3):
-                    length, address = struct.unpack('<BH', buf[i:i+3])
                     # if the string array is not full, pointers are zero
                     # but address is ignored for zero length
-                    ptr = string_store.store(self.strings.copy(length, address))
-                    buf[i:i+3] = ptr
+                    length, address = self.strings.copy_to(
+                                string_store, *struct.unpack('<BH', buf[i:i+3]))
+                    buf[i:i+3] = struct.pack('<BH', length, address)
             # copy the array buffers back
             self.arrays.view_full_buffer(name)[:] = buf
 
@@ -151,8 +151,8 @@ class DataSegment(object):
         yield
         for name, value in common.iteritems():
             if name[-1] == '$':
-                length, address = value.length(), value.address()
-                value = self.values.create(string_store.store(self.strings.copy(length, address)))
+                length, address = self.strings.copy_to(string_store, *value.to_pointer())
+                value = strings.String(values=self.values).from_pointer(length, address)
             self.scalars.set(name, value)
 
     def get_free(self):
