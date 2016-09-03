@@ -65,7 +65,7 @@ class Operators(object):
             tk.O_DIV: self._values.divide,
             tk.O_INTDIV: self._values.divide_int,
             tk.MOD: self._values.mod,
-            tk.O_PLUS: self._values.plus,
+            tk.O_PLUS: self._values.add,
             tk.O_MINUS: self._values.subtract,
             tk.O_GT: self._values.gt,
             tk.O_EQ: self._values.equals,
@@ -82,7 +82,6 @@ class Operators(object):
             tk.EQV: self._values.bitwise_eqv,
             tk.IMP: self._values.bitwise_imp,
         }
-
 
     def __getstate__(self):
         """Pickle."""

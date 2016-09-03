@@ -219,7 +219,7 @@ class Values(object):
             return num
         return self.to_single(num)
 
-    def to_most_precise(self, left, right):
+    def match_types(self, left, right):
         """Check if variables are numeric and convert to highest-precision."""
         if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
             return self.to_double(left), self.to_double(right)
@@ -228,7 +228,7 @@ class Values(object):
         elif isinstance(left, numbers.Integer) or isinstance(right, numbers.Integer):
             return self.to_integer(left), self.to_integer(right)
         elif isinstance(left, strings.String) or isinstance(right, strings.String):
-            raise error.RunError(error.TYPE_MISMATCH)
+            return pass_string(left), pass_string(right)
         raise TypeError('%s or %s is not of class Value.' % (type(left), type(right)))
 
     def to_type(self, typechar, value):
@@ -317,16 +317,17 @@ class Values(object):
 
     @float_safe
     def add(self, left, right):
-        """Add two numbers."""
-        # promote Integer to Single to avoid integer overflow
-        left = self.to_float(left)
-        left, right = self.to_most_precise(left, right)
+        """Add two numbers or concatenate two strings."""
+        if isinstance(left, numbers.Number):
+            # promote Integer to Single to avoid integer overflow
+            left = self.to_float(left)
+        left, right = self.match_types(left, right)
         return left.clone().iadd(right)
 
     @float_safe
     def subtract(self, left, right):
         """Subtract two numbers."""
-        return self.add(left, self.negate(right))
+        return self.add(pass_number(left), self.negate(right))
 
     def abs(self, inp):
         """Return the absolute value of a number. No-op for strings."""
@@ -423,35 +424,13 @@ class Values(object):
 
     def _bool_eq(self, left, right):
         """Return true if left == right, false otherwise."""
-        if isinstance(left, strings.String):
-            return (pass_string(left).to_str() ==
-                    pass_string(right).to_str())
-        else:
-            left, right = self.to_most_precise(left, right)
-            return left.eq(right)
+        left, right = self.match_types(left, right)
+        return left.eq(right)
 
-    def bool_gt(self, left, right):
+    def _bool_gt(self, left, right):
         """Ordering: return -1 if left > right, 0 otherwise."""
-        if isinstance(left, strings.String):
-            # MOVE to String class
-            left = pass_string(left).to_str()
-            right = pass_string(right).to_str()
-            shortest = min(len(left), len(right))
-            for i in range(shortest):
-                if left[i] > right[i]:
-                    return True
-                elif left[i] < right[i]:
-                    return False
-            # the same so far...
-            # the shorter string is said to be less than the longer,
-            # provided they are the same up till the length of the shorter.
-            if len(left) > len(right):
-                return True
-            # left is shorter, or equal strings
-            return False
-        else:
-            left, right = self.to_most_precise(left, right)
-            return left.gt(right)
+        left, right = self.match_types(left, right)
+        return left.gt(right)
 
     def equals(self, left, right):
         """Return -1 if left == right, 0 otherwise."""
@@ -463,26 +442,19 @@ class Values(object):
 
     def gt(self, left, right):
         """Ordering: return -1 if left > right, 0 otherwise."""
-        return self.from_bool(self.bool_gt(left, right))
+        return self.from_bool(self._bool_gt(left, right))
 
     def gte(self, left, right):
         """Ordering: return -1 if left >= right, 0 otherwise."""
-        return self.from_bool(not self.bool_gt(right, left))
+        return self.from_bool(not self._bool_gt(right, left))
 
     def lte(self, left, right):
         """Ordering: return -1 if left <= right, 0 otherwise."""
-        return self.from_bool(not self.bool_gt(left, right))
+        return self.from_bool(not self._bool_gt(left, right))
 
     def lt(self, left, right):
         """Ordering: return -1 if left < right, 0 otherwise."""
-        return self.from_bool(self.bool_gt(right, left))
-
-    def plus(self, left, right):
-        """Binary + operator: add or concatenate."""
-        if isinstance(left, strings.String):
-            return left.clone().iconcat(pass_string(right))
-        else:
-            return self.add(left, right)
+        return self.from_bool(self._bool_gt(right, left))
 
     ##########################################################################
     # conversion
@@ -530,19 +502,19 @@ class Values(object):
         """CHR$: character for ASCII value."""
         val = self.to_int(x)
         error.range_check(0, 255, val)
-        return  strings.String(buf=None, values=self).from_str(chr(val))
+        return strings.String(buf=None, values=self).from_str(chr(val))
 
     def octal(self, x):
         """OCT$: octal representation of int."""
         # allow range -32768 to 65535
         val = self.to_integer(x, unsigned=True)
-        return  strings.String(buf=None, values=self).from_str(val.to_oct())
+        return strings.String(buf=None, values=self).from_str(val.to_oct())
 
     def hexadecimal(self, x):
         """HEX$: hexadecimal representation of int."""
         # allow range -32768 to 65535
         val = self.to_integer(x, unsigned=True)
-        return  strings.String(buf=None, values=self).from_str(val.to_hex())
+        return strings.String(buf=None, values=self).from_str(val.to_hex())
 
 
     ######################################################################

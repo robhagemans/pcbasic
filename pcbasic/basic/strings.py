@@ -56,9 +56,31 @@ class String(numbers.Value):
     to_value = dereference
     to_str = dereference
 
-    def iconcat(self, right):
+    def iadd(self, right):
         """Concatenate strings. In-place for the pointer."""
         return self.from_str(self.dereference() + right.dereference())
+
+    def eq(self, right):
+        """This string equals the right-hand side."""
+        return self.to_str() == right.to_str()
+
+    def gt(self, right):
+        """This string orders after the right-hand side."""
+        left = self.to_str()
+        right = right.to_str()
+        shortest = min(len(left), len(right))
+        for i in range(shortest):
+            if left[i] > right[i]:
+                return True
+            elif left[i] < right[i]:
+                return False
+        # the same so far...
+        # the shorter string is said to be less than the longer,
+        # provided they are the same up till the length of the shorter.
+        if len(left) > len(right):
+            return True
+        # left is shorter, or equal strings
+        return False
 
     # NOTE: in_str is a Python str
     def lset(self, in_str, justify_right):
