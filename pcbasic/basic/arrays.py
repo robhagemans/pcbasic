@@ -165,7 +165,7 @@ class Arrays(object):
     def set(self, name, index, value):
         """Assign a value to an array element."""
         # copy value into array
-        self.view_buffer(name, index)[:] = self._values.to_bytes(self._values.to_type(name[-1], value))
+        self.view_buffer(name, index)[:] = self._values.to_bytes(values.to_type(name[-1], value))
         # increment array version
         self._versions[name] += 1
 

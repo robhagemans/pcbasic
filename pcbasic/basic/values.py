@@ -94,12 +94,13 @@ def float_safe(fn):
 
 def _call_float_function(fn, *args):
     """Convert to IEEE 754, apply function, convert back."""
-    args = [arg.to_float(arg._values._double_math) for arg in args]
+    args = list(args)
     floatcls = args[0].__class__
     values = args[0]._values
     feh = args[0]._float_error_handler
     try:
-        args = (arg.to_value() for arg in args)
+        # to_float can overflow on Double.pos_max
+        args = (arg.to_float(arg._values._double_math).to_value() for arg in args)
         return floatcls(None, values).from_value(fn(*args))
     except (ValueError, ArithmeticError) as e:
         # positive infinity of the appropriate class
@@ -175,6 +176,22 @@ class Values(object):
         """Return newly allocated value of the given type with zeroed buffer."""
         return TYPE_TO_CLASS[sigil](None, self)
 
+    def new_string(self):
+        """Return newly allocated null string."""
+        return strings.String(None, self)
+
+    def new_integer(self):
+        """Return newly allocated zero integer."""
+        return numbers.Integer(None, self)
+
+    def new_single(self):
+        """Return newly allocated zero single."""
+        return numbers.Single(None, self)
+
+    def new_double(self):
+        """Return newly allocated zero double."""
+        return numbers.Double(None, self)
+
     ###########################################################################
     # convert between BASIC and Python values
 
@@ -197,17 +214,13 @@ class Values(object):
     # whereas Float.to_int will not
     def to_int(self, inp, unsigned=False):
         """Round numeric variable and convert to Python integer."""
-        return self.to_integer(inp, unsigned).to_int(unsigned)
+        return cint_(inp, unsigned).to_int(unsigned)
 
     def from_bool(self, boo):
         """Convert Python boolean to Integer."""
         if boo:
             return numbers.Integer(None, self).from_bytes('\xff\xff')
         return numbers.Integer(None, self)
-
-    def to_bool(self, basic_value):
-        """Convert Integer to Python boolean."""
-        return not self.is_zero(basic_value)
 
     ###########################################################################
     # convert to and from internal representation
@@ -283,66 +296,7 @@ class Values(object):
             raise error.RunError(error.TYPE_MISMATCH)
         raise TypeError('%s is not of class Value' % type(inp))
 
-
-    ###########################################################################
-    # type conversions
-
-    def to_integer(self, inp, unsigned=False):
-        """Check if variable is numeric, convert to Int."""
-        if isinstance(inp, strings.String):
-            raise error.RunError(error.TYPE_MISMATCH)
-        return inp.to_integer(unsigned)
-
-    @float_safe
-    def to_single(self, num):
-        """Check if variable is numeric, convert to Single."""
-        if isinstance(num, strings.String):
-            raise error.RunError(error.TYPE_MISMATCH)
-        elif isinstance(num, numbers.Integer):
-            return numbers.Single(None, self).from_integer(num)
-        return num.to_single()
-
-    @float_safe
-    def to_double(self, num):
-        """Check if variable is numeric, convert to Double."""
-        if isinstance(num, strings.String):
-            raise error.RunError(error.TYPE_MISMATCH)
-        elif isinstance(num, numbers.Integer):
-            return numbers.Double(None, self).from_integer(num)
-        elif isinstance(num, numbers.Single):
-            return numbers.Double(None, self).from_single(num)
-        return num
-
-    def to_float(self, num, allow_double=True):
-        """Check if variable is numeric, convert to Double or Single."""
-        if isinstance(num, numbers.Double) and allow_double:
-            return num
-        return self.to_single(num)
-
-
-    def to_type(self, typechar, value):
-        """Check if variable can be converted to the given type and convert."""
-        if typechar == STR:
-            return pass_string(value)
-        elif typechar == INT:
-            return self.to_integer(value)
-        elif typechar == SNG:
-            return self.to_single(value)
-        elif typechar == DBL:
-            return self.to_double(value)
-        raise ValueError('%s is not a valid sigil.' % typechar)
-
-
     ###############################################################################
-
-    def round(self, x):
-        """Round to nearest whole number without converting to int."""
-        return self.to_float(x).iround()
-
-    def is_zero(self, x):
-        """Return whether a number is zero."""
-        return pass_number(x).is_zero()
-
 
     ###############################################################################
     # numeric operators
@@ -426,18 +380,6 @@ class Values(object):
     ##########################################################################
     # conversion between numbers and strings
 
-    def mki(self, x):
-        """MKI$: return the byte representation of an int."""
-        return strings.String(None, self).from_str(x.to_integer().to_bytes())
-
-    def mks(self, x):
-        """MKS$: return the byte representation of a single."""
-        return strings.String(None, self).from_str(self.to_single(x).to_bytes())
-
-    def mkd(self, x):
-        """MKD$: return the byte representation of a double."""
-        return strings.String(None, self).from_str(self.to_double(x).to_bytes())
-
     def representation(self, x):
         """STR$: string representation of a number."""
         return strings.String(None, self).from_str(
@@ -456,18 +398,69 @@ class Values(object):
     def octal(self, x):
         """OCT$: octal representation of int."""
         # allow range -32768 to 65535
-        val = self.to_integer(x, unsigned=True)
+        val = cint_(x, unsigned=True)
         return strings.String(None, self).from_str(val.to_oct())
 
     def hexadecimal(self, x):
         """HEX$: hexadecimal representation of int."""
         # allow range -32768 to 65535
-        val = self.to_integer(x, unsigned=True)
+        val = cint_(x, unsigned=True)
         return strings.String(None, self).from_str(val.to_hex())
+
+
+
+@float_safe
+def round(x):
+    """Round to nearest whole number without converting to int."""
+    return x.to_float().iround()
 
 
 ###############################################################################
 # conversions
+
+def cint_(inp, unsigned=False):
+    """Check if variable is numeric, convert to Int."""
+    if isinstance(inp, strings.String):
+        raise error.RunError(error.TYPE_MISMATCH)
+    return inp.to_integer(unsigned)
+
+@float_safe
+def csng_(num):
+    """Check if variable is numeric, convert to Single."""
+    if isinstance(num, strings.String):
+        raise error.RunError(error.TYPE_MISMATCH)
+    return num.to_single()
+
+@float_safe
+def cdbl_(num):
+    """Check if variable is numeric, convert to Double."""
+    if isinstance(num, strings.String):
+        raise error.RunError(error.TYPE_MISMATCH)
+    return num.to_double()
+
+def to_type(typechar, value):
+    """Check if variable can be converted to the given type and convert."""
+    if typechar == STR:
+        return pass_string(value)
+    elif typechar == INT:
+        return cint_(value)
+    elif typechar == SNG:
+        return csng_(value)
+    elif typechar == DBL:
+        return cdbl_(value)
+    raise ValueError('%s is not a valid sigil.' % typechar)
+
+def mki_(x):
+    """MKI$: return the byte representation of an int."""
+    return x._values.new_string().from_str(cint_(x).to_bytes())
+
+def mks_(x):
+    """MKS$: return the byte representation of a single."""
+    return x._values.new_string().from_str(csng_(x).to_bytes())
+
+def mkd_(x):
+    """MKD$: return the byte representation of a double."""
+    return x._values.new_string().from_str(cdbl_(x).to_bytes())
 
 def cvi_(x):
     """CVI: return the int value of a byte representation."""

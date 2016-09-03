@@ -43,7 +43,7 @@ class Scalars(object):
         """Assign a value to a variable."""
         type_char = name[-1]
         if value is not None:
-            value = self._values.to_type(type_char, value)
+            value = values.to_type(type_char, value)
         # update memory model
         # check if garbage needs collecting before allocating memory
         if name not in self._var_memory:
