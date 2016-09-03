@@ -111,10 +111,8 @@ class Number(Value):
     def to_single(self):
         """Convert to single."""
 
-    to_float = to_single
-
-    def idiv(self, right):
-        """In-place division."""
+    def to_float(self, allow_double=True):
+        """Convert to float."""
 
 
 
@@ -177,10 +175,12 @@ class Integer(Number):
         """Convert to single."""
         return Single(None, self._values).from_integer(self)
 
+    def to_float(self, allow_double=True):
+        """Convert to float."""
+        return Single(None, self._values).from_integer(self)
+
     to_value = to_int
     from_value = from_int
-
-    to_float = to_single
 
     def to_token(self):
         """Return signed value as integer token"""
@@ -963,7 +963,9 @@ class Single(Float):
         """Convert single to double."""
         return Double(None, self._values).from_single(self)
 
-    to_float = to_single
+    def to_float(self, allow_double=True):
+        """Convert single to float."""
+        return self
 
 
 ###############################################################################
@@ -1028,7 +1030,11 @@ class Double(Float):
         """Convert double to double (no-op)."""
         return self
 
-    to_float = to_double
+    def to_float(self, allow_double=True):
+        """Convert double to float."""
+        if allow_double:
+            return self
+        return self.to_single()
 
 
 ##############################################################################

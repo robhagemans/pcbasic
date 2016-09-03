@@ -55,7 +55,7 @@ class MLParser(object):
         else:
             raise error.RunError(error.IFC)
         if sgn == -1:
-            step = self.values.negate(step)
+            step = values.neg(step)
         return step
 
     def parse_number(self, default=None):

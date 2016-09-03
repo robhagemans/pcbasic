@@ -54,19 +54,19 @@ class Operators(object):
         """Initialise operators."""
         # unary operators
         self.unary = {
-            tk.O_MINUS: self._values.negate,
+            tk.O_MINUS: values.neg,
             tk.O_PLUS: lambda x: x,
             tk.NOT: self._values.bitwise_not,
         }
         # binary operators
         self.binary = {
             tk.O_CARET: self._values.power,
-            tk.O_TIMES: self._values.multiply,
+            tk.O_TIMES: values.mul,
             tk.O_DIV: values.div,
-            tk.O_INTDIV: self._values.divide_int,
-            tk.MOD: self._values.mod,
+            tk.O_INTDIV: values.intdiv,
+            tk.MOD: values.mod_,
             tk.O_PLUS: values.add,
-            tk.O_MINUS: self._values.subtract,
+            tk.O_MINUS: values.sub,
             tk.O_GT: self._values.gt,
             tk.O_EQ: self._values.equals,
             tk.O_LT: self._values.lt,

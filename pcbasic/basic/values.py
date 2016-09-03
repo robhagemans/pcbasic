@@ -373,44 +373,14 @@ class Values(object):
         """Logarithm."""
         return self._call_float_function(math.log, x)
 
-    ###########################################################################
 
     def sgn(self, x):
         """Sign."""
         return numbers.Integer(None, self).from_int(pass_number(x).sign())
 
-    def floor(self, x):
-        """Truncate towards negative infinity (INT)."""
-        return pass_number(x).clone().ifloor()
-
-    def fix(self, x):
-        """Truncate towards zero."""
-        return pass_number(x).clone().itrunc()
-
-
     ###############################################################################
     # numeric operators
 
-    @float_safe
-    def subtract(self, left, right):
-        """Subtract two numbers."""
-        return add(pass_number(left), self.negate(right))
-
-    def abs(self, inp):
-        """Return the absolute value of a number. No-op for strings."""
-        if isinstance(inp, strings.String):
-            # strings pass unchanged
-            return inp
-        # promote Integer to Single to avoid integer overflow on -32768
-        return self.to_float(inp).clone().iabs()
-
-    def negate(self, inp):
-        """Negation (unary -). No-op for strings."""
-        if isinstance(inp, strings.String):
-            # strings pass unchanged
-            return inp
-        # promote Integer to Single to avoid integer overflow on -32768
-        return self.to_float(inp).clone().ineg()
 
     @float_safe
     def power(self, left, right):
@@ -422,24 +392,6 @@ class Values(object):
             return self.to_single(left).ipow_int(right)
         else:
             return self._call_float_function(lambda a, b: a**b, self.to_single(left), self.to_single(right))
-
-    @float_safe
-    def multiply(self, left, right):
-        """Left*right."""
-        if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
-            return self.to_double(left).clone().imul(self.to_double(right))
-        else:
-            return self.to_single(left).clone().imul(self.to_single(right))
-
-    @float_safe
-    def divide_int(self, left, right):
-        """Left\\right."""
-        return left.to_integer().clone().idiv_int(right.to_integer())
-
-    @float_safe
-    def mod(self, left, right):
-        """Left modulo right."""
-        return left.to_integer().clone().imod(right.to_integer())
 
     def bitwise_not(self, right):
         """Bitwise NOT, -x-1."""
@@ -593,6 +545,32 @@ class Values(object):
         return strings.String(None, self).space(num)
 
 
+##############################################################################
+# unary operations
+
+def abs_(inp):
+    """Return the absolute value of a number. No-op for strings."""
+    if isinstance(inp, strings.String):
+        # strings pass unchanged
+        return inp
+    # promote Integer to Single to avoid integer overflow on -32768
+    return inp.to_float().clone().iabs()
+
+def neg(inp):
+    """Negation (unary -). No-op for strings."""
+    if isinstance(inp, strings.String):
+        # strings pass unchanged
+        return inp
+    # promote Integer to Single to avoid integer overflow on -32768
+    return inp.to_float().clone().ineg()
+
+def int_(inp):
+    """Truncate towards negative infinity (INT)."""
+    return pass_number(inp).clone().ifloor()
+
+def fix_(inp):
+    """Truncate towards zero."""
+    return pass_number(inp).clone().itrunc()
 
 ##############################################################################
 # binary operations
@@ -608,9 +586,33 @@ def add(left, right):
     return left.clone().iadd(right)
 
 @float_safe
+def sub(left, right):
+    """Subtract two numbers."""
+    return add(pass_number(left), neg(right))
+
+
+@float_safe
+def mul(left, right):
+    """Left*right."""
+    if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
+        return left.to_double().clone().imul(right.to_double())
+    else:
+        return left.to_single().clone().imul(right.to_single())
+
+@float_safe
 def div(left, right):
     """Left/right."""
     if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
         return left.to_double().clone().idiv(right.to_double())
     else:
         return left.to_single().clone().idiv(right.to_single())
+
+@float_safe
+def intdiv(left, right):
+    """Left\\right."""
+    return left.to_integer().clone().idiv_int(right.to_integer())
+
+@float_safe
+def mod_(left, right):
+    """Left modulo right."""
+    return left.to_integer().clone().imod(right.to_integer())
