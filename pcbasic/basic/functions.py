@@ -12,9 +12,11 @@ except ImportError:
     from StringIO import StringIO
 from functools import partial
 import logging
+import struct
 
 from . import values
 from . import numbers
+from . import strings
 from . import shell
 from . import util
 from . import error
@@ -173,15 +175,13 @@ class Functions(object):
         error.range_check(0, 255, n)
         util.require_read(ins, (',',))
         j = self.parser.parse_expression(ins)
-        if self.values.sigil(j) == '$':
-            j = self.session.strings.copy(j)
-            error.range_check(1, 255, len(j))
-            j = ord(j[0])
+        if isinstance(j, strings.String):
+            j = ord(j.to_str()[0])
         else:
             j = self.values.to_int(j)
             error.range_check(0, 255, j)
         util.require_read(ins, (')',))
-        return self.session.strings.store(chr(j)*n)
+        return self.values.from_value(chr(j)*n, '$')
 
     ######################################################################
     # console functions
@@ -203,7 +203,7 @@ class Functions(object):
         error.range_check(0, 255, z)
         util.require_read(ins, (')',))
         if z and not cmode.is_text_mode:
-            return values.null('%')
+            return self.values.null(values.INT)
         else:
             return numbers.Integer().from_int(self.session.screen.apage.get_char_attr(row, col, z!=0))
 
@@ -221,11 +221,11 @@ class Functions(object):
         if len(word) < num:
             # input past end
             raise error.RunError(error.INPUT_PAST_END)
-        return self.session.strings.store(word)
+        return self.values.from_value(word, values.STR)
 
     def value_inkey(self, ins):
         """INKEY$: get a character from the keyboard."""
-        return self.session.strings.store(self.session.keyboard.get_char())
+        return self.values.from_value(self.session.keyboard.get_char(), values.STR)
 
     def value_csrlin(self, ins):
         """CSRLIN: get the current screen row."""
@@ -273,7 +273,7 @@ class Functions(object):
         util.skip_white(ins)
         num = self.values.to_int(self.parser.parse_bracket(ins), unsigned=True)
         if num == 0:
-            return values.null('%')
+            return self.values.null(values.INT)
         error.range_check(0, 255, num)
         the_file = self.session.files.get(num, 'IR')
         return self.values.from_bool(the_file.eof())
@@ -294,12 +294,12 @@ class Functions(object):
         """ENVIRON$: get environment string."""
         util.require_read(ins, ('$',))
         expr = self.parser.parse_bracket(ins)
-        if self.values.sigil(expr) == '$':
-            return self.session.strings.store(shell.get_env(self.session.strings.copy(expr)))
+        if isinstance(expr, strings.String):
+            return self.values.from_value(shell.get_env(expr.to_str()), values.STR)
         else:
             expr = self.values.to_int(expr)
             error.range_check(1, 255, expr)
-            return self.session.strings.store(shell.get_env_entry(expr))
+            return self.values.from_value(shell.get_env_entry(expr), values.STR)
 
     def value_timer(self, ins):
         """TIMER: get clock ticks since midnight."""
@@ -309,11 +309,11 @@ class Functions(object):
 
     def value_time(self, ins):
         """TIME$: get current system time."""
-        return self.session.strings.store(self.session.clock.get_time())
+        return self.values.from_value(self.session.clock.get_time(), values.STR)
 
     def value_date(self, ins):
         """DATE$: get current system date."""
-        return self.session.strings.store(self.session.clock.get_date())
+        return self.values.from_value(self.session.clock.get_date(), values.STR)
 
     #######################################################
     # user-defined functions
@@ -393,7 +393,7 @@ class Functions(object):
                     _, fy = screen.drawing.get_window_logical(x, y)
                     return self.values.from_value(fy, '!')
             except AttributeError:
-                return values.null('%')
+                return self.values.null(values.INT)
 
     def value_pmap(self, ins):
         """PMAP: convert between logical and physical coordinates."""
@@ -405,7 +405,7 @@ class Functions(object):
         error.range_check(0, 3, mode)
         screen = self.session.screen
         if screen.mode.is_text_mode:
-            return values.null('%')
+            return self.values.null(values.INT)
         if mode == 0:
             value, _ = screen.drawing.get_window_physical(self.values.to_value(self.values.to_single(coord)), 0.)
             return numbers.Integer().from_int(value)
@@ -479,7 +479,7 @@ class Functions(object):
     def value_fre(self, ins):
         """FRE: get free memory and optionally collect garbage."""
         val = self.parser.parse_bracket(ins)
-        if self.values.sigil(val) == '$':
+        if isinstance(val, strings.String):
             # grabge collection if a string-valued argument is specified.
             self.session.memory.collect_garbage()
         return self.values.from_value(self.session.memory.get_free(), '!')
@@ -504,18 +504,18 @@ class Functions(object):
         util.require_read(ins, (')',))
         if var_ptr < 0:
             raise error.RunError(error.IFC)
-        var_ptr = numbers.Integer().from_int(var_ptr, unsigned=True)
         if dollar:
-            return self.session.strings.store(chr(values.size_bytes(name)) + self.values.to_bytes(var_ptr))
+            var_ptr_str = struct.pack('<BH', values.size_bytes(name), var_ptr)
+            return self.values.from_value(var_ptr_str, values.STR)
         else:
-            return var_ptr
+            return numbers.Integer().from_int(var_ptr, unsigned=True)
 
     def value_usr(self, ins):
         """USR: get value of machine-code function; not implemented."""
         util.require_read(ins, tk.digit)
         self.parser.parse_bracket(ins)
         logging.warning("USR function not implemented.")
-        return values.null('%')
+        return self.values.null(values.INT)
 
     def value_inp(self, ins):
         """INP: get value from machine port."""
@@ -526,17 +526,17 @@ class Functions(object):
         """ERDEV$: device error string; not implemented."""
         if util.skip_white_read_if(ins, ('$',)):
             logging.warning("ERDEV$ function not implemented.")
-            return values.null('$')
+            return self.values.null(values.STR)
         else:
             logging.warning("ERDEV function not implemented.")
-            return values.null('%')
+            return self.values.null(values.INT)
 
     def value_exterr(self, ins):
         """EXTERR: device error information; not implemented."""
         x = self.values.to_int(self.parser.parse_bracket(ins))
         error.range_check(0, 3, x)
         logging.warning("EXTERR function not implemented.")
-        return values.null('%')
+        return self.values.null(values.INT)
 
     def value_ioctl(self, ins):
         """IOCTL$: read device control string response; not implemented."""

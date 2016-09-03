@@ -44,15 +44,26 @@ class Value(object):
     sigil = None
     size = None
 
-    def __init__(self, buffer=None):
+    def __init__(self, buffer=None, values=None):
         """Initialise the value"""
         if buffer is None:
             buffer = memoryview(bytearray(self.size))
         self._buffer = memoryview(buffer)
+        self._values = values
+
+    def __str__(self):
+        """String representation for debugging."""
+        return b'%s[%s %s]' % (self.sigil, bytes(self.to_bytes()).encode('hex'), repr(self.to_value()))
+
+    __repr__ = __str__
+
+    def to_value(self):
+        """Convert to Python value."""
 
     def clone(self):
         """Create a temporary copy"""
-        return self.__class__().from_bytes(self._buffer)
+        print repr(self._buffer.tobytes())
+        return self.__class__(None, self._values).from_bytes(self._buffer)
 
     def copy_from(self, other):
         """Copy another value into this one"""
@@ -82,13 +93,6 @@ class Number(Value):
     zero = None
     pos_max = None
     neg_max = None
-
-    def __str__(self):
-        """String representation for debugging."""
-        return b'[%s] %s %s' % (bytes(self.to_bytes()).encode('hex'), self.to_value(), self.sigil)
-
-    def to_value(self):
-        """Convert to Python value."""
 
 
 ##############################################################################
@@ -343,10 +347,6 @@ class Float(Number):
     neg_max = None
 
     exp_sign = None
-
-    def __init__(self, buffer=None):
-        """Initialise float."""
-        Number.__init__(self, buffer)
 
     # properties
 

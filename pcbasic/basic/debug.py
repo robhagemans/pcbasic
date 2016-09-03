@@ -12,6 +12,7 @@ import logging
 import os
 import platform
 import struct
+import strings
 
 from . import values
 from . import error
@@ -115,8 +116,8 @@ class Debugger(BaseDebugger):
             outs.seek(2)
             try:
                 val = self.session.parser.parse_expression(outs)
-                if self.session.values.sigil(val) == '$':
-                    outstr += '"' + self.session.strings.copy(val) + '"'
+                if isinstance(val, strings.String):
+                    outstr += '"' + val.to_str() + '"'
                 else:
                     outstr += self.session.values.to_str(val, leading_space=False, type_sign=True)
             except Exception as e:
@@ -188,7 +189,7 @@ def show_variables():
     logging.debug('==== Arrays ='.ljust(100, '='))
     logging.debug(str(debugger.session.arrays))
     logging.debug('==== Strings ='.ljust(100, '='))
-    logging.debug(repr(debugger.session.strings.strings))
+    logging.debug(str(debugger.session.strings))
 
 def show_screen():
     """Copy the screen buffer to the log."""

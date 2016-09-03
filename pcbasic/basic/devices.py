@@ -416,7 +416,7 @@ class Field(object):
         str_sequence = struct.pack('<BH', length, str_addr)
         # assign the string ptr to the variable name
         # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
-        self.memory.set_variable(name, indices, values.Values.from_bytes(str_sequence))
+        self.memory.set_variable(name, indices, self.memory.values.from_bytes(str_sequence))
 
 
 #################################################################################

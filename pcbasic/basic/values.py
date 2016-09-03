@@ -20,6 +20,7 @@ from . import error
 from . import util
 from . import basictoken as tk
 from . import numbers
+from . import strings
 from .numbers import float_safe
 
 
@@ -37,15 +38,8 @@ STR = '$'
 TYPE_TO_SIZE = {STR: 3, INT: 2, SNG: 4, DBL: 8}
 SIZE_TO_TYPE = {2: INT, 3: STR, 4: SNG, 8: DBL}
 
-SIZE_TO_CLASS = {2: numbers.Integer, 4: numbers.Single, 8: numbers.Double}
-TYPE_TO_CLASS = {INT: numbers.Integer, SNG: numbers.Single, DBL: numbers.Double}
-
-def null(sigil):
-    """Return newly allocated value of the given type with zeroed buffer."""
-    if sigil == '$':
-        return (sigil, bytearray(TYPE_TO_SIZE[sigil]))
-    else:
-        return TYPE_TO_CLASS[sigil]()
+SIZE_TO_CLASS = {2: numbers.Integer, 3: strings.String, 4: numbers.Single, 8: numbers.Double}
+TYPE_TO_CLASS = {INT: numbers.Integer, STR: strings.String, SNG: numbers.Single, DBL: numbers.Double}
 
 def size_bytes(name):
     """Return the size of a value type, by variable name or type char."""
@@ -56,27 +50,19 @@ def size_bytes(name):
 
 def pass_string(inp, err=error.TYPE_MISMATCH):
     """Check if variable is String-valued."""
-    if Values.sigil(inp) != '$':
+    if not isinstance(inp, strings.String):
+        if not isinstance(inp, numbers.Value):
+            raise TypeError('%s is not of class Value' % type(inp))
         raise error.RunError(err)
     return inp
 
 def pass_number(inp, err=error.TYPE_MISMATCH):
     """Check if variable is numeric."""
     if not isinstance(inp, numbers.Number):
+        if not isinstance(inp, numbers.Value):
+            raise TypeError('%s is not of class Value' % type(inp))
         raise error.RunError(err)
     return inp
-
-
-###############################################################################
-# convert between BASIC String and token address bytes
-
-def string_length(in_string):
-    """Get string length as Python int."""
-    return Values.to_bytes(in_string)[0]
-
-def string_address(in_string):
-    """Get string address as Python int."""
-    return struct.unpack('<H', Values.to_bytes(in_string)[1:])[0]
 
 
 ###############################################################################
@@ -101,19 +87,12 @@ class Values(object):
     @float_safe
     def to_value(self, basic_val):
         """Convert BASIC value to Python value."""
-        typechar = self.sigil(basic_val)
-        if typechar == '$':
-            return self._strings.copy(basic_val)
-        else:
-            return basic_val.to_value()
+        return basic_val.to_value()
 
     @float_safe
     def from_value(self, python_val, typechar):
         """Convert Python value to BASIC value."""
-        if typechar == '$':
-            return self._strings.store(python_val)
-        else:
-            return TYPE_TO_CLASS[typechar]().from_value(python_val)
+        return TYPE_TO_CLASS[typechar](values=self).from_value(python_val)
 
     def to_int(self, inp, unsigned=False):
         """Round numeric variable and convert to Python integer."""
@@ -121,7 +100,9 @@ class Values(object):
 
     def from_bool(self, boo):
         """Convert Python boolean to Integer."""
-        return self.from_bytes('\xff\xff') if boo else self.from_bytes('\0\0')
+        if boo:
+            return numbers.Integer().from_bytes('\xff\xff')
+        return numbers.Integer()
 
     def to_bool(self, basic_value):
         """Convert Integer to Python boolean."""
@@ -133,31 +114,22 @@ class Values(object):
     @staticmethod
     def to_bytes(basic_val):
         """Convert BASIC value to internal byte representation."""
-        if isinstance(basic_val, tuple):
-            return bytearray(basic_val[1])
-        else:
-            # make a copy, not a view
-            return basic_val.to_bytes()
+        # make a copy, not a view
+        return basic_val.to_bytes()
 
-    @staticmethod
-    def from_bytes(token_bytes):
+    def from_bytes(self, token_bytes):
         """Convert internal byte representation to BASIC value."""
-        typechar = SIZE_TO_TYPE[len(token_bytes)]
-        if typechar == '$':
-            return (SIZE_TO_TYPE[len(token_bytes)], bytearray(token_bytes))
-        else:
-            # make a copy, not a view
-            return SIZE_TO_CLASS[len(token_bytes)]().from_bytes(token_bytes)
+        # make a copy, not a view
+        return SIZE_TO_CLASS[len(token_bytes)](values=self).from_bytes(token_bytes)
 
-    @staticmethod
-    def create(buf):
+    def create(self, buf):
         """Create new variable object with buffer provided."""
-        typechar = SIZE_TO_TYPE[len(buf)]
-        if typechar == '$':
-            return (SIZE_TO_TYPE[len(buf)], buf)
-        else:
-            # make a copy, not a view
-            return SIZE_TO_CLASS[len(buf)](buf)
+        # this sets a view, not a copy
+        return SIZE_TO_CLASS[len(buf)](buf, values=self)
+
+    def null(self, sigil):
+        """Return newly allocated value of the given type with zeroed buffer."""
+        return TYPE_TO_CLASS[sigil](values=self)
 
     ###########################################################################
     # representations
@@ -168,8 +140,8 @@ class Values(object):
         # keep as string if typechar asks for it, ignore typechar otherwise
         # FIXME: typechar is only used in INPUT and should be replaced
         # by creating the desired variable and then filling it with its class from_str
-        if typechar == '$':
-            return self._strings.store(word)
+        if typechar == STR:
+            return strings.String(buf=None, values=self).from_str(word)
         # skip spaces and line feeds (but not NUL).
         word = word.lstrip(' \n').upper()
         if not word:
@@ -202,83 +174,70 @@ class Values(object):
         # LIST - no loading space, yes type sign
         if isinstance(inp, numbers.Number):
             return inp.to_str(leading_space, type_sign)
-        else:
+        elif isinstance(inp, strings.String):
             raise error.RunError(error.TYPE_MISMATCH)
+        raise TypeError('%s is not of class Value' % type(inp))
+
 
     ###########################################################################
     # type conversions
 
-    @staticmethod
-    def sigil(num):
-        if isinstance(num, tuple):
-            return num[0]
-        elif isinstance(num, numbers.Value):
-            return num.sigil
-        else:
-            assert False, 'Unrecognised value type: %s' % type(num)
-
     def to_integer(self, inp, unsigned=False):
         """Check if variable is numeric, convert to Int."""
-        typechar = self.sigil(inp)
-        if typechar == '$':
-            # type mismatch
+        if isinstance(inp, strings.String):
             raise error.RunError(error.TYPE_MISMATCH)
         return inp.to_integer(unsigned)
 
     @float_safe
     def to_single(self, num):
         """Check if variable is numeric, convert to Single."""
-        typechar = self.sigil(num)
-        if typechar == '$':
+        if isinstance(num, strings.String):
             raise error.RunError(error.TYPE_MISMATCH)
-        elif typechar == '%':
+        elif isinstance(num, numbers.Integer):
             return numbers.Single().from_integer(num)
-        else:
-            return num.to_single()
+        return num.to_single()
 
     @float_safe
     def to_double(self, num):
         """Check if variable is numeric, convert to Double."""
-        typechar = self.sigil(num)
-        if typechar == '$':
+        if isinstance(num, strings.String):
             raise error.RunError(error.TYPE_MISMATCH)
-        elif typechar == '%':
+        elif isinstance(num, numbers.Integer):
             return numbers.Double().from_integer(num)
-        elif typechar == '!':
+        elif isinstance(num, numbers.Single):
             return numbers.Double().from_single(num)
-        elif typechar == '#':
-            return num
+        return num
 
     def to_float(self, num, allow_double=True):
         """Check if variable is numeric, convert to Double or Single."""
-        typechar = self.sigil(num)
-        if typechar == '#' and allow_double:
+        if isinstance(num, numbers.Double) and allow_double:
             return num
-        else:
-            return self.to_single(num)
+        return self.to_single(num)
 
     def to_most_precise(self, left, right):
         """Check if variables are numeric and convert to highest-precision."""
-        left_type, right_type = self.sigil(left), self.sigil(right)
-        if left_type == '#' or right_type == '#':
-            return (self.to_double(left), self.to_double(right))
-        elif left_type == '!' or right_type == '!':
-            return (self.to_single(left), self.to_single(right))
-        elif left_type == '%' or right_type == '%':
-            return (self.to_integer(left), self.to_integer(right))
-        else:
+        if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
+            return self.to_double(left), self.to_double(right)
+        elif isinstance(left, numbers.Single) or isinstance(right, numbers.Single):
+            return self.to_single(left), self.to_single(right)
+        elif isinstance(left, numbers.Integer) or isinstance(right, numbers.Integer):
+            return self.to_integer(left), self.to_integer(right)
+        elif isinstance(left, strings.String) or isinstance(right, strings.String):
             raise error.RunError(error.TYPE_MISMATCH)
+        raise TypeError('%s or %s is not of class Value.' % (type(left), type(right)))
 
     def to_type(self, typechar, value):
         """Check if variable can be converted to the given type and convert."""
-        if typechar == '$':
+        if typechar == STR:
             return pass_string(value)
-        elif typechar == '%':
+        elif typechar == INT:
             return self.to_integer(value)
-        elif typechar == '!':
+        elif typechar == SNG:
             return self.to_single(value)
-        elif typechar == '#':
+        elif typechar == DBL:
             return self.to_double(value)
+        raise ValueError('%s is not a valid sigil.' % typechar)
+
 
     ###############################################################################
 
@@ -366,7 +325,7 @@ class Values(object):
 
     def abs(self, inp):
         """Return the absolute value of a number. No-op for strings."""
-        if self.sigil(inp) == '$':
+        if isinstance(inp, strings.String):
             # strings pass unchanged
             return inp
         # promote Integer to Single to avoid integer overflow on -32768
@@ -374,7 +333,7 @@ class Values(object):
 
     def negate(self, inp):
         """Negation (unary -). No-op for strings."""
-        if self.sigil(inp) == '$':
+        if isinstance(inp, strings.String):
             # strings pass unchanged
             return inp
         # promote Integer to Single to avoid integer overflow on -32768
@@ -455,33 +414,23 @@ class Values(object):
 
 
     ###############################################################################
-    # string operations
-
-    def concat(self, left, right):
-        """Concatenate strings."""
-        return self._strings.store(
-            self._strings.copy(pass_string(left)) +
-            self._strings.copy(pass_string(right)))
-
-
-    ###############################################################################
     # number and string operations
 
     def _bool_eq(self, left, right):
         """Return true if left == right, false otherwise."""
-        if self.sigil(left) == '$':
-            return (self._strings.copy(pass_string(left)) ==
-                    self._strings.copy(pass_string(right)))
+        if isinstance(left, strings.String):
+            return (pass_string(left).to_str() ==
+                    pass_string(right).to_str())
         else:
             left, right = self.to_most_precise(left, right)
             return left.eq(right)
 
     def bool_gt(self, left, right):
         """Ordering: return -1 if left > right, 0 otherwise."""
-        ltype = self.sigil(left)
-        if self.sigil(left) == '$':
-            left = self._strings.copy(pass_string(left))
-            right = self._strings.copy(pass_string(right))
+        if isinstance(left, strings.String):
+            # MOVE to String class
+            left = pass_string(left).to_str()
+            right = pass_string(right).to_str()
             shortest = min(len(left), len(right))
             for i in range(shortest):
                 if left[i] > right[i]:
@@ -525,8 +474,8 @@ class Values(object):
 
     def plus(self, left, right):
         """Binary + operator: add or concatenate."""
-        if self.sigil(left) == '$':
-            return self.concat(left, right)
+        if isinstance(left, strings.String):
+            return left.clone().iconcat(pass_string(right))
         else:
             return self.add(left, right)
 
@@ -535,59 +484,60 @@ class Values(object):
 
     def cvi(self, x):
         """CVI: return the int value of a byte representation."""
-        cstr = self._strings.copy(pass_string(x))
+        cstr = pass_string(x).to_str()
         error.throw_if(len(cstr) < 2)
         return self.from_bytes(cstr[:2])
 
     def cvs(self, x):
         """CVS: return the single-precision value of a byte representation."""
-        cstr = self._strings.copy(pass_string(x))
+        cstr = pass_string(x).to_str()
         error.throw_if(len(cstr) < 4)
         return self.from_bytes(cstr[:4])
 
     def cvd(self, x):
         """CVD: return the double-precision value of a byte representation."""
-        cstr = self._strings.copy(pass_string(x))
+        cstr = pass_string(x).to_str()
         error.throw_if(len(cstr) < 8)
         return self.from_bytes(cstr[:8])
 
     def mki(self, x):
         """MKI$: return the byte representation of an int."""
-        return self._strings.store(self.to_bytes(self.to_integer(x)))
+        return strings.String(buf=None, values=self).from_str(self.to_bytes(self.to_integer(x)))
 
     def mks(self, x):
         """MKS$: return the byte representation of a single."""
-        return self._strings.store(self.to_bytes(self.to_single(x)))
+        return strings.String(buf=None, values=self).from_str(self.to_bytes(self.to_single(x)))
 
     def mkd(self, x):
         """MKD$: return the byte representation of a double."""
-        return self._strings.store(self.to_bytes(self.to_double(x)))
+        return strings.String(buf=None, values=self).from_str(self.to_bytes(self.to_double(x)))
 
     def representation(self, x):
         """STR$: string representation of a number."""
-        return self._strings.store(self.to_str(pass_number(x), leading_space=True, type_sign=False))
+        return strings.String(buf=None, values=self).from_str(
+                    self.to_str(pass_number(x), leading_space=True, type_sign=False))
 
     def val(self, x):
         """VAL: number value of a string."""
-        return self.from_str(self._strings.copy(pass_string(x)), allow_nonnum=True)
+        return self.from_str(pass_string(x).to_str(), allow_nonnum=True)
 
     def character(self, x):
         """CHR$: character for ASCII value."""
         val = self.to_int(x)
         error.range_check(0, 255, val)
-        return self._strings.store(chr(val))
+        return  strings.String(buf=None, values=self).from_str(chr(val))
 
     def octal(self, x):
         """OCT$: octal representation of int."""
         # allow range -32768 to 65535
         val = self.to_integer(x, unsigned=True)
-        return self._strings.store(val.to_oct())
+        return  strings.String(buf=None, values=self).from_str(val.to_oct())
 
     def hexadecimal(self, x):
         """HEX$: hexadecimal representation of int."""
         # allow range -32768 to 65535
         val = self.to_integer(x, unsigned=True)
-        return self._strings.store(val.to_hex())
+        return  strings.String(buf=None, values=self).from_str(val.to_hex())
 
 
     ######################################################################
@@ -595,11 +545,11 @@ class Values(object):
 
     def length(self, x):
         """LEN: length of string."""
-        return numbers.Integer().from_int(string_length(pass_string(x)))
+        return numbers.Integer().from_int(pass_string(x).length())
 
     def asc(self, x):
         """ASC: ordinal ASCII value of a character."""
-        s = self._strings.copy(pass_string(x))
+        s = pass_string(x).to_str()
         error.throw_if(not s)
         return numbers.Integer().from_int(ord(s[0]))
 
@@ -607,24 +557,24 @@ class Values(object):
         """SPACE$: repeat spaces."""
         num = self.to_int(x)
         error.range_check(0, 255, num)
-        return self._strings.store(' '*num)
+        return strings.String(buf=None, values=self).from_str(' ' * num)
 
     # FIXME: start is still a Python int
     def instr(self, big, small, start):
         """INSTR: find substring in string."""
-        big = self._strings.copy(pass_string(big))
-        small = self._strings.copy(pass_string(small))
+        big = pass_string(big).to_str()
+        small = pass_string(small).to_str()
         if big == '' or start > len(big):
-            return null('%')
+            return self.null(INT)
         # BASIC counts string positions from 1
         find = big[start-1:].find(small)
         if find == -1:
-            return null('%')
+            return self.null(INT)
         return numbers.Integer().from_int(start + find)
 
     def mid(self, s, start, num=None):
         """MID$: get substring."""
-        s = self._strings.copy(s)
+        s = s.to_str()
         start = self.to_int(start)
         if num is None:
             num = len(s)
@@ -633,28 +583,28 @@ class Values(object):
         error.range_check(1, 255, start)
         error.range_check(0, 255, num)
         if num == 0 or start > len(s):
-            return null('$')
+            return self.null(STR)
         start -= 1
         stop = start + num
         stop = min(stop, len(s))
-        return self._strings.store(s[start:stop])
+        return strings.String(buf=None, values=self).from_str(s[start:stop])
 
     def left(self, s, stop):
         """LEFT$: get substring at the start of string."""
-        s = self._strings.copy(s)
+        s = s.to_str()
         stop = self.to_int(stop)
         error.range_check(0, 255, stop)
         if stop == 0:
-            return null('$')
+            return self.null(STR)
         stop = min(stop, len(s))
-        return self._strings.store(s[:stop])
+        return strings.String(buf=None, values=self).from_str(s[:stop])
 
     def right(self, s, stop):
         """RIGHT$: get substring at the end of string."""
-        s = self._strings.copy(s)
+        s = s.to_str()
         stop = self.to_int(stop)
         error.range_check(0, 255, stop)
         if stop == 0:
-            return null('$')
+            return self.null(STR)
         stop = min(stop, len(s))
-        return self._strings.store(s[-stop:])
+        return strings.String(buf=None, values=self).from_str(s[-stop:])

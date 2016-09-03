@@ -557,8 +557,8 @@ class Drawing(object):
         c, border = self.get_attr_index(c), self.get_attr_index(border)
         solid = (pattern is None)
         if not solid:
-            tile = self.screen.mode.build_tile(pattern) if pattern else None
-            back = self.screen.mode.build_tile(background) if background else None
+            tile = self.screen.mode.build_tile(bytearray(pattern)) if pattern else None
+            back = self.screen.mode.build_tile(bytearray(background)) if background else None
         else:
             tile, back = [[c]*8], None
         bound_x0, bound_y0, bound_x1, bound_y1 = self.screen.graph_view.get()

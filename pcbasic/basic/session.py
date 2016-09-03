@@ -116,6 +116,9 @@ class Session(object):
         self.strings = strings.StringSpace(self.memory)
         # prepare string and number handler
         self.values = values.Values(self.screen, self.strings, double)
+        # create fields after value handler has been created (circular dependency in DataSegment)
+        self.memory.values = self.values
+        self.memory.reset_fields()
         # scalar space
         self.scalars = scalars.Scalars(self.memory, self.values)
         # array space

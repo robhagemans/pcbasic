@@ -76,7 +76,7 @@ class DataSegment(object):
         self.max_files = max_files
         self.max_reclen = max_reclen
         self.fields = {}
-        self.reset_fields()
+        #self.reset_fields()
 
     def set_buffers(self, program, scalars, arrays, strings, values):
         """Register program and variables."""
@@ -115,8 +115,7 @@ class DataSegment(object):
         with self._preserve_arrays(preserve_ar, new_strings):
             self.arrays.clear()
         # clear old dict and copy into
-        self.strings.clear()
-        self.strings.strings.update(new_strings.strings)
+        self.strings.rebuild(new_strings)
         if not(preserve_sc or preserve_ar):
             # clear OPTION BASE
             self.arrays.clear_base()
@@ -135,11 +134,11 @@ class DataSegment(object):
             self.arrays.dim(name, dimensions)
             if name[-1] == '$':
                 for i in range(0, len(buf), 3):
-                    ptr = values.Values.from_bytes(buf[i:i+3])
+                    length, address = struct.unpack('<BH', buf[i:i+3])
                     # if the string array is not full, pointers are zero
                     # but address is ignored for zero length
-                    ptr = string_store.store(self.strings.copy(ptr))
-                    buf[i:i+3] = values.Values.to_bytes(ptr)
+                    ptr = string_store.store(self.strings.copy(length, address))
+                    buf[i:i+3] = ptr
             # copy the array buffers back
             self.arrays.view_full_buffer(name)[:] = buf
 
@@ -152,7 +151,8 @@ class DataSegment(object):
         yield
         for name, value in common.iteritems():
             if name[-1] == '$':
-                value = string_store.store(self.strings.copy(value))
+                length, address = value.length(), value.address()
+                value = self.values.create(string_store.store(self.strings.copy(length, address)))
             self.scalars.set(name, value)
 
     def get_free(self):

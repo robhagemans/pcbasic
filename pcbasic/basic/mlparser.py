@@ -82,12 +82,11 @@ class MLParser(object):
             indices = self._parse_indices()
             sub = self.memory.get_variable(name, indices)
             util.require_read(self.gmls, (';',), err=error.IFC)
-            return self.memory.strings.copy(values.pass_string(sub, err=error.IFC))
+            return values.pass_string(sub, err=error.IFC).to_str()
         else:
             # varptr$
-            return self.memory.strings.copy(
-                    values.pass_string(
-                        self.memory.get_value_for_varptrstr(self.gmls.read(3))))
+            ptr = self.memory.get_value_for_varptrstr(self.gmls.read(3))
+            return values.pass_string(ptr).to_str()
 
     def _parse_const(self):
         """Parse and return a constant value in a macro-language string."""
