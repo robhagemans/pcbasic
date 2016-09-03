@@ -8,11 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import logging
 import struct
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+import io
 
 from . import error
 from . import values
@@ -27,7 +23,7 @@ class Program(object):
                 allow_protect, allow_code_poke, address):
         """Initialise program."""
         # program bytecode buffer
-        self.bytecode = StringIO()
+        self.bytecode = io.BytesIO()
         self.erase()
         self.max_list_line = max_list_line
         self.allow_protect = allow_protect
@@ -40,21 +36,22 @@ class Program(object):
 
     def size(self):
         """Size of code space """
-        return len(self.bytecode.getvalue())
+        return self.code_size
 
     def erase(self):
         """Erase the program from memory."""
-        self.bytecode.truncate(0)
+        self.bytecode.seek(0)
         self.bytecode.write('\0\0\0')
         self.protected = False
         self.line_numbers = { 65536: 0 }
         self.last_stored = None
+        self.code_size = self.bytecode.tell()
 
     def truncate(self, rest=''):
         """Write bytecode and cut the program of beyond the current position."""
         self.bytecode.write(rest if rest else '\0\0\0')
         # cut off at current position
-        self.bytecode.truncate()
+        self.code_size = self.bytecode.tell()
 
     def get_line_number(self, pos):
         """Get line number for stream position."""
@@ -299,6 +296,7 @@ class Program(object):
         # rebuild line number dict and offsets
         if rebuild_dict and g.filetype != 'A':
             self.rebuild_line_dict()
+        self.code_size = self.bytecode.tell()
 
     def merge(self, g):
         """Merge program from ascii or utf8 (if utf8_files is True) stream."""
@@ -378,11 +376,10 @@ class Program(object):
             # move pointer to end
             self.bytecode.seek(0, 2)
             if offset > self.bytecode.tell():
-                self.bytecode.write('\0' *
-                            (offset-self.bytecode.tell()) + chr(val))
+                self.bytecode.write('\0' * (offset-self.bytecode.tell()))
             else:
                 self.bytecode.seek(offset)
-                self.bytecode.write(chr(val))
+            self.bytecode.write(chr(val))
             # restore program pointer
             self.bytecode.seek(loc)
             self.rebuild_line_dict()

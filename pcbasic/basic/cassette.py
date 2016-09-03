@@ -12,11 +12,7 @@ import struct
 import logging
 import string
 from chunk import Chunk
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+import io
 
 from . import error
 from . import devices
@@ -250,7 +246,7 @@ class CassetteStream(object):
     def open_read(self):
         """Play until a file header record is found."""
         self.record_num = 0
-        self.record_stream = StringIO()
+        self.record_stream = io.BytesIO()
         self.buffer_complete = False
         self.bitstream.switch_mode('r')
         self.rwmode = 'r'
@@ -276,7 +272,7 @@ class CassetteStream(object):
     def open_write(self, name, filetype, seg, offs, length):
         """Write a file header to the tape."""
         self.record_num = 0
-        self.record_stream = StringIO()
+        self.record_stream = io.BytesIO()
         self.buffer_complete = False
         self.bitstream.switch_mode('w')
         self.rwmode = 'w'
@@ -364,13 +360,13 @@ class CassetteStream(object):
             return False
         if self.filetype in ('M', 'B', 'P'):
             # bsave, tokenised and protected come in one multi-block record
-            self.record_stream = StringIO()
+            self.record_stream = io.BytesIO()
             self.record_stream.write(self._read_record(self.length))
             self.buffer_complete = True
         else:
             # ascii and data come as a sequence of one-block records
             # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
-            self.record_stream = StringIO()
+            self.record_stream = io.BytesIO()
             record = self._read_record(256)
             num_bytes = ord(record[0])
             record = record[1:]
@@ -392,7 +388,7 @@ class CassetteStream(object):
                 # ascii and data come as a sequence of one-block records
                 # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
                 self._write_record('\0' + chunk)
-            self.record_stream = StringIO()
+            self.record_stream = io.BytesIO()
             self.record_stream.write(data)
             self.record_stream.seek(0, 2)
 
@@ -408,7 +404,7 @@ class CassetteStream(object):
             else:
                 if data:
                     self._write_record(chr(len(data)) + data)
-        self.record_stream = StringIO()
+        self.record_stream = io.BytesIO()
 
 
 
@@ -435,7 +431,7 @@ class BasicodeStream(CassetteStream):
             raise EndOfTape()
         self.filetype = 'A'
         self.record_num = 0
-        self.record_stream = StringIO()
+        self.record_stream = io.BytesIO()
         self.buffer_complete = False
         return ' '*8, 'A', 0, 0, 0
 
@@ -448,7 +444,7 @@ class BasicodeStream(CassetteStream):
         if self.record_num > 0:
             return False
         self.record_num += 1
-        self.record_stream = StringIO()
+        self.record_stream = io.BytesIO()
         # xor sum includes STX byte
         checksum = 0x02
         word = ''

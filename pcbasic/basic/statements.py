@@ -10,10 +10,7 @@ import os
 import logging
 import string
 import struct
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+import io
 from functools import partial
 
 from . import error
@@ -2418,7 +2415,7 @@ class Statements(object):
         if format_expr == '':
             raise error.RunError(error.IFC)
         util.require_read(ins, (';',))
-        fors = StringIO(format_expr)
+        fors = io.BytesIO(format_expr)
         semicolon, format_chars = False, False
         while True:
             data_ends = util.skip_white(ins) in tk.end_statement

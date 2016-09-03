@@ -6,13 +6,10 @@ BASIC functions.
 This file is released under the GNU GPL version 3 or later.
 """
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 from functools import partial
 import logging
 import struct
+import io
 
 from . import values
 from . import dos
@@ -355,7 +352,7 @@ class Functions(object):
                 self.session.scalars.set(name, value)
             util.require_read(ins, (')',))
         # execute the code
-        fns = StringIO(fncode)
+        fns = io.BytesIO(fncode)
         fns.seek(0)
         self.user_function_parsing.add(fnname)
         value = self.parser.parse_expression(fns)

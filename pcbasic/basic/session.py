@@ -9,11 +9,8 @@ import os
 import sys
 import logging
 import platform
+import io
 from contextlib import contextmanager
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 from . import error
 from . import tokens as tk
@@ -171,7 +168,7 @@ class Session(object):
         # interpreter is executing a command (needs Screen)
         self._set_parse_mode(False)
         # direct line buffer
-        self.direct_line = StringIO()
+        self.direct_line = io.BytesIO()
         # initialise the parser
         self.events.reset()
         self.parser = parser.Parser(self, syntax, pcjr_term)

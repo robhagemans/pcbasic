@@ -6,10 +6,7 @@ INPUT statement handling
 This file is released under the GNU GPL version 3 or later.
 """
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+import io
 
 from . import util
 from . import devices
@@ -25,7 +22,7 @@ class InputTextFile(devices.TextFileBase):
 
     def __init__(self, line):
         """Initialise InputStream."""
-        devices.TextFileBase.__init__(self, StringIO(line), 'D', 'I')
+        devices.TextFileBase.__init__(self, io.BytesIO(line), 'D', 'I')
 
 
 def input_console(editor, value_handler, prompt, readvar, newline):

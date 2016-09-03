@@ -5,13 +5,14 @@ DEBUG statement and utilities
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-from StringIO import StringIO
+
 import sys
 import traceback
 import logging
 import os
 import platform
 import struct
+import io
 
 from . import values
 from . import error
@@ -131,7 +132,7 @@ class Debugger(BaseDebugger):
         # make session available to debugging commands
         debugger = self
         session = self.session
-        buf = StringIO()
+        buf = io.BytesIO()
         save_stdout = sys.stdout
         sys.stdout = buf
         try:

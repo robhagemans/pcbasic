@@ -8,11 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import string
 import struct
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+import io
 
 from . import tokens as tk
 from . import util
@@ -55,8 +51,8 @@ class Tokeniser(object):
 
     def tokenise_line(self, line):
         """Convert an ascii program line to tokenised form."""
-        ins = StringIO(line)
-        outs = StringIO()
+        ins = io.BytesIO(line)
+        outs = io.BytesIO()
         # skip whitespace at start of line
         d = util.skip(ins, self._ascii_whitespace)
         if d == '':

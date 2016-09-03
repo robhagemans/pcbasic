@@ -11,10 +11,7 @@ import sys
 import string
 import logging
 import platform
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+import io
 
 from . import error
 from . import devices
@@ -124,8 +121,8 @@ class Files(object):
             return self._open_null(filetype, mode)
         try:
             if mode == 'I':
-                # use StringIO buffer for seekability
-                in_buffer = StringIO(sys.stdin.read())
+                # use io.BytesIO buffer for seekability
+                in_buffer = io.BytesIO(sys.stdin.read())
                 return self.devices.internal_disk.create_file_object(in_buffer, filetype, mode)
             else:
                 return self.devices.internal_disk.create_file_object(sys.stdout, filetype, mode)

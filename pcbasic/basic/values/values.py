@@ -11,11 +11,6 @@ import string
 import struct
 import functools
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
 from .. import error
 from .. import tokens as tk
 from . import numbers

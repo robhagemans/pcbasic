@@ -6,10 +6,6 @@ BASIC code parser
 This file is released under the GNU GPL version 3 or later.
 """
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 import string
 from collections import deque
 

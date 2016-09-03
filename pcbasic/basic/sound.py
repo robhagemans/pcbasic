@@ -10,11 +10,7 @@ from collections import deque
 import Queue
 import string
 import datetime
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+import io
 
 from . import error
 from . import util
@@ -190,7 +186,7 @@ class Sound(object):
         """Parse a list of Music Macro Language strings (PLAY statement)."""
         gmls_list = []
         for mml in mml_list:
-            gmls = StringIO()
+            gmls = io.BytesIO()
             # don't convert to uppercase as VARPTR$ elements are case sensitive
             gmls.write(str(mml))
             gmls.seek(0)

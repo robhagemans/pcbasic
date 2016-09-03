@@ -7,16 +7,12 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
-try:
     import numpy
 except ImportError:
     numpy = None
 
 import math
+import io
 
 from . import error
 from . import values
@@ -703,7 +699,7 @@ class Drawing(object):
     def draw(self, gml, memory, value_handler, events):
         """DRAW: Execute a Graphics Macro Language string."""
         # don't convert to uppercase as VARPTR$ elements are case sensitive
-        gmls = StringIO(gml)
+        gmls = io.BytesIO(gml)
         ml_parser = mlparser.MLParser(gmls, memory, value_handler)
         plot, goback = True, False
         while True:

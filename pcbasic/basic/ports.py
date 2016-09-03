@@ -15,6 +15,7 @@ import os
 import socket
 import datetime
 import platform
+import io
 
 # kbhit() also appears in video_none.py
 if platform.system() == 'Windows':
@@ -25,11 +26,6 @@ else:
     def kbhit():
         """Return whether a character is ready to be read from the keyboard."""
         return select.select([sys.stdin], [], [], 0)[0] != []
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 try:
     import serial
@@ -572,7 +568,7 @@ class LPTFile(devices.TextFileBase):
 
     def __init__(self, stream, filetype='D', flush_trigger='close'):
         """Initialise LPTn."""
-        devices.TextFileBase.__init__(self, StringIO(), filetype, mode='A')
+        devices.TextFileBase.__init__(self, io.BytesIO(), filetype, mode='A')
         # width=255 means line wrap
         self.width = 255
         self.col = 1

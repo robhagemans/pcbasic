@@ -6,11 +6,11 @@ Line printer output
 This file is released under the GNU GPL version 3 or later.
 """
 
-from StringIO import StringIO
 import subprocess
 import logging
 import platform
 import os
+import io
 
 if platform.system() == 'Windows':
     try:
@@ -21,14 +21,14 @@ if platform.system() == 'Windows':
     except ImportError:
         win32print = None
 
-class PrinterStreamBase(StringIO):
+class PrinterStreamBase(io.BytesIO):
     """Base stream for printing."""
 
     def __init__(self, printer_name, codepage):
         """Initialise the printer stream."""
         self.printer_name = printer_name
         self.codepage = codepage
-        StringIO.__init__(self)
+        io.BytesIO.__init__(self)
 
     def close(self):
         """Close the printer stream."""
