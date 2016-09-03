@@ -15,26 +15,26 @@ from . import numbers
 
 
 class String(numbers.Value):
-    """String pointer"""
+    """String pointer."""
 
     sigil = '$'
     size = 3
 
     def __init__(self, buffer, values):
-        """Initialise the pointer"""
+        """Initialise the pointer."""
         numbers.Value.__init__(self, buffer, values)
         self._stringspace = values._strings
 
     def length(self):
-        """String length"""
+        """String length."""
         return ord(self._buffer[0])
 
     def address(self):
-        """Pointer address"""
+        """Pointer address."""
         return struct.unpack_from('<H', self._buffer, 1)[0]
 
     def dereference(self):
-        """String value pointed to"""
+        """String value pointed to."""
         length, address = struct.unpack('<BH', self._buffer)
         return self._stringspace.view(length, address).tobytes()
 

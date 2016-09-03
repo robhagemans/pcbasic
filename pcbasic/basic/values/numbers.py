@@ -41,7 +41,7 @@ SEPARATORS = b'\x1c\x1d\x1f'
 # value base class
 
 class Value(object):
-    """Abstract base class for value types"""
+    """Abstract base class for value types."""
 
     sigil = None
     size = None
@@ -71,21 +71,21 @@ class Value(object):
         return self.__class__(None, self._values)
 
     def copy_from(self, other):
-        """Copy another value into this one"""
+        """Copy another value into this one."""
         self._buffer[:] = other._buffer
         return self
 
     def to_bytes(self):
-        """Get a copy of the byte representation"""
+        """Get a copy of the byte representation."""
         return bytearray(self._buffer)
 
     def from_bytes(self, in_bytes):
-        """Copy a new byte representation into the value"""
+        """Copy a new byte representation into the value."""
         self._buffer[:] = in_bytes
         return self
 
     def view(self):
-        """Get a reference to the storage space"""
+        """Get a reference to the storage space."""
         return self._buffer
 
 
@@ -93,7 +93,7 @@ class Value(object):
 # numeric value base class
 
 class Number(Value):
-    """Abstract base class for numeric value"""
+    """Abstract base class for numeric value."""
 
     zero = None
     pos_max = None
@@ -120,7 +120,7 @@ class Number(Value):
 # integer number
 
 class Integer(Number):
-    """16-bit signed little-endian integer"""
+    """16-bit signed little-endian integer."""
 
     sigil = b'%'
     size = 2
@@ -129,26 +129,26 @@ class Integer(Number):
     neg_max = b'\xff\xff'
 
     def is_zero(self):
-        """Value is zero"""
+        """Value is zero."""
         return self._buffer == b'\0\0'
 
     def is_negative(self):
-        """Value is negative"""
+        """Value is negative."""
         return (ord(self._buffer[-1]) & 0x80) != 0
 
     def sign(self):
-        """Sign of value"""
+        """Sign of value."""
         return -1 if (ord(self._buffer[-1]) & 0x80) != 0 else (0 if self._buffer == b'\0\0' else 1)
 
     def to_int(self, unsigned=False):
-        """Return value as Python int"""
+        """Return value as Python int."""
         if unsigned:
             return struct.unpack('<H', self._buffer)[0]
         else:
             return struct.unpack('<h', self._buffer)[0]
 
     def from_int(self, in_int, unsigned=False):
-        """Set value to Python int"""
+        """Set value to Python int."""
         if unsigned:
             # we can in fact assign negatives as 'unsigned'
             if in_int < 0:
@@ -183,7 +183,7 @@ class Integer(Number):
     from_value = from_int
 
     def to_token(self):
-        """Return signed value as integer token"""
+        """Return signed value as integer token."""
         if self._buffer[1] == b'\0':
             byte = ord(self._buffer[0])
             # although there is a one-byte token for '10', we don't write it.
@@ -195,19 +195,19 @@ class Integer(Number):
             return tk.T_INT + self._buffer.tobytes()
 
     def to_token_linenum(self):
-        """Return unsigned value as line number token"""
+        """Return unsigned value as line number token."""
         return tk.T_UINT + self._buffer.tobytes()
 
     def to_token_hex(self):
-        """Return unsigned value as hex token"""
+        """Return unsigned value as hex token."""
         return tk.T_HEX + self._buffer.tobytes()
 
     def to_token_oct(self):
-        """Return unsigned value as oct token"""
+        """Return unsigned value as oct token."""
         return tk.T_OCT + self._buffer.tobytes()
 
     def from_token(self, token):
-        """Set value to signed or unsigned integer token"""
+        """Set value to signed or unsigned integer token."""
         d = bytes(token)[0]
         if d in (tk.T_OCT, tk.T_HEX, tk.T_INT, tk.T_UINT):
             self._buffer[:] = token[-2:]
@@ -267,7 +267,7 @@ class Integer(Number):
         """Truncate towards negative infinity in-place (no-op)."""
 
     def ineg(self):
-        """Negate in-place"""
+        """Negate in-place."""
         if self._buffer == '\x00\x80':
             raise error.RunError(error.OVERFLOW)
         lsb = (ord(self._buffer[0]) ^ 0xff) + 1
@@ -281,12 +281,12 @@ class Integer(Number):
         return self
 
     def iabs(self):
-        """Absolute value in-place"""
+        """Absolute value in-place."""
         if (ord(self._buffer[-1]) & 0x80):
             return self.ineg()
 
     def iadd(self, rhs):
-        """Add another Integer in-place"""
+        """Add another Integer in-place."""
         lsb = ord(self._buffer[0]) + ord(rhs._buffer[0])
         msb = ord(self._buffer[1]) + ord(rhs._buffer[1])
         # apply carry
@@ -300,7 +300,7 @@ class Integer(Number):
         return self
 
     def isub(self, rhs):
-        """Subtract another Integer in-place"""
+        """Subtract another Integer in-place."""
         # we can't apply the neg on the lhs and avoid a copy
         # because of things like -32768 - (-1)
         return self.iadd(rhs.clone().ineg())
@@ -345,7 +345,7 @@ class Integer(Number):
     # relations
 
     def gt(self, rhs):
-        """Greater than"""
+        """Greater than."""
         if isinstance(rhs, Float):
             # upgrade to Float
             return rhs.new().from_integer(self).gt(rhs)
@@ -357,7 +357,7 @@ class Integer(Number):
         return self._abs_gt(rhs)
 
     def eq(self, rhs):
-        """Equals"""
+        """Equals."""
         if isinstance(rhs, Float):
             # upgrade to Float
             return rhs.new().from_integer(self).eq(rhs)
@@ -366,7 +366,7 @@ class Integer(Number):
     # implementation
 
     def _abs_gt(self, rhs):
-        """Absolute values greater than"""
+        """Absolute values greater than."""
         lmsb = ord(self._buffer[1]) & 0x7f
         rmsb = ord(rhs._buffer[1]) & 0x7f
         if lmsb > rmsb:
@@ -381,7 +381,7 @@ class Integer(Number):
 # floating-point base class
 
 class Float(Number):
-    """Abstract base class for floating-point value"""
+    """Abstract base class for floating-point value."""
 
     digits = None
     pos_max = None
@@ -392,15 +392,15 @@ class Float(Number):
     # properties
 
     def is_zero(self):
-        """Value is zero"""
+        """Value is zero."""
         return self._buffer[-1] == b'\0'
 
     def is_negative(self):
-        """Value is negative"""
+        """Value is negative."""
         return self._buffer[-2] >= b'\x80'
 
     def sign(self):
-        """Sign of value"""
+        """Sign of value."""
         return 0 if self._buffer[-1] == b'\0' else (-1 if (ord(self._buffer[-2]) & 0x80) != 0 else 1)
 
     # BASIC type conversions
@@ -416,7 +416,7 @@ class Float(Number):
     # Python float conversions
 
     def to_value(self):
-        """Return value as Python float"""
+        """Return value as Python float."""
         exp = ord(self._buffer[-1]) - self._bias
         if exp == -self._bias:
             return 0.
@@ -449,7 +449,7 @@ class Float(Number):
     # Python int conversions
 
     def to_int(self):
-        """Return value rounded to Python int"""
+        """Return value rounded to Python int."""
         man, neg = self._to_int_den()
         # carry: round to nearest, halves away from zero
         if man & 0x80:
@@ -459,7 +459,7 @@ class Float(Number):
         return -(man >> 8) if neg else man >> 8
 
     def from_int(self, in_int):
-        """Set value to Python int"""
+        """Set value to Python int."""
         if in_int == 0:
             self._buffer[:] = b'\0' * self.size
         else:
@@ -485,12 +485,12 @@ class Float(Number):
     # in-place unary operations
 
     def ineg(self):
-        """Negate in-place"""
+        """Negate in-place."""
         self._buffer[-2] = chr(ord(self._buffer[-2]) ^ 0x80)
         return self
 
     def iabs(self):
-        """Absolute value in-place"""
+        """Absolute value in-place."""
         self._buffer[-2] = chr(ord(self._buffer[-2]) & 0x7F)
         return self
 
@@ -513,7 +513,7 @@ class Float(Number):
     # relations
 
     def gt(self, rhs):
-        """Greater than"""
+        """Greater than."""
         if isinstance(rhs, Integer):
             # upgrade rhs to Float
             return self.gt(self.new().from_integer(rhs))
@@ -533,7 +533,7 @@ class Float(Number):
         return self._abs_gt(rhs)
 
     def eq(self, rhs):
-        """Equals"""
+        """Equals."""
         if isinstance(rhs, Integer):
             # upgrade rhs to Float
             return self.eq(self.new().from_integer(rhs))
@@ -548,16 +548,16 @@ class Float(Number):
     # in-place binary operations
 
     def iadd(self, right):
-        """Add in-place"""
+        """Add in-place."""
         return self._normalise(*self._add_den(self._denormalise(), right._denormalise()))
 
     def isub(self, right):
-        """Subtract in-place"""
+        """Subtract in-place."""
         rexp, rman, rneg = right._denormalise()
         return self._normalise(*self._add_den(self._denormalise(), (rexp, rman, not rneg)))
 
     def imul(self, right_in):
-        """Multiply in-place"""
+        """Multiply in-place."""
         global lden_s, rden_s, sden_s
         if self.is_zero() or right_in.is_zero():
             # set any zeroes to standard zero
@@ -723,7 +723,7 @@ class Float(Number):
         return exp, man, neg
 
     def _mul10_den(self, den):
-        """Multiply in-place by 10"""
+        """Multiply in-place by 10."""
         exp, man, neg = den
         # 10x == 2(x+4x)
         return self._add_den((exp+1, man, neg), (exp+3, man, neg))
@@ -743,14 +743,14 @@ class Float(Number):
     _carrymask = None
 
     def _denormalise(self):
-        """Denormalise to shifted mantissa, exp, sign"""
+        """Denormalise to shifted mantissa, exp, sign."""
         exp = ord(self._buffer[-1])
         man = struct.unpack(self._intformat, b'\0' + bytearray(self._buffer[:-1]))[0] | self._den_mask
         neg = self.is_negative()
         return exp, man, neg
 
     def _normalise(self, exp, man, neg):
-        """Normalise from shifted mantissa, exp, sign"""
+        """Normalise from shifted mantissa, exp, sign."""
         global pden_s
         # zero denormalised mantissa -> make zero
         if man == 0 or exp <= 0:
@@ -801,7 +801,7 @@ class Float(Number):
         return True
 
     def _bring_to_range(self, man, exp, lower, upper):
-        """Bring mantissa to range (posmask, mask]"""
+        """Bring mantissa to range (posmask, mask]."""
         while abs(man) <= lower:
             exp -= 1
             man <<= 1
@@ -811,7 +811,7 @@ class Float(Number):
         return man, exp
 
     def _abs_gt(self, rhs):
-        """Absolute values greater than"""
+        """Absolute values greater than."""
         # don't compare zeroes
         if self.is_zero():
             return False
@@ -829,7 +829,7 @@ class Float(Number):
         return False
 
     def _add_den(self, lden, rden):
-        """ Denormalised add. """
+        """Denormalised add."""
         lexp, lman, lneg = lden
         rexp, rman, rneg = rden
         global lden_s, rden_s, sden_s
@@ -915,7 +915,7 @@ class Float(Number):
 # single-precision floating-point number
 
 class Single(Float):
-    """Single-precision MBF float"""
+    """Single-precision MBF float."""
 
     sigil = b'!'
     size = 4
@@ -945,11 +945,11 @@ class Single(Float):
     _lim_bot = b'\xff\x23\x74\x94' # 999999.9, highest float  less than 10e+6
 
     def to_token(self):
-        """Return value as Single token"""
+        """Return value as Single token."""
         return tk.T_SINGLE + self._buffer.tobytes()
 
     def from_token(self, token):
-        """Set value to Single token"""
+        """Set value to Single token."""
         if bytes(token)[0] != tk.T_SINGLE:
             raise ValueError('%s is not a Single token.' % repr(token))
         self._buffer[:] = token[-4:]
@@ -972,7 +972,7 @@ class Single(Float):
 # double-precision floating-point number
 
 class Double(Float):
-    """Double-precision MBF float"""
+    """Double-precision MBF float."""
 
     sigil = b'#'
     size = 8
