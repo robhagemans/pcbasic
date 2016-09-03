@@ -56,7 +56,7 @@ class Operators(object):
         self.unary = {
             tk.O_MINUS: values.neg,
             tk.O_PLUS: lambda x: x,
-            tk.NOT: self._values.bitwise_not,
+            tk.NOT: values.not_,
         }
         # binary operators
         self.binary = {
@@ -76,11 +76,11 @@ class Operators(object):
             tk.O_EQ + tk.O_LT: values.lte,
             tk.O_LT + tk.O_GT: values.neq,
             tk.O_GT + tk.O_LT: values.neq,
-            tk.AND: self._values.bitwise_and,
-            tk.OR: self._values.bitwise_or,
-            tk.XOR: self._values.bitwise_xor,
-            tk.EQV: self._values.bitwise_eqv,
-            tk.IMP: self._values.bitwise_imp,
+            tk.AND: values.and_,
+            tk.OR: values.or_,
+            tk.XOR: values.xor_,
+            tk.EQV: values.eqv_,
+            tk.IMP: values.imp_,
         }
 
     def __getstate__(self):

@@ -296,49 +296,6 @@ class Values(object):
             raise error.RunError(error.TYPE_MISMATCH)
         raise TypeError('%s is not of class Value' % type(inp))
 
-    ###############################################################################
-
-    ###############################################################################
-    # numeric operators
-
-
-    def bitwise_not(self, right):
-        """Bitwise NOT, -x-1."""
-        return numbers.Integer(None, self).from_int(-right.to_int()-1)
-
-    def bitwise_and(self, left, right):
-        """Bitwise AND."""
-        return numbers.Integer(None, self).from_int(
-            left.to_integer().to_int(unsigned=True) &
-            right.to_integer().to_int(unsigned=True), unsigned=True)
-
-    def bitwise_or(self, left, right):
-        """Bitwise OR."""
-        return numbers.Integer(None, self).from_int(
-            left.to_integer().to_int(unsigned=True) |
-            right.to_integer().to_int(unsigned=True), unsigned=True)
-
-    def bitwise_xor(self, left, right):
-        """Bitwise XOR."""
-        return numbers.Integer(None, self).from_int(
-            left.to_integer().to_int(unsigned=True) ^
-            right.to_integer().to_int(unsigned=True), unsigned=True)
-
-    def bitwise_eqv(self, left, right):
-        """Bitwise equivalence."""
-        return numbers.Integer(None, self).from_int(0xffff - (
-                left.to_integer().to_int(unsigned=True) ^
-                right.to_integer().to_int(unsigned=True)
-            ), unsigned=True)
-
-    def bitwise_imp(self, left, right):
-        """Bitwise implication."""
-        return numbers.Integer(None, self).from_int(
-                (0xffff - left.to_integer().to_int(unsigned=True)) |
-                right.to_integer().to_int(unsigned=True),
-            unsigned=True)
-
-
 
     ##########################################################################
     # conversion between numbers and strings
@@ -480,6 +437,44 @@ def lte(left, right):
 def lt(left, right):
     """Ordering: return -1 if left < right, 0 otherwise."""
     return left._values.from_bool(_bool_gt(right, left))
+
+
+###############################################################################
+# bitwise operators
+
+def not_(num):
+    """Bitwise NOT, -x-1."""
+    return num._values.new_integer().from_int(~num.to_int())
+
+def and_(left, right):
+    """Bitwise AND."""
+    return left._values.new_integer().from_int(
+        left.to_integer().to_int(unsigned=True) & right.to_integer().to_int(unsigned=True),
+        unsigned=True)
+
+def or_(left, right):
+    """Bitwise OR."""
+    return left._values.new_integer().from_int(
+        left.to_integer().to_int(unsigned=True) | right.to_integer().to_int(unsigned=True),
+        unsigned=True)
+
+def xor_(left, right):
+    """Bitwise XOR."""
+    return left._values.new_integer().from_int(
+        left.to_integer().to_int(unsigned=True) ^ right.to_integer().to_int(unsigned=True),
+        unsigned=True)
+
+def eqv_(left, right):
+    """Bitwise equivalence."""
+    return left._values.new_integer().from_int(
+        ~(left.to_integer().to_int(unsigned=True) ^ right.to_integer().to_int(unsigned=True)),
+        unsigned=True)
+
+def imp_(left, right):
+    """Bitwise implication."""
+    return left._values.new_integer().from_int(
+        (~left.to_integer().to_int(unsigned=True)) | right.to_integer().to_int(unsigned=True),
+        unsigned=True)
 
 
 ##############################################################################
