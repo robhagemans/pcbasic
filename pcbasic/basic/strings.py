@@ -20,10 +20,9 @@ class String(numbers.Value):
     sigil = '$'
     size = 3
 
-    def __init__(self, buf=None, values=None):
+    def __init__(self, buf, values):
         """Initialise the pointer"""
         numbers.Value.__init__(self, buf, values)
-        self._values = values
         self._stringspace = values._strings
 
     def length(self):

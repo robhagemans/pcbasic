@@ -165,7 +165,7 @@ class Session(object):
         # set up the SHELL command
         self.shell = shell.get_shell_manager(self.keyboard, self.screen, self.codepage, option_shell)
         # initialise random number generator
-        self.randomiser = rnd.RandomNumberGenerator()
+        self.randomiser = rnd.RandomNumberGenerator(self.values)
         # initialise system clock
         self.clock = clock.Clock()
         # initialise machine ports

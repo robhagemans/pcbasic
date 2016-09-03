@@ -20,9 +20,10 @@ class RandomNumberGenerator(object):
     _multiplier = 214013
     _increment = 2531011
 
-    def __init__(self):
+    def __init__(self, values):
         """Initialise the random number generator."""
         self.clear()
+        self._values = values
 
     def clear(self):
         """Reset the random number generator."""
@@ -49,21 +50,24 @@ class RandomNumberGenerator(object):
         # unpack to signed integer
         n = struct.unpack('<h', final_two)
         self._seed &= 0xff
-        self._get(1) # RND(1)
+        self._cycle(1) # RND(1)
         self._seed += n * self._step
         self._seed %= self._period
 
     def rnd(self, f=None):
         """Get a value from the random number generator."""
         if f is None:
-            return self._get(1)
+            self._cycle(1)
         elif f.is_zero():
-            return self._get(0)
+            self._cycle(0)
         else:
             # use integer value of mantissa
-            return self._get(f.mantissa())
+            self._cycle(f.mantissa())
+        # seed/period
+        return numbers.Single(None, self._values).from_int(self._seed).idiv(
+                    numbers.Single(None, self._values).from_int(self._period))
 
-    def _get(self, n):
+    def _cycle(self, n):
         """Get a value from the random number generator (int argument)."""
         if n < 0:
             n = -n
@@ -72,5 +76,3 @@ class RandomNumberGenerator(object):
             self._seed = n
         if n != 0:
             self._seed = (self._seed*self._multiplier + self._increment) % self._period
-        # seed/period
-        return numbers.Single().from_int(self._seed).idiv(numbers.Single().from_int(self._period))

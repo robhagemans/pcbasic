@@ -152,7 +152,7 @@ class DataSegment(object):
         for name, value in common.iteritems():
             if name[-1] == '$':
                 length, address = self.strings.copy_to(string_store, *value.to_pointer())
-                value = strings.String(values=self.values).from_pointer(length, address)
+                value = strings.String(None, self.values).from_pointer(length, address)
             self.scalars.set(name, value)
 
     def get_free(self):

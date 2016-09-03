@@ -216,7 +216,7 @@ class Functions(object):
         if z and not cmode.is_text_mode:
             return self.values.null(values.INT)
         else:
-            return numbers.Integer().from_int(self.session.screen.apage.get_char_attr(row, col, z!=0))
+            return self.values.from_value(self.session.screen.apage.get_char_attr(row, col, z!=0), values.INT)
 
     def value_input(self, ins):
         """INPUT$: get characters from the keyboard or a file."""
@@ -246,7 +246,7 @@ class Functions(object):
                 row < self.session.screen.scroll_height):
             # in overflow position, return row+1 except on the last row
             row += 1
-        return numbers.Integer().from_int(row)
+        return self.values.from_value(row, values.INT)
 
     def value_pos(self, ins):
         """POS: get the current screen column."""
@@ -256,7 +256,7 @@ class Functions(object):
         if col == self.session.screen.mode.width and self.session.screen.overflow:
             # in overflow position, return column 1.
             col = 1
-        return numbers.Integer().from_int(col)
+        return self.values.from_value(col, values.INT)
 
     def value_lpos(self, ins):
         """LPOS: get the current printer column."""
@@ -264,9 +264,8 @@ class Functions(object):
         error.range_check(0, 3, num)
         printer = self.session.devices.devices['LPT' + max(1, num) + ':']
         if printer.device_file:
-            return numbers.Integer().from_int(printer.device_file.col)
-        else:
-            return numbers.Integer().from_int(1)
+            return self.values.from_value(printer.device_file.col, values.INT)
+        return self.values.from_value(1, values.INT)
 
     ######################################################################
     # file access
@@ -383,10 +382,12 @@ class Functions(object):
             util.require_read(ins, (')',))
             if screen.mode.is_text_mode:
                 raise error.RunError(error.IFC)
-            return numbers.Integer().from_int(screen.drawing.point(
-                            (self.values.to_value(self.values.to_single(arg0)),
-                             self.values.to_value(self.values.to_single(arg1)), False)
-                             ))
+            return self.values.from_value(
+                            screen.drawing.point((
+                                self.values.to_value(self.values.to_single(arg0)),
+                                self.values.to_value(self.values.to_single(arg1)),
+                                False)
+                            ), values.INT)
         else:
             # single-argument mode
             util.require_read(ins, (')',))
@@ -394,9 +395,9 @@ class Functions(object):
                 x, y = screen.drawing.last_point
                 fn = self.values.to_int(arg0)
                 if fn == 0:
-                    return numbers.Integer().from_int(x)
+                    return self.values.from_value(x, values.INT)
                 elif fn == 1:
-                    return numbers.Integer().from_int(y)
+                    return self.values.from_value(y, values.INT)
                 elif fn == 2:
                     fx, _ = screen.drawing.get_window_logical(x, y)
                     return self.values.from_value(fx, '!')
@@ -419,10 +420,10 @@ class Functions(object):
             return self.values.null(values.INT)
         if mode == 0:
             value, _ = screen.drawing.get_window_physical(self.values.to_value(self.values.to_single(coord)), 0.)
-            return numbers.Integer().from_int(value)
+            return self.values.from_value(value, values.INT)
         elif mode == 1:
             _, value = screen.drawing.get_window_physical(0., self.values.to_value(self.values.to_single(coord)))
-            return numbers.Integer().from_int(value)
+            return self.values.from_value(value, values.INT)
         elif mode == 2:
             value, _ = screen.drawing.get_window_logical(self.values.to_int(coord), 0)
             return self.values.from_value(value, '!')
@@ -439,7 +440,7 @@ class Functions(object):
         error.range_check(0, 255, voice)
         if not(self.parser.syntax in ('pcjr', 'tandy') and voice in (1, 2)):
             voice = 0
-        return numbers.Integer().from_int(self.session.sound.queue_length(voice))
+        return self.values.from_value(self.session.sound.queue_length(voice), values.INT)
 
     #####################################################################
     # error functions
@@ -456,7 +457,7 @@ class Functions(object):
 
     def value_err(self, ins):
         """ERR: get error code of last error."""
-        return numbers.Integer().from_int(self.parser.error_num)
+        return self.values.from_value(self.parser.error_num, values.INT)
 
     #####################################################################
     # pen, stick and strig
@@ -469,13 +470,13 @@ class Functions(object):
         if pen is None or not self.session.events.pen.enabled:
             # should return 0 or char pos 1 if PEN not ON
             pen = 1 if fn >= 6 else 0
-        return numbers.Integer().from_int(pen)
+        return self.values.from_value(pen, values.INT)
 
     def value_stick(self, ins):
         """STICK: poll the joystick."""
         fn = self.values.to_int(self.parser.parse_bracket(ins))
         error.range_check(0, 3, fn)
-        return numbers.Integer().from_int(self.session.stick.poll(fn))
+        return self.values.from_value(self.session.stick.poll(fn), values.INT)
 
     def value_strig(self, ins):
         """STRIG: poll the joystick fire button."""
@@ -500,7 +501,7 @@ class Functions(object):
         addr = self.values.to_int(self.parser.parse_bracket(ins), unsigned=True)
         if self.session.program.protected and not self.parser.run_mode:
             raise error.RunError(error.IFC)
-        return numbers.Integer().from_int(self.session.all_memory.peek(addr))
+        return self.values.from_value(self.session.all_memory.peek(addr), values.INT)
 
     def value_varptr(self, ins):
         """VARPTR, VARPTR$: get memory address for variable or FCB."""
@@ -519,7 +520,7 @@ class Functions(object):
             var_ptr_str = struct.pack('<BH', values.size_bytes(name), var_ptr)
             return self.values.from_value(var_ptr_str, values.STR)
         else:
-            return numbers.Integer().from_int(var_ptr, unsigned=True)
+            return numbers.Integer(None, self.values).from_int(var_ptr, unsigned=True)
 
     def value_usr(self, ins):
         """USR: get value of machine-code function; not implemented."""
@@ -531,7 +532,7 @@ class Functions(object):
     def value_inp(self, ins):
         """INP: get value from machine port."""
         port = self.values.to_int(self.parser.parse_bracket(ins), unsigned=True)
-        return numbers.Integer().from_int(self.session.machine.inp(port))
+        return numbers.Integer(None, self.values).from_int(self.session.machine.inp(port), unsigned=True)
 
     def value_erdev(self, ins):
         """ERDEV$: device error string; not implemented."""

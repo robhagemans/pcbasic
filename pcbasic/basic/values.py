@@ -21,7 +21,6 @@ from . import util
 from . import basictoken as tk
 from . import numbers
 from . import strings
-from .numbers import float_safe
 
 
 # BASIC type sigils:
@@ -66,13 +65,79 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
 
 
 ###############################################################################
+# error handling
+
+def float_safe(fn):
+    """Decorator to handle floating point errors."""
+    def wrapped_fn(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except (ValueError, ArithmeticError) as e:
+            return args[0]._float_error_handler.handle(e)
+    return wrapped_fn
+
+def float_safe_method(fn):
+    """Decorator to handle floating point errors."""
+    def wrapped_fn(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except (ValueError, ArithmeticError) as e:
+            return self._float_error_handler.handle(e)
+    return wrapped_fn
+
+
+class FloatErrorHandler(object):
+    """Handles floating point errors."""
+
+    # types of errors that do not always interrupt execution
+    soft_types = (error.OVERFLOW, error.DIVISION_BY_ZERO)
+
+    def __init__(self, screen):
+        """Setup handler."""
+        self._screen = screen
+        self._do_raise = False
+
+    def pause_handling(self, do_raise):
+        """Pause local handling of floating point errors."""
+        self._do_raise = do_raise
+
+    def handle(self, e):
+        """Handle Overflow or Division by Zero."""
+        if isinstance(e, ValueError):
+            # math domain errors such as SQR(-1)
+            math_error = error.IFC
+        elif isinstance(e, OverflowError):
+            math_error = error.OVERFLOW
+        elif isinstance(e, ZeroDivisionError):
+            math_error = error.DIVISION_BY_ZERO
+        else:
+            raise e
+        if (self._do_raise or self._screen is None or
+                math_error not in self.soft_types):
+            # also raises exception in error_handle_mode!
+            # in that case, prints a normal error message
+            raise error.RunError(math_error)
+        else:
+            # write a message & continue as normal
+            self._screen.write_line(error.RunError(math_error).message)
+        # return max value for the appropriate float type
+        if e.args and e.args[0]:
+            if isinstance(e.args[0], numbers.Float):
+                return e.args[0]
+            elif isinstance(e.args[0], numbers.Integer):
+                # integer values are not soft-handled
+                raise error.RunError(math_error)
+        return Single.pos_max
+
+
+###############################################################################
 
 class Values(object):
     """Handles BASIC strings and numbers."""
 
     def __init__(self, screen, string_space, double_math):
         """Setup values."""
-        self._float_error_handler = numbers.FloatErrorHandler(screen)
+        self._float_error_handler = FloatErrorHandler(screen)
         self._strings = string_space
         # double-precision EXP, SIN, COS, TAN, ATN, LOG
         self._double_math = double_math
@@ -81,22 +146,31 @@ class Values(object):
         """Suspend floating-point soft error handling."""
         self._float_error_handler.pause_handling(do_pause)
 
+    def create(self, buf):
+        """Create new variable object with buffer provided."""
+        # this sets a view, not a copy
+        return SIZE_TO_CLASS[len(buf)](buf, self)
+
+    def null(self, sigil):
+        """Return newly allocated value of the given type with zeroed buffer."""
+        return TYPE_TO_CLASS[sigil](None, self)
+
     ###########################################################################
     # convert between BASIC and Python values
 
-    @float_safe
+    @float_safe_method
     def to_value(self, basic_val):
         """Convert BASIC value to Python value."""
         return basic_val.to_value()
 
-    @float_safe
+    @float_safe_method
     def from_value(self, python_val, typechar):
         """Convert Python value to BASIC value."""
-        return TYPE_TO_CLASS[typechar](values=self).from_value(python_val)
+        return TYPE_TO_CLASS[typechar](None, self).from_value(python_val)
 
     def from_str_at(self, python_str, address):
         """Convert str to String at given address."""
-        return strings.String(values=self).from_pointer(
+        return strings.String(None, self).from_pointer(
             *self._strings.store(python_str, address))
 
     # NOTE that this function will overflow if outside the range of Integer
@@ -108,8 +182,8 @@ class Values(object):
     def from_bool(self, boo):
         """Convert Python boolean to Integer."""
         if boo:
-            return numbers.Integer().from_bytes('\xff\xff')
-        return numbers.Integer()
+            return numbers.Integer(None, self).from_bytes('\xff\xff')
+        return numbers.Integer(None, self)
 
     def to_bool(self, basic_value):
         """Convert Integer to Python boolean."""
@@ -127,40 +201,44 @@ class Values(object):
     def from_bytes(self, token_bytes):
         """Convert internal byte representation to BASIC value."""
         # make a copy, not a view
-        return SIZE_TO_CLASS[len(token_bytes)](values=self).from_bytes(token_bytes)
+        return SIZE_TO_CLASS[len(token_bytes)](None, self).from_bytes(token_bytes)
 
-    def create(self, buf):
-        """Create new variable object with buffer provided."""
-        # this sets a view, not a copy
-        return SIZE_TO_CLASS[len(buf)](buf, values=self)
-
-    def null(self, sigil):
-        """Return newly allocated value of the given type with zeroed buffer."""
-        return TYPE_TO_CLASS[sigil](values=self)
+    def from_token(self, token):
+        """Convert number token to new Number temporary"""
+        if not token:
+            raise ValueError('Token must not be empty')
+        lead = bytes(token)[0]
+        if lead == tk.T_SINGLE:
+            return numbers.Single(None, self).from_token(token)
+        elif lead == tk.T_DOUBLE:
+            return numbers.Double(None, self).from_token(token)
+        elif lead in tk.number:
+            return numbers.Integer(None, self).from_token(token)
+        raise ValueError('%s is not a number token' % repr(token))
 
     ###########################################################################
     # representations
 
-    @float_safe
+    @float_safe_method
     def from_str(self, word, allow_nonnum, typechar=None):
         """Convert decimal str representation to number."""
         # keep as string if typechar asks for it, ignore typechar otherwise
         # FIXME: typechar is only used in INPUT and should be replaced
         # by creating the desired variable and then filling it with its class from_str
         if typechar == STR:
-            return strings.String(buf=None, values=self).from_str(word)
+            return strings.String(None, self).from_str(word)
         # skip spaces and line feeds (but not NUL).
         word = word.lstrip(' \n').upper()
         if not word:
-            return numbers.Integer().from_int(0)
+            return numbers.Integer(None, self).from_int(0)
         if word[:2] == '&H':
-            return numbers.Integer().from_hex(word[2:])
+            return numbers.Integer(None, self).from_hex(word[2:])
         elif word[:1] == '&':
-            return numbers.Integer().from_oct(word[2:] if word[1:2] == 'O' else word[1:])
+            return numbers.Integer(None, self).from_oct(word[2:] if word[1:2] == 'O' else word[1:])
         # we need to try to convert to int first,
         # mainly so that the tokeniser can output the right token type
         try:
-            return numbers.Integer().from_str(word)
+            return numbers.Integer(None, self).from_str(word)
         except ValueError as e:
             # non-integer characters, try a float
             pass
@@ -170,8 +248,8 @@ class Values(object):
         # if allow_nonnum == False, raises ValueError for non-numerical characters
         is_double, mantissa, exp10 = numbers.str_to_decimal(word, allow_nonnum)
         if is_double:
-            return numbers.Double().from_decimal(mantissa, exp10)
-        return numbers.Single().from_decimal(mantissa, exp10)
+            return numbers.Double(None, self).from_decimal(mantissa, exp10)
+        return numbers.Single(None, self).from_decimal(mantissa, exp10)
 
     @staticmethod
     def to_str(inp, leading_space, type_sign):
@@ -195,24 +273,24 @@ class Values(object):
             raise error.RunError(error.TYPE_MISMATCH)
         return inp.to_integer(unsigned)
 
-    @float_safe
+    @float_safe_method
     def to_single(self, num):
         """Check if variable is numeric, convert to Single."""
         if isinstance(num, strings.String):
             raise error.RunError(error.TYPE_MISMATCH)
         elif isinstance(num, numbers.Integer):
-            return numbers.Single().from_integer(num)
+            return numbers.Single(None, self).from_integer(num)
         return num.to_single()
 
-    @float_safe
+    @float_safe_method
     def to_double(self, num):
         """Check if variable is numeric, convert to Double."""
         if isinstance(num, strings.String):
             raise error.RunError(error.TYPE_MISMATCH)
         elif isinstance(num, numbers.Integer):
-            return numbers.Double().from_integer(num)
+            return numbers.Double(None, self).from_integer(num)
         elif isinstance(num, numbers.Single):
-            return numbers.Double().from_single(num)
+            return numbers.Double(None, self).from_single(num)
         return num
 
     def to_float(self, num, allow_double=True):
@@ -259,17 +337,17 @@ class Values(object):
     ###############################################################################
     # math functions
 
-    @float_safe
+    @float_safe_method
     def _call_float_function(self, fn, *args):
         """Convert to IEEE 754, apply function, convert back."""
         args = [self.to_float(arg, self._double_math) for arg in args]
         floatcls = args[0].__class__
         try:
             args = (arg.to_value() for arg in args)
-            return floatcls().from_value(fn(*args))
+            return floatcls(None, self).from_value(fn(*args))
         except ArithmeticError as e:
             # positive infinity of the appropriate class
-            raise e.__class__(floatcls.pos_max)
+            raise e.__class__(floatcls(None, self).from_bytes(floatcls.pos_max))
 
     def sqr(self, x):
         """Square root."""
@@ -303,7 +381,7 @@ class Values(object):
 
     def sgn(self, x):
         """Sign."""
-        return numbers.Integer().from_int(pass_number(x).sign())
+        return numbers.Integer(None, self).from_int(pass_number(x).sign())
 
     def floor(self, x):
         """Truncate towards negative infinity (INT)."""
@@ -317,7 +395,7 @@ class Values(object):
     ###############################################################################
     # numeric operators
 
-    @float_safe
+    @float_safe_method
     def add(self, left, right):
         """Add two numbers or concatenate two strings."""
         if isinstance(left, numbers.Number):
@@ -326,7 +404,7 @@ class Values(object):
         left, right = self.match_types(left, right)
         return left.clone().iadd(right)
 
-    @float_safe
+    @float_safe_method
     def subtract(self, left, right):
         """Subtract two numbers."""
         return self.add(pass_number(left), self.negate(right))
@@ -347,7 +425,7 @@ class Values(object):
         # promote Integer to Single to avoid integer overflow on -32768
         return self.to_float(inp).clone().ineg()
 
-    @float_safe
+    @float_safe_method
     def power(self, left, right):
         """Left^right."""
         if self._double_math and (
@@ -358,7 +436,7 @@ class Values(object):
         else:
             return self._call_float_function(lambda a, b: a**b, self.to_single(left), self.to_single(right))
 
-    @float_safe
+    @float_safe_method
     def multiply(self, left, right):
         """Left*right."""
         if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
@@ -366,56 +444,48 @@ class Values(object):
         else:
             return self.to_single(left).clone().imul(self.to_single(right))
 
-    @float_safe
-    def divide(self, left, right):
-        """Left/right."""
-        if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
-            return self.to_double(left).clone().idiv(self.to_double(right))
-        else:
-            return self.to_single(left).clone().idiv(self.to_single(right))
-
-    @float_safe
+    @float_safe_method
     def divide_int(self, left, right):
         """Left\\right."""
         return left.to_integer().clone().idiv_int(right.to_integer())
 
-    @float_safe
+    @float_safe_method
     def mod(self, left, right):
         """Left modulo right."""
         return left.to_integer().clone().imod(right.to_integer())
 
     def bitwise_not(self, right):
         """Bitwise NOT, -x-1."""
-        return numbers.Integer().from_int(-right.to_int()-1)
+        return numbers.Integer(None, self).from_int(-right.to_int()-1)
 
     def bitwise_and(self, left, right):
         """Bitwise AND."""
-        return numbers.Integer().from_int(
+        return numbers.Integer(None, self).from_int(
             left.to_integer().to_int(unsigned=True) &
             right.to_integer().to_int(unsigned=True), unsigned=True)
 
     def bitwise_or(self, left, right):
         """Bitwise OR."""
-        return numbers.Integer().from_int(
+        return numbers.Integer(None, self).from_int(
             left.to_integer().to_int(unsigned=True) |
             right.to_integer().to_int(unsigned=True), unsigned=True)
 
     def bitwise_xor(self, left, right):
         """Bitwise XOR."""
-        return numbers.Integer().from_int(
+        return numbers.Integer(None, self).from_int(
             left.to_integer().to_int(unsigned=True) ^
             right.to_integer().to_int(unsigned=True), unsigned=True)
 
     def bitwise_eqv(self, left, right):
         """Bitwise equivalence."""
-        return numbers.Integer().from_int(0xffff - (
+        return numbers.Integer(None, self).from_int(0xffff - (
                 left.to_integer().to_int(unsigned=True) ^
                 right.to_integer().to_int(unsigned=True)
             ), unsigned=True)
 
     def bitwise_imp(self, left, right):
         """Bitwise implication."""
-        return numbers.Integer().from_int(
+        return numbers.Integer(None, self).from_int(
                 (0xffff - left.to_integer().to_int(unsigned=True)) |
                 right.to_integer().to_int(unsigned=True),
             unsigned=True)
@@ -482,19 +552,19 @@ class Values(object):
 
     def mki(self, x):
         """MKI$: return the byte representation of an int."""
-        return strings.String(buf=None, values=self).from_str(self.to_bytes(self.to_integer(x)))
+        return strings.String(None, self).from_str(self.to_bytes(self.to_integer(x)))
 
     def mks(self, x):
         """MKS$: return the byte representation of a single."""
-        return strings.String(buf=None, values=self).from_str(self.to_bytes(self.to_single(x)))
+        return strings.String(None, self).from_str(self.to_bytes(self.to_single(x)))
 
     def mkd(self, x):
         """MKD$: return the byte representation of a double."""
-        return strings.String(buf=None, values=self).from_str(self.to_bytes(self.to_double(x)))
+        return strings.String(None, self).from_str(self.to_bytes(self.to_double(x)))
 
     def representation(self, x):
         """STR$: string representation of a number."""
-        return strings.String(buf=None, values=self).from_str(
+        return strings.String(None, self).from_str(
                     self.to_str(pass_number(x), leading_space=True, type_sign=False))
 
     def val(self, x):
@@ -505,19 +575,19 @@ class Values(object):
         """CHR$: character for ASCII value."""
         val = self.to_int(x)
         error.range_check(0, 255, val)
-        return strings.String(buf=None, values=self).from_str(chr(val))
+        return strings.String(None, self).from_str(chr(val))
 
     def octal(self, x):
         """OCT$: octal representation of int."""
         # allow range -32768 to 65535
         val = self.to_integer(x, unsigned=True)
-        return strings.String(buf=None, values=self).from_str(val.to_oct())
+        return strings.String(None, self).from_str(val.to_oct())
 
     def hexadecimal(self, x):
         """HEX$: hexadecimal representation of int."""
         # allow range -32768 to 65535
         val = self.to_integer(x, unsigned=True)
-        return strings.String(buf=None, values=self).from_str(val.to_hex())
+        return strings.String(None, self).from_str(val.to_hex())
 
 
     ######################################################################
@@ -533,4 +603,17 @@ class Values(object):
 
     def space(self, num):
         """SPACE$: repeat spaces."""
-        return strings.String(buf=None, values=self).space(num)
+        return strings.String(None, self).space(num)
+
+
+
+##############################################################################
+# binary operations
+
+@float_safe
+def div(left, right):
+    """Left/right."""
+    if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
+        return left.to_double().clone().idiv(right.to_double())
+    else:
+        return left.to_single().clone().idiv(right.to_single())

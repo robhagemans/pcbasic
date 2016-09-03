@@ -62,7 +62,7 @@ class Operators(object):
         self.binary = {
             tk.O_CARET: self._values.power,
             tk.O_TIMES: self._values.multiply,
-            tk.O_DIV: self._values.divide,
+            tk.O_DIV: values.div,
             tk.O_INTDIV: self._values.divide_int,
             tk.MOD: self._values.mod,
             tk.O_PLUS: self._values.add,
