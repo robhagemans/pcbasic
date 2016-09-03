@@ -349,7 +349,7 @@ class Tokeniser(object):
         ins.seek(-len(word)+len(trimword), 1)
         # remove all internal whitespace
         word = trimword.strip(numbers.BLANKS)
-        return self._values.from_str(word, allow_nonnum=False).to_token()
+        return self._values.from_repr(word, allow_nonnum=False).to_token()
 
     def _tokenise_hex(self, ins):
         """Convert hex expression in Python string to number token."""

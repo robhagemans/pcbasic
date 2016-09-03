@@ -119,7 +119,7 @@ class Debugger(BaseDebugger):
                 if isinstance(val, strings.String):
                     outstr += '"' + val.to_str() + '"'
                 else:
-                    outstr += self.session.values.to_str(val, leading_space=False, type_sign=True)
+                    outstr += values.to_repr(val, leading_space=False, type_sign=True)
             except Exception as e:
                 logging.debug(str(type(e))+' '+str(e))
                 traceback.print_tb(sys.exc_info()[2])

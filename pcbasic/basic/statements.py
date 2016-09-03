@@ -1928,7 +1928,7 @@ class Statements(object):
                     address = None
                 value = self.values.from_str_at(entry, address)
             else:
-                value = self.values.from_str(entry, allow_nonnum=False)
+                value = self.values.from_repr(entry, allow_nonnum=False)
                 if value is None:
                     # set pointer for EDIT gadget to position in DATA statement
                     self.parser.program_code.seek(self.parser.data_pos)
@@ -1965,7 +1965,7 @@ class Statements(object):
             for v in self._parse_var_list(ins):
                 name, indices = v
                 word, _ = finp.input_entry(name[-1], allow_past_end=False)
-                value = self.values.from_str(word, allow_nonnum=False, typechar=name[-1])
+                value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1])
                 if value is None:
                     value = self.values.null(name[-1])
                 self.session.memory.set_variable(name, indices, value)
@@ -2082,7 +2082,7 @@ class Statements(object):
             while val is None:
                 self.session.screen.write("Random number seed (-32768 to 32767)? ")
                 seed = self.session.editor.wait_screenline()
-                val = self.values.from_str(seed, allow_nonnum=False)
+                val = self.values.from_repr(seed, allow_nonnum=False)
             # seed entered on prompt is rounded to int
             val = values.cint_(val)
         self.session.randomiser.randomize(val)
@@ -2352,7 +2352,7 @@ class Statements(object):
                     with self.session.strings:
                         outstr += '"' + expr.to_str() + '"'
                 else:
-                    outstr += self.values.to_str(expr, leading_space=False, type_sign=False)
+                    outstr += values.to_repr(expr, leading_space=False, type_sign=False)
                 if util.skip_white_read_if(ins, (',', ';')):
                     outstr += ','
                 else:
@@ -2400,7 +2400,7 @@ class Statements(object):
                     expr = self.parser.parse_expression(ins)
                     # numbers always followed by a space
                     if isinstance(expr, numbers.Number):
-                        word = self.values.to_str(expr, leading_space=True, type_sign=False) + ' '
+                        word = values.to_repr(expr, leading_space=True, type_sign=False) + ' '
                     else:
                         word = expr.to_str()
                 # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.

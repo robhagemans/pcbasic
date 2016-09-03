@@ -250,28 +250,26 @@ class Values(object):
         raise ValueError('%s is not a number token' % repr(token))
 
     ###########################################################################
-    # representations
+    # create value from string representations
 
     @float_safe
-    def from_str(self, word, allow_nonnum, typechar=None):
-        """Convert decimal str representation to number."""
+    def from_repr(self, word, allow_nonnum, typechar=None):
+        """Convert representation to value."""
         # keep as string if typechar asks for it, ignore typechar otherwise
-        # FIXME: typechar is only used in INPUT and should be replaced
-        # by creating the desired variable and then filling it with its class from_str
         if typechar == STR:
-            return strings.String(None, self).from_str(word)
+            return self.new_string().from_str(word)
         # skip spaces and line feeds (but not NUL).
         word = word.lstrip(' \n').upper()
         if not word:
-            return numbers.Integer(None, self).from_int(0)
+            return self.new_integer()
         if word[:2] == '&H':
-            return numbers.Integer(None, self).from_hex(word[2:])
+            return self.new_integer().from_hex(word[2:])
         elif word[:1] == '&':
-            return numbers.Integer(None, self).from_oct(word[2:] if word[1:2] == 'O' else word[1:])
+            return self.new_integer().from_oct(word[2:] if word[1:2] == 'O' else word[1:])
         # we need to try to convert to int first,
         # mainly so that the tokeniser can output the right token type
         try:
-            return numbers.Integer(None, self).from_str(word)
+            return self.new_integer().from_str(word)
         except ValueError as e:
             # non-integer characters, try a float
             pass
@@ -281,33 +279,8 @@ class Values(object):
         # if allow_nonnum == False, raises ValueError for non-numerical characters
         is_double, mantissa, exp10 = numbers.str_to_decimal(word, allow_nonnum)
         if is_double:
-            return numbers.Double(None, self).from_decimal(mantissa, exp10)
-        return numbers.Single(None, self).from_decimal(mantissa, exp10)
-
-    @staticmethod
-    def to_str(inp, leading_space, type_sign):
-        """Convert BASIC number to Python str."""
-        # PRINT, STR$ - yes leading space, no type sign
-        # WRITE - no leading space, no type sign
-        # LIST - no loading space, yes type sign
-        if isinstance(inp, numbers.Number):
-            return inp.to_str(leading_space, type_sign)
-        elif isinstance(inp, strings.String):
-            raise error.RunError(error.TYPE_MISMATCH)
-        raise TypeError('%s is not of class Value' % type(inp))
-
-
-    ##########################################################################
-    # conversion between numbers and strings
-
-    def representation(self, x):
-        """STR$: string representation of a number."""
-        return strings.String(None, self).from_str(
-                    self.to_str(pass_number(x), leading_space=True, type_sign=False))
-
-    def val(self, x):
-        """VAL: number value of a string."""
-        return self.from_str(pass_string(x).to_str(), allow_nonnum=True)
+            return self.new_double().from_decimal(mantissa, exp10)
+        return self.new_single().from_decimal(mantissa, exp10)
 
 
 @float_safe
@@ -521,6 +494,26 @@ def log_(x):
 ######################################################################
 # string representations and characteristics
 
+def to_repr(inp, leading_space, type_sign):
+    """Convert BASIC number to Python str representation."""
+    # PRINT, STR$ - yes leading space, no type sign
+    # WRITE - no leading space, no type sign
+    # LIST - no loading space, yes type sign
+    if isinstance(inp, numbers.Number):
+        return inp.to_str(leading_space, type_sign)
+    elif isinstance(inp, strings.String):
+        raise error.RunError(error.TYPE_MISMATCH)
+    raise TypeError('%s is not of class Value' % type(inp))
+
+def str_(x):
+    """STR$: string representation of a number."""
+    return x._values.new_string().from_str(
+                to_repr(pass_number(x), leading_space=True, type_sign=False))
+
+def val_(x):
+    """VAL: number value of a string."""
+    return x._values.from_repr(pass_string(x).to_str(), allow_nonnum=True)
+
 def len_(s):
     """LEN: length of string."""
     return pass_string(s).len()
@@ -550,6 +543,7 @@ def hex_(x):
     # allow range -32768 to 65535
     val = cint_(x, unsigned=True)
     return x._values.new_string().from_str(val.to_hex())
+
 
 ##############################################################################
 # binary operations
