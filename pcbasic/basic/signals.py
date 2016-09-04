@@ -58,7 +58,7 @@ class NullQueue(object):
 class Event(object):
     """Signal object for input, video or audio queue."""
 
-    def __init__(self, event_type, params=None):
+    def __init__(self, event_type, params=()):
         """Create signal."""
         self.event_type = event_type
         self.params = params
@@ -127,6 +127,10 @@ KEYB_CHAR = 4
 KEYB_DOWN = 5
 # insert keyup
 KEYB_UP = 6
+# redirect or stdio input
+STREAM_CHAR = 7
+# redirect or stdio closed
+STREAM_CLOSED = 8
 # light pen events
 PEN_DOWN = 101
 PEN_UP = 102

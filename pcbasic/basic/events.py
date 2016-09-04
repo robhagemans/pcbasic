@@ -114,12 +114,6 @@ class Events(object):
     def _check_input(self):
         """Handle input events."""
         while True:
-            # drain redirect streams
-            in_str = self.session.input_redirection.read()
-            if in_str:
-                self.session.keyboard.insert_chars(in_str, check_full=False)
-            if self.session.input_redirection.is_closed():
-                self.session.keyboard.close_input()
             # pop input queues
             try:
                 signal = self.session.input_queue.get(False)
@@ -140,6 +134,10 @@ class Events(object):
                 self.session.keyboard.key_down(*signal.params)
             elif signal.event_type == signals.KEYB_UP:
                 self.session.keyboard.key_up(*signal.params)
+            elif signal.event_type == signals.STREAM_CHAR:
+                self.session.keyboard.insert_chars(*signal.params, check_full=False)
+            elif signal.event_type == signals.STREAM_CLOSED:
+                self.session.keyboard.close_input()
             elif signal.event_type == signals.PEN_DOWN:
                 self.session.pen.down(*signal.params)
             elif signal.event_type == signals.PEN_UP:

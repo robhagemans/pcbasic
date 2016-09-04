@@ -10,6 +10,7 @@ import sys
 import logging
 import platform
 import io
+import Queue
 from contextlib import contextmanager
 
 from . import error
@@ -67,7 +68,7 @@ class Session(object):
         if iface:
             self.input_queue, self.video_queue, self.audio_queue = iface.get_queues()
         else:
-            self.input_queue = signals.NullQueue()
+            self.input_queue = Queue.Queue()
             self.video_queue = signals.NullQueue()
             self.audio_queue = signals.NullQueue()
         # true if a prompt is needed on next cycle
@@ -85,7 +86,7 @@ class Session(object):
         self.codepage = cp.Codepage(codepage, box_protect)
         # prepare I/O redirection
         self.input_redirection, self.output_redirection = redirect.get_redirection(
-                self.codepage, stdio, input_file, output_file, append)
+                self.codepage, stdio, input_file, output_file, append, self.input_queue)
         # set up event handlers
         self.events = events.Events(self, syntax)
         # initialise sound queue
