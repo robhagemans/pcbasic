@@ -73,7 +73,8 @@ class Scalars(object):
     def get(self, name):
         """Retrieve the value of a scalar variable."""
         try:
-            return self._values.from_bytes(self._vars[name])
+            # we can't copy as we may end up with stale string pointers
+            return self._values.create(self._vars[name])
         except KeyError:
             return self._values.new(name[-1])
 

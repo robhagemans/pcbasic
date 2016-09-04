@@ -158,9 +158,10 @@ class Arrays(object):
         return memoryview(lst)[bigindex*bytesize:(bigindex+1)*bytesize]
 
     def get(self, name, index):
-        """Retrieve a copy of the value of an array element."""
-        # from_bytes makes the copy
-        return self._values.from_bytes(self.view_buffer(name, index))
+        """Retrieve a view of the value of an array element."""
+        # do not make a copy - we may end up with stale string pointers
+        # due to garbage collection
+        return self._values.create(self.view_buffer(name, index))
 
     def set(self, name, index, value):
         """Assign a value to an array element."""

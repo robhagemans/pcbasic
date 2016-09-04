@@ -544,12 +544,19 @@ def add(left, right):
         # promote Integer to Single to avoid integer overflow
         left = left.to_float()
     left, right = match_types(left, right)
-    return left.clone().iadd(right)
+    # note that we can't call iadd here, as it breaks with strings
+    # since between copy and dereference the address may change due to garbage collection
+    # it may be better to define non-in-place operators for everything
+    return left.add(right)
 
 @float_safe
 def sub(left, right):
     """Subtract two numbers."""
-    return add(pass_number(left), neg(right))
+    if isinstance(left, strings.String) or isinstance(right, strings.String):
+        raise error.RunError(error.TYPE_MISMATCH)
+    # promote Integer to Single to avoid integer overflow
+    left, right = match_types(left.to_float(), right)
+    return left.clone().isub(right)
 
 
 @float_safe

@@ -113,6 +113,12 @@ class Number(Value):
     def to_float(self, allow_double=True):
         """Convert to float."""
 
+    def add(self, rhs):
+        """Add another Number."""
+        return self.clone().iadd(rhs)
+
+    def iadd(self, rhs):
+        """Add another Number, in-place."""
 
 
 ##############################################################################

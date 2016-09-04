@@ -56,9 +56,9 @@ class String(numbers.Value):
     to_value = dereference
     to_str = dereference
 
-    def iadd(self, right):
+    def add(self, right):
         """Concatenate strings. In-place for the pointer."""
-        return self.from_str(self.dereference() + right.dereference())
+        return self.new().from_str(self.dereference() + right.dereference())
 
     def eq(self, right):
         """This string equals the right-hand side."""
@@ -204,7 +204,7 @@ class StringSpace(object):
 
     def __str__(self):
         """Debugging representation of string table."""
-        return '\n'.join('%x: %s' % (n, v) for n, v in self._strings.iteritems())
+        return '\n'.join('%x: %s' % (n, repr(v)) for n, v in self._strings.iteritems())
 
     def clear(self):
         """Empty string space."""
