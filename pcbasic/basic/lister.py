@@ -42,17 +42,18 @@ class Lister(object):
 
     def detokenise_line_number(self, ins):
         """Parse line number and leave pointer at first char of line."""
+        trail = ins.read(4)
+        linum = self.token_to_line_number(trail)
         # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00
-        off = ins.read(2)
-        if off == '\0\0' or len(off) < 2:
-            ins.seek(-len(off), 1)
+        if linum == -1:
+            ins.seek(-len(trail), 1)
+        return linum
+
+    def token_to_line_number(self, trail):
+        """Unpack a line number token trail, -1 if end of program."""
+        if len(trail) < 4 or trail[:2] == '\0\0':
             return -1
-        off = ins.read(2)
-        if len(off) < 2:
-            ins.seek(-len(off)-2, 1)
-            return -1
-        else:
-            return struct.unpack('<H', off)[0]
+        return struct.unpack_from('<H', trail, 2)[0]
 
     def detokenise_compound_statement(self, ins, bytepos=None):
         """Detokenise tokens until end of line."""

@@ -31,6 +31,7 @@ class BaseDebugger(object):
 
     def __init__(self, session):
         """Initialise debugger."""
+        self.debug_tron = False
         self.session = session
 
     def bluescreen(self, e):
@@ -88,7 +89,7 @@ class BaseDebugger(object):
         screen.set_attr(7)
         self.session.parser.set_pointer(False)
 
-    def debug_step(self, linum):
+    def debug_step(self, token):
         """Dummy debug step."""
 
     def debug_exec(self, debug_cmd):
@@ -103,13 +104,13 @@ class Debugger(BaseDebugger):
     def __init__(self, session):
         """Initialise debugger."""
         BaseDebugger.__init__(self, session)
-        self.debug_tron = False
         self.watch_list = []
 
-    def debug_step(self, linum):
+    def debug_step(self, token):
         """Execute traces and watches on a program step."""
         outstr = ''
         if self.debug_tron:
+            linum = self.session.lister.token_to_line_number(token[1:])
             outstr += ('['+('%i' % linum) +']')
         for (expr, outs) in self.watch_list:
             outstr += (' ' + expr +' = ')

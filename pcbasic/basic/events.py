@@ -13,7 +13,7 @@ import Queue
 from . import scancode
 from . import signals
 from . import error
-from . import basictoken as tk
+from . import tokens as tk
 
 
 class Events(object):

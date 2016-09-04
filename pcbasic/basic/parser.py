@@ -65,29 +65,24 @@ class Parser(object):
                 ins = self.get_codestream()
                 self.current_statement = ins.tell()
                 c = util.skip_white(ins)
-                if c == '':
-                    # stream has ended
-                    self.set_pointer(False)
-                    return
                 # parse line number or : at start of statement
-                elif c == '\0':
-                    # save position for error message
-                    prepos = ins.tell()
-                    ins.read(1)
+                if c in tk.end_line:
                     # line number marker, new statement
-                    linenum = self.session.lister.detokenise_line_number(ins)
-                    if linenum == -1:
+                    token = ins.read(5)
+                    # end of program or truncated file
+                    if token[1:3] == '\0\0' or len(token) < 5:
                         if self.error_resume:
                             # unfinished error handler: no RESUME (don't trap this)
                             self.error_handle_mode = True
                             # get line number right
-                            raise error.RunError(error.NO_RESUME, prepos-1)
+                            raise error.RunError(error.NO_RESUME, ins.tell()-len(token)-1)
                         # stream has ended
                         self.set_pointer(False)
                         return
                     if self.tron:
+                        linenum = self.session.lister.token_to_line_number(token[1:])
                         self.session.screen.write('[' + ('%i' % linenum) + ']')
-                    self.session.debugger.debug_step(linenum)
+                    self.session.debugger.debug_step(token)
                 elif c == ':':
                     ins.read(1)
                 c = util.skip_white(ins)
