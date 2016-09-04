@@ -85,10 +85,10 @@ class InputRedirection(object):
                 self._input_streams.append(f)
                 self._lfcrs.append(lfcr)
                 self._encodings.append(encoding)
-        self._start_threads(queue)
+        self.attach(queue)
 
-    def _start_threads(self, queue):
-        """Start stream reader threads."""
+    def attach(self, queue):
+        """Attach input queue and start stream reader threads."""
         # allow None as well as empty list
         if not self._input_streams:
             return
@@ -112,7 +112,6 @@ class InputRedirection(object):
         # don't pickle the queues
         self.__dict__ = pickle_dict
         self._sources = []
-        self._start_threads()
 
     def _process_input(self, stream, queue, encoding, lfcr):
         """Process input from stream."""

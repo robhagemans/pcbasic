@@ -209,13 +209,18 @@ class Session(object):
 
     def attach(self, iface=None):
         """Attach interface to interpreter session."""
-        # use dummy queues if not provided
         if iface:
             self.input_queue, self.video_queue, self.audio_queue = iface.get_queues()
             # rebuild the screen
             self.screen.rebuild()
             # rebuild audio queues
             self.sound.rebuild()
+        else:
+            # use dummy video & audio queues if not provided
+            # but an input queue shouls be operational for redirects
+            self.input_queue = Queue.Queue
+        # attach input queue to redirects
+        self.input_redirection.attach(self.input_queue)
         return self
 
     def load_program(self, prog, rebuild_dict=True):
