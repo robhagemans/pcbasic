@@ -57,7 +57,6 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
         raise error.RunError(err)
     return inp
 
-
 ###############################################################################
 # type conversions
 
@@ -286,7 +285,7 @@ def cdbl_(num):
     return num.to_double()
 
 def to_type(typechar, value):
-    """Check if variable can be converted to the given type and convert."""
+    """Check if variable can be converted to the given type and convert if necessary."""
     if typechar == STR:
         return pass_string(value)
     elif typechar == INT:

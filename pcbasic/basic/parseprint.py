@@ -1,17 +1,128 @@
 """
 PC-BASIC - parseprint.py
-PRINT statement handling
+Formatted output handling
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
+import io
+
 from . import util
 from . import values
 from . import error
+from . import tokens as tk
 
 
-def get_string_tokens(fors):
+def write_(parser, ins):
+    """WRITE: Output machine-readable expressions to the screen or a file."""
+    outstr = ''
+    expr = parser.parse_expression(ins, allow_empty=True)
+    if expr is not None:
+        while True:
+            if isinstance(expr, values.String):
+                with parser.temp_string:
+                    outstr += '"' + expr.to_str() + '"'
+            else:
+                outstr += values.to_repr(expr, leading_space=False, type_sign=False)
+            if util.skip_white_read_if(ins, (',', ';')):
+                outstr += ','
+            else:
+                break
+            expr = parser.parse_expression(ins)
+    return outstr
+
+def print_(parser, ins, output):
+    """PRINT: Write expressions to screen or file."""
+    number_zones = max(1, int(output.width/14))
+    newline = True
+    while True:
+        d = util.skip_white(ins)
+        if d == tk.USING:
+            ins.read(1)
+            newline = print_using_(parser, ins, output)
+            break
+        elif d in tk.end_statement:
+            break
+        elif d in (',', ';', tk.SPC, tk.TAB):
+            ins.read(1)
+            newline = False
+            if d == ',':
+                next_zone = int((output.col-1) / 14) + 1
+                if next_zone >= number_zones and output.width >= 14 and output.width != 255:
+                    output.write_line()
+                else:
+                    output.write(' ' * (1 + 14*next_zone-output.col))
+            elif d == tk.SPC:
+                numspaces = max(0, values.to_int(parser.parse_expression(ins), unsigned=True)) % output.width
+                util.require_read(ins, (')',))
+                output.write(' ' * numspaces)
+            elif d == tk.TAB:
+                pos = max(0, values.to_int(parser.parse_expression(ins), unsigned=True) - 1) % output.width + 1
+                util.require_read(ins, (')',))
+                if pos < output.col:
+                    output.write_line()
+                    output.write(' ' * (pos-1))
+                else:
+                    output.write(' ' * (pos-output.col))
+        else:
+            newline = True
+            with parser.temp_string:
+                expr = parser.parse_expression(ins)
+                # numbers always followed by a space
+                if isinstance(expr, values.Number):
+                    word = values.to_repr(expr, leading_space=True, type_sign=False) + ' '
+                else:
+                    word = expr.to_str()
+            # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
+            output.write(word)
+    return newline
+
+def print_using_(parser, ins, output):
+    """PRINT USING: Write expressions to screen or file using a formatting string."""
+    format_expr = parser.parse_temporary_string(ins)
+    if format_expr == '':
+        raise error.RunError(error.IFC)
+    util.require_read(ins, (';',))
+    fors = io.BytesIO(format_expr)
+    semicolon, format_chars = False, False
+    while True:
+        data_ends = util.skip_white(ins) in tk.end_statement
+        c = util.peek(fors)
+        if c == '':
+            if not format_chars:
+                # there were no format chars in the string, illegal fn call (avoids infinite loop)
+                raise error.RunError(error.IFC)
+            if data_ends:
+                break
+            # loop the format string if more variables to come
+            fors.seek(0)
+        elif c == '_':
+            # escape char; write next char in fors or _ if this is the last char
+            output.write(fors.read(2)[-1])
+        else:
+            string_field = _get_string_tokens(fors)
+            if string_field:
+                if not data_ends:
+                    s = parser.parse_temporary_string(ins)
+                    if string_field == '&':
+                        output.write(s)
+                    else:
+                        output.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
+            else:
+                number_field, digits_before, decimals = _get_number_tokens(fors)
+                if number_field:
+                    if not data_ends:
+                        num = values.pass_number(parser.parse_expression(ins))
+                        output.write(_format_number(num, number_field, digits_before, decimals))
+                else:
+                    output.write(fors.read(1))
+            if string_field or number_field:
+                format_chars = True
+                semicolon = util.skip_white_read_if(ins, (';', ','))
+    return not semicolon
+
+def _get_string_tokens(fors):
     """Get consecutive string-related formatting tokens."""
     word = ''
     c = util.peek(fors)
@@ -31,7 +142,7 @@ def get_string_tokens(fors):
                 return ''
     return word
 
-def get_number_tokens(fors):
+def _get_number_tokens(fors):
     """Get consecutive number-related formatting tokens."""
     word, digits_before, decimals = '', 0, 0
     # + comes first
@@ -81,12 +192,13 @@ def get_number_tokens(fors):
     return word, digits_before, decimals
 
 
-
 ##############################################################################
 # convert float to string representation
 
-def format_number(value, tokens, digits_before, decimals):
+def _format_number(value, tokens, digits_before, decimals):
     """Format a number to a format string. For PRINT USING."""
+    # promote ints to single
+    value = value.to_float()
     # illegal function call if too many digits
     if digits_before + decimals > 24:
         raise error.RunError(error.IFC)

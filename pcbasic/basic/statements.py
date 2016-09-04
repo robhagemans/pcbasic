@@ -2309,120 +2309,23 @@ class Statements(object):
         """WRITE: Output machine-readable expressions to the screen or a file."""
         output = self.parser.parse_file_number(ins, 'OAR')
         output = self.session.devices.scrn_file if output is None else output
-        expr = self.parser.parse_expression(ins, allow_empty=True)
-        outstr = ''
-        if expr is not None:
-            while True:
-                if isinstance(expr, values.String):
-                    with self.session.strings:
-                        outstr += '"' + expr.to_str() + '"'
-                else:
-                    outstr += values.to_repr(expr, leading_space=False, type_sign=False)
-                if util.skip_white_read_if(ins, (',', ';')):
-                    outstr += ','
-                else:
-                    break
-                expr = self.parser.parse_expression(ins)
+        outstr = parseprint.write_(self.parser, ins)
         util.require(ins, tk.end_statement)
         # write the whole thing as one thing (this affects line breaks)
         output.write_line(outstr)
 
     def exec_print(self, ins, output=None):
         """PRINT: Write expressions to the screen or a file."""
+        # if no output specified (i.e. not LPRINT), check for a file number
         if output is None:
             output = self.parser.parse_file_number(ins, 'OAR')
-            output = self.session.devices.scrn_file if output is None else output
-        number_zones = max(1, int(output.width/14))
-        newline = True
-        while True:
-            d = util.skip_white(ins)
-            if d in tk.end_statement + (tk.USING,):
-                break
-            elif d in (',', ';', tk.SPC, tk.TAB):
-                ins.read(1)
-                newline = False
-                if d == ',':
-                    next_zone = int((output.col-1)/14)+1
-                    if next_zone >= number_zones and output.width >= 14 and output.width != 255:
-                        output.write_line()
-                    else:
-                        output.write(' '*(1+14*next_zone-output.col))
-                elif d == tk.SPC:
-                    numspaces = max(0, values.to_int(self.parser.parse_expression(ins), unsigned=True)) % output.width
-                    util.require_read(ins, (')',))
-                    output.write(' ' * numspaces)
-                elif d == tk.TAB:
-                    pos = max(0, values.to_int(self.parser.parse_expression(ins), unsigned=True) - 1) % output.width + 1
-                    util.require_read(ins, (')',))
-                    if pos < output.col:
-                        output.write_line()
-                        output.write(' '*(pos-1))
-                    else:
-                        output.write(' '*(pos-output.col))
-            else:
-                newline = True
-                with self.session.strings:
-                    expr = self.parser.parse_expression(ins)
-                    # numbers always followed by a space
-                    if isinstance(expr, values.Number):
-                        word = values.to_repr(expr, leading_space=True, type_sign=False) + ' '
-                    else:
-                        word = expr.to_str()
-                # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
-                output.write(word)
-        if util.skip_white_read_if(ins, (tk.USING,)):
-            return self.exec_print_using(ins, output)
+        # neither LPRINT not a file number: print to screen
+        if output is None:
+            output = self.session.devices.scrn_file
+        newline = parseprint.print_(self.parser, ins, output)
         if newline:
             if output == self.session.devices.scrn_file and self.session.screen.overflow:
                 output.write_line()
-            output.write_line()
-        util.require(ins, tk.end_statement)
-
-    def exec_print_using(self, ins, output):
-        """PRINT USING: Write expressions to screen or file using a formatting string."""
-        with self.session.strings:
-            format_expr = values.pass_string(self.parser.parse_expression(ins)).to_str()
-        if format_expr == '':
-            raise error.RunError(error.IFC)
-        util.require_read(ins, (';',))
-        fors = io.BytesIO(format_expr)
-        semicolon, format_chars = False, False
-        while True:
-            data_ends = util.skip_white(ins) in tk.end_statement
-            c = util.peek(fors)
-            if c == '':
-                if not format_chars:
-                    # there were no format chars in the string, illegal fn call (avoids infinite loop)
-                    raise error.RunError(error.IFC)
-                if data_ends:
-                    break
-                # loop the format string if more variables to come
-                fors.seek(0)
-            elif c == '_':
-                # escape char; write next char in fors or _ if this is the last char
-                output.write(fors.read(2)[-1])
-            else:
-                string_field = parseprint.get_string_tokens(fors)
-                if string_field:
-                    if not data_ends:
-                        with self.session.strings:
-                            s = values.pass_string(self.parser.parse_expression(ins)).to_str()
-                        if string_field == '&':
-                            output.write(s)
-                        else:
-                            output.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
-                else:
-                    number_field, digits_before, decimals = parseprint.get_number_tokens(fors)
-                    if number_field:
-                        if not data_ends:
-                            num = self.parser.parse_expression(ins).to_float()
-                            output.write(parseprint.format_number(num, number_field, digits_before, decimals))
-                    else:
-                        output.write(fors.read(1))
-                if string_field or number_field:
-                    format_chars = True
-                    semicolon = util.skip_white_read_if(ins, (';', ','))
-        if not semicolon:
             output.write_line()
         util.require(ins, tk.end_statement)
 

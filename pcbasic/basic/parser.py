@@ -24,7 +24,10 @@ class Parser(object):
     def __init__(self, session, syntax, term):
         """Initialise parser."""
         self.session = session
+        # value handler
         self.values = self.session.values
+        # temporary string context guard
+        self.temp_string = self.session.strings
         # syntax: advanced, pcjr, tandy
         self.syntax = syntax
         # program for TERM command
@@ -42,7 +45,6 @@ class Parser(object):
         self.error_pos = 0
         self.statements = statements.Statements(self)
         self.functions = functions.Functions(self)
-
 
     def init_error_trapping(self):
         """Initialise error trapping."""
@@ -107,7 +109,8 @@ class Parser(object):
             self.trap_error(e)
         return True
 
-    #################################################################
+    ###########################################################################
+    # clear state
 
     def clear(self):
         """Clear all to be cleared for CLEAR statement."""
@@ -145,7 +148,8 @@ class Parser(object):
         self.for_stack = []
         self.while_stack = []
 
-    #################################################################
+    ###########################################################################
+    # event and error handling
 
     def handle_basic_events(self):
         """Jump to user-defined event subs if events triggered."""
@@ -182,7 +186,8 @@ class Parser(object):
             self.set_pointer(False)
             raise e
 
-    #################################################################
+    ###########################################################################
+    # jumps
 
     def set_pointer(self, new_runmode, pos=None):
         """Set program pointer to the given codestream and position."""
@@ -239,8 +244,8 @@ class Parser(object):
             # jump to specified line number
             self.jump(jumpnum)
 
-
-    #################################################################
+    ###########################################################################
+    # loops
 
     def loop_init(self, ins, forpos, nextpos, varname, start, stop, step):
         """Initialise a FOR loop."""
@@ -274,7 +279,7 @@ class Parser(object):
             ins.seek(forpos)
         return not loop_ends
 
-    #################################################################
+    ###########################################################################
     # DATA utilities
 
     def restore(self, datanum=-1):
@@ -332,6 +337,11 @@ class Parser(object):
         val = self.parse_expression(ins)
         util.require_read(ins, (')',))
         return val
+
+    def parse_temporary_string(self, ins):
+        """Parse an expression and return as Python value. Store strings in a temporary."""
+        with self.temp_string:
+            return values.pass_string(self.parse_expression(ins)).to_value()
 
     def parse_literal(self, ins):
         """Compute the value of the literal at the current code pointer."""
