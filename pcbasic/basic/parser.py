@@ -338,10 +338,14 @@ class Parser(object):
         util.require_read(ins, (')',))
         return val
 
-    def parse_temporary_string(self, ins):
+    def parse_temporary_string(self, ins, allow_empty=False):
         """Parse an expression and return as Python value. Store strings in a temporary."""
+        # if allow_empty, a missing value is returned as an empty string
         with self.temp_string:
-            return values.pass_string(self.parse_expression(ins)).to_value()
+            expr = self.parse_expression(ins, allow_empty)
+            if expr:
+                return values.pass_string(expr).to_value()
+            return self.values.new_string()
 
     def parse_literal(self, ins):
         """Compute the value of the literal at the current code pointer."""

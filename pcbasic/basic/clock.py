@@ -31,6 +31,7 @@ class Clock(object):
 
     def set_time(self, timestr):
         """Set the system time offset."""
+        # allowed formats:  hh   hh:mm   hh:mm:ss  where hh 0-23, mm 0-59, ss 0-59
         now = datetime.datetime.now() + self.time_offset
         timelist = [0, 0, 0]
         pos, listpos, word = 0, 0, ''
@@ -57,6 +58,9 @@ class Clock(object):
 
     def set_date(self, datestr):
         """Set the system date offset."""
+        # allowed formats:
+        # mm/dd/yy  or mm-dd-yy  mm 0--12 dd 0--31 yy 80--00--77
+        # mm/dd/yyyy  or mm-dd-yyyy  yyyy 1980--2099
         now = datetime.datetime.now() + self.time_offset
         datelist = [1, 1, 1]
         pos, listpos, word = 0, 0, ''
