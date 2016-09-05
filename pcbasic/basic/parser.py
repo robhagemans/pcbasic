@@ -11,11 +11,13 @@ from collections import deque
 
 from . import error
 from . import tokens as tk
-from . import util
 from . import statements
 from . import operators as op
 from . import functions
 from . import values
+
+from . import util
+import sys
 
 
 class Parser(object):
@@ -37,6 +39,10 @@ class Parser(object):
         # pointer position: False for direct line, True for program
         self.run_mode = False
         self.program_code = session.program.bytecode
+        if not isinstance(self.program_code, util.TokenisedStream):
+            print repr(self.program_code)
+            sys.exit(0)
+
         self.current_statement = 0
         # clear stacks
         self.clear_stacks_and_pointers()
@@ -64,7 +70,11 @@ class Parser(object):
                 self.handle_basic_events()
                 ins = self.get_codestream()
                 self.current_statement = ins.tell()
-                c = util.skip_white(ins)
+                if not isinstance(ins, util.TokenisedStream):
+                    print repr(ins), repr(self.program_code), repr(self.session.direct_line)
+                    sys.exit(0)
+
+                c = ins.skip_blank()
                 # parse line number or : at start of statement
                 if c in tk.end_line:
                     # line number marker, new statement
@@ -85,7 +95,7 @@ class Parser(object):
                     self.session.debugger.debug_step(token)
                 elif c == ':':
                     ins.read(1)
-                c = util.skip_white(ins)
+                c = ins.skip_blank()
                 # empty statement, return to parse next
                 if c in tk.end_statement:
                     continue
@@ -288,18 +298,18 @@ class Parser(object):
         """READ a unit of DATA."""
         current = self.program_code.tell()
         self.program_code.seek(self.data_pos)
-        if util.peek(self.program_code) in tk.end_statement:
+        if self.program_code.peek() in tk.end_statement:
             # initialise - find first DATA
-            util.skip_to(self.program_code, (tk.DATA,))
+            self.program_code.skip_to((tk.DATA,))
         if self.program_code.read(1) not in (tk.DATA, ','):
             raise error.RunError(error.OUT_OF_DATA)
         vals, word, literal = '', '', False
         while True:
             # read next char; omit leading whitespace
             if not literal and vals == '':
-                c = util.skip_white(self.program_code)
+                c = self.program_code.skip_blank()
             else:
-                c = util.peek(self.program_code)
+                c = self.program_code.peek()
             # parse char
             if c == '' or (not literal and c == ',') or (c in tk.end_line or (not literal and c in tk.end_statement)):
                 break
@@ -307,7 +317,7 @@ class Parser(object):
                 self.program_code.read(1)
                 literal = not literal
                 if not literal:
-                    util.require(self.program_code, tk.end_statement + (',',))
+                    self.program_code.require(tk.end_statement + (',',))
             else:
                 self.program_code.read(1)
                 if literal:
@@ -327,10 +337,10 @@ class Parser(object):
 
     def parse_bracket(self, ins):
         """Compute the value of the bracketed expression."""
-        util.require_read(ins, ('(',))
+        ins.require_read(('(',))
         # we'll get a Syntax error, not a Missing operand, if we close with )
         val = self.parse_expression(ins)
-        util.require_read(ins, (')',))
+        ins.require_read((')',))
         return val
 
     def parse_temporary_string(self, ins, allow_empty=False):
@@ -344,7 +354,7 @@ class Parser(object):
 
     def parse_literal(self, ins):
         """Compute the value of the literal at the current code pointer."""
-        d = util.skip_white(ins)
+        d = ins.skip_blank()
         # string literal
         if d == '"':
             ins.read(1)
@@ -371,7 +381,7 @@ class Parser(object):
             return self.values.from_token(self.session.tokeniser.tokenise_number(ins))
         # number literals
         elif d in tk.number:
-            return self.values.from_token(util.read_token(ins))
+            return self.values.from_token(ins.read_token())
         # gw-basic allows adding line numbers to numbers
         elif d == tk.T_UINT:
             return self.values.new_integer().from_int(self.statements.parse_jumpnum(ins), unsigned=True)
@@ -382,19 +392,19 @@ class Parser(object):
         """Helper function: parse a scalar or array element."""
         name = self.parse_scalar(ins)
         indices = []
-        if util.skip_white_read_if(ins, ('[', '(')):
+        if ins.skip_blank_read_if(('[', '(')):
             # it's an array, read indices
             while True:
                 indices.append(values.to_int(self.parse_expression(ins)))
-                if not util.skip_white_read_if(ins, (',',)):
+                if not ins.skip_blank_read_if((',',)):
                     break
-            util.require_read(ins, (']', ')'))
+            ins.require_read((']', ')'))
         return name, indices
 
     def parse_scalar(self, ins, allow_empty=False):
         """Get scalar part of variable name from token stream."""
         # append type specifier
-        name = self.session.memory.complete_name(util.read_name(ins, allow_empty))
+        name = self.session.memory.complete_name(ins.read_name(allow_empty))
         # return None for empty names (only happens with allow_empty)
         if not name:
             return None
@@ -406,16 +416,16 @@ class Parser(object):
     def parse_file_number(self, ins, file_mode='IOAR'):
         """Helper function: parse a file number and retrieve the file object."""
         screen = None
-        if util.skip_white_read_if(ins, ('#',)):
+        if ins.skip_blank_read_if(('#',)):
             number = values.to_int(self.parse_expression(ins))
             error.range_check(0, 255, number)
             screen = self.session.files.get(number, file_mode)
-            util.require_read(ins, (',',))
+            ins.require_read((',',))
         return screen
 
     def parse_file_number_opthash(self, ins):
         """Helper function: parse a file number, with optional hash."""
-        util.skip_white_read_if(ins, ('#',))
+        ins.skip_blank_read_if(('#',))
         number = values.to_int(self.parse_expression(ins))
         error.range_check(0, 255, number)
         return number
@@ -428,10 +438,10 @@ class Parser(object):
         # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
         while True:
             last = d
-            d = util.skip_white(ins)
+            d = ins.skip_blank()
             # two-byte function tokens
             if d in tk.twobyte:
-                d = util.peek(ins, n=2)
+                d = ins.peek(n=2)
             if d == tk.NOT and not (last in op.OPERATORS or last == ''):
                 # unary NOT ends expression except after another operator or at start
                 break
@@ -439,7 +449,7 @@ class Parser(object):
                 ins.read(len(d))
                 # get combined operators such as >=
                 if d in op.COMBINABLE:
-                    nxt = util.skip_white(ins)
+                    nxt = ins.skip_blank()
                     if nxt in op.COMBINABLE:
                         d += ins.read(len(nxt))
                 if last in op.OPERATORS or last == '' or d == tk.NOT:

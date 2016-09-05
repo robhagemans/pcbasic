@@ -6,7 +6,6 @@ User-defined functions.
 This file is released under the GNU GPL version 3 or later.
 """
 
-import io
 import struct
 
 from . import error
@@ -87,7 +86,7 @@ class UserFunctions(object):
                 self._scalars.set(name, value)
             util.require_read(ins, (')',))
         # execute the code
-        fns = io.BytesIO(fncode)
+        fns = util.TokenisedStream(fncode)
         fns.seek(0)
         self._parsing.add(fnname)
         value = parser.parse_expression(fns)

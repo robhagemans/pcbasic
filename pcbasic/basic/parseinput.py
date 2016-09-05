@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import io
 
-from . import util
 from . import devices
 from . import values
 from . import error

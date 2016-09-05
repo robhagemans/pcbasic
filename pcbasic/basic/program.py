@@ -14,16 +14,15 @@ from . import error
 from . import values
 from . import tokens as tk
 from . import protect
-from . import util
 
 class Program(object):
     """BASIC program."""
 
     def __init__(self, tokeniser, lister, max_list_line,
-                allow_protect, allow_code_poke, address):
+                allow_protect, allow_code_poke, address, bytecode):
         """Initialise program."""
         # program bytecode buffer
-        self.bytecode = io.BytesIO()
+        self.bytecode = bytecode
         self.erase()
         self.max_list_line = max_list_line
         self.allow_protect = allow_protect
@@ -76,7 +75,7 @@ class Program(object):
                 break
             self.line_numbers[scanline] = scanpos
             last = scanpos
-            util.skip_to(self.bytecode, tk.end_line)
+            self.bytecode.skip_to(tk.end_line)
             scanpos = self.bytecode.tell()
             offsets.append(scanpos)
         self.line_numbers[65536] = scanpos
@@ -117,7 +116,7 @@ class Program(object):
         # get the new line number
         linebuf.seek(1)
         scanline = self.lister.detokenise_line_number(linebuf)
-        c = util.skip_white_read(linebuf)
+        c = linebuf.skip_blank_read()
         # check if linebuf is an empty line after the line number
         empty = (c in tk.end_line)
         # check if we start with a number
@@ -133,7 +132,7 @@ class Program(object):
         linebuf.seek(1)
         scanline = self.lister.detokenise_line_number(linebuf)
         # check if linebuf is an empty line after the line number
-        empty = (util.skip_white_read(linebuf) in tk.end_line)
+        empty = (linebuf.skip_blank_read() in tk.end_line)
         pos, afterpos, deleteable, beyond = self.find_pos_line_dict(scanline, scanline)
         if empty and not deleteable:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
@@ -243,7 +242,7 @@ class Program(object):
         # write the indirect line numbers
         ins = self.bytecode
         ins.seek(0)
-        while util.skip_to_read(ins, (tk.T_UINT,)) == tk.T_UINT:
+        while ins.skip_to_read((tk.T_UINT,)) == tk.T_UINT:
             # get the old g number
             token = ins.read(2)
             assert len(token) == 2, 'bytecode truncated in line number pointer'
@@ -253,7 +252,7 @@ class Program(object):
                 pos = ins.tell()
                 # skip line number token
                 ins.seek(-3, 1)
-                if util.backskip_white(ins) == tk.GOTO and util.backskip_white(ins) == tk.ERROR:
+                if ins.backskip_blank(ins) == tk.GOTO and ins.backskip_blank(ins) == tk.ERROR:
                     ins.seek(pos)
                     continue
                 ins.seek(pos)
@@ -310,7 +309,7 @@ class Program(object):
                 self.store_line(linebuf)
             else:
                 # we have read the :
-                if util.skip_white(linebuf) not in tk.end_line:
+                if linebuf.skip_blank() not in tk.end_line:
                     raise error.RunError(error.DIRECT_STATEMENT_IN_FILE)
 
     def save(self, g):

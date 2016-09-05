@@ -52,7 +52,7 @@ class Tokeniser(object):
     def tokenise_line(self, line):
         """Convert an ascii program line to tokenised form."""
         ins = io.BytesIO(line)
-        outs = io.BytesIO()
+        outs = util.TokenisedStream()
         # skip whitespace at start of line
         d = util.skip(ins, self._ascii_whitespace)
         if d == '':
@@ -358,9 +358,7 @@ class Tokeniser(object):
                 word += ins.read(1)
             else:
                 break
-        x = self._values.new_integer().from_hex(word)
-        y = x.to_token_hex()
-        return y
+        return self._values.new_integer().from_hex(word).to_token_hex()
 
     def _tokenise_oct(self, ins):
         """Convert octal expression in Python string to number token."""

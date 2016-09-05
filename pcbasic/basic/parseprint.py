@@ -25,7 +25,7 @@ def write_(parser, ins):
                     outstr += '"' + expr.to_str() + '"'
             else:
                 outstr += values.to_repr(expr, leading_space=False, type_sign=False)
-            if util.skip_white_read_if(ins, (',', ';')):
+            if ins.skip_blank_read_if((',', ';')):
                 outstr += ','
             else:
                 break
@@ -37,7 +37,7 @@ def print_(parser, ins, output):
     number_zones = max(1, int(output.width/14))
     newline = True
     while True:
-        d = util.skip_white(ins)
+        d = ins.skip_blank()
         if d == tk.USING:
             ins.read(1)
             newline = print_using_(parser, ins, output)
@@ -55,11 +55,11 @@ def print_(parser, ins, output):
                     output.write(' ' * (1 + 14*next_zone-output.col))
             elif d == tk.SPC:
                 numspaces = max(0, values.to_int(parser.parse_expression(ins), unsigned=True)) % output.width
-                util.require_read(ins, (')',))
+                ins.require_read((')',))
                 output.write(' ' * numspaces)
             elif d == tk.TAB:
                 pos = max(0, values.to_int(parser.parse_expression(ins), unsigned=True) - 1) % output.width + 1
-                util.require_read(ins, (')',))
+                ins.require_read((')',))
                 if pos < output.col:
                     output.write_line()
                     output.write(' ' * (pos-1))
@@ -83,11 +83,11 @@ def print_using_(parser, ins, output):
     format_expr = parser.parse_temporary_string(ins)
     if format_expr == '':
         raise error.RunError(error.IFC)
-    util.require_read(ins, (';',))
+    ins.require_read((';',))
     fors = io.BytesIO(format_expr)
     semicolon, format_chars = False, False
     while True:
-        data_ends = util.skip_white(ins) in tk.end_statement
+        data_ends = ins.skip_blank() in tk.end_statement
         c = util.peek(fors)
         if c == '':
             if not format_chars:
@@ -119,7 +119,7 @@ def print_using_(parser, ins, output):
                     output.write(fors.read(1))
             if string_field or number_field:
                 format_chars = True
-                semicolon = util.skip_white_read_if(ins, (';', ','))
+                semicolon = ins.skip_blank_read_if((';', ','))
     return not semicolon
 
 def _get_string_tokens(fors):

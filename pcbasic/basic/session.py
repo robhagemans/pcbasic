@@ -126,9 +126,10 @@ class Session(object):
         self.tokeniser = tokeniser.Tokeniser(self.values, token_keyword)
         self.lister = lister.Lister(self.values, token_keyword)
         # initialise the program
+        bytecode = util.TokenisedStream()
         self.program = program.Program(
                 self.tokeniser, self.lister, max_list_line, allow_protect,
-                allow_code_poke, self.memory.code_start)
+                allow_code_poke, self.memory.code_start, bytecode)
         # register all data segment users
         self.memory.set_buffers(
                 self.program, self.scalars, self.arrays, self.strings, self.values)
@@ -171,7 +172,7 @@ class Session(object):
         # interpreter is executing a command (needs Screen)
         self._set_parse_mode(False)
         # direct line buffer
-        self.direct_line = io.BytesIO()
+        self.direct_line = util.TokenisedStream()
         # initialise the parser
         self.events.reset()
         self.parser = parser.Parser(self, syntax, pcjr_term)
@@ -335,7 +336,7 @@ class Session(object):
         if not line:
             return True
         self.direct_line = self.tokeniser.tokenise_line(line)
-        c = util.peek(self.direct_line)
+        c = self.direct_line.peek()
         if c == '\0':
             # check for lines starting with numbers (6553 6) and empty lines
             self.program.check_number_start(self.direct_line)
@@ -374,7 +375,7 @@ class Session(object):
             line = bytearray(self.editor.wait_screenline(from_start=True))
         # run or store it; don't clear lines or raise undefined line number
         self.direct_line = self.tokeniser.tokenise_line(line)
-        c = util.peek(self.direct_line)
+        c = self.direct_line.peek()
         if c == '\0':
             # check for lines starting with numbers (6553 6) and empty lines
             empty, scanline = self.program.check_number_start(self.direct_line)

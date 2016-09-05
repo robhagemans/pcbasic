@@ -10,7 +10,6 @@ import string
 import struct
 
 from . import tokens as tk
-from . import util
 from . import values
 
 
@@ -29,13 +28,13 @@ class Lister(object):
             # detokenise_line_number has returned -1 and left us at: .. 00 | _00_ 00 1A
             # stream ends or end of file sequence \x00\x00\x1A
             return -1, '', 0
-        elif current_line == 0 and util.peek(ins) == ' ':
+        elif current_line == 0 and ins.peek() == ' ':
             # ignore up to one space after line number 0
             ins.read(1)
         linum = bytearray(str(current_line))
         # write one extra whitespace character after line number
         # unless first char is TAB
-        if util.peek(ins) != '\t':
+        if ins.peek() != '\t':
             linum += bytearray(' ')
         line, textpos = self.detokenise_compound_statement(ins, bytepos)
         return current_line, linum + line, textpos + len(linum) + 1
@@ -100,7 +99,7 @@ class Lister(object):
         try:
             keyword = self._token_to_keyword[s]
         except KeyError:
-            s += util.peek(ins)
+            s += ins.peek()
             try:
                 keyword = self._token_to_keyword[s]
                 ins.read(1)
@@ -147,7 +146,7 @@ class Lister(object):
                 output[:] = output[:-5] + tk.KW_ELSE
         # token followed by token or number is separated by a space,
         # except operator tokens and SPC(, TAB(, FN, USR
-        nxt = util.peek(ins)
+        nxt = ins.peek()
         if (not comment and
                 nxt not in tk.end_line + tk.operator +
                         (tk.O_REM, '"', ',', ';', ' ', ':', '(', ')', '$',

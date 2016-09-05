@@ -12,7 +12,6 @@ import struct
 
 from . import values
 from . import dos
-from . import util
 from . import error
 from . import tokens as tk
 
@@ -118,7 +117,7 @@ class Functions(object):
 
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
-        if util.skip_white(ins) == '(':
+        if ins.skip_blank() == '(':
             return self.session.randomiser.rnd(values.csng_(self.parser.parse_bracket(ins)))
         else:
             return self.session.randomiser.rnd()
@@ -129,61 +128,61 @@ class Functions(object):
 
     def value_instr(self, ins):
         """INSTR: find substring in string."""
-        util.require_read(ins, ('(',))
+        ins.require_read(('(',))
         # followed by comma so empty will raise STX
         s = self.parser.parse_expression(ins)
         n = 1
         if s[0] != '$':
             n = values.to_int(s)
             error.range_check(1, 255, n)
-            util.require_read(ins, (',',))
+            ins.require_read((',',))
             s = self.parser.parse_expression(ins, empty_err=error.STX)
         big = values.pass_string(s)
-        util.require_read(ins, (',',))
+        ins.require_read((',',))
         s = self.parser.parse_expression(ins, empty_err=error.STX)
         small = values.pass_string(s)
-        util.require_read(ins, (')',))
+        ins.require_read((')',))
         return big.instr(small)
 
     def value_mid(self, ins):
         """MID$: get substring."""
-        util.require_read(ins, ('(',))
+        ins.require_read(('(',))
         s = values.pass_string(self.parser.parse_expression(ins))
-        util.require_read(ins, (',',))
+        ins.require_read((',',))
         start = values.cint_(self.parser.parse_expression(ins))
         num = None
-        if util.skip_white_read_if(ins, (',',)):
+        if ins.skip_blank_read_if((',',)):
             num = values.cint_(self.parser.parse_expression(ins))
-        util.require_read(ins, (')',))
+        ins.require_read((')',))
         return s.mid(start, num)
 
     def value_left(self, ins):
         """LEFT$: get substring at the start of string."""
-        util.require_read(ins, ('(',))
+        ins.require_read(('(',))
         s = values.pass_string(self.parser.parse_expression(ins))
-        util.require_read(ins, (',',))
+        ins.require_read((',',))
         stop = values.cint_(self.parser.parse_expression(ins))
-        util.require_read(ins, (')',))
+        ins.require_read((')',))
         return s.left(stop)
 
     def value_right(self, ins):
         """RIGHT$: get substring at the end of string."""
-        util.require_read(ins, ('(',))
+        ins.require_read(('(',))
         s = values.pass_string(self.parser.parse_expression(ins))
-        util.require_read(ins, (',',))
+        ins.require_read((',',))
         stop = values.cint_(self.parser.parse_expression(ins))
-        util.require_read(ins, (')',))
+        ins.require_read((')',))
         return s.right(stop)
 
     def value_string(self, ins):
         """STRING$: repeat characters."""
-        util.require_read(ins, ('(',))
+        ins.require_read(('(',))
         n = values.to_int(self.parser.parse_expression(ins))
         error.range_check(0, 255, n)
-        util.require_read(ins, (',',))
+        ins.require_read((',',))
         asc_value_or_char = self.parser.parse_expression(ins)
         strstr = self.values.new_string().repeat(asc_value_or_char, n)
-        util.require_read(ins, (')',))
+        ins.require_read((')',))
         return strstr
 
     ######################################################################
@@ -191,12 +190,12 @@ class Functions(object):
 
     def value_screen(self, ins):
         """SCREEN: get char or attribute at a location."""
-        util.require_read(ins, ('(',))
+        ins.require_read(('(',))
         row = values.to_int(self.parser.parse_expression(ins))
-        util.require_read(ins, (',',), err=error.IFC)
+        ins.require_read((',',), err=error.IFC)
         col = values.to_int(self.parser.parse_expression(ins))
         z = 0
-        if util.skip_white_read_if(ins, (',',)):
+        if ins.skip_blank_read_if((',',)):
             z = values.to_int(self.parser.parse_expression(ins))
         cmode = self.session.screen.mode
         error.range_check(1, cmode.height, row)
@@ -204,7 +203,7 @@ class Functions(object):
             error.range_check(self.session.screen.view_start, self.session.screen.scroll_height, row)
         error.range_check(1, cmode.width, col)
         error.range_check(0, 255, z)
-        util.require_read(ins, (')',))
+        ins.require_read((')',))
         if z and not cmode.is_text_mode:
             return self.values.new_integer()
         else:
@@ -212,14 +211,14 @@ class Functions(object):
 
     def value_input(self, ins):
         """INPUT$: get characters from the keyboard or a file."""
-        util.require_read(ins, ('$',))
-        util.require_read(ins, ('(',))
+        ins.require_read(('$',))
+        ins.require_read(('(',))
         num = values.to_int(self.parser.parse_expression(ins))
         error.range_check(1, 255, num)
         infile = self.session.devices.kybd_file
-        if util.skip_white_read_if(ins, (',',)):
+        if ins.skip_blank_read_if((',',)):
             infile = self.session.files.get(self.parser.parse_file_number_opthash(ins))
-        util.require_read(ins, (')',))
+        ins.require_read((')',))
         word = bytearray(infile.read_raw(num))
         if len(word) < num:
             # input past end
@@ -264,7 +263,7 @@ class Functions(object):
 
     def value_loc(self, ins):
         """LOC: get file pointer."""
-        util.skip_white(ins)
+        ins.skip_blank()
         num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
         error.range_check(0, 255, num)
         the_file = self.session.files.get(num)
@@ -272,7 +271,7 @@ class Functions(object):
 
     def value_eof(self, ins):
         """EOF: get end-of-file."""
-        util.skip_white(ins)
+        ins.skip_blank()
         num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
         if num == 0:
             return self.values.new_integer()
@@ -282,7 +281,7 @@ class Functions(object):
 
     def value_lof(self, ins):
         """LOF: get length of file."""
-        util.skip_white(ins)
+        ins.skip_blank()
         num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
         error.range_check(0, 255, num)
         the_file = self.session.files.get(num)
@@ -294,7 +293,7 @@ class Functions(object):
 
     def value_environ(self, ins):
         """ENVIRON$: get environment string."""
-        util.require_read(ins, ('$',))
+        ins.require_read(('$',))
         expr = self.parser.parse_bracket(ins)
         if isinstance(expr, values.String):
             return self.values.from_value(dos.get_env(expr.to_str()), values.STR)
@@ -330,13 +329,13 @@ class Functions(object):
 
     def value_point(self, ins):
         """POINT: get pixel attribute at screen location."""
-        util.require_read(ins, ('(',))
+        ins.require_read(('(',))
         arg0 = self.parser.parse_expression(ins)
         screen = self.session.screen
-        if util.skip_white_read_if(ins, (',',)):
+        if ins.skip_blank_read_if((',',)):
             # two-argument mode
             arg1 = self.parser.parse_expression(ins)
-            util.require_read(ins, (')',))
+            ins.require_read((')',))
             if screen.mode.is_text_mode:
                 raise error.RunError(error.IFC)
             return self.values.from_value(
@@ -345,7 +344,7 @@ class Functions(object):
                         ), values.INT)
         else:
             # single-argument mode
-            util.require_read(ins, (')',))
+            ins.require_read((')',))
             try:
                 x, y = screen.drawing.last_point
                 fn = values.to_int(arg0)
@@ -364,11 +363,11 @@ class Functions(object):
 
     def value_pmap(self, ins):
         """PMAP: convert between logical and physical coordinates."""
-        util.require_read(ins, ('(',))
+        ins.require_read(('(',))
         coord = self.parser.parse_expression(ins)
-        util.require_read(ins, (',',))
+        ins.require_read((',',))
         mode = values.to_int(self.parser.parse_expression(ins))
-        util.require_read(ins, (')',))
+        ins.require_read((')',))
         error.range_check(0, 3, mode)
         screen = self.session.screen
         if screen.mode.is_text_mode:
@@ -460,15 +459,15 @@ class Functions(object):
 
     def value_varptr(self, ins):
         """VARPTR, VARPTR$: get memory address for variable or FCB."""
-        dollar = util.skip_white_read_if(ins, ('$',))
-        util.require_read(ins, ('(',))
-        if (not dollar) and util.skip_white(ins) == '#':
+        dollar = ins.skip_blank_read_if(('$',))
+        ins.require_read(('(',))
+        if (not dollar) and ins.skip_blank() == '#':
             filenum = self.parser.parse_file_number_opthash(ins)
             var_ptr = self.session.memory.varptr_file(filenum)
         else:
             name, indices = self.parser.parse_variable(ins)
             var_ptr = self.session.memory.varptr(name, indices)
-        util.require_read(ins, (')',))
+        ins.require_read((')',))
         if var_ptr < 0:
             raise error.RunError(error.IFC)
         if dollar:
@@ -479,7 +478,7 @@ class Functions(object):
 
     def value_usr(self, ins):
         """USR: get value of machine-code function; not implemented."""
-        util.require_read(ins, tk.digit)
+        ins.require_read(tk.digit)
         self.parser.parse_bracket(ins)
         logging.warning("USR function not implemented.")
         return self.values.new_integer()
@@ -491,7 +490,7 @@ class Functions(object):
 
     def value_erdev(self, ins):
         """ERDEV$: device error string; not implemented."""
-        if util.skip_white_read_if(ins, ('$',)):
+        if ins.skip_blank_read_if(('$',)):
             logging.warning("ERDEV$ function not implemented.")
             return self.values.new_string()
         else:
@@ -507,10 +506,10 @@ class Functions(object):
 
     def value_ioctl(self, ins):
         """IOCTL$: read device control string response; not implemented."""
-        util.require_read(ins, ('$',))
-        util.require_read(ins, ('(',))
+        ins.require_read(('$',))
+        ins.require_read(('(',))
         num = self.parser.parse_file_number_opthash(ins)
-        util.require_read(ins, (')',))
+        ins.require_read((')',))
         self.session.files.get(num)
         logging.warning("IOCTL$ function not implemented.")
         raise error.RunError(error.IFC)
