@@ -15,18 +15,24 @@ from . import util
 from . import values
 
 
-def ascii_read_to(ins, findrange):
-    """Read until a character from a given range is found."""
-    out = ''
-    while True:
-        d = ins.read(1)
-        if d == '':
-            break
-        if d in findrange:
-            break
-        out += d
-    ins.seek(-len(d), 1)
-    return out
+
+class PlainTextStream(util.CodeStream):
+    """Stream of plain-text BASIC code."""
+
+    blanks = ' \t\n'
+
+    def read_to(self, findrange):
+        """Read until a character from a given range is found."""
+        out = ''
+        while True:
+            d = self.read(1)
+            if d == '':
+                break
+            if d in findrange:
+                break
+            out += d
+        self.seek(-len(d), 1)
+        return out
 
 
 class Tokeniser(object):
@@ -51,10 +57,10 @@ class Tokeniser(object):
 
     def tokenise_line(self, line):
         """Convert an ascii program line to tokenised form."""
-        ins = io.BytesIO(line)
+        ins = PlainTextStream(line)
         outs = util.TokenisedStream()
         # skip whitespace at start of line
-        d = util.skip(ins, self._ascii_whitespace)
+        d = ins.skip_blank()
         if d == '':
             # empty line at EOF
             return outs
@@ -69,11 +75,11 @@ class Tokeniser(object):
         # parse through elements of line
         while True:
             # peek next character
-            c = util.peek(ins)
+            c = ins.peek()
             # anything after NUL is ignored till EOL
             if c == '\0':
                 ins.read(1)
-                ascii_read_to(ins, ('', '\r'))
+                ins.read_to(('', '\r'))
                 break
             # end of line
             elif c in ('', '\r'):
@@ -83,7 +89,7 @@ class Tokeniser(object):
                 ins.read(1)
                 outs.write(c)
             # handle string literals
-            elif util.peek(ins) == '"':
+            elif ins.peek() == '"':
                 self._tokenise_literal(ins, outs)
             # handle jump numbers
             elif allow_number and allow_jumpnum and c in string.digits + '.':
@@ -150,13 +156,13 @@ class Tokeniser(object):
 
     def _tokenise_rem(self, ins, outs):
         """Pass anything after REM as is till EOL."""
-        outs.write(ascii_read_to(ins, ('', '\r', '\0')))
+        outs.write(ins.read_to(('', '\r', '\0')))
 
     def _tokenise_data(self, ins, outs):
         """Pass DATA as is, till end of statement, except for literals."""
         while True:
-            outs.write(ascii_read_to(ins, ('', '\r', '\0', ':', '"')))
-            if util.peek(ins) == '"':
+            outs.write(ins.read_to(('', '\r', '\0', ':', '"')))
+            if ins.peek() == '"':
                 # string literal in DATA
                 self._tokenise_literal(ins, outs)
             else:
@@ -165,8 +171,8 @@ class Tokeniser(object):
     def _tokenise_literal(self, ins, outs):
         """Pass a string literal."""
         outs.write(ins.read(1))
-        outs.write(ascii_read_to(ins, ('', '\r', '\0', '"') ))
-        if util.peek(ins) == '"':
+        outs.write(ins.read_to(('', '\r', '\0', '"') ))
+        if ins.peek() == '"':
             outs.write(ins.read(1))
 
     def _tokenise_line_number(self, ins, outs):
@@ -183,7 +189,7 @@ class Tokeniser(object):
             outs.write('\xC0\xDE' + linenum)
             # ignore single whitespace after line number, if any,
             # unless line number is zero (as does GW)
-            if util.peek(ins) == ' ' and linenum != '\0\0' :
+            if ins.peek() == ' ' and linenum != '\0\0' :
                 ins.read(1)
         else:
             # direct line; internally, we need an anchor for the program pointer,
@@ -195,7 +201,7 @@ class Tokeniser(object):
         word = self._tokenise_uint(ins)
         if word != '':
             outs.write(tk.T_UINT + word)
-        elif util.peek(ins) == '.':
+        elif ins.peek() == '.':
             ins.read(1)
             outs.write('.')
 
@@ -209,25 +215,25 @@ class Tokeniser(object):
             if word == 'GO':
                 pos = ins.tell()
                 # GO SUB allows 1 space
-                if util.peek(ins, 4).upper() == ' SUB':
+                if ins.peek(4).upper() == ' SUB':
                     word = tk.KW_GOSUB
                     ins.read(4)
                 else:
                     # GOTO allows any number of spaces
-                    nxt = util.skip(ins, self._ascii_whitespace)
+                    nxt = ins.skip_blank()
                     if ins.read(2).upper() == 'TO':
                         word = tk.KW_GOTO
                     else:
                         ins.seek(pos)
                 if word in (tk.KW_GOTO, tk.KW_GOSUB):
-                    nxt = util.peek(ins)
+                    nxt = ins.peek()
                     if nxt and nxt in tk.name_chars:
                         ins.seek(pos)
                         word = 'GO'
             if word in self._keyword_to_token:
                 # ignore if part of a longer name, except FN, SPC(, TAB(, USR
                 if word not in (tk.KW_FN, tk.KW_SPC, tk.KW_TAB, tk.KW_USR):
-                    nxt = util.peek(ins)
+                    nxt = ins.peek()
                     if nxt and nxt in tk.name_chars:
                         continue
                 token = self._keyword_to_token[word]
@@ -257,7 +263,7 @@ class Tokeniser(object):
         ndigits, nblanks = 0, 0
         # don't read more than 5 digits
         while (ndigits < 5):
-            c = util.peek(ins)
+            c = ins.peek()
             if not c:
                 break
             elif c in string.digits:
@@ -283,13 +289,13 @@ class Tokeniser(object):
 
     def tokenise_number(self, ins):
         """Convert Python-string number representation to number token."""
-        c = util.peek(ins)
+        c = ins.peek()
         if not c:
             return ''
         elif c == '&':
             # handle hex or oct constants
             ins.read(1)
-            if util.peek(ins).upper() == 'H':
+            if ins.peek().upper() == 'H':
                 # hex constant
                 return self._tokenise_hex(ins)
             else:
@@ -316,7 +322,7 @@ class Tokeniser(object):
             elif c in 'ED' and not have_exp:
                 # there's a special exception for number followed by EL or EQ
                 # presumably meant to protect ELSE and maybe EQV ?
-                if c == 'E' and util.peek(ins).upper() in ('L', 'Q'):
+                if c == 'E' and ins.peek().upper() in ('L', 'Q'):
                     ins.seek(-1, 1)
                     break
                 else:
@@ -352,7 +358,7 @@ class Tokeniser(object):
         ins.read(1)
         word = ''
         while True:
-            c = util.peek(ins)
+            c = ins.peek()
             # hex literals must not be interrupted by whitespace
             if c and c in string.hexdigits:
                 word += ins.read(1)
@@ -363,11 +369,11 @@ class Tokeniser(object):
     def _tokenise_oct(self, ins):
         """Convert octal expression in Python string to number token."""
         # O is optional, could also be &777 instead of &O777
-        if util.peek(ins).upper() == 'O':
+        if ins.peek().upper() == 'O':
             ins.read(1)
         word = ''
         while True:
-            c = util.peek(ins)
+            c = ins.peek()
             # oct literals may be interrupted by whitespace
             if c and c in string.octdigits + values.BLANKS:
                 word += ins.read(1)

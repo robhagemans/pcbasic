@@ -68,6 +68,27 @@ class CodeStream(io.BytesIO):
         """Skip whitespace, then read if next char is in range."""
         return read_if(self, self.skip_blank(n=len(in_range[0])), in_range)
 
+    def read_name(self, allow_empty=False):
+        """Read a variable name """
+        name = ''
+        d = self.skip_blank_read()
+        if not d:
+            pass
+        elif d not in string.ascii_letters:
+            # variable name must start with a letter
+            self.seek(-len(d), 1)
+        else:
+            while d and d in tk.name_chars:
+                name += d
+                d = self.read(1)
+            if d in tk.sigils:
+                name += d
+            else:
+                self.seek(-len(d), 1)
+        if not name and not allow_empty:
+            raise error.RunError(error.STX)
+        return name
+
 
 class TokenisedStream(CodeStream):
 
@@ -135,45 +156,6 @@ class TokenisedStream(CodeStream):
         if self.skip_blank(n=len(rnge[0])) not in rnge:
             raise error.RunError(err)
 
-    def read_name(self, allow_empty=False):
-        """Read a variable name """
-        name = ''
-        d = self.skip_blank_read()
-        if not d:
-            pass
-        elif d not in string.ascii_letters:
-            # variable name must start with a letter
-            self.seek(-len(d), 1)
-        else:
-            while d and d in tk.name_chars:
-                name += d
-                d = self.read(1)
-            if d in tk.sigils:
-                name += d
-            else:
-                self.seek(-len(d), 1)
-        if not name and not allow_empty:
-            raise error.RunError(error.STX)
-        return name
-
-
-class PlainTextStream(CodeStream):
-
-    blanks = ' \t\n'
-
-    # tokeniser.ascii_read_to
-    def skip_to(self, findrange):
-        """Read until a character from a given range is found."""
-        out = ''
-        while True:
-            d = self.read(1)
-            if d == '':
-                break
-            if d in findrange:
-                break
-            out += d
-        self.seek(-len(d), 1)
-        return out
 
 
 ###############################################################################

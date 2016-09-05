@@ -16,7 +16,6 @@ import io
 
 from . import error
 from . import values
-from . import util
 from . import mlparser
 
 # degree-to-radian conversion factor
@@ -693,11 +692,10 @@ class Drawing(object):
     def draw(self, gml, memory, value_handler, events):
         """DRAW: Execute a Graphics Macro Language string."""
         # don't convert to uppercase as VARPTR$ elements are case sensitive
-        gmls = io.BytesIO(gml)
-        ml_parser = mlparser.MLParser(gmls, memory, value_handler)
+        gmls = mlparser.MLParser(gml, memory, value_handler)
         plot, goback = True, False
         while True:
-            c = util.skip_read(gmls, ml_parser.whitespace).upper()
+            c = gmls.skip_blank_read().upper()
             if c == '':
                 break
             elif c == ';':
@@ -710,31 +708,31 @@ class Drawing(object):
                 goback = True
             elif c == 'X':
                 # execute substring
-                sub = ml_parser.parse_string()
+                sub = gmls.parse_string()
                 self.draw(str(sub), memory, value_handler, events)
             elif c == 'C':
                 # set foreground colour
                 # allow empty spec (default 0), but only if followed by a semicolon
-                if util.skip(gmls, ml_parser.whitespace) == ';':
+                if gmls.skip_blank() == ';':
                     self.last_attr = 0
                 else:
-                    attr = ml_parser.parse_number()
+                    attr = gmls.parse_number()
                     # 100000 seems to be GW's limit
                     # however, parse_number will overflow past signed int limits
                     error.range_check(-99999, 99999, attr)
                     self.last_attr = attr
             elif c == 'S':
                 # set scale
-                scale = ml_parser.parse_number()
+                scale = gmls.parse_number()
                 error.range_check(1, 255, scale)
                 self.draw_scale = scale
             elif c == 'A':
                 # set angle
                 # allow empty spec (default 0), but only if followed by a semicolon
-                if util.skip(gmls, ml_parser.whitespace) == ';':
+                if gmls.skip_blank() == ';':
                     self.draw_angle = 0
                 else:
-                    angle = ml_parser.parse_number()
+                    angle = gmls.parse_number()
                     error.range_check(0, 3, angle)
                     self.draw_angle = 90 * angle
             elif c == 'T':
@@ -742,15 +740,15 @@ class Drawing(object):
                 if gmls.read(1).upper() != 'A':
                     raise error.RunError(error.IFC)
                 # allow empty spec (default 0), but only if followed by a semicolon
-                if util.skip(gmls, ml_parser.whitespace) == ';':
+                if gmls.skip_blank() == ';':
                     self.draw_angle = 0
                 else:
-                    angle = ml_parser.parse_number()
+                    angle = gmls.parse_number()
                     error.range_check(-360, 360, angle)
                     self.draw_angle = angle
             # one-variable movement commands:
             elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
-                step = ml_parser.parse_number(default=value_handler.from_value(1, values.INT))
+                step = gmls.parse_number(default=value_handler.from_value(1, values.INT))
                 # 100000 seems to be GW's limit
                 # however, parse_number will overflow past signed int limits
                 error.range_check(-99999, 99999, step)
@@ -769,14 +767,14 @@ class Drawing(object):
                 goback = False
             # two-variable movement command
             elif c == 'M':
-                relative = util.skip(gmls, ml_parser.whitespace) in ('+','-')
-                x = ml_parser.parse_number()
+                relative = gmls.skip_blank() in ('+','-')
+                x = gmls.parse_number()
                 error.range_check(-9999, 9999, x)
-                if util.skip(gmls, ml_parser.whitespace) != ',':
+                if gmls.skip_blank() != ',':
                     raise error.RunError(error.IFC)
                 else:
                     gmls.read(1)
-                y = ml_parser.parse_number()
+                y = gmls.parse_number()
                 error.range_check(-9999, 9999, y)
                 x0, y0 = self.last_point
                 if relative:
@@ -791,11 +789,11 @@ class Drawing(object):
                 goback = False
             elif c == 'P':
                 # paint - flood fill
-                colour = ml_parser.parse_number()
+                colour = gmls.parse_number()
                 error.range_check(0, 9999, colour)
-                if util.skip_read(gmls, ml_parser.whitespace) != ',':
+                if gmls.skip_blank_read() != ',':
                     raise error.RunError(error.IFC)
-                bound = ml_parser.parse_number()
+                bound = gmls.parse_number()
                 error.range_check(0, 9999, bound)
                 x, y = self.get_window_logical(*self.last_point)
                 self.paint((x, y, False), None, colour, bound, None, events)

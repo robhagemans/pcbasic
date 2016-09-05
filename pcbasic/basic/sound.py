@@ -10,10 +10,8 @@ from collections import deque
 import Queue
 import string
 import datetime
-import io
 
 from . import error
-from . import util
 from . import mlparser
 from . import signals
 
@@ -184,14 +182,7 @@ class Sound(object):
 
     def play(self, data_segment, values, mml_list):
         """Parse a list of Music Macro Language strings (PLAY statement)."""
-        gmls_list = []
-        for mml in mml_list:
-            gmls = io.BytesIO()
-            # don't convert to uppercase as VARPTR$ elements are case sensitive
-            gmls.write(str(mml))
-            gmls.seek(0)
-            gmls_list.append(gmls)
-        ml_parser_list = [mlparser.MLParser(gmls, data_segment, values) for gmls in gmls_list]
+        ml_parser_list = [mlparser.MLParser(mml, data_segment, values) for mml in mml_list]
         next_oct = 0
         voices = range(3)
         while True:
@@ -199,30 +190,29 @@ class Sound(object):
                 break
             for voice in voices:
                 vstate = self.play_state[voice]
-                gmls = gmls_list[voice]
-                ml_parser = ml_parser_list[voice]
-                c = util.skip_read(gmls, ml_parser.whitespace).upper()
+                mmls = ml_parser_list[voice]
+                c = mmls.skip_blank_read().upper()
                 if c == '':
                     voices.remove(voice)
                     continue
                 elif c == ';':
                     continue
                 elif c == 'X':
-                    # execute substring
-                    sub = ml_parser.parse_string()
-                    pos = gmls.tell()
-                    rest = gmls.read()
-                    gmls.truncate(pos)
-                    gmls.write(str(sub))
-                    gmls.write(rest)
-                    gmls.seek(pos)
+                    # insert substring
+                    sub = mmls.parse_string()
+                    pos = mmls.tell()
+                    rest = mmls.read()
+                    mmls.truncate(pos)
+                    mmls.write(sub)
+                    mmls.write(rest)
+                    mmls.seek(pos)
                 elif c == 'N':
-                    note = ml_parser.parse_number()
+                    note = mmls.parse_number()
                     error.range_check(0, 84, note)
                     dur = vstate.length
-                    c = util.skip(gmls, ml_parser.whitespace).upper()
+                    c = mmls.skip_blank().upper()
                     if c == '.':
-                        gmls.read(1)
+                        mmls.read(1)
                         dur *= 1.5
                     if note == 0:
                         self.play_sound(0, dur*vstate.tempo, vstate.speed,
@@ -232,15 +222,15 @@ class Sound(object):
                                          vstate.speed, volume=vstate.volume,
                                          voice=voice)
                 elif c == 'L':
-                    recip = ml_parser.parse_number()
+                    recip = mmls.parse_number()
                     error.range_check(1, 64, recip)
                     vstate.length = 1. / recip
                 elif c == 'T':
-                    recip = ml_parser.parse_number()
+                    recip = mmls.parse_number()
                     error.range_check(32, 255, recip)
                     vstate.tempo = 240. / recip
                 elif c == 'O':
-                    octave = ml_parser.parse_number()
+                    octave = mmls.parse_number()
                     error.range_check(0, 6, octave)
                     vstate.octave = octave
                 elif c == '>':
@@ -255,28 +245,28 @@ class Sound(object):
                     note = c
                     dur = vstate.length
                     while True:
-                        c = util.skip(gmls, ml_parser.whitespace).upper()
+                        c = mmls.skip_blank().upper()
                         if not c:
                             break
                         elif c == '.':
-                            gmls.read(1)
+                            mmls.read(1)
                             dur *= 1.5
                         elif c in string.digits:
                             numstr = ''
                             while c and c in string.digits:
-                                gmls.read(1)
+                                mmls.read(1)
                                 numstr += c
-                                c = util.skip(gmls, ml_parser.whitespace)
+                                c = mmls.skip_blank()
                             # NOT ml_parse_number, only literals allowed here!
                             length = int(numstr)
                             error.range_check(0, 64, length)
                             if length > 0:
                                 dur = 1. / float(length)
                         elif c in ('#', '+'):
-                            gmls.read(1)
+                            mmls.read(1)
                             note += '#'
                         elif c == '-':
-                            gmls.read(1)
+                            mmls.read(1)
                             note += '-'
                         else:
                             break
@@ -296,7 +286,7 @@ class Sound(object):
                             raise error.RunError(error.IFC)
                     next_oct = 0
                 elif c == 'M':
-                    c = util.skip_read(gmls, ml_parser.whitespace).upper()
+                    c = mmls.skip_blank_read().upper()
                     if c == 'N':
                         vstate.speed = 7./8.
                     elif c == 'L':
@@ -311,8 +301,7 @@ class Sound(object):
                         raise error.RunError(error.IFC)
                 elif c == 'V' and (self.capabilities == 'tandy' or
                                     (self.capabilities == 'pcjr' and self.sound_on)):
-                    vstate.volume = min(15,
-                                    max(0, ml_parser.parse_number()))
+                    vstate.volume = min(15, max(0, mmls.parse_number()))
                 else:
                     raise error.RunError(error.IFC)
         max_time = max(q.expiry() for q in self.voice_queue[:3])

@@ -29,18 +29,18 @@ class UserFunctions(object):
         fntype = fnname[-1]
         # read parameters
         fnvars = []
-        if util.skip_white_read_if(ins, ('(',)):
+        if ins.skip_blank_read_if(('(',)):
             while True:
                 fnvars.append(parser.parse_scalar(ins))
-                if util.skip_white(ins) in tk.end_statement + (')',):
+                if ins.skip_blank() in tk.end_statement + (')',):
                     break
-                util.require_read(ins, (',',))
-            util.require_read(ins, (')',))
+                ins.require_read((',',))
+            ins.require_read((')',))
         # read code
         fncode = ''
-        util.require_read(ins, (tk.O_EQ,)) #=
+        ins.require_read((tk.O_EQ,)) #=
         startloc = ins.tell()
-        util.skip_to(ins, tk.end_statement)
+        ins.skip_to(tk.end_statement)
         endloc = ins.tell()
         ins.seek(startloc)
         fncode = ins.read(endloc - startloc)
@@ -74,17 +74,17 @@ class UserFunctions(object):
                 # copy the buffer
                 varsave[name] = self._scalars.view(name).clone()
         # read variables
-        if util.skip_white_read_if(ins, ('(',)):
+        if ins.skip_blank_read_if(('(',)):
             exprs = []
             while True:
                 exprs.append(parser.parse_expression(ins))
-                if not util.skip_white_read_if(ins, (',',)):
+                if not ins.skip_blank_read_if((',',)):
                     break
             if len(exprs) != len(varnames):
                 raise error.RunError(error.STX)
             for name, value in zip(varnames, exprs):
                 self._scalars.set(name, value)
-            util.require_read(ins, (')',))
+            ins.require_read((')',))
         # execute the code
         fns = util.TokenisedStream(fncode)
         fns.seek(0)
