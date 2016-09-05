@@ -160,19 +160,19 @@ class Statements(object):
     def exec_system(self, ins):
         """SYSTEM: exit interpreter."""
         # SYSTEM LAH does not execute
-        ins.require(tk.end_statement)
+        ins.require_end()
         raise error.Exit()
 
     def exec_tron(self, ins):
         """TRON: turn on line number tracing."""
         self.parser.tron = True
         # TRON LAH gives error, but TRON has been executed
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_troff(self, ins):
         """TROFF: turn off line number tracing."""
         self.parser.tron = False
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_rem(self, ins):
         """REM: comment."""
@@ -185,7 +185,7 @@ class Statements(object):
         if ins.skip_blank() not in tk.end_statement:
             error.range_check(0, 255, values.to_int(
                     self.parser.parse_expression(ins)))
-            ins.require(tk.end_statement)
+            ins.require_end()
 
     def exec_motor(self, ins):
         """MOTOR: do nothing but check for syntax errors."""
@@ -205,7 +205,7 @@ class Statements(object):
     def exec_term(self, ins):
         """TERM: load and run PCjr buitin terminal emulator program."""
         try:
-            ins.require(tk.end_statement)
+            ins.require_end()
             self.session.load_program(self.parser.term)
         except EnvironmentError:
             # on Tandy, raises Internal Error
@@ -297,7 +297,7 @@ class Statements(object):
             ins.read(1)
         else:
             raise error.RunError(error.STX)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_strig(self, ins):
         """STRIG: switch on/off fire button event handling."""
@@ -321,7 +321,7 @@ class Statements(object):
             self.session.stick.switch(False)
         else:
             raise error.RunError(error.STX)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_com(self, ins):
         """COM: switch on/off serial port event handling."""
@@ -334,7 +334,7 @@ class Statements(object):
             ins.read(1)
         else:
             raise error.RunError(error.STX)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_timer(self, ins):
         """TIMER: switch on/off timer event handling."""
@@ -344,7 +344,7 @@ class Statements(object):
             ins.read(1)
         else:
             raise error.RunError(error.STX)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_key_events(self, ins):
         """KEY: switch on/off keyboard events."""
@@ -370,7 +370,7 @@ class Statements(object):
             jumpnum = None
         elif jumpnum not in self.session.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
-        ins.require(tk.end_statement)
+        ins.require_end()
         return num, jumpnum
 
     def exec_on_key(self, ins):
@@ -425,11 +425,11 @@ class Statements(object):
         if self.parser.syntax in ('pcjr', 'tandy') and ins.skip_blank() in (tk.ON, tk.OFF):
             # ON/OFF is ignored
             ins.read(1)
-            ins.require(tk.end_statement)
+            ins.require_end()
             return
         self.session.sound.beep()
         # if a syntax error happens, we still beeped.
-        ins.require(tk.end_statement)
+        ins.require_end()
         if self.session.sound.foreground:
             self.session.sound.wait_music()
 
@@ -438,7 +438,7 @@ class Statements(object):
         # Tandy/PCjr SOUND ON, OFF
         if self.parser.syntax in ('pcjr', 'tandy') and ins.skip_blank() in (tk.ON, tk.OFF):
             self.session.sound.sound_on = (ins.read(1) == tk.ON)
-            ins.require(tk.end_statement)
+            ins.require_end()
             return
         freq = values.to_int(self.parser.parse_expression(ins))
         ins.require_read((',',))
@@ -454,7 +454,7 @@ class Statements(object):
                 if ins.skip_blank_read_if((',',)):
                     voice = values.to_int(self.parser.parse_expression(ins))
                     error.range_check(0, 2, voice) # can't address noise channel here
-        ins.require(tk.end_statement)
+        ins.require_end()
         self.session.sound.sound(freq, dur, volume, voice)
 
     def exec_play(self, ins):
@@ -464,7 +464,7 @@ class Statements(object):
                     self.session.events.play,
                     ins.skip_blank()):
             ins.read(1)
-            ins.require(tk.end_statement)
+            ins.require_end()
         else:
             # retrieve Music Macro Language string
             mml1, mml2 = '', ''
@@ -475,7 +475,7 @@ class Statements(object):
                 mml1 = self.parser.parse_temporary_string(ins, allow_empty=True)
                 if ins.skip_blank_read_if((',',)):
                     mml2 = self.parser.parse_temporary_string(ins, allow_empty=True)
-            ins.require(tk.end_statement)
+            ins.require_end()
             if not (mml0 or mml1 or mml2):
                 raise error.RunError(error.MISSING_OPERAND)
             self.session.sound.play(self.session.memory, self.values, (mml0, mml1, mml2))
@@ -492,7 +492,7 @@ class Statements(object):
         error.range_check(0, 15, volume)
         dur = values.csng_(self.parser.parse_expression(ins)).to_value()
         error.range_check(-65535, 65535, dur)
-        ins.require(tk.end_statement)
+        ins.require_end()
         self.session.sound.noise(source, volume, dur)
 
 
@@ -508,7 +508,7 @@ class Statements(object):
         val = values.to_int(self.parser.parse_expression(ins))
         error.range_check(0, 255, val)
         self.session.all_memory.poke(addr, val)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_def_seg(self, ins):
         """DEF SEG: set the current memory segment."""
@@ -518,14 +518,14 @@ class Statements(object):
             self.session.all_memory.def_seg(values.to_int(self.parser.parse_expression(ins), unsigned=True))
         else:
             self.session.all_memory.def_seg(self.session.memory.data_segment)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_def_usr(self, ins):
         """DEF USR: Define a machine language function. Not implemented."""
-        ins.require_read(tk.digit)
+        ins.require_read(tk.DIGIT)
         ins.require_read((tk.O_EQ,))
         values.cint_(self.parser.parse_expression(ins), unsigned=True)
-        ins.require(tk.end_statement)
+        ins.require_end()
         logging.warning("DEF USR statement not implemented")
 
     def exec_bload(self, ins):
@@ -537,7 +537,7 @@ class Statements(object):
         offset = None
         if ins.skip_blank_read_if((',',)):
             offset = values.to_int(self.parser.parse_expression(ins), unsigned=True)
-        ins.require(tk.end_statement)
+        ins.require_end()
         with self.session.files.open(0, name, filetype='M', mode='I') as f:
             self.session.all_memory.bload(f, offset)
 
@@ -551,7 +551,7 @@ class Statements(object):
         offset = values.to_int(self.parser.parse_expression(ins), unsigned=True)
         ins.require_read((',',))
         length = values.to_int(self.parser.parse_expression(ins), unsigned=True)
-        ins.require(tk.end_statement)
+        ins.require_end()
         with self.session.files.open(0, name, filetype='M', mode='O',
                                 seg=self.session.all_memory.segment,
                                 offset=offset, length=length) as f:
@@ -571,7 +571,7 @@ class Statements(object):
                 if not ins.skip_blank_read_if((',',)):
                     break
             ins.require_read((')',))
-        ins.require(tk.end_statement)
+        ins.require_end()
         # ignore the statement
         logging.warning("CALL or CALLS statement not implemented")
 
@@ -586,7 +586,7 @@ class Statements(object):
         val = values.to_int(self.parser.parse_expression(ins))
         error.range_check(0, 255, val)
         self.session.machine.out(addr, val)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_wait(self, ins):
         """WAIT: wait for a machine port. Limited implementation."""
@@ -598,7 +598,7 @@ class Statements(object):
         if ins.skip_blank_read_if((',',)):
             xorer = values.to_int(self.parser.parse_expression(ins))
         error.range_check(0, 255, xorer)
-        ins.require(tk.end_statement)
+        ins.require_end()
         self.session.machine.wait(addr, ander, xorer)
 
 
@@ -610,21 +610,21 @@ class Statements(object):
         name = self.parser.parse_temporary_string(ins)
         dev, path = self.session.devices.get_diskdevice_and_path(name)
         dev.chdir(path)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_mkdir(self, ins):
         """MKDIR: create directory."""
         name = self.parser.parse_temporary_string(ins)
         dev, path = self.session.devices.get_diskdevice_and_path(name)
         dev.mkdir(path)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_rmdir(self, ins):
         """RMDIR: remove directory."""
         name = self.parser.parse_temporary_string(ins)
         dev, path = self.session.devices.get_diskdevice_and_path(name)
         dev.rmdir(path)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_name(self, ins):
         """NAME: rename file or directory."""
@@ -641,7 +641,7 @@ class Statements(object):
         if dev != newdev:
             raise error.RunError(error.RENAME_ACROSS_DISKS)
         dev.rename(oldpath, newpath)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_kill(self, ins):
         """KILL: remove file."""
@@ -650,7 +650,7 @@ class Statements(object):
         # don't delete open files
         dev.check_file_not_open(path)
         dev.kill(path)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_files(self, ins):
         """FILES: output directory listing."""
@@ -661,7 +661,7 @@ class Statements(object):
                 raise error.RunError(error.BAD_FILE_NAME)
         dev, path = self.session.devices.get_diskdevice_and_path(pathmask)
         dev.files(self.session.screen, path)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
 
     ##########################################################
@@ -686,7 +686,7 @@ class Statements(object):
             self.session.shell.launch(cmd)
         # reset cursor visibility to its previous state
         self.session.screen.cursor.reset_visibility()
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_environ(self, ins):
         """ENVIRON: set environment string."""
@@ -697,20 +697,20 @@ class Statements(object):
         envvar = str(envstr[:eqs])
         val = str(envstr[eqs+1:])
         os.environ[envvar] = val
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_time(self, ins):
         """TIME$: set time."""
         ins.require_read((tk.O_EQ,))
         timestr = self.parser.parse_temporary_string(ins)
-        ins.require(tk.end_statement)
+        ins.require_end()
         self.session.clock.set_time(timestr)
 
     def exec_date(self, ins):
         """DATE$: set date."""
         ins.require_read((tk.O_EQ,))
         datestr = self.parser.parse_temporary_string(ins)
-        ins.require(tk.end_statement)
+        ins.require_end()
         self.session.clock.set_date(datestr)
 
     ##########################################################
@@ -755,7 +755,7 @@ class Statements(object):
     def exec_delete(self, ins):
         """DELETE: delete range of lines from program."""
         from_line, to_line = self._parse_line_range(ins)
-        ins.require(tk.end_statement)
+        ins.require_end()
         # throws back to direct mode
         self.session.program.delete(from_line, to_line)
         # clear all program stacks
@@ -771,7 +771,7 @@ class Statements(object):
         from_line = self._parse_jumpnum_or_dot(ins, err=error.IFC)
         if from_line is None or from_line not in self.session.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
-        ins.require(tk.end_statement, err=error.IFC)
+        ins.require_end(err=error.IFC)
         # throws back to direct mode
         # jump to end of direct line so execution stops
         self.parser.set_pointer(False)
@@ -785,7 +785,7 @@ class Statements(object):
         increment = None
         if ins.skip_blank_read_if((',',)):
             increment = self.parse_jumpnum(ins, allow_empty=True)
-        ins.require(tk.end_statement)
+        ins.require_end()
         # reset linenum and increment on each call of AUTO (even in AUTO mode)
         self.session.auto_linenum = linenum if linenum is not None else 10
         self.session.auto_increment = increment if increment is not None else 10
@@ -803,7 +803,7 @@ class Statements(object):
             out = self.session.files.open(0, outname, filetype='A', mode='O')
             # ignore everything after file spec
             ins.skip_to(tk.end_line)
-        ins.require(tk.end_statement)
+        ins.require_end()
         lines = self.session.program.list_lines(from_line, to_line)
         if out:
             with out:
@@ -822,7 +822,7 @@ class Statements(object):
     def exec_llist(self, ins):
         """LLIST: output program lines to LPT1: """
         from_line, to_line = self._parse_line_range(ins)
-        ins.require(tk.end_statement)
+        ins.require_end()
         for l in self.session.program.list_lines(from_line, to_line):
             self.session.devices.lpt1_file.write_line(l)
         # return to direct mode
@@ -835,7 +835,7 @@ class Statements(object):
         comma = ins.skip_blank_read_if((',',))
         if comma:
             ins.require_read('R')
-        ins.require(tk.end_statement)
+        ins.require_end()
         with self.session.files.open(0, name, filetype='ABP', mode='I') as f:
             self.session.program.load(f)
         # reset stacks
@@ -874,7 +874,7 @@ class Statements(object):
                 else:
                     # CHAIN "file", , DELETE
                     delete_lines = self._parse_delete_clause(ins)
-        ins.require(tk.end_statement)
+        ins.require_end()
         if self.session.program.protected and action == self.session.program.merge:
                 raise error.RunError(error.IFC)
         with self.session.files.open(0, name, filetype='ABP', mode='I') as f:
@@ -921,7 +921,7 @@ class Statements(object):
                                 length=len(self.parser.program_code.getvalue())-1
                                 ) as f:
             self.session.program.save(f)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_merge(self, ins):
         """MERGE: merge lines from file into current program."""
@@ -931,7 +931,7 @@ class Statements(object):
             self.session.program.merge(f)
         # clear all program stacks
         self.parser.clear_stacks_and_pointers()
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_new(self, ins):
         """NEW: clear program from memory."""
@@ -953,7 +953,7 @@ class Statements(object):
                 old = self._parse_jumpnum_or_dot(ins, allow_empty=True)
                 if ins.skip_blank_read_if((',',)):
                     step = self.parse_jumpnum(ins, allow_empty=True) # returns -1 if empty
-        ins.require(tk.end_statement)
+        ins.require_end()
         if step is not None and step < 1:
             raise error.RunError(error.IFC)
         old_to_new = self.session.program.renum(
@@ -976,7 +976,7 @@ class Statements(object):
     def exec_reset(self, ins):
         """RESET: close all files."""
         self.session.files.close_all()
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def _parse_read_write(self, ins):
         """Helper function: parse access mode."""
@@ -1015,7 +1015,7 @@ class Statements(object):
                 c = ins.skip_blank()
                 # read word
                 word = ''
-                while c and c not in tk.whitespace and c not in tk.end_statement:
+                while c and c not in ins.blanks and c not in tk.end_statement:
                     word += ins.read(1)
                     c = ins.peek().upper()
                 try:
@@ -1053,7 +1053,7 @@ class Statements(object):
         # can't open file 0, or beyond max_files
         error.range_check_err(1, self.session.memory.max_files, number, error.BAD_FILE_NUMBER)
         self.session.files.open(number, name, 'D', mode, access, lock, reclen)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_close(self, ins):
         """CLOSE: close a file."""
@@ -1069,7 +1069,7 @@ class Statements(object):
                     pass
                 if not ins.skip_blank_read_if((',',)):
                     break
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_field(self, ins):
         """FIELD: link a string variable to record buffer."""
@@ -1085,7 +1085,7 @@ class Statements(object):
                 offset += width
                 if not ins.skip_blank_read_if((',',)):
                     break
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def _parse_get_or_put_file(self, ins):
         """Helper function: PUT and GET syntax."""
@@ -1111,13 +1111,13 @@ class Statements(object):
         """PUT: write record to file."""
         thefile, num_bytes = self._parse_get_or_put_file(ins)
         thefile.put(num_bytes)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_get_file(self, ins):
         """GET: read record from file."""
         thefile, num_bytes = self._parse_get_or_put_file(ins)
         thefile.get(num_bytes)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def _exec_lock_or_unlock(self, ins, action):
         """LOCK or UNLOCK: set file or record locks."""
@@ -1137,7 +1137,7 @@ class Statements(object):
         except AttributeError:
             # not a disk file
             raise error.RunError(error.PERMISSION_DENIED)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     exec_lock = partial(_exec_lock_or_unlock, action='lock')
     exec_unlock = partial(_exec_lock_or_unlock, action='unlock')
@@ -1174,7 +1174,7 @@ class Statements(object):
         if ins.skip_blank_read_if((',',)):
             c = values.to_int(self.parser.parse_expression(ins))
         error.range_check(-1, 255, c)
-        ins.require(tk.end_statement)
+        ins.require_end()
         self.session.screen.drawing.pset(lcoord, c)
 
     def exec_preset(self, ins):
@@ -1205,7 +1205,7 @@ class Statements(object):
                     pattern = values.to_int(self.parser.parse_expression(ins))
             elif not expr:
                 raise error.RunError(error.MISSING_OPERAND)
-        ins.require(tk.end_statement)
+        ins.require_end()
         self.session.screen.drawing.line(coord0, coord1, c, pattern, mode)
 
     def exec_view_graph(self, ins):
@@ -1229,7 +1229,7 @@ class Statements(object):
             self.session.screen.drawing.set_view(x0, y0, x1, y1, absolute, fill, border)
         else:
             self.session.screen.drawing.unset_view()
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_window(self, ins):
         """WINDOW: define logical coordinate system."""
@@ -1245,7 +1245,7 @@ class Statements(object):
             self.session.screen.drawing.set_window(x0, y0, x1, y1, cartesian)
         else:
             self.session.screen.drawing.unset_window()
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_circle(self, ins):
         """CIRCLE: Draw a circle, ellipse, arc or sector."""
@@ -1276,7 +1276,7 @@ class Statements(object):
                     raise error.RunError(error.MISSING_OPERAND)
             elif cval is None:
                 raise error.RunError(error.MISSING_OPERAND)
-        ins.require(tk.end_statement)
+        ins.require_end()
         self.session.screen.drawing.circle(centre, r, start, stop, c, aspect)
 
     def exec_paint(self, ins):
@@ -1313,7 +1313,7 @@ class Statements(object):
                     if (pattern and background_pattern[:len(pattern)] == pattern and
                             self.session.screen.mode.mem_start == 0xa000):
                         raise error.RunError(error.IFC)
-        ins.require(tk.end_statement)
+        ins.require_end()
         self.session.screen.drawing.paint(coord, pattern, c, border, background_pattern, self.session.events)
 
     def exec_get_graph(self, ins):
@@ -1327,7 +1327,7 @@ class Statements(object):
         coord1 = self._parse_coord_step(ins)
         ins.require_read((',',))
         array = self.parser.parse_scalar(ins)
-        ins.require(tk.end_statement)
+        ins.require_end()
         if array not in self.session.arrays:
             raise error.RunError(error.IFC)
         elif array[-1] == '$':
@@ -1348,7 +1348,7 @@ class Statements(object):
             ins.require((tk.PSET, tk.PRESET,
                                tk.AND, tk.OR, tk.XOR))
             action = ins.read(1)
-        ins.require(tk.end_statement)
+        ins.require_end()
         if array not in self.session.arrays:
             raise error.RunError(error.IFC)
         elif array[-1] == '$':
@@ -1361,7 +1361,7 @@ class Statements(object):
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         gml = self.parser.parse_temporary_string(ins)
-        ins.require(tk.end_statement)
+        ins.require_end()
         self.session.screen.drawing.draw(gml, self.session.memory, self.values, self.session.events)
 
     ##########################################################
@@ -1369,7 +1369,7 @@ class Statements(object):
 
     def exec_end(self, ins):
         """END: end program execution and return to interpreter."""
-        ins.require(tk.end_statement)
+        ins.require_end()
         self.parser.stop = self.parser.program_code.tell()
         # jump to end of direct line so execution stops
         self.parser.set_pointer(False)
@@ -1380,7 +1380,7 @@ class Statements(object):
 
     def exec_stop(self, ins):
         """STOP: break program execution and return to interpreter."""
-        ins.require(tk.end_statement)
+        ins.require_end()
         raise error.Break(stop=True)
 
     def exec_cont(self, ins):
@@ -1416,7 +1416,7 @@ class Statements(object):
             # convert 1 to vartype
             step = self.values.from_value(1, vartype)
         step = values.to_type(vartype, step)
-        ins.require(tk.end_statement)
+        ins.require_end()
         endforpos = ins.tell()
         # find NEXT
         nextpos = self._find_next(ins, varname)
@@ -1471,7 +1471,7 @@ class Statements(object):
         varname2 = self.parser.parse_scalar(ins, allow_empty=True)
         # no-var only allowed in standalone NEXT
         if varname2 is None:
-            ins.require(tk.end_statement)
+            ins.require_end()
         if (comma or varname2) and varname2 != varname:
             # NEXT without FOR marked with NEXT line number, while we're only at FOR
             raise error.RunError(error.NEXT_WITHOUT_FOR)
@@ -1496,7 +1496,7 @@ class Statements(object):
             if not ins.skip_blank_read_if((',')):
                 break
         # if we're done iterating we no longer ignore the rest of the statement
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_goto(self, ins):
         """GOTO: jump to specified line number."""
@@ -1515,7 +1515,7 @@ class Statements(object):
             if ins.skip_blank_read_if((',',)):
                 ins.require_read('R')
                 close_files = False
-            ins.require(tk.end_statement)
+            ins.require_end()
             with self.session.files.open(0, name, filetype='ABP', mode='I') as f:
                 self.session.program.load(f)
         self.parser.clear_stacks_and_pointers()
@@ -1578,7 +1578,7 @@ class Statements(object):
             ins.seek(whilepos)
             raise error.RunError(error.WHILE_WITHOUT_WEND)
         self._check_while_condition(ins, whilepos)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def _check_while_condition(self, ins, whilepos):
         """Check condition of while-loop."""
@@ -1587,7 +1587,7 @@ class Statements(object):
         if not values.pass_number(self.parser.parse_expression(ins)).is_zero():
             # statement start is before WHILE token
             self.parser.current_statement = whilepos-2
-            ins.require(tk.end_statement)
+            ins.require_end()
         else:
             # ignore rest of line and jump to WEND
             _, wendpos = self.parser.while_stack.pop()
@@ -1596,7 +1596,7 @@ class Statements(object):
     def exec_wend(self, ins):
         """WEND: iterate while-loop."""
         # while will actually syntax error on the first run if anything is in the way.
-        ins.require(tk.end_statement)
+        ins.require_end()
         pos = ins.tell()
         while True:
             if not self.parser.while_stack:
@@ -1651,7 +1651,7 @@ class Statements(object):
             # re-raise the error so that execution stops
             raise error.RunError(self.parser.error_num, self.parser.error_pos)
         # this will be caught by the trapping routine just set
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_resume(self, ins):
         """RESUME: resume program flow after error-trap."""
@@ -1667,7 +1667,7 @@ class Statements(object):
             jumpnum = self.parse_jumpnum(ins)
         else:
             jumpnum = 0
-        ins.require(tk.end_statement)
+        ins.require_end()
         start_statement, runmode = self.parser.error_resume
         self.parser.error_num = 0
         self.parser.error_handle_mode = False
@@ -1759,7 +1759,7 @@ class Statements(object):
                         self.session.screen.init_mode()
                 elif not exp2:
                     raise error.RunError(error.STX)
-        ins.require(tk.end_statement)
+        ins.require_end()
         self.session.clear()
 
     def exec_common(self, ins):
@@ -1792,7 +1792,7 @@ class Statements(object):
             self.session.arrays.dim(name, dimensions)
             if not ins.skip_blank_read_if((',',)):
                 break
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_deftype(self, ins, typechar):
         """DEFSTR/DEFINT/DEFSNG/DEFDBL: set type defaults for variables."""
@@ -1808,7 +1808,7 @@ class Statements(object):
             self.session.memory.set_deftype(start, stop, typechar)
             if not ins.skip_blank_read_if((',',)):
                 break
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_erase(self, ins):
         """ERASE: erase an array."""
@@ -1816,7 +1816,7 @@ class Statements(object):
             self.session.arrays.erase(self.parser.parse_scalar(ins))
             if not ins.skip_blank_read_if((',',)):
                 break
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_let(self, ins):
         """LET: assign value to variable or array."""
@@ -1827,7 +1827,7 @@ class Statements(object):
             self.session.arrays.check_dim(name, indices)
         ins.require_read((tk.O_EQ,))
         self.session.memory.set_variable(name, indices, self.parser.parse_expression(ins))
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_mid(self, ins):
         """MID$: set part of a string."""
@@ -1851,7 +1851,7 @@ class Statements(object):
             error.range_check(1, len(s), start)
         ins.require_read((tk.O_EQ,))
         val = self.parser.parse_temporary_string(ins)
-        ins.require(tk.end_statement)
+        ins.require_end()
         # copy new value into existing buffer if possible
         basic_str = self.session.memory.get_variable(name, indices)
         self.session.memory.set_variable(name, indices, basic_str.midset(start, num, val))
@@ -1903,7 +1903,7 @@ class Statements(object):
                     # syntax error in DATA line (not type mismatch!) if can't convert to var type
                     raise error.RunError(error.STX, self.parser.data_pos-1)
             self.session.memory.set_variable(name, indices, value=value)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def _parse_prompt(self, ins, question_mark):
         """Helper function for INPUT: parse prompt definition."""
@@ -1954,7 +1954,7 @@ class Statements(object):
             for v in varlist:
                 self.session.memory.set_variable(*v)
             ins.seek(pos)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_line_input(self, ins):
         """LINE INPUT: request input from user."""
@@ -1990,7 +1990,7 @@ class Statements(object):
         else:
             datanum = -1
         # undefined line number for all syntax errors
-        ins.require(tk.end_statement, err=error.UNDEFINED_LINE_NUMBER)
+        ins.require_end(err=error.UNDEFINED_LINE_NUMBER)
         self.parser.restore(datanum)
 
     def exec_swap(self, ins):
@@ -2000,7 +2000,7 @@ class Statements(object):
         name2, index2 = self.parser.parse_variable(ins)
         self.session.memory.swap(name1, index1, name2, index2)
         # if syntax error. the swap has happened
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_def_fn(self, ins):
         """DEF FN: define a function."""
@@ -2024,7 +2024,7 @@ class Statements(object):
             # seed entered on prompt is rounded to int
             val = values.cint_(val)
         self.session.randomiser.randomize(val)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     ################################################
     # Console statements
@@ -2048,9 +2048,9 @@ class Statements(object):
         if self.parser.syntax != 'pcjr':
             if ins.skip_blank_read_if((',',)):
                 # comma is ignored, but a number after means syntax error
-                ins.require(tk.end_statement)
+                ins.require_end()
             else:
-                ins.require(tk.end_statement, err=error.IFC)
+                ins.require_end(err=error.IFC)
         # cls is only executed if no errors have occurred
         if val == 0:
             self.session.screen.clear()
@@ -2062,7 +2062,7 @@ class Statements(object):
         elif val == 2:
             self.session.screen.clear_view()
         if self.parser.syntax == 'pcjr':
-            ins.require(tk.end_statement)
+            ins.require_end()
 
     def exec_color(self, ins):
         """COLOR: set colour attributes."""
@@ -2087,7 +2087,7 @@ class Statements(object):
                 back = screen.palette.get_entry(0)
         if mode.name == '320x200x4':
             self.exec_color_mode_1(ins, fore, back, bord)
-            ins.require(tk.end_statement)
+            ins.require_end()
             return
         elif mode.name in ('640x200x2', '720x348x2'):
             # screen 2; hercules: illegal fn call
@@ -2118,7 +2118,7 @@ class Statements(object):
             if back != 0:
                 raise error.RunError(error.IFC)
             screen.palette.set_entry(1, fore, check_mode=False)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_color_mode_1(self, ins, back, pal, override):
         """Helper function for COLOR in SCREEN 1."""
@@ -2161,7 +2161,7 @@ class Statements(object):
             error.range_check(-1, len(mode.colours)-1, colour)
             if colour != -1:
                 self.session.screen.palette.set_entry(attrib, colour)
-            ins.require(tk.end_statement)
+            ins.require_end()
 
     def exec_palette_using(self, ins):
         """PALETTE USING: set full colour palette."""
@@ -2188,7 +2188,7 @@ class Statements(object):
             error.range_check(-1, len(mode.colours)-1, val)
             new_palette.append(val if val > -1 else screen.palette.get_entry(i))
         screen.palette.set_all(new_palette)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_key(self, ins):
         """KEY: switch on/off or list function-key row on screen."""
@@ -2212,7 +2212,7 @@ class Statements(object):
             # key n, "TEXT"
             ins.seek(-len(d), 1)
             self.exec_key_define(ins)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_key_define(self, ins):
         """KEY: define function-key shortcut or scancode for event trapping."""
@@ -2275,14 +2275,14 @@ class Statements(object):
             # cursor shape only has an effect in text mode
             if cmode.is_text_mode:
                 self.session.screen.cursor.set_shape(start, stop)
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_write(self, ins, output=None):
         """WRITE: Output machine-readable expressions to the screen or a file."""
         output = self.parser.parse_file_number(ins, 'OAR')
         output = self.session.devices.scrn_file if output is None else output
         outstr = parseprint.write_(self.parser, ins)
-        ins.require(tk.end_statement)
+        ins.require_end()
         # write the whole thing as one thing (this affects line breaks)
         output.write_line(outstr)
 
@@ -2299,7 +2299,7 @@ class Statements(object):
             if output == self.session.devices.scrn_file and self.session.screen.overflow:
                 output.write_line()
             output.write_line()
-        ins.require(tk.end_statement)
+        ins.require_end()
 
     def exec_lprint(self, ins):
         """LPRINT: Write expressions to printer LPT1."""
@@ -2313,7 +2313,7 @@ class Statements(object):
             start = values.to_int(self.parser.parse_expression(ins))
             ins.require_read((tk.TO,))
             stop = values.to_int(self.parser.parse_expression(ins))
-            ins.require(tk.end_statement)
+            ins.require_end()
             max_line = 25 if (self.parser.syntax in ('pcjr', 'tandy') and not self.session.fkey_macros.keys_visible) else 24
             error.range_check(1, max_line, start, stop)
             self.session.screen.set_view(start, stop)
@@ -2330,7 +2330,7 @@ class Statements(object):
             w = values.to_int(self.parser.parse_expression(ins))
         else:
             # we can do calculations, but they must be bracketed...
-            if d in tk.number:
+            if d in tk.NUMBER:
                 expr = self.parser.parse_literal(ins)
             else:
                 expr = self.parser.parse_expression(ins)
@@ -2355,8 +2355,8 @@ class Statements(object):
                     # trailing comma is accepted
                     ins.skip_blank_read_if((',',))
                 # gives illegal function call, not syntax error
-            ins.require(tk.end_statement, err=error.IFC)
-        ins.require(tk.end_statement)
+            ins.require_end(err=error.IFC)
+        ins.require_end()
         dev.set_width(w)
 
     def exec_screen(self, ins):
@@ -2384,7 +2384,7 @@ class Statements(object):
         # then the error is only raised after changing the palette.
         error.range_check(0, 255, mode, color, apagenum, vpagenum)
         error.range_check(0, 2, erase)
-        ins.require(tk.end_statement)
+        ins.require_end()
         # decide whether to redraw the screen
         screen = self.session.screen
         oldmode, oldcolor = screen.mode, screen.colorswitch
@@ -2402,6 +2402,6 @@ class Statements(object):
         error.range_check(0, self.session.screen.mode.num_pages-1, src)
         ins.require_read((',',))
         dst = values.to_int(self.parser.parse_expression(ins))
-        ins.require(tk.end_statement)
+        ins.require_end()
         error.range_check(0, self.session.screen.mode.num_pages-1, dst)
         self.session.screen.copy_page(src, dst)

@@ -217,7 +217,7 @@ class Values(object):
             return numbers.Single(None, self).from_token(token)
         elif lead == tk.T_DOUBLE:
             return numbers.Double(None, self).from_token(token)
-        elif lead in tk.number:
+        elif lead in tk.NUMBER:
             return numbers.Integer(None, self).from_token(token)
         raise ValueError('%s is not a number token' % repr(token))
 

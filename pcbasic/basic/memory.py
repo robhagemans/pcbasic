@@ -311,7 +311,7 @@ class DataSegment(object):
 
     def complete_name(self, name):
         """Add default sigil to a name, if missing."""
-        if name and name[-1] not in tk.sigils:
+        if name and name[-1] not in tk.SIGILS:
             name += self.deftype[ord(name[0].upper()) - ord('A')]
         return name
 

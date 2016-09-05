@@ -478,7 +478,7 @@ class Functions(object):
 
     def value_usr(self, ins):
         """USR: get value of machine-code function; not implemented."""
-        ins.require_read(tk.digit)
+        ins.require_read(tk.DIGIT)
         self.parser.parse_bracket(ins)
         logging.warning("USR function not implemented.")
         return self.values.new_integer()

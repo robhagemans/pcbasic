@@ -325,7 +325,7 @@ class Parser(object):
                 else:
                     word += c
                 # omit trailing whitespace
-                if c not in tk.whitespace:
+                if c not in self.program_code.blanks:
                     vals += word
                     word = ''
         self.data_pos = self.program_code.tell()
@@ -380,7 +380,7 @@ class Parser(object):
         elif d in string.digits:
             return self.values.from_token(self.session.tokeniser.tokenise_number(ins))
         # number literals
-        elif d in tk.number:
+        elif d in tk.NUMBER:
             return self.values.from_token(ins.read_token())
         # gw-basic allows adding line numbers to numbers
         elif d == tk.T_UINT:

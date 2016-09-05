@@ -9,9 +9,9 @@ This file is released under the GNU GPL version 3 or later.
 import string
 
 # allowable as chars 2.. in a variable name (first char must be a letter)
-name_chars = string.ascii_letters + string.digits + '.'
+NAME_CHARS = tuple(string.ascii_letters + string.digits + '.')
 # type characters
-sigils = set(('#', '!', '%', '$'))
+SIGILS = ('#', '!', '%', '$')
 
 # indirect line number references
 T_UINT_PROC = '\x0d'
@@ -417,16 +417,13 @@ KW_DEBUG = 'DEBUG'
 # Undefined tokens:
 #   0x9A,  0x9B,  0x9F,  0xB4,  0xB5,  0xB6,  0xCB,  0xDF,  0xE0,  0xE1,  0xE2
 #   0xE3,  0xE4,  0xE5,  0xF5,  0xF6,  0xF7,  0xF8,  0xF9,  0xFA,  0xFB,  0xFC
-digit = (C_0, C_1, C_2, C_3, C_4, C_5, C_6, C_7, C_8, C_9)
-number = (T_OCT, T_HEX, T_BYTE, T_INT, T_SINGLE, T_DOUBLE,
+DIGIT = (C_0, C_1, C_2, C_3, C_4, C_5, C_6, C_7, C_8, C_9)
+NUMBER = (T_OCT, T_HEX, T_BYTE, T_INT, T_SINGLE, T_DOUBLE,
           C_0, C_1, C_2, C_3, C_4, C_5, C_6, C_7, C_8, C_9, C_10)
-linenum = (T_UINT, T_UINT_PROC)
-operator = (O_GT, O_EQ, O_LT, O_PLUS, O_MINUS,
+LINE_NUMBER = (T_UINT, T_UINT_PROC)
+OPERATOR = (O_GT, O_EQ, O_LT, O_PLUS, O_MINUS,
             O_TIMES, O_DIV, O_CARET, O_INTDIV)
-with_bracket = (SPC, TAB)
 
-# LF is just whitespace if not preceded by CR
-whitespace = (' ', '\t', '\n')
 # line ending tokens
 end_line = ('\0', '')
 # statement ending tokens

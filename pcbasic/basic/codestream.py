@@ -79,10 +79,10 @@ class CodeStream(io.BytesIO):
             # variable name must start with a letter
             self.seek(-len(d), 1)
         else:
-            while d and d in tk.name_chars:
+            while d in tk.NAME_CHARS:
                 name += d
                 d = self.read(1)
-            if d in tk.sigils:
+            if d in tk.SIGILS:
                 name += d
             else:
                 self.seek(-len(d), 1)
@@ -94,7 +94,8 @@ class CodeStream(io.BytesIO):
 class TokenisedStream(CodeStream):
     """Stream of tokenised BASIC code."""
 
-    blanks = tk.whitespace
+    # LF is just whitespace if not preceded by CR
+    blanks = (' ', '\t', '\n')
 
     def skip_to(self, findrange, break_on_first_char=True):
         """Skip until character is in findrange."""
@@ -155,4 +156,9 @@ class TokenisedStream(CodeStream):
     def require(self, rnge, err=error.STX):
         """Skip whitespace, peek and raise error if not in range."""
         if self.skip_blank(n=len(rnge[0])) not in rnge:
+            raise error.RunError(err)
+
+    def require_end(self, err=error.STX):
+        """Skip whitespace, peek and raise error if not at end of statement."""
+        if self.skip_blank() not in tk.end_statement:
             raise error.RunError(err)

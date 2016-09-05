@@ -120,7 +120,7 @@ class Program(object):
         # check if linebuf is an empty line after the line number
         empty = (c in tk.end_line)
         # check if we start with a number
-        if c in tk.number:
+        if c in tk.NUMBER:
             raise error.RunError(error.STX)
         return empty, scanline
 

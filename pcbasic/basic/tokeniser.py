@@ -15,7 +15,6 @@ from . import codestream
 from . import values
 
 
-
 class PlainTextStream(codestream.CodeStream):
     """Stream of plain-text BASIC code."""
 
@@ -227,14 +226,14 @@ class Tokeniser(object):
                         ins.seek(pos)
                 if word in (tk.KW_GOTO, tk.KW_GOSUB):
                     nxt = ins.peek()
-                    if nxt and nxt in tk.name_chars:
+                    if nxt in tk.NAME_CHARS:
                         ins.seek(pos)
                         word = 'GO'
             if word in self._keyword_to_token:
                 # ignore if part of a longer name, except FN, SPC(, TAB(, USR
                 if word not in (tk.KW_FN, tk.KW_SPC, tk.KW_TAB, tk.KW_USR):
                     nxt = ins.peek()
-                    if nxt and nxt in tk.name_chars:
+                    if nxt in tk.NAME_CHARS:
                         continue
                 token = self._keyword_to_token[word]
                 # handle special case ELSE -> :ELSE
@@ -250,7 +249,7 @@ class Tokeniser(object):
             elif not c:
                 outs.write(word)
                 break
-            elif c not in tk.name_chars:
+            elif c not in tk.NAME_CHARS:
                 word = word[:-1]
                 ins.seek(-1, 1)
                 outs.write(word)

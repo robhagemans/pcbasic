@@ -75,7 +75,7 @@ class Lister(object):
                 # even inside comments & literals
                 output += s
                 litstring = not litstring
-            elif s in tk.number or s in tk.linenum:
+            elif s in tk.NUMBER or s in tk.LINE_NUMBER:
                 self._detokenise_number(ins, s, output)
             elif comment or litstring or ('\x20' <= s <= '\x7E'):
                 # honest ASCII
@@ -108,7 +108,7 @@ class Lister(object):
                 return False
         # when we're here, s is an actual keyword token.
         # letter or number followed by token is separated by a space
-        if (output and chr(output[-1]) in (string.digits + string.ascii_letters) and s not in tk.operator):
+        if (output and chr(output[-1]) in (string.digits + string.ascii_letters) and s not in tk.OPERATOR):
             output += ' '
         output += keyword
         comment = False
@@ -148,10 +148,10 @@ class Lister(object):
         # except operator tokens and SPC(, TAB(, FN, USR
         nxt = ins.peek()
         if (not comment and
-                nxt not in tk.end_line + tk.operator +
+                nxt not in tk.end_line + tk.OPERATOR +
                         (tk.O_REM, '"', ',', ';', ' ', ':', '(', ')', '$',
                          '%', '!', '#', '_', '@', '~', '|', '`') and
-                s not in tk.operator + tk.with_bracket + (tk.USR, tk.FN)):
+                s not in tk.OPERATOR + (tk.TAB, tk.SPC, tk.USR, tk.FN)):
             # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN, \xD0 is USR.
             output += ' '
         return comment
@@ -171,7 +171,7 @@ class Lister(object):
             output += str(ord(trail))
         elif tk.C_0 <= lead <= tk.C_10:
             output += str(ord(lead) - ord(tk.C_0))
-        elif lead in tk.linenum:
+        elif lead in tk.LINE_NUMBER:
             # 0D: line pointer (unsigned int) - this token should not be here;
             #     interpret as line number and carry on
             # 0E: line number (unsigned int)
