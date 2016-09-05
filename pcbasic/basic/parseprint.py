@@ -84,11 +84,11 @@ def print_using_(parser, ins, output):
     if format_expr == '':
         raise error.RunError(error.IFC)
     ins.require_read((';',))
-    fors = io.BytesIO(format_expr)
+    fors = util.CodeStream(format_expr)
     semicolon, format_chars = False, False
     while True:
         data_ends = ins.skip_blank() in tk.end_statement
-        c = util.peek(fors)
+        c = fors.peek()
         if c == '':
             if not format_chars:
                 # there were no format chars in the string, illegal fn call (avoids infinite loop)
@@ -125,7 +125,7 @@ def print_using_(parser, ins, output):
 def _get_string_tokens(fors):
     """Get consecutive string-related formatting tokens."""
     word = ''
-    c = util.peek(fors)
+    c = fors.peek()
     if c in ('!', '&'):
         word += fors.read(1)
     elif c == '\\':
@@ -146,11 +146,11 @@ def _get_number_tokens(fors):
     """Get consecutive number-related formatting tokens."""
     word, digits_before, decimals = '', 0, 0
     # + comes first
-    leading_plus = (util.peek(fors) == '+')
+    leading_plus = (fors.peek() == '+')
     if leading_plus:
         word += fors.read(1)
     # $ and * combinations
-    c = util.peek(fors)
+    c = fors.peek()
     if c in ('$', '*'):
         word += fors.read(2)
         if word[-1] != c:
@@ -158,18 +158,18 @@ def _get_number_tokens(fors):
             return '', 0, 0
         if c == '*':
             digits_before += 2
-            if util.peek(fors) == '$':
+            if fors.peek() == '$':
                 word += fors.read(1)
         else:
             digits_before += 1
     # number field
-    c = util.peek(fors)
+    c = fors.peek()
     dot = (c == '.')
     if dot:
         word += fors.read(1)
     if c in ('.', '#'):
         while True:
-            c = util.peek(fors)
+            c = fors.peek()
             if not dot and c == '.':
                 word += fors.read(1)
                 dot = True
@@ -185,9 +185,9 @@ def _get_number_tokens(fors):
         fors.seek(-len(word), 1)
         return '', 0, 0
     # post characters
-    if util.peek(fors, 4) == '^^^^':
+    if fors.peek(4) == '^^^^':
         word += fors.read(4)
-    if not leading_plus and util.peek(fors) in ('-', '+'):
+    if not leading_plus and fors.peek() in ('-', '+'):
         word += fors.read(1)
     return word, digits_before, decimals
 
