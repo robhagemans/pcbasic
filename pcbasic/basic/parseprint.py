@@ -6,9 +6,7 @@ Formatted output handling
 This file is released under the GNU GPL version 3 or later.
 """
 
-import io
-
-from . import util
+from . import codestream
 from . import values
 from . import error
 from . import tokens as tk
@@ -84,7 +82,7 @@ def print_using_(parser, ins, output):
     if format_expr == '':
         raise error.RunError(error.IFC)
     ins.require_read((';',))
-    fors = util.CodeStream(format_expr)
+    fors = codestream.CodeStream(format_expr)
     semicolon, format_chars = False, False
     while True:
         data_ends = ins.skip_blank() in tk.end_statement

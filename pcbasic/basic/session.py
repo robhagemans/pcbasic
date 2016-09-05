@@ -17,7 +17,7 @@ from . import error
 from . import tokens as tk
 from . import tokeniser
 from . import lister
-from . import util
+from . import codestream
 from . import events
 from . import program
 from . import signals
@@ -126,7 +126,7 @@ class Session(object):
         self.tokeniser = tokeniser.Tokeniser(self.values, token_keyword)
         self.lister = lister.Lister(self.values, token_keyword)
         # initialise the program
-        bytecode = util.TokenisedStream()
+        bytecode = codestream.TokenisedStream()
         self.program = program.Program(
                 self.tokeniser, self.lister, max_list_line, allow_protect,
                 allow_code_poke, self.memory.code_start, bytecode)
@@ -172,7 +172,7 @@ class Session(object):
         # interpreter is executing a command (needs Screen)
         self._set_parse_mode(False)
         # direct line buffer
-        self.direct_line = util.TokenisedStream()
+        self.direct_line = codestream.TokenisedStream()
         # initialise the parser
         self.events.reset()
         self.parser = parser.Parser(self, syntax, pcjr_term)

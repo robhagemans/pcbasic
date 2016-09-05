@@ -16,7 +16,7 @@ from . import operators as op
 from . import functions
 from . import values
 
-from . import util
+from . import codestream
 import sys
 
 
@@ -39,7 +39,7 @@ class Parser(object):
         # pointer position: False for direct line, True for program
         self.run_mode = False
         self.program_code = session.program.bytecode
-        if not isinstance(self.program_code, util.TokenisedStream):
+        if not isinstance(self.program_code, codestream.TokenisedStream):
             print repr(self.program_code)
             sys.exit(0)
 
@@ -70,7 +70,7 @@ class Parser(object):
                 self.handle_basic_events()
                 ins = self.get_codestream()
                 self.current_statement = ins.tell()
-                if not isinstance(ins, util.TokenisedStream):
+                if not isinstance(ins, codestream.TokenisedStream):
                     print repr(ins), repr(self.program_code), repr(self.session.direct_line)
                     sys.exit(0)
 

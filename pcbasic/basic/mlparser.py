@@ -10,10 +10,10 @@ import string
 
 from . import error
 from . import values
-from . import util
+from . import codestream
 
 
-class MLParser(util.CodeStream):
+class MLParser(codestream.CodeStream):
     """Macro Language parser."""
 
     # whitespace character for both macro languages is only space
@@ -21,7 +21,7 @@ class MLParser(util.CodeStream):
 
     def __init__(self, gml, data_memory, values):
         """Initialise macro-language parser."""
-        util.CodeStream.__init__(self, gml)
+        codestream.CodeStream.__init__(self, gml)
         self.memory = data_memory
         self.values = values
 

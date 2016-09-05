@@ -11,12 +11,12 @@ import struct
 import io
 
 from . import tokens as tk
-from . import util
+from . import codestream
 from . import values
 
 
 
-class PlainTextStream(util.CodeStream):
+class PlainTextStream(codestream.CodeStream):
     """Stream of plain-text BASIC code."""
 
     blanks = ' \t\n'
@@ -58,7 +58,7 @@ class Tokeniser(object):
     def tokenise_line(self, line):
         """Convert an ascii program line to tokenised form."""
         ins = PlainTextStream(line)
-        outs = util.TokenisedStream()
+        outs = codestream.TokenisedStream()
         # skip whitespace at start of line
         d = ins.skip_blank()
         if d == '':

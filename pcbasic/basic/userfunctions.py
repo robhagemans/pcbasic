@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import struct
 
 from . import error
-from . import util
+from . import codestream
 from . import values
 from . import tokens as tk
 
@@ -86,7 +86,7 @@ class UserFunctions(object):
                 self._scalars.set(name, value)
             ins.require_read((')',))
         # execute the code
-        fns = util.TokenisedStream(fncode)
+        fns = codestream.TokenisedStream(fncode)
         fns.seek(0)
         self._parsing.add(fnname)
         value = parser.parse_expression(fns)
