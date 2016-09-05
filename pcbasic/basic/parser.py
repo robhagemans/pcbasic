@@ -295,8 +295,8 @@ class Parser(object):
         self.program_code.seek(self.data_pos)
         if util.peek(self.program_code) in tk.end_statement:
             # initialise - find first DATA
-            util.skip_to(self.program_code, ('\x84',))  # DATA
-        if self.program_code.read(1) not in ('\x84', ','):
+            util.skip_to(self.program_code, (tk.DATA,))
+        if self.program_code.read(1) not in (tk.DATA, ','):
             raise error.RunError(error.OUT_OF_DATA)
         vals, word, literal = '', '', False
         while True:
