@@ -2200,7 +2200,6 @@ class Statements(object):
 
     def exec_locate(self, ins):
         """LOCATE: Set cursor position, shape and visibility."""
-        cmode = self.session.screen.mode
         row = self.parser.parse_expression(ins, allow_empty=True)
         row = None if row is None else values.to_int(row)
         col, cursor, start, stop = None, None, None, None
@@ -2219,30 +2218,7 @@ class Statements(object):
                         if ins.skip_blank_read_if((',',)):
                             # can end on a 5th comma but no stuff allowed after it
                             pass
-        row = self.session.screen.current_row if row is None else row
-        col = self.session.screen.current_col if col is None else col
-        if row == cmode.height and self.session.fkey_macros.keys_visible:
-            raise error.RunError(error.IFC)
-        elif self.session.screen.view_set:
-            error.range_check(self.session.screen.view_start, self.session.screen.scroll_height, row)
-        else:
-            error.range_check(1, cmode.height, row)
-        error.range_check(1, cmode.width, col)
-        if row == cmode.height:
-            # temporarily allow writing on last row
-            self.session.screen.bottom_row_allowed = True
-        self.session.screen.set_pos(row, col, scroll_ok=False)
-        if cursor is not None:
-            error.range_check(0, (255 if self.parser.syntax in ('pcjr', 'tandy') else 1), cursor)
-            # set cursor visibility - this should set the flag but have no effect in graphics modes
-            self.session.screen.cursor.set_visibility(cursor != 0)
-        if stop is None:
-            stop = start
-        if start is not None:
-            error.range_check(0, 31, start, stop)
-            # cursor shape only has an effect in text mode
-            if cmode.is_text_mode:
-                self.session.screen.cursor.set_shape(start, stop)
+        self.session.screen.locate_(row, col, cursor, start, stop)
         ins.require_end()
 
     def exec_write(self, ins, output=None):
@@ -2315,7 +2291,7 @@ class Statements(object):
                 dev = self.session.devices.scrn_file
                 w = values.to_int(expr)
                 if ins.skip_blank_read_if((',',)):
-                    # pare dummy number rows setting
+                    # parse dummy number rows setting
                     num_rows_dummy = self.parser.parse_expression(ins, allow_empty=True)
                     if num_rows_dummy is not None:
                         min_num_rows = 0 if self.parser.syntax in ('pcjr', 'tandy') else 25
@@ -2353,16 +2329,7 @@ class Statements(object):
         error.range_check(0, 255, mode, color, apagenum, vpagenum)
         error.range_check(0, 2, erase)
         ins.require_end()
-        # decide whether to redraw the screen
-        screen = self.session.screen
-        oldmode, oldcolor = screen.mode, screen.colorswitch
-        screen.screen(mode, color, apagenum, vpagenum, erase)
-        if ((not screen.mode.is_text_mode and screen.mode.name != oldmode.name) or
-                (screen.mode.is_text_mode and not oldmode.is_text_mode) or
-                (screen.mode.width != oldmode.width) or
-                (screen.colorswitch != oldcolor)):
-            # rebuild the console if we've switched modes or colorswitch
-            self.session.screen.init_mode()
+        self.session.screen.screen_(mode, color, apagenum, vpagenum, erase)
 
     def exec_pcopy(self, ins):
         """PCOPY: copy video pages."""

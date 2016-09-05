@@ -563,9 +563,21 @@ class Screen(object):
                                 self.mode.pixel_width-1, self.mode.pixel_height-1,
                                 self.pixels.pages[pagenum].buffer)))
 
+    def screen_(self, mode, colorswitch, apagenum, vpagenum, erase):
+        """SCREEN: change the video mode, colourburst, visible or active page."""
+        # decide whether to redraw the screen
+        oldmode, oldcolor = self.mode, self.colorswitch
+        self.screen(mode, colorswitch, apagenum, vpagenum, erase)
+        if ((not self.mode.is_text_mode and self.mode.name != oldmode.name) or
+                (self.mode.is_text_mode and not oldmode.is_text_mode) or
+                (self.mode.width != oldmode.width) or
+                (self.colorswitch != oldcolor)):
+            # rebuild the console if we've switched modes or colorswitch
+            self.init_mode()
+
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum,
                erase=1, new_width=None):
-        """SCREEN: change the video mode, colourburst, visible or active page."""
+        """Change the video mode, colourburst, visible or active page."""
         # reset palette happens even if the SCREEN call fails
         self.palette = Palette(self.mode, self.capabilities)
         # set default arguments
@@ -987,6 +999,34 @@ class Screen(object):
             self.set_pos(self.current_row + 1, 1)
         # ensure line above doesn't wrap
         self.apage.row[self.current_row-2].wrap = False
+
+    def locate_(self, row, col, cursor, start, stop):
+        """LOCATE: Set cursor position, shape and visibility."""
+        row = self.current_row if row is None else row
+        col = self.current_col if col is None else col
+        cmode = self.mode
+        if row == cmode.height and self.fkey_macros.keys_visible:
+            raise error.RunError(error.IFC)
+        elif self.view_set:
+            error.range_check(self.view_start, self.scroll_height, row)
+        else:
+            error.range_check(1, cmode.height, row)
+        error.range_check(1, cmode.width, col)
+        if row == cmode.height:
+            # temporarily allow writing on last row
+            self.bottom_row_allowed = True
+        self.set_pos(row, col, scroll_ok=False)
+        if cursor is not None:
+            error.range_check(0, (255 if self.capabilities in ('pcjr', 'tandy') else 1), cursor)
+            # set cursor visibility - this should set the flag but have no effect in graphics modes
+            self.cursor.set_visibility(cursor != 0)
+        if stop is None:
+            stop = start
+        if start is not None:
+            error.range_check(0, 31, start, stop)
+            # cursor shape only has an effect in text mode
+            if cmode.is_text_mode:
+                self.cursor.set_shape(start, stop)
 
     def set_pos(self, to_row, to_col, scroll_ok=True):
         """Set the current position."""
