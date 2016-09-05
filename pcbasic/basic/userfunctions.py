@@ -32,7 +32,7 @@ class UserFunctions(object):
         if ins.skip_blank_read_if(('(',)):
             while True:
                 fnvars.append(parser.parse_scalar(ins))
-                if ins.skip_blank() in tk.end_statement + (')',):
+                if ins.skip_blank() in tk.END_STATEMENT + (')',):
                     break
                 ins.require_read((',',))
             ins.require_read((')',))
@@ -40,7 +40,7 @@ class UserFunctions(object):
         fncode = ''
         ins.require_read((tk.O_EQ,)) #=
         startloc = ins.tell()
-        ins.skip_to(tk.end_statement)
+        ins.skip_to(tk.END_STATEMENT)
         endloc = ins.tell()
         ins.seek(startloc)
         fncode = ins.read(endloc - startloc)

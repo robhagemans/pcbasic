@@ -127,8 +127,8 @@ class TokenisedStream(CodeStream):
                 if len(off) < 2 or off == '\0\0':
                     break
                 self.read(2)
-            elif c in tk.plus_bytes:
-                self.read(tk.plus_bytes[c])
+            elif c in tk.PLUS_BYTES:
+                self.read(tk.PLUS_BYTES[c])
 
     def skip_to_read(self, findrange):
         """Skip until character is in findrange, then read."""
@@ -139,7 +139,7 @@ class TokenisedStream(CodeStream):
         """Read full token, including trailing bytes."""
         lead = self.read(1)
         try:
-            length = tk.plus_bytes[lead]
+            length = tk.PLUS_BYTES[lead]
         except KeyError:
             length = 0
         trail = self.read(length)
@@ -160,5 +160,5 @@ class TokenisedStream(CodeStream):
 
     def require_end(self, err=error.STX):
         """Skip whitespace, peek and raise error if not at end of statement."""
-        if self.skip_blank() not in tk.end_statement:
+        if self.skip_blank() not in tk.END_STATEMENT:
             raise error.RunError(err)

@@ -177,12 +177,12 @@ class Statements(object):
     def exec_rem(self, ins):
         """REM: comment."""
         # skip the rest of the line, but parse numbers to avoid triggering EOL
-        ins.skip_to(tk.end_line)
+        ins.skip_to(tk.END_LINE)
 
     def exec_lcopy(self, ins):
         """LCOPY: do nothing but check for syntax errors."""
         # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
-        if ins.skip_blank() not in tk.end_statement:
+        if ins.skip_blank() not in tk.END_STATEMENT:
             error.range_check(0, 255, values.to_int(
                     self.parser.parse_expression(ins)))
             ins.require_end()
@@ -198,7 +198,7 @@ class Statements(object):
         # rest of the line is considered to be a python statement
         ins.skip_blank()
         debug_cmd = ''
-        while ins.peek() not in tk.end_line:
+        while ins.peek() not in tk.END_LINE:
             debug_cmd += ins.read(1)
         self.session.debugger.debug_exec(debug_cmd)
 
@@ -655,7 +655,7 @@ class Statements(object):
     def exec_files(self, ins):
         """FILES: output directory listing."""
         pathmask = ''
-        if ins.skip_blank() not in tk.end_statement:
+        if ins.skip_blank() not in tk.END_STATEMENT:
             pathmask = self.parser.parse_temporary_string(ins)
             if not pathmask:
                 raise error.RunError(error.BAD_FILE_NAME)
@@ -671,7 +671,7 @@ class Statements(object):
         """SHELL: open OS shell and optionally execute command."""
         # parse optional shell command
         cmd = b''
-        if ins.skip_blank() not in tk.end_statement:
+        if ins.skip_blank() not in tk.END_STATEMENT:
             cmd = self.parser.parse_temporary_string(ins)
         # no SHELL on PCjr.
         if self.parser.syntax == 'pcjr':
@@ -765,7 +765,7 @@ class Statements(object):
 
     def exec_edit(self, ins):
         """EDIT: output a program line and position cursor for editing."""
-        if ins.skip_blank() in tk.end_statement:
+        if ins.skip_blank() in tk.END_STATEMENT:
             # undefined line number
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         from_line = self._parse_jumpnum_or_dot(ins, err=error.IFC)
@@ -802,7 +802,7 @@ class Statements(object):
             outname = self.parser.parse_temporary_string(ins)
             out = self.session.files.open(0, outname, filetype='A', mode='O')
             # ignore everything after file spec
-            ins.skip_to(tk.end_line)
+            ins.skip_to(tk.END_LINE)
         ins.require_end()
         lines = self.session.program.list_lines(from_line, to_line)
         if out:
@@ -905,7 +905,7 @@ class Statements(object):
             delete_lines = (from_line, to_line)
             # ignore rest if preceded by cmma
             if ins.skip_blank_read_if((',',)):
-                ins.skip_to(tk.end_statement)
+                ins.skip_to(tk.END_STATEMENT)
         return delete_lines
 
     def exec_save(self, ins):
@@ -947,7 +947,7 @@ class Statements(object):
     def exec_renum(self, ins):
         """RENUM: renumber program line numbers."""
         new, old, step = None, None, None
-        if ins.skip_blank() not in tk.end_statement:
+        if ins.skip_blank() not in tk.END_STATEMENT:
             new = self._parse_jumpnum_or_dot(ins, allow_empty=True)
             if ins.skip_blank_read_if((',',)):
                 old = self._parse_jumpnum_or_dot(ins, allow_empty=True)
@@ -1015,7 +1015,7 @@ class Statements(object):
                 c = ins.skip_blank()
                 # read word
                 word = ''
-                while c and c not in ins.blanks and c not in tk.end_statement:
+                while c and c not in ins.blanks and c not in tk.END_STATEMENT:
                     word += ins.read(1)
                     c = ins.peek().upper()
                 try:
@@ -1057,7 +1057,7 @@ class Statements(object):
 
     def exec_close(self, ins):
         """CLOSE: close a file."""
-        if ins.skip_blank() in tk.end_statement:
+        if ins.skip_blank() in tk.END_STATEMENT:
             # allow empty CLOSE; close all open files
             self.session.files.close_all()
         else:
@@ -1428,7 +1428,7 @@ class Statements(object):
         """Helper function for FOR: skip over bytecode until NEXT."""
         stack = 0
         while True:
-            c = ins.skip_to_read(tk.end_statement+(tk.THEN, tk.ELSE))
+            c = ins.skip_to_read(tk.END_STATEMENT + (tk.THEN, tk.ELSE))
             # skip line number, if there
             if c == '\0' and self.session.lister.detokenise_line_number(ins) == -1:
                 break
@@ -1447,8 +1447,8 @@ class Statements(object):
                     stack -= 1
                     # NEXT I, J
                     if allow_comma:
-                        while (ins.skip_blank() not in tk.end_statement):
-                            ins.skip_to(tk.end_statement + (',',))
+                        while (ins.skip_blank() not in tk.END_STATEMENT):
+                            ins.skip_to(tk.END_STATEMENT + (',',))
                             if ins.peek() == ',':
                                 if stack > 0:
                                     ins.read(1)
@@ -1488,7 +1488,7 @@ class Statements(object):
             # if we haven't read a variable, we shouldn't find something else here
             # but if we have and we iterate, the rest of the line is ignored
             if name is None:
-                ins.require(tk.end_statement + (',',))
+                ins.require(tk.END_STATEMENT + (',',))
             # increment counter, check condition
             if self.parser.loop_iterate(ins, pos):
                 break
@@ -1510,7 +1510,7 @@ class Statements(object):
         if c == tk.T_UINT:
             # parse line number and ignore rest of line
             jumpnum = self.parse_jumpnum(ins)
-        elif c not in tk.end_statement:
+        elif c not in tk.END_STATEMENT:
             name = self.parser.parse_temporary_string(ins)
             if ins.skip_blank_read_if((',',)):
                 ins.require_read('R')
@@ -1538,7 +1538,7 @@ class Statements(object):
             # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
             nesting_level = 0
             while True:
-                d = ins.skip_to_read(tk.end_statement + (tk.IF,))
+                d = ins.skip_to_read(tk.END_STATEMENT + (tk.IF,))
                 if d == tk.IF:
                     # nexting step on IF. (it's less convenient to count THENs because they could be THEN, GOTO or THEN GOTO.)
                     nesting_level += 1
@@ -1559,7 +1559,7 @@ class Statements(object):
     def exec_else(self, ins):
         """ELSE: part of branch statement; ignore."""
         # any else statement by itself means the THEN has already been executed, so it's really like a REM.
-        ins.skip_to(tk.end_line)
+        ins.skip_to(tk.END_LINE)
 
     def exec_while(self, ins):
         """WHILE: enter while-loop."""
@@ -1570,7 +1570,7 @@ class Statements(object):
         # find matching WEND
         self._skip_to_next(ins, tk.WHILE, tk.WEND)
         if ins.read(1) == tk.WEND:
-            ins.skip_to(tk.end_statement)
+            ins.skip_to(tk.END_STATEMENT)
             wendpos = ins.tell()
             self.parser.while_stack.append((whilepos, wendpos))
         else:
@@ -1617,7 +1617,7 @@ class Statements(object):
         jumps = []
         while True:
             d = ins.skip_blank_read()
-            if d in tk.end_statement:
+            if d in tk.END_STATEMENT:
                 ins.seek(-len(d), 1)
                 break
             elif d in (tk.T_UINT,):
@@ -1635,7 +1635,7 @@ class Statements(object):
                 self.parser.jump(self.parse_jumpnum(ins))
             elif command == tk.GOSUB:
                 self.exec_gosub(ins)
-        ins.skip_to(tk.end_statement)
+        ins.skip_to(tk.END_STATEMENT)
 
     def exec_on_error(self, ins):
         """ON ERROR: define error trapping routine."""
@@ -1663,7 +1663,7 @@ class Statements(object):
         if c == tk.NEXT:
             ins.read(1)
             jumpnum = -1
-        elif c not in tk.end_statement:
+        elif c not in tk.END_STATEMENT:
             jumpnum = self.parse_jumpnum(ins)
         else:
             jumpnum = 0
@@ -1679,7 +1679,7 @@ class Statements(object):
         elif jumpnum == -1:
             # RESUME NEXT
             self.parser.set_pointer(runmode, start_statement)
-            self.parser.get_codestream().skip_to(tk.end_statement, break_on_first_char=False)
+            self.parser.get_codestream().skip_to(tk.END_STATEMENT, break_on_first_char=False)
         else:
             # RESUME n
             self.parser.jump(jumpnum)
@@ -1694,16 +1694,16 @@ class Statements(object):
         """GOSUB: jump into a subroutine."""
         jumpnum = self.parse_jumpnum(ins)
         # ignore rest of statement ('GOSUB 100 LAH' works just fine..); we need to be able to RETURN
-        ins.skip_to(tk.end_statement)
+        ins.skip_to(tk.END_STATEMENT)
         self.parser.jump_gosub(jumpnum)
 
     def exec_return(self, ins):
         """RETURN: return from a subroutine."""
         # return *can* have a line number
-        if ins.skip_blank() not in tk.end_statement:
+        if ins.skip_blank() not in tk.END_STATEMENT:
             jumpnum = self.parse_jumpnum(ins)
             # rest of line is ignored
-            ins.skip_to(tk.end_statement)
+            ins.skip_to(tk.END_STATEMENT)
         else:
             jumpnum = None
         self.parser.jump_return(jumpnum)
@@ -1781,7 +1781,7 @@ class Statements(object):
     def exec_data(self, ins):
         """DATA: data definition; ignore."""
         # ignore rest of statement after DATA
-        ins.skip_to(tk.end_statement)
+        ins.skip_to(tk.END_STATEMENT)
 
     def exec_dim(self, ins):
         """DIM: dimension arrays."""
@@ -1882,7 +1882,7 @@ class Statements(object):
                 raise error.RunError(error.STX)
         else:
             raise error.RunError(error.STX)
-        ins.skip_to(tk.end_statement)
+        ins.skip_to(tk.END_STATEMENT)
 
     def exec_read(self, ins):
         """READ: read values from DATA statement."""
@@ -1912,7 +1912,7 @@ class Statements(object):
             prompt = ''
             # only literal allowed, not a string expression
             d = ins.read(1)
-            while d not in tk.end_line + ('"',)  :
+            while d not in tk.END_LINE + ('"',)  :
                 prompt += d
                 d = ins.read(1)
             if d == '\0':
@@ -1985,7 +1985,7 @@ class Statements(object):
 
     def exec_restore(self, ins):
         """RESTORE: reset DATA pointer."""
-        if not ins.skip_blank() in tk.end_statement:
+        if not ins.skip_blank() in tk.END_STATEMENT:
             datanum = self.parse_jumpnum(ins, err=error.UNDEFINED_LINE_NUMBER)
         else:
             datanum = -1
@@ -2032,7 +2032,7 @@ class Statements(object):
     def exec_cls(self, ins):
         """CLS: clear the screen."""
         if (self.parser.syntax == 'pcjr' or
-                        ins.skip_blank() in (',',) + tk.end_statement):
+                        ins.skip_blank() in (',',) + tk.END_STATEMENT):
             if self.session.screen.graph_view.is_set():
                 val = 1
             elif self.session.screen.view_set:
@@ -2142,7 +2142,7 @@ class Statements(object):
     def exec_palette(self, ins):
         """PALETTE: set colour palette entry."""
         d = ins.skip_blank()
-        if d in tk.end_statement:
+        if d in tk.END_STATEMENT:
             # reset palette
             self.session.screen.palette.set_all(self.session.screen.mode.palette)
         elif d == tk.USING:
@@ -2307,7 +2307,7 @@ class Statements(object):
 
     def exec_view_print(self, ins):
         """VIEW PRINT: set scroll region."""
-        if ins.skip_blank() in tk.end_statement:
+        if ins.skip_blank() in tk.END_STATEMENT:
             self.session.screen.unset_view()
         else:
             start = values.to_int(self.parser.parse_expression(ins))

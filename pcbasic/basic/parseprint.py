@@ -40,7 +40,7 @@ def print_(parser, ins, output):
             ins.read(1)
             newline = print_using_(parser, ins, output)
             break
-        elif d in tk.end_statement:
+        elif d in tk.END_STATEMENT:
             break
         elif d in (',', ';', tk.SPC, tk.TAB):
             ins.read(1)
@@ -85,7 +85,7 @@ def print_using_(parser, ins, output):
     fors = codestream.CodeStream(format_expr)
     semicolon, format_chars = False, False
     while True:
-        data_ends = ins.skip_blank() in tk.end_statement
+        data_ends = ins.skip_blank() in tk.END_STATEMENT
         c = fors.peek()
         if c == '':
             if not format_chars:

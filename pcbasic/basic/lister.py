@@ -63,7 +63,7 @@ class Lister(object):
             s = ins.read(1)
             if not textpos and ins.tell() >= bytepos:
                 textpos = len(output)
-            if s in tk.end_line:
+            if s in tk.END_LINE:
                 # \x00 ends lines and comments when listed,
                 # if not inside a number constant
                 # stream ended or end of line
@@ -148,7 +148,7 @@ class Lister(object):
         # except operator tokens and SPC(, TAB(, FN, USR
         nxt = ins.peek()
         if (not comment and
-                nxt not in tk.end_line + tk.OPERATOR +
+                nxt not in tk.END_LINE + tk.OPERATOR +
                         (tk.O_REM, '"', ',', ';', ' ', ':', '(', ')', '$',
                          '%', '!', '#', '_', '@', '~', '|', '`') and
                 s not in tk.OPERATOR + (tk.TAB, tk.SPC, tk.USR, tk.FN)):
@@ -158,7 +158,7 @@ class Lister(object):
 
     def _detokenise_number(self, ins, lead, output):
         """Convert number token to Python string."""
-        ntrail = tk.plus_bytes.get(lead, 0)
+        ntrail = tk.PLUS_BYTES.get(lead, 0)
         trail = ins.read(ntrail)
         if len(trail) != ntrail:
             # not sure what GW does if the file is truncated here - we just stop

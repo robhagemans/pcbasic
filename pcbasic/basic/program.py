@@ -75,7 +75,7 @@ class Program(object):
                 break
             self.line_numbers[scanline] = scanpos
             last = scanpos
-            self.bytecode.skip_to(tk.end_line)
+            self.bytecode.skip_to(tk.END_LINE)
             scanpos = self.bytecode.tell()
             offsets.append(scanpos)
         self.line_numbers[65536] = scanpos
@@ -118,7 +118,7 @@ class Program(object):
         scanline = self.lister.detokenise_line_number(linebuf)
         c = linebuf.skip_blank_read()
         # check if linebuf is an empty line after the line number
-        empty = (c in tk.end_line)
+        empty = (c in tk.END_LINE)
         # check if we start with a number
         if c in tk.NUMBER:
             raise error.RunError(error.STX)
@@ -132,7 +132,7 @@ class Program(object):
         linebuf.seek(1)
         scanline = self.lister.detokenise_line_number(linebuf)
         # check if linebuf is an empty line after the line number
-        empty = (linebuf.skip_blank_read() in tk.end_line)
+        empty = (linebuf.skip_blank_read() in tk.END_LINE)
         pos, afterpos, deleteable, beyond = self.find_pos_line_dict(scanline, scanline)
         if empty and not deleteable:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
@@ -309,7 +309,7 @@ class Program(object):
                 self.store_line(linebuf)
             else:
                 # we have read the :
-                if linebuf.skip_blank() not in tk.end_line:
+                if linebuf.skip_blank() not in tk.END_LINE:
                     raise error.RunError(error.DIRECT_STATEMENT_IN_FILE)
 
     def save(self, g):

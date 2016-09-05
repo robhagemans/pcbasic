@@ -425,21 +425,21 @@ OPERATOR = (O_GT, O_EQ, O_LT, O_PLUS, O_MINUS,
             O_TIMES, O_DIV, O_CARET, O_INTDIV)
 
 # line ending tokens
-end_line = ('\0', '')
+END_LINE = ('\0', '')
 # statement ending tokens
-end_statement = end_line + (':',)
+END_STATEMENT = END_LINE + (':',)
 # expression ending tokens
-end_expression = end_statement + (')', ']', ',', ';')
+END_EXPRESSION = END_STATEMENT + (')', ']', ',', ';')
 ## tokens followed by one or more bytes to be skipped
-plus_bytes = {
+PLUS_BYTES = {
     T_BYTE:1, '\xff':1 , '\xfe':1, '\xfd':1, T_OCT:2, T_HEX:2,
     T_UINT_PROC:2, T_UINT:2, T_INT:2, T_SINGLE:4, T_DOUBLE:8, '\0':4}
 # two-byte keyword token lead bytes
-twobyte = ('\xff', '\xfe', '\xfd')
+TWOBYTE = ('\xff', '\xfe', '\xfd')
 
 
 # keyword dictionary
-keyword = {
+KEYWORDS = {
     END: KW_END, FOR: KW_FOR, NEXT: KW_NEXT, DATA: KW_DATA, INPUT: KW_INPUT,
     DIM: KW_DIM, READ: KW_READ, LET: KW_LET, GOTO: KW_GOTO, RUN: KW_RUN, IF: KW_IF,
     RESTORE: KW_RESTORE, GOSUB: KW_GOSUB, RETURN: KW_RETURN, REM: KW_REM,
@@ -480,15 +480,13 @@ keyword = {
     LOF: KW_LOF,
     }
 
-extra_keywords = {NOISE: KW_NOISE, TERM: KW_TERM, DEBUG: KW_DEBUG}
-
 
 class TokenKeywordDict(object):
     """Token to keyword conversion for given BASIC syntax."""
 
     def __init__(self, syntax, debug):
         """Build dictionaries."""
-        self.to_keyword = dict(keyword)
+        self.to_keyword = dict(KEYWORDS)
         if debug:
             # NOTE: PC-BASIC only. Not the same command or token as Sperry DEBUG.
             self.to_keyword[DEBUG] = KW_DEBUG

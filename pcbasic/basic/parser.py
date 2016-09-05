@@ -76,7 +76,7 @@ class Parser(object):
 
                 c = ins.skip_blank()
                 # parse line number or : at start of statement
-                if c in tk.end_line:
+                if c in tk.END_LINE:
                     # line number marker, new statement
                     token = ins.read(5)
                     # end of program or truncated file
@@ -97,7 +97,7 @@ class Parser(object):
                     ins.read(1)
                 c = ins.skip_blank()
                 # empty statement, return to parse next
-                if c in tk.end_statement:
+                if c in tk.END_STATEMENT:
                     continue
                 # implicit LET
                 elif c in string.ascii_letters:
@@ -105,7 +105,7 @@ class Parser(object):
                 # token
                 else:
                     ins.read(1)
-                    if c in tk.twobyte:
+                    if c in tk.TWOBYTE:
                         c += ins.read(1)
                     # don't use try-block to avoid catching other KeyErrors in statement
                     if c not in self.statements.statements:
@@ -298,7 +298,7 @@ class Parser(object):
         """READ a unit of DATA."""
         current = self.program_code.tell()
         self.program_code.seek(self.data_pos)
-        if self.program_code.peek() in tk.end_statement:
+        if self.program_code.peek() in tk.END_STATEMENT:
             # initialise - find first DATA
             self.program_code.skip_to((tk.DATA,))
         if self.program_code.read(1) not in (tk.DATA, ','):
@@ -311,13 +311,13 @@ class Parser(object):
             else:
                 c = self.program_code.peek()
             # parse char
-            if c == '' or (not literal and c == ',') or (c in tk.end_line or (not literal and c in tk.end_statement)):
+            if c == '' or (not literal and c == ',') or (c in tk.END_LINE or (not literal and c in tk.END_STATEMENT)):
                 break
             elif c == '"':
                 self.program_code.read(1)
                 literal = not literal
                 if not literal:
-                    self.program_code.require(tk.end_statement + (',',))
+                    self.program_code.require(tk.END_STATEMENT + (',',))
             else:
                 self.program_code.read(1)
                 if literal:
@@ -367,7 +367,7 @@ class Parser(object):
             # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a
             # line number afterwards, etc. We follow this.
             d = ins.read(1)
-            while d not in tk.end_line + ('"',):
+            while d not in tk.END_LINE + ('"',):
                 output += d
                 d = ins.read(1)
             if d == '\0':
@@ -440,7 +440,7 @@ class Parser(object):
             last = d
             d = ins.skip_blank()
             # two-byte function tokens
-            if d in tk.twobyte:
+            if d in tk.TWOBYTE:
                 d = ins.peek(n=2)
             if d == tk.NOT and not (last in op.OPERATORS or last == ''):
                 # unary NOT ends expression except after another operator or at start
@@ -480,9 +480,9 @@ class Parser(object):
                 # apply functions
                 ins.read(len(d))
                 units.append(self.functions.functions[d](ins))
-            elif d in tk.end_statement:
+            elif d in tk.END_STATEMENT:
                 break
-            elif d in tk.end_expression:
+            elif d in tk.END_EXPRESSION:
                 # missing operand inside brackets or before comma is syntax error
                 empty_err = error.STX
                 break
