@@ -25,7 +25,7 @@ class MLParser(codestream.CodeStream):
         self.memory = data_memory
         self.values = values
 
-    def parse_value(self, default):
+    def parse_number(self, default=None):
         """Parse a value in a macro-language string."""
         c = self.skip_blank()
         sgn = -1 if c == '-' else 1
@@ -42,11 +42,11 @@ class MLParser(codestream.CodeStream):
             elif ord(c) > 8:
                 name = self.read_name()
                 indices = self._parse_indices()
-                step = self.memory.get_variable(name, indices)
+                step = self.memory.get_variable(name, indices).to_int()
                 self.require_read((';',), err=error.IFC)
             else:
                 # varptr$
-                step = self.memory.get_value_for_varptrstr(self.read(3))
+                step = self.memory.get_value_for_varptrstr(self.read(3)).to_int()
         elif c and c in string.digits:
             step = self._parse_const()
         elif default is not None:
@@ -54,17 +54,8 @@ class MLParser(codestream.CodeStream):
         else:
             raise error.RunError(error.IFC)
         if sgn == -1:
-            step = values.neg(step)
+            step = -step
         return step
-
-    def parse_number(self, default=None):
-        """Parse and return a number value in a macro-language string."""
-        try:
-            return values.to_int(self.parse_value(default))
-        except error.RunError as e:
-            if e.err == error.TYPE_MISMATCH:
-                e.err = error.IFC
-            raise e
 
     def parse_string(self):
         """Parse a string value in a macro-language string."""
@@ -89,38 +80,21 @@ class MLParser(codestream.CodeStream):
 
     def _parse_const(self):
         """Parse and return a constant value in a macro-language string."""
-        c = self.skip_blank()
-        if c and c in string.digits:
-            numstr = ''
-            while c and c in string.digits:
-                self.read(1)
-                numstr += c
-                c = self.skip_blank()
-            return self.values.new_single().from_int(int(numstr))
-        else:
-            raise error.RunError(error.IFC)
-
-    def _parse_const_int(self):
-        """Parse a constant value in a macro-language string, return Python int."""
+        numstr = ''
+        while self.skip_blank() in set(string.digits):
+            numstr += self.read(1)
         try:
-            return values.to_int(self._parse_const())
-        except error.RunError as e:
-            if e.err == error.TYPE_MISMATCH:
-                e.err = error.IFC
-            raise e
+            return int(numstr)
+        except ValueError:
+            raise error.RunError(error.IFC)
 
     def _parse_indices(self):
         """Parse constant array indices."""
         indices = []
-        c = self.skip_blank()
-        if c in ('[', '('):
-            self.read(1)
+        if self.skip_blank_read_if(('[', '(')):
             while True:
-                indices.append(self._parse_const_int())
-                c = self.skip_blank()
-                if c == ',':
-                    self.read(1)
-                else:
+                indices.append(self._parse_const())
+                if not self.skip_blank_read_if((',',)):
                     break
             self.require_read((']', ')'))
         return indices

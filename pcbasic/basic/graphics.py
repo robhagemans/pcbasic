@@ -718,7 +718,6 @@ class Drawing(object):
                 else:
                     attr = gmls.parse_number()
                     # 100000 seems to be GW's limit
-                    # however, parse_number will overflow past signed int limits
                     error.range_check(-99999, 99999, attr)
                     self.last_attr = attr
             elif c == 'S':
@@ -748,9 +747,8 @@ class Drawing(object):
                     self.draw_angle = angle
             # one-variable movement commands:
             elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
-                step = gmls.parse_number(default=value_handler.from_value(1, values.INT))
+                step = gmls.parse_number(default=1)
                 # 100000 seems to be GW's limit
-                # however, parse_number will overflow past signed int limits
                 error.range_check(-99999, 99999, step)
                 x0, y0 = self.last_point
                 x1, y1 = 0, 0
