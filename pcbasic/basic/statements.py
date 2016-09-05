@@ -1424,42 +1424,10 @@ class Statements(object):
         self.parser.loop_init(ins, endforpos, nextpos, varname, start, stop, step)
         self.exec_next(ins)
 
-    def _skip_to_next(self, ins, for_char, next_char, allow_comma=False):
-        """Helper function for FOR: skip over bytecode until NEXT."""
-        stack = 0
-        while True:
-            c = ins.skip_to_read(tk.END_STATEMENT + (tk.THEN, tk.ELSE))
-            # skip line number, if there
-            if c == '\0' and self.session.lister.detokenise_line_number(ins) == -1:
-                break
-            # get first keyword in statement
-            d = ins.skip_blank()
-            if d == '':
-                break
-            elif d == for_char:
-                ins.read(1)
-                stack += 1
-            elif d == next_char:
-                if stack <= 0:
-                    break
-                else:
-                    ins.read(1)
-                    stack -= 1
-                    # NEXT I, J
-                    if allow_comma:
-                        while (ins.skip_blank() not in tk.END_STATEMENT):
-                            ins.skip_to(tk.END_STATEMENT + (',',))
-                            if ins.peek() == ',':
-                                if stack > 0:
-                                    ins.read(1)
-                                    stack -= 1
-                                else:
-                                    return
-
     def _find_next(self, ins, varname):
         """Helper function for FOR: find the right NEXT."""
         current = ins.tell()
-        self._skip_to_next(ins, tk.FOR, tk.NEXT, allow_comma=True)
+        ins.skip_block(tk.FOR, tk.NEXT, allow_comma=True)
         if ins.skip_blank() not in (tk.NEXT, ','):
             # FOR without NEXT marked with FOR line number
             ins.seek(current)
@@ -1568,7 +1536,7 @@ class Statements(object):
         # evaluate the 'boolean' expression
         # use double to avoid overflows
         # find matching WEND
-        self._skip_to_next(ins, tk.WHILE, tk.WEND)
+        ins.skip_block(tk.WHILE, tk.WEND)
         if ins.read(1) == tk.WEND:
             ins.skip_to(tk.END_STATEMENT)
             wendpos = ins.tell()

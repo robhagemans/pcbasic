@@ -162,3 +162,38 @@ class TokenisedStream(CodeStream):
         """Skip whitespace, peek and raise error if not at end of statement."""
         if self.skip_blank() not in tk.END_STATEMENT:
             raise error.RunError(err)
+
+    def skip_block(self, for_char, next_char, allow_comma=False):
+        """Helper function for block statements: skip over bytecode until block end token."""
+        stack = 0
+        while True:
+            c = self.skip_to_read(tk.END_STATEMENT + (tk.THEN, tk.ELSE))
+            # skip line number, if there
+            if c == '\0':
+                # break on end of stream
+                trail = self.read(4)
+                if len(trail) < 2 or trail[:2] == '\0\0':
+                    break
+            # get first keyword in statement
+            d = self.skip_blank()
+            if d == '':
+                break
+            elif d == for_char:
+                self.read(1)
+                stack += 1
+            elif d == next_char:
+                if stack <= 0:
+                    break
+                else:
+                    self.read(1)
+                    stack -= 1
+                    # NEXT I, J
+                    if allow_comma:
+                        while (self.skip_blank() not in tk.END_STATEMENT):
+                            self.skip_to(tk.END_STATEMENT + (',',))
+                            if self.peek() == ',':
+                                if stack > 0:
+                                    self.read(1)
+                                    stack -= 1
+                                else:
+                                    return
