@@ -2117,61 +2117,27 @@ class Statements(object):
             ins.read(1)
             self.exec_palette_using(ins)
         else:
-            # can't set blinking colours separately
-            mode = self.session.screen.mode
-            num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
-            attrib = values.to_int(self.parser.parse_expression(ins))
+            attrib = self.parser.parse_value(ins, values.INT, allow_empty=True)
             ins.require_read((',',))
-            colour = values.to_int(self.parser.parse_expression(ins))
-            if attrib is None or colour is None:
-                raise error.RunError(error.STX)
-            error.range_check(0, num_palette_entries-1, attrib)
-            error.range_check(-1, len(mode.colours)-1, colour)
-            if colour != -1:
-                self.session.screen.palette.set_entry(attrib, colour)
+            colour = self.parser.parse_value(ins, values.INT, allow_empty=True)
+            error.throw_if(attrib is None or colour is None, error.STX)
+            self.session.screen.palette.palette_(attrib, colour)
             ins.require_end()
 
     def exec_palette_using(self, ins):
         """PALETTE USING: set full colour palette."""
-        screen = self.session.screen
-        mode = screen.mode
-        num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
         array_name, start_indices = self.parser.parse_variable(ins)
         # brackets are not optional
-        if not start_indices:
-            raise error.RunError(error.STX)
-        try:
-            dimensions = self.session.arrays.dimensions(array_name)
-        except KeyError:
-            raise error.RunError(error.IFC)
-        if array_name[-1] != '%':
-            raise error.RunError(error.TYPE_MISMATCH)
-        lst = self.session.arrays.view_full_buffer(array_name)
-        start = self.session.arrays.index(start_indices, dimensions)
-        if self.session.arrays.array_len(dimensions) - start < num_palette_entries:
-            raise error.RunError(error.IFC)
-        new_palette = []
-        for i in range(num_palette_entries):
-            val = self.values.from_bytes(lst[(start+i)*2:(start+i+1)*2]).to_int()
-            error.range_check(-1, len(mode.colours)-1, val)
-            new_palette.append(val if val > -1 else screen.palette.get_entry(i))
-        screen.palette.set_all(new_palette)
+        error.throw_if(not start_indices, error.STX)
+        self.session.screen.palette.palette_using_(array_name, start_indices, self.session.arrays)
         ins.require_end()
 
     def exec_key(self, ins):
         """KEY: switch on/off or list function-key row on screen."""
         d = ins.skip_blank_read()
-        if d == tk.ON:
-            # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
-            if self.session.screen.scroll_height == 25:
-                raise error.RunError(error.IFC)
-            if not self.session.fkey_macros.keys_visible:
-                self.session.fkey_macros.show_keys(self.session.screen, True)
-        elif d == tk.OFF:
-            if self.session.fkey_macros.keys_visible:
-                self.session.fkey_macros.show_keys(self.session.screen, False)
-        elif d == tk.LIST:
-            self.session.fkey_macros.list_keys(self.session.screen)
+        if d in (tk.ON, tk.OFF, tk.LIST):
+            # KEY ON, KEY OFF, KEY LIST
+            self.session.fkey_macros.key_(d, self.session.screen)
         elif d == '(':
             # key (n)
             ins.seek(-1, 1)
@@ -2189,8 +2155,7 @@ class Statements(object):
         ins.require_read((',',), err=error.IFC)
         text = self.parser.parse_temporary_string(ins)
         if keynum <= self.session.events.num_fn_keys:
-            self.session.fkey_macros.set(keynum, text)
-            self.session.fkey_macros.redraw_keys(self.session.screen)
+            self.session.fkey_macros.set(keynum, text, screen)
         else:
             # only length-2 expressions can be assigned to KEYs over 10
             # in which case it's a key scancode definition

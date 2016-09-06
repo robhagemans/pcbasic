@@ -104,15 +104,30 @@ class FunctionKeyMacros(object):
             screen.put_char_attr(screen.apagenum, 25, col+i,
                     self._replace_chars.get(c, c), cattr, for_keys=True)
 
-    def set(self, num, macro):
+    def set(self, num, macro, screen):
         """Set macro for given function key."""
         # NUL terminates macro string, rest is ignored
         # macro starting with NUL is empty macro
         self._key_replace[num-1] = macro.split('\0', 1)[0]
+        self.redraw_keys(screen)
 
     def get(self, num):
         """Get macro for given function key."""
         return self._key_replace[num]
+
+    def key_(self, command, screen):
+        """KEY: show/hide/list macros."""
+        if command == tk.ON:
+            # tandy can have VIEW PRINT 1 to 25, should raise IFC in that case
+            error.throw_if(screen.scroll_height == 25)
+            if not self.keys_visible:
+                self.show_keys(screen, True)
+        elif command == tk.OFF:
+            if self.keys_visible:
+                self.show_keys(screen, False)
+        elif command == tk.LIST:
+            self.list_keys(screen)
+
 
 
 class Editor(object):

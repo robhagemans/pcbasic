@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import logging
+import struct
 
 try:
     import numpy
@@ -1519,13 +1520,12 @@ class Palette(object):
 
     def set_all(self, new_palette, check_mode=True):
         """Set the colours for all attributes."""
-        mode = self.mode
-        if check_mode and new_palette and not self.mode_allows_palette(mode):
+        if check_mode and new_palette and not self.mode_allows_palette(self.mode):
             return
         self.palette = list(new_palette)
-        self.rgb_palette = [mode.colours[i] for i in self.palette]
-        if mode.colours1:
-            self.rgb_palette1 = [mode.colours1[i] for i in self.palette]
+        self.rgb_palette = [self.mode.colours[i] for i in self.palette]
+        if self.mode.colours1:
+            self.rgb_palette1 = [self.mode.colours1[i] for i in self.palette]
         else:
             self.rgb_palette1 = None
         self.mode.screen.session.video_queue.put(
@@ -1541,6 +1541,35 @@ class Palette(object):
             return False
         else:
             return True
+
+    def palette_(self, attrib, colour):
+        """PALETTE: assign colour to attribute."""
+        # can't set blinking colours separately
+        num_palette_entries = self.mode.num_attr if self.mode.num_attr != 32 else 16
+        error.range_check(0, num_palette_entries-1, attrib)
+        error.range_check(-1, len(self.mode.colours)-1, colour)
+        if colour != -1:
+            self.set_entry(attrib, colour)
+
+    def palette_using_(self, array_name, start_indices, arrays):
+        """PALETTE USING: set palette from array buffer."""
+        num_palette_entries = self.mode.num_attr if self.mode.num_attr != 32 else 16
+        try:
+            dimensions = arrays.dimensions(array_name)
+        except KeyError:
+            raise error.RunError(error.IFC)
+        error.throw_if(array_name[-1] != '%', error.TYPE_MISMATCH)
+        lst = arrays.view_full_buffer(array_name)
+        start = arrays.index(start_indices, dimensions)
+        error.throw_if(arrays.array_len(dimensions) - start < num_palette_entries)
+        new_palette = []
+        for i in range(num_palette_entries):
+            offset = (start+i) * 2
+            ## signed int, as -1 means don't set
+            val, = struct.unpack('<h', lst[offset:offset+2])
+            error.range_check(-1, len(self.mode.colours)-1, val)
+            new_palette.append(val if val > -1 else self.get_entry(i))
+        self.set_all(new_palette)
 
 
 ###############################################################################
