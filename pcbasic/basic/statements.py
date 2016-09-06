@@ -1873,27 +1873,6 @@ class Statements(object):
             self.session.memory.set_variable(name, indices, value=value)
         ins.require_end()
 
-    def _parse_prompt(self, ins, question_mark):
-        """Helper function for INPUT: parse prompt definition."""
-        # parse prompt
-        if ins.skip_blank_read_if(('"',)):
-            prompt = ''
-            # only literal allowed, not a string expression
-            d = ins.read(1)
-            while d not in tk.END_LINE + ('"',)  :
-                prompt += d
-                d = ins.read(1)
-            if d == '\0':
-                ins.seek(-1, 1)
-            following = ins.skip_blank_read()
-            if following == ';':
-                prompt += question_mark
-            elif following != ',':
-                raise error.RunError(error.STX)
-        else:
-            prompt = question_mark
-        return prompt
-
     def exec_input(self, ins):
         """INPUT: request input from user."""
         finp = self.parser.parse_file_number(ins, 'IR')
@@ -1908,7 +1887,7 @@ class Statements(object):
         else:
             # ; to avoid echoing newline
             newline = not ins.skip_blank_read_if((';',))
-            prompt = self._parse_prompt(ins, '? ')
+            prompt = parseinput.parse_prompt(ins, '? ')
             readvar = self._parse_var_list(ins)
             # move the program pointer to the start of the statement to ensure correct behaviour for CONT
             pos = ins.tell()
@@ -1931,7 +1910,7 @@ class Statements(object):
             # ; to avoid echoing newline
             newline = not ins.skip_blank_read_if((';',))
             # get prompt
-            prompt = self._parse_prompt(ins, '')
+            prompt = parseinput.parse_prompt(ins, '')
         # get string variable
         readvar, indices = self.parser.parse_variable(ins)
         if not readvar:

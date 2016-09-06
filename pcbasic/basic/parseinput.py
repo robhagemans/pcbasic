@@ -11,6 +11,7 @@ import io
 from . import devices
 from . import values
 from . import error
+from . import tokens as tk
 
 
 class InputTextFile(devices.TextFileBase):
@@ -23,6 +24,27 @@ class InputTextFile(devices.TextFileBase):
         """Initialise InputStream."""
         devices.TextFileBase.__init__(self, io.BytesIO(line), 'D', 'I')
 
+
+def parse_prompt(ins, question_mark):
+    """Helper function for INPUT: parse prompt definition."""
+    # parse prompt
+    if ins.skip_blank_read_if(('"',)):
+        prompt = ''
+        # only literal allowed, not a string expression
+        d = ins.read(1)
+        while d not in tk.END_LINE + ('"',)  :
+            prompt += d
+            d = ins.read(1)
+        if d == '\0':
+            ins.seek(-1, 1)
+        following = ins.skip_blank_read()
+        if following == ';':
+            prompt += question_mark
+        elif following != ',':
+            raise error.RunError(error.STX)
+    else:
+        prompt = question_mark
+    return prompt
 
 def input_console(editor, value_handler, prompt, readvar, newline):
     """Read a list of variables for INPUT."""
