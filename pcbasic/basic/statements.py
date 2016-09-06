@@ -2296,29 +2296,27 @@ class Statements(object):
         """SCREEN: change video mode or page."""
         # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
         # this raises error before
-        mode = self.parser.parse_expression(ins, allow_empty=True)
-        mode = None if mode is None else values.to_int(mode)
-        color, apagenum, vpagenum, erase = None, None, None, 1
-        if ins.skip_blank_read_if((',',)):
-            color = self.parser.parse_expression(ins, allow_empty=True)
-            color = None if color is None else values.to_int(color)
-            if ins.skip_blank_read_if((',',)):
-                apagenum = self.parser.parse_expression(ins, allow_empty=True)
-                apagenum = None if apagenum is None else values.to_int(apagenum)
-                if ins.skip_blank_read_if((',',)):
-                    vpagenum = self.parser.parse_expression(ins,
-                                allow_empty=self.parser.syntax in ('pcjr', 'tandy'))
-                    vpagenum = None if vpagenum is None else values.to_int(vpagenum)
-                    if self.parser.syntax in ('pcjr', 'tandy') and ins.skip_blank_read_if((',',)):
-                        erase = values.to_int(self.parser.parse_expression(ins))
+        # mode, color, apagenum, vpagenum, erase=1
+        args = [None] * 4 + [1]
+        # erase can only be set on pcjr/tandy 5-argument syntax
+        n_args = 4 + (self.parser.syntax in ('pcjr', 'tandy'))
+        # all but last arguments are optional and may be followed by a comma
+        for i in range(len(args) - 1):
+            args[i] = self.parser.parse_value(ins, values.INT, allow_empty=True)
+            if not ins.skip_blank_read_if((',',)):
+                break
+        else:
+            # last argument is not optional (neither in 4- nor 5-argument syntax)
+            # and may not be followed by a comma
+            args[-1] = self.parser.parse_value(ins, values.INT, allow_empty=False)
         # if any parameter not in [0,255], error 5 without doing anything
         # if the parameters are outside narrow ranges
         # (e.g. not implemented screen mode, pagenum beyond max)
         # then the error is only raised after changing the palette.
-        error.range_check(0, 255, mode, color, apagenum, vpagenum)
-        error.range_check(0, 2, erase)
+        error.range_check(0, 255, *args[:4])
+        error.range_check(0, 2, args[4])
         ins.require_end()
-        self.session.screen.screen_(mode, color, apagenum, vpagenum, erase)
+        self.session.screen.screen_(*args)
 
     def exec_pcopy(self, ins):
         """PCOPY: copy video pages."""
