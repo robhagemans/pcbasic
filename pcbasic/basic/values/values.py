@@ -41,21 +41,25 @@ def size_bytes(name):
 ###############################################################################
 # type checks
 
+def check_value(inp):
+    """Check if value is of Value type."""
+    if not isinstance(inp, numbers.Value):
+        raise TypeError('%s is not of class Value' % type(inp))
+
 def pass_string(inp, err=error.TYPE_MISMATCH):
     """Check if variable is String-valued."""
     if not isinstance(inp, strings.String):
-        if not isinstance(inp, numbers.Value):
-            raise TypeError('%s is not of class Value' % type(inp))
+        check_value(inp)
         raise error.RunError(err)
     return inp
 
 def pass_number(inp, err=error.TYPE_MISMATCH):
     """Check if variable is numeric."""
     if not isinstance(inp, numbers.Number):
-        if not isinstance(inp, numbers.Value):
-            raise TypeError('%s is not of class Value' % type(inp))
+        check_value(inp)
         raise error.RunError(err)
     return inp
+
 
 ###############################################################################
 # type conversions

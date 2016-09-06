@@ -335,6 +335,14 @@ class Parser(object):
     ###########################################################################
     # expression parser
 
+    def parse_value(self, ins, sigil=None, allow_empty=False):
+        """Read a value of required type and return as Python value, or None if empty."""
+        expr = self.parse_expression(ins, allow_empty)
+        if expr is not None:
+            # this will force into the requested type; e.g. Integers may overflow
+            return values.to_type(sigil, expr).to_value()
+        return None
+
     def parse_bracket(self, ins):
         """Compute the value of the bracketed expression."""
         ins.require_read(('(',))

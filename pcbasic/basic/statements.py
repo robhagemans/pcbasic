@@ -2200,26 +2200,15 @@ class Statements(object):
 
     def exec_locate(self, ins):
         """LOCATE: Set cursor position, shape and visibility."""
-        row = self.parser.parse_expression(ins, allow_empty=True)
-        row = None if row is None else values.to_int(row)
-        col, cursor, start, stop = None, None, None, None
-        if ins.skip_blank_read_if((',',)):
-            col = self.parser.parse_expression(ins, allow_empty=True)
-            col = None if col is None else values.to_int(col)
-            if ins.skip_blank_read_if((',',)):
-                cursor = self.parser.parse_expression(ins, allow_empty=True)
-                cursor = None if cursor is None else values.to_int(cursor)
-                if ins.skip_blank_read_if((',',)):
-                    start = self.parser.parse_expression(ins, allow_empty=True)
-                    start = None if start is None else values.to_int(start)
-                    if ins.skip_blank_read_if((',',)):
-                        stop = self.parser.parse_expression(ins, allow_empty=True)
-                        stop = None if stop is None else values.to_int(stop)
-                        if ins.skip_blank_read_if((',',)):
-                            # can end on a 5th comma but no stuff allowed after it
-                            pass
-        self.session.screen.locate_(row, col, cursor, start, stop)
+        #row, col, cursor, start, stop
+        params = [None, None, None, None, None]
+        for i in range(5):
+            params[i] = self.parser.parse_value(ins, values.INT, allow_empty=True)
+            # note that LOCATE can end on a 5th comma but no stuff allowed after it
+            if not ins.skip_blank_read_if((',',)):
+                break
         ins.require_end()
+        self.session.screen.locate_(*params)
 
     def exec_write(self, ins, output=None):
         """WRITE: Output machine-readable expressions to the screen or a file."""

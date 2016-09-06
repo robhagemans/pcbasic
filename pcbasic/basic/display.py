@@ -1005,9 +1005,8 @@ class Screen(object):
         row = self.current_row if row is None else row
         col = self.current_col if col is None else col
         cmode = self.mode
-        if row == cmode.height and self.fkey_macros.keys_visible:
-            raise error.RunError(error.IFC)
-        elif self.view_set:
+        error.throw_if(row == cmode.height and self.fkey_macros.keys_visible)
+        if self.view_set:
             error.range_check(self.view_start, self.scroll_height, row)
         else:
             error.range_check(1, cmode.height, row)
@@ -1020,6 +1019,7 @@ class Screen(object):
             error.range_check(0, (255 if self.capabilities in ('pcjr', 'tandy') else 1), cursor)
             # set cursor visibility - this should set the flag but have no effect in graphics modes
             self.cursor.set_visibility(cursor != 0)
+        error.throw_if(start is None and stop is not None)
         if stop is None:
             stop = start
         if start is not None:
