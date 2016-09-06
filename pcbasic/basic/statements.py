@@ -2034,78 +2034,14 @@ class Statements(object):
 
     def exec_color(self, ins):
         """COLOR: set colour attributes."""
-        screen = self.session.screen
-        mode = screen.mode
-        fore = self.parser.parse_expression(ins, allow_empty=True)
-        if fore is None:
-            fore = (screen.attr>>7)*0x10 + (screen.attr&0xf)
-        else:
-            fore = values.to_int(fore)
-        back, bord = None, None
-        if ins.skip_blank_read_if((',')):
-            back = self.parser.parse_expression(ins, allow_empty=True)
-            back = None if back is None else values.to_int(back)
-            if ins.skip_blank_read_if((',')):
-                bord = values.to_int(self.parser.parse_expression(ins))
-        if back is None:
-            # graphics mode bg is always 0; sets palette instead
-            if mode.is_text_mode:
-                back = (screen.attr>>4) & 0x7
-            else:
-                back = screen.palette.get_entry(0)
-        if mode.name == '320x200x4':
-            self.exec_color_mode_1(ins, fore, back, bord)
-            ins.require_end()
-            return
-        elif mode.name in ('640x200x2', '720x348x2'):
-            # screen 2; hercules: illegal fn call
-            raise error.RunError(error.IFC)
-        # for screens other than 1, no distinction between 3rd parm zero and not supplied
-        bord = bord or 0
-        error.range_check(0, 255, bord)
-        if mode.is_text_mode:
-            error.range_check(0, mode.num_attr-1, fore)
-            error.range_check(0, 15, back, bord)
-            screen.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10
-                            + (fore & 0xf))
-            screen.set_border(bord)
-        elif mode.name in ('160x200x16', '320x200x4pcjr', '320x200x16pcjr'
-                            '640x200x4', '320x200x16', '640x200x16'):
-            error.range_check(1, mode.num_attr-1, fore)
-            error.range_check(0, mode.num_attr-1, back)
-            screen.set_attr(fore)
-            # in screen 7 and 8, only low intensity palette is used.
-            screen.palette.set_entry(0, back % 8, check_mode=False)
-        elif mode.name in ('640x350x16', '640x350x4'):
-            error.range_check(0, mode.num_attr-1, fore)
-            error.range_check(0, len(mode.colours)-1, back)
-            screen.set_attr(fore)
-            screen.palette.set_entry(0, back, check_mode=False)
-        elif mode.name == '640x400x2':
-            error.range_check(0, len(mode.colours)-1, fore)
-            if back != 0:
-                raise error.RunError(error.IFC)
-            screen.palette.set_entry(1, fore, check_mode=False)
+        fore, back, bord = None, None, None
+        fore = self.parser.parse_value(ins, values.INT, allow_empty=True)
+        if ins.skip_blank_read_if((',',)):
+            back = self.parser.parse_value(ins, values.INT, allow_empty=True)
+            if ins.skip_blank_read_if((',',)):
+                bord = self.parser.parse_value(ins, values.INT)
+        self.session.screen.color_(fore, back, bord)
         ins.require_end()
-
-    def exec_color_mode_1(self, ins, back, pal, override):
-        """Helper function for COLOR in SCREEN 1."""
-        screen = self.session.screen
-        back = screen.palette.get_entry(0) if back is None else back
-        if override is not None:
-            # uses last entry as palette if given
-            pal = override
-        error.range_check(0, 255, back)
-        if pal is not None:
-            error.range_check(0, 255, pal)
-            screen.set_cga4_palette(pal%2)
-            palette = list(screen.mode.palette)
-            palette[0] = back & 0xf
-            # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
-            # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15
-            screen.palette.set_all(palette, check_mode=False)
-        else:
-            screen.palette.set_entry(0, back & 0xf, check_mode=False)
 
     def exec_palette(self, ins):
         """PALETTE: set colour palette entry."""
@@ -2155,7 +2091,7 @@ class Statements(object):
         ins.require_read((',',), err=error.IFC)
         text = self.parser.parse_temporary_string(ins)
         if keynum <= self.session.events.num_fn_keys:
-            self.session.fkey_macros.set(keynum, text, screen)
+            self.session.fkey_macros.set(keynum, text, self.session.screen)
         else:
             # only length-2 expressions can be assigned to KEYs over 10
             # in which case it's a key scancode definition

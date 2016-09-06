@@ -869,6 +869,68 @@ class Screen(object):
         self.text.copy_page(src, dst)
         self.session.video_queue.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
 
+    def color_(self, fore, back, bord):
+        """COLOR: set colour attributes."""
+        mode = self.mode
+        if fore is None:
+            fore = (self.attr>>7) * 0x10 + (self.attr & 0xf)
+        if back is None:
+            # graphics mode bg is always 0; sets palette instead
+            if mode.is_text_mode:
+                back = (self.attr>>4) & 0x7
+            else:
+                back = self.palette.get_entry(0)
+        if mode.name == '320x200x4':
+            self._color_mode_1(fore, back, bord)
+        elif mode.name in ('640x200x2', '720x348x2'):
+            # screen 2; hercules: illegal fn call
+            raise error.RunError(error.IFC)
+        else:
+            # for screens other than 1, no distinction between 3rd parm zero and not supplied
+            bord = bord or 0
+            error.range_check(0, 255, bord)
+            if mode.is_text_mode:
+                error.range_check(0, mode.num_attr-1, fore)
+                error.range_check(0, 15, back, bord)
+                self.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10
+                                + (fore & 0xf))
+                self.set_border(bord)
+            elif mode.name in ('160x200x16', '320x200x4pcjr', '320x200x16pcjr'
+                                '640x200x4', '320x200x16', '640x200x16'):
+                error.range_check(1, mode.num_attr-1, fore)
+                error.range_check(0, mode.num_attr-1, back)
+                self.set_attr(fore)
+                # in screen 7 and 8, only low intensity palette is used.
+                self.palette.set_entry(0, back % 8, check_mode=False)
+            elif mode.name in ('640x350x16', '640x350x4'):
+                error.range_check(0, mode.num_attr-1, fore)
+                error.range_check(0, len(mode.colours)-1, back)
+                self.set_attr(fore)
+                self.palette.set_entry(0, back, check_mode=False)
+            elif mode.name == '640x400x2':
+                error.range_check(0, len(mode.colours)-1, fore)
+                if back != 0:
+                    raise error.RunError(error.IFC)
+                self.palette.set_entry(1, fore, check_mode=False)
+
+    def _color_mode_1(self, back, pal, override):
+        """Helper function for COLOR in SCREEN 1."""
+        back = self.palette.get_entry(0) if back is None else back
+        if override is not None:
+            # uses last entry as palette if given
+            pal = override
+        error.range_check(0, 255, back)
+        if pal is not None:
+            error.range_check(0, 255, pal)
+            self.set_cga4_palette(pal%2)
+            palette = list(self.mode.palette)
+            palette[0] = back & 0xf
+            # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
+            # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15
+            self.palette.set_all(palette, check_mode=False)
+        else:
+            self.palette.set_entry(0, back & 0xf, check_mode=False)
+
     #####################
     # screen read/write
 
