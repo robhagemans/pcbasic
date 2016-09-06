@@ -931,6 +931,26 @@ class Screen(object):
         else:
             self.palette.set_entry(0, back & 0xf, check_mode=False)
 
+    def cls_(self, val):
+        """CLS: clear the screen."""
+        if val is None:
+            if self.graph_view.is_set():
+                val = 1
+            elif self.view_set:
+                val = 2
+            else:
+                val = 0
+        # cls is only executed if no errors have occurred
+        if val == 0:
+            self.clear()
+            self.fkey_macros.redraw_keys(self)
+            self.drawing.reset()
+        elif val == 1:
+            self.graph_view.clear()
+            self.drawing.reset()
+        elif val == 2:
+            self.clear_view()
+
     #####################
     # screen read/write
 

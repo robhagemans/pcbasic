@@ -1999,36 +1999,20 @@ class Statements(object):
 
     def exec_cls(self, ins):
         """CLS: clear the screen."""
-        if (self.parser.syntax == 'pcjr' or
+        val = None
+        if not (self.parser.syntax == 'pcjr' or
                         ins.skip_blank() in (',',) + tk.END_STATEMENT):
-            if self.session.screen.graph_view.is_set():
-                val = 1
-            elif self.session.screen.view_set:
-                val = 2
-            else:
-                val = 0
-        else:
-            val = values.to_int(self.parser.parse_expression(ins))
-            if self.parser.syntax == 'tandy':
-                # tandy gives illegal function call on CLS number
-                raise error.RunError(error.IFC)
-        error.range_check(0, 2, val)
+            val = self.parser.parse_value(ins, values.INT)
+            # tandy gives illegal function call on CLS number
+            error.throw_if(self.parser.syntax == 'tandy')
+            error.range_check(0, 2, val)
         if self.parser.syntax != 'pcjr':
             if ins.skip_blank_read_if((',',)):
                 # comma is ignored, but a number after means syntax error
                 ins.require_end()
             else:
                 ins.require_end(err=error.IFC)
-        # cls is only executed if no errors have occurred
-        if val == 0:
-            self.session.screen.clear()
-            self.session.fkey_macros.redraw_keys(self.session.screen)
-            self.session.screen.drawing.reset()
-        elif val == 1:
-            self.session.screen.drawing.clear_view()
-            self.session.screen.drawing.reset()
-        elif val == 2:
-            self.session.screen.clear_view()
+        self.session.screen.cls_(val)
         if self.parser.syntax == 'pcjr':
             ins.require_end()
 
