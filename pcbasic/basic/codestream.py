@@ -150,7 +150,10 @@ class TokenisedStream(CodeStream):
 
     def require_read(self, in_range, err=error.STX):
         """Skip whitespace, read and raise error if not in range."""
-        c = self.skip_blank_read(n=len(in_range[0]))
+        d = self.read(1)
+        while d in self.blanks:
+            d = self.read(1)
+        c = d + self.read(len(in_range[0])-1)
         if not c or c not in in_range:
             self.seek(-len(c), 1)
             raise error.RunError(err)
@@ -158,7 +161,11 @@ class TokenisedStream(CodeStream):
 
     def require_end(self, err=error.STX):
         """Skip whitespace, peek and raise error if not at end of statement."""
-        if self.skip_blank() not in tk.END_STATEMENT:
+        d = self.read(1)
+        while d in self.blanks:
+            d = self.read(1)
+        self.seek(-1, 1)
+        if d not in tk.END_STATEMENT:
             raise error.RunError(err)
 
     def skip_block(self, for_char, next_char, allow_comma=False):
