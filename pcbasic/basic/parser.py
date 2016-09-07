@@ -429,7 +429,7 @@ class Parser(object):
             last = d
             d = ins.skip_blank()
             # two-byte function tokens
-            if d in tk.TWOBYTE:
+            if tk.PLUS_BYTES.get(d, 0) == 1:
                 d = ins.peek(n=2)
             if d == tk.NOT and not (last in op.OPERATORS or last == ''):
                 # unary NOT ends expression except after another operator or at start

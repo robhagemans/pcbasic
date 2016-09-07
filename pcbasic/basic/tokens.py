@@ -434,9 +434,6 @@ END_EXPRESSION = END_STATEMENT + (')', ']', ',', ';')
 PLUS_BYTES = {
     T_BYTE:1, '\xff':1 , '\xfe':1, '\xfd':1, T_OCT:2, T_HEX:2,
     T_UINT_PROC:2, T_UINT:2, T_INT:2, T_SINGLE:4, T_DOUBLE:8, '\0':4}
-# two-byte keyword token lead bytes
-TWOBYTE = ('\xff', '\xfe', '\xfd')
-
 
 # keyword dictionary
 KEYWORDS = {
