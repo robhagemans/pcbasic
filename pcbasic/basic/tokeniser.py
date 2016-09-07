@@ -97,9 +97,9 @@ class Tokeniser(object):
             # numbers following var names with no operator or token in between
             # should not be parsed, eg OPTION BASE 1
             # note we don't include leading signs, encoded as unary operators
-            # number starting with . or & are always parsed
-            elif c in ('&', '.') or (allow_number and
-                                      not allow_jumpnum and c in string.digits):
+            # number starting with & are always parsed
+            elif c in ('&', ) or (allow_number and
+                                      not allow_jumpnum and c in string.digits + '.'):
                 outs.write(self.tokenise_number(ins))
             # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):
             elif c in self._ascii_operators:
