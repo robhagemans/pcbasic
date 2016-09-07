@@ -12,7 +12,6 @@ import io
 
 from . import error
 from . import tokens as tk
-from . import values
 
 
 class CodeStream(io.BytesIO):
@@ -133,7 +132,8 @@ class CodeStream(io.BytesIO):
             elif c in '-+' and (not word or word[-1] in 'ED'):
                 # must be first character or in exponent
                 word += c
-            elif c in string.digits + values.BLANKS + values.SEPARATORS:
+            elif c in string.digits + self.blanks + '\x1c\x1d\x1f':
+                # '\x1c\x1d\x1f' are ASCII separators - these cause string representations to evaluate to zero
                 # we'll remove blanks later but need to keep it for now
                 # so we can reposition the stream on removing trailing whitespace
                 word += c
@@ -148,10 +148,10 @@ class CodeStream(io.BytesIO):
                 self.seek(-1, 1)
                 break
         # don't claim trailing whitespace
-        trimword = word.rstrip(values.BLANKS)
+        trimword = word.rstrip(self.blanks)
         self.seek(-len(word)+len(trimword), 1)
         # remove all internal whitespace
-        word = trimword.strip(values.BLANKS)
+        word = trimword.strip(self.blanks)
         return word
 
     def _read_hex(self):
@@ -177,7 +177,7 @@ class CodeStream(io.BytesIO):
         while True:
             c = self.peek()
             # oct literals may be interrupted by whitespace
-            if c and c in string.octdigits + values.BLANKS:
+            if c and c in string.octdigits + self.blanks:
                 word += self.read(1)
             else:
                 break
@@ -188,7 +188,7 @@ class TokenisedStream(CodeStream):
     """Stream of tokenised BASIC code."""
 
     # LF is just whitespace if not preceded by CR
-    blanks = (' ', '\t', '\n')
+    blanks = ' \t\n'
 
     def skip_to(self, findrange, break_on_first_char=True):
         """Skip until character is in findrange."""
@@ -244,7 +244,7 @@ class TokenisedStream(CodeStream):
     def require_read(self, in_range, err=error.STX):
         """Skip whitespace, read and raise error if not in range."""
         d = self.read(1)
-        while d in self.blanks:
+        while d and d in self.blanks:
             d = self.read(1)
         c = d + self.read(len(in_range[0])-1)
         if not c or c not in in_range:
@@ -255,7 +255,7 @@ class TokenisedStream(CodeStream):
     def require_end(self, err=error.STX):
         """Skip whitespace, peek and raise error if not at end of statement."""
         d = self.read(1)
-        while d in self.blanks:
+        while d and d in self.blanks:
             d = self.read(1)
         self.seek(-1, 1)
         if d not in tk.END_STATEMENT:

@@ -378,7 +378,7 @@ class Parser(object):
         # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
         # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
         elif d in string.digits:
-            return self.values.from_token(self.session.tokeniser.tokenise_number(ins))
+            return self.values.from_repr(ins.read_number(), allow_nonnum=False)
         # number literals
         elif d in tk.NUMBER:
             return self.values.from_token(ins.read_token())
