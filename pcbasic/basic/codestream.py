@@ -150,8 +150,11 @@ class TokenisedStream(CodeStream):
 
     def require_read(self, in_range, err=error.STX):
         """Skip whitespace, read and raise error if not in range."""
-        if not self.skip_blank_read_if(in_range):
+        c = self.skip_blank_read(n=len(in_range[0]))
+        if not c or c not in in_range:
+            self.seek(-len(c), 1)
             raise error.RunError(err)
+        return c
 
     def require(self, rnge, err=error.STX):
         """Skip whitespace, peek and raise error if not in range."""

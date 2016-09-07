@@ -1791,7 +1791,7 @@ class Statements(object):
         name, indices = self.parser.parse_variable(ins)
         if indices != []:
             # pre-dim even if this is not a legal statement!
-            # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out fo range afterwards
+            # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out of range afterwards
             self.session.arrays.check_dim(name, indices)
         ins.require_read((tk.O_EQ,))
         self.session.memory.set_variable(name, indices, self.parser.parse_expression(ins))
@@ -1807,13 +1807,13 @@ class Statements(object):
             # pre-dim even if this is not a legal statement!
             self.session.arrays.check_dim(name, indices)
         ins.require_read((',',))
-        start = values.to_int(self.parser.parse_expression(ins))
-        num = 255
+        start = self.parser.parse_value(ins, values.INT)
         if ins.skip_blank_read_if((',',)):
-            num = values.to_int(self.parser.parse_expression(ins))
+            num = self.parser.parse_value(ins, values.INT)
         ins.require_read((')',))
         with self.parser.temp_string:
             s = values.pass_string(self.session.memory.get_variable(name, indices)).to_str()
+        num = 255 if num is None else num
         error.range_check(0, 255, num)
         if num > 0:
             error.range_check(1, len(s), start)
@@ -1839,17 +1839,10 @@ class Statements(object):
 
     def exec_option(self, ins):
         """OPTION BASE: set array indexing convention."""
-        if ins.skip_blank_read_if(('BASE',)):
-            # MUST be followed by ASCII '1' or '0', num constants or expressions are an error!
-            d = ins.skip_blank_read()
-            if d == '0':
-                self.session.arrays.base(0)
-            elif d == '1':
-                self.session.arrays.base(1)
-            else:
-                raise error.RunError(error.STX)
-        else:
-            raise error.RunError(error.STX)
+        ins.require_read(('BASE',))
+        # MUST be followed by ASCII '1' or '0', num constants or expressions are an error!
+        d = ins.require_read(('0', '1'))
+        self.session.arrays.base(int(d))
         ins.skip_to(tk.END_STATEMENT)
 
     def exec_read(self, ins):
@@ -1877,13 +1870,8 @@ class Statements(object):
         """INPUT: request input from user."""
         finp = self.parser.parse_file_number(ins, 'IR')
         if finp is not None:
-            for v in self._parse_var_list(ins):
-                name, indices = v
-                word, _ = finp.input_entry(name[-1], allow_past_end=False)
-                value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1])
-                if value is None:
-                    value = self.values.new(name[-1])
-                self.session.memory.set_variable(name, indices, value)
+            readvar = self._parse_var_list(ins)
+            parseinput.input_file_(self.session.memory, self.values, finp, readvar)
         else:
             # ; to avoid echoing newline
             newline = not ins.skip_blank_read_if((';',))
@@ -1892,19 +1880,13 @@ class Statements(object):
             # move the program pointer to the start of the statement to ensure correct behaviour for CONT
             pos = ins.tell()
             ins.seek(self.parser.current_statement)
-            # read the input
-            self.session.input_mode = True
-            varlist = parseinput.input_console(
-                    self.session.editor, self.values,
-                    prompt, readvar, newline)
-            self.session.input_mode = False
-            for v in varlist:
-                self.session.memory.set_variable(*v)
+            parseinput.input_(self.session, self.values, prompt, readvar, newline)
             ins.seek(pos)
         ins.require_end()
 
     def exec_line_input(self, ins):
-        """LINE INPUT: request input from user."""
+        """LINE INPUT: request line of input from user."""
+        prompt, newline = None, None
         finp = self.parser.parse_file_number(ins, 'IR')
         if not finp:
             # ; to avoid echoing newline
@@ -1913,22 +1895,8 @@ class Statements(object):
             prompt = parseinput.parse_prompt(ins, '')
         # get string variable
         readvar, indices = self.parser.parse_variable(ins)
-        if not readvar:
-            raise error.RunError(error.STX)
-        elif readvar[-1] != '$':
-            raise error.RunError(error.TYPE_MISMATCH)
-        # read the input
-        if finp:
-            line = finp.read_line()
-            if line is None:
-                raise error.RunError(error.INPUT_PAST_END)
-        else:
-            self.session.input_mode = True
-            self.session.screen.write(prompt)
-            line = self.session.editor.wait_screenline(write_endl=newline)
-            self.session.input_mode = False
-        self.session.memory.set_variable(readvar, indices,
-                self.values.from_value(line, values.STR))
+        parseinput.line_input_(
+            self.session, self.values, finp, prompt, readvar, indices, newline)
 
     def exec_restore(self, ins):
         """RESTORE: reset DATA pointer."""
@@ -2120,11 +2088,11 @@ class Statements(object):
         d = ins.skip_blank()
         if d == '#':
             dev = self.parser.parse_file_number(ins)
-            w = values.to_int(self.parser.parse_expression(ins))
+            w = self.parser.parse_value(ins, values.INT)
         elif d == tk.LPRINT:
             ins.read(1)
             dev = self.session.devices.lpt1_file
-            w = values.to_int(self.parser.parse_expression(ins))
+            w = self.parser.parse_value(ins, values.INT)
         else:
             # we can do calculations, but they must be bracketed...
             if d in tk.NUMBER:
@@ -2139,16 +2107,16 @@ class Statements(object):
                     # bad file name
                     raise error.RunError(error.BAD_FILE_NAME)
                 ins.require_read((',',))
-                w = values.to_int(self.parser.parse_expression(ins))
+                w = self.parser.parse_value(ins, values.INT)
             else:
                 dev = self.session.devices.scrn_file
                 w = values.to_int(expr)
                 if ins.skip_blank_read_if((',',)):
                     # parse dummy number rows setting
-                    num_rows_dummy = self.parser.parse_expression(ins, allow_empty=True)
+                    num_rows_dummy = self.parser.parse_value(ins, values.INT, allow_empty=True)
                     if num_rows_dummy is not None:
                         min_num_rows = 0 if self.parser.syntax in ('pcjr', 'tandy') else 25
-                        error.range_check(min_num_rows, 25, values.to_int(num_rows_dummy))
+                        error.range_check(min_num_rows, 25, num_rows_dummy)
                     # trailing comma is accepted
                     ins.skip_blank_read_if((',',))
                 # gives illegal function call, not syntax error

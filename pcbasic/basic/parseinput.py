@@ -14,16 +14,42 @@ from . import error
 from . import tokens as tk
 
 
-class InputTextFile(devices.TextFileBase):
-    """Handle INPUT from console."""
+def input_(session, value_handler, prompt, readvar, newline):
+    """INPUT: request input from user."""
+    # read the input
+    session.input_mode = True
+    varlist = input_console(session.editor, value_handler, prompt, readvar, newline)
+    session.input_mode = False
+    for v in varlist:
+        session.memory.set_variable(*v)
 
-    # spaces do not separate numbers on console INPUT
-    soft_sep = ''
+def input_file_(memory, value_handler, finp, readvar):
+    """INPUT: retrieve input from file."""
+    for v in readvar:
+        name, indices = v
+        word, _ = finp.input_entry(name[-1], allow_past_end=False)
+        value = value_handler.from_repr(word, allow_nonnum=False, typechar=name[-1])
+        if value is None:
+            value = value_handler.new(name[-1])
+        memory.set_variable(name, indices, value)
 
-    def __init__(self, line):
-        """Initialise InputStream."""
-        devices.TextFileBase.__init__(self, io.BytesIO(line), 'D', 'I')
-
+def line_input_(session, value_handler, finp, prompt, readvar, indices, newline):
+    """LINE INPUT: request line of input from user."""
+    if not readvar:
+        raise error.RunError(error.STX)
+    elif readvar[-1] != '$':
+        raise error.RunError(error.TYPE_MISMATCH)
+    # read the input
+    if finp:
+        line = finp.read_line()
+        if line is None:
+            raise error.RunError(error.INPUT_PAST_END)
+    else:
+        session.input_mode = True
+        session.screen.write(prompt)
+        line = session.editor.wait_screenline(write_endl=newline)
+        session.input_mode = False
+    session.memory.set_variable(readvar, indices, value_handler.from_value(line, values.STR))
 
 def parse_prompt(ins, question_mark):
     """Helper function for INPUT: parse prompt definition."""
@@ -70,3 +96,14 @@ def input_console(editor, value_handler, prompt, readvar, newline):
             editor.screen.write_line('?Redo from start')
         else:
             return [r + [v] for r, v in zip(readvar, values)]
+
+
+class InputTextFile(devices.TextFileBase):
+    """Handle INPUT from console."""
+
+    # spaces do not separate numbers on console INPUT
+    soft_sep = ''
+
+    def __init__(self, line):
+        """Initialise InputStream."""
+        devices.TextFileBase.__init__(self, io.BytesIO(line), 'D', 'I')
