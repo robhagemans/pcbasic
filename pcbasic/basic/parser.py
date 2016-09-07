@@ -96,9 +96,7 @@ class Parser(object):
                     self.statements.exec_let(ins)
                 # token
                 else:
-                    ins.read(1)
-                    if c in tk.TWOBYTE:
-                        c += ins.read(1)
+                    c = ins.read_token()
                     # don't use try-block to avoid catching other KeyErrors in statement
                     if c not in self.statements.statements:
                         raise error.RunError(error.STX)
