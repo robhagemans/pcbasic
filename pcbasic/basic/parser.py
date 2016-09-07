@@ -316,8 +316,8 @@ class Parser(object):
             elif c == '"':
                 self.program_code.read(1)
                 literal = not literal
-                if not literal:
-                    self.program_code.require(tk.END_STATEMENT + (',',))
+                if (not literal) and (self.program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
+                    raise error.RunError(error.STX)
             else:
                 self.program_code.read(1)
                 if literal:

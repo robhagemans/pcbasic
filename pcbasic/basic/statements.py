@@ -325,7 +325,6 @@ class Statements(object):
 
     def exec_com(self, ins):
         """COM: switch on/off serial port event handling."""
-        ins.require(('(',))
         num = values.to_int(self.parser.parse_bracket(ins))
         error.range_check(1, 2, num)
         if self.session.events.command(
@@ -1199,10 +1198,12 @@ class Statements(object):
             if ins.skip_blank_read_if((',',)):
                 if ins.skip_blank_read_if(('B',)):
                     mode = 'BF' if ins.skip_blank_read_if(('F',)) else 'B'
-                else:
-                    ins.require((',',))
                 if ins.skip_blank_read_if((',',)):
-                    pattern = values.to_int(self.parser.parse_expression(ins))
+                    pattern = self.parser.parse_value(ins, values.INT)
+                else:
+                    # mustn't end on a comma
+                    # mode == '' if nothing after previous comma
+                    error.throw_if(not mode, error.STX)
             elif not expr:
                 raise error.RunError(error.MISSING_OPERAND)
         ins.require_end()
@@ -1321,8 +1322,7 @@ class Statements(object):
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         # don't accept STEP for first coord
-        ins.require(('('))
-        coord0 = self._parse_coord_step(ins)
+        coord0 = self._parse_coord_bare(ins)
         ins.require_read((tk.O_MINUS,))
         coord1 = self._parse_coord_step(ins)
         ins.require_read((',',))
@@ -1339,22 +1339,19 @@ class Statements(object):
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         # don't accept STEP
-        ins.require(('('))
-        coord = self._parse_coord_step(ins)
+        x, y = self._parse_coord_bare(ins)
         ins.require_read((',',))
         array = self.parser.parse_scalar(ins)
         action = tk.XOR
         if ins.skip_blank_read_if((',',)):
-            ins.require((tk.PSET, tk.PRESET,
-                               tk.AND, tk.OR, tk.XOR))
-            action = ins.read(1)
+            action = ins.require_read((tk.PSET, tk.PRESET, tk.AND, tk.OR, tk.XOR))
         ins.require_end()
         if array not in self.session.arrays:
             raise error.RunError(error.IFC)
         elif array[-1] == '$':
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
-        self.session.screen.drawing.put(coord, self.session.arrays, array, action)
+        self.session.screen.drawing.put((x, y), self.session.arrays, array, action)
 
     def exec_draw(self, ins):
         """DRAW: draw a figure defined by a Graphics Macro Language string."""
@@ -1455,8 +1452,8 @@ class Statements(object):
             name = self.parser.parse_scalar(ins, allow_empty=True)
             # if we haven't read a variable, we shouldn't find something else here
             # but if we have and we iterate, the rest of the line is ignored
-            if name is None:
-                ins.require(tk.END_STATEMENT + (',',))
+            if (name is None) and (ins.skip_blank() not in (tk.END_STATEMENT + (',',))):
+                raise error.RunError(error.STX)
             # increment counter, check condition
             if self.parser.loop_iterate(ins, pos):
                 break

@@ -156,11 +156,6 @@ class TokenisedStream(CodeStream):
             raise error.RunError(err)
         return c
 
-    def require(self, rnge, err=error.STX):
-        """Skip whitespace, peek and raise error if not in range."""
-        if self.skip_blank(n=len(rnge[0])) not in rnge:
-            raise error.RunError(err)
-
     def require_end(self, err=error.STX):
         """Skip whitespace, peek and raise error if not at end of statement."""
         if self.skip_blank() not in tk.END_STATEMENT:
