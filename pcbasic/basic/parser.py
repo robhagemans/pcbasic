@@ -39,10 +39,6 @@ class Parser(object):
         # pointer position: False for direct line, True for program
         self.run_mode = False
         self.program_code = session.program.bytecode
-        if not isinstance(self.program_code, codestream.TokenisedStream):
-            print repr(self.program_code)
-            sys.exit(0)
-
         self.current_statement = 0
         # clear stacks
         self.clear_stacks_and_pointers()
@@ -70,10 +66,6 @@ class Parser(object):
                 self.handle_basic_events()
                 ins = self.get_codestream()
                 self.current_statement = ins.tell()
-                if not isinstance(ins, codestream.TokenisedStream):
-                    print repr(ins), repr(self.program_code), repr(self.session.direct_line)
-                    sys.exit(0)
-
                 c = ins.skip_blank()
                 # parse line number or : at start of statement
                 if c in tk.END_LINE:
