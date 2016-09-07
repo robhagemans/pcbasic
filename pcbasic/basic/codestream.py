@@ -12,6 +12,7 @@ import io
 
 from . import error
 from . import tokens as tk
+from . import values
 
 
 class CodeStream(io.BytesIO):
@@ -89,6 +90,98 @@ class CodeStream(io.BytesIO):
         if not name and not allow_empty:
             raise error.RunError(error.STX)
         return name
+
+    def read_number(self):
+        """Read numeric literal."""
+        c = self.peek()
+        if not c:
+            return ''
+        elif c == '&':
+            # handle hex or oct constants
+            self.read(1)
+            if self.peek().upper() == 'H':
+                # hex literal
+                return '&H' + self._read_hex()
+            else:
+                # octal literal
+                return '&O' + self._read_oct()
+        elif c in string.digits + '.+-':
+            # decimal literal
+            return self._read_dec()
+
+    def _read_dec(self):
+        """Read decimal literal."""
+        have_exp = False
+        have_point = False
+        word = ''
+        while True:
+            c = self.read(1).upper()
+            if not c:
+                break
+            elif c == '.' and not have_point and not have_exp:
+                have_point = True
+                word += c
+            elif c in 'ED' and not have_exp:
+                # there's a special exception for number followed by EL or EQ
+                # presumably meant to protect ELSE and maybe EQV ?
+                if c == 'E' and self.peek().upper() in ('L', 'Q'):
+                    self.seek(-1, 1)
+                    break
+                else:
+                    have_exp = True
+                    word += c
+            elif c in '-+' and (not word or word[-1] in 'ED'):
+                # must be first character or in exponent
+                word += c
+            elif c in string.digits + values.BLANKS + values.SEPARATORS:
+                # we'll remove blanks later but need to keep it for now
+                # so we can reposition the stream on removing trailing whitespace
+                word += c
+            elif c in '!#' and not have_exp:
+                word += c
+                # must be last character
+                break
+            elif c == '%':
+                # swallow a %, but break parsing
+                break
+            else:
+                self.seek(-1, 1)
+                break
+        # don't claim trailing whitespace
+        trimword = word.rstrip(values.BLANKS)
+        self.seek(-len(word)+len(trimword), 1)
+        # remove all internal whitespace
+        word = trimword.strip(values.BLANKS)
+        return word
+
+    def _read_hex(self):
+        """Read hexadecimal literal."""
+        # pass the H in &H
+        self.read(1)
+        word = ''
+        while True:
+            c = self.peek()
+            # hex literals must not be interrupted by whitespace
+            if c and c in string.hexdigits:
+                word += self.read(1)
+            else:
+                break
+        return word
+
+    def _read_oct(self):
+        """Read octal literal."""
+        # O is optional, could also be &777 instead of &O777
+        if self.peek().upper() == 'O':
+            self.read(1)
+        word = ''
+        while True:
+            c = self.peek()
+            # oct literals may be interrupted by whitespace
+            if c and c in string.octdigits + values.BLANKS:
+                word += self.read(1)
+            else:
+                break
+        return word
 
 
 class TokenisedStream(CodeStream):
