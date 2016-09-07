@@ -357,24 +357,15 @@ class Parser(object):
         d = ins.skip_blank()
         # string literal
         if d == '"':
-            ins.read(1)
+            # record the address of the first byte of the string's payload
             if ins == self.session.program.bytecode:
-                address = ins.tell() + self.session.memory.code_start
+                address = ins.tell() + 1 + self.session.memory.code_start
             else:
                 address = None
-            output = bytearray()
-            # while tokenised numbers inside a string literal will be printed as tokenised numbers, they don't actually execute as such:
-            # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a
-            # line number afterwards, etc. We follow this.
-            d = ins.read(1)
-            while d not in tk.END_LINE + ('"',):
-                output += d
-                d = ins.read(1)
-            if d == '\0':
-                ins.seek(-1, 1)
+            value = ins.read_string().strip('"')
             # if this is a program, create a string pointer to code space
             # don't reserve space in string memory
-            return self.values.from_str_at(output, address)
+            return self.values.from_str_at(value, address)
         # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
         # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
         elif d in string.digits:

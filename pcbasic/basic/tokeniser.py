@@ -18,20 +18,7 @@ from . import values
 class PlainTextStream(codestream.CodeStream):
     """Stream of plain-text BASIC code."""
 
-    blanks = ' \t\n'
-
-    def read_to(self, findrange):
-        """Read until a character from a given range is found."""
-        out = ''
-        while True:
-            d = self.read(1)
-            if d == '':
-                break
-            if d in findrange:
-                break
-            out += d
-        self.seek(-len(d), 1)
-        return out
+    end_line = ('\0', '\r')
 
     def read_line_number(self):
         """Read a line or jump number, return as int."""
@@ -73,8 +60,6 @@ class Tokeniser(object):
         tk.KW_DELETE, tk.KW_RUN, tk.KW_RESUME, tk.KW_AUTO,
         tk.KW_ERL, tk.KW_RESTORE, tk.KW_RETURN)
 
-    # newline is considered whitespace: ' ', '\t', '\n'
-    _ascii_whitespace = ' \t\n'
     # operator symbols
     _ascii_operators = '+-=/\\^*<>'
 
@@ -113,12 +98,12 @@ class Tokeniser(object):
             elif c in ('', '\r'):
                 break
             # handle whitespace
-            elif c in self._ascii_whitespace:
+            elif c in ins.blanks:
                 ins.read(1)
                 outs.write(c)
             # handle string literals
             elif ins.peek() == '"':
-                self._tokenise_literal(ins, outs)
+                outs.write(ins.read_string())
             # handle jump numbers
             elif allow_number and allow_jumpnum and c in string.digits + '.':
                 self._tokenise_jump_number(ins, outs)
@@ -192,16 +177,9 @@ class Tokeniser(object):
             outs.write(ins.read_to(('', '\r', '\0', ':', '"')))
             if ins.peek() == '"':
                 # string literal in DATA
-                self._tokenise_literal(ins, outs)
+                outs.write(ins.read_string())
             else:
                 break
-
-    def _tokenise_literal(self, ins, outs):
-        """Pass a string literal."""
-        outs.write(ins.read(1))
-        outs.write(ins.read_to(('', '\r', '\0', '"') ))
-        if ins.peek() == '"':
-            outs.write(ins.read(1))
 
     def _tokenise_line_number(self, ins, outs):
         """Convert an ascii line number to tokenised start-of-line."""

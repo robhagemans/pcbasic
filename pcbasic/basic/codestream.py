@@ -17,7 +17,10 @@ from . import tokens as tk
 class CodeStream(io.BytesIO):
     """Stream of various kinds of code."""
 
-    blanks = None
+    # whitespace
+    blanks = ' \t\n'
+    # line end characters for ths stream type
+    end_line = None
 
     def peek(self, n=1):
         """Peek next char in stream."""
@@ -68,6 +71,19 @@ class CodeStream(io.BytesIO):
     def skip_blank_read_if(self, in_range):
         """Skip whitespace, then read if next char is in range."""
         return self.read_if(self.skip_blank(n=len(in_range[0])), in_range)
+
+    def read_to(self, findrange):
+        """Read until a character from a given range is found."""
+        out = ''
+        while True:
+            d = self.read(1)
+            if d == '':
+                break
+            if d in findrange:
+                break
+            out += d
+        self.seek(-len(d), 1)
+        return out
 
     def read_name(self, allow_empty=False):
         """Read a variable name """
@@ -183,12 +199,28 @@ class CodeStream(io.BytesIO):
                 break
         return word
 
+    def read_string(self):
+        """Read a string literal."""
+        word = self.read(1)
+        if not word or word != '"':
+            self.seek(-len(word), 1)
+            return ''
+        # while tokenised numbers inside a string literal will be printed as tokenised numbers, they don't actually execute as such:
+        # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a
+        # line number afterwards, etc. We follow this.
+        word += self.read_to(('"',) + self.end_line)
+        delim = self.read(1)
+        if delim == '"':
+            word += delim
+        else:
+            self.seek(-len(delim), 1)
+        return word
+
 
 class TokenisedStream(CodeStream):
     """Stream of tokenised BASIC code."""
 
-    # LF is just whitespace if not preceded by CR
-    blanks = ' \t\n'
+    end_line = tk.END_LINE
 
     def skip_to(self, findrange, break_on_first_char=True):
         """Skip until character is in findrange."""
