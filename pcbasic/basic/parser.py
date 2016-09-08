@@ -96,7 +96,7 @@ class Parser(object):
                     self.statements.exec_let(ins)
                 # token
                 else:
-                    c = ins.read_token()
+                    c = ins.read_keyword_token()
                     # don't use try-block to avoid catching other KeyErrors in statement
                     if c not in self.statements.statements:
                         raise error.RunError(error.STX)
@@ -370,7 +370,7 @@ class Parser(object):
             return self.values.from_repr(ins.read_number(), allow_nonnum=False)
         # number literals
         elif d in tk.NUMBER:
-            return self.values.from_token(ins.read_token())
+            return self.values.from_token(ins.read_number_token())
         # gw-basic allows adding line numbers to numbers
         elif d == tk.T_UINT:
             return self.values.new_integer().from_int(self.statements.parse_jumpnum(ins), unsigned=True)
@@ -427,10 +427,9 @@ class Parser(object):
         # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
         while True:
             last = d
-            d = ins.skip_blank()
-            # two-byte function tokens
-            if tk.PLUS_BYTES.get(d, 0) == 1:
-                d = ins.peek(n=2)
+            ins.skip_blank()
+            d = ins.read_keyword_token()
+            ins.seek(-len(d), 1)
             if d == tk.NOT and not (last in op.OPERATORS or last == ''):
                 # unary NOT ends expression except after another operator or at start
                 break

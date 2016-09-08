@@ -260,17 +260,20 @@ class TokenisedStream(CodeStream):
         self.skip_to(findrange)
         return self.read(1)
 
-    def read_token(self):
+    def read_keyword_token(self):
+        """Read full keyword token."""
+        token = self.read(1)
+        if token in ('\xff', '\xfe', '\xfd'):
+            token += self.read(1)
+        return token
+
+    def read_number_token(self):
         """Read full token, including trailing bytes."""
         lead = self.read(1)
-        try:
-            length = tk.PLUS_BYTES[lead]
-        except KeyError:
-            length = 0
-        trail = self.read(length)
-        if len(trail) < length:
-            # truncated stream
-            raise error.RunError(error.STX)
+        if lead not in tk.NUMBER:
+            self.seek(-len(lead), 1)
+            return ''
+        trail = self.read(tk.PLUS_BYTES.get(lead, 0))
         return lead + trail
 
     def require_read(self, in_range, err=error.STX):
