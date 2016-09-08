@@ -88,22 +88,26 @@ class Parser(object):
                     self.session.debugger.debug_step(token)
                 elif c == ':':
                     ins.read(1)
-                c = ins.skip_blank()
-                # empty statement, return to parse next
-                if c in tk.END_STATEMENT:
-                    continue
-                # implicit LET
-                elif c in string.ascii_letters:
-                    self.statements.exec_let(ins)
-                # token
-                else:
-                    c = ins.read_keyword_token()
-                    # don't use try-block to avoid catching other KeyErrors in statement
-                    if c not in self.statements.statements:
-                        raise error.RunError(error.STX)
-                    self.statements.statements[c](ins)
+                self.parse_statement(ins)
             except error.RunError as e:
                 self.trap_error(e)
+
+    def parse_statement(self, ins):
+        """Parse and execute a single statement."""
+        c = ins.skip_blank()
+        # empty statement, return to parse next
+        if c in tk.END_STATEMENT:
+            return
+        # implicit LET
+        elif c in string.ascii_letters:
+            self.statements.exec_let(ins)
+        # token
+        else:
+            c = ins.read_keyword_token()
+            # don't use try-block to avoid catching other KeyErrors in statement
+            if c not in self.statements.statements:
+                raise error.RunError(error.STX)
+            self.statements.statements[c](ins)
 
     ###########################################################################
     # clear state
