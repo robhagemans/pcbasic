@@ -243,15 +243,19 @@ class Session(object):
     def execute(self, command):
         """Execute a BASIC statement."""
         for cmd in command.splitlines():
+            if isinstance(cmd, unicode):
+                cmd = self.codepage.str_from_unicode(cmd)
             with self._handle_exceptions():
-                self._store_line(cmd)
+                self._store_line(self.codepage.str_from_unicode(cmd))
                 self._loop()
 
     def evaluate(self, expression):
         """Evaluate a BASIC expression."""
+        if isinstance(expression, unicode):
+            expression = self.codepage.str_from_unicode(expression)
         with self._handle_exceptions():
             # attach print token so tokeniser has a whole statement to work with
-            tokens = self.tokeniser.tokenise_line('?' + expression)
+            tokens = self.tokeniser.tokenise_line(b'?' + expression)
             # skip : and print token and parse expression
             tokens.read(2)
             return self.parser.parse_expression(tokens).to_value()
@@ -259,6 +263,10 @@ class Session(object):
 
     def set_variable(self, name, value):
         """Set a variable in memory."""
+        if isinstance(name, unicode):
+            name = name.encode('ascii')
+        if isinstance(value, unicode):
+            value = self.codepage.str_from_unicode(value)
         if '(' in name:
             name = name.split('(', 1)[0]
             self.arrays.from_list(value, name)
@@ -267,6 +275,8 @@ class Session(object):
 
     def get_variable(self, name):
         """Get a variable in memory."""
+        if isinstance(name, unicode):
+            name = name.encode('ascii')
         if '(' in name:
             name = name.split('(', 1)[0]
             return self.arrays.to_list(name)
