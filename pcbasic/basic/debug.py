@@ -110,15 +110,15 @@ class Debugger(BaseDebugger):
         """Execute traces and watches on a program step."""
         outstr = ''
         if self.debug_tron:
-            linum = self.session.lister.token_to_line_number(token[1:])
-            outstr += ('['+('%i' % linum) +']')
+            linum = struct.unpack_from('<H', token, 3)
+            outstr += '[%i]' % linum
         for (expr, outs) in self.watch_list:
-            outstr += (' ' + expr +' = ')
+            outstr += ' %s =' % str(expr)
             outs.seek(2)
             try:
                 val = self.session.parser.parse_expression(outs)
                 if isinstance(val, values.String):
-                    outstr += '"' + val.to_str() + '"'
+                    outstr += '"%s"' % val.to_str()
                 else:
                     outstr += values.to_repr(val, leading_space=False, type_sign=True)
             except Exception as e:

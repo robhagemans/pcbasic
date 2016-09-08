@@ -83,8 +83,8 @@ class Parser(object):
                         self.set_pointer(False)
                         return
                     if self.tron:
-                        linenum = self.session.lister.token_to_line_number(token[1:])
-                        self.session.screen.write('[' + ('%i' % linenum) + ']')
+                        linenum = struct.unpack_from('<H', token, 3)
+                        self.session.screen.write('[%i]' % linenum)
                     self.session.debugger.debug_step(token)
                 elif c == ':':
                     ins.read(1)
@@ -151,9 +151,8 @@ class Parser(object):
         """Jump to user-defined event subs if events triggered."""
         if self.session.events.suspend_all or not self.run_mode:
             return
-        for event in self.session.events.all:
-            if (event.enabled and event.triggered
-                    and not event.stopped and event.gosub is not None):
+        for event in self.session.events.enabled:
+            if (event.triggered and not event.stopped and event.gosub is not None):
                 # release trigger
                 event.triggered = False
                 # stop this event while handling it
