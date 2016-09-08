@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import string
+import struct
 from collections import deque
 
 from . import error
@@ -373,7 +374,7 @@ class Parser(object):
             return self.values.from_token(ins.read_number_token())
         # gw-basic allows adding line numbers to numbers
         elif d == tk.T_UINT:
-            return self.values.new_integer().from_int(self.statements.parse_jumpnum(ins), unsigned=True)
+            return self.values.new_integer().from_int(self.parse_jumpnum(ins), unsigned=True)
         else:
             raise error.RunError(error.STX)
 
@@ -408,6 +409,18 @@ class Parser(object):
         number = values.to_int(self.parse_expression(ins))
         error.range_check(0, 255, number)
         return number
+
+    def parse_jumpnum(self, ins, allow_empty=False, err=error.STX):
+        """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
+        if ins.skip_blank_read_if((tk.T_UINT,)):
+            token = ins.read(2)
+            assert len(token) == 2, 'bytecode truncated in line number pointer'
+            return struct.unpack('<H', token)[0]
+        else:
+            if allow_empty:
+                return -1
+            # Syntax error
+            raise error.RunError(err)
 
     def parse_expression(self, ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
         """Compute the value of the expression at the current code pointer."""

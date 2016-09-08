@@ -364,7 +364,7 @@ class Statements(object):
         if bracket:
             num = self.parser.parse_bracket(ins)
         ins.require_read((tk.GOSUB,))
-        jumpnum = self.parse_jumpnum(ins)
+        jumpnum = self.parser.parse_jumpnum(ins)
         if jumpnum == 0:
             jumpnum = None
         elif jumpnum not in self.session.program.line_numbers:
@@ -724,18 +724,6 @@ class Statements(object):
             to_line = from_line
         return (from_line, to_line)
 
-    def parse_jumpnum(self, ins, allow_empty=False, err=error.STX):
-        """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
-        if ins.skip_blank_read_if((tk.T_UINT,)):
-            token = ins.read(2)
-            assert len(token) == 2, 'bytecode truncated in line number pointer'
-            return struct.unpack('<H', token)[0]
-        else:
-            if allow_empty:
-                return -1
-            # Syntax error
-            raise error.RunError(err)
-
     def _parse_jumpnum_or_dot(self, ins, allow_empty=False, err=error.STX):
         """Helper function: parse jump target."""
         c = ins.skip_blank_read()
@@ -783,7 +771,7 @@ class Statements(object):
         linenum = self._parse_jumpnum_or_dot(ins, allow_empty=True)
         increment = None
         if ins.skip_blank_read_if((',',)):
-            increment = self.parse_jumpnum(ins, allow_empty=True)
+            increment = self.parser.parse_jumpnum(ins, allow_empty=True)
         ins.require_end()
         # reset linenum and increment on each call of AUTO (even in AUTO mode)
         self.session.auto_linenum = linenum if linenum is not None else 10
@@ -893,9 +881,9 @@ class Statements(object):
         """Helper function: parse the DELETE clause of a CHAIN statement."""
         delete_lines = None
         if ins.skip_blank_read_if((tk.DELETE,)):
-            from_line = self.parse_jumpnum(ins, allow_empty=True)
+            from_line = self.parser.parse_jumpnum(ins, allow_empty=True)
             if ins.skip_blank_read_if((tk.O_MINUS,)):
-                to_line = self.parse_jumpnum(ins, allow_empty=True)
+                to_line = self.parser.parse_jumpnum(ins, allow_empty=True)
             else:
                 to_line = from_line
             # to_line must be specified and must be an existing line number
@@ -951,7 +939,7 @@ class Statements(object):
             if ins.skip_blank_read_if((',',)):
                 old = self._parse_jumpnum_or_dot(ins, allow_empty=True)
                 if ins.skip_blank_read_if((',',)):
-                    step = self.parse_jumpnum(ins, allow_empty=True) # returns -1 if empty
+                    step = self.parser.parse_jumpnum(ins, allow_empty=True) # returns -1 if empty
         ins.require_end()
         if step is not None and step < 1:
             raise error.RunError(error.IFC)
@@ -1466,7 +1454,7 @@ class Statements(object):
     def exec_goto(self, ins):
         """GOTO: jump to specified line number."""
         # parse line number, ignore rest of line and jump
-        self.parser.jump(self.parse_jumpnum(ins))
+        self.parser.jump(self.parser.parse_jumpnum(ins))
 
     def exec_run(self, ins):
         """RUN: start program execution."""
@@ -1474,7 +1462,7 @@ class Statements(object):
         c = ins.skip_blank()
         if c == tk.T_UINT:
             # parse line number and ignore rest of line
-            jumpnum = self.parse_jumpnum(ins)
+            jumpnum = self.parser.parse_jumpnum(ins)
         elif c not in tk.END_STATEMENT:
             name = self.parser.parse_temporary_string(ins)
             if ins.skip_blank_read_if((',',)):
@@ -1497,7 +1485,7 @@ class Statements(object):
         if not val.is_zero():
             # TRUE: continue after THEN. line number or statement is implied GOTO
             if ins.skip_blank() in (tk.T_UINT,):
-                self.parser.jump(self.parse_jumpnum(ins))
+                self.parser.jump(self.parser.parse_jumpnum(ins))
             # continue parsing as normal, :ELSE will be ignored anyway
         else:
             # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
@@ -1514,7 +1502,7 @@ class Statements(object):
                         else:
                             # line number: jump
                             if ins.skip_blank() in (tk.T_UINT,):
-                                self.parser.jump(self.parse_jumpnum(ins))
+                                self.parser.jump(self.parser.parse_jumpnum(ins))
                             # continue execution from here
                             break
                 else:
@@ -1597,7 +1585,7 @@ class Statements(object):
         elif onvar > 0 and onvar <= len(jumps):
             ins.seek(jumps[onvar-1])
             if command == tk.GOTO:
-                self.parser.jump(self.parse_jumpnum(ins))
+                self.parser.jump(self.parser.parse_jumpnum(ins))
             elif command == tk.GOSUB:
                 self.exec_gosub(ins)
         ins.skip_to(tk.END_STATEMENT)
@@ -1605,7 +1593,7 @@ class Statements(object):
     def exec_on_error(self, ins):
         """ON ERROR: define error trapping routine."""
         ins.require_read((tk.GOTO,))  # GOTO
-        linenum = self.parse_jumpnum(ins)
+        linenum = self.parser.parse_jumpnum(ins)
         if linenum != 0 and linenum not in self.session.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         self.parser.on_error = linenum
@@ -1629,7 +1617,7 @@ class Statements(object):
             ins.read(1)
             jumpnum = -1
         elif c not in tk.END_STATEMENT:
-            jumpnum = self.parse_jumpnum(ins)
+            jumpnum = self.parser.parse_jumpnum(ins)
         else:
             jumpnum = 0
         ins.require_end()
@@ -1657,7 +1645,7 @@ class Statements(object):
 
     def exec_gosub(self, ins):
         """GOSUB: jump into a subroutine."""
-        jumpnum = self.parse_jumpnum(ins)
+        jumpnum = self.parser.parse_jumpnum(ins)
         # ignore rest of statement ('GOSUB 100 LAH' works just fine..); we need to be able to RETURN
         ins.skip_to(tk.END_STATEMENT)
         self.parser.jump_gosub(jumpnum)
@@ -1666,7 +1654,7 @@ class Statements(object):
         """RETURN: return from a subroutine."""
         # return *can* have a line number
         if ins.skip_blank() not in tk.END_STATEMENT:
-            jumpnum = self.parse_jumpnum(ins)
+            jumpnum = self.parser.parse_jumpnum(ins)
             # rest of line is ignored
             ins.skip_to(tk.END_STATEMENT)
         else:
@@ -1903,7 +1891,7 @@ class Statements(object):
     def exec_restore(self, ins):
         """RESTORE: reset DATA pointer."""
         if not ins.skip_blank() in tk.END_STATEMENT:
-            datanum = self.parse_jumpnum(ins, err=error.UNDEFINED_LINE_NUMBER)
+            datanum = self.parser.parse_jumpnum(ins, err=error.UNDEFINED_LINE_NUMBER)
         else:
             datanum = -1
         # undefined line number for all syntax errors
