@@ -294,34 +294,21 @@ class Parser(object):
             self.program_code.skip_to((tk.DATA,))
         if self.program_code.read(1) not in (tk.DATA, ','):
             raise error.RunError(error.OUT_OF_DATA)
-        vals, word, literal = '', '', False
-        while True:
-            # read next char; omit leading whitespace
-            if not literal and vals == '':
-                c = self.program_code.skip_blank()
+        self.program_code.skip_blank()
+        word = self.program_code.read_to((',', '"',) + tk.END_LINE + tk.END_STATEMENT)
+        if self.program_code.peek() == '"':
+            if word == '':
+                word = self.program_code.read_string().strip('"')
             else:
-                c = self.program_code.peek()
-            # parse char
-            if c == '' or (not literal and c == ',') or (c in tk.END_LINE or (not literal and c in tk.END_STATEMENT)):
-                break
-            elif c == '"':
-                self.program_code.read(1)
-                literal = not literal
-                if (not literal) and (self.program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
-                    raise error.RunError(error.STX)
-            else:
-                self.program_code.read(1)
-                if literal:
-                    vals += c
-                else:
-                    word += c
-                # omit trailing whitespace
-                if c not in self.program_code.blanks:
-                    vals += word
-                    word = ''
+                word += self.program_code.read_string()
+            if (self.program_code.skip_blank() not in (tk.END_STATEMENT + (',',))):
+                raise error.RunError(error.STX)
+        else:
+            word = word.strip(self.program_code.blanks)
         self.data_pos = self.program_code.tell()
         self.program_code.seek(current)
-        return vals
+        # omit leading and trailing whitespace
+        return word
 
     ###########################################################################
     # expression parser
