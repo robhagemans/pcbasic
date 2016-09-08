@@ -380,7 +380,8 @@ class Parser(object):
 
     def parse_variable(self, ins):
         """Helper function: parse a scalar or array element."""
-        name = self.parse_scalar(ins)
+        name = self.session.memory.complete_name(ins.read_name())
+        error.throw_if(not name, error.STX)
         indices = []
         if ins.skip_blank_read_if(('[', '(')):
             # it's an array, read indices
@@ -400,7 +401,7 @@ class Parser(object):
             if not allow_empty:
                 raise error.RunError(error.STX)
             return None
-        return name.upper()
+        return name
 
     def parse_file_number(self, ins, opt_hash):
         """Read a file number."""
