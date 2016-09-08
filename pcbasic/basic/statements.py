@@ -1865,8 +1865,10 @@ class Statements(object):
 
     def exec_input(self, ins):
         """INPUT: request input from user."""
-        finp = self.parser.parse_file_number(ins, 'IR')
-        if finp is not None:
+        file_number = self.parser.parse_file_number(ins)
+        if file_number is not None:
+            finp = self.session.files.get(file_number, mode='IR')
+            ins.require_read((',',))
             readvar = self._parse_var_list(ins)
             parseinput.input_file_(self.session.memory, self.values, finp, readvar)
         else:
@@ -1883,13 +1885,16 @@ class Statements(object):
 
     def exec_line_input(self, ins):
         """LINE INPUT: request line of input from user."""
-        prompt, newline = None, None
-        finp = self.parser.parse_file_number(ins, 'IR')
-        if not finp:
+        prompt, newline, finp = None, None, None
+        file_number = self.parser.parse_file_number(ins)
+        if file_number is None:
             # ; to avoid echoing newline
             newline = not ins.skip_blank_read_if((';',))
             # get prompt
             prompt = parseinput.parse_prompt(ins, '')
+        else:
+            finp = self.session.files.get(file_number, mode='IR')
+            ins.require_read((',',))
         # get string variable
         readvar, indices = self.parser.parse_variable(ins)
         parseinput.line_input_(
@@ -2041,8 +2046,12 @@ class Statements(object):
 
     def exec_write(self, ins, output=None):
         """WRITE: Output machine-readable expressions to the screen or a file."""
-        output = self.parser.parse_file_number(ins, 'OAR')
-        output = self.session.devices.scrn_file if output is None else output
+        file_number = self.parser.parse_file_number(ins)
+        if file_number is None:
+            output = self.session.devices.scrn_file
+        else:
+            output = self.session.files.get(file_number, 'OAR')
+            ins.require_read((',',))
         outstr = parseprint.write_(self.parser, ins)
         ins.require_end()
         # write the whole thing as one thing (this affects line breaks)
@@ -2052,9 +2061,12 @@ class Statements(object):
         """PRINT: Write expressions to the screen or a file."""
         # if no output specified (i.e. not LPRINT), check for a file number
         if output is None:
-            output = self.parser.parse_file_number(ins, 'OAR')
-        # neither LPRINT not a file number: print to screen
+            file_number = self.parser.parse_file_number(ins)
+            if file_number is not None:
+                output = self.session.files.get(file_number, 'OAR')
+                ins.require_read((',',))
         if output is None:
+            # neither LPRINT not a file number: print to screen
             output = self.session.devices.scrn_file
         newline = parseprint.print_(self.parser, ins, output)
         if newline:
@@ -2084,7 +2096,9 @@ class Statements(object):
         """WIDTH: set width of screen or device."""
         d = ins.skip_blank()
         if d == '#':
-            dev = self.parser.parse_file_number(ins)
+            file_number = self.parser.parse_file_number(ins)
+            dev = self.session.files.get(file_number, mode='IOAR')
+            ins.require_read((',',))
             w = self.parser.parse_value(ins, values.INT)
         elif d == tk.LPRINT:
             ins.read(1)

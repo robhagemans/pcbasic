@@ -401,15 +401,13 @@ class Parser(object):
             return None
         return name.upper()
 
-    def parse_file_number(self, ins, file_mode='IOAR'):
+    def parse_file_number(self, ins):
         """Helper function: parse a file number and retrieve the file object."""
-        screen = None
         if ins.skip_blank_read_if(('#',)):
             number = values.to_int(self.parse_expression(ins))
             error.range_check(0, 255, number)
-            screen = self.session.files.get(number, file_mode)
-            ins.require_read((',',))
-        return screen
+            return number
+        return None
 
     def parse_file_number_opthash(self, ins):
         """Helper function: parse a file number, with optional hash."""
