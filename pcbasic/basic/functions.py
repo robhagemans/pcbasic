@@ -217,7 +217,7 @@ class Functions(object):
         error.range_check(1, 255, num)
         infile = self.session.devices.kybd_file
         if ins.skip_blank_read_if((',',)):
-            infile = self.session.files.get(self.parser.parse_file_number_opthash(ins))
+            infile = self.session.files.get(self.parser.parse_file_number(ins, opt_hash=True))
         ins.require_read((')',))
         word = bytearray(infile.read_raw(num))
         if len(word) < num:
@@ -462,7 +462,7 @@ class Functions(object):
         dollar = ins.skip_blank_read_if(('$',))
         ins.require_read(('(',))
         if (not dollar) and ins.skip_blank() == '#':
-            filenum = self.parser.parse_file_number_opthash(ins)
+            filenum = self.parser.parse_file_number(ins, opt_hash=False)
             var_ptr = self.session.memory.varptr_file(filenum)
         else:
             name, indices = self.parser.parse_variable(ins)
@@ -508,7 +508,7 @@ class Functions(object):
         """IOCTL$: read device control string response; not implemented."""
         ins.require_read(('$',))
         ins.require_read(('(',))
-        num = self.parser.parse_file_number_opthash(ins)
+        num = self.parser.parse_file_number(ins, opt_hash=True)
         ins.require_read((')',))
         self.session.files.get(num)
         logging.warning("IOCTL$ function not implemented.")

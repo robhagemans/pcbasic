@@ -1001,7 +1001,7 @@ class Statements(object):
                 access = default_access_modes[mode]
             except (IndexError, KeyError):
                 raise error.RunError(error.BAD_FILE_MODE)
-            number = self.parser.parse_file_number_opthash(ins)
+            number = self.parser.parse_file_number(ins, opt_hash=True)
             ins.require_read((',',))
             name = self.parser.parse_temporary_string(ins)
             if ins.skip_blank_read_if((',',)):
@@ -1036,7 +1036,7 @@ class Statements(object):
             # AS file number clause
             if not ins.skip_blank_read_if(('AS',)):
                 raise error.RunError(error.STX)
-            number = self.parser.parse_file_number_opthash(ins)
+            number = self.parser.parse_file_number(ins, opt_hash=True)
             # LEN clause
             if ins.skip_blank_read_if((tk.LEN,)):
                 ins.require_read(tk.O_EQ)
@@ -1061,7 +1061,7 @@ class Statements(object):
             self.session.files.close_all()
         else:
             while True:
-                number = self.parser.parse_file_number_opthash(ins)
+                number = self.parser.parse_file_number(ins, opt_hash=True)
                 try:
                     self.session.files.close(number)
                 except KeyError:
@@ -1072,7 +1072,7 @@ class Statements(object):
 
     def exec_field(self, ins):
         """FIELD: link a string variable to record buffer."""
-        the_file = self.session.files.get(self.parser.parse_file_number_opthash(ins), 'R')
+        the_file = self.session.files.get(self.parser.parse_file_number(ins, opt_hash=True), 'R')
         if ins.skip_blank_read_if((',',)):
             offset = 0
             while True:
@@ -1088,7 +1088,7 @@ class Statements(object):
 
     def _parse_get_or_put_file(self, ins):
         """Helper function: PUT and GET syntax."""
-        the_file = self.session.files.get(self.parser.parse_file_number_opthash(ins), 'R')
+        the_file = self.session.files.get(self.parser.parse_file_number(ins, opt_hash=True), 'R')
         # for COM files
         num_bytes = the_file.reclen
         if ins.skip_blank_read_if((',',)):
@@ -1120,7 +1120,7 @@ class Statements(object):
 
     def _exec_lock_or_unlock(self, ins, action):
         """LOCK or UNLOCK: set file or record locks."""
-        thefile = self.session.files.get(self.parser.parse_file_number_opthash(ins))
+        thefile = self.session.files.get(self.parser.parse_file_number(ins, opt_hash=True))
         lock_start_rec = 1
         if ins.skip_blank_read_if((',',)):
             lock_start_rec = pos = values.round(
@@ -1143,7 +1143,7 @@ class Statements(object):
 
     def exec_ioctl(self, ins):
         """IOCTL: send control string to I/O device. Not implemented."""
-        self.session.files.get(self.parser.parse_file_number_opthash(ins))
+        self.session.files.get(self.parser.parse_file_number(ins, opt_hash=True))
         logging.warning("IOCTL statement not implemented.")
         raise error.RunError(error.IFC)
 
@@ -1865,7 +1865,7 @@ class Statements(object):
 
     def exec_input(self, ins):
         """INPUT: request input from user."""
-        file_number = self.parser.parse_file_number(ins)
+        file_number = self.parser.parse_file_number(ins, opt_hash=False)
         if file_number is not None:
             finp = self.session.files.get(file_number, mode='IR')
             ins.require_read((',',))
@@ -1886,7 +1886,7 @@ class Statements(object):
     def exec_line_input(self, ins):
         """LINE INPUT: request line of input from user."""
         prompt, newline, finp = None, None, None
-        file_number = self.parser.parse_file_number(ins)
+        file_number = self.parser.parse_file_number(ins, opt_hash=False)
         if file_number is None:
             # ; to avoid echoing newline
             newline = not ins.skip_blank_read_if((';',))
@@ -2046,7 +2046,7 @@ class Statements(object):
 
     def exec_write(self, ins, output=None):
         """WRITE: Output machine-readable expressions to the screen or a file."""
-        file_number = self.parser.parse_file_number(ins)
+        file_number = self.parser.parse_file_number(ins, opt_hash=False)
         if file_number is None:
             output = self.session.devices.scrn_file
         else:
@@ -2061,7 +2061,7 @@ class Statements(object):
         """PRINT: Write expressions to the screen or a file."""
         # if no output specified (i.e. not LPRINT), check for a file number
         if output is None:
-            file_number = self.parser.parse_file_number(ins)
+            file_number = self.parser.parse_file_number(ins, opt_hash=False)
             if file_number is not None:
                 output = self.session.files.get(file_number, 'OAR')
                 ins.require_read((',',))
@@ -2096,7 +2096,7 @@ class Statements(object):
         """WIDTH: set width of screen or device."""
         d = ins.skip_blank()
         if d == '#':
-            file_number = self.parser.parse_file_number(ins)
+            file_number = self.parser.parse_file_number(ins, opt_hash=False)
             dev = self.session.files.get(file_number, mode='IOAR')
             ins.require_read((',',))
             w = self.parser.parse_value(ins, values.INT)

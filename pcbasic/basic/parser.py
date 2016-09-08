@@ -351,7 +351,7 @@ class Parser(object):
             return self.values.new_string()
 
     def parse_literal(self, ins):
-        """Compute the value of the literal at the current code pointer."""
+        """Return the value of the literal at the current code pointer."""
         d = ins.skip_blank()
         # string literal
         if d == '"':
@@ -401,17 +401,10 @@ class Parser(object):
             return None
         return name.upper()
 
-    def parse_file_number(self, ins):
-        """Helper function: parse a file number and retrieve the file object."""
-        if ins.skip_blank_read_if(('#',)):
-            number = values.to_int(self.parse_expression(ins))
-            error.range_check(0, 255, number)
-            return number
-        return None
-
-    def parse_file_number_opthash(self, ins):
-        """Helper function: parse a file number, with optional hash."""
-        ins.skip_blank_read_if(('#',))
+    def parse_file_number(self, ins, opt_hash):
+        """Read a file number."""
+        if not ins.skip_blank_read_if(('#',)) and not opt_hash:
+            return None
         number = values.to_int(self.parse_expression(ins))
         error.range_check(0, 255, number)
         return number
