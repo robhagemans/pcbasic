@@ -85,26 +85,25 @@ class CodeStream(io.BytesIO):
         self.seek(-len(d), 1)
         return out
 
-    def read_name(self, allow_empty=False):
-        """Read a variable name """
-        name = ''
+    def read_name(self):
+        """Read a variable name."""
         d = self.skip_blank_read()
-        if not d:
-            pass
-        elif d not in string.ascii_letters:
+        if not d or d not in string.ascii_letters:
             # variable name must start with a letter
             self.seek(-len(d), 1)
+            return ''
+        name = ''
+        while d in tk.NAME_CHARS:
+            name += d
+            d = self.read(1)
+        # only the first 40 chars are relevant in GW-BASIC, rest is discarded
+        name = name[:40]
+        if d in tk.SIGILS:
+            name += d
         else:
-            while d in tk.NAME_CHARS:
-                name += d
-                d = self.read(1)
-            if d in tk.SIGILS:
-                name += d
-            else:
-                self.seek(-len(d), 1)
-        if not name and not allow_empty:
-            raise error.RunError(error.STX)
-        return name
+            self.seek(-len(d), 1)
+        # names are not case sensitive
+        return name.upper()
 
     def read_number(self):
         """Read numeric literal."""

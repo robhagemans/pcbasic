@@ -41,6 +41,7 @@ class MLParser(codestream.CodeStream):
                 raise error.RunError(error.IFC)
             elif ord(c) > 8:
                 name = self.read_name()
+                error.throw_if(not name)
                 indices = self._parse_indices()
                 step = self.memory.get_variable(name, indices).to_int()
                 self.require_read((';',), err=error.IFC)
@@ -63,12 +64,8 @@ class MLParser(codestream.CodeStream):
         if len(c) == 0:
             raise error.RunError(error.IFC)
         elif ord(c) > 8:
-            try:
-                name = self.read_name()
-            except error.RunError as e:
-                if e.err == error.STX:
-                    e.err = error.IFC
-                raise e
+            name = self.read_name()
+            error.throw_if(not name)
             indices = self._parse_indices()
             sub = self.memory.get_variable(name, indices)
             self.require_read((';',), err=error.IFC)

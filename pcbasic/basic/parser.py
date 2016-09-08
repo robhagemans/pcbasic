@@ -392,14 +392,13 @@ class Parser(object):
 
     def parse_scalar(self, ins, allow_empty=False):
         """Get scalar part of variable name from token stream."""
-        # append type specifier
-        name = self.session.memory.complete_name(ins.read_name(allow_empty))
+        # append sigil, if missing
+        name = self.session.memory.complete_name(ins.read_name())
         # return None for empty names (only happens with allow_empty)
         if not name:
+            if not allow_empty:
+                raise error.RunError(error.STX)
             return None
-        # only the first 40 chars are relevant in GW-BASIC, rest is discarded
-        if len(name) > 41:
-            name = name[:40]+name[-1]
         return name.upper()
 
     def parse_file_number(self, ins, file_mode='IOAR'):
