@@ -110,7 +110,7 @@ class Debugger(BaseDebugger):
         """Execute traces and watches on a program step."""
         outstr = ''
         if self.debug_tron:
-            linum = struct.unpack_from('<H', token, 3)
+            linum = struct.unpack_from('<H', token, 2)
             outstr += '[%i]' % linum
         for (expr, outs) in self.watch_list:
             outstr += ' %s =' % str(expr)

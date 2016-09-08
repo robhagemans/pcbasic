@@ -271,8 +271,6 @@ class StringSpace(object):
             address = self.current + 1
         # don't store empty strings
         if length > 0:
-            if address in self._strings:
-                logging.debug('String at %d already defined.' % (address,))
             # copy and convert to bytearray
             self._strings[address] = bytearray(in_str)
         return length, address
