@@ -88,7 +88,7 @@ class Parser(object):
                     self.session.debugger.debug_step(token)
                 elif c != ':':
                     # THEN clause gets us here
-                    ins.seek(-1, 1)
+                    ins.seek(-len(c), 1)
                 self.parse_statement(ins)
             except error.RunError as e:
                 self.trap_error(e)
