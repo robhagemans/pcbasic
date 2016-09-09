@@ -95,20 +95,18 @@ class Parser(object):
 
     def parse_statement(self, ins):
         """Parse and execute a single statement."""
-        c = ins.skip_blank()
-        # empty statement, return to parse next
-        if c in tk.END_STATEMENT:
-            return
-        # implicit LET
-        elif c in string.ascii_letters:
-            self.statements.exec_let(ins)
-        # token
-        else:
-            c = ins.read_keyword_token()
-            # don't use try-block to avoid catching other KeyErrors in statement
-            if c not in self.statements.statements:
-                raise error.RunError(error.STX)
-            self.statements.statements[c](ins)
+        # read keyword token or one byte
+        ins.skip_blank()
+        c = ins.read_keyword_token()
+        if c in self.statements.statements:
+            # statement token
+            return self.statements.statements[c](ins)
+        ins.seek(-len(c), 1)
+        if c in string.ascii_letters:
+            # implicit LET
+            return self.statements.exec_let(ins)
+        elif c not in tk.END_STATEMENT:
+            raise error.RunError(error.STX)
 
     ###########################################################################
     # clear state
