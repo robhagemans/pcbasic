@@ -89,24 +89,9 @@ class Parser(object):
                 elif c != ':':
                     # THEN clause gets us here
                     ins.seek(-len(c), 1)
-                self.parse_statement(ins)
+                self.statements.parse_statement(ins)
             except error.RunError as e:
                 self.trap_error(e)
-
-    def parse_statement(self, ins):
-        """Parse and execute a single statement."""
-        # read keyword token or one byte
-        ins.skip_blank()
-        c = ins.read_keyword_token()
-        if c in self.statements.statements:
-            # statement token
-            return self.statements.statements[c](ins)
-        ins.seek(-len(c), 1)
-        if c in string.ascii_letters:
-            # implicit LET
-            return self.statements.exec_let(ins)
-        elif c not in tk.END_STATEMENT:
-            raise error.RunError(error.STX)
 
     ###########################################################################
     # clear state

@@ -31,6 +31,21 @@ class Statements(object):
         self.values = parser.session.values
         self._init_statements()
 
+    def parse_statement(self, ins):
+        """Parse and execute a single statement."""
+        # read keyword token or one byte
+        ins.skip_blank()
+        c = ins.read_keyword_token()
+        if c in self.statements:
+            # statement token
+            return self.statements[c](ins)
+        ins.seek(-len(c), 1)
+        if c in string.ascii_letters:
+            # implicit LET
+            return self.exec_let(ins)
+        elif c not in tk.END_STATEMENT:
+            raise error.RunError(error.STX)
+
     def _init_statements(self):
         """Initialise statements."""
         self.statements = {
