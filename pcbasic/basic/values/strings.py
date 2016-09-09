@@ -115,9 +115,13 @@ class String(numbers.Value):
         target = self._stringspace.check_modify(*self.to_pointer())
         self.from_pointer(*target)
         source = val.to_pointer()
-        # copy byte by byte from left to right
-        for i in range(num):
-            self._stringspace.view(*target)[i+offset:i+offset+1] = self._stringspace.view(*source)[i]
+        if source != target:
+            self._stringspace.view(*target)[offset:offset+num] = self._stringspace.view(*source)[:num]
+        else:
+            # copy byte by byte from left to right
+            # to conform to GW overwriting of source string on overlap
+            for i in range(num):
+                self._stringspace.view(*target)[i+offset:i+offset+1] = self._stringspace.view(*source)[i]
         return self
 
     # the below have mostly Integer parameters
