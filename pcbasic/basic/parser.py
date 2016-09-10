@@ -426,10 +426,11 @@ class Parser(object):
             # Syntax error
             raise error.RunError(err)
 
-    def parse_expression(self, ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
+    def parse_expression(self, ins, allow_empty=False):
         """Compute the value of the expression at the current code pointer."""
         expr = Expression()
         d = ''
+        empty_err = error.MISSING_OPERAND
         # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
         while True:
             last = d
