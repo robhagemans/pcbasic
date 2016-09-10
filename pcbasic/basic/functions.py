@@ -28,99 +28,96 @@ class Functions(object):
     def init_functions(self):
         """Initialise functions."""
         self._with_presign = {
-            # token   range   optional   function
             tk.USR: {
-                None: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
-                tk.C_0: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
-                tk.C_1: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
-                tk.C_2: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
-                tk.C_3: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
-                tk.C_4: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
-                tk.C_5: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
-                tk.C_6: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
-                tk.C_7: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
-                tk.C_8: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
-                tk.C_9: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
+                None: (1, self.session.machine.usr_, values.SNG),
+                tk.C_0: (1, self.session.machine.usr_, values.SNG),
+                tk.C_1: (1, self.session.machine.usr_, values.SNG),
+                tk.C_2: (1, self.session.machine.usr_, values.SNG),
+                tk.C_3: (1, self.session.machine.usr_, values.SNG),
+                tk.C_4: (1, self.session.machine.usr_, values.SNG),
+                tk.C_5: (1, self.session.machine.usr_, values.SNG),
+                tk.C_6: (1, self.session.machine.usr_, values.SNG),
+                tk.C_7: (1, self.session.machine.usr_, values.SNG),
+                tk.C_8: (1, self.session.machine.usr_, values.SNG),
+                tk.C_9: (1, self.session.machine.usr_, values.SNG),
             },
             tk.IOCTL: {
-                '$': self.value_ioctl,
+                '$': (None, self.value_ioctl, None),
             },
             tk.ENVIRON: {
-                '$': partial(self.value_unary, fn=dos.environ_, to_type=values.STR),
+                '$': (1, dos.environ_, values.STR),
             },
             tk.INPUT: {
-                '$': self.value_input,
+                '$': (None, self.value_input, None),
             },
             tk.ERDEV: {
-                '$': partial(self.value_unary, fn=self.session.devices.erdev_str_, to_type=values.STR),
-                None: partial(self.value_unary, fn=self.session.devices.erdev_, to_type=values.INT),
+                '$': (1, self.session.devices.erdev_str_, values.STR),
+                None: (1, self.session.devices.erdev_, values.INT),
             },
             tk.VARPTR: {
-                '$': self.value_varptr_str,
-                None: self.value_varptr,
+                '$': (None, self.value_varptr_str, None),
+                None: (None, self.value_varptr, None),
             },
         }
         self._bare = {
-            tk.SCREEN: partial(self.value_polynary, fn=self.session.screen.screen_fn_,
-                            conv=(values.cint_, values.cint_, values.cint_), optional=True),
-            tk.FN: self.value_fn,
-            tk.ERL: partial(self.value_nullary, fn=self.parser.erl_, to_type=values.SNG),
-            tk.ERR: partial(self.value_nullary, fn=self.parser.err_, to_type=values.INT),
-            tk.STRING: self.value_string,
-            tk.INSTR: self.value_instr,
-            tk.CSRLIN: partial(self.value_nullary, fn=self.session.screen.csrlin_, to_type=values.INT),
-            tk.POINT: partial(self.value_polynary, fn=self.session.screen.point_,
-                            conv=(values.cint_, values.cint_), optional=True),
-            tk.INKEY: partial(self.value_nullary, fn=self.session.keyboard.get_char, to_type=values.STR),
-            tk.CVI: partial(self.value_func, fn=values.cvi_),
-            tk.CVS: partial(self.value_func, fn=values.cvs_),
-            tk.CVD: partial(self.value_func, fn=values.cvd_),
-            tk.MKI: partial(self.value_func, fn=values.mki_),
-            tk.MKS: partial(self.value_func, fn=values.mks_),
-            tk.MKD: partial(self.value_func, fn=values.mkd_),
-            tk.EXTERR: partial(self.value_unary, fn=self.session.devices.exterr_, to_type=values.INT),
-            tk.DATE: partial(self.value_nullary, fn=self.session.clock.date_fn_, to_type=values.STR),
-            tk.TIME: partial(self.value_nullary, fn=self.session.clock.time_fn_, to_type=values.STR),
-            tk.PLAY: partial(self.value_unary, fn=self.session.sound.play_fn_, to_type=values.INT),
-            tk.TIMER: partial(self.value_nullary, fn=self.session.clock.timer_, to_type=values.SNG),
-            tk.PMAP: partial(self.value_polynary, fn=self.session.screen.pmap_, conv=(values.cint_, values.cint_)),
-            tk.LEFT: partial(self.value_polynary, fn=values.left_, conv=(values.pass_string, values.cint_)),
-            tk.RIGHT: partial(self.value_polynary, fn=values.right_, conv=(values.pass_string, values.cint_)),
-            tk.MID: partial(self.value_polynary, fn=values.mid_, conv=(values.pass_string, values.cint_, values.cint_), optional=True),
-            tk.SGN: partial(self.value_func, fn=values.sgn_),
-            tk.INT: partial(self.value_func, fn=values.int_),
-            tk.ABS: partial(self.value_func, fn=values.abs_),
-            tk.SQR: partial(self.value_func, fn=values.sqr_),
-            tk.RND: self.value_rnd,
-            tk.SIN: partial(self.value_func, fn=values.sin_),
-            tk.LOG: partial(self.value_func, fn=values.log_),
-            tk.EXP: partial(self.value_func, fn=values.exp_),
-            tk.COS: partial(self.value_func, fn=values.cos_),
-            tk.TAN: partial(self.value_func, fn=values.tan_),
-            tk.ATN: partial(self.value_func, fn=values.atn_),
-            tk.FRE: partial(self.value_unary, fn=self.session.memory.fre_, to_type=values.SNG),
-            tk.INP: partial(self.value_unary, fn=self.session.machine.inp_, to_type=values.INT),
-            tk.POS: partial(self.value_unary, fn=self.session.screen.pos_, to_type=values.INT),
-            tk.LEN: partial(self.value_func, fn=values.len_),
-            tk.STR: partial(self.value_func, fn=values.str_),
-            tk.VAL: partial(self.value_func, fn=values.val_),
-            tk.ASC: partial(self.value_func, fn=values.asc_),
-            tk.CHR: partial(self.value_func, fn=values.chr_),
-            tk.PEEK: partial(self.value_unary, fn=self.session.all_memory.peek_, to_type=values.INT),
-            tk.SPACE: partial(self.value_func, fn=values.space_),
-            tk.OCT: partial(self.value_func, fn=values.oct_),
-            tk.HEX: partial(self.value_func, fn=values.hex_),
-            tk.LPOS: partial(self.value_unary, fn=self.session.files.lpos_, to_type=values.INT),
-            tk.CINT: partial(self.value_func, fn=values.cint_),
-            tk.CSNG: partial(self.value_func, fn=values.csng_),
-            tk.CDBL: partial(self.value_func, fn=values.cdbl_),
-            tk.FIX: partial(self.value_func, fn=values.fix_),
-            tk.PEN: partial(self.value_unary, fn=self.session.events.pen.pen_, to_type=values.INT),
-            tk.STICK: partial(self.value_unary, fn=self.session.stick.stick_, to_type=values.INT),
-            tk.STRIG: partial(self.value_unary, fn=self.session.stick.strig_, to_type=values.INT),
-            tk.EOF: partial(self.value_unary, fn=self.session.files.eof_, to_type=values.INT),
-            tk.LOC: partial(self.value_unary, fn=self.session.files.loc_, to_type=values.SNG),
-            tk.LOF: partial(self.value_unary, fn=self.session.files.lof_, to_type=values.SNG),
+            tk.SCREEN: (3, self.session.screen.screen_fn_, None, (values.cint_, values.cint_, values.cint_), True),
+            tk.FN: (None, self.value_fn, None),
+            tk.ERL: (0, self.parser.erl_, values.SNG),
+            tk.ERR: (0, self.parser.err_, values.INT),
+            tk.STRING: (None, self.value_string, None),
+            tk.INSTR: (None, self.value_instr, None),
+            tk.CSRLIN: (0, self.session.screen.csrlin_, values.INT),
+            tk.POINT: (2, self.session.screen.point_, None, (values.cint_, values.cint_), True),
+            tk.INKEY: (0, self.session.keyboard.get_char, values.STR),
+            tk.CVI: (1, values.cvi_, None),
+            tk.CVS: (1, values.cvs_, None),
+            tk.CVD: (1, values.cvd_, None),
+            tk.MKI: (1, values.mki_, None),
+            tk.MKS: (1, values.mks_, None),
+            tk.MKD: (1, values.mkd_, None),
+            tk.EXTERR: (1, self.session.devices.exterr_, values.INT),
+            tk.DATE: (0, self.session.clock.date_fn_, values.STR),
+            tk.TIME: (0, self.session.clock.time_fn_, values.STR),
+            tk.PLAY: (1, self.session.sound.play_fn_, values.INT),
+            tk.TIMER: (0, self.session.clock.timer_, values.SNG),
+            tk.PMAP: (2, self.session.screen.pmap_, (values.cint_, values.cint_), False),
+            tk.LEFT: (2, values.left_, None, (values.pass_string, values.cint_), False),
+            tk.RIGHT: (2, values.right_, None, (values.pass_string, values.cint_), False),
+            tk.MID: (3, values.mid_, None, (values.pass_string, values.cint_, values.cint_), True),
+            tk.SGN: (1, values.sgn_, None),
+            tk.INT: (1, values.int_, None),
+            tk.ABS: (1, values.abs_, None),
+            tk.SQR: (1, values.sqr_, None),
+            tk.RND: (None, self.value_rnd, None),
+            tk.SIN: (1, values.sin_, None),
+            tk.LOG: (1, values.log_, None),
+            tk.EXP: (1, values.exp_, None),
+            tk.COS: (1, values.cos_, None),
+            tk.TAN: (1, values.tan_, None),
+            tk.ATN: (1, values.atn_, None),
+            tk.FRE: (1, self.session.memory.fre_, values.SNG),
+            tk.INP: (1, self.session.machine.inp_, values.INT),
+            tk.POS: (1, self.session.screen.pos_, values.INT),
+            tk.LEN: (1, values.len_, None),
+            tk.STR: (1, values.str_, None),
+            tk.VAL: (1, values.val_, None),
+            tk.ASC: (1, values.asc_, None),
+            tk.CHR: (1, values.chr_, None),
+            tk.PEEK: (1, self.session.all_memory.peek_, values.INT),
+            tk.SPACE: (1, values.space_, None),
+            tk.OCT: (1, values.oct_, None),
+            tk.HEX: (1, values.hex_, None),
+            tk.LPOS: (1, self.session.files.lpos_, values.INT),
+            tk.CINT: (1, values.cint_, None),
+            tk.CSNG: (1, values.csng_, None),
+            tk.CDBL: (1, values.cdbl_, None),
+            tk.FIX: (1, values.fix_, None),
+            tk.PEN: (1, self.session.events.pen.pen_, values.INT),
+            tk.STICK: (1, self.session.stick.stick_, values.INT),
+            tk.STRIG: (1, self.session.stick.strig_, values.INT),
+            tk.EOF: (1, self.session.files.eof_, values.INT),
+            tk.LOC: (1, self.session.files.loc_, values.SNG),
+            tk.LOF: (1, self.session.files.lof_, values.SNG),
         }
         self._functions = set(self._with_presign.keys() + self._bare.keys())
 
@@ -149,34 +146,30 @@ class Functions(object):
         ins.read(len(token))
         if token in self._bare:
             # apply functions
-            return self._bare[token](ins)
+            fn_record = self._bare[token]
         else:
             fndict = self._with_presign[token]
             presign = ins.skip_blank_read_if(fndict)
             try:
-                return fndict[presign](ins)
+                fn_record = fndict[presign]
             except KeyError:
                 raise error.RunError(error.STX)
+        narity, fn, to_type = fn_record[:3]
+        if narity == 0:
+            return self.values.from_value(fn(), to_type)
+        elif narity == 1 and to_type:
+            return self.values.from_value(fn(self.parser.parse_bracket(ins)), to_type)
+        elif narity == 1:
+            return fn(self.parser.parse_bracket(ins))
+        elif narity > 1:
+            conv, optional = fn_record[3:]
+            # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
+            # while unary functions generate it *afterwards*. this is to match GW-BASIC
+            return fn(*self.parser.parse_argument_list(ins, conv, optional))
+        else:
+            # special case
+            return fn(ins)
 
-    def value_nullary(self, dummy_ins, fn, to_type):
-        """Get value of a function with no arguments and convert to BASIC value."""
-        # NOTE that this wrapper is only necessary to introduce a dummy argument
-        # for the dictionary-based call
-        return self.values.from_value(fn(), to_type)
-
-    def value_unary(self, ins, fn, to_type):
-        """Get value of a function with one arguments and convert to BASIC value."""
-        return self.values.from_value(fn(self.parser.parse_bracket(ins)), to_type)
-
-    def value_func(self, ins, fn):
-        """Return value of unary function requiring no conversion."""
-        return fn(self.parser.parse_bracket(ins))
-
-    def value_polynary(self, ins, fn, conv, optional=False):
-        """Type-check inputs and get value of a function with multiple arguments, return value requiring no conversion."""
-        # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
-        # while unary functions generate it *afterwards*. this is to match GW-BASIC
-        return fn(*self.parser.parse_argument_list(ins, conv, optional))
 
     ###########################################################
     # special cases
