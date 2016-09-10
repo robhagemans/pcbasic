@@ -56,7 +56,7 @@ class Functions(object):
                 None: partial(self.value_unary, fn=self.session.devices.erdev_, to_type=values.INT),
             },
             tk.VARPTR: {
-                '$': self.value_varptr,
+                '$': self.value_varptr_str,
                 None: self.value_varptr,
             },
         }
@@ -175,6 +175,28 @@ class Functions(object):
         ins.require_read((')',))
         return self.session.files.ioctl_(num)
 
+    def value_varptr(self, ins):
+        """VARPTR: get memory address for variable or FCB."""
+        ins.require_read(('(',))
+        is_filenum = ins.skip_blank() == '#'
+        if is_filenum:
+            # params holds a number
+            params = self.parser.parse_file_number(ins, opt_hash=False)
+        else:
+            # params holds a tuple
+            params = self.parser.parse_variable(ins)
+        ins.require_read((')',))
+        var_ptr = self.session.memory.varptr_(params)
+        return self.values.new_integer().from_int(var_ptr, unsigned=True)
+
+    def value_varptr_str(self, ins):
+        """VARPTR$: get memory address for variable."""
+        ins.require_read(('(',))
+        name, indices = self.parser.parse_variable(ins)
+        ins.require_read((')',))
+        var_ptr_str = self.session.memory.varptr_str_(name, indices)
+        return self.values.from_value(var_ptr_str, values.STR)
+
     ######################################################################
     # binary string functions
 
@@ -291,28 +313,3 @@ class Functions(object):
         ins.require_read((')',))
         pmap = self.session.screen.drawing.pmap_(coord, mode)
         return self.values.from_value(pmap, values.SNG)
-
-    def value_varptr(self, ins):
-        """VARPTR, VARPTR$: get memory address for variable or FCB."""
-        ins.require_read(('(',))
-        if ins.skip_blank() == '#':
-            filenum = self.parser.parse_file_number(ins, opt_hash=False)
-            var_ptr = self.session.memory.varptr_file(filenum)
-        else:
-            name, indices = self.parser.parse_variable(ins)
-            var_ptr = self.session.memory.varptr(name, indices)
-        ins.require_read((')',))
-        if var_ptr < 0:
-            raise error.RunError(error.IFC)
-        return self.values.new_integer().from_int(var_ptr, unsigned=True)
-
-    def value_varptr_str(self, ins):
-        """VARPTR, VARPTR$: get memory address for variable or FCB."""
-        ins.require_read(('(',))
-        name, indices = self.parser.parse_variable(ins)
-        var_ptr = self.session.memory.varptr(name, indices)
-        ins.require_read((')',))
-        if var_ptr < 0:
-            raise error.RunError(error.IFC)
-        var_ptr_str = struct.pack('<BH', values.size_bytes(name), var_ptr)
-        return self.values.from_value(var_ptr_str, values.STR)
