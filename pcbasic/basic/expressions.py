@@ -98,12 +98,8 @@ class Expression(object):
             if precedence > self._stack[-1][2]:
                 break
             oper, narity, _ = self._stack.pop()
-            right = self._units.pop()
-            if narity == 1:
-                self._units.append(oper(right))
-            else:
-                left = self._units.pop()
-                self._units.append(oper(left, right))
+            args = reversed([self._units.pop() for _ in range(narity)])
+            self._units.append(oper(*args))
 
     def evaluate(self):
         """Evaluate expression and return result."""
