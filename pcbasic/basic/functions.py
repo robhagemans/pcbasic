@@ -71,7 +71,7 @@ class Functions(object):
             tk.TAN: partial(self.value_func, fn=values.tan_),
             tk.ATN: partial(self.value_func, fn=values.atn_),
             tk.FRE: partial(self.value_unary, fn=self.session.memory.fre_, to_type=values.SNG),
-            tk.INP: self.value_inp,
+            tk.INP: partial(self.value_unary, fn=self.session.machine.inp_, to_type=values.INT),
             tk.POS: partial(self.value_unary, fn=self.session.screen.pos_, to_type=values.INT),
             tk.LEN: partial(self.value_func, fn=values.len_),
             tk.STR: partial(self.value_func, fn=values.str_),
@@ -89,8 +89,8 @@ class Functions(object):
             tk.FIX: partial(self.value_func, fn=values.fix_),
             tk.PEN: self.value_pen,
             tk.STICK: partial(self.value_unary, fn=self.session.stick.stick_, to_type=values.INT),
-            tk.STRIG: self.value_strig,
-            tk.EOF: self.value_eof,
+            tk.STRIG: partial(self.value_unary, fn=self.session.stick.strig_, to_type=values.INT),
+            tk.EOF: partial(self.value_unary, fn=self.session.files.eof_, to_type=values.INT),
             tk.LOC: partial(self.value_unary, fn=self.session.files.loc_, to_type=values.SNG),
             tk.LOF: partial(self.value_unary, fn=self.session.files.lof_, to_type=values.SNG),
         }
@@ -133,7 +133,7 @@ class Functions(object):
         return self.session.user_functions.value(fnname, self.parser, ins)
 
     ###########################################################
-    # nullary functions
+    # unary functions with idiosyncratic syntax
 
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
@@ -141,27 +141,6 @@ class Functions(object):
             return self.session.randomiser.rnd(values.csng_(self.parser.parse_bracket(ins)))
         else:
             return self.session.randomiser.rnd()
-
-    ###########################################################
-    # unary functions
-
-    def value_eof(self, ins):
-        """EOF: get end-of-file."""
-        num = self.parser.parse_bracket(ins)
-        eof = self.session.files.eof_(num)
-        return self.values.from_bool(eof)
-
-    def value_strig(self, ins):
-        """STRIG: poll the joystick fire button."""
-        fn = self.parser.parse_bracket(ins)
-        strig = self.session.stick.strig_(fn)
-        return self.values.from_bool(strig)
-
-    def value_inp(self, ins):
-        """INP: get value from machine port."""
-        num = self.parser.parse_bracket(ins)
-        inp = self.session.machine.inp_(num)
-        return self.values.new_integer().from_int(inp, unsigned=True)
 
     def value_pen(self, ins):
         """PEN: poll the light pen."""

@@ -482,21 +482,17 @@ class Stick(object):
     def strig_(self, fn):
         """STRIG: poll the joystick fire button."""
         fn = values.to_int(fn)
-        # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
         error.range_check(0, 7, fn)
+        # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
         joy, trig = fn // 4, (fn//2) % 2
-        try:
-            if fn % 2 == 0:
-                # has been fired
-                stick_was_trig = self.was_fired[joy][trig]
-                self.was_fired[joy][trig] = False
-                return stick_was_trig
-            else:
-                # is currently firing
-                return self.is_firing[joy][trig]
-        except IndexError:
-            # ignore any joysticks/axes beyond the 2x2 supported by BASIC
-            pass
+        if fn % 2 == 0:
+            # has been fired
+            stick_was_trig = self.was_fired[joy][trig]
+            self.was_fired[joy][trig] = False
+            return -1 if stick_was_trig else 0
+        else:
+            # is currently firing
+            return -1 if self.is_firing[joy][trig] else 0
 
     def decay(self):
         """Return time since last game port reset."""

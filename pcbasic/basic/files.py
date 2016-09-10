@@ -155,7 +155,7 @@ class Files(object):
         """EOF: get end-of-file."""
         if num.is_zero():
             return False
-        return self._get_from_integer(num, 'IR').eof()
+        return -1 if self._get_from_integer(num, 'IR').eof() else 0
 
     def lof_(self, num):
         """LOF: get length of file."""

@@ -52,7 +52,11 @@ class MachinePorts(object):
     def inp_(self, num):
         """INP: get value from machine port."""
         port = values.to_int(num, unsigned=True)
-        return self.inp(port)
+        inp = self.inp(port)
+        # return as unsigned int
+        if inp < 0:
+            inp += 0x10000
+        return inp
 
     def inp(self, port):
         """Get the value in an emulated machine port."""
