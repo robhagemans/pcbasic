@@ -172,13 +172,10 @@ class Arrays(object):
 
     def varptr(self, name, indices):
         """Retrieve the address of an array."""
-        try:
-            dimensions = self._dims[name]
-            _, array_ptr = self._array_memory[name]
-            # arrays are kept at the end of the var list
-            return self._memory.var_current() + array_ptr + values.size_bytes(name) * self.index(indices, dimensions)
-        except KeyError:
-            return -1
+        dimensions = self._dims[name]
+        _, array_ptr = self._array_memory[name]
+        # arrays are kept at the end of the var list
+        return self._memory.var_current() + array_ptr + values.size_bytes(name) * self.index(indices, dimensions)
 
     def dereference(self, address):
         """Get a value for an array given its pointer address."""

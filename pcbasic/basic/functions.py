@@ -178,8 +178,7 @@ class Functions(object):
     def value_varptr(self, ins):
         """VARPTR: get memory address for variable or FCB."""
         ins.require_read(('(',))
-        is_filenum = ins.skip_blank() == '#'
-        if is_filenum:
+        if ins.skip_blank() == '#':
             # params holds a number
             params = self.parser.parse_file_number(ins, opt_hash=False)
         else:
@@ -187,7 +186,7 @@ class Functions(object):
             params = self.parser.parse_variable(ins)
         ins.require_read((')',))
         var_ptr = self.session.memory.varptr_(params)
-        return self.values.new_integer().from_int(var_ptr, unsigned=True)
+        return self.values.from_value(var_ptr, values.INT)
 
     def value_varptr_str(self, ins):
         """VARPTR$: get memory address for variable."""

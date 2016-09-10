@@ -88,11 +88,8 @@ class Scalars(object):
 
     def varptr(self, name):
         """Retrieve the address of a scalar variable."""
-        try:
-            _, var_ptr = self._var_memory[name]
-            return var_ptr
-        except KeyError:
-            return -1
+        _, var_ptr = self._var_memory[name]
+        return var_ptr
 
     def dereference(self, address):
         """Get a value for a scalar given its pointer address."""

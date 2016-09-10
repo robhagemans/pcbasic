@@ -331,23 +331,26 @@ class DataSegment(object):
         if isinstance(params, tuple):
             name, indices = params
             name = self.complete_name(name)
-            if indices == []:
-                var_ptr = self.scalars.varptr(name)
-            else:
-                var_ptr = self.arrays.varptr(name, indices)
-            if var_ptr < 0:
+            try:
+                if indices == []:
+                    var_ptr = self.scalars.varptr(name)
+                else:
+                    var_ptr = self.arrays.varptr(name, indices)
+            except KeyError:
                 raise error.RunError(error.IFC)
-            return var_ptr
         else:
             filenum = args
             if filenum < 1 or filenum > self.max_files:
                 raise error.RunError(error.BAD_FILE_NUMBER)
-            return self.field_mem_base + filenum * self.field_mem_offset + 6
+            var_ptr = self.field_mem_base + filenum * self.field_mem_offset + 6
+        if var_ptr > 0x7fff:
+            var_ptr -= 0x10000
+        return var_ptr
 
     def varptr_str_(self, name, indices):
         """VARPTR$: Get address of variable in string representation."""
         var_ptr = self.varptr_(name, indices)
-        return struct.pack('<BH', values.size_bytes(name), var_ptr)
+        return struct.pack('<Bh', values.size_bytes(name), var_ptr)
 
     def dereference(self, address):
         """Get a value for a variable given its pointer address."""
