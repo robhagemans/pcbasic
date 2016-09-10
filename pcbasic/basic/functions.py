@@ -212,29 +212,17 @@ class Functions(object):
 
     def value_left(self, ins):
         """LEFT$: get substring at the start of string."""
-        ins.require_read(('(',))
-        s = values.pass_string(self.parser.parse_expression(ins))
-        ins.require_read((',',))
-        stop = values.cint_(self.parser.parse_expression(ins))
-        ins.require_read((')',))
+        s, stop = self.parser.parse_argument_list(ins, values.pass_string, values.cint_)
         return values.left_(s, stop)
 
     def value_right(self, ins):
         """RIGHT$: get substring at the end of string."""
-        ins.require_read(('(',))
-        s = values.pass_string(self.parser.parse_expression(ins))
-        ins.require_read((',',))
-        stop = values.cint_(self.parser.parse_expression(ins))
-        ins.require_read((')',))
+        s, stop = self.parser.parse_argument_list(ins, values.pass_string, values.cint_)
         return values.right_(s, stop)
 
     def value_pmap(self, ins):
         """PMAP: convert between logical and physical coordinates."""
-        ins.require_read(('(',))
-        coord = values.cint_(self.parser.parse_expression(ins))
-        ins.require_read((',',))
-        mode = values.cint_(self.parser.parse_expression(ins))
-        ins.require_read((')',))
+        coord, mode = self.parser.parse_argument_list(ins, values.cint_, values.cint_)
         return self.session.screen.drawing.pmap_(coord, mode)
 
     ###########################################################################
