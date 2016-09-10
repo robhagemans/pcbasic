@@ -47,11 +47,11 @@ class Functions(object):
             tk.MKI: partial(self.value_func, fn=values.mki_),
             tk.MKS: partial(self.value_func, fn=values.mks_),
             tk.MKD: partial(self.value_func, fn=values.mkd_),
-            tk.EXTERR: self.value_exterr,
+            tk.EXTERR: partial(self.value_unary, fn=self.session.devices.exterr_, to_type=values.INT),
             tk.DATE: partial(self.value_nullary, fn=self.session.clock.date_fn_, to_type=values.STR),
             tk.TIME: partial(self.value_nullary, fn=self.session.clock.time_fn_, to_type=values.STR),
-            tk.PLAY: self.value_play,
-            tk.TIMER: partial(self.value_nullary, fn=self.session.clock.timer_(), to_type=values.SNG),
+            tk.PLAY: partial(self.value_unary, fn=self.session.sound.play_fn_, to_type=values.INT),
+            tk.TIMER: partial(self.value_nullary, fn=self.session.clock.timer_, to_type=values.SNG),
             tk.ERDEV: self.value_erdev,
             tk.IOCTL: self.value_ioctl,
             tk.ENVIRON: self.value_environ,
@@ -70,9 +70,9 @@ class Functions(object):
             tk.COS: partial(self.value_func, fn=values.cos_),
             tk.TAN: partial(self.value_func, fn=values.tan_),
             tk.ATN: partial(self.value_func, fn=values.atn_),
-            tk.FRE: self.value_fre,
+            tk.FRE: partial(self.value_unary, fn=self.session.memory.fre_, to_type=values.SNG),
             tk.INP: self.value_inp,
-            tk.POS: self.value_pos,
+            tk.POS: partial(self.value_unary, fn=self.session.screen.pos_, to_type=values.INT),
             tk.LEN: partial(self.value_func, fn=values.len_),
             tk.STR: partial(self.value_func, fn=values.str_),
             tk.VAL: partial(self.value_func, fn=values.val_),
@@ -82,17 +82,17 @@ class Functions(object):
             tk.SPACE: partial(self.value_func, fn=values.space_),
             tk.OCT: partial(self.value_func, fn=values.oct_),
             tk.HEX: partial(self.value_func, fn=values.hex_),
-            tk.LPOS: self.value_lpos,
+            tk.LPOS: partial(self.value_unary, fn=self.session.files.lpos_, to_type=values.INT),
             tk.CINT: partial(self.value_func, fn=values.cint_),
             tk.CSNG: partial(self.value_func, fn=values.csng_),
             tk.CDBL: partial(self.value_func, fn=values.cdbl_),
             tk.FIX: partial(self.value_func, fn=values.fix_),
             tk.PEN: self.value_pen,
-            tk.STICK: self.value_stick,
+            tk.STICK: partial(self.value_unary, fn=self.session.stick.stick_, to_type=values.INT),
             tk.STRIG: self.value_strig,
             tk.EOF: self.value_eof,
-            tk.LOC: self.value_loc,
-            tk.LOF: self.value_lof,
+            tk.LOC: partial(self.value_unary, fn=self.session.files.loc_, to_type=values.SNG),
+            tk.LOF: partial(self.value_unary, fn=self.session.files.lof_, to_type=values.SNG),
         }
 
     def __getstate__(self):
@@ -115,6 +115,10 @@ class Functions(object):
         # NOTE that this wrapper is only necessary to introduce a dummy argument
         # for the dictionary-based call
         return self.values.from_value(fn(), to_type)
+
+    def value_unary(self, ins, fn, to_type):
+        """Get value of a function with one arguments and convert to BASIC value."""
+        return self.values.from_value(fn(self.parser.parse_bracket(ins)), to_type)
 
     def value_func(self, ins, fn):
         """Return value of unary function requiring no conversion."""
@@ -141,72 +145,23 @@ class Functions(object):
     ###########################################################
     # unary functions
 
-    def value_pos(self, ins):
-        """POS: get the current screen column."""
-        # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
-        dummy = self.parser.parse_bracket(ins)
-        pos = self.session.screen.pos_(dummy)
-        return self.values.from_value(pos, values.INT)
-
-    def value_lpos(self, ins):
-        """LPOS: get the current printer column."""
-        num = self.parser.parse_bracket(ins)
-        lpos = self.session.files.lpos_(num)
-        return self.values.from_value(lpos, values.INT)
-
-    def value_loc(self, ins):
-        """LOC: get file pointer."""
-        num = self.parser.parse_bracket(ins)
-        loc = self.session.files.loc_(num)
-        return self.values.from_value(loc, values.SNG)
-
     def value_eof(self, ins):
         """EOF: get end-of-file."""
         num = self.parser.parse_bracket(ins)
         eof = self.session.files.eof_(num)
         return self.values.from_bool(eof)
 
-    def value_lof(self, ins):
-        """LOF: get length of file."""
-        num = self.parser.parse_bracket(ins)
-        lof = self.session.files.lof_(num)
-        return self.values.from_value(lof, values.SNG)
+    def value_strig(self, ins):
+        """STRIG: poll the joystick fire button."""
+        fn = self.parser.parse_bracket(ins)
+        strig = self.session.stick.strig_(fn)
+        return self.values.from_bool(strig)
 
     def value_inp(self, ins):
         """INP: get value from machine port."""
         num = self.parser.parse_bracket(ins)
         inp = self.session.machine.inp_(num)
         return self.values.new_integer().from_int(inp, unsigned=True)
-
-    def value_fre(self, ins):
-        """FRE: get free memory and optionally collect garbage."""
-        val = self.parser.parse_bracket(ins)
-        fre = self.session.memory.fre_(val)
-        return self.values.from_value(fre, values.SNG)
-
-    def value_exterr(self, ins):
-        """EXTERR: device error information; not implemented."""
-        val = self.parser.parse_bracket(ins)
-        exterr = self.session.devices.exterr_(val)
-        return self.values.from_value(exterr, values.INT)
-
-    def value_play(self, ins):
-        """PLAY: get length of music queue."""
-        voice = values.to_int(self.parser.parse_bracket(ins))
-        play = self.session.sound.play_(voice)
-        return self.values.from_value(play, values.INT)
-
-    def value_stick(self, ins):
-        """STICK: poll the joystick."""
-        fn = self.parser.parse_bracket(ins)
-        stick = self.session.stick.stick_(fn)
-        return self.values.from_value(stick, values.INT)
-
-    def value_strig(self, ins):
-        """STRIG: poll the joystick fire button."""
-        fn = self.parser.parse_bracket(ins)
-        strig = self.session.stick.strig_(fn)
-        return self.values.from_bool(strig)
 
     def value_pen(self, ins):
         """PEN: poll the light pen."""

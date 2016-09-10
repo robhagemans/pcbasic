@@ -176,21 +176,6 @@ class Files(object):
         logging.warning("IOCTL$ function not implemented.")
         raise error.RunError(error.IFC)
 
-    def erdev_(self):
-        """ERDEV: device error value; not implemented."""
-        logging.warning("ERDEV function not implemented.")
-        return 0
-
-    def erdev_str_(self):
-        """ERDEV$: device error string; not implemented."""
-        logging.warning("ERDEV$ function not implemented.")
-        return b''
-
-    def exterr_(self, val):
-        """EXTERR: device error information; not implemented."""
-        logging.warning("EXTERR function not implemented.")
-        error.range_check(0, 3, values.to_int(val))
-        return 0
 
 
 ###############################################################################
@@ -274,3 +259,19 @@ class Devices(object):
         if dev not in self.drive_letters:
             raise error.RunError(error.DEVICE_UNAVAILABLE)
         return self.devices[dev + b':'], spec
+
+    def erdev_(self):
+        """ERDEV: device error value; not implemented."""
+        logging.warning("ERDEV function not implemented.")
+        return 0
+
+    def erdev_str_(self):
+        """ERDEV$: device error string; not implemented."""
+        logging.warning("ERDEV$ function not implemented.")
+        return b''
+
+    def exterr_(self, val):
+        """EXTERR: device error information; not implemented."""
+        logging.warning("EXTERR function not implemented.")
+        error.range_check(0, 3, values.to_int(val))
+        return 0
