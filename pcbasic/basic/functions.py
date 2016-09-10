@@ -159,21 +159,7 @@ class Functions(object):
         return self.session.user_functions.value(fnname, self.parser, ins)
 
     ###########################################################
-    # unary functions with idiosyncratic syntax
-
-    def value_rnd(self, ins):
-        """RND: get pseudorandom value."""
-        if ins.skip_blank() == '(':
-            return self.session.randomiser.rnd(values.csng_(self.parser.parse_bracket(ins)))
-        else:
-            return self.session.randomiser.rnd()
-
-    def value_ioctl(self, ins):
-        """IOCTL$: read device control string response; not implemented."""
-        ins.require_read(('(',))
-        num = self.parser.parse_file_number(ins, opt_hash=True)
-        ins.require_read((')',))
-        return self.session.files.ioctl_(num)
+    # special cases
 
     def value_varptr(self, ins):
         """VARPTR: get memory address for variable or FCB."""
@@ -196,8 +182,12 @@ class Functions(object):
         var_ptr_str = self.session.memory.varptr_str_(name, indices)
         return self.values.from_value(var_ptr_str, values.STR)
 
-    ######################################################################
-    # binary string functions
+    def value_ioctl(self, ins):
+        """IOCTL$: read device control string response; not implemented."""
+        ins.require_read(('(',))
+        num = self.parser.parse_file_number(ins, opt_hash=True)
+        ins.require_read((')',))
+        return self.session.files.ioctl_(num)
 
     def value_instr(self, ins):
         """INSTR: find substring in string."""
@@ -217,17 +207,8 @@ class Functions(object):
         ins.require_read((')',))
         return big.instr(small)
 
-    def value_mid(self, ins):
-        """MID$: get substring."""
-        ins.require_read(('(',))
-        s = values.pass_string(self.parser.parse_expression(ins))
-        ins.require_read((',',))
-        start = values.cint_(self.parser.parse_expression(ins))
-        num = None
-        if ins.skip_blank_read_if((',',)):
-            num = values.cint_(self.parser.parse_expression(ins))
-        ins.require_read((')',))
-        return s.mid(start, num)
+    ######################################################################
+    # binary functions
 
     def value_left(self, ins):
         """LEFT$: get substring at the start of string."""
@@ -247,6 +228,38 @@ class Functions(object):
         ins.require_read((')',))
         return s.right(stop)
 
+    def value_pmap(self, ins):
+        """PMAP: convert between logical and physical coordinates."""
+        ins.require_read(('(',))
+        coord = values.cint_(self.parser.parse_expression(ins))
+        ins.require_read((',',))
+        mode = values.cint_(self.parser.parse_expression(ins))
+        ins.require_read((')',))
+        pmap = self.session.screen.drawing.pmap_(coord, mode)
+        return self.values.from_value(pmap, values.SNG)
+
+    ###########################################################################
+    # functions with optional arguments
+
+    def value_rnd(self, ins):
+        """RND: get pseudorandom value."""
+        if ins.skip_blank() == '(':
+            return self.session.randomiser.rnd(values.csng_(self.parser.parse_bracket(ins)))
+        else:
+            return self.session.randomiser.rnd()
+
+    def value_mid(self, ins):
+        """MID$: get substring."""
+        ins.require_read(('(',))
+        s = values.pass_string(self.parser.parse_expression(ins))
+        ins.require_read((',',))
+        start = values.cint_(self.parser.parse_expression(ins))
+        num = None
+        if ins.skip_blank_read_if((',',)):
+            num = values.cint_(self.parser.parse_expression(ins))
+        ins.require_read((')',))
+        return s.mid(start, num)
+
     def value_string(self, ins):
         """STRING$: repeat characters."""
         ins.require_read(('(',))
@@ -258,9 +271,6 @@ class Functions(object):
             error.range_check(0, 255, asc_value_or_char.to_int())
         ins.require_read((')',))
         return self.values.new_string().string_(asc_value_or_char, n)
-
-    ######################################################################
-    # binary functions
 
     def value_screen(self, ins):
         """SCREEN: get char or attribute at a location."""
@@ -302,13 +312,3 @@ class Functions(object):
             ins.require_read((')',))
             screen = self.session.screen.drawing.point_1_(arg0)
             return self.values.from_value(screen, values.SNG)
-
-    def value_pmap(self, ins):
-        """PMAP: convert between logical and physical coordinates."""
-        ins.require_read(('(',))
-        coord = self.parser.parse_expression(ins)
-        ins.require_read((',',))
-        mode = values.to_int(self.parser.parse_expression(ins))
-        ins.require_read((')',))
-        pmap = self.session.screen.drawing.pmap_(coord, mode)
-        return self.values.from_value(pmap, values.SNG)

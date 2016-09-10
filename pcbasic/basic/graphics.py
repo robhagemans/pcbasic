@@ -263,6 +263,7 @@ class Drawing(object):
 
     def pmap_(self, coord, mode):
         """PMAP: convert between logical and physical coordinates."""
+        mode = mode.to_int()
         error.range_check(0, 3, mode)
         if self.screen.mode.is_text_mode:
             return 0
