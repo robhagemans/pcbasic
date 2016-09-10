@@ -153,11 +153,11 @@ class DataSegment(object):
                 value = self.values.new_string().from_pointer(length, address)
             self.scalars.set(name, value)
 
-    def get_free(self):
+    def _get_free(self):
         """Return the amount of memory available to variables, arrays, strings and code."""
         return self.strings.current - self.var_current() - self.arrays.current
 
-    def collect_garbage(self):
+    def _collect_garbage(self):
         """Collect garbage from string space. Compactify string storage."""
         # find all strings that are actually referenced
         string_ptrs = self.scalars.get_strings() + self.arrays.get_strings()
@@ -165,9 +165,9 @@ class DataSegment(object):
 
     def check_free(self, size, err):
         """Check if sufficient free memory is avilable, raise error if not."""
-        if self.get_free() <= size:
-            self.collect_garbage()
-            if self.get_free() <= size:
+        if self._get_free() <= size:
+            self._collect_garbage()
+            if self._get_free() <= size:
                 raise error.RunError(err)
 
     def var_start(self):
@@ -386,3 +386,10 @@ class DataSegment(object):
             self.arrays.set_cache(name1, None)
         if name2 in self.arrays:
             self.arrays.set_cache(name2, None)
+
+    def fre_(self, val):
+        """FRE: get free memory and optionally collect garbage."""
+        if isinstance(val, values.String):
+            # grabge collection if a string-valued argument is specified.
+            self._collect_garbage()
+        return self._get_free()

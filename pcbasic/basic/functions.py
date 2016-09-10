@@ -170,6 +170,12 @@ class Functions(object):
         inp = self.session.machine.inp_(num)
         return self.values.new_integer().from_int(inp, unsigned=True)
 
+    def value_fre(self, ins):
+        """FRE: get free memory and optionally collect garbage."""
+        val = self.parser.parse_bracket(ins)
+        fre = self.session.memory.fre_(val)
+        return self.values.from_value(fre, values.SNG)
+
     def value_usr(self, ins):
         """USR: get value of machine-code function; not implemented."""
         ins.require_read(tk.DIGIT)
@@ -184,8 +190,6 @@ class Functions(object):
         num = self.parser.parse_file_number(ins, opt_hash=True)
         ins.require_read((')',))
         return self.session.files.ioctl_(num)
-
-
 
     ######################################################################
     # binary string functions
@@ -416,6 +420,22 @@ class Functions(object):
         """ERR: get error code of last error."""
         return self.values.from_value(self.parser.error_num, values.INT)
 
+    def value_erdev(self, ins):
+        """ERDEV$: device error string; not implemented."""
+        if ins.skip_blank_read_if(('$',)):
+            logging.warning("ERDEV$ function not implemented.")
+            return self.values.new_string()
+        else:
+            logging.warning("ERDEV function not implemented.")
+            return self.values.new_integer()
+
+    def value_exterr(self, ins):
+        """EXTERR: device error information; not implemented."""
+        x = values.to_int(self.parser.parse_bracket(ins))
+        error.range_check(0, 3, x)
+        logging.warning("EXTERR function not implemented.")
+        return self.values.new_integer()
+
     #####################################################################
     # pen, stick and strig
 
@@ -445,14 +465,6 @@ class Functions(object):
     #########################################################
     # memory and machine
 
-    def value_fre(self, ins):
-        """FRE: get free memory and optionally collect garbage."""
-        val = self.parser.parse_bracket(ins)
-        if isinstance(val, values.String):
-            # grabge collection if a string-valued argument is specified.
-            self.session.memory.collect_garbage()
-        return self.values.from_value(self.session.memory.get_free(), values.SNG)
-
     def value_peek(self, ins):
         """PEEK: read memory location."""
         addr = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
@@ -478,19 +490,3 @@ class Functions(object):
             return self.values.from_value(var_ptr_str, values.STR)
         else:
             return self.values.new_integer().from_int(var_ptr, unsigned=True)
-
-    def value_erdev(self, ins):
-        """ERDEV$: device error string; not implemented."""
-        if ins.skip_blank_read_if(('$',)):
-            logging.warning("ERDEV$ function not implemented.")
-            return self.values.new_string()
-        else:
-            logging.warning("ERDEV function not implemented.")
-            return self.values.new_integer()
-
-    def value_exterr(self, ins):
-        """EXTERR: device error information; not implemented."""
-        x = values.to_int(self.parser.parse_bracket(ins))
-        error.range_check(0, 3, x)
-        logging.warning("EXTERR function not implemented.")
-        return self.values.new_integer()

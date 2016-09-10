@@ -291,7 +291,6 @@ class Memory(object):
         if self.segment < 0:
             self.segment += 0x10000
 
-
     ###########################################################################
     # IMPLEMENTATION
 
