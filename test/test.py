@@ -66,6 +66,7 @@ failed = []
 knowfailed = []
 
 start_time = time.time()
+start_clock = time.clock()
 
 for name in args:
     print '\033[00;37mRunning test \033[01m%s \033[00;37m.. ' % name,
@@ -139,7 +140,7 @@ for name in args:
     numtests += 1
 
 print
-print '\033[00mRan %d tests in %.2fs:' % (numtests, time.time() - start_time)
+print '\033[00mRan %d tests in %.2fs (wall) %.2fs (cpu):' % (numtests, time.time() - start_time, time.clock() - start_clock)
 if failed:
     print '    %d new failures: \033[01;31m%s\033[00m' % (len(failed), ' '.join(failed))
 if knowfailed:
