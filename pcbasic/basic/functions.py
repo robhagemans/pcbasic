@@ -158,16 +158,13 @@ class Functions(object):
         # while unary functions generate it *afterwards*. this is to match GW-BASIC
         return fn(*self.parser.parse_argument_list(ins, conv, optional))
 
-    #######################################################
-    # user-defined functions
+    ###########################################################
+    # special cases
 
     def value_fn(self, ins):
         """FN: get value of user-defined function."""
         fnname = self.parser.parse_scalar(ins)
         return self.session.user_functions.value(fnname, self.parser, ins)
-
-    ###########################################################
-    # special cases
 
     def value_varptr(self, ins):
         """VARPTR: get memory address for variable or FCB."""
@@ -203,7 +200,7 @@ class Functions(object):
         # followed by comma so empty will raise STX
         s = self.parser.parse_expression(ins)
         n = 1
-        if isinstance(s, values.String):
+        if isinstance(s, values.Number):
             n = values.to_int(s)
             error.range_check(1, 255, n)
             ins.require_read((',',))
@@ -214,10 +211,6 @@ class Functions(object):
         small = values.pass_string(s)
         ins.require_read((')',))
         return big.instr(small)
-
-
-    ###########################################################################
-    # functions with optional arguments
 
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
