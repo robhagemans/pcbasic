@@ -205,6 +205,8 @@ class Session(object):
     def __setstate__(self, pickle_dict):
         """Unpickle and resume the session."""
         self.__dict__.update(pickle_dict)
+        # build function table (depends on Memory having been initialised)
+        self.parser.functions.init_functions()
         self.keyboard._input_closed = False
         # suppress double prompt
         if not self._parse_mode:
