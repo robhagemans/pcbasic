@@ -291,7 +291,7 @@ class TokenisedStream(CodeStream):
         d = self.read(1)
         while d and d in self.blanks:
             d = self.read(1)
-        self.seek(-1, 1)
+        self.seek(-len(d), 1)
         if d not in tk.END_STATEMENT:
             raise error.RunError(err)
 
