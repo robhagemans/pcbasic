@@ -27,10 +27,14 @@ class Functions(object):
 
     def init_functions(self):
         """Initialise functions."""
+        self.with_presign = {
+            tk.USR: (self.value_usr, tk.DIGIT),
+            tk.IOCTL: (self.value_ioctl, '$'),
+            tk.ENVIRON: (self.value_environ, '$'),
+            tk.INPUT: (self.value_input, '$'),
+        }
         self.functions = {
-            tk.INPUT: self.value_input,
             tk.SCREEN: self.value_screen,
-            tk.USR: self.value_usr,
             tk.FN: self.value_fn,
             tk.ERL: partial(self.value_nullary, fn=self.parser.erl_, to_type=values.SNG),
             tk.ERR: partial(self.value_nullary, fn=self.parser.err_, to_type=values.INT),
@@ -52,8 +56,6 @@ class Functions(object):
             tk.PLAY: partial(self.value_unary, fn=self.session.sound.play_fn_, to_type=values.INT),
             tk.TIMER: partial(self.value_nullary, fn=self.session.clock.timer_, to_type=values.SNG),
             tk.ERDEV: self.value_erdev,
-            tk.IOCTL: self.value_ioctl,
-            tk.ENVIRON: self.value_environ,
             tk.PMAP: self.value_pmap,
             tk.LEFT: self.value_left,
             tk.RIGHT: self.value_right,
@@ -97,14 +99,14 @@ class Functions(object):
     def __getstate__(self):
         """Pickle."""
         pickle_dict = self.__dict__.copy()
-        # can't be pickled
+        # functools.partial objects and functions can't be pickled
         pickle_dict['functions'] = None
+        pickle_dict['with_presign'] = None
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
-        self._init_functions()
 
     ###########################################################
     # generalised calls
@@ -141,16 +143,14 @@ class Functions(object):
         else:
             return self.session.randomiser.rnd()
 
-    def value_usr(self, ins):
+    def value_usr(self, ins, presign):
         """USR: get value of machine-code function; not implemented."""
-        ins.require_read(tk.DIGIT)
         num = self.parser.parse_bracket(ins)
-        usr = self.session.machine.usr_(num)
+        usr = self.session.machine.usr_(presign, num)
         return self.values.from_value(usr, values.SNG)
 
-    def value_ioctl(self, ins):
+    def value_ioctl(self, ins, presign):
         """IOCTL$: read device control string response; not implemented."""
-        ins.require_read(('$',))
         ins.require_read(('(',))
         num = self.parser.parse_file_number(ins, opt_hash=True)
         ins.require_read((')',))
@@ -167,9 +167,8 @@ class Functions(object):
             erdev = self.session.devices.erdev_(val)
             return self.values.from_value(erdev, values.INT)
 
-    def value_environ(self, ins):
+    def value_environ(self, ins, presign):
         """ENVIRON$: get environment string."""
-        ins.require_read(('$',))
         expr = self.parser.parse_bracket(ins)
         environ = dos.environ_(expr)
         return self.values.from_value(environ, values.STR)
@@ -254,9 +253,8 @@ class Functions(object):
         ins.require_read((')',))
         return self.values.from_value(screen, values.INT)
 
-    def value_input(self, ins):
+    def value_input(self, ins, presign):
         """INPUT$: get characters from the keyboard or a file."""
-        ins.require_read(('$',))
         ins.require_read(('(',))
         num = values.to_int(self.parser.parse_expression(ins))
         error.range_check(1, 255, num)

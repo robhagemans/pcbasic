@@ -459,6 +459,13 @@ class Parser(object):
                 # apply functions
                 ins.read(len(d))
                 units.append(self.functions.functions[d](ins))
+            elif d in self.functions.with_presign:
+                fn, presign_range = self.functions.with_presign[d]
+                ins.read(len(d))
+                presign = ins.skip_blank_read_if(presign_range)
+                if not presign:
+                    raise error.RunError(error.STX)
+                units.append(fn(ins, presign))
             elif d in tk.END_STATEMENT:
                 break
             elif d in tk.END_EXPRESSION:
