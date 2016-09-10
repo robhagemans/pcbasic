@@ -471,18 +471,8 @@ class Parser(object):
                 # variable name
                 name, indices = self.parse_variable(ins)
                 units.append(self.session.memory.get_variable(name, indices))
-            elif d in self.functions.functions:
-                # apply functions
-                ins.read(len(d))
-                units.append(self.functions.functions[d](ins))
-            elif d in self.functions.with_presign:
-                fndict = self.functions.with_presign[d]
-                ins.read(len(d))
-                presign = ins.skip_blank_read_if(fndict)
-                try:
-                    units.append(fndict[presign](ins))
-                except KeyError:
-                    raise error.RunError(error.STX)
+            elif d in self.functions:
+                units.append(self.functions.parse_function(ins, d))
             elif d in tk.END_STATEMENT:
                 break
             elif d in tk.END_EXPRESSION:

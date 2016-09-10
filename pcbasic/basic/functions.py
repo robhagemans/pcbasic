@@ -27,7 +27,7 @@ class Functions(object):
 
     def init_functions(self):
         """Initialise functions."""
-        self.with_presign = {
+        self._with_presign = {
             # token   range   optional   function
             tk.USR: {
                 None: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
@@ -60,7 +60,7 @@ class Functions(object):
                 None: self.value_varptr,
             },
         }
-        self.functions = {
+        self._bare = {
             tk.SCREEN: partial(self.value_polynary, fn=self.session.screen.screen_fn_,
                             conv=(values.cint_, values.cint_, values.cint_), optional=True),
             tk.FN: self.value_fn,
@@ -122,21 +122,41 @@ class Functions(object):
             tk.LOC: partial(self.value_unary, fn=self.session.files.loc_, to_type=values.SNG),
             tk.LOF: partial(self.value_unary, fn=self.session.files.lof_, to_type=values.SNG),
         }
+        self._functions = set(self._with_presign.keys() + self._bare.keys())
 
     def __getstate__(self):
         """Pickle."""
         pickle_dict = self.__dict__.copy()
         # functools.partial objects and functions can't be pickled
-        pickle_dict['functions'] = None
-        pickle_dict['with_presign'] = None
+        pickle_dict['_bare'] = None
+        pickle_dict['_with_presign'] = None
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
 
+    def __contains__(self, token):
+        """Check if a token is a function token."""
+        return token in self._functions
+
+
     ###########################################################
     # generalised calls
+
+    def parse_function(self, ins, token):
+        """Parse a function starting with the given token."""
+        ins.read(len(token))
+        if token in self._bare:
+            # apply functions
+            return self._bare[token](ins)
+        else:
+            fndict = self._with_presign[token]
+            presign = ins.skip_blank_read_if(fndict)
+            try:
+                return fndict[presign](ins)
+            except KeyError:
+                raise error.RunError(error.STX)
 
     def value_nullary(self, dummy_ins, fn, to_type):
         """Get value of a function with no arguments and convert to BASIC value."""
