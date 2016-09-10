@@ -1165,15 +1165,19 @@ class Screen(object):
 
     def screen_fn_(self, row, col, want_attr):
         """SCREEN: get char or attribute at a location."""
+        new_int = row.new()
+        row, col = row.to_int(), col.to_int()
         error.range_check(1, self.mode.height, row)
+        error.range_check(1, self.mode.width, col)
+        if want_attr:
+            want_attr = want_attr.to_int()
+            error.range_check(0, 255, want_attr)
         if self.view_set:
             error.range_check(self.view_start, self.scroll_height, row)
-        error.range_check(1, self.mode.width, col)
-        error.range_check(0, 255, want_attr)
         if want_attr and not self.mode.is_text_mode:
-            return 0
+            return new_int.from_int(0)
         else:
-            return self.apage.get_char_attr(row, col, bool(want_attr))
+            return new_int.from_int(self.apage.get_char_attr(row, col, bool(want_attr)))
 
     def get_char_attr(self, pagenum, crow, ccol, want_attr):
         """Retrieve a byte from the screen."""

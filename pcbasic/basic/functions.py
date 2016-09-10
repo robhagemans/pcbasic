@@ -61,7 +61,8 @@ class Functions(object):
             },
         }
         self.functions = {
-            tk.SCREEN: self.value_screen,
+            tk.SCREEN: partial(self.value_polynary, fn=self.session.screen.screen_fn_,
+                            conv=(values.cint_, values.cint_, values.cint_), optional=True),
             tk.FN: self.value_fn,
             tk.ERL: partial(self.value_nullary, fn=self.parser.erl_, to_type=values.SNG),
             tk.ERR: partial(self.value_nullary, fn=self.parser.err_, to_type=values.INT),
@@ -120,21 +121,6 @@ class Functions(object):
             tk.LOC: partial(self.value_unary, fn=self.session.files.loc_, to_type=values.SNG),
             tk.LOF: partial(self.value_unary, fn=self.session.files.lof_, to_type=values.SNG),
         }
-
-    def value_screen(self, ins):
-        """SCREEN: get char or attribute at a location."""
-        ins.require_read(('(',))
-        row = values.to_int(self.parser.parse_expression(ins))
-        ins.require_read((',',), err=error.IFC)
-        col = values.to_int(self.parser.parse_expression(ins))
-        want_attr = None
-        if ins.skip_blank_read_if((',',)):
-            want_attr = values.to_int(self.parser.parse_expression(ins))
-        screen = self.session.screen.screen_fn_(row, col, want_attr)
-        ins.require_read((')',))
-        return self.values.from_value(screen, values.INT)
-
-
 
     def __getstate__(self):
         """Pickle."""
