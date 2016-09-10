@@ -339,10 +339,8 @@ class Parser(object):
             arg.append(conv(self.parse_expression(ins)))
         if ins.skip_blank_read_if((',',)):
             arg.append(conv(self.parse_expression(ins)))
-        else:
-            arg.append(None)
-            if not optional:
-                raise error.RunError(error.STX)
+        elif not optional:
+            raise error.RunError(error.STX)
         ins.require_read((')',))
         return arg
 

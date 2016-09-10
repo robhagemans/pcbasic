@@ -19,6 +19,7 @@ from . import error
 from . import modes
 from . import font
 from . import graphics
+from . import values
 from . import tokens as tk
 
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)
@@ -1163,7 +1164,7 @@ class Screen(object):
         return (self.current_row == oldrow and
                  self.current_col == oldcol)
 
-    def screen_fn_(self, row, col, want_attr):
+    def screen_fn_(self, row, col, want_attr=None):
         """SCREEN: get char or attribute at a location."""
         new_int = row.new()
         row, col = row.to_int(), col.to_int()
@@ -1532,6 +1533,52 @@ class Screen(object):
         self.session.video_queue.put(signals.Event(signals.VIDEO_FILL_RECT,
                                 (self.apagenum, x0, y0, x1, y1, index)))
         self.clear_text_area(x0, y0, x1, y1)
+
+
+    def point_(self, arg0, arg1=None):
+        """POINT (1 argument): Return current coordinate (2 arguments): Return the attribute of a pixel."""
+        if arg1 is None:
+            new_sng = arg0.to_single().clone()
+            if self.mode.is_text_mode:
+                return new_sng.from_int(0)
+            fn = values.to_int(arg0)
+            if fn in (0, 1):
+                return new_sng.from_value(self.drawing.last_point[fn])
+            elif fn in (2, 3):
+                return new_sng.from_value(self.drawing.get_window_logical(*self.drawing.last_point)[fn - 2])
+            return new_sng.from_int(0)
+        else:
+            if self.mode.is_text_mode:
+                raise error.RunError(error.IFC)
+            new_int = arg0.to_integer().clone()
+            x, y = values.csng_(arg0).to_value(), values.csng_(arg1).to_value()
+            x, y = self.graph_view.coords(*self.drawing.get_window_physical(x, y))
+            if x < 0 or x >= self.mode.pixel_width:
+                return new_int.from_int(-1)
+            if y < 0 or y >= self.mode.pixel_height:
+                return new_int.from_int(-1)
+            return new_int.from_int(self.get_pixel(x, y))
+
+    def pmap_(self, coord, mode):
+        """PMAP: convert between logical and physical coordinates."""
+        # create a new Single for the return value
+        fvalue = mode.to_single()
+        mode = mode.to_int()
+        error.range_check(0, 3, mode)
+        if self.mode.is_text_mode:
+            return 0
+        if mode == 0:
+            value, _ = self.drawing.get_window_physical(values.csng_(coord).to_value(), 0.)
+            return fvalue.from_value(value)
+        elif mode == 1:
+            _, value = self.drawing.get_window_physical(0., values.csng_(coord).to_value())
+            return fvalue.from_value(value)
+        elif mode == 2:
+            value, _ = self.drawing.get_window_logical(values.to_int(coord), 0)
+            return fvalue.from_value(value)
+        elif mode == 3:
+            _, value = self.drawing.get_window_logical(0, values.to_int(coord))
+            return fvalue.from_value(value)
 
     # text
 

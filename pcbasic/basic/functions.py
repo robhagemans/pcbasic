@@ -69,7 +69,8 @@ class Functions(object):
             tk.STRING: self.value_string,
             tk.INSTR: self.value_instr,
             tk.CSRLIN: partial(self.value_nullary, fn=self.session.screen.csrlin_, to_type=values.INT),
-            tk.POINT: self.value_point,
+            tk.POINT: partial(self.value_polynary, fn=self.session.screen.point_,
+                            conv=(values.cint_, values.cint_), optional=True),
             tk.INKEY: partial(self.value_nullary, fn=self.session.keyboard.get_char, to_type=values.STR),
             tk.CVI: partial(self.value_func, fn=values.cvi_),
             tk.CVS: partial(self.value_func, fn=values.cvs_),
@@ -82,7 +83,7 @@ class Functions(object):
             tk.TIME: partial(self.value_nullary, fn=self.session.clock.time_fn_, to_type=values.STR),
             tk.PLAY: partial(self.value_unary, fn=self.session.sound.play_fn_, to_type=values.INT),
             tk.TIMER: partial(self.value_nullary, fn=self.session.clock.timer_, to_type=values.SNG),
-            tk.PMAP: partial(self.value_polynary, fn=self.session.screen.drawing.pmap_, conv=(values.cint_, values.cint_)),
+            tk.PMAP: partial(self.value_polynary, fn=self.session.screen.pmap_, conv=(values.cint_, values.cint_)),
             tk.LEFT: partial(self.value_polynary, fn=values.left_, conv=(values.pass_string, values.cint_)),
             tk.RIGHT: partial(self.value_polynary, fn=values.right_, conv=(values.pass_string, values.cint_)),
             tk.MID: partial(self.value_polynary, fn=values.mid_, conv=(values.pass_string, values.cint_, values.cint_), optional=True),
@@ -248,19 +249,3 @@ class Functions(object):
         ins.require_read((')',))
         word = infile.input_(num)
         return self.values.from_value(word, values.STR)
-
-    def value_point(self, ins):
-        """POINT: get pixel attribute at screen location."""
-        ins.require_read(('(',))
-        arg0 = self.parser.parse_expression(ins)
-        if ins.skip_blank_read_if((',',)):
-            # two-argument mode
-            arg1 = self.parser.parse_expression(ins)
-            ins.require_read((')',))
-            screen = self.session.screen.drawing.point_2_(arg0, arg1)
-            return self.values.from_value(screen, values.INT)
-        else:
-            # single-argument mode
-            ins.require_read((')',))
-            screen = self.session.screen.drawing.point_1_(arg0)
-            return self.values.from_value(screen, values.SNG)
