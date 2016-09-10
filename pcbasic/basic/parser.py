@@ -428,8 +428,7 @@ class Parser(object):
 
     def parse_expression(self, ins, allow_empty=False, empty_err=error.MISSING_OPERAND):
         """Compute the value of the expression at the current code pointer."""
-        stack = deque()
-        units = deque()
+        expr = Expression()
         d = ''
         # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
         while True:
@@ -459,20 +458,20 @@ class Parser(object):
                     if d not in op.OPERATORS:
                         # illegal combined ops like == raise syntax error
                         raise error.RunError(error.STX)
-                    self._evaluate_stack(stack, units, op.PRECEDENCE[d], error.STX)
-                stack.append((d, nargs))
+                    expr.drain(op.PRECEDENCE[d], error.STX)
+                expr.push_operator(d, nargs)
             elif not (last in op.OPERATORS or last == ''):
                 # repeated unit ends expression
                 # repeated literals or variables or non-keywords like 'AS'
                 break
             elif d == '(':
-                units.append(self.parse_bracket(ins))
+                expr.push_value(self.parse_bracket(ins))
             elif d and d in string.ascii_letters:
                 # variable name
                 name, indices = self.parse_variable(ins)
-                units.append(self.session.memory.get_variable(name, indices))
+                expr.push_value(self.session.memory.get_variable(name, indices))
             elif d in self.functions:
-                units.append(self.functions.parse_function(ins, d))
+                expr.push_value(self.functions.parse_function(ins, d))
             elif d in tk.END_STATEMENT:
                 break
             elif d in tk.END_EXPRESSION:
@@ -481,31 +480,52 @@ class Parser(object):
                 break
             else:
                 # literal
-                units.append(self.parse_literal(ins))
+                expr.push_value(self.parse_literal(ins))
         # empty expression is a syntax error (inside brackets)
         # or Missing Operand (in an assignment)
         # or not an error (in print and many functions)
-        if units or stack:
-            self._evaluate_stack(stack, units, 0, empty_err)
-            return units[0]
+        return expr.evaluate(allow_empty, empty_err)
+
+
+class Expression(object):
+    """Expression stack."""
+
+    def __init__(self):
+        """Initialise empty expression."""
+        self._stack = deque()
+        self._units = deque()
+
+    def push_value(self, value):
+        """Push a value onto the unit stack."""
+        self._units.append(value)
+
+    def push_operator(self, operator, nargs):
+        """Push an operator onto the stack."""
+        self._stack.append((operator, nargs))
+
+    def drain(self, precedence, missing_err):
+        """Drain evaluation stack until an operator of low precedence on top."""
+        while self._stack:
+            if precedence > op.PRECEDENCE[self._stack[-1][0]]:
+                break
+            oper, narity = self._stack.pop()
+            try:
+                right = self._units.pop()
+                if narity == 1:
+                    self._units.append(op.UNARY[oper](right))
+                else:
+                    left = self._units.pop()
+                    self._units.append(op.BINARY[oper](left, right))
+            except IndexError:
+                # insufficient operators, error depends on context
+                raise error.RunError(missing_err)
+
+    def evaluate(self, allow_empty, empty_err):
+        """Evaluate expression and return result."""
+        if self._units or self._stack:
+            self.drain(0, empty_err)
+            return self._units[0]
         elif allow_empty:
             return None
         else:
             raise error.RunError(empty_err)
-
-    def _evaluate_stack(self, stack, units, precedence, missing_err):
-        """Drain evaluation stack until an operator of low precedence on top."""
-        while stack:
-            if precedence > op.PRECEDENCE[stack[-1][0]]:
-                break
-            oper, narity = stack.pop()
-            try:
-                right = units.pop()
-                if narity == 1:
-                    units.append(op.UNARY[oper](right))
-                else:
-                    left = units.pop()
-                    units.append(op.BINARY[oper](left, right))
-            except IndexError:
-                # insufficient operators, error depends on context
-                raise error.RunError(missing_err)
