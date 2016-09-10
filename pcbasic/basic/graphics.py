@@ -263,22 +263,24 @@ class Drawing(object):
 
     def pmap_(self, coord, mode):
         """PMAP: convert between logical and physical coordinates."""
+        # create a new Single for the return value
+        fvalue = mode.to_single()
         mode = mode.to_int()
         error.range_check(0, 3, mode)
         if self.screen.mode.is_text_mode:
             return 0
         if mode == 0:
             value, _ = self.get_window_physical(values.csng_(coord).to_value(), 0.)
-            return value
+            return fvalue.from_value(value)
         elif mode == 1:
             _, value = self.get_window_physical(0., values.csng_(coord).to_value())
-            return value
+            return fvalue.from_value(value)
         elif mode == 2:
             value, _ = self.get_window_logical(values.to_int(coord), 0)
-            return value
+            return fvalue.from_value(value)
         elif mode == 3:
             _, value = self.get_window_logical(0, values.to_int(coord))
-            return value
+            return fvalue.from_value(value)
 
 
     ### LINE

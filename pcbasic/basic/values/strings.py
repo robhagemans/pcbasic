@@ -165,22 +165,6 @@ class String(numbers.Value):
         start -= 1
         return self.new().from_str(self.to_str()[start:start+num])
 
-    def left(self, num):
-        """LEFT$: get substring of num characters at the start of string."""
-        stop = num.to_integer().to_int()
-        if stop == 0:
-            return self.new()
-        error.range_check(0, 255, stop)
-        return self.new().from_str(self.to_str()[:stop])
-
-    def right(self, s, num):
-        """RIGHT$: get substring of num characters at the end of string."""
-        stop = num.to_integer().to_int()
-        if stop == 0:
-            return self.new()
-        error.range_check(0, 255, stop)
-        return self.new().from_str(self.to_str()[-stop:])
-
 
     ######################################################################
     # unary functions

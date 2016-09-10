@@ -533,6 +533,25 @@ def hex_(x):
     val = cint_(x, unsigned=True)
     return x._values.new_string().from_str(val.to_hex())
 
+##############################################################################
+# sring operations
+
+def left_(s, num):
+    """LEFT$: get substring of num characters at the start of string."""
+    stop = num.to_integer().to_int()
+    if stop == 0:
+        return s.new()
+    error.range_check(0, 255, stop)
+    return s.new().from_str(s.to_str()[:stop])
+
+def right_(s, num):
+    """RIGHT$: get substring of num characters at the end of string."""
+    stop = num.to_integer().to_int()
+    if stop == 0:
+        return s.new()
+    error.range_check(0, 255, stop)
+    return s.new().from_str(s.to_str()[-stop:])
+
 
 ##############################################################################
 # binary operations

@@ -217,7 +217,7 @@ class Functions(object):
         ins.require_read((',',))
         stop = values.cint_(self.parser.parse_expression(ins))
         ins.require_read((')',))
-        return s.left(stop)
+        return values.left_(s, stop)
 
     def value_right(self, ins):
         """RIGHT$: get substring at the end of string."""
@@ -226,7 +226,7 @@ class Functions(object):
         ins.require_read((',',))
         stop = values.cint_(self.parser.parse_expression(ins))
         ins.require_read((')',))
-        return s.right(stop)
+        return values.right_(s, stop)
 
     def value_pmap(self, ins):
         """PMAP: convert between logical and physical coordinates."""
@@ -235,8 +235,7 @@ class Functions(object):
         ins.require_read((',',))
         mode = values.cint_(self.parser.parse_expression(ins))
         ins.require_read((')',))
-        pmap = self.session.screen.drawing.pmap_(coord, mode)
-        return self.values.from_value(pmap, values.SNG)
+        return self.session.screen.drawing.pmap_(coord, mode)
 
     ###########################################################################
     # functions with optional arguments
