@@ -381,8 +381,7 @@ class Pen(object):
         result, self.was_down_event = self.was_down_event, False
         return result
 
-
-    def pen_(self, fn):
+    def poll(self, fn, enabled):
         """PEN: poll the light pen."""
         fn = values.to_int(fn)
         error.range_check(0, 9, fn)
@@ -410,8 +409,10 @@ class Pen(object):
             pen = 1 + posy//fh
         elif fn == 9:
             pen = 1 + posx//fw
+        if not enabled:
+            # should return 0 or char pos 1 if PEN not ON
+            pen = 1 if fn >= 6 else 0
         return pen
-
 
 
 ###############################################################################

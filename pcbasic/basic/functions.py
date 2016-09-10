@@ -87,7 +87,7 @@ class Functions(object):
             tk.CSNG: partial(self.value_func, fn=values.csng_),
             tk.CDBL: partial(self.value_func, fn=values.cdbl_),
             tk.FIX: partial(self.value_func, fn=values.fix_),
-            tk.PEN: self.value_pen,
+            tk.PEN: partial(self.value_unary, fn=self.session.events.pen.pen_, to_type=values.INT),
             tk.STICK: partial(self.value_unary, fn=self.session.stick.stick_, to_type=values.INT),
             tk.STRIG: partial(self.value_unary, fn=self.session.stick.strig_, to_type=values.INT),
             tk.EOF: partial(self.value_unary, fn=self.session.files.eof_, to_type=values.INT),
@@ -141,15 +141,6 @@ class Functions(object):
             return self.session.randomiser.rnd(values.csng_(self.parser.parse_bracket(ins)))
         else:
             return self.session.randomiser.rnd()
-
-    def value_pen(self, ins):
-        """PEN: poll the light pen."""
-        fn = self.parser.parse_bracket(ins)
-        pen = self.session.pen.pen_(fn)
-        if not self.session.events.pen.enabled:
-            # should return 0 or char pos 1 if PEN not ON
-            pen = 1 if fn >= 6 else 0
-        return self.values.from_value(pen, values.INT)
 
     def value_usr(self, ins):
         """USR: get value of machine-code function; not implemented."""

@@ -317,6 +317,10 @@ class PenHandler(EventHandler):
         if self.pen.poll_event():
             self.trigger()
 
+    def pen_(self, fn):
+        """PEN: poll the light pen."""
+        return self.pen.poll(fn, self.enabled)
+
 
 class StrigHandler(EventHandler):
     """Manage STRIG events."""
