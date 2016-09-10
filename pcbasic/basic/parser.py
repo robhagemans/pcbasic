@@ -460,12 +460,13 @@ class Parser(object):
                 ins.read(len(d))
                 units.append(self.functions.functions[d](ins))
             elif d in self.functions.with_presign:
-                presign_range, optional, fn = self.functions.with_presign[d]
+                fndict = self.functions.with_presign[d]
                 ins.read(len(d))
-                presign = ins.skip_blank_read_if(presign_range)
-                if not presign and not optional:
+                presign = ins.skip_blank_read_if(fndict)
+                try:
+                    units.append(fndict[presign](ins))
+                except KeyError:
                     raise error.RunError(error.STX)
-                units.append(fn(ins, presign))
             elif d in tk.END_STATEMENT:
                 break
             elif d in tk.END_EXPRESSION:

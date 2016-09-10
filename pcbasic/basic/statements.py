@@ -243,7 +243,7 @@ class Statements(object):
         elif ins.read_if(c, (tk.USR,)):
             self.exec_def_usr(ins)
         # must be uppercase in tokenised form, otherwise syntax error
-        elif ins.skip_blank_read_if(('SEG',)):
+        elif ins.skip_blank_read_if(('SEG',), 3):
             self.exec_def_seg(ins)
         else:
             raise error.RunError(error.STX)
@@ -868,7 +868,7 @@ class Statements(object):
                 if jumpnum < 0:
                     jumpnum = 0x10000 + jumpnum
             if ins.skip_blank_read_if((',',)):
-                if ins.skip_blank_read_if(('ALL',)):
+                if ins.skip_blank_read_if(('ALL',), 3):
                     common_all = True
                     # CHAIN "file", , ALL, DELETE
                     if ins.skip_blank_read_if((',',)):
@@ -1029,19 +1029,19 @@ class Statements(object):
             except (KeyError):
                 raise error.RunError(error.BAD_FILE_MODE)
             # ACCESS clause
-            if ins.skip_blank_read_if(('ACCESS',)):
+            if ins.skip_blank_read_if(('ACCESS',), 6):
                 access = self._parse_read_write(ins)
             # LOCK clause
-            if ins.skip_blank_read_if((tk.LOCK,)):
+            if ins.skip_blank_read_if((tk.LOCK,), 2):
                 lock = self._parse_read_write(ins)
-            elif ins.skip_blank_read_if(('SHARED',)):
+            elif ins.skip_blank_read_if(('SHARED'), 6):
                 lock = 'S'
             # AS file number clause
-            if not ins.skip_blank_read_if(('AS',)):
+            if not ins.skip_blank_read_if(('AS',), 2):
                 raise error.RunError(error.STX)
             number = self.parser.parse_file_number(ins, opt_hash=True)
             # LEN clause
-            if ins.skip_blank_read_if((tk.LEN,)):
+            if ins.skip_blank_read_if((tk.LEN,), 2):
                 ins.require_read(tk.O_EQ)
                 reclen = values.to_int(self.parser.parse_expression(ins))
         # mode and access must match if not a RANDOM file
@@ -1511,7 +1511,7 @@ class Statements(object):
                     # nexting step on IF. (it's less convenient to count THENs because they could be THEN, GOTO or THEN GOTO.)
                     nesting_level += 1
                 elif d == ':':
-                    if ins.skip_blank_read_if(tk.ELSE): # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
+                    if ins.skip_blank_read_if((tk.ELSE,)): # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
                         if nesting_level > 0:
                             nesting_level -= 1
                         else:

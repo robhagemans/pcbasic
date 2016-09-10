@@ -62,15 +62,15 @@ class CodeStream(io.BytesIO):
                 return d
 
     def read_if(self, d, in_range):
-        """Read if next char is in range."""
+        """Read if next char is not empty and in range."""
         if d != '' and d in in_range:
             self.read(len(d))
             return d
         return None
 
-    def skip_blank_read_if(self, in_range):
+    def skip_blank_read_if(self, in_range, n=1):
         """Skip whitespace, then read if next char is in range."""
-        return self.read_if(self.skip_blank(n=len(in_range[0])), in_range)
+        return self.read_if(self.skip_blank(n=n), in_range)
 
     def read_to(self, findrange):
         """Read until a character from a given range is found."""

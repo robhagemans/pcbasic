@@ -29,12 +29,36 @@ class Functions(object):
         """Initialise functions."""
         self.with_presign = {
             # token   range   optional   function
-            tk.USR: (tk.DIGIT, True, self.value_usr),
-            tk.IOCTL: ('$', False, self.value_ioctl),
-            tk.ENVIRON: ('$', False, self.value_environ),
-            tk.INPUT: ('$', False, self.value_input),
-            tk.ERDEV: ('$', True, self.value_erdev),
-            tk.VARPTR: ('$', True, self.value_varptr),
+            tk.USR: {
+                None: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
+                tk.C_0: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
+                tk.C_1: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
+                tk.C_2: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
+                tk.C_3: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
+                tk.C_4: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
+                tk.C_5: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
+                tk.C_6: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
+                tk.C_7: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
+                tk.C_8: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
+                tk.C_9: partial(self.value_unary, fn=self.session.machine.usr_, to_type=values.SNG),
+            },
+            tk.IOCTL: {
+                '$': self.value_ioctl,
+            },
+            tk.ENVIRON: {
+                '$': partial(self.value_unary, fn=dos.environ_, to_type=values.STR),
+            },
+            tk.INPUT: {
+                '$': self.value_input,
+            },
+            tk.ERDEV: {
+                '$': self.value_erdev,
+                None: self.value_erdev,
+            },
+            tk.VARPTR: {
+                '$': self.value_varptr,
+                None: self.value_varptr,
+            },
         }
         self.functions = {
             tk.SCREEN: self.value_screen,
@@ -144,34 +168,24 @@ class Functions(object):
         else:
             return self.session.randomiser.rnd()
 
-    def value_usr(self, ins, presign):
-        """USR: get value of machine-code function; not implemented."""
-        num = self.parser.parse_bracket(ins)
-        usr = self.session.machine.usr_(presign, num)
-        return self.values.from_value(usr, values.SNG)
-
-    def value_ioctl(self, ins, presign):
+    def value_ioctl(self, ins):
         """IOCTL$: read device control string response; not implemented."""
         ins.require_read(('(',))
         num = self.parser.parse_file_number(ins, opt_hash=True)
         ins.require_read((')',))
         return self.session.files.ioctl_(num)
 
-    def value_erdev(self, ins, dollar):
+    def value_erdev(self, ins):
+        """ERDEV: device error value; not implemented."""
+        val = self.parser.parse_bracket(ins)
+        erdev = self.session.devices.erdev_(val)
+        return self.values.from_value(erdev, values.INT)
+
+    def value_erdev_str(self, ins):
         """ERDEV$: device error string; not implemented."""
         val = self.parser.parse_bracket(ins)
-        if dollar:
-            erdev = self.session.devices.erdev_str_(val)
-            return self.values.from_value(erdev, values.STR)
-        else:
-            erdev = self.session.devices.erdev_(val)
-            return self.values.from_value(erdev, values.INT)
-
-    def value_environ(self, ins, presign):
-        """ENVIRON$: get environment string."""
-        expr = self.parser.parse_bracket(ins)
-        environ = dos.environ_(expr)
-        return self.values.from_value(environ, values.STR)
+        erdev = self.session.devices.erdev_str_(val)
+        return self.values.from_value(erdev, values.STR)
 
 
     ######################################################################
@@ -253,7 +267,7 @@ class Functions(object):
         ins.require_read((')',))
         return self.values.from_value(screen, values.INT)
 
-    def value_input(self, ins, presign):
+    def value_input(self, ins):
         """INPUT$: get characters from the keyboard or a file."""
         ins.require_read(('(',))
         num = values.to_int(self.parser.parse_expression(ins))
@@ -291,10 +305,10 @@ class Functions(object):
         pmap = self.session.screen.drawing.pmap_(coord, mode)
         return self.values.from_value(pmap, values.SNG)
 
-    def value_varptr(self, ins, dollar):
+    def value_varptr(self, ins):
         """VARPTR, VARPTR$: get memory address for variable or FCB."""
         ins.require_read(('(',))
-        if (not dollar) and ins.skip_blank() == '#':
+        if ins.skip_blank() == '#':
             filenum = self.parser.parse_file_number(ins, opt_hash=False)
             var_ptr = self.session.memory.varptr_file(filenum)
         else:
@@ -303,8 +317,15 @@ class Functions(object):
         ins.require_read((')',))
         if var_ptr < 0:
             raise error.RunError(error.IFC)
-        if dollar:
-            var_ptr_str = struct.pack('<BH', values.size_bytes(name), var_ptr)
-            return self.values.from_value(var_ptr_str, values.STR)
-        else:
-            return self.values.new_integer().from_int(var_ptr, unsigned=True)
+        return self.values.new_integer().from_int(var_ptr, unsigned=True)
+
+    def value_varptr_str(self, ins):
+        """VARPTR, VARPTR$: get memory address for variable or FCB."""
+        ins.require_read(('(',))
+        name, indices = self.parser.parse_variable(ins)
+        var_ptr = self.session.memory.varptr(name, indices)
+        ins.require_read((')',))
+        if var_ptr < 0:
+            raise error.RunError(error.IFC)
+        var_ptr_str = struct.pack('<BH', values.size_bytes(name), var_ptr)
+        return self.values.from_value(var_ptr_str, values.STR)
