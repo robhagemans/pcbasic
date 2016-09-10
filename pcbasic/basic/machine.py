@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import struct
+import logging
 
 from . import values
 from . import devices
@@ -42,6 +43,16 @@ class MachinePorts(object):
         self.com_enable_baud_write = [False, False]
         self.com_baud_divisor = [0, 0]
         self.com_break = [False, False]
+
+    def usr_(self, num):
+        """USR: get value of machine-code function; not implemented."""
+        logging.warning("USR function not implemented.")
+        return 0
+
+    def inp_(self, num):
+        """INP: get value from machine port."""
+        port = values.to_int(num, unsigned=True)
+        return self.inp(port)
 
     def inp(self, port):
         """Get the value in an emulated machine port."""

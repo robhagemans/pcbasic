@@ -164,6 +164,28 @@ class Functions(object):
         lof = self.session.files.lof_(num)
         return self.values.from_value(lof, values.SNG)
 
+    def value_inp(self, ins):
+        """INP: get value from machine port."""
+        num = self.parser.parse_bracket(ins)
+        inp = self.session.machine.inp_(num)
+        return self.values.new_integer().from_int(inp, unsigned=True)
+
+    def value_usr(self, ins):
+        """USR: get value of machine-code function; not implemented."""
+        ins.require_read(tk.DIGIT)
+        num = self.parser.parse_bracket(ins)
+        usr = self.session.machine.usr_(num)
+        return self.values.from_value(usr, values.SNG)
+
+    def value_ioctl(self, ins):
+        """IOCTL$: read device control string response; not implemented."""
+        ins.require_read(('$',))
+        ins.require_read(('(',))
+        num = self.parser.parse_file_number(ins, opt_hash=True)
+        ins.require_read((')',))
+        return self.session.files.ioctl_(num)
+
+
 
     ######################################################################
     # binary string functions
@@ -429,7 +451,7 @@ class Functions(object):
         if isinstance(val, values.String):
             # grabge collection if a string-valued argument is specified.
             self.session.memory.collect_garbage()
-        return self.values.from_value(self.session.memory.get_free(), '!')
+        return self.values.from_value(self.session.memory.get_free(), values.SNG)
 
     def value_peek(self, ins):
         """PEEK: read memory location."""
@@ -457,18 +479,6 @@ class Functions(object):
         else:
             return self.values.new_integer().from_int(var_ptr, unsigned=True)
 
-    def value_usr(self, ins):
-        """USR: get value of machine-code function; not implemented."""
-        ins.require_read(tk.DIGIT)
-        self.parser.parse_bracket(ins)
-        logging.warning("USR function not implemented.")
-        return self.values.new_integer()
-
-    def value_inp(self, ins):
-        """INP: get value from machine port."""
-        port = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
-        return self.values.new_integer().from_int(self.session.machine.inp(port), unsigned=True)
-
     def value_erdev(self, ins):
         """ERDEV$: device error string; not implemented."""
         if ins.skip_blank_read_if(('$',)):
@@ -484,13 +494,3 @@ class Functions(object):
         error.range_check(0, 3, x)
         logging.warning("EXTERR function not implemented.")
         return self.values.new_integer()
-
-    def value_ioctl(self, ins):
-        """IOCTL$: read device control string response; not implemented."""
-        ins.require_read(('$',))
-        ins.require_read(('(',))
-        num = self.parser.parse_file_number(ins, opt_hash=True)
-        ins.require_read((')',))
-        self.session.files.get(num)
-        logging.warning("IOCTL$ function not implemented.")
-        raise error.RunError(error.IFC)

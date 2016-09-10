@@ -170,6 +170,12 @@ class Files(object):
             return printer.device_file.col
         return 1
 
+    def ioctl_(self, num):
+        """IOCTL$: read device control string response; not implemented."""
+        self.get(num)
+        logging.warning("IOCTL$ function not implemented.")
+        raise error.RunError(error.IFC)
+
 
 ###############################################################################
 # device management
