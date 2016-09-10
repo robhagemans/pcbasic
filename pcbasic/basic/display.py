@@ -1450,7 +1450,7 @@ class Screen(object):
             return self.current_row + 1
         return self.current_row
 
-    def pos_(self):
+    def pos_(self, dummy=None):
         """POS: get the current screen column."""
         if self.current_col == self.mode.width and self.overflow:
             # in overflow position, return column 1.

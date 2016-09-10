@@ -8,8 +8,6 @@ This file is released under the GNU GPL version 3 or later.
 
 import struct
 
-from . import values
-
 
 class Randomiser(object):
     """Linear Congruential Generator """

@@ -18,6 +18,7 @@ from . import devices
 from . import cassette
 from . import disk
 from . import ports
+from . import values
 
 
 # MS-DOS device files
@@ -139,6 +140,35 @@ class Files(object):
         if the_file.mode.upper() not in mode:
             raise error.RunError(error.BAD_FILE_MODE)
         return the_file
+
+    def _get_from_integer(self, num, mode='IOAR'):
+        """Get the file object for an Integer file number and check allowed mode."""
+        num = values.to_int(num, unsigned=True)
+        error.range_check(0, 255, num)
+        return self.get(num, mode)
+
+    def loc_(self, num):
+        """LOC: get file pointer."""
+        return self._get_from_integer(num).loc()
+
+    def eof_(self, num):
+        """EOF: get end-of-file."""
+        if num.is_zero():
+            return False
+        return self._get_from_integer(num, 'IR').eof()
+
+    def lof_(self, num):
+        """LOF: get length of file."""
+        return self._get_from_integer(num).lof()
+
+    def lpos_(self, num):
+        """LPOS: get the current printer column."""
+        num = values.to_int(num)
+        error.range_check(0, 3, num)
+        printer = self.devices['LPT' + max(1, num) + ':']
+        if printer.device_file:
+            return printer.device_file.col
+        return 1
 
 
 ###############################################################################

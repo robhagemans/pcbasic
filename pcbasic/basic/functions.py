@@ -136,44 +136,33 @@ class Functions(object):
     def value_pos(self, ins):
         """POS: get the current screen column."""
         # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
-        self.parser.parse_bracket(ins)
-        return self.values.from_value(self.session.sceen.pos_(), values.INT)
+        dummy = self.parser.parse_bracket(ins)
+        pos = self.session.sceen.pos_(dummy)
+        return self.values.from_value(pos, values.INT)
 
     def value_lpos(self, ins):
         """LPOS: get the current printer column."""
-        num = values.to_int(self.parser.parse_bracket(ins))
-        error.range_check(0, 3, num)
-        printer = self.session.devices.devices['LPT' + max(1, num) + ':']
-        if printer.device_file:
-            return self.values.from_value(printer.device_file.col, values.INT)
-        return self.values.from_value(1, values.INT)
+        num = self.parser.parse_bracket(ins)
+        lpos = self.session.files.lpos_(num)
+        return self.values.from_value(lpos, values.INT)
 
     def value_loc(self, ins):
         """LOC: get file pointer."""
-        ins.skip_blank()
-        num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
-        error.range_check(0, 255, num)
-        the_file = self.session.files.get(num)
-        return self.values.from_value(the_file.loc(), '!')
+        num = self.parser.parse_bracket(ins)
+        loc = self.session.files.loc_(num)
+        return self.values.from_value(loc, values.SNG)
 
     def value_eof(self, ins):
         """EOF: get end-of-file."""
-        ins.skip_blank()
-        num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
-        if num == 0:
-            return self.values.new_integer()
-        error.range_check(0, 255, num)
-        the_file = self.session.files.get(num, 'IR')
-        return self.values.from_bool(the_file.eof())
+        num = self.parser.parse_bracket(ins)
+        eof = self.session.files.eof_(num)
+        return self.values.from_bool(eof)
 
     def value_lof(self, ins):
         """LOF: get length of file."""
-        ins.skip_blank()
-        num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
-        error.range_check(0, 255, num)
-        the_file = self.session.files.get(num)
-        return self.values.from_value(the_file.lof(), '!')
-
+        num = self.parser.parse_bracket(ins)
+        lof = self.session.files.lof_(num)
+        return self.values.from_value(lof, values.SNG)
 
 
     ######################################################################
