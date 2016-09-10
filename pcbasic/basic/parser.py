@@ -441,6 +441,7 @@ class Parser(object):
                 break
             elif d in op.OPERATORS:
                 ins.read(len(d))
+                prec = op.PRECEDENCE[d]
                 # get combined operators such as >=
                 if d in op.COMBINABLE:
                     nxt = ins.skip_blank()
@@ -451,15 +452,19 @@ class Parser(object):
                     nargs = 1
                     # zero operands for a binary operator is always syntax error
                     # because it will be seen as an illegal unary
-                    if d not in op.UNARY:
+                    try:
+                        oper = op.UNARY[d]
+                    except KeyError:
                         raise error.RunError(error.STX)
                 else:
                     nargs = 2
-                    if d not in op.OPERATORS:
+                    try:
+                        oper = op.BINARY[d]
+                    except KeyError:
                         # illegal combined ops like == raise syntax error
                         raise error.RunError(error.STX)
-                    expr.drain(op.PRECEDENCE[d], error.STX)
-                expr.push_operator(d, nargs)
+                    expr.drain(prec, error.STX)
+                expr.push_operator(oper, nargs, prec)
             elif not (last in op.OPERATORS or last == ''):
                 # repeated unit ends expression
                 # repeated literals or variables or non-keywords like 'AS'
@@ -499,23 +504,23 @@ class Expression(object):
         """Push a value onto the unit stack."""
         self._units.append(value)
 
-    def push_operator(self, operator, nargs):
+    def push_operator(self, operator, nargs, precedence):
         """Push an operator onto the stack."""
-        self._stack.append((operator, nargs))
+        self._stack.append((operator, nargs, precedence))
 
     def drain(self, precedence, missing_err):
         """Drain evaluation stack until an operator of low precedence on top."""
         while self._stack:
-            if precedence > op.PRECEDENCE[self._stack[-1][0]]:
+            if precedence > self._stack[-1][2]:
                 break
-            oper, narity = self._stack.pop()
+            oper, narity, _ = self._stack.pop()
             try:
                 right = self._units.pop()
                 if narity == 1:
-                    self._units.append(op.UNARY[oper](right))
+                    self._units.append(oper(right))
                 else:
                     left = self._units.pop()
-                    self._units.append(op.BINARY[oper](left, right))
+                    self._units.append(oper(left, right))
             except IndexError:
                 # insufficient operators, error depends on context
                 raise error.RunError(missing_err)
