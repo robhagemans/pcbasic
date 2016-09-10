@@ -81,9 +81,9 @@ class Functions(object):
             tk.TIME: partial(self.value_nullary, fn=self.session.clock.time_fn_, to_type=values.STR),
             tk.PLAY: partial(self.value_unary, fn=self.session.sound.play_fn_, to_type=values.INT),
             tk.TIMER: partial(self.value_nullary, fn=self.session.clock.timer_, to_type=values.SNG),
-            tk.PMAP: self.value_pmap,
-            tk.LEFT: self.value_left,
-            tk.RIGHT: self.value_right,
+            tk.PMAP: partial(self.value_polynary, fn=self.session.screen.drawing.pmap_, conv=(values.cint_, values.cint_)),
+            tk.LEFT: partial(self.value_polynary, fn=values.left_, conv=(values.pass_string, values.cint_)),
+            tk.RIGHT: partial(self.value_polynary, fn=values.right_, conv=(values.pass_string, values.cint_)),
             tk.MID: self.value_mid,
             tk.SGN: partial(self.value_func, fn=values.sgn_),
             tk.INT: partial(self.value_func, fn=values.int_),
@@ -150,6 +150,10 @@ class Functions(object):
         """Return value of unary function requiring no conversion."""
         return fn(self.parser.parse_bracket(ins))
 
+    def value_polynary(self, ins, fn, conv):
+        """Type-check inputs and get value of a function with multiple arguments, return value requiring no conversion."""
+        return fn(*self.parser.parse_argument_list(ins, *conv))
+
     #######################################################
     # user-defined functions
 
@@ -207,23 +211,6 @@ class Functions(object):
         ins.require_read((')',))
         return big.instr(small)
 
-    ######################################################################
-    # binary functions
-
-    def value_left(self, ins):
-        """LEFT$: get substring at the start of string."""
-        s, stop = self.parser.parse_argument_list(ins, values.pass_string, values.cint_)
-        return values.left_(s, stop)
-
-    def value_right(self, ins):
-        """RIGHT$: get substring at the end of string."""
-        s, stop = self.parser.parse_argument_list(ins, values.pass_string, values.cint_)
-        return values.right_(s, stop)
-
-    def value_pmap(self, ins):
-        """PMAP: convert between logical and physical coordinates."""
-        coord, mode = self.parser.parse_argument_list(ins, values.cint_, values.cint_)
-        return self.session.screen.drawing.pmap_(coord, mode)
 
     ###########################################################################
     # functions with optional arguments
