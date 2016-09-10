@@ -55,7 +55,10 @@ class Value(object):
 
     def __str__(self):
         """String representation for debugging."""
-        return b'%s[%s %s]' % (self.sigil, bytes(self.to_bytes()).encode('hex'), repr(self.to_value()))
+        try:
+            return b'%s[%s %s]' % (self.sigil, bytes(self.to_bytes()).encode('hex'), repr(self.to_value()))
+        except Exception:
+            return b'%s[%s <detached>]' % (self.sigil, bytes(self.to_bytes()).encode('hex'))
 
     __repr__ = __str__
 

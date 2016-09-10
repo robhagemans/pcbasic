@@ -246,7 +246,7 @@ class Functions(object):
         # followed by comma so empty will raise STX
         s = self.parser.parse_expression(ins)
         n = 1
-        if s[0] != '$':
+        if isinstance(s, values.String):
             n = values.to_int(s)
             error.range_check(1, 255, n)
             ins.require_read((',',))

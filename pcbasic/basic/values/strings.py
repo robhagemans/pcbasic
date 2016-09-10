@@ -82,37 +82,47 @@ class String(numbers.Value):
         # left is shorter, or equal strings
         return False
 
-    # NOTE: in_str is a Python str
     def lset(self, in_str, justify_right):
         """Justify a str into an existing buffer and pad with spaces."""
         # v is empty string if variable does not exist
         # trim and pad to size of target buffer
         length = self.length()
+        in_str = in_str.to_value()
         if justify_right:
             in_str = in_str[:length].rjust(length)
         else:
             in_str = in_str[:length].ljust(length)
-        length, address = struct.unpack('<BH', self._buffer)
-        return self.from_pointer(*self._stringspace.modify(length, address, in_str, offset=None, num=None))
+        # make a copy only if not in a writeable location
+        target = self._stringspace.check_modify(*self.to_pointer())
+        self.from_pointer(*target)
+        # copy the new string in
+        self._stringspace.view(*target)[:] = in_str
+        return self
 
-    # NOTE: val is a Python str
     def midset(self, start, num, val):
         """Modify a string in an existing buffer."""
         # we need to decrement basic offset by 1 to get python offset
         offset = start - 1
         # don't overwrite more of the old string than the length of the new string
-        num = min(num, len(val))
+        num = min(num, val.length())
         # ensure the length of source string matches target
         length = self.length()
         if offset + num > length:
             num = length - offset
         if num <= 0:
             return self
-        # cut new string to size if too long
-        val = val[:num]
-        # copy new value into existing buffer if possible
-        length, address = struct.unpack('<BH', self._buffer)
-        return self.from_pointer(*self._stringspace.modify(length, address, val, offset, num))
+        # make a copy only if not in a writeable location
+        target = self._stringspace.check_modify(*self.to_pointer())
+        self.from_pointer(*target)
+        source = val.to_pointer()
+        if source != target:
+            self._stringspace.view(*target)[offset:offset+num] = self._stringspace.view(*source)[:num]
+        else:
+            # copy byte by byte from left to right
+            # to conform to GW overwriting of source string on overlap
+            for i in range(num):
+                self._stringspace.view(*target)[i+offset:i+offset+1] = self._stringspace.view(*source)[i]
+        return self
 
     # the below have mostly Integer parameters
 
@@ -245,15 +255,11 @@ class StringSpace(object):
             # memoryview slice continues to point to buffer, does not copy
             return memoryview(self._memory.fields[number].buffer)[offset:offset+length]
 
-    def modify(self, length, address, in_str, offset, num):
+    def check_modify(self, length, address):
         """Assign a new string into an existing buffer."""
         # if it is a code literal, we now do need to allocate space for a copy
         if address >= self._memory.code_start and address < self._memory.var_start():
             length, address = self.store(self.view(length, address).tobytes())
-        if num is None:
-            self.view(length, address)[:] = in_str
-        else:
-            self.view(length, address)[offset:offset+num] = in_str
         return length, address
 
     def store(self, in_str, address=None):
