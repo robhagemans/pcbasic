@@ -125,6 +125,13 @@ class Functions(object):
         else:
             return self.session.randomiser.rnd()
 
+    def value_erl(self, ins):
+        """ERL: get line number of last error."""
+        return self.values.from_value(self.parser.erl_(), values.SNG)
+
+    def value_err(self, ins):
+        """ERR: get error code of last error."""
+        return self.values.from_value(self.parser.err_(), values.INT)
 
     ###########################################################
     # unary functions
@@ -176,6 +183,12 @@ class Functions(object):
         fre = self.session.memory.fre_(val)
         return self.values.from_value(fre, values.SNG)
 
+    def value_exterr(self, ins):
+        """EXTERR: device error information; not implemented."""
+        val = self.parser.parse_bracket(ins)
+        exterr = self.session.devices.exterr_(val)
+        return self.values.from_value(exterr, values.INT)
+
     def value_stick(self, ins):
         """STICK: poll the joystick."""
         fn = self.parser.parse_bracket(ins)
@@ -211,6 +224,18 @@ class Functions(object):
         num = self.parser.parse_file_number(ins, opt_hash=True)
         ins.require_read((')',))
         return self.session.files.ioctl_(num)
+
+    def value_erdev(self, ins):
+        """ERDEV$: device error string; not implemented."""
+        dollar = ins.skip_blank_read_if(('$',))
+        val = self.parser.parse_bracket(ins)
+        if dollar:
+            erdev = self.session.devices.erdev_str_(val)
+            return self.values.from_value(erdev, values.STR)
+        else:
+            erdev = self.session.devices.erdev_(val)
+            return self.values.from_value(erdev, values.INT)
+
 
     ######################################################################
     # binary string functions
@@ -423,40 +448,6 @@ class Functions(object):
         if not(self.parser.syntax in ('pcjr', 'tandy') and voice in (1, 2)):
             voice = 0
         return self.values.from_value(self.session.sound.queue_length(voice), values.INT)
-
-    #####################################################################
-    # error functions
-
-    def value_erl(self, ins):
-        """ERL: get line number of last error."""
-        if self.parser.error_pos == 0:
-            erl = 0
-        elif self.parser.error_pos == -1:
-            erl = 65535
-        else:
-            erl = self.session.program.get_line_number(self.parser.error_pos)
-        return self.values.from_value(erl, '!')
-
-    def value_err(self, ins):
-        """ERR: get error code of last error."""
-        return self.values.from_value(self.parser.error_num, values.INT)
-
-    def value_erdev(self, ins):
-        """ERDEV$: device error string; not implemented."""
-        if ins.skip_blank_read_if(('$',)):
-            logging.warning("ERDEV$ function not implemented.")
-            return self.values.new_string()
-        else:
-            logging.warning("ERDEV function not implemented.")
-            return self.values.new_integer()
-
-    def value_exterr(self, ins):
-        """EXTERR: device error information; not implemented."""
-        x = values.to_int(self.parser.parse_bracket(ins))
-        error.range_check(0, 3, x)
-        logging.warning("EXTERR function not implemented.")
-        return self.values.new_integer()
-
 
     #########################################################
     # memory and machine

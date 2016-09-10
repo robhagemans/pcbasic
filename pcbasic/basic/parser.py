@@ -169,6 +169,19 @@ class Parser(object):
             self.set_pointer(False)
             raise e
 
+    def erl_(self):
+        """ERL: get line number of last error."""
+        if self.error_pos == 0:
+            return 0
+        elif self.error_pos == -1:
+            return 65535
+        else:
+            return self.session.program.get_line_number(self.error_pos)
+
+    def err_(self):
+        """ERR: get error code of last error."""
+        return self.error_num
+
     ###########################################################################
     # jumps
 
