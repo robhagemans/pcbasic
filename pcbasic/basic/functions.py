@@ -107,6 +107,14 @@ class Functions(object):
         self.__dict__.update(pickle_dict)
         self._init_functions()
 
+    #######################################################
+    # user-defined functions
+
+    def value_fn(self, ins):
+        """FN: get value of user-defined function."""
+        fnname = self.parser.parse_scalar(ins)
+        return self.session.user_functions.value(fnname, self.parser, ins)
+
     ###########################################################
     # nullary functions
 
@@ -132,6 +140,19 @@ class Functions(object):
     def value_err(self, ins):
         """ERR: get error code of last error."""
         return self.values.from_value(self.parser.err_(), values.INT)
+
+    def value_timer(self, ins):
+        """TIMER: get clock ticks since midnight."""
+        # precision of GWBASIC TIMER is about 1/20 of a second
+        return self.values.from_value(self.session.clock.timer_(), values.SNG)
+
+    def value_time(self, ins):
+        """TIME$: get current system time."""
+        return self.values.from_value(self.session.clock.time_fn_(), values.STR)
+
+    def value_date(self, ins):
+        """DATE$: get current system date."""
+        return self.values.from_value(self.session.clock.date_fn_(), values.STR)
 
     ###########################################################
     # unary functions
@@ -242,6 +263,13 @@ class Functions(object):
             erdev = self.session.devices.erdev_(val)
             return self.values.from_value(erdev, values.INT)
 
+    def value_environ(self, ins):
+        """ENVIRON$: get environment string."""
+        ins.require_read(('$',))
+        expr = self.parser.parse_bracket(ins)
+        environ = dos.environ_(expr)
+        return self.values.from_value(environ, values.STR)
+
 
     ######################################################################
     # binary string functions
@@ -345,43 +373,6 @@ class Functions(object):
             # input past end
             raise error.RunError(error.INPUT_PAST_END)
         return self.values.from_value(word, values.STR)
-
-
-    ######################################################################
-    # env, time and date functions
-
-    def value_environ(self, ins):
-        """ENVIRON$: get environment string."""
-        ins.require_read(('$',))
-        expr = self.parser.parse_bracket(ins)
-        if isinstance(expr, values.String):
-            return self.values.from_value(dos.get_env(expr.to_str()), values.STR)
-        else:
-            expr = values.to_int(expr)
-            error.range_check(1, 255, expr)
-            return self.values.from_value(dos.get_env_entry(expr), values.STR)
-
-    def value_timer(self, ins):
-        """TIMER: get clock ticks since midnight."""
-        # precision of GWBASIC TIMER is about 1/20 of a second
-        return self.values.from_value(
-                    float(self.session.clock.get_time_ms()//50) / 20., '!')
-
-    def value_time(self, ins):
-        """TIME$: get current system time."""
-        return self.values.from_value(self.session.clock.get_time(), values.STR)
-
-    def value_date(self, ins):
-        """DATE$: get current system date."""
-        return self.values.from_value(self.session.clock.get_date(), values.STR)
-
-    #######################################################
-    # user-defined functions
-
-    def value_fn(self, ins):
-        """FN: get value of user-defined function."""
-        fnname = self.parser.parse_scalar(ins)
-        return self.session.user_functions.value(fnname, self.parser, ins)
 
     ###############################################################
     # graphics

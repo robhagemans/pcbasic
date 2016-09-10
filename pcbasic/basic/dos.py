@@ -20,6 +20,7 @@ except ImportError:
     pexpect = None
 
 from . import error
+from . import values
 
 
 class InitFailed(Exception):
@@ -29,20 +30,21 @@ class InitFailed(Exception):
 #########################################
 # calling shell environment
 
-def get_env(parm):
-    """Retrieve environment string by name."""
-    if not parm:
-        raise error.RunError(error.IFC)
-    return bytearray(os.getenv(bytes(parm)) or b'')
-
-def get_env_entry(expr):
-    """Retrieve environment string by number."""
-    envlist = list(os.environ)
-    if expr > len(envlist):
-        return bytearray()
+def environ_(expr):
+    """ENVIRON$: get environment string."""
+    if isinstance(expr, values.String):
+        parm = expr.to_str()
+        if not parm:
+            raise error.RunError(error.IFC)
+        return os.getenv(parm) or b''
     else:
-        return bytearray(envlist[expr-1] + b'=' + os.getenv(envlist[expr-1]))
-
+        expr = values.to_int(expr)
+        error.range_check(1, 255, expr)
+        envlist = list(os.environ)
+        if expr > len(envlist):
+            return ''
+        else:
+            return '%s=%s' % (envlist[expr-1], os.getenv(envlist[expr-1]))
 
 #########################################
 # shell

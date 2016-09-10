@@ -20,14 +20,16 @@ class Clock(object):
         # given in seconds
         self.time_offset = datetime.timedelta()
 
-    def get_time_ms(self):
-        """Get time in milliseconds since midnight."""
+    def timer_(self):
+        """TIMER: get clock ticks since midnight."""
         now = datetime.datetime.now() + self.time_offset
         midnight = datetime.datetime(now.year, now.month, now.day)
         diff = now-midnight
         seconds = diff.seconds
         micro = diff.microseconds
-        return long(seconds)*1000 + long(micro)/1000
+        ms = long(seconds)*1000 + long(micro)/1000
+        # precision of GWBASIC TIMER is about 1/20 of a second
+        return float(ms//50) / 20.
 
     def set_time(self, timestr):
         """Set the system time offset."""
@@ -100,12 +102,12 @@ class Clock(object):
             raise error.RunError(error.IFC)
         self.time_offset += newtime - now
 
-    def get_time(self):
+    def time_fn_(self):
         """Get (offset) system time."""
         return bytearray((datetime.datetime.now() + self.time_offset)
                     .strftime('%H:%M:%S'))
 
-    def get_date(self):
+    def date_fn_(self):
         """Get (offset) system date."""
         return bytearray((datetime.datetime.now() + self.time_offset)
                     .strftime('%m-%d-%Y'))
