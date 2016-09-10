@@ -52,8 +52,8 @@ class Functions(object):
                 '$': self.value_input,
             },
             tk.ERDEV: {
-                '$': self.value_erdev,
-                None: self.value_erdev,
+                '$': partial(self.value_unary, fn=self.session.devices.erdev_str_, to_type=values.STR),
+                None: partial(self.value_unary, fn=self.session.devices.erdev_, to_type=values.INT),
             },
             tk.VARPTR: {
                 '$': self.value_varptr,
@@ -174,19 +174,6 @@ class Functions(object):
         num = self.parser.parse_file_number(ins, opt_hash=True)
         ins.require_read((')',))
         return self.session.files.ioctl_(num)
-
-    def value_erdev(self, ins):
-        """ERDEV: device error value; not implemented."""
-        val = self.parser.parse_bracket(ins)
-        erdev = self.session.devices.erdev_(val)
-        return self.values.from_value(erdev, values.INT)
-
-    def value_erdev_str(self, ins):
-        """ERDEV$: device error string; not implemented."""
-        val = self.parser.parse_bracket(ins)
-        erdev = self.session.devices.erdev_str_(val)
-        return self.values.from_value(erdev, values.STR)
-
 
     ######################################################################
     # binary string functions
