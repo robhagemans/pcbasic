@@ -343,20 +343,12 @@ class Functions(object):
         row = values.to_int(self.parser.parse_expression(ins))
         ins.require_read((',',), err=error.IFC)
         col = values.to_int(self.parser.parse_expression(ins))
-        z = 0
+        want_attr = None
         if ins.skip_blank_read_if((',',)):
-            z = values.to_int(self.parser.parse_expression(ins))
-        cmode = self.session.screen.mode
-        error.range_check(1, cmode.height, row)
-        if self.session.screen.view_set:
-            error.range_check(self.session.screen.view_start, self.session.screen.scroll_height, row)
-        error.range_check(1, cmode.width, col)
-        error.range_check(0, 255, z)
+            want_attr = values.to_int(self.parser.parse_expression(ins))
+        screen = self.session.screen.screen_fn_(row, col, want_attr)
         ins.require_read((')',))
-        if z and not cmode.is_text_mode:
-            return self.values.new_integer()
-        else:
-            return self.values.from_value(self.session.screen.apage.get_char_attr(row, col, z!=0), values.INT)
+        return self.values.from_value(screen, values.INT)
 
     def value_input(self, ins):
         """INPUT$: get characters from the keyboard or a file."""
