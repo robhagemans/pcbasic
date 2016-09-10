@@ -428,10 +428,20 @@ class Parser(object):
 
     def parse_expression(self, ins, allow_empty=False):
         """Compute the value of the expression at the current code pointer."""
-        expr = Expression()
-        d = ''
-        empty_err = error.MISSING_OPERAND
+        expr = Expression(ins, self, self.session.memory, self.functions, allow_empty)
+        return expr.evaluate()
+
+
+class Expression(object):
+    """Expression stack."""
+
+    def __init__(self, ins, parser, memory, functions, allow_empty):
+        """Initialise empty expression."""
+        self._stack = deque()
+        self._units = deque()
+        self._empty_err = error.MISSING_OPERAND
         # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
+        d = ''
         while True:
             last = d
             ins.skip_blank()
@@ -461,51 +471,35 @@ class Parser(object):
                     nargs = 2
                     try:
                         oper = op.BINARY[d]
-                        expr.drain(prec)
+                        self._drain(prec)
                     except (KeyError, IndexError):
                         # illegal combined ops like == raise syntax error
                         # incomplete expression also raises syntax error
                         raise error.RunError(error.STX)
-                expr.push_operator(oper, nargs, prec)
+                self.push_operator(oper, nargs, prec)
             elif not (last in op.OPERATORS or last == ''):
                 # repeated unit ends expression
                 # repeated literals or variables or non-keywords like 'AS'
                 break
             elif d == '(':
-                expr.push_value(self.parse_bracket(ins))
+                self.push_value(parser.parse_bracket(ins))
             elif d and d in string.ascii_letters:
                 # variable name
-                name, indices = self.parse_variable(ins)
-                expr.push_value(self.session.memory.get_variable(name, indices))
-            elif d in self.functions:
-                expr.push_value(self.functions.parse_function(ins, d))
+                name, indices = parser.parse_variable(ins)
+                self.push_value(memory.get_variable(name, indices))
+            elif d in functions:
+                self.push_value(functions.parse_function(ins, d))
             elif d in tk.END_STATEMENT:
                 break
             elif d in tk.END_EXPRESSION:
                 # missing operand inside brackets or before comma is syntax error
-                empty_err = error.STX
+                self._empty_err = error.STX
                 break
             else:
                 # literal
-                expr.push_value(self.parse_literal(ins))
-        # empty expression is a syntax error (inside brackets)
-        # or Missing Operand (in an assignment)
-        try:
-            return expr.evaluate()
-        except IndexError:
-            if allow_empty:
-                return None
-            else:
-                raise error.RunError(empty_err)
-
-
-class Expression(object):
-    """Expression stack."""
-
-    def __init__(self):
-        """Initialise empty expression."""
-        self._stack = deque()
-        self._units = deque()
+                self.push_value(parser.parse_literal(ins))
+        if allow_empty:
+            self._empty_err = None
 
     def push_value(self, value):
         """Push a value onto the unit stack."""
@@ -515,7 +509,7 @@ class Expression(object):
         """Push an operator onto the stack."""
         self._stack.append((operator, nargs, precedence))
 
-    def drain(self, precedence):
+    def _drain(self, precedence):
         """Drain evaluation stack until an operator of low precedence on top."""
         while self._stack:
             # this raises IndexError if there are not enough operators
@@ -532,5 +526,12 @@ class Expression(object):
     def evaluate(self):
         """Evaluate expression and return result."""
         # raises IndexError for insufficient operators
-        self.drain(0)
-        return self._units[0]
+        try:
+            self._drain(0)
+            return self._units[0]
+        except IndexError:
+            # empty expression is a syntax error (inside brackets)
+            # or Missing Operand (in an assignment)
+            if self._empty_err:
+                raise error.RunError(self._empty_err)
+            return None

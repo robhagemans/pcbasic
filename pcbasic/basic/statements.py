@@ -860,7 +860,7 @@ class Statements(object):
         name = self.parser.parse_temporary_string(ins)
         jumpnum, common_all, delete_lines = None, False, None
         if ins.skip_blank_read_if((',',)):
-            # check for an expression that indicates a line in the other self.session.program. This is not stored as a jumpnum (to avoid RENUM)
+            # check for an expression that indicates a line in the other program. This is not stored as a jumpnum (to avoid RENUM)
             expr = self.parser.parse_expression(ins, allow_empty=True)
             if expr is not None:
                 jumpnum = values.to_int(expr, unsigned=True)
