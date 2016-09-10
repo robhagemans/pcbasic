@@ -360,10 +360,7 @@ class Functions(object):
         if ins.skip_blank_read_if((',',)):
             infile = self.session.files.get(self.parser.parse_file_number(ins, opt_hash=True))
         ins.require_read((')',))
-        word = bytearray(infile.read_raw(num))
-        if len(word) < num:
-            # input past end
-            raise error.RunError(error.INPUT_PAST_END)
+        word = infile.input_(num)
         return self.values.from_value(word, values.STR)
 
     ###############################################################
