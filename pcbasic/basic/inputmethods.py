@@ -11,6 +11,7 @@ import logging
 
 from . import error
 from . import scancode
+from . import values
 from .eascii import as_bytes as ea
 from .eascii import as_unicode as uea
 
@@ -350,7 +351,7 @@ class Pen(object):
         """Initialise light pen."""
         self.is_down = False
         self.pos = 0, 0
-        # signal pen has been down for PEN polls in poll()
+        # signal pen has been down for PEN polls in pen_()
         self.was_down = False
         # signal pen has been down for event triggers in poll_event()
         self.was_down_event = False
@@ -380,32 +381,37 @@ class Pen(object):
         result, self.was_down_event = self.was_down_event, False
         return result
 
-    def poll(self, fn):
-        """Poll the pen."""
+
+    def pen_(self, fn):
+        """PEN: poll the light pen."""
+        fn = values.to_int(fn)
+        error.range_check(0, 9, fn)
         posx, posy = self.pos
         fw = self.screen.mode.font_width
         fh = self.screen.mode.font_height
         if fn == 0:
             pen_down_old, self.was_down = self.was_down, False
-            return -1 if pen_down_old else 0
+            pen = -1 if pen_down_old else 0
         elif fn == 1:
-            return self.down_pos[0]
+            pen = self.down_pos[0]
         elif fn == 2:
-            return self.down_pos[1]
+            pen = self.down_pos[1]
         elif fn == 3:
-            return -1 if self.is_down else 0
+            pen = -1 if self.is_down else 0
         elif fn == 4:
-            return posx
+            pen = posx
         elif fn == 5:
-            return posy
+            pen = posy
         elif fn == 6:
-            return 1 + self.down_pos[1]//fh
+            pen = 1 + self.down_pos[1]//fh
         elif fn == 7:
-            return 1 + self.down_pos[0]//fw
+            pen = 1 + self.down_pos[0]//fw
         elif fn == 8:
-            return 1 + posy//fh
+            pen = 1 + posy//fh
         elif fn == 9:
-            return 1 + posx//fw
+            pen = 1 + posx//fw
+        return pen
+
 
 
 ###############################################################################
@@ -462,8 +468,10 @@ class Stick(object):
         self.was_fired_event[joy][button] = False
         return result
 
-    def poll(self, fn):
-        """Poll the joystick axes."""
+    def stick_(self, fn):
+        """STICK: poll the joystick axes."""
+        fn = values.to_int(fn)
+        error.range_check(0, 3, fn)
         joy, axis = fn // 2, fn % 2
         try:
             return self.axis[joy][axis]
@@ -471,8 +479,11 @@ class Stick(object):
             # ignore any joysticks/axes beyond the 2x2 supported by BASIC
             pass
 
-    def poll_trigger(self, fn):
-        """Poll the joystick buttons."""
+    def strig_(self, fn):
+        """STRIG: poll the joystick fire button."""
+        fn = values.to_int(fn)
+        # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
+        error.range_check(0, 7, fn)
         joy, trig = fn // 4, (fn//2) % 2
         try:
             if fn % 2 == 0:

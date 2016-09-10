@@ -176,6 +176,27 @@ class Functions(object):
         fre = self.session.memory.fre_(val)
         return self.values.from_value(fre, values.SNG)
 
+    def value_stick(self, ins):
+        """STICK: poll the joystick."""
+        fn = self.parser.parse_bracket(ins)
+        stick = self.session.stick.stick_(fn)
+        return self.values.from_value(stick, values.INT)
+
+    def value_strig(self, ins):
+        """STRIG: poll the joystick fire button."""
+        fn = self.parser.parse_bracket(ins)
+        strig = self.session.stick.strig_(fn)
+        return self.values.from_bool(strig)
+
+    def value_pen(self, ins):
+        """PEN: poll the light pen."""
+        fn = self.parser.parse_bracket(ins)
+        pen = self.session.pen.pen_(fn)
+        if not self.session.events.pen.enabled:
+            # should return 0 or char pos 1 if PEN not ON
+            pen = 1 if fn >= 6 else 0
+        return self.values.from_value(pen, values.INT)
+
     def value_usr(self, ins):
         """USR: get value of machine-code function; not implemented."""
         ins.require_read(tk.DIGIT)
@@ -436,31 +457,6 @@ class Functions(object):
         logging.warning("EXTERR function not implemented.")
         return self.values.new_integer()
 
-    #####################################################################
-    # pen, stick and strig
-
-    def value_pen(self, ins):
-        """PEN: poll the light pen."""
-        fn = values.to_int(self.parser.parse_bracket(ins))
-        error.range_check(0, 9, fn)
-        pen = self.session.pen.poll(fn)
-        if pen is None or not self.session.events.pen.enabled:
-            # should return 0 or char pos 1 if PEN not ON
-            pen = 1 if fn >= 6 else 0
-        return self.values.from_value(pen, values.INT)
-
-    def value_stick(self, ins):
-        """STICK: poll the joystick."""
-        fn = values.to_int(self.parser.parse_bracket(ins))
-        error.range_check(0, 3, fn)
-        return self.values.from_value(self.session.stick.poll(fn), values.INT)
-
-    def value_strig(self, ins):
-        """STRIG: poll the joystick fire button."""
-        fn = values.to_int(self.parser.parse_bracket(ins))
-        # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
-        error.range_check(0, 7, fn)
-        return self.values.from_bool(self.session.stick.poll_trigger(fn))
 
     #########################################################
     # memory and machine
