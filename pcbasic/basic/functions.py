@@ -107,13 +107,16 @@ class Functions(object):
         self.__dict__.update(pickle_dict)
         self._init_functions()
 
-
     ###########################################################
-    # unary functions
+    # nullary functions
 
-    def value_func(self, ins, fn):
-        """Return value of unary function."""
-        return fn(self.parser.parse_bracket(ins))
+    def value_inkey(self, ins):
+        """INKEY$: get a character from the keyboard."""
+        return self.values.from_value(self.session.keyboard.get_char(), values.STR)
+
+    def value_csrlin(self, ins):
+        """CSRLIN: get the current screen row."""
+        return self.values.from_value(self.session.sceen.csrlin_(), values.INT)
 
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
@@ -123,8 +126,58 @@ class Functions(object):
             return self.session.randomiser.rnd()
 
 
+    ###########################################################
+    # unary functions
+
+    def value_func(self, ins, fn):
+        """Return value of unary function."""
+        return fn(self.parser.parse_bracket(ins))
+
+    def value_pos(self, ins):
+        """POS: get the current screen column."""
+        # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
+        self.parser.parse_bracket(ins)
+        return self.values.from_value(self.session.sceen.pos_(), values.INT)
+
+    def value_lpos(self, ins):
+        """LPOS: get the current printer column."""
+        num = values.to_int(self.parser.parse_bracket(ins))
+        error.range_check(0, 3, num)
+        printer = self.session.devices.devices['LPT' + max(1, num) + ':']
+        if printer.device_file:
+            return self.values.from_value(printer.device_file.col, values.INT)
+        return self.values.from_value(1, values.INT)
+
+    def value_loc(self, ins):
+        """LOC: get file pointer."""
+        ins.skip_blank()
+        num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
+        error.range_check(0, 255, num)
+        the_file = self.session.files.get(num)
+        return self.values.from_value(the_file.loc(), '!')
+
+    def value_eof(self, ins):
+        """EOF: get end-of-file."""
+        ins.skip_blank()
+        num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
+        if num == 0:
+            return self.values.new_integer()
+        error.range_check(0, 255, num)
+        the_file = self.session.files.get(num, 'IR')
+        return self.values.from_bool(the_file.eof())
+
+    def value_lof(self, ins):
+        """LOF: get length of file."""
+        ins.skip_blank()
+        num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
+        error.range_check(0, 255, num)
+        the_file = self.session.files.get(num)
+        return self.values.from_value(the_file.lof(), '!')
+
+
+
     ######################################################################
-    # string functions
+    # binary string functions
 
     def value_instr(self, ins):
         """INSTR: find substring in string."""
@@ -181,9 +234,10 @@ class Functions(object):
         error.range_check(0, 255, n)
         ins.require_read((',',))
         asc_value_or_char = self.parser.parse_expression(ins)
-        strstr = self.values.new_string().repeat(asc_value_or_char, n)
+        if isinstance(asc_value_or_char, values.Integer):
+            error.range_check(0, 255, asc_value_or_char.to_int())
         ins.require_read((')',))
-        return strstr
+        return self.values.new_string().string_(asc_value_or_char, n)
 
     ######################################################################
     # console functions
@@ -224,68 +278,6 @@ class Functions(object):
             # input past end
             raise error.RunError(error.INPUT_PAST_END)
         return self.values.from_value(word, values.STR)
-
-    def value_inkey(self, ins):
-        """INKEY$: get a character from the keyboard."""
-        return self.values.from_value(self.session.keyboard.get_char(), values.STR)
-
-    def value_csrlin(self, ins):
-        """CSRLIN: get the current screen row."""
-        row, col = self.session.screen.current_row, self.session.screen.current_col
-        if (col == self.session.screen.mode.width and
-                self.session.screen.overflow and
-                row < self.session.screen.scroll_height):
-            # in overflow position, return row+1 except on the last row
-            row += 1
-        return self.values.from_value(row, values.INT)
-
-    def value_pos(self, ins):
-        """POS: get the current screen column."""
-        # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
-        self.parser.parse_bracket(ins)
-        col = self.session.screen.current_col
-        if col == self.session.screen.mode.width and self.session.screen.overflow:
-            # in overflow position, return column 1.
-            col = 1
-        return self.values.from_value(col, values.INT)
-
-    def value_lpos(self, ins):
-        """LPOS: get the current printer column."""
-        num = values.to_int(self.parser.parse_bracket(ins))
-        error.range_check(0, 3, num)
-        printer = self.session.devices.devices['LPT' + max(1, num) + ':']
-        if printer.device_file:
-            return self.values.from_value(printer.device_file.col, values.INT)
-        return self.values.from_value(1, values.INT)
-
-    ######################################################################
-    # file access
-
-    def value_loc(self, ins):
-        """LOC: get file pointer."""
-        ins.skip_blank()
-        num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
-        error.range_check(0, 255, num)
-        the_file = self.session.files.get(num)
-        return self.values.from_value(the_file.loc(), '!')
-
-    def value_eof(self, ins):
-        """EOF: get end-of-file."""
-        ins.skip_blank()
-        num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
-        if num == 0:
-            return self.values.new_integer()
-        error.range_check(0, 255, num)
-        the_file = self.session.files.get(num, 'IR')
-        return self.values.from_bool(the_file.eof())
-
-    def value_lof(self, ins):
-        """LOF: get length of file."""
-        ins.skip_blank()
-        num = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
-        error.range_check(0, 255, num)
-        the_file = self.session.files.get(num)
-        return self.values.from_value(the_file.lof(), '!')
 
 
     ######################################################################

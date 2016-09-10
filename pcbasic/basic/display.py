@@ -1442,6 +1442,20 @@ class Screen(object):
         full.append(self.codepage.str_to_unicode(clip))
         return u''.join(full).replace(u'\0', u' ')
 
+    def csrlin_(self):
+        """CSRLIN: get the current screen row."""
+        if (self.overflow and self.current_col == self.mode.width and
+                                    self.current_row < self.scroll_height):
+            # in overflow position, return row+1 except on the last row
+            return self.current_row + 1
+        return self.current_row
+
+    def pos_(self):
+        """POS: get the current screen column."""
+        if self.current_col == self.mode.width and self.overflow:
+            # in overflow position, return column 1.
+            return 1
+        return self.current_col
 
     ## graphics primitives
 

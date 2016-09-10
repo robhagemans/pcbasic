@@ -116,14 +116,13 @@ class String(numbers.Value):
 
     # the below have mostly Integer parameters
 
-    def repeat(self, asc_value_or_char, num):
+    def string_(self, asc_value_or_char, num):
         """STRING$: repeat a character num times."""
         if isinstance(asc_value_or_char, String):
             char = asc_value_or_char.to_str()[0]
         else:
             # overflow if outside Integer range
             ascval = asc_value_or_char.to_integer().to_int()
-            error.range_check(0, 255, ascval)
             char = chr(ascval)
         return self.new().from_str(char * num)
 
