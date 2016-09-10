@@ -153,10 +153,6 @@ class Session(object):
         self.files = files.Files(self.devices, max_files)
         # set LPT1 as target for print_screen()
         self.screen.set_print_screen_target(self.devices.lpt1_file)
-        # set up rest of memory model
-        self.all_memory = machine.Memory(self.memory, self.devices,
-                            self.screen, self.keyboard, self.screen.fonts[8],
-                            peek_values, syntax)
         # initialise the editor
         self.editor = editor.Editor(
                 self.screen, self.keyboard, self.sound,
@@ -177,6 +173,12 @@ class Session(object):
         self.events.reset()
         self.parser = parser.Parser(self, syntax, pcjr_term)
         self.parser.set_pointer(False, 0)
+        # set up rest of memory model
+        self.all_memory = machine.Memory(self.memory, self.devices,
+                            self.screen, self.keyboard, self.screen.fonts[8],
+                            self.parser, peek_values, syntax)
+        # build function table (depends on Memory having been initialised)
+        self.parser.functions.init_functions()
         # set up debugger
         if option_debug:
             self.debugger = debug.Debugger(self)

@@ -24,9 +24,8 @@ class Functions(object):
         self.parser = parser
         self.session = parser.session
         self.values = self.session.values
-        self._init_functions()
 
-    def _init_functions(self):
+    def init_functions(self):
         """Initialise functions."""
         self.functions = {
             tk.INPUT: self.value_input,
@@ -78,7 +77,7 @@ class Functions(object):
             tk.VAL: partial(self.value_func, fn=values.val_),
             tk.ASC: partial(self.value_func, fn=values.asc_),
             tk.CHR: partial(self.value_func, fn=values.chr_),
-            tk.PEEK: self.value_peek,
+            tk.PEEK: partial(self.value_unary, fn=self.session.all_memory.peek_, to_type=values.INT),
             tk.SPACE: partial(self.value_func, fn=values.space_),
             tk.OCT: partial(self.value_func, fn=values.oct_),
             tk.HEX: partial(self.value_func, fn=values.hex_),
@@ -240,7 +239,7 @@ class Functions(object):
         return self.values.new_string().string_(asc_value_or_char, n)
 
     ######################################################################
-    # console functions
+    # binary functions
 
     def value_screen(self, ins):
         """SCREEN: get char or attribute at a location."""
@@ -268,9 +267,6 @@ class Functions(object):
         word = infile.input_(num)
         return self.values.from_value(word, values.STR)
 
-    ###############################################################
-    # graphics functions
-
     def value_point(self, ins):
         """POINT: get pixel attribute at screen location."""
         ins.require_read(('(',))
@@ -296,16 +292,6 @@ class Functions(object):
         ins.require_read((')',))
         pmap = self.session.screen.drawing.pmap_(coord, mode)
         return self.values.from_value(pmap, values.SNG)
-
-    #########################################################
-    # memory and machine functions
-
-    def value_peek(self, ins):
-        """PEEK: read memory location."""
-        addr = values.to_int(self.parser.parse_bracket(ins), unsigned=True)
-        if self.session.program.protected and not self.parser.run_mode:
-            raise error.RunError(error.IFC)
-        return self.values.from_value(self.session.all_memory.peek(addr), values.INT)
 
     def value_varptr(self, ins):
         """VARPTR, VARPTR$: get memory address for variable or FCB."""

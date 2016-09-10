@@ -11,6 +11,7 @@ import logging
 
 from . import values
 from . import devices
+from . import error
 
 
 ###############################################################################
@@ -231,7 +232,7 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, data_memory, devices, screen, keyboard, font_8, peek_values, syntax):
+    def __init__(self, data_memory, devices, screen, keyboard, font_8, parser, peek_values, syntax):
         """Initialise memory."""
         # data segment initialised elsewhere
         self.data = data_memory
@@ -241,6 +242,8 @@ class Memory(object):
         self.screen = screen
         # keyboard buffer access
         self.keyboard = keyboard
+        # parser, for runmode check
+        self.parser = parser
         # 8-pixel font
         self.font_8 = font_8
         # initial DEF SEG
@@ -250,10 +253,12 @@ class Memory(object):
         # tandy syntax
         self.tandy_syntax = syntax == 'tandy'
 
-    def peek(self, addr):
+    def peek_(self, addr):
         """Retrieve the value at an emulated memory location."""
-        if addr < 0:
-            addr += 0x10000
+        # no peeking the program code (or anywhere) in protected mode
+        if self.data.program.protected and not self.parser.run_mode:
+            raise error.RunError(error.IFC)
+        addr = values.to_int(addr, unsigned=True)
         addr += self.segment * 0x10
         return self._get_memory(addr)
 
