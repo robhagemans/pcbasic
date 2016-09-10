@@ -33,14 +33,14 @@ class Functions(object):
             tk.SCREEN: self.value_screen,
             tk.USR: self.value_usr,
             tk.FN: self.value_fn,
-            tk.ERL: self.value_erl,
-            tk.ERR: self.value_err,
+            tk.ERL: partial(self.value_nullary, fn=self.parser.erl_, to_type=values.SNG),
+            tk.ERR: partial(self.value_nullary, fn=self.parser.err_, to_type=values.INT),
             tk.STRING: self.value_string,
             tk.INSTR: self.value_instr,
             tk.VARPTR: self.value_varptr,
-            tk.CSRLIN: self.value_csrlin,
+            tk.CSRLIN: partial(self.value_nullary, fn=self.session.screen.csrlin_, to_type=values.INT),
             tk.POINT: self.value_point,
-            tk.INKEY: self.value_inkey,
+            tk.INKEY: partial(self.value_nullary, fn=self.session.keyboard.get_char, to_type=values.STR),
             tk.CVI: partial(self.value_func, fn=values.cvi_),
             tk.CVS: partial(self.value_func, fn=values.cvs_),
             tk.CVD: partial(self.value_func, fn=values.cvd_),
@@ -48,10 +48,10 @@ class Functions(object):
             tk.MKS: partial(self.value_func, fn=values.mks_),
             tk.MKD: partial(self.value_func, fn=values.mkd_),
             tk.EXTERR: self.value_exterr,
-            tk.DATE: self.value_date,
-            tk.TIME: self.value_time,
+            tk.DATE: partial(self.value_nullary, fn=self.session.clock.date_fn_, to_type=values.STR),
+            tk.TIME: partial(self.value_nullary, fn=self.session.clock.time_fn_, to_type=values.STR),
             tk.PLAY: self.value_play,
-            tk.TIMER: self.value_timer,
+            tk.TIMER: partial(self.value_nullary, fn=self.session.clock.timer_(), to_type=values.SNG),
             tk.ERDEV: self.value_erdev,
             tk.IOCTL: self.value_ioctl,
             tk.ENVIRON: self.value_environ,
@@ -107,6 +107,19 @@ class Functions(object):
         self.__dict__.update(pickle_dict)
         self._init_functions()
 
+    ###########################################################
+    # generalised calls
+
+    def value_nullary(self, dummy_ins, fn, to_type):
+        """Get value of a function with no arguments and convert to BASIC value."""
+        # NOTE that this wrapper is only necessary to introduce a dummy argument
+        # for the dictionary-based call
+        return self.values.from_value(fn(), to_type)
+
+    def value_func(self, ins, fn):
+        """Return value of unary function requiring no conversion."""
+        return fn(self.parser.parse_bracket(ins))
+
     #######################################################
     # user-defined functions
 
@@ -118,14 +131,6 @@ class Functions(object):
     ###########################################################
     # nullary functions
 
-    def value_inkey(self, ins):
-        """INKEY$: get a character from the keyboard."""
-        return self.values.from_value(self.session.keyboard.get_char(), values.STR)
-
-    def value_csrlin(self, ins):
-        """CSRLIN: get the current screen row."""
-        return self.values.from_value(self.session.sceen.csrlin_(), values.INT)
-
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
         if ins.skip_blank() == '(':
@@ -133,39 +138,14 @@ class Functions(object):
         else:
             return self.session.randomiser.rnd()
 
-    def value_erl(self, ins):
-        """ERL: get line number of last error."""
-        return self.values.from_value(self.parser.erl_(), values.SNG)
-
-    def value_err(self, ins):
-        """ERR: get error code of last error."""
-        return self.values.from_value(self.parser.err_(), values.INT)
-
-    def value_timer(self, ins):
-        """TIMER: get clock ticks since midnight."""
-        # precision of GWBASIC TIMER is about 1/20 of a second
-        return self.values.from_value(self.session.clock.timer_(), values.SNG)
-
-    def value_time(self, ins):
-        """TIME$: get current system time."""
-        return self.values.from_value(self.session.clock.time_fn_(), values.STR)
-
-    def value_date(self, ins):
-        """DATE$: get current system date."""
-        return self.values.from_value(self.session.clock.date_fn_(), values.STR)
-
     ###########################################################
     # unary functions
-
-    def value_func(self, ins, fn):
-        """Return value of unary function."""
-        return fn(self.parser.parse_bracket(ins))
 
     def value_pos(self, ins):
         """POS: get the current screen column."""
         # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
         dummy = self.parser.parse_bracket(ins)
-        pos = self.session.sceen.pos_(dummy)
+        pos = self.session.screen.pos_(dummy)
         return self.values.from_value(pos, values.INT)
 
     def value_lpos(self, ins):
