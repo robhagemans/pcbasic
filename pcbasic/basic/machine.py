@@ -47,7 +47,7 @@ class MachinePorts(object):
 
     def usr_(self, presign, num):
         """USR: get value of machine-code function; not implemented."""
-        logging.warning("USR function not implemented.")
+        logging.warning('USR function not implemented.')
         return 0
 
     def inp_(self, num):

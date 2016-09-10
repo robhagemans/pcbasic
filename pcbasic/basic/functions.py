@@ -28,10 +28,13 @@ class Functions(object):
     def init_functions(self):
         """Initialise functions."""
         self.with_presign = {
-            tk.USR: (self.value_usr, tk.DIGIT),
-            tk.IOCTL: (self.value_ioctl, '$'),
-            tk.ENVIRON: (self.value_environ, '$'),
-            tk.INPUT: (self.value_input, '$'),
+            # token   range   optional   function
+            tk.USR: (tk.DIGIT, True, self.value_usr),
+            tk.IOCTL: ('$', False, self.value_ioctl),
+            tk.ENVIRON: ('$', False, self.value_environ),
+            tk.INPUT: ('$', False, self.value_input),
+            tk.ERDEV: ('$', True, self.value_erdev),
+            tk.VARPTR: ('$', True, self.value_varptr),
         }
         self.functions = {
             tk.SCREEN: self.value_screen,
@@ -40,7 +43,6 @@ class Functions(object):
             tk.ERR: partial(self.value_nullary, fn=self.parser.err_, to_type=values.INT),
             tk.STRING: self.value_string,
             tk.INSTR: self.value_instr,
-            tk.VARPTR: self.value_varptr,
             tk.CSRLIN: partial(self.value_nullary, fn=self.session.screen.csrlin_, to_type=values.INT),
             tk.POINT: self.value_point,
             tk.INKEY: partial(self.value_nullary, fn=self.session.keyboard.get_char, to_type=values.STR),
@@ -55,7 +57,6 @@ class Functions(object):
             tk.TIME: partial(self.value_nullary, fn=self.session.clock.time_fn_, to_type=values.STR),
             tk.PLAY: partial(self.value_unary, fn=self.session.sound.play_fn_, to_type=values.INT),
             tk.TIMER: partial(self.value_nullary, fn=self.session.clock.timer_, to_type=values.SNG),
-            tk.ERDEV: self.value_erdev,
             tk.PMAP: self.value_pmap,
             tk.LEFT: self.value_left,
             tk.RIGHT: self.value_right,
@@ -156,9 +157,8 @@ class Functions(object):
         ins.require_read((')',))
         return self.session.files.ioctl_(num)
 
-    def value_erdev(self, ins):
+    def value_erdev(self, ins, dollar):
         """ERDEV$: device error string; not implemented."""
-        dollar = ins.skip_blank_read_if(('$',))
         val = self.parser.parse_bracket(ins)
         if dollar:
             erdev = self.session.devices.erdev_str_(val)
@@ -291,9 +291,8 @@ class Functions(object):
         pmap = self.session.screen.drawing.pmap_(coord, mode)
         return self.values.from_value(pmap, values.SNG)
 
-    def value_varptr(self, ins):
+    def value_varptr(self, ins, dollar):
         """VARPTR, VARPTR$: get memory address for variable or FCB."""
-        dollar = ins.skip_blank_read_if(('$',))
         ins.require_read(('(',))
         if (not dollar) and ins.skip_blank() == '#':
             filenum = self.parser.parse_file_number(ins, opt_hash=False)
