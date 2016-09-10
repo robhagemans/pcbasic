@@ -552,6 +552,22 @@ def right_(s, num):
     error.range_check(0, 255, stop)
     return s.new().from_str(s.to_str()[-stop:])
 
+def mid_(s, start, num=None):
+    """MID$: get substring."""
+    length = s.length()
+    start = start.to_integer().to_int()
+    if num is None:
+        num = length
+    else:
+        num = num.to_integer().to_int()
+    error.range_check(1, 255, start)
+    error.range_check(0, 255, num)
+    if num == 0 or start > length:
+        return s.new()
+    # BASIC's indexing starts at 1, Python's at 0
+    start -= 1
+    return s.new().from_str(s.to_str()[start:start+num])
+
 
 ##############################################################################
 # binary operations

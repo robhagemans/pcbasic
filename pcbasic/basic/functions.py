@@ -84,7 +84,7 @@ class Functions(object):
             tk.PMAP: partial(self.value_polynary, fn=self.session.screen.drawing.pmap_, conv=(values.cint_, values.cint_)),
             tk.LEFT: partial(self.value_polynary, fn=values.left_, conv=(values.pass_string, values.cint_)),
             tk.RIGHT: partial(self.value_polynary, fn=values.right_, conv=(values.pass_string, values.cint_)),
-            tk.MID: self.value_mid,
+            tk.MID: partial(self.value_polynary, fn=values.mid_, conv=(values.pass_string, values.cint_, values.cint_), optional=True),
             tk.SGN: partial(self.value_func, fn=values.sgn_),
             tk.INT: partial(self.value_func, fn=values.int_),
             tk.ABS: partial(self.value_func, fn=values.abs_),
@@ -121,6 +121,21 @@ class Functions(object):
             tk.LOF: partial(self.value_unary, fn=self.session.files.lof_, to_type=values.SNG),
         }
 
+    def value_screen(self, ins):
+        """SCREEN: get char or attribute at a location."""
+        ins.require_read(('(',))
+        row = values.to_int(self.parser.parse_expression(ins))
+        ins.require_read((',',), err=error.IFC)
+        col = values.to_int(self.parser.parse_expression(ins))
+        want_attr = None
+        if ins.skip_blank_read_if((',',)):
+            want_attr = values.to_int(self.parser.parse_expression(ins))
+        screen = self.session.screen.screen_fn_(row, col, want_attr)
+        ins.require_read((')',))
+        return self.values.from_value(screen, values.INT)
+
+
+
     def __getstate__(self):
         """Pickle."""
         pickle_dict = self.__dict__.copy()
@@ -150,9 +165,11 @@ class Functions(object):
         """Return value of unary function requiring no conversion."""
         return fn(self.parser.parse_bracket(ins))
 
-    def value_polynary(self, ins, fn, conv):
+    def value_polynary(self, ins, fn, conv, optional=False):
         """Type-check inputs and get value of a function with multiple arguments, return value requiring no conversion."""
-        return fn(*self.parser.parse_argument_list(ins, *conv))
+        # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
+        # while unary functions generate it *afterwards*. this is to match GW-BASIC
+        return fn(*self.parser.parse_argument_list(ins, conv, optional))
 
     #######################################################
     # user-defined functions
@@ -222,18 +239,6 @@ class Functions(object):
         else:
             return self.session.randomiser.rnd()
 
-    def value_mid(self, ins):
-        """MID$: get substring."""
-        ins.require_read(('(',))
-        s = values.pass_string(self.parser.parse_expression(ins))
-        ins.require_read((',',))
-        start = values.cint_(self.parser.parse_expression(ins))
-        num = None
-        if ins.skip_blank_read_if((',',)):
-            num = values.cint_(self.parser.parse_expression(ins))
-        ins.require_read((')',))
-        return s.mid(start, num)
-
     def value_string(self, ins):
         """STRING$: repeat characters."""
         ins.require_read(('(',))
@@ -245,19 +250,6 @@ class Functions(object):
             error.range_check(0, 255, asc_value_or_char.to_int())
         ins.require_read((')',))
         return self.values.new_string().string_(asc_value_or_char, n)
-
-    def value_screen(self, ins):
-        """SCREEN: get char or attribute at a location."""
-        ins.require_read(('(',))
-        row = values.to_int(self.parser.parse_expression(ins))
-        ins.require_read((',',), err=error.IFC)
-        col = values.to_int(self.parser.parse_expression(ins))
-        want_attr = None
-        if ins.skip_blank_read_if((',',)):
-            want_attr = values.to_int(self.parser.parse_expression(ins))
-        screen = self.session.screen.screen_fn_(row, col, want_attr)
-        ins.require_read((')',))
-        return self.values.from_value(screen, values.INT)
 
     def value_input(self, ins):
         """INPUT$: get characters from the keyboard or a file."""

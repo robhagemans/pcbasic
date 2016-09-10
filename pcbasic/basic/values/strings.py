@@ -149,23 +149,6 @@ class String(numbers.Value):
             return numbers.Integer(None, self._values)
         return numbers.Integer(None, self._values).from_int(start + find)
 
-    def mid(self, start, num=None):
-        """MID$: get substring."""
-        length = self.length()
-        start = start.to_integer().to_int()
-        if num is None:
-            num = length
-        else:
-            num = num.to_integer().to_int()
-        error.range_check(1, 255, start)
-        error.range_check(0, 255, num)
-        if num == 0 or start > length:
-            return self.new()
-        # BASIC's indexing starts at 1, Python's at 0
-        start -= 1
-        return self.new().from_str(self.to_str()[start:start+num])
-
-
     ######################################################################
     # unary functions
 
