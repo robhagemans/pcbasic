@@ -14,6 +14,7 @@ import datetime
 from . import error
 from . import mlparser
 from . import signals
+from . import values
 
 # base frequency for noise source
 base_freq = 3579545./1024.
@@ -179,6 +180,14 @@ class Sound(object):
                 last_expiry = expiry
                 item.params[2] = duration
                 self.session.audio_queue.put(item)
+
+    def play_fn_(self, voice):
+        """PLAY function: get length of music queue."""
+        voice = values.to_int(voice)
+        error.range_check(0, 255, voice)
+        if not(self.capabilities in ('pcjr', 'tandy') and voice in (1, 2)):
+            voice = 0
+        return self.queue_length(voice)
 
     def play(self, data_segment, values, mml_list):
         """Parse a list of Music Macro Language strings (PLAY statement)."""

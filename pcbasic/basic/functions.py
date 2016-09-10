@@ -189,6 +189,12 @@ class Functions(object):
         exterr = self.session.devices.exterr_(val)
         return self.values.from_value(exterr, values.INT)
 
+    def value_play(self, ins):
+        """PLAY: get length of music queue."""
+        voice = values.to_int(self.parser.parse_bracket(ins))
+        play = self.session.sound.play_(voice)
+        return self.values.from_value(play, values.INT)
+
     def value_stick(self, ins):
         """STICK: poll the joystick."""
         fn = self.parser.parse_bracket(ins)
@@ -437,17 +443,6 @@ class Functions(object):
         elif mode == 3:
             _, value = screen.drawing.get_window_logical(0, values.to_int(coord))
             return self.values.from_value(value, '!')
-
-    #####################################################################
-    # sound functions
-
-    def value_play(self, ins):
-        """PLAY: get length of music queue."""
-        voice = values.to_int(self.parser.parse_bracket(ins))
-        error.range_check(0, 255, voice)
-        if not(self.parser.syntax in ('pcjr', 'tandy') and voice in (1, 2)):
-            voice = 0
-        return self.values.from_value(self.session.sound.queue_length(voice), values.INT)
 
     #########################################################
     # memory and machine
