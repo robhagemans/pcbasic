@@ -240,14 +240,45 @@ class Drawing(object):
         self.last_attr = c
         self.last_point = x, y
 
-    def point(self, lcoord):
-        """Return the attribute of a pixel (POINT)."""
-        x, y = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
+    def point_2_(self, x, y):
+        """POINT (2 arguments): Return the attribute of a pixel."""
+        if self.screen.mode.is_text_mode:
+            raise error.RunError(error.IFC)
+        x, y = values.csng_(x).to_value(), values.csng_(y).to_value()
+        x, y = self.screen.graph_view.coords(*self.get_window_physical(x, y))
         if x < 0 or x >= self.screen.mode.pixel_width:
             return -1
         if y < 0 or y >= self.screen.mode.pixel_height:
             return -1
         return self.screen.get_pixel(x, y)
+
+    def point_1_(self, fn):
+        """POINT (1 argument): Return current coordinate."""
+        fn = values.to_int(fn)
+        if fn in (0, 1):
+            return self.last_point[fn]
+        elif fn in (2, 3):
+            return self.get_window_logical(*self.last_point)[fn - 2]
+        return 0
+
+    def pmap_(self, coord, mode):
+        """PMAP: convert between logical and physical coordinates."""
+        error.range_check(0, 3, mode)
+        if self.screen.mode.is_text_mode:
+            return 0
+        if mode == 0:
+            value, _ = self.get_window_physical(values.csng_(coord).to_value(), 0.)
+            return value
+        elif mode == 1:
+            _, value = self.get_window_physical(0., values.csng_(coord).to_value())
+            return value
+        elif mode == 2:
+            value, _ = self.get_window_logical(values.to_int(coord), 0)
+            return value
+        elif mode == 3:
+            _, value = self.get_window_logical(0, values.to_int(coord))
+            return value
+
 
     ### LINE
 

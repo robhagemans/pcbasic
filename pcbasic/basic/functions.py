@@ -364,41 +364,23 @@ class Functions(object):
         return self.values.from_value(word, values.STR)
 
     ###############################################################
-    # graphics
+    # graphics functions
 
     def value_point(self, ins):
         """POINT: get pixel attribute at screen location."""
         ins.require_read(('(',))
         arg0 = self.parser.parse_expression(ins)
-        screen = self.session.screen
         if ins.skip_blank_read_if((',',)):
             # two-argument mode
             arg1 = self.parser.parse_expression(ins)
             ins.require_read((')',))
-            if screen.mode.is_text_mode:
-                raise error.RunError(error.IFC)
-            return self.values.from_value(
-                        screen.drawing.point((
-                            values.csng_(arg0).to_value(), values.csng_(arg1).to_value(), False)
-                        ), values.INT)
+            screen = self.session.screen.drawing.point_2_(arg0, arg1)
+            return self.values.from_value(screen, values.INT)
         else:
             # single-argument mode
             ins.require_read((')',))
-            try:
-                x, y = screen.drawing.last_point
-                fn = values.to_int(arg0)
-                if fn == 0:
-                    return self.values.from_value(x, values.INT)
-                elif fn == 1:
-                    return self.values.from_value(y, values.INT)
-                elif fn == 2:
-                    fx, _ = screen.drawing.get_window_logical(x, y)
-                    return self.values.from_value(fx, '!')
-                elif fn == 3:
-                    _, fy = screen.drawing.get_window_logical(x, y)
-                    return self.values.from_value(fy, '!')
-            except AttributeError:
-                return self.values.new_integer()
+            screen = self.session.screen.drawing.point_1_(arg0)
+            return self.values.from_value(screen, values.SNG)
 
     def value_pmap(self, ins):
         """PMAP: convert between logical and physical coordinates."""
@@ -407,25 +389,11 @@ class Functions(object):
         ins.require_read((',',))
         mode = values.to_int(self.parser.parse_expression(ins))
         ins.require_read((')',))
-        error.range_check(0, 3, mode)
-        screen = self.session.screen
-        if screen.mode.is_text_mode:
-            return self.values.new_integer()
-        if mode == 0:
-            value, _ = screen.drawing.get_window_physical(values.csng_(coord).to_value(), 0.)
-            return self.values.from_value(value, values.INT)
-        elif mode == 1:
-            _, value = screen.drawing.get_window_physical(0., values.csng_(coord).to_value())
-            return self.values.from_value(value, values.INT)
-        elif mode == 2:
-            value, _ = screen.drawing.get_window_logical(values.to_int(coord), 0)
-            return self.values.from_value(value, '!')
-        elif mode == 3:
-            _, value = screen.drawing.get_window_logical(0, values.to_int(coord))
-            return self.values.from_value(value, '!')
+        pmap = self.session.screen.drawing.pmap_(coord, mode)
+        return self.values.from_value(pmap, values.SNG)
 
     #########################################################
-    # memory and machine
+    # memory and machine functions
 
     def value_peek(self, ins):
         """PEEK: read memory location."""
