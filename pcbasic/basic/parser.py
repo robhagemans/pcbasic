@@ -461,10 +461,11 @@ class Parser(object):
                     nargs = 2
                     try:
                         oper = op.BINARY[d]
-                    except KeyError:
+                        expr.drain(prec)
+                    except (KeyError, IndexError):
                         # illegal combined ops like == raise syntax error
+                        # incomplete expression also raises syntax error
                         raise error.RunError(error.STX)
-                    expr.drain(prec, error.STX)
                 expr.push_operator(oper, nargs, prec)
             elif not (last in op.OPERATORS or last == ''):
                 # repeated unit ends expression
@@ -489,8 +490,13 @@ class Parser(object):
                 expr.push_value(self.parse_literal(ins))
         # empty expression is a syntax error (inside brackets)
         # or Missing Operand (in an assignment)
-        # or not an error (in print and many functions)
-        return expr.evaluate(allow_empty, empty_err)
+        try:
+            return expr.evaluate()
+        except IndexError:
+            if allow_empty:
+                return None
+            else:
+                raise error.RunError(empty_err)
 
 
 class Expression(object):
@@ -509,29 +515,22 @@ class Expression(object):
         """Push an operator onto the stack."""
         self._stack.append((operator, nargs, precedence))
 
-    def drain(self, precedence, missing_err):
+    def drain(self, precedence):
         """Drain evaluation stack until an operator of low precedence on top."""
         while self._stack:
+            # this raises IndexError if there are not enough operators
             if precedence > self._stack[-1][2]:
                 break
             oper, narity, _ = self._stack.pop()
-            try:
-                right = self._units.pop()
-                if narity == 1:
-                    self._units.append(oper(right))
-                else:
-                    left = self._units.pop()
-                    self._units.append(oper(left, right))
-            except IndexError:
-                # insufficient operators, error depends on context
-                raise error.RunError(missing_err)
+            right = self._units.pop()
+            if narity == 1:
+                self._units.append(oper(right))
+            else:
+                left = self._units.pop()
+                self._units.append(oper(left, right))
 
-    def evaluate(self, allow_empty, empty_err):
+    def evaluate(self):
         """Evaluate expression and return result."""
-        if self._units or self._stack:
-            self.drain(0, empty_err)
-            return self._units[0]
-        elif allow_empty:
-            return None
-        else:
-            raise error.RunError(empty_err)
+        # raises IndexError for insufficient operators
+        self.drain(0)
+        return self._units[0]
