@@ -92,16 +92,23 @@ def float_safe(fn):
 def _call_float_function(fn, *args):
     """Convert to IEEE 754, apply function, convert back."""
     args = list(args)
-    floatcls = args[0].__class__
     values = args[0]._values
     feh = args[0].error_handler
     try:
         # to_float can overflow on Double.pos_max
-        args = (arg.to_float(arg._values.double_math).to_value() for arg in args)
+        args = [arg.to_float(arg._values.double_math) for arg in args]
+        floatcls = args[0].__class__
+        args = [arg.to_value() for arg in args]
         return floatcls(None, values).from_value(fn(*args))
     except (ValueError, ArithmeticError) as e:
-        # positive infinity of the appropriate class
-        return feh.handle(e.__class__(floatcls(None, values).from_bytes(floatcls.pos_max)))
+        # create positive infinity of the appropriate class
+        if arg._values.double_math and isinstance(args[0], numbers.Double):
+            floatcls = numbers.Double
+        else:
+            floatcls = numbers.Single
+        infty = floatcls(None, values).from_bytes(floatcls.pos_max)
+        # attach as exception payload for float error handler to deal with
+        return feh.handle(e.__class__(infty))
 
 
 class FloatErrorHandler(object):
