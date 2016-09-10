@@ -339,7 +339,7 @@ class DataSegment(object):
             except KeyError:
                 raise error.RunError(error.IFC)
         else:
-            filenum = args
+            filenum = params
             if filenum < 1 or filenum > self.max_files:
                 raise error.RunError(error.BAD_FILE_NUMBER)
             var_ptr = self.field_mem_base + filenum * self.field_mem_offset + 6
@@ -349,7 +349,7 @@ class DataSegment(object):
 
     def varptr_str_(self, name, indices):
         """VARPTR$: Get address of variable in string representation."""
-        var_ptr = self.varptr_(name, indices)
+        var_ptr = self.varptr_((name, indices))
         return struct.pack('<Bh', values.size_bytes(name), var_ptr)
 
     def dereference(self, address):
