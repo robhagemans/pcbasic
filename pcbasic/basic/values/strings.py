@@ -124,30 +124,6 @@ class String(numbers.Value):
                 self._stringspace.view(*target)[i+offset:i+offset+1] = self._stringspace.view(*source)[i]
         return self
 
-    # the below have mostly Integer parameters
-
-    def string_(self, asc_value_or_char, num):
-        """STRING$: repeat a character num times."""
-        if isinstance(asc_value_or_char, String):
-            char = asc_value_or_char.to_str()[0]
-        else:
-            # overflow if outside Integer range
-            ascval = asc_value_or_char.to_integer().to_int()
-            char = chr(ascval)
-        return self.new().from_str(char * num)
-
-    # NOTE: start is still a Python int
-    def instr(self, small, start):
-        """INSTR: find substring in string."""
-        big = self.to_str()
-        small = small.to_str()
-        if big == '' or start > len(big):
-            return numbers.Integer(None, self._values)
-        # BASIC counts string positions from 1
-        find = big[start-1:].find(small)
-        if find == -1:
-            return numbers.Integer(None, self._values)
-        return numbers.Integer(None, self._values).from_int(start + find)
 
     ######################################################################
     # unary functions

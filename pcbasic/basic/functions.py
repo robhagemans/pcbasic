@@ -212,18 +212,18 @@ class Functions(object):
         ins.require_read(('(',))
         # followed by comma so empty will raise STX
         s = self.parser.parse_expression(ins)
-        n = 1
+        start = 1
         if isinstance(s, values.Number):
-            n = values.to_int(s)
-            error.range_check(1, 255, n)
+            start = values.to_int(s)
+            error.range_check(1, 255, start)
             ins.require_read((',',))
-            s = self.parser.parse_expression(ins, empty_err=error.STX)
+            s = self.parser.parse_expression(ins)
         big = values.pass_string(s)
         ins.require_read((',',))
-        s = self.parser.parse_expression(ins, empty_err=error.STX)
+        s = self.parser.parse_expression(ins)
         small = values.pass_string(s)
         ins.require_read((')',))
-        return big.instr(small)
+        return values.instr_(start, big, small)
 
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
@@ -242,7 +242,7 @@ class Functions(object):
         if isinstance(asc_value_or_char, values.Integer):
             error.range_check(0, 255, asc_value_or_char.to_int())
         ins.require_read((')',))
-        return self.values.new_string().string_(asc_value_or_char, n)
+        return values.string_(asc_value_or_char, n)
 
     def value_input(self, ins):
         """INPUT$: get characters from the keyboard or a file."""

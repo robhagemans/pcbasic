@@ -568,6 +568,29 @@ def mid_(s, start, num=None):
     start -= 1
     return s.new().from_str(s.to_str()[start:start+num])
 
+# NOTE: start is still a Python int
+def instr_(start, big, small):
+    """INSTR: find substring in string."""
+    new_int = numbers.Integer(None, big._values)
+    big = big.to_str()
+    small = small.to_str()
+    if big == '' or start > len(big):
+        return new_int
+    # BASIC counts string positions from 1
+    find = big[start-1:].find(small)
+    if find == -1:
+        return new_int
+    return new_int.from_int(start + find)
+
+def string_(asc_value_or_char, num):
+    """STRING$: repeat a character num times."""
+    if isinstance(asc_value_or_char, strings.String):
+        char = asc_value_or_char.to_str()[0]
+    else:
+        # overflow if outside Integer range
+        ascval = asc_value_or_char.to_integer().to_int()
+        char = chr(ascval)
+    return strings.String(None, asc_value_or_char._values).from_str(char * num)
 
 ##############################################################################
 # binary operations
