@@ -21,7 +21,7 @@ class Expression(object):
         """Initialise empty expression."""
         self._stack = deque()
         self._units = deque()
-        self._empty_err = error.MISSING_OPERAND
+        self._final = True
         # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
         d = ''
         while True:
@@ -78,7 +78,7 @@ class Expression(object):
                 break
             elif d in tk.END_EXPRESSION:
                 # missing operand inside brackets or before comma is syntax error
-                self._empty_err = error.STX
+                self._final = False
                 break
             elif d == '"':
                 self.push_value(parser.read_string_literal(ins))
@@ -112,4 +112,6 @@ class Expression(object):
         except IndexError:
             # empty expression is a syntax error (inside brackets)
             # or Missing Operand (in an assignment)
-            raise error.RunError(self._empty_err)
+            if self._final:
+                raise error.RunError(error.MISSING_OPERAND)
+            raise error.RunError(error.STX)
