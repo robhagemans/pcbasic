@@ -351,23 +351,24 @@ class Parser(object):
                 return values.pass_string(expr).to_value()
             return self.values.new_string()
 
-    def parse_literal(self, ins):
-        """Return the value of the literal at the current code pointer."""
-        d = ins.skip_blank()
-        # string literal
-        if d == '"':
-            # record the address of the first byte of the string's payload
-            if ins == self.session.program.bytecode:
-                address = ins.tell() + 1 + self.session.memory.code_start
-            else:
-                address = None
-            value = ins.read_string().strip('"')
-            # if this is a program, create a string pointer to code space
-            # don't reserve space in string memory
-            return self.values.from_str_at(value, address)
+    def read_string_literal(self, ins):
+        """Read a quoted string literal (no leading blanks), return as String."""
+        # record the address of the first byte of the string's payload
+        if ins == self.session.program.bytecode:
+            address = ins.tell() + 1 + self.session.memory.code_start
+        else:
+            address = None
+        value = ins.read_string().strip('"')
+        # if this is a program, create a string pointer to code space
+        # don't reserve space in string memory
+        return self.values.from_str_at(value, address)
+
+    def read_number_literal(self, ins):
+        """Return the value of a numeric literal (no leading blanks)."""
+        d = ins.peek()
         # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
         # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
-        elif d in string.digits:
+        if d in string.digits:
             return self.values.from_repr(ins.read_number(), allow_nonnum=False)
         # number literals
         elif d in tk.NUMBER:

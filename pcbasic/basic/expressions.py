@@ -77,9 +77,10 @@ class Expression(object):
                 # missing operand inside brackets or before comma is syntax error
                 self._empty_err = error.STX
                 break
+            elif d == '"':
+                self.push_value(parser.read_string_literal(ins))
             else:
-                # literal
-                self.push_value(parser.parse_literal(ins))
+                self.push_value(parser.read_number_literal(ins))
         if allow_empty:
             self._empty_err = None
 

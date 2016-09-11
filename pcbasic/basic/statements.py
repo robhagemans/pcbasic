@@ -2120,7 +2120,10 @@ class Statements(object):
             dev.set_width(w)
         else:
             with self.parser.temp_string:
-                expr = self.parser.parse_expression(ins)
+                if d in string.digits or d in tk.NUMBER:
+                    expr = self.parser.read_number_literal(ins)
+                else:
+                    expr = self.parser.parse_expression(ins)
                 if isinstance(expr, values.String):
                     devname = expr.to_str().upper()
                     ins.require_read((',',))
