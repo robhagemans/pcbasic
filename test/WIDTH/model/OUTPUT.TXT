@@ -1,0 +1,42 @@
+error          2             85 
+error          5             90 
+error          2             110 
+lprint
+error          5             125 
+error          6             130 
+error          5             150 
+error          5             225 
+error          6             230 
+error          5             240 
+error          5             250 
+()
+error          5             320 
+error          6             330 
+error          5             340 
+error          5             350 
+scrn:
+error          5             425 
+error          6             430 
+error          5             440 
+error          5             450 
+error          5             525 
+error          6             530 
+error         
+ 5            
+ 550 
+error         
+ 2            
+ 600 
+error         
+ 5            
+ 630 
+error         
+ 5            
+ 640 
+error         
+ 2            
+ 650 
+error         
+ 22           
+ 660 
+
