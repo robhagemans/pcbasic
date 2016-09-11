@@ -64,7 +64,10 @@ class Expression(object):
                 # repeated literals or variables or non-keywords like 'AS'
                 break
             elif d == '(':
-                self.push_value(parser.parse_bracket(ins))
+                ins.read(len(d))
+                expr = Expression(ins, parser, memory, functions)
+                self.push_value(expr.evaluate())
+                ins.require_read((')',))
             elif d and d in string.ascii_letters:
                 # variable name
                 name, indices = parser.parse_variable(ins)
