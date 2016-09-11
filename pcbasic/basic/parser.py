@@ -426,5 +426,7 @@ class Parser(object):
 
     def parse_expression(self, ins, allow_empty=False):
         """Compute the value of the expression at the current code pointer."""
-        expr = expressions.Expression(ins, self, self.session.memory, self.functions, allow_empty)
+        if allow_empty and ins.skip_blank() in tk.END_EXPRESSION:
+            return None
+        expr = expressions.Expression(ins, self, self.session.memory, self.functions)
         return expr.evaluate()

@@ -17,7 +17,7 @@ from . import error
 class Expression(object):
     """Expression stack."""
 
-    def __init__(self, ins, parser, memory, functions, allow_empty):
+    def __init__(self, ins, parser, memory, functions):
         """Initialise empty expression."""
         self._stack = deque()
         self._units = deque()
@@ -81,8 +81,6 @@ class Expression(object):
                 self.push_value(parser.read_string_literal(ins))
             else:
                 self.push_value(parser.read_number_literal(ins))
-        if allow_empty:
-            self._empty_err = None
 
     def push_value(self, value):
         """Push a value onto the unit stack."""
@@ -111,6 +109,4 @@ class Expression(object):
         except IndexError:
             # empty expression is a syntax error (inside brackets)
             # or Missing Operand (in an assignment)
-            if self._empty_err:
-                raise error.RunError(self._empty_err)
-            return None
+            raise error.RunError(self._empty_err)
