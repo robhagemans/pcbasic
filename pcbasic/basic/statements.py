@@ -2108,12 +2108,14 @@ class Statements(object):
             dev = self.session.files.get(file_number, mode='IOAR')
             ins.require_read((',',))
             w = self.parser.parse_value(ins, values.INT)
+            error.range_check(0, 255, w)
             ins.require_end()
             dev.set_width(w)
         elif d == tk.LPRINT:
             ins.read(1)
             dev = self.session.devices.lpt1_file
             w = self.parser.parse_value(ins, values.INT)
+            error.range_check(0, 255, w)
             ins.require_end()
             dev.set_width(w)
         else:
@@ -2132,7 +2134,9 @@ class Statements(object):
                     dev.set_width(w)
                 else:
                     w = values.to_int(expr)
-                    if ins.skip_blank_read_if((',',)):
+                    if not ins.skip_blank_read_if((',',)):
+                        ins.require_end(error.IFC)
+                    else:
                         # parse dummy number rows setting
                         num_rows_dummy = self.parser.parse_value(ins, values.INT, allow_empty=True)
                         # trailing comma is accepted
@@ -2141,7 +2145,7 @@ class Statements(object):
                         if num_rows_dummy is not None:
                             min_num_rows = 0 if self.parser.syntax in ('pcjr', 'tandy') else 25
                             error.range_check(min_num_rows, 25, num_rows_dummy)
-                        self.session.devices.scrn_file.set_width(w)
+                    self.session.devices.scrn_file.set_width(w)
 
     def exec_screen(self, ins):
         """SCREEN: change video mode or page."""
