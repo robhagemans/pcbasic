@@ -58,7 +58,7 @@ class Expression(object):
                         # illegal combined ops like == raise syntax error
                         # incomplete expression also raises syntax error
                         raise error.RunError(error.STX)
-                self.push_operator(oper, nargs, prec)
+                self._stack.append((oper, nargs, prec))
             elif not (last in op.OPERATORS or last == ''):
                 # repeated unit ends expression
                 # repeated literals or variables or non-keywords like 'AS'
@@ -66,14 +66,14 @@ class Expression(object):
             elif d == '(':
                 ins.read(len(d))
                 expr = Expression(ins, parser, memory, functions)
-                self.push_value(expr.evaluate())
+                self._units.append(expr.evaluate())
                 ins.require_read((')',))
             elif d and d in string.ascii_letters:
                 # variable name
                 name, indices = parser.parse_variable(ins)
-                self.push_value(memory.get_variable(name, indices))
+                self._units.append(memory.get_variable(name, indices))
             elif d in functions:
-                self.push_value(functions.parse_function(ins, d))
+                self._units.append(functions.parse_function(ins, d))
             elif d in tk.END_STATEMENT:
                 break
             elif d in tk.END_EXPRESSION:
@@ -81,17 +81,9 @@ class Expression(object):
                 self._final = False
                 break
             elif d == '"':
-                self.push_value(parser.read_string_literal(ins))
+                self._units.append(parser.read_string_literal(ins))
             else:
-                self.push_value(parser.read_number_literal(ins))
-
-    def push_value(self, value):
-        """Push a value onto the unit stack."""
-        self._units.append(value)
-
-    def push_operator(self, operator, nargs, precedence):
-        """Push an operator onto the stack."""
-        self._stack.append((operator, nargs, precedence))
+                self._units.append(parser.read_number_literal(ins))
 
     def _drain(self, precedence):
         """Drain evaluation stack until an operator of low precedence on top."""
