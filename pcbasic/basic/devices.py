@@ -234,7 +234,7 @@ class TextFileBase(RawFile):
                 raise error.RunError(error.LINE_BUFFER_OVERFLOW)
         return False
 
-    def write(self, s):
+    def write(self, s, can_break=True):
         """Write the string s to the file, taking care of width settings."""
         # only break lines at the start of a new string. width 255 means unlimited width
         s_width = 0
@@ -247,7 +247,7 @@ class TextFileBase(RawFile):
             if ord(c) >= 32:
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
-        if self.width != 255 and self.col != 1 and self.col-1 + s_width > self.width and not newline:
+        if can_break and self.width != 255 and self.col != 1 and self.col-1 + s_width > self.width and not newline:
             self.write_line()
             self.flush()
             self.col = 1
@@ -588,7 +588,7 @@ class SCRNFile(RawFile):
         except KeyError:
             pass
 
-    def write(self, s):
+    def write(self, s, can_break=True):
         """Write string s to SCRN: """
         # writes to SCRN files should *not* be echoed
         do_echo = self.is_master
@@ -610,7 +610,7 @@ class SCRNFile(RawFile):
             elif ord(c) >= 32:
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
-        if (self.width != 255 and self.screen.current_row != self.screen.mode.height
+        if can_break and (self.width != 255 and self.screen.current_row != self.screen.mode.height
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
             self.screen.write_line(do_echo=do_echo)
             self._col = 1

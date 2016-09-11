@@ -50,11 +50,11 @@ def print_(parser, ins, output):
                 if next_zone >= number_zones and output.width >= 14 and output.width != 255:
                     output.write_line()
                 else:
-                    output.write(' ' * (1 + 14*next_zone-output.col))
+                    output.write(' ' * (1 + 14*next_zone-output.col), can_break=False)
             elif d == tk.SPC:
                 numspaces = max(0, values.to_int(parser.parse_expression(ins), unsigned=True)) % output.width
                 ins.require_read((')',))
-                output.write(' ' * numspaces)
+                output.write(' ' * numspaces, can_break=False)
             elif d == tk.TAB:
                 pos = max(0, values.to_int(parser.parse_expression(ins), unsigned=True) - 1) % output.width + 1
                 ins.require_read((')',))
@@ -62,7 +62,7 @@ def print_(parser, ins, output):
                     output.write_line()
                     output.write(' ' * (pos-1))
                 else:
-                    output.write(' ' * (pos-output.col))
+                    output.write(' ' * (pos-output.col), can_break=False)
         else:
             newline = True
             with parser.temp_string:

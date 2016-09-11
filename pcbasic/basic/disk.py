@@ -689,13 +689,13 @@ class RandomFile(devices.CRLFTextFileBase):
         self._check_overflow()
         return s
 
-    def write(self, s):
+    def write(self, s, can_break=True):
         """Write the string s to the field, taking care of width settings."""
         # switch to writing mode and fix readahead buffer
         if self.operating_mode == b'I':
             self.fhandle.seek(-1, 1)
             self.operating_mode = b'O'
-        devices.CRLFTextFileBase.write(self, s)
+        devices.CRLFTextFileBase.write(self, s, can_break)
         self._check_overflow()
 
     def close(self):
@@ -827,11 +827,11 @@ class TextFile(devices.CRLFTextFileBase):
             s = (self.codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
         devices.CRLFTextFileBase.write(self, s + '\r\n')
 
-    def write(self, s):
+    def write(self, s, can_break=True):
         """Write to file in normal or UTF-8 mode."""
         if self.codepage is not None:
             s = (self.codepage.str_to_unicode(s).encode(b'utf-8', b'replace'))
-        devices.CRLFTextFileBase.write(self, s)
+        devices.CRLFTextFileBase.write(self, s, can_break)
 
     def _read_line_universal(self):
         """Read line from ascii program file with universal newlines."""
