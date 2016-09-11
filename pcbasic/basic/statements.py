@@ -2108,40 +2108,40 @@ class Statements(object):
             dev = self.session.files.get(file_number, mode='IOAR')
             ins.require_read((',',))
             w = self.parser.parse_value(ins, values.INT)
+            ins.require_end()
+            dev.set_width(w)
         elif d == tk.LPRINT:
             ins.read(1)
             dev = self.session.devices.lpt1_file
             w = self.parser.parse_value(ins, values.INT)
+            ins.require_end()
+            dev.set_width(w)
         else:
-            # we can do calculations, but they must be bracketed...
-            if d in tk.NUMBER:
-                expr = self.parser.parse_literal(ins)
-            else:
+            with self.parser.temp_string:
                 expr = self.parser.parse_expression(ins)
-            if isinstance(expr, values.String):
-                devname = self.parser.parse_temporary_string(expr).upper()
-                try:
-                    dev = self.session.devices.devices[devname].device_file
-                except (KeyError, AttributeError):
-                    # bad file name
-                    raise error.RunError(error.BAD_FILE_NAME)
-                ins.require_read((',',))
-                w = self.parser.parse_value(ins, values.INT)
-            else:
-                dev = self.session.devices.scrn_file
-                w = values.to_int(expr)
-                if ins.skip_blank_read_if((',',)):
-                    # parse dummy number rows setting
-                    num_rows_dummy = self.parser.parse_value(ins, values.INT, allow_empty=True)
-                    if num_rows_dummy is not None:
-                        min_num_rows = 0 if self.parser.syntax in ('pcjr', 'tandy') else 25
-                        error.range_check(min_num_rows, 25, num_rows_dummy)
-                    # trailing comma is accepted
-                    ins.skip_blank_read_if((',',))
-                # gives illegal function call, not syntax error
-            ins.require_end(err=error.IFC)
-        ins.require_end()
-        dev.set_width(w)
+                if isinstance(expr, values.String):
+                    devname = expr.to_str().upper()
+                    ins.require_read((',',))
+                    w = self.parser.parse_value(ins, values.INT)
+                    try:
+                        dev = self.session.devices.devices[devname].device_file
+                    except (KeyError, AttributeError):
+                        # bad file name
+                        raise error.RunError(error.BAD_FILE_NAME)
+                    ins.require_end()
+                    dev.set_width(w)
+                else:
+                    w = values.to_int(expr)
+                    if ins.skip_blank_read_if((',',)):
+                        # parse dummy number rows setting
+                        num_rows_dummy = self.parser.parse_value(ins, values.INT, allow_empty=True)
+                        # trailing comma is accepted
+                        ins.skip_blank_read_if((',',))
+                        ins.require_end()
+                        if num_rows_dummy is not None:
+                            min_num_rows = 0 if self.parser.syntax in ('pcjr', 'tandy') else 25
+                            error.range_check(min_num_rows, 25, num_rows_dummy)
+                        self.session.devices.scrn_file.set_width(w)
 
     def exec_screen(self, ins):
         """SCREEN: change video mode or page."""
