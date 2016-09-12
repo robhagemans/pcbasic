@@ -87,9 +87,6 @@ class Expression(object):
                 name = ins.read_name()
                 error.throw_if(not name, error.STX)
                 indices = self.parse_indices(ins)
-                # variable name must be completed at evaluation time
-                # to account for prevailing DEFtypes
-                name = self._memory.complete_name(name)
                 self._units.append(self._memory.get_variable(name, indices))
             elif d in self._functions:
                 self._units.append(self._functions.parse_function(ins, d))
