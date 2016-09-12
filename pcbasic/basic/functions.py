@@ -201,9 +201,10 @@ class Functions(object):
     def value_varptr(self, ins):
         """VARPTR: get memory address for variable or FCB."""
         ins.require_read(('(',))
-        if ins.skip_blank() == '#':
+        if ins.skip_blank_read_if(('#',)):
             # params holds a number
-            params = self.parser.parse_file_number(ins, opt_hash=False)
+            params = values.to_int(self.parse_expression(ins))
+            error.range_check(0, 255, params)
         else:
             # params holds a tuple
             params = self.parser.parse_variable(ins)
@@ -222,7 +223,9 @@ class Functions(object):
     def value_ioctl(self, ins):
         """IOCTL$: read device control string response; not implemented."""
         ins.require_read(('(',))
-        num = self.parser.parse_file_number(ins, opt_hash=True)
+        ins.skip_blank_read_if(('#',))
+        num = values.to_int(self.parse_expression(ins))
+        error.range_check(0, 255, num)
         ins.require_read((')',))
         return self.session.files.ioctl_(num)
 
@@ -270,7 +273,10 @@ class Functions(object):
         error.range_check(1, 255, num)
         infile = self.session.devices.kybd_file
         if ins.skip_blank_read_if((',',)):
-            infile = self.session.files.get(self.parser.parse_file_number(ins, opt_hash=True))
+            ins.skip_blank_read_if(('#',))
+            num = values.to_int(self.parse_expression(ins))
+            error.range_check(0, 255, num)
+            infile = self.session.files.get(num)
         ins.require_read((')',))
         word = infile.input_(num)
         return self.values.from_value(word, values.STR)

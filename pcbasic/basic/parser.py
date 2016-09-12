@@ -344,7 +344,6 @@ class Parser(object):
         return number
 
 
-
     def parse_scalar(self, ins):
         """Get scalar part of variable name from token stream."""
         name = ins.read_name()
