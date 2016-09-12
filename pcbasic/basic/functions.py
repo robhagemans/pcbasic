@@ -157,17 +157,21 @@ class Functions(object):
         narity, fn, to_type = fn_record[:3]
         if narity == 0:
             return self.values.from_value(fn(), to_type)
-        elif narity == 1 and to_type:
-            return self.values.from_value(fn(self.parser.parse_bracket(ins)), to_type)
         elif narity == 1:
-            return fn(self.parser.parse_bracket(ins))
+            ins.require_read(('(',))
+            val = self.parser.parse_expression(ins)
+            ins.require_read((')',))
+            if to_type:
+                return self.values.from_value(fn(val), to_type)
+            else:
+                return fn(val)
         elif narity > 1:
             conv, optional = fn_record[3:]
             # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
             # while unary functions generate it *afterwards*. this is to match GW-BASIC
             return fn(*self.parse_argument_list(ins, conv, optional))
         else:
-            # special case
+            # special cases
             return fn(ins)
 
     def parse_argument_list(self, ins, conversions, optional=False):
@@ -203,7 +207,7 @@ class Functions(object):
         ins.require_read(('(',))
         if ins.skip_blank_read_if(('#',)):
             # params holds a number
-            params = values.to_int(self.parse_expression(ins))
+            params = values.to_int(self.parser.parse_expression(ins))
             error.range_check(0, 255, params)
         else:
             # params holds a tuple
@@ -224,7 +228,7 @@ class Functions(object):
         """IOCTL$: read device control string response; not implemented."""
         ins.require_read(('(',))
         ins.skip_blank_read_if(('#',))
-        num = values.to_int(self.parse_expression(ins))
+        num = values.to_int(self.parser.parse_expression(ins))
         error.range_check(0, 255, num)
         ins.require_read((')',))
         return self.session.files.ioctl_(num)
@@ -249,8 +253,10 @@ class Functions(object):
 
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
-        if ins.skip_blank() == '(':
-            return self.session.randomiser.rnd(values.csng_(self.parser.parse_bracket(ins)))
+        if ins.skip_blank_read_if(('(',)):
+            val = self.parser.parse_expression(ins)
+            ins.require_read((')',))
+            return self.session.randomiser.rnd(values.csng_(val))
         else:
             return self.session.randomiser.rnd()
 
@@ -274,7 +280,7 @@ class Functions(object):
         infile = self.session.devices.kybd_file
         if ins.skip_blank_read_if((',',)):
             ins.skip_blank_read_if(('#',))
-            num = values.to_int(self.parse_expression(ins))
+            num = values.to_int(self.parser.parse_expression(ins))
             error.range_check(0, 255, num)
             infile = self.session.files.get(num)
         ins.require_read((')',))
