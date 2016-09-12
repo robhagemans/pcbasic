@@ -361,23 +361,21 @@ class Parser(object):
 
 
 
-    def parse_scalar(self, ins, allow_empty=False):
+    def parse_scalar(self, ins):
         """Get scalar part of variable name from token stream."""
+        name = ins.read_name()
+        # must not be empty
+        error.throw_if(not name, error.STX)
         # append sigil, if missing
-        name = self.session.memory.complete_name(ins.read_name())
-        # return None for empty names (only happens with allow_empty)
-        if not name:
-            if not allow_empty:
-                raise error.RunError(error.STX)
-            return None
-        return name
+        return self.session.memory.complete_name(name)
 
     def parse_variable(self, ins):
         """Helper function: parse a scalar or array element."""
+        name = ins.read_name()
+        error.throw_if(not name, error.STX)
         # this is an evaluation-time determination
         # as we could have passed another DEFtype statement
-        name = self.session.memory.complete_name(ins.read_name())
-        error.throw_if(not name, error.STX)
+        name = self.session.memory.complete_name(name)
         indices = expressions.Expression(self.values,
             self.session.memory, self.session.program, self.functions
             ).parse_indices(ins)

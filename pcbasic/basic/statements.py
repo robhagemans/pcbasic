@@ -1434,10 +1434,11 @@ class Statements(object):
         # get position and line number just after the NEXT
         nextpos = ins.tell()
         # check var name for NEXT
-        varname2 = self.parser.parse_scalar(ins, allow_empty=True)
         # no-var only allowed in standalone NEXT
-        if varname2 is None:
-            ins.require_end()
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            varname2 = self.parser.parse_scalar(ins)
+        else:
+            varname2 = None
         if (comma or varname2) and varname2 != varname:
             # NEXT without FOR marked with NEXT line number, while we're only at FOR
             raise error.RunError(error.NEXT_WITHOUT_FOR)
@@ -1450,11 +1451,12 @@ class Statements(object):
             # record the NEXT (or comma) location
             pos = ins.tell()
             # optional variable - errors in this are checked at the scan during FOR
-            name = self.parser.parse_scalar(ins, allow_empty=True)
             # if we haven't read a variable, we shouldn't find something else here
             # but if we have and we iterate, the rest of the line is ignored
-            if (name is None) and (ins.skip_blank() not in (tk.END_STATEMENT + (',',))):
-                raise error.RunError(error.STX)
+            if ins.skip_blank() not in tk.END_STATEMENT + (',',):
+                name = self.parser.parse_scalar(ins)
+            else:
+                name = None
             # increment counter, check condition
             if self.parser.loop_iterate(ins, pos):
                 break
