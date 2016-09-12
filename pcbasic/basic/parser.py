@@ -326,22 +326,6 @@ class Parser(object):
         ins.require_read((')',))
         return val
 
-    def parse_argument_list(self, ins, conversions, optional=False):
-        """Parse a comma-separated list of arguments and apply type conversions."""
-        # required separators
-        arg = []
-        seps = (('(',),) + ((',',),) * (len(conversions)-1)
-        for conv, sep in zip(conversions[:-1], seps[:-1]):
-            ins.require_read(sep)
-            arg.append(conv(self.parse_expression(ins)))
-        if ins.skip_blank_read_if(seps[-1]):
-            arg.append(conversions[-1](self.parse_expression(ins)))
-        elif not optional:
-            raise error.RunError(error.STX)
-        if arg:
-            ins.require_read((')',))
-        return arg
-
     def parse_temporary_string(self, ins, allow_empty=False):
         """Parse an expression and return as Python value. Store strings in a temporary."""
         # if allow_empty, a missing value is returned as an empty string

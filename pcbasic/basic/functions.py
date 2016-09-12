@@ -165,18 +165,37 @@ class Functions(object):
             conv, optional = fn_record[3:]
             # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
             # while unary functions generate it *afterwards*. this is to match GW-BASIC
-            return fn(*self.parser.parse_argument_list(ins, conv, optional))
+            return fn(*self.parse_argument_list(ins, conv, optional))
         else:
             # special case
             return fn(ins)
 
+    def parse_argument_list(self, ins, conversions, optional=False):
+        """Parse a comma-separated list of arguments and apply type conversions."""
+        # required separators
+        arg = []
+        seps = (('(',),) + ((',',),) * (len(conversions)-1)
+        for conv, sep in zip(conversions[:-1], seps[:-1]):
+            ins.require_read(sep)
+            arg.append(conv(self.parser.parse_expression(ins)))
+        if ins.skip_blank_read_if(seps[-1]):
+            arg.append(conversions[-1](self.parser.parse_expression(ins)))
+        elif not optional:
+            raise error.RunError(error.STX)
+        if arg:
+            ins.require_read((')',))
+        return arg
 
     ###########################################################
     # special cases
 
     def value_fn(self, ins):
         """FN: get value of user-defined function."""
-        fnname = self.parser.parse_scalar(ins)
+        fnname = ins.read_name()
+        # must not be empty
+        error.throw_if(not fnname, error.STX)
+        # append sigil, if missing
+        fnname = self.session.memory.complete_name(fnname)
         return self.session.user_functions.value(fnname, self.parser, ins)
 
     def value_varptr(self, ins):
