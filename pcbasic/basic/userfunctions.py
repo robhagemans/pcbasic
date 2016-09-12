@@ -89,10 +89,12 @@ class UserFunctions(object):
         fns = codestream.TokenisedStream(fncode)
         fns.seek(0)
         self._parsing.add(fnname)
-        value = parser.parse_expression(fns)
-        self._parsing.remove(fnname)
-        # restore existing vars
-        for name in varsave:
-            # re-assign the stored value
-            self._scalars.view(name).copy_from(varsave[name])
-        return values.to_type(fnname[-1], value)
+        try:
+            value = parser.parse_expression(fns)
+            return values.to_type(fnname[-1], value)
+        finally:
+            self._parsing.remove(fnname)
+            # restore existing vars
+            for name in varsave:
+                # re-assign the stored value
+                self._scalars.view(name).copy_from(varsave[name])
