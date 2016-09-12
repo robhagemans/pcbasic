@@ -8,17 +8,29 @@ This file is released under the GNU GPL version 3 or later.
 
 from collections import deque
 import string
+import struct
 
 from . import operators as op
 from . import tokens as tk
 from . import error
+from . import values
 
 
 class Expression(object):
     """Expression stack."""
 
-    def __init__(self, ins, parser, memory, functions):
+    def __init__(self, values, memory, program, functions):
         """Initialise empty expression."""
+        self._values = values
+        # for variable retrieval
+        self._memory = memory
+        # for code strings
+        self._program = program
+        # for action callbacks
+        self._functions = functions
+
+    def parse(self, ins):
+        """Build stacks from tokenised expression."""
         self._stack = deque()
         self._units = deque()
         self._final = True
@@ -65,15 +77,22 @@ class Expression(object):
                 break
             elif d == '(':
                 ins.read(len(d))
-                expr = Expression(ins, parser, memory, functions)
+                # we need to create a new object or we'll overwrite our own stacks
+                # this will not be needed if we localise stacks in the expression parser
+                # either a separate class of just as local variables
+                expr = Expression(self._values, self._memory, self._program, self._functions).parse(ins)
                 self._units.append(expr.evaluate())
                 ins.require_read((')',))
             elif d and d in string.ascii_letters:
-                # variable name
-                name, indices = parser.parse_variable(ins)
-                self._units.append(memory.get_variable(name, indices))
-            elif d in functions:
-                self._units.append(functions.parse_function(ins, d))
+                name = ins.read_name()
+                error.throw_if(not name, error.STX)
+                indices = self.parse_indices(ins)
+                # variable name must be completed at evaluation time
+                # to account for prevailing DEFtypes
+                name = self._memory.complete_name(name)
+                self._units.append(self._memory.get_variable(name, indices))
+            elif d in self._functions:
+                self._units.append(self._functions.parse_function(ins, d))
             elif d in tk.END_STATEMENT:
                 break
             elif d in tk.END_EXPRESSION:
@@ -81,9 +100,10 @@ class Expression(object):
                 self._final = False
                 break
             elif d == '"':
-                self._units.append(parser.read_string_literal(ins))
+                self._units.append(self.read_string_literal(ins))
             else:
-                self._units.append(parser.read_number_literal(ins))
+                self._units.append(self.read_number_literal(ins))
+        return self
 
     def _drain(self, precedence):
         """Drain evaluation stack until an operator of low precedence on top."""
@@ -107,3 +127,48 @@ class Expression(object):
             if self._final:
                 raise error.RunError(error.MISSING_OPERAND)
             raise error.RunError(error.STX)
+
+
+    def read_string_literal(self, ins):
+        """Read a quoted string literal (no leading blanks), return as String."""
+        # record the address of the first byte of the string's payload
+        if ins == self._program.bytecode:
+            address = ins.tell() + 1 + self._memory.code_start
+        else:
+            address = None
+        value = ins.read_string().strip('"')
+        # if this is a program, create a string pointer to code space
+        # don't reserve space in string memory
+        return self._values.from_str_at(value, address)
+
+    def read_number_literal(self, ins):
+        """Return the value of a numeric literal (no leading blanks)."""
+        d = ins.peek()
+        # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
+        # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
+        if d in string.digits:
+            return self._values.from_repr(ins.read_number(), allow_nonnum=False)
+        # number literals
+        elif d in tk.NUMBER:
+            return self._values.from_token(ins.read_number_token())
+        elif d == tk.T_UINT:
+            # gw-basic allows adding line numbers to numbers
+            # convert to signed integer
+            value = struct.unpack('<h', ins.read(2))[0]
+            return self._values.new_integer().from_int(value)
+        else:
+            raise error.RunError(error.STX)
+
+    def parse_indices(self, ins):
+        """Parse array indices."""
+        indices = []
+        if ins.skip_blank_read_if(('[', '(')):
+            # it's an array, read indices
+            while True:
+                # new Expression object, see above
+                expr = Expression(self._values, self._memory, self._program, self._functions).parse(ins)
+                indices.append(values.to_int(expr.evaluate()))
+                if not ins.skip_blank_read_if((',',)):
+                    break
+            ins.require_read((']', ')'))
+        return indices

@@ -351,47 +351,15 @@ class Parser(object):
                 return values.pass_string(expr).to_value()
             return self.values.new_string()
 
-    def read_string_literal(self, ins):
-        """Read a quoted string literal (no leading blanks), return as String."""
-        # record the address of the first byte of the string's payload
-        if ins == self.session.program.bytecode:
-            address = ins.tell() + 1 + self.session.memory.code_start
-        else:
-            address = None
-        value = ins.read_string().strip('"')
-        # if this is a program, create a string pointer to code space
-        # don't reserve space in string memory
-        return self.values.from_str_at(value, address)
+    def parse_file_number(self, ins, opt_hash):
+        """Read a file number."""
+        if not ins.skip_blank_read_if(('#',)) and not opt_hash:
+            return None
+        number = values.to_int(self.parse_expression(ins))
+        error.range_check(0, 255, number)
+        return number
 
-    def read_number_literal(self, ins):
-        """Return the value of a numeric literal (no leading blanks)."""
-        d = ins.peek()
-        # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
-        # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
-        if d in string.digits:
-            return self.values.from_repr(ins.read_number(), allow_nonnum=False)
-        # number literals
-        elif d in tk.NUMBER:
-            return self.values.from_token(ins.read_number_token())
-        # gw-basic allows adding line numbers to numbers
-        elif d == tk.T_UINT:
-            return self.values.new_integer().from_int(self.parse_jumpnum(ins), unsigned=True)
-        else:
-            raise error.RunError(error.STX)
 
-    def parse_variable(self, ins):
-        """Helper function: parse a scalar or array element."""
-        name = self.session.memory.complete_name(ins.read_name())
-        error.throw_if(not name, error.STX)
-        indices = []
-        if ins.skip_blank_read_if(('[', '(')):
-            # it's an array, read indices
-            while True:
-                indices.append(values.to_int(self.parse_expression(ins)))
-                if not ins.skip_blank_read_if((',',)):
-                    break
-            ins.require_read((']', ')'))
-        return name, indices
 
     def parse_scalar(self, ins, allow_empty=False):
         """Get scalar part of variable name from token stream."""
@@ -404,29 +372,39 @@ class Parser(object):
             return None
         return name
 
-    def parse_file_number(self, ins, opt_hash):
-        """Read a file number."""
-        if not ins.skip_blank_read_if(('#',)) and not opt_hash:
-            return None
-        number = values.to_int(self.parse_expression(ins))
-        error.range_check(0, 255, number)
-        return number
+    def parse_variable(self, ins):
+        """Helper function: parse a scalar or array element."""
+        # this is an evaluation-time determination
+        # as we could have passed another DEFtype statement
+        name = self.session.memory.complete_name(ins.read_name())
+        error.throw_if(not name, error.STX)
+        indices = expressions.Expression(self.values,
+            self.session.memory, self.session.program, self.functions
+            ).parse_indices(ins)
+        return name, indices
 
-    def parse_jumpnum(self, ins, allow_empty=False, err=error.STX):
+
+
+    @staticmethod
+    def parse_jumpnum(ins):
         """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
-        if ins.skip_blank_read_if((tk.T_UINT,)):
-            token = ins.read(2)
-            assert len(token) == 2, 'bytecode truncated in line number pointer'
-            return struct.unpack('<H', token)[0]
-        else:
-            if allow_empty:
-                return -1
-            # Syntax error
-            raise error.RunError(err)
+        ins.require_read((tk.T_UINT,))
+        token = ins.read(2)
+        assert len(token) == 2, 'Bytecode truncated in line number pointer'
+        return struct.unpack('<H', token)[0]
+
+    @staticmethod
+    def parse_optional_jumpnum(ins):
+        """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
+        # no line number
+        if ins.skip_blank() != tk.T_UINT:
+            return -1
+        return Parser.parse_jumpnum(ins)
 
     def parse_expression(self, ins, allow_empty=False):
         """Compute the value of the expression at the current code pointer."""
         if allow_empty and ins.skip_blank() in tk.END_EXPRESSION:
             return None
-        expr = expressions.Expression(ins, self, self.session.memory, self.functions)
+        expr = expressions.Expression(self.values,
+                self.session.memory, self.session.program, self.functions).parse(ins)
         return expr.evaluate()

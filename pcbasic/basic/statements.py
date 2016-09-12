@@ -19,6 +19,7 @@ from . import ports
 from . import parseprint
 from . import parseinput
 from . import tokens as tk
+from . import expressions
 
 
 class Statements(object):
@@ -786,7 +787,7 @@ class Statements(object):
         linenum = self._parse_jumpnum_or_dot(ins, allow_empty=True)
         increment = None
         if ins.skip_blank_read_if((',',)):
-            increment = self.parser.parse_jumpnum(ins, allow_empty=True)
+            increment = self.parser.parse_optional_jumpnum(ins)
         ins.require_end()
         # reset linenum and increment on each call of AUTO (even in AUTO mode)
         self.session.auto_linenum = linenum if linenum is not None else 10
@@ -864,9 +865,6 @@ class Statements(object):
             expr = self.parser.parse_expression(ins, allow_empty=True)
             if expr is not None:
                 jumpnum = values.to_int(expr, unsigned=True)
-                # negative numbers will be two's complemented into a line number
-                if jumpnum < 0:
-                    jumpnum = 0x10000 + jumpnum
             if ins.skip_blank_read_if((',',)):
                 if ins.skip_blank_read_if(('ALL',), 3):
                     common_all = True
@@ -896,9 +894,9 @@ class Statements(object):
         """Helper function: parse the DELETE clause of a CHAIN statement."""
         delete_lines = None
         if ins.skip_blank_read_if((tk.DELETE,)):
-            from_line = self.parser.parse_jumpnum(ins, allow_empty=True)
+            from_line = self.parser.parse_optional_jumpnum(ins)
             if ins.skip_blank_read_if((tk.O_MINUS,)):
-                to_line = self.parser.parse_jumpnum(ins, allow_empty=True)
+                to_line = self.parser.parse_optional_jumpnum(ins)
             else:
                 to_line = from_line
             # to_line must be specified and must be an existing line number
@@ -954,7 +952,7 @@ class Statements(object):
             if ins.skip_blank_read_if((',',)):
                 old = self._parse_jumpnum_or_dot(ins, allow_empty=True)
                 if ins.skip_blank_read_if((',',)):
-                    step = self.parser.parse_jumpnum(ins, allow_empty=True) # returns -1 if empty
+                    step = self.parser.parse_optional_jumpnum(ins) # returns -1 if empty
         ins.require_end()
         if step is not None and step < 1:
             raise error.RunError(error.IFC)
@@ -1911,7 +1909,8 @@ class Statements(object):
     def exec_restore(self, ins):
         """RESTORE: reset DATA pointer."""
         if not ins.skip_blank() in tk.END_STATEMENT:
-            datanum = self.parser.parse_jumpnum(ins, err=error.UNDEFINED_LINE_NUMBER)
+            ins.require_read((tk.T_UINT,), err=error.UNDEFINED_LINE_NUMBER)
+            datanum = self.parser.parse_jumpnum(ins)
         else:
             datanum = -1
         # undefined line number for all syntax errors
@@ -2121,7 +2120,9 @@ class Statements(object):
         else:
             with self.parser.temp_string:
                 if d in string.digits or d in tk.NUMBER:
-                    expr = self.parser.read_number_literal(ins)
+                    expr = expressions.Expression(self.values,
+                            self.session.memory, self.session.program,
+                            self.parser.functions).read_number_literal(ins)
                 else:
                     expr = self.parser.parse_expression(ins)
                 if isinstance(expr, values.String):
