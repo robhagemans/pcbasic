@@ -63,41 +63,40 @@ class UserFunctions(object):
 
     def value(self, fnname, functions, ins):
         """Parse a function."""
-        # recursion is not allowed as there's no way to terminate it
-        if fnname in self._parsing:
-            raise error.RunError(error.OUT_OF_MEMORY)
         try:
             varnames, fncode = self._code[fnname]
         except KeyError:
             raise error.RunError(error.UNDEFINED_USER_FUNCTION)
+        # read variables
+        conversions = [values.TYPE_TO_CONV[self._memory.complete_name(name)[-1]] for name in varnames]
+        if conversions:
+            args = functions.parse_argument_list(ins, conversions, optional=False)
+        else:
+            args = ()
+        # recursion is not allowed as there's no way to terminate it
+        if fnname in self._parsing:
+            raise error.RunError(error.OUT_OF_MEMORY)
         # save existing vars
         varsave = {}
         for name in varnames:
             if name in self._scalars:
                 # copy the buffer
                 varsave[name] = self._scalars.view(name).clone()
-        # read variables
-        if ins.skip_blank_read_if(('(',)):
-            exprs = []
-            while True:
-                exprs.append(functions.parse_expression(ins))
-                if not ins.skip_blank_read_if((',',)):
-                    break
-            if len(exprs) != len(varnames):
-                raise error.RunError(error.STX)
-            for name, value in zip(varnames, exprs):
-                # append sigil, if missing
-                name = self._memory.complete_name(name)
-                self._scalars.set(name, value)
-            ins.require_read((')',))
-        # execute the code
-        fns = codestream.TokenisedStream(fncode)
-        fns.seek(0)
+        # set variables
+        for name, value in zip(varnames, args):
+            # append sigil, if missing
+            name = self._memory.complete_name(name)
+            self._scalars.set(name, value)
+        # set recursion flag
         self._parsing.add(fnname)
         try:
+            # parse and evaluate the function code
+            fns = codestream.TokenisedStream(fncode)
+            fns.seek(0)
             value = functions.parse_expression(fns)
             return values.to_type(fnname[-1], value)
         finally:
+            # unset recursion flag
             self._parsing.remove(fnname)
             # restore existing vars
             for name in varsave:

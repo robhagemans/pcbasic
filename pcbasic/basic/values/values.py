@@ -31,8 +31,10 @@ STR = '$'
 TYPE_TO_SIZE = {STR: 3, INT: 2, SNG: 4, DBL: 8}
 SIZE_TO_TYPE = {2: INT, 3: STR, 4: SNG, 8: DBL}
 
+# type classes
 SIZE_TO_CLASS = {2: numbers.Integer, 3: strings.String, 4: numbers.Single, 8: numbers.Double}
 TYPE_TO_CLASS = {INT: numbers.Integer, STR: strings.String, SNG: numbers.Single, DBL: numbers.Double}
+
 
 def size_bytes(name):
     """Return the size of a value type, by variable name or type char."""
@@ -653,3 +655,7 @@ def intdiv(left, right):
 def mod_(left, right):
     """Left modulo right."""
     return left.to_integer().clone().imod(right.to_integer())
+
+
+# conversions to type
+TYPE_TO_CONV = {STR: pass_string, INT: cint_, SNG: csng_, DBL: cdbl_}
