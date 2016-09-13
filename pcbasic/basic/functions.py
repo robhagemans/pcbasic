@@ -21,27 +21,26 @@ from . import expressions
 class Functions(object):
     """BASIC functions."""
 
-    def __init__(self, parser):
+    def __init__(self):
         """Initialise function context."""
-        self.parser = parser
-        self.session = parser.session
-        self.values = self.session.values
 
-    def init_functions(self):
+    def init_functions(self, session):
         """Initialise functions."""
+        self.session = session
+        self.values = self.session.values
         self._with_presign = {
             tk.USR: {
-                None: (1, self.session.machine.usr_, values.SNG),
-                tk.C_0: (1, self.session.machine.usr_, values.SNG),
-                tk.C_1: (1, self.session.machine.usr_, values.SNG),
-                tk.C_2: (1, self.session.machine.usr_, values.SNG),
-                tk.C_3: (1, self.session.machine.usr_, values.SNG),
-                tk.C_4: (1, self.session.machine.usr_, values.SNG),
-                tk.C_5: (1, self.session.machine.usr_, values.SNG),
-                tk.C_6: (1, self.session.machine.usr_, values.SNG),
-                tk.C_7: (1, self.session.machine.usr_, values.SNG),
-                tk.C_8: (1, self.session.machine.usr_, values.SNG),
-                tk.C_9: (1, self.session.machine.usr_, values.SNG),
+                None: (1, session.machine.usr_, values.SNG),
+                tk.C_0: (1, session.machine.usr_, values.SNG),
+                tk.C_1: (1, session.machine.usr_, values.SNG),
+                tk.C_2: (1, session.machine.usr_, values.SNG),
+                tk.C_3: (1, session.machine.usr_, values.SNG),
+                tk.C_4: (1, session.machine.usr_, values.SNG),
+                tk.C_5: (1, session.machine.usr_, values.SNG),
+                tk.C_6: (1, session.machine.usr_, values.SNG),
+                tk.C_7: (1, session.machine.usr_, values.SNG),
+                tk.C_8: (1, session.machine.usr_, values.SNG),
+                tk.C_9: (1, session.machine.usr_, values.SNG),
             },
             tk.IOCTL: {
                 '$': (None, self.value_ioctl, None),
@@ -53,8 +52,8 @@ class Functions(object):
                 '$': (None, self.value_input, None),
             },
             tk.ERDEV: {
-                '$': (1, self.session.devices.erdev_str_, values.STR),
-                None: (1, self.session.devices.erdev_, values.INT),
+                '$': (1, session.devices.erdev_str_, values.STR),
+                None: (1, session.devices.erdev_, values.INT),
             },
             tk.VARPTR: {
                 '$': (None, self.value_varptr_str, None),
@@ -62,27 +61,27 @@ class Functions(object):
             },
         }
         self._bare = {
-            tk.SCREEN: (3, self.session.screen.screen_fn_, None, (values.cint_, values.cint_, values.cint_), True),
+            tk.SCREEN: (3, session.screen.screen_fn_, None, (values.cint_, values.cint_, values.cint_), True),
             tk.FN: (None, self.value_fn, None),
-            tk.ERL: (0, self.parser.erl_, values.SNG),
-            tk.ERR: (0, self.parser.err_, values.INT),
+            tk.ERL: (0, session.parser.erl_, values.SNG),
+            tk.ERR: (0, session.parser.err_, values.INT),
             tk.STRING: (None, self.value_string, None),
             tk.INSTR: (None, self.value_instr, None),
-            tk.CSRLIN: (0, self.session.screen.csrlin_, values.INT),
-            tk.POINT: (2, self.session.screen.point_, None, (values.cint_, values.cint_), True),
-            tk.INKEY: (0, self.session.keyboard.get_char, values.STR),
+            tk.CSRLIN: (0, session.screen.csrlin_, values.INT),
+            tk.POINT: (2, session.screen.point_, None, (values.cint_, values.cint_), True),
+            tk.INKEY: (0, session.keyboard.get_char, values.STR),
             tk.CVI: (1, values.cvi_, None),
             tk.CVS: (1, values.cvs_, None),
             tk.CVD: (1, values.cvd_, None),
             tk.MKI: (1, values.mki_, None),
             tk.MKS: (1, values.mks_, None),
             tk.MKD: (1, values.mkd_, None),
-            tk.EXTERR: (1, self.session.devices.exterr_, values.INT),
-            tk.DATE: (0, self.session.clock.date_fn_, values.STR),
-            tk.TIME: (0, self.session.clock.time_fn_, values.STR),
-            tk.PLAY: (1, self.session.sound.play_fn_, values.INT),
-            tk.TIMER: (0, self.session.clock.timer_, values.SNG),
-            tk.PMAP: (2, self.session.screen.pmap_, (values.cint_, values.cint_), False),
+            tk.EXTERR: (1, session.devices.exterr_, values.INT),
+            tk.DATE: (0, session.clock.date_fn_, values.STR),
+            tk.TIME: (0, session.clock.time_fn_, values.STR),
+            tk.PLAY: (1, session.sound.play_fn_, values.INT),
+            tk.TIMER: (0, session.clock.timer_, values.SNG),
+            tk.PMAP: (2, session.screen.pmap_, (values.cint_, values.cint_), False),
             tk.LEFT: (2, values.left_, None, (values.pass_string, values.cint_), False),
             tk.RIGHT: (2, values.right_, None, (values.pass_string, values.cint_), False),
             tk.MID: (3, values.mid_, None, (values.pass_string, values.cint_, values.cint_), True),
@@ -97,29 +96,29 @@ class Functions(object):
             tk.COS: (1, values.cos_, None),
             tk.TAN: (1, values.tan_, None),
             tk.ATN: (1, values.atn_, None),
-            tk.FRE: (1, self.session.memory.fre_, values.SNG),
-            tk.INP: (1, self.session.machine.inp_, values.INT),
-            tk.POS: (1, self.session.screen.pos_, values.INT),
+            tk.FRE: (1, session.memory.fre_, values.SNG),
+            tk.INP: (1, session.machine.inp_, values.INT),
+            tk.POS: (1, session.screen.pos_, values.INT),
             tk.LEN: (1, values.len_, None),
             tk.STR: (1, values.str_, None),
             tk.VAL: (1, values.val_, None),
             tk.ASC: (1, values.asc_, None),
             tk.CHR: (1, values.chr_, None),
-            tk.PEEK: (1, self.session.all_memory.peek_, values.INT),
+            tk.PEEK: (1, session.all_memory.peek_, values.INT),
             tk.SPACE: (1, values.space_, None),
             tk.OCT: (1, values.oct_, None),
             tk.HEX: (1, values.hex_, None),
-            tk.LPOS: (1, self.session.files.lpos_, values.INT),
+            tk.LPOS: (1, session.files.lpos_, values.INT),
             tk.CINT: (1, values.cint_, None),
             tk.CSNG: (1, values.csng_, None),
             tk.CDBL: (1, values.cdbl_, None),
             tk.FIX: (1, values.fix_, None),
-            tk.PEN: (1, self.session.events.pen.pen_, values.INT),
-            tk.STICK: (1, self.session.stick.stick_, values.INT),
-            tk.STRIG: (1, self.session.stick.strig_, values.INT),
-            tk.EOF: (1, self.session.files.eof_, values.INT),
-            tk.LOC: (1, self.session.files.loc_, values.SNG),
-            tk.LOF: (1, self.session.files.lof_, values.SNG),
+            tk.PEN: (1, session.events.pen.pen_, values.INT),
+            tk.STICK: (1, session.stick.stick_, values.INT),
+            tk.STRIG: (1, session.stick.strig_, values.INT),
+            tk.EOF: (1, session.files.eof_, values.INT),
+            tk.LOC: (1, session.files.loc_, values.SNG),
+            tk.LOF: (1, session.files.lof_, values.SNG),
         }
         self._functions = set(self._with_presign.keys() + self._bare.keys())
 

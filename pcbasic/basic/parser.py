@@ -44,7 +44,7 @@ class Parser(object):
         self.error_num = 0
         self.error_pos = 0
         self.statements = statements.Statements(self)
-        self.functions = functions.Functions(self)
+        self.functions = functions.Functions()
 
     def init_error_trapping(self):
         """Initialise error trapping."""
