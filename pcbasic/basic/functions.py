@@ -15,6 +15,8 @@ from . import dos
 from . import error
 from . import tokens as tk
 
+from . import expressions
+
 
 class Functions(object):
     """BASIC functions."""
@@ -159,7 +161,7 @@ class Functions(object):
             return self.values.from_value(fn(), to_type)
         elif narity == 1:
             ins.require_read(('(',))
-            val = self.parser.parse_expression(ins)
+            val = self.parse_expression(ins)
             ins.require_read((')',))
             if to_type:
                 return self.values.from_value(fn(val), to_type)
@@ -181,14 +183,21 @@ class Functions(object):
         seps = (('(',),) + ((',',),) * (len(conversions)-1)
         for conv, sep in zip(conversions[:-1], seps[:-1]):
             ins.require_read(sep)
-            arg.append(conv(self.parser.parse_expression(ins)))
+            arg.append(conv(self.parse_expression(ins)))
         if ins.skip_blank_read_if(seps[-1]):
-            arg.append(conversions[-1](self.parser.parse_expression(ins)))
+            arg.append(conversions[-1](self.parse_expression(ins)))
         elif not optional:
             raise error.RunError(error.STX)
         if arg:
             ins.require_read((')',))
         return arg
+
+    #D
+    def parse_expression(self, ins):
+        """Compute the value of the expression at the current code pointer."""
+        expr = expressions.Expression(self.values,
+                self.session.memory, self.session.program, self).parse(ins)
+        return expr.evaluate()
 
     ###########################################################
     # special cases
@@ -207,11 +216,18 @@ class Functions(object):
         ins.require_read(('(',))
         if ins.skip_blank_read_if(('#',)):
             # params holds a number
-            params = values.to_int(self.parser.parse_expression(ins))
+            params = values.to_int(self.parse_expression(ins))
             error.range_check(0, 255, params)
         else:
             # params holds a tuple
-            params = self.parser.parse_variable(ins)
+            name = ins.read_name()
+            error.throw_if(not name, error.STX)
+            # this is an evaluation-time determination
+            # as we could have passed another DEFtype statement
+            name = self.session.memory.complete_name(name)
+            indices = expressions.Expression(self.values,
+                self.session.memory, self.session.program, self).parse_indices(ins)
+            params = name, indices
         ins.require_read((')',))
         var_ptr = self.session.memory.varptr_(params)
         return self.values.from_value(var_ptr, values.INT)
@@ -219,7 +235,13 @@ class Functions(object):
     def value_varptr_str(self, ins):
         """VARPTR$: get memory address for variable."""
         ins.require_read(('(',))
-        name, indices = self.parser.parse_variable(ins)
+        name = ins.read_name()
+        error.throw_if(not name, error.STX)
+        # this is an evaluation-time determination
+        # as we could have passed another DEFtype statement
+        name = self.session.memory.complete_name(name)
+        indices = expressions.Expression(self.values,
+                self.session.memory, self.session.program, self).parse_indices(ins)
         ins.require_read((')',))
         var_ptr_str = self.session.memory.varptr_str_(name, indices)
         return self.values.from_value(var_ptr_str, values.STR)
@@ -228,7 +250,7 @@ class Functions(object):
         """IOCTL$: read device control string response; not implemented."""
         ins.require_read(('(',))
         ins.skip_blank_read_if(('#',))
-        num = values.to_int(self.parser.parse_expression(ins))
+        num = values.to_int(self.parse_expression(ins))
         error.range_check(0, 255, num)
         ins.require_read((')',))
         return self.session.files.ioctl_(num)
@@ -237,16 +259,16 @@ class Functions(object):
         """INSTR: find substring in string."""
         ins.require_read(('(',))
         # followed by comma so empty will raise STX
-        s = self.parser.parse_expression(ins)
+        s = self.parse_expression(ins)
         start = 1
         if isinstance(s, values.Number):
             start = values.to_int(s)
             error.range_check(1, 255, start)
             ins.require_read((',',))
-            s = self.parser.parse_expression(ins)
+            s = self.parse_expression(ins)
         big = values.pass_string(s)
         ins.require_read((',',))
-        s = self.parser.parse_expression(ins)
+        s = self.parse_expression(ins)
         small = values.pass_string(s)
         ins.require_read((')',))
         return values.instr_(start, big, small)
@@ -254,7 +276,7 @@ class Functions(object):
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
         if ins.skip_blank_read_if(('(',)):
-            val = self.parser.parse_expression(ins)
+            val = self.parse_expression(ins)
             ins.require_read((')',))
             return self.session.randomiser.rnd(values.csng_(val))
         else:
@@ -263,10 +285,10 @@ class Functions(object):
     def value_string(self, ins):
         """STRING$: repeat characters."""
         ins.require_read(('(',))
-        n = values.to_int(self.parser.parse_expression(ins))
+        n = values.to_int(self.parse_expression(ins))
         error.range_check(0, 255, n)
         ins.require_read((',',))
-        asc_value_or_char = self.parser.parse_expression(ins)
+        asc_value_or_char = self.parse_expression(ins)
         if isinstance(asc_value_or_char, values.Integer):
             error.range_check(0, 255, asc_value_or_char.to_int())
         ins.require_read((')',))
@@ -275,12 +297,12 @@ class Functions(object):
     def value_input(self, ins):
         """INPUT$: get characters from the keyboard or a file."""
         ins.require_read(('(',))
-        num = values.to_int(self.parser.parse_expression(ins))
+        num = values.to_int(self.parse_expression(ins))
         error.range_check(1, 255, num)
         infile = self.session.devices.kybd_file
         if ins.skip_blank_read_if((',',)):
             ins.skip_blank_read_if(('#',))
-            num = values.to_int(self.parser.parse_expression(ins))
+            num = values.to_int(self.parse_expression(ins))
             error.range_check(0, 255, num)
             infile = self.session.files.get(num)
         ins.require_read((')',))
