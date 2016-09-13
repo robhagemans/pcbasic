@@ -28,6 +28,10 @@ class UserFunctions(object):
 
     def define(self, fnname, ins):
         """Define a function."""
+        # don't allow DEF FN in direct mode, as we point to the code in the stored program
+        # this is raised before further syntax errors
+        if ins != self._program.bytecode:
+            raise error.RunError(error.ILLEGAL_DIRECT)
         pointer_loc = self._memory.code_start + ins.tell()
         fntype = fnname[-1]
         # read parameters

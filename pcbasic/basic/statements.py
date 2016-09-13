@@ -1931,10 +1931,6 @@ class Statements(object):
     def exec_def_fn(self, ins):
         """DEF FN: define a function."""
         fnname = self.parser.parse_scalar(ins)
-        # GW doesn't allow DEF FN in direct mode, neither do we
-        # this is raised before further syntax errors
-        if not self.parser.run_mode:
-            raise error.RunError(error.ILLEGAL_DIRECT)
         ins.skip_blank()
         self.session.user_functions.define(fnname, ins)
 
