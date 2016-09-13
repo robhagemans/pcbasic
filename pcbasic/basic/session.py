@@ -132,7 +132,7 @@ class Session(object):
         self.memory.set_buffers(
                 self.program, self.scalars, self.arrays, self.strings, self.values)
         # user-defined functions
-        self.user_functions = userfunctions.UserFunctions(self.program, self.memory, self.scalars, self.values)
+        self.user_functions = userfunctions.UserFunctionManager(self.memory, self.values)
         # prepare input methods
         self.pen = inputmethods.Pen(self.screen)
         self.stick = inputmethods.Stick()
@@ -475,7 +475,7 @@ class Session(object):
                 self.common_arrays = set()
             self.memory.clear_variables(self.common_scalars, self.common_arrays)
             # functions are cleared except when CHAIN ... ALL is specified
-            self.user_functions = userfunctions.UserFunctions(self.program, self.memory, self.scalars, self.values)
+            self.user_functions = userfunctions.UserFunctionManager(self.memory, self.values)
         if not preserve_deftype:
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
             self.memory.clear_deftype()

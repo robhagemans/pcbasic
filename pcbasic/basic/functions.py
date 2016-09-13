@@ -206,9 +206,15 @@ class Functions(object):
         fnname = ins.read_name()
         # must not be empty
         error.throw_if(not fnname, error.STX)
-        # append sigil, if missing
-        fnname = self.session.memory.complete_name(fnname)
-        return self.session.user_functions.value(fnname, self, ins)
+        # obtain function
+        fn = self.session.user_functions.get(fnname)
+        # read variables
+        conversions = fn.get_conversions()
+        if conversions:
+            args = self.parse_argument_list(ins, conversions, optional=False)
+        else:
+            args = ()
+        return fn.evaluate(self, *args)
 
     def value_varptr(self, ins):
         """VARPTR: get memory address for variable or FCB."""

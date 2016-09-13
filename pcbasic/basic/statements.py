@@ -1930,6 +1930,10 @@ class Statements(object):
 
     def exec_def_fn(self, ins):
         """DEF FN: define a function."""
+        # don't allow DEF FN in direct mode, as we point to the code in the stored program
+        # this is raised before further syntax errors
+        if not self.parser.run_mode:
+            raise error.RunError(error.ILLEGAL_DIRECT)
         fnname = self.parser.parse_scalar(ins)
         ins.skip_blank()
         self.session.user_functions.define(fnname, ins)
