@@ -119,8 +119,6 @@ class Session(object):
         self.scalars = scalars.Scalars(self.memory, self.values)
         # array space
         self.arrays = arrays.Arrays(self.memory, self.values)
-        # user-defined functions
-        self.user_functions = userfunctions.UserFunctions(self.memory, self.scalars, self.values)
         # prepare tokeniser
         token_keyword = tk.TokenKeywordDict(syntax, option_debug)
         self.tokeniser = tokeniser.Tokeniser(self.values, token_keyword)
@@ -133,6 +131,8 @@ class Session(object):
         # register all data segment users
         self.memory.set_buffers(
                 self.program, self.scalars, self.arrays, self.strings, self.values)
+        # user-defined functions
+        self.user_functions = userfunctions.UserFunctions(self.program, self.memory, self.scalars, self.values)
         # prepare input methods
         self.pen = inputmethods.Pen(self.screen)
         self.stick = inputmethods.Stick()
@@ -475,7 +475,7 @@ class Session(object):
                 self.common_arrays = set()
             self.memory.clear_variables(self.common_scalars, self.common_arrays)
             # functions are cleared except when CHAIN ... ALL is specified
-            self.user_functions = userfunctions.UserFunctions(self.memory, self.scalars, self.values)
+            self.user_functions = userfunctions.UserFunctions(self.program, self.memory, self.scalars, self.values)
         if not preserve_deftype:
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
             self.memory.clear_deftype()

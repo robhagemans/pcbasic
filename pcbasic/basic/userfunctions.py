@@ -16,11 +16,12 @@ from . import tokens as tk
 class UserFunctions(object):
     """User-defined functions."""
 
-    def __init__(self, memory, scalars, values):
+    def __init__(self, program, memory, scalars, values):
         """Initialise functions."""
         self._code = {}
         # state variable for detecting recursion
         self._parsing = set()
+        self._program = program
         self._memory = memory
         self._scalars = scalars
         self._values = values
@@ -43,14 +44,9 @@ class UserFunctions(object):
                 ins.require_read((',',))
             ins.require_read((')',))
         # read code
-        fncode = ''
         ins.require_read((tk.O_EQ,)) #=
-        startloc = ins.tell()
+        self._code[fnname] = fnvars, ins.tell()
         ins.skip_to(tk.END_STATEMENT)
-        endloc = ins.tell()
-        ins.seek(startloc)
-        fncode = ins.read(endloc - startloc)
-        self._code[fnname] = fnvars, fncode
         # update memory model
         # allocate function pointer
         pointer = struct.pack('<H', pointer_loc) + bytearray(values.size_bytes(fntype)-2)
@@ -63,8 +59,9 @@ class UserFunctions(object):
 
     def value(self, fnname, functions, ins):
         """Parse a function."""
+        # parse/evaluate arguments
         try:
-            varnames, fncode = self._code[fnname]
+            varnames, start_loc = self._code[fnname]
         except KeyError:
             raise error.RunError(error.UNDEFINED_USER_FUNCTION)
         # read variables
@@ -76,6 +73,7 @@ class UserFunctions(object):
         # recursion is not allowed as there's no way to terminate it
         if fnname in self._parsing:
             raise error.RunError(error.OUT_OF_MEMORY)
+        # parse/evaluate function expression
         # save existing vars
         varsave = {}
         for name in varnames:
@@ -89,13 +87,13 @@ class UserFunctions(object):
             self._scalars.set(name, value)
         # set recursion flag
         self._parsing.add(fnname)
+        save_loc = self._program.bytecode.tell()
         try:
-            # parse and evaluate the function code
-            fns = codestream.TokenisedStream(fncode)
-            fns.seek(0)
-            value = functions.parse_expression(fns)
+            self._program.bytecode.seek(start_loc)
+            value = functions.parse_expression(self._program.bytecode)
             return values.to_type(fnname[-1], value)
         finally:
+            self._program.bytecode.seek(save_loc)
             # unset recursion flag
             self._parsing.remove(fnname)
             # restore existing vars
