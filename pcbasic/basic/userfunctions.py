@@ -65,7 +65,7 @@ class UserFunctions(object):
             name = self._memory.complete_name(name)
             self._scalars.set(name)
 
-    def value(self, fnname, parser, ins):
+    def value(self, fnname, functions, ins):
         """Parse a function."""
         # recursion is not allowed as there's no way to terminate it
         if fnname in self._parsing:
@@ -84,7 +84,7 @@ class UserFunctions(object):
         if ins.skip_blank_read_if(('(',)):
             exprs = []
             while True:
-                exprs.append(parser.parse_expression(ins))
+                exprs.append(functions.parse_expression(ins))
                 if not ins.skip_blank_read_if((',',)):
                     break
             if len(exprs) != len(varnames):
@@ -99,7 +99,7 @@ class UserFunctions(object):
         fns.seek(0)
         self._parsing.add(fnname)
         try:
-            value = parser.parse_expression(fns)
+            value = functions.parse_expression(fns)
             return values.to_type(fnname[-1], value)
         finally:
             self._parsing.remove(fnname)
