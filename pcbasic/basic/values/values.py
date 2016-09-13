@@ -67,11 +67,11 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
 def match_types(left, right):
     """Check if variables are numeric and convert to highest-precision."""
     if isinstance(left, numbers.Double) or isinstance(right, numbers.Double):
-        return left.to_double(), right.to_double()
+        return cdbl_(left), cdbl_(right)
     elif isinstance(left, numbers.Single) or isinstance(right, numbers.Single):
-        return left.to_single(), right.to_single()
+        return csng_(left), csng_(right)
     elif isinstance(left, numbers.Integer) or isinstance(right, numbers.Integer):
-        return left.to_integer(), right.to_integer()
+        return cint_(left), cint_(right)
     elif isinstance(left, strings.String) or isinstance(right, strings.String):
         return pass_string(left), pass_string(right)
     raise TypeError('%s or %s is not of class Value.' % (type(left), type(right)))
