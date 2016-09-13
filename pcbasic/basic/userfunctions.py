@@ -25,12 +25,9 @@ class UserFunctions(object):
         self._scalars = scalars
         self._values = values
 
-    def define(self, fnname, parser, ins, pointer_loc):
+    def define(self, fnname, ins):
         """Define a function."""
-        # GW doesn't allow DEF FN in direct mode, neither do we
-        # this is raised before syntax errors
-        if not parser.run_mode:
-            raise error.RunError(error.ILLEGAL_DIRECT)
+        pointer_loc = self._memory.code_start + ins.tell()
         fntype = fnname[-1]
         # read parameters
         fnvars = []
@@ -39,8 +36,7 @@ class UserFunctions(object):
                 name = ins.read_name()
                 # must not be empty
                 error.throw_if(not name, error.STX)
-                # append sigil, if missing
-                #name = self.session.memory.complete_name(name)
+                # do not append sigil here yet, level until evaluation time
                 fnvars.append(name)
                 if ins.skip_blank() in tk.END_STATEMENT + (')',):
                     break

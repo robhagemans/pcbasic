@@ -1931,9 +1931,12 @@ class Statements(object):
     def exec_def_fn(self, ins):
         """DEF FN: define a function."""
         fnname = self.parser.parse_scalar(ins)
+        # GW doesn't allow DEF FN in direct mode, neither do we
+        # this is raised before further syntax errors
+        if not self.parser.run_mode:
+            raise error.RunError(error.ILLEGAL_DIRECT)
         ins.skip_blank()
-        pointer_loc = self.session.memory.code_start + ins.tell()
-        self.session.user_functions.define(fnname, self.parser, ins, pointer_loc)
+        self.session.user_functions.define(fnname, ins)
 
     def exec_randomize(self, ins):
         """RANDOMIZE: set random number generator seed."""
