@@ -16,22 +16,32 @@ from . import tokens as tk
 class UserFunctions(object):
     """User-defined functions."""
 
-    def __init__(self, scalars, values):
+    def __init__(self, memory, scalars, values):
         """Initialise functions."""
         self._code = {}
         # state variable for detecting recursion
         self._parsing = set()
+        self._memory = memory
         self._scalars = scalars
         self._values = values
 
     def define(self, fnname, parser, ins, pointer_loc):
         """Define a function."""
+        # GW doesn't allow DEF FN in direct mode, neither do we
+        # this is raised before syntax errors
+        if not parser.run_mode:
+            raise error.RunError(error.ILLEGAL_DIRECT)
         fntype = fnname[-1]
         # read parameters
         fnvars = []
         if ins.skip_blank_read_if(('(',)):
             while True:
-                fnvars.append(parser.parse_scalar(ins))
+                name = ins.read_name()
+                # must not be empty
+                error.throw_if(not name, error.STX)
+                # append sigil, if missing
+                #name = self.session.memory.complete_name(name)
+                fnvars.append(name)
                 if ins.skip_blank() in tk.END_STATEMENT + (')',):
                     break
                 ins.require_read((',',))
@@ -44,10 +54,6 @@ class UserFunctions(object):
         endloc = ins.tell()
         ins.seek(startloc)
         fncode = ins.read(endloc - startloc)
-        if not parser.run_mode:
-            # GW doesn't allow DEF FN in direct mode, neither do we
-            # (for no good reason, works fine)
-            raise error.RunError(error.ILLEGAL_DIRECT)
         self._code[fnname] = fnvars, fncode
         # update memory model
         # allocate function pointer
@@ -56,6 +62,7 @@ class UserFunctions(object):
         self._scalars.set(chr(128+ord(fnname[0])) + fnname[1:], self._values.from_bytes(pointer))
         for name in fnvars:
             # allocate but don't set variables
+            name = self._memory.complete_name(name)
             self._scalars.set(name)
 
     def value(self, fnname, parser, ins):
@@ -83,6 +90,8 @@ class UserFunctions(object):
             if len(exprs) != len(varnames):
                 raise error.RunError(error.STX)
             for name, value in zip(varnames, exprs):
+                # append sigil, if missing
+                name = self._memory.complete_name(name)
                 self._scalars.set(name, value)
             ins.require_read((')',))
         # execute the code
