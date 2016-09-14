@@ -16,6 +16,14 @@ from . import error
 from . import values
 
 
+# AIMS
+# separate expression parsing from statement parsing (done)
+# separate parsing from evaluation (ExpressionParser creates Expression, which can then evaluate)
+# difficulty: reproduce sequence of errors (syntax checks during evaluation)
+# complete the implementation of action callbacks (get var, pointer, file)
+# remove Functions class and/or combine with UserFunctions
+
+
 class Expression(object):
     """Expression stack."""
 
@@ -28,6 +36,10 @@ class Expression(object):
         self._program = program
         # for action callbacks
         self._functions = functions
+
+    def new(self):
+        """Create new expression object."""
+        return Expression(self._values, self._memory, self._program, self._functions)
 
     def parse(self, ins):
         """Build stacks from tokenised expression."""
@@ -80,7 +92,7 @@ class Expression(object):
                 # we need to create a new object or we'll overwrite our own stacks
                 # this will not be needed if we localise stacks in the expression parser
                 # either a separate class of just as local variables
-                expr = Expression(self._values, self._memory, self._program, self._functions).parse(ins)
+                expr = self.new().parse(ins)
                 self._units.append(expr.evaluate())
                 ins.require_read((')',))
             elif d and d in string.ascii_letters:
@@ -163,7 +175,7 @@ class Expression(object):
             # it's an array, read indices
             while True:
                 # new Expression object, see above
-                expr = Expression(self._values, self._memory, self._program, self._functions).parse(ins)
+                expr = self.new().parse(ins)
                 indices.append(values.to_int(expr.evaluate()))
                 if not ins.skip_blank_read_if((',',)):
                     break
