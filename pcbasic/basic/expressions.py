@@ -22,6 +22,7 @@ from . import values
 # difficulty: reproduce sequence of errors (syntax checks during evaluation)
 # complete the implementation of action callbacks (get var, pointer, file)
 # remove Functions class and/or combine with UserFunctions
+# perhaps Functions (holding callbacks and user function state) should become ExpressionParser/ExpressionManager
 
 
 class Expression(object):

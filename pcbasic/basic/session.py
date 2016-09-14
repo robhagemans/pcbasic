@@ -475,7 +475,7 @@ class Session(object):
                 self.common_arrays = set()
             self.memory.clear_variables(self.common_scalars, self.common_arrays)
             # functions are cleared except when CHAIN ... ALL is specified
-            self.user_functions = userfunctions.UserFunctionManager(self.memory, self.values)
+            self.user_functions.clear()
         if not preserve_deftype:
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
             self.memory.clear_deftype()

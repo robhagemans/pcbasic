@@ -81,6 +81,10 @@ class UserFunctionManager(object):
         """Check if a function of the given (complete) name exists."""
         return self._memory.complete_name(name) in self._code
 
+    def clear(self):
+        """Clear all user-defined functions."""
+        self._fn_dict.clear()
+
     def get(self, fnname):
         """Retrieve function by name."""
         # append sigil, if missing
