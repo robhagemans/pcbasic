@@ -2125,9 +2125,7 @@ class Statements(object):
         else:
             with self.parser.temp_string:
                 if d in string.digits or d in tk.NUMBER:
-                    expr = expressions.Expression(self.values,
-                            self.session.memory, self.session.program,
-                            self.parser.functions).read_number_literal(ins)
+                    expr = self.parser.expression_parser.read_number_literal(ins)
                 else:
                     expr = self.parser.parse_expression(ins)
                 if isinstance(expr, values.String):

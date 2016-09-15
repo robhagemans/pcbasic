@@ -178,7 +178,7 @@ class Session(object):
                             self.screen, self.keyboard, self.screen.fonts[8],
                             self.parser, peek_values, syntax)
         # build function table (depends on Memory having been initialised)
-        self.parser.functions.init_functions(self)
+        self.parser.expression_parser.init_functions(self)
         # set up debugger
         if option_debug:
             self.debugger = debug.Debugger(self)
@@ -206,7 +206,7 @@ class Session(object):
         """Unpickle and resume the session."""
         self.__dict__.update(pickle_dict)
         # build function table (depends on Memory having been initialised)
-        self.parser.functions.init_functions(self)
+        self.parser.expression_parser.init_functions(self)
         self.keyboard._input_closed = False
         # suppress double prompt
         if not self._parse_mode:

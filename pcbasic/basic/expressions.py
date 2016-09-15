@@ -32,177 +32,28 @@ from . import dos
 #   def OperationNode.evaluate(self):
 #       args = (arg.evaluate() for arg in self._args)
 #       return self._oper(*args)
+#
+# in the code below, this could be implemented by replacing evaluate steps
+# operation[token](*args) --> OperationNode(token, args)
+# adding the OperationNodes to the unit stack as we currently do values
+# when popped off the stack, they end up in the tree (through the argument list)
+# but are not yet evaluated.
 
 
-class Expression(object):
-    """Expression stack."""
+class ExpressionParser(object):
+    """Expression parser."""
 
-    def __init__(self, values, memory, program, functions):
+    def __init__(self, values, memory, program):
         """Initialise empty expression."""
         self._values = values
         # for variable retrieval
         self._memory = memory
         # for code strings
         self._program = program
-        # for action callbacks
-        self._functions = functions
-
-    def new(self):
-        """Create new expression object."""
-        return Expression(self._values, self._memory, self._program, self._functions)
-
-    def parse(self, ins):
-        """Build stacks from tokenised expression."""
-        self._stack = deque()
-        self._units = deque()
-        self._final = True
-        # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
-        d = ''
-        while True:
-            last = d
-            ins.skip_blank()
-            d = ins.read_keyword_token()
-            ins.seek(-len(d), 1)
-            if d == tk.NOT and not (last in op.OPERATORS or last == ''):
-                # unary NOT ends expression except after another operator or at start
-                break
-            elif d in op.OPERATORS:
-                ins.read(len(d))
-                prec = op.PRECEDENCE[d]
-                # get combined operators such as >=
-                if d in op.COMBINABLE:
-                    nxt = ins.skip_blank()
-                    if nxt in op.COMBINABLE:
-                        d += ins.read(len(nxt))
-                if last in op.OPERATORS or last == '' or d == tk.NOT:
-                    # also if last is ( but that leads to recursive call and last == ''
-                    nargs = 1
-                    # zero operands for a binary operator is always syntax error
-                    # because it will be seen as an illegal unary
-                    try:
-                        oper = op.UNARY[d]
-                    except KeyError:
-                        raise error.RunError(error.STX)
-                else:
-                    nargs = 2
-                    try:
-                        oper = op.BINARY[d]
-                        self._drain(prec)
-                    except (KeyError, IndexError):
-                        # illegal combined ops like == raise syntax error
-                        # incomplete expression also raises syntax error
-                        raise error.RunError(error.STX)
-                self._stack.append((oper, nargs, prec))
-            elif not (last in op.OPERATORS or last == ''):
-                # repeated unit ends expression
-                # repeated literals or variables or non-keywords like 'AS'
-                break
-            elif d == '(':
-                ins.read(len(d))
-                # we need to create a new object or we'll overwrite our own stacks
-                # this will not be needed if we localise stacks in the expression parser
-                # either a separate class of just as local variables
-                expr = self.new().parse(ins)
-                self._units.append(expr.evaluate())
-                ins.require_read((')',))
-            elif d and d in string.ascii_letters:
-                name = ins.read_name()
-                error.throw_if(not name, error.STX)
-                indices = self.parse_indices(ins)
-                self._units.append(self._memory.get_variable(name, indices))
-            elif d in self._functions:
-                self._units.append(self._functions.parse_function(ins, d))
-            elif d in tk.END_STATEMENT:
-                break
-            elif d in tk.END_EXPRESSION:
-                # missing operand inside brackets or before comma is syntax error
-                self._final = False
-                break
-            elif d == '"':
-                self._units.append(self.read_string_literal(ins))
-            else:
-                self._units.append(self.read_number_literal(ins))
-        return self
-
-    def _drain(self, precedence):
-        """Drain evaluation stack until an operator of low precedence on top."""
-        while self._stack:
-            # this raises IndexError if there are not enough operators
-            if precedence > self._stack[-1][2]:
-                break
-            oper, narity, _ = self._stack.pop()
-            args = reversed([self._units.pop() for _ in range(narity)])
-            self._units.append(oper(*args))
-
-    def evaluate(self):
-        """Evaluate expression and return result."""
-        # raises IndexError for insufficient operators
-        try:
-            self._drain(0)
-            return self._units[0]
-        except IndexError:
-            # empty expression is a syntax error (inside brackets)
-            # or Missing Operand (in an assignment)
-            if self._final:
-                raise error.RunError(error.MISSING_OPERAND)
-            raise error.RunError(error.STX)
-
-
-    def read_string_literal(self, ins):
-        """Read a quoted string literal (no leading blanks), return as String."""
-        # record the address of the first byte of the string's payload
-        if ins == self._program.bytecode:
-            address = ins.tell() + 1 + self._memory.code_start
-        else:
-            address = None
-        value = ins.read_string().strip('"')
-        # if this is a program, create a string pointer to code space
-        # don't reserve space in string memory
-        return self._values.from_str_at(value, address)
-
-    def read_number_literal(self, ins):
-        """Return the value of a numeric literal (no leading blanks)."""
-        d = ins.peek()
-        # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
-        # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
-        if d in string.digits:
-            return self._values.from_repr(ins.read_number(), allow_nonnum=False)
-        # number literals
-        elif d in tk.NUMBER:
-            return self._values.from_token(ins.read_number_token())
-        elif d == tk.T_UINT:
-            # gw-basic allows adding line numbers to numbers
-            # convert to signed integer
-            value = struct.unpack('<h', ins.read(2))[0]
-            return self._values.new_integer().from_int(value)
-        else:
-            raise error.RunError(error.STX)
-
-    def parse_indices(self, ins):
-        """Parse array indices."""
-        indices = []
-        if ins.skip_blank_read_if(('[', '(')):
-            # it's an array, read indices
-            while True:
-                # new Expression object, see above
-                expr = self.new().parse(ins)
-                indices.append(values.to_int(expr.evaluate()))
-                if not ins.skip_blank_read_if((',',)):
-                    break
-            ins.require_read((']', ')'))
-        return indices
-
-
-class Functions(object):
-    """BASIC functions."""
-
-    def __init__(self):
-        """Initialise function context."""
 
     def init_functions(self, session):
         """Initialise functions."""
         self.session = session
-        self.values = self.session.values
         self._with_presign = {
             tk.USR: {
                 None: (1, session.machine.usr_, values.SNG),
@@ -309,13 +160,143 @@ class Functions(object):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
 
-    def __contains__(self, token):
-        """Check if a token is a function token."""
-        return token in self._functions
 
+    def parse(self, ins):
+        """Parse and evaluate tokenised expression."""
+        stack = deque()
+        units = deque()
+        final = True
+        # see https://en.wikipedia.org/wiki/Shunting-yard_algorithm
+        d = ''
+        while True:
+            last = d
+            ins.skip_blank()
+            d = ins.read_keyword_token()
+            ins.seek(-len(d), 1)
+            if d == tk.NOT and not (last in op.OPERATORS or last == ''):
+                # unary NOT ends expression except after another operator or at start
+                break
+            elif d in op.OPERATORS:
+                ins.read(len(d))
+                prec = op.PRECEDENCE[d]
+                # get combined operators such as >=
+                if d in op.COMBINABLE:
+                    nxt = ins.skip_blank()
+                    if nxt in op.COMBINABLE:
+                        d += ins.read(len(nxt))
+                if last in op.OPERATORS or last == '' or d == tk.NOT:
+                    # also if last is ( but that leads to recursive call and last == ''
+                    nargs = 1
+                    # zero operands for a binary operator is always syntax error
+                    # because it will be seen as an illegal unary
+                    try:
+                        oper = op.UNARY[d]
+                    except KeyError:
+                        raise error.RunError(error.STX)
+                else:
+                    nargs = 2
+                    try:
+                        oper = op.BINARY[d]
+                        self._drain(prec, stack, units)
+                    except (KeyError, IndexError):
+                        # illegal combined ops like == raise syntax error
+                        # incomplete expression also raises syntax error
+                        raise error.RunError(error.STX)
+                stack.append((oper, nargs, prec))
+            elif not (last in op.OPERATORS or last == ''):
+                # repeated unit ends expression
+                # repeated literals or variables or non-keywords like 'AS'
+                break
+            elif d == '(':
+                ins.read(len(d))
+                # we need to create a new object or we'll overwrite our own stacks
+                # this will not be needed if we localise stacks in the expression parser
+                # either a separate class of just as local variables
+                units.append(self.parse(ins))
+                ins.require_read((')',))
+            elif d and d in string.ascii_letters:
+                name = ins.read_name()
+                error.throw_if(not name, error.STX)
+                indices = self.parse_indices(ins)
+                units.append(self._memory.get_variable(name, indices))
+            elif d in self._functions:
+                units.append(self.parse_function(ins, d))
+            elif d in tk.END_STATEMENT:
+                break
+            elif d in tk.END_EXPRESSION:
+                # missing operand inside brackets or before comma is syntax error
+                final = False
+                break
+            elif d == '"':
+                units.append(self.read_string_literal(ins))
+            else:
+                units.append(self.read_number_literal(ins))
+        # raises IndexError for insufficient operators
+        try:
+            self._drain(0, stack, units)
+            return units[0]
+        except IndexError:
+            # empty expression is a syntax error (inside brackets)
+            # or Missing Operand (in an assignment)
+            if final:
+                raise error.RunError(error.MISSING_OPERAND)
+            raise error.RunError(error.STX)
+
+    def _drain(self, precedence, stack, units):
+        """Drain evaluation stack until an operator of low precedence on top."""
+        while stack:
+            # this raises IndexError if there are not enough operators
+            if precedence > stack[-1][2]:
+                break
+            oper, narity, _ = stack.pop()
+            args = reversed([units.pop() for _ in range(narity)])
+            units.append(oper(*args))
+
+    def read_string_literal(self, ins):
+        """Read a quoted string literal (no leading blanks), return as String."""
+        # record the address of the first byte of the string's payload
+        if ins == self._program.bytecode:
+            address = ins.tell() + 1 + self._memory.code_start
+        else:
+            address = None
+        value = ins.read_string().strip('"')
+        # if this is a program, create a string pointer to code space
+        # don't reserve space in string memory
+        return self._values.from_str_at(value, address)
+
+    def read_number_literal(self, ins):
+        """Return the value of a numeric literal (no leading blanks)."""
+        d = ins.peek()
+        # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
+        # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
+        if d in string.digits:
+            return self._values.from_repr(ins.read_number(), allow_nonnum=False)
+        # number literals
+        elif d in tk.NUMBER:
+            return self._values.from_token(ins.read_number_token())
+        elif d == tk.T_UINT:
+            # gw-basic allows adding line numbers to numbers
+            # convert to signed integer
+            value = struct.unpack('<h', ins.read(2))[0]
+            return self._values.new_integer().from_int(value)
+        else:
+            raise error.RunError(error.STX)
+
+    def parse_indices(self, ins):
+        """Parse array indices."""
+        indices = []
+        if ins.skip_blank_read_if(('[', '(')):
+            # it's an array, read indices
+            while True:
+                expr = self.parse(ins)
+                indices.append(values.to_int(expr))
+                if not ins.skip_blank_read_if((',',)):
+                    break
+            ins.require_read((']', ')'))
+        return indices
 
     ###########################################################
-    # generalised calls
+    # function handling
 
     def parse_function(self, ins, token):
         """Parse a function starting with the given token."""
@@ -332,13 +313,13 @@ class Functions(object):
                 raise error.RunError(error.STX)
         narity, fn, to_type = fn_record[:3]
         if narity == 0:
-            return self.values.from_value(fn(), to_type)
+            return self._values.from_value(fn(), to_type)
         elif narity == 1:
             ins.require_read(('(',))
-            val = self.parse_expression(ins)
+            val = self.parse(ins)
             ins.require_read((')',))
             if to_type:
-                return self.values.from_value(fn(val), to_type)
+                return self._values.from_value(fn(val), to_type)
             else:
                 return fn(val)
         elif narity > 1:
@@ -357,21 +338,14 @@ class Functions(object):
         seps = (('(',),) + ((',',),) * (len(conversions)-1)
         for conv, sep in zip(conversions[:-1], seps[:-1]):
             ins.require_read(sep)
-            arg.append(conv(self.parse_expression(ins)))
+            arg.append(conv(self.parse(ins)))
         if ins.skip_blank_read_if(seps[-1]):
-            arg.append(conversions[-1](self.parse_expression(ins)))
+            arg.append(conversions[-1](self.parse(ins)))
         elif not optional:
             raise error.RunError(error.STX)
         if arg:
             ins.require_read((')',))
         return arg
-
-    #D
-    def parse_expression(self, ins):
-        """Compute the value of the expression at the current code pointer."""
-        expr = Expression(self.values,
-                self.session.memory, self.session.program, self).parse(ins)
-        return expr.evaluate()
 
     ###########################################################
     # special cases
@@ -396,7 +370,7 @@ class Functions(object):
         ins.require_read(('(',))
         if ins.skip_blank_read_if(('#',)):
             # params holds a number
-            params = values.to_int(self.parse_expression(ins))
+            params = values.to_int(self.parse(ins))
             error.range_check(0, 255, params)
         else:
             # params holds a tuple
@@ -405,12 +379,11 @@ class Functions(object):
             # this is an evaluation-time determination
             # as we could have passed another DEFtype statement
             name = self.session.memory.complete_name(name)
-            indices = Expression(self.values,
-                self.session.memory, self.session.program, self).parse_indices(ins)
+            indices = self.parse_indices(ins)
             params = name, indices
         ins.require_read((')',))
         var_ptr = self.session.memory.varptr_(params)
-        return self.values.from_value(var_ptr, values.INT)
+        return self._values.from_value(var_ptr, values.INT)
 
     def value_varptr_str(self, ins):
         """VARPTR$: get memory address for variable."""
@@ -420,17 +393,16 @@ class Functions(object):
         # this is an evaluation-time determination
         # as we could have passed another DEFtype statement
         name = self.session.memory.complete_name(name)
-        indices = Expression(self.values,
-                self.session.memory, self.session.program, self).parse_indices(ins)
+        indices = self.parse_indices(ins)
         ins.require_read((')',))
         var_ptr_str = self.session.memory.varptr_str_(name, indices)
-        return self.values.from_value(var_ptr_str, values.STR)
+        return self._values.from_value(var_ptr_str, values.STR)
 
     def value_ioctl(self, ins):
         """IOCTL$: read device control string response; not implemented."""
         ins.require_read(('(',))
         ins.skip_blank_read_if(('#',))
-        num = values.to_int(self.parse_expression(ins))
+        num = values.to_int(self.parse(ins))
         error.range_check(0, 255, num)
         ins.require_read((')',))
         return self.session.files.ioctl_(num)
@@ -439,16 +411,16 @@ class Functions(object):
         """INSTR: find substring in string."""
         ins.require_read(('(',))
         # followed by comma so empty will raise STX
-        s = self.parse_expression(ins)
+        s = self.parse(ins)
         start = 1
         if isinstance(s, values.Number):
             start = values.to_int(s)
             error.range_check(1, 255, start)
             ins.require_read((',',))
-            s = self.parse_expression(ins)
+            s = self.parse(ins)
         big = values.pass_string(s)
         ins.require_read((',',))
-        s = self.parse_expression(ins)
+        s = self.parse(ins)
         small = values.pass_string(s)
         ins.require_read((')',))
         return values.instr_(start, big, small)
@@ -456,7 +428,7 @@ class Functions(object):
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
         if ins.skip_blank_read_if(('(',)):
-            val = self.parse_expression(ins)
+            val = self.parse(ins)
             ins.require_read((')',))
             return self.session.randomiser.rnd(values.csng_(val))
         else:
@@ -465,10 +437,10 @@ class Functions(object):
     def value_string(self, ins):
         """STRING$: repeat characters."""
         ins.require_read(('(',))
-        n = values.to_int(self.parse_expression(ins))
+        n = values.to_int(self.parse(ins))
         error.range_check(0, 255, n)
         ins.require_read((',',))
-        asc_value_or_char = self.parse_expression(ins)
+        asc_value_or_char = self.parse(ins)
         if isinstance(asc_value_or_char, values.Integer):
             error.range_check(0, 255, asc_value_or_char.to_int())
         ins.require_read((')',))
@@ -477,14 +449,14 @@ class Functions(object):
     def value_input(self, ins):
         """INPUT$: get characters from the keyboard or a file."""
         ins.require_read(('(',))
-        num = values.to_int(self.parse_expression(ins))
+        num = values.to_int(self.parse(ins))
         error.range_check(1, 255, num)
         infile = self.session.devices.kybd_file
         if ins.skip_blank_read_if((',',)):
             ins.skip_blank_read_if(('#',))
-            num = values.to_int(self.parse_expression(ins))
+            num = values.to_int(self.parse(ins))
             error.range_check(0, 255, num)
             infile = self.session.files.get(num)
         ins.require_read((')',))
         word = infile.input_(num)
-        return self.values.from_value(word, values.STR)
+        return self._values.from_value(word, values.STR)

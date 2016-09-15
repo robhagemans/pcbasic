@@ -31,7 +31,7 @@ class UserFunction(object):
         # read variables
         return [values.TYPE_TO_CONV[self._memory.complete_name(name)[-1]] for name in self._varnames]
 
-    def evaluate(self, functions, *args):
+    def evaluate(self, expression_parser, *args):
         """Evaluate user-defined function."""
         # parse/evaluate arguments
         # recursion is not allowed as there's no way to terminate it
@@ -54,7 +54,7 @@ class UserFunction(object):
         save_loc = self._codestream.tell()
         try:
             self._codestream.seek(self._start_loc)
-            value = functions.parse_expression(self._codestream)
+            value = expression_parser.parse(self._codestream)
             return values.to_type(self._sigil, value)
         finally:
             self._codestream.seek(save_loc)
@@ -79,7 +79,7 @@ class UserFunctionManager(object):
 
     def __contains__(self, name):
         """Check if a function of the given (complete) name exists."""
-        return self._memory.complete_name(name) in self._code
+        return self._memory.complete_name(name) in self._fn_dict
 
     def clear(self):
         """Clear all user-defined functions."""

@@ -12,7 +12,6 @@ import struct
 from . import error
 from . import tokens as tk
 from . import statements
-from . import functions
 from . import values
 from . import expressions
 from . import codestream
@@ -44,7 +43,8 @@ class Parser(object):
         self.error_num = 0
         self.error_pos = 0
         self.statements = statements.Statements(self)
-        self.functions = expressions.Functions()
+        self.expression_parser = expressions.ExpressionParser(
+            self.values, session.memory, session.program)
 
     def init_error_trapping(self):
         """Initialise error trapping."""
@@ -343,7 +343,6 @@ class Parser(object):
         error.range_check(0, 255, number)
         return number
 
-
     def parse_scalar(self, ins):
         """Get scalar part of variable name from token stream."""
         name = ins.read_name()
@@ -359,12 +358,8 @@ class Parser(object):
         # this is an evaluation-time determination
         # as we could have passed another DEFtype statement
         name = self.session.memory.complete_name(name)
-        indices = expressions.Expression(self.values,
-            self.session.memory, self.session.program, self.functions
-            ).parse_indices(ins)
+        indices = self.expression_parser.parse_indices(ins)
         return name, indices
-
-
 
     @staticmethod
     def parse_jumpnum(ins):
@@ -386,6 +381,4 @@ class Parser(object):
         """Compute the value of the expression at the current code pointer."""
         if allow_empty and ins.skip_blank() in tk.END_EXPRESSION:
             return None
-        expr = expressions.Expression(self.values,
-                self.session.memory, self.session.program, self.functions).parse(ins)
-        return expr.evaluate()
+        return self.expression_parser.parse(ins)
