@@ -242,11 +242,23 @@ def swap_var(name1, index1, name2, index2):
 
 def erase_array(name):
     """ Remove an array from memory. """
-    try:
-        del state.basic_state.arrays[name]
-    except KeyError:
-        # illegal fn call
+    if name not in state.basic_state.arrays:
+        # IFC if array does not exist
         raise error.RunError(error.IFC)
+    dimensions = state.basic_state.arrays[name][0]
+    record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
+    freed_bytes = array_len(dimensions) * var_size_bytes(name) + record_len
+    erased_name_ptr, _ = state.basic_state.array_memory[name]
+    # delete buffers
+    del state.basic_state.arrays[name]
+    del state.basic_state.array_memory[name]
+    # update memory model
+    for name in state.basic_state.array_memory:
+        name_ptr, array_ptr = state.basic_state.array_memory[name]
+        if name_ptr > erased_name_ptr:
+            state.basic_state.array_memory[name] = name_ptr - freed_bytes, array_ptr - freed_bytes
+    state.basic_state.array_current -= freed_bytes
+
 
 def index_array(index, dimensions):
     """ Return the flat index for a given dimensioned index. """
