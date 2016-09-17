@@ -45,13 +45,24 @@ class Arrays(object):
 
     def erase(self, name):
         """Remove an array from memory."""
-        try:
-            del self._dims[name]
-            del self._buffers[name]
-            del self._cache[name]
-        except KeyError:
-            # illegal fn call
+        if name not in self._dims:
+            # IFC if array does not exist
             raise error.RunError(error.IFC)
+        dimensions = self._dims[name]
+        record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
+        freed_bytes = self.array_len(dimensions) * values.size_bytes(name) + record_len
+        erased_name_ptr, _ = self._array_memory[name]
+        # delete buffers
+        del self._dims[name]
+        del self._buffers[name]
+        del self._cache[name]
+        del self._array_memory[name]
+        # update memory model
+        for name in self._array_memory:
+            name_ptr, array_ptr = self._array_memory[name]
+            if name_ptr > erased_name_ptr:
+                self._array_memory[name] = name_ptr - freed_bytes, array_ptr - freed_bytes
+        self.current -= freed_bytes
 
     def index(self, index, dimensions):
         """Return the flat index for a given dimensioned index."""
