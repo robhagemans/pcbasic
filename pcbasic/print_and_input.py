@@ -15,6 +15,7 @@ import util
 import console
 import devices
 import vartypes
+import state
 
 
 class InputTextFile(devices.TextFileBase):
@@ -39,6 +40,9 @@ def input_console(prompt, readvar, newline):
     # we return a list of (name, indices, values) tuples
     while True:
         console.write(prompt)
+        # disconnect the wrap between line with the prompt and previous line
+        if state.console_state.row > 1:
+            state.console_state.screen.apage.row[state.console_state.row-2].wrap = False
         line = console.wait_screenline(write_endl=newline)
         inputstream = InputTextFile(line)
         # read the values and group them and the separators
