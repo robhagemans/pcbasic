@@ -157,7 +157,7 @@ class Editor(object):
             # while only a line break appears on the console
             self.screen.write_line()
             raise
-        # get contents and of the logical line
+        # get contents of the logical line
         if from_start:
             outstr = self._get_logical_line(self.screen.current_row)
         else:

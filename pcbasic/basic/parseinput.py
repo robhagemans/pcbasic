@@ -78,6 +78,9 @@ def input_console(editor, value_handler, prompt, readvar, newline):
     # we return a list of (name, indices, values) tuples
     while True:
         editor.screen.write(prompt)
+        # disconnect the wrap between line with the prompt and previous line
+        if editor.screen.current_row > 1:
+            editor.screen.apage.row[editor.screen.current_row-2].wrap = False
         line = editor.wait_screenline(write_endl=newline)
         inputstream = InputTextFile(line)
         # read the values and group them and the separators
