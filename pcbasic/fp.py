@@ -427,8 +427,9 @@ class Float(object):
             return cls.zero
         neg = value < 0
         fexp = math.log(abs(value), 2) - cls.mantissa_bits
-        man = int(abs(value) * 0.5**int(fexp-8))
-        exp = int(fexp) + cls.bias
+        exp = int(fexp)
+        man = int(abs(value) * 0.5**(exp-8))
+        exp += cls.bias
         return cls(neg, man, exp).normalise()
 
 
