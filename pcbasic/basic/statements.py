@@ -1936,7 +1936,7 @@ class Statements(object):
             raise error.RunError(error.ILLEGAL_DIRECT)
         fnname = self.parser.parse_scalar(ins)
         ins.skip_blank()
-        self.session.user_functions.define(fnname, ins)
+        self.parser.expression_parser.user_functions.define(fnname, ins)
 
     def exec_randomize(self, ins):
         """RANDOMIZE: set random number generator seed."""

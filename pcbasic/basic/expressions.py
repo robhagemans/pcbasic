@@ -17,6 +17,7 @@ from . import tokens as tk
 from . import error
 from . import values
 from . import dos
+from . import userfunctions
 
 
 
@@ -51,6 +52,8 @@ class ExpressionParser(object):
         self._memory = memory
         # for code strings
         self._program = program
+        # user-defined functions
+        self.user_functions = userfunctions.UserFunctionManager(memory, values)
 
     def init_functions(self, session):
         """Initialise functions."""
@@ -160,7 +163,6 @@ class ExpressionParser(object):
     def __setstate__(self, pickle_dict):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
-
 
     def parse(self, ins):
         """Parse and evaluate tokenised expression."""
@@ -357,7 +359,7 @@ class ExpressionParser(object):
         # must not be empty
         error.throw_if(not fnname, error.STX)
         # obtain function
-        fn = self.session.user_functions.get(fnname)
+        fn = self.user_functions.get(fnname)
         # read variables
         conversions = fn.get_conversions()
         if conversions:
