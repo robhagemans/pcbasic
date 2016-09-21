@@ -1936,7 +1936,7 @@ class Statements(object):
             raise error.RunError(error.ILLEGAL_DIRECT)
         fnname = self.parser.parse_scalar(ins)
         ins.skip_blank()
-        self.parser.expression_parser.user_functions.define(fnname, ins)
+        self.session.expression_parser.user_functions.define(fnname, ins)
 
     def exec_randomize(self, ins):
         """RANDOMIZE: set random number generator seed."""
@@ -2125,7 +2125,7 @@ class Statements(object):
         else:
             with self.parser.temp_string:
                 if d in string.digits or d in tk.NUMBER:
-                    expr = self.parser.expression_parser.read_number_literal(ins)
+                    expr = self.session.expression_parser.read_number_literal(ins)
                 else:
                     expr = self.parser.parse_expression(ins)
                 if isinstance(expr, values.String):

@@ -13,7 +13,6 @@ from . import error
 from . import tokens as tk
 from . import statements
 from . import values
-from . import expressions
 from . import codestream
 
 
@@ -43,8 +42,7 @@ class Parser(object):
         self.error_num = 0
         self.error_pos = 0
         self.statements = statements.Statements(self)
-        self.expression_parser = expressions.ExpressionParser(
-            self.values, session.memory, session.program)
+        self.expression_parser = session.expression_parser
 
     def init_error_trapping(self):
         """Initialise error trapping."""

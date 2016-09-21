@@ -330,6 +330,8 @@ class DataSegment(object):
         """VARPTR: Get address of variable."""
         if isinstance(params, tuple):
             name, indices = params
+            # this is an evaluation-time determination
+            # as we could have passed another DEFtype statement
             name = self.complete_name(name)
             try:
                 if indices == []:

@@ -37,6 +37,7 @@ from . import codepage as cp
 from . import scalars
 from . import arrays
 from . import values
+from . import expressions
 
 
 class Session(object):
@@ -166,6 +167,9 @@ class Session(object):
         self._set_parse_mode(False)
         # direct line buffer
         self.direct_line = codestream.TokenisedStream()
+        # initialise the expression parser
+        self.expression_parser = expressions.ExpressionParser(
+                self.values, self.memory, self.program)
         # initialise the parser
         self.events.reset()
         self.parser = parser.Parser(self, syntax, pcjr_term)
@@ -175,7 +179,7 @@ class Session(object):
                             self.screen, self.keyboard, self.screen.fonts[8],
                             self.parser, peek_values, syntax)
         # build function table (depends on Memory having been initialised)
-        self.parser.expression_parser.init_functions(self)
+        self.expression_parser.init_functions(self)
         # set up debugger
         if option_debug:
             self.debugger = debug.Debugger(self)
@@ -203,7 +207,7 @@ class Session(object):
         """Unpickle and resume the session."""
         self.__dict__.update(pickle_dict)
         # build function table (depends on Memory having been initialised)
-        self.parser.expression_parser.init_functions(self)
+        self.expression_parser.init_functions(self)
         self.keyboard._input_closed = False
         # suppress double prompt
         if not self._parse_mode:
@@ -472,7 +476,7 @@ class Session(object):
                 self.common_arrays = set()
             self.memory.clear_variables(self.common_scalars, self.common_arrays)
             # functions are cleared except when CHAIN ... ALL is specified
-            self.parser.expression_parser.user_functions.clear()
+            self.expression_parser.user_functions.clear()
         if not preserve_deftype:
             # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
             self.memory.clear_deftype()

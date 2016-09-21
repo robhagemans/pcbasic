@@ -24,8 +24,6 @@ from . import userfunctions
 # AIMS
 # complete the implementation of action callbacks (get var, pointer, file)
 # remove the session member
-#       - move user_functions member from Session to ExpressionParser
-#       - move expression_parser member from Parser to Session
 #       implement callbacks for RND
 
 # separate parsing from evaluation (ExpressionParser creates Expression, which can then evaluate)
@@ -379,9 +377,6 @@ class ExpressionParser(object):
             # params holds a tuple
             name = ins.read_name()
             error.throw_if(not name, error.STX)
-            # this is an evaluation-time determination
-            # as we could have passed another DEFtype statement
-            name = self._memory.complete_name(name)
             indices = self.parse_indices(ins)
             params = name, indices
         ins.require_read((')',))
@@ -393,9 +388,6 @@ class ExpressionParser(object):
         ins.require_read(('(',))
         name = ins.read_name()
         error.throw_if(not name, error.STX)
-        # this is an evaluation-time determination
-        # as we could have passed another DEFtype statement
-        name = self._memory.complete_name(name)
         indices = self.parse_indices(ins)
         ins.require_read((')',))
         var_ptr_str = self._memory.varptr_str_(name, indices)
