@@ -221,7 +221,7 @@ class ExpressionParser(object):
                 indices = self.parse_indices(ins)
                 units.append(self._memory.get_variable(name, indices))
             elif d in self._functions:
-                units.append(self.parse_function(ins, d))
+                units.append(self._parse_function(ins, d))
             elif d in tk.END_STATEMENT:
                 break
             elif d in tk.END_EXPRESSION:
@@ -297,9 +297,9 @@ class ExpressionParser(object):
         return indices
 
     ###########################################################
-    # function handling
+    # function and argument handling
 
-    def parse_function(self, ins, token):
+    def _parse_function(self, ins, token):
         """Parse a function starting with the given token."""
         ins.read(len(token))
         if token in self._bare:
@@ -327,12 +327,12 @@ class ExpressionParser(object):
             conv, optional = fn_record[3:]
             # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
             # while unary functions generate it *afterwards*. this is to match GW-BASIC
-            return fn(*self.parse_argument_list(ins, conv, optional))
+            return fn(*self._parse_argument_list(ins, conv, optional))
         else:
             # special cases
             return fn(ins)
 
-    def parse_argument_list(self, ins, conversions, optional=False):
+    def _parse_argument_list(self, ins, conversions, optional=False):
         """Parse a comma-separated list of arguments and apply type conversions."""
         # required separators
         arg = []
@@ -348,6 +348,13 @@ class ExpressionParser(object):
             ins.require_read((')',))
         return arg
 
+    def _parse_file_number(self, ins):
+        """Read a file number."""
+        ins.skip_blank_read_if(('#',))
+        number = values.to_int(self.parse(ins))
+        error.range_check(0, 255, number)
+        return number
+
     ###########################################################
     # special cases
 
@@ -361,7 +368,7 @@ class ExpressionParser(object):
         # read variables
         conversions = fn.get_conversions()
         if conversions:
-            args = self.parse_argument_list(ins, conversions, optional=False)
+            args = self._parse_argument_list(ins, conversions, optional=False)
         else:
             args = ()
         return fn.evaluate(self, *args)
@@ -379,10 +386,9 @@ class ExpressionParser(object):
     def value_varptr(self, ins):
         """VARPTR: get memory address for variable or FCB."""
         ins.require_read(('(',))
-        if ins.skip_blank_read_if(('#',)):
+        if ins.skip_blank() == '#':
             # params holds a number
-            params = values.to_int(self.parse(ins))
-            error.range_check(0, 255, params)
+            params = self._parse_file_number(ins)
             error.throw_if(params > self.session.files.max_files, error.BAD_FILE_NUMBER)
         else:
             # params holds a tuple
@@ -397,9 +403,7 @@ class ExpressionParser(object):
     def value_ioctl(self, ins):
         """IOCTL$: read device control string response; not implemented."""
         ins.require_read(('(',))
-        ins.skip_blank_read_if(('#',))
-        num = values.to_int(self.parse(ins))
-        error.range_check(0, 255, num)
+        num = self._parse_file_number(ins)
         # raise BAD FILE NUMBER if the file is not open
         infile = self.session.files.get(num)
         ins.require_read((')',))
@@ -412,9 +416,7 @@ class ExpressionParser(object):
         error.range_check(1, 255, num)
         infile = None
         if ins.skip_blank_read_if((',',)):
-            ins.skip_blank_read_if(('#',))
-            num = values.to_int(self.parse(ins))
-            error.range_check(0, 255, num)
+            num = self._parse_file_number(ins)
             # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
             infile = self.session.files.get(num, mode='IR', not_open=error.BAD_FILE_MODE)
         ins.require_read((')',))
