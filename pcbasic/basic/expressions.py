@@ -43,19 +43,20 @@ from . import userfunctions
 class ExpressionParser(object):
     """Expression parser."""
 
-    def __init__(self, values, memory, program):
+    def __init__(self, values, memory, program, files):
         """Initialise empty expression."""
         self._values = values
         # for variable retrieval
         self._memory = memory
         # for code strings
         self._program = program
+        # for file number checks
+        self._files = files
         # user-defined functions
         self.user_functions = userfunctions.UserFunctionManager(memory, values)
 
     def init_functions(self, session):
         """Initialise functions."""
-        self.session = session
         self._with_presign = {
             tk.USR: {
                 None: (1, session.machine.usr_, values.SNG),
@@ -149,6 +150,84 @@ class ExpressionParser(object):
             tk.LOF: (1, session.files.lof_, values.SNG),
         }
         self._functions = set(self._with_presign.keys() + self._bare.keys())
+        self._callbacks = {
+            tk.USR: session.machine.usr_,
+            tk.USR + tk.C_0: session.machine.usr_,
+            tk.USR + tk.C_1: session.machine.usr_,
+            tk.USR + tk.C_2: session.machine.usr_,
+            tk.USR + tk.C_3: session.machine.usr_,
+            tk.USR + tk.C_4: session.machine.usr_,
+            tk.USR + tk.C_5: session.machine.usr_,
+            tk.USR + tk.C_6: session.machine.usr_,
+            tk.USR + tk.C_7: session.machine.usr_,
+            tk.USR + tk.C_8: session.machine.usr_,
+            tk.USR + tk.C_9: session.machine.usr_,
+            tk.IOCTL + '$': session.files.ioctl_,
+            tk.ENVIRON + '$': dos.environ_,
+            tk.INPUT + '$': session.files.input_,
+            tk.ERDEV: session.devices.erdev_,
+            tk.ERDEV + '$': session.devices.erdev_str_,
+            tk.VARPTR: session.memory.varptr_,
+            tk.VARPTR + '$': session.memory.varptr_str_,
+            tk.SCREEN: session.screen.screen_fn_,
+            tk.FN: None,
+            tk.ERL: session.parser.erl_,
+            tk.ERR: session.parser.err_,
+            tk.STRING: values.string_,
+            tk.INSTR: values.instr_,
+            tk.CSRLIN: session.screen.csrlin_,
+            tk.POINT: session.screen.point_,
+            tk.INKEY: session.keyboard.get_char,
+            tk.CVI: values.cvi_,
+            tk.CVS: values.cvs_,
+            tk.CVD: values.cvd_,
+            tk.MKI: values.mki_,
+            tk.MKS: values.mks_,
+            tk.MKD: values.mkd_,
+            tk.EXTERR: session.devices.exterr_,
+            tk.DATE: session.clock.date_fn_,
+            tk.TIME: session.clock.time_fn_,
+            tk.PLAY: session.sound.play_fn_,
+            tk.TIMER: session.clock.timer_,
+            tk.PMAP: session.screen.pmap_,
+            tk.LEFT: values.left_,
+            tk.RIGHT: values.right_,
+            tk.MID: values.mid_,
+            tk.SGN: values.sgn_,
+            tk.INT: values.int_,
+            tk.ABS: values.abs_,
+            tk.SQR: values.sqr_,
+            tk.RND: session.randomiser.rnd,
+            tk.SIN: values.sin_,
+            tk.LOG: values.log_,
+            tk.EXP: values.exp_,
+            tk.COS: values.cos_,
+            tk.TAN: values.tan_,
+            tk.ATN: values.atn_,
+            tk.FRE: session.memory.fre_,
+            tk.INP: session.machine.inp_,
+            tk.POS: session.screen.pos_,
+            tk.LEN: values.len_,
+            tk.STR: values.str_,
+            tk.VAL: values.val_,
+            tk.ASC: values.asc_,
+            tk.CHR: values.chr_,
+            tk.PEEK: session.all_memory.peek_,
+            tk.SPACE: values.space_,
+            tk.OCT: values.oct_,
+            tk.HEX: values.hex_,
+            tk.LPOS: session.files.lpos_,
+            tk.CINT: values.cint_,
+            tk.CSNG: values.csng_,
+            tk.CDBL: values.cdbl_,
+            tk.FIX: values.fix_,
+            tk.PEN: session.events.pen.pen_,
+            tk.STICK: session.stick.stick_,
+            tk.STRIG: session.stick.strig_,
+            tk.EOF: session.files.eof_,
+            tk.LOC: session.files.loc_,
+            tk.LOF: session.files.lof_,
+        }
 
     def __getstate__(self):
         """Pickle."""
@@ -156,6 +235,7 @@ class ExpressionParser(object):
         # functools.partial objects and functions can't be pickled
         pickle_dict['_bare'] = None
         pickle_dict['_with_presign'] = None
+        pickle_dict['_callbacks'] = None
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
@@ -380,7 +460,7 @@ class ExpressionParser(object):
         error.throw_if(not name, error.STX)
         indices = self.parse_indices(ins)
         ins.require_read((')',))
-        var_ptr_str = self._memory.varptr_str_(name, indices)
+        var_ptr_str = self._callbacks[tk.VARPTR + '$'](name, indices)
         return self._values.from_value(var_ptr_str, values.STR)
 
     def value_varptr(self, ins):
@@ -389,7 +469,7 @@ class ExpressionParser(object):
         if ins.skip_blank() == '#':
             # params holds a number
             params = self._parse_file_number(ins)
-            error.throw_if(params > self.session.files.max_files, error.BAD_FILE_NUMBER)
+            error.throw_if(params > self._files.max_files, error.BAD_FILE_NUMBER)
         else:
             # params holds a tuple
             name = ins.read_name()
@@ -397,7 +477,7 @@ class ExpressionParser(object):
             indices = self.parse_indices(ins)
             params = name, indices
         ins.require_read((')',))
-        var_ptr = self._memory.varptr_(params)
+        var_ptr = self._callbacks[tk.VARPTR](params)
         return self._values.from_value(var_ptr, values.INT)
 
     def value_ioctl(self, ins):
@@ -405,9 +485,9 @@ class ExpressionParser(object):
         ins.require_read(('(',))
         num = self._parse_file_number(ins)
         # raise BAD FILE NUMBER if the file is not open
-        infile = self.session.files.get(num)
+        infile = self._files.get(num)
         ins.require_read((')',))
-        return self.session.files.ioctl_(infile)
+        return self._callbacks[tk.IOCTL + '$'](infile)
 
     def value_input(self, ins):
         """INPUT$: get characters from the keyboard or a file."""
@@ -418,9 +498,9 @@ class ExpressionParser(object):
         if ins.skip_blank_read_if((',',)):
             num = self._parse_file_number(ins)
             # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
-            infile = self.session.files.get(num, mode='IR', not_open=error.BAD_FILE_MODE)
+            infile = self._files.get(num, mode='IR', not_open=error.BAD_FILE_MODE)
         ins.require_read((')',))
-        word = self.session.files.input_(infile, num)
+        word = self._callbacks[tk.INPUT + '$'](infile, num)
         return self._values.from_value(word, values.STR)
 
     def value_instr(self, ins):
@@ -439,7 +519,7 @@ class ExpressionParser(object):
         s = self.parse(ins)
         small = values.pass_string(s)
         ins.require_read((')',))
-        return values.instr_(start, big, small)
+        return self._callbacks[tk.INSTR](start, big, small)
 
     def value_string(self, ins):
         """STRING$: repeat characters."""
@@ -451,13 +531,13 @@ class ExpressionParser(object):
         if isinstance(asc_value_or_char, values.Integer):
             error.range_check(0, 255, asc_value_or_char.to_int())
         ins.require_read((')',))
-        return values.string_(asc_value_or_char, n)
+        return self._callbacks[tk.STRING](asc_value_or_char, n)
 
     def value_rnd(self, ins):
         """RND: get pseudorandom value."""
         if ins.skip_blank_read_if(('(',)):
             val = self.parse(ins)
             ins.require_read((')',))
-            return self.session.randomiser.rnd(values.csng_(val))
+            return self._callbacks[tk.RND](values.csng_(val))
         else:
-            return self.session.randomiser.rnd()
+            return self._callbacks[tk.RND]()

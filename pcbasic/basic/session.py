@@ -169,7 +169,7 @@ class Session(object):
         self.direct_line = codestream.TokenisedStream()
         # initialise the expression parser
         self.expression_parser = expressions.ExpressionParser(
-                self.values, self.memory, self.program)
+                self.values, self.memory, self.program, self.files)
         # initialise the parser
         self.events.reset()
         self.parser = parser.Parser(self, syntax, pcjr_term)
