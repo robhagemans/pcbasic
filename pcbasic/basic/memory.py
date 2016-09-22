@@ -342,7 +342,8 @@ class DataSegment(object):
                 raise error.RunError(error.IFC)
         else:
             filenum = params
-            if filenum < 1 or filenum > self.max_files:
+            # file number 0 is allowed for VARPTR
+            if filenum < 0 or filenum > self.max_files:
                 raise error.RunError(error.BAD_FILE_NUMBER)
             var_ptr = self.field_mem_base + filenum * self.field_mem_offset + 6
         if var_ptr > 0x7fff:

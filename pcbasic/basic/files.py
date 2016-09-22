@@ -131,12 +131,14 @@ class Files(object):
             logging.warning('Could not open standard I/O: %s', e)
             return self._open_null(filetype, mode)
 
-    def get(self, num, mode='IOAR'):
+    def get(self, num, mode='IOAR', not_open=error.BAD_FILE_NUMBER):
         """Get the file object for a file number and check allowed mode."""
+        if (num < 1):
+            raise error.RunError(error.BAD_FILE_NUMBER)
         try:
             the_file = self.files[num]
         except KeyError:
-            raise error.RunError(error.BAD_FILE_NUMBER)
+            raise error.RunError(not_open)
         if the_file.mode.upper() not in mode:
             raise error.RunError(error.BAD_FILE_MODE)
         return the_file
@@ -170,12 +172,16 @@ class Files(object):
             return printer.device_file.col
         return 1
 
-    def ioctl_(self, num):
+    def ioctl_(self, infile):
         """IOCTL$: read device control string response; not implemented."""
-        self.get(num)
         logging.warning("IOCTL$ function not implemented.")
         raise error.RunError(error.IFC)
 
+    def input_(self, file_obj, num_chars):
+        """INPUT$: read num chars from file."""
+        if file_obj is None:
+            file_obj = self.devices.kybd_file
+        return file_obj.input_(num_chars)
 
 
 ###############################################################################

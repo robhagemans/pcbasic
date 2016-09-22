@@ -373,6 +373,7 @@ class ExpressionParser(object):
             # params holds a number
             params = values.to_int(self.parse(ins))
             error.range_check(0, 255, params)
+            error.throw_if(params > self.session.files.max_files, error.BAD_FILE_NUMBER)
         else:
             # params holds a tuple
             name = ins.read_name()
@@ -399,8 +400,10 @@ class ExpressionParser(object):
         ins.skip_blank_read_if(('#',))
         num = values.to_int(self.parse(ins))
         error.range_check(0, 255, num)
+        # raise BAD FILE NUMBER if the file is not open
+        infile = self.session.files.get(num)
         ins.require_read((')',))
-        return self.session.files.ioctl_(num)
+        return self.session.files.ioctl_(infile)
 
     def value_instr(self, ins):
         """INSTR: find substring in string."""
@@ -446,12 +449,13 @@ class ExpressionParser(object):
         ins.require_read(('(',))
         num = values.to_int(self.parse(ins))
         error.range_check(1, 255, num)
-        infile = self.session.devices.kybd_file
+        infile = None
         if ins.skip_blank_read_if((',',)):
             ins.skip_blank_read_if(('#',))
             num = values.to_int(self.parse(ins))
             error.range_check(0, 255, num)
-            infile = self.session.files.get(num)
+            # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
+            infile = self.session.files.get(num, mode='IR', not_open=error.BAD_FILE_MODE)
         ins.require_read((')',))
-        word = infile.input_(num)
+        word = self.session.files.input_(infile, num)
         return self._values.from_value(word, values.STR)
