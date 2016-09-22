@@ -1566,7 +1566,7 @@ class Screen(object):
         mode = mode.to_int()
         error.range_check(0, 3, mode)
         if self.mode.is_text_mode:
-            return 0
+            return fvalue.from_value(0)
         if mode == 0:
             value, _ = self.drawing.get_window_physical(values.csng_(coord).to_value(), 0.)
             return fvalue.from_value(value)

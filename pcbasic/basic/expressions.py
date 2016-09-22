@@ -109,7 +109,7 @@ class ExpressionParser(object):
             tk.TIME: (0, session.clock.time_fn_, values.STR),
             tk.PLAY: (1, session.sound.play_fn_, values.INT),
             tk.TIMER: (0, session.clock.timer_, values.SNG),
-            tk.PMAP: (2, session.screen.pmap_, (values.cint_, values.cint_), False),
+            tk.PMAP: (2, session.screen.pmap_, None, (values.cint_, values.cint_), False),
             tk.LEFT: (2, values.left_, None, (values.pass_string, values.cint_), False),
             tk.RIGHT: (2, values.right_, None, (values.pass_string, values.cint_), False),
             tk.MID: (3, values.mid_, None, (values.pass_string, values.cint_, values.cint_), True),

@@ -441,6 +441,7 @@ class Float(Number):
         """Set to value of Python float."""
         if in_float == 0.:
             self._buffer[:] = b'\0' * self.size
+            return self
         neg = in_float < 0
         exp = int(math.log(abs(in_float), 2) - self._shift)
         man = int(abs(in_float) * 0.5**exp)
