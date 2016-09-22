@@ -366,6 +366,16 @@ class ExpressionParser(object):
             args = ()
         return fn.evaluate(self, *args)
 
+    def value_varptr_str(self, ins):
+        """VARPTR$: get memory address for variable."""
+        ins.require_read(('(',))
+        name = ins.read_name()
+        error.throw_if(not name, error.STX)
+        indices = self.parse_indices(ins)
+        ins.require_read((')',))
+        var_ptr_str = self._memory.varptr_str_(name, indices)
+        return self._values.from_value(var_ptr_str, values.STR)
+
     def value_varptr(self, ins):
         """VARPTR: get memory address for variable or FCB."""
         ins.require_read(('(',))
@@ -384,16 +394,6 @@ class ExpressionParser(object):
         var_ptr = self._memory.varptr_(params)
         return self._values.from_value(var_ptr, values.INT)
 
-    def value_varptr_str(self, ins):
-        """VARPTR$: get memory address for variable."""
-        ins.require_read(('(',))
-        name = ins.read_name()
-        error.throw_if(not name, error.STX)
-        indices = self.parse_indices(ins)
-        ins.require_read((')',))
-        var_ptr_str = self._memory.varptr_str_(name, indices)
-        return self._values.from_value(var_ptr_str, values.STR)
-
     def value_ioctl(self, ins):
         """IOCTL$: read device control string response; not implemented."""
         ins.require_read(('(',))
@@ -404,6 +404,22 @@ class ExpressionParser(object):
         infile = self.session.files.get(num)
         ins.require_read((')',))
         return self.session.files.ioctl_(infile)
+
+    def value_input(self, ins):
+        """INPUT$: get characters from the keyboard or a file."""
+        ins.require_read(('(',))
+        num = values.to_int(self.parse(ins))
+        error.range_check(1, 255, num)
+        infile = None
+        if ins.skip_blank_read_if((',',)):
+            ins.skip_blank_read_if(('#',))
+            num = values.to_int(self.parse(ins))
+            error.range_check(0, 255, num)
+            # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
+            infile = self.session.files.get(num, mode='IR', not_open=error.BAD_FILE_MODE)
+        ins.require_read((')',))
+        word = self.session.files.input_(infile, num)
+        return self._values.from_value(word, values.STR)
 
     def value_instr(self, ins):
         """INSTR: find substring in string."""
@@ -423,15 +439,6 @@ class ExpressionParser(object):
         ins.require_read((')',))
         return values.instr_(start, big, small)
 
-    def value_rnd(self, ins):
-        """RND: get pseudorandom value."""
-        if ins.skip_blank_read_if(('(',)):
-            val = self.parse(ins)
-            ins.require_read((')',))
-            return self.session.randomiser.rnd(values.csng_(val))
-        else:
-            return self.session.randomiser.rnd()
-
     def value_string(self, ins):
         """STRING$: repeat characters."""
         ins.require_read(('(',))
@@ -444,18 +451,11 @@ class ExpressionParser(object):
         ins.require_read((')',))
         return values.string_(asc_value_or_char, n)
 
-    def value_input(self, ins):
-        """INPUT$: get characters from the keyboard or a file."""
-        ins.require_read(('(',))
-        num = values.to_int(self.parse(ins))
-        error.range_check(1, 255, num)
-        infile = None
-        if ins.skip_blank_read_if((',',)):
-            ins.skip_blank_read_if(('#',))
-            num = values.to_int(self.parse(ins))
-            error.range_check(0, 255, num)
-            # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
-            infile = self.session.files.get(num, mode='IR', not_open=error.BAD_FILE_MODE)
-        ins.require_read((')',))
-        word = self.session.files.input_(infile, num)
-        return self._values.from_value(word, values.STR)
+    def value_rnd(self, ins):
+        """RND: get pseudorandom value."""
+        if ins.skip_blank_read_if(('(',)):
+            val = self.parse(ins)
+            ins.require_read((')',))
+            return self.session.randomiser.rnd(values.csng_(val))
+        else:
+            return self.session.randomiser.rnd()
