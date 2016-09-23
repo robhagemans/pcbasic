@@ -72,30 +72,30 @@ class ExpressionParser(object):
                 tk.C_9: (1, values.SNG),
             },
             tk.IOCTL: {
-                '$': (None, self.value_ioctl),
+                '$': (self.value_ioctl, None),
             },
             tk.ENVIRON: {
                 '$': (1, values.STR),
             },
             tk.INPUT: {
-                '$': (None, self.value_input),
+                '$': (self.value_input, values.STR),
             },
             tk.ERDEV: {
                 '$': (1, values.STR),
                 None: (1, values.INT),
             },
             tk.VARPTR: {
-                '$': (None, self.value_varptr_str),
-                None: (None, self.value_varptr),
+                '$': (self.value_varptr_str, values.STR),
+                None: (self.value_varptr, values.INT),
             },
         }
         self._bare = {
             tk.SCREEN: (3, None, (values.cint_, values.cint_, values.cint_), True),
-            tk.FN: (None, self.value_fn),
+            tk.FN: (self.value_fn, None),
             tk.ERL: (0, values.SNG),
             tk.ERR: (0, values.INT),
-            tk.STRING: (None, self.value_string),
-            tk.INSTR: (None, self.value_instr),
+            tk.STRING: (self.value_string, None),
+            tk.INSTR: (self.value_instr, None),
             tk.CSRLIN: (0, values.INT),
             tk.POINT: (2, None, (values.cint_, values.cint_), True),
             tk.INKEY: (0, values.STR),
@@ -118,7 +118,7 @@ class ExpressionParser(object):
             tk.INT: (1, None),
             tk.ABS: (1, None),
             tk.SQR: (1, None),
-            tk.RND: (None, self.value_rnd),
+            tk.RND: (self.value_rnd, None),
             tk.SIN: (1, None),
             tk.LOG: (1, None),
             tk.EXP: (1, None),
@@ -397,24 +397,24 @@ class ExpressionParser(object):
         narity, to_type = fn_record[:2]
         fn = self._callbacks[token]
         if narity == 0:
-            return self._values.from_value(fn(), to_type)
+            result = fn()
         elif narity == 1:
             ins.require_read(('(',))
             val = self.parse(ins)
             ins.require_read((')',))
-            if to_type:
-                return self._values.from_value(fn(val), to_type)
-            else:
-                return fn(val)
-        elif narity > 1:
+            result = fn(val)
+        elif narity in (2, 3):
             conv, optional = fn_record[2:]
             # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
             # while unary functions generate it *afterwards*. this is to match GW-BASIC
-            return fn(*self._parse_argument_list(ins, conv, optional))
+            result = fn(*self._parse_argument_list(ins, conv, optional))
         else:
-            fn = fn_record[1]
             # special cases
-            return fn(ins)
+            fn = fn_record[0]
+            result = fn(ins)
+        if to_type:
+            return self._values.from_value(result, to_type)
+        return result
 
     def _parse_argument_list(self, ins, conversions, optional=False):
         """Parse a comma-separated list of arguments and apply type conversions."""
@@ -464,8 +464,7 @@ class ExpressionParser(object):
         error.throw_if(not name, error.STX)
         indices = self.parse_indices(ins)
         ins.require_read((')',))
-        var_ptr_str = self._callbacks[tk.VARPTR + '$'](name, indices)
-        return self._values.from_value(var_ptr_str, values.STR)
+        return self._callbacks[tk.VARPTR + '$'](name, indices)
 
     def value_varptr(self, ins):
         """VARPTR: get memory address for variable or FCB."""
@@ -481,8 +480,7 @@ class ExpressionParser(object):
             indices = self.parse_indices(ins)
             params = name, indices
         ins.require_read((')',))
-        var_ptr = self._callbacks[tk.VARPTR](params)
-        return self._values.from_value(var_ptr, values.INT)
+        return self._callbacks[tk.VARPTR](params)
 
     def value_ioctl(self, ins):
         """IOCTL$: read device control string response; not implemented."""
@@ -504,8 +502,7 @@ class ExpressionParser(object):
             # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
             infile = self._files.get(num, mode='IR', not_open=error.BAD_FILE_MODE)
         ins.require_read((')',))
-        word = self._callbacks[tk.INPUT + '$'](infile, num)
-        return self._values.from_value(word, values.STR)
+        return self._callbacks[tk.INPUT + '$'](infile, num)
 
     def value_instr(self, ins):
         """INSTR: find substring in string."""
