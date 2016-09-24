@@ -412,7 +412,8 @@ class ExpressionParser(object):
             conv, optional = fn_record[2:]
             args = self._parse_argument_list(ins, conv, optional)
         elif token == tk.FN:
-            fn, args = self._parse_fn(ins)
+            fn, conv = self._parse_fn(ins)
+            args = self._parse_argument_list(ins, conv, optional=False)
         else:
             # special cases
             args = narity(ins)
@@ -432,6 +433,8 @@ class ExpressionParser(object):
         """Parse a comma-separated list of arguments and apply type conversions."""
         # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
         # while unary functions generate it *afterwards*. this is to match GW-BASIC
+        if not conversions:
+            return ()
         arg = []
         # required separators
         seps = (('(',),) + ((',',),) * (len(conversions)-1)
@@ -465,11 +468,7 @@ class ExpressionParser(object):
         fn = self.user_functions.get(fnname)
         # read variables
         conversions = fn.get_conversions()
-        if conversions:
-            args = self._parse_argument_list(ins, conversions, optional=False)
-        else:
-            args = ()
-        return fn.evaluate, args
+        return fn.evaluate, conversions
 
     def _parse_varptr_str(self, ins):
         """VARPTR$: get memory address for variable."""
