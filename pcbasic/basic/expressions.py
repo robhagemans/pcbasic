@@ -54,9 +54,13 @@ class ExpressionParser(object):
         self._files = files
         # user-defined functions
         self.user_functions = userfunctions.UserFunctionManager(memory, values, self)
+        # initialise syntax tables
+        self._init_syntax()
+        # callbacks must be initilised later
+        self._callbacks = {}
 
-    def init_functions(self, session):
-        """Initialise functions."""
+    def _init_syntax(self):
+        """Initialise function syntax tables."""
         self._with_presign = {
             tk.USR: {
                 None: (1, values.SNG),
@@ -150,6 +154,9 @@ class ExpressionParser(object):
             tk.LOF: (1, values.SNG),
         }
         self._functions = set(self._with_presign.keys() + self._bare.keys())
+
+    def init_functions(self, session):
+        """Initialise function callbacks."""
         self._callbacks = {
             tk.USR: session.machine.usr_,
             tk.USR + tk.C_0: session.machine.usr_,
@@ -241,6 +248,7 @@ class ExpressionParser(object):
     def __setstate__(self, pickle_dict):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
+        self._init_syntax()
 
     def parse(self, ins):
         """Parse and evaluate tokenised expression."""
