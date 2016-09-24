@@ -72,30 +72,30 @@ class ExpressionParser(object):
                 tk.C_9: (1, values.SNG),
             },
             tk.IOCTL: {
-                '$': (self.value_ioctl, None),
+                '$': (self._parse_ioctl, None),
             },
             tk.ENVIRON: {
                 '$': (1, values.STR),
             },
             tk.INPUT: {
-                '$': (self.value_input, values.STR),
+                '$': (self._parse_input, values.STR),
             },
             tk.ERDEV: {
                 '$': (1, values.STR),
                 None: (1, values.INT),
             },
             tk.VARPTR: {
-                '$': (self.value_varptr_str, values.STR),
-                None: (self.value_varptr, values.INT),
+                '$': (self._parse_varptr_str, values.STR),
+                None: (self._parse_varptr, values.INT),
             },
         }
         self._bare = {
             tk.SCREEN: (3, None, (values.cint_, values.cint_, values.cint_), True),
-            tk.FN: (self.value_fn, None),
+            tk.FN: (None, None),
             tk.ERL: (0, values.SNG),
             tk.ERR: (0, values.INT),
-            tk.STRING: (self.value_string, None),
-            tk.INSTR: (self.value_instr, None),
+            tk.STRING: (self._parse_string, None),
+            tk.INSTR: (self._parse_instr, None),
             tk.CSRLIN: (0, values.INT),
             tk.POINT: (2, None, (values.cint_, values.cint_), True),
             tk.INKEY: (0, values.STR),
@@ -118,7 +118,7 @@ class ExpressionParser(object):
             tk.INT: (1, None),
             tk.ABS: (1, None),
             tk.SQR: (1, None),
-            tk.RND: (self.value_rnd, None),
+            tk.RND: (self._parse_rnd, None),
             tk.SIN: (1, None),
             tk.LOG: (1, None),
             tk.EXP: (1, None),
@@ -408,10 +408,12 @@ class ExpressionParser(object):
             # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
             # while unary functions generate it *afterwards*. this is to match GW-BASIC
             result = fn(*self._parse_argument_list(ins, conv, optional))
+        elif token == tk.FN:
+            return self._evaluate_fn(ins)
         else:
             # special cases
-            fn = fn_record[0]
-            result = fn(ins)
+            args = narity(ins)
+            result = fn(*args)
         if to_type:
             return self._values.from_value(result, to_type)
         return result
@@ -442,7 +444,7 @@ class ExpressionParser(object):
     ###########################################################
     # special cases
 
-    def value_fn(self, ins):
+    def _evaluate_fn(self, ins):
         """FN: get value of user-defined function."""
         fnname = ins.read_name()
         # must not be empty
@@ -457,16 +459,16 @@ class ExpressionParser(object):
             args = ()
         return fn.evaluate(self, *args)
 
-    def value_varptr_str(self, ins):
+    def _parse_varptr_str(self, ins):
         """VARPTR$: get memory address for variable."""
         ins.require_read(('(',))
         name = ins.read_name()
         error.throw_if(not name, error.STX)
         indices = self.parse_indices(ins)
         ins.require_read((')',))
-        return self._callbacks[tk.VARPTR + '$'](name, indices)
+        return (name, indices)
 
-    def value_varptr(self, ins):
+    def _parse_varptr(self, ins):
         """VARPTR: get memory address for variable or FCB."""
         ins.require_read(('(',))
         if ins.skip_blank() == '#':
@@ -480,18 +482,18 @@ class ExpressionParser(object):
             indices = self.parse_indices(ins)
             params = name, indices
         ins.require_read((')',))
-        return self._callbacks[tk.VARPTR](params)
+        return (params,)
 
-    def value_ioctl(self, ins):
+    def _parse_ioctl(self, ins):
         """IOCTL$: read device control string response; not implemented."""
         ins.require_read(('(',))
         num = self._parse_file_number(ins)
         # raise BAD FILE NUMBER if the file is not open
         infile = self._files.get(num)
         ins.require_read((')',))
-        return self._callbacks[tk.IOCTL + '$'](infile)
+        return (infile,)
 
-    def value_input(self, ins):
+    def _parse_input(self, ins):
         """INPUT$: get characters from the keyboard or a file."""
         ins.require_read(('(',))
         num = values.to_int(self.parse(ins))
@@ -502,9 +504,9 @@ class ExpressionParser(object):
             # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
             infile = self._files.get(num, mode='IR', not_open=error.BAD_FILE_MODE)
         ins.require_read((')',))
-        return self._callbacks[tk.INPUT + '$'](infile, num)
+        return (infile, num)
 
-    def value_instr(self, ins):
+    def _parse_instr(self, ins):
         """INSTR: find substring in string."""
         ins.require_read(('(',))
         # followed by comma so empty will raise STX
@@ -520,9 +522,9 @@ class ExpressionParser(object):
         s = self.parse(ins)
         small = values.pass_string(s)
         ins.require_read((')',))
-        return self._callbacks[tk.INSTR](start, big, small)
+        return (start, big, small)
 
-    def value_string(self, ins):
+    def _parse_string(self, ins):
         """STRING$: repeat characters."""
         ins.require_read(('(',))
         n = values.to_int(self.parse(ins))
@@ -532,13 +534,13 @@ class ExpressionParser(object):
         if isinstance(asc_value_or_char, values.Integer):
             error.range_check(0, 255, asc_value_or_char.to_int())
         ins.require_read((')',))
-        return self._callbacks[tk.STRING](asc_value_or_char, n)
+        return (asc_value_or_char, n)
 
-    def value_rnd(self, ins):
+    def _parse_rnd(self, ins):
         """RND: get pseudorandom value."""
         if ins.skip_blank_read_if(('(',)):
             val = self.parse(ins)
             ins.require_read((')',))
-            return self._callbacks[tk.RND](values.csng_(val))
+            return (values.csng_(val),)
         else:
-            return self._callbacks[tk.RND]()
+            return ()
