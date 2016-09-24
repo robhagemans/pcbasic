@@ -17,7 +17,7 @@ from . import tokens as tk
 class UserFunction(object):
     """User-defined function."""
 
-    def __init__(self, name, code_stream, varnames, memory):
+    def __init__(self, name, code_stream, varnames, memory, expression_parser):
         """Define function."""
         self._codestream = code_stream
         self._start_loc = code_stream.tell()
@@ -25,13 +25,14 @@ class UserFunction(object):
         self._memory = memory
         self._varnames = varnames
         self._sigil = name[-1]
+        self._expression_parser = expression_parser
 
     def get_conversions(self):
         """Retrieve list of argument type conversions."""
         # read variables
         return [values.TYPE_TO_CONV[self._memory.complete_name(name)[-1]] for name in self._varnames]
 
-    def evaluate(self, expression_parser, *args):
+    def evaluate(self, *args):
         """Evaluate user-defined function."""
         # parse/evaluate arguments
         # recursion is not allowed as there's no way to terminate it
@@ -54,7 +55,7 @@ class UserFunction(object):
         save_loc = self._codestream.tell()
         try:
             self._codestream.seek(self._start_loc)
-            value = expression_parser.parse(self._codestream)
+            value = self._expression_parser.parse(self._codestream)
             return values.to_type(self._sigil, value)
         finally:
             self._codestream.seek(save_loc)
@@ -70,12 +71,13 @@ class UserFunction(object):
 class UserFunctionManager(object):
     """User-defined function handler."""
 
-    def __init__(self, memory, values):
+    def __init__(self, memory, values, expression_parser):
         """Initialise functions."""
         self._fn_dict = {}
         # state variable for detecting recursion
         self._memory = memory
         self._values = values
+        self._expression_parser = expression_parser
 
     def __contains__(self, name):
         """Check if a function of the given (complete) name exists."""
@@ -113,7 +115,7 @@ class UserFunctionManager(object):
             ins.require_read((')',))
         # read code
         ins.require_read((tk.O_EQ,)) #=
-        self._fn_dict[fnname] = UserFunction(fnname, ins, fnvars, self._memory)
+        self._fn_dict[fnname] = UserFunction(fnname, ins, fnvars, self._memory, self._expression_parser)
         ins.skip_to(tk.END_STATEMENT)
         # update memory model
         # allocate function pointer

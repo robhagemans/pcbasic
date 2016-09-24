@@ -53,7 +53,7 @@ class ExpressionParser(object):
         # for file number checks
         self._files = files
         # user-defined functions
-        self.user_functions = userfunctions.UserFunctionManager(memory, values)
+        self.user_functions = userfunctions.UserFunctionManager(memory, values, self)
 
     def init_functions(self, session):
         """Initialise functions."""
@@ -409,7 +409,7 @@ class ExpressionParser(object):
             # while unary functions generate it *afterwards*. this is to match GW-BASIC
             args = self._parse_argument_list(ins, conv, optional)
         elif token == tk.FN:
-            return self._evaluate_fn(ins)
+            fn, args = self._parse_fn(ins)
         else:
             # special cases
             args = narity(ins)
@@ -444,7 +444,7 @@ class ExpressionParser(object):
     ###########################################################
     # special cases
 
-    def _evaluate_fn(self, ins):
+    def _parse_fn(self, ins):
         """FN: get value of user-defined function."""
         fnname = ins.read_name()
         # must not be empty
@@ -457,7 +457,7 @@ class ExpressionParser(object):
             args = self._parse_argument_list(ins, conversions, optional=False)
         else:
             args = ()
-        return fn.evaluate(self, *args)
+        return fn.evaluate, args
 
     def _parse_varptr_str(self, ins):
         """VARPTR$: get memory address for variable."""
