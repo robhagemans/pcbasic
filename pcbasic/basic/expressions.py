@@ -399,14 +399,9 @@ class ExpressionParser(object):
         if narity == 0:
             args = ()
         elif narity == 1:
-            ins.require_read(('(',))
-            val = self.parse(ins)
-            ins.require_read((')',))
-            args = (val,)
+            args = self._parse_argument(ins)
         elif narity in (2, 3):
             conv, optional = fn_record[2:]
-            # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
-            # while unary functions generate it *afterwards*. this is to match GW-BASIC
             args = self._parse_argument_list(ins, conv, optional)
         elif token == tk.FN:
             fn, args = self._parse_fn(ins)
@@ -418,10 +413,19 @@ class ExpressionParser(object):
             return self._values.from_value(result, to_type)
         return result
 
+    def _parse_argument(self, ins):
+        """Parse a single function argument."""
+        ins.require_read(('(',))
+        val = self.parse(ins)
+        ins.require_read((')',))
+        return (val,)
+
     def _parse_argument_list(self, ins, conversions, optional=False):
         """Parse a comma-separated list of arguments and apply type conversions."""
-        # required separators
+        # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
+        # while unary functions generate it *afterwards*. this is to match GW-BASIC
         arg = []
+        # required separators
         seps = (('(',),) + ((',',),) * (len(conversions)-1)
         for conv, sep in zip(conversions[:-1], seps[:-1]):
             ins.require_read(sep)
