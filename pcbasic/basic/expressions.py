@@ -397,23 +397,23 @@ class ExpressionParser(object):
         narity, to_type = fn_record[:2]
         fn = self._callbacks[token]
         if narity == 0:
-            result = fn()
+            args = ()
         elif narity == 1:
             ins.require_read(('(',))
             val = self.parse(ins)
             ins.require_read((')',))
-            result = fn(val)
+            args = (val,)
         elif narity in (2, 3):
             conv, optional = fn_record[2:]
             # these functions generate type mismatch and overflow errors *before* parsing the closing parenthesis
             # while unary functions generate it *afterwards*. this is to match GW-BASIC
-            result = fn(*self._parse_argument_list(ins, conv, optional))
+            args = self._parse_argument_list(ins, conv, optional)
         elif token == tk.FN:
             return self._evaluate_fn(ins)
         else:
             # special cases
             args = narity(ins)
-            result = fn(*args)
+        result = fn(*args)
         if to_type:
             return self._values.from_value(result, to_type)
         return result
