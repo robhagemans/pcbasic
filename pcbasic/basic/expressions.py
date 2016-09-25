@@ -20,12 +20,7 @@ from . import dos
 from . import userfunctions
 
 
-
 # AIMS
-# complete the implementation of action callbacks (get var, pointer, file)
-# remove the session member
-#       implement callbacks for RND
-
 # separate parsing from evaluation (ExpressionParser creates Expression, which can then evaluate)
 # difficulty: reproduce sequence of errors (syntax checks during evaluation)
 # approach: build an evaluation tree with operation and value nodes
