@@ -1952,7 +1952,7 @@ class Statements(object):
                 val = self.values.from_repr(seed, allow_nonnum=False)
             # seed entered on prompt is rounded to int
             val = values.cint_(val)
-        self.session.randomiser.randomize(val)
+        self.session.randomiser.randomize_(val)
         ins.require_end()
 
     ################################################

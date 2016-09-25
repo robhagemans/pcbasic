@@ -204,7 +204,7 @@ class ExpressionParser(object):
             tk.INT: values.int_,
             tk.ABS: values.abs_,
             tk.SQR: values.sqr_,
-            tk.RND: session.randomiser.rnd,
+            tk.RND: session.randomiser.rnd_,
             tk.SIN: values.sin_,
             tk.LOG: values.log_,
             tk.EXP: values.exp_,

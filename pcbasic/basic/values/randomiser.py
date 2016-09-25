@@ -26,7 +26,7 @@ class Randomiser(object):
         """Reset the random number generator."""
         self._seed = 5228370 # 0x4fc752
 
-    def randomize(self, val):
+    def randomize_(self, val):
         """Reseed the random number generator."""
         # RANDOMIZE converts to int in a non-standard way - looking at the first two bytes in the internal representation
         # on a program line, if a number outside the signed int range (or -32768) is entered,
@@ -51,7 +51,7 @@ class Randomiser(object):
         self._seed += n * self._step
         self._seed %= self._period
 
-    def rnd(self, f=None):
+    def rnd_(self, f=None):
         """Get a value from the random number generator."""
         if f is None:
             self._cycle(1)
