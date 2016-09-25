@@ -402,13 +402,13 @@ class ExpressionParser(object):
                 fn_record = fndict[presign]
             except KeyError:
                 raise error.RunError(error.STX)
-        parse_args, to_type = fn_record[:2]
-        fn = self._callbacks[token]
         if token == tk.FN:
-            fn, conv = self._parse_fn(ins)
-            args = self._parse_argument_list(ins, conv, optional=False)
+            to_type = None
+            fn, parse_args = self._read_fn(ins)
         else:
-            args = parse_args(ins)
+            parse_args, to_type = fn_record
+            fn = self._callbacks[token]
+        args = parse_args(ins)
         result = fn(*args)
         if to_type:
             return self._values.from_value(result, to_type)
@@ -455,16 +455,15 @@ class ExpressionParser(object):
     ###########################################################
     # special cases
 
-    def _parse_fn(self, ins):
+    def _read_fn(self, ins):
         """FN: get value of user-defined function."""
         fnname = ins.read_name()
         # must not be empty
         error.throw_if(not fnname, error.STX)
         # obtain function
         fn = self.user_functions.get(fnname)
-        # read variables
-        conversions = fn.get_conversions()
-        return fn.evaluate, conversions
+        # get syntax
+        return fn.evaluate, partial(self._parse_argument_list, conversions=fn.get_conversions(), optional=False)
 
     def _parse_varptr_str(self, ins):
         """VARPTR$: get memory address for variable."""
