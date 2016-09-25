@@ -478,17 +478,18 @@ class ExpressionParser(object):
         """VARPTR: get memory address for variable or FCB."""
         ins.require_read(('(',))
         if ins.skip_blank() == '#':
-            # params holds a number
-            params = self._parse_file_number(ins)
-            error.throw_if(params > self._files.max_files, error.BAD_FILE_NUMBER)
+            filenum = self._parse_file_number(ins)
+            error.throw_if(filenum > self._files.max_files, error.BAD_FILE_NUMBER)
+            # params holds a one-element tuple
+            params = filenum,
         else:
-            # params holds a tuple
             name = ins.read_name()
             error.throw_if(not name, error.STX)
             indices = self.parse_indices(ins)
+            # params holds a two-element tuple
             params = name, indices
         ins.require_read((')',))
-        return (params,)
+        return params
 
     def _parse_ioctl(self, ins):
         """IOCTL$: read device control string response; not implemented."""

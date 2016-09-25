@@ -326,9 +326,9 @@ class DataSegment(object):
         else:
             self.arrays.set(name, indices, value)
 
-    def varptr_(self, params):
+    def varptr_(self, *params):
         """VARPTR: Get address of variable."""
-        if isinstance(params, tuple):
+        if len(params) == 2:
             name, indices = params
             # this is an evaluation-time determination
             # as we could have passed another DEFtype statement
@@ -341,7 +341,7 @@ class DataSegment(object):
             except KeyError:
                 raise error.RunError(error.IFC)
         else:
-            filenum = params
+            filenum, = params
             # file number 0 is allowed for VARPTR
             if filenum < 0 or filenum > self.max_files:
                 raise error.RunError(error.BAD_FILE_NUMBER)
