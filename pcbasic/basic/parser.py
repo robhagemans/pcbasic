@@ -21,10 +21,6 @@ class Parser(object):
     def __init__(self, session, syntax, term):
         """Initialise parser."""
         self.session = session
-        # syntax: advanced, pcjr, tandy
-        self.syntax = syntax
-        # program for TERM command
-        self.term = term
         # line number tracing
         self.tron = False
         # pointer position: False for direct line, True for program
@@ -36,7 +32,7 @@ class Parser(object):
         self.init_error_trapping()
         self.error_num = 0
         self.error_pos = 0
-        self.statements = statements.Statements(self)
+        self.statements = statements.StatementParser(self, syntax, term)
 
     def init_error_trapping(self):
         """Initialise error trapping."""

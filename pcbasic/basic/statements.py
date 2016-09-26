@@ -22,11 +22,15 @@ from . import tokens as tk
 from . import expressions
 
 
-class Statements(object):
+class StatementParser(object):
     """BASIC statements."""
 
-    def __init__(self, parser):
+    def __init__(self, parser, syntax, term):
         """Initialise statement context."""
+        # syntax: advanced, pcjr, tandy
+        self.syntax = syntax
+        # program for TERM command
+        self.term = term
         self.parser = parser
         self.session = parser.session
         self.values = parser.session.values
@@ -298,7 +302,7 @@ class Statements(object):
         """TERM: load and run PCjr buitin terminal emulator program."""
         try:
             ins.require_end()
-            self.session.load_program(self.parser.term)
+            self.session.load_program(self.term)
         except EnvironmentError:
             # on Tandy, raises Internal Error
             raise error.RunError(error.INTERNAL_ERROR)
@@ -513,7 +517,7 @@ class Statements(object):
     def exec_beep(self, ins):
         """BEEP: produce an alert sound or switch internal speaker on/off."""
         # Tandy/PCjr BEEP ON, OFF
-        if self.parser.syntax in ('pcjr', 'tandy') and ins.skip_blank() in (tk.ON, tk.OFF):
+        if self.syntax in ('pcjr', 'tandy') and ins.skip_blank() in (tk.ON, tk.OFF):
             # ON/OFF is ignored
             ins.read(1)
             ins.require_end()
@@ -527,7 +531,7 @@ class Statements(object):
     def exec_sound(self, ins):
         """SOUND: produce an arbitrary sound or switch external speaker on/off."""
         # Tandy/PCjr SOUND ON, OFF
-        if self.parser.syntax in ('pcjr', 'tandy') and ins.skip_blank() in (tk.ON, tk.OFF):
+        if self.syntax in ('pcjr', 'tandy') and ins.skip_blank() in (tk.ON, tk.OFF):
             self.session.sound.sound_on = (ins.read(1) == tk.ON)
             ins.require_end()
             return
@@ -538,8 +542,8 @@ class Statements(object):
         # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
         volume, voice = 15, 0
         if dur > 0:
-            if (ins.skip_blank_read_if((',',)) and (self.parser.syntax == 'tandy' or
-                    (self.parser.syntax == 'pcjr' and self.session.sound.sound_on))):
+            if (ins.skip_blank_read_if((',',)) and (self.syntax == 'tandy' or
+                    (self.syntax == 'pcjr' and self.session.sound.sound_on))):
                 volume = values.to_int(self.parse_expression(ins))
                 error.range_check(0, 15, volume)
                 if ins.skip_blank_read_if((',',)):
@@ -560,7 +564,7 @@ class Statements(object):
             # retrieve Music Macro Language string
             mml1, mml2 = '', ''
             mml0 = self.parse_temporary_string(ins, allow_empty=True)
-            if ((self.parser.syntax == 'tandy' or (self.parser.syntax == 'pcjr' and
+            if ((self.syntax == 'tandy' or (self.syntax == 'pcjr' and
                                              self.session.sound.sound_on))
                     and ins.skip_blank_read_if((',',))):
                 mml1 = self.parse_temporary_string(ins, allow_empty=True)
@@ -765,7 +769,7 @@ class Statements(object):
         if ins.skip_blank() not in tk.END_STATEMENT:
             cmd = self.parse_temporary_string(ins)
         # no SHELL on PCjr.
-        if self.parser.syntax == 'pcjr':
+        if self.syntax == 'pcjr':
             raise error.RunError(error.IFC)
         # force cursor visible in all cases
         self.session.screen.cursor.show(True)
@@ -1795,7 +1799,7 @@ class Statements(object):
                         #  0 leads to illegal fn call
                         raise error.RunError(error.IFC)
                     self.session.memory.set_stack_size(stack_size)
-                if self.parser.syntax in ('pcjr', 'tandy') and ins.skip_blank_read_if((',',)):
+                if self.syntax in ('pcjr', 'tandy') and ins.skip_blank_read_if((',',)):
                     # Tandy/PCjr: select video memory size
                     video_size = values.round(self.parse_expression(ins)).to_value()
                     if not self.session.screen.set_video_memory_size(video_size):
@@ -2037,20 +2041,20 @@ class Statements(object):
     def exec_cls(self, ins):
         """CLS: clear the screen."""
         val = None
-        if not (self.parser.syntax == 'pcjr' or
+        if not (self.syntax == 'pcjr' or
                         ins.skip_blank() in (',',) + tk.END_STATEMENT):
             val = self.parse_value(ins, values.INT)
             # tandy gives illegal function call on CLS number
-            error.throw_if(self.parser.syntax == 'tandy')
+            error.throw_if(self.syntax == 'tandy')
             error.range_check(0, 2, val)
-        if self.parser.syntax != 'pcjr':
+        if self.syntax != 'pcjr':
             if ins.skip_blank_read_if((',',)):
                 # comma is ignored, but a number after means syntax error
                 ins.require_end()
             else:
                 ins.require_end(err=error.IFC)
         self.session.screen.cls_(val)
-        if self.parser.syntax == 'pcjr':
+        if self.syntax == 'pcjr':
             ins.require_end()
 
     def exec_color(self, ins):
@@ -2176,7 +2180,7 @@ class Statements(object):
             ins.require_read((tk.TO,))
             stop = values.to_int(self.parse_expression(ins))
             ins.require_end()
-            max_line = 25 if (self.parser.syntax in ('pcjr', 'tandy') and not self.session.fkey_macros.keys_visible) else 24
+            max_line = 25 if (self.syntax in ('pcjr', 'tandy') and not self.session.fkey_macros.keys_visible) else 24
             error.range_check(1, max_line, start, stop)
             self.session.screen.set_view(start, stop)
 
@@ -2226,7 +2230,7 @@ class Statements(object):
                         ins.skip_blank_read_if((',',))
                         ins.require_end()
                         if num_rows_dummy is not None:
-                            min_num_rows = 0 if self.parser.syntax in ('pcjr', 'tandy') else 25
+                            min_num_rows = 0 if self.syntax in ('pcjr', 'tandy') else 25
                             error.range_check(min_num_rows, 25, num_rows_dummy)
                     self.session.devices.scrn_file.set_width(w)
 
@@ -2237,7 +2241,7 @@ class Statements(object):
         # mode, color, apagenum, vpagenum, erase=1
         args = [None] * 4 + [1]
         # erase can only be set on pcjr/tandy 5-argument syntax
-        n_args = 4 + (self.parser.syntax in ('pcjr', 'tandy'))
+        n_args = 4 + (self.syntax in ('pcjr', 'tandy'))
         # all but last arguments are optional and may be followed by a comma
         for i in range(len(args) - 1):
             args[i] = self.parse_value(ins, values.INT, allow_empty=True)
