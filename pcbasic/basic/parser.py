@@ -12,7 +12,6 @@ import struct
 from . import error
 from . import tokens as tk
 from . import statements
-from . import values
 from . import codestream
 
 
@@ -22,10 +21,6 @@ class Parser(object):
     def __init__(self, session, syntax, term):
         """Initialise parser."""
         self.session = session
-        # value handler
-        self.values = self.session.values
-        # temporary string context guard
-        self.temp_string = self.session.strings
         # syntax: advanced, pcjr, tandy
         self.syntax = syntax
         # program for TERM command
@@ -42,7 +37,6 @@ class Parser(object):
         self.error_num = 0
         self.error_pos = 0
         self.statements = statements.Statements(self)
-        self.expression_parser = session.expression_parser
 
     def init_error_trapping(self):
         """Initialise error trapping."""
@@ -304,79 +298,3 @@ class Parser(object):
         self.program_code.seek(current)
         # omit leading and trailing whitespace
         return word
-
-    ###########################################################################
-    # expression parser
-
-    def parse_value(self, ins, sigil=None, allow_empty=False):
-        """Read a value of required type and return as Python value, or None if empty."""
-        expr = self.parse_expression(ins, allow_empty)
-        if expr is not None:
-            # this will force into the requested type; e.g. Integers may overflow
-            return values.to_type(sigil, expr).to_value()
-        return None
-
-    def parse_bracket(self, ins):
-        """Compute the value of the bracketed expression."""
-        ins.require_read(('(',))
-        # we'll get a Syntax error, not a Missing operand, if we close with )
-        val = self.parse_expression(ins)
-        ins.require_read((')',))
-        return val
-
-    def parse_temporary_string(self, ins, allow_empty=False):
-        """Parse an expression and return as Python value. Store strings in a temporary."""
-        # if allow_empty, a missing value is returned as an empty string
-        with self.temp_string:
-            expr = self.parse_expression(ins, allow_empty)
-            if expr:
-                return values.pass_string(expr).to_value()
-            return self.values.new_string()
-
-    def parse_file_number(self, ins, opt_hash):
-        """Read a file number."""
-        if not ins.skip_blank_read_if(('#',)) and not opt_hash:
-            return None
-        number = values.to_int(self.parse_expression(ins))
-        error.range_check(0, 255, number)
-        return number
-
-    def parse_scalar(self, ins):
-        """Get scalar part of variable name from token stream."""
-        name = ins.read_name()
-        # must not be empty
-        error.throw_if(not name, error.STX)
-        # append sigil, if missing
-        return self.session.memory.complete_name(name)
-
-    def parse_variable(self, ins):
-        """Helper function: parse a scalar or array element."""
-        name = ins.read_name()
-        error.throw_if(not name, error.STX)
-        # this is an evaluation-time determination
-        # as we could have passed another DEFtype statement
-        name = self.session.memory.complete_name(name)
-        indices = self.expression_parser.parse_indices(ins)
-        return name, indices
-
-    @staticmethod
-    def parse_jumpnum(ins):
-        """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
-        ins.require_read((tk.T_UINT,))
-        token = ins.read(2)
-        assert len(token) == 2, 'Bytecode truncated in line number pointer'
-        return struct.unpack('<H', token)[0]
-
-    @staticmethod
-    def parse_optional_jumpnum(ins):
-        """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
-        # no line number
-        if ins.skip_blank() != tk.T_UINT:
-            return -1
-        return Parser.parse_jumpnum(ins)
-
-    def parse_expression(self, ins, allow_empty=False):
-        """Compute the value of the expression at the current code pointer."""
-        if allow_empty and ins.skip_blank() in tk.END_EXPRESSION:
-            return None
-        return self.expression_parser.parse(ins)

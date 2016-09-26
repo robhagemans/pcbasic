@@ -263,7 +263,7 @@ class Session(object):
             tokens = self.tokeniser.tokenise_line(b'?' + expression)
             # skip : and print token and parse expression
             tokens.read(2)
-            return self.parser.parse_expression(tokens).to_value()
+            return self.parser.statements.parse_expression(tokens).to_value()
         return None
 
     def set_variable(self, name, value):
