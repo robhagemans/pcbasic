@@ -289,7 +289,7 @@ class DiskDevice(object):
         if len(filetype) > 1 and mode == b'I':
             # read magic
             first = fhandle.read(1)
-            fhandle.seek(-1, 1)
+            fhandle.seek(-len(first), 1)
             try:
                 filetype_found = devices.magic_to_type[first]
                 if filetype_found not in filetype:
