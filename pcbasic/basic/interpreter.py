@@ -1,6 +1,6 @@
 """
-PC-BASIC - parser.py
-BASIC code parser
+PC-BASIC - interpreter.py
+BASIC interpreter
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
@@ -15,11 +15,11 @@ from . import statements
 from . import codestream
 
 
-class Parser(object):
-    """Statement parser."""
+class Interpreter(object):
+    """BASIC interpreter."""
 
     def __init__(self, session, syntax, term):
-        """Initialise parser."""
+        """Initialise interpreter."""
         self.session = session
         # line number tracing
         self.tron = False
@@ -32,7 +32,7 @@ class Parser(object):
         self.init_error_trapping()
         self.error_num = 0
         self.error_pos = 0
-        self.statements = statements.StatementParser(self, syntax, term)
+        self.statement_parser = statements.StatementParser(self, syntax, term)
 
     def init_error_trapping(self):
         """Initialise error trapping."""
@@ -74,7 +74,7 @@ class Parser(object):
                 elif c != ':':
                     # THEN clause gets us here
                     ins.seek(-len(c), 1)
-                self.statements.parse_statement(ins)
+                self.statement_parser.parse_statement(ins)
             except error.RunError as e:
                 self.trap_error(e)
 

@@ -29,7 +29,7 @@ from . import clock
 from . import dos
 from . import memory
 from . import machine
-from . import parser
+from . import interpreter
 from . import files
 from . import sound
 from . import redirect
@@ -172,19 +172,16 @@ class Session(object):
                 self.values, self.memory, self.program, self.files)
         # initialise the parser
         self.events.reset()
-        self.parser = parser.Parser(self, syntax, pcjr_term)
-        self.parser.set_pointer(False, 0)
+        self.interpreter = interpreter.Interpreter(self, syntax, pcjr_term)
+        self.interpreter.set_pointer(False, 0)
         # set up rest of memory model
         self.all_memory = machine.Memory(self.memory, self.devices,
                             self.screen, self.keyboard, self.screen.fonts[8],
-                            self.parser, peek_values, syntax)
+                            self.interpreter, peek_values, syntax)
         # build function table (depends on Memory having been initialised)
         self.expression_parser.init_functions(self)
         # set up debugger
-        if option_debug:
-            self.debugger = debug.Debugger(self)
-        else:
-            self.debugger = debug.BaseDebugger(self)
+        self.debugger = debug.get_debugger(self, option_debug)
 
     def __enter__(self):
         """Context guard."""
@@ -263,7 +260,7 @@ class Session(object):
             tokens = self.tokeniser.tokenise_line(b'?' + expression)
             # skip : and print token and parse expression
             tokens.read(2)
-            return self.parser.statements.parse_expression(tokens).to_value()
+            return self.expression_parser.parse(tokens).to_value()
         return None
 
     def set_variable(self, name, value):
@@ -318,7 +315,7 @@ class Session(object):
             if self._parse_mode:
                 try:
                     # parse until break or end
-                    self.parser.parse()
+                    self.interpreter.parse()
                     self._parse_mode = False
                 except error.Break as e:
                     # ctrl-break stops foreground and background sound
@@ -335,7 +332,7 @@ class Session(object):
             # change loop modes
             if self._parse_mode != last_parse:
                 # move pointer to the start of direct line (for both on and off!)
-                self.parser.set_pointer(False, 0)
+                self.interpreter.set_pointer(False, 0)
                 self.screen.cursor.reset_visibility()
             # return control to user
             if ((not self.auto_mode) and (not self._parse_mode)):
@@ -357,7 +354,7 @@ class Session(object):
             self.program.check_number_start(self.direct_line)
             self.program.store_line(self.direct_line)
             # clear all program stacks
-            self.parser.clear_stacks_and_pointers()
+            self.interpreter.clear_stacks_and_pointers()
             self.clear()
         elif c != '':
             # it is a command, go and execute
@@ -397,7 +394,7 @@ class Session(object):
             if not empty:
                 self.program.store_line(self.direct_line)
                 # clear all program stacks
-                self.parser.clear_stacks_and_pointers()
+                self.interpreter.clear_stacks_and_pointers()
                 self.clear()
             self.auto_linenum = scanline + self.auto_increment
         elif c != '':
@@ -433,7 +430,7 @@ class Session(object):
         # special case: syntax error
         if e.err == error.STX:
             # for some reason, err is reset to zero by GW-BASIC in this case.
-            self.parser.error_num = 0
+            self.interpreter.error_num = 0
             if e.pos is not None and e.pos != -1:
                 # line edit gadget appears
                 self.edit_prompt = (self.program.get_line_number(e.pos), e.pos+1)
@@ -445,9 +442,9 @@ class Session(object):
             self.screen.write('^C')
         # if we're in a program, save pointer
         pos = -1
-        if self.parser.run_mode:
+        if self.interpreter.run_mode:
             pos = self.program.bytecode.tell()-1
-            self.parser.stop = pos
+            self.interpreter.stop = pos
         self._write_error_message(e.message, self.program.get_line_number(pos))
         self._set_parse_mode(False)
         self.input_mode = False
@@ -495,4 +492,4 @@ class Session(object):
         self.sound.reset()
         # reset DRAW state (angle, scale) and current graphics position
         self.screen.drawing.reset()
-        self.parser.clear()
+        self.interpreter.clear()

@@ -25,15 +25,15 @@ from . import expressions
 class StatementParser(object):
     """BASIC statements."""
 
-    def __init__(self, parser, syntax, term):
+    def __init__(self, interpreter, syntax, term):
         """Initialise statement context."""
         # syntax: advanced, pcjr, tandy
         self.syntax = syntax
         # program for TERM command
         self.term = term
-        self.parser = parser
-        self.session = parser.session
-        self.values = parser.session.values
+        self.interpreter = interpreter
+        self.session = interpreter.session
+        self.values = interpreter.session.values
         self.expression_parser = self.session.expression_parser
         # temporary string context guard
         self.temp_string = self.session.strings
@@ -261,13 +261,13 @@ class StatementParser(object):
 
     def exec_tron(self, ins):
         """TRON: turn on line number tracing."""
-        self.parser.tron = True
+        self.interpreter.tron = True
         # TRON LAH gives error, but TRON has been executed
         ins.require_end()
 
     def exec_troff(self, ins):
         """TROFF: turn off line number tracing."""
-        self.parser.tron = False
+        self.interpreter.tron = False
         ins.require_end()
 
     def exec_rem(self, ins):
@@ -306,11 +306,11 @@ class StatementParser(object):
         except EnvironmentError:
             # on Tandy, raises Internal Error
             raise error.RunError(error.INTERNAL_ERROR)
-        self.parser.clear_stacks_and_pointers()
+        self.interpreter.clear_stacks_and_pointers()
         self.session.clear()
-        self.parser.jump(None)
-        self.parser.error_handle_mode = False
-        self.parser.tron = False
+        self.interpreter.jump(None)
+        self.interpreter.error_handle_mode = False
+        self.interpreter.tron = False
 
 
     ##########################################################
@@ -597,7 +597,7 @@ class StatementParser(object):
     def exec_poke(self, ins):
         """POKE: write to a memory location. Limited implementation."""
         addr = values.to_int(self.parse_expression(ins), unsigned=True)
-        if self.session.program.protected and not self.parser.run_mode:
+        if self.session.program.protected and not self.interpreter.run_mode:
             raise error.RunError(error.IFC)
         ins.require_read((',',))
         val = values.to_int(self.parse_expression(ins))
@@ -625,7 +625,7 @@ class StatementParser(object):
 
     def exec_bload(self, ins):
         """BLOAD: load a file into a memory location. Limited implementation."""
-        if self.session.program.protected and not self.parser.run_mode:
+        if self.session.program.protected and not self.interpreter.run_mode:
             raise error.RunError(error.IFC)
         name = self.parse_temporary_string(ins)
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
@@ -638,7 +638,7 @@ class StatementParser(object):
 
     def exec_bsave(self, ins):
         """BSAVE: save a block of memory to a file. Limited implementation."""
-        if self.session.program.protected and not self.parser.run_mode:
+        if self.session.program.protected and not self.interpreter.run_mode:
             raise error.RunError(error.IFC)
         name = self.parse_temporary_string(ins)
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
@@ -842,7 +842,7 @@ class StatementParser(object):
         # throws back to direct mode
         self.session.program.delete(from_line, to_line)
         # clear all program stacks
-        self.parser.clear_stacks_and_pointers()
+        self.interpreter.clear_stacks_and_pointers()
         # clear all variables
         self.session.clear()
 
@@ -857,7 +857,7 @@ class StatementParser(object):
         ins.require_end(err=error.IFC)
         # throws back to direct mode
         # jump to end of direct line so execution stops
-        self.parser.set_pointer(False)
+        self.interpreter.set_pointer(False)
         self.session.screen.cursor.reset_visibility()
         # request edit prompt
         self.session.edit_prompt = (from_line, None)
@@ -873,7 +873,7 @@ class StatementParser(object):
         self.session.auto_linenum = linenum if linenum is not None else 10
         self.session.auto_increment = increment if increment is not None else 10
         # move program pointer to end
-        self.parser.set_pointer(False)
+        self.interpreter.set_pointer(False)
         # continue input in AUTO mode
         self.session.auto_mode = True
 
@@ -900,7 +900,7 @@ class StatementParser(object):
                 # LIST on screen is slightly different from just writing
                 self.session.screen.list_line(l)
         # return to direct mode
-        self.parser.set_pointer(False)
+        self.interpreter.set_pointer(False)
 
     def exec_llist(self, ins):
         """LLIST: output program lines to LPT1: """
@@ -909,7 +909,7 @@ class StatementParser(object):
         for l in self.session.program.list_lines(from_line, to_line):
             self.session.devices.lpt1_file.write_line(l)
         # return to direct mode
-        self.parser.set_pointer(False)
+        self.interpreter.set_pointer(False)
 
     def exec_load(self, ins):
         """LOAD: load program from file."""
@@ -922,15 +922,15 @@ class StatementParser(object):
         with self.session.files.open(0, name, filetype='ABP', mode='I') as f:
             self.session.program.load(f)
         # reset stacks
-        self.parser.clear_stacks_and_pointers()
+        self.interpreter.clear_stacks_and_pointers()
         # clear variables
         self.session.clear()
         if comma:
             # in ,R mode, don't close files; run the program
-            self.parser.jump(None)
+            self.interpreter.jump(None)
         else:
             self.session.files.close_all()
-        self.parser.tron = False
+        self.interpreter.tron = False
 
     def exec_chain(self, ins):
         """CHAIN: load program and chain execution."""
@@ -963,10 +963,10 @@ class StatementParser(object):
                 self.session.program.delete(*delete_lines)
             action(f)
             # clear all program stacks
-            self.parser.clear_stacks_and_pointers()
+            self.interpreter.clear_stacks_and_pointers()
             # don't close files!
             # RUN
-            self.parser.jump(jumpnum, err=error.IFC)
+            self.interpreter.jump(jumpnum, err=error.IFC)
         # preserve DEFtype on MERGE
         self.session.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==self.session.program.merge))
 
@@ -998,7 +998,7 @@ class StatementParser(object):
                 raise error.RunError(error.STX)
         with self.session.files.open(0, name, filetype=mode, mode='O',
                                 seg=self.session.memory.data_segment, offset=self.session.memory.code_start,
-                                length=len(self.parser.program_code.getvalue())-1
+                                length=len(self.interpreter.program_code.getvalue())-1
                                 ) as f:
             self.session.program.save(f)
         ins.require_end()
@@ -1010,19 +1010,19 @@ class StatementParser(object):
         with self.session.files.open(0, name, filetype='A', mode='I') as f:
             self.session.program.merge(f)
         # clear all program stacks
-        self.parser.clear_stacks_and_pointers()
+        self.interpreter.clear_stacks_and_pointers()
         ins.require_end()
 
     def exec_new(self, ins):
         """NEW: clear program from memory."""
-        self.parser.tron = False
+        self.interpreter.tron = False
         # deletes the program currently in memory
         self.session.program.erase()
         # reset stacks
-        self.parser.clear_stacks_and_pointers()
+        self.interpreter.clear_stacks_and_pointers()
         # and clears all variables
         self.session.clear()
-        self.parser.set_pointer(False)
+        self.interpreter.set_pointer(False)
 
     def exec_renum(self, ins):
         """RENUM: renumber program line numbers."""
@@ -1039,12 +1039,12 @@ class StatementParser(object):
         old_to_new = self.session.program.renum(
                 self.session.screen, new, old, step)
         # stop running if we were
-        self.parser.set_pointer(False)
+        self.interpreter.set_pointer(False)
         # reset loop stacks
-        self.parser.clear_stacks()
+        self.interpreter.clear_stacks()
         # renumber error handler
-        if self.parser.on_error:
-            self.parser.on_error = old_to_new[self.parser.on_error]
+        if self.interpreter.on_error:
+            self.interpreter.on_error = old_to_new[self.interpreter.on_error]
         # renumber event traps
         for handler in self.session.events.all:
             if handler.gosub:
@@ -1448,12 +1448,12 @@ class StatementParser(object):
     def exec_end(self, ins):
         """END: end program execution and return to interpreter."""
         ins.require_end()
-        self.parser.stop = self.parser.program_code.tell()
+        self.interpreter.stop = self.interpreter.program_code.tell()
         # jump to end of direct line so execution stops
-        self.parser.set_pointer(False)
+        self.interpreter.set_pointer(False)
         # avoid NO RESUME
-        self.parser.error_handle_mode = False
-        self.parser.error_resume = None
+        self.interpreter.error_handle_mode = False
+        self.interpreter.error_resume = None
         self.session.files.close_all()
 
     def exec_stop(self, ins):
@@ -1463,10 +1463,10 @@ class StatementParser(object):
 
     def exec_cont(self, ins):
         """CONT: continue STOPped or ENDed execution."""
-        if self.parser.stop is None:
+        if self.interpreter.stop is None:
             raise error.RunError(error.CANT_CONTINUE)
         else:
-            self.parser.set_pointer(True, self.parser.stop)
+            self.interpreter.set_pointer(True, self.interpreter.stop)
         # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
         # and there's a STOP in the subroutine.
         # CONT then continues and the rest of the original line is executed, printing x
@@ -1499,7 +1499,7 @@ class StatementParser(object):
         # find NEXT
         nextpos = self._find_next(ins, varname)
         # apply initial condition and jump to nextpos
-        self.parser.loop_init(ins, endforpos, nextpos, varname, start, stop, step)
+        self.interpreter.loop_init(ins, endforpos, nextpos, varname, start, stop, step)
         self.exec_next(ins)
 
     def _find_next(self, ins, varname):
@@ -1538,7 +1538,7 @@ class StatementParser(object):
             else:
                 name = None
             # increment counter, check condition
-            if self.parser.loop_iterate(ins, pos):
+            if self.interpreter.loop_iterate(ins, pos):
                 break
             # done if we're not jumping into a comma'ed NEXT
             if not ins.skip_blank_read_if((',')):
@@ -1549,7 +1549,7 @@ class StatementParser(object):
     def exec_goto(self, ins):
         """GOTO: jump to specified line number."""
         # parse line number, ignore rest of line and jump
-        self.parser.jump(self.parse_jumpnum(ins))
+        self.interpreter.jump(self.parse_jumpnum(ins))
 
     def exec_run(self, ins):
         """RUN: start program execution."""
@@ -1566,10 +1566,10 @@ class StatementParser(object):
             ins.require_end()
             with self.session.files.open(0, name, filetype='ABP', mode='I') as f:
                 self.session.program.load(f)
-        self.parser.clear_stacks_and_pointers()
+        self.interpreter.clear_stacks_and_pointers()
         self.session.clear(close_files=close_files)
-        self.parser.jump(jumpnum)
-        self.parser.error_handle_mode = False
+        self.interpreter.jump(jumpnum)
+        self.interpreter.error_handle_mode = False
 
     def exec_if(self, ins):
         """IF: enter branching statement."""
@@ -1580,7 +1580,7 @@ class StatementParser(object):
         if not val.is_zero():
             # TRUE: continue after THEN. line number or statement is implied GOTO
             if ins.skip_blank() in (tk.T_UINT,):
-                self.parser.jump(self.parse_jumpnum(ins))
+                self.interpreter.jump(self.parse_jumpnum(ins))
             # continue parsing as normal, :ELSE will be ignored anyway
         else:
             # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
@@ -1597,7 +1597,7 @@ class StatementParser(object):
                         else:
                             # line number: jump
                             if ins.skip_blank() in (tk.T_UINT,):
-                                self.parser.jump(self.parse_jumpnum(ins))
+                                self.interpreter.jump(self.parse_jumpnum(ins))
                             # continue execution from here
                             break
                 else:
@@ -1620,7 +1620,7 @@ class StatementParser(object):
         if ins.read(1) == tk.WEND:
             ins.skip_to(tk.END_STATEMENT)
             wendpos = ins.tell()
-            self.parser.while_stack.append((whilepos, wendpos))
+            self.interpreter.while_stack.append((whilepos, wendpos))
         else:
             # WHILE without WEND
             ins.seek(whilepos)
@@ -1634,11 +1634,11 @@ class StatementParser(object):
         # WHILE condition is zero?
         if not values.pass_number(self.parse_expression(ins)).is_zero():
             # statement start is before WHILE token
-            self.parser.current_statement = whilepos-2
+            self.interpreter.current_statement = whilepos-2
             ins.require_end()
         else:
             # ignore rest of line and jump to WEND
-            _, wendpos = self.parser.while_stack.pop()
+            _, wendpos = self.interpreter.while_stack.pop()
             ins.seek(wendpos)
 
     def exec_wend(self, ins):
@@ -1647,14 +1647,14 @@ class StatementParser(object):
         ins.require_end()
         pos = ins.tell()
         while True:
-            if not self.parser.while_stack:
+            if not self.interpreter.while_stack:
                 # WEND without WHILE
                 raise error.RunError(error.WEND_WITHOUT_WHILE)
-            whilepos, wendpos = self.parser.while_stack[-1]
+            whilepos, wendpos = self.interpreter.while_stack[-1]
             if pos == wendpos:
                 break
             # not the expected WEND, we must have jumped out
-            self.parser.while_stack.pop()
+            self.interpreter.while_stack.pop()
         self._check_while_condition(ins, whilepos)
 
     def exec_on_jump(self, ins):
@@ -1680,7 +1680,7 @@ class StatementParser(object):
         elif onvar > 0 and onvar <= len(jumps):
             ins.seek(jumps[onvar-1])
             if command == tk.GOTO:
-                self.parser.jump(self.parse_jumpnum(ins))
+                self.interpreter.jump(self.parse_jumpnum(ins))
             elif command == tk.GOSUB:
                 self.exec_gosub(ins)
         ins.skip_to(tk.END_STATEMENT)
@@ -1691,21 +1691,21 @@ class StatementParser(object):
         linenum = self.parse_jumpnum(ins)
         if linenum != 0 and linenum not in self.session.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
-        self.parser.on_error = linenum
+        self.interpreter.on_error = linenum
         # pause soft-handling math errors so that we can catch them
         self.values.error_handler.suspend(linenum != 0)
         # ON ERROR GOTO 0 in error handler
-        if self.parser.on_error == 0 and self.parser.error_handle_mode:
+        if self.interpreter.on_error == 0 and self.interpreter.error_handle_mode:
             # re-raise the error so that execution stops
-            raise error.RunError(self.parser.error_num, self.parser.error_pos)
+            raise error.RunError(self.interpreter.error_num, self.interpreter.error_pos)
         # this will be caught by the trapping routine just set
         ins.require_end()
 
     def exec_resume(self, ins):
         """RESUME: resume program flow after error-trap."""
-        if self.parser.error_resume is None:
+        if self.interpreter.error_resume is None:
             # unset error handler
-            self.parser.on_error = 0
+            self.interpreter.on_error = 0
             raise error.RunError(error.RESUME_WITHOUT_ERROR)
         c = ins.skip_blank()
         if c == tk.NEXT:
@@ -1716,21 +1716,21 @@ class StatementParser(object):
         else:
             jumpnum = 0
         ins.require_end()
-        start_statement, runmode = self.parser.error_resume
-        self.parser.error_num = 0
-        self.parser.error_handle_mode = False
-        self.parser.error_resume = None
+        start_statement, runmode = self.interpreter.error_resume
+        self.interpreter.error_num = 0
+        self.interpreter.error_handle_mode = False
+        self.interpreter.error_resume = None
         self.session.events.suspend_all = False
         if jumpnum == 0:
             # RESUME or RESUME 0
-            self.parser.set_pointer(runmode, start_statement)
+            self.interpreter.set_pointer(runmode, start_statement)
         elif jumpnum == -1:
             # RESUME NEXT
-            self.parser.set_pointer(runmode, start_statement)
-            self.parser.get_codestream().skip_to(tk.END_STATEMENT, break_on_first_char=False)
+            self.interpreter.set_pointer(runmode, start_statement)
+            self.interpreter.get_codestream().skip_to(tk.END_STATEMENT, break_on_first_char=False)
         else:
             # RESUME n
-            self.parser.jump(jumpnum)
+            self.interpreter.jump(jumpnum)
 
     def exec_error(self, ins):
         """ERRROR: simulate an error condition."""
@@ -1743,7 +1743,7 @@ class StatementParser(object):
         jumpnum = self.parse_jumpnum(ins)
         # ignore rest of statement ('GOSUB 100 LAH' works just fine..); we need to be able to RETURN
         ins.skip_to(tk.END_STATEMENT)
-        self.parser.jump_gosub(jumpnum)
+        self.interpreter.jump_gosub(jumpnum)
 
     def exec_return(self, ins):
         """RETURN: return from a subroutine."""
@@ -1754,7 +1754,7 @@ class StatementParser(object):
             ins.skip_to(tk.END_STATEMENT)
         else:
             jumpnum = None
-        self.parser.jump_return(jumpnum)
+        self.interpreter.jump_return(jumpnum)
 
     ################################################
     # Variable & array statements
@@ -1934,10 +1934,10 @@ class StatementParser(object):
         """READ: read values from DATA statement."""
         # reading loop
         for name, indices in self._parse_var_list(ins):
-            entry = self.parser.read_entry()
+            entry = self.interpreter.read_entry()
             if name[-1] == '$':
-                if ins == self.parser.program_code:
-                    address = self.parser.data_pos + self.session.memory.code_start
+                if ins == self.interpreter.program_code:
+                    address = self.interpreter.data_pos + self.session.memory.code_start
                 else:
                     address = None
                 value = self.values.from_str_at(entry, address)
@@ -1945,9 +1945,9 @@ class StatementParser(object):
                 value = self.values.from_repr(entry, allow_nonnum=False)
                 if value is None:
                     # set pointer for EDIT gadget to position in DATA statement
-                    self.parser.program_code.seek(self.parser.data_pos)
+                    self.interpreter.program_code.seek(self.interpreter.data_pos)
                     # syntax error in DATA line (not type mismatch!) if can't convert to var type
-                    raise error.RunError(error.STX, self.parser.data_pos-1)
+                    raise error.RunError(error.STX, self.interpreter.data_pos-1)
             self.session.memory.set_variable(name, indices, value=value)
         ins.require_end()
 
@@ -1966,7 +1966,7 @@ class StatementParser(object):
             readvar = self._parse_var_list(ins)
             # move the program pointer to the start of the statement to ensure correct behaviour for CONT
             pos = ins.tell()
-            ins.seek(self.parser.current_statement)
+            ins.seek(self.interpreter.current_statement)
             parseinput.input_(self.session, self.values, prompt, readvar, newline)
             ins.seek(pos)
         ins.require_end()
@@ -1997,7 +1997,7 @@ class StatementParser(object):
             datanum = -1
         # undefined line number for all syntax errors
         ins.require_end(err=error.UNDEFINED_LINE_NUMBER)
-        self.parser.restore(datanum)
+        self.interpreter.restore(datanum)
 
     def exec_swap(self, ins):
         """SWAP: swap values of two variables."""
@@ -2012,7 +2012,7 @@ class StatementParser(object):
         """DEF FN: define a function."""
         # don't allow DEF FN in direct mode, as we point to the code in the stored program
         # this is raised before further syntax errors
-        if not self.parser.run_mode:
+        if not self.interpreter.run_mode:
             raise error.RunError(error.ILLEGAL_DIRECT)
         fnname = self.parse_scalar(ins)
         ins.skip_blank()

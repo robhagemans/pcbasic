@@ -18,6 +18,14 @@ from . import values
 from . import error
 
 
+def get_debugger(session, option_debug):
+    """Create debugger."""
+    if option_debug:
+        return Debugger(session)
+    else:
+        return BaseDebugger(session)
+
+
 class DebugException(Exception):
     """Test exception for debugging purposes"""
     def __str__(self):
@@ -48,7 +56,7 @@ class BaseDebugger(object):
         screen.set_attr(0x70)
         screen.write_line('EXCEPTION')
         screen.set_attr(15)
-        if self.session.parser.run_mode:
+        if self.session.interpreter.run_mode:
             self.session.program.bytecode.seek(-1, 1)
             self.session.program.edit(screen,
                     self.session.program.get_line_number(
@@ -87,7 +95,7 @@ class BaseDebugger(object):
         screen.write_line('as much information as you can about what you were doing and how this happened.')
         screen.write_line('Thank you!')
         screen.set_attr(7)
-        self.session.parser.set_pointer(False)
+        self.session.interpreter.set_pointer(False)
 
     def debug_step(self, token):
         """Dummy debug step."""
@@ -116,7 +124,7 @@ class Debugger(BaseDebugger):
             outstr += ' %s =' % str(expr)
             outs.seek(2)
             try:
-                val = self.session.parser.parse_expression(outs)
+                val = self.session.expression_parser.parse(outs)
                 if isinstance(val, values.String):
                     outstr += '"%s"' % val.to_str()
                 else:
