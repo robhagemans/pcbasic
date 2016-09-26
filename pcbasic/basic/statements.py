@@ -25,19 +25,18 @@ from . import expressions
 class StatementParser(object):
     """BASIC statements."""
 
-    def __init__(self, interpreter, syntax, term):
+    def __init__(self, values, temp_string, memory, expression_parser, syntax, term):
         """Initialise statement context."""
         # syntax: advanced, pcjr, tandy
         self.syntax = syntax
         # program for TERM command
         self.term = term
-        self.interpreter = interpreter
-        self.session = interpreter.session
-        self.values = interpreter.session.values
-        self.expression_parser = self.session.expression_parser
+        self.values = values
+        self.expression_parser = expression_parser
         # temporary string context guard
-        self.temp_string = self.session.strings
-        self._init_statements()
+        self.temp_string = temp_string
+        # data segment
+        self.memory = memory
 
     def parse_statement(self, ins):
         """Parse and execute a single statement."""
@@ -93,7 +92,7 @@ class StatementParser(object):
         # must not be empty
         error.throw_if(not name, error.STX)
         # append sigil, if missing
-        return self.session.memory.complete_name(name)
+        return self.memory.complete_name(name)
 
     def parse_variable(self, ins):
         """Helper function: parse a scalar or array element."""
@@ -101,7 +100,7 @@ class StatementParser(object):
         error.throw_if(not name, error.STX)
         # this is an evaluation-time determination
         # as we could have passed another DEFtype statement
-        name = self.session.memory.complete_name(name)
+        name = self.memory.complete_name(name)
         indices = self.expression_parser.parse_indices(ins)
         return name, indices
 
@@ -127,8 +126,10 @@ class StatementParser(object):
 
     ###########################################################################
 
-    def _init_statements(self):
+    def init_statements(self, session):
         """Initialise statements."""
+        self.interpreter = session.interpreter
+        self.session = session
         self.statements = {
             tk.END: self.exec_end,
             tk.FOR: self.exec_for,
@@ -250,7 +251,6 @@ class StatementParser(object):
     def __setstate__(self, pickle_dict):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
-        self._init_statements()
 
 
     def exec_system(self, ins):
@@ -573,7 +573,7 @@ class StatementParser(object):
             ins.require_end()
             if not (mml0 or mml1 or mml2):
                 raise error.RunError(error.MISSING_OPERAND)
-            self.session.sound.play(self.session.memory, self.values, (mml0, mml1, mml2))
+            self.session.sound.play(self.memory, self.values, (mml0, mml1, mml2))
 
     def exec_noise(self, ins):
         """NOISE: produce sound on the noise generator (Tandy/PCjr)."""
@@ -612,7 +612,7 @@ class StatementParser(object):
             # def_seg() accepts signed values
             self.session.all_memory.def_seg(values.to_int(self.parse_expression(ins), unsigned=True))
         else:
-            self.session.all_memory.def_seg(self.session.memory.data_segment)
+            self.session.all_memory.def_seg(self.memory.data_segment)
         ins.require_end()
 
     def exec_def_usr(self, ins):
@@ -997,7 +997,7 @@ class StatementParser(object):
             if mode not in ('A', 'P'):
                 raise error.RunError(error.STX)
         with self.session.files.open(0, name, filetype=mode, mode='O',
-                                seg=self.session.memory.data_segment, offset=self.session.memory.code_start,
+                                seg=self.memory.data_segment, offset=self.memory.code_start,
                                 length=len(self.interpreter.program_code.getvalue())-1
                                 ) as f:
             self.session.program.save(f)
@@ -1129,9 +1129,9 @@ class StatementParser(object):
             raise error.RunError(error.PATH_FILE_ACCESS_ERROR)
         elif mode != 'R' and access and access != default_access_modes[mode]:
             raise error.RunError(error.STX)
-        error.range_check(1, self.session.memory.max_reclen, reclen)
+        error.range_check(1, self.memory.max_reclen, reclen)
         # can't open file 0, or beyond max_files
-        error.range_check_err(1, self.session.memory.max_files, number, error.BAD_FILE_NUMBER)
+        error.range_check_err(1, self.memory.max_files, number, error.BAD_FILE_NUMBER)
         self.session.files.open(number, name, 'D', mode, access, lock, reclen)
         ins.require_end()
 
@@ -1440,7 +1440,7 @@ class StatementParser(object):
             raise error.RunError(error.IFC)
         gml = self.parse_temporary_string(ins)
         ins.require_end()
-        self.session.screen.drawing.draw(gml, self.session.memory, self.values, self.session.events)
+        self.session.screen.drawing.draw(gml, self.memory, self.values, self.session.events)
 
     ##########################################################
     # Flow-control statements
@@ -1785,7 +1785,7 @@ class StatementParser(object):
                     #  0 leads to illegal fn call
                     raise error.RunError(error.IFC)
                 else:
-                    if not self.session.memory.set_basic_memory_size(mem_size):
+                    if not self.memory.set_basic_memory_size(mem_size):
                         raise error.RunError(error.OUT_OF_MEMORY)
             if ins.skip_blank_read_if((',',)):
                 # set aside stack space for GW-BASIC. The default is the previous stack space size.
@@ -1798,7 +1798,7 @@ class StatementParser(object):
                     if stack_size == 0:
                         #  0 leads to illegal fn call
                         raise error.RunError(error.IFC)
-                    self.session.memory.set_stack_size(stack_size)
+                    self.memory.set_stack_size(stack_size)
                 if self.syntax in ('pcjr', 'tandy') and ins.skip_blank_read_if((',',)):
                     # Tandy/PCjr: select video memory size
                     video_size = values.round(self.parse_expression(ins)).to_value()
@@ -1853,7 +1853,7 @@ class StatementParser(object):
                 stop = ins.skip_blank_read()
                 if stop not in string.ascii_letters:
                     raise error.RunError(error.STX)
-            self.session.memory.set_deftype(start, stop, typechar)
+            self.memory.set_deftype(start, stop, typechar)
             if not ins.skip_blank_read_if((',',)):
                 break
         ins.require_end()
@@ -1874,7 +1874,7 @@ class StatementParser(object):
             # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out of range afterwards
             self.session.arrays.check_dim(name, indices)
         ins.require_read((tk.O_EQ,))
-        self.session.memory.set_variable(name, indices, self.parse_expression(ins))
+        self.memory.set_variable(name, indices, self.parse_expression(ins))
         ins.require_end()
 
     def exec_mid(self, ins):
@@ -1893,7 +1893,7 @@ class StatementParser(object):
             num = self.parse_value(ins, values.INT)
         ins.require_read((')',))
         with self.temp_string:
-            s = values.pass_string(self.session.memory.get_variable(name, indices)).to_str()
+            s = values.pass_string(self.memory.get_variable(name, indices)).to_str()
         num = 255 if num is None else num
         error.range_check(0, 255, num)
         if num > 0:
@@ -1904,19 +1904,19 @@ class StatementParser(object):
         val = values.pass_string(self.parse_expression(ins))
         ins.require_end()
         # copy new value into existing buffer if possible
-        basic_str = self.session.memory.get_variable(name, indices)
-        self.session.memory.set_variable(name, indices, basic_str.midset(start, num, val))
+        basic_str = self.memory.get_variable(name, indices)
+        self.memory.set_variable(name, indices, basic_str.midset(start, num, val))
 
     def exec_lset(self, ins, justify_right=False):
         """LSET: assign string value in-place; left justified."""
         name, index = self.parse_variable(ins)
-        v = values.pass_string(self.session.memory.get_variable(name, index))
+        v = values.pass_string(self.memory.get_variable(name, index))
         ins.require_read((tk.O_EQ,))
         # we're not using a temp string here
         # as it would delete the new string generated by lset if applied to a code literal
         s = values.pass_string(self.parse_expression(ins))
         # copy new value into existing buffer if possible
-        self.session.memory.set_variable(name, index, v.lset(s, justify_right))
+        self.memory.set_variable(name, index, v.lset(s, justify_right))
 
     def exec_rset(self, ins):
         """RSET: assign string value in-place; right justified."""
@@ -1937,7 +1937,7 @@ class StatementParser(object):
             entry = self.interpreter.read_entry()
             if name[-1] == '$':
                 if ins == self.interpreter.program_code:
-                    address = self.interpreter.data_pos + self.session.memory.code_start
+                    address = self.interpreter.data_pos + self.memory.code_start
                 else:
                     address = None
                 value = self.values.from_str_at(entry, address)
@@ -1948,7 +1948,7 @@ class StatementParser(object):
                     self.interpreter.program_code.seek(self.interpreter.data_pos)
                     # syntax error in DATA line (not type mismatch!) if can't convert to var type
                     raise error.RunError(error.STX, self.interpreter.data_pos-1)
-            self.session.memory.set_variable(name, indices, value=value)
+            self.memory.set_variable(name, indices, value=value)
         ins.require_end()
 
     def exec_input(self, ins):
@@ -1958,7 +1958,7 @@ class StatementParser(object):
             finp = self.session.files.get(file_number, mode='IR')
             ins.require_read((',',))
             readvar = self._parse_var_list(ins)
-            parseinput.input_file_(self.session.memory, self.values, finp, readvar)
+            parseinput.input_file_(self.memory, self.values, finp, readvar)
         else:
             # ; to avoid echoing newline
             newline = not ins.skip_blank_read_if((';',))
@@ -2004,7 +2004,7 @@ class StatementParser(object):
         name1, index1 = self.parse_variable(ins)
         ins.require_read((',',))
         name2, index2 = self.parse_variable(ins)
-        self.session.memory.swap(name1, index1, name2, index2)
+        self.memory.swap(name1, index1, name2, index2)
         # if syntax error. the swap has happened
         ins.require_end()
 
@@ -2016,7 +2016,7 @@ class StatementParser(object):
             raise error.RunError(error.ILLEGAL_DIRECT)
         fnname = self.parse_scalar(ins)
         ins.skip_blank()
-        self.session.expression_parser.user_functions.define(fnname, ins)
+        self.expression_parser.user_functions.define(fnname, ins)
 
     def exec_randomize(self, ins):
         """RANDOMIZE: set random number generator seed."""
@@ -2205,7 +2205,7 @@ class StatementParser(object):
         else:
             with self.temp_string:
                 if d in string.digits or d in tk.NUMBER:
-                    expr = self.session.expression_parser.read_number_literal(ins)
+                    expr = self.expression_parser.read_number_literal(ins)
                 else:
                     expr = self.parse_expression(ins)
                 if isinstance(expr, values.String):

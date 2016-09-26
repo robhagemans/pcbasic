@@ -11,14 +11,13 @@ import struct
 
 from . import error
 from . import tokens as tk
-from . import statements
 from . import codestream
 
 
 class Interpreter(object):
     """BASIC interpreter."""
 
-    def __init__(self, session, syntax, term):
+    def __init__(self, session, statement_parser):
         """Initialise interpreter."""
         self.session = session
         # line number tracing
@@ -32,7 +31,8 @@ class Interpreter(object):
         self.init_error_trapping()
         self.error_num = 0
         self.error_pos = 0
-        self.statement_parser = statements.StatementParser(self, syntax, term)
+        self.statement_parser = statement_parser
+        self.set_pointer(False, 0)
 
     def init_error_trapping(self):
         """Initialise error trapping."""

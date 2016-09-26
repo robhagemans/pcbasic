@@ -38,6 +38,7 @@ from . import scalars
 from . import arrays
 from . import values
 from . import expressions
+from . import statements
 
 
 class Session(object):
@@ -170,16 +171,19 @@ class Session(object):
         # initialise the expression parser
         self.expression_parser = expressions.ExpressionParser(
                 self.values, self.memory, self.program, self.files)
+        self.statement_parser = statements.StatementParser(
+                self.values, self.strings, self.memory, self.expression_parser,
+                syntax, pcjr_term)
         # initialise the parser
         self.events.reset()
-        self.interpreter = interpreter.Interpreter(self, syntax, pcjr_term)
-        self.interpreter.set_pointer(False, 0)
+        self.interpreter = interpreter.Interpreter(self, self.statement_parser)
         # set up rest of memory model
         self.all_memory = machine.Memory(self.memory, self.devices,
                             self.screen, self.keyboard, self.screen.fonts[8],
                             self.interpreter, peek_values, syntax)
         # build function table (depends on Memory having been initialised)
         self.expression_parser.init_functions(self)
+        self.statement_parser.init_statements(self)
         # set up debugger
         self.debugger = debug.get_debugger(self, option_debug)
 
