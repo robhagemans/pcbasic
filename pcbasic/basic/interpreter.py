@@ -17,21 +17,26 @@ from . import codestream
 class Interpreter(object):
     """BASIC interpreter."""
 
-    def __init__(self, session, statement_parser):
+    def __init__(self, session, program, statement_parser):
         """Initialise interpreter."""
         self.session = session
         # line number tracing
         self.tron = False
         # pointer position: False for direct line, True for program
         self.run_mode = False
-        self.program_code = session.program.bytecode
+        # program buffer
+        self.program = program
+        self.program_code = program.bytecode
+        # direct line buffer
+        self.direct_line = codestream.TokenisedStream()
         self.current_statement = 0
+        # statement syntax parser
+        self.statement_parser = statement_parser
         # clear stacks
         self.clear_stacks_and_pointers()
         self.init_error_trapping()
         self.error_num = 0
         self.error_pos = 0
-        self.statement_parser = statement_parser
         self.set_pointer(False, 0)
 
     def init_error_trapping(self):
@@ -161,7 +166,7 @@ class Interpreter(object):
         elif self.error_pos == -1:
             return 65535
         else:
-            return self.session.program.get_line_number(self.error_pos)
+            return self.program.get_line_number(self.error_pos)
 
     def err_(self):
         """ERR: get error code of last error."""
@@ -173,6 +178,7 @@ class Interpreter(object):
     def set_pointer(self, new_runmode, pos=None):
         """Set program pointer to the given codestream and position."""
         self.run_mode = new_runmode
+        self.statement_parser.set_runmode(new_runmode)
         # events are active in run mode
         self.session.events.set_active(new_runmode)
         # keep the sound engine on to avoid delays in run mode
@@ -189,7 +195,7 @@ class Interpreter(object):
 
     def get_codestream(self):
         """Get the current codestream."""
-        return self.program_code if self.run_mode else self.session.direct_line
+        return self.program_code if self.run_mode else self.direct_line
 
     def jump(self, jumpnum, err=error.UNDEFINED_LINE_NUMBER):
         """Execute jump for a GOTO or RUN instruction."""
@@ -198,7 +204,7 @@ class Interpreter(object):
         else:
             try:
                 # jump to target
-                self.set_pointer(True, self.session.program.line_numbers[jumpnum])
+                self.set_pointer(True, self.program.line_numbers[jumpnum])
             except KeyError:
                 raise error.RunError(err)
 
@@ -266,7 +272,7 @@ class Interpreter(object):
     def restore(self, datanum=-1):
         """Reset data pointer (RESTORE) """
         try:
-            self.data_pos = 0 if datanum == -1 else self.session.program.line_numbers[datanum]
+            self.data_pos = 0 if datanum == -1 else self.program.line_numbers[datanum]
         except KeyError:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
 

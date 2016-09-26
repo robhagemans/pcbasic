@@ -166,8 +166,6 @@ class Session(object):
         self.machine = machine.MachinePorts(self)
         # interpreter is executing a command (needs Screen)
         self._set_parse_mode(False)
-        # direct line buffer
-        self.direct_line = codestream.TokenisedStream()
         # initialise the expression parser
         self.expression_parser = expressions.ExpressionParser(
                 self.values, self.memory, self.program, self.files)
@@ -176,7 +174,7 @@ class Session(object):
                 syntax, pcjr_term)
         # initialise the parser
         self.events.reset()
-        self.interpreter = interpreter.Interpreter(self, self.statement_parser)
+        self.interpreter = interpreter.Interpreter(self, self.program, self.statement_parser)
         # set up rest of memory model
         self.all_memory = machine.Memory(self.memory, self.devices,
                             self.screen, self.keyboard, self.screen.fonts[8],
@@ -351,12 +349,12 @@ class Session(object):
         """Store a program line or schedule a command line for execution."""
         if not line:
             return True
-        self.direct_line = self.tokeniser.tokenise_line(line)
-        c = self.direct_line.peek()
+        self.interpreter.direct_line = self.tokeniser.tokenise_line(line)
+        c = self.interpreter.direct_line.peek()
         if c == '\0':
             # check for lines starting with numbers (6553 6) and empty lines
-            self.program.check_number_start(self.direct_line)
-            self.program.store_line(self.direct_line)
+            self.program.check_number_start(self.interpreter.direct_line)
+            self.program.store_line(self.interpreter.direct_line)
             # clear all program stacks
             self.interpreter.clear_stacks_and_pointers()
             self.clear()
@@ -390,13 +388,13 @@ class Session(object):
             self.screen.write(' ')
             line = bytearray(self.editor.wait_screenline(from_start=True))
         # run or store it; don't clear lines or raise undefined line number
-        self.direct_line = self.tokeniser.tokenise_line(line)
-        c = self.direct_line.peek()
+        self.interpreter.direct_line = self.tokeniser.tokenise_line(line)
+        c = self.interpreter.direct_line.peek()
         if c == '\0':
             # check for lines starting with numbers (6553 6) and empty lines
-            empty, scanline = self.program.check_number_start(self.direct_line)
+            empty, scanline = self.program.check_number_start(self.interpreter.direct_line)
             if not empty:
-                self.program.store_line(self.direct_line)
+                self.program.store_line(self.interpreter.direct_line)
                 # clear all program stacks
                 self.interpreter.clear_stacks_and_pointers()
                 self.clear()
