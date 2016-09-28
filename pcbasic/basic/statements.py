@@ -256,60 +256,6 @@ class StatementParser(object):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
 
-    ###########################################################################
-
-    def exec_system(self, ins):
-        """SYSTEM: exit interpreter."""
-        # SYSTEM LAH does not execute
-        ins.require_end()
-        raise error.Exit()
-
-    def exec_tron(self, ins):
-        """TRON: turn on line number tracing."""
-        self.session.interpreter.tron_()
-        # TRON LAH gives error, but TRON has been executed
-        ins.require_end()
-
-    def exec_troff(self, ins):
-        """TROFF: turn off line number tracing."""
-        self.session.interpreter.troff_()
-        ins.require_end()
-
-    def exec_rem(self, ins):
-        """REM: comment."""
-        # skip the rest of the line, but parse numbers to avoid triggering EOL
-        ins.skip_to(tk.END_LINE)
-
-    def exec_lcopy(self, ins):
-        """LCOPY: do nothing but check for syntax errors."""
-        # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            error.range_check(0, 255, values.to_int(self.parse_expression(ins)))
-            ins.require_end()
-
-    def exec_motor(self, ins):
-        """MOTOR: do nothing but check for syntax errors."""
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            error.range_check(0, 255, values.to_int(self.parse_expression(ins)))
-            ins.require_end()
-
-    def exec_debug(self, ins):
-        """DEBUG: execute Python command."""
-        # this is not a GW-BASIC behaviour, but helps debugging.
-        # this is parsed like a REM by the tokeniser.
-        # rest of the line is considered to be a python statement
-        ins.skip_blank()
-        debug_cmd = ''
-        while ins.peek() not in tk.END_LINE:
-            debug_cmd += ins.read(1)
-        self.session.debugger.debug_exec(debug_cmd)
-
-    def exec_term(self, ins):
-        """TERM: load and run PCjr buitin terminal emulator program."""
-        ins.require_end()
-        self.session.interpreter.term_()
-
-
     ##########################################################
     # statements that require further qualification
 
@@ -378,6 +324,61 @@ class StatementParser(object):
                 self.exec_on_jump(ins)
         else:
             self.exec_on_jump(ins)
+
+
+    ###########################################################################
+    # interpreter commands and no-op statements
+
+    def exec_system(self, ins):
+        """SYSTEM: exit interpreter."""
+        # SYSTEM LAH does not execute
+        ins.require_end()
+        raise error.Exit()
+
+    def exec_tron(self, ins):
+        """TRON: turn on line number tracing."""
+        self.session.interpreter.tron_()
+        # TRON LAH gives error, but TRON has been executed
+        ins.require_end()
+
+    def exec_troff(self, ins):
+        """TROFF: turn off line number tracing."""
+        self.session.interpreter.troff_()
+        ins.require_end()
+
+    def exec_rem(self, ins):
+        """REM: comment."""
+        # skip the rest of the line, but parse numbers to avoid triggering EOL
+        ins.skip_to(tk.END_LINE)
+
+    def exec_lcopy(self, ins):
+        """LCOPY: do nothing but check for syntax errors."""
+        # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            error.range_check(0, 255, values.to_int(self.parse_expression(ins)))
+            ins.require_end()
+
+    def exec_motor(self, ins):
+        """MOTOR: do nothing but check for syntax errors."""
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            error.range_check(0, 255, values.to_int(self.parse_expression(ins)))
+            ins.require_end()
+
+    def exec_debug(self, ins):
+        """DEBUG: execute Python command."""
+        # this is not a GW-BASIC behaviour, but helps debugging.
+        # this is parsed like a REM by the tokeniser.
+        # rest of the line is considered to be a python statement
+        ins.skip_blank()
+        debug_cmd = ''
+        while ins.peek() not in tk.END_LINE:
+            debug_cmd += ins.read(1)
+        self.session.debugger.debug_exec(debug_cmd)
+
+    def exec_term(self, ins):
+        """TERM: load and run PCjr buitin terminal emulator program."""
+        ins.require_end()
+        self.session.interpreter.term_()
 
     ##########################################################
     # event switches (except PLAY)
