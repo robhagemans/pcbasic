@@ -477,41 +477,42 @@ class StatementParser(object):
 
     def exec_beep(self, ins):
         """BEEP: produce an alert sound or switch internal speaker on/off."""
-        # Tandy/PCjr BEEP ON, OFF
-        if self.syntax in ('pcjr', 'tandy') and ins.skip_blank() in (tk.ON, tk.OFF):
-            # ON/OFF is ignored
-            ins.read(1)
-            ins.require_end()
-            return
-        self.session.sound.beep()
+        command = None
+        if self.syntax in ('pcjr', 'tandy'):
+            # Tandy/PCjr BEEP ON, OFF
+            command = ins.skip_blank_read_if((tk.ON, tk.OFF))
+        self.session.sound.beep_(command)
         # if a syntax error happens, we still beeped.
         ins.require_end()
-        if self.session.sound.foreground:
-            self.session.sound.wait_music()
 
     def exec_sound(self, ins):
-        """SOUND: produce an arbitrary sound or switch external speaker on/off."""
-        # Tandy/PCjr SOUND ON, OFF
-        if self.syntax in ('pcjr', 'tandy') and ins.skip_blank() in (tk.ON, tk.OFF):
-            self.session.sound.sound_on = (ins.read(1) == tk.ON)
+        """SOUND: produce a sound or switch external speaker on/off."""
+        command = None
+        if self.syntax in ('pcjr', 'tandy'):
+            # Tandy/PCjr SOUND ON, OFF
+            command = ins.skip_blank_read_if((tk.ON, tk.OFF))
+        if command:
+            args = command,
             ins.require_end()
-            return
-        freq = values.to_int(self.parse_expression(ins))
-        ins.require_read((',',))
-        dur = values.csng_(self.parse_expression(ins)).to_value()
-        error.range_check(-65535, 65535, dur)
-        # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
-        volume, voice = 15, 0
-        if dur > 0:
-            if (ins.skip_blank_read_if((',',)) and (self.syntax == 'tandy' or
-                    (self.syntax == 'pcjr' and self.session.sound.sound_on))):
-                volume = values.to_int(self.parse_expression(ins))
-                error.range_check(0, 15, volume)
-                if ins.skip_blank_read_if((',',)):
-                    voice = values.to_int(self.parse_expression(ins))
-                    error.range_check(0, 2, voice) # can't address noise channel here
+        else:
+            freq = values.to_int(self.parse_expression(ins))
+            ins.require_read((',',))
+            dur = values.csng_(self.parse_expression(ins)).to_value()
+            error.range_check(-65535, 65535, dur)
+            # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
+            volume, voice = 15, 0
+            if dur > 0:
+                if (ins.skip_blank_read_if((',',)) and (self.syntax == 'tandy' or
+                        (self.syntax == 'pcjr' and self.session.sound.sound_on))):
+                    volume = values.to_int(self.parse_expression(ins))
+                    error.range_check(0, 15, volume)
+                    if ins.skip_blank_read_if((',',)):
+                        voice = values.to_int(self.parse_expression(ins))
+                        error.range_check(0, 2, voice) # can't address noise channel here
+            ins.require_end()
+            args = freq, dur, volume, voice
+        self.session.sound.sound_(*args)
         ins.require_end()
-        self.session.sound.sound(freq, dur, volume, voice)
 
     def exec_play(self, ins):
         """PLAY: event switch/play MML string."""
@@ -533,7 +534,7 @@ class StatementParser(object):
             ins.require_end()
             if not (mml0 or mml1 or mml2):
                 raise error.RunError(error.MISSING_OPERAND)
-            self.session.sound.play(self.memory, self.values, (mml0, mml1, mml2))
+            self.session.sound.play_(self.memory, self.values, (mml0, mml1, mml2))
 
     def exec_noise(self, ins):
         """NOISE: produce sound on the noise generator (Tandy/PCjr)."""
@@ -548,8 +549,7 @@ class StatementParser(object):
         dur = values.csng_(self.parse_expression(ins)).to_value()
         error.range_check(-65535, 65535, dur)
         ins.require_end()
-        self.session.sound.noise(source, volume, dur)
-
+        self.session.sound.noise_(source, volume, dur)
 
     ##########################################################
     # machine emulation

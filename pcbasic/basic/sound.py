@@ -15,6 +15,7 @@ from . import error
 from . import mlparser
 from . import signals
 from . import values
+from . import tokens as tk
 
 # base frequency for noise source
 base_freq = 3579545./1024.
@@ -71,9 +72,12 @@ class Sound(object):
         # reset all PLAY state
         self.play_state = [ PlayState(), PlayState(), PlayState() ]
 
-    def beep(self):
-        """Play the BEEP sound."""
-        self.play_sound(800, 0.25)
+    def beep_(self, command=None):
+        """BEEP: produce an alert sound or switch internal speaker on/off."""
+        if command:
+            self.beep_on = (command == tk.ON)
+        else:
+            self.play_sound(800, 0.25)
 
     def play_sound_no_wait(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
         """Play a sound on the tone generator."""
@@ -93,8 +97,13 @@ class Sound(object):
             self.noise_freq[3] = frequency/2.
             self.noise_freq[7] = frequency/2.
 
-    def sound(self, freq, dur, volume, voice):
-        """Play a sound (SOUND statement)."""
+    def sound_(self, *args):
+        """SOUND: produce a sound or switch external speaker on/off."""
+        if len(args) == 1:
+            command, = args
+            self.sound_on = (command == tk.ON)
+            return
+        freq, dur, volume, voice = args
         if dur == 0:
             self.stop_all_sound()
             return
@@ -119,7 +128,7 @@ class Sound(object):
         # at most 16 notes in the sound queue (not 32 as the guide says!)
         self.wait_music(15)
 
-    def noise(self, source, volume, dur):
+    def noise_(self, source, volume, dur):
         """Generate a noise (NOISE statement)."""
         # calculate duration in seconds
         dur_sec = dur / 18.2
@@ -189,7 +198,7 @@ class Sound(object):
             voice = 0
         return self.queue_length(voice)
 
-    def play(self, data_segment, values, mml_list):
+    def play_(self, data_segment, values, mml_list):
         """Parse a list of Music Macro Language strings (PLAY statement)."""
         ml_parser_list = [mlparser.MLParser(mml, data_segment, values) for mml in mml_list]
         next_oct = 0

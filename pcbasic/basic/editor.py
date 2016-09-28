@@ -272,7 +272,7 @@ class Editor(object):
                     break
                 elif d == b'\a':
                     # BEL, CTRL+G
-                    self.sound.beep()
+                    self.sound.beep_()
                 elif d == b'\b':
                     # BACKSPACE, CTRL+H
                     self.backspace(start_row, furthest_left)
