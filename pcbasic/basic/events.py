@@ -77,6 +77,38 @@ class Events(object):
 
 
     ##########################################################################
+    # callbacks
+
+    def pen_(self, command):
+        """PEN: switch on/off light pen event handling."""
+        self.command(self.pen, command)
+
+    def strig_(self, num, command):
+        """STRIG: switch on/off fire button event handling."""
+        if num not in (0, 2, 4, 6):
+            raise error.RunError(error.IFC)
+        self.command(self.strig[num//2], command)
+
+    def com_(self, num, command):
+        """COM: switch on/off serial port event handling."""
+        error.range_check(1, 2, num)
+        self.command(self.com[num-1], command)
+
+    def timer_(self, command):
+        """TIMER: switch on/off timer event handling."""
+        self.command(self.timer, command)
+
+    def key_(self, num, command):
+        """KEY: switch on/off keyboard events."""
+        # others are ignored
+        if num >= 1 and num <= 20:
+            self.command(self.key[num-1], command)
+
+    def play_(self, command):
+        """PLAY: switch on/off sound queue event handling."""
+        self.command(self.play, command)
+
+    ##########################################################################
     # main event checker
 
     tick = 0.006

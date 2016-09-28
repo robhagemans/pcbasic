@@ -12,6 +12,7 @@ import logging
 from . import error
 from . import scancode
 from . import values
+from . import tokens as tk
 from .eascii import as_bytes as ea
 from .eascii import as_unicode as uea
 
@@ -433,9 +434,9 @@ class Stick(object):
         # timer for reading game port
         self.out_time = self._decay_timer()
 
-    def switch(self, on):
+    def strig_statement_(self, on):
         """Switch joystick handling on or off."""
-        self.is_on = on
+        self.is_on = (on == tk.ON)
 
     def down(self, joy, button):
         """Report a joystick button down event."""

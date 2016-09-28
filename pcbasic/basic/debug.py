@@ -64,10 +64,10 @@ class BaseDebugger(object):
                             self.session.program.bytecode.tell())
             screen.write_line('\n')
         else:
-            self.session.direct_line.seek(0)
+            self.session.interpreter.direct_line.seek(0)
             screen.write_line(str(
                     self.session.lister.detokenise_compound_statement(
-                            self.session.direct_line)[0])+'\n')
+                            self.session.interpreter.direct_line)[0])+'\n')
         stack = traceback.extract_tb(exc_traceback)
         for s in stack[-4:]:
             screen.set_attr(15)
@@ -100,7 +100,7 @@ class BaseDebugger(object):
     def debug_step(self, token):
         """Dummy debug step."""
 
-    def debug_exec(self, debug_cmd):
+    def debug_(self, debug_cmd):
         """Dummy debug exec."""
 
 
@@ -135,7 +135,7 @@ class Debugger(BaseDebugger):
         if outstr:
             logging.debug(outstr)
 
-    def debug_exec(self, debug_cmd):
+    def debug_(self, debug_cmd):
         """Execute a debug command."""
         global debugger, session
         # make session available to debugging commands

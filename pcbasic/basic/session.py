@@ -171,10 +171,11 @@ class Session(object):
                 self.values, self.memory, self.program, self.files)
         self.statement_parser = statements.StatementParser(
                 self.values, self.strings, self.memory, self.expression_parser,
-                syntax, pcjr_term)
+                syntax)
         # initialise the parser
         self.events.reset()
-        self.interpreter = interpreter.Interpreter(self, self.program, self.statement_parser)
+        self.interpreter = interpreter.Interpreter(
+                self, self.program, self.statement_parser, pcjr_term)
         # set up rest of memory model
         self.all_memory = machine.Memory(self.memory, self.devices,
                             self.screen, self.keyboard, self.screen.fonts[8],
@@ -489,7 +490,7 @@ class Session(object):
         # stop all sound
         self.sound.stop_all_sound()
         # Resets STRIG to off
-        self.stick.switch(False)
+        self.stick.strig_statement_(tk.OFF)
         # reset sound and PLAY state
         self.sound.reset()
         # reset DRAW state (angle, scale) and current graphics position

@@ -25,12 +25,10 @@ from . import expressions
 class StatementParser(object):
     """BASIC statements."""
 
-    def __init__(self, values, temp_string, memory, expression_parser, syntax, term):
+    def __init__(self, values, temp_string, memory, expression_parser, syntax):
         """Initialise statement context."""
         # syntax: advanced, pcjr, tandy
         self.syntax = syntax
-        # program for TERM command
-        self.term = term
         self.values = values
         self.expression_parser = expression_parser
         # temporary string context guard
@@ -325,7 +323,6 @@ class StatementParser(object):
         else:
             self.exec_on_jump(ins)
 
-
     ###########################################################################
     # interpreter commands and no-op statements
 
@@ -333,7 +330,7 @@ class StatementParser(object):
         """SYSTEM: exit interpreter."""
         # SYSTEM LAH does not execute
         ins.require_end()
-        raise error.Exit()
+        self.session.interpreter.system_()
 
     def exec_tron(self, ins):
         """TRON: turn on line number tracing."""
@@ -353,16 +350,21 @@ class StatementParser(object):
 
     def exec_lcopy(self, ins):
         """LCOPY: do nothing but check for syntax errors."""
-        # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
+        val = None
         if ins.skip_blank() not in tk.END_STATEMENT:
-            error.range_check(0, 255, values.to_int(self.parse_expression(ins)))
+            val = values.to_int(self.parse_expression(ins))
+            error.range_check(0, 255, val)
             ins.require_end()
+        self.session.devices.lcopy_(val)
 
     def exec_motor(self, ins):
-        """MOTOR: do nothing but check for syntax errors."""
+        """MOTOR: drive cassette motor."""
+        val = None
         if ins.skip_blank() not in tk.END_STATEMENT:
-            error.range_check(0, 255, values.to_int(self.parse_expression(ins)))
+            val = values.to_int(self.parse_expression(ins))
+            error.range_check(0, 255, val)
             ins.require_end()
+        self.session.devices.motor_(val)
 
     def exec_debug(self, ins):
         """DEBUG: execute Python command."""
@@ -373,7 +375,7 @@ class StatementParser(object):
         debug_cmd = ''
         while ins.peek() not in tk.END_LINE:
             debug_cmd += ins.read(1)
-        self.session.debugger.debug_exec(debug_cmd)
+        self.session.debugger.debug_(debug_cmd)
 
     def exec_term(self, ins):
         """TERM: load and run PCjr buitin terminal emulator program."""
@@ -386,7 +388,7 @@ class StatementParser(object):
     def exec_pen(self, ins):
         """PEN: switch on/off light pen event handling."""
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        self.session.events.command(self.session.events.pen, command)
+        self.session.events.pen_(command)
         ins.require_end()
 
     def exec_strig(self, ins):
@@ -396,38 +398,32 @@ class StatementParser(object):
             # strig (n)
             num = values.to_int(self.parse_expression(ins))
             ins.require_read((')',))
-            if num not in (0, 2, 4, 6):
-                raise error.RunError(error.IFC)
             command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-            self.session.events.command(self.session.events.strig[num//2], command)
-        elif d == tk.ON:
-            self.session.stick.switch(True)
-        elif d == tk.OFF:
-            self.session.stick.switch(False)
+            self.session.events.strig_(num, command)
+        elif d in (tk.ON, tk.OFF):
+            self.session.stick.strig_statement_(d)
         ins.require_end()
 
     def exec_com(self, ins):
         """COM: switch on/off serial port event handling."""
         num = values.to_int(self.parse_bracket(ins))
-        error.range_check(1, 2, num)
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        self.session.events.command(self.session.events.com[num-1], command)
+        self.session.events.com_(num, command)
         ins.require_end()
 
     def exec_timer(self, ins):
         """TIMER: switch on/off timer event handling."""
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        self.session.events.command(self.session.events.timer, command)
+        self.session.events.timer_(command)
         ins.require_end()
 
     def exec_key_events(self, ins):
         """KEY: switch on/off keyboard events."""
         num = values.to_int(self.parse_bracket(ins))
         error.range_check(0, 255, num)
-        # others are ignored
-        if num >= 1 and num <= 20:
-            command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-            self.session.events.command(self.session.events.key[num-1], command)
+        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+        self.session.events.key_(num, command)
+        ins.require_end()
 
     ##########################################################
     # event definitions
@@ -506,6 +502,8 @@ class StatementParser(object):
         if self.session.sound.foreground:
             self.session.sound.wait_music()
 
+
+
     def exec_sound(self, ins):
         """SOUND: produce an arbitrary sound or switch external speaker on/off."""
         # Tandy/PCjr SOUND ON, OFF
@@ -535,7 +533,7 @@ class StatementParser(object):
         command = ins.skip_blank_read_if((tk.ON, tk.OFF, tk.STOP))
         if command:
             # PLAY: event switch
-            self.session.events.command(self.session.events.play, command)
+            self.session.events.play_(command)
             ins.require_end()
         else:
             # retrieve Music Macro Language string

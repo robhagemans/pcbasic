@@ -266,18 +266,32 @@ class Devices(object):
             raise error.RunError(error.DEVICE_UNAVAILABLE)
         return self.devices[dev + b':'], spec
 
+    ###########################################################################
+    # function callbacks
+
     def erdev_(self):
         """ERDEV: device error value; not implemented."""
-        logging.warning("ERDEV function not implemented.")
+        logging.warning('ERDEV function not implemented.')
         return 0
 
     def erdev_str_(self):
         """ERDEV$: device error string; not implemented."""
-        logging.warning("ERDEV$ function not implemented.")
+        logging.warning('ERDEV$ function not implemented.')
         return b''
 
     def exterr_(self, val):
         """EXTERR: device error information; not implemented."""
-        logging.warning("EXTERR function not implemented.")
+        logging.warning('EXTERR function not implemented.')
         error.range_check(0, 3, values.to_int(val))
         return 0
+
+    ###########################################################################
+    # statement callbacks
+
+    def motor_(self, value):
+        """MOTOR: drive cassette motor; not implemented."""
+        logging.warning('MOTOR statement not implemented.')
+
+    def lcopy_(self, val):
+        """LCOPY: screen copy / no-op in later GW-BASIC."""
+        # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
