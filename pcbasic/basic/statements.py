@@ -382,7 +382,7 @@ class StatementParser(object):
         ins.require_end()
         self.session.interpreter.term_()
 
-    ##########################################################
+    ###########################################################################
     # event switches (except PLAY)
 
     def exec_pen(self, ins):
@@ -425,7 +425,7 @@ class StatementParser(object):
         self.session.events.key_(num, command)
         ins.require_end()
 
-    ##########################################################
+    ###########################################################################
     # event definitions
 
     def _parse_on_event(self, ins, bracket=True):
@@ -445,47 +445,34 @@ class StatementParser(object):
     def exec_on_key(self, ins):
         """ON KEY: define key event trapping."""
         keynum, jumpnum = self._parse_on_event(ins)
-        keynum = values.to_int(keynum)
-        error.range_check(1, 20, keynum)
-        self.session.events.key[keynum-1].set_jump(jumpnum)
+        self.session.events.on_key_gosub_(keynum, jumpnum)
 
     def exec_on_timer(self, ins):
         """ON TIMER: define timer event trapping."""
         timeval, jumpnum = self._parse_on_event(ins)
-        timeval = values.csng_(timeval).to_value()
-        period = round(timeval * 1000.)
-        self.session.events.timer.set_trigger(period)
-        self.session.events.timer.set_jump(jumpnum)
+        self.session.events.on_timer_gosub_(timeval, jumpnum)
 
     def exec_on_play(self, ins):
         """ON PLAY: define music event trapping."""
         playval, jumpnum = self._parse_on_event(ins)
-        playval = values.to_int(playval)
-        self.session.events.play.set_trigger(playval)
-        self.session.events.play.set_jump(jumpnum)
+        self.session.events.on_play_gosub_(playval, jumpnum)
 
     def exec_on_pen(self, ins):
         """ON PEN: define light pen event trapping."""
         _, jumpnum = self._parse_on_event(ins, bracket=False)
-        self.session.events.pen.set_jump(jumpnum)
+        self.session.events.on_pen_gosub_(jumpnum)
 
     def exec_on_strig(self, ins):
         """ON STRIG: define fire button event trapping."""
         strigval, jumpnum = self._parse_on_event(ins)
-        strigval = values.to_int(strigval)
-        ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
-        if strigval not in (0,2,4,6):
-            raise error.RunError(error.IFC)
-        self.session.events.strig[strigval//2].set_jump(jumpnum)
+        self.session.events.on_strig_gosub_(strigval, jumpnum)
 
     def exec_on_com(self, ins):
         """ON COM: define serial port event trapping."""
         keynum, jumpnum = self._parse_on_event(ins)
-        keynum = values.to_int(keynum)
-        error.range_check(1, 2, keynum)
-        self.session.events.com[keynum-1].set_jump(jumpnum)
+        self.session.events.on_com_gosub_(keynum, jumpnum)
 
-    ##########################################################
+    ###########################################################################
     # sound
 
     def exec_beep(self, ins):
@@ -501,8 +488,6 @@ class StatementParser(object):
         ins.require_end()
         if self.session.sound.foreground:
             self.session.sound.wait_music()
-
-
 
     def exec_sound(self, ins):
         """SOUND: produce an arbitrary sound or switch external speaker on/off."""

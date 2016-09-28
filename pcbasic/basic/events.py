@@ -13,6 +13,7 @@ import Queue
 from . import scancode
 from . import signals
 from . import error
+from . import values
 from . import tokens as tk
 
 
@@ -107,6 +108,44 @@ class Events(object):
     def play_(self, command):
         """PLAY: switch on/off sound queue event handling."""
         self.command(self.play, command)
+
+    def on_key_gosub_(self, keynum, jumpnum):
+        """ON KEY: define key event trapping."""
+        keynum = values.to_int(keynum)
+        error.range_check(1, 20, keynum)
+        self.key[keynum-1].set_jump(jumpnum)
+
+    def on_timer_gosub_(self, timeval, jumpnum):
+        """ON TIMER: define timer event trapping."""
+        timeval = values.csng_(timeval).to_value()
+        period = round(timeval * 1000.)
+        self.timer.set_trigger(period)
+        self.timer.set_jump(jumpnum)
+
+    def on_play_gosub_(self, playval, jumpnum):
+        """ON PLAY: define music event trapping."""
+        playval = values.to_int(playval)
+        self.play.set_trigger(playval)
+        self.play.set_jump(jumpnum)
+
+    def on_pen_gosub_(self, jumpnum):
+        """ON PEN: define light pen event trapping."""
+        self.pen.set_jump(jumpnum)
+
+    def on_strig_gosub_(self, strigval, jumpnum):
+        """ON STRIG: define fire button event trapping."""
+        strigval = values.to_int(strigval)
+        ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
+        if strigval not in (0,2,4,6):
+            raise error.RunError(error.IFC)
+        self.strig[strigval//2].set_jump(jumpnum)
+
+    def on_com_gosub_(self, keynum, jumpnum):
+        """ON COM: define serial port event trapping."""
+        keynum = values.to_int(keynum)
+        error.range_check(1, 2, keynum)
+        self.com[keynum-1].set_jump(jumpnum)
+
 
     ##########################################################################
     # main event checker
