@@ -302,24 +302,12 @@ class StatementParser(object):
         """ON: select ON ERROR, ON KEY, ON TIMER, ON PLAY, ON COM, ON PEN, ON STRIG
             or ON (jump statement)."""
         c = ins.skip_blank()
-        if ins.read_if(c, (tk.ERROR,)):
-            self.exec_on_error(ins)
-        elif ins.read_if(c, (tk.KEY,)):
-            self.exec_on_key(ins)
-        elif c in ('\xFE', '\xFF'):
-            c = ins.peek(2)
-            if ins.read_if(c, (tk.TIMER,)):
-                self.exec_on_timer(ins)
-            elif ins.read_if(c, (tk.PLAY,)):
-                self.exec_on_play(ins)
-            elif ins.read_if(c, (tk.COM,)):
-                self.exec_on_com(ins)
-            elif ins.read_if(c, (tk.PEN,)):
-                self.exec_on_pen(ins)
-            elif ins.read_if(c, (tk.STRIG,)):
-                self.exec_on_strig(ins)
+        if c in (tk.ERROR, tk.KEY, '\xFE', '\xFF'):
+            token = ins.read_keyword_token()
+            if token == tk.ERROR:
+                self.exec_on_error(ins)
             else:
-                self.exec_on_jump(ins)
+                self.exec_on_event(ins, token)
         else:
             self.exec_on_jump(ins)
 
@@ -428,11 +416,13 @@ class StatementParser(object):
     ###########################################################################
     # event definitions
 
-    def _parse_on_event(self, ins, bracket=True):
+    def exec_on_event(self, ins, token):
         """Helper function for ON event trap definitions."""
         num = None
-        if bracket:
+        if token != tk.PEN:
             num = self.parse_bracket(ins)
+        elif token not in (tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
+            raise error.RunError(error.STX)
         ins.require_read((tk.GOSUB,))
         jumpnum = self.parse_jumpnum(ins)
         if jumpnum == 0:
@@ -440,37 +430,7 @@ class StatementParser(object):
         elif jumpnum not in self.session.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         ins.require_end()
-        return num, jumpnum
-
-    def exec_on_key(self, ins):
-        """ON KEY: define key event trapping."""
-        keynum, jumpnum = self._parse_on_event(ins)
-        self.session.events.on_key_gosub_(keynum, jumpnum)
-
-    def exec_on_timer(self, ins):
-        """ON TIMER: define timer event trapping."""
-        timeval, jumpnum = self._parse_on_event(ins)
-        self.session.events.on_timer_gosub_(timeval, jumpnum)
-
-    def exec_on_play(self, ins):
-        """ON PLAY: define music event trapping."""
-        playval, jumpnum = self._parse_on_event(ins)
-        self.session.events.on_play_gosub_(playval, jumpnum)
-
-    def exec_on_pen(self, ins):
-        """ON PEN: define light pen event trapping."""
-        _, jumpnum = self._parse_on_event(ins, bracket=False)
-        self.session.events.on_pen_gosub_(jumpnum)
-
-    def exec_on_strig(self, ins):
-        """ON STRIG: define fire button event trapping."""
-        strigval, jumpnum = self._parse_on_event(ins)
-        self.session.events.on_strig_gosub_(strigval, jumpnum)
-
-    def exec_on_com(self, ins):
-        """ON COM: define serial port event trapping."""
-        keynum, jumpnum = self._parse_on_event(ins)
-        self.session.events.on_com_gosub_(keynum, jumpnum)
+        self.session.events.on_event_gosub_(token, num, jumpnum)
 
     ###########################################################################
     # sound
