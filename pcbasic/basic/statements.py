@@ -256,6 +256,7 @@ class StatementParser(object):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
 
+    ###########################################################################
 
     def exec_system(self, ins):
         """SYSTEM: exit interpreter."""
@@ -265,13 +266,13 @@ class StatementParser(object):
 
     def exec_tron(self, ins):
         """TRON: turn on line number tracing."""
-        self.session.interpreter.tron = True
+        self.session.interpreter.tron_()
         # TRON LAH gives error, but TRON has been executed
         ins.require_end()
 
     def exec_troff(self, ins):
         """TROFF: turn off line number tracing."""
-        self.session.interpreter.tron = False
+        self.session.interpreter.troff_()
         ins.require_end()
 
     def exec_rem(self, ins):
@@ -283,13 +284,14 @@ class StatementParser(object):
         """LCOPY: do nothing but check for syntax errors."""
         # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
         if ins.skip_blank() not in tk.END_STATEMENT:
-            error.range_check(0, 255, values.to_int(
-                    self.parse_expression(ins)))
+            error.range_check(0, 255, values.to_int(self.parse_expression(ins)))
             ins.require_end()
 
     def exec_motor(self, ins):
         """MOTOR: do nothing but check for syntax errors."""
-        self.exec_lcopy(ins)
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            error.range_check(0, 255, values.to_int(self.parse_expression(ins)))
+            ins.require_end()
 
     def exec_debug(self, ins):
         """DEBUG: execute Python command."""
@@ -304,17 +306,8 @@ class StatementParser(object):
 
     def exec_term(self, ins):
         """TERM: load and run PCjr buitin terminal emulator program."""
-        try:
-            ins.require_end()
-            self.session.load_program(self.term)
-        except EnvironmentError:
-            # on Tandy, raises Internal Error
-            raise error.RunError(error.INTERNAL_ERROR)
-        self.session.interpreter.clear_stacks_and_pointers()
-        self.session.clear()
-        self.session.interpreter.jump(None)
-        self.session.interpreter.error_handle_mode = False
-        self.session.interpreter.tron = False
+        ins.require_end()
+        self.session.interpreter.term_()
 
 
     ##########################################################
@@ -387,76 +380,56 @@ class StatementParser(object):
             self.exec_on_jump(ins)
 
     ##########################################################
-    # event switches (except PLAY) and event definitions
+    # event switches (except PLAY)
 
     def exec_pen(self, ins):
         """PEN: switch on/off light pen event handling."""
-        if self.session.events.command(
-                    self.session.events.pen,
-                    ins.skip_blank()):
-            ins.read(1)
-        else:
-            raise error.RunError(error.STX)
+        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+        self.session.events.command(self.session.events.pen, command)
         ins.require_end()
 
     def exec_strig(self, ins):
         """STRIG: switch on/off fire button event handling."""
-        d = ins.skip_blank()
+        d = ins.require_read((tk.ON, tk.OFF, '('))
         if d == '(':
             # strig (n)
-            num = values.to_int(self.parse_bracket(ins))
-            if num not in (0,2,4,6):
+            num = values.to_int(self.parse_expression(ins))
+            ins.require_read((')',))
+            if num not in (0, 2, 4, 6):
                 raise error.RunError(error.IFC)
-            if self.session.events.command(
-                        self.session.events.strig[num//2],
-                        ins.skip_blank()):
-                ins.read(1)
-            else:
-                raise error.RunError(error.STX)
+            command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+            self.session.events.command(self.session.events.strig[num//2], command)
         elif d == tk.ON:
-            ins.read(1)
             self.session.stick.switch(True)
         elif d == tk.OFF:
-            ins.read(1)
             self.session.stick.switch(False)
-        else:
-            raise error.RunError(error.STX)
         ins.require_end()
 
     def exec_com(self, ins):
         """COM: switch on/off serial port event handling."""
         num = values.to_int(self.parse_bracket(ins))
         error.range_check(1, 2, num)
-        if self.session.events.command(
-                    self.session.events.com[num-1],
-                    ins.skip_blank()):
-            ins.read(1)
-        else:
-            raise error.RunError(error.STX)
+        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+        self.session.events.command(self.session.events.com[num-1], command)
         ins.require_end()
 
     def exec_timer(self, ins):
         """TIMER: switch on/off timer event handling."""
-        if self.session.events.command(
-                    self.session.events.timer,
-                    ins.skip_blank()):
-            ins.read(1)
-        else:
-            raise error.RunError(error.STX)
+        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+        self.session.events.command(self.session.events.timer, command)
         ins.require_end()
 
     def exec_key_events(self, ins):
         """KEY: switch on/off keyboard events."""
         num = values.to_int(self.parse_bracket(ins))
         error.range_check(0, 255, num)
-        d = ins.skip_blank()
         # others are ignored
         if num >= 1 and num <= 20:
-            if self.session.events.command(
-                        self.session.events.key[num-1], d):
-                ins.read(1)
-            else:
-                raise error.RunError(error.STX)
+            command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+            self.session.events.command(self.session.events.key[num-1], command)
+
+    ##########################################################
+    # event definitions
 
     def _parse_on_event(self, ins, bracket=True):
         """Helper function for ON event trap definitions."""
@@ -557,12 +530,11 @@ class StatementParser(object):
         self.session.sound.sound(freq, dur, volume, voice)
 
     def exec_play(self, ins):
-        """PLAY: play sound sequence defined by a Music Macro Language string."""
-        # PLAY: event switch
-        if self.session.events.command(
-                    self.session.events.play,
-                    ins.skip_blank()):
-            ins.read(1)
+        """PLAY: event switch/play MML string."""
+        command = ins.skip_blank_read_if((tk.ON, tk.OFF, tk.STOP))
+        if command:
+            # PLAY: event switch
+            self.session.events.command(self.session.events.play, command)
             ins.require_end()
         else:
             # retrieve Music Macro Language string

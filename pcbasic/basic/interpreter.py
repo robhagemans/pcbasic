@@ -300,3 +300,27 @@ class Interpreter(object):
         self.program_code.seek(current)
         # omit leading and trailing whitespace
         return word
+
+    ###########################################################################
+    # callbacks
+
+    def tron_(self):
+        """TRON: trace on."""
+        self.tron = True
+
+    def troff_(self):
+        """TROFF: trace off."""
+        self.tron = False
+
+    def term_(self):
+        """TERM: terminal emulator."""
+        try:
+            self.session.load_program(self.term)
+        except EnvironmentError:
+            # on Tandy, raises Internal Error
+            raise error.RunError(error.INTERNAL_ERROR)
+        self.clear_stacks_and_pointers()
+        self.session.clear()
+        self.jump(None)
+        self.error_handle_mode = False
+        self.tron = False
