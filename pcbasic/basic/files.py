@@ -295,3 +295,18 @@ class Devices(object):
     def lcopy_(self, val):
         """LCOPY: screen copy / no-op in later GW-BASIC."""
         # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
+
+    def chdir_(self, name):
+        """CHDIR: change working directory."""
+        dev, path = self.get_diskdevice_and_path(name)
+        dev.chdir(path)
+
+    def mkdir_(self, name):
+        """MKDIR: create directory."""
+        dev, path = self.get_diskdevice_and_path(name)
+        dev.mkdir(path)
+
+    def rmdir_(self, name):
+        """RMDIR: remove directory."""
+        dev, path = self.get_diskdevice_and_path(name)
+        dev.rmdir(path)

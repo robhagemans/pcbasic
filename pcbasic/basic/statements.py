@@ -620,23 +620,17 @@ class StatementParser(object):
 
     def exec_chdir(self, ins):
         """CHDIR: change working directory."""
-        name = self.parse_temporary_string(ins)
-        dev, path = self.session.devices.get_diskdevice_and_path(name)
-        dev.chdir(path)
+        self.session.devices.chdir_(self.parse_temporary_string(ins))
         ins.require_end()
 
     def exec_mkdir(self, ins):
         """MKDIR: create directory."""
-        name = self.parse_temporary_string(ins)
-        dev, path = self.session.devices.get_diskdevice_and_path(name)
-        dev.mkdir(path)
+        self.session.devices.mkdir_(self.parse_temporary_string(ins))
         ins.require_end()
 
     def exec_rmdir(self, ins):
         """RMDIR: remove directory."""
-        name = self.parse_temporary_string(ins)
-        dev, path = self.session.devices.get_diskdevice_and_path(name)
-        dev.rmdir(path)
+        self.session.devices.rmdir_(self.parse_temporary_string(ins))
         ins.require_end()
 
     def exec_name(self, ins):
