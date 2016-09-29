@@ -327,7 +327,7 @@ class Interpreter(object):
             # on Tandy, raises Internal Error
             raise error.RunError(error.INTERNAL_ERROR)
         self.clear_stacks_and_pointers()
-        self.session.clear()
+        self.session.clear_()
         self.jump(None)
         self.error_handle_mode = False
         self.tron = False

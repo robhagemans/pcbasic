@@ -20,6 +20,7 @@ from . import parseprint
 from . import parseinput
 from . import tokens as tk
 from . import expressions
+from . import dos
 
 
 class StatementParser(object):
@@ -664,30 +665,13 @@ class StatementParser(object):
         cmd = b''
         if ins.skip_blank() not in tk.END_STATEMENT:
             cmd = self.parse_temporary_string(ins)
-        # no SHELL on PCjr.
-        if self.syntax == 'pcjr':
-            raise error.RunError(error.IFC)
-        # force cursor visible in all cases
-        self.session.screen.cursor.show(True)
-        # sound stops playing and is forgotten
-        self.session.sound.stop_all_sound()
-        # no user events
-        with self.session.events.suspend():
-            # run the os-specific shell
-            self.session.shell.launch(cmd)
-        # reset cursor visibility to its previous state
-        self.session.screen.cursor.reset_visibility()
+        self.session.shell_(cmd)
         ins.require_end()
 
     def exec_environ(self, ins):
         """ENVIRON: set environment string."""
         envstr = self.parse_temporary_string(ins)
-        eqs = envstr.find('=')
-        if eqs <= 0:
-            raise error.RunError(error.IFC)
-        envvar = str(envstr[:eqs])
-        val = str(envstr[eqs+1:])
-        os.environ[envvar] = val
+        dos.environ_statement_(envstr)
         ins.require_end()
 
     def exec_time(self, ins):
@@ -695,14 +679,14 @@ class StatementParser(object):
         ins.require_read((tk.O_EQ,))
         timestr = self.parse_temporary_string(ins)
         ins.require_end()
-        self.session.clock.set_time(timestr)
+        self.session.clock.time_(timestr)
 
     def exec_date(self, ins):
         """DATE$: set date."""
         ins.require_read((tk.O_EQ,))
         datestr = self.parse_temporary_string(ins)
         ins.require_end()
-        self.session.clock.set_date(datestr)
+        self.session.clock.date_(datestr)
 
     ##########################################################
     # code
@@ -740,7 +724,7 @@ class StatementParser(object):
         # clear all program stacks
         self.session.interpreter.clear_stacks_and_pointers()
         # clear all variables
-        self.session.clear()
+        self.session.clear_()
 
     def exec_edit(self, ins):
         """EDIT: output a program line and position cursor for editing."""
@@ -820,7 +804,7 @@ class StatementParser(object):
         # reset stacks
         self.session.interpreter.clear_stacks_and_pointers()
         # clear variables
-        self.session.clear()
+        self.session.clear_()
         if comma:
             # in ,R mode, don't close files; run the program
             self.session.interpreter.jump(None)
@@ -864,7 +848,7 @@ class StatementParser(object):
             # RUN
             self.session.interpreter.jump(jumpnum, err=error.IFC)
         # preserve DEFtype on MERGE
-        self.session.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==self.session.program.merge))
+        self.session.clear_(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==self.session.program.merge))
 
     def _parse_delete_clause(self, ins):
         """Helper function: parse the DELETE clause of a CHAIN statement."""
@@ -917,7 +901,7 @@ class StatementParser(object):
         # reset stacks
         self.session.interpreter.clear_stacks_and_pointers()
         # and clears all variables
-        self.session.clear()
+        self.session.clear_()
         self.session.interpreter.set_pointer(False)
 
     def exec_renum(self, ins):
@@ -1463,7 +1447,7 @@ class StatementParser(object):
             with self.session.files.open(0, name, filetype='ABP', mode='I') as f:
                 self.session.program.load(f)
         self.session.interpreter.clear_stacks_and_pointers()
-        self.session.clear(close_files=close_files)
+        self.session.clear_(close_files=close_files)
         self.session.interpreter.jump(jumpnum)
         self.session.interpreter.error_handle_mode = False
 
@@ -1704,7 +1688,7 @@ class StatementParser(object):
                 elif not exp2:
                     raise error.RunError(error.STX)
         ins.require_end()
-        self.session.clear()
+        self.session.clear_()
 
     def exec_common(self, ins):
         """COMMON: define variables to be preserved on CHAIN."""

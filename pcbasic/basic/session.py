@@ -157,7 +157,7 @@ class Session(object):
                 self.screen, self.keyboard, self.sound,
                 self.output_redirection, self.devices.lpt1_file)
         # set up the SHELL command
-        self.shell = dos.get_shell_manager(self.keyboard, self.screen, self.codepage, option_shell)
+        self.shell = dos.get_shell_manager(self.keyboard, self.screen, self.codepage, option_shell, syntax)
         # initialise random number generator
         self.randomiser = values.Randomiser(self.values)
         # initialise system clock
@@ -358,7 +358,7 @@ class Session(object):
             self.program.store_line(self.interpreter.direct_line)
             # clear all program stacks
             self.interpreter.clear_stacks_and_pointers()
-            self.clear()
+            self.clear_()
         elif c != '':
             # it is a command, go and execute
             self._set_parse_mode(True)
@@ -398,7 +398,7 @@ class Session(object):
                 self.program.store_line(self.interpreter.direct_line)
                 # clear all program stacks
                 self.interpreter.clear_stacks_and_pointers()
-                self.clear()
+                self.clear_()
             self.auto_linenum = scanline + self.auto_increment
         elif c != '':
             # it is a command, go and execute
@@ -462,7 +462,7 @@ class Session(object):
 
     ###########################################################################
 
-    def clear(self, close_files=False,
+    def clear_(self, close_files=False,
               preserve_common=False, preserve_all=False, preserve_deftype=False):
         """Execute a CLEAR command."""
         #   Resets the stack and string space
@@ -496,3 +496,16 @@ class Session(object):
         # reset DRAW state (angle, scale) and current graphics position
         self.screen.drawing.reset()
         self.interpreter.clear()
+
+    def shell_(self, cmd=None):
+        """SHELL: open OS shell and optionally execute command."""
+        # force cursor visible in all cases
+        self.screen.cursor.show(True)
+        # sound stops playing and is forgotten
+        self.sound.stop_all_sound()
+        # no user events
+        with self.events.suspend():
+            # run the os-specific shell
+            self.shell.launch(cmd)
+        # reset cursor visibility to its previous state
+        self.screen.cursor.reset_visibility()

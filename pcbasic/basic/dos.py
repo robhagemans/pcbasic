@@ -46,11 +46,23 @@ def environ_(expr):
         else:
             return '%s=%s' % (envlist[expr-1], os.getenv(envlist[expr-1]))
 
+def environ_statement_(envstr):
+    """ENVIRON: set environment string."""
+    eqs = envstr.find('=')
+    if eqs <= 0:
+        raise error.RunError(error.IFC)
+    envvar = str(envstr[:eqs])
+    val = str(envstr[eqs+1:])
+    os.environ[envvar] = val
+
+
 #########################################
 # shell
 
-def get_shell_manager(keyboard, screen, codepage, shell_command):
+def get_shell_manager(keyboard, screen, codepage, shell_command, syntax):
     """Return a new shell manager object."""
+    if syntax == 'pcjr':
+        return ErrorShell()
     if shell_command:
         if platform.system() == 'Windows':
             return WindowsShell(keyboard, screen, codepage, shell_command)
@@ -59,11 +71,27 @@ def get_shell_manager(keyboard, screen, codepage, shell_command):
                 return Shell(keyboard, screen, codepage, shell_command)
             except InitFailed:
                 logging.warning('Pexpect module not found. SHELL statement disabled.')
-    return ShellBase(keyboard, screen, codepage, u'')
+    return ShellBase()
 
 
 class ShellBase(object):
     """Launcher for command shell."""
+
+    def launch(self, command):
+        """Launch the shell."""
+        logging.warning(b'SHELL statement disabled.')
+
+
+class ErrorShell(ShellBase):
+    """Launcher to throw IFC."""
+
+    def launch(self, command):
+        """Launch the shell."""
+        raise error.RunError(error.IFC)
+
+
+class WindowsShell(ShellBase):
+    """Launcher for Windows CMD shell."""
 
     def __init__(self, keyboard, screen, codepage, shell_command):
         """Initialise the shell."""
@@ -72,18 +100,6 @@ class ShellBase(object):
         self.command = shell_command
         self.codepage = codepage
         self._encoding = locale.getpreferredencoding()
-
-    def launch(self, command):
-        """Launch the shell."""
-        logging.warning(b'SHELL statement disabled.')
-
-
-class WindowsShell(ShellBase):
-    """Launcher for Windows CMD shell."""
-
-    def __init__(self, keyboard, screen, codepage, shell_command):
-        """Initialise the shell."""
-        ShellBase.__init__(self, keyboard, screen, shell_command, codepage)
 
     def _process_stdout(self, p, stream, shell_output):
         """Retrieve SHELL output and write to console."""
@@ -157,7 +173,11 @@ class Shell(ShellBase):
         """Initialise the shell."""
         if not pexpect:
             raise InitFailed()
-        ShellBase.__init__(self, keyboard, screen, codepage, shell_command)
+        self.keyboard = keyboard
+        self.screen = screen
+        self.command = shell_command
+        self.codepage = codepage
+        self._encoding = locale.getpreferredencoding()
 
     def launch(self, command):
         """Run a SHELL subprocess."""
