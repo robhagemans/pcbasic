@@ -199,6 +199,7 @@ class Devices(object):
         """Initialise devices."""
         self.devices = {}
         # screen device
+        self._screen = screen
         self.devices['SCRN:'] = devices.SCRNDevice(screen)
         # KYBD: device needs screen as it can set the screen width
         self.devices['KYBD:'] = devices.KYBDDevice(keyboard, screen)
@@ -310,3 +311,30 @@ class Devices(object):
         """RMDIR: remove directory."""
         dev, path = self.get_diskdevice_and_path(name)
         dev.rmdir(path)
+
+    def name_(self, oldname, newname):
+        """NAME: rename file or directory."""
+        dev, oldpath = self.get_diskdevice_and_path(oldname)
+        newdev, newpath = self.get_diskdevice_and_path(newname)
+        # don't rename open files
+        dev.check_file_not_open(oldpath)
+        if dev != newdev:
+            raise error.RunError(error.RENAME_ACROSS_DISKS)
+        dev.rename(oldpath, newpath)
+
+    def kill_(self, name):
+        """KILL: remove file."""
+        dev, path = self.get_diskdevice_and_path(name)
+        # don't delete open files
+        dev.check_file_not_open(path)
+        dev.kill(path)
+
+    def files_(self, pathmask=None):
+        """FILES: output directory listing to screen."""
+        # pathmask may be left unspecified, but not empty
+        if pathmask == b'':
+            raise error.RunError(error.BAD_FILE_NAME)
+        elif pathmask is None:
+            pathmask = b''
+        dev, path = self.get_diskdevice_and_path(pathmask)
+        dev.files(self._screen, path)

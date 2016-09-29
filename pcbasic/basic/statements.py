@@ -637,41 +637,25 @@ class StatementParser(object):
         """NAME: rename file or directory."""
         oldname = self.parse_temporary_string(ins)
         # AS is not a tokenised word
-        word = ins.skip_blank_read() + ins.read(1)
-        if word.upper() != 'AS':
-            raise error.RunError(error.STX)
+        ins.require_read(('AS',))
         newname = self.parse_temporary_string(ins)
-        dev, oldpath = self.session.devices.get_diskdevice_and_path(oldname)
-        newdev, newpath = self.session.devices.get_diskdevice_and_path(newname)
-        # don't rename open files
-        dev.check_file_not_open(oldpath)
-        if dev != newdev:
-            raise error.RunError(error.RENAME_ACROSS_DISKS)
-        dev.rename(oldpath, newpath)
+        self.session.devices.name_(oldname, newname)
         ins.require_end()
 
     def exec_kill(self, ins):
         """KILL: remove file."""
-        name = self.parse_temporary_string(ins)
-        dev, path = self.session.devices.get_diskdevice_and_path(name)
-        # don't delete open files
-        dev.check_file_not_open(path)
-        dev.kill(path)
+        self.session.devices.kill_(self.parse_temporary_string(ins))
         ins.require_end()
 
     def exec_files(self, ins):
         """FILES: output directory listing."""
-        pathmask = ''
+        pathmask = None
         if ins.skip_blank() not in tk.END_STATEMENT:
             pathmask = self.parse_temporary_string(ins)
-            if not pathmask:
-                raise error.RunError(error.BAD_FILE_NAME)
-        dev, path = self.session.devices.get_diskdevice_and_path(pathmask)
-        dev.files(self.session.screen, path)
+        self.session.devices.files_(pathmask)
         ins.require_end()
 
-
-    ##########################################################
+    ###########################################################################
     # OS
 
     def exec_shell(self, ins):
