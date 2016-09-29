@@ -129,7 +129,7 @@ class MachinePorts(object):
             # addr isn't one of the covered ports
             return 0
 
-    def out(self, addr, val):
+    def out_(self, addr, val):
         """Send a value to an emulated machine port."""
         if addr == 0x201:
             # game port reset
@@ -203,7 +203,7 @@ class MachinePorts(object):
                 elif addr == base_addr + 4:
                     com_port.stream.set_pins(rts=val & 0x2, dtr=val & 0x1)
 
-    def wait(self, addr, ander, xorer):
+    def wait_(self, addr, ander, xorer):
         """Wait untial an emulated machine port has a specified value."""
         with self.session.events.suspend():
             while (self.inp(addr) ^ xorer) & ander == 0:
@@ -232,12 +232,15 @@ class Memory(object):
     key_buffer_offset = 30
     blink_enabled = True
 
-    def __init__(self, data_memory, devices, screen, keyboard, font_8, interpreter, peek_values, syntax):
+    def __init__(self, data_memory, devices, files, screen, keyboard,
+                font_8, interpreter, peek_values, syntax):
         """Initialise memory."""
         # data segment initialised elsewhere
         self.data = data_memory
         # device access needed for COM and LPT ports
         self.devices = devices
+        # for BLOAD and BSAVE
+        self._files = files
         # screen access needed for video memory
         self.screen = screen
         # keyboard buffer access
@@ -254,7 +257,7 @@ class Memory(object):
         self.tandy_syntax = syntax == 'tandy'
 
     def peek_(self, addr):
-        """Retrieve the value at an emulated memory location."""
+        """PEEK: Retrieve the value at an emulated memory location."""
         # no peeking the program code (or anywhere) in protected mode
         if self.data.program.protected and not self.interpreter.run_mode:
             raise error.RunError(error.IFC)
@@ -262,43 +265,65 @@ class Memory(object):
         addr += self.segment * 0x10
         return self._get_memory(addr)
 
-    def poke(self, addr, val):
-        """Set the value at an emulated memory location."""
+    def poke_(self, addr, val):
+        """POKE: Set the value at an emulated memory location."""
+        val = values.to_int(val)
+        error.range_check(0, 255, val)
         if addr < 0:
             addr += 0x10000
         addr += self.segment * 0x10
         self._set_memory(addr, val)
 
-    def bload(self, g, offset):
-        """Load a file into a block of memory."""
-        # size gets ignored; even the \x1a at the end gets dumped onto the screen.
-        seg = g.seg
-        if offset is None:
-            offset = g.offset
-        buf = bytearray(g.read())
-        # remove any EOF marker at end
-        if buf and buf[-1] == 0x1a:
-            buf = buf[:-1]
-        # Tandys repeat the header at the end of the file
-        if self.tandy_syntax:
-            buf = buf[:-7]
-        addr = seg * 0x10 + offset
-        self._set_memory_block(addr, buf)
+    def bload_(self, name, offset):
+        """BLOAD: Load a file into a block of memory."""
+        with self._files.open(0, name, filetype='M', mode='I') as g:
+            # size gets ignored; even the \x1a at the end gets dumped onto the screen.
+            seg = g.seg
+            if offset is None:
+                offset = g.offset
+            buf = bytearray(g.read())
+            # remove any EOF marker at end
+            if buf and buf[-1] == 0x1a:
+                buf = buf[:-1]
+            # Tandys repeat the header at the end of the file
+            if self.tandy_syntax:
+                buf = buf[:-7]
+            addr = seg * 0x10 + offset
+            self._set_memory_block(addr, buf)
 
-    def bsave(self, g, offset, length):
-        """Save a block of memory into a file."""
-        addr = self.segment * 0x10 + offset
-        g.write(str(self._get_memory_block(addr, length)))
-        # Tandys repeat the header at the end of the file
-        if self.tandy_syntax:
-            g.write(devices.type_to_magic['M'] +
-                    struct.pack('<HHH', self.segment, offset, length))
+    def bsave_(self, name, offset, length):
+        """BSAVE: Save a block of memory into a file."""
+        with self._files.open(0, name, filetype='M', mode='O',
+                    seg=self.segment, offset=offset, length=length) as g:
+            addr = self.segment * 0x10 + offset
+            g.write(str(self._get_memory_block(addr, length)))
+            # Tandys repeat the header at the end of the file
+            if self.tandy_syntax:
+                g.write(devices.type_to_magic['M'] +
+                        struct.pack('<HHH', self.segment, offset, length))
 
-    def def_seg(self, segment):
-        """Set segment."""
-        self.segment = segment
-        if self.segment < 0:
-            self.segment += 0x10000
+    def def_seg_(self, segment=None):
+        """DEF SEG: Set segment."""
+        # &hb800: text screen buffer; &h13d: data segment
+        if segment is None:
+            self.segment = self.data.data_segment
+        else:
+            self.segment = segment
+            if self.segment < 0:
+                self.segment += 0x10000
+
+    def def_usr_(self, usr, addr):
+        """DEF USR: Define machine language function."""
+        logging.warning('DEF USR statement not implemented')
+
+    def call_(self, varname, args):
+        """CALL: Call machine language procedure."""
+        logging.warning('CALL statement not implemented')
+
+    def calls_(self, varname, args):
+        """CALLS: Call machine language procedure."""
+        logging.warning('CALLS statement not implemented')
+
 
     ###########################################################################
     # IMPLEMENTATION

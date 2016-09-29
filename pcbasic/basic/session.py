@@ -177,7 +177,7 @@ class Session(object):
         self.interpreter = interpreter.Interpreter(
                 self, self.program, self.statement_parser, pcjr_term)
         # set up rest of memory model
-        self.all_memory = machine.Memory(self.memory, self.devices,
+        self.all_memory = machine.Memory(self.memory, self.devices, self.files,
                             self.screen, self.keyboard, self.screen.fonts[8],
                             self.interpreter, peek_values, syntax)
         # build function table (depends on Memory having been initialised)

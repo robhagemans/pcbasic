@@ -85,7 +85,7 @@ class StatementParser(object):
         error.range_check(0, 255, number)
         return number
 
-    def parse_scalar(self, ins):
+    def _parse_name(self, ins):
         """Get scalar part of variable name from token stream."""
         name = ins.read_name()
         # must not be empty
@@ -511,40 +511,38 @@ class StatementParser(object):
         ins.require_end()
         self.session.sound.noise_(source, volume, dur)
 
-    ##########################################################
+    ###########################################################################
     # machine emulation
 
     def exec_poke(self, ins):
-        """POKE: write to a memory location. Limited implementation."""
+        """POKE: write to a memory location."""
         addr = values.to_int(self.parse_expression(ins), unsigned=True)
         if self.session.program.protected and not self.run_mode:
             raise error.RunError(error.IFC)
         ins.require_read((',',))
-        val = values.to_int(self.parse_expression(ins))
-        error.range_check(0, 255, val)
-        self.session.all_memory.poke(addr, val)
+        val = self.parse_expression(ins)
+        self.session.all_memory.poke_(addr, val)
         ins.require_end()
 
     def exec_def_seg(self, ins):
         """DEF SEG: set the current memory segment."""
-        # &hb800: text screen buffer; &h13d: data segment
+        seg = None
         if ins.skip_blank_read_if((tk.O_EQ,)):
             # def_seg() accepts signed values
-            self.session.all_memory.def_seg(values.to_int(self.parse_expression(ins), unsigned=True))
-        else:
-            self.session.all_memory.def_seg(self.memory.data_segment)
+            seg = values.to_int(self.parse_expression(ins), unsigned=True)
+        self.session.all_memory.def_seg_(seg)
         ins.require_end()
 
     def exec_def_usr(self, ins):
-        """DEF USR: Define a machine language function. Not implemented."""
-        ins.require_read(tk.DIGIT)
+        """DEF USR: Define a machine language function."""
+        usr = ins.skip_blank_read_if(tk.DIGIT)
         ins.require_read((tk.O_EQ,))
-        values.cint_(self.parse_expression(ins), unsigned=True)
+        addr = values.cint_(self.parse_expression(ins), unsigned=True)
+        self.session.all_memory.def_usr_(usr, addr)
         ins.require_end()
-        logging.warning("DEF USR statement not implemented")
 
     def exec_bload(self, ins):
-        """BLOAD: load a file into a memory location. Limited implementation."""
+        """BLOAD: load a file into a memory location."""
         if self.session.program.protected and not self.run_mode:
             raise error.RunError(error.IFC)
         name = self.parse_temporary_string(ins)
@@ -553,8 +551,7 @@ class StatementParser(object):
         if ins.skip_blank_read_if((',',)):
             offset = values.to_int(self.parse_expression(ins), unsigned=True)
         ins.require_end()
-        with self.session.files.open(0, name, filetype='M', mode='I') as f:
-            self.session.all_memory.bload(f, offset)
+        self.session.all_memory.bload_(name, offset)
 
     def exec_bsave(self, ins):
         """BSAVE: save a block of memory to a file. Limited implementation."""
@@ -567,32 +564,34 @@ class StatementParser(object):
         ins.require_read((',',))
         length = values.to_int(self.parse_expression(ins), unsigned=True)
         ins.require_end()
-        with self.session.files.open(0, name, filetype='M', mode='O',
-                                seg=self.session.all_memory.segment,
-                                offset=offset, length=length) as f:
-            self.session.all_memory.bsave(f, offset, length)
+        self.session.all_memory.bsave_(name, offset, length)
 
-    def exec_call(self, ins):
-        """CALL: call an external procedure. Not implemented."""
-        addr_var = self.parse_scalar(ins)
-        if addr_var[-1] == '$':
+    def _parse_call(self, ins):
+        """Helper function to parse CALL and CALLS."""
+        addr_var = self._parse_name(ins)
+        if addr_var[-1] == values.STR:
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
+        vals = []
         if ins.skip_blank_read_if(('(',)):
             while True:
                 # if we wanted to call a function, we should distinguish varnames
                 # (passed by ref) from constants (passed by value) here.
-                self.parse_expression(ins)
+                # right now we only pass by value.
+                vals.append(self.parse_expression(ins))
                 if not ins.skip_blank_read_if((',',)):
                     break
             ins.require_read((')',))
         ins.require_end()
-        # ignore the statement
-        logging.warning("CALL or CALLS statement not implemented")
+        return addr_var, vals
+
+    def exec_call(self, ins):
+        """CALL: call an external procedure."""
+        self.session.all_memory.call_(*self._parse_call(ins))
 
     def exec_calls(self, ins):
-        """CALLS: call an external procedure. Not implemented."""
-        self.exec_call(ins)
+        """CALLS: call an external procedure."""
+        self.session.all_memory.calls_(*self._parse_call(ins))
 
     def exec_out(self, ins):
         """OUT: send a byte to a machine port. Limited implementation."""
@@ -600,7 +599,7 @@ class StatementParser(object):
         ins.require_read((',',))
         val = values.to_int(self.parse_expression(ins))
         error.range_check(0, 255, val)
-        self.session.machine.out(addr, val)
+        self.session.machine.out_(addr, val)
         ins.require_end()
 
     def exec_wait(self, ins):
@@ -614,10 +613,9 @@ class StatementParser(object):
             xorer = values.to_int(self.parse_expression(ins))
         error.range_check(0, 255, xorer)
         ins.require_end()
-        self.session.machine.wait(addr, ander, xorer)
+        self.session.machine.wait_(addr, ander, xorer)
 
-
-    ##########################################################
+    ###########################################################################
     # Disk
 
     def exec_chdir(self, ins):
@@ -1327,7 +1325,7 @@ class StatementParser(object):
         ins.require_read((tk.O_MINUS,))
         coord1 = self._parse_coord_step(ins)
         ins.require_read((',',))
-        array = self.parse_scalar(ins)
+        array = self._parse_name(ins)
         ins.require_end()
         if array not in self.session.arrays:
             raise error.RunError(error.IFC)
@@ -1342,7 +1340,7 @@ class StatementParser(object):
         # don't accept STEP
         x, y = self._parse_coord_bare(ins)
         ins.require_read((',',))
-        array = self.parse_scalar(ins)
+        array = self._parse_name(ins)
         action = tk.XOR
         if ins.skip_blank_read_if((',',)):
             action = ins.require_read((tk.PSET, tk.PRESET, tk.AND, tk.OR, tk.XOR))
@@ -1400,7 +1398,7 @@ class StatementParser(object):
     def exec_for(self, ins):
         """FOR: enter for-loop."""
         # read variable
-        varname = self.parse_scalar(ins)
+        varname = self._parse_name(ins)
         vartype = varname[-1]
         if vartype in ('$', '#'):
             raise error.RunError(error.TYPE_MISMATCH)
@@ -1436,7 +1434,7 @@ class StatementParser(object):
         # check var name for NEXT
         # no-var only allowed in standalone NEXT
         if ins.skip_blank() not in tk.END_STATEMENT:
-            varname2 = self.parse_scalar(ins)
+            varname2 = self._parse_name(ins)
         else:
             varname2 = None
         if (comma or varname2) and varname2 != varname:
@@ -1454,7 +1452,7 @@ class StatementParser(object):
             # if we haven't read a variable, we shouldn't find something else here
             # but if we have and we iterate, the rest of the line is ignored
             if ins.skip_blank() not in tk.END_STATEMENT + (',',):
-                name = self.parse_scalar(ins)
+                name = self._parse_name(ins)
             else:
                 name = None
             # increment counter, check condition
@@ -1734,7 +1732,7 @@ class StatementParser(object):
         """COMMON: define variables to be preserved on CHAIN."""
         common_scalars, common_arrays = set(), set()
         while True:
-            name = self.parse_scalar(ins)
+            name = self._parse_name(ins)
             # array?
             if ins.skip_blank_read_if(('[', '(')):
                 ins.require_read((']', ')'))
@@ -1781,7 +1779,7 @@ class StatementParser(object):
     def exec_erase(self, ins):
         """ERASE: erase an array."""
         while True:
-            self.session.arrays.erase(self.parse_scalar(ins))
+            self.session.arrays.erase(self._parse_name(ins))
             if not ins.skip_blank_read_if((',',)):
                 break
         ins.require_end()
@@ -1934,7 +1932,7 @@ class StatementParser(object):
         # this is raised before further syntax errors
         if not self.run_mode:
             raise error.RunError(error.ILLEGAL_DIRECT)
-        fnname = self.parse_scalar(ins)
+        fnname = self._parse_name(ins)
         ins.skip_blank()
         self.expression_parser.user_functions.define(fnname, ins)
 
