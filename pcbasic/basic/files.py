@@ -31,10 +31,11 @@ device_files = ('AUX', 'CON', 'NUL', 'PRN')
 class Files(object):
     """File manager."""
 
-    def __init__(self, devices, max_files):
+    def __init__(self, devices, max_files, max_reclen):
         """Initialise files."""
         self.files = {}
         self.max_files = max_files
+        self.max_reclen = max_reclen
         self.devices = devices
 
     def close(self, num):
@@ -52,6 +53,36 @@ class Files(object):
         self.files = {}
 
     reset_ = close_all
+
+    def close_(self, number=None):
+        """CLOSE: close a file, or all files."""
+        if number is None:
+            self.close_all()
+        else:
+            try:
+                self.close(number)
+            except KeyError:
+                pass
+
+    def open_(self, number, name, mode=None, reclen=None, access=None, lock=None):
+        """OPEN: open a data file."""
+        mode = mode or 'R'
+        default_access_modes = {'I':'R', 'O':'W', 'A':'RW', 'R':'RW'}
+        access = access or default_access_modes[mode]
+        lock = lock or b''
+        if reclen is None:
+            reclen = 128
+        # mode and access must match if not a RANDOM file
+        # If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR
+        # If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
+        if mode == 'A' and access == 'W':
+            raise error.RunError(error.PATH_FILE_ACCESS_ERROR)
+        elif mode != 'R' and access and access != default_access_modes[mode]:
+            raise error.RunError(error.STX)
+        error.range_check(1, self.max_reclen, reclen)
+        # can't open file 0, or beyond max_files
+        error.range_check_err(1, self.max_files, number, error.BAD_FILE_NUMBER)
+        self.open(number, name, 'D', mode, access, lock, reclen)
 
     def open(self, number, description, filetype, mode='I', access='R', lock='',
                   reclen=128, seg=0, offset=0, length=0):

@@ -576,7 +576,7 @@ class Locks(object):
                     # LOCK READ WRITE: don't accept if already open
                     (lock_type == b'RW') or
                     # SHARED: don't accept if open in default mode
-                    (lock_type == b'S' and not f.lock_type) or
+                    (lock_type == b'SHARED' and not f.lock_type) or
                     # LOCK READ or LOCK WRITE: accept base on ACCESS of open file
                     (lock_type in f.access) or (f.lock_type in access)):
                 raise error.RunError(error.PERMISSION_DENIED)

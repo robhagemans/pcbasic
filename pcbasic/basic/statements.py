@@ -851,6 +851,64 @@ class StatementParser(object):
         self.session.files.reset_()
         ins.require_end()
 
+    def exec_open(self, ins):
+        """OPEN: open a file."""
+        first_expr = self.parse_temporary_string(ins)
+        if ins.skip_blank_read_if((',',)):
+            args = self._parse_open_first(ins, first_expr)
+        else:
+            args = self._parse_open_second(ins, first_expr)
+        self.session.files.open_(*args)
+        ins.require_end()
+
+    def _parse_open_first(self, ins, first_expr):
+        """Parse OPEN first ('old') syntax."""
+        mode = first_expr[:1].upper()
+        if mode not in ('I', 'O', 'A', 'R'):
+            raise error.RunError(error.BAD_FILE_MODE)
+        number = self.parse_file_number(ins, opt_hash=True)
+        ins.require_read((',',))
+        name = self.parse_temporary_string(ins)
+        reclen = None
+        if ins.skip_blank_read_if((',',)):
+            reclen = values.to_int(self.parse_expression(ins))
+        return number, name, mode, reclen
+
+    def _parse_open_second(self, ins, first_expr):
+        """Parse OPEN second ('new') syntax."""
+        name = first_expr
+        # FOR clause
+        mode = None
+        if ins.skip_blank_read_if((tk.FOR,)):
+            # read mode word
+            if ins.skip_blank_read_if((tk.INPUT,)):
+                mode = 'I'
+            else:
+                word = ins.read_name()
+                try:
+                    mode = {'OUTPUT':'O', 'RANDOM':'R', 'APPEND':'A'}[word]
+                except KeyError:
+                    ins.seek(-len(word), 1)
+                    raise error.RunError(error.STX)
+        # ACCESS clause
+        access = None
+        if ins.skip_blank_read_if(('ACCESS',), 6):
+            access = self._parse_read_write(ins)
+        # LOCK clause
+        if ins.skip_blank_read_if((tk.LOCK,), 2):
+            lock = self._parse_read_write(ins)
+        else:
+            lock = ins.skip_blank_read_if(('SHARED'), 6)
+        # AS file number clause
+        ins.require_read(('AS',))
+        number = self.parse_file_number(ins, opt_hash=True)
+        # LEN clause
+        reclen = None
+        if ins.skip_blank_read_if((tk.LEN,), 2):
+            ins.require_read(tk.O_EQ)
+            reclen = values.to_int(self.parse_expression(ins))
+        return number, name, mode, reclen, access, lock
+
     def _parse_read_write(self, ins):
         """Helper function: parse access mode."""
         d = ins.skip_blank_read_if((tk.READ, tk.WRITE))
@@ -860,84 +918,16 @@ class StatementParser(object):
             return 'RW' if ins.skip_blank_read_if((tk.WRITE,)) else 'R'
         raise error.RunError(error.STX)
 
-    def exec_open(self, ins):
-        """OPEN: open a file."""
-        long_modes = {tk.INPUT:'I', 'OUTPUT':'O', 'RANDOM':'R', 'APPEND':'A'}
-        default_access_modes = {'I':'R', 'O':'W', 'A':'RW', 'R':'RW'}
-        first_expr = self.parse_temporary_string(ins)
-        mode, access, lock, reclen = 'R', 'RW', '', 128
-        if ins.skip_blank_read_if((',',)):
-            # first syntax
-            try:
-                mode = first_expr[0].upper()
-                access = default_access_modes[mode]
-            except (IndexError, KeyError):
-                raise error.RunError(error.BAD_FILE_MODE)
-            number = self.parse_file_number(ins, opt_hash=True)
-            ins.require_read((',',))
-            name = self.parse_temporary_string(ins)
-            if ins.skip_blank_read_if((',',)):
-                reclen = values.to_int(self.parse_expression(ins))
-        else:
-            # second syntax
-            name = first_expr
-            # FOR clause
-            if ins.skip_blank_read_if((tk.FOR,)):
-                c = ins.skip_blank()
-                # read word
-                word = ''
-                while c and c not in ins.blanks and c not in tk.END_STATEMENT:
-                    word += ins.read(1)
-                    c = ins.peek().upper()
-                try:
-                    mode = long_modes[word]
-                except KeyError:
-                    raise error.RunError(error.STX)
-            try:
-                access = default_access_modes[mode]
-            except (KeyError):
-                raise error.RunError(error.BAD_FILE_MODE)
-            # ACCESS clause
-            if ins.skip_blank_read_if(('ACCESS',), 6):
-                access = self._parse_read_write(ins)
-            # LOCK clause
-            if ins.skip_blank_read_if((tk.LOCK,), 2):
-                lock = self._parse_read_write(ins)
-            elif ins.skip_blank_read_if(('SHARED'), 6):
-                lock = 'S'
-            # AS file number clause
-            if not ins.skip_blank_read_if(('AS',), 2):
-                raise error.RunError(error.STX)
-            number = self.parse_file_number(ins, opt_hash=True)
-            # LEN clause
-            if ins.skip_blank_read_if((tk.LEN,), 2):
-                ins.require_read(tk.O_EQ)
-                reclen = values.to_int(self.parse_expression(ins))
-        # mode and access must match if not a RANDOM file
-        # If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR
-        # If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
-        if mode == 'A' and access == 'W':
-            raise error.RunError(error.PATH_FILE_ACCESS_ERROR)
-        elif mode != 'R' and access and access != default_access_modes[mode]:
-            raise error.RunError(error.STX)
-        error.range_check(1, self.memory.max_reclen, reclen)
-        # can't open file 0, or beyond max_files
-        error.range_check_err(1, self.memory.max_files, number, error.BAD_FILE_NUMBER)
-        self.session.files.open(number, name, 'D', mode, access, lock, reclen)
-        ins.require_end()
-
     def exec_close(self, ins):
-        """CLOSE: close a file."""
+        """CLOSE: close one or more files."""
         if ins.skip_blank() in tk.END_STATEMENT:
-            # allow empty CLOSE; close all open files
-            self.session.files.close_all()
+            # close all open files
+            self.session.files.close_()
         else:
             while True:
+                # if an error occurs, the files parsed before are closed anyway
                 number = self.parse_file_number(ins, opt_hash=True)
-                try:
-                    self.session.files.close(number)
-                except KeyError:
-                    pass
+                self.session.files.close_(number)
                 if not ins.skip_blank_read_if((',',)):
                     break
         ins.require_end()

@@ -149,7 +149,7 @@ class Session(object):
                 device_params, current_device, mount_dict,
                 print_trigger, temp_dir, serial_buffer_size,
                 utf8, universal)
-        self.files = files.Files(self.devices, max_files)
+        self.files = files.Files(self.devices, max_files, max_reclen)
         # set LPT1 as target for print_screen()
         self.screen.set_print_screen_target(self.devices.lpt1_file)
         # initialise the editor
