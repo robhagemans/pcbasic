@@ -461,6 +461,7 @@ class Session(object):
         self.screen.write_line('\xFF')
 
     ###########################################################################
+    # callbacks
 
     def clear_(self, close_files=False,
               preserve_common=False, preserve_all=False, preserve_deftype=False):
@@ -509,3 +510,134 @@ class Session(object):
             self.shell.launch(cmd)
         # reset cursor visibility to its previous state
         self.screen.cursor.reset_visibility()
+
+    def delete_(self, from_line, to_line):
+        """DELETE: delete range of lines from program."""
+        # throws back to direct mode
+        self.program.delete(from_line, to_line)
+        # clear all program stacks
+        self.interpreter.clear_stacks_and_pointers()
+        # clear all variables
+        self.clear_()
+
+    def edit_(self, from_line):
+        """EDIT: output a program line and position cursor for editing."""
+        # throws back to direct mode
+        # jump to end of direct line so execution stops
+        self.interpreter.set_pointer(False)
+        self.screen.cursor.reset_visibility()
+        # request edit prompt
+        self.edit_prompt = (from_line, None)
+
+    def auto_(self, linenum=None, increment=None):
+        """AUTO: enter automatic line numbering mode."""
+        # reset linenum and increment on each call of AUTO (even in AUTO mode)
+        self.auto_linenum = linenum if linenum is not None else 10
+        self.auto_increment = increment if increment is not None else 10
+        # move program pointer to end
+        self.interpreter.set_pointer(False)
+        # continue input in AUTO mode
+        self.auto_mode = True
+
+    def list_(self, from_line, to_line, out=None):
+        """LIST: output program lines."""
+        lines = self.program.list_lines(from_line, to_line)
+        if out:
+            with out:
+                for l in lines:
+                    out.write_line(l)
+        else:
+            for l in lines:
+                # flow of listing is visible on screen
+                # and interruptible
+                self.events.wait()
+                # LIST on screen is slightly different from just writing
+                self.screen.list_line(l)
+        # return to direct mode
+        self.interpreter.set_pointer(False)
+
+    def llist_(self, from_line, to_line):
+        """LLIST: output program lines to LPT1: """
+        for l in self.program.list_lines(from_line, to_line):
+            self.devices.lpt1_file.write_line(l)
+        # return to direct mode
+        self.interpreter.set_pointer(False)
+
+    def load_(self, name, comma_r=None):
+        """LOAD: load program from file."""
+        with self.files.open(0, name, filetype='ABP', mode='I') as f:
+            self.program.load(f)
+        # reset stacks
+        self.interpreter.clear_stacks_and_pointers()
+        # clear variables
+        self.clear_()
+        if comma_r:
+            # in ,R mode, don't close files; run the program
+            self.interpreter.jump(None)
+        else:
+            self.files.close_all()
+        self.interpreter.tron = False
+
+    def chain_(self, name, jumpnum=None, common_all=False, delete_lines=None, merge=False):
+        """CHAIN: load program and chain execution."""
+        if self.program.protected and merge:
+            raise error.RunError(error.IFC)
+        with self.files.open(0, name, filetype='ABP', mode='I') as f:
+            if delete_lines:
+                # delete lines from existing code before merge (without MERGE, this is pointless)
+                self.program.delete(*delete_lines)
+            if merge:
+                self.program.merge(f)
+            else:
+                self.program.load(f)
+            # clear all program stacks
+            self.interpreter.clear_stacks_and_pointers()
+            # don't close files!
+            # RUN
+            self.interpreter.jump(jumpnum, err=error.IFC)
+        # preserve DEFtype on MERGE
+        self.clear_(preserve_common=True, preserve_all=common_all, preserve_deftype=merge)
+
+    def save_(self, name, mode=None):
+        """SAVE: save program to a file."""
+        mode = mode or 'B'
+        with self.files.open(0, name, filetype=mode, mode='O',
+                            seg=self.memory.data_segment, offset=self.memory.code_start,
+                            length=len(self.program.bytecode.getvalue())-1) as f:
+            self.program.save(f)
+
+    def merge_(self, name):
+        """MERGE: merge lines from file into current program."""
+        # check if file exists, make some guesses (all uppercase, +.BAS) if not
+        with self.files.open(0, name, filetype='A', mode='I') as f:
+            self.program.merge(f)
+        # clear all program stacks
+        self.interpreter.clear_stacks_and_pointers()
+
+    def new_(self):
+        """NEW: clear program from memory."""
+        self.interpreter.troff_()
+        # deletes the program currently in memory
+        self.program.erase()
+        # reset stacks
+        self.interpreter.clear_stacks_and_pointers()
+        # and clears all variables
+        self.clear_()
+        self.interpreter.set_pointer(False)
+
+    def renum_(self, new=None, old=None, step=None):
+        """RENUM: renumber program line numbers."""
+        if step is not None and step < 1:
+            raise error.RunError(error.IFC)
+        old_to_new = self.program.renum(self.screen, new, old, step)
+        # stop running if we were
+        self.interpreter.set_pointer(False)
+        # reset loop stacks
+        self.interpreter.clear_stacks()
+        # renumber error handler
+        if self.interpreter.on_error:
+            self.interpreter.on_error = old_to_new[self.interpreter.on_error]
+        # renumber event traps
+        for handler in self.events.all:
+            if handler.gosub:
+                handler.set_jump(old_to_new[handler.gosub])

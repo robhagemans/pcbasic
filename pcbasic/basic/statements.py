@@ -719,12 +719,7 @@ class StatementParser(object):
         """DELETE: delete range of lines from program."""
         from_line, to_line = self._parse_line_range(ins)
         ins.require_end()
-        # throws back to direct mode
-        self.session.program.delete(from_line, to_line)
-        # clear all program stacks
-        self.session.interpreter.clear_stacks_and_pointers()
-        # clear all variables
-        self.session.clear_()
+        self.session.delete_(from_line, to_line)
 
     def exec_edit(self, ins):
         """EDIT: output a program line and position cursor for editing."""
@@ -735,12 +730,7 @@ class StatementParser(object):
         if from_line is None or from_line not in self.session.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         ins.require_end(err=error.IFC)
-        # throws back to direct mode
-        # jump to end of direct line so execution stops
-        self.session.interpreter.set_pointer(False)
-        self.session.screen.cursor.reset_visibility()
-        # request edit prompt
-        self.session.edit_prompt = (from_line, None)
+        self.session.edit_(from_line)
 
     def exec_auto(self, ins):
         """AUTO: enter automatic line numbering mode."""
@@ -749,13 +739,7 @@ class StatementParser(object):
         if ins.skip_blank_read_if((',',)):
             increment = self.parse_optional_jumpnum(ins)
         ins.require_end()
-        # reset linenum and increment on each call of AUTO (even in AUTO mode)
-        self.session.auto_linenum = linenum if linenum is not None else 10
-        self.session.auto_increment = increment if increment is not None else 10
-        # move program pointer to end
-        self.session.interpreter.set_pointer(False)
-        # continue input in AUTO mode
-        self.session.auto_mode = True
+        self.session.auto_(linenum, increment)
 
     def exec_list(self, ins):
         """LIST: output program lines."""
@@ -767,57 +751,24 @@ class StatementParser(object):
             # ignore everything after file spec
             ins.skip_to(tk.END_LINE)
         ins.require_end()
-        lines = self.session.program.list_lines(from_line, to_line)
-        if out:
-            with out:
-                for l in lines:
-                    out.write_line(l)
-        else:
-            for l in lines:
-                # flow of listing is visible on screen
-                # and interruptible
-                self.session.events.wait()
-                # LIST on screen is slightly different from just writing
-                self.session.screen.list_line(l)
-        # return to direct mode
-        self.session.interpreter.set_pointer(False)
+        self.session.list_(from_line, to_line, out)
 
     def exec_llist(self, ins):
         """LLIST: output program lines to LPT1: """
         from_line, to_line = self._parse_line_range(ins)
         ins.require_end()
-        for l in self.session.program.list_lines(from_line, to_line):
-            self.session.devices.lpt1_file.write_line(l)
-        # return to direct mode
-        self.session.interpreter.set_pointer(False)
+        self.session.llist_(from_line, to_line)
 
     def exec_load(self, ins):
         """LOAD: load program from file."""
         name = self.parse_temporary_string(ins)
-        # check if file exists, make some guesses (all uppercase, +.BAS) if not
-        comma = ins.skip_blank_read_if((',',))
-        if comma:
-            ins.require_read('R')
+        comma_r = ins.skip_blank_read_if((',R',), 2)
         ins.require_end()
-        with self.session.files.open(0, name, filetype='ABP', mode='I') as f:
-            self.session.program.load(f)
-        # reset stacks
-        self.session.interpreter.clear_stacks_and_pointers()
-        # clear variables
-        self.session.clear_()
-        if comma:
-            # in ,R mode, don't close files; run the program
-            self.session.interpreter.jump(None)
-        else:
-            self.session.files.close_all()
-        self.session.interpreter.tron = False
+        self.session.load_(name, comma_r)
 
     def exec_chain(self, ins):
         """CHAIN: load program and chain execution."""
-        if ins.skip_blank_read_if((tk.MERGE,)):
-            action = self.session.program.merge
-        else:
-            action = self.session.program.load
+        merge = ins.skip_blank_read_if((tk.MERGE,)) is not None
         name = self.parse_temporary_string(ins)
         jumpnum, common_all, delete_lines = None, False, None
         if ins.skip_blank_read_if((',',)):
@@ -835,20 +786,7 @@ class StatementParser(object):
                     # CHAIN "file", , DELETE
                     delete_lines = self._parse_delete_clause(ins)
         ins.require_end()
-        if self.session.program.protected and action == self.session.program.merge:
-                raise error.RunError(error.IFC)
-        with self.session.files.open(0, name, filetype='ABP', mode='I') as f:
-            if delete_lines:
-                # delete lines from existing code before merge (without MERGE, this is pointless)
-                self.session.program.delete(*delete_lines)
-            action(f)
-            # clear all program stacks
-            self.session.interpreter.clear_stacks_and_pointers()
-            # don't close files!
-            # RUN
-            self.session.interpreter.jump(jumpnum, err=error.IFC)
-        # preserve DEFtype on MERGE
-        self.session.clear_(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==self.session.program.merge))
+        self.session.chain_(name, jumpnum, common_all, delete_lines, merge)
 
     def _parse_delete_clause(self, ins):
         """Helper function: parse the DELETE clause of a CHAIN statement."""
@@ -871,38 +809,24 @@ class StatementParser(object):
     def exec_save(self, ins):
         """SAVE: save program to a file."""
         name = self.parse_temporary_string(ins)
-        mode = 'B'
+        mode = None
         if ins.skip_blank_read_if((',',)):
             mode = ins.skip_blank_read().upper()
             if mode not in ('A', 'P'):
                 raise error.RunError(error.STX)
-        with self.session.files.open(0, name, filetype=mode, mode='O',
-                                seg=self.memory.data_segment, offset=self.memory.code_start,
-                                length=len(self.session.program.bytecode.getvalue())-1
-                                ) as f:
-            self.session.program.save(f)
+        self.session.save_(name, mode)
         ins.require_end()
 
     def exec_merge(self, ins):
         """MERGE: merge lines from file into current program."""
         name = self.parse_temporary_string(ins)
-        # check if file exists, make some guesses (all uppercase, +.BAS) if not
-        with self.session.files.open(0, name, filetype='A', mode='I') as f:
-            self.session.program.merge(f)
-        # clear all program stacks
-        self.session.interpreter.clear_stacks_and_pointers()
+        self.session.merge_(name)
         ins.require_end()
 
     def exec_new(self, ins):
         """NEW: clear program from memory."""
-        self.session.interpreter.tron = False
-        # deletes the program currently in memory
-        self.session.program.erase()
-        # reset stacks
-        self.session.interpreter.clear_stacks_and_pointers()
-        # and clears all variables
-        self.session.clear_()
-        self.session.interpreter.set_pointer(False)
+        ins.require_end()
+        self.session.new_()
 
     def exec_renum(self, ins):
         """RENUM: renumber program line numbers."""
@@ -914,23 +838,9 @@ class StatementParser(object):
                 if ins.skip_blank_read_if((',',)):
                     step = self.parse_optional_jumpnum(ins) # returns -1 if empty
         ins.require_end()
-        if step is not None and step < 1:
-            raise error.RunError(error.IFC)
-        old_to_new = self.session.program.renum(
-                self.session.screen, new, old, step)
-        # stop running if we were
-        self.session.interpreter.set_pointer(False)
-        # reset loop stacks
-        self.session.interpreter.clear_stacks()
-        # renumber error handler
-        if self.session.interpreter.on_error:
-            self.session.interpreter.on_error = old_to_new[self.session.interpreter.on_error]
-        # renumber event traps
-        for handler in self.session.events.all:
-            if handler.gosub:
-                handler.set_jump(old_to_new[handler.gosub])
+        self.session.renum_(new, old, step)
 
-    ##########################################################
+    ###########################################################################
     # file
 
     def exec_reset(self, ins):
