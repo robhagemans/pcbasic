@@ -111,7 +111,7 @@ class StatementParser(object):
         assert len(token) == 2, 'Bytecode truncated in line number pointer'
         return struct.unpack('<H', token)[0]
 
-    def parse_optional_jumpnum(self, ins):
+    def _parse_optional_jumpnum(self, ins):
         """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
         # no line number
         if ins.skip_blank() != tk.T_UINT:
@@ -737,7 +737,8 @@ class StatementParser(object):
         linenum = self._parse_jumpnum_or_dot(ins, allow_empty=True)
         increment = None
         if ins.skip_blank_read_if((',',)):
-            increment = self.parse_optional_jumpnum(ins)
+            increment = self._parse_optional_jumpnum(ins)
+            # FIXME: returns -1, auto shld give IFC
         ins.require_end()
         self.session.auto_(linenum, increment)
 
@@ -792,16 +793,17 @@ class StatementParser(object):
         """Helper function: parse the DELETE clause of a CHAIN statement."""
         delete_lines = None
         if ins.skip_blank_read_if((tk.DELETE,)):
-            from_line = self.parse_optional_jumpnum(ins)
+            from_line = self._parse_optional_jumpnum(ins)
             if ins.skip_blank_read_if((tk.O_MINUS,)):
-                to_line = self.parse_optional_jumpnum(ins)
+                to_line = self._parse_optional_jumpnum(ins)
+                #FIXME: returns -1 on missing, not clear what happens in CHAIN
             else:
                 to_line = from_line
             # to_line must be specified and must be an existing line number
             if not to_line or to_line not in self.session.program.line_numbers:
                 raise error.RunError(error.IFC)
             delete_lines = (from_line, to_line)
-            # ignore rest if preceded by cmma
+            # ignore rest if preceded by comma
             if ins.skip_blank_read_if((',',)):
                 ins.skip_to(tk.END_STATEMENT)
         return delete_lines
@@ -836,7 +838,8 @@ class StatementParser(object):
             if ins.skip_blank_read_if((',',)):
                 old = self._parse_jumpnum_or_dot(ins, allow_empty=True)
                 if ins.skip_blank_read_if((',',)):
-                    step = self.parse_optional_jumpnum(ins) # returns -1 if empty
+                    step = self._parse_optional_jumpnum(ins)
+                    # FIXME: returns -1 if empty, renum shld give IFC
         ins.require_end()
         self.session.renum_(new, old, step)
 
@@ -845,19 +848,17 @@ class StatementParser(object):
 
     def exec_reset(self, ins):
         """RESET: close all files."""
-        self.session.files.close_all()
+        self.session.files.reset_()
         ins.require_end()
 
     def _parse_read_write(self, ins):
         """Helper function: parse access mode."""
-        d = ins.skip_blank()
+        d = ins.skip_blank_read_if((tk.READ, tk.WRITE))
         if d == tk.WRITE:
-            ins.read(1)
-            access = 'W'
+            return 'W'
         elif d == tk.READ:
-            ins.read(1)
-            access = 'RW' if ins.skip_blank_read_if((tk.WRITE,)) else 'R'
-        return access
+            return 'RW' if ins.skip_blank_read_if((tk.WRITE,)) else 'R'
+        raise error.RunError(error.STX)
 
     def exec_open(self, ins):
         """OPEN: open a file."""

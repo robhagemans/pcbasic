@@ -51,6 +51,7 @@ class Files(object):
             f.close()
         self.files = {}
 
+    reset_ = close_all
 
     def open(self, number, description, filetype, mode='I', access='R', lock='',
                   reclen=128, seg=0, offset=0, length=0):
