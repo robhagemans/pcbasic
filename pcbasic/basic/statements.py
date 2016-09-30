@@ -942,74 +942,63 @@ class StatementParser(object):
                 error.range_check(0, 255, width)
                 ins.require_read(('AS',), err=error.IFC)
                 name, index = self.parse_variable(ins)
-                the_file.field.attach_var(name, index, offset, width)
+                self.session.files.field_(the_file, name, index, offset, width)
                 offset += width
                 if not ins.skip_blank_read_if((',',)):
                     break
         ins.require_end()
 
-    def _parse_get_or_put_file(self, ins):
-        """Helper function: PUT and GET syntax."""
-        the_file = self.session.files.get(self.parse_file_number(ins, opt_hash=True), 'R')
-        # for COM files
-        num_bytes = the_file.reclen
-        if ins.skip_blank_read_if((',',)):
-            # forcing to single before rounding - this means we don't have enough precision
-            # to address each individual record close to the maximum record number
-            # but that's in line with GW
-            pos = values.round(
-                    values.csng_(self.parse_expression(ins))).to_value()
-            # not 2^32-1 as the manual boasts!
-            # pos-1 needs to fit in a single-precision mantissa
-            error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
-            if not isinstance(the_file, ports.COMFile):
-                the_file.set_pos(pos)
-            else:
-                num_bytes = pos
-        return the_file, num_bytes
-
     def exec_put_file(self, ins):
         """PUT: write record to file."""
-        thefile, num_bytes = self._parse_get_or_put_file(ins)
-        thefile.put(num_bytes)
+        the_file = self.session.files.get(self.parse_file_number(ins, opt_hash=True), 'R')
+        pos = None
+        if ins.skip_blank_read_if((',',)):
+            pos = self.parse_expression(ins)
+        self.session.files.put_(the_file, pos)
         ins.require_end()
 
     def exec_get_file(self, ins):
         """GET: read record from file."""
-        thefile, num_bytes = self._parse_get_or_put_file(ins)
-        thefile.get(num_bytes)
-        ins.require_end()
-
-    def _exec_lock_or_unlock(self, ins, action):
-        """LOCK or UNLOCK: set file or record locks."""
-        thefile = self.session.files.get(self.parse_file_number(ins, opt_hash=True))
-        lock_start_rec = 1
+        the_file = self.session.files.get(self.parse_file_number(ins, opt_hash=True), 'R')
+        pos = None
         if ins.skip_blank_read_if((',',)):
-            lock_start_rec = pos = values.round(
-                    self.values.csng_(self.parse_expression(ins))).to_value()
-        lock_stop_rec = lock_start_rec
-        if ins.skip_blank_read_if((tk.TO,)):
-            lock_stop_rec = pos = values.round(
-                    self.values.csng_(self.parse_expression(ins))).to_value()
-        if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
-            raise error.RunError(error.BAD_RECORD_NUMBER)
-        try:
-            getattr(thefile, action)(lock_start_rec, lock_stop_rec)
-        except AttributeError:
-            # not a disk file
-            raise error.RunError(error.PERMISSION_DENIED)
+            pos = self.parse_expression(ins)
+        self.session.files.get_(the_file, pos)
         ins.require_end()
 
-    exec_lock = partial(_exec_lock_or_unlock, action='lock')
-    exec_unlock = partial(_exec_lock_or_unlock, action='unlock')
+    def exec_lock(self, ins):
+        """LOCK: set file or record locks."""
+        thefile = self.session.files.get(self.parse_file_number(ins, opt_hash=True))
+        lock_start_rec = None
+        if ins.skip_blank_read_if((',',)):
+            lock_start_rec = self.values.csng_(self.parse_expression(ins))
+        lock_stop_rec = None
+        if ins.skip_blank_read_if((tk.TO,)):
+            lock_stop_rec = self.values.csng_(self.parse_expression(ins))
+        self.session.files.lock_(thefile, lock_start_rec, lock_stop_rec)
+        ins.require_end()
+
+    def exec_unlock(self, ins):
+        """UNLOCK: unset file or record locks."""
+        thefile = self.session.files.get(self.parse_file_number(ins, opt_hash=True))
+        lock_start_rec = None
+        if ins.skip_blank_read_if((',',)):
+            lock_start_rec = self.values.csng_(self.parse_expression(ins))
+        lock_stop_rec = None
+        if ins.skip_blank_read_if((tk.TO,)):
+            lock_stop_rec = self.values.csng_(self.parse_expression(ins))
+        self.session.files.unlock_(thefile, lock_start_rec, lock_stop_rec)
+        ins.require_end()
 
     def exec_ioctl(self, ins):
-        """IOCTL: send control string to I/O device. Not implemented."""
-        self.session.files.get(self.parse_file_number(ins, opt_hash=True))
-        logging.warning("IOCTL statement not implemented.")
-        raise error.RunError(error.IFC)
+        """IOCTL: send control string to I/O device."""
+        thefile = self.session.files.get(self.parse_file_number(ins, opt_hash=True))
+        ins.require_read((',',))
+        control_string = self.parse_temporary_string(ins)
+        self.session.files.ioctl_statement_(thefile, control_string)
+        ins.require_end()
 
-    ##########################################################
+    ###########################################################################
     # Graphics statements
 
     def _parse_coord_bare(self, ins):

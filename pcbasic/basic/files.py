@@ -84,6 +84,73 @@ class Files(object):
         error.range_check_err(1, self.max_files, number, error.BAD_FILE_NUMBER)
         self.open(number, name, 'D', mode, access, lock, reclen)
 
+    def field_(self, the_file, name, index, offset, width):
+        """FIELD: attach a fiedl variable."""
+        the_file.field.attach_var(name, index, offset, width)
+
+    def _set_record_pos(self, the_file, pos=None):
+        """Helper function: PUT and GET syntax."""
+        # for COM files
+        num_bytes = the_file.reclen
+        if pos is not None:
+            # forcing to single before rounding - this means we don't have enough precision
+            # to address each individual record close to the maximum record number
+            # but that's in line with GW
+            pos = values.round(values.csng_(pos)).to_value()
+            # not 2^32-1 as the manual boasts!
+            # pos-1 needs to fit in a single-precision mantissa
+            error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
+            if not isinstance(the_file, ports.COMFile):
+                the_file.set_pos(pos)
+            else:
+                num_bytes = pos
+        return the_file, num_bytes
+
+    def put_(self, the_file, pos=None):
+        """PUT: write record to file."""
+        thefile, num_bytes = self._set_record_pos(the_file, pos)
+        thefile.put(num_bytes)
+
+    def get_(self, the_file, pos=None):
+        """GET: read record from file."""
+        thefile, num_bytes = self._set_record_pos(the_file, pos)
+        thefile.get(num_bytes)
+
+    def _get_lock_limits(self, lock_start_rec, lock_stop_rec):
+        """Get record lock limits."""
+        if lock_start_rec is None:
+            lock_start_rec = 1
+        else:
+            lock_start_rec = values.round(lock_start_rec).to_value()
+        if lock_stop_rec is None:
+            lock_stop_rec = lock_start_rec
+        else:
+            lock_stop_rec = values.round(lock_stop_rec).to_value()
+        if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
+            raise error.RunError(error.BAD_RECORD_NUMBER)
+        return lock_start_rec, lock_stop_rec
+
+    def lock_(self, thefile, lock_start_rec, lock_stop_rec):
+        """LOCK: set file or record locks."""
+        try:
+            thefile.lock(*self._get_lock_limits(lock_start_rec, lock_stop_rec))
+        except AttributeError:
+            # not a disk file
+            raise error.RunError(error.PERMISSION_DENIED)
+
+    def unlock_(self, thefile, lock_start_rec, lock_stop_rec):
+        """UNLOCK: set file or record locks."""
+        try:
+            thefile.unlock(*self._get_lock_limits(lock_start_rec, lock_stop_rec))
+        except AttributeError:
+            # not a disk file
+            raise error.RunError(error.PERMISSION_DENIED)
+
+    def ioctl_statement_(self, thefile, control_string):
+        """IOCTL: send control string to I/O device. Not implemented."""
+        logging.warning("IOCTL statement not implemented.")
+        raise error.RunError(error.IFC)
+
     def open(self, number, description, filetype, mode='I', access='R', lock='',
                   reclen=128, seg=0, offset=0, length=0):
         """Open a file on a device specified by description."""
