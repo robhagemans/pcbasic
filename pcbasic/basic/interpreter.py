@@ -311,6 +311,26 @@ class Interpreter(object):
         """SYSTEM: exit interpreter."""
         raise error.Exit()
 
+    def stop_(self):
+        """STOP: break program execution and return to interpreter."""
+        raise error.Break(stop=True)
+
+    def cont_(self, ins):
+        """CONT: continue STOPped or ENDed execution."""
+        if self.stop is None:
+            raise error.RunError(error.CANT_CONTINUE)
+        else:
+            self.set_pointer(True, self.stop)
+        # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
+        # and there's a STOP in the subroutine.
+        # CONT then continues and the rest of the original line is executed, printing x
+        # However, CONT:PRINT triggers a bug - a syntax error in a nonexistant line number is reported.
+        # CONT:PRINT "y" results in neither x nor y being printed.
+        # if a command is executed before CONT, x is not printed.
+        # It would appear that GW-BASIC only partially overwrites the line buffer and
+        # then jumps back to the original return location!
+        # in this implementation, the CONT command will fully overwrite the line buffer so x is not printed.
+
     def tron_(self):
         """TRON: trace on."""
         self.tron = True

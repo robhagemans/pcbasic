@@ -641,3 +641,13 @@ class Session(object):
         for handler in self.events.all:
             if handler.gosub:
                 handler.set_jump(old_to_new[handler.gosub])
+
+    def end_(self):
+        """END: end program execution and return to interpreter."""
+        self.interpreter.stop = self.program.bytecode.tell()
+        # jump to end of direct line so execution stops
+        self.interpreter.set_pointer(False)
+        # avoid NO RESUME
+        self.interpreter.error_handle_mode = False
+        self.interpreter.error_resume = None
+        self.files.close_all()

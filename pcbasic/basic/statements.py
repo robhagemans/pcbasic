@@ -1196,34 +1196,16 @@ class StatementParser(object):
     def exec_end(self, ins):
         """END: end program execution and return to interpreter."""
         ins.require_end()
-        self.session.interpreter.stop = self.session.program.bytecode.tell()
-        # jump to end of direct line so execution stops
-        self.session.interpreter.set_pointer(False)
-        # avoid NO RESUME
-        self.session.interpreter.error_handle_mode = False
-        self.session.interpreter.error_resume = None
-        self.session.files.close_all()
+        self.session.end_()
 
     def exec_stop(self, ins):
         """STOP: break program execution and return to interpreter."""
         ins.require_end()
-        raise error.Break(stop=True)
+        self.session.interpreter.stop_()
 
     def exec_cont(self, ins):
         """CONT: continue STOPped or ENDed execution."""
-        if self.session.interpreter.stop is None:
-            raise error.RunError(error.CANT_CONTINUE)
-        else:
-            self.session.interpreter.set_pointer(True, self.session.interpreter.stop)
-        # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
-        # and there's a STOP in the subroutine.
-        # CONT then continues and the rest of the original line is executed, printing x
-        # However, CONT:PRINT triggers a bug - a syntax error in a nonexistant line number is reported.
-        # CONT:PRINT "y" results in neither x nor y being printed.
-        # if a command is executed before CONT, x is not printed.
-        # It would appear that GW-BASIC only partially overwrites the line buffer and
-        # then jumps back to the original return location!
-        # in this implementation, the CONT command will fully overwrite the line buffer so x is not printed.
+        self.session.interpreter.cont_()
 
     def exec_for(self, ins):
         """FOR: enter for-loop."""
