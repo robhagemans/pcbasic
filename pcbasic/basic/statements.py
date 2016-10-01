@@ -948,26 +948,26 @@ class StatementParser(object):
                     break
         ins.require_end()
 
-    def exec_put_file(self, ins):
-        """PUT: write record to file."""
+    def _parse_put_get_file(self, ins):
+        """Parse record number for PUT and GET."""
         the_file = self.session.files.get(self.parse_file_number(ins, opt_hash=True), 'R')
         pos = None
         if ins.skip_blank_read_if((',',)):
             pos = self.parse_expression(ins)
-        self.session.files.put_(the_file, pos)
+        return (the_file, pos)
+
+    def exec_put_file(self, ins):
+        """PUT: write record to file."""
+        self.session.files.put_(*self._parse_put_get_file(ins))
         ins.require_end()
 
     def exec_get_file(self, ins):
         """GET: read record from file."""
-        the_file = self.session.files.get(self.parse_file_number(ins, opt_hash=True), 'R')
-        pos = None
-        if ins.skip_blank_read_if((',',)):
-            pos = self.parse_expression(ins)
-        self.session.files.get_(the_file, pos)
+        self.session.files.get_(*self._parse_put_get_file(ins))
         ins.require_end()
 
-    def exec_lock(self, ins):
-        """LOCK: set file or record locks."""
+    def _parse_lock_unlock(self, ins):
+        """Parse lock records for LOCK or UNLOCK."""
         thefile = self.session.files.get(self.parse_file_number(ins, opt_hash=True))
         lock_start_rec = None
         if ins.skip_blank_read_if((',',)):
@@ -975,19 +975,16 @@ class StatementParser(object):
         lock_stop_rec = None
         if ins.skip_blank_read_if((tk.TO,)):
             lock_stop_rec = self.values.csng_(self.parse_expression(ins))
-        self.session.files.lock_(thefile, lock_start_rec, lock_stop_rec)
+        return (thefile, lock_start_rec, lock_stop_rec)
+
+    def exec_lock(self, ins):
+        """LOCK: set file or record locks."""
+        self.session.files.lock_(*self._parse_lock_unlock(ins))
         ins.require_end()
 
     def exec_unlock(self, ins):
         """UNLOCK: unset file or record locks."""
-        thefile = self.session.files.get(self.parse_file_number(ins, opt_hash=True))
-        lock_start_rec = None
-        if ins.skip_blank_read_if((',',)):
-            lock_start_rec = self.values.csng_(self.parse_expression(ins))
-        lock_stop_rec = None
-        if ins.skip_blank_read_if((tk.TO,)):
-            lock_stop_rec = self.values.csng_(self.parse_expression(ins))
-        self.session.files.unlock_(thefile, lock_start_rec, lock_stop_rec)
+        self.session.files.unlock_(*self._parse_lock_unlock(ins))
         ins.require_end()
 
     def exec_ioctl(self, ins):
