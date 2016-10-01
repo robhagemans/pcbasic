@@ -45,13 +45,13 @@ class StatementParser(object):
         c = ins.read_keyword_token()
         if c in self.statements:
             # statement token
-            return self.statements[c](ins)
-        ins.seek(-len(c), 1)
-        if c in string.ascii_letters:
+            self.statements[c](ins)
+        else:
             # implicit LET
-            return self.exec_let(ins)
-        elif c not in tk.END_STATEMENT:
-            raise error.RunError(error.STX)
+            ins.seek(-len(c), 1)
+            if c in string.ascii_letters:
+                return self.exec_let(ins)
+        ins.require_end()
 
     def parse_value(self, ins, sigil=None, allow_empty=False):
         """Read a value of required type and return as Python value, or None if empty."""
@@ -1306,7 +1306,8 @@ class StatementParser(object):
             # TRUE: continue after THEN. line number or statement is implied GOTO
             if ins.skip_blank() in (tk.T_UINT,):
                 self.session.interpreter.goto_(self._parse_jumpnum(ins))
-            # continue parsing as normal, :ELSE will be ignored anyway
+            # continue parsing as normal from next statement, :ELSE will be ignored anyway
+            self.parse_statement(ins)
         else:
             # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
             nesting_level = 0
