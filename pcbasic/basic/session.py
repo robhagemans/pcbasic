@@ -573,7 +573,7 @@ class Session(object):
         self.clear_()
         if comma_r:
             # in ,R mode, don't close files; run the program
-            self.interpreter.jump(None)
+            self.interpreter.set_pointer(True, 0)
         else:
             self.files.close_all()
         self.interpreter.tron = False
@@ -594,7 +594,7 @@ class Session(object):
             self.interpreter.clear_stacks_and_pointers()
             # don't close files!
             # RUN
-            self.interpreter.jump(jumpnum, err=error.IFC)
+            self.interpreter.goto_(jumpnum, err=error.IFC)
         # preserve DEFtype on MERGE
         self.clear_(preserve_common=True, preserve_all=common_all, preserve_deftype=merge)
 

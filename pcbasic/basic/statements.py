@@ -104,7 +104,7 @@ class StatementParser(object):
         indices = self.expression_parser.parse_indices(ins)
         return name, indices
 
-    def parse_jumpnum(self, ins):
+    def _parse_jumpnum(self, ins):
         """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
         ins.require_read((tk.T_UINT,))
         token = ins.read(2)
@@ -116,7 +116,7 @@ class StatementParser(object):
         # no line number
         if ins.skip_blank() != tk.T_UINT:
             return -1
-        return self.parse_jumpnum(ins)
+        return self._parse_jumpnum(ins)
 
     def parse_expression(self, ins, allow_empty=False):
         """Compute the value of the expression at the current code pointer."""
@@ -425,7 +425,7 @@ class StatementParser(object):
         elif token not in (tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
             raise error.RunError(error.STX)
         ins.require_read((tk.GOSUB,))
-        jumpnum = self.parse_jumpnum(ins)
+        jumpnum = self._parse_jumpnum(ins)
         if jumpnum == 0:
             jumpnum = None
         elif jumpnum not in self.session.program.line_numbers:
@@ -1210,53 +1210,39 @@ class StatementParser(object):
     def exec_goto(self, ins):
         """GOTO: jump to specified line number."""
         # parse line number, ignore rest of line and jump
-        self.session.interpreter.jump(self.parse_jumpnum(ins))
+        self.session.interpreter.goto_(self._parse_jumpnum(ins))
 
     def exec_gosub(self, ins):
         """GOSUB: jump into a subroutine."""
-        jumpnum = self.parse_jumpnum(ins)
-        # ignore rest of statement ('GOSUB 100 LAH' works just fine..); we need to be able to RETURN
-        ins.skip_to(tk.END_STATEMENT)
-        self.session.interpreter.jump_gosub(jumpnum)
+        self.session.interpreter.gosub_(self._parse_jumpnum(ins))
 
     def exec_return(self, ins):
         """RETURN: return from a subroutine."""
         # return *can* have a line number
+        jumpnum = None
         if ins.skip_blank() not in tk.END_STATEMENT:
-            jumpnum = self.parse_jumpnum(ins)
-            # rest of line is ignored
-            ins.skip_to(tk.END_STATEMENT)
-        else:
-            jumpnum = None
-        self.session.interpreter.jump_return(jumpnum)
+            jumpnum = self._parse_jumpnum(ins)
+        self.session.interpreter.return_(jumpnum)
 
     def exec_on_jump(self, ins):
         """ON: calculated jump."""
         onvar = values.to_int(self.parse_expression(ins))
         error.range_check(0, 255, onvar)
-        command = ins.skip_blank_read()
-        jumps = []
-        while True:
-            d = ins.skip_blank_read()
-            if d in tk.END_STATEMENT:
-                ins.seek(-len(d), 1)
-                break
-            elif d in (tk.T_UINT,):
-                jumps.append( ins.tell()-1 )
-                ins.read(2)
-            elif d == ',':
-                pass
-            else:
-                raise error.RunError(error.STX)
-        if jumps == []:
-            raise error.RunError(error.STX)
-        elif onvar > 0 and onvar <= len(jumps):
-            ins.seek(jumps[onvar-1])
-            if command == tk.GOTO:
-                self.session.interpreter.jump(self.parse_jumpnum(ins))
-            elif command == tk.GOSUB:
-                self.exec_gosub(ins)
-        ins.skip_to(tk.END_STATEMENT)
+        command = ins.require_read((tk.GOTO, tk.GOSUB))
+        skipped = 0
+        # only parse jumps (and errors!) up to our choice
+        while skipped < onvar-1 or onvar == 0:
+            self._parse_jumpnum(ins)
+            skipped += 1
+            if not ins.skip_blank_read_if((',',)):
+                ins.require_end()
+                return
+        # parse our choice
+        jumpnum = self._parse_jumpnum(ins)
+        if command == tk.GOTO:
+            self.session.interpreter.goto_(jumpnum)
+        elif command == tk.GOSUB:
+            self.session.interpreter.gosub_(jumpnum)
 
     def exec_for(self, ins):
         """FOR: enter for-loop."""
@@ -1333,7 +1319,7 @@ class StatementParser(object):
         c = ins.skip_blank()
         if c == tk.T_UINT:
             # parse line number and ignore rest of line
-            jumpnum = self.parse_jumpnum(ins)
+            jumpnum = self._parse_jumpnum(ins)
         elif c not in tk.END_STATEMENT:
             name = self.parse_temporary_string(ins)
             if ins.skip_blank_read_if((',',)):
@@ -1344,7 +1330,7 @@ class StatementParser(object):
                 self.session.program.load(f)
         self.session.interpreter.clear_stacks_and_pointers()
         self.session.clear_(close_files=close_files)
-        self.session.interpreter.jump(jumpnum)
+        self.session.interpreter.goto_(jumpnum)
         self.session.interpreter.error_handle_mode = False
 
     def exec_if(self, ins):
@@ -1356,7 +1342,7 @@ class StatementParser(object):
         if not val.is_zero():
             # TRUE: continue after THEN. line number or statement is implied GOTO
             if ins.skip_blank() in (tk.T_UINT,):
-                self.session.interpreter.jump(self.parse_jumpnum(ins))
+                self.session.interpreter.goto_(self._parse_jumpnum(ins))
             # continue parsing as normal, :ELSE will be ignored anyway
         else:
             # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
@@ -1373,7 +1359,7 @@ class StatementParser(object):
                         else:
                             # line number: jump
                             if ins.skip_blank() in (tk.T_UINT,):
-                                self.session.interpreter.jump(self.parse_jumpnum(ins))
+                                self.session.interpreter.goto_(self._parse_jumpnum(ins))
                             # continue execution from here
                             break
                 else:
@@ -1436,7 +1422,7 @@ class StatementParser(object):
     def exec_on_error(self, ins):
         """ON ERROR: define error trapping routine."""
         ins.require_read((tk.GOTO,))  # GOTO
-        linenum = self.parse_jumpnum(ins)
+        linenum = self._parse_jumpnum(ins)
         if linenum != 0 and linenum not in self.session.program.line_numbers:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         self.session.interpreter.on_error = linenum
@@ -1460,7 +1446,7 @@ class StatementParser(object):
             ins.read(1)
             jumpnum = -1
         elif c not in tk.END_STATEMENT:
-            jumpnum = self.parse_jumpnum(ins)
+            jumpnum = self._parse_jumpnum(ins)
         else:
             jumpnum = 0
         ins.require_end()
@@ -1478,7 +1464,7 @@ class StatementParser(object):
             self.session.interpreter.get_codestream().skip_to(tk.END_STATEMENT, break_on_first_char=False)
         else:
             # RESUME n
-            self.session.interpreter.jump(jumpnum)
+            self.session.interpreter.goto_(jumpnum)
 
     def exec_error(self, ins):
         """ERRROR: simulate an error condition."""
@@ -1722,7 +1708,7 @@ class StatementParser(object):
         """RESTORE: reset DATA pointer."""
         if not ins.skip_blank() in tk.END_STATEMENT:
             ins.require_read((tk.T_UINT,), err=error.UNDEFINED_LINE_NUMBER)
-            datanum = self.parse_jumpnum(ins)
+            datanum = self._parse_jumpnum(ins)
         else:
             datanum = -1
         # undefined line number for all syntax errors
