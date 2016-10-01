@@ -759,7 +759,7 @@ class Drawing(object):
             elif c == 'X':
                 # execute substring
                 sub = gmls.parse_string()
-                self.draw(str(sub), memory, value_handler, events)
+                self.draw_(sub, memory, value_handler, events)
             elif c == 'C':
                 # set foreground colour
                 # allow empty spec (default 0), but only if followed by a semicolon
