@@ -1230,19 +1230,27 @@ class StatementParser(object):
         error.range_check(0, 255, onvar)
         command = ins.require_read((tk.GOTO, tk.GOSUB))
         skipped = 0
-        # only parse jumps (and errors!) up to our choice
-        while skipped < onvar-1 or onvar == 0:
-            self._parse_jumpnum(ins)
-            skipped += 1
-            if not ins.skip_blank_read_if((',',)):
-                ins.require_end()
-                return
-        # parse our choice
-        jumpnum = self._parse_jumpnum(ins)
-        if command == tk.GOTO:
-            self.session.interpreter.goto_(jumpnum)
-        elif command == tk.GOSUB:
-            self.session.interpreter.gosub_(jumpnum)
+        if onvar in (0, 255):
+            # if any provided, check all but jump to none
+            while True:
+                num = self._parse_optional_jumpnum(ins)
+                if num == -1 or not ins.skip_blank_read_if((',',)):
+                    ins.require_end()
+                    return
+        else:
+            # only parse jumps (and errors!) up to our choice
+            while skipped < onvar-1:
+                self._parse_jumpnum(ins)
+                skipped += 1
+                if not ins.skip_blank_read_if((',',)):
+                    ins.require_end()
+                    return
+            # parse our choice
+            jumpnum = self._parse_jumpnum(ins)
+            if command == tk.GOTO:
+                self.session.interpreter.goto_(jumpnum)
+            elif command == tk.GOSUB:
+                self.session.interpreter.gosub_(jumpnum)
 
     def exec_for(self, ins):
         """FOR: enter for-loop."""
