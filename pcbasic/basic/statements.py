@@ -1207,6 +1207,57 @@ class StatementParser(object):
         """CONT: continue STOPped or ENDed execution."""
         self.session.interpreter.cont_()
 
+    def exec_goto(self, ins):
+        """GOTO: jump to specified line number."""
+        # parse line number, ignore rest of line and jump
+        self.session.interpreter.jump(self.parse_jumpnum(ins))
+
+    def exec_gosub(self, ins):
+        """GOSUB: jump into a subroutine."""
+        jumpnum = self.parse_jumpnum(ins)
+        # ignore rest of statement ('GOSUB 100 LAH' works just fine..); we need to be able to RETURN
+        ins.skip_to(tk.END_STATEMENT)
+        self.session.interpreter.jump_gosub(jumpnum)
+
+    def exec_return(self, ins):
+        """RETURN: return from a subroutine."""
+        # return *can* have a line number
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            jumpnum = self.parse_jumpnum(ins)
+            # rest of line is ignored
+            ins.skip_to(tk.END_STATEMENT)
+        else:
+            jumpnum = None
+        self.session.interpreter.jump_return(jumpnum)
+
+    def exec_on_jump(self, ins):
+        """ON: calculated jump."""
+        onvar = values.to_int(self.parse_expression(ins))
+        error.range_check(0, 255, onvar)
+        command = ins.skip_blank_read()
+        jumps = []
+        while True:
+            d = ins.skip_blank_read()
+            if d in tk.END_STATEMENT:
+                ins.seek(-len(d), 1)
+                break
+            elif d in (tk.T_UINT,):
+                jumps.append( ins.tell()-1 )
+                ins.read(2)
+            elif d == ',':
+                pass
+            else:
+                raise error.RunError(error.STX)
+        if jumps == []:
+            raise error.RunError(error.STX)
+        elif onvar > 0 and onvar <= len(jumps):
+            ins.seek(jumps[onvar-1])
+            if command == tk.GOTO:
+                self.session.interpreter.jump(self.parse_jumpnum(ins))
+            elif command == tk.GOSUB:
+                self.exec_gosub(ins)
+        ins.skip_to(tk.END_STATEMENT)
+
     def exec_for(self, ins):
         """FOR: enter for-loop."""
         # read variable
@@ -1275,11 +1326,6 @@ class StatementParser(object):
                 break
         # if we're done iterating we no longer ignore the rest of the statement
         ins.require_end()
-
-    def exec_goto(self, ins):
-        """GOTO: jump to specified line number."""
-        # parse line number, ignore rest of line and jump
-        self.session.interpreter.jump(self.parse_jumpnum(ins))
 
     def exec_run(self, ins):
         """RUN: start program execution."""
@@ -1387,34 +1433,6 @@ class StatementParser(object):
             self.session.interpreter.while_stack.pop()
         self._check_while_condition(ins, whilepos)
 
-    def exec_on_jump(self, ins):
-        """ON: calculated jump."""
-        onvar = values.to_int(self.parse_expression(ins))
-        error.range_check(0, 255, onvar)
-        command = ins.skip_blank_read()
-        jumps = []
-        while True:
-            d = ins.skip_blank_read()
-            if d in tk.END_STATEMENT:
-                ins.seek(-len(d), 1)
-                break
-            elif d in (tk.T_UINT,):
-                jumps.append( ins.tell()-1 )
-                ins.read(2)
-            elif d == ',':
-                pass
-            else:
-                raise error.RunError(error.STX)
-        if jumps == []:
-            raise error.RunError(error.STX)
-        elif onvar > 0 and onvar <= len(jumps):
-            ins.seek(jumps[onvar-1])
-            if command == tk.GOTO:
-                self.session.interpreter.jump(self.parse_jumpnum(ins))
-            elif command == tk.GOSUB:
-                self.exec_gosub(ins)
-        ins.skip_to(tk.END_STATEMENT)
-
     def exec_on_error(self, ins):
         """ON ERROR: define error trapping routine."""
         ins.require_read((tk.GOTO,))  # GOTO
@@ -1467,24 +1485,6 @@ class StatementParser(object):
         errn = values.to_int(self.parse_expression(ins))
         error.range_check(1, 255, errn)
         raise error.RunError(errn)
-
-    def exec_gosub(self, ins):
-        """GOSUB: jump into a subroutine."""
-        jumpnum = self.parse_jumpnum(ins)
-        # ignore rest of statement ('GOSUB 100 LAH' works just fine..); we need to be able to RETURN
-        ins.skip_to(tk.END_STATEMENT)
-        self.session.interpreter.jump_gosub(jumpnum)
-
-    def exec_return(self, ins):
-        """RETURN: return from a subroutine."""
-        # return *can* have a line number
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            jumpnum = self.parse_jumpnum(ins)
-            # rest of line is ignored
-            ins.skip_to(tk.END_STATEMENT)
-        else:
-            jumpnum = None
-        self.session.interpreter.jump_return(jumpnum)
 
     ################################################
     # Variable & array statements
