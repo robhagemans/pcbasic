@@ -143,6 +143,13 @@ class Drawing(object):
 
     ## VIEW graphics viewport
 
+    def view_(self, *args):
+        """VIEW: Set/unset the graphics viewport and optionally draw a box."""
+        if args:
+            self.set_view(*args)
+        else:
+            self.unset_view()
+
     def set_view(self, x0, y0, x1, y1, absolute, fill, border):
         """Set the graphics viewport and optionally draw a box (VIEW)."""
         # first unset the viewport so that we can draw the box
@@ -166,6 +173,13 @@ class Drawing(object):
             self.set_window(*self.window_bounds)
 
     ### WINDOW logical coords
+
+    def window_(self, *args):
+        """WINDOW: Set/unset the logical coordinate window."""
+        if args:
+            self.set_window(*args)
+        else:
+            self.unset_window()
 
     def set_window(self, fx0, fy0, fx1, fy1, cartesian=True):
         """Set the logical coordinate window (WINDOW)."""
@@ -232,26 +246,37 @@ class Drawing(object):
 
     ### PSET, POINT
 
-    def pset(self, lcoord, c):
+    def pset_(self, lcoord, c=None):
         """Draw a pixel in the given attribute (PSET, PRESET)."""
+        if c is None:
+            c = -1
         x, y = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
         self.screen.put_pixel(x, y, c)
         self.last_attr = c
         self.last_point = x, y
 
+    def preset_(self, lcoord, c=None):
+        """Draw a pixel in the given attribute (PSET, PRESET)."""
+        if c is None:
+            c = 0
+        self.pset_(lcoord, c)
 
     ### LINE
 
-    def line(self, lcoord0, lcoord1, c, pattern, shape):
+    def line_(self, lcoord0, lcoord1, c=None, pattern=None, shape=None):
         """Draw a patterned line or box (LINE)."""
+        if c is None:
+            c = -1
+        if pattern is None:
+            pattern = 0xffff
         if lcoord0:
             x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord0))
         else:
             x0, y0 = self.last_point
         x1, y1 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord1))
         c = self.get_attr_index(c)
-        if shape == '':
+        if not shape:
             self.draw_line(x0, y0, x1, y1, c, pattern)
         elif shape == 'B':
             self.draw_box(x0, y0, x1, y1, c, pattern)
@@ -373,8 +398,10 @@ class Drawing(object):
     #
     # break yinc loop if one step no longer suffices
 
-    def circle(self, lcoord, r, start, stop, c, aspect):
+    def circle_(self, lcoord, r, start, stop, c, aspect):
         """Draw a circle, ellipse, arc or sector (CIRCLE)."""
+        if c is None:
+            c = -1
         x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
         if aspect is None:

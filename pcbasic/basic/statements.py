@@ -1016,20 +1016,25 @@ class StatementParser(object):
         x, y = self._parse_coord_bare(ins)
         return x, y, step
 
-    def exec_pset(self, ins, c=-1):
-        """PSET: set a pixel to a given attribute, or foreground."""
+    def _parse_pset_preset(self, ins):
+        """Parse arguments for PSET and PRESET."""
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         lcoord = self._parse_coord_step(ins)
+        c = None
         if ins.skip_blank_read_if((',',)):
             c = values.to_int(self.parse_expression(ins))
-        error.range_check(-1, 255, c)
+            error.range_check(0, 255, c)
         ins.require_end()
-        self.session.screen.drawing.pset(lcoord, c)
+        return lcoord, c
+
+    def exec_pset(self, ins, c=-1):
+        """PSET: set a pixel to a given attribute, or foreground."""
+        self.session.screen.drawing.pset_(*self._parse_pset_preset(ins))
 
     def exec_preset(self, ins):
         """PRESET: set a pixel to a given attribute, or background."""
-        self.exec_pset(ins, 0)
+        self.session.screen.drawing.preset_(*self._parse_pset_preset(ins))
 
     def exec_line_graph(self, ins):
         """LINE: draw a line or box between two points."""
@@ -1041,7 +1046,7 @@ class StatementParser(object):
             coord0 = None
         ins.require_read((tk.O_MINUS,))
         coord1 = self._parse_coord_step(ins)
-        c, mode, pattern = -1, '', 0xffff
+        c, mode, pattern = None, None, None
         if ins.skip_blank_read_if((',',)):
             expr = self.parse_expression(ins, allow_empty=True)
             if expr:
@@ -1058,7 +1063,7 @@ class StatementParser(object):
             elif not expr:
                 raise error.RunError(error.MISSING_OPERAND)
         ins.require_end()
-        self.session.screen.drawing.line(coord0, coord1, c, pattern, mode)
+        self.session.screen.drawing.line_(coord0, coord1, c, pattern, mode)
 
     def exec_view_graph(self, ins):
         """VIEW: set graphics viewport and optionally draw a box."""
@@ -1078,9 +1083,10 @@ class StatementParser(object):
                 fill = values.to_int(self.parse_expression(ins))
                 ins.require_read((',',))
                 border = values.to_int(self.parse_expression(ins))
-            self.session.screen.drawing.set_view(x0, y0, x1, y1, absolute, fill, border)
+            args = (x0, y0, x1, y1, absolute, fill, border)
         else:
-            self.session.screen.drawing.unset_view()
+            args = ()
+        self.session.screen.drawing.view_(*args)
         ins.require_end()
 
     def exec_window(self, ins):
@@ -1094,9 +1100,10 @@ class StatementParser(object):
             x1, y1 = self._parse_coord_bare(ins)
             if x0 == x1 or y0 == y1:
                 raise error.RunError(error.IFC)
-            self.session.screen.drawing.set_window(x0, y0, x1, y1, cartesian)
+            args = (x0, y0, x1, y1, cartesian)
         else:
-            self.session.screen.drawing.unset_window()
+            args = ()
+        self.session.screen.drawing.window_(*args)
         ins.require_end()
 
     def exec_circle(self, ins):
@@ -1106,7 +1113,7 @@ class StatementParser(object):
         centre = self._parse_coord_step(ins)
         ins.require_read((',',))
         r = values.csng_(self.parse_expression(ins)).to_value()
-        start, stop, c, aspect = None, None, -1, None
+        start, stop, c, aspect = None, None, None, None
         if ins.skip_blank_read_if((',',)):
             cval = self.parse_expression(ins, allow_empty=True)
             if cval is not None:
@@ -1129,7 +1136,7 @@ class StatementParser(object):
             elif cval is None:
                 raise error.RunError(error.MISSING_OPERAND)
         ins.require_end()
-        self.session.screen.drawing.circle(centre, r, start, stop, c, aspect)
+        self.session.screen.drawing.circle_(centre, r, start, stop, c, aspect)
 
     def exec_paint(self, ins):
         """PAINT: flood fill from point."""
