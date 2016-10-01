@@ -306,7 +306,8 @@ class StatementParser(object):
         if c in (tk.ERROR, tk.KEY, '\xFE', '\xFF'):
             token = ins.read_keyword_token()
             if token == tk.ERROR:
-                self.exec_on_error(ins)
+                ins.require_read((tk.GOTO,))
+                self.exec_on_error_goto(ins)
             else:
                 self.exec_on_event(ins, token)
         else:
@@ -1267,19 +1268,10 @@ class StatementParser(object):
             args = ()
         self.session.run_(*args)
 
-    def exec_on_error(self, ins):
+    def exec_on_error_goto(self, ins):
         """ON ERROR: define error trapping routine."""
-        ins.require_read((tk.GOTO,))  # GOTO
         linenum = self._parse_jumpnum(ins)
-        if linenum != 0 and linenum not in self.session.program.line_numbers:
-            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
-        self.session.interpreter.on_error = linenum
-        # pause soft-handling math errors so that we can catch them
-        self.values.error_handler.suspend(linenum != 0)
-        # ON ERROR GOTO 0 in error handler
-        if self.session.interpreter.on_error == 0 and self.session.interpreter.error_handle_mode:
-            # re-raise the error so that execution stops
-            raise error.RunError(self.session.interpreter.error_num, self.session.interpreter.error_pos)
+        self.session.interpreter.on_error_goto_(linenum)
         # this will be caught by the trapping routine just set
         ins.require_end()
 
@@ -1291,34 +1283,18 @@ class StatementParser(object):
             raise error.RunError(error.RESUME_WITHOUT_ERROR)
         c = ins.skip_blank()
         if c == tk.NEXT:
-            ins.read(1)
-            jumpnum = -1
-        elif c not in tk.END_STATEMENT:
-            jumpnum = self._parse_jumpnum(ins)
+            where = ins.read(1)
+        elif c in tk.END_STATEMENT:
+            where = None
         else:
-            jumpnum = 0
+            where = self._parse_jumpnum(ins)
         ins.require_end()
-        start_statement, runmode = self.session.interpreter.error_resume
-        self.session.interpreter.error_num = 0
-        self.session.interpreter.error_handle_mode = False
-        self.session.interpreter.error_resume = None
-        self.session.events.suspend_all = False
-        if jumpnum == 0:
-            # RESUME or RESUME 0
-            self.session.interpreter.set_pointer(runmode, start_statement)
-        elif jumpnum == -1:
-            # RESUME NEXT
-            self.session.interpreter.set_pointer(runmode, start_statement)
-            self.session.interpreter.get_codestream().skip_to(tk.END_STATEMENT, break_on_first_char=False)
-        else:
-            # RESUME n
-            self.session.interpreter.goto_(jumpnum)
+        self.session.interpreter.resume_(where)
 
     def exec_error(self, ins):
-        """ERRROR: simulate an error condition."""
+        """ERROR: simulate an error condition."""
         errn = values.to_int(self.parse_expression(ins))
-        error.range_check(1, 255, errn)
-        raise error.RunError(errn)
+        error.error_(errn)
 
     def exec_if(self, ins):
         """IF: enter branching statement."""

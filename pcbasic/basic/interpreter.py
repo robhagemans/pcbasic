@@ -41,7 +41,6 @@ class Interpreter(object):
         # program for TERM command
         self._term_program = term
 
-
     def init_error_trapping(self):
         """Initialise error trapping."""
         # True if error handling in progress
@@ -354,3 +353,33 @@ class Interpreter(object):
         self.set_pointer(True, 0)
         self.error_handle_mode = False
         self.tron = False
+
+    def on_error_goto_(self, linenum):
+        """ON ERROR GOTO: define error trapping routine."""
+        if linenum != 0 and linenum not in self.program.line_numbers:
+            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
+        self.on_error = linenum
+        # pause soft-handling math errors so that we can catch them
+        self.session.values.error_handler.suspend(linenum != 0)
+        # ON ERROR GOTO 0 in error handler
+        if self.on_error == 0 and self.error_handle_mode:
+            # re-raise the error so that execution stops
+            raise error.RunError(self.error_num, self.error_pos)
+
+    def resume_(self, where):
+        """RESUME: resume program flow after error-trap."""
+        start_statement, runmode = self.error_resume
+        self.error_num = 0
+        self.error_handle_mode = False
+        self.error_resume = None
+        self.session.events.suspend_all = False
+        if not where:
+            # RESUME or RESUME 0
+            self.set_pointer(runmode, start_statement)
+        elif where == tk.NEXT:
+            # RESUME NEXT
+            self.set_pointer(runmode, start_statement)
+            self.get_codestream().skip_to(tk.END_STATEMENT, break_on_first_char=False)
+        else:
+            # RESUME n
+            self.goto_(where)
