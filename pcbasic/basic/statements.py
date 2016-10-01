@@ -1140,40 +1140,23 @@ class StatementParser(object):
 
     def exec_paint(self, ins):
         """PAINT: flood fill from point."""
-        # if paint *colour* specified, border default = paint colour
-        # if paint *attribute* specified, border default = current foreground
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
         coord = self._parse_coord_step(ins)
-        pattern, c, border, background_pattern = None, -1, -1, None
-        if ins.skip_blank_read_if((',',)):
-            cval = self.parse_expression(ins, allow_empty=True)
-            if cval is None:
-                pass
-            elif isinstance(cval, values.String):
-                # pattern given; copy
-                with self.temp_string:
-                    pattern = values.pass_string(cval).to_str()
-                # empty pattern "" is illegal function call
-                error.throw_if(not pattern)
-                # default for border, if pattern is specified as string: foreground attr
-            else:
-                c = values.to_int(cval)
-            border = c
+        attrib, border, background_pattern = None, None, None
+        with self.temp_string:
             if ins.skip_blank_read_if((',',)):
-                bval = self.parse_expression(ins, allow_empty=True)
-                if bval is not None:
-                    border = values.to_int(bval)
+                attrib = self.parse_expression(ins, allow_empty=True)
                 if ins.skip_blank_read_if((',',)):
-                    with self.temp_string:
-                        background_pattern = values.pass_string(
-                                self.parse_expression(ins), err=error.IFC).to_str()
-                    # only in screen 7,8,9 is this an error (use ega memory as a check)
-                    if (pattern and background_pattern[:len(pattern)] == pattern and
-                            self.session.screen.mode.mem_start == 0xa000):
-                        raise error.RunError(error.IFC)
+                    bval = self.parse_expression(ins, allow_empty=True)
+                    if bval is not None:
+                        border = values.to_int(bval)
+                    if ins.skip_blank_read_if((',',)):
+                        with self.temp_string:
+                            background_pattern = values.pass_string(
+                                    self.parse_expression(ins), err=error.IFC).to_str()
+            self.session.screen.drawing.paint_(coord, attrib, border, background_pattern, self.session.events)
         ins.require_end()
-        self.session.screen.drawing.paint(coord, pattern, c, border, background_pattern, self.session.events)
 
     def exec_get_graph(self, ins):
         """GET: read a sprite to memory."""

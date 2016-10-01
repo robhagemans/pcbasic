@@ -559,12 +559,33 @@ class Drawing(object):
 
     ### PAINT: Flood fill
 
-    def paint(self, lcoord, pattern, c, border, background, events):
-        """Fill an area defined by a border attribute with a tiled pattern."""
+    def paint_(self, lcoord, cval, border, background, events):
+        """PAINT: Fill an area defined by a border attribute with a tiled pattern."""
         # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
         # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
         # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
         # also equal to the background pattern.
+        c, pattern = -1, None
+        if isinstance(cval, values.String):
+            # pattern given; copy
+            pattern = values.pass_string(cval).to_str()
+            # empty pattern "" is illegal function call
+            error.throw_if(not pattern)
+            # default for border, if pattern is specified as string: foreground attr
+        elif cval is not None:
+            c = values.to_int(cval)
+        # if paint *colour* specified, border default = paint colour
+        # if paint *attribute* specified, border default = current foreground
+        if border is None:
+            border = c
+        # only in screen 7,8,9 is this an error (use ega memory as a check)
+        if (pattern and background[:len(pattern)] == pattern and
+                self.screen.mode.mem_start == 0xa000):
+            raise error.RunError(error.IFC)
+        self.flood_fill(lcoord, c, pattern, border, background, events)
+
+    def flood_fill(self, lcoord, c, pattern, border, background, events):
+        """Fill an area defined by a border attribute with a tiled pattern."""
         c, border = self.get_attr_index(c), self.get_attr_index(border)
         solid = (pattern is None)
         if not solid:
@@ -813,7 +834,7 @@ class Drawing(object):
                 bound = gmls.parse_number()
                 error.range_check(0, 9999, bound)
                 x, y = self.get_window_logical(*self.last_point)
-                self.paint((x, y, False), None, colour, bound, None, events)
+                self.flood_fill((x, y, False), colour, None, bound, None, events)
 
     def draw_step(self, x0, y0, sx, sy, plot, goback):
         """Make a DRAW step, drawing a line and returning if requested."""
