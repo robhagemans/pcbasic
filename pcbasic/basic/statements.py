@@ -326,12 +326,10 @@ class StatementParser(object):
         """TRON: turn on line number tracing."""
         self.session.interpreter.tron_()
         # TRON LAH gives error, but TRON has been executed
-        ins.require_end()
 
     def exec_troff(self, ins):
         """TROFF: turn off line number tracing."""
         self.session.interpreter.troff_()
-        ins.require_end()
 
     def exec_rem(self, ins):
         """REM: comment."""
@@ -379,7 +377,6 @@ class StatementParser(object):
         """PEN: switch on/off light pen event handling."""
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
         self.session.events.pen_(command)
-        ins.require_end()
 
     def exec_strig(self, ins):
         """STRIG: switch on/off fire button event handling."""
@@ -392,20 +389,17 @@ class StatementParser(object):
             self.session.events.strig_(num, command)
         elif d in (tk.ON, tk.OFF):
             self.session.stick.strig_statement_(d)
-        ins.require_end()
 
     def exec_com(self, ins):
         """COM: switch on/off serial port event handling."""
         num = values.to_int(self.parse_bracket(ins))
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
         self.session.events.com_(num, command)
-        ins.require_end()
 
     def exec_timer(self, ins):
         """TIMER: switch on/off timer event handling."""
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
         self.session.events.timer_(command)
-        ins.require_end()
 
     def exec_key_events(self, ins):
         """KEY: switch on/off keyboard events."""
@@ -413,7 +407,6 @@ class StatementParser(object):
         error.range_check(0, 255, num)
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
         self.session.events.key_(num, command)
-        ins.require_end()
 
     ###########################################################################
     # event definitions
@@ -445,7 +438,6 @@ class StatementParser(object):
             command = ins.skip_blank_read_if((tk.ON, tk.OFF))
         self.session.sound.beep_(command)
         # if a syntax error happens, we still beeped.
-        ins.require_end()
 
     def exec_sound(self, ins):
         """SOUND: produce a sound or switch external speaker on/off."""
@@ -474,7 +466,6 @@ class StatementParser(object):
             ins.require_end()
             args = freq, dur, volume, voice
         self.session.sound.sound_(*args)
-        ins.require_end()
 
     def exec_play(self, ins):
         """PLAY: event switch/play MML string."""
@@ -524,7 +515,6 @@ class StatementParser(object):
         ins.require_read((',',))
         val = self.parse_expression(ins)
         self.session.all_memory.poke_(addr, val)
-        ins.require_end()
 
     def exec_def_seg(self, ins):
         """DEF SEG: set the current memory segment."""
@@ -533,7 +523,6 @@ class StatementParser(object):
             # def_seg() accepts signed values
             seg = values.to_int(self.parse_expression(ins), unsigned=True)
         self.session.all_memory.def_seg_(seg)
-        ins.require_end()
 
     def exec_def_usr(self, ins):
         """DEF USR: Define a machine language function."""
@@ -541,7 +530,6 @@ class StatementParser(object):
         ins.require_read((tk.O_EQ,))
         addr = values.cint_(self.parse_expression(ins), unsigned=True)
         self.session.all_memory.def_usr_(usr, addr)
-        ins.require_end()
 
     def exec_bload(self, ins):
         """BLOAD: load a file into a memory location."""
@@ -602,7 +590,6 @@ class StatementParser(object):
         val = values.to_int(self.parse_expression(ins))
         error.range_check(0, 255, val)
         self.session.machine.out_(addr, val)
-        ins.require_end()
 
     def exec_wait(self, ins):
         """WAIT: wait for a machine port. Limited implementation."""
@@ -623,17 +610,14 @@ class StatementParser(object):
     def exec_chdir(self, ins):
         """CHDIR: change working directory."""
         self.session.devices.chdir_(self.parse_temporary_string(ins))
-        ins.require_end()
 
     def exec_mkdir(self, ins):
         """MKDIR: create directory."""
         self.session.devices.mkdir_(self.parse_temporary_string(ins))
-        ins.require_end()
 
     def exec_rmdir(self, ins):
         """RMDIR: remove directory."""
         self.session.devices.rmdir_(self.parse_temporary_string(ins))
-        ins.require_end()
 
     def exec_name(self, ins):
         """NAME: rename file or directory."""
@@ -642,12 +626,10 @@ class StatementParser(object):
         ins.require_read(('AS',))
         newname = self.parse_temporary_string(ins)
         self.session.devices.name_(oldname, newname)
-        ins.require_end()
 
     def exec_kill(self, ins):
         """KILL: remove file."""
         self.session.devices.kill_(self.parse_temporary_string(ins))
-        ins.require_end()
 
     def exec_files(self, ins):
         """FILES: output directory listing."""
@@ -655,7 +637,6 @@ class StatementParser(object):
         if ins.skip_blank() not in tk.END_STATEMENT:
             pathmask = self.parse_temporary_string(ins)
         self.session.devices.files_(pathmask)
-        ins.require_end()
 
     ###########################################################################
     # OS
@@ -667,13 +648,11 @@ class StatementParser(object):
         if ins.skip_blank() not in tk.END_STATEMENT:
             cmd = self.parse_temporary_string(ins)
         self.session.shell_(cmd)
-        ins.require_end()
 
     def exec_environ(self, ins):
         """ENVIRON: set environment string."""
         envstr = self.parse_temporary_string(ins)
         dos.environ_statement_(envstr)
-        ins.require_end()
 
     def exec_time(self, ins):
         """TIME$: set time."""
@@ -818,13 +797,11 @@ class StatementParser(object):
             if mode not in ('A', 'P'):
                 raise error.RunError(error.STX)
         self.session.save_(name, mode)
-        ins.require_end()
 
     def exec_merge(self, ins):
         """MERGE: merge lines from file into current program."""
         name = self.parse_temporary_string(ins)
         self.session.merge_(name)
-        ins.require_end()
 
     def exec_new(self, ins):
         """NEW: clear program from memory."""
@@ -850,7 +827,6 @@ class StatementParser(object):
     def exec_reset(self, ins):
         """RESET: close all files."""
         self.session.files.reset_()
-        ins.require_end()
 
     def exec_open(self, ins):
         """OPEN: open a file."""
@@ -860,7 +836,6 @@ class StatementParser(object):
         else:
             args = self._parse_open_second(ins, first_expr)
         self.session.files.open_(*args)
-        ins.require_end()
 
     def _parse_open_first(self, ins, first_expr):
         """Parse OPEN first ('old') syntax."""
@@ -931,7 +906,6 @@ class StatementParser(object):
                 self.session.files.close_(number)
                 if not ins.skip_blank_read_if((',',)):
                     break
-        ins.require_end()
 
     def exec_field(self, ins):
         """FIELD: link a string variable to record buffer."""
@@ -947,7 +921,6 @@ class StatementParser(object):
                 offset += width
                 if not ins.skip_blank_read_if((',',)):
                     break
-        ins.require_end()
 
     def _parse_put_get_file(self, ins):
         """Parse record number for PUT and GET."""
@@ -960,12 +933,10 @@ class StatementParser(object):
     def exec_put_file(self, ins):
         """PUT: write record to file."""
         self.session.files.put_(*self._parse_put_get_file(ins))
-        ins.require_end()
 
     def exec_get_file(self, ins):
         """GET: read record from file."""
         self.session.files.get_(*self._parse_put_get_file(ins))
-        ins.require_end()
 
     def _parse_lock_unlock(self, ins):
         """Parse lock records for LOCK or UNLOCK."""
@@ -981,12 +952,10 @@ class StatementParser(object):
     def exec_lock(self, ins):
         """LOCK: set file or record locks."""
         self.session.files.lock_(*self._parse_lock_unlock(ins))
-        ins.require_end()
 
     def exec_unlock(self, ins):
         """UNLOCK: unset file or record locks."""
         self.session.files.unlock_(*self._parse_lock_unlock(ins))
-        ins.require_end()
 
     def exec_ioctl(self, ins):
         """IOCTL: send control string to I/O device."""
@@ -994,7 +963,6 @@ class StatementParser(object):
         ins.require_read((',',))
         control_string = self.parse_temporary_string(ins)
         self.session.files.ioctl_statement_(thefile, control_string)
-        ins.require_end()
 
     ###########################################################################
     # Graphics statements
@@ -1085,7 +1053,6 @@ class StatementParser(object):
         else:
             args = ()
         self.session.screen.drawing.view_(*args)
-        ins.require_end()
 
     def exec_window(self, ins):
         """WINDOW: define logical coordinate system."""
@@ -1102,7 +1069,6 @@ class StatementParser(object):
         else:
             args = ()
         self.session.screen.drawing.window_(*args)
-        ins.require_end()
 
     def exec_circle(self, ins):
         """CIRCLE: Draw a circle, ellipse, arc or sector."""
@@ -1154,7 +1120,6 @@ class StatementParser(object):
                             background_pattern = values.pass_string(
                                     self.parse_expression(ins), err=error.IFC).to_str()
             self.session.screen.drawing.paint_(coord, attrib, border, background_pattern, self.session.events)
-        ins.require_end()
 
     def exec_get_graph(self, ins):
         """GET: read a sprite to memory."""
@@ -1272,8 +1237,7 @@ class StatementParser(object):
         """ON ERROR: define error trapping routine."""
         linenum = self._parse_jumpnum(ins)
         self.session.interpreter.on_error_goto_(linenum)
-        # this will be caught by the trapping routine just set
-        ins.require_end()
+        # any syntax error following will be caught by the trapping routine just set
 
     def exec_resume(self, ins):
         """RESUME: resume program flow after error-trap."""
@@ -1402,7 +1366,6 @@ class StatementParser(object):
             if not ins.skip_blank_read_if((',')):
                 break
         # if we're done iterating we no longer ignore the rest of the statement
-        ins.require_end()
 
     def exec_while(self, ins):
         """WHILE: enter while-loop."""
@@ -1421,7 +1384,6 @@ class StatementParser(object):
             ins.seek(whilepos)
             raise error.RunError(error.WHILE_WITHOUT_WEND)
         self._check_while_condition(ins, whilepos)
-        ins.require_end()
 
     def _check_while_condition(self, ins, whilepos):
         """Check condition of while-loop."""
@@ -1536,7 +1498,6 @@ class StatementParser(object):
             self.session.arrays.dim(name, dimensions)
             if not ins.skip_blank_read_if((',',)):
                 break
-        ins.require_end()
 
     def exec_deftype(self, ins, typechar):
         """DEFSTR/DEFINT/DEFSNG/DEFDBL: set type defaults for variables."""
@@ -1552,7 +1513,6 @@ class StatementParser(object):
             self.memory.set_deftype(start, stop, typechar)
             if not ins.skip_blank_read_if((',',)):
                 break
-        ins.require_end()
 
     def exec_erase(self, ins):
         """ERASE: erase an array."""
@@ -1560,7 +1520,6 @@ class StatementParser(object):
             self.session.arrays.erase(self._parse_name(ins))
             if not ins.skip_blank_read_if((',',)):
                 break
-        ins.require_end()
 
     def exec_let(self, ins):
         """LET: assign value to variable or array."""
@@ -1571,7 +1530,6 @@ class StatementParser(object):
             self.session.arrays.check_dim(name, indices)
         ins.require_read((tk.O_EQ,))
         self.memory.set_variable(name, indices, self.parse_expression(ins))
-        ins.require_end()
 
     def exec_mid(self, ins):
         """MID$: set part of a string."""
@@ -1645,7 +1603,6 @@ class StatementParser(object):
                     # syntax error in DATA line (not type mismatch!) if can't convert to var type
                     raise error.RunError(error.STX, self.session.interpreter.data_pos-1)
             self.memory.set_variable(name, indices, value=value)
-        ins.require_end()
 
     def exec_input(self, ins):
         """INPUT: request input from user."""
@@ -1665,7 +1622,6 @@ class StatementParser(object):
             ins.seek(self.session.interpreter.current_statement)
             parseinput.input_(self.session, self.values, prompt, readvar, newline)
             ins.seek(pos)
-        ins.require_end()
 
     def exec_line_input(self, ins):
         """LINE INPUT: request line of input from user."""
@@ -1701,8 +1657,7 @@ class StatementParser(object):
         ins.require_read((',',))
         name2, index2 = self.parse_variable(ins)
         self.memory.swap(name1, index1, name2, index2)
-        # if syntax error. the swap has happened
-        ins.require_end()
+        # if syntax error, the swap has happened
 
     def exec_def_fn(self, ins):
         """DEF FN: define a function."""
@@ -1729,7 +1684,6 @@ class StatementParser(object):
             # seed entered on prompt is rounded to int
             val = values.cint_(val)
         self.session.randomiser.randomize_(val)
-        ins.require_end()
 
     ################################################
     # Console statements
@@ -1762,7 +1716,6 @@ class StatementParser(object):
             if ins.skip_blank_read_if((',',)):
                 bord = self.parse_value(ins, values.INT)
         self.session.screen.color_(fore, back, bord)
-        ins.require_end()
 
     def exec_palette(self, ins):
         """PALETTE: set colour palette entry."""
@@ -1779,7 +1732,6 @@ class StatementParser(object):
             colour = self.parse_value(ins, values.INT, allow_empty=True)
             error.throw_if(attrib is None or colour is None, error.STX)
             self.session.screen.palette.palette_(attrib, colour)
-            ins.require_end()
 
     def exec_palette_using(self, ins):
         """PALETTE USING: set full colour palette."""
@@ -1787,7 +1739,6 @@ class StatementParser(object):
         # brackets are not optional
         error.throw_if(not start_indices, error.STX)
         self.session.screen.palette.palette_using_(array_name, start_indices, self.session.arrays)
-        ins.require_end()
 
     def exec_key(self, ins):
         """KEY: switch on/off or list function-key row on screen."""
@@ -1803,7 +1754,6 @@ class StatementParser(object):
             # key n, "TEXT"
             ins.seek(-len(d), 1)
             self.exec_key_define(ins)
-        ins.require_end()
 
     def exec_key_define(self, ins):
         """KEY: define function-key shortcut or scancode for event trapping."""
@@ -1861,7 +1811,6 @@ class StatementParser(object):
             if output == self.session.devices.scrn_file and self.session.screen.overflow:
                 output.write_line()
             output.write_line()
-        ins.require_end()
 
     def exec_lprint(self, ins):
         """LPRINT: Write expressions to printer LPT1."""
