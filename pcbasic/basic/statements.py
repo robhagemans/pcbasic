@@ -1166,11 +1166,7 @@ class StatementParser(object):
         ins.require_read((',',))
         array = self._parse_name(ins)
         ins.require_end()
-        if array not in self.session.arrays:
-            raise error.RunError(error.IFC)
-        elif array[-1] == '$':
-            raise error.RunError(error.TYPE_MISMATCH) # type mismatch
-        self.session.screen.drawing.get(coord0, coord1, self.session.arrays, array)
+        self.session.screen.drawing.get_(coord0, coord1, self.session.arrays, array)
 
     def exec_put_graph(self, ins):
         """PUT: draw sprite on screen."""
@@ -1180,16 +1176,11 @@ class StatementParser(object):
         x, y = self._parse_coord_bare(ins)
         ins.require_read((',',))
         array = self._parse_name(ins)
-        action = tk.XOR
+        action = None
         if ins.skip_blank_read_if((',',)):
             action = ins.require_read((tk.PSET, tk.PRESET, tk.AND, tk.OR, tk.XOR))
         ins.require_end()
-        if array not in self.session.arrays:
-            raise error.RunError(error.IFC)
-        elif array[-1] == '$':
-            # type mismatch
-            raise error.RunError(error.TYPE_MISMATCH)
-        self.session.screen.drawing.put((x, y), self.session.arrays, array, action)
+        self.session.screen.drawing.put_((x, y), self.session.arrays, array, action)
 
     def exec_draw(self, ins):
         """DRAW: draw a figure defined by a Graphics Macro Language string."""
@@ -1197,9 +1188,9 @@ class StatementParser(object):
             raise error.RunError(error.IFC)
         gml = self.parse_temporary_string(ins)
         ins.require_end()
-        self.session.screen.drawing.draw(gml, self.memory, self.values, self.session.events)
+        self.session.screen.drawing.draw_(gml, self.memory, self.values, self.session.events)
 
-    ##########################################################
+    ###########################################################################
     # Flow-control statements
 
     def exec_end(self, ins):

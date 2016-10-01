@@ -17,6 +17,7 @@ import io
 from . import error
 from . import values
 from . import mlparser
+from . import tokens as tk
 
 # degree-to-radian conversion factor
 deg_to_rad = math.pi / 180.
@@ -669,8 +670,13 @@ class Drawing(object):
 
     ### PUT and GET: Sprite operations
 
-    def put(self, lcoord, arrays, array_name, operation_token):
-        """Put a sprite on the screen (PUT)."""
+    def put_(self, lcoord, arrays, array_name, operation_token=None):
+        """PUT: Put a sprite on the screen."""
+        operation_token = operation_token or tk.XOR
+        if array_name not in arrays:
+            raise error.RunError(error.IFC)
+        elif array_name[-1] == values.STR:
+            raise error.RunError(error.TYPE_MISMATCH)
         x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord))
         self.last_point = x0, y0
         try:
@@ -699,8 +705,12 @@ class Drawing(object):
         # apply the sprite to the screen
         self.screen.put_rect(x0, y0, x1, y1, sprite, operation_token)
 
-    def get(self, lcoord0, lcoord1, arrays, array_name):
-        """Read a sprite from the screen (GET)."""
+    def get_(self, lcoord0, lcoord1, arrays, array_name):
+        """GET: Read a sprite from the screen."""
+        if array_name not in arrays:
+            raise error.RunError(error.IFC)
+        elif array_name[-1] == values.STR:
+            raise error.RunError(error.TYPE_MISMATCH)
         x0, y0 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord0))
         x1, y1 = self.screen.graph_view.coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
@@ -729,7 +739,7 @@ class Drawing(object):
 
     ### DRAW statement
 
-    def draw(self, gml, memory, value_handler, events):
+    def draw_(self, gml, memory, value_handler, events):
         """DRAW: Execute a Graphics Macro Language string."""
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = mlparser.MLParser(gml, memory, value_handler)
