@@ -1254,23 +1254,18 @@ class StatementParser(object):
 
     def exec_run(self, ins):
         """RUN: start program execution."""
-        jumpnum, close_files = None, True
         c = ins.skip_blank()
         if c == tk.T_UINT:
             # parse line number and ignore rest of line
-            jumpnum = self._parse_jumpnum(ins)
+            args = self._parse_jumpnum(ins),
         elif c not in tk.END_STATEMENT:
             name = self.parse_temporary_string(ins)
-            if ins.skip_blank_read_if((',',)):
-                ins.require_read('R')
-                close_files = False
+            comma_r = ins.skip_blank_read_if((',R',))
             ins.require_end()
-            with self.session.files.open(0, name, filetype='ABP', mode='I') as f:
-                self.session.program.load(f)
-        self.session.interpreter.clear_stacks_and_pointers()
-        self.session.clear_(close_files=close_files)
-        self.session.interpreter.goto_(jumpnum)
-        self.session.interpreter.error_handle_mode = False
+            args = name, comma_r
+        else:
+            args = ()
+        self.session.run_(*args)
 
     def exec_on_error(self, ins):
         """ON ERROR: define error trapping routine."""

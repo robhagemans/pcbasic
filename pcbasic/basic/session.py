@@ -642,6 +642,24 @@ class Session(object):
             if handler.gosub:
                 handler.set_jump(old_to_new[handler.gosub])
 
+    def run_(self, *args):
+        """RUN: start program execution."""
+        comma_r = False
+        jumpnum = None
+        if len(args) == 2:
+            name, comma_r = args
+            with self.files.open(0, name, filetype='ABP', mode='I') as f:
+                self.program.load(f)
+        elif len(args) == 1:
+            jumpnum, = args
+        self.interpreter.clear_stacks_and_pointers()
+        self.clear_(close_files=not comma_r)
+        if jumpnum is None:
+            self.interpreter.set_pointer(True, 0)
+        else:
+            self.interpreter.goto_(jumpnum)
+        self.interpreter.error_handle_mode = False
+
     def end_(self):
         """END: end program execution and return to interpreter."""
         self.interpreter.stop = self.program.bytecode.tell()
