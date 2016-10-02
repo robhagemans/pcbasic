@@ -1014,6 +1014,7 @@ class Double(Float):
         """Convert Single to Double in-place."""
         self._buffer[:4] = b'\0\0\0\0'
         self._buffer[4:] = in_single._buffer
+        return self
 
     def to_token(self):
         """Return value as Single token."""
