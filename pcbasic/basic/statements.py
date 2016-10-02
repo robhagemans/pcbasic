@@ -19,7 +19,6 @@ from . import ports
 from . import parseprint
 from . import parseinput
 from . import tokens as tk
-from . import expressions
 from . import dos
 
 
@@ -94,14 +93,16 @@ class StatementParser(object):
         # append sigil, if missing
         return self.memory.complete_name(name)
 
-    def parse_variable(self, ins):
+    def _parse_variable(self, ins):
         """Helper function: parse a scalar or array element."""
         name = ins.read_name()
         error.throw_if(not name, error.STX)
         # this is an evaluation-time determination
         # as we could have passed another DEFtype statement
         name = self.memory.complete_name(name)
+        self.session.redo_on_break = True
         indices = self.expression_parser.parse_indices(ins)
+        self.session.redo_on_break = False
         return name, indices
 
     def _parse_jumpnum(self, ins):
@@ -122,7 +123,10 @@ class StatementParser(object):
         """Compute the value of the expression at the current code pointer."""
         if allow_empty and ins.skip_blank() in tk.END_EXPRESSION:
             return None
-        return self.expression_parser.parse(ins)
+        self.session.redo_on_break = True
+        val = self.expression_parser.parse(ins)
+        self.session.redo_on_break = False
+        return val
 
     ###########################################################################
 
@@ -916,7 +920,7 @@ class StatementParser(object):
                 width = values.to_int(self.parse_expression(ins))
                 error.range_check(0, 255, width)
                 ins.require_read(('AS',), err=error.IFC)
-                name, index = self.parse_variable(ins)
+                name, index = self._parse_variable(ins)
                 self.session.files.field_(the_file, name, index, offset, width)
                 offset += width
                 if not ins.skip_blank_read_if((',',)):
@@ -1417,10 +1421,10 @@ class StatementParser(object):
     # Variable & array statements
 
     def _parse_var_list(self, ins):
-        """Helper function: parse variable list.  """
+        """Helper function: parse variable list."""
         readvar = []
         while True:
-            readvar.append(list(self.parse_variable(ins)))
+            readvar.append(list(self._parse_variable(ins)))
             if not ins.skip_blank_read_if((',',)):
                 break
         return readvar
@@ -1491,7 +1495,7 @@ class StatementParser(object):
     def exec_dim(self, ins):
         """DIM: dimension arrays."""
         while True:
-            name, dimensions = self.parse_variable(ins)
+            name, dimensions = self._parse_variable(ins)
             if not dimensions:
                 dimensions = [10]
             self.session.arrays.dim(name, dimensions)
@@ -1522,7 +1526,7 @@ class StatementParser(object):
 
     def exec_let(self, ins):
         """LET: assign value to variable or array."""
-        name, indices = self.parse_variable(ins)
+        name, indices = self._parse_variable(ins)
         if indices != []:
             # pre-dim even if this is not a legal statement!
             # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out of range afterwards
@@ -1535,7 +1539,7 @@ class StatementParser(object):
         # do not use require_read as we don't allow whitespace here
         if ins.read(1) != '(':
             raise error.RunError(error.STX)
-        name, indices = self.parse_variable(ins)
+        name, indices = self._parse_variable(ins)
         if indices != []:
             # pre-dim even if this is not a legal statement!
             self.session.arrays.check_dim(name, indices)
@@ -1562,7 +1566,7 @@ class StatementParser(object):
 
     def exec_lset(self, ins, justify_right=False):
         """LSET: assign string value in-place; left justified."""
-        name, index = self.parse_variable(ins)
+        name, index = self._parse_variable(ins)
         v = values.pass_string(self.memory.get_variable(name, index))
         ins.require_read((tk.O_EQ,))
         # we're not using a temp string here
@@ -1616,11 +1620,7 @@ class StatementParser(object):
             newline = not ins.skip_blank_read_if((';',))
             prompt = parseinput.parse_prompt(ins, '? ')
             readvar = self._parse_var_list(ins)
-            # move the program pointer to the start of the statement to ensure correct behaviour for CONT
-            pos = ins.tell()
-            ins.seek(self.session.interpreter.current_statement+1)
             parseinput.input_(self.session, self.values, prompt, readvar, newline)
-            ins.seek(pos)
 
     def exec_line_input(self, ins):
         """LINE INPUT: request line of input from user."""
@@ -1635,7 +1635,7 @@ class StatementParser(object):
             finp = self.session.files.get(file_number, mode='IR')
             ins.require_read((',',))
         # get string variable
-        readvar, indices = self.parse_variable(ins)
+        readvar, indices = self._parse_variable(ins)
         parseinput.line_input_(
             self.session, self.values, finp, prompt, readvar, indices, newline)
 
@@ -1652,9 +1652,9 @@ class StatementParser(object):
 
     def exec_swap(self, ins):
         """SWAP: swap values of two variables."""
-        name1, index1 = self.parse_variable(ins)
+        name1, index1 = self._parse_variable(ins)
         ins.require_read((',',))
-        name2, index2 = self.parse_variable(ins)
+        name2, index2 = self._parse_variable(ins)
         self.memory.swap(name1, index1, name2, index2)
         # if syntax error, the swap has happened
 
@@ -1734,7 +1734,7 @@ class StatementParser(object):
 
     def exec_palette_using(self, ins):
         """PALETTE USING: set full colour palette."""
-        array_name, start_indices = self.parse_variable(ins)
+        array_name, start_indices = self._parse_variable(ins)
         # brackets are not optional
         error.throw_if(not start_indices, error.STX)
         self.session.screen.palette.palette_using_(array_name, start_indices, self.session.arrays)

@@ -18,7 +18,9 @@ def input_(session, value_handler, prompt, readvar, newline):
     """INPUT: request input from user."""
     # read the input
     session.input_mode = True
+    session.redo_on_break = True
     varlist = input_console(session.editor, value_handler, prompt, readvar, newline)
+    session.redo_on_break = False
     session.input_mode = False
     for v in varlist:
         session.memory.set_variable(*v)
@@ -46,8 +48,10 @@ def line_input_(session, value_handler, finp, prompt, readvar, indices, newline)
             raise error.RunError(error.INPUT_PAST_END)
     else:
         session.input_mode = True
+        session.redo_on_break = True
         session.screen.write(prompt)
         line = session.editor.wait_screenline(write_endl=newline)
+        session.redo_on_break = False
         session.input_mode = False
     session.memory.set_variable(readvar, indices, value_handler.from_value(line, values.STR))
 

@@ -80,6 +80,7 @@ class Session(object):
         self.auto_increment = 10
         # interpreter is waiting for INPUT or LINE INPUT
         self.input_mode = False
+        self.redo_on_break = False
         # syntax error prompt and EDIT
         self.edit_prompt = False
         ######################################################################
@@ -446,11 +447,16 @@ class Session(object):
         # if we're in a program, save pointer
         pos = -1
         if self.interpreter.run_mode:
-            pos = self.program.bytecode.tell()-1
+            if self.redo_on_break:
+                pos = self.interpreter.current_statement
+            else:
+                self.program.bytecode.skip_to(tk.END_STATEMENT)
+                pos = self.program.bytecode.tell()
             self.interpreter.stop = pos
         self._write_error_message(e.message, self.program.get_line_number(pos))
         self._set_parse_mode(False)
         self.input_mode = False
+        self.redo_on_break = False
 
     def _write_error_message(self, msg, linenum):
         """Write an error message to the console."""
@@ -662,7 +668,6 @@ class Session(object):
 
     def end_(self):
         """END: end program execution and return to interpreter."""
-        self.interpreter.stop = self.program.bytecode.tell()
         # jump to end of direct line so execution stops
         self.interpreter.set_pointer(False)
         # avoid NO RESUME
