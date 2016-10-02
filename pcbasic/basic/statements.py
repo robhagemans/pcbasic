@@ -1618,7 +1618,7 @@ class StatementParser(object):
             readvar = self._parse_var_list(ins)
             # move the program pointer to the start of the statement to ensure correct behaviour for CONT
             pos = ins.tell()
-            ins.seek(self.session.interpreter.current_statement)
+            ins.seek(self.session.interpreter.current_statement+1)
             parseinput.input_(self.session, self.values, prompt, readvar, newline)
             ins.seek(pos)
 
