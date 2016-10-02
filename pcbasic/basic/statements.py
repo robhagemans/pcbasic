@@ -1274,17 +1274,19 @@ class StatementParser(object):
         ins.require_end()
         self.session.screen.drawing.draw_(gml, self.memory, self.values, self.session.events)
 
-    ################################################
+    ###########################################################################
     # Variable & array statements
+
+    def _parse_var_list_iter(self, ins):
+        """Helper function: lazily parse variable list."""
+        while True:
+            yield self._parse_variable(ins)
+            if not ins.skip_blank_read_if((',',)):
+                break
 
     def _parse_var_list(self, ins):
         """Helper function: parse variable list."""
-        readvar = []
-        while True:
-            readvar.append(list(self._parse_variable(ins)))
-            if not ins.skip_blank_read_if((',',)):
-                break
-        return readvar
+        return list(self._parse_var_list_iter(ins))
 
     def exec_clear(self, ins):
         """CLEAR: clear memory and redefine memory limits."""
@@ -1458,13 +1460,6 @@ class StatementParser(object):
                     # syntax error in DATA line (not type mismatch!) if can't convert to var type
                     raise error.RunError(error.STX, self.session.interpreter.data_pos-1)
             self.memory.set_variable(name, indices, value=value)
-
-    def _parse_var_list_iter(self, ins):
-        """Helper function: lazily parse variable list.."""
-        while True:
-            yield self._parse_variable(ins)
-            if not ins.skip_blank_read_if((',',)):
-                break
 
     def exec_input(self, ins):
         """INPUT: request input from user."""
