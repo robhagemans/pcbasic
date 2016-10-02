@@ -1607,6 +1607,13 @@ class StatementParser(object):
                     raise error.RunError(error.STX, self.session.interpreter.data_pos-1)
             self.memory.set_variable(name, indices, value=value)
 
+    def _parse_var_list_iter(self, ins):
+        """Helper function: lazily parse variable list.."""
+        while True:
+            yield self._parse_variable(ins)
+            if not ins.skip_blank_read_if((',',)):
+                break
+
     def exec_input(self, ins):
         """INPUT: request input from user."""
         file_number = self.parse_file_number(ins, opt_hash=False)
@@ -1617,7 +1624,7 @@ class StatementParser(object):
             parseinput.input_file_(self.memory, self.values, finp, readvar)
         else:
             newline, prompt, following = parseinput.parse_prompt(ins)
-            readvar = self._parse_var_list(ins)
+            readvar = self._parse_var_list_iter(ins)
             parseinput.input_(self.session, self.values, newline, prompt, following, readvar)
 
     def exec_line_input(self, ins):

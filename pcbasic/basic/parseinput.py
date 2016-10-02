@@ -81,7 +81,7 @@ def input_console(editor, value_handler, prompt, readvar, newline):
         line = editor.wait_screenline(write_endl=newline)
         inputstream = InputTextFile(line)
         # read the values and group them and the separators
-        values, seps = [], []
+        var, values, seps = [], [], []
         for v in readvar:
             word, sep = inputstream.input_entry(v[0][-1], allow_past_end=True)
             try:
@@ -89,6 +89,7 @@ def input_console(editor, value_handler, prompt, readvar, newline):
             except error.RunError as e:
                 # string entered into numeric field
                 value = None
+            var.append(list(v))
             values.append(value)
             seps.append(sep)
         # last separator not empty: there were too many values or commas
@@ -98,8 +99,9 @@ def input_console(editor, value_handler, prompt, readvar, newline):
         if (seps[-1] or '' in seps[:-1] or None in values):
             # good old Redo!
             editor.screen.write_line('?Redo from start')
+            readvar = var
         else:
-            return [r + [v] for r, v in zip(readvar, values)]
+            return [r + [v] for r, v in zip(var, values)]
 
 
 class InputTextFile(devices.TextFileBase):
