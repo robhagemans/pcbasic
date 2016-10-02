@@ -340,6 +340,16 @@ class StatementParser(object):
         # skip the rest of the line, but parse numbers to avoid triggering EOL
         ins.skip_to(tk.END_LINE)
 
+    def exec_data(self, ins):
+        """DATA: data definition; ignore."""
+        # ignore rest of statement after DATA
+        ins.skip_to(tk.END_STATEMENT)
+
+    def exec_else(self, ins):
+        """ELSE: part of branch statement; ignore."""
+        # any else statement by itself means the THEN has already been executed, so it's really like a REM.
+        ins.skip_to(tk.END_LINE)
+
     def exec_lcopy(self, ins):
         """LCOPY: do nothing but check for syntax errors."""
         val = None
@@ -373,6 +383,110 @@ class StatementParser(object):
         """TERM: load and run PCjr buitin terminal emulator program."""
         ins.require_end()
         self.session.interpreter.term_()
+
+    ###########################################################################
+    # Flow-control statements
+
+    def exec_end(self, ins):
+        """END: end program execution and return to interpreter."""
+        ins.require_end()
+        self.session.end_()
+
+    def exec_stop(self, ins):
+        """STOP: break program execution and return to interpreter."""
+        ins.require_end()
+        self.session.interpreter.stop_()
+
+    def exec_cont(self, ins):
+        """CONT: continue STOPped or ENDed execution."""
+        self.session.interpreter.cont_()
+
+    def exec_goto(self, ins):
+        """GOTO: jump to specified line number."""
+        # parse line number, ignore rest of line and jump
+        self.session.interpreter.goto_(self._parse_jumpnum(ins))
+
+    def exec_gosub(self, ins):
+        """GOSUB: jump into a subroutine."""
+        self.session.interpreter.gosub_(self._parse_jumpnum(ins))
+
+    def exec_return(self, ins):
+        """RETURN: return from a subroutine."""
+        # return *can* have a line number
+        jumpnum = None
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            jumpnum = self._parse_jumpnum(ins)
+        self.session.interpreter.return_(jumpnum)
+
+    def exec_on_jump(self, ins):
+        """ON: calculated jump."""
+        onvar = values.to_int(self.parse_expression(ins))
+        error.range_check(0, 255, onvar)
+        command = ins.require_read((tk.GOTO, tk.GOSUB))
+        skipped = 0
+        if onvar in (0, 255):
+            # if any provided, check all but jump to none
+            while True:
+                num = self._parse_optional_jumpnum(ins)
+                if num == -1 or not ins.skip_blank_read_if((',',)):
+                    ins.require_end()
+                    return
+        else:
+            # only parse jumps (and errors!) up to our choice
+            while skipped < onvar-1:
+                self._parse_jumpnum(ins)
+                skipped += 1
+                if not ins.skip_blank_read_if((',',)):
+                    ins.require_end()
+                    return
+            # parse our choice
+            jumpnum = self._parse_jumpnum(ins)
+            if command == tk.GOTO:
+                self.session.interpreter.goto_(jumpnum)
+            elif command == tk.GOSUB:
+                self.session.interpreter.gosub_(jumpnum)
+
+    def exec_run(self, ins):
+        """RUN: start program execution."""
+        c = ins.skip_blank()
+        if c == tk.T_UINT:
+            # parse line number and ignore rest of line
+            args = self._parse_jumpnum(ins),
+        elif c not in tk.END_STATEMENT:
+            name = self.parse_temporary_string(ins)
+            comma_r = ins.skip_blank_read_if((',R',))
+            ins.require_end()
+            args = name, comma_r
+        else:
+            args = ()
+        self.session.run_(*args)
+
+    def exec_on_error_goto(self, ins):
+        """ON ERROR: define error trapping routine."""
+        linenum = self._parse_jumpnum(ins)
+        self.session.interpreter.on_error_goto_(linenum)
+        # any syntax error following will be caught by the trapping routine just set
+
+    def exec_resume(self, ins):
+        """RESUME: resume program flow after error-trap."""
+        if self.session.interpreter.error_resume is None:
+            # unset error handler
+            self.session.interpreter.on_error = 0
+            raise error.RunError(error.RESUME_WITHOUT_ERROR)
+        c = ins.skip_blank()
+        if c == tk.NEXT:
+            where = ins.read(1)
+        elif c in tk.END_STATEMENT:
+            where = None
+        else:
+            where = self._parse_jumpnum(ins)
+        ins.require_end()
+        self.session.interpreter.resume_(where)
+
+    def exec_error(self, ins):
+        """ERROR: simulate an error condition."""
+        errn = values.to_int(self.parse_expression(ins))
+        error.error_(errn)
 
     ###########################################################################
     # event switches (except PLAY)
@@ -623,6 +737,10 @@ class StatementParser(object):
         """RMDIR: remove directory."""
         self.session.devices.rmdir_(self.parse_temporary_string(ins))
 
+    def exec_kill(self, ins):
+        """KILL: remove file."""
+        self.session.devices.kill_(self.parse_temporary_string(ins))
+
     def exec_name(self, ins):
         """NAME: rename file or directory."""
         oldname = self.parse_temporary_string(ins)
@@ -630,10 +748,6 @@ class StatementParser(object):
         ins.require_read(('AS',))
         newname = self.parse_temporary_string(ins)
         self.session.devices.name_(oldname, newname)
-
-    def exec_kill(self, ins):
-        """KILL: remove file."""
-        self.session.devices.kill_(self.parse_temporary_string(ins))
 
     def exec_files(self, ins):
         """FILES: output directory listing."""
@@ -1160,263 +1274,6 @@ class StatementParser(object):
         ins.require_end()
         self.session.screen.drawing.draw_(gml, self.memory, self.values, self.session.events)
 
-    ###########################################################################
-    # Flow-control statements
-
-    def exec_end(self, ins):
-        """END: end program execution and return to interpreter."""
-        ins.require_end()
-        self.session.end_()
-
-    def exec_stop(self, ins):
-        """STOP: break program execution and return to interpreter."""
-        ins.require_end()
-        self.session.interpreter.stop_()
-
-    def exec_cont(self, ins):
-        """CONT: continue STOPped or ENDed execution."""
-        self.session.interpreter.cont_()
-
-    def exec_goto(self, ins):
-        """GOTO: jump to specified line number."""
-        # parse line number, ignore rest of line and jump
-        self.session.interpreter.goto_(self._parse_jumpnum(ins))
-
-    def exec_gosub(self, ins):
-        """GOSUB: jump into a subroutine."""
-        self.session.interpreter.gosub_(self._parse_jumpnum(ins))
-
-    def exec_return(self, ins):
-        """RETURN: return from a subroutine."""
-        # return *can* have a line number
-        jumpnum = None
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            jumpnum = self._parse_jumpnum(ins)
-        self.session.interpreter.return_(jumpnum)
-
-    def exec_on_jump(self, ins):
-        """ON: calculated jump."""
-        onvar = values.to_int(self.parse_expression(ins))
-        error.range_check(0, 255, onvar)
-        command = ins.require_read((tk.GOTO, tk.GOSUB))
-        skipped = 0
-        if onvar in (0, 255):
-            # if any provided, check all but jump to none
-            while True:
-                num = self._parse_optional_jumpnum(ins)
-                if num == -1 or not ins.skip_blank_read_if((',',)):
-                    ins.require_end()
-                    return
-        else:
-            # only parse jumps (and errors!) up to our choice
-            while skipped < onvar-1:
-                self._parse_jumpnum(ins)
-                skipped += 1
-                if not ins.skip_blank_read_if((',',)):
-                    ins.require_end()
-                    return
-            # parse our choice
-            jumpnum = self._parse_jumpnum(ins)
-            if command == tk.GOTO:
-                self.session.interpreter.goto_(jumpnum)
-            elif command == tk.GOSUB:
-                self.session.interpreter.gosub_(jumpnum)
-
-    def exec_run(self, ins):
-        """RUN: start program execution."""
-        c = ins.skip_blank()
-        if c == tk.T_UINT:
-            # parse line number and ignore rest of line
-            args = self._parse_jumpnum(ins),
-        elif c not in tk.END_STATEMENT:
-            name = self.parse_temporary_string(ins)
-            comma_r = ins.skip_blank_read_if((',R',))
-            ins.require_end()
-            args = name, comma_r
-        else:
-            args = ()
-        self.session.run_(*args)
-
-    def exec_on_error_goto(self, ins):
-        """ON ERROR: define error trapping routine."""
-        linenum = self._parse_jumpnum(ins)
-        self.session.interpreter.on_error_goto_(linenum)
-        # any syntax error following will be caught by the trapping routine just set
-
-    def exec_resume(self, ins):
-        """RESUME: resume program flow after error-trap."""
-        if self.session.interpreter.error_resume is None:
-            # unset error handler
-            self.session.interpreter.on_error = 0
-            raise error.RunError(error.RESUME_WITHOUT_ERROR)
-        c = ins.skip_blank()
-        if c == tk.NEXT:
-            where = ins.read(1)
-        elif c in tk.END_STATEMENT:
-            where = None
-        else:
-            where = self._parse_jumpnum(ins)
-        ins.require_end()
-        self.session.interpreter.resume_(where)
-
-    def exec_error(self, ins):
-        """ERROR: simulate an error condition."""
-        errn = values.to_int(self.parse_expression(ins))
-        error.error_(errn)
-
-    def exec_if(self, ins):
-        """IF: enter branching statement."""
-        # avoid overflow: don't use bools.
-        val = values.csng_(self.parse_expression(ins))
-        ins.skip_blank_read_if((',',)) # optional comma
-        ins.require_read((tk.THEN, tk.GOTO))
-        if not val.is_zero():
-            # TRUE: continue after THEN. line number or statement is implied GOTO
-            if ins.skip_blank() in (tk.T_UINT,):
-                self.session.interpreter.goto_(self._parse_jumpnum(ins))
-            # continue parsing as normal from next statement, :ELSE will be ignored anyway
-            self.parse_statement(ins)
-        else:
-            # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
-            nesting_level = 0
-            while True:
-                d = ins.skip_to_read(tk.END_STATEMENT + (tk.IF,))
-                if d == tk.IF:
-                    # nexting step on IF. (it's less convenient to count THENs because they could be THEN, GOTO or THEN GOTO.)
-                    nesting_level += 1
-                elif d == ':':
-                    # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
-                    if ins.skip_blank_read_if((tk.ELSE,)):
-                        if nesting_level > 0:
-                            nesting_level -= 1
-                        else:
-                            # line number: jump
-                            if ins.skip_blank() in (tk.T_UINT,):
-                                self.session.interpreter.goto_(self._parse_jumpnum(ins))
-                            # continue execution from here
-                            break
-                else:
-                    ins.seek(-len(d), 1)
-                    break
-
-    def exec_else(self, ins):
-        """ELSE: part of branch statement; ignore."""
-        # any else statement by itself means the THEN has already been executed, so it's really like a REM.
-        ins.skip_to(tk.END_LINE)
-
-    def exec_for(self, ins):
-        """FOR: enter for-loop."""
-        # read variable
-        varname = self._parse_name(ins)
-        vartype = varname[-1]
-        if vartype in (values.STR, values.DBL):
-            raise error.RunError(error.TYPE_MISMATCH)
-        ins.require_read((tk.O_EQ,))
-        start = values.to_type(vartype, self.parse_expression(ins))
-        ins.require_read((tk.TO,))
-        stop = values.to_type(vartype, self.parse_expression(ins))
-        if ins.skip_blank_read_if((tk.STEP,)):
-            step = self.parse_expression(ins)
-        else:
-            # convert 1 to vartype
-            step = self.values.from_value(1, vartype)
-        step = values.to_type(vartype, step)
-        ins.require_end()
-        endforpos = ins.tell()
-        # find NEXT
-        nextpos = self._find_next(ins, varname)
-        # apply initial condition and jump to nextpos
-        self.session.interpreter.loop_init(ins, endforpos, nextpos, varname, start, stop, step)
-        self.exec_next(ins)
-
-    def _find_next(self, ins, varname):
-        """Helper function for FOR: find the right NEXT."""
-        current = ins.tell()
-        ins.skip_block(tk.FOR, tk.NEXT, allow_comma=True)
-        if ins.skip_blank() not in (tk.NEXT, ','):
-            # FOR without NEXT marked with FOR line number
-            ins.seek(current)
-            raise error.RunError(error.FOR_WITHOUT_NEXT)
-        comma = (ins.read(1) == ',')
-        # get position and line number just after the NEXT
-        nextpos = ins.tell()
-        # check var name for NEXT
-        # no-var only allowed in standalone NEXT
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            varname2 = self._parse_name(ins)
-        else:
-            varname2 = None
-        if (comma or varname2) and varname2 != varname:
-            # NEXT without FOR marked with NEXT line number, while we're only at FOR
-            raise error.RunError(error.NEXT_WITHOUT_FOR)
-        ins.seek(current)
-        return nextpos
-
-    def exec_next(self, ins):
-        """NEXT: iterate for-loop."""
-        while True:
-            # record the NEXT (or comma) location
-            pos = ins.tell()
-            # optional variable - errors in this are checked at the scan during FOR
-            # if we haven't read a variable, we shouldn't find something else here
-            # but if we have and we iterate, the rest of the line is ignored
-            if ins.skip_blank() not in tk.END_STATEMENT + (',',):
-                self._parse_name(ins)
-            # increment counter, check condition
-            if self.session.interpreter.loop_iterate(ins, pos):
-                break
-            # done if we're not jumping into a comma'ed NEXT
-            if not ins.skip_blank_read_if((',')):
-                break
-        # if we're done iterating we no longer ignore the rest of the statement
-
-    def exec_while(self, ins):
-        """WHILE: enter while-loop."""
-        # just after WHILE opcode
-        whilepos = ins.tell()
-        # evaluate the 'boolean' expression
-        # use double to avoid overflows
-        # find matching WEND
-        ins.skip_block(tk.WHILE, tk.WEND)
-        if ins.read(1) == tk.WEND:
-            ins.skip_to(tk.END_STATEMENT)
-            wendpos = ins.tell()
-            self.session.interpreter.while_stack.append((whilepos, wendpos))
-        else:
-            # WHILE without WEND
-            ins.seek(whilepos)
-            raise error.RunError(error.WHILE_WITHOUT_WEND)
-        self._check_while_condition(ins, whilepos)
-
-    def _check_while_condition(self, ins, whilepos):
-        """Check condition of while-loop."""
-        ins.seek(whilepos)
-        # WHILE condition is zero?
-        if not values.pass_number(self.parse_expression(ins)).is_zero():
-            # statement start is before WHILE token
-            self.session.interpreter.current_statement = whilepos-2
-            ins.require_end()
-        else:
-            # ignore rest of line and jump to WEND
-            _, wendpos = self.session.interpreter.while_stack.pop()
-            ins.seek(wendpos)
-
-    def exec_wend(self, ins):
-        """WEND: iterate while-loop."""
-        # while will actually syntax error on the first run if anything is in the way.
-        ins.require_end()
-        pos = ins.tell()
-        while True:
-            if not self.session.interpreter.while_stack:
-                # WEND without WHILE
-                raise error.RunError(error.WEND_WITHOUT_WHILE)
-            whilepos, wendpos = self.session.interpreter.while_stack[-1]
-            if pos == wendpos:
-                break
-            # not the expected WEND, we must have jumped out
-            self.session.interpreter.while_stack.pop()
-        self._check_while_condition(ins, whilepos)
-
     ################################################
     # Variable & array statements
 
@@ -1486,11 +1343,6 @@ class StatementParser(object):
                 break
         self.session.common_scalars |= common_scalars
         self.session.common_arrays |= common_arrays
-
-    def exec_data(self, ins):
-        """DATA: data definition; ignore."""
-        # ignore rest of statement after DATA
-        ins.skip_to(tk.END_STATEMENT)
 
     def exec_dim(self, ins):
         """DIM: dimension arrays."""
@@ -1916,3 +1768,154 @@ class StatementParser(object):
         ins.require_end()
         error.range_check(0, self.session.screen.mode.num_pages-1, dst)
         self.session.screen.copy_page(src, dst)
+
+    ###########################################################################
+    # Loops and branchess
+
+    def exec_if(self, ins):
+        """IF: enter branching statement."""
+        # avoid overflow: don't use bools.
+        val = values.csng_(self.parse_expression(ins))
+        ins.skip_blank_read_if((',',)) # optional comma
+        ins.require_read((tk.THEN, tk.GOTO))
+        if not val.is_zero():
+            # TRUE: continue after THEN. line number or statement is implied GOTO
+            if ins.skip_blank() in (tk.T_UINT,):
+                self.session.interpreter.goto_(self._parse_jumpnum(ins))
+            # continue parsing as normal from next statement, :ELSE will be ignored anyway
+            self.parse_statement(ins)
+        else:
+            # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
+            nesting_level = 0
+            while True:
+                d = ins.skip_to_read(tk.END_STATEMENT + (tk.IF,))
+                if d == tk.IF:
+                    # nexting step on IF. (it's less convenient to count THENs because they could be THEN, GOTO or THEN GOTO.)
+                    nesting_level += 1
+                elif d == ':':
+                    # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
+                    if ins.skip_blank_read_if((tk.ELSE,)):
+                        if nesting_level > 0:
+                            nesting_level -= 1
+                        else:
+                            # line number: jump
+                            if ins.skip_blank() in (tk.T_UINT,):
+                                self.session.interpreter.goto_(self._parse_jumpnum(ins))
+                            # continue execution from here
+                            break
+                else:
+                    ins.seek(-len(d), 1)
+                    break
+
+    def exec_for(self, ins):
+        """FOR: enter for-loop."""
+        # read variable
+        varname = self._parse_name(ins)
+        vartype = varname[-1]
+        if vartype in (values.STR, values.DBL):
+            raise error.RunError(error.TYPE_MISMATCH)
+        ins.require_read((tk.O_EQ,))
+        start = values.to_type(vartype, self.parse_expression(ins))
+        ins.require_read((tk.TO,))
+        stop = values.to_type(vartype, self.parse_expression(ins))
+        if ins.skip_blank_read_if((tk.STEP,)):
+            step = self.parse_expression(ins)
+        else:
+            # convert 1 to vartype
+            step = self.values.from_value(1, vartype)
+        step = values.to_type(vartype, step)
+        ins.require_end()
+        endforpos = ins.tell()
+        # find NEXT
+        nextpos = self._find_next(ins, varname)
+        # apply initial condition and jump to nextpos
+        self.session.interpreter.loop_init(ins, endforpos, nextpos, varname, start, stop, step)
+        self.exec_next(ins)
+
+    def _find_next(self, ins, varname):
+        """Helper function for FOR: find the right NEXT."""
+        current = ins.tell()
+        ins.skip_block(tk.FOR, tk.NEXT, allow_comma=True)
+        if ins.skip_blank() not in (tk.NEXT, ','):
+            # FOR without NEXT marked with FOR line number
+            ins.seek(current)
+            raise error.RunError(error.FOR_WITHOUT_NEXT)
+        comma = (ins.read(1) == ',')
+        # get position and line number just after the NEXT
+        nextpos = ins.tell()
+        # check var name for NEXT
+        # no-var only allowed in standalone NEXT
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            varname2 = self._parse_name(ins)
+        else:
+            varname2 = None
+        if (comma or varname2) and varname2 != varname:
+            # NEXT without FOR marked with NEXT line number, while we're only at FOR
+            raise error.RunError(error.NEXT_WITHOUT_FOR)
+        ins.seek(current)
+        return nextpos
+
+    def exec_next(self, ins):
+        """NEXT: iterate for-loop."""
+        while True:
+            # record the NEXT (or comma) location
+            pos = ins.tell()
+            # optional variable - errors in this are checked at the scan during FOR
+            # if we haven't read a variable, we shouldn't find something else here
+            # but if we have and we iterate, the rest of the line is ignored
+            if ins.skip_blank() not in tk.END_STATEMENT + (',',):
+                self._parse_name(ins)
+            # increment counter, check condition
+            if self.session.interpreter.loop_iterate(ins, pos):
+                break
+            # done if we're not jumping into a comma'ed NEXT
+            if not ins.skip_blank_read_if((',')):
+                break
+        # if we're done iterating we no longer ignore the rest of the statement
+
+    def exec_while(self, ins):
+        """WHILE: enter while-loop."""
+        # just after WHILE opcode
+        whilepos = ins.tell()
+        # evaluate the 'boolean' expression
+        # use double to avoid overflows
+        # find matching WEND
+        ins.skip_block(tk.WHILE, tk.WEND)
+        if ins.read(1) == tk.WEND:
+            ins.skip_to(tk.END_STATEMENT)
+            wendpos = ins.tell()
+            self.session.interpreter.while_stack.append((whilepos, wendpos))
+        else:
+            # WHILE without WEND
+            ins.seek(whilepos)
+            raise error.RunError(error.WHILE_WITHOUT_WEND)
+        self._check_while_condition(ins, whilepos)
+
+    def _check_while_condition(self, ins, whilepos):
+        """Check condition of while-loop."""
+        ins.seek(whilepos)
+        # WHILE condition is zero?
+        if not values.pass_number(self.parse_expression(ins)).is_zero():
+            # statement start is before WHILE token
+            self.session.interpreter.current_statement = whilepos-2
+            ins.require_end()
+        else:
+            # ignore rest of line and jump to WEND
+            _, wendpos = self.session.interpreter.while_stack.pop()
+            ins.seek(wendpos)
+
+    def exec_wend(self, ins):
+        """WEND: iterate while-loop."""
+        # while will actually syntax error on the first run if anything is in the way.
+        ins.require_end()
+        pos = ins.tell()
+        while True:
+            if not self.session.interpreter.while_stack:
+                # WEND without WHILE
+                raise error.RunError(error.WEND_WITHOUT_WHILE)
+            whilepos, wendpos = self.session.interpreter.while_stack[-1]
+            if pos == wendpos:
+                break
+            # not the expected WEND, we must have jumped out
+            self.session.interpreter.while_stack.pop()
+        self._check_while_condition(ins, whilepos)
