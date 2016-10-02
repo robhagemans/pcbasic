@@ -1616,21 +1616,17 @@ class StatementParser(object):
             readvar = self._parse_var_list(ins)
             parseinput.input_file_(self.memory, self.values, finp, readvar)
         else:
-            # ; to avoid echoing newline
-            newline = not ins.skip_blank_read_if((';',))
-            prompt = parseinput.parse_prompt(ins, '? ')
+            newline, prompt, following = parseinput.parse_prompt(ins)
             readvar = self._parse_var_list(ins)
-            parseinput.input_(self.session, self.values, prompt, readvar, newline)
+            parseinput.input_(self.session, self.values, newline, prompt, following, readvar)
 
     def exec_line_input(self, ins):
         """LINE INPUT: request line of input from user."""
         prompt, newline, finp = None, None, None
         file_number = self.parse_file_number(ins, opt_hash=False)
         if file_number is None:
-            # ; to avoid echoing newline
-            newline = not ins.skip_blank_read_if((';',))
             # get prompt
-            prompt = parseinput.parse_prompt(ins, '')
+            newline, prompt, _ = parseinput.parse_prompt(ins)
         else:
             finp = self.session.files.get(file_number, mode='IR')
             ins.require_read((',',))

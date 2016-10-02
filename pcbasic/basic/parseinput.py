@@ -14,8 +14,10 @@ from . import error
 from . import tokens as tk
 
 
-def input_(session, value_handler, prompt, readvar, newline):
+def input_(session, value_handler, newline, prompt, following, readvar):
     """INPUT: request input from user."""
+    if following == ';':
+        prompt += '? '
     # read the input
     session.input_mode = True
     session.redo_on_break = True
@@ -55,26 +57,17 @@ def line_input_(session, value_handler, finp, prompt, readvar, indices, newline)
         session.input_mode = False
     session.memory.set_variable(readvar, indices, value_handler.from_value(line, values.STR))
 
-def parse_prompt(ins, question_mark):
+def parse_prompt(ins):
     """Helper function for INPUT: parse prompt definition."""
+    # ; to avoid echoing newline
+    newline = not ins.skip_blank_read_if((';',))
     # parse prompt
-    if ins.skip_blank_read_if(('"',)):
-        prompt = ''
+    prompt, following = '', ';'
+    if ins.skip_blank() == '"':
         # only literal allowed, not a string expression
-        d = ins.read(1)
-        while d not in tk.END_LINE + ('"',)  :
-            prompt += d
-            d = ins.read(1)
-        if d == '\0':
-            ins.seek(-1, 1)
-        following = ins.skip_blank_read()
-        if following == ';':
-            prompt += question_mark
-        elif following != ',':
-            raise error.RunError(error.STX)
-    else:
-        prompt = question_mark
-    return prompt
+        prompt = ins.read_string().strip('"')
+        following = ins.require_read((';', ','))
+    return newline, prompt, following
 
 def input_console(editor, value_handler, prompt, readvar, newline):
     """Read a list of variables for INPUT."""
