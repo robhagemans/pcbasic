@@ -83,6 +83,8 @@ class Session(object):
         self.redo_on_break = False
         # syntax error prompt and EDIT
         self.edit_prompt = False
+        # program for TERM command
+        self._term_program = pcjr_term
         ######################################################################
         # prepare codepage
         self.codepage = cp.Codepage(codepage, box_protect)
@@ -176,7 +178,7 @@ class Session(object):
         # initialise the parser
         self.events.reset()
         self.interpreter = interpreter.Interpreter(
-                self, self.program, self.statement_parser, pcjr_term)
+                self, self.program, self.statement_parser)
         # set up rest of memory model
         self.all_memory = machine.Memory(self.memory, self.devices, self.files,
                             self.screen, self.keyboard, self.screen.fonts[8],
@@ -359,7 +361,7 @@ class Session(object):
             self.program.store_line(self.interpreter.direct_line)
             # clear all program stacks
             self.interpreter.clear_stacks_and_pointers()
-            self.clear_()
+            self._clear_all()
         elif c != '':
             # it is a command, go and execute
             self._set_parse_mode(True)
@@ -399,7 +401,7 @@ class Session(object):
                 self.program.store_line(self.interpreter.direct_line)
                 # clear all program stacks
                 self.interpreter.clear_stacks_and_pointers()
-                self.clear_()
+                self._clear_all()
             self.auto_linenum = scanline + self.auto_increment
         elif c != '':
             # it is a command, go and execute
@@ -469,9 +471,52 @@ class Session(object):
     ###########################################################################
     # callbacks
 
-    def clear_(self, close_files=False,
+    def clear_(self, args):
+        """CLEAR: clear memory and redefine memory limits."""
+        try:
+            # positive integer expression allowed but not used
+            intexp = next(args)
+            if intexp is not None:
+                expr = values.to_int(intexp)
+                if expr < 0:
+                    raise error.RunError(error.IFC)
+            exp1 = next(args)
+            if exp1 is not None:
+                # this produces a *signed* int
+                mem_size = values.to_int(exp1, unsigned=True)
+                if mem_size == 0:
+                    #  0 leads to illegal fn call
+                    raise error.RunError(error.IFC)
+                else:
+                    if not self.memory.set_basic_memory_size(mem_size):
+                        raise error.RunError(error.OUT_OF_MEMORY)
+            # set aside stack space for GW-BASIC. The default is the previous stack space size.
+            exp2 = next(args)
+            if exp2 is not None:
+                stack_size = values.to_int(exp2, unsigned=True)
+                # this should be an unsigned int
+                if stack_size < 0:
+                    stack_size += 0x10000
+                if stack_size == 0:
+                    #  0 leads to illegal fn call
+                    raise error.RunError(error.IFC)
+                self.memory.set_stack_size(stack_size)
+            exp3 = next(args)
+            if exp3 is not None:
+                # Tandy/PCjr: select video memory size
+                video_size = values.round(exp3).to_value()
+                if not self.screen.set_video_memory_size(video_size):
+                    self.screen.screen(0, 0, 0, 0)
+                    self.screen.init_mode()
+            # execute any remaining parsing steps
+            next(args)
+        except StopIteration:
+            pass
+        self._clear_all()
+
+    def _clear_all(self, close_files=False,
               preserve_common=False, preserve_all=False, preserve_deftype=False):
-        """Execute a CLEAR command."""
+        """Clear everything required for the CLEAR command."""
         #   Resets the stack and string space
         #   Clears all COMMON and user variables
         if preserve_all:
@@ -517,6 +562,19 @@ class Session(object):
         # reset cursor visibility to its previous state
         self.screen.cursor.reset_visibility()
 
+    def term_(self):
+        """TERM: terminal emulator."""
+        try:
+            self.load_program(self._term_program)
+        except EnvironmentError:
+            # on Tandy, raises Internal Error
+            raise error.RunError(error.INTERNAL_ERROR)
+        self.interpreter.clear_stacks_and_pointers()
+        self._clear_all()
+        self.interpreter.set_pointer(True, 0)
+        self.interpreter.error_handle_mode = False
+        self.interpreter.tron = False
+
     def delete_(self, from_line, to_line):
         """DELETE: delete range of lines from program."""
         # throws back to direct mode
@@ -524,7 +582,7 @@ class Session(object):
         # clear all program stacks
         self.interpreter.clear_stacks_and_pointers()
         # clear all variables
-        self.clear_()
+        self._clear_all()
 
     def edit_(self, from_line):
         """EDIT: output a program line and position cursor for editing."""
@@ -576,7 +634,7 @@ class Session(object):
         # reset stacks
         self.interpreter.clear_stacks_and_pointers()
         # clear variables
-        self.clear_()
+        self._clear_all()
         if comma_r:
             # in ,R mode, don't close files; run the program
             self.interpreter.set_pointer(True, 0)
@@ -602,7 +660,7 @@ class Session(object):
             # RUN
             self.interpreter.goto_(jumpnum, err=error.IFC)
         # preserve DEFtype on MERGE
-        self.clear_(preserve_common=True, preserve_all=common_all, preserve_deftype=merge)
+        self._clear_all(preserve_common=True, preserve_all=common_all, preserve_deftype=merge)
 
     def save_(self, name, mode=None):
         """SAVE: save program to a file."""
@@ -628,7 +686,7 @@ class Session(object):
         # reset stacks
         self.interpreter.clear_stacks_and_pointers()
         # and clears all variables
-        self.clear_()
+        self._clear_all()
         self.interpreter.set_pointer(False)
 
     def renum_(self, new=None, old=None, step=None):
@@ -659,7 +717,7 @@ class Session(object):
         elif len(args) == 1:
             jumpnum, = args
         self.interpreter.clear_stacks_and_pointers()
-        self.clear_(close_files=not comma_r)
+        self._clear_all(close_files=not comma_r)
         if jumpnum is None:
             self.interpreter.set_pointer(True, 0)
         else:

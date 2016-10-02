@@ -382,7 +382,7 @@ class StatementParser(object):
     def exec_term(self, ins):
         """TERM: load and run PCjr buitin terminal emulator program."""
         ins.require_end()
-        self.session.interpreter.term_()
+        self.session.term_()
 
     ###########################################################################
     # Flow-control statements
@@ -1311,46 +1311,7 @@ class StatementParser(object):
     def exec_clear(self, ins):
         """CLEAR: clear memory and redefine memory limits."""
         args = self._parse_clear_vars_iter(ins)
-        try:
-            # positive integer expression allowed but not used
-            intexp = next(args)
-            if intexp is not None:
-                expr = values.to_int(intexp)
-                if expr < 0:
-                    raise error.RunError(error.IFC)
-            exp1 = next(args)
-            if exp1 is not None:
-                # this produces a *signed* int
-                mem_size = values.to_int(exp1, unsigned=True)
-                if mem_size == 0:
-                    #  0 leads to illegal fn call
-                    raise error.RunError(error.IFC)
-                else:
-                    if not self.memory.set_basic_memory_size(mem_size):
-                        raise error.RunError(error.OUT_OF_MEMORY)
-            # set aside stack space for GW-BASIC. The default is the previous stack space size.
-            exp2 = next(args)
-            if exp2 is not None:
-                stack_size = values.to_int(exp2, unsigned=True)
-                # this should be an unsigned int
-                if stack_size < 0:
-                    stack_size += 0x10000
-                if stack_size == 0:
-                    #  0 leads to illegal fn call
-                    raise error.RunError(error.IFC)
-                self.memory.set_stack_size(stack_size)
-            exp3 = next(args)
-            if exp3 is not None:
-                # Tandy/PCjr: select video memory size
-                video_size = values.round(exp3).to_value()
-                if not self.session.screen.set_video_memory_size(video_size):
-                    self.session.screen.screen(0, 0, 0, 0)
-                    self.session.screen.init_mode()
-            # execute any remaining parsing steps
-            next(args)
-        except StopIteration:
-            pass
-        self.session.clear_()
+        self.session.clear_(args)
 
     def exec_common(self, ins):
         """COMMON: define variables to be preserved on CHAIN."""

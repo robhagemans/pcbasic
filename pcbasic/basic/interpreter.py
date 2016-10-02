@@ -17,7 +17,7 @@ from . import codestream
 class Interpreter(object):
     """BASIC interpreter."""
 
-    def __init__(self, session, program, statement_parser, term):
+    def __init__(self, session, program, statement_parser):
         """Initialise interpreter."""
         self.session = session
         # line number tracing
@@ -38,8 +38,6 @@ class Interpreter(object):
         self.error_num = 0
         self.error_pos = 0
         self.set_pointer(False, 0)
-        # program for TERM command
-        self._term_program = term
 
     def init_error_trapping(self):
         """Initialise error trapping."""
@@ -336,19 +334,6 @@ class Interpreter(object):
 
     def troff_(self):
         """TROFF: trace off."""
-        self.tron = False
-
-    def term_(self):
-        """TERM: terminal emulator."""
-        try:
-            self.session.load_program(self._term_program)
-        except EnvironmentError:
-            # on Tandy, raises Internal Error
-            raise error.RunError(error.INTERNAL_ERROR)
-        self.clear_stacks_and_pointers()
-        self.session.clear_()
-        self.set_pointer(True, 0)
-        self.error_handle_mode = False
         self.tron = False
 
     def on_error_goto_(self, linenum):
