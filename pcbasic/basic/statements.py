@@ -1281,7 +1281,8 @@ class StatementParser(object):
                     # nexting step on IF. (it's less convenient to count THENs because they could be THEN, GOTO or THEN GOTO.)
                     nesting_level += 1
                 elif d == ':':
-                    if ins.skip_blank_read_if((tk.ELSE,)): # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
+                    # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
+                    if ins.skip_blank_read_if((tk.ELSE,)):
                         if nesting_level > 0:
                             nesting_level -= 1
                         else:
@@ -1304,7 +1305,7 @@ class StatementParser(object):
         # read variable
         varname = self._parse_name(ins)
         vartype = varname[-1]
-        if vartype in ('$', '#'):
+        if vartype in (values.STR, values.DBL):
             raise error.RunError(error.TYPE_MISMATCH)
         ins.require_read((tk.O_EQ,))
         start = values.to_type(vartype, self.parse_expression(ins))
@@ -1356,9 +1357,7 @@ class StatementParser(object):
             # if we haven't read a variable, we shouldn't find something else here
             # but if we have and we iterate, the rest of the line is ignored
             if ins.skip_blank() not in tk.END_STATEMENT + (',',):
-                name = self._parse_name(ins)
-            else:
-                name = None
+                self._parse_name(ins)
             # increment counter, check condition
             if self.session.interpreter.loop_iterate(ins, pos):
                 break
