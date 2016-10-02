@@ -317,7 +317,7 @@ class Interpreter(object):
         """STOP: break program execution and return to interpreter."""
         raise error.Break(stop=True)
 
-    def cont_(self, ins):
+    def cont_(self):
         """CONT: continue STOPped or ENDed execution."""
         if self.stop is None:
             raise error.RunError(error.CANT_CONTINUE)
