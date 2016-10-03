@@ -97,10 +97,13 @@ class DataSegment(object):
         """Reset default sigils."""
         self.deftype = ['!']*26
 
-    def set_deftype(self, start, stop, sigil):
+    def deftype_(self, sigil, start, stop=None):
         """Set default sigils."""
         start = ord(start.upper()) - ord('A')
-        stop = ord(stop.upper()) - ord('A')
+        if stop:
+            stop = ord(stop.upper()) - ord('A')
+        else:
+            stop = start
         self.deftype[start:stop+1] = [sigil] * (stop-start+1)
 
     def clear_variables(self, preserve_sc, preserve_ar):

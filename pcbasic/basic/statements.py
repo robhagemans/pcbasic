@@ -1337,19 +1337,19 @@ class StatementParser(object):
             start = ins.skip_blank_read()
             if start not in string.ascii_letters:
                 raise error.RunError(error.STX)
-            stop = start
+            stop = None
             if ins.skip_blank_read_if((tk.O_MINUS,)):
                 stop = ins.skip_blank_read()
                 if stop not in string.ascii_letters:
                     raise error.RunError(error.STX)
-            self.memory.set_deftype(start, stop, typechar)
+            self.memory.deftype_(typechar, start, stop)
             if not ins.skip_blank_read_if((',',)):
                 break
 
     def exec_erase(self, ins):
         """ERASE: erase an array."""
         while True:
-            self.session.arrays.erase(self._parse_name(ins))
+            self.session.arrays.erase_(self._parse_name(ins))
             if not ins.skip_blank_read_if((',',)):
                 break
 

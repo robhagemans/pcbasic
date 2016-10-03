@@ -43,7 +43,7 @@ class Arrays(object):
         self._array_memory = {}
         self.current = 0
 
-    def erase(self, name):
+    def erase_(self, name):
         """Remove an array from memory."""
         if name not in self._dims:
             # IFC if array does not exist
