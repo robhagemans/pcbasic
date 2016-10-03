@@ -1278,6 +1278,7 @@ class StatementParser(object):
     # Variable & array statements
 
     def _parse_clear_args_iter(self, ins):
+        """Generator: parse arguments for CLEAR."""
         # integer expression allowed but ignored
         yield self.parse_expression(ins, allow_empty=True)
         if ins.skip_blank_read_if((',',)):
@@ -1316,7 +1317,7 @@ class StatementParser(object):
         self.session.common_(common_vars)
 
     def _parse_var_list_iter(self, ins):
-        """Helper function: lazily parse variable list."""
+        """Generator: lazily parse variable list."""
         while True:
             yield self._parse_variable(ins)
             if not ins.skip_blank_read_if((',',)):
@@ -1353,15 +1354,15 @@ class StatementParser(object):
             if not ins.skip_blank_read_if((',',)):
                 break
 
+    def _parse_let_args_iter(self, ins):
+        """Generator: parse arguments for LET."""
+        yield self._parse_variable(ins)
+        ins.require_read((tk.O_EQ,))
+        yield self.parse_expression(ins)
+
     def exec_let(self, ins):
         """LET: assign value to variable or array."""
-        name, indices = self._parse_variable(ins)
-        if indices != []:
-            # pre-dim even if this is not a legal statement!
-            # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out of range afterwards
-            self.session.arrays.check_dim(name, indices)
-        ins.require_read((tk.O_EQ,))
-        self.memory.set_variable(name, indices, self.parse_expression(ins))
+        self.memory.let_(self._parse_let_args_iter(ins))
 
     def exec_mid(self, ins):
         """MID$: set part of a string."""

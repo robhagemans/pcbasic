@@ -321,6 +321,16 @@ class DataSegment(object):
             # array is allocated if retrieved and nonexistant
             return self.arrays.get(name, indices)
 
+    def let_(self, args):
+        """LET: assign value to variable or array."""
+        name, indices = next(args)
+        if indices != []:
+            # pre-dim even if this is not a legal statement!
+            # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out of range afterwards
+            self.arrays.check_dim(name, indices)
+        value = next(args)
+        self.set_variable(name, indices, value)
+
     def set_variable(self, name, indices, value):
         """Assign a value to a scalar variable or an array element."""
         name = self.complete_name(name)
