@@ -153,8 +153,9 @@ class Arrays(object):
         """Unset the array base."""
         self._base = None
 
-    def base(self, base):
+    def option_base_(self, base):
         """Set the array base to 0 or 1 (OPTION BASE). Raise error if already set."""
+        base = int(base)
         if base not in (1, 0):
             # syntax error
             raise error.RunError(error.STX)
