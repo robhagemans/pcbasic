@@ -1277,18 +1277,7 @@ class StatementParser(object):
     ###########################################################################
     # Variable & array statements
 
-    def _parse_var_list_iter(self, ins):
-        """Helper function: lazily parse variable list."""
-        while True:
-            yield self._parse_variable(ins)
-            if not ins.skip_blank_read_if((',',)):
-                break
-
-    def _parse_var_list(self, ins):
-        """Helper function: parse variable list."""
-        return list(self._parse_var_list_iter(ins))
-
-    def _parse_clear_vars_iter(self, ins):
+    def _parse_clear_args_iter(self, ins):
         # integer expression allowed but ignored
         yield self.parse_expression(ins, allow_empty=True)
         if ins.skip_blank_read_if((',',)):
@@ -1310,34 +1299,37 @@ class StatementParser(object):
 
     def exec_clear(self, ins):
         """CLEAR: clear memory and redefine memory limits."""
-        args = self._parse_clear_vars_iter(ins)
+        args = self._parse_clear_args_iter(ins)
         self.session.clear_(args)
 
     def exec_common(self, ins):
         """COMMON: define variables to be preserved on CHAIN."""
-        common_scalars, common_arrays = set(), set()
+        common_vars = []
         while True:
             name = self._parse_name(ins)
-            # array?
-            if ins.skip_blank_read_if(('[', '(')):
+            brackets = ins.skip_blank_read_if(('[', '('))
+            if brackets:
                 ins.require_read((']', ')'))
-                common_arrays.add(name)
-            else:
-                common_scalars.add(name)
+            common_vars.append((name, brackets))
             if not ins.skip_blank_read_if((',',)):
                 break
-        self.session.common_scalars |= common_scalars
-        self.session.common_arrays |= common_arrays
+        self.session.common_(common_vars)
+
+    def _parse_var_list_iter(self, ins):
+        """Helper function: lazily parse variable list."""
+        while True:
+            yield self._parse_variable(ins)
+            if not ins.skip_blank_read_if((',',)):
+                break
+
+    def _parse_var_list(self, ins):
+        """Helper function: parse variable list."""
+        return list(self._parse_var_list_iter(ins))
 
     def exec_dim(self, ins):
         """DIM: dimension arrays."""
-        while True:
-            name, dimensions = self._parse_variable(ins)
-            if not dimensions:
-                dimensions = [10]
-            self.session.arrays.dim(name, dimensions)
-            if not ins.skip_blank_read_if((',',)):
-                break
+        for name, dimensions in self._parse_var_list_iter(ins):
+            self.session.arrays.dim_(name, dimensions)
 
     def exec_deftype(self, ins, typechar):
         """DEFSTR/DEFINT/DEFSNG/DEFDBL: set type defaults for variables."""
