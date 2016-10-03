@@ -21,7 +21,38 @@ def input_(session, value_handler, newline, prompt, following, readvar):
     # read the input
     session.input_mode = True
     session.redo_on_break = True
-    varlist = input_console(session.editor, value_handler, prompt, readvar, newline)
+    # readvar is a list of (name, indices) tuples
+    # we return a list of (name, indices, values) tuples
+    while True:
+        session.editor.screen.write(prompt)
+        # disconnect the wrap between line with the prompt and previous line
+        if session.editor.screen.current_row > 1:
+            session.editor.screen.apage.row[session.editor.screen.current_row-2].wrap = False
+        line = session.editor.wait_screenline(write_endl=newline)
+        inputstream = InputTextFile(line)
+        # read the values and group them and the separators
+        var, values, seps = [], [], []
+        for v in readvar:
+            word, sep = inputstream.input_entry(v[0][-1], allow_past_end=True)
+            try:
+                value = value_handler.from_repr(word, allow_nonnum=False, typechar=v[0][-1])
+            except error.RunError as e:
+                # string entered into numeric field
+                value = None
+            var.append(list(v))
+            values.append(value)
+            seps.append(sep)
+        # last separator not empty: there were too many values or commas
+        # earlier separators empty: there were too few values
+        # empty values will be converted to zero by from_str
+        # None means a conversion error occurred
+        if (seps[-1] or '' in seps[:-1] or None in values):
+            # good old Redo!
+            session.editor.screen.write_line('?Redo from start')
+            readvar = var
+        else:
+            varlist = [r + [v] for r, v in zip(var, values)]
+            break
     session.redo_on_break = False
     session.input_mode = False
     for v in varlist:
@@ -68,40 +99,6 @@ def parse_prompt(ins):
         prompt = ins.read_string().strip('"')
         following = ins.require_read((';', ','))
     return newline, prompt, following
-
-def input_console(editor, value_handler, prompt, readvar, newline):
-    """Read a list of variables for INPUT."""
-    # readvar is a list of (name, indices) tuples
-    # we return a list of (name, indices, values) tuples
-    while True:
-        editor.screen.write(prompt)
-        # disconnect the wrap between line with the prompt and previous line
-        if editor.screen.current_row > 1:
-            editor.screen.apage.row[editor.screen.current_row-2].wrap = False
-        line = editor.wait_screenline(write_endl=newline)
-        inputstream = InputTextFile(line)
-        # read the values and group them and the separators
-        var, values, seps = [], [], []
-        for v in readvar:
-            word, sep = inputstream.input_entry(v[0][-1], allow_past_end=True)
-            try:
-                value = value_handler.from_repr(word, allow_nonnum=False, typechar=v[0][-1])
-            except error.RunError as e:
-                # string entered into numeric field
-                value = None
-            var.append(list(v))
-            values.append(value)
-            seps.append(sep)
-        # last separator not empty: there were too many values or commas
-        # earlier separators empty: there were too few values
-        # empty values will be converted to zero by from_str
-        # None means a conversion error occurred
-        if (seps[-1] or '' in seps[:-1] or None in values):
-            # good old Redo!
-            editor.screen.write_line('?Redo from start')
-            readvar = var
-        else:
-            return [r + [v] for r, v in zip(var, values)]
 
 
 class InputTextFile(devices.TextFileBase):
