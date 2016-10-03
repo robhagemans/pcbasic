@@ -6,6 +6,7 @@ Devices, Files and I/O operations
 This file is released under the GNU GPL version 3 or later.
 """
 
+import io
 import os
 import struct
 
@@ -392,6 +393,17 @@ class CRLFTextFileBase(TextFileBase):
     def write_line(self, s=''):
         """Write string or bytearray and newline to file."""
         self.write(str(s) + '\r\n')
+
+
+class InputTextFile(TextFileBase):
+    """Handle INPUT from console."""
+
+    # spaces do not separate numbers on console INPUT
+    soft_sep = ''
+
+    def __init__(self, line):
+        """Initialise InputStream."""
+        TextFileBase.__init__(self, io.BytesIO(line), 'D', 'I')
 
 
 ############################################################################

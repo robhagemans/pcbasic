@@ -17,7 +17,6 @@ from . import error
 from . import values
 from . import ports
 from . import parseprint
-from . import parseinput
 from . import tokens as tk
 from . import dos
 
@@ -1420,6 +1419,18 @@ class StatementParser(object):
         for name, indices in self._parse_var_list(ins):
             self.session.read_(name, indices)
 
+    def _parse_prompt(self, ins):
+        """Helper function for INPUT: parse prompt definition."""
+        # ; to avoid echoing newline
+        newline = not ins.skip_blank_read_if((';',))
+        # parse prompt
+        prompt, following = '', ';'
+        if ins.skip_blank() == '"':
+            # only literal allowed, not a string expression
+            prompt = ins.read_string().strip('"')
+            following = ins.require_read((';', ','))
+        return newline, prompt, following
+
     def exec_input(self, ins):
         """INPUT: request input from user."""
         file_number = self.parse_file_number(ins, opt_hash=False)
@@ -1427,11 +1438,11 @@ class StatementParser(object):
             finp = self.session.files.get(file_number, mode='IR')
             ins.require_read((',',))
             readvar = self._parse_var_list(ins)
-            parseinput.input_file_(self.memory, self.values, finp, readvar)
+            self.session.input_file_(finp, readvar)
         else:
-            newline, prompt, following = parseinput.parse_prompt(ins)
+            newline, prompt, following = self._parse_prompt(ins)
             readvar = self._parse_var_list_iter(ins)
-            parseinput.input_(self.session, self.values, newline, prompt, following, readvar)
+            self.session.input_(newline, prompt, following, readvar)
 
     def exec_line_input(self, ins):
         """LINE INPUT: request line of input from user."""
@@ -1439,14 +1450,13 @@ class StatementParser(object):
         file_number = self.parse_file_number(ins, opt_hash=False)
         if file_number is None:
             # get prompt
-            newline, prompt, _ = parseinput.parse_prompt(ins)
+            newline, prompt, _ = self._parse_prompt(ins)
         else:
             finp = self.session.files.get(file_number, mode='IR')
             ins.require_read((',',))
         # get string variable
         readvar, indices = self._parse_variable(ins)
-        parseinput.line_input_(
-            self.session, self.values, finp, prompt, readvar, indices, newline)
+        self.session.line_input_(finp, prompt, readvar, indices, newline)
 
     def exec_restore(self, ins):
         """RESTORE: reset DATA pointer."""

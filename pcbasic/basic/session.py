@@ -39,6 +39,7 @@ from . import arrays
 from . import values
 from . import expressions
 from . import statements
+from . import devices
 
 
 class Session(object):
@@ -754,3 +755,77 @@ class Session(object):
                 # syntax error in DATA line (not type mismatch!) if can't convert to var type
                 raise error.RunError(error.STX, self.interpreter.data_pos-1)
         self.memory.set_variable(name, indices, value=value)
+
+    def input_(self, newline, prompt, following, readvar):
+        """INPUT: request input from user."""
+        if following == ';':
+            prompt += '? '
+        # read the input
+        self.input_mode = True
+        self.redo_on_break = True
+        # readvar is a list of (name, indices) tuples
+        # we return a list of (name, indices, values) tuples
+        while True:
+            self.editor.screen.write(prompt)
+            # disconnect the wrap between line with the prompt and previous line
+            if self.editor.screen.current_row > 1:
+                self.editor.screen.apage.row[self.editor.screen.current_row-2].wrap = False
+            line = self.editor.wait_screenline(write_endl=newline)
+            inputstream = devices.InputTextFile(line)
+            # read the values and group them and the separators
+            var, values, seps = [], [], []
+            for v in readvar:
+                word, sep = inputstream.input_entry(v[0][-1], allow_past_end=True)
+                try:
+                    value = self.values.from_repr(word, allow_nonnum=False, typechar=v[0][-1])
+                except error.RunError as e:
+                    # string entered into numeric field
+                    value = None
+                var.append(list(v))
+                values.append(value)
+                seps.append(sep)
+            # last separator not empty: there were too many values or commas
+            # earlier separators empty: there were too few values
+            # empty values will be converted to zero by from_str
+            # None means a conversion error occurred
+            if (seps[-1] or '' in seps[:-1] or None in values):
+                # good old Redo!
+                self.editor.screen.write_line('?Redo from start')
+                readvar = var
+            else:
+                varlist = [r + [v] for r, v in zip(var, values)]
+                break
+        self.redo_on_break = False
+        self.input_mode = False
+        for v in varlist:
+            self.memory.set_variable(*v)
+
+    def input_file_(self, finp, readvar):
+        """INPUT: retrieve input from file."""
+        for v in readvar:
+            name, indices = v
+            word, _ = finp.input_entry(name[-1], allow_past_end=False)
+            value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1])
+            if value is None:
+                value = self.values.new(name[-1])
+            self.memory.set_variable(name, indices, value)
+
+    def line_input_(self, finp, prompt, readvar, indices, newline):
+        """LINE INPUT: request line of input from user."""
+        if not readvar:
+            raise error.RunError(error.STX)
+        elif readvar[-1] != '$':
+            raise error.RunError(error.TYPE_MISMATCH)
+        # read the input
+        if finp:
+            line = finp.read_line()
+            if line is None:
+                raise error.RunError(error.INPUT_PAST_END)
+        else:
+            self.input_mode = True
+            self.redo_on_break = True
+            self.screen.write(prompt)
+            line = self.editor.wait_screenline(write_endl=newline)
+            self.redo_on_break = False
+            self.input_mode = False
+        self.memory.set_variable(readvar, indices, self.values.from_value(line, values.STR))
