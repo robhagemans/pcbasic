@@ -94,7 +94,7 @@ class Interpreter(object):
         # CLEAR also dumps for_next and while_wend stacks
         self.clear_loop_stacks()
         # reset the DATA pointer
-        self.restore()
+        self.restore_()
 
     def clear_stacks_and_pointers(self):
         """Initialise the stacks and pointers for a new program."""
@@ -107,7 +107,7 @@ class Interpreter(object):
         # reset stop/cont
         self.stop = None
         # reset data reader
-        self.restore()
+        self.restore_()
 
     def clear_stacks(self):
         """Clear loop and jump stacks."""
@@ -269,10 +269,10 @@ class Interpreter(object):
     ###########################################################################
     # DATA utilities
 
-    def restore(self, datanum=-1):
+    def restore_(self, datanum=None):
         """Reset data pointer (RESTORE) """
         try:
-            self.data_pos = 0 if datanum == -1 else self.program.line_numbers[datanum]
+            self.data_pos = 0 if datanum is None else self.program.line_numbers[datanum]
         except KeyError:
             raise error.RunError(error.UNDEFINED_LINE_NUMBER)
 

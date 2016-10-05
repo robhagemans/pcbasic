@@ -399,7 +399,7 @@ class DataSegment(object):
             # array would be allocated if retrieved and nonexistant
             return self.arrays.view_buffer(name, indices)
 
-    def swap(self, name1, index1, name2, index2):
+    def swap_(self, name1, index1, name2, index2):
         """Swap two variables."""
         if name1[-1] != name2[-1]:
             # type mismatch

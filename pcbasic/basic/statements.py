@@ -1460,21 +1460,19 @@ class StatementParser(object):
 
     def exec_restore(self, ins):
         """RESTORE: reset DATA pointer."""
-        if not ins.skip_blank() in tk.END_STATEMENT:
-            ins.require_read((tk.T_UINT,), err=error.UNDEFINED_LINE_NUMBER)
+        datanum = None
+        if ins.skip_blank() == tk.T_UINT:
             datanum = self._parse_jumpnum(ins)
-        else:
-            datanum = -1
         # undefined line number for all syntax errors
         ins.require_end(err=error.UNDEFINED_LINE_NUMBER)
-        self.session.interpreter.restore(datanum)
+        self.session.interpreter.restore_(datanum)
 
     def exec_swap(self, ins):
         """SWAP: swap values of two variables."""
         name1, index1 = self._parse_variable(ins)
         ins.require_read((',',))
         name2, index2 = self._parse_variable(ins)
-        self.memory.swap(name1, index1, name2, index2)
+        self.memory.swap_(name1, index1, name2, index2)
         # if syntax error, the swap has happened
 
     def exec_def_fn(self, ins):
