@@ -1486,21 +1486,18 @@ class StatementParser(object):
     def exec_cls(self, ins):
         """CLS: clear the screen."""
         val = None
-        if not (self.syntax == 'pcjr' or
-                        ins.skip_blank() in (',',) + tk.END_STATEMENT):
-            val = self.parse_value(ins, values.INT)
-            # tandy gives illegal function call on CLS number
-            error.throw_if(self.syntax == 'tandy')
-            error.range_check(0, 2, val)
         if self.syntax != 'pcjr':
             if ins.skip_blank_read_if((',',)):
                 # comma is ignored, but a number after means syntax error
                 ins.require_end()
             else:
-                ins.require_end(err=error.IFC)
+                val = self.parse_value(ins, values.INT, allow_empty=True)
+                if val is not None:
+                    # tandy gives illegal function call on CLS number
+                    error.throw_if(self.syntax == 'tandy')
+                    error.range_check(0, 2, val)
+                    ins.require_end(err=error.IFC)
         self.session.screen.cls_(val)
-        if self.syntax == 'pcjr':
-            ins.require_end()
 
     def exec_color(self, ins):
         """COLOR: set colour attributes."""
