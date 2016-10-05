@@ -26,7 +26,7 @@ class Randomiser(object):
         """Reset the random number generator."""
         self._seed = 5228370 # 0x4fc752
 
-    def randomize_(self, val):
+    def reseed(self, val):
         """Reseed the random number generator."""
         # RANDOMIZE converts to int in a non-standard way - looking at the first two bytes in the internal representation
         # on a program line, if a number outside the signed int range (or -32768) is entered,
@@ -38,14 +38,14 @@ class Randomiser(object):
         # e.g. 1#    = /x00/x00/x00/x00 /x00/x00/x00/x81 gets read as /x00/x00 ^ /x00/x81 = /x00/x81 -> 0x10000-0x8100 = -32512 (sign bit set)
         #      0.25# = /x00/x00/x00/x00 /x00/x00/x00/x7f gets read as /x00/x00 ^ /x00/x7f = /x00/x7F -> 0x7F00 = 32512 (sign bit not set)
         #              /xDE/xAD/xBE/xEF /xFF/x80/x00/x80 gets read as /xFF/x80 ^ /x00/x80 = /xFF/x00 -> 0x00FF = 255
-        s = val[1]
+        s = val.to_bytes()
         final_two = s[-2:]
         mask = bytearray(2)
         if len(s) >= 4:
             mask = s[-4:-2]
         final_two = chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1])
         # unpack to signed integer
-        n = struct.unpack('<h', final_two)
+        n, = struct.unpack('<h', final_two)
         self._seed &= 0xff
         self._cycle(1) # RND(1)
         self._seed += n * self._step

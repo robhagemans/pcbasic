@@ -1478,20 +1478,9 @@ class StatementParser(object):
     def exec_randomize(self, ins):
         """RANDOMIZE: set random number generator seed."""
         val = self.parse_expression(ins, allow_empty=True)
-        if val is not None:
-            # don't convert to int if provided in the code
-            val = values.pass_number(val)
-        else:
-            # prompt for random seed if not specified
-            while val is None:
-                self.session.screen.write("Random number seed (-32768 to 32767)? ")
-                seed = self.session.editor.wait_screenline()
-                val = self.values.from_repr(seed, allow_nonnum=False)
-            # seed entered on prompt is rounded to int
-            val = values.cint_(val)
-        self.session.randomiser.randomize_(val)
+        self.session.randomize_(val)
 
-    ################################################
+    ###########################################################################
     # Console statements
 
     def exec_cls(self, ins):

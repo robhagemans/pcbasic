@@ -829,3 +829,18 @@ class Session(object):
             self.redo_on_break = False
             self.input_mode = False
         self.memory.set_variable(readvar, indices, self.values.from_value(line, values.STR))
+
+    def randomize_(self, val):
+        """RANDOMIZE: set random number generator seed."""
+        if val is not None:
+            # don't convert to int if provided in the code
+            val = values.pass_number(val, err=error.IFC)
+        else:
+            # prompt for random seed if not specified
+            while val is None:
+                self.screen.write("Random number seed (-32768 to 32767)? ")
+                seed = self.editor.wait_screenline()
+                val = self.values.from_repr(seed, allow_nonnum=False)
+            # seed entered on prompt is rounded to int
+            val = values.cint_(val)
+        self.randomiser.reseed(val)
