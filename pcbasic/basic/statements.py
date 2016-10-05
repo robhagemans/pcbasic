@@ -1417,7 +1417,7 @@ class StatementParser(object):
         """READ: read values from DATA statement."""
         # reading loop
         for name, indices in self._parse_var_list(ins):
-            self.session.read_(name, indices)
+            self.session.interpreter.read_(name, indices)
 
     def _parse_prompt(self, ins):
         """Helper function for INPUT: parse prompt definition."""

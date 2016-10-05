@@ -741,21 +741,6 @@ class Session(object):
         self.common_scalars |= set(common_scalars)
         self.common_arrays |= set(common_arrays)
 
-    def read_(self, name, indices):
-        """READ: read values from DATA statement."""
-        entry = self.interpreter.read_entry()
-        if name[-1] == values.STR:
-            address = self.interpreter.data_pos + self.memory.code_start
-            value = self.values.from_str_at(entry, address)
-        else:
-            value = self.values.from_repr(entry, allow_nonnum=False)
-            if value is None:
-                # set pointer for EDIT gadget to position in DATA statement
-                self.program.bytecode.seek(self.interpreter.data_pos)
-                # syntax error in DATA line (not type mismatch!) if can't convert to var type
-                raise error.RunError(error.STX, self.interpreter.data_pos-1)
-        self.memory.set_variable(name, indices, value=value)
-
     def input_(self, newline, prompt, following, readvar):
         """INPUT: request input from user."""
         if following == ';':
