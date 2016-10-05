@@ -1475,16 +1475,6 @@ class StatementParser(object):
         self.memory.swap_(name1, index1, name2, index2)
         # if syntax error, the swap has happened
 
-    def exec_def_fn(self, ins):
-        """DEF FN: define a function."""
-        # don't allow DEF FN in direct mode, as we point to the code in the stored program
-        # this is raised before further syntax errors
-        if not self.run_mode:
-            raise error.RunError(error.ILLEGAL_DIRECT)
-        fnname = self._parse_name(ins)
-        ins.skip_blank()
-        self.expression_parser.user_functions.define(fnname, ins)
-
     def exec_randomize(self, ins):
         """RANDOMIZE: set random number generator seed."""
         val = self.parse_expression(ins, allow_empty=True)
@@ -1732,7 +1722,20 @@ class StatementParser(object):
         self.session.screen.copy_page(src, dst)
 
     ###########################################################################
-    # Loops and branchess
+    # User-defined functions
+
+    def exec_def_fn(self, ins):
+        """DEF FN: define a function."""
+        # don't allow DEF FN in direct mode, as we point to the code in the stored program
+        # this is raised before further syntax errors
+        if not self.run_mode:
+            raise error.RunError(error.ILLEGAL_DIRECT)
+        fnname = self._parse_name(ins)
+        ins.skip_blank()
+        self.expression_parser.user_functions.define(fnname, ins)
+
+    ###########################################################################
+    # Loops and branches
 
     def exec_if(self, ins):
         """IF: enter branching statement."""
