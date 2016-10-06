@@ -870,7 +870,7 @@ class Screen(object):
         self.text.copy_page(src, dst)
         self.session.video_queue.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
 
-    def color_(self, fore, back, bord):
+    def color_(self, fore, back=None, bord=None):
         """COLOR: set colour attributes."""
         mode = self.mode
         if fore is None:
@@ -904,7 +904,7 @@ class Screen(object):
                 # in screen 7 and 8, only low intensity palette is used.
                 self.palette.set_entry(0, back % 8, check_mode=False)
             elif mode.name in ('640x350x16', '640x350x4'):
-                error.range_check(0, mode.num_attr-1, fore)
+                error.range_check(1, mode.num_attr-1, fore)
                 error.range_check(0, len(mode.colours)-1, back)
                 self.set_attr(fore)
                 self.palette.set_entry(0, back, check_mode=False)

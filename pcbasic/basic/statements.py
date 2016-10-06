@@ -1501,19 +1501,21 @@ class StatementParser(object):
 
     def exec_color(self, ins):
         """COLOR: set colour attributes."""
-        fore, back, bord = None, None, None
-        fore = self.parse_value(ins, values.INT, allow_empty=True)
+        args = [self.parse_value(ins, values.INT, allow_empty=True)]
         if ins.skip_blank_read_if((',',)):
-            back = self.parse_value(ins, values.INT, allow_empty=True)
-            if ins.skip_blank_read_if((',',)):
-                bord = self.parse_value(ins, values.INT, allow_empty=True)
-                if bord is None:
+            # unlike LOCATE, ending in any number of commas is a Missing Operand
+            while True:
+                args.append(self.parse_value(ins, values.INT, allow_empty=True))
+                if ins.skip_blank_read_if((',',)):
+                    continue
+                elif args[-1] is None:
                     raise error.RunError(error.MISSING_OPERAND)
-            elif back is None:
-                raise error.RunError(error.MISSING_OPERAND)
-        elif fore is None:
+                else:
+                    break
+        elif args[0] is None:
             raise error.RunError(error.IFC)
-        self.session.screen.color_(fore, back, bord)
+        error.throw_if(len(args) > 3)
+        self.session.screen.color_(*args)
 
     def exec_palette(self, ins):
         """PALETTE: set colour palette entry."""
