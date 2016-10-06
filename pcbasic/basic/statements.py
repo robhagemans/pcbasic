@@ -1506,7 +1506,13 @@ class StatementParser(object):
         if ins.skip_blank_read_if((',',)):
             back = self.parse_value(ins, values.INT, allow_empty=True)
             if ins.skip_blank_read_if((',',)):
-                bord = self.parse_value(ins, values.INT)
+                bord = self.parse_value(ins, values.INT, allow_empty=True)
+                if bord is None:
+                    raise error.RunError(error.MISSING_OPERAND)
+            elif back is None:
+                raise error.RunError(error.MISSING_OPERAND)
+        elif fore is None:
+            raise error.RunError(error.IFC)
         self.session.screen.color_(fore, back, bord)
 
     def exec_palette(self, ins):
