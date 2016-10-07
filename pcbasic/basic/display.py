@@ -1702,13 +1702,16 @@ class Palette(object):
 
     def palette_(self, attrib, colour):
         """PALETTE: assign colour to attribute."""
-        # can't set blinking colours separately
-        num_palette_entries = self.mode.num_attr if self.mode.num_attr != 32 else 16
-        error.range_check(0, num_palette_entries-1, attrib)
-        colour = (colour+1) % 256 -1
-        error.range_check(-1, len(self.mode.colours)-1, colour)
-        if colour != -1:
-            self.set_entry(attrib, colour)
+        if attrib is None and colour is None:
+            self.set_all(self.mode.palette)
+        else:
+            # can't set blinking colours separately
+            num_palette_entries = self.mode.num_attr if self.mode.num_attr != 32 else 16
+            error.range_check(0, num_palette_entries-1, attrib)
+            colour = (colour+1) % 256 -1
+            error.range_check(-1, len(self.mode.colours)-1, colour)
+            if colour != -1:
+                self.set_entry(attrib, colour)
 
     def palette_using_(self, array_name, start_indices, arrays):
         """PALETTE USING: set palette from array buffer."""

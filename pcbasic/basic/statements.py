@@ -1516,18 +1516,17 @@ class StatementParser(object):
 
     def exec_palette(self, ins):
         """PALETTE: set colour palette entry."""
-        d = ins.skip_blank()
-        if d in tk.END_STATEMENT:
-            # reset palette
-            self.session.screen.palette.set_all(self.session.screen.mode.palette)
-        elif d == tk.USING:
-            ins.read(1)
-            self.exec_palette_using(ins)
+        if ins.skip_blank_read_if((tk.USING,)):
+            return self.exec_palette_using(ins)
         else:
             attrib = self.parse_value(ins, values.INT, allow_empty=True)
-            ins.require_read((',',))
-            colour = self.parse_value(ins, values.INT, allow_empty=True)
-            error.throw_if(attrib is None or colour is None, error.STX)
+            if attrib is None:
+                colour = None
+                ins.require_end()
+            else:
+                ins.require_read((',',))
+                colour = self.parse_value(ins, values.INT, allow_empty=True)
+                error.throw_if(attrib is None or colour is None, error.STX)
             self.session.screen.palette.palette_(attrib, colour)
 
     def exec_palette_using(self, ins):
