@@ -1555,7 +1555,7 @@ class StatementParser(object):
         """KEY: define function-key shortcut or scancode for event trapping."""
         keynum = values.to_int(self.parse_expression(ins))
         error.range_check(1, 255, keynum)
-        ins.require_read((',',), err=error.IFC)
+        ins.require_read((',',))
         text = self.parse_temporary_string(ins)
         if keynum <= self.session.events.num_fn_keys:
             self.session.fkey_macros.set(keynum, text, self.session.screen)

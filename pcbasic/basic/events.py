@@ -165,7 +165,7 @@ class Events(object):
             self.enabled.add(handler)
             handler.stopped = False
         elif command_char == tk.OFF:
-            self.enabled -= handler
+            self.enabled.remove(handler)
         elif command_char == tk.STOP:
             handler.stopped = True
         else:
