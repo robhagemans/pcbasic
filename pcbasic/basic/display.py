@@ -1705,6 +1705,7 @@ class Palette(object):
         # can't set blinking colours separately
         num_palette_entries = self.mode.num_attr if self.mode.num_attr != 32 else 16
         error.range_check(0, num_palette_entries-1, attrib)
+        colour = (colour+1) % 256 -1
         error.range_check(-1, len(self.mode.colours)-1, colour)
         if colour != -1:
             self.set_entry(attrib, colour)
