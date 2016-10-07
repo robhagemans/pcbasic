@@ -11,25 +11,6 @@ from . import values
 from . import error
 from . import tokens as tk
 
-
-def write_(parser, ins):
-    """WRITE: Output machine-readable expressions to the screen or a file."""
-    outstr = ''
-    expr = parser.parse_expression(ins, allow_empty=True)
-    if expr is not None:
-        while True:
-            if isinstance(expr, values.String):
-                with parser.temp_string:
-                    outstr += '"' + expr.to_str() + '"'
-            else:
-                outstr += values.to_repr(expr, leading_space=False, type_sign=False)
-            if ins.skip_blank_read_if((',', ';')):
-                outstr += ','
-            else:
-                break
-            expr = parser.parse_expression(ins)
-    return outstr
-
 def print_(parser, ins, output):
     """PRINT: Write expressions to screen or file."""
     number_zones = max(1, int(output.width/14))

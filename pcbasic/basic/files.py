@@ -282,6 +282,28 @@ class Files(object):
             file_obj = self.devices.kybd_file
         return file_obj.input_(num_chars)
 
+    def write_(self, args):
+        """WRITE: Output machine-readable expressions to the screen or a file."""
+        file_number = next(args)
+        if file_number is None:
+            output = self.devices.scrn_file
+        else:
+            output = self.get(file_number, 'OAR')
+        outstrs = []
+        try:
+            for expr in args:
+                if isinstance(expr, values.String):
+                    outstrs.append('"%s"' % expr.to_str())
+                else:
+                    outstrs.append(values.to_repr(expr, leading_space=False, type_sign=False))
+        except error.RunError:
+            if outstrs:
+                output.write(','.join(outstrs) + ',')
+            raise
+        else:
+            # write the whole thing as one thing (this affects line breaks)
+            output.write_line(','.join(outstrs))
+
 
 ###############################################################################
 # device management

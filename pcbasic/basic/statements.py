@@ -1578,18 +1578,27 @@ class StatementParser(object):
         ins.require_end()
         self.session.screen.locate_(*params)
 
-    def exec_write(self, ins, output=None):
-        """WRITE: Output machine-readable expressions to the screen or a file."""
+    def _parse_write_args_iter(self, ins):
+        """Parse WRITE statement arguments."""
         file_number = self.parse_file_number(ins, opt_hash=False)
-        if file_number is None:
-            output = self.session.devices.scrn_file
-        else:
-            output = self.session.files.get(file_number, 'OAR')
+        yield file_number
+        if file_number is not None:
             ins.require_read((',',))
-        outstr = parseprint.write_(self, ins)
-        ins.require_end()
-        # write the whole thing as one thing (this affects line breaks)
-        output.write_line(outstr)
+        with self.temp_string:
+            expr = self.parse_expression(ins, allow_empty=True)
+            if expr is not None:
+                yield expr
+        if expr is not None:
+            while True:
+                if not ins.skip_blank_read_if((',', ';')):
+                    ins.require_end()
+                    break
+                with self.temp_string:
+                    yield self.parse_expression(ins)
+
+    def exec_write(self, ins):
+        """WRITE: Output machine-readable expressions to the screen or a file."""
+        self.session.files.write_(self._parse_write_args_iter(ins))
 
     def exec_print(self, ins, output=None):
         """PRINT: Write expressions to the screen or a file."""
