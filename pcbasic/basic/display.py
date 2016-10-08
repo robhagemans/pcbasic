@@ -1348,6 +1348,16 @@ class Screen(object):
 
     ## text viewport / scroll area
 
+    def view_print_(self, start, stop):
+        """VIEW PRINT: set scroll region."""
+        if start is None and stop is None:
+            self.unset_view()
+        else:
+            max_line = 25 if (self.capabilities in ('pcjr', 'tandy') and not self.fkey_macros.keys_visible) else 24
+            error.range_check(1, max_line, start, stop)
+            error.throw_if(stop < start)
+            self.set_view(start, stop)
+
     def set_view(self, start, stop):
         """Set the scroll area."""
         self.view_set = True

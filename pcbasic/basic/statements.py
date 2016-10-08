@@ -1602,16 +1602,13 @@ class StatementParser(object):
 
     def exec_view_print(self, ins):
         """VIEW PRINT: set scroll region."""
-        if ins.skip_blank() in tk.END_STATEMENT:
-            self.session.screen.unset_view()
-        else:
-            start = values.to_int(self.parse_expression(ins))
+        start = self.parse_value(ins, values.INT, allow_empty=True)
+        stop = None
+        if start is not None:
             ins.require_read((tk.TO,))
-            stop = values.to_int(self.parse_expression(ins))
-            ins.require_end()
-            max_line = 25 if (self.syntax in ('pcjr', 'tandy') and not self.session.fkey_macros.keys_visible) else 24
-            error.range_check(1, max_line, start, stop)
-            self.session.screen.set_view(start, stop)
+            stop = self.parse_value(ins, values.INT)
+        ins.require_end()
+        self.session.screen.view_print_(start, stop)
 
     def exec_width(self, ins):
         """WIDTH: set width of screen or device."""
