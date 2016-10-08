@@ -1600,27 +1600,6 @@ class StatementParser(object):
         """WRITE: Output machine-readable expressions to the screen or a file."""
         self.session.files.write_(self._parse_write_args_iter(ins))
 
-    def exec_print(self, ins, output=None):
-        """PRINT: Write expressions to the screen or a file."""
-        # if no output specified (i.e. not LPRINT), check for a file number
-        if output is None:
-            file_number = self.parse_file_number(ins, opt_hash=False)
-            if file_number is not None:
-                output = self.session.files.get(file_number, 'OAR')
-                ins.require_read((',',))
-        if output is None:
-            # neither LPRINT not a file number: print to screen
-            output = self.session.devices.scrn_file
-        newline = parseprint.print_(self, ins, output)
-        if newline:
-            if output == self.session.devices.scrn_file and self.session.screen.overflow:
-                output.write_line()
-            output.write_line()
-
-    def exec_lprint(self, ins):
-        """LPRINT: Write expressions to printer LPT1."""
-        self.exec_print(ins, self.session.devices.lpt1_file)
-
     def exec_view_print(self, ins):
         """VIEW PRINT: set scroll region."""
         if ins.skip_blank() in tk.END_STATEMENT:
@@ -1719,6 +1698,27 @@ class StatementParser(object):
         ins.require_end()
         error.range_check(0, self.session.screen.mode.num_pages-1, dst)
         self.session.screen.copy_page(src, dst)
+
+    def exec_print(self, ins, output=None):
+        """PRINT: Write expressions to the screen or a file."""
+        # if no output specified (i.e. not LPRINT), check for a file number
+        if output is None:
+            file_number = self.parse_file_number(ins, opt_hash=False)
+            if file_number is not None:
+                output = self.session.files.get(file_number, 'OAR')
+                ins.require_read((',',))
+        if output is None:
+            # neither LPRINT not a file number: print to screen
+            output = self.session.devices.scrn_file
+        newline = parseprint.print_(self, ins, output)
+        if newline:
+            if output == self.session.devices.scrn_file and self.session.screen.overflow:
+                output.write_line()
+            output.write_line()
+
+    def exec_lprint(self, ins):
+        """LPRINT: Write expressions to printer LPT1."""
+        self.exec_print(ins, self.session.devices.lpt1_file)
 
     ###########################################################################
     # User-defined functions
