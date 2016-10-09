@@ -94,12 +94,9 @@ class Formatter(object):
         else:
             self._output.write(' ' * (pos-self._output.col), can_break=False)
 
-    ###############################################################################
-    # parse format string
-
     def _print_using(self, format_expr, args):
-        """PRINT USING: Write expressions to screen or file using a formatting string."""
-        fors = codestream.CodeStream(format_expr)
+        """PRINT USING clause: Write expressions to screen or file using a formatting string."""
+        fors = FormatParser(format_expr)
         newline, format_chars = True, False
         try:
             while True:
@@ -114,9 +111,9 @@ class Formatter(object):
                     # escape char; write next char in fors or _ if this is the last char
                     self._output.write(fors.read(2)[-1])
                 else:
-                    string_field = _get_string_tokens(fors)
+                    string_field = fors._get_string_tokens()
                     if not string_field:
-                        number_field = _get_number_tokens(fors)
+                        number_field = fors._get_number_tokens()
                     if string_field or number_field:
                         format_chars = True
                         value = next(args)
@@ -141,74 +138,78 @@ class Formatter(object):
             raise error.RunError(error.IFC)
         return newline
 
-def _get_string_tokens(fors):
-    """Get consecutive string-related formatting tokens."""
-    word = ''
-    c = fors.peek()
-    if c in ('!', '&'):
-        word += fors.read(1)
-    elif c == '\\':
-        word += fors.read(1)
-        # count the width of the \ \ token;
-        # only spaces allowed and closing \ is necessary
-        while True:
-            c = fors.read(1)
-            word += c
-            if c == '\\':
-                break
-            elif c != ' ': # can be empty as well
-                fors.seek(-len(word), 1)
-                return ''
-    return word
 
-def _get_number_tokens(fors):
-    """Get consecutive number-related formatting tokens."""
-    word, digits_before, decimals = '', 0, 0
-    # + comes first
-    leading_plus = (fors.peek() == '+')
-    if leading_plus:
-        word += fors.read(1)
-    # $ and * combinations
-    c = fors.peek()
-    if c in ('$', '*'):
-        word += fors.read(2)
-        if word[-1] != c:
-            fors.seek(-len(word), 1)
-            return None
-        if c == '*':
-            digits_before += 2
-            if fors.peek() == '$':
-                word += fors.read(1)
-        else:
-            digits_before += 1
-    # number field
-    c = fors.peek()
-    dot = (c == '.')
-    if dot:
-        word += fors.read(1)
-    if c in ('.', '#'):
-        while True:
-            c = fors.peek()
-            if not dot and c == '.':
-                word += fors.read(1)
-                dot = True
-            elif c == '#' or (not dot and c == ','):
-                word += fors.read(1)
-                if dot:
-                    decimals += 1
-                else:
-                    digits_before += 1
+class FormatParser(codestream.CodeStream):
+    """Format string parser."""
+
+    def _get_string_tokens(self):
+        """Get consecutive string-related formatting tokens."""
+        word = ''
+        c = self.peek()
+        if c in ('!', '&'):
+            word += self.read(1)
+        elif c == '\\':
+            word += self.read(1)
+            # count the width of the \ \ token;
+            # only spaces allowed and closing \ is necessary
+            while True:
+                c = self.read(1)
+                word += c
+                if c == '\\':
+                    break
+                elif c != ' ': # can be empty as well
+                    self.seek(-len(word), 1)
+                    return ''
+        return word
+
+    def _get_number_tokens(self):
+        """Get consecutive number-related formatting tokens."""
+        word, digits_before, decimals = '', 0, 0
+        # + comes first
+        leading_plus = (self.peek() == '+')
+        if leading_plus:
+            word += self.read(1)
+        # $ and * combinations
+        c = self.peek()
+        if c in ('$', '*'):
+            word += self.read(2)
+            if word[-1] != c:
+                self.seek(-len(word), 1)
+                return None
+            if c == '*':
+                digits_before += 2
+                if self.peek() == '$':
+                    word += self.read(1)
             else:
-                break
-    if digits_before + decimals == 0:
-        fors.seek(-len(word), 1)
-        return None
-    # post characters
-    if fors.peek(4) == '^^^^':
-        word += fors.read(4)
-    if not leading_plus and fors.peek() in ('-', '+'):
-        word += fors.read(1)
-    return word, digits_before, decimals
+                digits_before += 1
+        # number field
+        c = self.peek()
+        dot = (c == '.')
+        if dot:
+            word += self.read(1)
+        if c in ('.', '#'):
+            while True:
+                c = self.peek()
+                if not dot and c == '.':
+                    word += self.read(1)
+                    dot = True
+                elif c == '#' or (not dot and c == ','):
+                    word += self.read(1)
+                    if dot:
+                        decimals += 1
+                    else:
+                        digits_before += 1
+                else:
+                    break
+        if digits_before + decimals == 0:
+            self.seek(-len(word), 1)
+            return None
+        # post characters
+        if self.peek(4) == '^^^^':
+            word += self.read(4)
+        if not leading_plus and self.peek() in ('-', '+'):
+            word += self.read(1)
+        return word, digits_before, decimals
 
 
 ##############################################################################
