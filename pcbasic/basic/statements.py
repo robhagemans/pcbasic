@@ -1694,11 +1694,7 @@ class StatementParser(object):
         if output is None:
             # neither LPRINT not a file number: print to screen
             output = self.session.devices.scrn_file
-        newline = parseprint.print_(self, ins, output)
-        if newline:
-            if output == self.session.devices.scrn_file and self.session.screen.overflow:
-                output.write_line()
-            output.write_line()
+        parseprint.print_(self, ins, output)
 
     def exec_lprint(self, ins):
         """LPRINT: Write expressions to printer LPT1."""

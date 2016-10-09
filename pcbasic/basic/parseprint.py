@@ -13,56 +13,79 @@ from . import tokens as tk
 
 def print_(parser, ins, output):
     """PRINT: Write expressions to screen or file."""
-    number_zones = max(1, int(output.width/14))
     newline = True
     while True:
-        d = ins.skip_blank()
-        if d == tk.USING:
-            ins.read(1)
-            newline = print_using_(parser, ins, output)
+        d = ins.skip_blank_read()
+        if d in tk.END_STATEMENT:
+            ins.seek(-len(d), 1)
             break
-        elif d in tk.END_STATEMENT:
+        elif d == tk.USING:
+            format_expr = parser.parse_temporary_string(ins)
+            if format_expr == '':
+                raise error.RunError(error.IFC)
+            ins.require_read((';',))
+            newline = _print_using(parser, ins, output, format_expr)
             break
-        elif d in (',', ';', tk.SPC, tk.TAB):
-            ins.read(1)
+        elif d == ',':
             newline = False
-            if d == ',':
-                next_zone = int((output.col-1) / 14) + 1
-                if next_zone >= number_zones and output.width >= 14 and output.width != 255:
-                    output.write_line()
-                else:
-                    output.write(' ' * (1 + 14*next_zone-output.col), can_break=False)
-            elif d == tk.SPC:
-                numspaces = max(0, values.to_int(parser.parse_expression(ins), unsigned=True)) % output.width
-                ins.require_read((')',))
-                output.write(' ' * numspaces, can_break=False)
-            elif d == tk.TAB:
-                pos = max(0, values.to_int(parser.parse_expression(ins), unsigned=True) - 1) % output.width + 1
-                ins.require_read((')',))
-                if pos < output.col:
-                    output.write_line()
-                    output.write(' ' * (pos-1))
-                else:
-                    output.write(' ' * (pos-output.col), can_break=False)
+            _print_comma(output)
+        elif d == ';':
+            newline = False
+        elif d == tk.SPC:
+            newline = False
+            num = values.to_int(parser.parse_expression(ins), unsigned=True)
+            ins.require_read((')',))
+            _print_spc(output, num)
+        elif d == tk.TAB:
+            newline = False
+            num = values.to_int(parser.parse_expression(ins), unsigned=True)
+            ins.require_read((')',))
+            _print_tab(output, num)
         else:
-            newline = True
+            ins.seek(-len(d), 1)
             with parser.temp_string:
-                expr = parser.parse_expression(ins)
-                # numbers always followed by a space
-                if isinstance(expr, values.Number):
-                    word = values.to_repr(expr, leading_space=True, type_sign=False) + ' '
-                else:
-                    word = expr.to_str()
-            # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
-            output.write(word)
-    return newline
+                _print_value(output, parser.parse_expression(ins))
+        newline = d not in (',', ';', tk.SPC, tk.TAB)
+    if newline:
+        if output == parser.session.devices.scrn_file and parser.session.screen.overflow:
+            output.write_line()
+        output.write_line()
 
-def print_using_(parser, ins, output):
+def _print_value(output, expr):
+    """Print a value."""
+    # numbers always followed by a space
+    if isinstance(expr, values.Number):
+        word = values.to_repr(expr, leading_space=True, type_sign=False) + ' '
+    else:
+        word = expr.to_str()
+    # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
+    output.write(word)
+
+def _print_comma(output):
+    """Skip to next output zone."""
+    number_zones = max(1, int(output.width/14))
+    next_zone = int((output.col-1) / 14) + 1
+    if next_zone >= number_zones and output.width >= 14 and output.width != 255:
+        output.write_line()
+    else:
+        output.write(' ' * (1 + 14*next_zone-output.col), can_break=False)
+
+def _print_spc(output, num):
+    """Print SPC separator."""
+    numspaces = max(0, num) % output.width
+    output.write(' ' * numspaces, can_break=False)
+
+def _print_tab(output, num):
+    """Print TAB separator."""
+    pos = max(0, num - 1) % output.width + 1
+    if pos < output.col:
+        output.write_line()
+        output.write(' ' * (pos-1))
+    else:
+        output.write(' ' * (pos-output.col), can_break=False)
+
+def _print_using(parser, ins, output, format_expr):
     """PRINT USING: Write expressions to screen or file using a formatting string."""
-    format_expr = parser.parse_temporary_string(ins)
-    if format_expr == '':
-        raise error.RunError(error.IFC)
-    ins.require_read((';',))
     fors = codestream.CodeStream(format_expr)
     semicolon, format_chars = False, False
     while True:
