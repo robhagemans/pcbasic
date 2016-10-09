@@ -1650,19 +1650,20 @@ class StatementParser(object):
         """SCREEN: change video mode or page."""
         # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
         # this raises error before
-        # mode, color, apagenum, vpagenum, erase=1
-        args = [None] * 4 + [1]
+        # mode, color, apagenum, vpagenum, erase
         # erase can only be set on pcjr/tandy 5-argument syntax
         n_args = 4 + (self.syntax in ('pcjr', 'tandy'))
+        args = []
         # all but last arguments are optional and may be followed by a comma
-        for i in range(len(args) - 1):
-            args[i] = self.parse_value(ins, values.INT, allow_empty=True)
+        while True:
+            args.append(self.parse_value(ins, values.INT, allow_empty=True))
             if not ins.skip_blank_read_if((',',)):
                 break
-        else:
-            # last argument is not optional (neither in 4- nor 5-argument syntax)
-            # and may not be followed by a comma
-            args[-1] = self.parse_value(ins, values.INT, allow_empty=False)
+        if args[-1] is None:
+            raise error.RunError(error.MISSING_OPERAND)
+        if len(args) > n_args:
+            raise error.RunError(error.IFC)
+        args += [None] * (5-len(args))
         # if any parameter not in [0,255], error 5 without doing anything
         # if the parameters are outside narrow ranges
         # (e.g. not implemented screen mode, pagenum beyond max)

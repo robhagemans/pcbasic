@@ -569,6 +569,8 @@ class Screen(object):
         """SCREEN: change the video mode, colourburst, visible or active page."""
         # decide whether to redraw the screen
         oldmode, oldcolor = self.mode, self.colorswitch
+        if erase is None:
+            erase = 1
         self.screen(mode, colorswitch, apagenum, vpagenum, erase)
         if ((not self.mode.is_text_mode and self.mode.name != oldmode.name) or
                 (self.mode.is_text_mode and not oldmode.is_text_mode) or
