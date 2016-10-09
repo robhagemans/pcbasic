@@ -76,7 +76,7 @@ class StatementParser(object):
                 return values.pass_string(expr).to_value()
             return self.values.new_string()
 
-    def parse_file_number(self, ins, opt_hash):
+    def _parse_file_number(self, ins, opt_hash):
         """Read a file number."""
         if not ins.skip_blank_read_if(('#',)) and not opt_hash:
             return None
@@ -959,7 +959,7 @@ class StatementParser(object):
         mode = first_expr[:1].upper()
         if mode not in ('I', 'O', 'A', 'R'):
             raise error.RunError(error.BAD_FILE_MODE)
-        number = self.parse_file_number(ins, opt_hash=True)
+        number = self._parse_file_number(ins, opt_hash=True)
         ins.require_read((',',))
         name = self.parse_temporary_string(ins)
         reclen = None
@@ -994,7 +994,7 @@ class StatementParser(object):
             lock = ins.skip_blank_read_if(('SHARED'), 6)
         # AS file number clause
         ins.require_read(('AS',))
-        number = self.parse_file_number(ins, opt_hash=True)
+        number = self._parse_file_number(ins, opt_hash=True)
         # LEN clause
         reclen = None
         if ins.skip_blank_read_if((tk.LEN,), 2):
@@ -1019,14 +1019,14 @@ class StatementParser(object):
         else:
             while True:
                 # if an error occurs, the files parsed before are closed anyway
-                number = self.parse_file_number(ins, opt_hash=True)
+                number = self._parse_file_number(ins, opt_hash=True)
                 self.session.files.close_(number)
                 if not ins.skip_blank_read_if((',',)):
                     break
 
     def exec_field(self, ins):
         """FIELD: link a string variable to record buffer."""
-        the_file = self.session.files.get(self.parse_file_number(ins, opt_hash=True), 'R')
+        the_file = self.session.files.get(self._parse_file_number(ins, opt_hash=True), 'R')
         if ins.skip_blank_read_if((',',)):
             offset = 0
             while True:
@@ -1041,7 +1041,7 @@ class StatementParser(object):
 
     def _parse_put_get_file(self, ins):
         """Parse record number for PUT and GET."""
-        the_file = self.session.files.get(self.parse_file_number(ins, opt_hash=True), 'R')
+        the_file = self.session.files.get(self._parse_file_number(ins, opt_hash=True), 'R')
         pos = None
         if ins.skip_blank_read_if((',',)):
             pos = self.parse_expression(ins)
@@ -1057,7 +1057,7 @@ class StatementParser(object):
 
     def _parse_lock_unlock(self, ins):
         """Parse lock records for LOCK or UNLOCK."""
-        thefile = self.session.files.get(self.parse_file_number(ins, opt_hash=True))
+        thefile = self.session.files.get(self._parse_file_number(ins, opt_hash=True))
         lock_start_rec = None
         if ins.skip_blank_read_if((',',)):
             lock_start_rec = self.values.csng_(self.parse_expression(ins))
@@ -1076,7 +1076,7 @@ class StatementParser(object):
 
     def exec_ioctl(self, ins):
         """IOCTL: send control string to I/O device."""
-        thefile = self.session.files.get(self.parse_file_number(ins, opt_hash=True))
+        thefile = self.session.files.get(self._parse_file_number(ins, opt_hash=True))
         ins.require_read((',',))
         control_string = self.parse_temporary_string(ins)
         self.session.files.ioctl_statement_(thefile, control_string)
@@ -1433,7 +1433,7 @@ class StatementParser(object):
 
     def exec_input(self, ins):
         """INPUT: request input from user."""
-        file_number = self.parse_file_number(ins, opt_hash=False)
+        file_number = self._parse_file_number(ins, opt_hash=False)
         if file_number is not None:
             finp = self.session.files.get(file_number, mode='IR')
             ins.require_read((',',))
@@ -1447,7 +1447,7 @@ class StatementParser(object):
     def exec_line_input(self, ins):
         """LINE INPUT: request line of input from user."""
         prompt, newline, finp = None, None, None
-        file_number = self.parse_file_number(ins, opt_hash=False)
+        file_number = self._parse_file_number(ins, opt_hash=False)
         if file_number is None:
             # get prompt
             newline, prompt, _ = self._parse_prompt(ins)
@@ -1580,7 +1580,7 @@ class StatementParser(object):
 
     def _parse_write_args_iter(self, ins):
         """Parse WRITE statement arguments."""
-        file_number = self.parse_file_number(ins, opt_hash=False)
+        file_number = self._parse_file_number(ins, opt_hash=False)
         yield file_number
         if file_number is not None:
             ins.require_read((',',))
@@ -1610,55 +1610,41 @@ class StatementParser(object):
         ins.require_end()
         self.session.screen.view_print_(start, stop)
 
-    def exec_width(self, ins):
-        """WIDTH: set width of screen or device."""
-        d = ins.skip_blank()
-        if d == '#':
-            file_number = self.parse_file_number(ins, opt_hash=False)
-            dev = self.session.files.get(file_number, mode='IOAR')
-            ins.require_read((',',))
-            w = self.parse_value(ins, values.INT)
-            error.range_check(0, 255, w)
-            ins.require_end()
-            dev.set_width(w)
-        elif d == tk.LPRINT:
-            ins.read(1)
-            dev = self.session.devices.lpt1_file
-            w = self.parse_value(ins, values.INT)
-            error.range_check(0, 255, w)
-            ins.require_end()
-            dev.set_width(w)
+    def _parse_width_args_iter(self, ins):
+        """Parse WIDTH syntax."""
+        d = ins.skip_blank_read_if(('#', tk.LPRINT))
+        if d:
+            if d == '#':
+                yield values.to_int(self.parse_expression(ins))
+                ins.require_read((',',))
+            else:
+                yield tk.LPRINT
+            yield self.parse_value(ins, values.INT)
         else:
+            yield None
             with self.temp_string:
-                if d in string.digits or d in tk.NUMBER:
+                if ins.peek() in set(string.digits) | set(tk.NUMBER):
                     expr = self.expression_parser.read_number_literal(ins)
                 else:
                     expr = self.parse_expression(ins)
-                if isinstance(expr, values.String):
-                    devname = expr.to_str().upper()
-                    ins.require_read((',',))
-                    w = self.parse_value(ins, values.INT)
-                    try:
-                        dev = self.session.devices.devices[devname].device_file
-                    except (KeyError, AttributeError):
-                        # bad file name
-                        raise error.RunError(error.BAD_FILE_NAME)
-                    ins.require_end()
-                    dev.set_width(w)
+                yield expr
+            if isinstance(expr, values.String):
+                ins.require_read((',',))
+                yield self.parse_value(ins, values.INT)
+            else:
+                if not ins.skip_blank_read_if((',',)):
+                    yield None
+                    ins.require_end(error.IFC)
                 else:
-                    w = values.to_int(expr)
-                    if not ins.skip_blank_read_if((',',)):
-                        ins.require_end(error.IFC)
-                    else:
-                        # parse dummy number rows setting
-                        num_rows_dummy = self.parse_value(ins, values.INT, allow_empty=True)
-                        # trailing comma is accepted
-                        ins.skip_blank_read_if((',',))
-                        ins.require_end()
-                        if num_rows_dummy is not None:
-                            min_num_rows = 0 if self.syntax in ('pcjr', 'tandy') else 25
-                            error.range_check(min_num_rows, 25, num_rows_dummy)
-                    self.session.devices.scrn_file.set_width(w)
+                    # parse dummy number rows setting
+                    yield self.parse_value(ins, values.INT, allow_empty=True)
+                    # trailing comma is accepted
+                    ins.skip_blank_read_if((',',))
+        ins.require_end()
+
+    def exec_width(self, ins):
+        """WIDTH: set width of screen or device."""
+        self.session.files.width_(self._parse_width_args_iter(ins))
 
     def exec_screen(self, ins):
         """SCREEN: change video mode or page."""
@@ -1700,7 +1686,7 @@ class StatementParser(object):
         """PRINT: Write expressions to the screen or a file."""
         # if no output specified (i.e. not LPRINT), check for a file number
         if output is None:
-            file_number = self.parse_file_number(ins, opt_hash=False)
+            file_number = self._parse_file_number(ins, opt_hash=False)
             if file_number is not None:
                 output = self.session.files.get(file_number, 'OAR')
                 ins.require_read((',',))

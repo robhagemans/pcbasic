@@ -19,6 +19,7 @@ from . import cassette
 from . import disk
 from . import ports
 from . import values
+from . import tokens as tk
 
 
 # MS-DOS device files
@@ -303,6 +304,38 @@ class Files(object):
         else:
             # write the whole thing as one thing (this affects line breaks)
             output.write_line(','.join(outstrs))
+
+    def width_(self, args):
+        """WIDTH: set width of screen or device."""
+        file_or_device = next(args)
+        num_rows_dummy = None
+        if file_or_device == tk.LPRINT:
+            dev = self.devices.lpt1_file
+            w = next(args)
+        elif isinstance(file_or_device, int):
+            error.range_check(0, 255, file_or_device)
+            dev = self.get(file_or_device, mode='IOAR')
+            w = next(args)
+        else:
+            expr = next(args)
+            if isinstance(expr, values.String):
+                devname = expr.to_str().upper()
+                w = next(args)
+                try:
+                    dev = self.devices.devices[devname].device_file
+                except (KeyError, AttributeError):
+                    # bad file name
+                    raise error.RunError(error.BAD_FILE_NAME)
+            else:
+                w = values.to_int(expr)
+                num_rows_dummy = next(args)
+                dev = self.devices.scrn_file
+        error.range_check(0, 255, w)
+        list(args)
+        if num_rows_dummy is not None:
+            min_num_rows = 0 if self.devices.scrn_file.screen.capabilities in ('pcjr', 'tandy') else 25
+            error.range_check(min_num_rows, 25, num_rows_dummy)
+        dev.set_width(w)
 
 
 ###############################################################################
