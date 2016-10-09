@@ -11,9 +11,10 @@ from . import values
 from . import error
 from . import tokens as tk
 
+
 def lprint_(devices, args):
     """LPRINT: Write expressions to printer LPT1."""
-    _print_loop(devices, devices.lpt1_file, args)
+    Formatter(devices, devices.lpt1_file).format(args)
 
 def print_(files, args):
     """PRINT: Write expressions to the screen or a file."""
@@ -24,112 +25,121 @@ def print_(files, args):
     else:
         # neither LPRINT not a file number: print to screen
         output = files.devices.scrn_file
-    _print_loop(files.devices, output, args)
+    Formatter(files.devices, output).format(args)
 
-def _print_loop(devices, output, args):
-    """PRINT: Write expressions to screen or file."""
-    newline = True
-    for d, value in args:
-        if d == tk.USING:
-            if value == '':
-                raise error.RunError(error.IFC)
-            newline = _print_using(output, value, args)
-            break
-        elif d == ',':
-            _print_comma(output)
-        elif d == ';':
-            pass
-        elif d == tk.SPC:
-            _print_spc(output, value)
-        elif d == tk.TAB:
-            _print_tab(output, value)
-        else:
-            _print_value(output, value)
-        newline = d not in (tk.TAB, tk.SPC, ',', ';')
-    if newline:
-        if output == devices.scrn_file and output.screen.overflow:
-            output.write_line()
-        output.write_line()
 
-def _print_value(output, expr):
-    """Print a value."""
-    # numbers always followed by a space
-    if isinstance(expr, values.Number):
-        word = values.to_repr(expr, leading_space=True, type_sign=False) + ' '
-    else:
-        word = expr.to_str()
-    # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
-    output.write(word)
+class Formatter(object):
+    """Output string formatter."""
 
-def _print_comma(output):
-    """Skip to next output zone."""
-    number_zones = max(1, int(output.width/14))
-    next_zone = int((output.col-1) / 14) + 1
-    if next_zone >= number_zones and output.width >= 14 and output.width != 255:
-        output.write_line()
-    else:
-        output.write(' ' * (1 + 14*next_zone-output.col), can_break=False)
+    def __init__(self, devices, output):
+        """Initialise."""
+        self._devices = devices
+        self._output = output
 
-def _print_spc(output, num):
-    """Print SPC separator."""
-    numspaces = max(0, num) % output.width
-    output.write(' ' * numspaces, can_break=False)
-
-def _print_tab(output, num):
-    """Print TAB separator."""
-    pos = max(0, num - 1) % output.width + 1
-    if pos < output.col:
-        output.write_line()
-        output.write(' ' * (pos-1))
-    else:
-        output.write(' ' * (pos-output.col), can_break=False)
-
-###############################################################################
-# parse format string
-
-def _print_using(output, format_expr, args):
-    """PRINT USING: Write expressions to screen or file using a formatting string."""
-    fors = codestream.CodeStream(format_expr)
-    newline, format_chars = True, False
-    try:
-        while True:
-            c = fors.peek()
-            if c == '':
-                if not format_chars:
-                    # avoid infinite loop
-                    break
-                # loop the format string if more variables to come
-                fors.seek(0)
-            elif c == '_':
-                # escape char; write next char in fors or _ if this is the last char
-                output.write(fors.read(2)[-1])
+    def format(self, args):
+        """PRINT: Write expressions to screen or file."""
+        newline = True
+        for d, value in args:
+            if d == tk.USING:
+                if value == '':
+                    raise error.RunError(error.IFC)
+                newline = self._print_using(value, args)
+                break
+            elif d == ',':
+                self._print_comma()
+            elif d == ';':
+                pass
+            elif d == tk.SPC:
+                self._print_spc(value)
+            elif d == tk.TAB:
+                self._print_tab(value)
             else:
-                string_field = _get_string_tokens(fors)
-                if not string_field:
-                    number_field = _get_number_tokens(fors)
-                if string_field or number_field:
-                    format_chars = True
-                    value = next(args)
-                    if value is None:
-                        newline = False
+                self._print_value(value)
+            newline = d not in (tk.TAB, tk.SPC, ',', ';')
+        if newline:
+            if self._output == self._devices.scrn_file and self._output.screen.overflow:
+                self._output.write_line()
+            self._output.write_line()
+
+    def _print_value(self, expr):
+        """Print a value."""
+        # numbers always followed by a space
+        if isinstance(expr, values.Number):
+            word = values.to_repr(expr, leading_space=True, type_sign=False) + ' '
+        else:
+            word = expr.to_str()
+        # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
+        self._output.write(word)
+
+    def _print_comma(self):
+        """Skip to next output zone."""
+        number_zones = max(1, int(self._output.width/14))
+        next_zone = int((self._output.col-1) / 14) + 1
+        if next_zone >= number_zones and self._output.width >= 14 and self._output.width != 255:
+            self._output.write_line()
+        else:
+            self._output.write(' ' * (1 + 14*next_zone-self._output.col), can_break=False)
+
+    def _print_spc(self, num):
+        """Print SPC separator."""
+        numspaces = max(0, num) % self._output.width
+        self._output.write(' ' * numspaces, can_break=False)
+
+    def _print_tab(self, num):
+        """Print TAB separator."""
+        pos = max(0, num - 1) % self._output.width + 1
+        if pos < self._output.col:
+            self._output.write_line()
+            self._output.write(' ' * (pos-1))
+        else:
+            self._output.write(' ' * (pos-self._output.col), can_break=False)
+
+    ###############################################################################
+    # parse format string
+
+    def _print_using(self, format_expr, args):
+        """PRINT USING: Write expressions to screen or file using a formatting string."""
+        fors = codestream.CodeStream(format_expr)
+        newline, format_chars = True, False
+        try:
+            while True:
+                c = fors.peek()
+                if c == '':
+                    if not format_chars:
+                        # avoid infinite loop
                         break
-                if string_field:
-                    s = values.pass_string(value)
-                    if string_field == '&':
-                        output.write(s)
-                    else:
-                        output.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
-                elif number_field:
-                    num = values.pass_number(value)
-                    output.write(_format_number(num, *number_field))
+                    # loop the format string if more variables to come
+                    fors.seek(0)
+                elif c == '_':
+                    # escape char; write next char in fors or _ if this is the last char
+                    self._output.write(fors.read(2)[-1])
                 else:
-                    output.write(fors.read(1))
-    except StopIteration:
-        pass
-    if not format_chars:
-        # there were no format chars in the string, illegal fn call
-        raise error.RunError(error.IFC)
-    return newline
+                    string_field = _get_string_tokens(fors)
+                    if not string_field:
+                        number_field = _get_number_tokens(fors)
+                    if string_field or number_field:
+                        format_chars = True
+                        value = next(args)
+                        if value is None:
+                            newline = False
+                            break
+                    if string_field:
+                        s = values.pass_string(value)
+                        if string_field == '&':
+                            self._output.write(s)
+                        else:
+                            self._output.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
+                    elif number_field:
+                        num = values.pass_number(value)
+                        self._output.write(_format_number(num, *number_field))
+                    else:
+                        self._output.write(fors.read(1))
+        except StopIteration:
+            pass
+        if not format_chars:
+            # there were no format chars in the string, illegal fn call
+            raise error.RunError(error.IFC)
+        return newline
 
 def _get_string_tokens(fors):
     """Get consecutive string-related formatting tokens."""
