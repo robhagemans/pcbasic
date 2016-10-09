@@ -16,7 +16,6 @@ from functools import partial
 from . import error
 from . import values
 from . import ports
-from . import parseprint
 from . import tokens as tk
 from . import dos
 
@@ -1731,11 +1730,11 @@ class StatementParser(object):
 
     def exec_print(self, ins):
         """PRINT: Write expressions to the screen or a file."""
-        parseprint.print_(self.session.files, self._parse_print_args_iter(ins, parse_file=True))
+        self.session.files.print_(self._parse_print_args_iter(ins, parse_file=True))
 
     def exec_lprint(self, ins):
         """LPRINT: Write expressions to printer LPT1."""
-        parseprint.lprint_(self.session.devices, self._parse_print_args_iter(ins, parse_file=False))
+        self.session.devices.lprint_(self._parse_print_args_iter(ins, parse_file=False))
 
     ###########################################################################
     # User-defined functions

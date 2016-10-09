@@ -1,5 +1,5 @@
 """
-PC-BASIC - parseprint.py
+PC-BASIC - formatter.py
 Formatted output handling
 
 (c) 2013, 2014, 2015, 2016 Rob Hagemans
@@ -12,28 +12,12 @@ from . import error
 from . import tokens as tk
 
 
-def lprint_(devices, args):
-    """LPRINT: Write expressions to printer LPT1."""
-    Formatter(devices, devices.lpt1_file).format(args)
-
-def print_(files, args):
-    """PRINT: Write expressions to the screen or a file."""
-    # check for a file number
-    file_number = next(args)
-    if file_number is not None:
-        output = files.get(file_number, 'OAR')
-    else:
-        # neither LPRINT not a file number: print to screen
-        output = files.devices.scrn_file
-    Formatter(files.devices, output).format(args)
-
-
 class Formatter(object):
     """Output string formatter."""
 
-    def __init__(self, devices, output):
+    def __init__(self, output, screen=None):
         """Initialise."""
-        self._devices = devices
+        self._screen = screen
         self._output = output
 
     def format(self, args):
@@ -57,7 +41,7 @@ class Formatter(object):
                 self._print_value(value)
             newline = d not in (tk.TAB, tk.SPC, ',', ';')
         if newline:
-            if self._output == self._devices.scrn_file and self._output.screen.overflow:
+            if self._screen and self._screen.overflow:
                 self._output.write_line()
             self._output.write_line()
 

@@ -20,7 +20,7 @@ from . import disk
 from . import ports
 from . import values
 from . import tokens as tk
-
+from . import formatter
 
 # MS-DOS device files
 device_files = ('AUX', 'CON', 'NUL', 'PRN')
@@ -337,6 +337,19 @@ class Files(object):
             error.range_check(min_num_rows, 25, num_rows_dummy)
         dev.set_width(w)
 
+    def print_(self, args):
+        """PRINT: Write expressions to the screen or a file."""
+        # check for a file number
+        file_number = next(args)
+        if file_number is not None:
+            output = self.get(file_number, 'OAR')
+            screen = None
+        else:
+            # neither LPRINT not a file number: print to screen
+            output = self.devices.scrn_file
+            screen = output.screen
+        formatter.Formatter(output, screen).format(args)
+
 
 ###############################################################################
 # device management
@@ -492,3 +505,7 @@ class Devices(object):
             pathmask = b''
         dev, path = self.get_diskdevice_and_path(pathmask)
         dev.files(self._screen, path)
+
+    def lprint_(self, args):
+        """LPRINT: Write expressions to printer LPT1."""
+        formatter.Formatter(self.lpt1_file).format(args)
