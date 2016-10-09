@@ -1683,22 +1683,21 @@ class StatementParser(object):
         error.range_check(0, self.session.screen.mode.num_pages-1, dst)
         self.session.screen.pcopy_(src, dst)
 
-    def exec_print(self, ins, output=None):
+    def exec_print(self, ins):
         """PRINT: Write expressions to the screen or a file."""
-        # if no output specified (i.e. not LPRINT), check for a file number
-        if output is None:
-            file_number = self._parse_file_number(ins, opt_hash=False)
-            if file_number is not None:
-                output = self.session.files.get(file_number, 'OAR')
-                ins.require_read((',',))
-        if output is None:
+        # check for a file number
+        file_number = self._parse_file_number(ins, opt_hash=False)
+        if file_number is not None:
+            output = self.session.files.get(file_number, 'OAR')
+            ins.require_read((',',))
+        else:
             # neither LPRINT not a file number: print to screen
             output = self.session.devices.scrn_file
         parseprint.print_(self, ins, output)
 
     def exec_lprint(self, ins):
         """LPRINT: Write expressions to printer LPT1."""
-        self.exec_print(ins, self.session.devices.lpt1_file)
+        parseprint.print_(self, ins, self.session.devices.lpt1_file)
 
     ###########################################################################
     # User-defined functions
