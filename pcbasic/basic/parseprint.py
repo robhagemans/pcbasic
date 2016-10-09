@@ -36,19 +36,16 @@ def _print_loop(devices, output, args):
             newline = _print_using(output, value, args)
             break
         elif d == ',':
-            newline = False
             _print_comma(output)
         elif d == ';':
-            newline = False
+            pass
         elif d == tk.SPC:
-            newline = False
             _print_spc(output, value)
         elif d == tk.TAB:
-            newline = False
             _print_tab(output, value)
         else:
-            newline = True
             _print_value(output, value)
+        newline = d not in (tk.TAB, tk.SPC, ',', ';')
     if newline:
         if output == devices.scrn_file and output.screen.overflow:
             output.write_line()
