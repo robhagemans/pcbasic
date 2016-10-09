@@ -1683,21 +1683,59 @@ class StatementParser(object):
         error.range_check(0, self.session.screen.mode.num_pages-1, dst)
         self.session.screen.pcopy_(src, dst)
 
+    def _parse_print_args_iter(self, ins, parse_file):
+        """PRINT: Write expressions to screen or file."""
+        if parse_file:
+            # check for a file number
+            file_number = self._parse_file_number(ins, opt_hash=False)
+            yield file_number
+            if file_number is not None:
+                ins.require_read((',',))
+        while True:
+            d = ins.skip_blank_read()
+            if d in tk.END_STATEMENT:
+                ins.seek(-len(d), 1)
+                break
+            elif d == tk.USING:
+                format_expr = self.parse_temporary_string(ins)
+                if format_expr == '':
+                    raise error.RunError(error.IFC)
+                ins.require_read((';',))
+                yield (tk.USING, format_expr)
+                has_args = False
+                while True:
+                    with self.temp_string:
+                        expr = self.parse_expression(ins, allow_empty=True)
+                        yield expr
+                        if expr is None:
+                            ins.require_end()
+                            # need at least one argument after format string
+                            if not has_args:
+                                raise error.RunError(error.MISSING_OPERAND)
+                            break
+                        has_args = True
+                    if not ins.skip_blank_read_if((';', ',')):
+                        break
+                break
+            elif d in (',', ';'):
+                yield (d, None)
+            elif d in (tk.SPC, tk.TAB):
+                num = values.to_int(self.parse_expression(ins), unsigned=True)
+                ins.require_read((')',))
+                yield (d, num)
+            else:
+                ins.seek(-len(d), 1)
+                with self.temp_string:
+                    value = self.parse_expression(ins)
+                    yield (None, value)
+
     def exec_print(self, ins):
         """PRINT: Write expressions to the screen or a file."""
-        # check for a file number
-        file_number = self._parse_file_number(ins, opt_hash=False)
-        if file_number is not None:
-            output = self.session.files.get(file_number, 'OAR')
-            ins.require_read((',',))
-        else:
-            # neither LPRINT not a file number: print to screen
-            output = self.session.devices.scrn_file
-        parseprint.print_(self, ins, output)
+        parseprint.print_(self.session.files, self._parse_print_args_iter(ins, parse_file=True))
 
     def exec_lprint(self, ins):
         """LPRINT: Write expressions to printer LPT1."""
-        parseprint.print_(self, ins, self.session.devices.lpt1_file)
+        parseprint.lprint_(self.session.devices, self._parse_print_args_iter(ins, parse_file=False))
 
     ###########################################################################
     # User-defined functions

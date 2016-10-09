@@ -11,20 +11,29 @@ from . import values
 from . import error
 from . import tokens as tk
 
-def print_(parser, ins, output):
+def lprint_(devices, args):
+    """LPRINT: Write expressions to printer LPT1."""
+    _print_loop(devices, devices.lpt1_file, args)
+
+def print_(files, args):
+    """PRINT: Write expressions to the screen or a file."""
+    # check for a file number
+    file_number = next(args)
+    if file_number is not None:
+        output = files.get(file_number, 'OAR')
+    else:
+        # neither LPRINT not a file number: print to screen
+        output = files.devices.scrn_file
+    _print_loop(files.devices, output, args)
+
+def _print_loop(devices, output, args):
     """PRINT: Write expressions to screen or file."""
     newline = True
-    while True:
-        d = ins.skip_blank_read()
-        if d in tk.END_STATEMENT:
-            ins.seek(-len(d), 1)
-            break
-        elif d == tk.USING:
-            format_expr = parser.parse_temporary_string(ins)
-            if format_expr == '':
+    for d, value in args:
+        if d == tk.USING:
+            if value == '':
                 raise error.RunError(error.IFC)
-            ins.require_read((';',))
-            newline = _print_using(parser, ins, output, format_expr)
+            newline = _print_using(output, value, args)
             break
         elif d == ',':
             newline = False
@@ -33,21 +42,15 @@ def print_(parser, ins, output):
             newline = False
         elif d == tk.SPC:
             newline = False
-            num = values.to_int(parser.parse_expression(ins), unsigned=True)
-            ins.require_read((')',))
-            _print_spc(output, num)
+            _print_spc(output, value)
         elif d == tk.TAB:
             newline = False
-            num = values.to_int(parser.parse_expression(ins), unsigned=True)
-            ins.require_read((')',))
-            _print_tab(output, num)
+            _print_tab(output, value)
         else:
-            ins.seek(-len(d), 1)
-            with parser.temp_string:
-                _print_value(output, parser.parse_expression(ins))
-        newline = d not in (',', ';', tk.SPC, tk.TAB)
+            newline = True
+            _print_value(output, value)
     if newline:
-        if output == parser.session.devices.scrn_file and parser.session.screen.overflow:
+        if output == devices.scrn_file and output.screen.overflow:
             output.write_line()
         output.write_line()
 
@@ -84,45 +87,52 @@ def _print_tab(output, num):
     else:
         output.write(' ' * (pos-output.col), can_break=False)
 
-def _print_using(parser, ins, output, format_expr):
+###############################################################################
+# parse format string
+
+def _print_using(output, format_expr, args):
     """PRINT USING: Write expressions to screen or file using a formatting string."""
     fors = codestream.CodeStream(format_expr)
-    semicolon, format_chars = False, False
-    while True:
-        data_ends = ins.skip_blank() in tk.END_STATEMENT
-        c = fors.peek()
-        if c == '':
-            if not format_chars:
-                # there were no format chars in the string, illegal fn call (avoids infinite loop)
-                raise error.RunError(error.IFC)
-            if data_ends:
-                break
-            # loop the format string if more variables to come
-            fors.seek(0)
-        elif c == '_':
-            # escape char; write next char in fors or _ if this is the last char
-            output.write(fors.read(2)[-1])
-        else:
-            string_field = _get_string_tokens(fors)
-            if string_field:
-                if not data_ends:
-                    s = parser.parse_temporary_string(ins)
+    newline, format_chars = True, False
+    try:
+        while True:
+            c = fors.peek()
+            if c == '':
+                if not format_chars:
+                    # avoid infinite loop
+                    break
+                # loop the format string if more variables to come
+                fors.seek(0)
+            elif c == '_':
+                # escape char; write next char in fors or _ if this is the last char
+                output.write(fors.read(2)[-1])
+            else:
+                string_field = _get_string_tokens(fors)
+                if not string_field:
+                    number_field = _get_number_tokens(fors)
+                if string_field or number_field:
+                    format_chars = True
+                    value = next(args)
+                    if value is None:
+                        newline = False
+                        break
+                if string_field:
+                    s = values.pass_string(value)
                     if string_field == '&':
                         output.write(s)
                     else:
                         output.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
-            else:
-                number_field, digits_before, decimals = _get_number_tokens(fors)
-                if number_field:
-                    if not data_ends:
-                        num = values.pass_number(parser.parse_expression(ins))
-                        output.write(_format_number(num, number_field, digits_before, decimals))
+                elif number_field:
+                    num = values.pass_number(value)
+                    output.write(_format_number(num, *number_field))
                 else:
                     output.write(fors.read(1))
-            if string_field or number_field:
-                format_chars = True
-                semicolon = ins.skip_blank_read_if((';', ','))
-    return not semicolon
+    except StopIteration:
+        pass
+    if not format_chars:
+        # there were no format chars in the string, illegal fn call
+        raise error.RunError(error.IFC)
+    return newline
 
 def _get_string_tokens(fors):
     """Get consecutive string-related formatting tokens."""
@@ -157,7 +167,7 @@ def _get_number_tokens(fors):
         word += fors.read(2)
         if word[-1] != c:
             fors.seek(-len(word), 1)
-            return '', 0, 0
+            return None
         if c == '*':
             digits_before += 2
             if fors.peek() == '$':
@@ -185,7 +195,7 @@ def _get_number_tokens(fors):
                 break
     if digits_before + decimals == 0:
         fors.seek(-len(word), 1)
-        return '', 0, 0
+        return None
     # post characters
     if fors.peek(4) == '^^^^':
         word += fors.read(4)
@@ -195,7 +205,7 @@ def _get_number_tokens(fors):
 
 
 ##############################################################################
-# convert float to string representation
+# formatting functions
 
 def _format_number(value, tokens, digits_before, decimals):
     """Format a number to a format string. For PRINT USING."""
