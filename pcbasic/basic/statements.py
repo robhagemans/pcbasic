@@ -1681,7 +1681,7 @@ class StatementParser(object):
         dst = values.to_int(self.parse_expression(ins))
         ins.require_end()
         error.range_check(0, self.session.screen.mode.num_pages-1, dst)
-        self.session.screen.copy_page(src, dst)
+        self.session.screen.pcopy_(src, dst)
 
     def exec_print(self, ins, output=None):
         """PRINT: Write expressions to the screen or a file."""

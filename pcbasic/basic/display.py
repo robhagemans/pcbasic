@@ -867,9 +867,11 @@ class Screen(object):
         fore, _, _, _ = self.split_attr(attr)
         self.session.video_queue.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, fore))
 
-    def copy_page(self, src, dst):
+    def pcopy_(self, src, dst):
         """Copy source to destination page."""
         self.text.copy_page(src, dst)
+        if not self.mode.is_text_mode:
+            self.pixels.copy_page(src, dst)
         self.session.video_queue.put(signals.Event(signals.VIDEO_COPY_PAGE, (src, dst)))
 
     def color_(self, fore, back=None, bord=None):
