@@ -235,18 +235,27 @@ class Interpreter(object):
     ###########################################################################
     # loops
 
-    def loop_init(self, ins, forpos, nextpos, varname, start, stop, step):
+    def for_(self, ins, forpos, nextpos, varname, start, stop, step):
         """Initialise a FOR loop."""
-        # set start to start-step, then iterate - slower on init but allows for faster iterate
-        self.session.scalars.set(varname, start.clone().isub(step))
+        # initialise loop variable
+        self.session.scalars.set(varname, start)
         # obtain a view of the loop variable
         counter_view = self.session.scalars.view(varname)
-        self.for_stack.append(
-            (counter_view, stop, step, step.sign(), forpos, nextpos,))
-        ins.seek(nextpos)
+        self.for_stack.append((counter_view, stop, step, step.sign(), forpos, nextpos,))
+        if (start.gt(stop) if step.sign() > 0 else stop.gt(start)):
+            ins.seek(nextpos)
+            self.next_(ins)
 
-    def loop_iterate(self, ins, pos):
+    def next_(self, ins):
         """Iterate a loop (NEXT)."""
+        # record the NEXT (or comma) location
+        pos = ins.tell()
+        # optional variable - errors in this are checked at the scan during FOR
+        # if we haven't read a variable, we shouldn't find something else here
+        # but if we have and we iterate, the rest of the line is ignored
+        if ins.skip_blank() not in tk.END_STATEMENT + (',',):
+            # FIXME calling private method
+            self.statement_parser._parse_name(ins)
         # find the matching NEXT record
         num = len(self.for_stack)
         for depth in range(num):

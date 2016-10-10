@@ -1809,8 +1809,7 @@ class StatementParser(object):
         # find NEXT
         nextpos = self._find_next(ins, varname)
         # apply initial condition and jump to nextpos
-        self.session.interpreter.loop_init(ins, endforpos, nextpos, varname, start, stop, step)
-        self.exec_next(ins)
+        self.session.interpreter.for_(ins, endforpos, nextpos, varname, start, stop, step)
 
     def _find_next(self, ins, varname):
         """Helper function for FOR: find the right NEXT."""
@@ -1838,15 +1837,8 @@ class StatementParser(object):
     def exec_next(self, ins):
         """NEXT: iterate for-loop."""
         while True:
-            # record the NEXT (or comma) location
-            pos = ins.tell()
-            # optional variable - errors in this are checked at the scan during FOR
-            # if we haven't read a variable, we shouldn't find something else here
-            # but if we have and we iterate, the rest of the line is ignored
-            if ins.skip_blank() not in tk.END_STATEMENT + (',',):
-                self._parse_name(ins)
             # increment counter, check condition
-            if self.session.interpreter.loop_iterate(ins, pos):
+            if self.session.interpreter.next_(ins):
                 break
             # done if we're not jumping into a comma'ed NEXT
             if not ins.skip_blank_read_if((',')):
