@@ -360,21 +360,7 @@ class Integer(Number):
         isneg = ord(self._buffer[-1]) & 0x80
         if isneg != (ord(rhs._buffer[-1]) & 0x80):
             return not(isneg)
-        if isneg:
-            return rhs._abs_gt(self)
-        return self._abs_gt(rhs)
-
-    def eq(self, rhs):
-        """Equals."""
-        if isinstance(rhs, Float):
-            # upgrade to Float
-            return rhs.new().from_integer(self).eq(rhs)
-        return self._buffer == rhs._buffer
-
-    # implementation
-
-    def _abs_gt(self, rhs):
-        """Absolute values greater than."""
+        # compute the unsigned (not absolute!) >
         lmsb = ord(self._buffer[1]) & 0x7f
         rmsb = ord(rhs._buffer[1]) & 0x7f
         if lmsb > rmsb:
@@ -383,6 +369,12 @@ class Integer(Number):
             return False
         return ord(self._buffer[0]) > ord(rhs._buffer[0])
 
+    def eq(self, rhs):
+        """Equals."""
+        if isinstance(rhs, Float):
+            # upgrade to Float
+            return rhs.new().from_integer(self).eq(rhs)
+        return self._buffer == rhs._buffer
 
 
 ##############################################################################
