@@ -1737,19 +1737,6 @@ class StatementParser(object):
         self.session.devices.lprint_(self._parse_print_args_iter(ins, parse_file=False))
 
     ###########################################################################
-    # User-defined functions
-
-    def exec_def_fn(self, ins):
-        """DEF FN: define a function."""
-        # don't allow DEF FN in direct mode, as we point to the code in the stored program
-        # this is raised before further syntax errors
-        if not self.run_mode:
-            raise error.RunError(error.ILLEGAL_DIRECT)
-        fnname = self._parse_name(ins)
-        ins.skip_blank()
-        self.expression_parser.user_functions.define(fnname, ins)
-
-    ###########################################################################
     # Loops and branches
 
     def exec_if(self, ins):
@@ -1891,3 +1878,16 @@ class StatementParser(object):
             # not the expected WEND, we must have jumped out
             self.session.interpreter.while_stack.pop()
         self._check_while_condition(ins, whilepos)
+
+    ###########################################################################
+    # User-defined functions
+
+    def exec_def_fn(self, ins):
+        """DEF FN: define a function."""
+        # don't allow DEF FN in direct mode, as we point to the code in the stored program
+        # this is raised before further syntax errors
+        if not self.run_mode:
+            raise error.RunError(error.ILLEGAL_DIRECT)
+        fnname = self._parse_name(ins)
+        ins.skip_blank()
+        self.expression_parser.user_functions.define(fnname, ins)
