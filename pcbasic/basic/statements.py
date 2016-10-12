@@ -1769,6 +1769,7 @@ class StatementParser(object):
                             if ins.skip_blank() in (tk.T_UINT,):
                                 self.session.interpreter.goto_(self._parse_jumpnum(ins))
                             # continue execution from here
+                            self.parse_statement(ins)
                             break
                 else:
                     ins.seek(-len(d), 1)
