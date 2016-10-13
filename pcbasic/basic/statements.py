@@ -136,10 +136,10 @@ class StatementParser(object):
         """Initialise statements."""
         self.session = session
         self.statements = {
-            tk.END: self.exec_end,
+            tk.END: partial(self.exec_after_end, callback=session.end_),
             tk.FOR: self.exec_for,
             tk.NEXT: self.exec_next,
-            tk.DATA: self.exec_data,
+            tk.DATA: self.skip_statement,
             tk.INPUT: self.exec_input,
             tk.DIM: self.exec_dim,
             tk.READ: self.exec_read,
@@ -150,24 +150,24 @@ class StatementParser(object):
             tk.RESTORE: self.exec_restore,
             tk.GOSUB: self.exec_gosub,
             tk.RETURN: self.exec_return,
-            tk.REM: self.exec_rem,
-            tk.STOP: self.exec_stop,
+            tk.REM: self.skip_line,
+            tk.STOP: partial(self.exec_after_end, callback=session.interpreter.stop_),
             tk.PRINT: self.exec_print,
             tk.CLEAR: self.exec_clear,
             tk.LIST: self.exec_list,
-            tk.NEW: self.exec_new,
+            tk.NEW: partial(self.exec_after_end, callback=session.new_),
             tk.ON: self.exec_on,
             tk.WAIT: self.exec_wait,
             tk.DEF: self.exec_def,
             tk.POKE: self.exec_poke,
-            tk.CONT: self.exec_cont,
+            tk.CONT: partial(self.exec_immediate, callback=session.interpreter.cont_),
             tk.OUT: self.exec_out,
             tk.LPRINT: self.exec_lprint,
             tk.LLIST: self.exec_llist,
             tk.WIDTH: self.exec_width,
-            tk.ELSE: self.exec_else,
-            tk.TRON: self.exec_tron,
-            tk.TROFF: self.exec_troff,
+            tk.ELSE: self.skip_line,
+            tk.TRON: partial(self.exec_immediate, callback=session.interpreter.tron_),
+            tk.TROFF: partial(self.exec_immediate, callback=session.interpreter.troff_),
             tk.SWAP: self.exec_swap,
             tk.ERASE: self.exec_erase,
             tk.EDIT: self.exec_edit,
@@ -194,7 +194,7 @@ class StatementParser(object):
             tk.SAVE: self.exec_save,
             tk.COLOR: self.exec_color,
             tk.CLS: self.exec_cls,
-            tk.MOTOR: self.exec_motor,
+            tk.MOTOR: partial(self.exec_lcopy_motor, callback=session.devices.motor_),
             tk.BSAVE: self.exec_bsave,
             tk.BLOAD: self.exec_bload,
             tk.SOUND: self.exec_sound,
@@ -206,14 +206,14 @@ class StatementParser(object):
             tk.LOCATE: self.exec_locate,
             tk.FILES: self.exec_files,
             tk.FIELD: self.exec_field,
-            tk.SYSTEM: self.exec_system,
+            tk.SYSTEM: partial(self.exec_after_end, callback=session.interpreter.system_),
             tk.NAME: self.exec_name,
             tk.LSET: self.exec_lset,
             tk.RSET: self.exec_rset,
             tk.KILL: self.exec_kill,
             tk.PUT: self.exec_put,
             tk.GET: self.exec_get,
-            tk.RESET: self.exec_reset,
+            tk.RESET: partial(self.exec_immediate, callback=session.files.reset_),
             tk.COMMON: self.exec_common,
             tk.CHAIN: self.exec_chain,
             tk.DATE: self.exec_date,
@@ -233,11 +233,11 @@ class StatementParser(object):
             tk.VIEW: self.exec_view,
             tk.WINDOW: self.exec_window,
             tk.PALETTE: self.exec_palette,
-            tk.LCOPY: self.exec_lcopy,
+            tk.LCOPY: partial(self.exec_lcopy_motor, callback=session.devices.lcopy_),
             tk.CALLS: self.exec_calls,
             tk.NOISE: self.exec_noise,
             tk.PCOPY: self.exec_pcopy,
-            tk.TERM: self.exec_term,
+            tk.TERM: partial(self.exec_after_end, callback=session.term_),
             tk.LOCK: self.exec_lock,
             tk.UNLOCK: self.exec_unlock,
             tk.MID: self.exec_mid,
@@ -316,70 +316,28 @@ class StatementParser(object):
             self.exec_on_jump(ins)
 
     ###########################################################################
-    # immediate statements
+    # generalised callers
 
-    def exec_tron(self, ins):
-        """TRON: turn on line number tracing."""
-        self.session.interpreter.tron_()
-        # TRON LAH gives error, but TRON has been executed
+    def exec_immediate(self, ins, callback):
+        """Execute before end-of-statement."""
+        # e.g. TRON LAH raises error but TRON will have been executed
+        callback()
 
-    def exec_troff(self, ins):
-        """TROFF: turn off line number tracing."""
-        self.session.interpreter.troff_()
-
-    def exec_cont(self, ins):
-        """CONT: continue STOPped or ENDed execution."""
-        self.session.interpreter.cont_()
-
-    def exec_reset(self, ins):
-        """RESET: close all files."""
-        self.session.files.reset_()
-
-    ###########################################################################
-    # statements executed after end of statement
-
-    def exec_system(self, ins):
-        """SYSTEM: exit interpreter."""
-        # SYSTEM LAH does not execute
+    def exec_after_end(self, ins, callback):
+        """Execute after end-of-statement."""
+        # e.g. SYSTEM LAH does not execute
         ins.require_end()
-        self.session.interpreter.system_()
-
-    def exec_term(self, ins):
-        """TERM: load and run PCjr buitin terminal emulator program."""
-        ins.require_end()
-        self.session.term_()
-
-    def exec_end(self, ins):
-        """END: end program execution and return to interpreter."""
-        ins.require_end()
-        self.session.end_()
-
-    def exec_stop(self, ins):
-        """STOP: break program execution and return to interpreter."""
-        ins.require_end()
-        self.session.interpreter.stop_()
-
-    def exec_new(self, ins):
-        """NEW: clear program from memory."""
-        ins.require_end()
-        self.session.new_()
+        callback()
 
     ###########################################################################
     # skips
 
-    def exec_rem(self, ins):
-        """REM: comment."""
-        # skip the rest of the line, but parse numbers to avoid triggering EOL
+    def skip_line(self, ins):
+        """Ignore the rest of the line."""
         ins.skip_to(tk.END_LINE)
 
-    def exec_else(self, ins):
-        """ELSE: part of branch statement; ignore."""
-        # any else statement by itself means the THEN has already been executed, so it's really like a REM.
-        ins.skip_to(tk.END_LINE)
-
-    def exec_data(self, ins):
-        """DATA: data definition; ignore."""
-        # ignore rest of statement after DATA
+    def skip_statement(self, ins):
+        """Ignore rest of statement."""
         ins.skip_to(tk.END_STATEMENT)
 
     def exec_debug(self, ins):
@@ -387,32 +345,20 @@ class StatementParser(object):
         # this is not a GW-BASIC behaviour, but helps debugging.
         # this is parsed like a REM by the tokeniser.
         # rest of the line is considered to be a python statement
-        ins.skip_blank()
-        debug_cmd = ''
-        while ins.peek() not in tk.END_LINE:
-            debug_cmd += ins.read(1)
+        debug_cmd = ins.read_to(tk.END_LINE)
         self.session.debugger.debug_(debug_cmd)
 
     ###########################################################################
     # statements taking a single argument
 
-    def exec_lcopy(self, ins):
-        """LCOPY: do nothing but check for syntax errors."""
+    def exec_lcopy_motor(self, ins, callback):
+        """Parse LCOPY and MOTOR syntax"""
         val = None
         if ins.skip_blank() not in tk.END_STATEMENT:
             val = values.to_int(self.parse_expression(ins))
             error.range_check(0, 255, val)
             ins.require_end()
-        self.session.devices.lcopy_(val)
-
-    def exec_motor(self, ins):
-        """MOTOR: drive cassette motor."""
-        val = None
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            val = values.to_int(self.parse_expression(ins))
-            error.range_check(0, 255, val)
-            ins.require_end()
-        self.session.devices.motor_(val)
+        callback(val)
 
     def exec_files(self, ins):
         """FILES: output directory listing."""
