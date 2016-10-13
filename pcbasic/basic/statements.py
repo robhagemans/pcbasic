@@ -316,13 +316,7 @@ class StatementParser(object):
             self.exec_on_jump(ins)
 
     ###########################################################################
-    # interpreter commands and no-op statements
-
-    def exec_system(self, ins):
-        """SYSTEM: exit interpreter."""
-        # SYSTEM LAH does not execute
-        ins.require_end()
-        self.session.interpreter.system_()
+    # immediate statements
 
     def exec_tron(self, ins):
         """TRON: turn on line number tracing."""
@@ -333,9 +327,54 @@ class StatementParser(object):
         """TROFF: turn off line number tracing."""
         self.session.interpreter.troff_()
 
+    def exec_cont(self, ins):
+        """CONT: continue STOPped or ENDed execution."""
+        self.session.interpreter.cont_()
+
+    def exec_reset(self, ins):
+        """RESET: close all files."""
+        self.session.files.reset_()
+
+    ###########################################################################
+    # statements executed after end of statement
+
+    def exec_system(self, ins):
+        """SYSTEM: exit interpreter."""
+        # SYSTEM LAH does not execute
+        ins.require_end()
+        self.session.interpreter.system_()
+
+    def exec_term(self, ins):
+        """TERM: load and run PCjr buitin terminal emulator program."""
+        ins.require_end()
+        self.session.term_()
+
+    def exec_end(self, ins):
+        """END: end program execution and return to interpreter."""
+        ins.require_end()
+        self.session.end_()
+
+    def exec_stop(self, ins):
+        """STOP: break program execution and return to interpreter."""
+        ins.require_end()
+        self.session.interpreter.stop_()
+
+    def exec_new(self, ins):
+        """NEW: clear program from memory."""
+        ins.require_end()
+        self.session.new_()
+
+    ###########################################################################
+    # skips
+
     def exec_rem(self, ins):
         """REM: comment."""
         # skip the rest of the line, but parse numbers to avoid triggering EOL
+        ins.skip_to(tk.END_LINE)
+
+    def exec_else(self, ins):
+        """ELSE: part of branch statement; ignore."""
+        # any else statement by itself means the THEN has already been executed, so it's really like a REM.
         ins.skip_to(tk.END_LINE)
 
     def exec_data(self, ins):
@@ -343,10 +382,19 @@ class StatementParser(object):
         # ignore rest of statement after DATA
         ins.skip_to(tk.END_STATEMENT)
 
-    def exec_else(self, ins):
-        """ELSE: part of branch statement; ignore."""
-        # any else statement by itself means the THEN has already been executed, so it's really like a REM.
-        ins.skip_to(tk.END_LINE)
+    def exec_debug(self, ins):
+        """DEBUG: execute Python command."""
+        # this is not a GW-BASIC behaviour, but helps debugging.
+        # this is parsed like a REM by the tokeniser.
+        # rest of the line is considered to be a python statement
+        ins.skip_blank()
+        debug_cmd = ''
+        while ins.peek() not in tk.END_LINE:
+            debug_cmd += ins.read(1)
+        self.session.debugger.debug_(debug_cmd)
+
+    ###########################################################################
+    # statements taking a single argument
 
     def exec_lcopy(self, ins):
         """LCOPY: do nothing but check for syntax errors."""
@@ -366,38 +414,59 @@ class StatementParser(object):
             ins.require_end()
         self.session.devices.motor_(val)
 
-    def exec_debug(self, ins):
-        """DEBUG: execute Python command."""
-        # this is not a GW-BASIC behaviour, but helps debugging.
-        # this is parsed like a REM by the tokeniser.
-        # rest of the line is considered to be a python statement
-        ins.skip_blank()
-        debug_cmd = ''
-        while ins.peek() not in tk.END_LINE:
-            debug_cmd += ins.read(1)
-        self.session.debugger.debug_(debug_cmd)
+    def exec_files(self, ins):
+        """FILES: output directory listing."""
+        pathmask = None
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            pathmask = self.parse_temporary_string(ins)
+        self.session.devices.files_(pathmask)
 
-    def exec_term(self, ins):
-        """TERM: load and run PCjr buitin terminal emulator program."""
-        ins.require_end()
-        self.session.term_()
+    def exec_shell(self, ins):
+        """SHELL: open OS shell and optionally execute command."""
+        # parse optional shell command
+        cmd = b''
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            cmd = self.parse_temporary_string(ins)
+        self.session.shell_(cmd)
+
+    def exec_randomize(self, ins):
+        """RANDOMIZE: set random number generator seed."""
+        val = self.parse_expression(ins, allow_empty=True)
+        self.session.randomize_(val)
+
+    def exec_error(self, ins):
+        """ERROR: simulate an error condition."""
+        errn = values.to_int(self.parse_expression(ins))
+        error.error_(errn)
+
+    def exec_chdir(self, ins):
+        """CHDIR: change working directory."""
+        self.session.devices.chdir_(self.parse_temporary_string(ins))
+
+    def exec_mkdir(self, ins):
+        """MKDIR: create directory."""
+        self.session.devices.mkdir_(self.parse_temporary_string(ins))
+
+    def exec_rmdir(self, ins):
+        """RMDIR: remove directory."""
+        self.session.devices.rmdir_(self.parse_temporary_string(ins))
+
+    def exec_kill(self, ins):
+        """KILL: remove file."""
+        self.session.devices.kill_(self.parse_temporary_string(ins))
+
+    def exec_environ(self, ins):
+        """ENVIRON: set environment string."""
+        envstr = self.parse_temporary_string(ins)
+        dos.environ_statement_(envstr)
+
+    def exec_merge(self, ins):
+        """MERGE: merge lines from file into current program."""
+        name = self.parse_temporary_string(ins)
+        self.session.merge_(name)
 
     ###########################################################################
-    # Flow-control statements
-
-    def exec_end(self, ins):
-        """END: end program execution and return to interpreter."""
-        ins.require_end()
-        self.session.end_()
-
-    def exec_stop(self, ins):
-        """STOP: break program execution and return to interpreter."""
-        ins.require_end()
-        self.session.interpreter.stop_()
-
-    def exec_cont(self, ins):
-        """CONT: continue STOPped or ENDed execution."""
-        self.session.interpreter.cont_()
+    # Statements taking a single line number
 
     def exec_goto(self, ins):
         """GOTO: jump to specified line number."""
@@ -407,6 +476,15 @@ class StatementParser(object):
     def exec_gosub(self, ins):
         """GOSUB: jump into a subroutine."""
         self.session.interpreter.gosub_(self._parse_jumpnum(ins))
+
+    def exec_on_error_goto(self, ins):
+        """ON ERROR: define error trapping routine."""
+        linenum = self._parse_jumpnum(ins)
+        self.session.interpreter.on_error_goto_(linenum)
+        # any syntax error following will be caught by the trapping routine just set
+
+    ###########################################################################
+    # Flow-control statements
 
     def exec_return(self, ins):
         """RETURN: return from a subroutine."""
@@ -459,12 +537,6 @@ class StatementParser(object):
             args = ()
         self.session.run_(*args)
 
-    def exec_on_error_goto(self, ins):
-        """ON ERROR: define error trapping routine."""
-        linenum = self._parse_jumpnum(ins)
-        self.session.interpreter.on_error_goto_(linenum)
-        # any syntax error following will be caught by the trapping routine just set
-
     def exec_resume(self, ins):
         """RESUME: resume program flow after error-trap."""
         if self.session.interpreter.error_resume is None:
@@ -481,11 +553,6 @@ class StatementParser(object):
         ins.require_end()
         self.session.interpreter.resume_(where)
 
-    def exec_error(self, ins):
-        """ERROR: simulate an error condition."""
-        errn = values.to_int(self.parse_expression(ins))
-        error.error_(errn)
-
     ###########################################################################
     # event switches (except PLAY)
 
@@ -493,6 +560,11 @@ class StatementParser(object):
         """PEN: switch on/off light pen event handling."""
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
         self.session.events.pen_(command)
+
+    def exec_timer(self, ins):
+        """TIMER: switch on/off timer event handling."""
+        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+        self.session.events.timer_(command)
 
     def exec_strig(self, ins):
         """STRIG: switch on/off fire button event handling."""
@@ -511,11 +583,6 @@ class StatementParser(object):
         num = values.to_int(self.parse_bracket(ins))
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
         self.session.events.com_(num, command)
-
-    def exec_timer(self, ins):
-        """TIMER: switch on/off timer event handling."""
-        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        self.session.events.timer_(command)
 
     def exec_key_events(self, ins):
         """KEY: switch on/off keyboard events."""
@@ -723,22 +790,6 @@ class StatementParser(object):
     ###########################################################################
     # Disk
 
-    def exec_chdir(self, ins):
-        """CHDIR: change working directory."""
-        self.session.devices.chdir_(self.parse_temporary_string(ins))
-
-    def exec_mkdir(self, ins):
-        """MKDIR: create directory."""
-        self.session.devices.mkdir_(self.parse_temporary_string(ins))
-
-    def exec_rmdir(self, ins):
-        """RMDIR: remove directory."""
-        self.session.devices.rmdir_(self.parse_temporary_string(ins))
-
-    def exec_kill(self, ins):
-        """KILL: remove file."""
-        self.session.devices.kill_(self.parse_temporary_string(ins))
-
     def exec_name(self, ins):
         """NAME: rename file or directory."""
         oldname = self.parse_temporary_string(ins)
@@ -747,28 +798,8 @@ class StatementParser(object):
         newname = self.parse_temporary_string(ins)
         self.session.devices.name_(oldname, newname)
 
-    def exec_files(self, ins):
-        """FILES: output directory listing."""
-        pathmask = None
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            pathmask = self.parse_temporary_string(ins)
-        self.session.devices.files_(pathmask)
-
     ###########################################################################
     # OS
-
-    def exec_shell(self, ins):
-        """SHELL: open OS shell and optionally execute command."""
-        # parse optional shell command
-        cmd = b''
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            cmd = self.parse_temporary_string(ins)
-        self.session.shell_(cmd)
-
-    def exec_environ(self, ins):
-        """ENVIRON: set environment string."""
-        envstr = self.parse_temporary_string(ins)
-        dos.environ_statement_(envstr)
 
     def exec_time(self, ins):
         """TIME$: set time."""
@@ -914,16 +945,6 @@ class StatementParser(object):
                 raise error.RunError(error.STX)
         self.session.save_(name, mode)
 
-    def exec_merge(self, ins):
-        """MERGE: merge lines from file into current program."""
-        name = self.parse_temporary_string(ins)
-        self.session.merge_(name)
-
-    def exec_new(self, ins):
-        """NEW: clear program from memory."""
-        ins.require_end()
-        self.session.new_()
-
     def exec_renum(self, ins):
         """RENUM: renumber program line numbers."""
         new, old, step = None, None, None
@@ -939,10 +960,6 @@ class StatementParser(object):
 
     ###########################################################################
     # file
-
-    def exec_reset(self, ins):
-        """RESET: close all files."""
-        self.session.files.reset_()
 
     def exec_open(self, ins):
         """OPEN: open a file."""
@@ -1473,11 +1490,6 @@ class StatementParser(object):
         name2, index2 = self._parse_variable(ins)
         self.memory.swap_(name1, index1, name2, index2)
         # if syntax error, the swap has happened
-
-    def exec_randomize(self, ins):
-        """RANDOMIZE: set random number generator seed."""
-        val = self.parse_expression(ins, allow_empty=True)
-        self.session.randomize_(val)
 
     ###########################################################################
     # Console statements
