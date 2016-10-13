@@ -145,7 +145,7 @@ class Debugger(BaseDebugger):
         save_stdout = sys.stdout
         sys.stdout = buf
         try:
-            exec(debug_cmd.strip())
+            exec(debug_cmd)
         except DebugException:
             raise
         except error.Exit:

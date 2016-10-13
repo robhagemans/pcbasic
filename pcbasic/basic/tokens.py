@@ -221,8 +221,6 @@ LOF = '\xff\xa5'
 # PCjr and Tandy only
 NOISE = '\xfe\xa4'
 TERM = '\xfe\xa6'
-# PC-BASIC only; not a GW-BASIC token
-DEBUG = '\xff\xff'
 
 KW_END = 'END'
 KW_FOR = 'FOR'
@@ -409,7 +407,6 @@ KW_LOF = 'LOF'
 
 KW_NOISE = 'NOISE'
 KW_TERM = 'TERM'
-KW_DEBUG = 'DEBUG'
 
 # other keywords on http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html :
 # Sperry PC only:
@@ -481,12 +478,9 @@ KEYWORDS = {
 class TokenKeywordDict(object):
     """Token to keyword conversion for given BASIC syntax."""
 
-    def __init__(self, syntax, debug):
+    def __init__(self, syntax):
         """Build dictionaries."""
         self.to_keyword = dict(KEYWORDS)
-        if debug:
-            # NOTE: PC-BASIC only. Not the same command or token as Sperry DEBUG.
-            self.to_keyword[DEBUG] = KW_DEBUG
         if syntax in ('pcjr', 'tandy'):
             # pcjr, tandy; incompatible with Sperry PC.
             self.to_keyword[NOISE] = KW_NOISE

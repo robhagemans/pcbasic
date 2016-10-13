@@ -125,7 +125,7 @@ class Session(object):
         # array space
         self.arrays = arrays.Arrays(self.memory, self.values)
         # prepare tokeniser
-        token_keyword = tk.TokenKeywordDict(syntax, option_debug)
+        token_keyword = tk.TokenKeywordDict(syntax)
         self.tokeniser = tokeniser.Tokeniser(self.values, token_keyword)
         self.lister = lister.Lister(self.values, token_keyword)
         # initialise the program

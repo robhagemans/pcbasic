@@ -137,8 +137,7 @@ class Tokeniser(object):
             elif c in string.ascii_letters:
                 word = self._tokenise_word(ins, outs)
                 # handle non-parsing modes
-                if (word in (tk.KW_REM, "'") or
-                            (word == tk.KW_DEBUG and word in self._keyword_to_token)):
+                if word in (tk.KW_REM, "'"):
                     self._tokenise_rem(ins, outs)
                 elif word == tk.KW_DATA:
                     self._tokenise_data(ins, outs)

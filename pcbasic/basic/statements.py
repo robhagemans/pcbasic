@@ -243,7 +243,7 @@ class StatementParser(object):
             tk.MID: self.exec_mid,
             tk.PEN: self.exec_pen,
             tk.STRIG: self.exec_strig,
-            tk.DEBUG: self.exec_debug,
+            '_': self.exec_extension,
         }
 
     def __getstate__(self):
@@ -315,6 +315,13 @@ class StatementParser(object):
         else:
             self.exec_on_jump(ins)
 
+    def exec_extension(self, ins):
+        """Extension statement."""
+        # Extension statement _DEBUG "python-statement"
+        # This is not a GW-BASIC behaviour.
+        ins.require_read(('DEBUG',))
+        self.session.debugger.debug_(self.parse_temporary_string(ins))
+
     ###########################################################################
     # generalised callers
 
@@ -339,14 +346,6 @@ class StatementParser(object):
     def skip_statement(self, ins):
         """Ignore rest of statement."""
         ins.skip_to(tk.END_STATEMENT)
-
-    def exec_debug(self, ins):
-        """DEBUG: execute Python command."""
-        # this is not a GW-BASIC behaviour, but helps debugging.
-        # this is parsed like a REM by the tokeniser.
-        # rest of the line is considered to be a python statement
-        debug_cmd = ins.read_to(tk.END_LINE)
-        self.session.debugger.debug_(debug_cmd)
 
     ###########################################################################
     # statements taking a single argument
