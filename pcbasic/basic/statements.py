@@ -1793,19 +1793,20 @@ class StatementParser(object):
             step = self.values.from_value(1, vartype)
         step = values.to_type(vartype, step)
         ins.require_end()
-        endforpos = ins.tell()
+        # TODO: the below can be absorbed into Interpreter.for_()
         # find NEXT
-        nextpos = self._find_next(ins, varname)
+        forpos, nextpos = self._find_next(ins, varname)
         # apply initial condition and jump to nextpos
-        self.session.interpreter.for_(ins, endforpos, nextpos, varname, start, stop, step)
+        self.session.interpreter.for_(ins, forpos, nextpos, varname, start, stop, step)
 
+    #MOVE to Interpreter
     def _find_next(self, ins, varname):
-        """Helper function for FOR: find the right NEXT."""
-        current = ins.tell()
+        """Helper function for FOR: find matching NEXT."""
+        endforpos = ins.tell()
         ins.skip_block(tk.FOR, tk.NEXT, allow_comma=True)
         if ins.skip_blank() not in (tk.NEXT, ','):
             # FOR without NEXT marked with FOR line number
-            ins.seek(current)
+            ins.seek(endforpos)
             raise error.RunError(error.FOR_WITHOUT_NEXT)
         comma = (ins.read(1) == ',')
         # get position and line number just after the NEXT
@@ -1819,8 +1820,8 @@ class StatementParser(object):
         if (comma or varname2) and varname2 != varname:
             # NEXT without FOR marked with NEXT line number, while we're only at FOR
             raise error.RunError(error.NEXT_WITHOUT_FOR)
-        ins.seek(current)
-        return nextpos
+        ins.seek(endforpos)
+        return endforpos, nextpos
 
     def exec_next(self, ins):
         """NEXT: iterate for-loop."""
@@ -1833,23 +1834,34 @@ class StatementParser(object):
                 break
         # if we're done iterating we no longer ignore the rest of the statement
 
+    # WHILE and DEF FN (and IF and FOR, in a sense) share the characteristic that they require
+    # evaluation of an expression that is not locally defined. These jumps and evaluations
+    # fit Interpreter better than this module, which should simply define the syntax.
+    # compare goto_(), which also modifies the current codestream pointer.
+    # if we refactor these functions to operate on the current codestream rather than 'ins',
+    # we should be able to move them to Interpreter in a sensible way
+
     def exec_while(self, ins):
         """WHILE: enter while-loop."""
-        # just after WHILE opcode
-        whilepos = ins.tell()
-        # evaluate the 'boolean' expression
-        # use double to avoid overflows
         # find matching WEND
+        whilepos, wendpos = self._find_wend(ins)
+        self.session.interpreter.while_stack.append((whilepos, wendpos))
+        self._check_while_condition(ins, whilepos)
+
+    #MOVE to Interpreter
+    def _find_wend(self, ins):
+        """Helper function for WHILE: find matching WEND."""
+        # just after WHILE token
+        whilepos = ins.tell()
         ins.skip_block(tk.WHILE, tk.WEND)
-        if ins.read(1) == tk.WEND:
-            ins.skip_to(tk.END_STATEMENT)
-            wendpos = ins.tell()
-            self.session.interpreter.while_stack.append((whilepos, wendpos))
-        else:
+        if ins.read(1) != tk.WEND:
             # WHILE without WEND
             ins.seek(whilepos)
             raise error.RunError(error.WHILE_WITHOUT_WEND)
-        self._check_while_condition(ins, whilepos)
+        ins.skip_to(tk.END_STATEMENT)
+        wendpos = ins.tell()
+        ins.seek(whilepos)
+        return whilepos, wendpos
 
     def _check_while_condition(self, ins, whilepos):
         """Check condition of while-loop."""
