@@ -190,7 +190,7 @@ class StatementParser(object):
             tk.OPEN: self.exec_open,
             tk.CLOSE: self.exec_close,
             tk.LOAD: self.exec_load,
-            tk.MERGE: self.exec_merge,
+            tk.MERGE: partial(self.exec_single_string_arg, callback=session.merge_),
             tk.SAVE: self.exec_save,
             tk.COLOR: self.exec_color,
             tk.CLS: self.exec_cls,
@@ -204,13 +204,13 @@ class StatementParser(object):
             tk.SCREEN: self.exec_screen,
             tk.KEY: self.exec_key,
             tk.LOCATE: self.exec_locate,
-            tk.FILES: self.exec_files,
+            tk.FILES: partial(self.exec_files_shell, callback=session.devices.files_),
             tk.FIELD: self.exec_field,
             tk.SYSTEM: partial(self.exec_after_end, callback=session.interpreter.system_),
             tk.NAME: self.exec_name,
             tk.LSET: self.exec_lset,
             tk.RSET: self.exec_rset,
-            tk.KILL: self.exec_kill,
+            tk.KILL: partial(self.exec_single_string_arg, callback=self.session.devices.kill_),
             tk.PUT: self.exec_put,
             tk.GET: self.exec_get,
             tk.RESET: partial(self.exec_immediate, callback=session.files.reset_),
@@ -225,11 +225,11 @@ class StatementParser(object):
             tk.PLAY: self.exec_play,
             tk.TIMER: self.exec_timer,
             tk.IOCTL: self.exec_ioctl,
-            tk.CHDIR: self.exec_chdir,
-            tk.MKDIR: self.exec_mkdir,
-            tk.RMDIR: self.exec_rmdir,
-            tk.SHELL: self.exec_shell,
-            tk.ENVIRON: self.exec_environ,
+            tk.CHDIR: partial(self.exec_single_string_arg, callback=session.devices.chdir_),
+            tk.MKDIR: partial(self.exec_single_string_arg, callback=session.devices.mkdir_),
+            tk.RMDIR: partial(self.exec_single_string_arg, callback=session.devices.rmdir_),
+            tk.SHELL: partial(self.exec_files_shell, callback=session.shell_),
+            tk.ENVIRON: partial(self.exec_single_string_arg, callback=dos.environ_statement_),
             tk.VIEW: self.exec_view,
             tk.WINDOW: self.exec_window,
             tk.PALETTE: self.exec_palette,
@@ -315,6 +315,9 @@ class StatementParser(object):
         else:
             self.exec_on_jump(ins)
 
+    ###########################################################################
+    # extension statements
+
     def exec_extension(self, ins):
         """Extension statement."""
         # Extension statement _DEBUG "python-statement"
@@ -359,20 +362,16 @@ class StatementParser(object):
             ins.require_end()
         callback(val)
 
-    def exec_files(self, ins):
-        """FILES: output directory listing."""
-        pathmask = None
+    def exec_files_shell(self, ins, callback):
+        """Execute statemnt with single optional string-valued argument."""
+        arg = None
         if ins.skip_blank() not in tk.END_STATEMENT:
-            pathmask = self.parse_temporary_string(ins)
-        self.session.devices.files_(pathmask)
+            arg = self.parse_temporary_string(ins)
+        callback(arg)
 
-    def exec_shell(self, ins):
-        """SHELL: open OS shell and optionally execute command."""
-        # parse optional shell command
-        cmd = b''
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            cmd = self.parse_temporary_string(ins)
-        self.session.shell_(cmd)
+    def exec_single_string_arg(self, ins, callback):
+        """Execute statement with single string-valued argument."""
+        callback(self.parse_temporary_string(ins))
 
     def exec_randomize(self, ins):
         """RANDOMIZE: set random number generator seed."""
@@ -383,32 +382,6 @@ class StatementParser(object):
         """ERROR: simulate an error condition."""
         errn = values.to_int(self.parse_expression(ins))
         error.error_(errn)
-
-    def exec_chdir(self, ins):
-        """CHDIR: change working directory."""
-        self.session.devices.chdir_(self.parse_temporary_string(ins))
-
-    def exec_mkdir(self, ins):
-        """MKDIR: create directory."""
-        self.session.devices.mkdir_(self.parse_temporary_string(ins))
-
-    def exec_rmdir(self, ins):
-        """RMDIR: remove directory."""
-        self.session.devices.rmdir_(self.parse_temporary_string(ins))
-
-    def exec_kill(self, ins):
-        """KILL: remove file."""
-        self.session.devices.kill_(self.parse_temporary_string(ins))
-
-    def exec_environ(self, ins):
-        """ENVIRON: set environment string."""
-        envstr = self.parse_temporary_string(ins)
-        dos.environ_statement_(envstr)
-
-    def exec_merge(self, ins):
-        """MERGE: merge lines from file into current program."""
-        name = self.parse_temporary_string(ins)
-        self.session.merge_(name)
 
     ###########################################################################
     # Statements taking a single line number
