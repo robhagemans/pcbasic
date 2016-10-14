@@ -144,11 +144,11 @@ class StatementParser(object):
             tk.DIM: self.exec_dim,
             tk.READ: self.exec_read,
             tk.LET: self.exec_let,
-            tk.GOTO: self.exec_goto,
+            tk.GOTO: partial(self.exec_single_line_number, callback=session.interpreter.goto_),
             tk.RUN: self.exec_run,
             tk.IF: self.exec_if,
             tk.RESTORE: self.exec_restore,
-            tk.GOSUB: self.exec_gosub,
+            tk.GOSUB: partial(self.exec_single_line_number, callback=session.interpreter.gosub_),
             tk.RETURN: self.exec_return,
             tk.REM: self.skip_line,
             tk.STOP: partial(self.exec_after_end, callback=session.interpreter.stop_),
@@ -210,20 +210,20 @@ class StatementParser(object):
             tk.NAME: self.exec_name,
             tk.LSET: self.exec_lset,
             tk.RSET: self.exec_rset,
-            tk.KILL: partial(self.exec_single_string_arg, callback=self.session.devices.kill_),
+            tk.KILL: partial(self.exec_single_string_arg, callback=session.devices.kill_),
             tk.PUT: self.exec_put,
             tk.GET: self.exec_get,
             tk.RESET: partial(self.exec_immediate, callback=session.files.reset_),
             tk.COMMON: self.exec_common,
             tk.CHAIN: self.exec_chain,
-            tk.DATE: self.exec_date,
-            tk.TIME: self.exec_time,
+            tk.DATE: partial(self.exec_time_date, callback=session.clock.date_),
+            tk.TIME: partial(self.exec_time_date, callback=session.clock.time_),
             tk.PAINT: self.exec_paint,
             tk.COM: self.exec_com,
             tk.CIRCLE: self.exec_circle,
             tk.DRAW: self.exec_draw,
             tk.PLAY: self.exec_play,
-            tk.TIMER: self.exec_timer,
+            tk.TIMER: partial(self.exec_pen_timer, callback=session.events.timer_),
             tk.IOCTL: self.exec_ioctl,
             tk.CHDIR: partial(self.exec_single_string_arg, callback=session.devices.chdir_),
             tk.MKDIR: partial(self.exec_single_string_arg, callback=session.devices.mkdir_),
@@ -241,7 +241,7 @@ class StatementParser(object):
             tk.LOCK: self.exec_lock,
             tk.UNLOCK: self.exec_unlock,
             tk.MID: self.exec_mid,
-            tk.PEN: self.exec_pen,
+            tk.PEN: partial(self.exec_pen_timer, callback=session.events.pen_),
             tk.STRIG: self.exec_strig,
             '_': self.exec_extension,
         }
@@ -309,7 +309,7 @@ class StatementParser(object):
             token = ins.read_keyword_token()
             if token == tk.ERROR:
                 ins.require_read((tk.GOTO,))
-                self.exec_on_error_goto(ins)
+                self.exec_single_line_number(ins, callback=self.session.interpreter.on_error_goto_)
             else:
                 self.exec_on_event(ins, token)
         else:
@@ -384,25 +384,11 @@ class StatementParser(object):
         error.error_(errn)
 
     ###########################################################################
-    # Statements taking a single line number
-
-    def exec_goto(self, ins):
-        """GOTO: jump to specified line number."""
-        # parse line number, ignore rest of line and jump
-        self.session.interpreter.goto_(self._parse_jumpnum(ins))
-
-    def exec_gosub(self, ins):
-        """GOSUB: jump into a subroutine."""
-        self.session.interpreter.gosub_(self._parse_jumpnum(ins))
-
-    def exec_on_error_goto(self, ins):
-        """ON ERROR: define error trapping routine."""
-        linenum = self._parse_jumpnum(ins)
-        self.session.interpreter.on_error_goto_(linenum)
-        # any syntax error following will be caught by the trapping routine just set
-
-    ###########################################################################
     # Flow-control statements
+
+    def exec_single_line_number(self, ins, callback):
+        """Execute statement with single line number."""
+        callback(self._parse_jumpnum(ins))
 
     def exec_return(self, ins):
         """RETURN: return from a subroutine."""
@@ -474,15 +460,10 @@ class StatementParser(object):
     ###########################################################################
     # event switches (except PLAY)
 
-    def exec_pen(self, ins):
-        """PEN: switch on/off light pen event handling."""
+    def exec_pen_timer(self, ins, callback):
+        """Parse PEN or TIMER event switch statement."""
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        self.session.events.pen_(command)
-
-    def exec_timer(self, ins):
-        """TIMER: switch on/off timer event handling."""
-        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        self.session.events.timer_(command)
+        callback(command)
 
     def exec_strig(self, ins):
         """STRIG: switch on/off fire button event handling."""
@@ -719,19 +700,12 @@ class StatementParser(object):
     ###########################################################################
     # OS
 
-    def exec_time(self, ins):
-        """TIME$: set time."""
+    def exec_time_date(self, ins, callback):
+        """Parse TIME$ or DATE$ syntax."""
         ins.require_read((tk.O_EQ,))
-        timestr = self.parse_temporary_string(ins)
+        arg = self.parse_temporary_string(ins)
         ins.require_end()
-        self.session.clock.time_(timestr)
-
-    def exec_date(self, ins):
-        """DATE$: set date."""
-        ins.require_read((tk.O_EQ,))
-        datestr = self.parse_temporary_string(ins)
-        ins.require_end()
-        self.session.clock.date_(datestr)
+        callback(arg)
 
     ##########################################################
     # code
