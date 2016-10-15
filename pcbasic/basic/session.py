@@ -712,19 +712,22 @@ class Session(object):
         arg0, arg1 = args
         comma_r = False
         jumpnum = None
-        if arg1 is not None:
+        if isinstance(arg0, bytes):
             name, comma_r = arg0, arg1
             with self.files.open(0, name, filetype='ABP', mode='I') as f:
                 self.program.load(f)
-        else:
+        self.interpreter.on_error = 0
+        self.interpreter.error_handle_mode = False
+        if isinstance(arg0, int):
             jumpnum = arg0
+            if jumpnum not in self.program.line_numbers:
+                raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         self.interpreter.clear_stacks_and_pointers()
         self._clear_all(close_files=not comma_r)
         if jumpnum is None:
             self.interpreter.set_pointer(True, 0)
         else:
             self.interpreter.jump(jumpnum)
-        self.interpreter.error_handle_mode = False
 
     def end_(self):
         """END: end program execution and return to interpreter."""

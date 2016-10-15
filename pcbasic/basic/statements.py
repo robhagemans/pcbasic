@@ -347,7 +347,11 @@ class StatementParser(object):
             yield None
         elif c not in tk.END_STATEMENT:
             yield self._parse_temporary_string(ins)
-            yield ins.skip_blank_read_if((',R',))
+            if ins.skip_blank_read_if((',',)):
+                ins.require_read(('R',))
+                yield True
+            else:
+                yield False
             ins.require_end()
         else:
             yield None
@@ -646,7 +650,9 @@ class StatementParser(object):
     def exec_load(self, ins):
         """LOAD: load program from file."""
         name = self._parse_temporary_string(ins)
-        comma_r = ins.skip_blank_read_if((',R',), 2)
+        comma_r = ins.skip_blank_read_if((',',))
+        if comma_r:
+            comma_r = ins.require_read(('R',))
         ins.require_end()
         self.session.load_(name, comma_r)
 
