@@ -1688,6 +1688,9 @@ class StatementParser(object):
     def exec_next(self, ins):
         """NEXT: iterate for-loop."""
         while True:
+            # optional var names, errors have been checked during _find_next scan
+            if ins.skip_blank() not in tk.END_STATEMENT + (',',):
+                self._parse_name(ins)
             # increment counter, check condition
             if self.session.interpreter.next_(ins):
                 break

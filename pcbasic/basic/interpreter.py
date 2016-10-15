@@ -258,8 +258,6 @@ class Interpreter(object):
             ins.seek(endforpos)
             raise error.RunError(error.FOR_WITHOUT_NEXT)
         comma = (ins.read(1) == ',')
-        # get position and line number just after the NEXT
-        nextpos = ins.tell()
         # check var name for NEXT
         # no-var only allowed in standalone NEXT
         if ins.skip_blank() not in tk.END_STATEMENT:
@@ -267,6 +265,8 @@ class Interpreter(object):
             varname2 = self.statement_parser._parse_name(ins)
         else:
             varname2 = None
+        # get position and line number just after the matching variable in NEXT
+        nextpos = ins.tell()
         if (comma or varname2) and varname2 != varname:
             # NEXT without FOR marked with NEXT line number, while we're only at FOR
             raise error.RunError(error.NEXT_WITHOUT_FOR)
@@ -275,14 +275,8 @@ class Interpreter(object):
 
     def next_(self, ins):
         """Iterate a loop (NEXT)."""
-        # record the NEXT (or comma) location
+        # record the location after the variable
         pos = ins.tell()
-        # optional variable - errors in this are checked at the scan during FOR
-        # if we haven't read a variable, we shouldn't find something else here
-        # but if we have and we iterate, the rest of the line is ignored
-        if ins.skip_blank() not in tk.END_STATEMENT + (',',):
-            # FIXME calling private method
-            self.statement_parser._parse_name(ins)
         # find the matching NEXT record
         num = len(self.for_stack)
         for depth in range(num):
