@@ -181,8 +181,8 @@ class StatementParser(object):
             tk.DEFSNG: partial(self.exec_deftype, typechar='!'),
             tk.DEFDBL: partial(self.exec_deftype, typechar='#'),
             tk.LINE: self.exec_line,
-            tk.WHILE: self.exec_while,
-            tk.WEND: self.exec_wend,
+            tk.WHILE: partial(self.exec_immediate, callback=session.interpreter.while_),
+            tk.WEND: partial(self.exec_after_end, callback=session.interpreter.wend_),
             tk.CALL: self.exec_call,
             tk.WRITE: partial(self.exec_args_iter, args_iter=self._parse_write_args_iter, callback=session.files.write_),
             tk.OPTION: self.exec_option,
@@ -1697,17 +1697,6 @@ class StatementParser(object):
             if not ins.skip_blank_read_if((',')):
                 break
         # if we're done iterating we no longer ignore the rest of the statement
-
-    def exec_while(self, ins):
-        """WHILE: enter while-loop."""
-        # expression is being read and parsed by Interpreter
-        self.session.interpreter.while_()
-
-    def exec_wend(self, ins):
-        """WEND: iterate while-loop."""
-        # while will actually syntax error on the first run if anything is in the way.
-        ins.require_end()
-        self.session.interpreter.wend_()
 
     ###########################################################################
     # User-defined functions
