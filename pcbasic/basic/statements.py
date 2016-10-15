@@ -50,7 +50,24 @@ class StatementParser(object):
                 return self.statements[tk.LET](ins)
         ins.require_end()
 
-    def parse_value(self, ins, sigil=None, allow_empty=False):
+    def parse_name(self, ins):
+        """Get scalar part of variable name from token stream."""
+        name = ins.read_name()
+        # must not be empty
+        error.throw_if(not name, error.STX)
+        # append sigil, if missing
+        return self.memory.complete_name(name)
+
+    def parse_expression(self, ins, allow_empty=False):
+        """Compute the value of the expression at the current code pointer."""
+        if allow_empty and ins.skip_blank() in tk.END_EXPRESSION:
+            return None
+        self.session.redo_on_break = True
+        val = self.expression_parser.parse(ins)
+        self.session.redo_on_break = False
+        return val
+
+    def _parse_value(self, ins, sigil=None, allow_empty=False):
         """Read a value of required type and return as Python value, or None if empty."""
         expr = self.parse_expression(ins, allow_empty)
         if expr is not None:
@@ -58,7 +75,7 @@ class StatementParser(object):
             return values.to_type(sigil, expr).to_value()
         return None
 
-    def parse_bracket(self, ins):
+    def _parse_bracket(self, ins):
         """Compute the value of the bracketed expression."""
         ins.require_read(('(',))
         # we'll get a Syntax error, not a Missing operand, if we close with )
@@ -66,7 +83,7 @@ class StatementParser(object):
         ins.require_read((')',))
         return val
 
-    def parse_temporary_string(self, ins, allow_empty=False):
+    def _parse_temporary_string(self, ins, allow_empty=False):
         """Parse an expression and return as Python value. Store strings in a temporary."""
         # if allow_empty, a missing value is returned as an empty string
         with self.temp_string:
@@ -82,14 +99,6 @@ class StatementParser(object):
         number = values.to_int(self.parse_expression(ins))
         error.range_check(0, 255, number)
         return number
-
-    def _parse_name(self, ins):
-        """Get scalar part of variable name from token stream."""
-        name = ins.read_name()
-        # must not be empty
-        error.throw_if(not name, error.STX)
-        # append sigil, if missing
-        return self.memory.complete_name(name)
 
     def _parse_variable(self, ins):
         """Helper function: parse a scalar or array element."""
@@ -116,15 +125,6 @@ class StatementParser(object):
         if ins.skip_blank() != tk.T_UINT:
             return -1
         return self._parse_jumpnum(ins)
-
-    def parse_expression(self, ins, allow_empty=False):
-        """Compute the value of the expression at the current code pointer."""
-        if allow_empty and ins.skip_blank() in tk.END_EXPRESSION:
-            return None
-        self.session.redo_on_break = True
-        val = self.expression_parser.parse(ins)
-        self.session.redo_on_break = False
-        return val
 
     ###########################################################################
 
@@ -380,12 +380,12 @@ class StatementParser(object):
         """Execute statemnt with single optional string-valued argument."""
         arg = None
         if ins.skip_blank() not in tk.END_STATEMENT:
-            arg = self.parse_temporary_string(ins)
+            arg = self._parse_temporary_string(ins)
         callback(arg)
 
     def exec_single_string_arg(self, ins, callback):
         """Execute statement with single string-valued argument."""
-        callback(self.parse_temporary_string(ins))
+        callback(self._parse_temporary_string(ins))
 
     def exec_randomize(self, ins):
         """RANDOMIZE: set random number generator seed."""
@@ -447,7 +447,7 @@ class StatementParser(object):
             # parse line number and ignore rest of line
             args = self._parse_jumpnum(ins),
         elif c not in tk.END_STATEMENT:
-            name = self.parse_temporary_string(ins)
+            name = self._parse_temporary_string(ins)
             comma_r = ins.skip_blank_read_if((',R',))
             ins.require_end()
             args = name, comma_r
@@ -493,13 +493,13 @@ class StatementParser(object):
 
     def exec_com(self, ins):
         """COM: switch on/off serial port event handling."""
-        num = values.to_int(self.parse_bracket(ins))
+        num = values.to_int(self._parse_bracket(ins))
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
         self.session.events.com_(num, command)
 
     def exec_key_events(self, ins):
         """KEY: switch on/off keyboard events."""
-        num = values.to_int(self.parse_bracket(ins))
+        num = values.to_int(self._parse_bracket(ins))
         error.range_check(0, 255, num)
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
         self.session.events.key_(num, command)
@@ -511,7 +511,7 @@ class StatementParser(object):
         """Helper function for ON event trap definitions."""
         num = None
         if token != tk.PEN:
-            num = self.parse_bracket(ins)
+            num = self._parse_bracket(ins)
         elif token not in (tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
             raise error.RunError(error.STX)
         ins.require_read((tk.GOSUB,))
@@ -573,13 +573,13 @@ class StatementParser(object):
         else:
             # retrieve Music Macro Language string
             mml1, mml2 = '', ''
-            mml0 = self.parse_temporary_string(ins, allow_empty=True)
+            mml0 = self._parse_temporary_string(ins, allow_empty=True)
             if ((self.syntax == 'tandy' or (self.syntax == 'pcjr' and
                                              self.session.sound.sound_on))
                     and ins.skip_blank_read_if((',',))):
-                mml1 = self.parse_temporary_string(ins, allow_empty=True)
+                mml1 = self._parse_temporary_string(ins, allow_empty=True)
                 if ins.skip_blank_read_if((',',)):
-                    mml2 = self.parse_temporary_string(ins, allow_empty=True)
+                    mml2 = self._parse_temporary_string(ins, allow_empty=True)
             ins.require_end()
             if not (mml0 or mml1 or mml2):
                 raise error.RunError(error.MISSING_OPERAND)
@@ -631,7 +631,7 @@ class StatementParser(object):
         """BLOAD: load a file into a memory location."""
         if self.session.program.protected and not self.run_mode:
             raise error.RunError(error.IFC)
-        name = self.parse_temporary_string(ins)
+        name = self._parse_temporary_string(ins)
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         offset = None
         if ins.skip_blank_read_if((',',)):
@@ -643,7 +643,7 @@ class StatementParser(object):
         """BSAVE: save a block of memory to a file. Limited implementation."""
         if self.session.program.protected and not self.run_mode:
             raise error.RunError(error.IFC)
-        name = self.parse_temporary_string(ins)
+        name = self._parse_temporary_string(ins)
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
         ins.require_read((',',))
         offset = values.to_int(self.parse_expression(ins), unsigned=True)
@@ -654,7 +654,7 @@ class StatementParser(object):
 
     def _parse_call(self, ins):
         """Helper function to parse CALL and CALLS."""
-        addr_var = self._parse_name(ins)
+        addr_var = self.parse_name(ins)
         if addr_var[-1] == values.STR:
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
@@ -705,10 +705,10 @@ class StatementParser(object):
 
     def exec_name(self, ins):
         """NAME: rename file or directory."""
-        oldname = self.parse_temporary_string(ins)
+        oldname = self._parse_temporary_string(ins)
         # AS is not a tokenised word
         ins.require_read((tk.W_AS,))
-        newname = self.parse_temporary_string(ins)
+        newname = self._parse_temporary_string(ins)
         self.session.devices.name_(oldname, newname)
 
     ###########################################################################
@@ -717,7 +717,7 @@ class StatementParser(object):
     def exec_time_date(self, ins, callback):
         """Parse TIME$ or DATE$ syntax."""
         ins.require_read((tk.O_EQ,))
-        arg = self.parse_temporary_string(ins)
+        arg = self._parse_temporary_string(ins)
         ins.require_end()
         callback(arg)
 
@@ -780,7 +780,7 @@ class StatementParser(object):
         from_line, to_line = self._parse_line_range(ins)
         out = None
         if ins.skip_blank_read_if((',',)):
-            outname = self.parse_temporary_string(ins)
+            outname = self._parse_temporary_string(ins)
             out = self.session.files.open(0, outname, filetype='A', mode='O')
             # ignore everything after file spec
             ins.skip_to(tk.END_LINE)
@@ -795,7 +795,7 @@ class StatementParser(object):
 
     def exec_load(self, ins):
         """LOAD: load program from file."""
-        name = self.parse_temporary_string(ins)
+        name = self._parse_temporary_string(ins)
         comma_r = ins.skip_blank_read_if((',R',), 2)
         ins.require_end()
         self.session.load_(name, comma_r)
@@ -803,7 +803,7 @@ class StatementParser(object):
     def exec_chain(self, ins):
         """CHAIN: load program and chain execution."""
         merge = ins.skip_blank_read_if((tk.MERGE,)) is not None
-        name = self.parse_temporary_string(ins)
+        name = self._parse_temporary_string(ins)
         jumpnum, common_all, delete_lines = None, False, None
         if ins.skip_blank_read_if((',',)):
             # check for an expression that indicates a line in the other program. This is not stored as a jumpnum (to avoid RENUM)
@@ -843,7 +843,7 @@ class StatementParser(object):
 
     def exec_save(self, ins):
         """SAVE: save program to a file."""
-        name = self.parse_temporary_string(ins)
+        name = self._parse_temporary_string(ins)
         mode = None
         if ins.skip_blank_read_if((',',)):
             mode = ins.skip_blank_read().upper()
@@ -869,7 +869,7 @@ class StatementParser(object):
 
     def exec_open(self, ins):
         """OPEN: open a file."""
-        first_expr = self.parse_temporary_string(ins)
+        first_expr = self._parse_temporary_string(ins)
         if ins.skip_blank_read_if((',',)):
             args = self._parse_open_first(ins, first_expr)
         else:
@@ -883,7 +883,7 @@ class StatementParser(object):
             raise error.RunError(error.BAD_FILE_MODE)
         number = self._parse_file_number(ins, opt_hash=True)
         ins.require_read((',',))
-        name = self.parse_temporary_string(ins)
+        name = self._parse_temporary_string(ins)
         reclen = None
         if ins.skip_blank_read_if((',',)):
             reclen = values.to_int(self.parse_expression(ins))
@@ -1000,7 +1000,7 @@ class StatementParser(object):
         """IOCTL: send control string to I/O device."""
         thefile = self.session.files.get(self._parse_file_number(ins, opt_hash=True))
         ins.require_read((',',))
-        control_string = self.parse_temporary_string(ins)
+        control_string = self._parse_temporary_string(ins)
         self.session.files.ioctl_statement_(thefile, control_string)
 
     ###########################################################################
@@ -1060,7 +1060,7 @@ class StatementParser(object):
                 if ins.skip_blank_read_if(('B',)):
                     mode = 'BF' if ins.skip_blank_read_if(('F',)) else 'B'
                 if ins.skip_blank_read_if((',',)):
-                    pattern = self.parse_value(ins, values.INT)
+                    pattern = self._parse_value(ins, values.INT)
                 else:
                     # mustn't end on a comma
                     # mode == '' if nothing after previous comma
@@ -1169,7 +1169,7 @@ class StatementParser(object):
         ins.require_read((tk.O_MINUS,))
         coord1 = self._parse_coord_step(ins)
         ins.require_read((',',))
-        array = self._parse_name(ins)
+        array = self.parse_name(ins)
         ins.require_end()
         self.session.screen.drawing.get_(coord0, coord1, self.session.arrays, array)
 
@@ -1180,7 +1180,7 @@ class StatementParser(object):
         # don't accept STEP
         x, y = self._parse_coord_bare(ins)
         ins.require_read((',',))
-        array = self._parse_name(ins)
+        array = self.parse_name(ins)
         action = None
         if ins.skip_blank_read_if((',',)):
             action = ins.require_read((tk.PSET, tk.PRESET, tk.AND, tk.OR, tk.XOR))
@@ -1191,7 +1191,7 @@ class StatementParser(object):
         """DRAW: draw a figure defined by a Graphics Macro Language string."""
         if self.session.screen.mode.is_text_mode:
             raise error.RunError(error.IFC)
-        gml = self.parse_temporary_string(ins)
+        gml = self._parse_temporary_string(ins)
         ins.require_end()
         self.session.screen.drawing.draw_(gml, self.memory, self.values, self.session.events)
 
@@ -1223,7 +1223,7 @@ class StatementParser(object):
         """COMMON: define variables to be preserved on CHAIN."""
         common_vars = []
         while True:
-            name = self._parse_name(ins)
+            name = self.parse_name(ins)
             brackets = ins.skip_blank_read_if(('[', '('))
             if brackets:
                 ins.require_read((']', ')'))
@@ -1266,7 +1266,7 @@ class StatementParser(object):
     def exec_erase(self, ins):
         """ERASE: erase an array."""
         while True:
-            self.session.arrays.erase_(self._parse_name(ins))
+            self.session.arrays.erase_(self.parse_name(ins))
             if not ins.skip_blank_read_if((',',)):
                 break
 
@@ -1283,9 +1283,9 @@ class StatementParser(object):
             raise error.RunError(error.STX)
         yield self._parse_variable(ins)
         ins.require_read((',',))
-        yield self.parse_value(ins, values.INT)
+        yield self._parse_value(ins, values.INT)
         if ins.skip_blank_read_if((',',)):
-            yield self.parse_value(ins, values.INT)
+            yield self._parse_value(ins, values.INT)
         else:
             yield None
         ins.require_read((')',))
@@ -1391,7 +1391,7 @@ class StatementParser(object):
         """CLS: clear the screen."""
         val = None
         if self.syntax != 'pcjr':
-            val = self.parse_value(ins, values.INT, allow_empty=True)
+            val = self._parse_value(ins, values.INT, allow_empty=True)
             if val is not None:
                 # tandy gives illegal function call on CLS number
                 error.throw_if(self.syntax == 'tandy')
@@ -1402,11 +1402,11 @@ class StatementParser(object):
 
     def exec_color(self, ins):
         """COLOR: set colour attributes."""
-        args = [self.parse_value(ins, values.INT, allow_empty=True)]
+        args = [self._parse_value(ins, values.INT, allow_empty=True)]
         if ins.skip_blank_read_if((',',)):
             # unlike LOCATE, ending in any number of commas is a Missing Operand
             while True:
-                args.append(self.parse_value(ins, values.INT, allow_empty=True))
+                args.append(self._parse_value(ins, values.INT, allow_empty=True))
                 if ins.skip_blank_read_if((',',)):
                     continue
                 elif args[-1] is None:
@@ -1423,13 +1423,13 @@ class StatementParser(object):
         if ins.skip_blank_read_if((tk.USING,)):
             return self.exec_palette_using(ins)
         else:
-            attrib = self.parse_value(ins, values.INT, allow_empty=True)
+            attrib = self._parse_value(ins, values.INT, allow_empty=True)
             if attrib is None:
                 colour = None
                 ins.require_end()
             else:
                 ins.require_read((',',))
-                colour = self.parse_value(ins, values.INT, allow_empty=True)
+                colour = self._parse_value(ins, values.INT, allow_empty=True)
                 error.throw_if(attrib is None or colour is None, error.STX)
             self.session.screen.palette.palette_(attrib, colour)
 
@@ -1460,7 +1460,7 @@ class StatementParser(object):
         keynum = values.to_int(self.parse_expression(ins))
         error.range_check(1, 255, keynum)
         ins.require_read((',',))
-        text = self.parse_temporary_string(ins)
+        text = self._parse_temporary_string(ins)
         if keynum <= self.session.events.num_fn_keys:
             self.session.fkey_macros.set(keynum, text, self.session.screen)
         else:
@@ -1475,7 +1475,7 @@ class StatementParser(object):
         #row, col, cursor, start, stop
         params = [None, None, None, None, None]
         for i in range(5):
-            params[i] = self.parse_value(ins, values.INT, allow_empty=True)
+            params[i] = self._parse_value(ins, values.INT, allow_empty=True)
             # note that LOCATE can end on a 5th comma but no stuff allowed after it
             if not ins.skip_blank_read_if((',',)):
                 break
@@ -1502,11 +1502,11 @@ class StatementParser(object):
 
     def exec_view_print(self, ins):
         """VIEW PRINT: set scroll region."""
-        start = self.parse_value(ins, values.INT, allow_empty=True)
+        start = self._parse_value(ins, values.INT, allow_empty=True)
         stop = None
         if start is not None:
             ins.require_read((tk.TO,))
-            stop = self.parse_value(ins, values.INT)
+            stop = self._parse_value(ins, values.INT)
         ins.require_end()
         self.session.screen.view_print_(start, stop)
 
@@ -1519,7 +1519,7 @@ class StatementParser(object):
                 ins.require_read((',',))
             else:
                 yield tk.LPRINT
-            yield self.parse_value(ins, values.INT)
+            yield self._parse_value(ins, values.INT)
         else:
             yield None
             with self.temp_string:
@@ -1530,14 +1530,14 @@ class StatementParser(object):
                 yield expr
             if isinstance(expr, values.String):
                 ins.require_read((',',))
-                yield self.parse_value(ins, values.INT)
+                yield self._parse_value(ins, values.INT)
             else:
                 if not ins.skip_blank_read_if((',',)):
                     yield None
                     ins.require_end(error.IFC)
                 else:
                     # parse dummy number rows setting
-                    yield self.parse_value(ins, values.INT, allow_empty=True)
+                    yield self._parse_value(ins, values.INT, allow_empty=True)
                     # trailing comma is accepted
                     ins.skip_blank_read_if((',',))
         ins.require_end()
@@ -1552,7 +1552,7 @@ class StatementParser(object):
         args = []
         # all but last arguments are optional and may be followed by a comma
         while True:
-            args.append(self.parse_value(ins, values.INT, allow_empty=True))
+            args.append(self._parse_value(ins, values.INT, allow_empty=True))
             if not ins.skip_blank_read_if((',',)):
                 break
         if args[-1] is None:
@@ -1593,7 +1593,7 @@ class StatementParser(object):
                 ins.seek(-len(d), 1)
                 break
             elif d == tk.USING:
-                format_expr = self.parse_temporary_string(ins)
+                format_expr = self._parse_temporary_string(ins)
                 if format_expr == '':
                     raise error.RunError(error.IFC)
                 ins.require_read((';',))
@@ -1667,7 +1667,7 @@ class StatementParser(object):
     def exec_for(self, ins):
         """FOR: enter for-loop."""
         # read variable
-        varname = self._parse_name(ins)
+        varname = self.parse_name(ins)
         vartype = varname[-1]
         ins.require_read((tk.O_EQ,))
         start = values.to_type(vartype, self.parse_expression(ins))
@@ -1689,7 +1689,7 @@ class StatementParser(object):
             # optional var name, errors have been checked during _find_next scan
             varname = None
             if ins.skip_blank() not in tk.END_STATEMENT + (',',):
-                varname = self._parse_name(ins)
+                varname = self.parse_name(ins)
             # increment counter, check condition
             if self.session.interpreter.next_(varname):
                 break
@@ -1703,7 +1703,7 @@ class StatementParser(object):
 
     def exec_def_fn(self, ins):
         """DEF FN: define a function."""
-        fnname = self._parse_name(ins)
+        fnname = self.parse_name(ins)
         # don't allow DEF FN in direct mode, as we point to the code in the stored program
         # this is raised before further syntax errors
         if not self.run_mode:

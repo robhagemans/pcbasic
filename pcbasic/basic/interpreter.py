@@ -265,8 +265,7 @@ class Interpreter(object):
         # check var name for NEXT
         # no-var only allowed in standalone NEXT
         if ins.skip_blank() not in tk.END_STATEMENT:
-            # FIXME calling private method
-            varname2 = self.statement_parser._parse_name(ins)
+            varname2 = self.statement_parser.parse_name(ins)
         else:
             varname2 = None
         # get position and line number just after the matching variable in NEXT
