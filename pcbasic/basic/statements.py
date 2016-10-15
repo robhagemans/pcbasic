@@ -700,7 +700,7 @@ class StatementParser(object):
         """NAME: rename file or directory."""
         oldname = self.parse_temporary_string(ins)
         # AS is not a tokenised word
-        ins.require_read(('AS',))
+        ins.require_read((tk.W_AS,))
         newname = self.parse_temporary_string(ins)
         self.session.devices.name_(oldname, newname)
 
@@ -894,21 +894,21 @@ class StatementParser(object):
             else:
                 word = ins.read_name()
                 try:
-                    mode = {'OUTPUT':'O', 'RANDOM':'R', 'APPEND':'A'}[word]
+                    mode = {tk.W_OUTPUT:'O', tk.W_RANDOM:'R', tk.W_APPEND:'A'}[word]
                 except KeyError:
                     ins.seek(-len(word), 1)
                     raise error.RunError(error.STX)
         # ACCESS clause
         access = None
-        if ins.skip_blank_read_if(('ACCESS',), 6):
+        if ins.skip_blank_read_if((tk.W_ACCESS,), 6):
             access = self._parse_read_write(ins)
         # LOCK clause
         if ins.skip_blank_read_if((tk.LOCK,), 2):
             lock = self._parse_read_write(ins)
         else:
-            lock = ins.skip_blank_read_if(('SHARED'), 6)
+            lock = ins.skip_blank_read_if((tk.W_SHARED), 6)
         # AS file number clause
-        ins.require_read(('AS',))
+        ins.require_read((tk.W_AS,))
         number = self._parse_file_number(ins, opt_hash=True)
         # LEN clause
         reclen = None
@@ -947,7 +947,7 @@ class StatementParser(object):
             while True:
                 width = values.to_int(self.parse_expression(ins))
                 error.range_check(0, 255, width)
-                ins.require_read(('AS',), err=error.IFC)
+                ins.require_read((tk.W_AS,), err=error.IFC)
                 name, index = self._parse_variable(ins)
                 self.session.files.field_(the_file, name, index, offset, width)
                 offset += width
@@ -1310,7 +1310,7 @@ class StatementParser(object):
 
     def exec_option(self, ins):
         """OPTION BASE: set array indexing convention."""
-        ins.require_read(('BASE',))
+        ins.require_read((tk.W_BASE,))
         # MUST be followed by ASCII '1' or '0', num constants or expressions are an error!
         d = ins.require_read(('0', '1'))
         self.session.arrays.option_base_(d)

@@ -408,6 +408,15 @@ KW_LOF = 'LOF'
 KW_NOISE = 'NOISE'
 KW_TERM = 'TERM'
 
+# non-keywords that appear as syntax elements
+W_AS = 'AS'
+W_SHARED = 'SHARED'
+W_ACCESS = 'ACCESS'
+W_RANDOM = 'RANDOM'
+W_OUTPUT = 'OUTPUT'
+W_APPEND = 'APPEND'
+W_BASE = 'BASE'
+
 # other keywords on http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html :
 # Sperry PC only:
 #   0xFEA4: 'DEBUG' (conflicts with PCjr/Tandy NOISE)
