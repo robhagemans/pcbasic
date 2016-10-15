@@ -235,16 +235,43 @@ class Interpreter(object):
     ###########################################################################
     # loops
 
-    def for_(self, ins, forpos, nextpos, varname, start, stop, step):
+    def for_(self, ins, varname, start, stop, step):
         """Initialise a FOR loop."""
+        # find NEXT
+        forpos, nextpos = self._find_next(ins, varname)
         # initialise loop variable
         self.session.scalars.set(varname, start)
         # obtain a view of the loop variable
         counter_view = self.session.scalars.view(varname)
         self.for_stack.append((counter_view, stop, step, step.sign(), forpos, nextpos,))
+        # empty loop: jump to NEXT without executing block
         if (start.gt(stop) if step.sign() > 0 else stop.gt(start)):
             ins.seek(nextpos)
             self.next_(ins)
+
+    def _find_next(self, ins, varname):
+        """Helper function for FOR: find matching NEXT."""
+        endforpos = ins.tell()
+        ins.skip_block(tk.FOR, tk.NEXT, allow_comma=True)
+        if ins.skip_blank() not in (tk.NEXT, ','):
+            # FOR without NEXT marked with FOR line number
+            ins.seek(endforpos)
+            raise error.RunError(error.FOR_WITHOUT_NEXT)
+        comma = (ins.read(1) == ',')
+        # get position and line number just after the NEXT
+        nextpos = ins.tell()
+        # check var name for NEXT
+        # no-var only allowed in standalone NEXT
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            # FIXME calling private method
+            varname2 = self.statement_parser._parse_name(ins)
+        else:
+            varname2 = None
+        if (comma or varname2) and varname2 != varname:
+            # NEXT without FOR marked with NEXT line number, while we're only at FOR
+            raise error.RunError(error.NEXT_WITHOUT_FOR)
+        ins.seek(endforpos)
+        return endforpos, nextpos
 
     def next_(self, ins):
         """Iterate a loop (NEXT)."""

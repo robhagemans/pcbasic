@@ -1682,35 +1682,8 @@ class StatementParser(object):
             step = self.values.from_value(1, vartype)
         step = values.to_type(vartype, step)
         ins.require_end()
-        # TODO: the below can be absorbed into Interpreter.for_()
-        # find NEXT
-        forpos, nextpos = self._find_next(ins, varname)
-        # apply initial condition and jump to nextpos
-        self.session.interpreter.for_(ins, forpos, nextpos, varname, start, stop, step)
-
-    #MOVE to Interpreter
-    def _find_next(self, ins, varname):
-        """Helper function for FOR: find matching NEXT."""
-        endforpos = ins.tell()
-        ins.skip_block(tk.FOR, tk.NEXT, allow_comma=True)
-        if ins.skip_blank() not in (tk.NEXT, ','):
-            # FOR without NEXT marked with FOR line number
-            ins.seek(endforpos)
-            raise error.RunError(error.FOR_WITHOUT_NEXT)
-        comma = (ins.read(1) == ',')
-        # get position and line number just after the NEXT
-        nextpos = ins.tell()
-        # check var name for NEXT
-        # no-var only allowed in standalone NEXT
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            varname2 = self._parse_name(ins)
-        else:
-            varname2 = None
-        if (comma or varname2) and varname2 != varname:
-            # NEXT without FOR marked with NEXT line number, while we're only at FOR
-            raise error.RunError(error.NEXT_WITHOUT_FOR)
-        ins.seek(endforpos)
-        return endforpos, nextpos
+        # initialise loop
+        self.session.interpreter.for_(ins, varname, start, stop, step)
 
     def exec_next(self, ins):
         """NEXT: iterate for-loop."""
