@@ -235,8 +235,9 @@ class Interpreter(object):
     ###########################################################################
     # loops
 
-    def for_(self, ins, varname, start, stop, step):
+    def for_(self, varname, start, stop, step):
         """Initialise a FOR loop."""
+        ins = self.get_codestream()
         # find NEXT
         forpos, nextpos = self._find_next(ins, varname)
         # initialise loop variable
@@ -273,8 +274,9 @@ class Interpreter(object):
         ins.seek(endforpos)
         return endforpos, nextpos
 
-    def next_(self, ins):
+    def next_(self, dummy_varname):
         """Iterate a loop (NEXT)."""
+        ins = self.get_codestream()
         # record the location after the variable
         pos = ins.tell()
         # find the matching NEXT record

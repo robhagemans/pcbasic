@@ -1683,16 +1683,17 @@ class StatementParser(object):
         step = values.to_type(vartype, step)
         ins.require_end()
         # initialise loop
-        self.session.interpreter.for_(ins, varname, start, stop, step)
+        self.session.interpreter.for_(varname, start, stop, step)
 
     def exec_next(self, ins):
         """NEXT: iterate for-loop."""
         while True:
-            # optional var names, errors have been checked during _find_next scan
+            # optional var name, errors have been checked during _find_next scan
+            varname = None
             if ins.skip_blank() not in tk.END_STATEMENT + (',',):
-                self._parse_name(ins)
+                varname = self._parse_name(ins)
             # increment counter, check condition
-            if self.session.interpreter.next_(ins):
+            if self.session.interpreter.next_(varname):
                 break
             # done if we're not jumping into a comma'ed NEXT
             if not ins.skip_blank_read_if((',')):
