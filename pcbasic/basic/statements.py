@@ -144,12 +144,12 @@ class StatementParser(object):
             tk.DIM: self.exec_dim,
             tk.READ: self.exec_read,
             tk.LET: partial(self.exec_args_iter, args_iter=self._parse_let_args_iter, callback=session.memory.let_),
-            tk.GOTO: partial(self.exec_single_line_number, callback=session.interpreter.goto_),
+            tk.GOTO: partial(self.exec_args_iter, args_iter=self._parse_single_line_number_iter, callback=session.interpreter.goto_),
             tk.RUN: self.exec_run,
             tk.IF: self.exec_if,
             tk.RESTORE: self.exec_restore,
-            tk.GOSUB: partial(self.exec_single_line_number, callback=session.interpreter.gosub_),
-            tk.RETURN: self.exec_return,
+            tk.GOSUB: partial(self.exec_args_iter, args_iter=self._parse_single_line_number_iter, callback=session.interpreter.gosub_),
+            tk.RETURN: partial(self.exec_args_iter, args_iter=self._parse_optional_line_number_iter, callback=session.interpreter.return_),
             tk.REM: self.skip_line,
             tk.STOP: partial(self.exec_after_end, callback=session.interpreter.stop_),
             tk.PRINT: partial(self.exec_args_iter, args_iter=partial(self._parse_print_args_iter, parse_file=True), callback=session.files.print_),
@@ -306,14 +306,13 @@ class StatementParser(object):
             self.exec_put_file(ins)
 
     def exec_on(self, ins):
-        """ON: select ON ERROR, ON KEY, ON TIMER, ON PLAY, ON COM, ON PEN, ON STRIG
-            or ON (jump statement)."""
+        """ON: select ON ERROR, ON (event) or ON (jump)."""
         c = ins.skip_blank()
         if c in (tk.ERROR, tk.KEY, '\xFE', '\xFF'):
             token = ins.read_keyword_token()
             if token == tk.ERROR:
                 ins.require_read((tk.GOTO,))
-                self.exec_single_line_number(ins, callback=self.session.interpreter.on_error_goto_)
+                self.session.interpreter.on_error_goto_(self._parse_jumpnum(ins))
             else:
                 self.exec_on_event(ins, token)
         else:
@@ -346,9 +345,6 @@ class StatementParser(object):
         ins.require_end()
         callback()
 
-    ###########################################################################
-    # skips
-
     def skip_line(self, ins):
         """Ignore the rest of the line."""
         ins.skip_to(tk.END_LINE)
@@ -356,9 +352,6 @@ class StatementParser(object):
     def skip_statement(self, ins):
         """Ignore rest of statement."""
         ins.skip_to(tk.END_STATEMENT)
-
-    ###########################################################################
-    # using iterable to parse arguments
 
     def exec_args_iter(self, ins, args_iter, callback):
         """Execute statement parsed by iterable."""
@@ -368,14 +361,26 @@ class StatementParser(object):
     # statements taking a single argument
 
     def _parse_optional_arg_iter(self, ins):
-        """Parse LCOPY and MOTOR syntax."""
+        """Parse statement with on eoptional argument."""
         yield self.parse_expression(ins, allow_empty=True)
         ins.require_end()
 
     def _parse_single_arg_iter(self, ins):
-        """ERROR: simulate an error condition."""
+        """Parse statement with one mandatory argument."""
         yield self.parse_expression(ins)
         ins.require_end()
+
+    def _parse_single_line_number_iter(self, ins):
+        """Parse statement with single line number argument."""
+        yield self._parse_jumpnum(ins)
+
+    def _parse_optional_line_number_iter(self, ins):
+        """Parse statement with optional line number argument."""
+        # return *can* have a line number
+        jumpnum = None
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            jumpnum = self._parse_jumpnum(ins)
+        yield jumpnum
 
     def exec_files_shell(self, ins, callback):
         """Execute statemnt with single optional string-valued argument."""
@@ -390,18 +395,6 @@ class StatementParser(object):
 
     ###########################################################################
     # Flow-control statements
-
-    def exec_single_line_number(self, ins, callback):
-        """Execute statement with single line number."""
-        callback(self._parse_jumpnum(ins))
-
-    def exec_return(self, ins):
-        """RETURN: return from a subroutine."""
-        # return *can* have a line number
-        jumpnum = None
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            jumpnum = self._parse_jumpnum(ins)
-        self.session.interpreter.return_(jumpnum)
 
     def exec_on_jump(self, ins):
         """ON: calculated jump."""
@@ -427,9 +420,9 @@ class StatementParser(object):
             # parse our choice
             jumpnum = self._parse_jumpnum(ins)
             if command == tk.GOTO:
-                self.session.interpreter.goto_(jumpnum)
+                self.session.interpreter.jump(jumpnum)
             elif command == tk.GOSUB:
-                self.session.interpreter.gosub_(jumpnum)
+                self.session.interpreter.jump_sub(jumpnum)
 
     def exec_run(self, ins):
         """RUN: start program execution."""
@@ -1628,7 +1621,7 @@ class StatementParser(object):
         if not val.is_zero():
             # TRUE: continue after THEN. line number or statement is implied GOTO
             if ins.skip_blank() in (tk.T_UINT,):
-                self.session.interpreter.goto_(self._parse_jumpnum(ins))
+                self.session.interpreter.jump(self._parse_jumpnum(ins))
             # continue parsing as normal from next statement, :ELSE will be ignored anyway
             self.parse_statement(ins)
         else:
@@ -1647,7 +1640,7 @@ class StatementParser(object):
                         else:
                             # line number: jump
                             if ins.skip_blank() in (tk.T_UINT,):
-                                self.session.interpreter.goto_(self._parse_jumpnum(ins))
+                                self.session.interpreter.jump(self._parse_jumpnum(ins))
                             # continue execution from here
                             self.parse_statement(ins)
                             break

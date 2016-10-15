@@ -659,7 +659,7 @@ class Session(object):
             self.interpreter.clear_stacks_and_pointers()
             # don't close files!
             # RUN
-            self.interpreter.goto_(jumpnum, err=error.IFC)
+            self.interpreter.jump(jumpnum, err=error.IFC)
         # preserve DEFtype on MERGE
         self._clear_all(preserve_common=True, preserve_all=common_all, preserve_deftype=merge)
 
@@ -722,7 +722,7 @@ class Session(object):
         if jumpnum is None:
             self.interpreter.set_pointer(True, 0)
         else:
-            self.interpreter.goto_(jumpnum)
+            self.interpreter.jump(jumpnum)
         self.interpreter.error_handle_mode = False
 
     def end_(self):

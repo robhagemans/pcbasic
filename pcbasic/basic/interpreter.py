@@ -135,7 +135,7 @@ class Interpreter(object):
                 event.stopped = True
                 # execute 'ON ... GOSUB' subroutine;
                 # attach handler to allow un-stopping event on RETURN
-                self.gosub_(event.gosub, event)
+                self.jump_sub(event.gosub, event)
 
     def trap_error(self, e):
         """Handle a BASIC error through trapping."""
@@ -149,7 +149,7 @@ class Interpreter(object):
         # don't jump if we're already busy handling an error
         if self.on_error is not None and self.on_error != 0 and not self.error_handle_mode:
             self.error_resume = self.current_statement, self.run_mode
-            self.goto_(self.on_error)
+            self.jump(self.on_error)
             self.error_handle_mode = True
             self.session.events.suspend_all = True
         else:
@@ -195,7 +195,7 @@ class Interpreter(object):
         """Get the current codestream."""
         return self.program_code if self.run_mode else self.direct_line
 
-    def goto_(self, jumpnum, err=error.UNDEFINED_LINE_NUMBER):
+    def jump(self, jumpnum, err=error.UNDEFINED_LINE_NUMBER):
         """Execute jump for a GOTO or RUN instruction."""
         if jumpnum is None:
             self.set_pointer(True, 0)
@@ -206,15 +206,24 @@ class Interpreter(object):
             except KeyError:
                 raise error.RunError(err)
 
-    def gosub_(self, jumpnum, handler=None):
+    def jump_sub(self, jumpnum, handler=None):
         """Execute jump for a GOSUB."""
         # set return position
         pos = self.get_codestream().tell()
-        self.goto_(jumpnum)
+        self.jump(jumpnum)
         self.gosub_stack.append((pos, self.run_mode, handler))
 
-    def return_(self, jumpnum):
+    def goto_(self, args):
+        """GOTO: jump to line number."""
+        self.jump(*args)
+
+    def gosub_(self, args):
+        """GOSUB: jump to subroutine."""
+        self.jump_sub(*args)
+
+    def return_(self, args):
         """Execute jump for a RETURN."""
+        jumpnum, = args
         try:
             pos, orig_runmode, handler = self.gosub_stack.pop()
         except IndexError:
@@ -230,7 +239,7 @@ class Interpreter(object):
             self.get_codestream().skip_to(tk.END_STATEMENT)
         else:
             # jump to specified line number
-            self.goto_(jumpnum)
+            self.jump(jumpnum)
 
     ###########################################################################
     # loops
@@ -462,4 +471,4 @@ class Interpreter(object):
             self.get_codestream().skip_to(tk.END_STATEMENT, break_on_first_char=False)
         else:
             # RESUME n
-            self.goto_(where)
+            self.jump(where)
