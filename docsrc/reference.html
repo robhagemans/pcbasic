@@ -4152,9 +4152,22 @@
         <ul>
             <li>
                 <code><var>port</var></code> is a numeric expression with a value of <code>1</code> or <code>2</code>. This specifies which
-                serial port (<code>COM1:</code> or <code>COM2:</code>) is trapped.
+                serial port (<code>COM1:</code> or <code>COM2:</code>) is trapped. If <code><var>port</var></code> equals <code>0</code>, this statement does nothing.
             </li>
         </ul>
+        <h5>Errors</h5>
+        <ul>
+            <li>
+                <code><var>port</var></code> a string value: <samp>Type mismatch</samp>.
+            </li>
+            <li>
+                <code><var>port</var></code> is not in <code>[-32768&#8212;32767]</code>: <samp>Overflow</samp>.
+            </li>
+            <li>
+                <code><var>port</var></code> is not in <code>[0&#8212;3]</code>: <samp>Illegal function call</samp>.
+            </li>
+        </ul>
+
     </section>
 <hr />
 
