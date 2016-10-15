@@ -171,7 +171,7 @@ class StatementParser(object):
             tk.SWAP: self.exec_swap,
             tk.ERASE: self.exec_erase,
             tk.EDIT: self.exec_edit,
-            tk.ERROR: self.exec_error,
+            tk.ERROR: partial(self.exec_args_iter, args_iter=self._parse_single_arg_iter, callback=session.error_),
             tk.RESUME: self.exec_resume,
             tk.DELETE: self.exec_delete,
             tk.AUTO: self.exec_auto,
@@ -186,7 +186,7 @@ class StatementParser(object):
             tk.CALL: self.exec_call,
             tk.WRITE: partial(self.exec_args_iter, args_iter=self._parse_write_args_iter, callback=session.files.write_),
             tk.OPTION: self.exec_option,
-            tk.RANDOMIZE: self.exec_randomize,
+            tk.RANDOMIZE: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.randomize_),
             tk.OPEN: self.exec_open,
             tk.CLOSE: self.exec_close,
             tk.LOAD: self.exec_load,
@@ -194,7 +194,7 @@ class StatementParser(object):
             tk.SAVE: self.exec_save,
             tk.COLOR: self.exec_color,
             tk.CLS: self.exec_cls,
-            tk.MOTOR: partial(self.exec_args_iter, args_iter=self._parse_lcopy_motor_args_iter, callback=session.devices.motor_),
+            tk.MOTOR: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.motor_),
             tk.BSAVE: self.exec_bsave,
             tk.BLOAD: self.exec_bload,
             tk.SOUND: self.exec_sound,
@@ -233,7 +233,7 @@ class StatementParser(object):
             tk.VIEW: self.exec_view,
             tk.WINDOW: self.exec_window,
             tk.PALETTE: self.exec_palette,
-            tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_lcopy_motor_args_iter, callback=session.devices.lcopy_),
+            tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.lcopy_),
             tk.CALLS: self.exec_calls,
             tk.NOISE: self.exec_noise,
             tk.PCOPY: self.exec_pcopy,
@@ -367,12 +367,14 @@ class StatementParser(object):
     ###########################################################################
     # statements taking a single argument
 
-    def _parse_lcopy_motor_args_iter(self, ins):
+    def _parse_optional_arg_iter(self, ins):
         """Parse LCOPY and MOTOR syntax."""
-        val = None
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            val = self.parse_expression(ins)
-        yield val
+        yield self.parse_expression(ins, allow_empty=True)
+        ins.require_end()
+
+    def _parse_single_arg_iter(self, ins):
+        """ERROR: simulate an error condition."""
+        yield self.parse_expression(ins)
         ins.require_end()
 
     def exec_files_shell(self, ins, callback):
@@ -385,16 +387,6 @@ class StatementParser(object):
     def exec_single_string_arg(self, ins, callback):
         """Execute statement with single string-valued argument."""
         callback(self._parse_temporary_string(ins))
-
-    def exec_randomize(self, ins):
-        """RANDOMIZE: set random number generator seed."""
-        val = self.parse_expression(ins, allow_empty=True)
-        self.session.randomize_(val)
-
-    def exec_error(self, ins):
-        """ERROR: simulate an error condition."""
-        errn = values.to_int(self.parse_expression(ins))
-        error.error_(errn)
 
     ###########################################################################
     # Flow-control statements

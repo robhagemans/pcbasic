@@ -190,8 +190,3 @@ def range_check_err(lower, upper, v, err=IFC):
     """Check if variable is within the given inclusive range."""
     if v is not None and not (lower <= v <= upper):
         raise RunError(err)
-
-def error_(errn):
-    """ERROR: simulate an error condition."""
-    range_check(1, 255, errn)
-    raise RunError(errn)

@@ -815,8 +815,9 @@ class Session(object):
             self.input_mode = False
         self.memory.set_variable(readvar, indices, self.values.from_value(line, values.STR))
 
-    def randomize_(self, val):
+    def randomize_(self, args):
         """RANDOMIZE: set random number generator seed."""
+        val, = args
         if val is not None:
             # don't convert to int if provided in the code
             val = values.pass_number(val, err=error.IFC)
@@ -829,3 +830,10 @@ class Session(object):
             # seed entered on prompt is rounded to int
             val = values.cint_(val)
         self.randomiser.reseed(val)
+
+    def error_(self, args):
+        """ERROR: simulate an error condition."""
+        errn, = args
+        errn = values.to_int(errn)
+        error.range_check(1, 255, errn)
+        raise error.RunError(errn)
