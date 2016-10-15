@@ -718,12 +718,12 @@ class Session(object):
                 self.program.load(f)
         self.interpreter.on_error = 0
         self.interpreter.error_handle_mode = False
+        self.interpreter.clear_stacks_and_pointers()
+        self._clear_all(close_files=not comma_r)
         if isinstance(arg0, int):
             jumpnum = arg0
             if jumpnum not in self.program.line_numbers:
                 raise error.RunError(error.UNDEFINED_LINE_NUMBER)
-        self.interpreter.clear_stacks_and_pointers()
-        self._clear_all(close_files=not comma_r)
         if jumpnum is None:
             self.interpreter.set_pointer(True, 0)
         else:
