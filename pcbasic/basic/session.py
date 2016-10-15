@@ -707,16 +707,17 @@ class Session(object):
             if handler.gosub:
                 handler.set_jump(old_to_new[handler.gosub])
 
-    def run_(self, *args):
+    def run_(self, args):
         """RUN: start program execution."""
+        arg0, arg1 = args
         comma_r = False
         jumpnum = None
-        if len(args) == 2:
-            name, comma_r = args
+        if arg1 is not None:
+            name, comma_r = arg0, arg1
             with self.files.open(0, name, filetype='ABP', mode='I') as f:
                 self.program.load(f)
-        elif len(args) == 1:
-            jumpnum, = args
+        else:
+            jumpnum = arg0
         self.interpreter.clear_stacks_and_pointers()
         self._clear_all(close_files=not comma_r)
         if jumpnum is None:

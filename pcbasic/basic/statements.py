@@ -145,7 +145,7 @@ class StatementParser(object):
             tk.READ: self.exec_read,
             tk.LET: partial(self.exec_args_iter, args_iter=self._parse_let_args_iter, callback=session.memory.let_),
             tk.GOTO: partial(self.exec_args_iter, args_iter=self._parse_single_line_number_iter, callback=session.interpreter.goto_),
-            tk.RUN: self.exec_run,
+            tk.RUN: partial(self.exec_args_iter, args_iter=self._parse_run_args_iter, callback=session.run_),
             tk.IF: self.exec_if,
             tk.RESTORE: self.exec_restore,
             tk.GOSUB: partial(self.exec_args_iter, args_iter=self._parse_single_line_number_iter, callback=session.interpreter.gosub_),
@@ -423,20 +423,20 @@ class StatementParser(object):
             elif command == tk.GOSUB:
                 self.session.interpreter.jump_sub(jumpnum)
 
-    def exec_run(self, ins):
+    def _parse_run_args_iter(self, ins):
         """RUN: start program execution."""
         c = ins.skip_blank()
         if c == tk.T_UINT:
             # parse line number and ignore rest of line
-            args = self._parse_jumpnum(ins),
+            yield self._parse_jumpnum(ins)
+            yield None
         elif c not in tk.END_STATEMENT:
-            name = self._parse_temporary_string(ins)
-            comma_r = ins.skip_blank_read_if((',R',))
+            yield self._parse_temporary_string(ins)
+            yield ins.skip_blank_read_if((',R',))
             ins.require_end()
-            args = name, comma_r
         else:
-            args = ()
-        self.session.run_(*args)
+            yield None
+            yield None
 
     def exec_resume(self, ins):
         """RESUME: resume program flow after error-trap."""
