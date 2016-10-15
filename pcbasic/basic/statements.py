@@ -245,12 +245,16 @@ class StatementParser(object):
             tk.STRIG: self.exec_strig,
             '_': self.exec_extension,
         }
+        self.extensions = {
+            'DEBUG': partial(self.exec_single_string_arg, callback=session.debugger.debug_),
+        }
 
     def __getstate__(self):
         """Pickle."""
         pickle_dict = self.__dict__.copy()
         # can't be pickled
         pickle_dict['statements'] = None
+        pickle_dict['extensions'] = None
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
@@ -320,10 +324,13 @@ class StatementParser(object):
 
     def exec_extension(self, ins):
         """Extension statement."""
-        # Extension statement _DEBUG "python-statement"
         # This is not a GW-BASIC behaviour.
-        ins.require_read(('DEBUG',))
-        self.session.debugger.debug_(self.parse_temporary_string(ins))
+        word = ins.read_name()
+        try:
+            callback = self.extensions[word]
+        except KeyError:
+            raise error.RunError(error.STX)
+        callback(ins)
 
     ###########################################################################
     # generalised callers

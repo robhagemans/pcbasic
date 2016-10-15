@@ -184,11 +184,11 @@ class Session(object):
         self.all_memory = machine.Memory(self.memory, self.devices, self.files,
                             self.screen, self.keyboard, self.screen.fonts[8],
                             self.interpreter, peek_values, syntax)
+        # set up debugger
+        self.debugger = debug.get_debugger(self, option_debug)
         # build function table (depends on Memory having been initialised)
         self.expression_parser.init_functions(self)
         self.statement_parser.init_statements(self)
-        # set up debugger
-        self.debugger = debug.get_debugger(self, option_debug)
 
     def __enter__(self):
         """Context guard."""
