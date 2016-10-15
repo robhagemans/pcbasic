@@ -261,63 +261,6 @@ class StatementParser(object):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
 
-    ##########################################################
-    # statements that require further qualification
-
-    def exec_def(self, ins):
-        """DEF: select DEF FN, DEF USR, DEF SEG."""
-        c = ins.skip_blank()
-        if ins.read_if(c, (tk.FN,)):
-            self.exec_def_fn(ins)
-        elif ins.read_if(c, (tk.USR,)):
-            self.exec_def_usr(ins)
-        # must be uppercase in tokenised form, otherwise syntax error
-        elif ins.skip_blank_read_if(('SEG',), 3):
-            self.exec_def_seg(ins)
-        else:
-            raise error.RunError(error.STX)
-
-    def exec_view(self, ins):
-        """VIEW: select VIEW PRINT, VIEW (graphics)."""
-        if ins.skip_blank_read_if((tk.PRINT,)):
-            self.exec_view_print(ins)
-        else:
-            self.exec_view_graph(ins)
-
-    def exec_line(self, ins):
-        """LINE: select LINE INPUT, LINE (graphics)."""
-        if ins.skip_blank_read_if((tk.INPUT,)):
-            self.exec_line_input(ins)
-        else:
-            self.exec_line_graph(ins)
-
-    def exec_get(self, ins):
-        """GET: select GET (graphics), GET (files)."""
-        if ins.skip_blank() == '(':
-            self.exec_get_graph(ins)
-        else:
-            self.exec_get_file(ins)
-
-    def exec_put(self, ins):
-        """PUT: select PUT (graphics), PUT (files)."""
-        if ins.skip_blank() == '(':
-            self.exec_put_graph(ins)
-        else:
-            self.exec_put_file(ins)
-
-    def exec_on(self, ins):
-        """ON: select ON ERROR, ON (event) or ON (jump)."""
-        c = ins.skip_blank()
-        if c in (tk.ERROR, tk.KEY, '\xFE', '\xFF'):
-            token = ins.read_keyword_token()
-            if token == tk.ERROR:
-                ins.require_read((tk.GOTO,))
-                self.session.interpreter.on_error_goto_(self._parse_jumpnum(ins))
-            else:
-                self.exec_on_event(ins, token)
-        else:
-            self.exec_on_jump(ins)
-
     ###########################################################################
     # extension statements
 
@@ -395,34 +338,6 @@ class StatementParser(object):
     ###########################################################################
     # Flow-control statements
 
-    def exec_on_jump(self, ins):
-        """ON: calculated jump."""
-        onvar = values.to_int(self.parse_expression(ins))
-        error.range_check(0, 255, onvar)
-        command = ins.require_read((tk.GOTO, tk.GOSUB))
-        skipped = 0
-        if onvar in (0, 255):
-            # if any provided, check all but jump to none
-            while True:
-                num = self._parse_optional_jumpnum(ins)
-                if num == -1 or not ins.skip_blank_read_if((',',)):
-                    ins.require_end()
-                    return
-        else:
-            # only parse jumps (and errors!) up to our choice
-            while skipped < onvar-1:
-                self._parse_jumpnum(ins)
-                skipped += 1
-                if not ins.skip_blank_read_if((',',)):
-                    ins.require_end()
-                    return
-            # parse our choice
-            jumpnum = self._parse_jumpnum(ins)
-            if command == tk.GOTO:
-                self.session.interpreter.jump(jumpnum)
-            elif command == tk.GOSUB:
-                self.session.interpreter.jump_sub(jumpnum)
-
     def _parse_run_args_iter(self, ins):
         """RUN: start program execution."""
         c = ins.skip_blank()
@@ -455,7 +370,7 @@ class StatementParser(object):
         self.session.interpreter.resume_(where)
 
     ###########################################################################
-    # event switches (except PLAY)
+    # event switches
 
     def exec_pen_timer(self, ins, callback):
         """Parse PEN or TIMER event switch statement."""
@@ -479,32 +394,6 @@ class StatementParser(object):
         num = values.to_int(self._parse_bracket(ins))
         command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
         self.session.events.com_(num, command)
-
-    def exec_key_events(self, ins):
-        """KEY: switch on/off keyboard events."""
-        num = values.to_int(self._parse_bracket(ins))
-        error.range_check(0, 255, num)
-        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        self.session.events.key_(num, command)
-
-    ###########################################################################
-    # event definitions
-
-    def exec_on_event(self, ins, token):
-        """Helper function for ON event trap definitions."""
-        num = None
-        if token != tk.PEN:
-            num = self._parse_bracket(ins)
-        elif token not in (tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
-            raise error.RunError(error.STX)
-        ins.require_read((tk.GOSUB,))
-        jumpnum = self._parse_jumpnum(ins)
-        if jumpnum == 0:
-            jumpnum = None
-        elif jumpnum not in self.session.program.line_numbers:
-            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
-        ins.require_end()
-        self.session.events.on_event_gosub_(token, num, jumpnum)
 
     ###########################################################################
     # sound
@@ -545,28 +434,6 @@ class StatementParser(object):
             ins.require_end()
             args = freq, dur, volume, voice
         self.session.sound.sound_(*args)
-
-    def exec_play(self, ins):
-        """PLAY: event switch/play MML string."""
-        command = ins.skip_blank_read_if((tk.ON, tk.OFF, tk.STOP))
-        if command:
-            # PLAY: event switch
-            self.session.events.play_(command)
-            ins.require_end()
-        else:
-            # retrieve Music Macro Language string
-            mml1, mml2 = '', ''
-            mml0 = self._parse_temporary_string(ins, allow_empty=True)
-            if ((self.syntax == 'tandy' or (self.syntax == 'pcjr' and
-                                             self.session.sound.sound_on))
-                    and ins.skip_blank_read_if((',',))):
-                mml1 = self._parse_temporary_string(ins, allow_empty=True)
-                if ins.skip_blank_read_if((',',)):
-                    mml2 = self._parse_temporary_string(ins, allow_empty=True)
-            ins.require_end()
-            if not (mml0 or mml1 or mml2):
-                raise error.RunError(error.MISSING_OPERAND)
-            self.session.sound.play_(self.memory, self.values, (mml0, mml1, mml2))
 
     def exec_noise(self, ins):
         """NOISE: produce sound on the noise generator (Tandy/PCjr)."""
@@ -1423,36 +1290,6 @@ class StatementParser(object):
         error.throw_if(not start_indices, error.STX)
         self.session.screen.palette.palette_using_(array_name, start_indices, self.session.arrays)
 
-    def exec_key(self, ins):
-        """KEY: switch on/off or list function-key row on screen."""
-        d = ins.skip_blank_read()
-        if d in (tk.ON, tk.OFF, tk.LIST):
-            # KEY ON, KEY OFF, KEY LIST
-            self.session.fkey_macros.key_(d, self.session.screen)
-        elif d == '(':
-            # key (n)
-            ins.seek(-1, 1)
-            self.exec_key_events(ins)
-        else:
-            # key n, "TEXT"
-            ins.seek(-len(d), 1)
-            self.exec_key_define(ins)
-
-    def exec_key_define(self, ins):
-        """KEY: define function-key shortcut or scancode for event trapping."""
-        keynum = values.to_int(self.parse_expression(ins))
-        error.range_check(1, 255, keynum)
-        ins.require_read((',',))
-        text = self._parse_temporary_string(ins)
-        if keynum <= self.session.events.num_fn_keys:
-            self.session.fkey_macros.set(keynum, text, self.session.screen)
-        else:
-            # only length-2 expressions can be assigned to KEYs over 10
-            # in which case it's a key scancode definition
-            if len(text) != 2:
-                raise error.RunError(error.IFC)
-            self.session.events.key[keynum-1].set_trigger(str(text))
-
     def exec_locate(self, ins):
         """LOCATE: Set cursor position, shape and visibility."""
         #row, col, cursor, start, stop
@@ -1693,3 +1530,165 @@ class StatementParser(object):
             raise error.RunError(error.ILLEGAL_DIRECT)
         # arguments and expression are being read and parsed by UserFunctionManager
         self.expression_parser.user_functions.define(fnname, ins)
+
+
+    ##########################################################
+    # statements that require further qualification
+
+    def exec_def(self, ins):
+        """DEF: select DEF FN, DEF USR, DEF SEG."""
+        c = ins.skip_blank()
+        if ins.read_if(c, (tk.FN,)):
+            self.exec_def_fn(ins)
+        elif ins.read_if(c, (tk.USR,)):
+            self.exec_def_usr(ins)
+        # must be uppercase in tokenised form, otherwise syntax error
+        elif ins.skip_blank_read_if(('SEG',), 3):
+            self.exec_def_seg(ins)
+        else:
+            raise error.RunError(error.STX)
+
+    def exec_view(self, ins):
+        """VIEW: select VIEW PRINT, VIEW (graphics)."""
+        if ins.skip_blank_read_if((tk.PRINT,)):
+            self.exec_view_print(ins)
+        else:
+            self.exec_view_graph(ins)
+
+    def exec_line(self, ins):
+        """LINE: select LINE INPUT, LINE (graphics)."""
+        if ins.skip_blank_read_if((tk.INPUT,)):
+            self.exec_line_input(ins)
+        else:
+            self.exec_line_graph(ins)
+
+    def exec_get(self, ins):
+        """GET: select GET (graphics), GET (files)."""
+        if ins.skip_blank() == '(':
+            self.exec_get_graph(ins)
+        else:
+            self.exec_get_file(ins)
+
+    def exec_put(self, ins):
+        """PUT: select PUT (graphics), PUT (files)."""
+        if ins.skip_blank() == '(':
+            self.exec_put_graph(ins)
+        else:
+            self.exec_put_file(ins)
+
+    def exec_on(self, ins):
+        """ON: select ON ERROR, ON (event) or ON (jump)."""
+        c = ins.skip_blank()
+        if c in (tk.ERROR, tk.KEY, '\xFE', '\xFF'):
+            token = ins.read_keyword_token()
+            if token == tk.ERROR:
+                ins.require_read((tk.GOTO,))
+                self.session.interpreter.on_error_goto_(self._parse_jumpnum(ins))
+            else:
+                self.exec_on_event(ins, token)
+        else:
+            self.exec_on_jump(ins)
+
+    def exec_on_jump(self, ins):
+        """ON: calculated jump."""
+        onvar = values.to_int(self.parse_expression(ins))
+        error.range_check(0, 255, onvar)
+        command = ins.require_read((tk.GOTO, tk.GOSUB))
+        skipped = 0
+        if onvar in (0, 255):
+            # if any provided, check all but jump to none
+            while True:
+                num = self._parse_optional_jumpnum(ins)
+                if num == -1 or not ins.skip_blank_read_if((',',)):
+                    ins.require_end()
+                    return
+        else:
+            # only parse jumps (and errors!) up to our choice
+            while skipped < onvar-1:
+                self._parse_jumpnum(ins)
+                skipped += 1
+                if not ins.skip_blank_read_if((',',)):
+                    ins.require_end()
+                    return
+            # parse our choice
+            jumpnum = self._parse_jumpnum(ins)
+            if command == tk.GOTO:
+                self.session.interpreter.jump(jumpnum)
+            elif command == tk.GOSUB:
+                self.session.interpreter.jump_sub(jumpnum)
+
+    def exec_on_event(self, ins, token):
+        """Helper function for ON event trap definitions."""
+        num = None
+        if token != tk.PEN:
+            num = self._parse_bracket(ins)
+        elif token not in (tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
+            raise error.RunError(error.STX)
+        ins.require_read((tk.GOSUB,))
+        jumpnum = self._parse_jumpnum(ins)
+        if jumpnum == 0:
+            jumpnum = None
+        elif jumpnum not in self.session.program.line_numbers:
+            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
+        ins.require_end()
+        self.session.events.on_event_gosub_(token, num, jumpnum)
+
+
+    def exec_key(self, ins):
+        """KEY: switch on/off or list function-key row on screen."""
+        d = ins.skip_blank_read()
+        if d in (tk.ON, tk.OFF, tk.LIST):
+            # KEY ON, KEY OFF, KEY LIST
+            self.session.fkey_macros.key_(d, self.session.screen)
+        elif d == '(':
+            # key (n)
+            ins.seek(-1, 1)
+            self.exec_key_events(ins)
+        else:
+            # key n, "TEXT"
+            ins.seek(-len(d), 1)
+            self.exec_key_define(ins)
+
+    def exec_key_events(self, ins):
+        """KEY: switch on/off keyboard events."""
+        num = values.to_int(self._parse_bracket(ins))
+        error.range_check(0, 255, num)
+        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+        self.session.events.key_(num, command)
+
+    def exec_key_define(self, ins):
+        """KEY: define function-key shortcut or scancode for event trapping."""
+        keynum = values.to_int(self.parse_expression(ins))
+        error.range_check(1, 255, keynum)
+        ins.require_read((',',))
+        text = self._parse_temporary_string(ins)
+        if keynum <= self.session.events.num_fn_keys:
+            self.session.fkey_macros.set(keynum, text, self.session.screen)
+        else:
+            # only length-2 expressions can be assigned to KEYs over 10
+            # in which case it's a key scancode definition
+            if len(text) != 2:
+                raise error.RunError(error.IFC)
+            self.session.events.key[keynum-1].set_trigger(str(text))
+
+    def exec_play(self, ins):
+        """PLAY: event switch/play MML string."""
+        command = ins.skip_blank_read_if((tk.ON, tk.OFF, tk.STOP))
+        if command:
+            # PLAY: event switch
+            self.session.events.play_(command)
+            ins.require_end()
+        else:
+            # retrieve Music Macro Language string
+            mml1, mml2 = '', ''
+            mml0 = self._parse_temporary_string(ins, allow_empty=True)
+            if ((self.syntax == 'tandy' or (self.syntax == 'pcjr' and
+                                             self.session.sound.sound_on))
+                    and ins.skip_blank_read_if((',',))):
+                mml1 = self._parse_temporary_string(ins, allow_empty=True)
+                if ins.skip_blank_read_if((',',)):
+                    mml2 = self._parse_temporary_string(ins, allow_empty=True)
+            ins.require_end()
+            if not (mml0 or mml1 or mml2):
+                raise error.RunError(error.MISSING_OPERAND)
+            self.session.sound.play_(self.memory, self.values, (mml0, mml1, mml2))
