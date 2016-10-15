@@ -99,6 +99,7 @@ class UserFunctionManager(object):
 
     def define(self, fnname, ins):
         """Define a function."""
+        ins.skip_blank()
         pointer_loc = self._memory.code_start + ins.tell()
         # read parameters
         fnvars = []
