@@ -194,7 +194,7 @@ class StatementParser(object):
             tk.SAVE: self.exec_save,
             tk.COLOR: self.exec_color,
             tk.CLS: self.exec_cls,
-            tk.MOTOR: partial(self.exec_lcopy_motor, callback=session.devices.motor_),
+            tk.MOTOR: partial(self.exec_args_iter, args_iter=self._parse_lcopy_motor_args_iter, callback=session.devices.motor_),
             tk.BSAVE: self.exec_bsave,
             tk.BLOAD: self.exec_bload,
             tk.SOUND: self.exec_sound,
@@ -233,7 +233,7 @@ class StatementParser(object):
             tk.VIEW: self.exec_view,
             tk.WINDOW: self.exec_window,
             tk.PALETTE: self.exec_palette,
-            tk.LCOPY: partial(self.exec_lcopy_motor, callback=session.devices.lcopy_),
+            tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_lcopy_motor_args_iter, callback=session.devices.lcopy_),
             tk.CALLS: self.exec_calls,
             tk.NOISE: self.exec_noise,
             tk.PCOPY: self.exec_pcopy,
@@ -367,14 +367,13 @@ class StatementParser(object):
     ###########################################################################
     # statements taking a single argument
 
-    def exec_lcopy_motor(self, ins, callback):
-        """Parse LCOPY and MOTOR syntax"""
+    def _parse_lcopy_motor_args_iter(self, ins):
+        """Parse LCOPY and MOTOR syntax."""
         val = None
         if ins.skip_blank() not in tk.END_STATEMENT:
-            val = values.to_int(self.parse_expression(ins))
-            error.range_check(0, 255, val)
-            ins.require_end()
-        callback(val)
+            val = self.parse_expression(ins)
+        yield val
+        ins.require_end()
 
     def exec_files_shell(self, ins, callback):
         """Execute statemnt with single optional string-valued argument."""

@@ -456,13 +456,21 @@ class Devices(object):
     ###########################################################################
     # statement callbacks
 
-    def motor_(self, value):
+    def motor_(self, args):
         """MOTOR: drive cassette motor; not implemented."""
         logging.warning('MOTOR statement not implemented.')
+        val = next(args)
+        if val is not None:
+            error.range_check(0, 255, values.to_int(val))
+        list(args)
 
-    def lcopy_(self, val):
+    def lcopy_(self, args):
         """LCOPY: screen copy / no-op in later GW-BASIC."""
         # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
+        val = next(args)
+        if val is not None:
+            error.range_check(0, 255, values.to_int(val))
+        list(args)
 
     def chdir_(self, name):
         """CHDIR: change working directory."""
