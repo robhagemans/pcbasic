@@ -1698,63 +1698,16 @@ class StatementParser(object):
                 break
         # if we're done iterating we no longer ignore the rest of the statement
 
-    # WHILE and DEF FN (and IF and FOR, in a sense) share the characteristic that they require
-    # evaluation of an expression that is not locally defined. These jumps and evaluations
-    # fit Interpreter better than this module, which should simply define the syntax.
-    # compare goto_(), which also modifies the current codestream pointer.
-    # if we refactor these functions to operate on the current codestream rather than 'ins',
-    # we should be able to move them to Interpreter in a sensible way
-
     def exec_while(self, ins):
         """WHILE: enter while-loop."""
-        # find matching WEND
-        whilepos, wendpos = self._find_wend(ins)
-        self.session.interpreter.while_stack.append((whilepos, wendpos))
-        self._check_while_condition(ins, whilepos)
-
-    #MOVE to Interpreter
-    def _find_wend(self, ins):
-        """Helper function for WHILE: find matching WEND."""
-        # just after WHILE token
-        whilepos = ins.tell()
-        ins.skip_block(tk.WHILE, tk.WEND)
-        if ins.read(1) != tk.WEND:
-            # WHILE without WEND
-            ins.seek(whilepos)
-            raise error.RunError(error.WHILE_WITHOUT_WEND)
-        ins.skip_to(tk.END_STATEMENT)
-        wendpos = ins.tell()
-        ins.seek(whilepos)
-        return whilepos, wendpos
-
-    def _check_while_condition(self, ins, whilepos):
-        """Check condition of while-loop."""
-        ins.seek(whilepos)
-        # WHILE condition is zero?
-        if not values.pass_number(self.parse_expression(ins)).is_zero():
-            # statement start is before WHILE token
-            self.session.interpreter.current_statement = whilepos-2
-            ins.require_end()
-        else:
-            # ignore rest of line and jump to WEND
-            _, wendpos = self.session.interpreter.while_stack.pop()
-            ins.seek(wendpos)
+        # expression is being read and parsed by Interpreter
+        self.session.interpreter.while_()
 
     def exec_wend(self, ins):
         """WEND: iterate while-loop."""
         # while will actually syntax error on the first run if anything is in the way.
         ins.require_end()
-        pos = ins.tell()
-        while True:
-            if not self.session.interpreter.while_stack:
-                # WEND without WHILE
-                raise error.RunError(error.WEND_WITHOUT_WHILE)
-            whilepos, wendpos = self.session.interpreter.while_stack[-1]
-            if pos == wendpos:
-                break
-            # not the expected WEND, we must have jumped out
-            self.session.interpreter.while_stack.pop()
-        self._check_while_condition(ins, whilepos)
+        self.session.interpreter.wend_()
 
     ###########################################################################
     # User-defined functions
@@ -1767,4 +1720,5 @@ class StatementParser(object):
             raise error.RunError(error.ILLEGAL_DIRECT)
         fnname = self._parse_name(ins)
         ins.skip_blank()
+        # arguments and expression are being read and parsed by UserFunctionManager
         self.expression_parser.user_functions.define(fnname, ins)

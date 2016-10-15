@@ -302,6 +302,56 @@ class Interpreter(object):
             ins.seek(forpos)
         return not loop_ends
 
+    def while_(self):
+        """WHILE: enter while-loop."""
+        ins = self.get_codestream()
+        # find matching WEND
+        whilepos, wendpos = self._find_wend(ins)
+        self.while_stack.append((whilepos, wendpos))
+        self._check_while_condition(ins, whilepos)
+
+    def _find_wend(self, ins):
+        """Helper function for WHILE: find matching WEND."""
+        # just after WHILE token
+        whilepos = ins.tell()
+        ins.skip_block(tk.WHILE, tk.WEND)
+        if ins.read(1) != tk.WEND:
+            # WHILE without WEND
+            ins.seek(whilepos)
+            raise error.RunError(error.WHILE_WITHOUT_WEND)
+        ins.skip_to(tk.END_STATEMENT)
+        wendpos = ins.tell()
+        ins.seek(whilepos)
+        return whilepos, wendpos
+
+    def _check_while_condition(self, ins, whilepos):
+        """Check condition of while-loop."""
+        ins.seek(whilepos)
+        # WHILE condition is zero?
+        if not values.pass_number(self.statement_parser.parse_expression(ins)).is_zero():
+            # statement start is before WHILE token
+            self.current_statement = whilepos-2
+            ins.require_end()
+        else:
+            # ignore rest of line and jump to WEND
+            _, wendpos = self.while_stack.pop()
+            ins.seek(wendpos)
+
+    def wend_(self):
+        """WEND: iterate while-loop."""
+        ins = self.get_codestream()
+        pos = ins.tell()
+        while True:
+            if not self.while_stack:
+                # WEND without WHILE
+                raise error.RunError(error.WEND_WITHOUT_WHILE)
+            whilepos, wendpos = self.while_stack[-1]
+            if pos == wendpos:
+                break
+            # not the expected WEND, we must have jumped out
+            self.while_stack.pop()
+        self._check_while_condition(ins, whilepos)
+
     ###########################################################################
     # DATA utilities
 
