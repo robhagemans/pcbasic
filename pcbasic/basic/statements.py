@@ -376,9 +376,8 @@ class StatementParser(object):
 
     def _parse_optional_line_number_iter(self, ins):
         """Parse statement with optional line number argument."""
-        # return *can* have a line number
         jumpnum = None
-        if ins.skip_blank() not in tk.END_STATEMENT:
+        if ins.skip_blank() == tk.T_UINT:
             jumpnum = self._parse_jumpnum(ins)
         yield jumpnum
 
