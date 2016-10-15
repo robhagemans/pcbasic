@@ -172,7 +172,7 @@ class StatementParser(object):
             tk.ERASE: self.exec_erase,
             tk.EDIT: self.exec_edit,
             tk.ERROR: partial(self.exec_args_iter, args_iter=self._parse_single_arg_iter, callback=session.error_),
-            tk.RESUME: self.exec_resume,
+            tk.RESUME: partial(self.exec_args_iter, args_iter=self._parse_resume_args_iter, callback=session.interpreter.resume_),
             tk.DELETE: self.exec_delete,
             tk.AUTO: self.exec_auto,
             tk.RENUM: self.exec_renum,
@@ -261,9 +261,6 @@ class StatementParser(object):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
 
-    ###########################################################################
-    # extension statements
-
     def exec_extension(self, ins):
         """Extension statement."""
         # This is not a GW-BASIC behaviour.
@@ -273,6 +270,10 @@ class StatementParser(object):
         except KeyError:
             raise error.RunError(error.STX)
         callback(ins)
+
+    def exec_args_iter(self, ins, args_iter, callback):
+        """Execute statement parsed by iterable."""
+        callback(args_iter(ins))
 
     ###########################################################################
     # generalised callers
@@ -296,9 +297,16 @@ class StatementParser(object):
         """Ignore rest of statement."""
         ins.skip_to(tk.END_STATEMENT)
 
-    def exec_args_iter(self, ins, args_iter, callback):
-        """Execute statement parsed by iterable."""
-        callback(args_iter(ins))
+    def exec_files_shell(self, ins, callback):
+        """Execute statemnt with single optional string-valued argument."""
+        arg = None
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            arg = self._parse_temporary_string(ins)
+        callback(arg)
+
+    def exec_single_string_arg(self, ins, callback):
+        """Execute statement with single string-valued argument."""
+        callback(self._parse_temporary_string(ins))
 
     ###########################################################################
     # statements taking a single argument
@@ -324,17 +332,6 @@ class StatementParser(object):
             jumpnum = self._parse_jumpnum(ins)
         yield jumpnum
 
-    def exec_files_shell(self, ins, callback):
-        """Execute statemnt with single optional string-valued argument."""
-        arg = None
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            arg = self._parse_temporary_string(ins)
-        callback(arg)
-
-    def exec_single_string_arg(self, ins, callback):
-        """Execute statement with single string-valued argument."""
-        callback(self._parse_temporary_string(ins))
-
     ###########################################################################
     # Flow-control statements
 
@@ -357,21 +354,16 @@ class StatementParser(object):
             yield None
             yield None
 
-    def exec_resume(self, ins):
+    def _parse_resume_args_iter(self, ins):
         """RESUME: resume program flow after error-trap."""
-        if self.session.interpreter.error_resume is None:
-            # unset error handler
-            self.session.interpreter.on_error = 0
-            raise error.RunError(error.RESUME_WITHOUT_ERROR)
         c = ins.skip_blank()
         if c == tk.NEXT:
-            where = ins.read(1)
+            yield ins.read(1)
         elif c in tk.END_STATEMENT:
-            where = None
+            yield None
         else:
-            where = self._parse_jumpnum(ins)
+            yield self._parse_jumpnum(ins)
         ins.require_end()
-        self.session.interpreter.resume_(where)
 
     ###########################################################################
     # event switches

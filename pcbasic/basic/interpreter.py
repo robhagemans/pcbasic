@@ -455,8 +455,14 @@ class Interpreter(object):
             # re-raise the error so that execution stops
             raise error.RunError(self.error_num, self.error_pos)
 
-    def resume_(self, where):
+    def resume_(self, args):
         """RESUME: resume program flow after error-trap."""
+        if self.error_resume is None:
+            # unset error handler
+            self.on_error = 0
+            raise error.RunError(error.RESUME_WITHOUT_ERROR)
+        # parse arguments
+        where, = args
         start_statement, runmode = self.error_resume
         self.error_num = 0
         self.error_handle_mode = False
