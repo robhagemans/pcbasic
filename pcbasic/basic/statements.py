@@ -219,7 +219,7 @@ class StatementParser(object):
             tk.DATE: partial(self.exec_time_date, callback=session.clock.date_),
             tk.TIME: partial(self.exec_time_date, callback=session.clock.time_),
             tk.PAINT: self.exec_paint,
-            tk.COM: self.exec_com,
+            tk.COM: partial(self.exec_args_iter, args_iter=self._parse_com_command_iter, callback=session.events.com_),
             tk.CIRCLE: self.exec_circle,
             tk.DRAW: self.exec_draw,
             tk.PLAY: self.exec_play,
@@ -372,23 +372,10 @@ class StatementParser(object):
         """Parse PEN or TIMER syntax."""
         yield ins.require_read((tk.ON, tk.OFF, tk.STOP))
 
-    def exec_strig(self, ins):
-        """STRIG: switch on/off fire button event handling."""
-        d = ins.require_read((tk.ON, tk.OFF, '('))
-        if d == '(':
-            # strig (n)
-            num = values.to_int(self.parse_expression(ins))
-            ins.require_read((')',))
-            command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-            self.session.events.strig_(num, command)
-        elif d in (tk.ON, tk.OFF):
-            self.session.stick.strig_statement_(d)
-
-    def exec_com(self, ins):
-        """COM: switch on/off serial port event handling."""
-        num = values.to_int(self._parse_bracket(ins))
-        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        self.session.events.com_(num, command)
+    def _parse_com_command_iter(self, ins):
+        """Parse COM syntax."""
+        yield self._parse_bracket(ins)
+        yield ins.require_read((tk.ON, tk.OFF, tk.STOP))
 
     ###########################################################################
     # sound
@@ -1689,3 +1676,15 @@ class StatementParser(object):
             if not (mml0 or mml1 or mml2):
                 raise error.RunError(error.MISSING_OPERAND)
             self.session.sound.play_(self.memory, self.values, (mml0, mml1, mml2))
+
+    def exec_strig(self, ins):
+        """STRIG: switch on/off fire button event handling."""
+        d = ins.require_read((tk.ON, tk.OFF, '('))
+        if d == '(':
+            # strig (n)
+            num = values.to_int(self.parse_expression(ins))
+            ins.require_read((')',))
+            command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
+            self.session.events.strig_(num, command)
+        elif d in (tk.ON, tk.OFF):
+            self.session.stick.strig_statement_(d)

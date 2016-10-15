@@ -91,10 +91,13 @@ class Events(object):
             raise error.RunError(error.IFC)
         self.command(self.strig[num//2], command)
 
-    def com_(self, num, command):
+    def com_(self, args):
         """COM: switch on/off serial port event handling."""
-        error.range_check(1, 2, num)
-        self.command(self.com[num-1], command)
+        num = values.to_int(next(args))
+        command, = args
+        error.range_check(0, 2, num)
+        if num > 0:
+            self.command(self.com[num-1], command)
 
     def timer_(self, args):
         """TIMER: switch on/off timer event handling."""
@@ -137,7 +140,7 @@ class Events(object):
         elif token == tk.COM:
             comnum = values.to_int(num)
             error.range_check(1, 2, comnum)
-            self.com[keynum-1].set_jump(jumpnum)
+            self.com[comnum-1].set_jump(jumpnum)
 
     ##########################################################################
     # main event checker
