@@ -237,6 +237,9 @@ class Interpreter(object):
 
     def for_(self, varname, start, stop, step):
         """Initialise a FOR loop."""
+        if step is None:
+            # convert 1 to vartype
+            step = self.session.values.from_value(1, varname[-1])
         ins = self.get_codestream()
         # find NEXT
         forpos, nextpos = self._find_next(ins, varname)

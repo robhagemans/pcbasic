@@ -1669,18 +1669,16 @@ class StatementParser(object):
         # read variable
         varname = self._parse_name(ins)
         vartype = varname[-1]
-        if vartype in (values.STR, values.DBL):
-            raise error.RunError(error.TYPE_MISMATCH)
         ins.require_read((tk.O_EQ,))
         start = values.to_type(vartype, self.parse_expression(ins))
         ins.require_read((tk.TO,))
+        # only raised after the TO has been parsed
+        if vartype in (values.STR, values.DBL):
+            raise error.RunError(error.TYPE_MISMATCH)
         stop = values.to_type(vartype, self.parse_expression(ins))
+        step = None
         if ins.skip_blank_read_if((tk.STEP,)):
-            step = self.parse_expression(ins)
-        else:
-            # convert 1 to vartype
-            step = self.values.from_value(1, vartype)
-        step = values.to_type(vartype, step)
+            step = values.to_type(vartype, self.parse_expression(ins))
         ins.require_end()
         # initialise loop
         self.session.interpreter.for_(varname, start, stop, step)
