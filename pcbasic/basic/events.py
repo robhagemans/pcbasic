@@ -80,8 +80,9 @@ class Events(object):
     ##########################################################################
     # callbacks
 
-    def pen_(self, command):
+    def pen_(self, args):
         """PEN: switch on/off light pen event handling."""
+        command, = args
         self.command(self.pen, command)
 
     def strig_(self, num, command):
@@ -95,8 +96,9 @@ class Events(object):
         error.range_check(1, 2, num)
         self.command(self.com[num-1], command)
 
-    def timer_(self, command):
+    def timer_(self, args):
         """TIMER: switch on/off timer event handling."""
+        command, = args
         self.command(self.timer, command)
 
     def key_(self, num, command):

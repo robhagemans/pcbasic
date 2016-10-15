@@ -20,16 +20,19 @@ class Clock(object):
         # given in seconds
         self.time_offset = datetime.timedelta()
 
-    def timer_(self):
-        """TIMER: get clock ticks since midnight."""
+    def get_time_ms(self):
+        """Get milliseconds since midnight."""
         now = datetime.datetime.now() + self.time_offset
         midnight = datetime.datetime(now.year, now.month, now.day)
         diff = now-midnight
         seconds = diff.seconds
         micro = diff.microseconds
-        ms = long(seconds)*1000 + long(micro)/1000
+        return long(seconds)*1000 + long(micro)/1000
+
+    def timer_(self):
+        """TIMER: get clock ticks since midnight."""
         # precision of GWBASIC TIMER is about 1/20 of a second
-        return float(ms//50) / 20.
+        return float(self.get_time_ms()//50) / 20.
 
     def time_(self, timestr):
         """TIME: Set the system time offset."""

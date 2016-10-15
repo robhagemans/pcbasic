@@ -223,7 +223,7 @@ class StatementParser(object):
             tk.CIRCLE: self.exec_circle,
             tk.DRAW: self.exec_draw,
             tk.PLAY: self.exec_play,
-            tk.TIMER: partial(self.exec_pen_timer, callback=session.events.timer_),
+            tk.TIMER: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.timer_),
             tk.IOCTL: self.exec_ioctl,
             tk.CHDIR: partial(self.exec_single_string_arg, callback=session.devices.chdir_),
             tk.MKDIR: partial(self.exec_single_string_arg, callback=session.devices.mkdir_),
@@ -241,7 +241,7 @@ class StatementParser(object):
             tk.LOCK: self.exec_lock,
             tk.UNLOCK: self.exec_unlock,
             tk.MID: partial(self.exec_args_iter, args_iter=self._parse_mid_args_iter, callback=session.memory.mid_),
-            tk.PEN: partial(self.exec_pen_timer, callback=session.events.pen_),
+            tk.PEN: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.pen_),
             tk.STRIG: self.exec_strig,
             '_': self.exec_extension,
         }
@@ -336,7 +336,7 @@ class StatementParser(object):
     # Flow-control statements
 
     def _parse_run_args_iter(self, ins):
-        """RUN: start program execution."""
+        """Parse RUN syntax."""
         c = ins.skip_blank()
         if c == tk.T_UINT:
             # parse line number and ignore rest of line
@@ -355,7 +355,7 @@ class StatementParser(object):
             yield None
 
     def _parse_resume_args_iter(self, ins):
-        """RESUME: resume program flow after error-trap."""
+        """Parse RESUME syntax."""
         c = ins.skip_blank()
         if c == tk.NEXT:
             yield ins.read(1)
@@ -368,10 +368,9 @@ class StatementParser(object):
     ###########################################################################
     # event switches
 
-    def exec_pen_timer(self, ins, callback):
-        """Parse PEN or TIMER event switch statement."""
-        command = ins.require_read((tk.ON, tk.OFF, tk.STOP))
-        callback(command)
+    def _parse_event_command_iter(self, ins):
+        """Parse PEN or TIMER syntax."""
+        yield ins.require_read((tk.ON, tk.OFF, tk.STOP))
 
     def exec_strig(self, ins):
         """STRIG: switch on/off fire button event handling."""
@@ -1618,10 +1617,10 @@ class StatementParser(object):
     def exec_on_event(self, ins, token):
         """Helper function for ON event trap definitions."""
         num = None
+        if token not in (tk.PEN, tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
+            raise error.RunError(error.STX)
         if token != tk.PEN:
             num = self._parse_bracket(ins)
-        elif token not in (tk.KEY, tk.TIMER, tk.PLAY, tk.COM, tk.STRIG):
-            raise error.RunError(error.STX)
         ins.require_read((tk.GOSUB,))
         jumpnum = self._parse_jumpnum(ins)
         if jumpnum == 0:
