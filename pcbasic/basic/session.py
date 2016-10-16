@@ -565,16 +565,18 @@ class Session(object):
 
     def term_(self):
         """TERM: terminal emulator."""
-        try:
-            self.load_program(self._term_program)
-        except EnvironmentError:
-            # on Tandy, raises Internal Error
-            raise error.RunError(error.INTERNAL_ERROR)
-        self.interpreter.clear_stacks_and_pointers()
         self._clear_all()
-        self.interpreter.set_pointer(True, 0)
-        self.interpreter.error_handle_mode = False
         self.interpreter.tron = False
+        if not self._term_program:
+            # on Tandy, raises Internal Error
+            # and deletes the program currently in memory
+            raise error.RunError(error.INTERNAL_ERROR)
+        with self.files.open_native_or_basic(self._term_program,
+                    filetype='ABP', mode='I') as progfile:
+            self.program.load(progfile)
+        self.interpreter.error_handle_mode = False
+        self.interpreter.clear_stacks_and_pointers()
+        self.interpreter.set_pointer(True, 0)
 
     def delete_(self, from_line, to_line):
         """DELETE: delete range of lines from program."""

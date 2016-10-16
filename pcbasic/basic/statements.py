@@ -235,9 +235,7 @@ class StatementParser(object):
             tk.PALETTE: self.exec_palette,
             tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.lcopy_),
             tk.CALLS: self.exec_calls,
-            tk.NOISE: partial(self.exec_args_iter, args_iter=self._parse_noise_args_iter, callback=session.sound.noise_),
             tk.PCOPY: self.exec_pcopy,
-            tk.TERM: partial(self.exec_after_end, callback=session.term_),
             tk.LOCK: self.exec_lock,
             tk.UNLOCK: self.exec_unlock,
             tk.MID: partial(self.exec_args_iter, args_iter=self._parse_mid_args_iter, callback=session.memory.mid_),
@@ -245,6 +243,11 @@ class StatementParser(object):
             tk.STRIG: self.exec_strig,
             '_': self.exec_extension,
         }
+        if self.syntax in ('pcjr', 'tandy'):
+            self.statements.update({
+                tk.TERM: partial(self.exec_after_end, callback=session.term_),
+                tk.NOISE: partial(self.exec_args_iter, args_iter=self._parse_noise_args_iter, callback=session.sound.noise_),
+            })
         self.extensions = {
             'DEBUG': partial(self.exec_single_string_arg, callback=session.debugger.debug_),
         }
