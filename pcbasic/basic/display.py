@@ -987,7 +987,7 @@ class Screen(object):
                 self.set_pos(row + 1, 1, scroll_ok)
             elif c == '\a':
                 # BEL
-                self.sound.beep_()
+                self.sound.play_alert()
             elif c == '\x0B':
                 # HOME
                 self.set_pos(1, 1, scroll_ok)

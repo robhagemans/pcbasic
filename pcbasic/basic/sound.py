@@ -72,12 +72,17 @@ class Sound(object):
         # reset all PLAY state
         self.play_state = [ PlayState(), PlayState(), PlayState() ]
 
-    def beep_(self, command=None):
+    def beep_(self, args):
         """BEEP: produce an alert sound or switch internal speaker on/off."""
+        command, = args
         if command:
             self.beep_on = (command == tk.ON)
         else:
-            self.play_sound(800, 0.25)
+            self.play_alert()
+
+    def play_alert(self):
+        """Produce an alert sound."""
+        self.play_sound(800, 0.25)
 
     def play_sound_no_wait(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
         """Play a sound on the tone generator."""

@@ -198,7 +198,7 @@ class StatementParser(object):
             tk.BSAVE: self.exec_bsave,
             tk.BLOAD: self.exec_bload,
             tk.SOUND: self.exec_sound,
-            tk.BEEP: self.exec_beep,
+            tk.BEEP: partial(self.exec_args_iter, args_iter=self._parse_beep_args_iter, callback=session.sound.beep_),
             tk.PSET: self.exec_pset,
             tk.PRESET: self.exec_preset,
             tk.SCREEN: self.exec_screen,
@@ -380,13 +380,13 @@ class StatementParser(object):
     ###########################################################################
     # sound
 
-    def exec_beep(self, ins):
+    def _parse_beep_args_iter(self, ins):
         """BEEP: produce an alert sound or switch internal speaker on/off."""
-        command = None
         if self.syntax in ('pcjr', 'tandy'):
             # Tandy/PCjr BEEP ON, OFF
-            command = ins.skip_blank_read_if((tk.ON, tk.OFF))
-        self.session.sound.beep_(command)
+            yield ins.skip_blank_read_if((tk.ON, tk.OFF))
+        else:
+            yield None
         # if a syntax error happens, we still beeped.
 
     def exec_sound(self, ins):
