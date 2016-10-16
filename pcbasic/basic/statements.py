@@ -208,7 +208,7 @@ class StatementParser(object):
             tk.FILES: partial(self.exec_files_shell, callback=session.devices.files_),
             tk.FIELD: self.exec_field,
             tk.SYSTEM: partial(self.exec_after_end, callback=session.interpreter.system_),
-            tk.NAME: self.exec_name,
+            tk.NAME: partial(self.exec_args_iter, args_iter=self._parse_name_args_iter, callback=session.devices.name_),
             tk.LSET: self.exec_lset,
             tk.RSET: self.exec_rset,
             tk.KILL: partial(self.exec_single_string_arg, callback=session.devices.kill_),
@@ -479,13 +479,12 @@ class StatementParser(object):
     ###########################################################################
     # Disk
 
-    def exec_name(self, ins):
-        """NAME: rename file or directory."""
-        oldname = self._parse_temporary_string(ins)
+    def _parse_name_args_iter(self, ins):
+        """Parse NAME syntax."""
+        yield self._parse_temporary_string(ins)
         # AS is not a tokenised word
         ins.require_read((tk.W_AS,))
-        newname = self._parse_temporary_string(ins)
-        self.session.devices.name_(oldname, newname)
+        yield self._parse_temporary_string(ins)
 
     ###########################################################################
     # OS

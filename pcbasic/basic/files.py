@@ -487,14 +487,19 @@ class Devices(object):
         dev, path = self.get_diskdevice_and_path(name)
         dev.rmdir(path)
 
-    def name_(self, oldname, newname):
+    def name_(self, args):
         """NAME: rename file or directory."""
-        dev, oldpath = self.get_diskdevice_and_path(oldname)
-        newdev, newpath = self.get_diskdevice_and_path(newname)
+        dev, oldpath = self.get_diskdevice_and_path(next(args))
         # don't rename open files
         dev.check_file_not_open(oldpath)
+        oldpath = dev._native_path(bytes(oldpath), name_err=error.FILE_NOT_FOUND, isdir=False)
+        newdev, newpath = self.get_diskdevice_and_path(next(args))
+        list(args)
         if dev != newdev:
             raise error.RunError(error.RENAME_ACROSS_DISKS)
+        newpath = dev._native_path(bytes(newpath), name_err=None, isdir=False)
+        if os.path.exists(newpath):
+            raise error.RunError(error.FILE_ALREADY_EXISTS)
         dev.rename(oldpath, newpath)
 
     def kill_(self, name):

@@ -473,11 +473,6 @@ class DiskDevice(object):
 
     def rename(self, oldname, newname):
         """Rename a file or directory."""
-        # note that we can't rename to another drive: "Rename across disks"
-        oldname = self._native_path(bytes(oldname), name_err=error.FILE_NOT_FOUND, isdir=False)
-        newname = self._native_path(bytes(newname), name_err=None, isdir=False)
-        if os.path.exists(newname):
-            raise error.RunError(error.FILE_ALREADY_EXISTS)
         safe(os.rename, oldname, newname)
 
     def files(self, screen, pathmask):
@@ -541,7 +536,7 @@ class DiskDevice(object):
             try:
                 if self._native_path(path, name_err=None) == f.name:
                     raise error.RunError(error.FILE_ALREADY_OPEN)
-            except AttributeError:
+            except AttributeError as e:
                 # only disk files have a name, so ignore
                 pass
 
