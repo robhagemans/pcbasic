@@ -195,8 +195,8 @@ class StatementParser(object):
             tk.COLOR: self.exec_color,
             tk.CLS: self.exec_cls,
             tk.MOTOR: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.motor_),
-            tk.BSAVE: self.exec_bsave,
-            tk.BLOAD: self.exec_bload,
+            tk.BSAVE: partial(self.exec_args_iter, args_iter=self._parse_bsave_args_iter, callback=session.all_memory.bsave_),
+            tk.BLOAD: partial(self.exec_args_iter, args_iter=self._parse_bload_args_iter, callback=session.all_memory.bload_),
             tk.SOUND: partial(self.exec_args_iter, args_iter=self._parse_sound_args_iter, callback=session.sound.sound_),
             tk.BEEP: partial(self.exec_args_iter, args_iter=self._parse_beep_args_iter, callback=session.sound.beep_),
             tk.PSET: self.exec_pset,
@@ -436,30 +436,23 @@ class StatementParser(object):
         ins.require_read((',',))
         yield self.parse_expression(ins)
 
-    def exec_bload(self, ins):
-        """BLOAD: load a file into a memory location."""
-        if self.session.program.protected and not self.run_mode:
-            raise error.RunError(error.IFC)
-        name = self._parse_temporary_string(ins)
-        # check if file exists, make some guesses (all uppercase, +.BAS) if not
-        offset = None
+    def _parse_bload_args_iter(self, ins):
+        """Parse BLOAD syntax."""
+        yield self._parse_temporary_string(ins)
         if ins.skip_blank_read_if((',',)):
-            offset = values.to_int(self.parse_expression(ins), unsigned=True)
+            yield self.parse_expression(ins)
+        else:
+            yield None
         ins.require_end()
-        self.session.all_memory.bload_(name, offset)
 
-    def exec_bsave(self, ins):
-        """BSAVE: save a block of memory to a file. Limited implementation."""
-        if self.session.program.protected and not self.run_mode:
-            raise error.RunError(error.IFC)
-        name = self._parse_temporary_string(ins)
-        # check if file exists, make some guesses (all uppercase, +.BAS) if not
+    def _parse_bsave_args_iter(self, ins):
+        """Parse BSAVE syntax."""
+        yield self._parse_temporary_string(ins)
         ins.require_read((',',))
-        offset = values.to_int(self.parse_expression(ins), unsigned=True)
+        yield self.parse_expression(ins)
         ins.require_read((',',))
-        length = values.to_int(self.parse_expression(ins), unsigned=True)
+        yield self.parse_expression(ins)
         ins.require_end()
-        self.session.all_memory.bsave_(name, offset, length)
 
     def _parse_call(self, ins):
         """Helper function to parse CALL and CALLS."""

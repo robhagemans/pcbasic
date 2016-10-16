@@ -278,8 +278,15 @@ class Memory(object):
         addr += self.segment * 0x10
         self._set_memory(addr, val)
 
-    def bload_(self, name, offset):
+    def bload_(self, args):
         """BLOAD: Load a file into a block of memory."""
+        if self.data.program.protected and not self.interpreter.run_mode:
+            raise error.RunError(error.IFC)
+        name = next(args)
+        offset = next(args)
+        if offset is not None:
+            offset = values.to_int(offset, unsigned=True)
+        list(args)
         with self._files.open(0, name, filetype='M', mode='I') as g:
             # size gets ignored; even the \x1a at the end gets dumped onto the screen.
             seg = g.seg
@@ -295,8 +302,14 @@ class Memory(object):
             addr = seg * 0x10 + offset
             self._set_memory_block(addr, buf)
 
-    def bsave_(self, name, offset, length):
+    def bsave_(self, args):
         """BSAVE: Save a block of memory into a file."""
+        if self.data.program.protected and not self.interpreter.run_mode:
+            raise error.RunError(error.IFC)
+        name = next(args)
+        offset = values.to_int(next(args), unsigned=True)
+        length = values.to_int(next(args), unsigned=True)
+        list(args)
         with self._files.open(0, name, filetype='M', mode='O',
                     seg=self.segment, offset=offset, length=length) as g:
             addr = self.segment * 0x10 + offset
