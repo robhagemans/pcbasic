@@ -184,7 +184,7 @@ class StatementParser(object):
             tk.WHILE: partial(self.exec_immediate, callback=session.interpreter.while_),
             tk.WEND: partial(self.exec_after_end, callback=session.interpreter.wend_),
             tk.CALL: partial(self.exec_args_iter, args_iter=self._parse_call_args_iter, callback=session.all_memory.call_),
-            tk.CALLS: partial(self.exec_args_iter, args_iter=self._parse_call_args_iter, callback=session.all_memory.calls_),
+            tk.CALLS: partial(self.exec_args_iter, args_iter=self._parse_call_args_iter, callback=session.all_memory.call_),
             tk.WRITE: partial(self.exec_args_iter, args_iter=self._parse_write_args_iter, callback=session.files.write_),
             tk.OPTION: self.exec_option,
             tk.RANDOMIZE: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.randomize_),

@@ -340,17 +340,7 @@ class Memory(object):
             # type mismatch
             raise error.RunError(error.TYPE_MISMATCH)
         list(args)
-        logging.warning('CALL statement not implemented')
-
-    def calls_(self, args):
-        """CALLS: Call machine language procedure."""
-        addr_var = next(args)
-        if addr_var[-1] == values.STR:
-            # type mismatch
-            raise error.RunError(error.TYPE_MISMATCH)
-        list(args)
-        logging.warning('CALLS statement not implemented')
-
+        logging.warning('CALL/CALLS statement not implemented')
 
     ###########################################################################
     # IMPLEMENTATION
