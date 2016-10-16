@@ -129,8 +129,12 @@ class MachinePorts(object):
             # addr isn't one of the covered ports
             return 0
 
-    def out_(self, addr, val):
-        """Send a value to an emulated machine port."""
+    def out_(self, args):
+        """OUT: send a byte to a machine port."""
+        addr = values.to_int(next(args), unsigned=True)
+        val = values.to_int(next(args))
+        error.range_check(0, 255, val)
+        list(args)
         if addr == 0x201:
             # game port reset
             self.session.stick.reset_decay()

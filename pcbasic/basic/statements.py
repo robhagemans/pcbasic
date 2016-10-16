@@ -159,9 +159,9 @@ class StatementParser(object):
             tk.ON: self.exec_on,
             tk.WAIT: self.exec_wait,
             tk.DEF: self.exec_def,
-            tk.POKE: partial(self.exec_args_iter, args_iter=self._parse_poke_args_iter, callback=session.all_memory.poke_),
+            tk.POKE: partial(self.exec_args_iter, args_iter=self._parse_poke_out_args_iter, callback=session.all_memory.poke_),
             tk.CONT: partial(self.exec_immediate, callback=session.interpreter.cont_),
-            tk.OUT: self.exec_out,
+            tk.OUT: partial(self.exec_args_iter, args_iter=self._parse_poke_out_args_iter, callback=session.machine.out_),
             tk.LPRINT: partial(self.exec_args_iter, args_iter=partial(self._parse_print_args_iter, parse_file=False), callback=session.devices.lprint_),
             tk.LLIST: self.exec_llist,
             tk.WIDTH: partial(self.exec_args_iter, args_iter=self._parse_width_args_iter, callback=session.files.width_),
@@ -430,8 +430,8 @@ class StatementParser(object):
     ###########################################################################
     # machine emulation
 
-    def _parse_poke_args_iter(self, ins):
-        """Parse POKE syntax."""
+    def _parse_poke_out_args_iter(self, ins):
+        """Parse POKE or OUT syntax."""
         yield self.parse_expression(ins)
         ins.require_read((',',))
         yield self.parse_expression(ins)
@@ -464,14 +464,6 @@ class StatementParser(object):
                     break
             ins.require_read((')',))
         ins.require_end()
-
-    def exec_out(self, ins):
-        """OUT: send a byte to a machine port. Limited implementation."""
-        addr = values.to_int(self.parse_expression(ins), unsigned=True)
-        ins.require_read((',',))
-        val = values.to_int(self.parse_expression(ins))
-        error.range_check(0, 255, val)
-        self.session.machine.out_(addr, val)
 
     def exec_wait(self, ins):
         """WAIT: wait for a machine port. Limited implementation."""
