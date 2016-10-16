@@ -3342,9 +3342,9 @@
 <hr />
 
     <section>
-    <h4 id="CALL"><code>CALL</code></h4>
+    <h4 id="CALL"><code>CALL</code> and <b>CALLS</b></h4>
     <code class="flow">
-        <b>CALL</b> <var>address_var</var> [<b>(</b> <var>p0</var> [<b>,</b> <var>p1</var>] ... <b>)</b>]
+        {<b>CALL</b>|<b>CALLS</b>} <var>address_var</var> [<b>(</b> <var>p0</var> [<b>,</b> <var>p1</var>] ... <b>)</b>]
     </code>
     <p>
         Does nothing.
@@ -3352,7 +3352,7 @@
     <h5>Notes</h5>
     <ul>
         <li>
-            In GW-BASIC, <code>CALL</code> executes a machine language subroutine.
+            In GW-BASIC, <code>CALL</code> or <b>CALLS</b> executes a machine language subroutine.
         </li>
         <li>
             This statement is not implemented in PC-BASIC.
@@ -3361,10 +3361,10 @@
     <h5>Parameters</h5>
     <ul>
         <li>
-            <code><var>address_var</var></code> is a numeric variable.
+            <code><var>address_var</var></code> is a numeric variable name.
         </li>
         <li>
-            <code><var>p0</var>, <var>p1</var>, ...</code> are variables.
+            <code><var>p0</var>, <var>p1</var>, ...</code> are variable names.
         </li>
     </ul>
     <h5>Errors</h5>
@@ -3373,45 +3373,9 @@
             <code><var>address_var</var></code> is a string variable: <samp>Type mismatch</samp>.
         </li>
         <li>
-            <code><var>address_var</var></code> is a literal: <samp>Syntax error</samp>.
+            <code><var>address_var</var></code> is a literal or expression: <samp>Syntax error</samp>.
         </li>
     </ul>
-    </section>
-<hr />
-
-    <section>
-        <h4 id="CALLS"><code>CALLS</code></h4>
-        <code class="flow">
-            <b>CALLS</b> <var>address_var</var> [<b>(</b> <var>p0</var> [<b>,</b> <var>p1</var>] ... <b>)</b>]
-        </code>
-        <p>Does nothing.</p>
-        <h5>Notes</h5>
-        <ul>
-            <li>
-                In GW-BASIC, <code>CALLS</code> executes a FORTRAN subroutine.
-            </li>
-            <li>
-                This statement is not implemented in PC-BASIC.
-            </li>
-        </ul>
-        <h5>Parameters</h5>
-        <ul>
-            <li>
-                <code><var>address_var</var></code> is a numeric variable.
-            </li>
-            <li>
-                <code><var>p0</var>, <var>p1</var>, ...</code> are variables.
-            </li>
-        </ul>
-        <h5>Errors</h5>
-        <ul>
-            <li>
-                <code><var>address_var</var></code> is a string variable: <samp>Type mismatch</samp>.
-            </li>
-            <li>
-                <code><var>address_var</var></code> is a literal: <samp>Syntax error</samp>.
-            </li>
-        </ul>
     </section>
 <hr />
 
