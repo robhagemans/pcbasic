@@ -197,7 +197,7 @@ class StatementParser(object):
             tk.MOTOR: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.motor_),
             tk.BSAVE: self.exec_bsave,
             tk.BLOAD: self.exec_bload,
-            tk.SOUND: self.exec_sound,
+            tk.SOUND: partial(self.exec_args_iter, args_iter=self._parse_sound_args_iter, callback=session.sound.sound_),
             tk.BEEP: partial(self.exec_args_iter, args_iter=self._parse_beep_args_iter, callback=session.sound.beep_),
             tk.PSET: self.exec_pset,
             tk.PRESET: self.exec_preset,
@@ -398,33 +398,31 @@ class StatementParser(object):
         yield self.parse_expression(ins)
         ins.require_end()
 
-    def exec_sound(self, ins):
-        """SOUND: produce a sound or switch external speaker on/off."""
+    def _parse_sound_args_iter(self, ins):
+        """Parse SOUND syntax."""
         command = None
         if self.syntax in ('pcjr', 'tandy'):
             # Tandy/PCjr SOUND ON, OFF
             command = ins.skip_blank_read_if((tk.ON, tk.OFF))
         if command:
-            args = command,
-            ins.require_end()
+            yield command
         else:
-            freq = values.to_int(self.parse_expression(ins))
+            yield self.parse_expression(ins)
             ins.require_read((',',))
-            dur = values.csng_(self.parse_expression(ins)).to_value()
-            error.range_check(-65535, 65535, dur)
-            # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)
-            volume, voice = 15, 0
-            if dur > 0:
-                if (ins.skip_blank_read_if((',',)) and (self.syntax == 'tandy' or
-                        (self.syntax == 'pcjr' and self.session.sound.sound_on))):
-                    volume = values.to_int(self.parse_expression(ins))
-                    error.range_check(0, 15, volume)
-                    if ins.skip_blank_read_if((',',)):
-                        voice = values.to_int(self.parse_expression(ins))
-                        error.range_check(0, 2, voice) # can't address noise channel here
-            ins.require_end()
-            args = freq, dur, volume, voice
-        self.session.sound.sound_(*args)
+            dur = self.parse_expression(ins)
+            yield dur
+            # only look for args 3 and 4 if duration is > 0;
+            # otherwise those args are a syntax error (on tandy)
+            if (dur.sign() == 1) and ins.skip_blank_read_if((',',)) and self.syntax in ('pcjr', 'tandy'):
+                yield self.parse_expression(ins)
+                if ins.skip_blank_read_if((',',)):
+                    yield self.parse_expression(ins)
+                else:
+                    yield None
+            else:
+                yield None
+                yield None
+        ins.require_end()
 
     ###########################################################################
     # machine emulation

@@ -102,13 +102,34 @@ class Sound(object):
             self.noise_freq[3] = frequency/2.
             self.noise_freq[7] = frequency/2.
 
-    def sound_(self, *args):
+    def sound_(self, args):
         """SOUND: produce a sound or switch external speaker on/off."""
-        if len(args) == 1:
-            command, = args
+        arg0 = next(args)
+        if self.capabilities in ('pcjr', 'tandy') and arg0 in (tk.ON, tk.OFF):
+            command = arg0
+        else:
+            command = None
+            freq = values.to_int(arg0)
+            dur = values.csng_(next(args)).to_value()
+            error.range_check(-65535, 65535, dur)
+            volume = next(args)
+            if volume is None:
+                volume = 15
+            else:
+                volume = values.to_int(volume)
+                error.range_check(-1, 15, volume)
+                if volume == -1:
+                    volume = 15
+            voice = next(args)
+            if voice is None:
+                voice = 0
+            else:
+                voice = values.to_int(voice)
+                error.range_check(0, 2, voice) # can't address noise channel here
+        list(args)
+        if command is not None:
             self.sound_on = (command == tk.ON)
             return
-        freq, dur, volume, voice = args
         if dur == 0:
             self.stop_all_sound()
             return
