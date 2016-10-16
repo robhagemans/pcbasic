@@ -433,21 +433,6 @@ class StatementParser(object):
         ins.require_read((',',))
         yield self.parse_expression(ins)
 
-    def exec_def_seg(self, ins):
-        """DEF SEG: set the current memory segment."""
-        seg = None
-        if ins.skip_blank_read_if((tk.O_EQ,)):
-            # def_seg() accepts signed values
-            seg = values.to_int(self.parse_expression(ins), unsigned=True)
-        self.session.all_memory.def_seg_(seg)
-
-    def exec_def_usr(self, ins):
-        """DEF USR: Define a machine language function."""
-        usr = ins.skip_blank_read_if(tk.DIGIT)
-        ins.require_read((tk.O_EQ,))
-        addr = values.cint_(self.parse_expression(ins), unsigned=True)
-        self.session.all_memory.def_usr_(usr, addr)
-
     def exec_bload(self, ins):
         """BLOAD: load a file into a memory location."""
         if self.session.program.protected and not self.run_mode:
@@ -634,7 +619,7 @@ class StatementParser(object):
             if expr is not None:
                 jumpnum = values.to_int(expr, unsigned=True)
             if ins.skip_blank_read_if((',',)):
-                if ins.skip_blank_read_if(('ALL',), 3):
+                if ins.skip_blank_read_if((tk.W_ALL,), 3):
                     common_all = True
                     # CHAIN "file", , ALL, DELETE
                     if ins.skip_blank_read_if((',',)):
@@ -1516,10 +1501,25 @@ class StatementParser(object):
         elif ins.read_if(c, (tk.USR,)):
             self.exec_def_usr(ins)
         # must be uppercase in tokenised form, otherwise syntax error
-        elif ins.skip_blank_read_if(('SEG',), 3):
+        elif ins.skip_blank_read_if((tk.W_SEG,), 3):
             self.exec_def_seg(ins)
         else:
             raise error.RunError(error.STX)
+
+    def exec_def_seg(self, ins):
+        """DEF SEG: set the current memory segment."""
+        seg = None
+        if ins.skip_blank_read_if((tk.O_EQ,)):
+            # def_seg() accepts signed values
+            seg = values.to_int(self.parse_expression(ins), unsigned=True)
+        self.session.all_memory.def_seg_(seg)
+
+    def exec_def_usr(self, ins):
+        """DEF USR: Define a machine language function."""
+        usr = ins.skip_blank_read_if(tk.DIGIT)
+        ins.require_read((tk.O_EQ,))
+        addr = values.cint_(self.parse_expression(ins), unsigned=True)
+        self.session.all_memory.def_usr_(usr, addr)
 
     def exec_view(self, ins):
         """VIEW: select VIEW PRINT, VIEW (graphics)."""

@@ -416,6 +416,8 @@ W_RANDOM = 'RANDOM'
 W_OUTPUT = 'OUTPUT'
 W_APPEND = 'APPEND'
 W_BASE = 'BASE'
+W_SEG = 'SEG'
+W_ALL = 'ALL'
 
 # other keywords on http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html :
 # Sperry PC only:
