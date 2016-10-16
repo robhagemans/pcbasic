@@ -578,8 +578,10 @@ class Session(object):
         self.interpreter.clear_stacks_and_pointers()
         self.interpreter.set_pointer(True, 0)
 
-    def delete_(self, from_line, to_line):
+    def delete_(self, args):
         """DELETE: delete range of lines from program."""
+        from_line, to_line = next(args)
+        list(args)
         # throws back to direct mode
         self.program.delete(from_line, to_line)
         # clear all program stacks

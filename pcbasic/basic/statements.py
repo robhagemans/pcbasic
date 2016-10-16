@@ -173,7 +173,7 @@ class StatementParser(object):
             tk.EDIT: self.exec_edit,
             tk.ERROR: partial(self.exec_args_iter, args_iter=self._parse_single_arg_iter, callback=session.error_),
             tk.RESUME: partial(self.exec_args_iter, args_iter=self._parse_resume_args_iter, callback=session.interpreter.resume_),
-            tk.DELETE: self.exec_delete,
+            tk.DELETE: partial(self.exec_args_iter, args_iter=self._parse_delete_args_iter, callback=session.delete_),
             tk.AUTO: self.exec_auto,
             tk.RENUM: self.exec_renum,
             tk.DEFSTR: partial(self.exec_deftype, typechar='$'),
@@ -522,11 +522,10 @@ class StatementParser(object):
                 return None
             raise error.RunError(err)
 
-    def exec_delete(self, ins):
-        """DELETE: delete range of lines from program."""
-        from_line, to_line = self._parse_line_range(ins)
+    def _parse_delete_args_iter(self, ins):
+        """Parse DELETE syntax."""
+        yield self._parse_line_range(ins)
         ins.require_end()
-        self.session.delete_(from_line, to_line)
 
     def exec_edit(self, ins):
         """EDIT: output a program line and position cursor for editing."""
