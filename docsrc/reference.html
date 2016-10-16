@@ -4237,26 +4237,27 @@
         </code>
         <p>
             Sets the system date. <code><var>date</var></code> is a string expression that represents a
-            date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>, <code>"mm-dd-yy"</code>, <code>"mm/dd/yy"</code>.
+            date in one of the formats: <code><b>"</b><var>mm</var>{<b>-</b>|<b>/</b>}<var>dd</var>{<b>-</b>|<b>/</b>}<var>yy</var><b>"</b></code> or
+            <code><b>"</b><var>mm</var>{<b>-</b>|<b>/</b>}<var>dd</var>{<b>-</b>|<b>/</b>}<var>yyyy</var><b>"</b></code>
         </p>
         <p>
             Of these,
         </p>
         <ul>
             <li>
-                <code>mm</code> must be in <code>[01&#8212;12]</code>.
+                <code><var>mm</var></code> may be one or two characters long and must be in <code>[1&#8212;12]</code>.
             </li>
             <li>
-                <code>dd</code> must be in <code>[01&#8212;31]</code>.
+                <code><var>dd</var></code> may be one or two characters long and must be in <code>[1&#8212;31]</code>.
             </li>
             <li>
-                <code>yyyy</code> must be in <code>[1980&#8212;2099]</code>.
+                <code><var>yyyy</var></code> must be in <code>[1980&#8212;2099]</code>.
             </li>
             <li>
-                <code>yy</code> must be in one of the ranges:
+                <code><var>yy</var></code> may be one or two characters long and must be in one of the ranges:
                 <ul>
                     <li>
-                        <code>[00&#8212;77]</code>, interpreted as <code>2000&#8212;2077</code>; or
+                        <code>[0&#8212;77]</code>, interpreted as <code>2000&#8212;2077</code>; or
                     </li>
                     <li>
                         <code>[80&#8212;99]</code>, interpreted as <code>1980&#8212;1999</code>.
@@ -10391,8 +10392,9 @@
         <ul>
             <li>
                 Time is a string expression
-                of the form <code>"HH:mm:ss"</code> where
-                <code>00&lt;=HH&lt;24</code>, <code>00&lt;=mm&lt;60</code> and <code>00&lt;=ss&lt;60</code>.
+                of the form <code><b>"</b><var>HH</var>{<b>:</b>|<b>.</b>}<var>mm</var>{<b>:</b>|<b>.</b>}<var>ss</var><b>"</b></code> where
+                <code>0 &lt;= <var>HH</var> &lt; 24</code>, <code>0 &lt;= <var>mm</var> &lt; 60</code> and <code>0 &lt;= <var>ss</var> &lt; 60</code>.
+                Each position may have one or two characters.
             </li>
         </ul>
         <h5>Notes</h5>
