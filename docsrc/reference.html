@@ -10152,11 +10152,12 @@
                 <code><var>duration</var></code> is a numeric expression in <code>[0&#8212;65535]</code>.
             </li>
             <li>
-                <code><var>volume</var></code> is a numeric expression in [0, 15]. 0 is silent, 15 is full
-                volume; every step less reduces the volume by 2 dB. (For <code>syntax={pcjr | tandy}</code>)
+                <code><var>volume</var></code> is a numeric expression in <code>[-1&#8212;15]</code>. 0 is silent, 15 is full
+                volume; every step less reduces the volume by 2 dB. -1 is also full volume.
+                (For <code>syntax={pcjr | tandy}</code>).
             </li>
             <li>
-                <code><var>voice</var></code> is a numeric expression in [0, 2], indicating which of the
+                <code><var>voice</var></code> is a numeric expression in <code>[0&#8212;2]</code>, indicating which of the
                 three tone voice channels is used for this sound. (For <code><a href="#--syntax">syntax</a>={pcjr | tandy}</code>)
             </li>
         </ul>
