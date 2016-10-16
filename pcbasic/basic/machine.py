@@ -207,12 +207,21 @@ class MachinePorts(object):
                 elif addr == base_addr + 4:
                     com_port.stream.set_pins(rts=val & 0x2, dtr=val & 0x1)
 
-    def wait_(self, addr, ander, xorer):
-        """Wait untial an emulated machine port has a specified value."""
+    def wait_(self, args):
+        """WAIT: wait for a machine port."""
+        addr = values.to_int(next(args), unsigned=True)
+        ander = values.to_int(next(args))
+        error.range_check(0, 255, ander)
+        xorer = next(args)
+        if xorer is None:
+            xorer = 0
+        else:
+            xorer = values.to_int(xorer)
+        error.range_check(0, 255, xorer)
+        list(args)
         with self.session.events.suspend():
             while (self.inp(addr) ^ xorer) & ander == 0:
                 self.session.events.wait()
-
 
 
 ###############################################################################

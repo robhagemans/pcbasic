@@ -157,7 +157,7 @@ class StatementParser(object):
             tk.LIST: self.exec_list,
             tk.NEW: partial(self.exec_after_end, callback=session.new_),
             tk.ON: self.exec_on,
-            tk.WAIT: self.exec_wait,
+            tk.WAIT: partial(self.exec_args_iter, args_iter=self._parse_wait_args_iter, callback=session.machine.wait_),
             tk.DEF: self.exec_def,
             tk.POKE: partial(self.exec_args_iter, args_iter=self._parse_poke_out_args_iter, callback=session.all_memory.poke_),
             tk.CONT: partial(self.exec_immediate, callback=session.interpreter.cont_),
@@ -455,7 +455,7 @@ class StatementParser(object):
         ins.require_end()
 
     def _parse_call_args_iter(self, ins):
-        """Helper function to parse CALL and CALLS."""
+        """Parse CALL and CALLS syntax."""
         yield self.parse_name(ins)
         if ins.skip_blank_read_if(('(',)):
             while True:
@@ -465,18 +465,16 @@ class StatementParser(object):
             ins.require_read((')',))
         ins.require_end()
 
-    def exec_wait(self, ins):
-        """WAIT: wait for a machine port. Limited implementation."""
-        addr = values.to_int(self.parse_expression(ins), unsigned=True)
+    def _parse_wait_args_iter(self, ins):
+        """Parse WAIT syntax."""
+        yield self.parse_expression(ins)
         ins.require_read((',',))
-        ander = values.to_int(self.parse_expression(ins))
-        error.range_check(0, 255, ander)
-        xorer = 0
+        yield self.parse_expression(ins)
         if ins.skip_blank_read_if((',',)):
-            xorer = values.to_int(self.parse_expression(ins))
-        error.range_check(0, 255, xorer)
+            yield self.parse_expression(ins)
+        else:
+            yield None
         ins.require_end()
-        self.session.machine.wait_(addr, ander, xorer)
 
     ###########################################################################
     # Disk
