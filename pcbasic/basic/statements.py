@@ -235,7 +235,7 @@ class StatementParser(object):
             tk.PALETTE: self.exec_palette,
             tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.lcopy_),
             tk.CALLS: self.exec_calls,
-            tk.NOISE: self.exec_noise,
+            tk.NOISE: partial(self.exec_args_iter, args_iter=self._parse_noise_args_iter, callback=session.sound.noise_),
             tk.PCOPY: self.exec_pcopy,
             tk.TERM: partial(self.exec_after_end, callback=session.term_),
             tk.LOCK: self.exec_lock,
@@ -381,13 +381,22 @@ class StatementParser(object):
     # sound
 
     def _parse_beep_args_iter(self, ins):
-        """BEEP: produce an alert sound or switch internal speaker on/off."""
+        """Parse BEEP syntax."""
         if self.syntax in ('pcjr', 'tandy'):
             # Tandy/PCjr BEEP ON, OFF
             yield ins.skip_blank_read_if((tk.ON, tk.OFF))
         else:
             yield None
         # if a syntax error happens, we still beeped.
+
+    def _parse_noise_args_iter(self, ins):
+        """Parse NOISE syntax (Tandy/PCjr)."""
+        yield self.parse_expression(ins)
+        ins.require_read((',',))
+        yield self.parse_expression(ins)
+        ins.require_read((',',))
+        yield self.parse_expression(ins)
+        ins.require_end()
 
     def exec_sound(self, ins):
         """SOUND: produce a sound or switch external speaker on/off."""
@@ -416,21 +425,6 @@ class StatementParser(object):
             ins.require_end()
             args = freq, dur, volume, voice
         self.session.sound.sound_(*args)
-
-    def exec_noise(self, ins):
-        """NOISE: produce sound on the noise generator (Tandy/PCjr)."""
-        if not self.session.sound.sound_on:
-            raise error.RunError(error.IFC)
-        source = values.to_int(self.parse_expression(ins))
-        ins.require_read((',',))
-        volume = values.to_int(self.parse_expression(ins))
-        ins.require_read((',',))
-        error.range_check(0, 7, source)
-        error.range_check(0, 15, volume)
-        dur = values.csng_(self.parse_expression(ins)).to_value()
-        error.range_check(-65535, 65535, dur)
-        ins.require_end()
-        self.session.sound.noise_(source, volume, dur)
 
     ###########################################################################
     # machine emulation

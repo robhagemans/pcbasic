@@ -133,8 +133,17 @@ class Sound(object):
         # at most 16 notes in the sound queue (not 32 as the guide says!)
         self.wait_music(15)
 
-    def noise_(self, source, volume, dur):
+    def noise_(self, args):
         """Generate a noise (NOISE statement)."""
+        if not self.sound_on:
+            raise error.RunError(error.IFC)
+        source = values.to_int(next(args))
+        error.range_check(0, 7, source)
+        volume = values.to_int(next(args))
+        error.range_check(0, 15, volume)
+        dur = values.csng_(next(args)).to_value()
+        error.range_check(-65535, 65535, dur)
+        list(args)
         # calculate duration in seconds
         dur_sec = dur / 18.2
         # in BASIC, 1/44 = 0.02272727248 which is '\x8c\x2e\x3a\x7b'
