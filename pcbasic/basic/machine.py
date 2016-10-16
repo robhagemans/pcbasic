@@ -333,12 +333,22 @@ class Memory(object):
         """DEF USR: Define machine language function."""
         logging.warning('DEF USR statement not implemented')
 
-    def call_(self, varname, args):
+    def call_(self, args):
         """CALL: Call machine language procedure."""
+        addr_var = next(args)
+        if addr_var[-1] == values.STR:
+            # type mismatch
+            raise error.RunError(error.TYPE_MISMATCH)
+        list(args)
         logging.warning('CALL statement not implemented')
 
-    def calls_(self, varname, args):
+    def calls_(self, args):
         """CALLS: Call machine language procedure."""
+        addr_var = next(args)
+        if addr_var[-1] == values.STR:
+            # type mismatch
+            raise error.RunError(error.TYPE_MISMATCH)
+        list(args)
         logging.warning('CALLS statement not implemented')
 
 

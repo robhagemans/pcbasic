@@ -183,7 +183,8 @@ class StatementParser(object):
             tk.LINE: self.exec_line,
             tk.WHILE: partial(self.exec_immediate, callback=session.interpreter.while_),
             tk.WEND: partial(self.exec_after_end, callback=session.interpreter.wend_),
-            tk.CALL: self.exec_call,
+            tk.CALL: partial(self.exec_args_iter, args_iter=self._parse_call_args_iter, callback=session.all_memory.call_),
+            tk.CALLS: partial(self.exec_args_iter, args_iter=self._parse_call_args_iter, callback=session.all_memory.calls_),
             tk.WRITE: partial(self.exec_args_iter, args_iter=self._parse_write_args_iter, callback=session.files.write_),
             tk.OPTION: self.exec_option,
             tk.RANDOMIZE: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.randomize_),
@@ -234,7 +235,6 @@ class StatementParser(object):
             tk.WINDOW: self.exec_window,
             tk.PALETTE: self.exec_palette,
             tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.lcopy_),
-            tk.CALLS: self.exec_calls,
             tk.PCOPY: self.exec_pcopy,
             tk.LOCK: self.exec_lock,
             tk.UNLOCK: self.exec_unlock,
@@ -454,32 +454,16 @@ class StatementParser(object):
         yield self.parse_expression(ins)
         ins.require_end()
 
-    def _parse_call(self, ins):
+    def _parse_call_args_iter(self, ins):
         """Helper function to parse CALL and CALLS."""
-        addr_var = self.parse_name(ins)
-        if addr_var[-1] == values.STR:
-            # type mismatch
-            raise error.RunError(error.TYPE_MISMATCH)
-        vals = []
+        yield self.parse_name(ins)
         if ins.skip_blank_read_if(('(',)):
             while True:
-                # if we wanted to call a function, we should distinguish varnames
-                # (passed by ref) from constants (passed by value) here.
-                # right now we only pass by value.
-                vals.append(self.parse_expression(ins))
+                yield self._parse_variable(ins)
                 if not ins.skip_blank_read_if((',',)):
                     break
             ins.require_read((')',))
         ins.require_end()
-        return addr_var, vals
-
-    def exec_call(self, ins):
-        """CALL: call an external procedure."""
-        self.session.all_memory.call_(*self._parse_call(ins))
-
-    def exec_calls(self, ins):
-        """CALLS: call an external procedure."""
-        self.session.all_memory.calls_(*self._parse_call(ins))
 
     def exec_out(self, ins):
         """OUT: send a byte to a machine port. Limited implementation."""
