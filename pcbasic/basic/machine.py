@@ -265,8 +265,12 @@ class Memory(object):
         addr += self.segment * 0x10
         return self._get_memory(addr)
 
-    def poke_(self, addr, val):
+    def poke_(self, args):
         """POKE: Set the value at an emulated memory location."""
+        addr = values.to_int(next(args), unsigned=True)
+        if self.data.program.protected and not self.interpreter.run_mode:
+            raise error.RunError(error.IFC)
+        val, = args
         val = values.to_int(val)
         error.range_check(0, 255, val)
         if addr < 0:

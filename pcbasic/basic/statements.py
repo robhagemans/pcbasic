@@ -159,7 +159,7 @@ class StatementParser(object):
             tk.ON: self.exec_on,
             tk.WAIT: self.exec_wait,
             tk.DEF: self.exec_def,
-            tk.POKE: self.exec_poke,
+            tk.POKE: partial(self.exec_args_iter, args_iter=self._parse_poke_args_iter, callback=session.all_memory.poke_),
             tk.CONT: partial(self.exec_immediate, callback=session.interpreter.cont_),
             tk.OUT: self.exec_out,
             tk.LPRINT: partial(self.exec_args_iter, args_iter=partial(self._parse_print_args_iter, parse_file=False), callback=session.devices.lprint_),
@@ -427,14 +427,11 @@ class StatementParser(object):
     ###########################################################################
     # machine emulation
 
-    def exec_poke(self, ins):
-        """POKE: write to a memory location."""
-        addr = values.to_int(self.parse_expression(ins), unsigned=True)
-        if self.session.program.protected and not self.run_mode:
-            raise error.RunError(error.IFC)
+    def _parse_poke_args_iter(self, ins):
+        """Parse POKE syntax."""
+        yield self.parse_expression(ins)
         ins.require_read((',',))
-        val = self.parse_expression(ins)
-        self.session.all_memory.poke_(addr, val)
+        yield self.parse_expression(ins)
 
     def exec_def_seg(self, ins):
         """DEF SEG: set the current memory segment."""
