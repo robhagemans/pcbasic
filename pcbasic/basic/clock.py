@@ -34,61 +34,41 @@ class Clock(object):
         # precision of GWBASIC TIMER is about 1/20 of a second
         return float(self.get_time_ms()//50) / 20.
 
-    def time_(self, timestr):
+    def time_(self, args):
         """TIME: Set the system time offset."""
+        timestr, = args
         # allowed formats:  hh   hh:mm   hh:mm:ss  where hh 0-23, mm 0-59, ss 0-59
         now = datetime.datetime.now() + self.time_offset
-        timelist = [0, 0, 0]
-        pos, listpos, word = 0, 0, ''
-        while pos < len(timestr):
-            if listpos > 2:
-                break
-            c = timestr[pos]
-            if c in (':', '.'):
-                timelist[listpos] = int(word)
-                listpos += 1
-                word = ''
-            elif (c < '0' or c > '9'):
-                raise error.RunError(error.IFC)
-            else:
-                word += c
-            pos += 1
-        if word:
-            timelist[listpos] = int(word)
+        strlist = timestr.replace('.', ':').split(':')
+        if len(strlist) == 1:
+            strlist = strlist[0].split('.')
+        if len(strlist) not in (1, 2, 3):
+            raise error.RunError(error.IFC)
+        try:
+            timelist = [int(s) for s in strlist]
+        except ValueError:
+            raise error.RunError(error.IFC)
+        timelist += [0] * (3 - len(timelist))
         if timelist[0] > 23 or timelist[1] > 59 or timelist[2] > 59:
             raise error.RunError(error.IFC)
         newtime = datetime.datetime(now.year, now.month, now.day,
                     timelist[0], timelist[1], timelist[2], now.microsecond)
         self.time_offset += newtime - now
 
-    def date_(self, datestr):
+    def date_(self, args):
         """DATE: Set the system date offset."""
+        datestr = next(args)
         # allowed formats:
         # mm/dd/yy  or mm-dd-yy  mm 0--12 dd 0--31 yy 80--00--77
         # mm/dd/yyyy  or mm-dd-yyyy  yyyy 1980--2099
         now = datetime.datetime.now() + self.time_offset
-        datelist = [1, 1, 1]
-        pos, listpos, word = 0, 0, ''
-        if len(datestr) < 8:
+        strlist = datestr.replace('/', '-').split('-')
+        if len(strlist) != 3:
             raise error.RunError(error.IFC)
-        while pos < len(datestr):
-            if listpos > 2:
-                break
-            c = datestr[pos]
-            if c in ('-', '/'):
-                datelist[listpos] = int(word)
-                listpos += 1
-                word = ''
-            elif (c < '0' or c > '9'):
-                if listpos == 2:
-                    break
-                else:
-                    raise error.RunError(error.IFC)
-            else:
-                word += c
-            pos += 1
-        if word:
-            datelist[listpos] = int(word)
+        try:
+            datelist = [int(s) for s in strlist]
+        except ValueError:
+            raise error.RunError(error.IFC)
         if (datelist[0] > 12 or datelist[1] > 31 or
                 (datelist[2] > 77 and datelist[2] < 80) or
                 (datelist[2] > 99 and datelist[2] < 1980 or datelist[2] > 2099)):
@@ -103,6 +83,7 @@ class Clock(object):
                             now.hour, now.minute, now.second, now.microsecond)
         except ValueError:
             raise error.RunError(error.IFC)
+        list(args)
         self.time_offset += newtime - now
 
     def time_fn_(self):

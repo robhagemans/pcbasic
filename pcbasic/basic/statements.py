@@ -217,8 +217,8 @@ class StatementParser(object):
             tk.RESET: partial(self.exec_immediate, callback=session.files.reset_),
             tk.COMMON: self.exec_common,
             tk.CHAIN: self.exec_chain,
-            tk.DATE: partial(self.exec_time_date, callback=session.clock.date_),
-            tk.TIME: partial(self.exec_time_date, callback=session.clock.time_),
+            tk.DATE: partial(self.exec_args_iter, args_iter=self._parse_time_date_args_iter, callback=session.clock.date_),
+            tk.TIME: partial(self.exec_args_iter, args_iter=self._parse_time_date_args_iter, callback=session.clock.time_),
             tk.PAINT: self.exec_paint,
             tk.COM: partial(self.exec_args_iter, args_iter=self._parse_com_command_iter, callback=session.events.com_),
             tk.CIRCLE: self.exec_circle,
@@ -489,12 +489,11 @@ class StatementParser(object):
     ###########################################################################
     # OS
 
-    def exec_time_date(self, ins, callback):
+    def _parse_time_date_args_iter(self, ins):
         """Parse TIME$ or DATE$ syntax."""
         ins.require_read((tk.O_EQ,))
-        arg = self._parse_temporary_string(ins)
+        yield self._parse_temporary_string(ins)
         ins.require_end()
-        callback(arg)
 
     ##########################################################
     # code
