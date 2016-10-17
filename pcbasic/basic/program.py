@@ -252,7 +252,7 @@ class Program(object):
                 pos = ins.tell()
                 # skip line number token
                 ins.seek(-3, 1)
-                if ins.backskip_blank(ins) == tk.GOTO and ins.backskip_blank(ins) == tk.ERROR:
+                if ins.backskip_blank() == tk.GOTO and ins.backskip_blank() == tk.ERROR:
                     ins.seek(pos)
                     continue
                 ins.seek(pos)

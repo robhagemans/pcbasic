@@ -175,7 +175,7 @@ class StatementParser(object):
             tk.RESUME: partial(self.exec_args_iter, args_iter=self._parse_resume_args_iter, callback=session.interpreter.resume_),
             tk.DELETE: partial(self.exec_args_iter, args_iter=self._parse_delete_llist_args_iter, callback=session.delete_),
             tk.AUTO: partial(self.exec_args_iter, args_iter=self._parse_auto_args_iter, callback=session.auto_),
-            tk.RENUM: self.exec_renum,
+            tk.RENUM: partial(self.exec_args_iter, args_iter=self._parse_renum_args_iter, callback=session.renum_),
             tk.DEFSTR: partial(self.exec_deftype, typechar='$'),
             tk.DEFINT: partial(self.exec_deftype, typechar='%'),
             tk.DEFSNG: partial(self.exec_deftype, typechar='!'),
@@ -577,6 +577,21 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
+    def _parse_renum_args_iter(self, ins):
+        """Parse RENUM syntax."""
+        new, old, step = None, None, None
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            new = self._parse_jumpnum_or_dot(ins, allow_empty=True)
+            if ins.skip_blank_read_if((',',)):
+                old = self._parse_jumpnum_or_dot(ins, allow_empty=True)
+                if ins.skip_blank_read_if((',',)):
+                    step = self._parse_optional_jumpnum(ins)
+        ins.require_end()
+        if step is None:
+            raise error.RunError(error.IFC)
+        for n in (new, old, step):
+            yield n
+
     def exec_chain(self, ins):
         """CHAIN: load program and chain execution."""
         merge = ins.skip_blank_read_if((tk.MERGE,)) is not None
@@ -617,19 +632,6 @@ class StatementParser(object):
             if ins.skip_blank_read_if((',',)):
                 ins.skip_to(tk.END_STATEMENT)
         return delete_lines
-
-    def exec_renum(self, ins):
-        """RENUM: renumber program line numbers."""
-        new, old, step = None, None, None
-        if ins.skip_blank() not in tk.END_STATEMENT:
-            new = self._parse_jumpnum_or_dot(ins, allow_empty=True)
-            if ins.skip_blank_read_if((',',)):
-                old = self._parse_jumpnum_or_dot(ins, allow_empty=True)
-                if ins.skip_blank_read_if((',',)):
-                    step = self._parse_optional_jumpnum(ins, -1)
-                    # FIXME: returns -1 if empty, renum shld give IFC
-        ins.require_end()
-        self.session.renum_(new, old, step)
 
     ###########################################################################
     # file

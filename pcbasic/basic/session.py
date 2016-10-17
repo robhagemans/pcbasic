@@ -708,8 +708,9 @@ class Session(object):
         self._clear_all()
         self.interpreter.set_pointer(False)
 
-    def renum_(self, new=None, old=None, step=None):
+    def renum_(self, args):
         """RENUM: renumber program line numbers."""
+        new, old, step = args
         if step is not None and step < 1:
             raise error.RunError(error.IFC)
         old_to_new = self.program.renum(self.screen, new, old, step)
