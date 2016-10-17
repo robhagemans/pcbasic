@@ -170,7 +170,7 @@ class StatementParser(object):
             tk.TROFF: partial(self.exec_immediate, callback=session.interpreter.troff_),
             tk.SWAP: self.exec_swap,
             tk.ERASE: self.exec_erase,
-            tk.EDIT: self.exec_edit,
+            tk.EDIT: partial(self.exec_args_iter, args_iter=self._parse_edit_args_iter, callback=session.edit_),
             tk.ERROR: partial(self.exec_args_iter, args_iter=self._parse_single_arg_iter, callback=session.error_),
             tk.RESUME: partial(self.exec_args_iter, args_iter=self._parse_resume_args_iter, callback=session.interpreter.resume_),
             tk.DELETE: partial(self.exec_args_iter, args_iter=self._parse_delete_args_iter, callback=session.delete_),
@@ -527,16 +527,13 @@ class StatementParser(object):
         yield self._parse_line_range(ins)
         ins.require_end()
 
-    def exec_edit(self, ins):
-        """EDIT: output a program line and position cursor for editing."""
-        if ins.skip_blank() in tk.END_STATEMENT:
-            # undefined line number
-            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
-        from_line = self._parse_jumpnum_or_dot(ins, err=error.IFC)
-        if from_line is None or from_line not in self.session.program.line_numbers:
-            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
+    def _parse_edit_args_iter(self, ins):
+        """Parse EDIT syntax."""
+        if ins.skip_blank() not in tk.END_STATEMENT:
+            yield self._parse_jumpnum_or_dot(ins, err=error.IFC)
+        else:
+            yield None
         ins.require_end(err=error.IFC)
-        self.session.edit_(from_line)
 
     def exec_auto(self, ins):
         """AUTO: enter automatic line numbering mode."""

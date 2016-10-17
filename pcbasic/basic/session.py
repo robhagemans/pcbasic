@@ -589,8 +589,12 @@ class Session(object):
         # clear all variables
         self._clear_all()
 
-    def edit_(self, from_line):
+    def edit_(self, args):
         """EDIT: output a program line and position cursor for editing."""
+        from_line, = args
+        self.program.last_stored = from_line
+        if from_line is None or from_line not in self.program.line_numbers:
+            raise error.RunError(error.UNDEFINED_LINE_NUMBER)
         # throws back to direct mode
         # jump to end of direct line so execution stops
         self.interpreter.set_pointer(False)
