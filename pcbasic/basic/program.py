@@ -345,10 +345,12 @@ class Program(object):
         # in GW-BASIC, 65530 appears in LIST, 65531 and above are hidden
         if to_line is None:
             to_line = self.max_list_line
+        numbers = [num for num in self.line_numbers
+                            if num >= from_line and num <= to_line]
         # sort by positions, not line numbers!
-        listable = sorted([ self.line_numbers[num]
-                                for num in self.line_numbers
-                                if num >= from_line and num <= to_line ])
+        listable = sorted([self.line_numbers[num] for num in numbers])
+        if numbers:
+            self.last_stored = max(numbers)
         lines = []
         for pos in listable:
             self.bytecode.seek(pos + 1)

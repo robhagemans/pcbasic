@@ -613,8 +613,10 @@ class Session(object):
         # continue input in AUTO mode
         self.auto_mode = True
 
-    def list_(self, from_line, to_line, out=None):
+    def list_(self, args):
         """LIST: output program lines."""
+        from_line, to_line = next(args)
+        out, = args
         lines = self.program.list_lines(from_line, to_line)
         if out:
             with out:

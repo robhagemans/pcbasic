@@ -154,7 +154,7 @@ class StatementParser(object):
             tk.STOP: partial(self.exec_after_end, callback=session.interpreter.stop_),
             tk.PRINT: partial(self.exec_args_iter, args_iter=partial(self._parse_print_args_iter, parse_file=True), callback=session.files.print_),
             tk.CLEAR: partial(self.exec_args_iter, args_iter=self._parse_clear_args_iter, callback=session.clear_),
-            tk.LIST: self.exec_list,
+            tk.LIST: partial(self.exec_args_iter, args_iter=self._parse_list_args_iter, callback=session.list_),
             tk.NEW: partial(self.exec_after_end, callback=session.new_),
             tk.ON: self.exec_on,
             tk.WAIT: partial(self.exec_args_iter, args_iter=self._parse_wait_args_iter, callback=session.machine.wait_),
@@ -549,24 +549,24 @@ class StatementParser(object):
         ins.require_end()
 
     def _parse_save_args_iter(self, ins):
-        """SAVE: save program to a file."""
+        """Parse SAVE syntax."""
         yield self._parse_temporary_string(ins)
         if ins.skip_blank_read_if((',',)):
             yield ins.require_read(('A', 'a', 'P', 'p'))
         else:
             yield None
 
-    def exec_list(self, ins):
-        """LIST: output program lines."""
-        from_line, to_line = self._parse_line_range(ins)
-        out = None
+    def _parse_list_args_iter(self, ins):
+        """Parse LIST syntax."""
+        yield self._parse_line_range(ins)
         if ins.skip_blank_read_if((',',)):
             outname = self._parse_temporary_string(ins)
-            out = self.session.files.open(0, outname, filetype='A', mode='O')
+            yield self.session.files.open(0, outname, filetype='A', mode='O')
             # ignore everything after file spec
             ins.skip_to(tk.END_LINE)
-        ins.require_end()
-        self.session.list_(from_line, to_line, out)
+        else:
+            yield None
+            ins.require_end()
 
     def exec_load(self, ins):
         """LOAD: load program from file."""
