@@ -674,13 +674,17 @@ class Session(object):
         # preserve DEFtype on MERGE
         self._clear_all(preserve_common=True, preserve_all=common_all, preserve_deftype=merge)
 
-    def save_(self, name, mode=None):
+    def save_(self, args):
         """SAVE: save program to a file."""
-        mode = mode or 'B'
+        name, mode = args
+        mode = (mode or 'B').upper()
         with self.files.open(0, name, filetype=mode, mode='O',
                             seg=self.memory.data_segment, offset=self.memory.code_start,
                             length=len(self.program.bytecode.getvalue())-1) as f:
             self.program.save(f)
+        if mode == 'A':
+            # return to direct mode
+            self.interpreter.set_pointer(False)
 
     def merge_(self, name):
         """MERGE: merge lines from file into current program."""

@@ -192,7 +192,7 @@ class StatementParser(object):
             tk.CLOSE: self.exec_close,
             tk.LOAD: self.exec_load,
             tk.MERGE: partial(self.exec_single_string_arg, callback=session.merge_),
-            tk.SAVE: self.exec_save,
+            tk.SAVE: partial(self.exec_args_iter, args_iter=self._parse_save_args_iter, callback=session.save_),
             tk.COLOR: self.exec_color,
             tk.CLS: self.exec_cls,
             tk.MOTOR: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.motor_),
@@ -548,6 +548,14 @@ class StatementParser(object):
             yield None
         ins.require_end()
 
+    def _parse_save_args_iter(self, ins):
+        """SAVE: save program to a file."""
+        yield self._parse_temporary_string(ins)
+        if ins.skip_blank_read_if((',',)):
+            yield ins.require_read(('A', 'a', 'P', 'p'))
+        else:
+            yield None
+
     def exec_list(self, ins):
         """LIST: output program lines."""
         from_line, to_line = self._parse_line_range(ins)
@@ -609,16 +617,6 @@ class StatementParser(object):
             if ins.skip_blank_read_if((',',)):
                 ins.skip_to(tk.END_STATEMENT)
         return delete_lines
-
-    def exec_save(self, ins):
-        """SAVE: save program to a file."""
-        name = self._parse_temporary_string(ins)
-        mode = None
-        if ins.skip_blank_read_if((',',)):
-            mode = ins.skip_blank_read().upper()
-            if mode not in ('A', 'P'):
-                raise error.RunError(error.STX)
-        self.session.save_(name, mode)
 
     def exec_renum(self, ins):
         """RENUM: renumber program line numbers."""
