@@ -1,0 +1,3 @@
+40 PRINT 2
+50 PRINT 3
+
