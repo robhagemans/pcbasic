@@ -9483,8 +9483,8 @@
         <h5>Notes</h5>
         <ul>
             <li>
-                The following keywords can reference line numbers, which will be renumbered
-                by <code>RENUM</code>: <code><a href="#AUTO">AUTO</a></code>, <code><a href="#EDIT">EDIT</a></code>,
+                Line numbers afer the following keywords will be renumbered:
+                <code><a href="#AUTO">AUTO</a></code>, <code><a href="#EDIT">EDIT</a></code>,
                 <code><a href="#ELSE">ELSE</a></code>, <code><a href="#ERL">ERL</a></code>,
                 <code><a href="#DELETE">DELETE</a></code>, <code><a href="#GOSUB">GOSUB</a></code>,
                 <code><a href="#GOTO">GOTO</a></code>, <code><a href="#LIST">LIST</a></code>,
@@ -9494,19 +9494,20 @@
                 <code><a href="#THEN">THEN</a></code>.
             </li>
             <li>
-                One keyword contains line numbers in a different program, which will not be
-                renumbered: <code><a href="#CHAIN">CHAIN</a></code>. However, a line number
-                in a <code>RUN</code> statement that
-                opens a new file <em>will</em> be renumbered, and incorrectly so. Furthermore, any <code>RENUM</code>
-                or <code>AUTO</code> statements in a program will have all their arguments 'renumbered',
-                including any line number offsets or increments. However silly, this agrees with GW-BASIC's behaviour.
+                Any line numbers in <code><a href="#CHAIN">CHAIN</a></code> statements will not be
+                renumbered; note that these line numbers refer to another program.
+            </li>
+            <li>
+                All arguments of <code>RENUM</code> or <code>AUTO</code> statements in a program will be renumbered,
+                including any line number offsets or increments, even though that does not make much sense.
             </li>
             <li>
                 A zero line number following the keywords <code>ERROR GOTO</code> will not be renumbered.
             </li>
             <li>
-                If a referenced line number does not exist in the program, the statement prints a
-                message (not an error) <code>Undefined line <var>ref</var> in <var>old_line</var></code> where <code><var>old_line</var></code>
+                If a referenced line number does not exist in the program, a
+                message <samp>Undefined line <var>ref</var> in <var>old_line</var></samp>
+                is printed. Here, <code><var>old_line</var></code>
                 is the line number prior to renumbering. The referenced line number will be
                 left unchanged, but the line's old line number will be renumbered.
             </li>
