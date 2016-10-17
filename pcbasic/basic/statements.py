@@ -163,7 +163,7 @@ class StatementParser(object):
             tk.CONT: partial(self.exec_immediate, callback=session.interpreter.cont_),
             tk.OUT: partial(self.exec_args_iter, args_iter=self._parse_poke_out_args_iter, callback=session.machine.out_),
             tk.LPRINT: partial(self.exec_args_iter, args_iter=partial(self._parse_print_args_iter, parse_file=False), callback=session.devices.lprint_),
-            tk.LLIST: self.exec_llist,
+            tk.LLIST: partial(self.exec_args_iter, args_iter=self._parse_delete_llist_args_iter, callback=session.llist_),
             tk.WIDTH: partial(self.exec_args_iter, args_iter=self._parse_width_args_iter, callback=session.files.width_),
             tk.ELSE: self.skip_line,
             tk.TRON: partial(self.exec_immediate, callback=session.interpreter.tron_),
@@ -173,7 +173,7 @@ class StatementParser(object):
             tk.EDIT: partial(self.exec_args_iter, args_iter=self._parse_edit_args_iter, callback=session.edit_),
             tk.ERROR: partial(self.exec_args_iter, args_iter=self._parse_single_arg_iter, callback=session.error_),
             tk.RESUME: partial(self.exec_args_iter, args_iter=self._parse_resume_args_iter, callback=session.interpreter.resume_),
-            tk.DELETE: partial(self.exec_args_iter, args_iter=self._parse_delete_args_iter, callback=session.delete_),
+            tk.DELETE: partial(self.exec_args_iter, args_iter=self._parse_delete_llist_args_iter, callback=session.delete_),
             tk.AUTO: partial(self.exec_args_iter, args_iter=self._parse_auto_args_iter, callback=session.auto_),
             tk.RENUM: self.exec_renum,
             tk.DEFSTR: partial(self.exec_deftype, typechar='$'),
@@ -522,7 +522,7 @@ class StatementParser(object):
                 return None
             raise error.RunError(err)
 
-    def _parse_delete_args_iter(self, ins):
+    def _parse_delete_llist_args_iter(self, ins):
         """Parse DELETE syntax."""
         yield self._parse_line_range(ins)
         ins.require_end()
@@ -559,12 +559,6 @@ class StatementParser(object):
             ins.skip_to(tk.END_LINE)
         ins.require_end()
         self.session.list_(from_line, to_line, out)
-
-    def exec_llist(self, ins):
-        """LLIST: output program lines to LPT1: """
-        from_line, to_line = self._parse_line_range(ins)
-        ins.require_end()
-        self.session.llist_(from_line, to_line)
 
     def exec_load(self, ins):
         """LOAD: load program from file."""

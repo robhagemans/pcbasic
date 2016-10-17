@@ -630,8 +630,10 @@ class Session(object):
         # return to direct mode
         self.interpreter.set_pointer(False)
 
-    def llist_(self, from_line, to_line):
+    def llist_(self, args):
         """LLIST: output program lines to LPT1: """
+        from_line, to_line = next(args)
+        list(args)
         for l in self.program.list_lines(from_line, to_line):
             self.devices.lpt1_file.write_line(l)
         # return to direct mode
