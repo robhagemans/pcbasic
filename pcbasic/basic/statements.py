@@ -188,7 +188,7 @@ class StatementParser(object):
             tk.WRITE: partial(self.exec_args_iter, args_iter=self._parse_write_args_iter, callback=session.files.write_),
             tk.OPTION: self.exec_option,
             tk.RANDOMIZE: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.randomize_),
-            tk.OPEN: self.exec_open,
+            tk.OPEN: partial(self.exec_args_iter, args_iter=self._parse_open_args_iter, callback=session.files.open_),
             tk.CLOSE: self.exec_close,
             tk.LOAD: partial(self.exec_args_iter, args_iter=self._parse_load_args_iter, callback=session.load_),
             tk.MERGE: partial(self.exec_single_string_arg, callback=session.merge_),
@@ -628,14 +628,15 @@ class StatementParser(object):
     ###########################################################################
     # file
 
-    def exec_open(self, ins):
-        """OPEN: open a file."""
+    def _parse_open_args_iter(self, ins):
+        """Parse OPEN syntax."""
         first_expr = self._parse_temporary_string(ins)
         if ins.skip_blank_read_if((',',)):
             args = self._parse_open_first(ins, first_expr)
         else:
             args = self._parse_open_second(ins, first_expr)
-        self.session.files.open_(*args)
+        for a in args:
+            yield a
 
     def _parse_open_first(self, ins, first_expr):
         """Parse OPEN first ('old') syntax."""
@@ -647,8 +648,8 @@ class StatementParser(object):
         name = self._parse_temporary_string(ins)
         reclen = None
         if ins.skip_blank_read_if((',',)):
-            reclen = values.to_int(self.parse_expression(ins))
-        return number, name, mode, reclen
+            reclen = self.parse_expression(ins)
+        return number, name, mode, reclen, None, None
 
     def _parse_open_second(self, ins, first_expr):
         """Parse OPEN second ('new') syntax."""
@@ -682,7 +683,7 @@ class StatementParser(object):
         reclen = None
         if ins.skip_blank_read_if((tk.LEN,), 2):
             ins.require_read(tk.O_EQ)
-            reclen = values.to_int(self.parse_expression(ins))
+            reclen = self.parse_expression(ins)
         return number, name, mode, reclen, access, lock
 
     def _parse_read_write(self, ins):

@@ -65,14 +65,17 @@ class Files(object):
             except KeyError:
                 pass
 
-    def open_(self, number, name, mode=None, reclen=None, access=None, lock=None):
+    def open_(self, args):
         """OPEN: open a data file."""
+        number, name, mode, reclen, access, lock = args
         mode = mode or 'R'
         default_access_modes = {'I':'R', 'O':'W', 'A':'RW', 'R':'RW'}
         access = access or default_access_modes[mode]
         lock = lock or b''
         if reclen is None:
             reclen = 128
+        else:
+            reclen = values.to_int(reclen)
         # mode and access must match if not a RANDOM file
         # If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR
         # If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
