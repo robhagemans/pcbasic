@@ -1,0 +1,4 @@
+10 PRINT 1
+20 SAVE "c",A
+30 PRINT 2
+
