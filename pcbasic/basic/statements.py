@@ -190,7 +190,7 @@ class StatementParser(object):
             tk.RANDOMIZE: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.randomize_),
             tk.OPEN: self.exec_open,
             tk.CLOSE: self.exec_close,
-            tk.LOAD: self.exec_load,
+            tk.LOAD: partial(self.exec_args_iter, args_iter=self._parse_load_args_iter, callback=session.load_),
             tk.MERGE: partial(self.exec_single_string_arg, callback=session.merge_),
             tk.SAVE: partial(self.exec_args_iter, args_iter=self._parse_save_args_iter, callback=session.save_),
             tk.COLOR: self.exec_color,
@@ -568,14 +568,14 @@ class StatementParser(object):
             yield None
             ins.require_end()
 
-    def exec_load(self, ins):
-        """LOAD: load program from file."""
-        name = self._parse_temporary_string(ins)
-        comma_r = ins.skip_blank_read_if((',',))
-        if comma_r:
-            comma_r = ins.require_read(('R',))
+    def _parse_load_args_iter(self, ins):
+        """Parse LOAD syntax."""
+        yield self._parse_temporary_string(ins)
+        if ins.skip_blank_read_if((',',)):
+            yield ins.require_read(('R', 'r'))
+        else:
+            yield None
         ins.require_end()
-        self.session.load_(name, comma_r)
 
     def exec_chain(self, ins):
         """CHAIN: load program and chain execution."""

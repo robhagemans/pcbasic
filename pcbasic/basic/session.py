@@ -641,8 +641,9 @@ class Session(object):
         # return to direct mode
         self.interpreter.set_pointer(False)
 
-    def load_(self, name, comma_r=None):
+    def load_(self, args):
         """LOAD: load program from file."""
+        name, comma_r = args
         with self.files.open(0, name, filetype='ABP', mode='I') as f:
             self.program.load(f)
         # reset stacks
