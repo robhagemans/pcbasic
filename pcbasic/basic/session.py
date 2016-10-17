@@ -657,8 +657,16 @@ class Session(object):
             self.files.close_all()
         self.interpreter.tron = False
 
-    def chain_(self, name, jumpnum=None, common_all=False, delete_lines=None, merge=False):
+    def chain_(self, args):
         """CHAIN: load program and chain execution."""
+        merge, name, jumpnum = next(args), next(args), next(args)
+        if jumpnum is not None:
+            jumpnum = values.to_int(jumpnum, unsigned=True)
+        common_all, delete_lines = next(args), next(args)
+        from_line, to_line = delete_lines if delete_lines else None, None
+        if to_line is not None and to_line not in self.program.line_numbers:
+            raise error.RunError(error.IFC)
+        list(args)
         if self.program.protected and merge:
             raise error.RunError(error.IFC)
         with self.files.open(0, name, filetype='ABP', mode='I') as f:

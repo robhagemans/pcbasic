@@ -216,7 +216,7 @@ class StatementParser(object):
             tk.GET: self.exec_get,
             tk.RESET: partial(self.exec_immediate, callback=session.files.reset_),
             tk.COMMON: self.exec_common,
-            tk.CHAIN: self.exec_chain,
+            tk.CHAIN: partial(self.exec_args_iter, args_iter=self._parse_chain_args_iter, callback=session.chain_),
             tk.DATE: partial(self.exec_args_iter, args_iter=self._parse_time_date_args_iter, callback=session.clock.date_),
             tk.TIME: partial(self.exec_args_iter, args_iter=self._parse_time_date_args_iter, callback=session.clock.time_),
             tk.PAINT: self.exec_paint,
@@ -592,46 +592,38 @@ class StatementParser(object):
         for n in (new, old, step):
             yield n
 
-    def exec_chain(self, ins):
-        """CHAIN: load program and chain execution."""
-        merge = ins.skip_blank_read_if((tk.MERGE,)) is not None
-        name = self._parse_temporary_string(ins)
-        jumpnum, common_all, delete_lines = None, False, None
+    def _parse_chain_args_iter(self, ins):
+        """Parse CHAIN syntax."""
+        yield ins.skip_blank_read_if((tk.MERGE,)) is not None
+        yield self._parse_temporary_string(ins)
+        jumpnum, common_all, delete_range = None, False, True
         if ins.skip_blank_read_if((',',)):
-            # check for an expression that indicates a line in the other program. This is not stored as a jumpnum (to avoid RENUM)
-            expr = self.parse_expression(ins, allow_empty=True)
-            if expr is not None:
-                jumpnum = values.to_int(expr, unsigned=True)
+            # check for an expression that indicates a line in the other program.
+            # This is not stored as a jumpnum (to avoid RENUM)
+            jumpnum = self.parse_expression(ins, allow_empty=True)
             if ins.skip_blank_read_if((',',)):
-                if ins.skip_blank_read_if((tk.W_ALL,), 3):
-                    common_all = True
+                common_all = ins.skip_blank_read_if((tk.W_ALL,), 3)
+                if common_all:
                     # CHAIN "file", , ALL, DELETE
-                    if ins.skip_blank_read_if((',',)):
-                        delete_lines = self._parse_delete_clause(ins)
-                else:
-                    # CHAIN "file", , DELETE
-                    delete_lines = self._parse_delete_clause(ins)
-        ins.require_end()
-        self.session.chain_(name, jumpnum, common_all, delete_lines, merge)
-
-    def _parse_delete_clause(self, ins):
-        """Helper function: parse the DELETE clause of a CHAIN statement."""
-        delete_lines = None
-        if ins.skip_blank_read_if((tk.DELETE,)):
-            from_line = self._parse_optional_jumpnum(ins, -1)
+                    delete_range = ins.skip_blank_read_if((',',))
+                # CHAIN "file", , DELETE
+        yield jumpnum
+        yield common_all
+        if delete_range and ins.skip_blank_read_if((tk.DELETE,)):
+            from_line = self._parse_optional_jumpnum(ins)
             if ins.skip_blank_read_if((tk.O_MINUS,)):
-                to_line = self._parse_optional_jumpnum(ins, -1)
-                #FIXME: returns -1 on missing, not clear what happens in CHAIN
+                to_line = self._parse_optional_jumpnum(ins)
             else:
                 to_line = from_line
-            # to_line must be specified and must be an existing line number
-            if not to_line or to_line not in self.session.program.line_numbers:
-                raise error.RunError(error.IFC)
+            error.throw_if(not to_line)
             delete_lines = (from_line, to_line)
             # ignore rest if preceded by comma
             if ins.skip_blank_read_if((',',)):
                 ins.skip_to(tk.END_STATEMENT)
-        return delete_lines
+            yield delete_lines
+        else:
+            yield None
+        ins.require_end()
 
     ###########################################################################
     # file
