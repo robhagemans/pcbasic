@@ -119,11 +119,11 @@ class StatementParser(object):
         assert len(token) == 2, 'Bytecode truncated in line number pointer'
         return struct.unpack('<H', token)[0]
 
-    def _parse_optional_jumpnum(self, ins):
+    def _parse_optional_jumpnum(self, ins, missing_value=None):
         """Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc."""
         # no line number
         if ins.skip_blank() != tk.T_UINT:
-            return -1
+            return missing_value
         return self._parse_jumpnum(ins)
 
     ###########################################################################
@@ -174,7 +174,7 @@ class StatementParser(object):
             tk.ERROR: partial(self.exec_args_iter, args_iter=self._parse_single_arg_iter, callback=session.error_),
             tk.RESUME: partial(self.exec_args_iter, args_iter=self._parse_resume_args_iter, callback=session.interpreter.resume_),
             tk.DELETE: partial(self.exec_args_iter, args_iter=self._parse_delete_args_iter, callback=session.delete_),
-            tk.AUTO: self.exec_auto,
+            tk.AUTO: partial(self.exec_args_iter, args_iter=self._parse_auto_args_iter, callback=session.auto_),
             tk.RENUM: self.exec_renum,
             tk.DEFSTR: partial(self.exec_deftype, typechar='$'),
             tk.DEFINT: partial(self.exec_deftype, typechar='%'),
@@ -535,15 +535,18 @@ class StatementParser(object):
             yield None
         ins.require_end(err=error.IFC)
 
-    def exec_auto(self, ins):
-        """AUTO: enter automatic line numbering mode."""
-        linenum = self._parse_jumpnum_or_dot(ins, allow_empty=True)
-        increment = None
+    def _parse_auto_args_iter(self, ins):
+        """Parse AUTO syntax."""
+        yield self._parse_jumpnum_or_dot(ins, allow_empty=True)
         if ins.skip_blank_read_if((',',)):
-            increment = self._parse_optional_jumpnum(ins)
-            # FIXME: returns -1, auto shld give IFC
+            inc = self._parse_optional_jumpnum(ins)
+            if inc is None:
+                raise error.RunError(error.IFC)
+            else:
+                yield inc
+        else:
+            yield None
         ins.require_end()
-        self.session.auto_(linenum, increment)
 
     def exec_list(self, ins):
         """LIST: output program lines."""
@@ -598,9 +601,9 @@ class StatementParser(object):
         """Helper function: parse the DELETE clause of a CHAIN statement."""
         delete_lines = None
         if ins.skip_blank_read_if((tk.DELETE,)):
-            from_line = self._parse_optional_jumpnum(ins)
+            from_line = self._parse_optional_jumpnum(ins, -1)
             if ins.skip_blank_read_if((tk.O_MINUS,)):
-                to_line = self._parse_optional_jumpnum(ins)
+                to_line = self._parse_optional_jumpnum(ins, -1)
                 #FIXME: returns -1 on missing, not clear what happens in CHAIN
             else:
                 to_line = from_line
@@ -631,7 +634,7 @@ class StatementParser(object):
             if ins.skip_blank_read_if((',',)):
                 old = self._parse_jumpnum_or_dot(ins, allow_empty=True)
                 if ins.skip_blank_read_if((',',)):
-                    step = self._parse_optional_jumpnum(ins)
+                    step = self._parse_optional_jumpnum(ins, -1)
                     # FIXME: returns -1 if empty, renum shld give IFC
         ins.require_end()
         self.session.renum_(new, old, step)
@@ -1535,7 +1538,7 @@ class StatementParser(object):
         if onvar in (0, 255):
             # if any provided, check all but jump to none
             while True:
-                num = self._parse_optional_jumpnum(ins)
+                num = self._parse_optional_jumpnum(ins, -1)
                 if num == -1 or not ins.skip_blank_read_if((',',)):
                     ins.require_end()
                     return

@@ -602,8 +602,9 @@ class Session(object):
         # request edit prompt
         self.edit_prompt = (from_line, None)
 
-    def auto_(self, linenum=None, increment=None):
+    def auto_(self, args):
         """AUTO: enter automatic line numbering mode."""
+        linenum, increment = args
         # reset linenum and increment on each call of AUTO (even in AUTO mode)
         self.auto_linenum = linenum if linenum is not None else 10
         self.auto_increment = increment if increment is not None else 10
