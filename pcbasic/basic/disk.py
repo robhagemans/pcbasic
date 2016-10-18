@@ -747,20 +747,19 @@ class RandomFile(devices.CRLFTextFileBase):
 
     def lock(self, start, stop):
         """Lock range of records."""
-        bstart, bstop = (start-1) * self.reclen, stop*self.reclen - 1
         other_lock_list = set.union(*(f.lock_list for f in self.locks.list(self.name)))
         for start_1, stop_1 in other_lock_list:
-            if (stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1)
-                             or (bstop >= start_1 and bstop <= stop_1)):
+            if (stop_1 is None and start_1 is None
+                        or (start >= start_1 and start <= stop_1)
+                        or (stop >= start_1 and stop <= stop_1)):
                 raise error.RunError(error.PERMISSION_DENIED)
-        self.lock_list.add((bstart, bstop))
+        self.lock_list.add((start, stop))
 
     def unlock(self, start, stop):
         """Unlock range of records."""
-        bstart, bstop = (start-1) * self.reclen, stop*self.reclen - 1
         # permission denied if the exact record range wasn't given before
         try:
-            self.lock_list.remove((bstart, bstop))
+            self.lock_list.remove((start, stop))
         except KeyError:
             raise error.RunError(error.PERMISSION_DENIED)
 
@@ -869,11 +868,11 @@ class TextFile(devices.CRLFTextFileBase):
         """Lock the file."""
         if set.union(*(f.lock_list for f in self.locks.list(self.name))):
             raise error.RunError(error.PERMISSION_DENIED)
-        self.lock_list.add((0, -1))
+        self.lock_list.add(True)
 
     def unlock(self, start, stop):
         """Unlock the file."""
         try:
-            self.lock_list.remove((0, -1))
+            self.lock_list.remove(True)
         except KeyError:
             raise error.RunError(error.PERMISSION_DENIED)

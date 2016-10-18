@@ -135,6 +135,8 @@ class Files(object):
 
     def _get_lock_limits(self, lock_start_rec, lock_stop_rec):
         """Get record lock limits."""
+        if lock_start_rec is None and lock_stop_rec is None:
+            return None, None
         if lock_start_rec is None:
             lock_start_rec = 1
         else:
