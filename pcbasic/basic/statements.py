@@ -236,7 +236,7 @@ class StatementParser(object):
             tk.PALETTE: self.exec_palette,
             tk.LCOPY: partial(self.exec_args_iter, args_iter=self._parse_optional_arg_iter, callback=session.devices.lcopy_),
             tk.PCOPY: self.exec_pcopy,
-            tk.LOCK: partial(self.exec_args_iter, args_iter=self._parse_lock_unlock_args_iter, callback=session.files.unlock_),
+            tk.LOCK: partial(self.exec_args_iter, args_iter=self._parse_lock_unlock_args_iter, callback=session.files.lock_),
             tk.UNLOCK: partial(self.exec_args_iter, args_iter=self._parse_lock_unlock_args_iter, callback=session.files.unlock_),
             tk.MID: partial(self.exec_args_iter, args_iter=self._parse_mid_args_iter, callback=session.memory.mid_),
             tk.PEN: partial(self.exec_args_iter, args_iter=self._parse_event_command_iter, callback=session.events.pen_),

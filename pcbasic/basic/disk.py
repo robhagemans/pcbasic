@@ -748,7 +748,7 @@ class RandomFile(devices.CRLFTextFileBase):
     def lock(self, start, stop):
         """Lock range of records."""
         bstart, bstop = (start-1) * self.reclen, stop*self.reclen - 1
-        other_lock_list = set.union(f.lock_list for f in self.locks.list(self.name))
+        other_lock_list = set.union(*(f.lock_list for f in self.locks.list(self.name)))
         for start_1, stop_1 in other_lock_list:
             if (stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1)
                              or (bstop >= start_1 and bstop <= stop_1)):
@@ -867,7 +867,7 @@ class TextFile(devices.CRLFTextFileBase):
 
     def lock(self, start, stop):
         """Lock the file."""
-        if set.union(f.lock_list for f in self.locks.list(self.name)):
+        if set.union(*(f.lock_list for f in self.locks.list(self.name))):
             raise error.RunError(error.PERMISSION_DENIED)
         self.lock_list.add((0, -1))
 
